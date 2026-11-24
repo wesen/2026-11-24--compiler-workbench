@@ -1,0 +1,735 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> ir-workbench@0.6.0 verify:release
+> npm run verify && node scripts/strategy-demo.mjs && node scripts/contracts-demo.mjs && node scripts/ir-demo.mjs && node scripts/guide-demo.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> ir-workbench@0.6.0 verify
+> npm run build:source && npm test && node scripts/source-demo.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> ir-workbench@0.6.0 build:source
+> npm run build && node scripts/build-source.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> ir-workbench@0.6.0 build
+> node scripts/build.mjs
+
+Strict TypeScript build complete.
+Standalone source-first workbench: 11.1 MB
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> ir-workbench@0.6.0 test
+> node --test tests/*.test.mjs
+
+✔ box has independently known volume, area, bounds and spherical topology (3.710864ms)
+✔ cylinder matches regular polygon prism volume rather than claiming exact curved volume (1.297947ms)
+✔ reflection transforms repair orientation; compound concatenation preserves separate topology (0.872495ms)
+✔ mesh structural validation rejects malformed positions and indices (2.550154ms)
+✔ bracket is one closed oriented surface with two genuine through holes (10.837005ms)
+✔ bracket volume converges to exact analytic construction with a conservative bore error bound (13.32859ms)
+✔ geometric restrictions fail explicitly rather than emitting substitute solids (0.439542ms)
+✔ CAD sketch genuinely uses the shared eight-variable residual and numerical tape (4.334743ms)
+✔ sketch structural edges report actual constraint sparsity rather than false dependencies (1.454573ms)
+✔ registered CAD pipeline executes the shared math compile pass and reuses unchanged artifacts (78.267053ms)
+✔ hole diameter edits preserve the sketch, numeric tape, base and upright definitions (125.267848ms)
+✔ changing tessellation invalidates mesh and its analysis while retaining the analytic shape (206.484667ms)
+✔ changing base depth reuses the independently compiled upright definition (61.178866ms)
+✔ a bore triangle traces to its named cylindrical face and drilling feature (42.671289ms)
+✔ an invalid hole edit leaves a queryable failed invocation without a false mesh result (37.089486ms)
+✔ equal CAD content can have separate logical identities without sharing mutable objects (38.214151ms)
+✔ custom CLI runs record baseline and edited outputs with an offline workbench (2601.931558ms)
+✔ invalid custom CLI exports failed traces and preserves last successful assets before exiting nonzero (1948.777289ms)
+✔ all source compiler passes have versioned typed contracts and building runs all 59 acceptance checks (2588.11683ms)
+✔ warm compiler artifacts are accepted only after current semantic checks, with reused revision-specific evidence (3614.742661ms)
+✔ ring reductions carry checked correspondence, transferred surface labels and independently verified bounds (1462.815186ms)
+✔ cleanup contracts verify exact surface geometry at each real iteration without requiring intermediate watertightness (67.894285ms)
+✔ mechanism contracts independently check anchors, driver, branch, poses, sample schedule and numerical evidence (245.381939ms)
+✔ scene packaging verifies material assignments and source geometry; semantic objective measures real candidate cost (1365.2745ms)
+✔ a failed positive-integer precondition does not run or publish the invalid ring transformation (30.479651ms)
+✔ a well-typed but geometrically wrong transform is rejected before artifact or fact publication (17.660159ms)
+✔ unjustified preservation rejects a fabricated face label with explicit transfer evidence (16.182491ms)
+✔ undeclared resource effects are rejected without performing a write (13.359977ms)
+✔ accepted writes commit once per execution, while failed postconditions discard staged writes (35.647351ms)
+✔ changed postcondition resource rechecks cached geometry without pretending the algorithm input changed (53.403769ms)
+✔ changed body resource invalidates computational reuse and survives subsequent warm-cache imports (58.419019ms)
+✔ body analysis invalidation forces registered kernel execution; context queries expose exact revisions and reasons (52.51764ms)
+✔ replacing a contract version rechecks a cached artifact before acceptance without changing pass code (22.527394ms)
+✔ retained source approximation bounds and semantic face correspondences cannot be falsified (1159.461144ms)
+✔ an implementation bug in a semantic callback remains a fatal failure, not a rejected candidate (14.414707ms)
+✔ contract projections scope retained history to exact run and invocation (2.710095ms)
+✔ contract inspector separates pass reuse, semantic checks and typed revisioned ports (6.485115ms)
+✔ analysis and property explanations expose checker versions and dependency evidence (12.217466ms)
+✔ failed contracts retain failure evidence without asserting accepted output facts (2.074897ms)
+✔ effects and correspondence show resource revisions and actual entity mappings (2.088548ms)
+✔ legacy invocation without contract evidence is explicitly unverified (0.643239ms)
+✔ embedded pass inspector opens contracts below the actual IR route (30.955209ms)
+✔ definition source index records literal category, version and exact original text (920.931131ms)
+✔ inspector consumes real manager acceptance, cached analysis and rejected postcondition traces (86.786655ms)
+✔ full workbench exercises all contract lab scenarios, cached resource rechecks and staged effects (10303.543975ms)
+✔ typed definitions, exact registry versions, immutable manifests and artifacts are reusable (25.100344ms)
+✔ analyses reuse exact revision+params and explicit invalidation reaches dependent analyses and properties (12.189783ms)
+✔ declared claims cannot satisfy preconditions and checked property facts identify exact revisions (7.970023ms)
+✔ relational invariants enforce numeric parameters and named input/output guarantees (4.624992ms)
+✔ preserves check and establishes run real property checkers before outputs become accepted (7.095064ms)
+✔ analysis and property transfer require exact correspondence and a versioned executable justification (11.590731ms)
+✔ unauthorized or stale source results cannot be transferred (1.524398ms)
+✔ effect declarations enforce transitive reads even when a nested analysis was already cached (9.919462ms)
+✔ resource writes require cache never and rejected outputs publish no resource writes or facts (4.930451ms)
+✔ a caught missing resource read is tracked so later resource creation invalidates cached fallback (5.994897ms)
+✔ analysis/property cycles are diagnosed and malformed truthy checker values are rejected (1.290816ms)
+✔ parallel transactions checking the same immutable source commit without false stale evidence (11.622528ms)
+✔ late context calls and unawaited nested invariant work cannot escape contract lifetime (16.07438ms)
+✔ objectives execute their declared analysis and preserve exact metric evidence (1.285488ms)
+✔ proof assurance requires a property-specific checked certificate and never accepts a free assurance label (3.251861ms)
+✔ typed input and output failures are inspectable and never accept forged artifacts (1.541453ms)
+✔ verification is single flight, snapshots values before waiting, and committed history cannot be failed retroactively (1.218166ms)
+✔ preconditions read the original resource and postconditions read the staged revision of the same subject (2.597165ms)
+✔ standalone invariant queries return evidence for true and false results and enforce effects in nested queries (1.435143ms)
+✔ a throwing transformation drains already-started semantic work before reporting failure (11.11237ms)
+✔ invalidation during an in-flight checker prevents its late result from authorizing a transformation (10.066153ms)
+✔ asynchronous property queries pin the checked artifact and reject forged introspection subjects (1.321352ms)
+✔ proof certificate and transfer correspondence evidence equal their captured verifier inputs (5.545229ms)
+✔ asynchronous resource commits cannot publish accepted outputs or hide rejected promises (1.693312ms)
+✔ manual rollback immediately closes every descendant and prevents late trace or fact publication (3.930795ms)
+✔ cache validation stops before replaying a child parameterized by a changed artifact (12.153338ms)
+✔ run failure drains concurrent work, preserves the original error, and closes the registry (19.054381ms)
+✔ a fallback after a failed dependency cannot remain cached after the dependency is repaired (1.424227ms)
+✔ a fallback after an absent input cannot hide a subsequently supplied value (0.711983ms)
+✔ a dependency failure during cache validation lets the current parent execute its fallback (2.140196ms)
+✔ a rejected run callback is recorded as a failed run even after successful tasks (0.753586ms)
+✔ an unawaited failed requirement is reported without an orphaned promise rejection (5.776838ms)
+✔ task dependency manifests snapshot the request at require time (1.185407ms)
+✔ query differences distinguish absent fields and inputs from explicit null (5.295802ms)
+✔ canonical arrays reject accessors, symbol keys, and sparse arrays with spoofed key counts (0.697331ms)
+✔ an exposed run record cannot replace the immutable input snapshot (0.790852ms)
+✔ fixpoint detection includes IR kind and schema, not only the JSON payload (3.010448ms)
+✔ selection tie-breaking uses portable code-unit order rather than host locale (3.072771ms)
+✔ portable SHA-256 agrees with the platform for ASCII, Unicode and multi-block data (8.252059ms)
+✔ run snapshots and artifacts are immutable and isolated from host mutation (5.508243ms)
+✔ dynamic dependencies explain exact edits and ignore unread inputs (5.329073ms)
+✔ diamond dependency deduplication and content-based downstream reuse (9.803602ms)
+✔ conditional reads are tracked and historical cache variants can be reused (2.16944ms)
+✔ transitive algorithm version changes are checked even under a cached parent (2.045033ms)
+✔ parameter changes never validate stale child requests (1.941116ms)
+✔ failed validation and failed dependencies are recorded but never cached (2.418656ms)
+✔ dependency cycles including independently scheduled roots fail without deadlock (1.265578ms)
+✔ conflicting task identity is rejected, registry is immutable during a run (0.881369ms)
+✔ LRU eviction is explained distinctly from changed input (3.693197ms)
+✔ full checkpoints are not invented from summary-only cache entries (1.04811ms)
+✔ generic selection retains feasibility reasons and deterministic tie-breaking (6.334067ms)
+✔ fixpoint convergence and oscillation have explicit outcomes (5.017743ms)
+✔ analysis caches belong to exact artifact revisions; query diffs retain run history (5.83108ms)
+✔ composed door is a real shared scene with two occurrences of one CAD bracket definition (360.892797ms)
+✔ every exported sampled pose closes every assembly joint in world coordinates (81.736793ms)
+✔ driver phase, duration and full-cycle endpoint positions agree with the explicit inputs (0.630931ms)
+✔ selected CAD mounting datums land on the actual ground pivots (187.464243ms)
+✔ each local collider and every transformed collider box conservatively enclose its mesh vertices (30.778323ms)
+✔ the animated scene validator rejects shrunken collision proxies and broken sample identities (9.877198ms)
+✔ a CAD bore diameter edit recomputes ports but preserves their value and every mechanism stage (1299.018226ms)
+✔ door leaf dimension changes invalidate its geometry without invalidating the mechanism (355.716476ms)
+✔ CAD width edits correctly move ground pivots and invalidate dependent mechanism computation (566.162334ms)
+✔ the assembly adapter explicitly rejects unsupported axes, topology, roles, driver and local frames (41.169115ms)
+✔ adapter body recognition and provenance remain correct when body declaration order changes (23.35273ms)
+✔ mount datum provenance identifies the real CAD bore walls and drilling feature (220.29977ms)
+✔ a newly registered IR and one analysis pass consume CAD and game geometry through the same boundary (336.231902ms)
+✔ the extension inherits precise cache invalidation without implementing its own cache (313.221212ms)
+✔ the same extension also accepts a new mesh producer registered after the existing frontends (2.12291ms)
+✔ reusable modules have no domain imports and respect their directed dependency boundaries (157.835122ms)
+✔ fresh Node processes reproduce every intermediate and final artifact hash from equal inputs (1148.708171ms)
+✔ cylinder error certification rejects inconsistent primitive metadata and ring geometry (6.128227ms)
+✔ the identity cylinder option validates its claimed analytic source error too (0.33772ms)
+✔ reduced cylinders preserve topology and cover measured mesh distances with the declared bound (5.160839ms)
+✔ unsupported reduction divisors fail instead of producing incomplete ring meshes (0.495467ms)
+✔ ring reduction supplies complete many-to-one surface correspondence (1.130134ms)
+✔ recipe and LOD validators enforce complete contracts (1.334222ms)
+✔ LOD cost evaluation rejects references to missing definitions (1.204275ms)
+✔ shared scene schema rejects inconsistent materials, geometry counts and references (112.134311ms)
+✔ scene occurrence identity and transformation contracts reject ambiguous objects (0.949531ms)
+✔ a reduced cylinder side traces through the collected mesh set to every original side (86.91577ms)
+✔ ring decimation rebuilds closed meshes and respects a geometric bound (36.635831ms)
+✔ roof is a closed prism with independently calculated volume (1.071635ms)
+✔ building retains shared definitions and selects the lowest feasible triangle count (173.916566ms)
+✔ appearance changes reuse all geometry and unchanged reruns are cached (348.239545ms)
+✔ policy changes reuse the alternatives and choose a different candidate (150.958818ms)
+✔ column edit invalidates one geometry definition and preserves unrelated mesh artifacts (140.610118ms)
+✔ invalid geometric parameters fail with a recorded diagnostic instead of a plausible package (15.23229ms)
+✔ expressions: native storage round-trips without an implicit format conversion (25.918768ms)
+✔ expressions: actual strategy, runtime, semantic checks and generic edits compose (172.354947ms)
+✔ scenes: native storage round-trips without an implicit format conversion (9.281341ms)
+✔ scenes: actual strategy, runtime, semantic checks and generic edits compose (59.323108ms)
+✔ meshes: native storage round-trips without an implicit format conversion (17.610754ms)
+✔ meshes: actual strategy, runtime, semantic checks and generic edits compose (153.565241ms)
+✔ constraints: native storage round-trips without an implicit format conversion (17.752568ms)
+✔ constraints: actual strategy, runtime, semantic checks and generic edits compose (153.302495ms)
+✔ Expression CSE and algebraic rewrites are backed by exact semantic checks (8.243385ms)
+✔ Polynomial coefficients use exact BigInt intermediates instead of silently rounded arithmetic (0.678352ms)
+✔ Polynomial expansion has an explicit degree budget (9.688314ms)
+✔ A long expression arena validates and evaluates without recursive stack overflow (74.014843ms)
+✔ The expression summary derives its environment from edited source variables (107.721314ms)
+✔ Scene sharing redirects bindings while retaining named world placements (0.55072ms)
+✔ Scene queries remain valid when the first supplied definition is the one merged away (43.304894ms)
+✔ Mesh objective chooses actual checked candidates under a changed approximation bound (89.240453ms)
+✔ Edited odd boundary fans expose only feasible construction alternatives (46.74572ms)
+✔ Global convexity rejects a twice-winding star even when all local turns are positive (0.387384ms)
+✔ The mesh distance routine rejects unrelated or translated contours (0.317168ms)
+✔ Constraints use dependency decomposition and actual independent component solves (0.200903ms)
+✔ Constraint pattern checks coefficients rather than matching equal right-hand sides alone (6.158468ms)
+✔ Numerical constraints reject inconsistent, underdetermined and non-finite elimination results (0.294533ms)
+✔ Each original equation is checked against the computed numerical solution (0.121143ms)
+✔ expressions: semantic failure rejects the transaction without publishing the edited revision (5.880223ms)
+✔ scenes: semantic failure rejects the transaction without publishing the edited revision (7.531162ms)
+✔ meshes: semantic failure rejects the transaction without publishing the edited revision (10.254567ms)
+✔ constraints: semantic failure rejects the transaction without publishing the edited revision (8.188242ms)
+✔ expressions: a warm run reuses real compiler outputs and reruns semantic acceptance (103.473987ms)
+✔ scenes: a warm run reuses real compiler outputs and reruns semantic acceptance (49.552101ms)
+✔ meshes: a warm run reuses real compiler outputs and reruns semantic acceptance (244.367182ms)
+✔ constraints: a warm run reuses real compiler outputs and reruns semantic acceptance (202.920079ms)
+✔ adapter metadata, callbacks and exact versions are captured; registry rejects redefinition (2.371113ms)
+✔ adapter capability validation requires paired serializers and native validation for edits (1.554494ms)
+✔ projection rejects duplicate, dangling, mistyped and inconsistent native projections (16.822728ms)
+✔ artifacts verify native type and content-addressed revisions; graph and native values are frozen (7.073111ms)
+✔ navigation distinguishes containment, dependencies, binding and adjacency (6.213916ms)
+✔ pre/post/breadth traversal is deterministic, cycle-safe and covers disconnected components by default (9.856397ms)
+✔ navigation budgets fail explicitly, including depth, instead of silently returning partial results (1.906884ms)
+✔ induced subgraphs and dependency/connected closures retain only selected typed relationships (7.570141ms)
+✔ commits preserve immutable revisions and emit actual changes, operation log and total correspondence (26.870993ms)
+✔ insert, replace, connect, disconnect and removal have explicit identities and atomic validation (5.305116ms)
+✔ reference redirection defaults to incoming binding/dependency, preserving containment and stable edge IDs (19.111328ms)
+✔ invalid native edits and lossy adapter rebuilds never advance the published head (4.626393ms)
+✔ stale concurrent, no-op and ABA drafts are rejected by head generation, not just content hash (11.821869ms)
+✔ semantic verification rejects provisional edits without accepting effects or native revisions (4.474185ms)
+✔ semantic acceptance and IR publication share a synchronous CAS boundary (7.156868ms)
+✔ async acceptance and reentrant publication are rejected before an IR revision is visible (8.16754ms)
+✔ rollback and concurrent commit guards seal pending edits and clean provisional acceptance (7.784814ms)
+✔ edit references, identifiers, undeclared edges and stale draft objects fail before mutation (1.483937ms)
+✔ read-only adapters support queries/diff but clearly reject unsupported optional capabilities (1.358287ms)
+✔ many-to-one and one-to-many correspondences compose, invert and trace across representation types (1.583958ms)
+✔ correspondence validates exact intermediate universes, endpoints, coverage and explicit budgets (5.636376ms)
+✔ root-only topology changes remain visible in diffs and affected exact entity references (15.146851ms)
+✔ Acceptance cannot successfully roll back its draft during synchronous publication and then publish it anyway (6.604044ms)
+✔ Adapter registration never accepts inherited callbacks and then silently drops them (0.379942ms)
+✔ IR correspondence additions and removals do not become whole-artifact lineage edges (235.286045ms)
+✔ operation matching enforces exact name, arity, order and captured entity identity (21.615741ms)
+✔ forward identity constraints unify declared captures without leaking failed candidates (5.668504ms)
+✔ typed graph conditions and content conditions compose with exact evidence (8.739189ms)
+✔ equalContent includes ordered operand identities without pretending to prove recursive equivalence (5.824339ms)
+✔ pattern serialization is finite, immutable, and semantically reusable (8.871882ms)
+✔ pattern queries cover disconnected entities and explicit roots reject stale references (11.681137ms)
+✔ versioned predicates are snapshotted and delimiter-safe, with reason evidence (1.731881ms)
+✔ predicate callbacks cannot substitute promises, throw away bugs, or mutate query snapshots (1.347682ms)
+✔ matching budgets never return a truncated successful enumeration (1.832061ms)
+✔ special capture names are data and malformed patterns are rejected (1.332579ms)
+✔ one rewrite commits exact revision changes while keeping the original view immutable (3.162267ms)
+✔ all applies the initial match frontier, revalidating overlaps after each accepted edit (7.693226ms)
+✔ top-down and bottom-up are single sweeps with observably different dependency order (17.730496ms)
+✔ innermost and outermost normalize with real post-order versus pre-order scheduling (16.514082ms)
+✔ newly introduced matches are outside a sweep but included by normalization (9.297664ms)
+✔ saturation detects a directed cycle before publishing its repeated candidate (3.70868ms)
+✔ application budget distinguishes an uncommitted candidate from established convergence (15.141863ms)
+✔ matching and attempt budgets apply across the entire schedule (3.5289ms)
+✔ no-op rules terminate without publishing revisions or claiming semantic verification (1.781765ms)
+✔ semantic acceptance runs before publication and is separately identified from declarations (14.153113ms)
+✔ semantic rejection rolls back atomically and retains its provisional edit as evidence (1.648274ms)
+✔ unexpected errors remain fatal while an explicit host classifier can recognize rejection (8.285378ms)
+✔ native invalid edits and stale views fail without publishing artifacts (3.002376ms)
+✔ an awaited gate cannot publish over a concurrently committed revision (1.986575ms)
+✔ cancellation before a schedule or during its semantic gate never publishes its draft (2.07645ms)
+✔ async acceptance callbacks are never masked by the cancellation wrapper (3.837654ms)
+✔ rule definitions and callback protocols are immutable and fail closed (2.173716ms)
+✔ rewrite registries use version tuples and reusable schedules expose plain descriptors (12.217165ms)
+✔ replacement callbacks cannot publish early or bypass scheduler budgets through their view (2.27539ms)
+✔ edit capabilities expire before asynchronous verification, including retained callback references (1.848857ms)
+✔ custom predicates and rule guards receive read-only observation capabilities (3.302929ms)
+✔ selected dependency relationships give nested expressions actual inner and outer order (30.15687ms)
+✔ explicit ordering relation cycles and disconnected components are visited once (1.920785ms)
+✔ native expression rewrite order follows explicitly selected operand dependencies (36.725287ms)
+✔ IR inspection sequence resolves every exact retained transaction revision for all four representations (446.498652ms)
+✔ IR inspector links entity selection through recorded many-to-one correspondence and exposes typed relationships (602.938356ms)
+✔ live IR queries execute adapter semantics, preserve empty results, and expose budgets and unknown entities (20.242051ms)
+✔ live pattern YAML calls the real matcher and explains failed matches without mutating historical IR (37.556259ms)
+✔ IR implementation navigation shows exact adapter and rewrite source with real syntax highlighting (98.785025ms)
+✔ IR lab runs all four real compilers and keeps source, invocations and strategy evidence connected (720.281601ms)
+✔ IR lab rejects invalid edited input, restores history, retains per-domain drafts and runs warm cache inspection (250.95056ms)
+✔ mesh error bound changes the real selected approximation and malformed bounds are rejected (260.871302ms)
+✔ recorded constraint patterns can be rerun with their exact versioned domain predicate registry (31.00973ms)
+✔ uncommitted budget candidates are inspected explicitly and never presented as accepted after revisions (17.253907ms)
+✔ entity lineage follows one exact revision route through alternative mesh branches and supports inverse origin queries (169.434851ms)
+✔ standalone initial IR mode is selectable without losing the baseline source compiler (2109.662691ms)
+✔ acceptance hooks enclose actual execution and cache reuse with provisional publication (6.009268ms)
+✔ preconditions reject before algorithm execution or cache lookup and retain failure state (4.357448ms)
+✔ postcondition failure publishes no artifact, commits no policy state and creates no cache entry (1.753012ms)
+✔ a stricter policy version gates a preexisting cached artifact (3.585003ms)
+✔ fresh policy observations are tracked without replaying old checks or invalidating pure algorithm output (2.749765ms)
+✔ policy-required task revisions are fresh and distinct from computation dependencies (3.916885ms)
+✔ rejected child policy prevents accepting a cached ancestor (1.616797ms)
+✔ commit failure rejects publication and a failed cleanup hook cannot mask the original error (0.588728ms)
+✔ policy registry snapshots reject mutation during runs and reused version identities (0.738593ms)
+✔ policies governing repeated effects can force real execution on every run (0.702389ms)
+✔ unawaited hook requirements are drained and fail without accepting the output (10.836524ms)
+✔ postcondition error diagnostics prevent commit even when the checker returns normally (0.543399ms)
+✔ extension-owned computation dependencies can reject cache reuse and force recomputation (0.645523ms)
+✔ asynchronous policy failure cleanup drains before the run releases its registry (11.860949ms)
+✔ expression DAG interns structure and numeric lowering drops unused nodes and folds constants (2.576424ms)
+✔ forward autodiff agrees with central finite differences for all arithmetic operations (2.981675ms)
+✔ invalid expression graphs, missing inputs, and undefined arithmetic are explicit failures (1.467272ms)
+✔ damped QR least squares solves a coupled linear system without normal equations (1.218728ms)
+✔ rank-deficient and inconsistent systems are not mislabeled converged (1.381672ms)
+✔ solver enforces iteration bounds and reports nonconvergence (0.399392ms)
+✔ four-bar lowering produces independently correct residuals and analytic derivatives (0.692314ms)
+✔ numerical and closed-form full-rotation motion agree and preserve all four link lengths (26.480043ms)
+✔ assembly branch is explicit and a seed on the other branch is rejected (11.083346ms)
+✔ closed-form recognition rejects unreachable, toggle, and concentric mechanisms (0.469849ms)
+✔ a valid tape for another mechanism cannot produce a silently invalid motion (0.614527ms)
+✔ sampling inputs are validated instead of generating empty or nonfinite animation (8.892423ms)
+✔ registered physics uses shared math pass and records the optimization rationale (115.209046ms)
+✔ changing only optimization policy reuses graph, tape and both solvers (78.241945ms)
+✔ changing a numerical seed invalidates only its consumer, not the closed solver (92.019212ms)
+✔ an impossible linkage records a structured diagnostic and fails the compilation (4.500894ms)
+✔ YAML presentation preserves ambiguity and compact numeric vectors (2.726731ms)
+✔ TypeScript syntax highlighting is lossless, including multiline comments and incomplete drafts (1.887145ms)
+✔ dependency-first compact list and IR route reflect actual requested edges, not invented sequencing (1.388564ms)
+✔ execution-layer evidence is a captured immutable snapshot with a single-assignment namespace (4.184147ms)
+✔ failure evidence survives a thrown callback and run closure (0.526764ms)
+✔ evidence rejects executable data without consuming the namespace (0.380824ms)
+✔ narrow runtime inspection separates current registrations from historical artifact revisions (4.270697ms)
+✔ every authored TypeScript file evaluated from source matches the strict tsc build (191.318956ms)
+✔ builder values are persistent and source-level host loops build new authored programs (0.520674ms)
+✔ building reproduces the original scene and pavilion uses the identical generic scene passes (4684.465565ms)
+✔ the scene compiler accepts arbitrary named geometry and occurrences, not a building recipe (275.117559ms)
+✔ warm recompilation reuses every invocation (2936.820346ms)
+✔ source material-only edit retains every primitive, reduction and candidate (4019.148733ms)
+✔ source optimization policy edit reuses all four actual candidates (4413.2902ms)
+✔ source floor count changes occurrence structure but not independent wall geometry (4192.598509ms)
+✔ a new definition and new instance are handled in the same live compiler, then removed (4218.298031ms)
+✔ CAD source drives real features and a changed bore preserves the solved sketch (329.264733ms)
+✔ CAD source with unsupported construction produces a recorded failed recognizer, then recovers (299.947122ms)
+✔ mechanism source declares actual ports and joints; drive edit leaves equations and tape cached (583.663416ms)
+✔ door imports authored CAD and linkage; changing bracket bore reuses mechanism motion (3083.022241ms)
+✔ changing authored animation sampling keeps every primitive and CAD mesh cached (2352.060297ms)
+✔ invalid TypeScript, unknown imports, missing default exports, cyclic imports and invalid builders fail explicitly (8.931072ms)
+✔ new source compiler has actual source links for every pass and no legacy domain registration (568.120718ms)
+✔ two choices over the same candidate artifacts retain exact causality when materializing the earlier result (4146.997986ms)
+✔ inserting an observational strategy checkpoint changes the plan trace while preserving all pass cache identities (3098.041894ms)
+✔ all five examples preserve legacy artifact values and explicitly link every actual invocation (9461.515794ms)
+✔ scene strategies execute all dynamic reductions and retain explainable rejected applicability probes (1596.207485ms)
+✔ warm strategy execution uses real cached pass links and repeats control-flow evidence (2694.930808ms)
+✔ an edited plan changes the real optimization choice while preserving compiled candidate cache (3022.409903ms)
+✔ Strategy IR selection materialization validates the authored hard error budget (1673.903149ms)
+✔ door Strategy IR executes imported CAD and motion plans and preserves explicit conditional skip evidence (1620.918617ms)
+✔ a fatal CAD backend error records the exact strategy leaf and failed compiler invocation (54.10097ms)
+✔ serialized plans are executable with the same content and pinned registry versions (3386.911731ms)
+✔ pre-cancelled strategy execution records cancellation and invokes no compiler pass (52.386943ms)
+✔ fixed-point mesh cleanup makes three real changes then converges and preserves oriented geometry (116.339477ms)
+✔ fixed-point iteration budgets fail visibly instead of returning a partially cleaned mesh (32.863645ms)
+✔ one-step cleanup never mutates the input mesh (0.420143ms)
+✔ removing a candidate branch prevents its compiler work even when older cache entries exist (2360.224892ms)
+✔ implicit required data dependencies remain visible when their explicit scheduling step is removed (1390.030776ms)
+✔ transitive requirements keep pass versions pinned after their explicit scheduling node is removed (21.044365ms)
+✔ all thirteen promised operators execute across the real examples and cleanup lab (1363.728776ms)
+✔ Source workbench wires six examples, edited strategies, history, source and exact pass details (29009.938542ms)
+✔ Strategy component renders every actual plan node, including nested binding and item-reference nodes (2188.100202ms)
+✔ Strategy component links exact compiler invocations and exposes real implementation sources (261.560776ms)
+✔ Strategy component validates YAML, rejects duplicate keys and missing algorithm versions without compiling (282.791856ms)
+✔ Strategy component applies a real optimization policy edit and passes that exact plan to compilation (1740.695464ms)
+✔ Strategy component structural insertion is executable, and binding-breaking removal is rejected (456.654226ms)
+✔ Strategy component imports YAML safely and restores the exact historic executed plan (416.675949ms)
+✔ Strategy component exposes the four actual cleanup loop executions (338.633865ms)
+✔ Strategy editor YAML round-trips nested plans and scalar edge cases (3.837073ms)
+✔ Strategy editor accepts ordinary block sequence maps, JSON flow, comments and document markers (0.293211ms)
+✔ Strategy editor rejects duplicate keys, executable YAML features and malformed/unsafe data (0.519473ms)
+✔ Strategy editor bounds input size and recursive depth (0.418531ms)
+✔ all 13 node kinds execute in a nested serializable plan with bindings and observations (21.603717ms)
+✔ algorithm inputs, arguments, plans, observer events and returned results are immutable snapshots (1.321141ms)
+✔ late context writes are rejected and cannot mutate a completed trace (1.060098ms)
+✔ observer failures are retained as evidence, disable the observer, and do not change compiler semantics (1.179238ms)
+✔ registry version pinning and snapshot prevent hot mutation from changing an active execution (1.697809ms)
+✔ global algorithm concurrency stays bounded across nested groups and ordering follows source, not completion (42.761954ms)
+✔ parallel failure drains started siblings and never schedules queued work (6.081196ms)
+✔ fork isolates bindings and turns only explicit rejections into candidate outcomes (5.435493ms)
+✔ chooseBest keeps all constraint/rejection evidence and resolves equal objectives lexicographically (7.567556ms)
+✔ all constraint operators and max objectives are evaluated, including zero (2.320818ms)
+✔ no feasible candidate is a recoverable rejection; malformed metrics are a fatal algorithm error (1.729607ms)
+✔ attempt code filters and fatal bugs cannot silently activate fallback (5.478147ms)
+✔ attempt fallback receives original data, with rejected branch bindings discarded (1.992152ms)
+✔ repeat converges on semantic artifact revision, ignores logical id, and includes schema/kind (1.422003ms)
+✔ repeat detects cycles, rejects nonconvergence, exposes iteration refs, and custom identity works (1.923098ms)
+✔ forEach selectors, item/index refs, empty sets and bounds are explicit (12.775768ms)
+✔ require leaves current unchanged, analysis binding is lexical, and scopes do not leak (1.385739ms)
+✔ verify false records proof evidence and verification failure is recoverable (1.895477ms)
+✔ malformed predicate, invariant and algorithm undefined results are fatal (1.866523ms)
+✔ cancellation before execution and during work has terminal immutable records and never runs fallback (1.632591ms)
+✔ cancellation releases queued semaphore callers without deadlocks (1.830089ms)
+✔ dynamic step and nesting budgets fail explicitly; attempts cannot swallow budgets (1.719392ms)
+✔ executeOrThrow carries the complete failed execution (0.828819ms)
+✔ reference resolution is own-key only and literal() escapes reserved reference data (1.547573ms)
+✔ validation rejects unknown nodes, fields, duplicate ids, invalid algorithm roles and dangling bindings (0.755158ms)
+✔ validation rejects illegal iteration/item references, ambiguous selectors, bounds and duplicate candidate names (1.263554ms)
+✔ walk/find cover every child position and immutable edits preserve unrelated nodes (2.695673ms)
+✔ insertion can wrap a required child and edits reject dangling bindings, duplicate ids and invalid removal (1.279899ms)
+✔ serialization is deterministic, rejects malformed input, and round-trips exact plan revision (1.276374ms)
+✔ a parallel rejection cannot hide a simultaneously failing implementation behind attempt fallback (1.144024ms)
+✔ cancellation between acquired permits and algorithm starts avoids starting subsequent algorithms (1.529856ms)
+✔ node budget includes skipped subtrees and bounds trace allocation during repeated branches (12.349274ms)
+✔ cooperatively aborted host algorithms retain completed-task links and report cancellation (1.155562ms)
+✔ plan requirements pin hidden host dependencies independently of directly edited call nodes (1.115271ms)
+✔ walk visitor and find predicate expose typed traversal context without modifying the plan (0.554767ms)
+✔ choice evidence bindings retain exact earlier decisions across later scoring of the same candidates (10.009137ms)
+✔ analysis of visible properties invalidates when the property set changes (11.043846ms)
+✔ a transformation observes changes to an existing property fact when choosing output (16.388873ms)
+✔ verification seals the user transaction context before accepting staged effects (1.613312ms)
+✔ unawaited semantic analysis is drained and rejected without orphaned promises or accepted output (26.336355ms)
+✔ rejected transaction facts remain inspectable but cannot authorize later reuse (3.462389ms)
+✔ identity correspondence does not replace an analysis with a self-dependent invalid record (1.196513ms)
+✔ memory resource commit validates all writes before applying the first write (0.652754ms)
+✔ a property cannot attach a proof verifier for a different IR type (0.31223ms)
+✔ definition factories reject missing runtime validation functions (0.283868ms)
+✔ warm transformation reuse retains dependencies read only by the body (4.885043ms)
+✔ postconditions observe staged resource writes and reject before publishing a violating state (4.188753ms)
+✔ workbench queries use the same transitive explanations as the compiler API (144.863689ms)
+✔ execution graphs retain failed requests while value dependency graphs omit unproduced values (1.628444ms)
+✔ value comparisons distinguish additions, removals, null and unchanged data (0.335045ms)
+✔ standalone HTML safely embeds script-like source values without changing the trace (0.6173ms)
+✔ view providers extend a new IR kind without modifying the compiler or generic inspector (0.248685ms)
+✔ source catalog indexes every registered compiler pass and preserves original source bytes (663.852572ms)
+✔ standalone source browser data safely embeds original script-like text (0.458451ms)
+ℹ tests 371
+ℹ suites 0
+ℹ pass 371
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35162.893178
+Building · original: 59 executed, 0 reused, 0 failed
+Building · unchanged: 0 executed, 59 reused, 0 failed
+Building · appearance: 14 executed, 45 reused, 0 failed
+Building · quality: 15 executed, 44 reused, 0 failed
+Building · third floor: 24 executed, 35 reused, 0 failed
+Building · new chimney: 25 executed, 40 reused, 0 failed
+Building · restore original: 0 executed, 59 reused, 0 failed
+Pavilion · same scene compiler: 35 executed, 0 reused, 0 failed
+Bracket · original: 12 executed, 0 reused, 0 failed
+Bracket · larger bore: 9 executed, 3 reused, 0 failed
+Bracket · unsupported hole location: 6 executed, 3 reused, 1 failed
+Linkage · original: 11 executed, 0 reused, 0 failed
+Linkage · fewer samples: 8 executed, 3 reused, 0 failed
+Door · imported bracket and linkage: 49 executed, 0 reused, 0 failed
+Door · change imported bracket: 26 executed, 23 reused, 0 failed
+Door · change imported motion: 21 executed, 28 reused, 0 failed
+Building: default strategy: 59 executed, 0 cached, 248 strategy records; succeeded
+Building: warm strategy: 0 executed, 59 cached, 248 strategy records; succeeded
+Building: edited quality strategy: 2 executed, 57 cached, 248 strategy records; succeeded
+Building: remove divisor8 branch: 2 executed, 48 cached, 204 strategy records; succeeded
+Building: instrumentation preserves cache: 0 executed, 59 cached, 249 strategy records; succeeded
+Building: no feasible candidate: 0 executed, 57 cached, 248 strategy records; rejected
+Building: authored hard bound still enforced: 0 executed, 57 cached, 248 strategy records; failed
+Pavilion: same scene strategy generator: 35 executed, 0 cached, 140 strategy records; succeeded
+Pavilion: warm strategy: 0 executed, 35 cached, 140 strategy records; succeeded
+CAD: explicit lowering and analysis: 12 executed, 0 cached, 16 strategy records; succeeded
+CAD: warm strategy: 0 executed, 12 cached, 16 strategy records; succeeded
+Mechanism: fork and constrained selection: 11 executed, 0 cached, 24 strategy records; succeeded
+Mechanism: warm strategy: 0 executed, 11 cached, 24 strategy records; succeeded
+Door: composed CAD, scene and motion: 49 executed, 0 cached, 128 strategy records; succeeded
+Door: warm strategy: 0 executed, 49 cached, 128 strategy records; succeeded
+Cleanup: real fixed-point mesh transformation: 7 executed, 0 cached, 13 strategy records; succeeded
+Cleanup: warm fixed-point strategy: 0 executed, 7 cached, 13 strategy records; succeeded
+Cleanup: explicit nonconvergence: 0 executed, 4 cached, 11 strategy records; failed
+CAD: unsupported geometry fails at actual recognizer: 6 executed, 3 cached, 16 strategy records; failed
+Building: transitive version mismatch rejected before execution: rejected before strategy execution; no compiler passes invoked
+All 13 Strategy IR operators exercised by real examples; 20 recorded runs.
+building: cold: 59 executed, 0 cached; 59 accepted, 0 rejected, 0 failed contracts; 226 checks
+building: warm: 0 executed, 59 cached; 59 accepted, 0 rejected, 0 failed contracts; 226 checks
+pavilion: cold: 35 executed, 0 cached; 35 accepted, 0 rejected, 0 failed contracts; 118 checks
+pavilion: warm: 0 executed, 35 cached; 35 accepted, 0 rejected, 0 failed contracts; 118 checks
+bracket: cold: 12 executed, 0 cached; 12 accepted, 0 rejected, 0 failed contracts; 6 checks
+bracket: warm: 0 executed, 12 cached; 12 accepted, 0 rejected, 0 failed contracts; 6 checks
+linkage: cold: 11 executed, 0 cached; 11 accepted, 0 rejected, 0 failed contracts; 6 checks
+linkage: warm: 0 executed, 11 cached; 11 accepted, 0 rejected, 0 failed contracts; 6 checks
+door: cold: 49 executed, 0 cached; 49 accepted, 0 rejected, 0 failed contracts; 73 checks
+door: warm: 0 executed, 49 cached; 49 accepted, 0 rejected, 0 failed contracts; 73 checks
+cleanup: cold: 7 executed, 0 cached; 7 accepted, 0 rejected, 0 failed contracts; 16 checks
+cleanup: warm: 0 executed, 7 cached; 7 accepted, 0 rejected, 0 failed contracts; 16 checks
+lab verified-cleanup: cold: 2 executed, 0 cached; 2 accepted, 0 rejected, 0 failed contracts; 4 checks
+lab invalid-divisor: cold: 1 executed, 0 cached; 1 accepted, 1 rejected, 0 failed contracts; 0 checks
+lab bad-transform: cold: 1 executed, 0 cached; 1 accepted, 1 rejected, 0 failed contracts; 2 checks
+lab false-preservation: cold: 1 executed, 0 cached; 1 accepted, 1 rejected, 0 failed contracts; 2 checks
+lab effect-violation: cold: 1 executed, 0 cached; 1 accepted, 1 rejected, 0 failed contracts; 0 checks
+lab resource-bound: cold: 2 executed, 0 cached; 2 accepted, 0 rejected, 0 failed contracts; 1 checks
+lab resource-derived: cold: 2 executed, 0 cached; 2 accepted, 0 rejected, 0 failed contracts; 1 checks
+lab commit-effect: cold: 2 executed, 0 cached; 2 accepted, 0 rejected, 0 failed contracts; 0 checks
+lab rollback-effect: cold: 1 executed, 0 cached; 1 accepted, 1 rejected, 0 failed contracts; 2 checks
+analysis dependencies: warm: 0 executed, 2 cached; 2 accepted, 0 rejected, 0 failed contracts; 4 checks
+analysis dependencies: explicitly invalidated: 1 executed, 1 cached; 2 accepted, 0 rejected, 0 failed contracts; 4 checks
+guard resource: warm at ten: 0 executed, 2 cached; 2 accepted, 0 rejected, 0 failed contracts; 1 checks
+guard resource: cached output rejected at one: 0 executed, 1 cached; 1 accepted, 1 rejected, 0 failed contracts; 1 checks
+guard resource: cached output accepted again: 0 executed, 2 cached; 2 accepted, 0 rejected, 0 failed contracts; 1 checks
+new contract version: cached output rejected: 0 executed, 1 cached; 1 accepted, 1 rejected, 0 failed contracts; 1 checks
+body resource: warm at ten: 0 executed, 2 cached; 2 accepted, 0 rejected, 0 failed contracts; 1 checks
+body resource: recomputed at twenty: 1 executed, 1 cached; 2 accepted, 0 rejected, 0 failed contracts; 1 checks
+body resource: warm at twenty: 0 executed, 2 cached; 2 accepted, 0 rejected, 0 failed contracts; 1 checks
+effect: accepted writes execute again: 1 executed, 1 cached; 2 accepted, 0 rejected, 0 failed contracts; 0 checks
+effect: later failed output does not commit: 0 executed, 1 cached; 1 accepted, 1 rejected, 0 failed contracts; 2 checks
+callback bug: fatal contract execution failure: 1 executed, 0 cached; 1 accepted, 0 rejected, 1 failed contracts; 0 checks
+Verified 33 compiler runs across six domain examples and all nine lab modes; 44 registered pass contracts.
+[
+  {
+    "domain": "expressions",
+    "runId": "run-2",
+    "summary": {
+      "adapter": {
+        "id": "adapter.expression-arena",
+        "version": "1"
+      },
+      "afterOperations": 7,
+      "beforeOperations": 7,
+      "evaluation": 26,
+      "evaluationEnvironment": {
+        "x": 3,
+        "y": 4
+      },
+      "nativeKind": "ir-lab.expression",
+      "polynomial": {
+        "[\"x\",\"x\"]": 2,
+        "[\"y\"]": 2
+      },
+      "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+      "warmRuns": 2
+    },
+    "invocations": 4,
+    "editTransactions": 3,
+    "semanticExecutions": 7,
+    "semanticChecks": 22
+  },
+  {
+    "domain": "scenes",
+    "runId": "run-2",
+    "summary": {
+      "adapter": {
+        "id": "adapter.scene-tables",
+        "version": "1"
+      },
+      "afterDefinitions": 2,
+      "beforeDefinitions": 3,
+      "nativeKind": "ir-lab.scene",
+      "placements": [
+        {
+          "name": "left-column",
+          "position": [
+            -2,
+            1.5,
+            0
+          ],
+          "shape": "box",
+          "size": [
+            1,
+            3,
+            1
+          ]
+        },
+        {
+          "name": "lintel",
+          "position": [
+            0,
+            3.5,
+            0
+          ],
+          "shape": "box",
+          "size": [
+            5,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "right-column",
+          "position": [
+            2,
+            1.5,
+            0
+          ],
+          "shape": "box",
+          "size": [
+            1,
+            3,
+            1
+          ]
+        }
+      ],
+      "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+      "warmRuns": 2
+    },
+    "invocations": 4,
+    "editTransactions": 1,
+    "semanticExecutions": 5,
+    "semanticChecks": 14
+  },
+  {
+    "domain": "meshes",
+    "runId": "run-2",
+    "summary": {
+      "adapter": {
+        "id": "adapter.packed-triangle-mesh",
+        "version": "1"
+      },
+      "afterTriangles": 4,
+      "beforeTriangles": 8,
+      "candidateConstructionTolerance": 2.0000000000000004,
+      "error": 0.29289321881345254,
+      "nativeKind": "ir-lab.mesh",
+      "requestedTolerance": 0.35,
+      "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+      "warmRuns": 2
+    },
+    "invocations": 6,
+    "editTransactions": 2,
+    "semanticExecutions": 8,
+    "semanticChecks": 26
+  },
+  {
+    "domain": "constraints",
+    "runId": "run-2",
+    "summary": {
+      "adapter": {
+        "id": "adapter.sparse-constraints",
+        "version": "1"
+      },
+      "afterEquations": 4,
+      "beforeEquations": 5,
+      "components": [
+        [
+          "u",
+          "v"
+        ],
+        [
+          "x",
+          "y"
+        ]
+      ],
+      "nativeKind": "ir-lab.constraints",
+      "solution": {
+        "components": [
+          [
+            "u",
+            "v"
+          ],
+          [
+            "x",
+            "y"
+          ]
+        ],
+        "matrices": [
+          [
+            [
+              1,
+              0,
+              4
+            ],
+            [
+              0,
+              1,
+              2
+            ]
+          ],
+          [
+            [
+              1,
+              0,
+              3
+            ],
+            [
+              0,
+              1,
+              1
+            ]
+          ]
+        ],
+        "residualTolerance": 1e-9,
+        "residuals": [
+          {
+            "absolute": 0,
+            "equation": "difference-xy",
+            "relative": 0
+          },
+          {
+            "absolute": 0,
+            "equation": "duplicate-xy",
+            "relative": 0
+          },
+          {
+            "absolute": 0,
+            "equation": "sum-uv",
+            "relative": 0
+          },
+          {
+            "absolute": 0,
+            "equation": "difference-uv",
+            "relative": 0
+          }
+        ],
+        "values": {
+          "u": 4,
+          "v": 2,
+          "x": 3,
+          "y": 1
+        }
+      },
+      "solver": "components",
+      "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+      "warmRuns": 2
+    },
+    "invocations": 6,
+    "editTransactions": 2,
+    "semanticExecutions": 8,
+    "semanticChecks": 26
+  },
+  {
+    "domain": "meshes-tight-bound",
+    "summary": {
+      "adapter": {
+        "id": "adapter.packed-triangle-mesh",
+        "version": "1"
+      },
+      "afterTriangles": 8,
+      "beforeTriangles": 8,
+      "candidateConstructionTolerance": 2.0000000000000004,
+      "error": 0,
+      "nativeKind": "ir-lab.mesh",
+      "requestedTolerance": 0.1,
+      "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+      "warmRuns": 1
+    }
+  }
+]
+{
+  "tutorials": [
+    {
+      "id": "01-runtime",
+      "status": "passed"
+    },
+    {
+      "id": "02-ir-manipulation",
+      "status": "passed"
+    },
+    {
+      "id": "03-strategy-contracts",
+      "status": "passed"
+    },
+    {
+      "id": "04-domain-tour",
+      "status": "passed"
+    },
+    {
+      "id": "05-custom-adapter",
+      "status": "passed"
+    }
+  ]
+}
+npm notice
+npm notice New major version of npm available! 11.19.1 -> 12.2.3
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.3
+npm notice To update run: npm install -g npm@12.2.3
+npm notice

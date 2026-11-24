@@ -1,0 +1,8 @@
+{
+  "release": "v6",
+  "status": "not-run-environment-restriction",
+  "browserRenderingVerified": false,
+  "reason": "The authoring environment could not provide permitted browser execution in the prior release. That restriction was not retried or bypassed for v6.",
+  "automatedAlternative": "Real compiler, adapters, contracts, source and inspector executed through explicit DOM, Canvas and Worker transport doubles.",
+  "optionalSuite": "scripts/check-ir-browser.py"
+}

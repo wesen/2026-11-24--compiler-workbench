@@ -1,0 +1,2 @@
+# Optional documentation renderer; the compiler and delivered HTML do not need Python.
+reportlab==4.4.9

@@ -1,0 +1,56 @@
+{
+  "release": "v6",
+  "packageVersion": "0.6.0",
+  "verifiedOn": "2026-11-24",
+  "command": "npm run verify:release",
+  "status": "passed",
+  "strictTypeScriptBuild": "passed",
+  "testCounts": {
+    "tests": 371,
+    "pass": 371,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "experiments": {
+    "authoredSourceScenarios": 16,
+    "strategyScenarios": 20,
+    "strategyOperatorKinds": 13,
+    "contractScenarios": 33,
+    "contractSuccesses": 24,
+    "expectedContractFailures": 9,
+    "contractedPasses": 44,
+    "irScenarios": 5,
+    "guideTutorials": 5
+  },
+  "evidence": [
+    "output/v6-release-validation.log",
+    "output/source-experiments/summary.json",
+    "output/strategy-experiments/summary.json",
+    "output/contracts-experiments/summary.json",
+    "output/v6-ir-verification.json",
+    "output/v6-guide-verification.json"
+  ],
+  "finalOfflineHtmlRebuilt": true,
+  "documentation": {
+    "markdown": "docs/v6-user-guide.md",
+    "pdf": "output/ir-workbench-v6-user-guide.pdf",
+    "wordCount": 19415,
+    "chapters": 11,
+    "pages": 53,
+    "pdfBookmarks": 75,
+    "pdfTextBoundsCheck": "passed",
+    "pdfVisualReview": "passed",
+    "pdfVisualReviewScope": "All pages reviewed in rendered contact sheets; full-resolution samples and every changed final page checked. No clipping, overlap, orphan headings or nearly empty spill pages remain."
+  },
+  "browser": {
+    "release": "v6",
+    "status": "not-run-environment-restriction",
+    "browserRenderingVerified": false,
+    "reason": "The authoring environment could not provide permitted browser execution in the prior release. That restriction was not retried or bypassed for v6.",
+    "automatedAlternative": "Real compiler, adapters, contracts, source and inspector executed through explicit DOM, Canvas and Worker transport doubles.",
+    "optionalSuite": "scripts/check-ir-browser.py"
+  },
+  "archiveVerification": "Performed by scripts/package-release.py; release receipt is kept alongside the ZIP."
+}

@@ -1,0 +1,376 @@
+{
+  "formatVersion": 1,
+  "tutorials": [
+    {
+      "id": "01-runtime",
+      "source": "src/guide/01-runtime.ts",
+      "status": "passed",
+      "evidence": {
+        "cold": 7,
+        "warm": 7,
+        "changed": 14,
+        "warmCache": [
+          {
+            "invocationId": "inv-4",
+            "runId": "run-2",
+            "taskId": "guide/sum",
+            "changes": [],
+            "checkedEntries": 1,
+            "key": "a5de611f41f6e470d8c73e9ad551109c69d0d94d00fadf227121aeaef98ff947",
+            "originInvocation": "inv-1",
+            "reason": "Algorithm, parameters, schema, and every recorded dependency match; current acceptance policy is checked separately",
+            "status": "hit"
+          }
+        ],
+        "changedCache": [
+          {
+            "invocationId": "inv-7",
+            "runId": "run-3",
+            "taskId": "guide/sum",
+            "changes": [
+              {
+                "after": {
+                  "artifact": "guide/left",
+                  "revision": "3da72f2c29c21cf3abe9c605cd6a7370bacdff6e7fe1ba0fbed57883b099f716"
+                },
+                "before": {
+                  "artifact": "guide/left",
+                  "revision": "241bd0e7748fb2020868beeb45bf807d3e0b9aaf80d96d2bb717811a4369002f"
+                },
+                "dependency": "guide/left",
+                "reason": "Required artifact revision changed"
+              }
+            ],
+            "checkedEntries": 1,
+            "key": "bf54ceb830dcb98ce2a5f99f540dd9b89612e50d1d20da338564ab6aab214024",
+            "reason": "guide/left: Required artifact revision changed",
+            "status": "miss"
+          }
+        ],
+        "comparison": {
+          "beforeRun": "run-2",
+          "afterRun": "run-3",
+          "inputs": [
+            {
+              "key": "guide.left",
+              "before": 3,
+              "after": 10
+            }
+          ],
+          "tasks": [
+            {
+              "taskId": "guide/left",
+              "before": {
+                "artifact": "guide/left",
+                "revision": "241bd0e7748fb2020868beeb45bf807d3e0b9aaf80d96d2bb717811a4369002f"
+              },
+              "after": {
+                "artifact": "guide/left",
+                "revision": "3da72f2c29c21cf3abe9c605cd6a7370bacdff6e7fe1ba0fbed57883b099f716"
+              },
+              "change": "changed",
+              "execution": "executed",
+              "cache": {
+                "changes": [
+                  {
+                    "after": 10,
+                    "before": 3,
+                    "dependency": "guide.left",
+                    "reason": "Read input changed"
+                  }
+                ],
+                "checkedEntries": 1,
+                "key": "e389e83e52f95f991fa466116af4efc7ef99d37c78427af035e18a2766d2dee1",
+                "reason": "guide.left: Read input changed",
+                "status": "miss"
+              }
+            },
+            {
+              "taskId": "guide/right",
+              "before": {
+                "artifact": "guide/right",
+                "revision": "10279e6b5cce22411205935be9b1f762e96195ca737529771282e2a702d45314"
+              },
+              "after": {
+                "artifact": "guide/right",
+                "revision": "10279e6b5cce22411205935be9b1f762e96195ca737529771282e2a702d45314"
+              },
+              "change": "unchanged",
+              "execution": "cached",
+              "cache": {
+                "changes": [],
+                "checkedEntries": 1,
+                "key": "6e2ecd2edab5ccbe8087d764afa9e1e0e336584a3b57d56afb9eb29165147422",
+                "originInvocation": "inv-3",
+                "reason": "Algorithm, parameters, schema, and every recorded dependency match; current acceptance policy is checked separately",
+                "status": "hit"
+              }
+            },
+            {
+              "taskId": "guide/sum",
+              "before": {
+                "artifact": "guide/sum",
+                "revision": "96adea24086641fea4d959cfa19311166735c23d44847118d8a91241d23b136d"
+              },
+              "after": {
+                "artifact": "guide/sum",
+                "revision": "ae46956d41c1b467585f0d226929b8cd57515e69d6413bf2d72adb6a3053fcb4"
+              },
+              "change": "changed",
+              "execution": "executed",
+              "cache": {
+                "changes": [
+                  {
+                    "after": {
+                      "artifact": "guide/left",
+                      "revision": "3da72f2c29c21cf3abe9c605cd6a7370bacdff6e7fe1ba0fbed57883b099f716"
+                    },
+                    "before": {
+                      "artifact": "guide/left",
+                      "revision": "241bd0e7748fb2020868beeb45bf807d3e0b9aaf80d96d2bb717811a4369002f"
+                    },
+                    "dependency": "guide/left",
+                    "reason": "Required artifact revision changed"
+                  }
+                ],
+                "checkedEntries": 1,
+                "key": "bf54ceb830dcb98ce2a5f99f540dd9b89612e50d1d20da338564ab6aab214024",
+                "reason": "guide/left: Required artifact revision changed",
+                "status": "miss"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "02-ir-manipulation",
+      "source": "src/guide/02-ir-manipulation.ts",
+      "status": "passed",
+      "evidence": {
+        "tutorial": "02-ir-manipulation",
+        "matches": 2,
+        "status": "converged",
+        "applications": 2,
+        "verifiedCommits": 2,
+        "outputRoot": "x",
+        "tracedOutput": [
+          "x"
+        ],
+        "originalContributors": [
+          "first",
+          "second",
+          "x"
+        ],
+        "retainedRevisions": 3,
+        "samples": [
+          {
+            "x": -3,
+            "before": -3,
+            "after": -3
+          },
+          {
+            "x": 0,
+            "before": 0,
+            "after": 0
+          },
+          {
+            "x": 5,
+            "before": 5,
+            "after": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "03-strategy-contracts",
+      "source": "src/guide/03-strategy-contracts.ts",
+      "status": "passed",
+      "evidence": {
+        "strategyStatus": "succeeded",
+        "originalPlanNodes": 6,
+        "editedPlanNodes": 7,
+        "arithmeticBefore": 5,
+        "arithmeticAfter": 4,
+        "rewriteApplications": 3,
+        "reusedAnalysisRecord": true,
+        "acceptedTransactions": 3,
+        "rejectedTransactions": 1,
+        "rejectedEdit": "postcondition",
+        "originalInputUnchanged": true,
+        "resourceDemo": {
+          "unchangedFactorReusesBody": true,
+          "changedFactorRecomputesBody": true,
+          "rejectedWriteWasRolledBack": true,
+          "finalAcceptedCount": 1
+        }
+      }
+    },
+    {
+      "id": "04-domain-tour",
+      "source": "src/guide/04-domain-tour.ts",
+      "status": "passed",
+      "evidence": {
+        "verified": true,
+        "scenarios": [
+          {
+            "scenario": "expressions",
+            "acceptedEdits": 3,
+            "evaluation": 26,
+            "cacheHits": 2,
+            "freshSemanticExecutions": 2
+          },
+          {
+            "scenario": "expressions-distinct-operands",
+            "retainedOperator": "add",
+            "evaluation": 25
+          },
+          {
+            "scenario": "scene-sharing",
+            "definitionsBefore": 3,
+            "definitionsAfter": 2,
+            "instances": 3,
+            "cacheHits": 2,
+            "freshSemanticExecutions": 2
+          },
+          {
+            "scenario": "scene-distinct-shapes",
+            "definitionsAfter": 3
+          },
+          {
+            "scenario": "mesh-selection",
+            "tolerance": 0.35,
+            "triangles": 4,
+            "contourError": 0.29289321881345254,
+            "cacheHits": 3,
+            "freshSemanticExecutions": 3
+          },
+          {
+            "scenario": "mesh-selection",
+            "tolerance": 0.1,
+            "triangles": 8,
+            "contourError": 0,
+            "cacheHits": 3,
+            "freshSemanticExecutions": 3
+          },
+          {
+            "scenario": "constraint-decomposition",
+            "equationsAfter": 4,
+            "components": [
+              [
+                "u",
+                "v"
+              ],
+              [
+                "x",
+                "y"
+              ]
+            ],
+            "values": {
+              "u": 4,
+              "v": 2,
+              "x": 3,
+              "y": 1
+            },
+            "maxRelativeResidual": 0,
+            "cacheHits": 3,
+            "freshSemanticExecutions": 3
+          },
+          {
+            "scenario": "constraint-contradiction",
+            "rejected": true
+          },
+          {
+            "scenario": "authored-cad-bracket",
+            "vertices": 334,
+            "triangles": 672,
+            "watertight": true,
+            "components": 1,
+            "warmCacheHits": 12
+          }
+        ]
+      }
+    },
+    {
+      "id": "05-custom-adapter",
+      "source": "src/guide/05-custom-adapter.ts",
+      "status": "passed",
+      "evidence": {
+        "nativeBefore": {
+          "spheres": {
+            "handle": {
+              "radius": 0.25
+            },
+            "wheel": {
+              "radius": 1
+            }
+          }
+        },
+        "nativeAfter": {
+          "spheres": {
+            "handle": {
+              "radius": 0.25
+            },
+            "wheel": {
+              "radius": 2
+            }
+          }
+        },
+        "matchingEntities": [
+          "wheel"
+        ],
+        "changes": {
+          "changed": true,
+          "entities": [
+            {
+              "after": {
+                "attributes": {
+                  "radius": 2
+                },
+                "id": "wheel",
+                "kind": "guide.sphere"
+              },
+              "before": {
+                "attributes": {
+                  "radius": 1
+                },
+                "id": "wheel",
+                "kind": "guide.sphere"
+              },
+              "entity": "wheel",
+              "kind": "updated"
+            }
+          ],
+          "from": {
+            "artifact": "guide/spheres",
+            "revision": "c208f9bca21792b9300eae506bd27125f974f166781c5b6141ab0b7ab2a166ea"
+          },
+          "operations": [
+            {
+              "data": {
+                "attributes": {
+                  "radius": 2
+                },
+                "entity": "wheel"
+              },
+              "kind": "update"
+            }
+          ],
+          "relations": [],
+          "to": {
+            "artifact": "guide/spheres",
+            "revision": "06fafc2daefc6b9baba287ce4256c570b791933b225ad89c23d6fc4de58cb07d"
+          }
+        },
+        "capabilities": [
+          "Traversable",
+          "Queryable",
+          "Diffable",
+          "Rewritable",
+          "Verifiable"
+        ],
+        "invalidEditRejected": true
+      }
+    }
+  ]
+}

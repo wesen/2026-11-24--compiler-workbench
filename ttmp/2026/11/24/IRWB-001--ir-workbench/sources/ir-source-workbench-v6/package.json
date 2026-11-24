@@ -1,0 +1,26 @@
+{
+  "name": "ir-workbench",
+  "version": "0.6.0",
+  "private": true,
+  "description": "A standalone, observable TypeScript compiler framework exercised by CAD, game assets and constrained mechanisms",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node node_modules/typescript/bin/tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "demo": "node dist/examples/run.js",
+    "verify": "npm run build:source && npm test && node scripts/source-demo.mjs",
+    "build:source": "npm run build && node scripts/build-source.mjs",
+    "verify:release": "npm run verify && node scripts/strategy-demo.mjs && node scripts/contracts-demo.mjs && node scripts/ir-demo.mjs && node scripts/guide-demo.mjs",
+    "demo:ir": "node scripts/ir-demo.mjs",
+    "demo:guide": "node scripts/guide-demo.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.9.3"
+  }
+}

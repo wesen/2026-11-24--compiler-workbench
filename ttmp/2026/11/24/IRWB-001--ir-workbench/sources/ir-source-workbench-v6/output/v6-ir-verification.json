@@ -1,0 +1,232 @@
+{
+  "formatVersion": 1,
+  "scenarios": [
+    {
+      "domain": "expressions",
+      "runId": "run-2",
+      "summary": {
+        "adapter": {
+          "id": "adapter.expression-arena",
+          "version": "1"
+        },
+        "afterOperations": 7,
+        "beforeOperations": 7,
+        "evaluation": 26,
+        "evaluationEnvironment": {
+          "x": 3,
+          "y": 4
+        },
+        "nativeKind": "ir-lab.expression",
+        "polynomial": {
+          "[\"x\",\"x\"]": 2,
+          "[\"y\"]": 2
+        },
+        "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+        "warmRuns": 2
+      },
+      "invocations": 4,
+      "editTransactions": 3,
+      "semanticExecutions": 7,
+      "semanticChecks": 22
+    },
+    {
+      "domain": "scenes",
+      "runId": "run-2",
+      "summary": {
+        "adapter": {
+          "id": "adapter.scene-tables",
+          "version": "1"
+        },
+        "afterDefinitions": 2,
+        "beforeDefinitions": 3,
+        "nativeKind": "ir-lab.scene",
+        "placements": [
+          {
+            "name": "left-column",
+            "position": [
+              -2,
+              1.5,
+              0
+            ],
+            "shape": "box",
+            "size": [
+              1,
+              3,
+              1
+            ]
+          },
+          {
+            "name": "lintel",
+            "position": [
+              0,
+              3.5,
+              0
+            ],
+            "shape": "box",
+            "size": [
+              5,
+              1,
+              1
+            ]
+          },
+          {
+            "name": "right-column",
+            "position": [
+              2,
+              1.5,
+              0
+            ],
+            "shape": "box",
+            "size": [
+              1,
+              3,
+              1
+            ]
+          }
+        ],
+        "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+        "warmRuns": 2
+      },
+      "invocations": 4,
+      "editTransactions": 1,
+      "semanticExecutions": 5,
+      "semanticChecks": 14
+    },
+    {
+      "domain": "meshes",
+      "runId": "run-2",
+      "summary": {
+        "adapter": {
+          "id": "adapter.packed-triangle-mesh",
+          "version": "1"
+        },
+        "afterTriangles": 4,
+        "beforeTriangles": 8,
+        "candidateConstructionTolerance": 2.0000000000000004,
+        "error": 0.29289321881345254,
+        "nativeKind": "ir-lab.mesh",
+        "requestedTolerance": 0.35,
+        "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+        "warmRuns": 2
+      },
+      "invocations": 6,
+      "editTransactions": 2,
+      "semanticExecutions": 8,
+      "semanticChecks": 26
+    },
+    {
+      "domain": "constraints",
+      "runId": "run-2",
+      "summary": {
+        "adapter": {
+          "id": "adapter.sparse-constraints",
+          "version": "1"
+        },
+        "afterEquations": 4,
+        "beforeEquations": 5,
+        "components": [
+          [
+            "u",
+            "v"
+          ],
+          [
+            "x",
+            "y"
+          ]
+        ],
+        "nativeKind": "ir-lab.constraints",
+        "solution": {
+          "components": [
+            [
+              "u",
+              "v"
+            ],
+            [
+              "x",
+              "y"
+            ]
+          ],
+          "matrices": [
+            [
+              [
+                1,
+                0,
+                4
+              ],
+              [
+                0,
+                1,
+                2
+              ]
+            ],
+            [
+              [
+                1,
+                0,
+                3
+              ],
+              [
+                0,
+                1,
+                1
+              ]
+            ]
+          ],
+          "residualTolerance": 1e-9,
+          "residuals": [
+            {
+              "absolute": 0,
+              "equation": "difference-xy",
+              "relative": 0
+            },
+            {
+              "absolute": 0,
+              "equation": "duplicate-xy",
+              "relative": 0
+            },
+            {
+              "absolute": 0,
+              "equation": "sum-uv",
+              "relative": 0
+            },
+            {
+              "absolute": 0,
+              "equation": "difference-uv",
+              "relative": 0
+            }
+          ],
+          "values": {
+            "u": 4,
+            "v": 2,
+            "x": 3,
+            "y": 1
+          }
+        },
+        "solver": "components",
+        "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+        "warmRuns": 2
+      },
+      "invocations": 6,
+      "editTransactions": 2,
+      "semanticExecutions": 8,
+      "semanticChecks": 26
+    },
+    {
+      "domain": "meshes-tight-bound",
+      "summary": {
+        "adapter": {
+          "id": "adapter.packed-triangle-mesh",
+          "version": "1"
+        },
+        "afterTriangles": 8,
+        "beforeTriangles": 8,
+        "candidateConstructionTolerance": 2.0000000000000004,
+        "error": 0,
+        "nativeKind": "ir-lab.mesh",
+        "requestedTolerance": 0.1,
+        "transformationEvidence": "Rewrite traces identify their original executed invocation; warm passes reuse checked native artifacts",
+        "warmRuns": 1
+      }
+    }
+  ]
+}
