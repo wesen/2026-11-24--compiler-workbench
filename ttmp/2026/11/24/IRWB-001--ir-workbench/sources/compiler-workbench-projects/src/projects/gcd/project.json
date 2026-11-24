@@ -1,0 +1,15 @@
+{
+  "title": "Euclid",
+  "about": "A while loop around a remainder. The rem keeps its zero check because b can be zero on entry.",
+  "group": "Programs",
+  "pipeline": "O2",
+  "inputs": {
+    "gcd": {
+      "a": [0, 500],
+      "b": [0, 500]
+    }
+  },
+  "chapter": "division",
+  "focus": 4,
+  "try": ["Teach ranges to refine on !== 0 and see whether the check goes.", "How many iterations does gcd(1071, 462) take?"]
+}

@@ -1,0 +1,20 @@
+{
+  "title": "Bounds lab: a helper for bce",
+  "about": "Four loops over buffers. A script finds every bounds check and asks bce what it would do; two UI scripts show the answer as a tile and as marks on the IR and the source.",
+  "group": "Bounds",
+  "pipeline": "O2",
+  "inputs": {
+    "total": { "a": { "buffer": [0, 24] } },
+    "window": { "a": { "buffer": [0, 24] }, "k": [0, 30] },
+    "pairs": { "a": { "buffer": [0, 20] }, "b": { "buffer": [0, 20] } },
+    "tail": { "a": { "buffer": [0, 24] } }
+  },
+  "ui": { "order": ["bce-helper", "bce-marks"] },
+  "chapter": "projects",
+  "focus": 5,
+  "try": [
+    "Why does bce keep the check on b.charCodeAt(i) in pairs? Show the branch it would need.",
+    "Change window so bce can remove its check, without changing what it returns for k ≤ a.length.",
+    "Add a column to the Bounds checks tile with the instructions each check costs in the image."
+  ]
+}

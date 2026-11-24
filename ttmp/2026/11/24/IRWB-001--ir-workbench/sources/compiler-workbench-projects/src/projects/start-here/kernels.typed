@@ -1,0 +1,18 @@
+// kernels.typed: the loops worth optimizing
+function smooth(samples: buffer, n: i32, gain: i32): i32 {
+    let s = 0;
+    for (let i = 0; i < n; i = i + 1) {
+        s = s + samples.charCodeAt(i) * weight(gain);
+    }
+    return clamp(s / 16, 0, 4000);
+}
+function peak(samples: buffer): i32 {
+    let best = 0;
+    for (let i = 0; i < samples.length; i = i + 1) {
+        const x = samples.charCodeAt(i);
+        if (x > best) {
+            best = x;
+        }
+    }
+    return best;
+}

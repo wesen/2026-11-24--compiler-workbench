@@ -1,0 +1,7 @@
+function rises(work: buffer): i32 {
+    let n = 0;
+    for (let i = 0; i + 1 < work.length; i = i + 1) {
+        if (work.charCodeAt(i + 1) > work.charCodeAt(i)) { n = n + 1; }
+    }
+    return n;
+}

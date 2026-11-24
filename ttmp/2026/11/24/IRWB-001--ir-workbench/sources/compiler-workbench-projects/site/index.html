@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compiler Workbench: projects</title>
+<link rel="stylesheet" href="app/ui/kiln.css">
+<link rel="stylesheet" href="app/ui/agent.css">
+<link rel="stylesheet" href="app/ui/app.css">
+</head>
+<body>
+<div id="app">
+  <header class="bar">
+    <div class="brand">Compiler Workbench <i>projects · typed → RV32</i></div>
+    <div class="proj"><button class="projbtn" id="presetBtn" aria-haspopup="true"><span class="pcode"></span><span class="ptitle">Loading</span><span class="caret">▾</span></button><div class="menu presets" id="presetMenu" hidden></div></div>
+    <span class="pill" id="revPill"><b>—</b><span>revision</span></span>
+    <span class="pill" id="checkPill"><b>—</b><span>check</span></span>
+    <div class="runctl"><button class="btn" id="stepBtn" title="Apply the next pass of the pipeline">Step</button><button class="btn" id="runBtn" title="Apply the rest of the pipeline">Run</button><button class="btn" id="undoBtn" title="Undo the last revision">Undo</button><button class="btn" id="checkBtn" title="Check the head revision against r0">Check</button></div>
+    <span class="sp"></span>
+    <button class="btn" id="bookBtn" title="Open the book">Book</button>
+    <button class="btn" id="layoutBtn" title="Layouts: drag tabs to make your own">Layout ▾</button>
+    <button class="tog" id="themeTog" title="Dark theme">Dark</button>
+  </header>
+  <main class="dock" id="dock"></main>
+  <div class="toasts" id="toasts"></div>
+</div>
+<script src="vendor/typed-wasm.js"></script>
+<script src="vendor/rv32-interp.js"></script>
+<script src="app/engine/base.js"></script>
+<script src="app/engine/store.js"></script>
+<script src="app/engine/evaluator.js"></script>
+<script src="app/engine/analyses.js"></script>
+<script src="app/engine/passes.js"></script>
+<script src="app/engine/handles.js"></script>
+<script src="app/engine/backend.js"></script>
+<script src="app/engine/projects.js"></script>
+<script src="app/engine/api.js"></script>
+<script src="app/content/projects.js"></script>
+<script src="app/content/references.js"></script>
+<script src="app/content/reference.js"></script>
+<script src="app/content/book.js"></script>
+<script src="app/sources.js"></script>
+<script src="app/ui/md.js"></script>
+<script src="app/ui/views.js"></script>
+<script src="app/ui/agent.js"></script>
+<script src="app/ui/dock.js"></script>
+<script src="app/ui/dsl.js"></script>
+<script src="app/ui/main.js"></script>
+</body>
+</html>

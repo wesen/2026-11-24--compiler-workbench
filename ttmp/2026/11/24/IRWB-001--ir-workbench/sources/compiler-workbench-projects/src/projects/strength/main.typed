@@ -1,0 +1,10 @@
+function meter(work: buffer): i32 {
+    let level = 0;
+    for (let i = 0; i < work.length; i = i + 1) {
+        level = Math.min(level + work.charCodeAt(i), 1000);
+    }
+    return level / 4 + level % 8;
+}
+function signed(x: i32): i32 {
+    return x / 4 + x % 8;
+}

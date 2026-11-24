@@ -1,0 +1,17 @@
+{
+  "title": "A loop to n, not to length",
+  "about": "Nothing ties n to work.length, so every check stays. Cases with n beyond the length trap in both engines.",
+  "group": "Bounds",
+  "pipeline": "O2",
+  "inputs": {
+    "prefix": {
+      "work": {
+        "buffer": [0, 16]
+      },
+      "n": [0, 20]
+    }
+  },
+  "chapter": "bounds",
+  "focus": 4,
+  "try": ["How many cases trap, and does the image trap at the same place?", "Rewrite prefix so the checks can go, without changing its result when n <= length."]
+}

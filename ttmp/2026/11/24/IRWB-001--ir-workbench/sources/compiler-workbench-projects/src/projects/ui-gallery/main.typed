@@ -1,0 +1,15 @@
+// A small program for the component gallery to show.
+function score(a: i32, b: i32): i32 {
+    const bonus = 10 * 3;
+    if (a > b) {
+        return a * 4 + bonus;
+    }
+    return b * 4 - bonus;
+}
+function sum(v: buffer, n: i32): i32 {
+    let s = 0;
+    for (let i = 0; i < n; i = i + 1) {
+        s = s + v.charCodeAt(i) * score(i, n);
+    }
+    return s;
+}

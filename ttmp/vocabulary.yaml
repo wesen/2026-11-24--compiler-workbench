@@ -13,6 +13,8 @@ topics:
       description: Interactive workbench / inspector UIs for IR and pipelines
     - slug: typescript
       description: TypeScript implementation code
+    - slug: candela
+      description: Candela path-tracing scenes and their compilation (ds-js-os)
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

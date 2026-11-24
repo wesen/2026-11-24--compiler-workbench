@@ -1,0 +1,1 @@
+One licm run places each expression in the right preheader: a * b + 7 and a + b reach the outer one, r * (a + b) stops at the inner one because the outer loop assigns r. On rows = cols = 10 the image runs 955 instructions before and 568 after.

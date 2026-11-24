@@ -1,0 +1,16 @@
+enum Shape { Circle, Square = 4, Tri }
+record Point { x: i32; y: i32; }
+function area(s: Shape, k: i32): i32 {
+    let r = 0;
+    match (s) {
+        Circle: { r = 3 * k * k; }
+        Square: { r = k * k; }
+        Tri: { r = k * k / 2; }
+    }
+    return r;
+}
+function dist(p: Point, q: Point): i32 {
+    const dx = p.x - q.x;
+    const dy = p.y - q.y;
+    return Math.max(dx, 0 - dx) + Math.max(dy, 0 - dy);
+}

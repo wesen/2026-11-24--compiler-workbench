@@ -1,0 +1,17 @@
+{
+  "title": "Reading the next element",
+  "about": "The loop test is i + 1 < work.length and the read is at i + 1. Our bce only matches the plain index, so both checks stay.",
+  "group": "Bounds",
+  "pipeline": "O2",
+  "inputs": {
+    "rises": {
+      "work": {
+        "buffer": [0, 20],
+        "cell": [0, 9]
+      }
+    }
+  },
+  "chapter": "bounds",
+  "focus": 4,
+  "try": ["Extend bce (as a new pass) to handle an index of the form i + c.", "Is the check on work.charCodeAt(i) actually redundant here? Argue from ranges."]
+}

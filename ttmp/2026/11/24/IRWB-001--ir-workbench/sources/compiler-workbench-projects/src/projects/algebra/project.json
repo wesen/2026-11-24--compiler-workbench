@@ -1,0 +1,9 @@
+{
+  "title": "Algebraic identities",
+  "about": "x * 1, x + 0, y - 0, x * 0 and x - x. simplify rewrites each and records the identity it used.",
+  "group": "Folding",
+  "pipeline": "O1",
+  "chapter": "folding",
+  "focus": 3,
+  "try": ["Which identities does simplify know? Read them from its source.", "Write a pass that rewrites x + x into x * 2 and run it here."]
+}

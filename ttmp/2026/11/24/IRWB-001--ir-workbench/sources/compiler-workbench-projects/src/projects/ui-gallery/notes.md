@@ -1,0 +1,1 @@
+`ui/gallery.js` shows every built-in component: values (text, stat, badge, code, json), tables and lists, charts, controls bound to parameters and state, layout, and the provenance components (tree, diff). `ui/diagnostics.js` makes twelve mistakes on purpose and shows the error each raises.

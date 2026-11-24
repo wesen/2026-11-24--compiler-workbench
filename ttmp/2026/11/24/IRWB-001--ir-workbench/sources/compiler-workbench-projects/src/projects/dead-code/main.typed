@@ -1,0 +1,13 @@
+function pick(x: i32, flag: bool): i32 {
+    let unused = x * 37;
+    let y = x + 1;
+    const debug = false;
+    if (debug) {
+        y = y * 1000;
+    }
+    if (1 > 2) {
+        return 0 - 1;
+    }
+    unused = y;
+    return y * 2;
+}

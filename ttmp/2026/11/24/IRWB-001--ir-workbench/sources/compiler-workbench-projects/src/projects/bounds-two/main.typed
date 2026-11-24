@@ -1,0 +1,7 @@
+function dot(a: buffer, b: buffer): i32 {
+    let s = 0;
+    for (let i = 0; i < a.length; i = i + 1) {
+        s = s + a.charCodeAt(i) * b.charCodeAt(i);
+    }
+    return s;
+}

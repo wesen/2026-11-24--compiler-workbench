@@ -6,3 +6,27 @@
 - [ ] Reproduce v6 verification (scripts/02-run-verification.sh) and open source-workbench.html in a real browser <!-- t:2phj -->
 - [ ] Decide reuse vs. reimplementation, first-layer scope, target IRs (analysis section 9) <!-- t:386g -->
 - [x] Decide how to store the 34 MB archive in git (keep / LFS / gitignore) <!-- t:l4cw -->
+- [x] Import Compiler Workbench projects zip, analyze it and its overlap with v6 <!-- t:2t5v -->
+- [ ] Decide on the combination proposal (design-doc/01 section 5: stack, flagship, agent hosting, persistence, ds-js-os relationship) <!-- t:ug0h -->
+- [ ] Phase 0: run Compiler Workbench locally (fix build/load paths, regenerate bundles, run test/projects.mjs against ds-js-os typed-rv32.js) <!-- t:fqfc -->
+- [ ] Inventory what Candela build/compile/pack know (constant fields, parameter ranges, per-scene sections) before designing the fact channel <!-- t:m7y3 -->
+- [ ] P0.1 Baseline: snapshot the Compiler Workbench prototype on all 44 projects (parity oracle: revisions, listings, image bytes, checks) <!-- t:x022 -->
+- [ ] P1.1 Scaffold the TypeScript project (strict tsc, esbuild, prettier, node:test, layering check) <!-- t:70zr -->
+- [ ] P1.2 Lift the v6 framework (core, strategy, contracts, ir) into src/framework, reformat, port its tests <!-- t:txbz -->
+- [ ] P1.3 Extensions E1 (control relation category) and E2 (because on edits, why query) <!-- t:2v29 -->
+- [ ] P1.4 Extension E4: dataflow builder, lattices, widening, checked fact transfer <!-- t:aruk -->
+- [ ] P1.5 Extension E5: differential invariants, case generation, sampled assurance <!-- t:unsw -->
+- [ ] P1.6 Extensions E3 (definePass) and E6 (passes and analyses as strategy algorithms) <!-- t:l28x -->
+- [ ] P2.1 typed.blocks IR, adapter and lifting from the vendored Typed front end <!-- t:qnfa -->
+- [ ] P2.2 Evaluator, case generation and checks against r0 <!-- t:kko5 -->
+- [ ] P2.3 Analyses: cfg, dominators, loops, liveness, reaching, ranges <!-- t:rtdl -->
+- [ ] P2.4 The eleven passes on definePass and rewrite rules <!-- t:4kh7 -->
+- [ ] P2.5 Backend: tiling selection, linear scan, frames, encoding, emulator runs <!-- t:jn6a -->
+- [ ] P2.6 O2 and pipelines as Strategy plans; parity with the prototype on 44 projects <!-- t:vhni -->
+- [ ] P3.1 wb API layer: handles, selections, projects, why and lineage <!-- t:pb99 -->
+- [ ] P3.2 Workbench UI on the new kernel, standalone build <!-- t:es43 -->
+- [ ] P4.1 Candela inventory: what build, compile and pack know <!-- t:5smn -->
+- [ ] P4.2 Candela chain: tasks for front end, generator, Typed front end; correspondence <!-- t:lofv -->
+- [ ] P4.3 Candela experiment: per-scene specialization measured on the host <!-- t:ckco -->
+- [ ] R1 Obsidian report at the framework + parity milestone <!-- t:3x4l -->
+- [ ] R2 Obsidian report at the Candela milestone <!-- t:z21g -->

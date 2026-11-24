@@ -1,0 +1,9 @@
+{
+  "title": "Write an analysis",
+  "about": "A forward analysis over sets: which locals may have been reassigned, after their declaration, on some path to each block.",
+  "group": "Writing passes",
+  "pipeline": "O0",
+  "chapter": "analyses",
+  "focus": 4,
+  "try": ["Write a must-assigned analysis (intersection instead of union). What lattice do you need?", "How many block visits did the solver make, and why?"]
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Checksum: a check that goes away",
+  "about": "A loop to work.length. The loop test proves the index is in range, so bounds-check elimination removes the check inside.",
+  "group": "Start here",
+  "pipeline": "O2",
+  "inputs": {
+    "total": {
+      "work": {
+        "buffer": [0, 40]
+      }
+    }
+  },
+  "chapter": "bounds",
+  "focus": 4,
+  "try": ["Which three facts does bce combine to remove the check? Show me in its source.", "Make a variant where the index can be negative and show that bce refuses."]
+}

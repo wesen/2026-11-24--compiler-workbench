@@ -1,0 +1,17 @@
+{
+  "title": "Strength reduction with ranges",
+  "about": "level stays in [0, 1000], so level / 4 is a shift and level % 8 a mask. The same code on a signed x stays a division.",
+  "group": "Loops",
+  "pipeline": "O2",
+  "inputs": {
+    "meter": {
+      "work": {
+        "buffer": [0, 30],
+        "cell": [0, 300]
+      }
+    }
+  },
+  "chapter": "division",
+  "focus": 6,
+  "try": ["Show me the interval ranges computes for level at the return, and how widening got there.", "What would x >> 2 return for x = -5, and what does x / 4 return?"]
+}

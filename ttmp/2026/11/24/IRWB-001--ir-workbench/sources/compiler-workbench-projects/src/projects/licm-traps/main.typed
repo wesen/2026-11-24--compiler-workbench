@@ -1,0 +1,7 @@
+function ratio(n: i32, a: i32, b: i32): i32 {
+    let s = 0;
+    for (let i = 0; i < n; i = i + 1) {
+        s = s + a / b + i;
+    }
+    return s;
+}

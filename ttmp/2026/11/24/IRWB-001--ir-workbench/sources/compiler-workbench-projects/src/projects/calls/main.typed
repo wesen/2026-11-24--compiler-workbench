@@ -1,0 +1,8 @@
+function sq(x: i32): i32 { return x * x; }
+function clamp(v: i32, lo: i32, hi: i32): i32 {
+    return Math.max(lo, Math.min(v, hi));
+}
+function energy(a: i32, b: i32, c: i32): i32 {
+    const e = sq(a) + sq(b) + sq(c);
+    return clamp(e, 0, 5000) + a * b * c;
+}

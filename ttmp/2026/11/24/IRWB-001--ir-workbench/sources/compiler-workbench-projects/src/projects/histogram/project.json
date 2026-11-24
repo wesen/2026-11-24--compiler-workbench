@@ -1,0 +1,21 @@
+{
+  "title": "Histogram",
+  "about": "Count values into buckets: a read of one buffer, a computed index into another, a load and a store.",
+  "group": "Programs",
+  "pipeline": "O2",
+  "inputs": {
+    "histogram": {
+      "work": {
+        "buffer": [0, 20],
+        "cell": [0, 39]
+      },
+      "bins": {
+        "buffer": [4, 4],
+        "cell": [0, 0]
+      }
+    }
+  },
+  "chapter": "bounds",
+  "focus": 5,
+  "try": ["What range does ranges give k, and why can bce not use it?", "What happens with a value of 40 in work?"]
+}

@@ -22,6 +22,26 @@ WhenToUse: "Read the newest entry when resuming work on IRWB-001."
 
 <!-- Log entries in reverse chronological order (newest first) -->
 
+## 2026-11-24 - Imported Compiler Workbench: projects; overlap and combination proposal
+
+**Goal.** Import `~/Downloads/Compiler Workbench_ projects.zip`, explain what it is, measure its overlap with v6, and propose how to combine the best of both.
+
+**Done.**
+- The user typed the file as `Compiler Workbench_projects.zip`; the actual name has a space after the underscore.
+- The zip (26 files, 1.4 MB) holds only the built site. Its authored sources live inside generated bundles: `app/sources.js` embeds 42 files, including the book Markdown, the reference and the test scripts, and `app/content/projects.js` packs 44 projects.
+- Unpacked those bundles back into the repo layout that `test/build.mjs` expects (`site/`, `src/{book,reference.md,projects}`, `test/`) under `sources/compiler-workbench-projects/`: 237 files, 2.0 MB. The four generated bundles were left out.
+- `scripts/03-verify-compiler-workbench-import.py` re-derives the bundle contents from the imported files and compares them with the zip. The round trip is OK; only the `<title>` of `index.html` differs between the embedded and shipped copies.
+- Wrote `analysis/02` (what it is, plus an overlap matrix) and `design-doc/01` (combination proposal and phases).
+
+**Findings.**
+- This prototype was also built by Claude, as a claude.ai artifact project: the paths are `/home/claude/wb2`, and the agent uses `claude.use('sample')`.
+- It reuses the Typed front end and the RV32 tools from the user's `ds-js-os`. The reference compiler now lives at `ds-js-os/compiler/typed/typed-rv32.js`, not the `picocalc-os/compiler/` path the tests hard-code. The vendored `typed-wasm.js` is older than the current one in ds-js-os.
+- The two prototypes share no code. Conceptually they overlap in the middle layer: revisions, transactions, provenance, declared writes and preservation, stale facts, check-before-accept, and self-reading. Otherwise they are complementary: v6 is broad and generic, CW is deep and usable.
+
+**Decision proposed (not yet taken).** Use CW's product shape and its Typed → RV32 compiler as the flagship, on a kernel shaped by v6's abstractions. Reimplement in strict TypeScript, using CW's 44 projects as the parity corpus. Bring in v6's breadth in phases.
+
+**Not done.** The Compiler Workbench site was not run, for the same reason as before: it is downloaded code, and running it needs path fixes first. Nothing was committed in this step; the user's earlier commit request covered only the v6 import.
+
 ## 2026-11-24 - Replaced the zip import with an extracted source subset; committed
 
 **Why.** The user asked to unzip and import the relevant files instead of the archive, clean up, and commit only what is worth committing.

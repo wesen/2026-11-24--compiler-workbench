@@ -1,0 +1,17 @@
+{
+  "title": "Division checks and what removes them",
+  "about": "A general a / b needs a zero check and an overflow check (INT_MIN / -1). When ranges prove the divisor is in [1, 10], both go.",
+  "group": "Division",
+  "pipeline": "O2",
+  "inputs": {
+    "share": {
+      "people": [-3, 12]
+    },
+    "safeShare": {
+      "people": [-3, 12]
+    }
+  },
+  "chapter": "division",
+  "focus": 6,
+  "try": ["Show me the check sequence for share and the trap it implements.", "What interval does ranges give k, and from which branches?"]
+}

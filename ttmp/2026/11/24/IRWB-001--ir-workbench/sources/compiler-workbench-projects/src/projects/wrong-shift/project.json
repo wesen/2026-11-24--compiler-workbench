@@ -1,0 +1,14 @@
+{
+  "title": "A pass that is wrong for negatives",
+  "about": "div-to-shift rewrites s / 8 as s >> 3. It is right when s >= 0 and wrong otherwise; the check finds the case.",
+  "group": "Broken on purpose",
+  "pipeline": "broken",
+  "inputs": {
+    "eighth": {
+      "s": [-100, 100]
+    }
+  },
+  "chapter": "checks",
+  "focus": 2,
+  "try": ["Find the smallest counterexample and explain it bit by bit.", "Fix div-to-shift as a new pass and show the check agreeing."]
+}

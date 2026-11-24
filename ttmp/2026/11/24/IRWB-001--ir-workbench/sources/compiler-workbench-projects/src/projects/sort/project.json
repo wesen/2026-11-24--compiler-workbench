@@ -1,0 +1,17 @@
+{
+  "title": "Insertion sort",
+  "about": "Nested loops with loads and stores into one buffer. The checks compare the sorted cells.",
+  "group": "Programs",
+  "pipeline": "O2",
+  "inputs": {
+    "sort": {
+      "work": {
+        "buffer": [0, 12],
+        "cell": [0, 99]
+      }
+    }
+  },
+  "chapter": "checks",
+  "focus": 6,
+  "try": ["Which bounds checks stay in sort, and which facts would remove each?", "Where does sort spend its instructions on a reversed buffer of 10?"]
+}

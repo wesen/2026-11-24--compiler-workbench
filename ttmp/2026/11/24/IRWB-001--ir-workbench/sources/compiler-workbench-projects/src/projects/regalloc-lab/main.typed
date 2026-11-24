@@ -1,0 +1,31 @@
+// Register pressure: mixer keeps a dozen values live at once; accum
+// keeps four accumulators across a call.
+function mixer(a: i32, b: i32, c: i32, d: i32): i32 {
+    const e = a * b;
+    const f = b * c;
+    const g = c * d;
+    const h = d * a;
+    const i = e + f;
+    const j = f + g;
+    const k = g + h;
+    const l = h + e;
+    return (e - f) * (g - h) + (i - j) * (k - l) +
+        i * j - k * l + a * d - b * c;
+}
+function step(x: i32): i32 {
+    return x * 3 + 1;
+}
+function accum(v: buffer, n: i32): i32 {
+    let s0 = 0;
+    let s1 = 0;
+    let s2 = 0;
+    let s3 = 0;
+    for (let i = 0; i < n; i = i + 1) {
+        const x = v.charCodeAt(i);
+        s0 = s0 + x;
+        s1 = s1 + step(x);
+        s2 = s2 + x * s0;
+        s3 = s3 * 3 + (x - s1);
+    }
+    return s0 + s1 * 2 + s2 * 3 + s3 * 5;
+}

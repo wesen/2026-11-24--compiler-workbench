@@ -1,0 +1,9 @@
+{
+  "title": "Mistakes and the errors they get",
+  "about": "Five deliberate mistakes against the API: a typo, an assignment, an undeclared write, a removal without because, a bad pass name.",
+  "group": "Writing passes",
+  "pipeline": "O0",
+  "chapter": "handles",
+  "focus": 2,
+  "try": ["List every error code the workbench can raise and where each is thrown.", "Why is the second mistake refused rather than ignored?"]
+}

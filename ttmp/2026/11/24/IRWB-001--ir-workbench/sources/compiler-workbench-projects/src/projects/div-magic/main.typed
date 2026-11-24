@@ -1,0 +1,12 @@
+function digitsum(x: i32): i32 {
+    let v = Math.max(x, 0 - x);
+    let s = 0;
+    while (v > 0) {
+        s = s + v % 10;
+        v = v / 10;
+    }
+    return s;
+}
+function sevenths(x: i32): i32 {
+    return x / 7 + x / (0 - 3);
+}

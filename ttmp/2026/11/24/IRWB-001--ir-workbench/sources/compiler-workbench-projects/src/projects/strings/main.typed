@@ -1,0 +1,19 @@
+function vowels(s: string): i32 {
+    let n = 0;
+    for (let i = 0; i < s.length; i = i + 1) {
+        const c = s.charCodeAt(i);
+        if (c === 97 || c === 101 || c === 105 ||
+            c === 111 || c === 117) {
+            n = n + 1;
+        }
+    }
+    return n;
+}
+function digits(s: string): i32 {
+    let v = 0;
+    for (let i = 0; i < s.length; i = i + 1) {
+        const c = s.charCodeAt(i);
+        if (c >= 48 && c <= 57) { v = v * 10 + (c - 48); }
+    }
+    return v;
+}

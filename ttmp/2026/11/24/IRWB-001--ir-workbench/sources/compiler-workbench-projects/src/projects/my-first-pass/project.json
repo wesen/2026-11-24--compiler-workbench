@@ -1,0 +1,9 @@
+{
+  "title": "Write a pass: x + x into x * 2",
+  "about": "A pass made with wb.pass(): it declares what it writes, rewrites values through tx, and records why.",
+  "group": "Writing passes",
+  "pipeline": "O0",
+  "chapter": "passes",
+  "focus": 2,
+  "try": ["Make add-self also handle (x + x) + (x + x).", "What happens if the pass forgets .writes('values')?"]
+}

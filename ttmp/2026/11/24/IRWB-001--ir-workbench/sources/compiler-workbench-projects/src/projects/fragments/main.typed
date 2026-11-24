@@ -1,0 +1,8 @@
+function blend(work: buffer, n: i32, a: i32, b: i32): i32 {
+    const scale = 4 * 16;
+    let s = 0;
+    for (let i = 0; i < n; i = i + 1) {
+        s = s + work.charCodeAt(i) * (a * b + scale);
+    }
+    return s / 8;
+}

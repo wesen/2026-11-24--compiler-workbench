@@ -1,0 +1,20 @@
+{
+  "title": "Records in memory",
+  "about": "A record is a pointer to one word per field. Assigning a field is a store; the check compares the memory afterwards.",
+  "group": "Bounds",
+  "pipeline": "O2",
+  "inputs": {
+    "nudge": {
+      "p": {
+        "record": {
+          "x": [-100, 100],
+          "y": [-100, 100]
+        }
+      },
+      "dx": [-10, 10]
+    }
+  },
+  "chapter": "language",
+  "focus": 7,
+  "try": ["Could a pass reuse the stored value instead of loading p.x again? What would it need to know?", "Show me the loads and stores of nudge in the image."]
+}

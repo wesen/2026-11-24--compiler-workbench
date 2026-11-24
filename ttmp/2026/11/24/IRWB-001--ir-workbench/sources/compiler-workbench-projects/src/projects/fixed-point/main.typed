@@ -1,0 +1,7 @@
+function qmul(a: i32, b: i32): i32 {
+    const wide = a * b + 128;
+    return Math.max(0 - 32768, Math.min(wide >> 8, 32767));
+}
+function lerp(a: i32, b: i32, t: i32): i32 {
+    return a + qmul(b - a, t);
+}

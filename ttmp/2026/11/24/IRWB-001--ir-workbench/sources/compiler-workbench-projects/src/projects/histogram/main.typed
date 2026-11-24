@@ -1,0 +1,9 @@
+function histogram(work: buffer, bins: buffer): i32 {
+    let biggest = 0;
+    for (let i = 0; i < work.length; i = i + 1) {
+        const k = work.charCodeAt(i) / 10;
+        bins.setCharCodeAt(k, bins.charCodeAt(k) + 1);
+        biggest = Math.max(biggest, bins.charCodeAt(k));
+    }
+    return biggest;
+}
