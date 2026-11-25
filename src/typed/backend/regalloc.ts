@@ -143,6 +143,79 @@ export interface Allocation {
   readonly intervals: readonly Interval[];
 }
 
+/**
+ * Where the physical registers `tracked` (at most 31) are occupied: for each, a prefix count over the instructions
+ * of the positions where it is live in or written. A call reads its argument registers (`uses`) and writes every
+ * tracked register (they are caller-saved); a return reads its result registers; the parameters are live from the
+ * entry until their copies. Liveness is computed over the machine blocks, as for virtual registers.
+ */
+export function physicalOccupancy(
+  code: readonly MInsn[],
+  tracked: readonly number[],
+): { occupied(r: number, from: number, to: number): boolean; liveOut(r: number, at: number): boolean } {
+  const bit = new Map(tracked.map((r, i) => [r, 1 << i]));
+  const all = (1 << tracked.length) - 1;
+  const n = code.length;
+  const use = new Int32Array(n),
+    def = new Int32Array(n);
+  code.forEach((m, i) => {
+    let u = 0;
+    for (const r of [m.rs1, m.rs2, ...(m.uses ?? [])]) if (r !== undefined && bit.has(r)) u |= bit.get(r)!;
+    use[i] = u;
+    def[i] = m.op === 'call' ? all : m.op !== 'label' && m.rd !== undefined && bit.has(m.rd) ? bit.get(m.rd)! : 0;
+  });
+  const blocks = machineBlocks(code);
+  const bUse = blocks.map(b => {
+      let u = 0,
+        d = 0;
+      for (let i = b.start; i <= b.end; i++) {
+        u |= use[i] & ~d;
+        d |= def[i];
+      }
+      return [u, d];
+    }),
+    IN = new Int32Array(blocks.length),
+    OUT = new Int32Array(blocks.length);
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (let k = blocks.length - 1; k >= 0; k--) {
+      let out = 0;
+      for (const s of blocks[k].succ) out |= IN[s];
+      const inn = bUse[k][0] | (out & ~bUse[k][1]);
+      if (inn !== IN[k] || out !== OUT[k]) {
+        IN[k] = inn;
+        OUT[k] = out;
+        changed = true;
+      }
+    }
+  }
+  const liveIn = new Int32Array(n),
+    liveAfter = new Int32Array(n);
+  blocks.forEach((b, k) => {
+    let live = OUT[k];
+    for (let i = b.end; i >= b.start; i--) {
+      liveAfter[i] = live;
+      live = (live & ~def[i]) | use[i];
+      liveIn[i] = live;
+    }
+  });
+  // prefix counts of the occupied positions (live in or written) per tracked register
+  const prefix = tracked.map((r, j) => {
+    const p = new Int32Array(n + 1);
+    for (let i = 0; i < n; i++) p[i + 1] = p[i] + (((liveIn[i] | def[i]) >> j) & 1);
+    return p;
+  });
+  const index = new Map(tracked.map((r, j) => [r, j]));
+  return {
+    // whether r is occupied at some position p with from <= p <= to
+    occupied: (r, from, to) => {
+      const p = prefix[index.get(r)!];
+      return to >= from && p[Math.min(n, to + 1)] - p[Math.max(0, from)] > 0;
+    },
+    liveOut: (r, at) => ((liveAfter[at] >> index.get(r)!) & 1) === 1,
+  };
+}
+
 /** A register class's pools: caller-saved, the argument registers (leaf functions only), callee-saved. */
 interface ClassPools {
   readonly caller: readonly number[];
@@ -178,9 +251,25 @@ export function allocate(
   });
   const assign = new Map<number, number>(),
     spilled = new Set<number>();
-  const scan = (pools: ClassPools, xs: readonly Interval[]): void => {
-    // caller-saved first; argument registers only in leaf functions (a call would clobber them); callee-saved last
-    let pool = leaf ? [...pools.caller, ...pools.args, ...pools.callee] : [...pools.caller, ...pools.callee];
+  // the f class in a function that calls: fa0-fa7 are allocatable wherever their physical uses leave them free
+  const shared = !leaf && fregs.size > 0 ? physicalOccupancy(code, F_ARGS) : null;
+  /**
+   * Whether interval x would clash with the physical uses of argument register r: r is occupied strictly inside x,
+   * or still live after x's definition (unless that definition copies r, so both hold one value).
+   */
+  const clashes = (r: number, x: Interval): boolean => {
+    if (!shared) return false;
+    const s = x.start,
+      last = Number.isInteger(x.end) ? x.end - 1 : Math.floor(x.end);
+    if (shared.occupied(r, s + 1, last)) return true;
+    const d = code[s];
+    return shared.liveOut(r, s) && !(d.mv && d.rs1 === r);
+  };
+  const scan = (pools: ClassPools, xs: readonly Interval[], argsShared: boolean): void => {
+    // caller-saved first; argument registers in leaf functions (a call would clobber them), or where their physical
+    // uses leave them free (argsShared); callee-saved last
+    let pool =
+      leaf || argsShared ? [...pools.caller, ...pools.args, ...pools.callee] : [...pools.caller, ...pools.callee];
     // s-registers first: every one used is saved and restored
     if (o.order === 'callee') pool = [...pools.callee, ...pool.filter(r => !pools.callee.includes(r))];
     if (o.registers !== 'all') pool = pool.slice(0, Math.max(1, +o.registers));
@@ -189,7 +278,8 @@ export function allocate(
     const okFor = (r: number, x: Interval) =>
       (!x.crossesCall || pools.callee.includes(r)) &&
       !(fixed.has(r) && x.start < fixed.get(r)!) &&
-      !pins.get(r)?.some(i => x.start < i && i < x.end);
+      !pins.get(r)?.some(i => x.start < i && i < x.end) &&
+      !(argsShared && !leaf && pools.args.includes(r) && clashes(r, x));
     for (const x of xs) {
       active = active.filter(a => {
         if (a.end <= x.start) {
@@ -225,13 +315,16 @@ export function allocate(
       active.push(x);
     }
   };
+  // the x class as Compiler Workbench allocates it (so integer images stay the book's); the f class also shares fa0-fa7
   scan(
     X_POOLS,
     list.filter(x => !fregs.has(x.reg)),
+    false,
   );
   scan(
     F_POOLS,
     list.filter(x => fregs.has(x.reg)),
+    shared !== null,
   );
   return { assign, spilled, intervals: list };
 }

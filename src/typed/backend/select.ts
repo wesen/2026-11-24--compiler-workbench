@@ -366,7 +366,7 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
       else if (classOf(r) === l.cls) move(physOf(l), r, id);
       else emit('fmv.x.w', { rd: physOf(l), rs1: r }, id); // an f32 beyond fa7, as its bits in an x register
     });
-    emit('call', { callee: name, argc: regs.length }, id);
+    emit('call', { callee: name, argc: regs.length, uses: locs.filter(l => l.cls !== 'stack').map(physOf) }, id);
     calls++;
     if (sig.results) {
       // the leaves stay where they return, until result#k reads them (before the next call, in this block)
@@ -688,6 +688,13 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
     });
   }
 
+  // the registers a return reads: a0 or fa0, or a record result's leaf registers
+  const returned = f.results
+    ? resultLocations(f.results)
+        .filter(l => l.cls !== 'stack')
+        .map(physOf)
+    : [typeClass(f.result) === 'f32' ? FA0 : A0];
+
   // entry: copy parameters out of their ilp32f locations, zero the locals read before they are written
   emit('label', { name: 'entry' });
   const incoming = argumentLocations(f.params);
@@ -774,7 +781,7 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
             hints.set(r, ret);
             move(ret, r, s.value);
           } else emit('addi', { rd: A0, rs1: ZERO, imm: 0 });
-          emit('jexit', {});
+          emit('jexit', { uses: returned });
           break;
         }
         case 'trap':

@@ -244,6 +244,8 @@ export interface MInsn {
   caller?: boolean;
   /** A write of a physical result register in a record return: no value live across it may be given that register. */
   pins?: boolean;
+  /** Physical registers read besides rs1 and rs2: a call's argument registers, a return's result registers. */
+  uses?: number[];
 }
 
 export const R3: Readonly<Record<string, readonly [number, number]>> = {
