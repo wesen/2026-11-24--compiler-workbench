@@ -175,3 +175,86 @@ This step tried to snapshot the Compiler Workbench prototype as a parity oracle 
 
 ### Technical details
 - A reason's `because` is a non-empty, deduplicated list of non-empty strings, or absent. A note is non-empty text, or absent. Empty reasons add no fields, so operations without reasons serialize as before.
+
+## Step 3: E4 dataflow, E5 differential checks, E3 definePass and E6 strategy bridge
+
+This step completes the framework extensions that the Typed compiler builds on:
+
+- **E4:** lattices and a worklist solver, packaged as v6 analyses with a checked transfer rule.
+- **E5:** sampled differential testing, packaged as v6 invariants.
+- **E3:** `definePass`, which declares needs, writes, preservation claims and a contract. Its `applyPass` enforces all four before anything is published.
+- **E6:** passes and analyses run as Strategy IR algorithms.
+
+Each extension is a new module on top of the lifted v6 layers. The only lifted-layer edits are to `contracts/index.ts` (an export) and, in Step 2, to `ir/`. 221 of 221 tests pass.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Finish P1.4–P1.6 so the Typed domain can be written against a stable framework API.
+**Inferred user intent:** The compiler is defined on the framework, not beside it.
+**Commit (code):** d054b47 (E4), 060126a (E5), da18d29 (E3+E6)
+
+### What I did
+- `src/framework/dataflow/`:
+  - `lattices.ts`: `setLattice`, `flatLattice`, `intervalLattice` (i32 bounds, `widen`) and `mapLattice`, each with a finite-JSON encode/decode.
+  - `solver.ts`: `solve(graph, {direction, lattice, transfer, boundary, widen, maxIterations})`; `depthFirst` finds loop heads as the targets of retreating edges; `DataflowError` codes are `noWidening`, `noFixpoint` and `badGraph`.
+  - `analysis.ts`: `dataflow(spec)` returns a v6 `AnalysisDefinition` with `run` (solve per region), `decode`, `solveArtifact`, and `transfer.verify`, which accepts a transfer iff `readsTouched(spec.reads, diff(from, to))` is empty. `flowGraphOf(view, entry, blocks)` builds graphs from `control` relations.
+- `src/framework/contracts/differential.ts`: `seededRandom` (mulberry32), `differential(spec)` returning an `InvariantDefinition` with `method: 'sampled'`, `runDifferential` and `assuranceOf`.
+- `src/framework/passes/`:
+  - `define-pass.ts`: `definePass` and `applyPass`. Errors are `PassError` with codes `undeclaredWrite`, `preserveViolated`, `contractRejected` and `badResult`. Helpers are `undeclaredWrites` and `semanticCorrespondence`.
+  - `bridge.ts`: `passAlgorithm`, `analysisAlgorithm` and `metricsAlgorithm`.
+- Tests: `ext-e4.test.mjs` (5), `ext-e5.test.mjs` (4), `ext-e3-e6.test.mjs` (7).
+
+### Why
+- **Dataflow as v6 analyses.** This gives per-revision caching and invalidation for free, and makes CW's `preserves` checkable. The transfer verifier compares what an analysis declares it reads against the adapter's real change set. If the declaration is incomplete, the claim can still be wrong, so `applyPass` has a second line of defence (below).
+- **Preservation claims are checked in two stages.**
+  1. Try v6 `manager.preserve`, which runs the analysis's transfer verifier.
+  2. If that refuses, recompute on the output and compare canonical values.
+
+  CW's `fold` claims to preserve liveness while writing values. This is semantically true, because folding all-constant trees removes no `get`. It fails the conservative reads-based check, but the recompute confirms it (`confirmed-by-recompute`). A false claim is `preserveViolated`, and the pass is not published.
+- **Two edit styles.** The generic `IREdit` style suits pattern rules (E7 later). The native style lets CW's passes, which manipulate tables directly, be ported with modest changes. Both produce the same revision: a test checks that the native and edit-style CSE give an identical revision hash.
+
+### What worked
+- E4: liveness around a loop gives `in(head) = {i, k}`. Intervals without widening throw `noWidening`. With widening, the loop counter at the head is `[0, I32_MAX]` and the untouched `k` stays `[7, 7]`. The manager returns the same record id for a repeated `analyse`. Transfer is rejected when a read kind changed, and accepted (`assurance: 'transferred'`, rule `test.blocks-only.unchanged-reads`) for an analysis that reads only blocks and edges.
+- E5: a correct rewrite of `2x² + 2y` agrees on 40 of 40 sampled environments. A wrong one gives counterexamples. Inconclusive cases are counted, and an all-inconclusive run has status `inconclusive`. The invariant works in a `defineTransformation` `ensures` clause, and `verifyTransformation` rejects the wrong output with `/disagree/`.
+- E3/E6: contract rejection, undeclared writes and preservation checks all behave as intended. A two-step plan applies the CSE and then a no-op, with `results.map(r => r.changed)` equal to `[true, false]`. A plan with the wrong pass ends `status: 'rejected'` and `error.code: 'contract-rejected'`.
+
+### What didn't work
+- My first `ext-e4.test.mjs` contained a half-written test: an unfinished edit, a `disconnect` of a nonexistent edge, and a stray `.catch?.()`. I replaced it with a clean caching test before running anything, and corrected a misleading comment in the transfer test.
+- `ext-e5.test.mjs` failed once with:
+  ```
+  Error: Definition test.expression-agrees@1 cannot be redefined
+  ```
+  The test built a new invariant object per call. v6's `ContractRegistry` correctly refuses two different objects with the same id@version. The test now reuses one instance. This is framework behaviour to keep: a definition's identity is its id@version plus its object.
+- `ext-e3-e6.test.mjs` failed four tests with:
+  ```
+  evidence: { cause: 'ContractError: Missing correspondence entities' }
+  ```
+  `applyPass` built one correspondence record with `id` set to the revision pair and `relation` set to the pass id. The manager matches records to the contract's `correspondence` requirements by `id` and `relation` (the lab contract requires `entities` / `generic-ir-edit`). `applyPass` now builds one record per requirement, with the default `entities` / `generic-ir-edit` as in v6's `lab.ts`.
+
+### What I learned
+- The v6 analysis manager already supports everything E4 needs: `analyse`, `hasAnalysis` and `preserve` with a transfer verifier. Dataflow only had to supply the definition.
+- v6 contracts identify correspondence by name. Any host that gates passes must know the contract's requirement names. `applyPass` now does this generically.
+
+### What was tricky to build
+- **Solver semantics.** Two choices:
+  - *Forward:* the entry's join starts from the boundary value, and in(b) joins only reachable predecessors.
+  - *Backward:* blocks without successors start from the boundary. Unreachable blocks keep bottom but are still reported, so every block has a fact.
+
+  Widening runs before the transfer, at loop heads only, on the joined input. This matches CW ("the solver widens only at loop heads").
+- **The IREdit path in `applyPass`.** It uses `prepare()` and then `rollback()`. The framework computes the result and enforces writes and the contract itself, then returns the artifact. Publishing to the program's revision chain is the domain host's job (P3.1), so `IRStore` head and stale checks are not used here yet.
+
+### What warrants a second pair of eyes
+- `readsTouched` uses kind globs. An analysis that reads attributes of an entity kind it does not list would be transferred wrongly. The recompute fallback runs only when the transfer is refused, so a too-narrow `reads` declaration is the one way to keep a stale fact. A paranoid mode (always recompute and compare) for tests would close this.
+- `applyPass` treats "no entity or relation change" as no change, even when the native bytes differ, for example key order. This is correct because the adapter is the canonical projection, but it assumes `rebuild` and projection are faithful.
+
+### What should be done in the future
+- A paranoid preservation mode for tests (recompute always).
+- Publication through `IRStore` with stale-head rejection in the Program layer (P3.1).
+
+### Code review instructions
+- `src/framework/passes/define-pass.ts` (`applyPass`), `src/framework/dataflow/analysis.ts` (`transfer.verify`) and `src/framework/contracts/differential.ts`.
+- Run `npm test`. Expect 221 or more tests, 0 failures.
+
+### Technical details
+- The flow graph interface is `{entry, blocks, succ(b), preds(b)}`. The solver visits the pending block that comes earliest in (reverse) postorder.
+- `DataflowResult` is `{analysis, direction, regions: {id: {in, out, iterations, loopHeads}}}`, with lattice-encoded facts keyed by block id.
