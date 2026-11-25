@@ -1,0 +1,14 @@
+{
+  "title": "The same expression twice",
+  "about": "i * 3 + 7 appears twice per iteration. Local value numbering computes it once into a new local.",
+  "group": "Loops",
+  "pipeline": "O2",
+  "inputs": {
+    "halves": {
+      "n": [0, 60]
+    }
+  },
+  "chapter": "loops",
+  "focus": 5,
+  "try": ["Why does strength not turn the / 4 into a shift here?", "Make n bounded (Math.min(n, 1000)) and see whether strength fires."]
+}

@@ -1,0 +1,7 @@
+// helpers.typed: small functions the kernels call
+function clamp(v: i32, lo: i32, hi: i32): i32 {
+    return Math.max(lo, Math.min(v, hi));
+}
+function weight(k: i32): i32 {
+    return k * 4 + 2 * 8;
+}

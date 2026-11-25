@@ -1,0 +1,3 @@
+function h(x: i32): i32 { return x * 3 + 1; }
+function g(x: i32): i32 { return h(x) + h(x + 1); }
+function f(x: i32): i32 { return g(x) * 2 + g(0 - x); }

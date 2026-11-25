@@ -1,0 +1,3 @@
+type Cm = distinct i32;
+function add(a: Cm, b: Cm): Cm { return a + b; }
+function perimeter(w: Cm, h: Cm): Cm { return add(add(w, h), add(w, h)); }

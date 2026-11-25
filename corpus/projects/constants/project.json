@@ -1,0 +1,9 @@
+{
+  "title": "Constants all the way down",
+  "about": "Chained constants: fold, propagate and fold again until the arithmetic on constants is gone.",
+  "group": "Folding",
+  "pipeline": "O1",
+  "chapter": "folding",
+  "focus": 3,
+  "try": ["How many revisions did it take to reach a fixed point, and why that many?", "Show me the because chain of the final constant 9."]
+}

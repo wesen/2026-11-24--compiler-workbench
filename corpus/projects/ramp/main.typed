@@ -1,0 +1,8 @@
+function ramp(out: buffer, step: i32): i32 {
+    let v = 0;
+    for (let i = 0; i < out.length; i = i + 1) {
+        out.setCharCodeAt(i, Math.min(v, 65535));
+        v = v + step;
+    }
+    return v;
+}

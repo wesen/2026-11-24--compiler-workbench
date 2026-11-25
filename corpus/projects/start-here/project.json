@@ -1,0 +1,22 @@
+{
+  "title": "Start here: a project in plain files",
+  "about": "Two source files, two scripts and three UI scripts that add tiles: a status board, an O2 report and a next-pass helper.",
+  "group": "Start here",
+  "sources": ["helpers.typed", "kernels.typed"],
+  "pipeline": "O2",
+  "inputs": {
+    "smooth": { "samples": { "buffer": [24, 24], "cell": [0, 255] }, "n": [0, 24], "gain": [-8, 8] },
+    "peak": { "samples": { "buffer": [0, 24], "cell": [0, 255] } }
+  },
+  "scripts": {
+    "o2-report": { "about": "O2 on a fresh copy: what each pass did, and the image before and after", "fresh": true }
+  },
+  "ui": { "order": ["status", "report", "next-pass"] },
+  "chapter": "projects",
+  "focus": 13,
+  "try": [
+    "Read ui/next-pass.js and explain how its table stays current when I press Apply.",
+    "Add a tile that charts statements per function across the revisions.",
+    "Which pass removes the bounds check in peak, and why does smooth keep its own?"
+  ]
+}

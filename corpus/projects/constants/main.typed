@@ -1,0 +1,6 @@
+function poly(x: i32): i32 {
+    const a = 3;
+    const b = a * 4 + 2;
+    const c = b - 14;
+    return x * b + c * x + a * a;
+}

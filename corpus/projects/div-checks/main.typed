@@ -1,0 +1,7 @@
+function share(total: i32, people: i32): i32 {
+    return total / people;
+}
+function safeShare(total: i32, people: i32): i32 {
+    const k = Math.max(1, Math.min(people, 10));
+    return total / k + total % k;
+}

@@ -1,0 +1,7 @@
+function scale(x: i32): i32 {
+    const k = 2 * 4;
+    return x * k + 1;
+}
+function twice(x: i32): i32 {
+    return scale(scale(x));
+}

@@ -1,0 +1,7 @@
+function f(x: i32, flag: bool): i32 {
+    let a = 0;
+    let b = 0;
+    if (flag) { a = x * 2; } else { b = x + 1; }
+    while (a < 100) { a = a + b + 1; }
+    return a;
+}

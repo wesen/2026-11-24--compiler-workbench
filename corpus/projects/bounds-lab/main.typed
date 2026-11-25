@@ -1,0 +1,30 @@
+// Four loops over buffers. bce removes a check only when a dominating
+// branch already proved the index is in range.
+function total(a: buffer): i32 {
+    let s = 0;
+    for (let i = 0; i < a.length; i = i + 1) {
+        s = s + a.charCodeAt(i);
+    }
+    return s;
+}
+function window(a: buffer, k: i32): i32 {
+    let s = 0;
+    for (let i = 0; i < k; i = i + 1) {
+        s = s + a.charCodeAt(i);
+    }
+    return s;
+}
+function pairs(a: buffer, b: buffer): i32 {
+    let s = 0;
+    for (let i = 0; i < a.length; i = i + 1) {
+        s = s + a.charCodeAt(i) * b.charCodeAt(i);
+    }
+    return s;
+}
+function tail(a: buffer): i32 {
+    let s = 0;
+    for (let i = 1; i < a.length; i = i + 1) {
+        s = s + a.charCodeAt(i) - a.charCodeAt(i - 1);
+    }
+    return s;
+}

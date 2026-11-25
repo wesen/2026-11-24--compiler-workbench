@@ -1,0 +1,9 @@
+function find(work: buffer, target: i32): i32 {
+    let at = 0 - 1;
+    let i = 0;
+    while (i < work.length) {
+        if (work.charCodeAt(i) === target) { at = i; break; }
+        i = i + 1;
+    }
+    return at;
+}

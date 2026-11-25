@@ -1,0 +1,10 @@
+function gcd(a: i32, b: i32): i32 {
+    let x = a;
+    let y = b;
+    while (y !== 0) {
+        const t = x % y;
+        x = y;
+        y = t;
+    }
+    return x;
+}

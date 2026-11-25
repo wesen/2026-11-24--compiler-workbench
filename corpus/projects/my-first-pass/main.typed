@@ -1,0 +1,5 @@
+function double(x: i32, y: i32): i32 {
+    const a = x + x;
+    const b = (y + 1) + (y + 1);
+    return a + b;
+}

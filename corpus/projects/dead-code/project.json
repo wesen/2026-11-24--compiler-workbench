@@ -1,0 +1,9 @@
+{
+  "title": "Dead stores and a branch that never runs",
+  "about": "A store nobody reads, a debug flag that is always false, and a test that is always false. dce and cfg remove them.",
+  "group": "Folding",
+  "pipeline": "O1",
+  "chapter": "folding",
+  "focus": 6,
+  "try": ["List every statement that was removed, the revision, and the fact that justified it.", "Is flag used at all? Prove it with a query."]
+}

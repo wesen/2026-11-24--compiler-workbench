@@ -1,0 +1,27 @@
+{
+  "repository": "~/code/wesen/2026-10-20--ds-js-os",
+  "commit": "b19062b29fe4fb6b02863e92510501dc5c4bc9b3",
+  "purpose": "Typed front end (tape.js, typed-wasm.js), RV32 reference interpreter, reference compiler (oracle only); copied unchanged",
+  "files": [
+    {
+      "path": "bench/host/rv32-interp.js",
+      "bytes": 23127,
+      "sha256": "485c771811d13ba4d8fe359a636fa019d38f837bc972ce526081c3878bccb1a7"
+    },
+    {
+      "path": "compiler/typed/tape.js",
+      "bytes": 12241,
+      "sha256": "7f05e1c148672fe4e1bb4747d450d9de33f057c58dc972c6f93a4c40d6c9f528"
+    },
+    {
+      "path": "compiler/typed/typed-rv32.js",
+      "bytes": 134717,
+      "sha256": "6b1c147892224df419eba912f1bb3aa615e047bcf2054706dafccf64421091a7"
+    },
+    {
+      "path": "compiler/typed/typed-wasm.js",
+      "bytes": 116412,
+      "sha256": "a3ad9d066fae7d7376cc7b82b21dd1a1d847f3070d7cc65f9eb1916efb34232a"
+    }
+  ]
+}

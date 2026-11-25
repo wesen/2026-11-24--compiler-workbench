@@ -1,0 +1,14 @@
+{
+  "title": "UI gallery: every component, and the diagnostics",
+  "about": "One tile per kind of thing the UI DSL builds (values, tables, charts, controls, layout, provenance trees, diffs) and a tile of deliberate mistakes with the errors they raise.",
+  "group": "Writing passes",
+  "pipeline": "O2",
+  "inputs": { "score": { "a": [-50, 50], "b": [-50, 50] }, "sum": { "v": { "buffer": [10, 10], "cell": [0, 20] }, "n": [0, 10] } },
+  "ui": { "order": ["gallery", "diagnostics"] },
+  "chapter": "projects",
+  "try": [
+    "Show me a tile that charts bytes against registers for sum, built from the components in this gallery.",
+    "Which mistake in the diagnostics tile would you make most often, and how does the error help?",
+    "Turn the Values tab into a component of its own with ui.component."
+  ]
+}

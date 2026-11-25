@@ -1,0 +1,14 @@
+function sort(work: buffer): i32 {
+    let swaps = 0;
+    for (let i = 1; i < work.length; i = i + 1) {
+        let j = i;
+        while (j > 0 && work.charCodeAt(j - 1) > work.charCodeAt(j)) {
+            const t = work.charCodeAt(j);
+            work.setCharCodeAt(j, work.charCodeAt(j - 1));
+            work.setCharCodeAt(j - 1, t);
+            swaps = swaps + 1;
+            j = j - 1;
+        }
+    }
+    return swaps;
+}

@@ -1,0 +1,7 @@
+function total(work: buffer): i32 {
+    let s = 0;
+    for (let i = 0; i < work.length; i = i + 1) {
+        s = s + work.charCodeAt(i);
+    }
+    return s;
+}

@@ -1,0 +1,13 @@
+function mixer(a: i32, b: i32, c: i32, d: i32): i32 {
+    const e = a * b;
+    const f = b * c;
+    const g = c * d;
+    const h = d * a;
+    const i = e + f;
+    const j = f + g;
+    const k = g + h;
+    const l = h + e;
+    const m = i * j;
+    const n = k * l;
+    return (e - f) * (g - h) + (i - j) * (k - l) + m - n + a * d - b * c;
+}

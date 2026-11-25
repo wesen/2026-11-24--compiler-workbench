@@ -1,0 +1,16 @@
+{
+  "title": "Strings: vowels and digits",
+  "about": "A string is a buffer of 16-bit code units. Two loops over s.length, a chain of || and a range test.",
+  "group": "Bounds",
+  "pipeline": "O2",
+  "inputs": {
+    "vowels": {
+      "s": {
+        "string": "the quick brown fox jumps over a lazy dog"
+      }
+    }
+  },
+  "chapter": "language",
+  "focus": 5,
+  "try": ["Count the branches in vowels and explain where each comes from.", "Run digits on \"2147483648\" and explain the result."]
+}

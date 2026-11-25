@@ -1,0 +1,10 @@
+function eighth(s: i32): i32 {
+    return s / 8;
+}
+function bucket(work: buffer): i32 {
+    let s = 0;
+    for (let i = 0; i < work.length; i = i + 1) {
+        s = s + work.charCodeAt(i) - 100;
+    }
+    return s / 8;
+}
