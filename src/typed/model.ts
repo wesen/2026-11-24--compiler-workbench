@@ -69,6 +69,9 @@ export interface LocalRec {
   mutable: boolean;
   temp?: string;
   at?: SourcePos | null;
+  /** Set on locals a pass made (Compiler Workbench's tx.local). */
+  madeBy?: string;
+  rev?: number;
 }
 
 export interface FnRec {
@@ -140,6 +143,8 @@ export interface FrontEndInfo {
 export interface TypedBlocks {
   readonly formatVersion: 1;
   readonly program: string;
+  /** Revision number: 0 at ingest, one more for each pass application that changed the program. */
+  readonly rev: number;
   readonly counters: Readonly<Record<string, number>>;
   /** Function names in source order (the tables themselves are sorted by id). */
   readonly fnOrder: readonly string[];
@@ -164,6 +169,7 @@ export class Store {
   readonly ents = new Map<string, Entity>();
   readonly counters = new Map<string, number>();
   readonly fns = new Map<string, WorkFn>();
+  rev = 0;
   constructor(
     readonly program: string,
     public frontEnd: FrontEndInfo = { wasmBytes: 0, records: null, enums: null, signatures: null },
@@ -193,6 +199,7 @@ export class Store {
   /** A working copy of a native revision; records are cloned, so the artifact stays immutable. */
   static from(native: TypedBlocks): Store {
     const st = new Store(native.program, clone(native.frontEnd));
+    st.rev = native.rev;
     for (const [k, v] of Object.entries(native.counters)) st.counters.set(k, v);
     for (const o of Object.values(native.ops)) st.add(clone(o));
     for (const v of Object.values(native.values)) st.add(clone(v));
@@ -255,6 +262,7 @@ export class Store {
     return {
       formatVersion: 1,
       program: this.program,
+      rev: this.rev,
       counters,
       fnOrder: [...this.fns.keys()],
       fns,

@@ -71,6 +71,8 @@ export interface NativeResult<S> {
   readonly correspondence?: readonly CorrespondenceEntry[];
   /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
   readonly edits?: number;
+  /** Domain report (e.g. the edit records of a Compiler Workbench revision), passed through to the result. */
+  readonly report?: unknown;
 }
 
 export interface PassSpec<S, N extends Needs, P = unknown> {
@@ -113,6 +115,8 @@ export interface ApplyOptions<P> {
   readonly contractInputs?: Readonly<Record<string, unknown>>;
   /** Artifact id of the output (default: the input's). */
   readonly outputId?: string;
+  /** A contract for this application, overriding the pass's own (e.g. one carrying a project's case inputs). */
+  readonly contract?: TransformationDefinition<Ports, Ports>;
 }
 
 export interface PreservationOutcome {
@@ -131,6 +135,7 @@ export interface PassResult<S> {
   readonly edits: number;
   readonly preserved: readonly PreservationOutcome[];
   readonly contract?: unknown;
+  readonly report?: unknown;
 }
 
 const glob = (patterns: readonly string[], kind: string) =>
@@ -206,6 +211,7 @@ export async function applyPass<S, N extends Needs, P>(
     throw e;
   }
   let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
+  let report: unknown;
   if (produced && typeof produced === 'object' && 'native' in produced) {
     if (edit.state === 'open') edit.rollback('native result');
     const id = options.outputId ?? before.id;
@@ -220,6 +226,7 @@ export async function applyPass<S, N extends Needs, P>(
       produced.correspondence ?? [],
     );
     edits = produced.edits ?? changes.entities.length;
+    report = produced.report;
   } else {
     if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
     const prepared = edit.prepare();
@@ -246,14 +253,15 @@ export async function applyPass<S, N extends Needs, P>(
     });
 
   let contract: unknown;
-  if (pass.contract) {
+  const gate = options.contract ?? pass.contract;
+  if (gate) {
     try {
       const prepared = await manager.verifyTransformation(
         { input: before, ...(options.contractInputs ?? {}) } as never,
         { output: after } as never,
-        pass.contract,
-        pass.contract.correspondence.length
-          ? pass.contract.correspondence.map(req =>
+        gate,
+        gate.correspondence.length
+          ? gate.correspondence.map(req =>
               semanticCorrespondence(correspondence, req.id, req.relation),
             )
           : [semanticCorrespondence(correspondence)],
@@ -301,5 +309,6 @@ export async function applyPass<S, N extends Needs, P>(
     edits,
     preserved,
     contract,
+    report,
   };
 }

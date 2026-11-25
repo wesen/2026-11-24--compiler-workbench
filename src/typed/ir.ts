@@ -73,6 +73,7 @@ export function validateBlocks(value: unknown): asserts value is TypedBlocks {
   for (const k of ['fns', 'blocks', 'stmts', 'values', 'ops', 'counters'] as const)
     need(v[k] && typeof v[k] === 'object', `${k} required`);
   need(typeof v.program === 'string' && v.program.length > 0, 'program name required');
+  need(Number.isInteger(v.rev) && v.rev >= 0, 'rev must be a revision number');
   need(
     Array.isArray(v.fnOrder) &&
       v.fnOrder.length === Object.keys(v.fns).length &&
@@ -303,6 +304,7 @@ export function rebuildBlocks(base: TypedBlocks, graph: IRGraph): TypedBlocks {
   const result: TypedBlocks = {
     formatVersion: 1,
     program: base.program,
+    rev: base.rev,
     counters: sortKeys(counters),
     fnOrder: base.fnOrder.filter(n => fns[n]),
     fns: sortKeys(fns),
