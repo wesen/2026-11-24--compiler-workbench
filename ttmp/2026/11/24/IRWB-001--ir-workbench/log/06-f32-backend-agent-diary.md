@@ -285,7 +285,7 @@ This step found that every reference policy, `kernel` included, now compiles Can
 
 ### What I learned
 - `mix` compiles to the same four instructions under our backend and the reference's `kernel` policy (`fsub.s`, `fmul.s`, `fadd.s fa0, fa0, …`, `ret`).
-- In a function that calls, parameters are copied out of fa0–fa7 (the argument registers are not allocatable there) and copied back for a call: `swapTwice` spends four `fmv.s` before its call. This is the i32 allocator's rule carried over; see Step 8.
+- In a function that calls, parameters are copied out of fa0–fa7 (the argument registers are not allocatable there) and copied back for a call: `swapTwice` spends four `fmv.s` before its call. This is the i32 allocator's rule carried over; see Step 6.
 
 ### What was tricky to build
 - **Comparing images on one set of cases.** `runImage` takes the signature from the image (`ImageFn.sig`) or from the caller; a reference image gets its signatures from the reference compiler's `signatures` list, so both images place the same arguments the same way.
@@ -302,3 +302,52 @@ This step found that every reference policy, `kernel` included, now compiles Can
 
 ### Technical details
 - Instructions per case = Σ steps over the decided cases / their number; a case is decided when every evaluator and every image finished within its limit (2·10^5 statements, 2·10^7 instructions).
+
+## Step 6: fa0–fa7 for f values in functions that call
+
+Step 5 showed every parameter of a calling function copied out of its fa register and back. Design-doc 05 §4.2 pools fa0–fa7 only in leaf functions, as the i32 allocator does with a0–a7. This step lets an f interval in a calling function take an fa register where a liveness analysis of the physical fa registers shows it free. Only the f class changes, so the corpus images are again identical; Candela r0 shrinks by 3.1%.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** An allocation improvement inside the brief's register-class design (it adds to the f pools of calling functions; the x class is untouched).
+**Inferred user intent:** Instruction counts that measure the compiler, not a missed register.
+**Commit (code):** 719e1d6 — "IRWB-001 P4.5: f values may use fa0-fa7 in functions that call, where a liveness of those physical registers leaves them free"
+
+### What I did
+- `select.ts`: a `call` records the registers its arguments are in (`MInsn.uses`); a `jexit` records the registers the return reads (a0, fa0, or the record's leaf registers).
+- `regalloc.ts` `physicalOccupancy(code, F_ARGS)`: liveness of fa0–fa7 over the machine blocks (a bit mask per instruction). A register is read by rs1, rs2 and `uses`, and written by rd; a call writes all eight. Prefix counts give "occupied (live in or written) at some position in [a, b]" in constant time.
+- `allocate`: in a function that calls, the f pool is ft0–ft9, fa1–fa7, fa0, fs0–fs11. An interval x may take fa_k unless fa_k is occupied strictly inside x, or fa_k is live after x's first position and that position is not a copy from fa_k (then both hold one value). The existing parameter reservation and `pins` still apply. Intervals that cross a call still need a callee-saved register.
+- Commands: `npm run build`; `node scratchpad/probes/fixture.mjs scratchpad/conv.typed swapTwice keep`; `node scratchpad/probes/fixture.mjs ""`; the baseline comparison (`scratchpad/baseline-shared.json`); `node scratchpad/probes/candela-r0.mjs 10`.
+
+### Why
+- **Liveness, not the interval rule.** An argument register is written by every call and by the moves before it, and read by the call, the return and the copies after it. Those are physical events the virtual intervals do not see. Computing where each fa register holds a value is the smallest model that makes sharing safe.
+- **Only the f class.** The same rule for a0–a7 would change the corpus's integer images (the book's numbers), which acceptance 1 forbids.
+
+### What worked
+- Corpus: `projects 44 differ 0 5160`.
+- Convention fixture: 1,780 → 1,680 bytes, `true {"total":1600,"agree":1600,…}`; scalar fixture unchanged at 496 bytes, 2,800 of 2,800.
+- `swapTwice` is now `jal ra, …; fmv.s ft0, fa1; fmv.s fa1, fa0; fmv.s fa0, ft0` (the parameters stay in fa0 and fa1 until the call), against eight copies before.
+- Candela r0: 189,216 → 183,324 bytes; `{"cases":3320,"agree":3300,"disagree":0,"inconclusive":20,"values":3154}`.
+
+### What didn't work
+- No failures. The r0 measurement started in Step 5 (task `bsodi34ym`) runs the build before this change; I keep its numbers as the "before" and measure again on the final build.
+
+### What I learned
+- `keep` still copies each call result twice (`fmv.s ft0, fa0; fmv.s fs3, ft0`): at r0 a call result goes into a temporary and then into the named local; `subst` at O2 removes the temporary.
+
+### What was tricky to build
+- **The endpoints of an interval.** At its first position x is written; if fa_k is still needed after that, x may not live there, except when the write copies fa_k (a parameter's copy, a result leaf's copy). At its last position x is read; a write of fa_k there is harmless (the instruction reads x first), and fa_k live at the last position means it was live just before, which an inner position or the first-position rule already catches. Interval ends at a block's end plus 0.5 include the block's last instruction.
+
+### What warrants a second pair of eyes
+- `physicalOccupancy` treats a call as writing all of fa0–fa7 and reading only its argument registers; a callee reading an fa register that is not an argument would be a convention violation, so this is the convention itself.
+- The intervals are hulls, so the rule is conservative across holes.
+
+### What should be done in the future
+- The same analysis for a0–a7 in the x class, as a separate, book-changing decision (it changes the corpus's numbers).
+
+### Code review instructions
+- `src/typed/backend/regalloc.ts` (`physicalOccupancy`, `clashes`, `scan`), `src/typed/backend/select.ts` (`uses` on `call` and `jexit`).
+- `node --test tests/typed/f32-backend.test.mjs`.
+
+### Technical details
+- Occupied(r, p) = r ∈ liveIn(p) ∪ def(p); clash(x, r) = ∃p ∈ (start, end): occupied(r, p), or r ∈ liveOut(start) and code[start] is not `fmv.s x, r`.
