@@ -25,7 +25,7 @@
 - [ ] P2.6 O2 and pipelines as Strategy plans; parity with the prototype on 44 projects <!-- t:vhni -->
 - [ ] P3.1 wb API layer: handles, selections, projects, why and lineage <!-- t:pb99 -->
 - [ ] P3.2 Workbench UI on the new kernel, standalone build <!-- t:es43 -->
-- [ ] P4.1 Candela inventory: what build, compile and pack know <!-- t:5smn -->
+- [x] P4.1 Candela inventory: what build, compile and pack know <!-- t:5smn -->
 - [ ] P4.2 Candela chain: tasks for front end, generator, Typed front end; correspondence <!-- t:lofv -->
 - [ ] P4.3 Candela experiment: per-scene specialization measured on the host <!-- t:ckco -->
 - [ ] R1 Obsidian report at the framework + parity milestone <!-- t:3x4l -->
