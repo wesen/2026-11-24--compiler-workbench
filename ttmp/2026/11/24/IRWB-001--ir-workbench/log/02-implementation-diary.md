@@ -816,3 +816,91 @@ A pass on Candela cost about two minutes even when it changed nothing. Nearly al
 ### Code review instructions
 - `src/framework/core/data.ts` (`immutable`, `canonical`, `fingerprint`, `isCanonical`, `sameCanonical`), then `src/framework/ir/adapters.ts` (`VERIFIED`, `PROJECTED`, `project`).
 - Run `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs` on the old and new code and diff the outputs.
+
+## Step 13: what Candela's checked addresses look like, and a first bcm that removed 11 of 559
+
+Design-doc 05 planned `caddr` bounds-check elimination from dominating tests, the existing `bce` argument. Before writing it, I looked at the actual checks. In `oRow` there is no test at all. One statement makes four checked reads from the same buffer at positions `2·q_t0 + 1`, `+3`, `+5`, `+7`. So I measured how the 559 checks relate, and changed the plan to merging checks within a block rather than eliminating them.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Assistant interpretation:** design-doc 05 §5, task t4dq; the doc's rule is revised by measurement.
+
+### What I did
+- **Listing.** Counted caddr per function on Candela r0: 559 in 41 functions (`cdlInit` 256, `finishHit` 32, `skyL_wgsl` 27, `tracePath` 21, …), and printed `oRow`.
+- **`scripts/09-caddr-patterns.mjs`.** Groups checks by block, receiver and the linear base of the position.
+  - First run: `{"total":559,"constPos":0,"groups":559,"inGroupsOf2plus":0}`. At r0 positions are locals (`get t5`), so every check landed in its own group.
+  - After resolving locals with a single assignment: `{"total":559,"constPos":442,"groups":81,"inGroupsOf2plus":538,"removableByMinMax":421}`.
+- **`bcm`, version 1.** Constant positions only, one local deep. It merges a block's checks on one receiver into a check of the largest position at the first site.
+  - Group boundaries: calls, `zero`, and stores not provably inside a buffer's data.
+  - Run with `scripts/10-bcm-candela.mjs` (contract at 40 cases per function):
+    `{"from":"r0","caddrBefore":559,"caddrAfter":548,"changed":true,"edits":12,"ms":46587}`.
+
+### Why
+- **Merging needs no outside fact.** Dominating tests are rare in generated code that indexes rows by computed positions. Proving those reads in bounds would need Candela's row-count facts. Merging does not: if the largest position of a group is in range, every smaller non-negative one is too.
+
+### What worked
+- The contract accepted the pass on Candela, so no sampled case changed meaning.
+
+### What didn't work
+- **Only 11 checks went**, against 421 predicted. The analysis script resolved chains of locals (`t5 = (q_t0 << 1) + 1`, `q_t0 = …`) transitively, while the pass resolved one local and only literal constants. The script measured what a deeper resolution could do, not what the pass did.
+
+### What I learned
+- In generated code the positions are linear in a row index (`(row·6 + k)·4·2 + 1`). The useful form is "base + constant", not "constant".
+
+### What should be done in the future
+- Linear positions with a symbolic base: Step 14.
+
+## Step 14: bcm over linear positions: 559 checks become 100 on Candela r0
+
+The second version of `bcm` handles positions of the form base + constant, computed exactly modulo 2³², with a symbolic base. The rule, for a block's checks on one receiver:
+- **Constant positions:** the largest is checked once, at the first site.
+- **Symbolic base:** the smallest and the largest are checked, at the first two sites. Every other site becomes an unchecked `r + 2p`.
+
+On Candela r0 the 559 checked addresses become 100, and the meaning contract accepts the result.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Commit (code):** the commit after this step.
+
+### What I did
+- **Linear forms** `{terms, k}` over `add`, `sub`, `shl` and `mul` by constants, all modulo 2³² (`Math.imul`, `| 0`).
+- **Stable names for terms.** A local read is named by its single reaching definition when that definition is earlier in the same block (`index(d) < index(site)`). That definition runs once per block execution, so equal names are equal values. Otherwise a local is named as itself, provided the block never assigns it. A literal assigned by a single definition anywhere is a constant.
+- **Explicit roles** per site: `keep` (the site's own check is one of the group's), `check` (rewrite to `caddr(r, p + Δ) − 2Δ`), and `unchecked` (`r + (p << 1)`). Unchecked sites carry `because: [first site's statement]`.
+- **Tests,** `tests/typed/bcm.test.mjs`, on a tape-lifted fixture:
+  - constant positions 0, 3, 1 merge to one check;
+  - `i`, `i+1`, `i+2` keep two checks of three;
+  - `i`, `i+5` stays at two;
+  - a call between two reads keeps both checks;
+  - `why` on an unchecked address reaches the group's check.
+
+  Each test also checks the meaning at 200 cases with texts of length 0–6, so traps occur.
+- **`tests/workbench/strategies.test.mjs`:** the compiler now lists 12 passes.
+
+### Why
+- **Why the base needs both checks.** For a symbolic base, B + kmin and B + kmax below the capacity imply every position between is too, as long as B + kmin + (kmax − kmin) does not wrap. It cannot, because a text's capacity is below 2³¹ units: its units take 2·capacity bytes of a 32-bit address space. For constant positions, all ≥ 0, the largest check alone suffices and needs no such argument.
+- **Why moving the check is sound.** Every caddr of a block runs whenever the block runs, unless something traps first, and a trap aborts the program. The merged check can therefore trap earlier than the original, but never in a run that would not have trapped. Calls end a group because a call might not return. A store ends a group unless it provably writes a buffer's data: a checked caddr at a constant position c ≥ 0 with 2c + offset ≥ 4. Any other store could overwrite a capacity word.
+
+### What worked
+- Candela r0: `{"caddrBefore":559,"caddrAfter":100,"changed":true,"edits":482,"ms":56529}`. In `oRow`, the four checks became two:
+  ```
+  return (loadf32[(caddr(q_bO, (t5 + 6)) + -12)+2], loadf32[(caddr(q_bO, (t6 + -2)) + 4)+2],
+          loadf32[(q_bO + (t7 << 1))+2], loadf32[(q_bO + (t8 << 1))+2])
+  ```
+- `npm test`: 306 pass and 1 skipped.
+
+### What didn't work
+- **A role bug, caught before running.** The first version marked a symbolic group's second site with "no rewrite" when its position already was the smallest, and the rewrite then treated "no rewrite" as "unchecked". That would have dropped a check that must stay. An explicit `mode` per site removed the ambiguity.
+- **The provenance test failed twice.**
+  - It looked for the reason in the edit records (`because: []`), but `make` options are recorded on the new value's origin.
+  - `why` on the statement's load showed only "rebuilt around a changed argument". The reason is one level down, on the rewritten address, which the test now follows.
+
+### What I learned
+- The edit log's `because` is per rewrite call; a per-value reason lives in the value's origin. A UI that shows why a check disappeared has to show the address value's `why`, not the statement's.
+
+### What warrants a second pair of eyes
+- **The capacity bound.** The assumption that a capacity is below 2³¹ units is an argument about the address space, not something the IR states. A text buffer whose capacity word holds garbage would break the symbolic-base case; the meaning contract would see that only if its cases contained such a buffer.
+- **`safeStore`** accepts only constant-position stores, so symbolic-position stores (row writes in loops) end groups. That is conservative, and may leave checks in `cdlInit`.
+
+### Code review instructions
+- `src/typed/passes.ts` (`bcm`) and `tests/typed/bcm.test.mjs`.
+- `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/10-bcm-candela.mjs` (about 1 minute).

@@ -757,6 +757,198 @@ export const bce = typedPass({
   },
 });
 
+/**
+ * Bounds-check merging for checked text addresses. `caddr(r, p)` traps unless p <u capacity(r) and gives r + 2p.
+ * When one block computes several of them on the same receiver, with positions that are one base plus constant
+ * offsets (p = B + k, B possibly 0), checking the smallest and the largest position covers every position between:
+ * if B + kmin and B + kmax are both below the capacity, so is every B + k with kmin ≤ k ≤ kmax. (For a symbolic
+ * B this uses that a text's capacity is below 2^31 units, as its units occupy 2·capacity bytes of a 32-bit
+ * address space, so B + kmin + (kmax - kmin) cannot wrap. For constant positions, all ≥ 0, the largest suffices.)
+ *
+ * The group's first site checks the largest position and its second site the smallest, each rewritten as
+ * `caddr(r, p + Δ) - 2Δ` when its own position is not the one checked; every later site becomes the unchecked
+ * `r + 2p`. The merged checks run before the original check of the largest position did, which changes only
+ * where the program traps, never whether it does:
+ * - every caddr of a block runs whenever the block runs (no value operator evaluates its arguments
+ *   conditionally), unless something traps first;
+ * - a trap aborts the program.
+ * A group ends at anything that could break that or change a capacity: a call (it might not return), a store not
+ * provably inside a buffer's data, or `zero`.
+ *
+ * Linear forms are exact modulo 2^32 (add, sub, shifts and products by constants). A symbolic term names either a
+ * definition earlier in the same block (one execution per block execution, so equal names are equal values) or
+ * a local the block never assigns.
+ */
+export const bcm = typedPass({
+  name: 'bcm',
+  about:
+    'bounds-check merging: checked text addresses on one receiver whose positions differ by constants are checked once for the smallest and once for the largest position',
+  needs: { reach: 'reaching' },
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body({ st, f, tx, facts }) {
+    const reach = facts.reach!;
+    type Lin = { t: Map<string, number>; k: number };
+    type Site = { vid: string; sid: string; key: string; k: number; symbolic: boolean };
+    /** keep: the site's own check is one of the group's; check: rewrite to check `check`; unchecked: r + 2p */
+    type Plan = { site: Site; first: Site; mode: 'keep' | 'check' | 'unchecked'; check?: number };
+    const plan = new Map<string, Plan>();
+    const isLit = (v: ValueRec) => v.op === 'const' && !v.type;
+    const add = (a: Lin, b: Lin, sign = 1): Lin => {
+      const t = new Map(a.t);
+      for (const [x, c] of b.t) t.set(x, ((t.get(x) ?? 0) + sign * c) | 0);
+      return { t, k: (a.k + sign * b.k) | 0 };
+    };
+    const scale = (a: Lin, c: number): Lin => ({
+      t: new Map([...a.t].map(([x, y]) => [x, Math.imul(y, c)])),
+      k: Math.imul(a.k, c),
+    });
+    const baseKey = (a: Lin) =>
+      [...a.t]
+        .filter(([, c]) => c !== 0)
+        .sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))
+        .map(([x, c]) => `${c}*${x}`)
+        .join('+');
+    for (const b of f.blocks) {
+      const index = new Map(b.stmts.map((sid, i) => [sid, i]));
+      const assigned = new Set<number>();
+      for (const sid of b.stmts) {
+        const s = st.get(sid) as StmtRec;
+        if (s.op === 'set') assigned.add(s.local!);
+      }
+      // a local read at `sid` as a stable name within one execution of the block, or null
+      const name = (sid: string, l: number): { def?: StmtRec; key: string } | null => {
+        const defs = reach.reachingAt(sid, l);
+        if (defs.length === 1 && defs[0].startsWith('s:')) {
+          const d = st.get(defs[0]) as StmtRec;
+          if (index.has(d.id) && index.get(d.id)! < index.get(sid)!) return { def: d, key: d.id };
+          // a single definition of a literal is the same constant wherever it reaches
+          if (d.op === 'set' && isLit(st.get(d.value!) as ValueRec)) return { def: d, key: `=${d.id}` };
+        }
+        if (!assigned.has(l)) return { key: `L${l}` };
+        return null;
+      };
+      const lin = (sid: string, id: string, depth = 0): Lin | null => {
+        const v = st.get(id) as ValueRec;
+        if (v.type) return null;
+        if (isLit(v)) return { t: new Map(), k: v.imm as number };
+        if (depth > 12) return null;
+        if (v.op === 'get') {
+          const n = name(sid, v.imm as number);
+          if (!n) return null;
+          if (n.def) {
+            const inner = lin(n.def.id, n.def.value!, depth + 1);
+            if (inner) return inner;
+          }
+          return { t: new Map([[n.key, 1]]), k: 0 };
+        }
+        const x = v.args[0] && lin(sid, v.args[0], depth + 1),
+          y = v.args[1] && lin(sid, v.args[1], depth + 1);
+        if (!x || !y) return null;
+        const yc = y.t.size === 0 || [...y.t.values()].every(c => c === 0) ? y.k : null;
+        const xc = x.t.size === 0 || [...x.t.values()].every(c => c === 0) ? x.k : null;
+        switch (v.op) {
+          case 'add':
+            return add(x, y);
+          case 'sub':
+            return add(x, y, -1);
+          case 'shl':
+            return yc !== null && yc >= 0 && yc < 32 ? scale(x, (2 ** yc) | 0) : null;
+          case 'mul':
+            return yc !== null ? scale(x, yc) : xc !== null ? scale(y, xc) : null;
+          default:
+            return null;
+        }
+      };
+      const recvKey = (sid: string, id: string): string | null => {
+        const v = st.get(id) as ValueRec;
+        if (v.op !== 'get') return null;
+        return name(sid, v.imm as number)?.key ?? null;
+      };
+      let open = new Map<string, Site[]>();
+      const close = () => {
+        const role = (x: Site, first: Site, target: number) =>
+          plan.set(
+            x.vid,
+            x.k === target
+              ? { site: x, first, mode: 'keep' }
+              : { site: x, first, mode: 'check', check: target },
+          );
+        for (const sites of open.values()) {
+          if (sites.length < 2) continue;
+          const ks = sites.map(x => x.k),
+            max = Math.max(...ks),
+            min = Math.min(...ks);
+          const [first, second, ...rest] = sites;
+          if (!first.symbolic || min === max) {
+            // constant positions ≥ 0, or one position repeated: one check covers the group
+            role(first, first, max);
+            for (const x of [second, ...rest]) plan.set(x.vid, { site: x, first, mode: 'unchecked' });
+          } else {
+            if (sites.length < 3) continue;
+            role(first, first, max);
+            role(second, first, min);
+            for (const x of rest) plan.set(x.vid, { site: x, first, mode: 'unchecked' });
+          }
+        }
+        open = new Map();
+      };
+      // a store keeps every capacity word intact when it writes a buffer's data: a checked caddr at a constant
+      // position c ≥ 0 with 2c + offset ≥ 4 (the capacity is the first 4 bytes)
+      const safeStore = (s: StmtRec): boolean => {
+        const a = st.get(s.addr!) as ValueRec;
+        if (a.op !== 'caddr') return false;
+        const p = lin(s.id, a.args[1]);
+        return !!p && baseKey(p) === '' && p.k >= 0 && 2 * p.k + (s.offset ?? 0) >= 4;
+      };
+      const visit = (sid: string, id: string): void => {
+        const v = st.get(id) as ValueRec;
+        v.args.forEach(a => visit(sid, a));
+        if (v.op === 'call') close();
+        else if (v.op === 'caddr') {
+          const recv = recvKey(sid, v.args[0]),
+            p = lin(sid, v.args[1]);
+          if (recv === null || !p) return;
+          const base = baseKey(p);
+          if (!base && p.k < 0) return;
+          const key = `${recv}|${base}`;
+          const sites = open.get(key) ?? [];
+          sites.push({ vid: id, sid, key, k: p.k, symbolic: base !== '' });
+          open.set(key, sites);
+        }
+      };
+      for (const sid of b.stmts) {
+        const s = st.get(sid) as StmtRec;
+        // the evaluator's order: a store's address, then its value; otherwise the one value or condition
+        const fields = s.op === 'store' ? (['addr', 'value'] as const) : (['value', 'cond'] as const);
+        for (const k of fields) if (s[k]) visit(sid, s[k]!);
+        if ((s.op === 'store' && !safeStore(s)) || s.op === 'zero') close();
+      }
+      close();
+    }
+    if (![...plan.values()].some(p => p.mode !== 'keep')) return;
+    tx.rewrite(v => {
+      const p = plan.get(v.id);
+      if (!p || p.mode === 'keep' || v.op !== 'caddr') return;
+      const recv = v.args[0].id,
+        pos = v.args[1].id;
+      if (p.mode === 'check') {
+        const d = (p.check! - p.site.k) | 0;
+        const checked = tx.make('caddr', recv, tx.make('add', pos, tx.const(d)), {
+          note: `checks position ${p.site.symbolic ? 'base + ' : ''}${p.check} for the group on this receiver`,
+        });
+        return tx.make('add', checked, tx.const(Math.imul(-2, d)), {
+          note: 'this address, from the group check',
+        });
+      }
+      return tx.make('add', recv, tx.make('shl', pos, tx.const(1)), {
+        because: [p.first.sid],
+        note: `covered by the group's checks, made where ${p.first.sid} computes the first address on this receiver`,
+      });
+    });
+  },
+});
+
 const countReads = (st: Store, id: string, l: number): number => {
   const v = st.get(id) as ValueRec;
   return (v.op === 'get' && v.imm === l ? 1 : 0) + v.args.reduce((n, a) => n + countReads(st, a, l), 0);
@@ -838,6 +1030,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   'div-to-shift': divToShift,
   bce,
   subst,
+  bcm,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */

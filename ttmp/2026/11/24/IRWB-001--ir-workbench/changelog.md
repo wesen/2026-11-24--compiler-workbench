@@ -127,3 +127,12 @@ Framework performance (no hash changes): immutable builds canonical copies direc
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/framework/core/data.ts — canonical data, caches
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs — revision fingerprint of the corpus for equivalence checks
+
+## 2026-11-24
+
+bcm, bounds-check merging for checked text addresses: per block and receiver, positions base + constant (exact mod 2^32) keep only the smallest and largest checks (constant positions: the largest). Candela r0: 559 caddr -> 100, contract accepted. Revised design-doc 05's dominating-test plan after measuring that generated code indexes rows by computed positions.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/passes.ts — bcm
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/tests/typed/bcm.test.mjs — bcm tests
