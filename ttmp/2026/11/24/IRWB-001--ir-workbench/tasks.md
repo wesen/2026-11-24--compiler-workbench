@@ -35,4 +35,4 @@
 - [x] P4.6 Framework performance on large artifacts: cached canonical encoding of deep-frozen values, cheaper projection checks, same hashes <!-- t:9rcu -->
 - [x] P4.7 caddr-aware bounds-check elimination (559 checked addresses in Candela) <!-- t:t4dq -->
 - [x] P4.8 Candela oracle against the reference kernel policy (pass groups now vendored) <!-- t:gxe6 -->
-- [ ] R3 Obsidian report at the f32-backend / Candela-optimization milestone <!-- t:tjdl -->
+- [x] R3 Obsidian report at the f32-backend / Candela-optimization milestone <!-- t:tjdl -->

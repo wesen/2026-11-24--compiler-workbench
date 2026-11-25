@@ -176,3 +176,7 @@ P4.3 per-scene Candela kernels: field bindings (K.scene), entry-only contracts (
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/passes.ts — dfe
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/specialize.ts — field bindings
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/13-candela-per-scene-images.mjs — per-scene images, O2+ and checks
+
+## 2026-11-25
+
+R3 vault report written, checked against the evidence and pushed (go-go-parc 9ab00a9): Per-Scene Kernels for Candela - cheaper checked passes, merged bounds checks, an RV32F backend and bit-identical frames.
