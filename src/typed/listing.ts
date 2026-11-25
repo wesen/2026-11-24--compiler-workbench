@@ -112,7 +112,7 @@ export function listing(st: Store, fname?: string): string {
     out.push(`function ${f.name}(${params}): ${f.result}`);
     for (const b of f.blocks) {
       out.push(`${b.id}  -> [${b.succ.map(short).join(', ')}]`);
-      for (const s of b.stmts) out.push(`    ${s.padEnd(13)}${showStmt(st, s)}`);
+      for (const s of b.stmts) out.push(`    ${s.length < 13 ? s.padEnd(13) : s + ' '}${showStmt(st, s)}`);
     }
   }
   return out.join('\n');

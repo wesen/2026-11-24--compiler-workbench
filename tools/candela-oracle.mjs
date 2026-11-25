@@ -1,6 +1,7 @@
 // The evaluator at r0 against the reference: Candela compiled by the repository's own RV32 compiler (typed-rv32.js,
 // policy stock) and run on the reference interpreter, on the evaluator's generated cases.
-//   node tools/candela-oracle.mjs [--count N] [--seed S] [--scalar] [--json] [fn...]
+//   node tools/candela-oracle.mjs [--count N] [--seed S] [--limit statements] [--scalar] [--random] [--json] [fn...]
+// --limit: the evaluator's step limit (default 2e5 statements); the interpreter gets 100 instructions per statement.
 // --scalar: only functions whose parameters are all scalars (i32, u32, bool, f32). --random: K and buffer parameters
 // as the evaluator generates them by default (random words: mostly traps), not candelaInputs' row buffers.
 import { installVendor } from './node-vendor.mjs';
@@ -13,16 +14,17 @@ const { referenceCompile, referenceRun } = await import('../dist/typed/reference
 
 const args = process.argv.slice(2);
 const flag = (name, d) => (args.includes(name) ? +args[args.indexOf(name) + 1] : d);
-const count = flag('--count', 40), seed = flag('--seed', 7), json = args.includes('--json'), scalar = args.includes('--scalar');
-const only = args.filter((a, i) => !a.startsWith('--') && !['--count', '--seed'].includes(args[i - 1]));
+const count = flag('--count', 40), seed = flag('--seed', 7), limit = flag('--limit', 2e5);
+const json = args.includes('--json'), scalar = args.includes('--scalar');
+const only = args.filter((a, i) => !a.startsWith('--') && !['--count', '--seed', '--limit'].includes(args[i - 1]));
 
 /** Compare one function over generated cases; returns per-function tallies and the first disagreements. */
-export function compareFunction(st, program, fn, { count, seed, inputs = {} }) {
+export function compareFunction(st, program, fn, { count, seed, inputs = {}, limit = 2e5 }) {
   const row = { fn, cases: 0, values: 0, traps: 0, agree: 0, disagree: 0, inconclusive: 0, faults: 0, examples: [] };
   for (const c of casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} })) {
     row.cases++;
-    const ours = evaluate(st, fn, c.args, c.memory, { limit: 2e5 });
-    const ref = referenceRun(program, fn, c.args, c.memory, { limit: 2e7 });
+    const ours = evaluate(st, fn, c.args, c.memory, { limit });
+    const ref = referenceRun(program, fn, c.args, c.memory, { limit: 100 * limit });
     if (ours.limit || ref.limit) {
       row.inconclusive++;
       continue;
@@ -49,7 +51,7 @@ const st = ingest('candela', source, { tape: true, maxSourceLength: MAX_SOURCE }
 const program = referenceCompile(source, { maxSourceLength: MAX_SOURCE, policy: 'stock' });
 const names = only.length ? only : [...st.fns.keys()].filter(n => !scalar || st.fn(n).params.every(t => scalarTypes.has(t)));
 const inputs = args.includes('--random') ? {} : candelaInputs(st);
-const rows = names.map(fn => compareFunction(st, program, fn, { count, seed, inputs }));
+const rows = names.map(fn => compareFunction(st, program, fn, { count, seed, inputs, limit }));
 const total = rows.reduce(
   (s, r) => {
     for (const k of ['cases', 'values', 'traps', 'agree', 'disagree', 'inconclusive', 'faults']) s[k] += r[k];

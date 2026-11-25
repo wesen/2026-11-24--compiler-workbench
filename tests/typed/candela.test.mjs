@@ -38,6 +38,17 @@ test('P4.2: the evaluator at r0 agrees with the reference compiler\'s image on e
   assert.ok(t.valueFns >= 320, JSON.stringify(t));
 });
 
+test('P4.2: the program host ingests Candela from the tape and runs f32 functions on bits', async () => {
+  const { Program } = await import('../../dist/typed/program.js');
+  const { toBits } = await import('../../dist/typed/f32.js');
+  const p = new Program('candela', source, { ingest: { tape: true, maxSourceLength: MAX_SOURCE } });
+  assert.equal(p.status, 'ok');
+  assert.equal(p.exec('mix', [1, 3, 0.5]).result, toBits(2));
+  assert.equal(p.exec('saturate', [NaN]).result, toBits(0)); // max_num(NaN, 0) is 0, then min_num(0, 1)
+  assert.match(p.listing('mix'), /return \(a \+\. \(\(b -\. a\) \*\. t\)\)/);
+  assert.equal(new Program('candela', source).status, 'frontEndError'); // the input limit, by default
+});
+
 test('P4.2: O2 on Candela keeps its meaning (IRWB_CANDELA=1)', { skip: process.env.IRWB_CANDELA !== '1', timeout: 4 * 3600e3 }, async () => {
   const { blocksAdapter } = await import('../../dist/typed/ir.js');
   const { createIRArtifact } = await import('../../dist/framework/ir/index.js');

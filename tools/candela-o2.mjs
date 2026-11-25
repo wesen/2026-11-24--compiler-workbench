@@ -28,7 +28,17 @@ const size = a => ({
 const manager = new AnalysisManager();
 const steps = [];
 let before = size(r0), last = performance.now();
-const run = await runPipeline(r0, pipeline, { manager, inputs, count });
+// one pass at a time (runPipeline's `start`), each still checked against r0, so progress can be reported
+const { PIPELINES } = await import('../dist/typed/passes.js');
+const run = { artifact: r0, steps: [] };
+for (const name of PIPELINES[pipeline]) {
+  const t = performance.now();
+  const one = await runPipeline(r0, [name], { manager, inputs, count, start: run.artifact });
+  run.artifact = one.artifact;
+  run.steps.push(...one.steps);
+  const s = one.steps[0];
+  process.stderr.write(`${name} ${s.changed ? 'r' + s.rev : '-'}${s.rejected ? ' REJECTED' : ''} ${Math.round(performance.now() - t)} ms\n`);
+}
 for (const s of run.steps) {
   const after = s.result?.artifact ? size(s.result.artifact) : before;
   steps.push({
