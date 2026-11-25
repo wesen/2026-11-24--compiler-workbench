@@ -144,3 +144,12 @@ Candela oracle against the reference kernel policy: 33,200 cases, 32,985 agree, 
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/candela-oracle.mjs — --policy option
+
+## 2026-11-24
+
+Candela rendering: gallery scene table vendored as data; CandelaHost (port of ds-js-os host.mjs) with reference-image (emulator) and evaluator engines; tools/candela-render.mjs writes PNG views. B-01 renders; evaluator at r0 and at the O2 head bit-identical to the emulator (19,200 floats). Candela O2 after the framework speedup: 19 min (was 36).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/candela-render.ts — scene table, host protocol, views
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/candela-render.mjs — render tool

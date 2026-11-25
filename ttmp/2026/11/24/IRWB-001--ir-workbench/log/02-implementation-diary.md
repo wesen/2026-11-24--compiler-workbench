@@ -928,3 +928,79 @@ The f32 agent's oracle used the reference compiler's `stock` policy, because its
 
 ### Code review instructions
 `node tools/candela-oracle.mjs --count 100 --policy kernel` (about 5 minutes).
+
+## Step 16: the full Candela O2 run after the framework speedup
+
+This step re-ran O2 on all of Candela on the build from Step 12, as design-doc 05 §3.3 asked. It took 19 minutes instead of 36. The final check is now at the intended step limit and has fewer inconclusive cases.
+
+### What I did
+- `/usr/bin/time -v node --max-old-space-size=12288 tools/candela-o2.mjs --json --save head.json`. It ran while other measurements shared the CPU (the bcm runs, the oracle and the tests).
+- Evidence: `various/experiments/05-candela-o2-after-framework-speedup.{json,log}`.
+
+### What worked
+- `{"rev":13,"final":{"total":33200,"agree":33184,"disagree":0,"inconclusive":16},"ms":{"pipeline":1128733,"final":256951,"total":1395118}}`, with a maximum RSS of 5.8 GB.
+- **Pipeline:** 1,129 s against 2,178 s before (1.9×, on a busy machine).
+- **Revisions:** the same 13.
+- **Statements:** 12,358 → 9,479, as before.
+- **Final check:** 16 inconclusive cases against 58. This run used `--final-limit` 2·10^5; the earlier run did not.
+
+### What didn't work
+- The per-pass times grew towards the end (`subst` 127 s and 137 s), when the parallel runs started. The 1.9× is a lower bound.
+
+### What I learned
+- Memory, not time, is now the limit for keeping many Candela revisions: 5.8 GB for 13 revisions with their analyses.
+
+## Step 17: rendering Candela scenes, on the emulator and on our evaluator, bit-identical
+
+The user asked to see a Candela program's rendered image when run on the emulator, in the workbench. This step builds the host side.
+- **The scene data:** the gallery's scene table, vendored as data.
+- **The frame loop:** a port of ds-js-os's host protocol.
+- **Two engines:** the reference compiler's RV32 image on the RV32 interpreter, and our evaluator at any revision.
+- **Output:** PNG views of the frame.
+
+"Hello, sphere" renders. Our evaluator, at r0 and at the O2 head, produces the same 19,200 output floats as the emulator, bit for bit.
+
+### Prompt Context
+**User prompt (verbatim):** "can i test one of the candela programs and see te rendered image when run on the emulator in the workbench?"
+**Assistant interpretation:**
+- Not yet; three things are missing: real scene data (the checks so far used synthetic rows), a driver for Candela's frame loop, and a view.
+- Build the host side, verify it, then have the workbench show it.
+
+### What I did
+- **Finding the data.**
+  - In ds-js-os, `apps/typed/candela-gallery/link.js` names the four slot entries (`cdlLayout`, `cdlInit`, `cdlSky`, `cdlRenderSpan`).
+  - `tools/gen/candela/typed/host.mjs` drives them over a memory image; I read it and did not run it.
+  - The packed scenes come from Candela's own front end (`lib/candela.mjs exportScene`), but the generator writes them into `firmware/third_party/candela/gallery/candela_gallery_scenes.c`: per scene the U, O, LI, BV and SD rows as float bit patterns, plus a `cg_scenes[]` table.
+  - I chose that file, so no Candela code runs. It is byte-identical at b19062b and HEAD (`cmp`; SHA-256 `a0039225…`).
+- **Vendored** into `corpus/candela-gallery/candela_gallery_scenes.c`, recorded in its `VENDOR.json` with a note: data only, never compiled.
+- **`src/typed/candela-render.ts`:**
+  - `parseSceneTable`: 18 scenes, with word counts checked against the row counts.
+  - `CandelaHost`: layout, bind and span, ported from `host.mjs`.
+  - `renderScene` (with an optional `stride` for previews) and `viewImage` (colour with automatic exposure, albedo, normal, depth).
+- **`tools/candela-render.mjs`:** `candelaScenes()` (digest-checked), `engineFor('reference' | 'evaluator', { policy, head })`, a minimal PNG writer, and the command-line tool.
+- **`scripts/11-candela-render-compare.mjs`:** renders with two engines and compares every output float bit for bit.
+
+### What worked
+- **`--list`** prints the 18 scenes, in the order `scenes.typed` indexes them (0 B-01 "Hello, sphere" … 17 G-03).
+- **B-01 at 160×160 on the emulator** (`kernel` policy): `{"steps":217105487,"stepsPerPixel":8481,"renderMs":18670,"nonFinite":0}`. The image shows a red sphere on a floor under a sky, at one sample per pixel. Renders are in `various/renders/`.
+- **Comparisons at stride 4** (1,600 pixels, 19,200 floats):
+  - emulator against evaluator at r0: `"differentBits":0`; the emulator ran 13.6 M instructions, the evaluator 4.98 M statements.
+  - emulator against evaluator at the O2 head: `"differentBits":0`; the evaluator ran 3.75 M statements (−25%).
+
+### What didn't work
+- **The first PNG was almost white.** It used a fixed exposure of 1, and Candela's colours are physical radiance (median ≈ 7,000; the centre pixel ≈ 3,092, 557, 359). Automatic exposure fixed it: the log-average luminance maps to 0.18.
+- **A tiny preview cannot show the scene.** At stride 4 the image is 40×40; full size is needed to judge it.
+
+### What I learned
+- Rendering is a far stronger whole-program check than sampled function cases. It runs every entry with real scene data, and bit-identical floats leave no room for tolerance arguments.
+
+### What was tricky to build
+- **`bind` writes capacities in UTF-16 units** (8 per row of 16 bytes), with data from byte 4. K's first five fields are the row buffers. `K.scene` is at word 7, `K.spectral` at 8, `K.skyOn` at 9, which is cleared for `cdlSky` and set afterwards. All of this follows `host.mjs` exactly.
+
+### What should be done in the future
+- The view in the workbench: delegated to the UI agent, resumed with its context.
+- Accumulate several frames for less noise; the gallery's frame indices are 0, then p + 1.
+- Our own RV32 image as a third engine, when the f32 backend lands.
+
+### Code review instructions
+- `src/typed/candela-render.ts`, then run `node tools/candela-render.mjs --scene R-01 --stride 2` and `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/11-candela-render-compare.mjs B-01 4`.
