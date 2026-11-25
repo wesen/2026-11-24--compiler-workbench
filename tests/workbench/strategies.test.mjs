@@ -109,7 +109,7 @@ test('wb.compiler and wb.source: declarations with ids and versions, and where e
   assert.deepEqual(licm.needs, { loops: 'typed.loops@1' });
   assert.match(licm.source, /^src\/typed\/passes\.ts:\d+$/);
   assert.deepEqual(c.analyses.map(a => a.name), ['cfg', 'dominators', 'loops', 'liveness', 'reaching', 'ranges']);
-  assert.deepEqual(Object.keys(c.pipelines), ['O0', 'O1', 'O2', 'loops', 'checks', 'broken']);
+  assert.deepEqual(Object.keys(c.pipelines), ['O0', 'O1', 'O2', 'O2+', 'loops', 'checks', 'broken']);
   const d = wb.source.definition('licm');
   assert.match(d.text, /name: 'licm'/);
   assert.ok(d.from <= d.line && d.line <= d.to);

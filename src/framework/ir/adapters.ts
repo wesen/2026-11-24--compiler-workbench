@@ -1,4 +1,4 @@
-import { canonical, fingerprint, immutable } from '../core/data.js';
+import { canonical, fingerprint, immutable, isCanonical, sameCanonical } from '../core/data.js';
 import type { Artifact } from '../core/types.js';
 import type { AdapterDescriptor, Capability, IRAdapter, IREntity, IRGraph, IRRelation } from './types.js';
 import { compareText, IRError, requireRecord, requireText, synchronous, syncFunction } from './common.js';
@@ -107,6 +107,16 @@ export class AdapterRegistry {
     );
   }
 }
+/**
+ * Artifacts whose hashes this module computed or checked. An artifact is deep-frozen, so the relation between its
+ * value and its hashes cannot change afterwards; checking it again would recompute the same SHA-256.
+ */
+const VERIFIED = new WeakSet<object>();
+/**
+ * Projections by adapter and canonical value. A captured adapter is frozen and a canonical value is deep-frozen;
+ * projecting is a deterministic function of the two, and it already validated the graph and every resolve.
+ */
+const PROJECTED = new WeakMap<object, WeakMap<object, IRGraph>>();
 export function createIRArtifact<T>(definition: IRAdapter<T>, id: string, value: T): Artifact<T> {
   const adapter = defineAdapter(definition);
   requireText(id, 'Artifact ID');
@@ -125,6 +135,7 @@ export function createIRArtifact<T>(definition: IRAdapter<T>, id: string, value:
     }),
   });
   project(adapter, artifact.value);
+  VERIFIED.add(artifact);
   return artifact;
 }
 export function validateIRArtifact<T>(definition: IRAdapter<T>, artifact: Artifact<T>): Artifact<T> {
@@ -134,15 +145,17 @@ export function validateIRArtifact<T>(definition: IRAdapter<T>, artifact: Artifa
   if (snapshot.kind !== adapter.kind || snapshot.schemaVersion !== adapter.schemaVersion)
     throw new IRError('ir.kind', `Adapter ${adapter.id} requires ${adapter.kind}@${adapter.schemaVersion}`);
   if (
-    snapshot.contentHash !== fingerprint(snapshot.value) ||
-    snapshot.revision !==
-      fingerprint({
-        kind: snapshot.kind,
-        schemaVersion: snapshot.schemaVersion,
-        value: snapshot.value,
-      })
+    !VERIFIED.has(snapshot) &&
+    (snapshot.contentHash !== fingerprint(snapshot.value) ||
+      snapshot.revision !==
+        fingerprint({
+          kind: snapshot.kind,
+          schemaVersion: snapshot.schemaVersion,
+          value: snapshot.value,
+        }))
   )
     throw new IRError('ir.revision', 'Artifact content/revision hash does not match its value');
+  VERIFIED.add(snapshot);
   if (adapter.validate) synchronous(adapter.validate(snapshot.value), 'Adapter validation');
   return snapshot;
 }
@@ -200,6 +213,18 @@ export function compareRelations(a: IRRelation, b: IRRelation): number {
   );
 }
 export function project<T>(adapter: IRAdapter<T>, value: T): IRGraph {
+  const cacheable = isCanonical(value) && captured.has(adapter);
+  const cached = cacheable ? PROJECTED.get(adapter)?.get(value as object) : undefined;
+  if (cached) return cached;
+  const graph = projectUncached(adapter, value);
+  if (cacheable) {
+    let m = PROJECTED.get(adapter);
+    if (!m) PROJECTED.set(adapter, (m = new WeakMap()));
+    m.set(value as object, graph);
+  }
+  return graph;
+}
+function projectUncached<T>(adapter: IRAdapter<T>, value: T): IRGraph {
   const entities = [...synchronous(adapter.entities(value), 'Entity enumeration')];
   const relations = [...synchronous(adapter.relations(value), 'Relation enumeration')];
   const incoming = new Set(relations.filter(r => r.category === 'containment').map(r => r.to));
@@ -216,7 +241,7 @@ export function project<T>(adapter: IRAdapter<T>, value: T): IRGraph {
   });
   for (const entity of graph.entities) {
     const resolved = synchronous(adapter.resolve(value, entity.id), 'Entity resolution');
-    if (!resolved || canonical(validateEntity(resolved)) !== canonical(entity))
+    if (!resolved || !sameCanonical(validateEntity(resolved), entity))
       throw new IRError('ir.resolve', `Adapter resolve disagrees with enumeration for ${entity.id}`);
   }
   return graph;

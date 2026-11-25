@@ -110,3 +110,20 @@ Ordering search over the corpus: 12/44 projects faster than O2 (-2.2% instructio
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/f32.ts — f32 semantics
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/search-experiment.mjs — the corpus ordering experiment
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/24/IRWB-001--ir-workbench/design-doc/04-optimization-ideas-what-the-framework-makes-possible-from-candela-to-rv32.md — optimization ideas
+
+## 2026-11-24
+
+O2+ pipeline (O2 then subst): faster than O2 on 11 projects, slower on none, no image grows; corpus 77,321 -> 75,681 instructions, 5,160 -> 5,104 bytes; O2 unchanged for parity.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/passes.ts — PIPELINES O2+
+
+## 2026-11-24
+
+Framework performance (no hash changes): immutable builds canonical copies directly; canonical text and fingerprints cached for deep-frozen canonical values; validation skipped for values immutable produced; structural comparison in project; verified-artifact and projection caches. Candela: no-change pass 86 s -> 18 s, cfg 101 s -> 31 s; corpus r0/O2/image revisions identical on 44 projects.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/framework/core/data.ts — canonical data, caches
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs — revision fingerprint of the corpus for equivalence checks

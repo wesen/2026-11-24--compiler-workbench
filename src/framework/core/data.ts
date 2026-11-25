@@ -1,3 +1,14 @@
+/**
+ * Values that `immutable` produced: deep-frozen plain records and arrays in canonical form (finite numbers, -0 as 0,
+ * no accessors, symbols, holes or cycles). Nothing in one can change, so its canonical text is fixed: `canonical`
+ * may cache it, and `immutable` returns such a value as it is. Only `immutable` adds to this set, and only objects
+ * it built itself.
+ */
+const CANONICAL = new WeakSet<object>();
+/** Canonical text of large canonical values (small ones are cheaper to encode again than to keep). */
+const TEXT = new WeakMap<object, string>();
+const CACHE_MIN = 4096;
+
 /** Canonical finite JSON. Rejects values that would make persistent keys ambiguous. */
 export function canonical(value: unknown): string {
   const ancestors = new Set<object>();
@@ -9,6 +20,8 @@ export function canonical(value: unknown): string {
       return Object.is(v, -0) ? '0' : String(v);
     }
     if (typeof v !== 'object') throw new Error(`IR data cannot contain ${typeof v}`);
+    const cached = TEXT.get(v);
+    if (cached !== undefined) return cached;
     if (ancestors.has(v)) throw new Error('IR data cannot contain cycles');
     const prototype = Object.getPrototypeOf(v);
     if (!Array.isArray(v) && prototype !== Object.prototype && prototype !== null) {
@@ -43,6 +56,7 @@ export function canonical(value: unknown): string {
         '}';
     }
     ancestors.delete(v);
+    if (result.length >= CACHE_MIN && CANONICAL.has(v)) TEXT.set(v, result);
     return result;
   }
   return encode(value);
@@ -56,8 +70,63 @@ export function deepFreeze<T>(value: T): T {
   return value;
 }
 
+/**
+ * A deep-frozen canonical copy: what `JSON.parse(canonical(value))`, deep-frozen, would give (keys in sorted order,
+ * -0 as 0), built directly instead of through text, with the same rejections as `canonical`. A value that
+ * `immutable` produced is returned as it is; canonical parts of a new value are shared, not copied.
+ */
 export function immutable<T>(value: T): T {
-  return deepFreeze(JSON.parse(canonical(value)) as T);
+  const ancestors = new Set<object>();
+  function build(v: unknown): unknown {
+    if (v === null || typeof v === 'string' || typeof v === 'boolean') return v;
+    if (typeof v === 'number') {
+      if (!Number.isFinite(v)) throw new Error('IR data must contain only finite numbers');
+      return Object.is(v, -0) ? 0 : v;
+    }
+    if (typeof v !== 'object') throw new Error(`IR data cannot contain ${typeof v}`);
+    if (CANONICAL.has(v)) return v;
+    if (ancestors.has(v)) throw new Error('IR data cannot contain cycles');
+    const prototype = Object.getPrototypeOf(v);
+    if (!Array.isArray(v) && prototype !== Object.prototype && prototype !== null) {
+      throw new Error('IR data must be plain records or arrays');
+    }
+    ancestors.add(v);
+    let out: unknown[] | Record<string, unknown>;
+    if (Array.isArray(v)) {
+      if (Object.keys(v).length !== v.length)
+        throw new Error('IR arrays cannot be sparse or have extra properties');
+      if (Object.getOwnPropertySymbols(v).length) throw new Error('IR arrays cannot contain symbol keys');
+      const items: unknown[] = new Array(v.length);
+      for (let i = 0; i < v.length; i++) {
+        const descriptor = Object.getOwnPropertyDescriptor(v, String(i));
+        if (!descriptor || !('value' in descriptor))
+          throw new Error('IR arrays require own data elements without holes or accessors');
+        items[i] = build(descriptor.value);
+      }
+      out = items;
+    } else {
+      if (Object.getOwnPropertySymbols(v).length) throw new Error('IR data cannot contain symbol keys');
+      // JSON.parse gives a plain object with own data properties in text order (here: sorted); defineProperty
+      // keeps a "__proto__" key an own property, as JSON.parse does
+      const record: Record<string, unknown> = {};
+      for (const k of Object.keys(v).sort()) {
+        const descriptor = Object.getOwnPropertyDescriptor(v, k)!;
+        if (!('value' in descriptor)) throw new Error('IR data cannot contain accessors');
+        Object.defineProperty(record, k, {
+          value: build(descriptor.value),
+          enumerable: true,
+          writable: true,
+          configurable: true,
+        });
+      }
+      out = record;
+    }
+    ancestors.delete(v);
+    Object.freeze(out);
+    CANONICAL.add(out);
+    return out;
+  }
+  return build(value) as T;
 }
 
 const K = [
@@ -117,6 +186,39 @@ export function sha256(text: string): string {
   return h.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
 }
 
+const HASH = new WeakMap<object, string>();
 export function fingerprint(value: unknown): string {
+  if (value && typeof value === 'object' && CANONICAL.has(value)) {
+    let h = HASH.get(value);
+    if (h === undefined) HASH.set(value, (h = sha256(canonical(value))));
+    return h;
+  }
   return sha256(canonical(value));
+}
+
+/** True for values `immutable` produced: deep-frozen, canonical, already validated. */
+export function isCanonical(value: unknown): boolean {
+  return !!value && typeof value === 'object' && CANONICAL.has(value);
+}
+
+/**
+ * `canonical(a) === canonical(b)`, decided without building text: both are made canonical (free for values
+ * `immutable` produced), then compared structurally (canonical records have sorted keys, so equal records have
+ * equal key lists).
+ */
+export function sameCanonical(a: unknown, b: unknown): boolean {
+  const eq = (x: unknown, y: unknown): boolean => {
+    if (x === y) return true;
+    if (!x || !y || typeof x !== 'object' || typeof y !== 'object') return false;
+    if (Array.isArray(x) !== Array.isArray(y)) return false;
+    const kx = Object.keys(x),
+      ky = Object.keys(y);
+    if (kx.length !== ky.length) return false;
+    for (let i = 0; i < kx.length; i++) {
+      if (kx[i] !== ky[i]) return false;
+      if (!eq((x as Record<string, unknown>)[kx[i]], (y as Record<string, unknown>)[ky[i]])) return false;
+    }
+    return true;
+  };
+  return eq(immutable(a), immutable(b));
 }

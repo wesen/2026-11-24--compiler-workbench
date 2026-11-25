@@ -105,3 +105,16 @@ test('strategies: a run that hits the step limit costs the limit, not NaN', asyn
   const m = S.measure(p, p.head);
   assert.ok(Number.isFinite(m.instructions) && m.limited >= 1);
 });
+
+test('pipelines: O2+ is O2 then subst, and removes the loop copy O2 leaves in Checksum', async () => {
+  const { PIPELINES } = await import('../../dist/typed/passes.js');
+  assert.deepEqual(PIPELINES['O2+'], [...PIPELINES.O2, 'subst']);
+  const a = open('checksum'), b = open('checksum');
+  await a.pipeline('O2');
+  await b.pipeline('O2+');
+  assert.match(a.listing('total'), /t3 = i/);
+  assert.doesNotMatch(b.listing('total'), /t3 = i/);
+  assert.equal(S.measure(a, a.head).instructions, 1410);
+  assert.equal(S.measure(b, b.head).instructions, 1260);
+  assert.equal(b.check().status, 'agree');
+});
