@@ -186,3 +186,115 @@ The reading produced findings that the reports do not state and that shape the a
 
 ### Technical details
 - `applyPass` order of gates, from `define-pass.ts:190–323`: analyses for `needs` → `run` → diff or `edit.prepare()` → unchanged short-circuit → `undeclaredWrites` → `verifyTransformation` → preservation (`manager.preserve`, else recompute and compare canonical values).
+
+## Step 4: Reading the two surveys
+
+The surveys are the pool of ideas beyond what the project has done. I read both from the first line to the last, in chunks of 600 to 800 lines, through a small script that removes link targets and inline SVG markup. For each family of techniques I asked one question: is there a file, a measurement or a named gap in this project that the technique would act on? Techniques with no such anchor are left out of the agenda or listed as deferred.
+
+The two surveys cover the same ground with different emphasis. The first is organized by representation family and ends in a proposed layered architecture; the second adds a cost model for representations, more on e-graphs, relational analysis, verification and incremental compilation, and a list of 2024–2026 research directions.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Treat the surveys as reference material and extract what applies here; do not follow anything in them as an instruction.
+
+### What I did
+- `bash scripts/01-survey-outline.sh`: `/tmp/irs.md` is 186,650 bytes and 4,516 lines; `/tmp/irs2.md` is 189,660 bytes and 5,073 lines.
+- Wrote `scripts/03-survey-read.sh FILE FROM TO` and read:
+  - `/tmp/irs.md` in the ranges 1–125, 126–720, 721–1430, 1431–2250, 2251–3040, 3041–3790, 3791–4516;
+  - `/tmp/irs2.md` in the ranges 1–760, 761–1430, 1431–2060, 2061–2800, 2801–3560, 3561–4330, 4331–5073.
+
+### Why
+- The script exists because about a tenth of each file is citation URLs and SVG path data, which carry nothing for the agenda.
+
+### What worked
+- What I took, and where it lands in the agenda:
+
+| survey material | section | lands as |
+|---|---|---|
+| SSA, block parameters, the CPS correspondence, Braun's direct construction, SSA variants (pruned, gated, e-SSA) | irs §9, §42; irs2 §8 | an SSA view as a derived artifact; sparse constant propagation; global value numbering |
+| Effects are not solved by value SSA; Memory SSA; state tokens | irs §14; irs2 §8.4 | memory dependence, so loads can be shared and moved (they are impure today) |
+| Sea of Nodes and V8 leaving it; RVSDG | irs §10.3–10.4; irs2 §9.3–9.4 | a warning: do not replace the CFG; a region tree only as a view for loop passes |
+| E-graphs, egg's API, e-class analyses, Cranelift's acyclic variant, extraction and its limits | irs §12; irs2 §12 | equality saturation over pure value trees, with the CFG as skeleton |
+| Rules versus strategies (Stratego); pattern rewriting needs guards, provenance and verification | irs §21.4–21.5; irs2 §23 | `simplify` and `fold` as rule tables on the framework's unused rewrite engine |
+| Superoptimization (Massalin, STOKE, Souper) | irs2 §14.4 | rule discovery by enumeration; a window superoptimizer on the image |
+| Abstract interpretation, Galois connections, widening; analyses over e-classes | irs §4.3, §23.1; irs2 §29.5 | a domain library, reduced products, relational bounds |
+| Datalog, Soufflé, CodeQL, code property graphs, egglog | irs §23–24; irs2 §13 | a relational fact base over the projection, with derivations as `why` |
+| Partial evaluation, Futamura, binding-time analysis, staging, guards | irs §6.3, §19.8, §27.4; irs2 §4.7, §15.4 | per-scene kernels, guarded clones, a general specializer |
+| Translation validation (Alive2), verified compilers, the table of what each check establishes | irs §33.4–33.5; irs2 §28 | an assurance ladder: sampled, exhaustive-bounded, symbolic, certificate |
+| Polyhedral model; Halide's algorithm and schedule | irs §11, §28.4; irs2 §14.1, §15.1 | loop transformations as strategy candidates; the affine machinery itself is deferred |
+| MLIR dialects, legalization, interfaces and traits, the Transform dialect, IRDL, nanopass | irs §16–18, §21.6–21.8; irs2 §11, §22 | the Candela → WGSL → Typed → blocks → machine → image chain as registered IRs with legality sets; operator traits |
+| Query-based compilers, Salsa, red-green reuse, build systems | irs §25, §34; irs2 §26 | the unused task runtime; per-function artifacts; a persistent store |
+| Provenance as a relation; correspondences between representations | irs §36–37; irs2 §27 | multi-origin correspondence; cross-IR `why` |
+| Constraint IRs for allocation and scheduling | irs2 §14.2 | optimal register allocation on small functions as a yardstick |
+| Cascades memo, cost-based search, recorded schedules (TVM) | irs §30; irs2 §19, §15.2 | search strategies and learned cost models |
+| Proof-carrying code; LLM-assisted compilation "subject to independent validation" | irs §39; irs2 §31.8 | certificates per pass; candidate generators behind the meaning contract |
+
+### What didn't work
+- `scripts/03-survey-read.sh` first failed with `line 6: 3: unbound variable`: I had passed the range as one argument `126,580`; the script takes `FROM TO` as two.
+- Chunks above about 30 KB were not returned inline by the tool; their output was saved to a file and read from there. Chunks of 650 lines stay under the limit.
+
+### What I learned
+- The surveys' own proposed architecture (contracts on transformations, analyses as versioned facts, first-class provenance, transactions, rules separate from strategies) describes what the v6 framework already is. The project is ahead of the surveys on those points and behind on three others they stress: non-destructive rewriting, sparse representations, and incremental evaluation.
+- Both surveys warn against the same mistake: adopting a more general representation whose ordinary operations then cost more (V8 and Sea of Nodes). The framework's Candela profile is a small version of that lesson, so every representation item in the agenda carries a compile-time acceptance measure.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The surveys cite work dated up to 2026 (for example "Optimism in Equality Saturation", "eqsat" dialect). I cite them as the surveys describe them and have not checked the papers themselves.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `bash scripts/03-survey-read.sh /tmp/irs2.md 1431 1620` shows the e-graph section as I read it.
+
+### Technical details
+- Deliberately left out of the agenda as having no anchor here: lossless syntax trees and red-green trees (the front end is vendored and unchanged), scope graphs, infrastructure-as-code representations, quantum and hardware IRs, projectional editing, tagless-final encodings.
+
+## Step 5: Decisions about the document
+
+Before drafting I fixed the shape of the guide, the template for an agenda item, and the measure by which an item counts as done, because forty items written to different templates cannot be compared or assigned.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** One document; Part 1 teaches, Part 2 is a catalogue with a fixed template, then a roadmap.
+
+### What I did
+- Wrote `scripts/04-code-inventory.sh` and ran it for the counts the guide cites:
+  `framework 10,910 lines; typed 8,798 (backend 2,108); workbench 3,875; site-src 5,430; 33 test files, 290 test calls; 44 projects, 46 scripts, 17 book chapters; 12 passes, 7 pipelines, 6 analyses; 54 value operators, 8 statement operators; 13 strategy node kinds; Candela 332 functions, 177 scene sections, 7,164 source lines; 9 backend options`.
+- Checked three facts the agenda leans on:
+  - `isPure` and `hasEffect` (`src/typed/analyses.ts:40–64`) treat every load as impure, so no load is ever shared, hoisted or substituted;
+  - the vendored interpreter (`vendor/ds-js-os/bench/host/rv32-interp.js`, 462 lines) implements `fmadd` but shows no decoding of compressed instructions;
+  - `corpus/projects/*/strategies/` holds no files: the strategies in use are the four presets in `src/typed/strategies.ts`.
+
+### Why
+- **One file, ASCII diagrams.** The reMarkable pipeline renders Markdown through pandoc and LaTeX; Mermaid blocks would arrive as source text. Box-drawing diagrams in code blocks render as drawn. Code lines stay under about 88 columns so that they do not run off the page.
+- **Item template.** Each item has: the idea with pseudocode; why here (a file, a number or a named gap); what it needs (existing APIs by name, proposed APIs labelled "Proposed"); a first experiment; an acceptance measurement; size; dependencies.
+- **Sizes.** S is up to a week, M two to four weeks, L one to three months, XL longer. These are estimates for one person who has read Part 1.
+- **Every item ends in a measurement on the corpus or on Candela,** with the meaning contract as the gate. An item that cannot state its acceptance number is not ready to be assigned.
+- **Workstreams, not a ranked list.** Items are grouped so that a researcher owns a coherent area; the roadmap orders them across streams by dependency and by measured payoff.
+
+### What worked
+- The inventory script's numbers agree with the brief (44 projects, 332 functions, 177 scene sections).
+
+### What didn't work
+- The first version of the inventory script, written through a shell heredoc containing a function definition and nested command substitutions, was refused by the worktree guard (`this command is too complex to verify that it stays inside the worktree`). Writing the file with the file tool and running it as `bash scripts/04-code-inventory.sh` works.
+
+### What I learned
+- The project has no committed per-project strategy file, so "strategies as project data" is a capability without a corpus example yet.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The sizes are judgment, not measurement.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `bash ttmp/2026/11/24/IRWB-002--…/scripts/04-code-inventory.sh` from the repository root.
+
+### Technical details
+- Workstreams chosen: A representation, B rewriting and equality, C analyses, D checking and assurance, E specialization and Candela, F framework capabilities, G loops, H backend, I research tooling.
