@@ -24,7 +24,9 @@ export function loadVendorFile(path) {
 /** Load everything and install it into the typed domain's vendor slot. */
 export async function installVendor({ reference = false } = {}) {
   for (const p of ['compiler/typed/tape.js', 'compiler/typed/typed-wasm.js', 'bench/host/rv32-interp.js']) loadVendorFile(p);
-  if (reference) loadVendorFile('compiler/typed/typed-rv32.js');
+  if (reference)
+    for (const p of ['typed-rv32.js', 'typed-rv32-inline.js', 'typed-rv32-loops.js', 'typed-rv32-kernel.js'])
+      loadVendorFile(`compiler/typed/${p}`); // the core, then the pass groups its policies install
   const { setVendor } = await import('../dist/typed/vendor.js');
   setVendor({
     typedWasm: globalThis.typedWasm,
