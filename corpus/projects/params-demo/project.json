@@ -1,17 +1,21 @@
 {
   "title": "Parameters: sliders in a script",
-  "about": "A script declares a slider, a toggle and a choice. Moving one reruns the script with the new value.",
+  "about": [
+    "A script declares a slider, a toggle and a choice. Moving one",
+    "reruns the script with the new value."
+  ],
   "group": "Writing passes",
   "pipeline": "O0",
   "inputs": {
-    "blend": {
-      "work": {
-        "buffer": [40, 40]
-      },
-      "n": [0, 40]
-    }
+    "blend": { "work": { "buffer": [40, 40] }, "n": [0, 40] }
   },
   "chapter": "passes",
   "focus": 4,
-  "try": ["Make a table of bytes and steps for every pipeline at 2, 4 and 16 registers.", "Which setting changes the result? (None should.)"]
+  "try": [
+    [
+      "Make a table of bytes and steps for every pipeline at 2, 4 and",
+      "16 registers."
+    ],
+    "Which setting changes the result? (None should.)"
+  ]
 }

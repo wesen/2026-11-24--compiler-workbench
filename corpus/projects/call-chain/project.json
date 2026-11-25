@@ -1,9 +1,18 @@
 {
   "title": "A chain of calls",
-  "about": "f calls g twice, g calls h twice. Every non-leaf function saves ra; leaves need no frame at all.",
+  "about": [
+    "f calls g twice, g calls h twice. Every non-leaf function saves",
+    "ra; leaves need no frame at all."
+  ],
   "group": "Calls",
   "pipeline": "O2",
   "chapter": "regalloc",
   "focus": 2,
-  "try": ["How deep does the stack get when f runs?", "Show me the prologue and epilogue of g with the instructions that cover them."]
+  "try": [
+    "How deep does the stack get when f runs?",
+    [
+      "Show me the prologue and epilogue of g with the instructions",
+      "that cover them."
+    ]
+  ]
 }

@@ -1,9 +1,18 @@
 {
   "title": "First steps: one constant, one call",
-  "about": "Two tiny functions. The constant 2 * 4 folds, the call stays, and the whole thing fits in a dozen instructions.",
+  "about": [
+    "Two tiny functions. The constant 2 * 4 folds, the call stays, and",
+    "the whole thing fits in a dozen instructions."
+  ],
   "group": "Start here",
   "pipeline": "O1",
   "chapter": "welcome",
   "focus": 3,
-  "try": ["Walk me through what each pass of O1 did to scale, with the edit ids.", "Why does x * 8 turn into a shift, and which pass decided it?"]
+  "try": [
+    [
+      "Walk me through what each pass of O1 did to scale, with the",
+      "edit ids."
+    ],
+    "Why does x * 8 turn into a shift, and which pass decided it?"
+  ]
 }

@@ -24,7 +24,9 @@ import {
 import { execute } from '../framework/strategy/interpreter.js';
 import type { StrategyNode, StrategyPlan } from '../framework/strategy/ir.js';
 import { AlgorithmRegistry } from '../framework/strategy/registry.js';
-import { deserialize, serialize } from '../framework/strategy/serialization.js';
+import { deserialize } from '../framework/strategy/serialization.js';
+import { assertValid } from '../framework/strategy/validation.js';
+import { formatJson, joinText, TILE_WIDTH } from './format.js';
 import { lowerToImage, runImage } from './backend/index.js';
 import { USER_PASSES } from './builder.js';
 import { casesFrom } from './evaluate.js';
@@ -120,13 +122,13 @@ export function choosePlan(
 ): StrategyPlan {
   const branches = Object.entries(candidates).map(([n, passes]) => ({
     name: n,
-    strategy: passesNode(`${name}/${n}`, passes),
+    strategy: passesNode(n, passes),
   }));
   return plan(
     `typed.strategy.${name}`,
     chooseBest(
-      `${name}/choose`,
-      fork(`${name}/candidates`, branches),
+      'choose',
+      fork('candidates', branches),
       { metric: objective.metric, direction: objective.direction ?? 'min' },
       {
         metrics: algorithm('typed.metrics', '1'),
@@ -140,11 +142,15 @@ export function choosePlan(
 export function untilStablePlan(name: string, passes: readonly string[], maxIterations = 8): StrategyPlan {
   return plan(
     `typed.strategy.${name}`,
-    repeatUntilStable(`${name}/loop`, passesNode(`${name}/body`, passes), { maxIterations }),
+    repeatUntilStable('repeat', passesNode('body', passes), { maxIterations }),
   );
 }
 
-export const toJson = (p: StrategyPlan) => serialize(p);
+/** A plan as JSON for a tile: valid, canonical key order, at most `width` columns where the content allows. */
+export const toJson = (p: StrategyPlan, width = TILE_WIDTH) => {
+  assertValid(p);
+  return formatJson(p, width);
+};
 export const fromJson = (text: string, registry?: AlgorithmRegistry) => deserialize(text, registry);
 
 // ---------- running ----------
@@ -219,12 +225,79 @@ export async function runStrategy(
   };
 }
 
-/** A project's own strategies: `strategies/<name>.json` files holding serialized plans. */
+// ---------- the short form ----------
+/**
+ * The form strategies are written in (a preset, a project's `strategies/<name>.json`); it compiles to a plan.
+ * Exactly one of `passes`, `choose` or `repeat`:
+ *   { "passes": "O2" }                                   a pipeline, or a list of pass names
+ *   { "choose": { "O1": "O1", "O2": "O2" }, "by": "instructions", "constraints": [["bytes", "<=", 100]] }
+ *   { "repeat": ["cfg", "fold", "dce"], "max": 8 }       until the program stops changing
+ * `about` (a string, or lines joined with spaces) says what it is for.
+ */
+export interface StrategySpec {
+  readonly about?: string | readonly string[];
+  readonly passes?: string | readonly string[];
+  readonly choose?: Readonly<Record<string, string | readonly string[]>>;
+  readonly by?: 'statements' | 'blocks' | 'bytes' | 'instructions';
+  readonly direction?: 'min' | 'max';
+  readonly constraints?: readonly (readonly [string, '<=' | '>=' | '<' | '>' | '==', number])[];
+  readonly repeat?: readonly string[];
+  readonly max?: number;
+}
+
+export function planFromSpec(name: string, spec: StrategySpec): StrategyPlan {
+  const forms = [spec.passes !== undefined, spec.choose !== undefined, spec.repeat !== undefined].filter(
+    Boolean,
+  );
+  if (forms.length !== 1) throw new Error(`strategy ${name}: give exactly one of passes, choose or repeat`);
+  if (spec.choose)
+    return choosePlan(
+      name,
+      spec.choose,
+      { metric: spec.by ?? 'instructions', direction: spec.direction ?? 'min' },
+      (spec.constraints ?? []).map(([metric, op, value]) => ({ metric, op, value })),
+    );
+  if (spec.repeat) return untilStablePlan(name, spec.repeat, spec.max ?? 8);
+  return plan(`typed.strategy.${name}`, passesNode(name, spec.passes!));
+}
+
+/** The workbench's built-in strategies, in the short form. */
+export const PRESETS: Readonly<Record<string, StrategySpec>> = Object.freeze({
+  O2: { about: "Compiler Workbench's O2 pipeline, as one plan", passes: 'O2' },
+  fastest: {
+    about: ['The standard pipeline that runs the fewest instructions', "on the project's own cases."],
+    choose: { O0: 'O0', O1: 'O1', O2: 'O2', loops: 'loops' },
+    by: 'instructions',
+  },
+  smallest: {
+    about: 'The standard pipeline with the smallest image.',
+    choose: { O0: 'O0', O1: 'O1', O2: 'O2', loops: 'loops' },
+    by: 'bytes',
+  },
+  cleanup: {
+    about: ['Constant folding, propagation and dead code,', 'repeated until nothing changes.'],
+    repeat: ['cfg', 'fold', 'simplify', 'constprop', 'dce'],
+  },
+});
+
+/** The presets as the files the workbench shows (`strategies/<name>.json`, at tile width). */
+export function presetFiles(width = TILE_WIDTH): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(PRESETS).map(([n, spec]) => [`strategies/${n}.json`, formatJson(spec, width)]),
+  );
+}
+
+export const aboutOf = (spec: StrategySpec) => joinText(spec.about);
+
+/** A project's own strategies: `strategies/<name>.json` files, in the short form or as serialized plans. */
 export function projectStrategies(files: Readonly<Record<string, string>>): Record<string, StrategyPlan> {
   const out: Record<string, StrategyPlan> = {};
   for (const [path, text] of Object.entries(files)) {
     const m = /^strategies\/([^/]+)\.json$/.exec(path);
-    if (m) out[m[1]] = deserialize(text);
+    if (!m) continue;
+    const value = JSON.parse(text);
+    // a full plan (formatVersion), or the short form
+    out[m[1]] = value && value.formatVersion !== undefined ? deserialize(text) : planFromSpec(m[1], value);
   }
   return out;
 }

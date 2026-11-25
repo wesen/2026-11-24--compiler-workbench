@@ -1,9 +1,19 @@
 {
   "title": "Values that live across calls",
-  "about": "Up to seven values stay live across four calls, so they need callee-saved registers. Allow fewer than twelve registers and some go to the stack.",
+  "about": [
+    "Up to seven values stay live across four calls, so they need",
+    "callee-saved registers. Allow fewer than twelve registers and",
+    "some go to the stack."
+  ],
   "group": "Calls",
   "pipeline": "O2",
   "chapter": "regalloc",
   "focus": 3,
-  "try": ["At what register count does keep start to spill, and what does each spill cost?", "Explain the spill heuristic in allocate()."]
+  "try": [
+    [
+      "At what register count does keep start to spill, and what does",
+      "each spill cost?"
+    ],
+    "Explain the spill heuristic in allocate()."
+  ]
 }

@@ -1,9 +1,18 @@
 {
   "title": "Distinct types",
-  "about": "type Cm = distinct i32 keeps centimetres and plain integers apart in the type checker, and costs nothing in the code.",
+  "about": [
+    "type Cm = distinct i32 keeps centimetres and plain integers apart",
+    "in the type checker, and costs nothing in the code."
+  ],
   "group": "Programs",
   "pipeline": "O2",
   "chapter": "language",
   "focus": 2,
-  "try": ["What does the front end say if perimeter returns w * 2 + h * 2 with a literal 2?", "Make a project that shows the distinct type error."]
+  "try": [
+    [
+      "What does the front end say if perimeter returns w * 2 + h * 2",
+      "with a literal 2?"
+    ],
+    "Make a project that shows the distinct type error."
+  ]
 }
