@@ -1,0 +1,91 @@
+/* port.css: the few styles this port adds to Compiler Workbench's kiln.css, agent.css and app.css. */
+.buildinfo { font-size: 11px; opacity: 0.6; margin-right: 8px; white-space: nowrap; }
+.pill.busy { opacity: 0.85; }
+.pill.busy span::after { content: ''; }
+.btn.busy { opacity: 0.6; cursor: progress; }
+.btn:disabled { cursor: not-allowed; }
+.dslpending { font-style: italic; opacity: 0.7; }
+@media (max-width: 760px) { .buildinfo { display: none; } }
+
+/* ---------- narrow tiles (60–80 columns): no horizontal scroll in a view ---------- */
+.toolbar { flex-wrap: wrap; row-gap: 4px; height: auto; min-height: 38px; }
+/* listings wrap with a hanging indent: an IR statement's continuation lines start after its id column */
+.irtext { white-space: pre-wrap; min-width: 0; overflow-wrap: anywhere; }
+.irtext > div { padding-left: 17ch; text-indent: -17ch; }
+/* read-only source (Code view, Compiler view): continuation lines start after the line number */
+.irtext.csrc > div { padding-left: 6ch; text-indent: -6ch; }
+/* RV32: the instruction stays whole; what it covers wraps */
+.rt.asm td:nth-child(3), .rt.asm td:nth-child(5) { white-space: normal; overflow-wrap: anywhere; }
+.rt td { overflow-wrap: anywhere; }
+.rt.changes td { white-space: normal; }
+/* the CFG drawing scales to the tile (it has a viewBox) */
+.graphscroll svg.graph { max-width: 100%; height: auto; }
+/* editors: a ruler at 72 columns (the tile width files are written for); long lines scroll in the editor */
+.code textarea {
+  background-image: linear-gradient(to right, transparent calc(12px + 72ch), var(--hair) calc(12px + 72ch), var(--hair) calc(12px + 72ch + 1px), transparent calc(12px + 72ch + 1px));
+  background-attachment: local;
+}
+.ruled textarea {
+  background-image: linear-gradient(to right, transparent calc(8px + 72ch), var(--hair) calc(8px + 72ch), var(--hair) calc(8px + 72ch + 1px), transparent calc(8px + 72ch + 1px));
+  background-attachment: local;
+}
+/* the book: code and tables scroll inside their own box; the reference and output wrap */
+.doc table.doc-t { display: block; overflow-x: auto; max-width: 100%; }
+.doc.refdoc pre.src, .cv pre, pre.wrapped { white-space: pre-wrap; overflow-wrap: anywhere; overflow-x: hidden; }
+.whytree li { overflow-wrap: anywhere; }
+
+/* ---------- the Compiler and Strategies views ---------- */
+.cv { max-width: none; }
+.cv h3 { margin: 4px 0; font-size: 15px; }
+.cv h4 { margin: 14px 0 6px; font-size: var(--fs-s); }
+.cv-head p { margin: 2px 0 8px; color: var(--ink-2); }
+.chip { display: inline-block; font: 400 var(--fs-xs)/1.5 var(--font-code); padding: 0 6px; border: 1px solid var(--hair); color: var(--ink-2); white-space: nowrap; vertical-align: baseline; background: none; }
+.chip.user { border-color: var(--accent); color: var(--accent); }
+.chip.good { border-color: var(--ink); color: var(--ink); font-weight: 700; }
+.chip.w { border-style: dashed; }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; text-decoration-color: var(--hair); cursor: pointer; }
+.chip.linkish { text-decoration: none; }
+.rt.kvt th { width: 8em; vertical-align: top; text-align: left; white-space: nowrap; }
+.rt.kvt td { text-align: left !important; }
+.rt.cv-list tr[data-csel] { cursor: pointer; }
+.rt.cv-list tr[data-csel]:hover td { background: var(--fill); }
+.rt.cv-list td:last-child, .rt.cv-list th:last-child { text-align: left; }
+.cv-acts { gap: 6px; flex-wrap: wrap; margin: 10px 0; display: flex; }
+.cv-new { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--rule); }
+.cv-new input, .cv-form input, .cv-form select, .cv select { font: inherit; font-size: var(--fs-s); padding: 3px 6px; border: 1px solid var(--hair); background: var(--bg); color: var(--ink); max-width: 100%; }
+.cv .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.cv-form { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
+.cv-cand { margin-right: 10px; white-space: nowrap; }
+.cv-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.cv-row input[data-scpasses] { flex: 1; min-width: 12em; }
+.cv-json { width: 100%; min-height: 150px; box-sizing: border-box; font: 400 12px/18px var(--font-code); padding: 8px; border: 1px solid var(--hair); background: var(--code-bg); color: var(--ink); resize: vertical; white-space: pre; overflow-x: auto; }
+.cv-explain { font: 400 11.5px/1.6 var(--font-code); background: var(--code-bg); border: 1px solid var(--hair); padding: 8px 10px; margin: 8px 0; }
+.cv-busy { font-weight: 700; color: var(--accent); }
+.cv-decision { margin: 8px 0 12px; }
+.cv-decision td.obj, .cv-decision th.obj { font-weight: 700; }
+.cv-decision tr.win td { background: var(--fill); }
+.cv-decision tr.rej td { color: var(--ink-2); }
+.cv-decision .rt td:last-child, .cv-decision .rt th:last-child { text-align: left; }
+.cv-pub { margin: 4px 0 8px; padding-left: 22px; font-size: var(--fs-s); }
+.cv-trace td { font-size: var(--fs-xs); }
+.rt td.nw, .rt td.num { white-space: nowrap; overflow-wrap: normal; }
+.cv-decision tr.why td { border-top: 0; padding-top: 0; color: var(--ink-2); font-size: var(--fs-xs); white-space: normal; }
+.cv-decision tr.cand.hasWhy td { border-bottom: 0; }
+.cv-trace td:last-child, .cv-trace th:last-child { text-align: left; }
+.cv-trace tr.rej td { color: var(--accent); }
+.cv details summary { cursor: pointer; margin: 6px 0; }
+/* the register allocation chart scales to the tile too (it has a viewBox) */
+.ivwrap { overflow-x: hidden; }
+.ivwrap svg.ivs { max-width: 100%; height: auto; }
+
+/* the header on narrower windows: the project title gives way (ellipsis), the controls keep their size */
+.bar .proj { flex: 0 1 auto; min-width: 60px; overflow: hidden; }
+.bar .projbtn { max-width: 100%; min-width: 0; }
+.bar .projbtn .pcode { white-space: nowrap; }
+.bar .projbtn .ptitle { min-width: 0; }
+.bar .pill, .bar .runctl, .bar .btn, .bar .tog { flex: none; }
+@media (max-width: 1280px) { .brand i, .buildinfo { display: none; } }
+@media (max-width: 1060px) { .bar .projbtn .pcode { display: none; } .bar { gap: 8px; } .brand { padding-right: 8px; } }
+/* a file name longer than its row wraps instead of running under the row's buttons */
+.fileitem .pitem b, .fileitem .pitem small { overflow-wrap: anywhere; }
+.fileitem .btn.sm, .fileitem .tog { flex: none; }
