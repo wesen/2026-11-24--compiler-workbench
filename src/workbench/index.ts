@@ -20,3 +20,4 @@ export { handle, selection, fragments, usesOf, type EntityHost } from './entitie
 export { PIPELINES, PASSES } from '../typed/passes.js';
 export { backendDefaults, backendOptionsAbout, runImage } from '../typed/backend/index.js';
 export { setVendor } from '../typed/vendor.js';
+export { formatJson, wrapProse, TILE_WIDTH } from '../typed/format.js';

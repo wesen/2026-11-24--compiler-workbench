@@ -89,6 +89,8 @@ UI.md = function md(text, opts = {}) {
         if (i < lines.length && /^Figure[ :.]/.test(lines[i])) {
           cap = lines[i].replace(/^Figure[ :.]\s*/, '');
           i++;
+          // a caption wrapped to the tile width goes on to the next blank line
+          while (i < lines.length && lines[i].trim() && !/^(```|#|\||>|---|\s*([-*]|\d+\.) )/.test(lines[i])) cap += ' ' + lines[i++].trim();
         }
         figs++;
         out.push(

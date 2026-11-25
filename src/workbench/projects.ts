@@ -12,6 +12,7 @@
  * `SyncContext`, so the corpus's synchronous scripts drive the async kernel unchanged.
  */
 import { hash } from '../typed/evaluate.js';
+import { formatJson, joinText, splitWords, TILE_WIDTH } from '../typed/format.js';
 import { Program } from '../typed/program.js';
 import { projectSource } from '../typed/project.js';
 import { didYouMean, fail, guard, toYaml, WorkbenchError } from './base.js';
@@ -19,6 +20,28 @@ import { WbProgram } from './programs.js';
 import { keyOf, runAsync, runSync, settle, unwrap, type Outcome, type SyncContext } from './sync.js';
 
 export const KEY = 'wb.projects.v1';
+
+/**
+ * A project.json the workbench writes: prose fields as lines that fit a tile (JSON strings cannot span lines;
+ * readers join them), and the whole at most TILE_WIDTH columns (as tools/format-corpus.mjs does for the corpus).
+ */
+export function projectJson(meta: Record<string, unknown>): string {
+  const lines = (text: unknown, indent: number) =>
+    typeof text !== 'string' || indent + text.length + 3 <= TILE_WIDTH
+      ? text
+      : splitWords(text, TILE_WIDTH - indent - 3);
+  const out: Record<string, unknown> = { ...meta };
+  if (out.about !== undefined) out.about = lines(joinText(out.about), 4);
+  if (Array.isArray(out.try)) out.try = out.try.map(t => lines(joinText(t), 6));
+  if (out.scripts && typeof out.scripts === 'object')
+    out.scripts = Object.fromEntries(
+      Object.entries(out.scripts as Record<string, Record<string, unknown>>).map(([k, v]) => [
+        k,
+        v && v.about !== undefined ? { ...v, about: lines(joinText(v.about), 8) } : v,
+      ]),
+    );
+  return formatJson(out);
+}
 export type FileKind = 'typed' | 'script' | 'ui' | 'meta' | 'notes' | 'strategy' | 'json' | 'file';
 export const kindOf = (path: string): FileKind =>
   /\.typed$/.test(path)
@@ -177,6 +200,12 @@ export function makeProjects(
         m = { _error: (e as Error).message };
       }
     }
+    // prose fields may be arrays of lines (so project.json fits a tile): they mean the joined text
+    if (m.about !== undefined) m.about = joinText(m.about);
+    if (Array.isArray(m.try)) m.try = m.try.map((x: unknown) => joinText(x));
+    if (m.scripts && typeof m.scripts === 'object')
+      for (const sc of Object.values(m.scripts as Record<string, Record<string, unknown>>))
+        if (sc && sc.about !== undefined) sc.about = joinText(sc.about);
     const typed = Object.keys(files)
       .filter(f => kindOf(f) === 'typed')
       .sort();
@@ -587,25 +616,19 @@ export function makeProjects(
             fix: `wb.projects.get('${id}').files.write(...) changes it; pick another id for a new one`,
           });
         const files: Record<string, string> = opts.files || {
-          'project.json':
-            JSON.stringify(
-              {
-                title: opts.title || id,
-                about: opts.about || '',
-                group: opts.group || 'Mine',
-                pipeline: 'O2',
-              },
-              null,
-              2,
-            ) + '\n',
+          'project.json': projectJson({
+            title: opts.title || id,
+            about: opts.about || '',
+            group: opts.group || 'Mine',
+            pipeline: 'O2',
+          }),
           'main.typed': opts.source || 'function f(x: i32): i32 {\n    return x * 8 + 1;\n}\n',
           'scripts/explore.js':
             "// O2 on the program, and what it changed\np.pipeline('O2');\nreturn { revisions: p.revisions().length - 1, listing: p.listing() };\n",
           'notes.md': '',
         };
         if (!files['project.json'])
-          files['project.json'] =
-            JSON.stringify({ title: opts.title || id, group: opts.group || 'Mine' }, null, 2) + '\n';
+          files['project.json'] = projectJson({ title: opts.title || id, group: opts.group || 'Mine' });
         try {
           JSON.parse(files['project.json']);
         } catch (e) {
@@ -631,16 +654,11 @@ export function makeProjects(
         return api.create(newId, {
           files: {
             ...filesOf(id),
-            'project.json':
-              JSON.stringify(
-                {
-                  ...JSON.parse(filesOf(id)['project.json'] || '{}'),
-                  title: opts.title || `${metaOf(id).title} (copy)`,
-                  group: 'Mine',
-                },
-                null,
-                2,
-              ) + '\n',
+            'project.json': projectJson({
+              ...JSON.parse(filesOf(id)['project.json'] || '{}'),
+              title: opts.title || `${metaOf(id).title} (copy)`,
+              group: 'Mine',
+            }),
           },
         });
       },

@@ -7,11 +7,10 @@
 //               a JSON editor, and Run, which shows the decision (the winner, every alternative with its metrics or
 //               the reason it was rejected), the revisions it published and the execution trace.
 import { UI, esc } from './ui.js';
-import { PIPELINES } from './wb.js';
+import { PIPELINES, formatJson } from './wb.js';
 
 const V = (UI.views = UI.views || {});
 const S = () => UI.S;
-const short = h => (h ? String(h).slice(0, 10) : '');
 const errText = e => String((e && e.message) || e).split('\n');
 const showErr = e => {
   const [msg, ...rest] = errText(e);
@@ -65,18 +64,25 @@ function analysisDetail(wb, c, a) {
     <h4>Source <span class="dim">${def ? `${esc(def.path)} lines ${def.from}–${def.to} · read-only` : ''}</span></h4>
     ${def ? codeBlock(def.text, def.from, def.line) : '<p class="dim">defined in a project script with wb.analysis()</p>'}`;
 }
-const PASS_TEMPLATE = name => `// A user pass, ${name}: x + x, for a pure x, becomes x * 2 (an example: change the body, then Run this script).
-// Running the script (re)defines the pass; apply it from the Compiler view, or name it in a strategy candidate
-// in the Strategies view. A user pass is a framework pass like the built-ins: it declares what it writes, its
-// transaction refuses anything else, and the meaning contract against r0 gates its output.
+const PASS_TEMPLATE = name => `// A user pass, ${name}: x + x, for a pure x, becomes x * 2.
+// An example: change the body, then Run this script. Running it
+// (re)defines the pass; apply it from the Compiler view, or name it in
+// a strategy candidate in the Strategies view. It is a framework pass
+// like the built-ins: it declares what it writes, its transaction
+// refuses anything else, and the meaning contract against r0 gates
+// its output.
 wb.pass('${name}')
   .about('x + x, for a pure x, becomes x * 2')
   .writes('values')
   .preserves('cfg', 'dominators', 'loops', 'liveness', 'reaching')
   .run((fn, tx) => {
     tx.rewrite(v => {
-      if (v.op === 'add' && v.args[0].isPure && v.args[0].same(v.args[1]))
-        return tx.make('mul', v.args[0].id, tx.const(2), { because: [v.args[1].id], note: 'x + x = x * 2' });
+      const [a, b] = v.args;
+      if (v.op === 'add' && a.isPure && a.same(b))
+        return tx.make('mul', a.id, tx.const(2), {
+          because: [b.id],
+          note: 'x + x = x * 2',
+        });
     });
   });
 return wb.compiler().userPasses.find(x => x.name === '${name}');
@@ -207,8 +213,12 @@ let progressHooked = false;
 function decisionHtml(d) {
   const metrics = ['instructions', 'bytes', 'statements', 'blocks'];
   return `<div class="cv-decision"><p>choose the <b>${d.objective.direction === 'max' ? 'largest' : 'smallest'} ${esc(d.objective.metric)}</b>${d.constraints && d.constraints.length ? ` where ${esc(d.constraints.map(c => `${c.metric} ${c.op} ${c.value}`).join(', '))}` : ''}: <b class="good">${esc(d.winner || 'no winner')}</b>${d.tieBreak ? ` <span class="dim">· ties: ${esc(d.tieBreak)}</span>` : ''}</p>
-    <table class="rt"><tr><th>candidate</th><th>status</th>${metrics.map(m => `<th class="${m === d.objective.metric ? 'obj' : ''}">${m}</th>`).join('')}<th>reason</th></tr>${d.alternatives
-      .map(a => `<tr class="${a.selected ? 'win' : a.status === 'rejected' ? 'rej' : ''}"><td><b>${esc(a.name)}</b>${a.selected ? ' <span class="chip good">winner</span>' : ''}</td><td class="${a.status === 'feasible' ? '' : 'bad'}">${esc(a.status)}</td>${metrics.map(m => `<td class="num${m === d.objective.metric ? ' obj' : ''}">${a.metrics && a.metrics[m] !== undefined ? a.metrics[m].toLocaleString('en-GB') : '—'}</td>`).join('')}<td class="dim">${esc(a.status === 'feasible' ? (a.violations && a.violations.length ? a.violations.join('; ') : '') : a.reason || '')}</td></tr>`)
+    <table class="rt"><tr><th>candidate</th><th>status</th>${metrics.map(m => `<th class="num${m === d.objective.metric ? ' obj' : ''}">${m === 'instructions' ? 'insns' : m === 'statements' ? 'stmts' : m}</th>`).join('')}</tr>${d.alternatives
+      .map(a => {
+        // why a candidate lost or was refused goes on a row of its own, so the numbers keep their columns
+        const why = a.status === 'feasible' ? (a.violations && a.violations.length ? a.violations.join('; ') : '') : a.reason || '';
+        return `<tr class="cand${a.selected ? ' win' : a.status === 'rejected' ? ' rej' : ''}${why ? ' hasWhy' : ''}"><td class="nw"><b>${esc(a.name)}</b>${a.selected ? ' <span class="chip good">winner</span>' : ''}</td><td class="nw${a.status === 'feasible' ? '' : ' bad'}">${esc(a.status)}</td>${metrics.map(m => `<td class="num${m === d.objective.metric ? ' obj' : ''}">${a.metrics && a.metrics[m] !== undefined ? a.metrics[m].toLocaleString('en-GB') : '—'}</td>`).join('')}</tr>${why ? `<tr class="why"><td colspan="${2 + metrics.length}">${esc(why)}</td></tr>` : ''}`;
+      })
       .join('')}</table></div>`;
 }
 function resultHtml(r, st) {
@@ -220,8 +230,12 @@ function resultHtml(r, st) {
     <h4>Published revisions <span class="dim">the winning chain, one revision per pass that changed something</span></h4>
     ${r.published && r.published.length ? `<ol class="cv-pub">${r.published.map((x, i) => `<li><span class="mono">r${r.fromN + i + 1}</span> ${esc(x)}</li>`).join('')}</ol><button class="btn sm" data-link="view:timeline">Timeline</button> <button class="btn sm" data-link="view:ir">IR</button>` : '<p class="dim">nothing changed</p>'}
     <details ${st.showTrace ? 'open' : ''} data-strace><summary><b>Execution trace</b> <span class="dim">${r.execution ? `${esc(r.execution.id)} · ${r.execution.nodes} nodes` : ''}</span></summary>
-    <table class="rt cv-trace"><tr><th>node</th><th>kind</th><th>branch</th><th>status</th><th>ms</th><th>output</th><th>evidence</th></tr>${(r.trace || [])
-      .map(t => `<tr class="${t.status === 'rejected' || t.status === 'failed' ? 'rej' : ''}"><td style="padding-left:${6 + depth(t.path) * 12}px" class="mono">${esc(t.nodeId)}</td><td>${esc(t.kind)}</td><td>${esc(t.branch || '')}</td><td class="${t.status === 'succeeded' ? '' : 'bad'}">${esc(t.status)}${t.error ? ` <span class="dim" title="${esc(t.error.message)}">${esc(t.error.code)}</span>` : ''}</td><td class="num">${t.ms ?? ''}</td><td class="mono dim">${esc(short(t.output))}</td><td class="dim">${esc((t.evidence || []).join(', '))}</td></tr>`)
+    <p class="dim">One row per node the interpreter ran; hover a row for its branch, output revision and evidence.</p>
+    <table class="rt cv-trace"><tr><th>node</th><th>kind</th><th>status</th><th class="num">ms</th></tr>${(r.trace || [])
+      .map(t => {
+        const more = [t.branch ? `branch ${t.branch}` : '', t.output ? `output ${t.output}` : '', t.evidence && t.evidence.length ? `evidence: ${t.evidence.join(', ')}` : '', t.error ? `${t.error.code}: ${t.error.message}` : ''].filter(Boolean).join('\n');
+        return `<tr class="${t.status === 'rejected' || t.status === 'failed' ? 'rej' : ''}" title="${esc(more)}"><td style="padding-left:${depth(t.path) * 10}px" class="mono">${esc(t.nodeId)}</td><td class="nw">${esc(t.kind)}</td><td class="nw${t.status === 'succeeded' ? '' : ' bad'}">${esc(t.status)}${t.error ? ` <span class="dim">${esc(t.error.code)}</span>` : ''}</td><td class="num">${t.ms !== undefined ? Math.round(t.ms) : ''}</td></tr>`;
+      })
       .join('')}</table></details></div>`;
 }
 
@@ -252,24 +266,32 @@ V.strategies = {
       });
     }
     const list = wb.strategy.list();
-    const mine = list.filter(x => x.kind === 'project'),
-      pipes = list.filter(x => x.kind === 'pipeline');
+    const groups = [
+      ['project', `in ${pr.id}`],
+      ['preset', 'presets'],
+      ['pipeline', 'pipelines'],
+    ];
     if (st.sel && !list.some(x => x.name === st.sel && x.kind === st.selKind)) st.sel = null;
     const cur = st.sel ? list.find(x => x.name === st.sel && x.kind === st.selKind) : null;
     const key = cur ? `${cur.kind}:${cur.name}` : 'new';
+    // the short form ({ passes } | { choose, by } | { repeat }) as the file holds it, at tile width
     let text = st.draft[key];
     if (text === undefined) {
       if (cur && cur.kind === 'project') text = pr.files.read(cur.path);
-      else if (cur) text = JSON.stringify(JSON.parse(wb.strategy.toJson(cur.name)), null, 2);
+      else if (cur) text = formatJson(cur.spec);
       else text = '';
     }
+    const saveName =
+      st.saveName || (cur && cur.kind === 'project' ? cur.name : cur ? `my-${cur.name}` : st.name || 'mine');
     let parsed = null,
       parseErr = null,
-      explain = '';
+      explain = '',
+      full = '';
     if (text.trim()) {
       try {
-        parsed = wb.strategy.fromJson(text);
+        parsed = wb.strategy.fromJson(text, cur ? cur.name : saveName);
         explain = wb.strategy.explain(parsed);
+        if (st.showFull) full = wb.strategy.toJson(parsed);
       } catch (e) {
         parseErr = errText(e)[0];
       }
@@ -277,7 +299,13 @@ V.strategies = {
     const users = wb.compiler().userPasses.map(x => x.name);
     const metricSel = (attr, v) => `<select ${attr}>${wb.strategy.metrics.map(m => `<option ${m === v ? 'selected' : ''}>${m}</option>`).join('')}</select>`;
     const busy = st.busy;
-    el.innerHTML = `<div class="tabbody col"><div class="toolbar"><span class="lbl">strategy</span><div class="seg sm">${mine.map(x => `<button class="${cur === x ? 'on' : ''}${x.error ? ' bad' : ''}" data-ssel="project:${esc(x.name)}" title="${esc(x.path)}">${esc(x.name)}</button>`).join('')}<button class="${!cur ? 'on' : ''}" data-ssel="new">+ new</button></div><span class="lbl">pipelines</span><div class="seg sm">${pipes.map(x => `<button class="${cur === x ? 'on' : ''}" data-ssel="pipeline:${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div><span class="sp"></span>
+    const pick = `<select data-spick><option value="new" ${!cur ? 'selected' : ''}>+ new strategy</option>${groups
+      .map(([k, label]) => {
+        const xs = list.filter(x => x.kind === k);
+        return xs.length ? `<optgroup label="${esc(label)}">${xs.map(x => `<option value="${k}:${esc(x.name)}" ${cur === x ? 'selected' : ''}>${esc(x.name)}${x.error ? ' (error)' : ''}</option>`).join('')}</optgroup>` : '';
+      })
+      .join('')}</select>`;
+    el.innerHTML = `<div class="tabbody col"><div class="toolbar wrap"><span class="lbl">strategy</span>${pick}<span class="sp"></span>
       <label class="dim"><input type="checkbox" data-sfrom ${st.fromR0 ? 'checked' : ''}> from r0</label><button class="btn sm primary" data-srun ${parsed && !busy && !UI.busy ? '' : 'disabled'}>Run on ${esc(p.id)}</button></div>
       <div class="scroll"><div class="doc cv">
       ${busy ? `<p class="cv-busy" data-sprog>running ${esc(busy.node || busy.plan)}…</p>` : ''}
@@ -293,12 +321,14 @@ V.strategies = {
           <div class="row"><button class="btn sm" data-skadd>+ constraint</button><span class="sp"></span><button class="btn sm primary" data-sbuildgo>Build plan</button></div>
           ${st.buildErr ? showErr(st.buildErr) : ''}
         </div></details>
-      <h4>${cur ? (cur.kind === 'project' ? `${esc(cur.path)} <span class="dim">in ${esc(pr.id)}, saved in this browser</span>` : `${esc(cur.name)} <span class="dim">a pipeline as a plan · read-only: save a copy to change it</span>`) : 'New strategy <span class="dim">build one above, or write the plan JSON</span>'}</h4>
-      <textarea class="cv-json mono" data-sjson spellcheck="false" ${cur && cur.kind === 'pipeline' ? 'readonly' : ''} placeholder="the plan JSON">${esc(text)}</textarea>
-      <div class="row"><span class="${parseErr ? 'bad' : 'dim'}">${parseErr ? esc(parseErr) : parsed ? `valid plan ${esc(parsed.id)}` : 'empty'}</span><span class="sp"></span>
-        <label>save as strategies/<input data-ssavename value="${esc(st.saveName || (cur && cur.kind === 'project' ? cur.name : parsed ? parsed.id.replace(/^typed\.(strategy|pipeline)\./, '') : 'mine'))}" size="12">.json</label>
+      <h4>${cur ? (cur.kind === 'project' ? `${esc(cur.path)} <span class="dim">in ${esc(pr.id)}, saved in this browser</span>` : `${esc(cur.name)} <span class="dim">${cur.kind === 'preset' ? 'a preset' : 'a pipeline'} · read-only: save a copy to change it</span>`) : 'New strategy <span class="dim">build one above, or write it</span>'}</h4>
+      ${cur && cur.about ? `<p class="dim">${esc(cur.about)}</p>` : ''}
+      <div class="ruled"><textarea class="cv-json mono" data-sjson spellcheck="false" ${cur && cur.kind !== 'project' ? 'readonly' : ''} placeholder='{ "choose": { "O1": "O1", "O2": "O2" }, "by": "instructions" }'>${esc(text)}</textarea></div>
+      <div class="row wrap"><span class="${parseErr ? 'bad' : 'dim'}">${parseErr ? esc(parseErr) : parsed ? `valid · ${esc(parsed.id)}` : 'empty'}</span><span class="sp"></span>
+        <label>save as strategies/<input data-ssavename value="${esc(saveName)}" size="10">.json</label>
         <button class="btn sm" data-ssave ${parsed ? '' : 'disabled'}>Save</button>${cur && cur.kind === 'project' ? '<button class="btn sm" data-sdel>Delete</button>' : ''}</div>
-      ${explain ? `<pre class="cv-explain">${esc(explain)}</pre>` : ''}
+      ${explain ? `<pre class="cv-explain wrapped">${esc(explain)}</pre>` : ''}
+      ${parsed ? `<details ${st.showFull ? 'open' : ''} data-sfull><summary>Show the full plan <span class="dim">the Strategy IR the short form compiles to</span></summary>${full ? `<pre class="cv-explain wrapped">${esc(full)}</pre>` : ''}</details>` : ''}
       </div></div></div>`;
 
     const ta = el.querySelector('[data-sjson]');
@@ -306,6 +336,26 @@ V.strategies = {
       st.draft[key] = ta.value;
     };
     ta.onchange = () => V.strategies.render(el, { wb });
+    const pk = el.querySelector('[data-spick]');
+    pk.onchange = () => {
+      readForm();
+      const v = pk.value;
+      if (v === 'new') st.sel = null;
+      else {
+        const [k, ...n] = v.split(':');
+        st.selKind = k;
+        st.sel = n.join(':');
+      }
+      st.saveName = '';
+      V.strategies.render(el, { wb });
+    };
+    const fd = el.querySelector('[data-sfull]');
+    if (fd)
+      fd.ontoggle = () => {
+        if (fd.open === !!st.showFull) return;
+        st.showFull = fd.open;
+        V.strategies.render(el, { wb });
+      };
     const det = el.querySelector('[data-strace]');
     if (det) det.ontoggle = () => (st.showTrace = det.open);
     const bd = el.querySelector('[data-sbuild]');
@@ -330,18 +380,6 @@ V.strategies = {
     };
     el.onclick = UI.guarded(async e => {
       const q = s => e.target.closest(s);
-      if (q('[data-ssel]')) {
-        readForm();
-        const v = q('[data-ssel]').dataset.ssel;
-        if (v === 'new') st.sel = null;
-        else {
-          const [k, ...n] = v.split(':');
-          st.selKind = k;
-          st.sel = n.join(':');
-        }
-        st.saveName = '';
-        return V.strategies.render(el, { wb });
-      }
       if (q('[data-sfrom]')) {
         st.fromR0 = q('[data-sfrom]').checked;
         return;
@@ -383,9 +421,16 @@ V.strategies = {
             const passes = c.passes.split(/[\s,→>]+/).filter(Boolean);
             if (c.name && passes.length) cands[c.name] = passes;
           }
-          const plan = wb.strategy.choose(st.name, cands, { metric: st.metric, direction: st.direction }, st.constraints);
+          // the short form, as a project file holds it
+          const spec = {
+            choose: cands,
+            by: st.metric,
+            ...(st.direction === 'max' ? { direction: 'max' } : {}),
+            ...(st.constraints.length ? { constraints: st.constraints.map(c => [c.metric, c.op, c.value]) } : {}),
+          };
+          wb.strategy.fromSpec(st.name, spec); // refuses unknown passes, metrics or shapes
           st.sel = null;
-          st.draft.new = JSON.stringify(JSON.parse(wb.strategy.toJson(plan)), null, 2);
+          st.draft.new = formatJson(spec);
           st.saveName = st.name;
         } catch (err) {
           st.buildErr = err;

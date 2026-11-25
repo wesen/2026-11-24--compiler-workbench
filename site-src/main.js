@@ -24,6 +24,7 @@ UI.content = { book: BOOK, reference: REFERENCE, sources: SOURCES, build: BUILD 
 const wb = createWb({ storage: store, projects: PROJECTS, book: BOOK, reference: REFERENCE, sources: SOURCES });
 UI.wb = wb;
 globalThis.wb = wb; // for the browser's own console
+globalThis.wbUI = UI; // the UI state and views, for the console and for tests
 
 const S = (UI.S = {
   fn: null,

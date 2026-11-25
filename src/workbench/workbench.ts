@@ -20,9 +20,18 @@ import { blocksAdapter, BlocksIR, storeOf } from '../typed/ir.js';
 import { describeText, lineage as lineageOf, linesOf, listing as listingOf } from '../typed/listing.js';
 import type { Store, WorkFn } from '../typed/model.js';
 import { PASSES, PIPELINES, type TypedPass } from '../typed/passes.js';
-import { choosePlan, fromJson, passesNode, toJson, untilStablePlan } from '../typed/strategies.js';
+import { formatJson, joinText } from '../typed/format.js';
+import {
+  choosePlan,
+  fromJson,
+  passesNode,
+  planFromSpec,
+  PRESETS,
+  toJson,
+  untilStablePlan,
+  type StrategySpec,
+} from '../typed/strategies.js';
 import { createWorkbench, Program } from '../typed/program.js';
-import type { WriteKind } from '../typed/tx.js';
 import { didYouMean, ERRORS, fail, guard, toYaml } from './base.js';
 import { fragments, handle, type EntityHost } from './entities.js';
 import { FACTS, makeProgramHandle, WbProgram, type HandleEnv } from './programs.js';
@@ -46,7 +55,6 @@ export interface WbConfig {
   readonly sources?: Readonly<Record<string, string>>;
 }
 
-const KINDS: readonly WriteKind[] = ['values', 'stmts', 'locals', 'cfg'];
 
 /** Handles over a working store (a pass's), for user pass bodies and user analyses. */
 function storeHost(st: Store): EntityHost {
@@ -642,13 +650,21 @@ export function createWb(config: WbConfig = {}) {
     planOf(`typed.pipeline.${name}`, passesNode(name, name), `the ${name} pipeline as a plan`);
   interface StrategyEntry {
     name: string;
-    kind: 'project' | 'pipeline';
+    kind: 'project' | 'preset' | 'pipeline';
     path?: string;
     id?: string;
-    description?: string;
+    about?: string;
+    /** The short form it was written in (a project file or a preset), if it was. */
+    spec?: StrategySpec;
     plan?: StrategyPlan;
     error?: string;
   }
+  /** A strategy file's text: the short form ({ passes } | { choose, by } | { repeat }) or a full plan. */
+  const parseStrategy = (name: string, text: string): { plan: StrategyPlan; spec?: StrategySpec } => {
+    const value = JSON.parse(text);
+    if (value && typeof value === 'object' && value.formatVersion !== undefined) return { plan: fromJson(text) };
+    return { plan: planFromSpec(name, value), spec: value };
+  };
   const strategyList = (projectId: string | null = state.projectId): StrategyEntry[] => {
     const out: StrategyEntry[] = [];
     if (projectId && projects.exists(projectId))
@@ -656,26 +672,29 @@ export function createWb(config: WbConfig = {}) {
         const m = /^strategies\/([^/]+)\.json$/.exec(path);
         if (!m) continue;
         try {
-          const plan = fromJson(text);
-          out.push({ name: m[1], kind: 'project', path, id: plan.id, description: plan.description, plan });
+          const { plan, spec } = parseStrategy(m[1], text);
+          const about = spec ? joinText(spec.about) : plan.description;
+          out.push({ name: m[1], kind: 'project', path, id: plan.id, about, spec, plan });
         } catch (e) {
           out.push({ name: m[1], kind: 'project', path, error: String((e as Error).message || e).split('\n')[0] });
         }
       }
+    for (const [n, spec] of Object.entries(PRESETS))
+      out.push({ name: n, kind: 'preset', id: `typed.strategy.${n}`, about: joinText(spec.about), spec, plan: planFromSpec(n, spec) });
     for (const n of Object.keys(PIPELINES)) {
       const plan = pipelinePlan(n);
-      out.push({ name: n, kind: 'pipeline', id: plan.id, description: plan.description, plan });
+      out.push({ name: n, kind: 'pipeline', id: plan.id, about: plan.description, spec: { passes: n }, plan });
     }
     return out;
   };
   const isPlan = (x: unknown): x is StrategyPlan =>
     !!x && typeof x === 'object' && (x as StrategyPlan).formatVersion === 1 && !!(x as StrategyPlan).root;
-  function strategyPlan(x: unknown, projectId: string | null = state.projectId): StrategyPlan {
+  function strategyPlan(x: unknown, projectId: string | null = state.projectId, name = 'adhoc'): StrategyPlan {
     if (typeof x === 'string') {
       const t = x.trim();
       if (t.startsWith('{')) {
         try {
-          return fromJson(t);
+          return parseStrategy(name, t).plan;
         } catch (e) {
           return fail(
             'badStrategy',
@@ -685,6 +704,7 @@ export function createWb(config: WbConfig = {}) {
         }
       }
       const list = strategyList(projectId);
+      // a project's own strategy first, then a preset, then a pipeline of the same name
       const hit = list.find(e => e.name === t || e.id === t || e.path === t);
       if (!hit) {
         const near = didYouMean(t, list.map(e => e.name));
@@ -698,6 +718,14 @@ export function createWb(config: WbConfig = {}) {
     }
     const o = x && typeof x === 'object' ? ((x as { _plan?: unknown })._plan ?? x) : x;
     if (isPlan(o)) return o;
+    if (o && typeof o === 'object' && ['passes', 'choose', 'repeat'].some(k => k in (o as object)))
+      try {
+        return planFromSpec(name, o as StrategySpec);
+      } catch (e) {
+        return fail('badStrategy', String((e as Error).message).split('\n')[0], {
+          fix: '{ "passes": "O2" } | { "choose": { … }, "by": "instructions" } | { "repeat": [ … ], "max": 8 }',
+        });
+      }
     return fail('badArgument', 'a strategy is a plan (wb.strategy.choose(…)), its JSON, or a name', {
       fix: "wb.strategy.list() names them; wb.strategy.choose('fast', { a: 'O1', b: 'O2' }, 'instructions')",
     });
@@ -858,13 +886,23 @@ export function createWb(config: WbConfig = {}) {
         candidate(name, 'pipeline');
         return pipelinePlan(name);
       },
+      /** A plan as JSON at tile width (the full form). */
       toJson(plan: unknown) {
         return toJson(strategyPlan(plan));
       },
-      fromJson(text: string) {
+      /** A plan from JSON: the short form or a full plan. */
+      fromJson(text: string, name = 'adhoc') {
         if (typeof text !== 'string' || !text.trim().startsWith('{'))
-          fail('badArgument', 'fromJson(text): the JSON of a plan');
-        return strategyPlan(text);
+          fail('badArgument', 'fromJson(text): the JSON of a strategy (short form) or a plan');
+        return strategyPlan(text, state.projectId, name);
+      },
+      /** The short form to a plan: { passes } | { choose, by, direction, constraints } | { repeat, max }. */
+      fromSpec(name: string, spec: StrategySpec) {
+        return strategyPlan(spec, state.projectId, name);
+      },
+      /** The built-in strategies, in the short form. */
+      presets() {
+        return JSON.parse(JSON.stringify(PRESETS));
       },
       list() {
         return strategyList().map(({ plan, ...e }) => ({ ...e, ...(plan ? { root: plan.root.kind } : {}) }));
@@ -887,7 +925,18 @@ export function createWb(config: WbConfig = {}) {
         if (!pr) fail('noProject', 'no project open', { fix: "wb.projects.open('blend')" });
         if (typeof name !== 'string' || !/^[A-Za-z0-9_-]+$/.test(name))
           fail('badPath', `"${name}" is not a strategy name: letters, digits, _ -`);
-        const text = toJson(strategyPlan(plan));
+        // the short form when given one (or its JSON), the full plan otherwise; either way at tile width
+        let value: unknown = plan;
+        if (typeof plan === 'string') {
+          try {
+            value = JSON.parse(plan);
+          } catch (e) {
+            fail('badStrategy', `the strategy JSON does not parse: ${(e as Error).message}`);
+          }
+        }
+        const full = isPlan(value);
+        const checked = strategyPlan(value, pr, name); // refuses what would not run
+        const text = full ? toJson(checked) : formatJson(value);
         projects.make(ctx).get(pr!).files.write(`strategies/${name}.json`, text);
         return { saved: `strategies/${name}.json`, project: pr };
       },

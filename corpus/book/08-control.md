@@ -6,11 +6,18 @@ projects: branches, early-exit, nested-loops
 ---
 # Control flow: blocks, dominators, loops
 
-Blocks end in exactly one terminator: `goto`, a two-way `if … goto … else …`, `return` or `trap`. Successors are not stored by hand; a transaction derives them from terminators at commit, so a pass that retargets a branch cannot leave the graph inconsistent.
+Blocks end in exactly one terminator: `goto`, a two-way `if … goto …
+else …`, `return` or `trap`. Successors are not stored by hand; a
+transaction derives them from terminators at commit, so a pass that
+retargets a branch cannot leave the graph inconsistent.
 
 ## 1. The cfg pass
 
-cfg does three things, repeatedly, until nothing changes: a branch on a constant becomes a jump, a jump to a block that only jumps on is retargeted past it (jump threading), and a block with one successor whose successor has one predecessor absorbs it (merging). Unreachable blocks are dropped at commit.
+cfg does three things, repeatedly, until nothing changes: a branch on a
+constant becomes a jump, a jump to a block that only jumps on is
+retargeted past it (jump threading), and a block with one successor
+whose successor has one predecessor absorbs it (merging). Unreachable
+blocks are dropped at commit.
 
 ```js
 const p = wb.projects.open('branches').program;
@@ -20,17 +27,33 @@ const r = p.apply('cfg');
 return { before, after: count(), kinds: r.kinds };
 ```
 
-On [Branches](project:branches), `sign` goes from 7 blocks to 5 and `grade` from 10 to 8, with 6 retargets and 4 unreachable blocks dropped. Lifting creates most of those: every `if` gets a join block, and an `if` whose arms both return leaves a join no one reaches.
+On [Branches](project:branches), `sign` goes from 7 blocks to 5 and
+`grade` from 10 to 8, with 6 retargets and 4 unreachable blocks dropped.
+Lifting creates most of those: every `if` gets a join block, and an `if`
+whose arms both return leaves a join no one reaches.
 
 ## 2. Dominators
 
-Block A dominates block B if every path from the entry to B passes through A. The workbench computes immediate dominators with the iterative algorithm of Cooper, Harvey and Kennedy: walk the blocks in reverse postorder, intersect the dominators of each block's processed predecessors, repeat until stable. For `sign` it takes two rounds over 7 blocks: one to compute, one to see that nothing changes.
+Block A dominates block B if every path from the entry to B passes
+through A. The workbench computes immediate dominators with the
+iterative algorithm of Cooper, Harvey and Kennedy: walk the blocks in
+reverse postorder, intersect the dominators of each block's processed
+predecessors, repeat until stable. For `sign` it takes two rounds over 7
+blocks: one to compute, one to see that nothing changes.
 
-Dominators answer the question most passes ask: is it safe to assume something here because it was established there? If a branch's arm dominates a block, the branch's condition (or its negation) holds in that block. bce rests entirely on this.
+Dominators answer the question most passes ask: is it safe to assume
+something here because it was established there? If a branch's arm
+dominates a block, the branch's condition (or its negation) holds in
+that block. bce rests entirely on this.
 
 ## 3. Loops
 
-A back edge is an edge whose target dominates its source; the target is a loop head. The loops analysis collects, for each back edge, the natural loop: the head, the latch (the source of the back edge), the body (every block that reaches the latch without passing the head), the exits, the locals assigned anywhere in the body, and the preheader if the head has exactly one predecessor outside the loop.
+A back edge is an edge whose target dominates its source; the target is
+a loop head. The loops analysis collects, for each back edge, the
+natural loop: the head, the latch (the source of the back edge), the
+body (every block that reaches the latch without passing the head), the
+exits, the locals assigned anywhere in the body, and the preheader if
+the head has exactly one predecessor outside the loop.
 
 ```js
 const p = wb.projects.open('early-exit').program;
@@ -45,7 +68,9 @@ return p.fn('find')
   }));
 ```
 
-[While with break](project:early-exit) has one loop with three exits: the loop test, the `break`, and the bounds-check trap. A break is just another edge out.
+[While with break](project:early-exit) has one loop with three exits:
+the loop test, the `break`, and the bounds-check trap. A break is just
+another edge out.
 
 ```svg
 <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
@@ -67,10 +92,17 @@ return p.fn('find')
   <text x="440" y="116" class="mut">the dashed back edge goes from latch to head</text>
 </svg>
 ```
-Figure: A natural loop. The grey blocks are the body. licm puts invariant statements in the preheader, which runs once before the head.
+Figure: A natural loop. The grey blocks are the body. licm puts
+invariant statements in the preheader, which runs once before the head.
 
-In [Nested loops](project:nested-loops) the inner loop assigns `c` and `s`; the outer assigns `r`, `c` and `s`. The assigned sets are what licm reads: an expression is invariant in a loop if no local it reads is assigned in that loop's body.
+In [Nested loops](project:nested-loops) the inner loop assigns `c` and
+`s`; the outer assigns `r`, `c` and `s`. The assigned sets are what licm
+reads: an expression is invariant in a loop if no local it reads is
+assigned in that loop's body.
 
-> **Try it.** Open the CFG view on [Insertion sort](project:sort). Loop heads are labelled, back edges are dashed, and blocks inside a loop are shaded. Then run O2 and watch the empty blocks go.
+> **Try it.** Open the CFG view on [Insertion sort](project:sort). Loop
+> heads are labelled, back edges are dashed, and blocks inside a loop
+> are shaded. Then run O2 and watch the empty blocks go.
 
-Before loops can be optimized, the workbench needs facts that flow along these edges: [dataflow analyses](chapter:analyses).
+Before loops can be optimized, the workbench needs facts that flow along
+these edges: [dataflow analyses](chapter:analyses).

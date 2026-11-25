@@ -6,14 +6,21 @@ projects: blend
 ---
 # Provenance: where things came from, and why they are valid
 
-Every entity carries an `origin`: a list of records `{ from, via, rev, because, note }`. `from` is what it was made from, `via` the pass (or `ingest`), `rev` the revision, and `because` the facts or entities that make it valid. A transaction fills these in by default, so a pass gets provenance without asking for it.
+Every entity carries an `origin`: a list of records `{ from, via, rev,
+because, note }`. `from` is what it was made from, `via` the pass (or
+`ingest`), `rev` the revision, and `because` the facts or entities that
+make it valid. A transaction fills these in by default, so a pass gets
+provenance without asking for it.
 
 ## 1. Two questions, two walks
 
-- **Lineage** follows `from` and value arguments down to front-end ops. It answers: which source does this come from?
-- **Why** follows both `from` and `because`, as a tree. It answers: what made this, and what justified it?
+- **Lineage** follows `from` and value arguments down to front-end ops.
+  It answers: which source does this come from?
+- **Why** follows both `from` and `because`, as a tree. It answers: what
+  made this, and what justified it?
 
-Here is the why tree of the statement licm put in Blend's preheader, as `p.why('s:blend.15')` returns it after O2:
+Here is the why tree of the statement licm put in Blend's preheader, as
+`p.why('s:blend.15')` returns it after O2:
 
 ```text
 s:blend.15  inv = ((a * b) + 64)        live · via licm · r6 · hoisted out of loop:blend@bb:blend.1
@@ -42,11 +49,14 @@ s:blend.15  inv = ((a * b) + 64)        live · via licm · r6 · hoisted out of
   <text x="10" y="30" class="mut">solid: made from (origin) · dashed: because</text>
 </svg>
 ```
-Figure: The lineage of the hoisted statement. The origin chain runs to line 5; the because edge names the loop fact whose preheader received the statement.
+Figure: The lineage of the hoisted statement. The origin chain runs to
+line 5; the because edge names the loop fact whose preheader received
+the statement.
 
 ## 2. Statuses
 
-`p.statusOf(id)` answers for any id, including ones no longer in the program:
+`p.statusOf(id)` answers for any id, including ones no longer in the
+program:
 
 | status | meaning |
 |---|---|
@@ -55,11 +65,19 @@ Figure: The lineage of the hoisted statement. The origin chain runs to line 5; t
 | `replaced@r4` | an edit at r4 replaced it with something else |
 | `detached` | a value no longer in any tree, usually because its parent was rebuilt |
 
-Removed things keep their fields, so after O2 `p.get('s:blend.0').text` still reads `scale = 64`, the statement as it was when dce removed it at r5. (fold had rewritten its value at r2: statement fields change in place, and each revision's snapshot keeps the old ones.)
+Removed things keep their fields, so after O2 `p.get('s:blend.0').text`
+still reads `scale = 64`, the statement as it was when dce removed it at
+r5. (fold had rewritten its value at r2: statement fields change in
+place, and each revision's snapshot keeps the old ones.)
 
 ## 3. From instructions back to source
 
-Instructions are entities too. Each records the values and statement it **covers**: the instruction `mul t2, a2, a3` in the O2 image of Blend covers `v:blend.23` and `s:blend.15`, so its lines are `[5]`. That is how the RV32 view shows a source line beside each instruction, and how `img.heat()` turns execution counts into counts per line: on a 40-cell run, line 5 accounts for 322 of the 451 instructions executed.
+Instructions are entities too. Each records the values and statement it
+**covers**: the instruction `mul t2, a2, a3` in the O2 image of Blend
+covers `v:blend.23` and `s:blend.15`, so its lines are `[5]`. That is
+how the RV32 view shows a source line beside each instruction, and how
+`img.heat()` turns execution counts into counts per line: on a 40-cell
+run, line 5 accounts for 322 of the 451 instructions executed.
 
 ```js
 const p = wb.projects.open('blend').program;
@@ -71,8 +89,12 @@ return {
 };
 ```
 
-`p.related(id)` runs the other way: from an op (or anything) to every live value, statement and instruction that came from it. Selecting a line number in the Source view does exactly this.
+`p.related(id)` runs the other way: from an op (or anything) to every
+live value, statement and instruction that came from it. Selecting a
+line number in the Source view does exactly this.
 
-> **Try it.** In the RV32 view, click an instruction id. Lineage shows its whole chain down to the op; Source highlights the line.
+> **Try it.** In the RV32 view, click an instruction id. Lineage shows
+> its whole chain down to the op; Source highlights the line.
 
-[Handles](chapter:handles) covers the read side of the API: what you can ask an entity, and what happens when you ask wrongly.
+[Handles](chapter:handles) covers the read side of the API: what you can
+ask an entity, and what happens when you ask wrongly.

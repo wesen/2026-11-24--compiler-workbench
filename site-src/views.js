@@ -1427,6 +1427,6 @@ V.reference = {
   title: 'Reference',
   on: [],
   render(el) {
-    el.innerHTML = `<div class="tabbody col"><div class="scroll"><div class="doc">${UI.md(UI.content.reference || '', { runnable: true })}</div></div></div>`;
+    el.innerHTML = `<div class="tabbody col"><div class="scroll"><div class="doc refdoc">${UI.md(UI.content.reference || '', { runnable: true })}</div></div></div>`;
   },
 };
