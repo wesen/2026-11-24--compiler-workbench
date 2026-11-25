@@ -7,9 +7,23 @@
  * (callee-saved: a function that uses one must restore it). `t5` and `t6` are kept back as spill scratch; `s0`,
  * `sp`, `ra`, `gp` and `tp` are never allocated. An interval that spans a call must be in a callee-saved register,
  * or spilled.
+ *
+ * f32 values are a second class with its own pools: `ft0`-`ft9` and, in leaf functions, `fa0`-`fa7` (caller-saved),
+ * and `fs0`-`fs11` (callee-saved); `ft10` and `ft11` are its spill scratch. The two classes are scanned separately:
+ * an interval only ever receives a register of its own class, and the options apply to each class.
  */
 import type { BackendOptions } from './options.js';
-import { A0, ARGS, CALLEE, CALLER, isBranch, isTerminal, type MInsn } from './encode.js';
+import {
+  ARGS,
+  CALLEE,
+  CALLER,
+  F_ARGS,
+  F_CALLEE,
+  F_CALLER,
+  isBranch,
+  isTerminal,
+  type MInsn,
+} from './encode.js';
 
 export const usesOf = (m: MInsn): number[] =>
   [m.rs1, m.rs2].filter((r): r is number => r !== undefined && r >= 64);
@@ -129,63 +143,95 @@ export interface Allocation {
   readonly intervals: readonly Interval[];
 }
 
+/** A register class's pools: caller-saved, the argument registers (leaf functions only), callee-saved. */
+interface ClassPools {
+  readonly caller: readonly number[];
+  readonly args: readonly number[];
+  readonly callee: readonly number[];
+}
+const X_POOLS: ClassPools = { caller: CALLER, args: ARGS, callee: CALLEE };
+const F_POOLS: ClassPools = { caller: F_CALLER, args: F_ARGS, callee: F_CALLEE };
+
+/**
+ * Linear scan, one register class at a time. `fregs` names the virtual registers of class f; every other virtual
+ * register is of class x.
+ */
 export function allocate(
   code: readonly MInsn[],
   hintsIn: ReadonlyMap<number, number>,
   o: BackendOptions,
   leaf: boolean,
+  fregs: ReadonlySet<number> = new Set(),
 ): Allocation {
   const { list } = intervals(code);
-  // caller-saved first; a0..a7 only in leaf functions (a call would clobber them); callee-saved last
-  let pool = leaf ? [...CALLER, ...ARGS, ...CALLEE] : [...CALLER, ...CALLEE];
-  // s-registers first: every one used is saved and restored
-  if (o.order === 'callee') pool = [...CALLEE, ...pool.filter(r => !CALLEE.includes(r))];
-  if (o.registers !== 'all') pool = pool.slice(0, Math.max(1, +o.registers));
   const hints = o.hints ? hintsIn : new Map<number, number>();
-  // a0..a7 hold the parameters until each is copied: reserve them until then
+  // the argument registers hold the parameters until each is copied: reserve each until then
   const fixed = new Map<number, number>();
   code.forEach((m, i) => {
-    if (m.param !== undefined) fixed.set(A0 + m.param, i);
+    if (m.param !== undefined && m.rs1 !== undefined && m.rs1 < 64) fixed.set(m.rs1, i);
+  });
+  // a record return writes its result registers one after another: a value live across one of those writes
+  // (it is still to be moved) may not live in that register
+  const pins = new Map<number, number[]>();
+  code.forEach((m, i) => {
+    if (m.pins && m.rd !== undefined && m.rd < 64) pins.set(m.rd, [...(pins.get(m.rd) ?? []), i]);
   });
   const assign = new Map<number, number>(),
     spilled = new Set<number>();
-  let active: Interval[] = [];
-  const free = new Set(pool);
-  const okFor = (r: number, x: Interval) =>
-    (!x.crossesCall || CALLEE.includes(r)) && !(fixed.has(r) && x.start < fixed.get(r)!);
-  for (const x of list) {
-    active = active.filter(a => {
-      if (a.end <= x.start) {
-        free.add(assign.get(a.reg)!);
-        return false;
+  const scan = (pools: ClassPools, xs: readonly Interval[]): void => {
+    // caller-saved first; argument registers only in leaf functions (a call would clobber them); callee-saved last
+    let pool = leaf ? [...pools.caller, ...pools.args, ...pools.callee] : [...pools.caller, ...pools.callee];
+    // s-registers first: every one used is saved and restored
+    if (o.order === 'callee') pool = [...pools.callee, ...pool.filter(r => !pools.callee.includes(r))];
+    if (o.registers !== 'all') pool = pool.slice(0, Math.max(1, +o.registers));
+    let active: Interval[] = [];
+    const free = new Set(pool);
+    const okFor = (r: number, x: Interval) =>
+      (!x.crossesCall || pools.callee.includes(r)) &&
+      !(fixed.has(r) && x.start < fixed.get(r)!) &&
+      !pins.get(r)?.some(i => x.start < i && i < x.end);
+    for (const x of xs) {
+      active = active.filter(a => {
+        if (a.end <= x.start) {
+          free.add(assign.get(a.reg)!);
+          return false;
+        }
+        return true;
+      });
+      const hint = hints.get(x.reg);
+      let r =
+        hint !== undefined && free.has(hint) && okFor(hint, x)
+          ? hint
+          : pool.find(q => free.has(q) && okFor(q, x));
+      if (r === undefined) {
+        // spill 'furthest': whichever of x and the active intervals it could take a register from ends last
+        // spill 'current': always x, the interval that found no register
+        const cand =
+          o.spill === 'current'
+            ? null
+            : active.filter(a => okFor(assign.get(a.reg)!, x)).sort((a, b) => b.end - a.end)[0];
+        if (cand && cand.end > x.end) {
+          r = assign.get(cand.reg)!;
+          assign.delete(cand.reg);
+          spilled.add(cand.reg);
+          active = active.filter(a => a !== cand);
+        } else {
+          spilled.add(x.reg);
+          continue;
+        }
       }
-      return true;
-    });
-    const hint = hints.get(x.reg);
-    let r =
-      hint !== undefined && free.has(hint) && okFor(hint, x)
-        ? hint
-        : pool.find(q => free.has(q) && okFor(q, x));
-    if (r === undefined) {
-      // spill 'furthest': whichever of x and the active intervals it could take a register from ends last
-      // spill 'current': always x, the interval that found no register
-      const cand =
-        o.spill === 'current'
-          ? null
-          : active.filter(a => okFor(assign.get(a.reg)!, x)).sort((a, b) => b.end - a.end)[0];
-      if (cand && cand.end > x.end) {
-        r = assign.get(cand.reg)!;
-        assign.delete(cand.reg);
-        spilled.add(cand.reg);
-        active = active.filter(a => a !== cand);
-      } else {
-        spilled.add(x.reg);
-        continue;
-      }
+      free.delete(r);
+      assign.set(x.reg, r);
+      active.push(x);
     }
-    free.delete(r);
-    assign.set(x.reg, r);
-    active.push(x);
-  }
+  };
+  scan(
+    X_POOLS,
+    list.filter(x => !fregs.has(x.reg)),
+  );
+  scan(
+    F_POOLS,
+    list.filter(x => fregs.has(x.reg)),
+  );
   return { assign, spilled, intervals: list };
 }

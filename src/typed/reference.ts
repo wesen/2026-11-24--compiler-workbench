@@ -12,6 +12,7 @@
  * `fault`, which never agrees.
  */
 import type { RunResult } from './evaluate.js';
+import { placeCall, readResults } from './ilp32f.js';
 import { requireVendor } from './vendor.js';
 
 export interface ReferenceProgram {
@@ -31,44 +32,10 @@ export function referenceCompile(
   });
 }
 
-const CALLEE_SAVED = [2, 3, 4, 8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27];
-const RETURN_TO_HOST = -4;
-/** The stack the frames grow into, below the stack words of arguments and results. */
-const STACK = 65536;
-
-type Location =
-  | { readonly cls: 'x' | 'f'; readonly reg: number }
-  | { readonly cls: 'stack'; readonly word: number };
-function argumentLocations(types: readonly string[]): Location[] {
-  let x = 0,
-    f = 0,
-    k = 0;
-  return types.map(t =>
-    t === 'f32' && f < 8
-      ? { cls: 'f', reg: 10 + f++ }
-      : x < 8
-        ? { cls: 'x', reg: 10 + x++ }
-        : { cls: 'stack', word: k++ },
-  );
-}
-function resultLocations(types: readonly string[]): Location[] {
-  let x = 0,
-    f = 0,
-    k = 0;
-  return types.map(t =>
-    t === 'f32'
-      ? f < 8
-        ? { cls: 'f', reg: 10 + f++ }
-        : { cls: 'stack', word: k++ }
-      : x < 8
-        ? { cls: 'x', reg: 10 + x++ }
-        : { cls: 'stack', word: k++ },
-  );
-}
-
 /**
  * Call `name` with `args` (i32s, f32s as bits) over guest memory `memory`; the memory the run leaves is compared
- * over `memory.length` bytes, as the evaluator's.
+ * over `memory.length` bytes, as the evaluator's. Arguments and results are placed by ilp32f.ts (`placeCall`,
+ * `readResults`): guest memory, then the stack, then the caller's stack words at sp.
  */
 export function referenceRun(
   program: ReferenceProgram,
@@ -80,33 +47,13 @@ export function referenceRun(
   const interp = requireVendor('typedRv32Interp');
   const sig = program.signatures.find(s => s.name === name);
   if (!sig) throw new Error(`referenceRun: no function ${name} in the reference image`);
-  const params = argumentLocations(sig.params);
-  const results = sig.results ? resultLocations(sig.results) : null;
-  const words = Math.max(
-    params.filter(p => p.cls === 'stack').length,
-    results?.filter(r => r.cls === 'stack').length ?? 0,
-  );
-  // guest memory, then the stack, then the caller's stack words at sp
-  const sp = (memory.length + STACK + 15) & -16;
-  const bytes = new Uint8Array(sp + ((4 * words + 15) & -16));
-  bytes.set(memory);
-  const view = new DataView(bytes.buffer);
-  const x = new Int32Array(32),
-    f = new Uint32Array(32);
-  for (const r of CALLEE_SAVED) x[r] = 0x12340000 + r;
-  x[1] = RETURN_TO_HOST;
-  x[2] = sp;
-  params.forEach((p, i) => {
-    if (p.cls === 'stack') view.setInt32(sp + 4 * p.word, args[i] | 0, true);
-    else if (p.cls === 'f') f[p.reg] = args[i] >>> 0;
-    else x[p.reg] = args[i] | 0;
-  });
+  const placed = placeCall(sig, args, memory);
   const base = { kind: 'run' as const, engine: 'rv32', unit: 'instructions', counts: null };
   let run: any;
   try {
-    run = interp.run(program, name, [], bytes, {
-      registers: x,
-      fregisters: f,
+    run = interp.run(program, name, [], placed.bytes, {
+      registers: placed.registers,
+      fregisters: placed.fregisters,
       limit: options.limit ?? 2e7,
       counts: false,
     });
@@ -125,17 +72,6 @@ export function referenceRun(
   }
   const out = (run.bytes as Uint8Array).slice(0, memory.length);
   if (run.trap) return { ...base, trap: 'ebreak', limit: false, steps: run.steps, bytes: out };
-  const after = new DataView((run.bytes as Uint8Array).buffer, (run.bytes as Uint8Array).byteOffset);
-  const read = (l: Location) =>
-    l.cls === 'stack'
-      ? after.getInt32(sp + 4 * l.word, true)
-      : l.cls === 'f'
-        ? run.fregisters[l.reg] | 0
-        : run.registers[l.reg] | 0;
-  const result = results
-    ? results.map(read)
-    : sig.result === 'f32'
-      ? run.fregisters[10] | 0
-      : run.registers[10] | 0;
+  const result = readResults(sig, placed, run);
   return { ...base, trap: false, result, limit: false, steps: run.steps, bytes: out };
 }
