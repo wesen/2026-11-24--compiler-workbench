@@ -1,6 +1,7 @@
 import { canonical, immutable } from '../core/data.js';
 import type {
   CorrespondenceEntry,
+  Reason,
   EntityCorrespondence,
   EntityTrace,
   IRRef,
@@ -17,6 +18,33 @@ function unique(values: readonly string[], label: string): readonly string[] {
   values.forEach(v => requireText(v, label));
   if (new Set(values).size !== values.length) throw new IRError('ir.correspondence', `Duplicate ${label}`);
   return [...values].sort(compareText);
+}
+/** IRWB-001 E2: a reason is optional; when present, `because` is a non-empty list of distinct non-empty strings. */
+export function normalizeReason(reason: Reason | undefined): Reason {
+  if (!reason) return {};
+  const out: { because?: readonly string[]; note?: string } = {};
+  if (reason.because !== undefined) {
+    if (!Array.isArray(reason.because)) throw new IRError('ir.reason', 'because must be an array of strings');
+    const because = [
+      ...new Set(
+        (reason.because as unknown[]).map((b): string => (requireText(b, 'because entry'), b as string)),
+      ),
+    ];
+    if (because.length) out.because = because;
+  }
+  if (reason.note !== undefined) {
+    requireText(reason.note, 'Reason note');
+    out.note = reason.note;
+  }
+  return out;
+}
+function mergeReasons(reasons: readonly Reason[]): Reason {
+  const because = [...new Set(reasons.flatMap(r => r.because ?? []))];
+  const notes = [...new Set(reasons.flatMap(r => (r.note ? [r.note] : [])))];
+  return {
+    ...(because.length ? { because } : {}),
+    ...(notes.length ? { note: notes.join(' > ') } : {}),
+  };
 }
 export function validateCorrespondence(input: EntityCorrespondence): EntityCorrespondence {
   const c = immutable(input);
@@ -46,10 +74,11 @@ export function validateCorrespondence(input: EntityCorrespondence): EntityCorre
       if (!target.has(id)) throw new IRError('ir.correspondence', `Unknown target entity ${id}`);
       seenTarget.add(id);
     }
-    const normalized = {
+    const normalized: CorrespondenceEntry = {
       from,
       to,
       relation: entry.relation,
+      ...normalizeReason(entry),
     };
     entries.set(canonical(normalized), normalized);
   }
@@ -131,13 +160,14 @@ export function composeCorrespondence(
   const maxPairs = limit(options.maxPairs, 100000, 'maxPairs');
   let count = 0;
   const entries: CorrespondenceEntry[] = [];
-  const append = (from: readonly string[], to: readonly string[], relation: string) => {
+  const append = (from: readonly string[], to: readonly string[], relation: string, ...reasons: Reason[]) => {
     if (++count > maxPairs) throw new IRBudgetError('correspondence pairs', maxPairs);
     if (from.length || to.length)
       entries.push({
         from,
         to,
         relation,
+        ...mergeReasons(reasons),
       });
   };
   const byMiddle = new Map<string, CorrespondenceEntry[]>();
@@ -145,7 +175,7 @@ export function composeCorrespondence(
     for (const middle of e.from) byMiddle.set(middle, [...(byMiddle.get(middle) ?? []), e]);
   for (const e of a.entries) {
     if (!e.to.length) {
-      append(e.from, [], e.relation);
+      append(e.from, [], e.relation, e);
       continue;
     }
     for (const middle of e.to)
@@ -157,12 +187,14 @@ export function composeCorrespondence(
               from === undefined ? [] : [from],
               to === undefined ? [] : [to],
               `${e.relation} > ${next.relation}`,
+              e,
+              next,
             );
           }
       }
   }
   // Target entities introduced by the second step have no antecedent in the first.
-  for (const e of b.entries) if (!e.from.length) append([], e.to, e.relation);
+  for (const e of b.entries) if (!e.from.length) append([], e.to, e.relation, e);
   return validateCorrespondence({
     formatVersion: 1,
     from: a.from,
@@ -251,4 +283,58 @@ export function traceEntity(
     steps,
     current,
   });
+}
+
+/** IRWB-001 E2: one step of an explanation: the entry that produced `entity` in revision `at`. */
+export interface WhyNode {
+  readonly entity: string;
+  readonly at: RevisionRef;
+  readonly relation: string;
+  readonly because: readonly string[];
+  readonly note?: string;
+  /** The same question asked of each source entity, one revision earlier. */
+  readonly from: readonly WhyNode[];
+}
+/**
+ * Why does `target` exist as it does? Walks an ordered revision chain backwards from the revision of
+ * `target`, through entries whose targets contain the entity, collecting relations and reasons.
+ * Retained entries are skipped silently (they explain nothing), so the tree lists actual changes.
+ */
+export function whyEntity(
+  target: IRRef,
+  chain: readonly EntityCorrespondence[],
+  options: { maxNodes?: number } = {},
+): readonly WhyNode[] {
+  const steps = chain.map(validateCorrespondence),
+    maxNodes = limit(options.maxNodes, 10000, 'maxNodes');
+  let count = 0;
+  const ask = (entity: string, at: RevisionRef, end: number): WhyNode[] => {
+    for (let i = end; i >= 0; i--) {
+      const step = steps[i];
+      if (!sameRevision(step.to, at)) continue;
+      const out: WhyNode[] = [];
+      for (const entry of step.entries) {
+        if (!entry.to.includes(entity)) continue;
+        if (entry.relation === 'retained' && !entry.because?.length) {
+          out.push(...entry.from.flatMap(id => ask(id, step.from, i - 1)));
+          continue;
+        }
+        if (++count > maxNodes) throw new IRBudgetError('why nodes', maxNodes);
+        out.push({
+          entity,
+          at,
+          relation: entry.relation,
+          because: entry.because ?? [],
+          ...(entry.note ? { note: entry.note } : {}),
+          from: entry.from.flatMap(id => ask(id, step.from, i - 1)),
+        });
+      }
+      return out;
+    }
+    return [];
+  };
+  revision(target);
+  return immutable(
+    ask(target.entity, { artifact: target.artifact, revision: target.revision }, steps.length - 1),
+  );
 }

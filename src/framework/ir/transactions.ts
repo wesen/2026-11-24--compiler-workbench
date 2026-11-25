@@ -14,11 +14,12 @@ import type {
   IRView,
   RedirectOptions,
   RelationSpec,
+  Reason,
   TransformationResult,
 } from './types.js';
 import { createIRArtifact, project, validateEntity, validateGraph } from './adapters.js';
 import { IRError, requireRecord, requireText, revisionRef, syncFunction, synchronous } from './common.js';
-import { makeCorrespondence } from './correspondence.js';
+import { makeCorrespondence, normalizeReason } from './correspondence.js';
 import { diffGraphs } from './diff.js';
 import { IRStore, publishRevision } from './store.js';
 /** Edits are draft-local; no operation mutates a retained native value. */
@@ -79,24 +80,27 @@ export class Edit<T> implements IREdit<T> {
       entity: id,
     });
   }
-  #record(kind: string, data: unknown): void {
+  /** `why` is an already normalized reason: methods validate it before they change the draft. */
+  #record(kind: string, data: Record<string, unknown>, why: Reason = {}): void {
     this.#operations.push(
       immutable({
         kind,
-        data,
+        data: { ...data, ...why },
       }),
     );
   }
-  insert(entity: IREntity): IRRef {
+  insert(entity: IREntity, reason?: Reason): IRRef {
     this.#open();
+    const why = normalizeReason(reason);
     const e = validateEntity(entity);
     if (this.#entities.has(e.id)) throw new IRError('ir.entity', `Entity ${e.id} already exists`);
     this.#entities.set(e.id, e);
-    this.#record('insert', { entity: e });
+    this.#record('insert', { entity: e }, why);
     return this.#ref(e.id);
   }
-  replace(target: EntityTarget, entity: IREntity): void {
+  replace(target: EntityTarget, entity: IREntity, reason?: Reason): void {
     this.#open();
+    const why = normalizeReason(reason);
     const id = this.#id(target),
       e = validateEntity(entity);
     if (e.id !== id)
@@ -105,10 +109,11 @@ export class Edit<T> implements IREdit<T> {
         'Replacement preserves entity identity; insert, redirect and remove to rename',
       );
     this.#entities.set(id, e);
-    this.#record('replace', { entity: e });
+    this.#record('replace', { entity: e }, why);
   }
-  remove(target: EntityTarget): void {
+  remove(target: EntityTarget, reason?: Reason): void {
     this.#open();
+    const why = normalizeReason(reason);
     const id = this.#id(target),
       removedRelations: string[] = [];
     this.#entities.delete(id);
@@ -117,13 +122,18 @@ export class Edit<T> implements IREdit<T> {
         this.#relations.delete(key);
         removedRelations.push(key);
       }
-    this.#record('remove', {
-      entity: id,
-      removedRelations,
-    });
+    this.#record(
+      'remove',
+      {
+        entity: id,
+        removedRelations,
+      },
+      why,
+    );
   }
-  update(target: EntityTarget, attributes: Readonly<Record<string, unknown>>): void {
+  update(target: EntityTarget, attributes: Readonly<Record<string, unknown>>, reason?: Reason): void {
     this.#open();
+    const why = normalizeReason(reason);
     const id = this.#id(target);
     requireRecord(attributes, 'Attribute update');
     const snapshot = immutable(attributes),
@@ -138,13 +148,18 @@ export class Edit<T> implements IREdit<T> {
         },
       }),
     );
-    this.#record('update', {
-      entity: id,
-      attributes: snapshot,
-    });
+    this.#record(
+      'update',
+      {
+        entity: id,
+        attributes: snapshot,
+      },
+      why,
+    );
   }
-  connect(from: EntityTarget, relation: string | RelationSpec, to: EntityTarget): string {
+  connect(from: EntityTarget, relation: string | RelationSpec, to: EntityTarget, reason?: Reason): string {
     this.#open();
+    const why = normalizeReason(reason);
     const source = this.#id(from),
       target = this.#id(to),
       spec = typeof relation === 'string' ? { kind: relation } : immutable(relation);
@@ -175,13 +190,15 @@ export class Edit<T> implements IREdit<T> {
       roots: [],
     });
     this.#relations.set(id, edge);
-    this.#record('connect', { relation: edge });
+    this.#record('connect', { relation: edge }, why);
     return id;
   }
-  disconnect(relationId: string): void;
-  disconnect(from: EntityTarget, relationKind: string, to: EntityTarget): void;
-  disconnect(target: EntityTarget, kind?: string, to?: EntityTarget): void {
+  disconnect(relationId: string, reason?: Reason): void;
+  disconnect(from: EntityTarget, relationKind: string, to: EntityTarget, reason?: Reason): void;
+  disconnect(target: EntityTarget, kindOrReason?: string | Reason, to?: EntityTarget, reason?: Reason): void {
     this.#open();
+    const kind = typeof kindOrReason === 'string' ? kindOrReason : undefined,
+      why = normalizeReason(typeof kindOrReason === 'string' ? reason : kindOrReason);
     const removed: string[] = [];
     if (kind === undefined) {
       if (typeof target !== 'string' || !this.#relations.has(target))
@@ -200,10 +217,11 @@ export class Edit<T> implements IREdit<T> {
         }
       if (!removed.length) throw new IRError('ir.relation', 'No matching relation to disconnect');
     }
-    this.#record('disconnect', { relations: removed });
+    this.#record('disconnect', { relations: removed }, why);
   }
   redirectReferences(from: EntityTarget, to: EntityTarget, options: RedirectOptions = {}): void {
     this.#open();
+    const why = normalizeReason(options);
     const source = this.#id(from),
       target = this.#id(to),
       direction = options.direction ?? 'incoming';
@@ -234,18 +252,23 @@ export class Edit<T> implements IREdit<T> {
         changed.push(id);
       }
     }
-    this.#record('redirectReferences', {
-      from: source,
-      to: target,
-      direction,
-      relations: names,
-      changed,
-    });
+    this.#record(
+      'redirectReferences',
+      {
+        from: source,
+        to: target,
+        direction,
+        relations: names,
+        changed,
+      },
+      why,
+    );
   }
   correspond(
     from: EntityTarget | readonly EntityTarget[],
     to: EntityTarget | readonly EntityTarget[],
     relation = 'rewritten',
+    reason?: Reason,
   ): void {
     this.#open();
     requireText(relation, 'Correspondence relation');
@@ -257,9 +280,10 @@ export class Edit<T> implements IREdit<T> {
       from: sources,
       to: targets,
       relation,
+      ...normalizeReason(reason),
     });
     this.#correspondence.push(entry);
-    this.#record('correspond', entry);
+    this.#record('correspond', { ...entry });
   }
   preview(): IRGraph {
     return immutable({

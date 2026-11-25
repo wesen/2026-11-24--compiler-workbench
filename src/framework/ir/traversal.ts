@@ -239,3 +239,14 @@ export function subgraph(
     roots: [...selected].filter(id => !incoming.has(id)).sort(compareText),
   });
 }
+
+/** IRWB-001 E1: control-flow successors, following every relation kind of category 'control'. */
+export function flowSuccessors(view: IRView<any>, target: EntityTarget): readonly IRRef[] {
+  const kinds = categories(view, ['control']);
+  return kinds.length ? successors(view, target, kinds) : [];
+}
+/** IRWB-001 E1: control-flow predecessors. */
+export function flowPredecessors(view: IRView<any>, target: EntityTarget): readonly IRRef[] {
+  const kinds = categories(view, ['control']);
+  return kinds.length ? predecessors(view, target, kinds) : [];
+}

@@ -11,7 +11,14 @@ export interface IRRef extends EntityRef {
   readonly entity: string;
 }
 export type EntityTarget = string | IRRef;
-export type RelationCategory = 'containment' | 'dependency' | 'binding' | 'adjacency' | 'provenance';
+/** IRWB-001 E1 adds 'control': control-flow successor edges (a CFG), distinct from containment and dataflow. */
+export type RelationCategory =
+  | 'containment'
+  | 'dependency'
+  | 'binding'
+  | 'adjacency'
+  | 'provenance'
+  | 'control';
 export type Capability =
   | 'Traversable'
   | 'Queryable'
@@ -135,7 +142,13 @@ export interface ChangeSet {
   readonly operations: readonly EditOperation[];
   readonly changed: boolean;
 }
-export interface CorrespondenceEntry {
+/** IRWB-001 E2: why a change is valid, separate from what it was made from (from/to).
+ * `because` names entities or facts (e.g. `s:peak.4`, `fact:ranges(peak)@r5`); `note` is human-readable. */
+export interface Reason {
+  readonly because?: readonly string[];
+  readonly note?: string;
+}
+export interface CorrespondenceEntry extends Reason {
   readonly from: readonly string[];
   readonly to: readonly string[];
   readonly relation: string;
@@ -185,25 +198,27 @@ export interface RelationSpec {
   readonly order?: number;
   readonly attributes?: Readonly<Record<string, unknown>>;
 }
-export interface RedirectOptions {
+export interface RedirectOptions extends Reason {
   readonly relations?: readonly string[];
   readonly direction?: 'incoming' | 'outgoing' | 'both';
 }
 export interface IREdit<T = unknown> {
   readonly base: Artifact<T>;
   readonly state: 'open' | 'preparing' | 'prepared' | 'committed' | 'rolled-back' | 'failed';
-  insert(entity: IREntity): IRRef;
-  replace(target: EntityTarget, entity: IREntity): void;
-  remove(target: EntityTarget): void;
-  update(target: EntityTarget, attributes: Readonly<Record<string, unknown>>): void;
-  connect(from: EntityTarget, relation: string | RelationSpec, to: EntityTarget): string;
-  disconnect(relationId: string): void;
-  disconnect(from: EntityTarget, relationKind: string, to: EntityTarget): void;
+  // IRWB-001 E2: every edit takes an optional Reason, recorded in the operation log.
+  insert(entity: IREntity, reason?: Reason): IRRef;
+  replace(target: EntityTarget, entity: IREntity, reason?: Reason): void;
+  remove(target: EntityTarget, reason?: Reason): void;
+  update(target: EntityTarget, attributes: Readonly<Record<string, unknown>>, reason?: Reason): void;
+  connect(from: EntityTarget, relation: string | RelationSpec, to: EntityTarget, reason?: Reason): string;
+  disconnect(relationId: string, reason?: Reason): void;
+  disconnect(from: EntityTarget, relationKind: string, to: EntityTarget, reason?: Reason): void;
   redirectReferences(from: EntityTarget, to: EntityTarget, options?: RedirectOptions): void;
   correspond(
     from: EntityTarget | readonly EntityTarget[],
     to: EntityTarget | readonly EntityTarget[],
     relation?: string,
+    reason?: Reason,
   ): void;
   preview(): IRGraph;
   prepare(): TransformationResult<T>;

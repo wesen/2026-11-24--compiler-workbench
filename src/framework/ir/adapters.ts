@@ -2,7 +2,7 @@ import { canonical, fingerprint, immutable } from '../core/data.js';
 import type { Artifact } from '../core/types.js';
 import type { AdapterDescriptor, Capability, IRAdapter, IREntity, IRGraph, IRRelation } from './types.js';
 import { compareText, IRError, requireRecord, requireText, synchronous, syncFunction } from './common.js';
-const categories = new Set(['containment', 'dependency', 'binding', 'adjacency', 'provenance']);
+const categories = new Set(['containment', 'dependency', 'binding', 'adjacency', 'provenance', 'control']);
 const captured = new WeakSet<object>();
 const requiredFunctions = ['entities', 'resolve', 'relations', 'describe'] as const;
 const optionalFunctions = [
