@@ -73,3 +73,40 @@ Typed domain on the framework: typed.blocks IR and adapter, CW lifting, evaluato
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/passes.ts — the 11 passes as definePass
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/parity.mjs — corpus parity report
+
+## 2026-11-24
+
+RV32 backend merged (tiling selection, linear scan, frames, encoding, rv32.image IR with correspondence); image parity after O2: Blend 88 bytes / 451 instructions, Checksum 52/366; program host (Program: apply, undo, why, check against r0 and image); Candela inventory (analysis/03); report 1 in the vault.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/backend/compile.ts — lowering typed.blocks to the RV32 image
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/program.ts — the program host
+
+## 2026-11-24
+
+Audit mode for preservation claims (1,376 applications; the prototype's lvn/dce/subst loops claims fail on 9/2/10 revisions); reference compiler pass groups vendored, chapters 13 and 14 reproduced (5,160 vs 7,628 bytes; 6,986/6,986 cases); specialization on outer facts (typed.bindings, restricted contract, because-chain to the fact).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/specialize.ts — specialization under assumptions
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/audit-preservation.mjs — checks every preservation claim
+
+## 2026-11-24
+
+Strategies as checked data: typed.metrics, strategyRegistry, chooseBest plans, runStrategy publishes the winning chain; user passes via the prototype's builder; short-form strategies and presets; tile-width (72 columns) formatting of everything the workbench shows (88 corpus files reformatted with meaning and Markdown-block checks).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/format.ts — tile-width formatting
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/strategies.ts — strategies, metrics, presets
+
+## 2026-11-24
+
+Ordering search over the corpus: 12/44 projects faster than O2 (-2.2% instructions, 5,160 -> 5,092 bytes); 11 of 12 gains are one extra subst after O2 (the book's t = i copy where bce removed the check); per-function search never beats per-program choice on this corpus. Merged the browser workbench (UI subagent) and f32 + Candela lifting (f32 subagent: 332 functions, 0 disagreements with the reference image, O2 13 revisions, -23% statements). Fixed typedTape registration in the page. Reports 2 and 3 in the vault. Design-doc 04 (16 optimization ideas).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/f32.ts — f32 semantics
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/search-experiment.mjs — the corpus ordering experiment
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/24/IRWB-001--ir-workbench/design-doc/04-optimization-ideas-what-the-framework-makes-possible-from-candela-to-rv32.md — optimization ideas
