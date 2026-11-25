@@ -727,3 +727,36 @@ The user also set the diary cadence: a step at every significant action, more of
 
 ### Code review instructions
 Read `design-doc/05-…md`, then `docmgr task list --ticket IRWB-001`.
+
+## Step 11: O2+ (task 4c1o)
+
+This step turns the ordering search's finding into a pipeline: `O2+` is O2 followed by one `subst`. Across the corpus it is faster than O2 on exactly the eleven projects the search predicted, and never slower or larger.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Assistant interpretation:** design-doc 05 §2.
+**Commit (code):** the commit after this step (O2+, tests, scripts/06, experiments/03).
+
+### What I did
+- **`src/typed/passes.ts`:** added `PIPELINES['O2+']`, which is O2's 16 passes plus `subst`, with a comment naming the finding. O2 is unchanged.
+- **`tests/typed/strategies.test.mjs`:** O2+ equals O2 plus `subst`. On Checksum, O2 leaves `t3 = i` and 1,410 instructions; O2+ removes it, giving 1,260, and its check agrees.
+- **`tests/workbench/strategies.test.mjs`:** the compiler's pipeline list now includes `O2+`.
+- **`scripts/06-o2-plus-corpus.mjs`:** O2 against O2+ on all 44 projects. Output in `various/experiments/03-o2-plus-corpus.{json,log}`.
+
+### What worked
+- The corpus comparison:
+  `{"better":[11 projects],"worse":[],"biggerImage":[],"allAgree":true,"totals":{"o2":77321,"plus":75681,"o2b":5160,"plusb":5104}}`.
+- The eleven projects are those of step 9: across-calls, bounds-lab, bounds-two, checksum, early-exit, histogram, ramp, start-here, strength, strings and wrong-shift.
+- `npm test` passes; see the commit.
+
+### What didn't work
+- Nothing failed.
+
+### What I learned
+- O2+ reaches 75,681 instructions; the search's best reached 75,651. The 30-instruction difference is `constants`, which needs O2 twice. O2+ captures 98% of the search's gain at the cost of one pass.
+
+### What warrants a second pair of eyes
+- The strategy presets (`fastest`, `smallest`) still choose among O0, O1, O2 and loops. Adding O2+ to them changes the winners that the UI tests pin.
+
+### Code review instructions
+`src/typed/passes.ts` (`PIPELINES`), then `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/06-o2-plus-corpus.mjs`.

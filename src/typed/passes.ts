@@ -862,6 +862,30 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'dce',
     'cfg',
   ],
+  /**
+   * O2 followed by one subst: after O2's final dce and cfg, a copy such as `t3 = i` has a single reader and subst
+   * removes it. Found by the ordering search (diary step 9): 11 of the 12 projects that beat O2 do so this way.
+   * O2 itself stays as Compiler Workbench defines it, for parity with the book.
+   */
+  'O2+': [
+    'cfg',
+    'fold',
+    'simplify',
+    'constprop',
+    'fold',
+    'simplify',
+    'dce',
+    'cfg',
+    'licm',
+    'lvn',
+    'strength',
+    'bce',
+    'subst',
+    'subst',
+    'dce',
+    'cfg',
+    'subst',
+  ],
   loops: ['cfg', 'simplify', 'licm', 'lvn', 'subst', 'dce', 'cfg'],
   checks: ['cfg', 'simplify', 'bce', 'cfg'],
   broken: ['div-to-shift'],
