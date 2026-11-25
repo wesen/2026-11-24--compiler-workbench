@@ -1237,3 +1237,45 @@ This step finished Step 23's browser check. In Chromium, rendering B-01 at strid
 
 ### What warrants a second pair of eyes
 - **The setup time of the `own` engine at r0 includes hashing r0 into an artifact** (`candelaArtifact`), several seconds, on the main thread. The UI agent flagged the same cost for opening Candela as a project.
+
+## Step 25: per-scene programs compiled by our backend: images 58% smaller, 5–6% fewer instructions per pixel, frames identical
+
+This step compiled the per-scene programs of Step 19 to RV32 with our own backend and rendered from them. For B-01 and R-01:
+- **Size:** the image falls from 183,324 bytes, the general r0 image, to about 77 KB.
+- **Speed:** instructions per pixel fall by 6.3% and 4.9%.
+- **Correctness:** both frames are bit-identical to the reference `kernel` image's.
+
+The size gain is the large one. The speed gain is small, because this pipeline removes dispatch and runs only light cleanup. Design-doc 05 §7 planned O2+ after `dfe`, which runs next.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10. The broader goal is the user's earlier "create new projects and such that try to create sick ass optimizations from candela to rv32".
+
+### What I did
+- **`scripts/13-candela-per-scene-images.mjs`:**
+  - lowers the general r0 once;
+  - per scene: specialize on `K.scene`, then constprop, fold, cfg, dce, cfg and dfe, and lower the result;
+  - renders at stride 4 with the reference `kernel` image, our general r0 image and our scene image;
+  - compares every output float with the reference frame.
+- Ran it on B-01 and R-01 → `various/experiments/07-candela-per-scene-images.{json,log}`.
+
+### What worked
+| scene | general image | scene image | instructions per pixel: ours general → ours scene | `kernel` |
+|---|---:|---:|---:|---:|
+| B-01 | 183,324 B | 76,244 B (−58.4%) | 11,200.4 → 10,494.4 (−6.3%) | 8,501 |
+| R-01 | 183,324 B | 77,688 B (−57.6%) | 24,070.2 → 22,881.6 (−4.9%) | 15,655.9 |
+
+`differentBits` is 0 in all four comparisons (general and scene image, each against the reference).
+
+### What I learned
+- **Specialization alone mostly saves size.** The dispatchers cost a few instructions per call, and with them gone the hot paths are unchanged.
+- **The speed gap to `kernel` stays wide.** It needs the O2 passes, and beyond them inlining (agenda item E3). R-01, with more bounces and lights, shows the larger gap: 46% more instructions than `kernel` here, against 32% for B-01.
+
+### What warrants a second pair of eyes
+- **The scene images are compared at stride 4 only**, 1,600 pixels, one sample each. Step 19's evaluator runs cover all 18 scenes at stride 8.
+
+### Next
+- `scripts/13 … --o2`, running in the background:
+  - after `dfe`, apply O2+;
+  - check every surviving function against the post-`dfe` revision on 20 cases each;
+  - lower, render and compare again.
+  The entry-only contract alone is weak for internal functions, since many `cdlRenderSpan` cases hit the step limit; the per-function check closes that gap, and is valid because the assumption `K.scene = v` is part of every function's inputs.

@@ -1,0 +1,2 @@
+{"scene":"B-01","stride":4,"pixels":1600,"rev":6,"bytes":{"general":183324,"scene":76244},"perPixel":{"referenceKernel":8501,"oursGeneral":11200.4,"oursScene":10494.4},"differentBits":{"generalVsReference":0,"sceneVsReference":0}}
+{"scene":"R-01","stride":4,"pixels":1600,"rev":6,"bytes":{"general":183324,"scene":77688},"perPixel":{"referenceKernel":15655.9,"oursGeneral":24070.2,"oursScene":22881.6},"differentBits":{"generalVsReference":0,"sceneVsReference":0}}
