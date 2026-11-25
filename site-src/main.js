@@ -8,8 +8,9 @@ import './agent.js';
 import './dock.js';
 import './dsl.js';
 import './compiler.js';
+import './candela.js';
 import { createWb, setVendor, PIPELINES, backendDefaults, didYouMean, yieldToHost } from './wb.js';
-import { PROJECTS, BOOK, REFERENCE, SOURCES, BUILD } from './content.generated.js';
+import { PROJECTS, BOOK, REFERENCE, SOURCES, BUILD, LAZY } from './content.generated.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = UI.esc;
@@ -20,7 +21,7 @@ if (!globalThis.typedWasm || !globalThis.typedRv32Interp) throw new Error('vendo
 setVendor({ typedWasm: globalThis.typedWasm, typedRv32Interp: globalThis.typedRv32Interp, typedTape: globalThis.typedTape });
 
 // ---------- the workbench ----------
-UI.content = { book: BOOK, reference: REFERENCE, sources: SOURCES, build: BUILD };
+UI.content = { book: BOOK, reference: REFERENCE, sources: SOURCES, build: BUILD, lazy: LAZY };
 const wb = createWb({ storage: store, projects: PROJECTS, book: BOOK, reference: REFERENCE, sources: SOURCES });
 UI.wb = wb;
 globalThis.wb = wb; // for the browser's own console
@@ -335,6 +336,19 @@ UI.batch = async function batch(fn) {
 
 // ---------- the pipeline in the header: Step and Run apply passes through the async pass manager ----------
 UI.busy = null;
+// a check's result for the run log: every function on a small program; on a large one (Candela has 332) a count,
+// and the functions that disagree
+function checkLine(c) {
+  if (!c) return '';
+  const each = f => `${f.fn} ${f.agree}/${f.total}`;
+  if (c.fns.length <= 6) return c.fns.map(each).join(', ');
+  const bad = c.fns.filter(f => f.agree !== f.total),
+    cases = c.fns.reduce((n, f) => n + f.total, 0);
+  return (
+    `${c.fns.length - bad.length} of ${c.fns.length} functions agree on all ${cases.toLocaleString('en-GB')} cases` +
+    (bad.length ? `; ${bad.length} disagree: ${bad.slice(0, 6).map(each).join(', ')}${bad.length > 6 ? ', …' : ''}` : '')
+  );
+}
 UI.step = UI.guarded(async function step() {
   const p = wb.current;
   if (!p || UI.busy) return;
@@ -345,6 +359,12 @@ UI.step = UI.guarded(async function step() {
   }
   const i = S.pipeIndex,
     name = S.pipeline[i];
+  const slow = wb.projects.current && wb.projects.current.meta.slowPasses;
+  if (slow && S.slowOk !== wb.projects.current.id) {
+    S.slowOk = wb.projects.current.id;
+    UI.toast(`${wb.projects.current.title}: each pass takes ${slow}, and the page does not respond meanwhile. Step or Run again to start.`, true);
+    return;
+  }
   UI.busy = { i, pass: name };
   UI.refresh(['pipeline']);
   await new Promise(r => requestAnimationFrame(() => r())); // show "running" before the pass takes the thread
@@ -352,7 +372,7 @@ UI.step = UI.guarded(async function step() {
   try {
     const r = await p.apply(name);
     const c = r.changed ? p.check({ count: 40 }) : null;
-    S.runLog.push({ i, pass: name, rev: r.rev, edits: r.edits, check: c ? c.fns.map(f => `${f.fn} ${f.agree}/${f.total}`).join(', ') : '', bad: !!(c && c.status !== 'agree') });
+    S.runLog.push({ i, pass: name, rev: r.rev, edits: r.edits, check: checkLine(c), bad: !!(c && c.status !== 'agree') });
   } catch (e) {
     if (e.code !== 'contractRejected') throw e;
     // the kernel's gate kept the program as it was: show why, and go on
@@ -442,7 +462,8 @@ function route(first) {
   const h = (location.hash || '').slice(1);
   if (h.startsWith('book-')) {
     S.chapter = h.slice(5);
-    if (first === true && !wb.current) UI.loadProject(store.get('wb3.project') || 'start-here', { quiet: true });
+    const last = store.get('wb3.project');
+    if (first === true && !wb.current) UI.loadProject(last && wb.projects.list().some(x => x.id === last) ? last : 'start-here', { quiet: true });
     UI.open('book');
     UI.refresh(['book']);
     return;

@@ -79,13 +79,26 @@
 .ivwrap svg.ivs { max-width: 100%; height: auto; }
 
 /* the header on narrower windows: the project title gives way (ellipsis), the controls keep their size */
-.bar .proj { flex: 0 1 auto; min-width: 60px; overflow: hidden; }
+.bar .proj { flex: 0 1 auto; min-width: 120px; overflow: hidden; }
 .bar .projbtn { max-width: 100%; min-width: 0; }
 .bar .projbtn .pcode { white-space: nowrap; }
 .bar .projbtn .ptitle { min-width: 0; }
 .bar .pill, .bar .runctl, .bar .btn, .bar .tog { flex: none; }
-@media (max-width: 1280px) { .brand i, .buildinfo { display: none; } }
+@media (max-width: 1440px) { .brand i, .buildinfo { display: none; } }
 @media (max-width: 1060px) { .bar .projbtn .pcode { display: none; } .bar { gap: 8px; } .brand { padding-right: 8px; } }
 /* a file name longer than its row wraps instead of running under the row's buttons */
 .fileitem .pitem b, .fileitem .pitem small { overflow-wrap: anywhere; }
 .fileitem .btn.sm, .fileitem .tog { flex: none; }
+
+/* the Candela view: controls that wrap in a narrow tile, the frame scaled up without smoothing */
+.cdl-ctl { row-gap: 4px; }
+.cdl-ctl select { max-width: 100%; min-width: 0; flex: 1 1 18ch; font: inherit; font-size: var(--fs-s); padding: 2px 4px; border: 1px solid var(--hair); background: var(--bg); color: var(--ink); }
+.cdl-ctl input[type=number] { width: 6ch; font: inherit; font-size: var(--fs-s); padding: 2px 4px; border: 1px solid var(--hair); background: var(--bg); color: var(--ink); }
+.cdl-ctl .lbl { font-size: var(--fs-xs); color: var(--ink-2); }
+.cdl-canvas { margin: 8px 0; max-width: 480px; }
+.cdl-canvas canvas { display: block; width: 100%; height: auto; image-rendering: crisp-edges; image-rendering: pixelated; background: var(--fill); border: 1px solid var(--hair); }
+.cdl .kvt th { text-align: left; white-space: nowrap; font-weight: normal; color: var(--ink-2); padding-right: 10px; vertical-align: top; }
+.cdl .kvt td { text-align: left; }
+.cdl .kvt td.good { color: var(--good); }
+.cdl .kvt td.bad { color: var(--warn); }
+.cv-busy { color: var(--ink-2); font-style: italic; }

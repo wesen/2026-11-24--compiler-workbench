@@ -17,6 +17,8 @@ import { Program } from '../typed/program.js';
 import { projectSource } from '../typed/project.js';
 import { didYouMean, fail, guard, toYaml, WorkbenchError } from './base.js';
 import { WbProgram } from './programs.js';
+import { candelaInputs } from './candela-inputs.js';
+import { storeOf } from '../typed/ir.js';
 import { keyOf, runAsync, runSync, settle, unwrap, type Outcome, type SyncContext } from './sync.js';
 
 export const KEY = 'wb.projects.v1';
@@ -236,21 +238,39 @@ export function makeProjects(
   const programs = new Map<string, { sig: string; q: WbProgram }>();
   const builds = new Map<string, WbProgram>(); // by signature: a replayed write finds the same program
   const templates = new Map<string, WbProgram>(); // fresh copies, by signature: ingested once
+  /**
+   * A kernel program for a project. project.json may say how to ingest (`"ingest": { "tape": true,
+   * "maxSourceLength": n }`, for Candela) and where check inputs come from (`"inputsFrom": "candela"`: derived from
+   * the lifted program, so the gate's cases fit Candela's records).
+   */
+  function kernelFor(id: string, files: Record<string, string>, name?: string): Program {
+    const meta = metaOf(id);
+    const ingest = meta.ingest && typeof meta.ingest === 'object' ? meta.ingest : null;
+    if (!ingest && !meta.inputsFrom) return env.kernel.open(id, files);
+    const ps = projectSource(id, files);
+    const inputs: Record<string, unknown> = { ...((ps.meta.inputs as Record<string, unknown>) ?? {}) };
+    const k = new Program(name ?? ps.name, ps.source, {
+      inputs: inputs as never,
+      fileMap: ps.fileMap,
+      project: id,
+      ...(ingest ? { ingest } : {}),
+    });
+    // the Program reads its inputs object on every check; fill it once the program is lifted
+    if (meta.inputsFrom === 'candela' && k.status === 'ok')
+      Object.assign(inputs, candelaInputs(storeOf(k.head.value)));
+    return k;
+  }
   function build(id: string, fresh = false): WbProgram {
     const files = buildFiles(id);
     if (!fresh) {
-      const k = env.kernel.open(id, files);
+      const k = kernelFor(id, files);
       return new WbProgram(k, { project: id, fileMap: k.options.fileMap });
     }
     const key = `${id}:${hash(JSON.stringify(files))}`;
     let t = templates.get(key);
     if (!t) {
       const ps = projectSource(id, files);
-      const k = new Program(`${ps.name}_fresh`, ps.source, {
-        inputs: ps.meta.inputs,
-        fileMap: ps.fileMap,
-        project: id,
-      });
+      const k = kernelFor(id, files, `${ps.name}_fresh`);
       if (templates.size > 32) templates.clear();
       templates.set(key, (t = new WbProgram(k, { project: id, scratch: true, fileMap: k.options.fileMap })));
     }
@@ -690,8 +710,14 @@ export function makeProjects(
     return guard('Projects', api);
   };
 
+  /** A built-in project whose files arrive after the page loads (Candela, from its lazily loaded data). */
+  function addBuiltin(p: BuiltinProject) {
+    builtins.set(p.id, p);
+    env.emit('projects', { added: p.id });
+  }
   return {
     make,
+    addBuiltin,
     filesOf,
     metaOf,
     programFor,
