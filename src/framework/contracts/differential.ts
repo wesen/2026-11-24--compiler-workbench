@@ -39,6 +39,8 @@ export interface DifferentialSpec<P extends Ports, Case, Outcome> {
   readonly subject: keyof P & string;
   readonly count: number;
   readonly seed?: number;
+  /** The generator to seed (default `seededRandom`, mulberry32); a port may supply its tool's own generator. */
+  readonly random?: (seed: number) => () => number;
   /** Generate the cases, deterministically from `random` and the inputs. */
   cases(inputs: PortValues<P>, random: () => number, count: number): readonly Case[];
   /** Run one side on one case. `side` names which port `value` came from. */
@@ -103,7 +105,7 @@ export function runDifferential<P extends Ports, Case, Outcome>(
   seed = spec.seed ?? 1,
   maxCounterexamples = spec.maxCounterexamples ?? 5,
 ): DifferentialEvidence {
-  const cases = spec.cases(inputs, seededRandom(seed), spec.count);
+  const cases = spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count);
   let agree = 0,
     disagree = 0,
     inconclusive = 0;

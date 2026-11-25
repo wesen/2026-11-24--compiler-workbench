@@ -73,6 +73,12 @@ export function validateBlocks(value: unknown): asserts value is TypedBlocks {
   for (const k of ['fns', 'blocks', 'stmts', 'values', 'ops', 'counters'] as const)
     need(v[k] && typeof v[k] === 'object', `${k} required`);
   need(typeof v.program === 'string' && v.program.length > 0, 'program name required');
+  need(
+    Array.isArray(v.fnOrder) &&
+      v.fnOrder.length === Object.keys(v.fns).length &&
+      v.fnOrder.every(n => v.fns[n]),
+    'fnOrder must list every function once',
+  );
   for (const [name, f] of Object.entries(v.fns)) {
     need(f.id === `fn:${name}` && f.name === name, `function ${name} has id ${f.id}`);
     need(
@@ -298,6 +304,7 @@ export function rebuildBlocks(base: TypedBlocks, graph: IRGraph): TypedBlocks {
     formatVersion: 1,
     program: base.program,
     counters: sortKeys(counters),
+    fnOrder: base.fnOrder.filter(n => fns[n]),
     fns: sortKeys(fns),
     blocks: sortKeys(blocks),
     stmts: sortKeys(stmts),

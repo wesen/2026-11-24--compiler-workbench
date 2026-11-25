@@ -45,6 +45,9 @@ export interface DataflowSpec<S, V, C = unknown> {
   transfer(block: string, input: V, context: C, region: FlowRegion): V;
   boundary?(region: FlowRegion, context: C): V;
   widen?(previous: V, next: V, block: string): V;
+  readonly widenAfter?: number;
+  edge?(from: string, to: string, value: V, context: C, region: FlowRegion): V;
+  readonly strategy?: 'worklist' | 'round-robin';
   readonly reads: ReadSet;
   readonly maxIterations?: number;
 }
@@ -60,6 +63,7 @@ export interface DataflowResult {
         readonly in: Readonly<Record<string, Json>>;
         readonly out: Readonly<Record<string, Json>>;
         readonly iterations: number;
+        readonly rounds: number;
         readonly loopHeads: readonly string[];
       }
     >
@@ -125,6 +129,9 @@ export function dataflow<S, V, C = unknown>(spec: DataflowSpec<S, V, C>): Datafl
         boundary: spec.boundary?.(region, region.context),
         transfer: (b, v) => spec.transfer(b, v, region.context, region),
         widen: spec.widen,
+        widenAfter: spec.widenAfter,
+        edge: spec.edge && ((from, to, v) => spec.edge!(from, to, v, region.context, region)),
+        strategy: spec.strategy,
         maxIterations: spec.maxIterations,
       });
       const enc = (m: ReadonlyMap<string, V>) =>
@@ -137,6 +144,7 @@ export function dataflow<S, V, C = unknown>(spec: DataflowSpec<S, V, C>): Datafl
         in: enc(solution.in),
         out: enc(solution.out),
         iterations: solution.iterations,
+        rounds: solution.rounds,
         loopHeads: solution.loopHeads,
       };
     }
@@ -181,7 +189,13 @@ export function dataflow<S, V, C = unknown>(spec: DataflowSpec<S, V, C>): Datafl
       if (!r) throw new Error(`${spec.id} has no region ${region}`);
       const dec = (m: Readonly<Record<string, Json>>) =>
         new Map(Object.entries(m).map(([k, v]) => [k, spec.lattice.decode(v)]));
-      return { in: dec(r.in), out: dec(r.out), iterations: r.iterations, loopHeads: r.loopHeads };
+      return {
+        in: dec(r.in),
+        out: dec(r.out),
+        iterations: r.iterations,
+        rounds: r.rounds ?? 0,
+        loopHeads: r.loopHeads,
+      };
     },
   }) as DataflowAnalysis<S, V>;
 }

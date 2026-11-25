@@ -141,6 +141,8 @@ export interface TypedBlocks {
   readonly formatVersion: 1;
   readonly program: string;
   readonly counters: Readonly<Record<string, number>>;
+  /** Function names in source order (the tables themselves are sorted by id). */
+  readonly fnOrder: readonly string[];
   /** Function name -> function record plus the ordered ids of its blocks. */
   readonly fns: Readonly<Record<string, FnRec & { readonly blocks: readonly string[] }>>;
   readonly blocks: Readonly<Record<string, BlockRec>>;
@@ -196,8 +198,8 @@ export class Store {
     for (const v of Object.values(native.values)) st.add(clone(v));
     for (const s of Object.values(native.stmts)) st.add(clone(s));
     for (const b of Object.values(native.blocks)) st.add(clone(b));
-    for (const [name, f] of Object.entries(native.fns)) {
-      const { blocks, ...rest } = clone(f);
+    for (const name of native.fnOrder) {
+      const { blocks, ...rest } = clone(native.fns[name]);
       const work: WorkFn = { ...(rest as FnRec), blocks: blocks.map(id => st.get(id) as BlockRec) };
       st.add(work);
       st.fns.set(name, work);
@@ -254,6 +256,7 @@ export class Store {
       formatVersion: 1,
       program: this.program,
       counters,
+      fnOrder: [...this.fns.keys()],
       fns,
       blocks,
       stmts,
