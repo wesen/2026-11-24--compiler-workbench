@@ -11,8 +11,8 @@
 - [ ] Phase 0: run Compiler Workbench locally (fix build/load paths, regenerate bundles, run test/projects.mjs against ds-js-os typed-rv32.js) <!-- t:fqfc -->
 - [ ] Inventory what Candela build/compile/pack know (constant fields, parameter ranges, per-scene sections) before designing the fact channel <!-- t:m7y3 -->
 - [ ] P0.1 Baseline: snapshot the Compiler Workbench prototype on all 44 projects (parity oracle: revisions, listings, image bytes, checks) <!-- t:x022 -->
-- [ ] P1.1 Scaffold the TypeScript project (strict tsc, esbuild, prettier, node:test, layering check) <!-- t:70zr -->
-- [ ] P1.2 Lift the v6 framework (core, strategy, contracts, ir) into src/framework, reformat, port its tests <!-- t:txbz -->
+- [x] P1.1 Scaffold the TypeScript project (strict tsc, esbuild, prettier, node:test, layering check) <!-- t:70zr -->
+- [x] P1.2 Lift the v6 framework (core, strategy, contracts, ir) into src/framework, reformat, port its tests <!-- t:txbz -->
 - [ ] P1.3 Extensions E1 (control relation category) and E2 (because on edits, why query) <!-- t:2v29 -->
 - [ ] P1.4 Extension E4: dataflow builder, lattices, widening, checked fact transfer <!-- t:aruk -->
 - [ ] P1.5 Extension E5: differential invariants, case generation, sampled assurance <!-- t:unsw -->
