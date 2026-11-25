@@ -18,6 +18,8 @@ export interface BridgeOptions {
   readonly manager: AnalysisManager;
   readonly store?: IRStore;
   readonly contractInputs?: (input: Artifact<any>) => Readonly<Record<string, unknown>>;
+  /** A contract for every application, overriding the passes' own (see ApplyOptions.contract). */
+  readonly contract?: import('../contracts/types.js').TransformationDefinition<any, any>;
   readonly onResult?: (result: PassResult<any>) => void;
 }
 
@@ -39,6 +41,7 @@ export function passAlgorithm<S>(pass: Pass<S, Needs, any>, options: BridgeOptio
           store: options.store,
           params: args,
           contractInputs: options.contractInputs?.(input as Artifact<S>),
+          contract: options.contract,
         });
         options.onResult?.(result);
         ctx.record('pass', {

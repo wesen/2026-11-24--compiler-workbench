@@ -92,3 +92,22 @@ test(`P2.6: corpus parity (${FULL ? 'all projects' : 'subset'})`, { timeout: 600
   if (FULL) assert.deepEqual({ projects: ids.length, fns, total, agree, inconclusive }, { projects: 44, fns: 70, total: 7000, agree: 6986, inconclusive: 14 });
   else assert.equal(agree + inconclusive, total);
 });
+
+test('P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner', async () => {
+  const { pipelinePlan, pipelineRegistry } = await import('../../dist/typed/strategy.js');
+  const { executeOrThrow, execute } = await import('../../dist/framework/strategy/index.js');
+  const p = project('blend'), r0 = ingestProject(p), manager = new AnalysisManager(), results = [];
+  const registry = pipelineRegistry({ manager, origin: r0, inputs: p.meta.inputs, onResult: r => results.push(r) });
+  const exec = await executeOrThrow(pipelinePlan('O2'), registry, r0);
+  const direct = await runPipeline(r0, 'O2', { manager: new AnalysisManager(), inputs: p.meta.inputs });
+  assert.equal(exec.value.revision, direct.artifact.revision);
+  assert.deepEqual(results.filter(r => r.changed).map(r => r.pass.id), ['typed.cfg', 'typed.fold', 'typed.simplify', 'typed.constprop', 'typed.dce', 'typed.licm']);
+  // the broken pipeline is a strategy rejection, unless the plan tolerates the pass
+  const w = project('wrong-shift'), w0 = ingestProject(w);
+  const wreg = pipelineRegistry({ manager, origin: w0, inputs: w.meta.inputs });
+  const rejected = await execute(pipelinePlan('broken'), wreg, w0);
+  assert.equal(rejected.status, 'rejected');
+  assert.equal(rejected.error.code, 'contract-rejected');
+  const tolerated = await executeOrThrow(pipelinePlan('broken', undefined, { tolerate: ['div-to-shift'] }), wreg, w0);
+  assert.equal(tolerated.value.revision, w0.revision);
+});
