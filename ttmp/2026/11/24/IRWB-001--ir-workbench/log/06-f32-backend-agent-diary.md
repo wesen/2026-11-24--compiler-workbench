@@ -351,3 +351,63 @@ Step 5 showed every parameter of a calling function copied out of its fa registe
 
 ### Technical details
 - Occupied(r, p) = r ∈ liveIn(p) ∪ def(p); clash(x, r) = ∃p ∈ (start, end): occupied(r, p), or r ∈ liveOut(start) and code[start] is not `fmv.s x, r`.
+
+## Step 7: The test suites, r0 at 100 cases, the O2 head; branch relaxation
+
+This step collected four results. The full test suite passes. The `IRWB_FULL=1` corpus tests pass. Candela r0 agrees at 100 cases per function, and so do the reference's `stock` and `kernel` images. O2 on Candela finished with the head diary 04 reported. That head first failed to compile with a branch out of range, which led to branch relaxation. After it, every function compiles at the O2 head and agrees.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Acceptance 1 (the i32 corpus) and 2 (every function compiles at r0 and at the O2 head); the first half of 3.
+**Inferred user intent:** See Step 1.
+**Commit (code):** e3e91b1 — "IRWB-001 P4.5: branch relaxation (a conditional branch beyond ±4 KiB becomes an inverted branch over a jal); every Candela function compiles at the O2 head"
+
+### What I did
+- `npm test` (on 719e1d6), background task `bz0uwa3v0`.
+- `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs` (task `b3cb8e6mf`).
+- The r0 run of Step 5 (`tools/candela-image.mjs --count 100`, task `bsodi34ym`, on 9e96e22, before Step 6) finished.
+- The O2 run of Step 1 (task `byfsir3x1`) finished and saved `scratchpad/candela-o2-head.json` (16,319,658 bytes).
+- `node tools/candela-image.mjs --count 10 --policies stock --head scratchpad/candela-o2-head.json`, which failed (below).
+- `compile.ts` `relaxBranches`, applied to every function's finished code: a conditional branch whose target is outside −4096…4094 bytes becomes the inverted branch to a new label `farN` right after a `jal zero, target` (note "a branch target beyond ±4 KiB"); repeated until nothing changes. An unknown target is left for the encoder to report. Exported from the backend's index.
+- A test: an `if` arm of 300 f32 statements (about 8 KiB) relaxes its branch and agrees on 20 cases; `relaxBranches` on hand-made code (a branch 5,000 bytes back becomes `bge` over `j`; a near branch is unchanged).
+- The baseline comparison again, and `node --test tests/typed/backend.test.mjs tests/typed/f32-backend.test.mjs`.
+
+### Why
+- **Relaxation after finishing, per function.** Displacements are known only once spill code, the frame and the exit sequence are in place. Branches never leave their function (calls are `jal` with ±1 MiB), so each function can be relaxed on its own before layout.
+
+### What worked
+- `npm test`: `tests 309`, `pass 307`, `fail 0`, `skipped 2` (the two `IRWB_CANDELA` tests), 53 s.
+- `IRWB_FULL=1`: 21 of 21, among them "P2.6: the book's table against the reference compiler, and 5160 bytes against 7628" and "P2.6: corpus parity (all projects)".
+- Candela r0 at 100 cases per function (build 9e96e22): `{"functions":332,"cases":33200,"decided":32985,"values":31617,"traps":1368,"bytes":{"r0":189216,"stock":312740,"kernel":434996},"agree":{"r0":32985,"stock":32985,"kernel":32985},"disagree":{"r0":0,"stock":0,"kernel":0},"inconclusive":{"r0":215,"stock":215,"kernel":215},"vsStock":{"r0":0},"perCase":{"r0":944.7,"stock":1598.6,"kernel":747.7},"ms":1012598}`. So our image, the `stock` image and the `kernel` image each agree with the evaluator on every decided case, and our image agrees with `stock` on every case both decided. The 215 inconclusive cases are the ones the f32 agent found (`skyBuild`, `cdlSky`, `cdlRenderSpan`, `fbm3`, `traceAOV` at the 2·10^5-statement limit).
+- O2: `rev 13`, `head {"blocks":1970,"stmts":9479,"values":29963,"locals":10466}`, as in diary 04 Step 9; no pass rejected; final check `{"total":33200,"agree":33184,"disagree":0,"inconclusive":16}` (limit 2·10^5); pipeline 2,540 s and final check 222 s on the loaded machine (load average about 8).
+- After relaxation, the head at 10 cases per function: `"bytes":{"r0":183324,"o2":151748,"stock":312740}`, `"agree":{"r0":3300,"o2":3300,"stock":3300}`, `"disagree"` 0 for all, `"vsStock":{"r0":0,"o2":0}`, `"perCase":{"r0":919.1,"o2":854,"stock":1574.8}`.
+- The corpus: `projects 44 differ 0 5160` again; backend and f32-backend tests 20 pass, 1 skipped.
+
+### What didn't work
+- The O2 head did not compile:
+  ```
+  BackendError: [branchRange] branch of -4512 bytes is out of range
+    code: 'branchRange',
+  ```
+  At r0 no branch was that long; after O2 one is (cfg merges blocks, and licm and lvn make loop bodies longer). Fixed by relaxation.
+- The first relaxation test used a `for` loop with an 8 KiB body and found no long branch: the lifter places the loop's exit block right after its header (`blt t0, a0, 0xc` jumps 8 bytes), and the back edge is a `jal`. An `if` arm does need the long forward branch.
+- My unit check `relaxBranches(code.slice(-100))` expected 100 instructions and got 102: the slice dropped the target label, and the first version relaxed a branch to an unknown label. It now leaves such a branch alone.
+
+### What I learned
+- The reference's `kernel` policy agrees with the evaluator on all 32,985 decided cases at 100 per function. That is the acceptance measurement of task gxe6 (design-doc 05 §6), obtained here in passing.
+- At r0, our image runs 59% of the `stock` image's instructions and 126% of the `kernel` image's (944.7 against 1,598.6 and 747.7), in 60% of `stock`'s bytes and 43% of `kernel`'s.
+
+### What was tricky to build
+- Nothing beyond the label bookkeeping: a relaxed branch moves every later instruction, so the loop recomputes positions until no branch changes.
+
+### What warrants a second pair of eyes
+- The corpus never needs relaxation (it would have failed before), so relaxation cannot change a corpus image; the baseline comparison confirms it.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `src/typed/backend/compile.ts` `relaxBranches`; the test "a branch beyond ±4 KiB is relaxed".
+
+### Technical details
+- B-type range: −4096…+4094 bytes. A relaxed site costs one extra word: `b<inverted> rs1, rs2, farN; jal zero, target; farN:`.
