@@ -23,9 +23,11 @@ import {
   T5,
   T6,
   ZERO,
+  INVERT,
   decode,
   encodeOne,
   fits12,
+  isBranch,
   physClass,
   type MInsn,
 } from './encode.js';
@@ -201,12 +203,58 @@ export function finish(
   if (!final.some(m => m.target === 'exit') && before && ['ret', 'j', 'ebreak'].includes(before.op))
     final.length = exitAt;
   return {
-    code: final,
+    code: relaxBranches(final),
     frame,
     saved,
     spills: slots.size,
     regs: [...new Set(assign.values())].sort((a, b) => a - b),
   };
+}
+
+/**
+ * Branch relaxation: a conditional branch reaches ±4 KiB; one whose target is farther becomes the inverted branch
+ * over a `jal zero, target` (±1 MiB). Repeated until every branch fits, since each expansion moves code.
+ */
+export function relaxBranches(code: readonly MInsn[]): MInsn[] {
+  let out = [...code],
+    far = 0;
+  for (;;) {
+    const at = new Map<string, number>(),
+      pcs: number[] = [];
+    let pc = 0;
+    for (const m of out)
+      if (m.op === 'label') at.set(m.name!, pc);
+      else {
+        pcs.push(pc);
+        pc += 4;
+      }
+    const next: MInsn[] = [];
+    let k = 0,
+      changed = false;
+    for (const m of out) {
+      if (m.op === 'label') {
+        next.push(m);
+        continue;
+      }
+      const here = pcs[k++];
+      // an unknown target is left for the encoder to report
+      const t = isBranch(m.op) ? at.get(m.target!) : undefined;
+      const d = t === undefined ? 0 : t - here;
+      if (d >= -4096 && d <= 4094) {
+        next.push(m);
+        continue;
+      }
+      const over = `far${far++}`;
+      next.push(
+        { ...m, op: INVERT[m.op], target: over },
+        { op: 'j', target: m.target, covers: m.covers, note: 'a branch target beyond ±4 KiB' },
+        { op: 'label', name: over, covers: [] },
+      );
+      changed = true;
+    }
+    out = next;
+    if (!changed) return out;
+  }
 }
 
 /** Facts a caller may supply (e.g. from an AnalysisManager); computed from the artifact otherwise. */

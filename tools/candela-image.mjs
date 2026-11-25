@@ -2,7 +2,7 @@
 // the reference compiler's images (typed-rv32.js; the second oracle), and their sizes and instruction counts beside
 // the reference's policies.
 //   node tools/candela-image.mjs [--count N] [--seed S] [--limit statements] [--head head.json]
-//                                [--policies stock,kernel] [--only fn,fn] [--json out.json] [--invariant]
+//                                [--policies stock,kernel] [--only fn,fn] [--json out.json] [--table out.tsv] [--invariant]
 // --head: an O2 head saved by `tools/candela-o2.mjs --save`; without it only r0 is compiled.
 // --limit: the evaluator's step limit (default 2e5 statements); every image gets 100 instructions per statement.
 // --invariant: also run rv32.image-agrees (backend/run.ts imageAgrees) on r0 and the head, as the framework checks it.
@@ -151,6 +151,14 @@ if (args.includes('--invariant')) {
 }
 const result = { count, seed, limit, imageLimit, total, invariant, rows };
 if (out) writeFileSync(out, JSON.stringify(result, null, 1));
+const table = flag('--table', null);
+if (table) {
+  // one line per function: bytes and instructions per decided case of every image, tab-separated
+  const head = ['fn', 'decided', ...keys.map(k => `bytes.${k}`), ...keys.map(k => `perCase.${k}`)];
+  const line = r => [r.fn, r.decided, ...keys.map(k => r.bytes[k]), ...keys.map(k => r.perCase[k])].join('\t');
+  const totalLine = ['TOTAL', total.decided, ...keys.map(k => total.bytes[k]), ...keys.map(k => total.perCase[k])].join('\t');
+  writeFileSync(table, [head.join('\t'), ...rows.map(line), totalLine].join('\n') + '\n');
+}
 for (const r of rows.filter(r => Object.values(r.disagree).some(Boolean) || Object.values(r.vsStock).some(Boolean)))
   console.log(r.fn, JSON.stringify({ disagree: r.disagree, vsStock: r.vsStock, examples: r.examples }));
 console.log(JSON.stringify(total));

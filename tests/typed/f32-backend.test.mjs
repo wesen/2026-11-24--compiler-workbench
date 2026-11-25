@@ -227,6 +227,25 @@ test('P4.5: f registers spill through ft10 and ft11; the options apply per class
   assert.match(run.trap, /callee-saved f8 \(fs0\) changed/);
 });
 
+test('P4.5: a branch beyond ±4 KiB is relaxed into an inverted branch over a jump', async () => {
+  // an if arm of about 8 KiB of code: the test's branch past the arm does not fit 13 bits (a loop's would not show
+  // it, as the lifter places a loop's exit before its body and the back edge is a jal)
+  const body = Array.from({ length: 300 }, (_, k) => `        s = s * 1.0001 + ${k}.5;`).join('\n');
+  const src = `function long(n: i32, x: f32): f32 {\n    let s: f32 = x;\n    if (n > 0) {\n${body}\n    }\n    return s;\n}\n`;
+  const r0 = lift('long', src);
+  const { image } = B.lowerToImage(r0);
+  assert.ok(image.value.bytes > 4096);
+  assert.ok(image.value.insns.some(m => m.why === 'a branch target beyond ±4 KiB'));
+  const ev = await check(r0, image, { inputs: { long: { n: [-1, 1] } }, count: 20 });
+  assert.equal(ev.ok, true, ev.reason);
+  // relaxBranches on its own: a branch 5000 bytes back becomes bge over a jal
+  const code = [{ op: 'label', name: 'top', covers: [] }, ...Array.from({ length: 1250 }, () => ({ op: 'addi', rd: 5, rs1: 5, imm: 1, covers: [] })), { op: 'blt', rs1: 5, rs2: 6, target: 'top', covers: [] }];
+  const relaxed = B.relaxBranches(code);
+  assert.deepEqual(relaxed.slice(-3).map(m => [m.op, m.target ?? m.name]), [['bge', 'far0'], ['j', 'top'], ['label', 'far0']]);
+  const near = [code[0], ...code.slice(1, 11), code.at(-1)];
+  assert.deepEqual(B.relaxBranches(near), near); // in range: unchanged
+});
+
 // Candela: every function compiles at r0 and agrees on a few cases; IRWB_CANDELA=1 runs 100 cases per function.
 const source = candelaSource();
 const candela = createIRArtifact(blocksAdapter, 'candela', ingest('candela', source, { tape: true, maxSourceLength: MAX_SOURCE }).toNative());
