@@ -4,7 +4,7 @@
  * DIVERGENCES.md for where this API differs from Compiler Workbench's.
  */
 export { createWb, type Chapter, type WbConfig } from './workbench.js';
-export { runSync, runAsync, SyncContext, Suspend, isPromise, type SyncOptions } from './sync.js';
+export { runSync, runAsync, yieldToHost, SyncContext, Suspend, isPromise, type SyncOptions } from './sync.js';
 export { toYaml, yaml, guard, fail, didYouMean, ERRORS, WorkbenchError } from './base.js';
 export {
   kindOf,

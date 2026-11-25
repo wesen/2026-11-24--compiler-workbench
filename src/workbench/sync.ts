@@ -151,6 +151,8 @@ export function runSync<T>(fn: (ctx: SyncContext) => T, opts: SyncOptions = {}):
       while (!res.done) {
         const s = ctx.suspended!;
         ctx.cache.set(s.key, await s.compute());
+        // the kernel's async work yields only microtasks: let the host paint and take input between attempts
+        await yieldToHost();
         res = await attempt();
       }
       return res.value as Awaited<T>;
@@ -158,6 +160,20 @@ export function runSync<T>(fn: (ctx: SyncContext) => T, opts: SyncOptions = {}):
       ctx.closed = true;
     }
   })();
+}
+
+/** A macrotask turn: a page renders and handles input before the next piece of work. */
+export function yieldToHost(): Promise<void> {
+  const MC = (globalThis as { MessageChannel?: typeof MessageChannel }).MessageChannel;
+  if (!MC) return new Promise(r => setTimeout(r, 0));
+  return new Promise(r => {
+    const ch = new MC();
+    ch.port1.onmessage = () => {
+      ch.port1.close();
+      r();
+    };
+    ch.port2.postMessage(null);
+  });
 }
 
 /** Like `runSync`, always a Promise. */

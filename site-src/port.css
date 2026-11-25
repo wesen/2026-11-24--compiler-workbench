@@ -1,0 +1,8 @@
+/* port.css: the few styles this port adds to Compiler Workbench's kiln.css, agent.css and app.css. */
+.buildinfo { font-size: 11px; opacity: 0.6; margin-right: 8px; white-space: nowrap; }
+.pill.busy { opacity: 0.85; }
+.pill.busy span::after { content: ''; }
+.btn.busy { opacity: 0.6; cursor: progress; }
+.btn:disabled { cursor: not-allowed; }
+.dslpending { font-style: italic; opacity: 0.7; }
+@media (max-width: 760px) { .buildinfo { display: none; } }

@@ -8,6 +8,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
+    "build:site": "node tools/build-site.mjs",
+    "serve:site": "node tools/serve-site.mjs",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
