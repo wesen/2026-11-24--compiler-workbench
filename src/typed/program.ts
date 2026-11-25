@@ -122,8 +122,42 @@ export class Program {
   get id(): string {
     return `prog:${this.name}`;
   }
+  /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
+  readonly assumptions: Record<string, Record<string, number>> = {};
+  /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
   get inputs(): ProgramInputs {
-    return this.options.inputs ?? {};
+    const base = this.options.inputs ?? {};
+    const out: Record<string, Record<string, unknown>> = Object.fromEntries(
+      Object.entries(base).map(([f, v]) => [f, { ...v }]),
+    );
+    for (const [f, params] of Object.entries(this.assumptions)) out[f] = { ...(out[f] ?? {}), ...params };
+    return out as ProgramInputs;
+  }
+  /**
+   * Restrict the program's meaning to inputs satisfying `bindings`: from now on the contract every pass must meet,
+   * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
+   */
+  assume(
+    bindings: readonly { fn: string; param: string; value: number }[],
+  ): Record<string, Record<string, number>> {
+    const previous = JSON.parse(JSON.stringify(this.assumptions));
+    for (const b of bindings) {
+      this.fname(b.fn);
+      (this.assumptions[b.fn] ??= {})[b.param] = b.value;
+    }
+    return previous;
+  }
+  /** Specialize on an outer artifact's facts: assume them, then apply the `specialize` pass under that contract. */
+  async specialize(bindings: Artifact<import('./specialize.js').Bindings>): Promise<ApplyResult> {
+    const { specialize } = await import('./specialize.js');
+    const previous = this.assume(bindings.value.bindings);
+    try {
+      return await this.apply(specialize, { params: { bindings } });
+    } catch (e) {
+      for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
+      Object.assign(this.assumptions, previous);
+      throw e;
+    }
   }
   get rev(): number {
     return this.revisions.length - 1;
