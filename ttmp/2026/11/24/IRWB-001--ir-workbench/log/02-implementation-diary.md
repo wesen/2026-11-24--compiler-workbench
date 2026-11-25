@@ -679,3 +679,51 @@ In the same step I merged both subagents (the browser workbench, and f32 with Ca
 
 ### Code review instructions
 Read `src/typed/strategies.ts` (`searchPlan`, the scoped registration, `measure`), then run `node tools/search-experiment.mjs` (about 21 minutes).
+
+## Step 10: bookkeeping caught up, design-doc 05 for the next phase
+
+The user asked me to go ahead with the next phase and to keep its four practices. I caught up the docmgr ticket, which was behind: four finished tasks were unchecked, and the changelog had no entries after the first milestone. Then I measured the three things the next design depends on, and wrote design-doc 05 before writing any code. The doc covers six pieces of work: O2+, framework performance, the f32 backend (for a subagent), `caddr` bounds checks, the kernel-policy oracle, and per-scene kernels.
+
+The user also set the diary cadence: a step at every significant action, more often than commits, about ten per milestone. Steps 1–9 were milestone-sized summaries. From this step on they are not.
+
+### Prompt Context
+**User prompts (verbatim):**
+- "Ok, go go go go. diary docmgr deisgn doc vault report, do you know what that means?"
+- Mid-turn: "diary should be more frequent than milestones, it should be like, at any significant step where something was done, more frequent than commits potentially. A milestone is probably something like 10 diary entris (of course this can vary wildly)"
+
+**Assistant interpretation:**
+- Proceed with the next steps I proposed.
+- For each piece of work: a design doc first, docmgr bookkeeping, frequent diary steps, and a vault report at each milestone.
+
+**Commit:** cbe69a0
+
+### What I did
+- **docmgr:**
+  - checked pb99 (wb layer), es43 (UI), z21g (R2) and m7y3 (a duplicate of the finished inventory task);
+  - added 4c1o (O2+), owi2 (f32 backend), 9rcu (framework performance), t4dq (caddr bce), gxe6 (kernel-policy oracle) and tjdl (R3);
+  - added four changelog entries covering steps 5–9.
+- **Measurements for the design:**
+  - `src/framework/core/data.ts` and `createIRArtifact`: an artifact costs five canonical encodings, two SHA-256 hashes, and two encodings per entity during projection.
+  - The backend is 2,000 lines, with a single register class in `regalloc.ts`.
+  - Candela's scene dispatch reads `q_k.scene`, a field of record `K` (types.typed:156), in five dispatchers. 177 of 332 functions are scene sections (`grep -c "^function s[0-9]*_"` on scenes.typed). Nothing writes `.scene` (`grep "\.scene *=[^=]"` is empty).
+- **Design-doc 05,** related to `data.ts`, `regalloc.ts` and `kernel.typed`.
+- **Memory:** the diary cadence rule is saved, so it applies to me and to every subagent brief.
+
+### Why
+- **Framework performance first among the large items.** Each later Candela experiment runs O2 at least once, and at two minutes per pass every experiment costs half an hour.
+- **Field bindings, not parameter bindings, for scenes.** The scene index is a memory field of a record passed everywhere, so the existing specialization, which substitutes parameter reads, would not reach it.
+
+### What worked
+- The measurements were enough to make every section concrete: the operator table for the backend, the register-class table, and the dispatcher's shape.
+
+### What didn't work
+- Nothing failed in this step.
+
+### What I learned
+- Candela's per-scene sections are more than half of all functions. Specialization plus dead-function elimination should therefore shrink the image far more than any pass ordering.
+
+### What warrants a second pair of eyes
+- **The `immutable` short circuit (design-doc 05, section 3.2)** assumes that a value in the `CANONICAL` set can never contain anything non-canonical. That holds only if every object in it was created by `JSON.parse` of canonical text and then frozen.
+
+### Code review instructions
+Read `design-doc/05-…md`, then `docmgr task list --ticket IRWB-001`.
