@@ -11,7 +11,18 @@
 import { prune } from './lift.js';
 import { describeText, show, showStmt, COMPARE } from './listing.js';
 import { hasEffect, isPure, readsOf } from './analyses.js';
-import type { BlockRec, Origin, StmtRec, Store, ValueOp, ValueRec, WorkFn } from './model.js';
+import { F32_RESULT } from './f32.js';
+import {
+  typeClass,
+  type BlockRec,
+  type Origin,
+  type StmtRec,
+  type Store,
+  type TypeClass,
+  type ValueOp,
+  type ValueRec,
+  type WorkFn,
+} from './model.js';
 
 export type WriteKind = 'values' | 'stmts' | 'locals' | 'cfg';
 export const WRITE_KINDS: readonly WriteKind[] = ['values', 'stmts', 'locals', 'cfg'];
@@ -48,6 +59,11 @@ export interface MakeOptions {
   readonly because?: readonly (Ref | string)[];
   readonly note?: string;
   readonly imm?: number | string;
+  /**
+   * The result type of a made value. Derived for get (the local's) and the f32 operators; needed for a constant,
+   * a load or a result leaf of an f32 (absent: i32).
+   */
+  readonly type?: TypeClass;
 }
 export interface Position {
   readonly block: BlockRec;
@@ -82,6 +98,7 @@ const sameTree = (st: Store, a: string, b: string): boolean => {
   return (
     x.op === y.op &&
     x.imm === y.imm &&
+    x.type === y.type &&
     x.args.length === y.args.length &&
     x.args.every((u, i) => sameTree(st, u, y.args[i]))
   );
@@ -196,6 +213,7 @@ export class Tx {
   }
 
   // values
+  /** A constant; an f32 constant (`type: 'f32'`) is given as its bits. */
   const(n: number, opts: MakeOptions = {}): string {
     this.may('values', 'made a constant');
     return this.st.add<ValueRec>({
@@ -204,9 +222,16 @@ export class Tx {
       fn: this.fn.id,
       op: 'const',
       args: [],
+      ...(opts.type === 'f32' ? { type: 'f32' as const } : {}),
       imm: n | 0,
       origin: this.origin(id(opts.from) ?? this.cur, opts),
     }).id;
+  }
+  /** The type a made value has: given, or the local's for a get, or f32 for the f32 operators. */
+  private typeOf(op: ValueOp, opts: MakeOptions): TypeClass {
+    if (opts.type) return opts.type;
+    if (op === 'get') return typeClass(this.fn.locals[opts.imm as number]?.type);
+    return F32_RESULT.has(op) ? 'f32' : 'i32';
   }
   make(op: ValueOp, ...rest: (Ref | MakeOptions)[]): string {
     this.may('values', 'made a value');
@@ -223,6 +248,7 @@ export class Tx {
       args: (rest as Ref[]).map(a => id(a)!),
       origin: this.origin(id(opts.from) ?? this.cur, opts),
     };
+    if (this.typeOf(op, opts) === 'f32') rec.type = 'f32';
     if (opts.imm !== undefined) rec.imm = opts.imm;
     return this.st.add(rec).id;
   }
@@ -238,7 +264,7 @@ export class Tx {
     }
     return l.index;
   }
-  local(name: string, opts: MakeOptions & { type?: string } = {}): number {
+  local(name: string, opts: MakeOptions = {}): number {
     this.may('locals', 'made a local');
     let n = name,
       k = 1;
@@ -421,6 +447,7 @@ export class Tx {
           args,
           origin: this.origin(vid, { note: 'rebuilt around a changed argument' }),
         };
+        if (v.type) rec.type = v.type;
         if (v.imm !== undefined) rec.imm = v.imm;
         cur = this.st.add(rec).id;
       }

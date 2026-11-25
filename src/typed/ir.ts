@@ -22,39 +22,61 @@ import {
   type LocalRec,
   type OpRec,
   type StmtRec,
+  type TypeClass,
   type TypedBlocks,
+  type ValueOp,
   type ValueRec,
+  typeClass,
 } from './model.js';
 import { describeText } from './listing.js';
 
-const STMT_OPS = new Set(['set', 'store', 'eval', 'br', 'br_if', 'return', 'trap']);
-const VALUE_OPS = new Set([
-  'const',
-  'get',
-  'add',
-  'sub',
-  'mul',
-  'div',
-  'rem',
-  'and',
-  'or',
-  'xor',
-  'shl',
-  'shr',
-  'shru',
-  'eq',
-  'ne',
-  'lt',
-  'gt',
-  'le',
-  'ge',
-  'ltu',
-  'geu',
-  'eqz',
-  'load',
-  'load16u',
-  'call',
-]);
+const STMT_OPS = new Set(['set', 'store', 'eval', 'br', 'br_if', 'return', 'trap', 'zero']);
+
+/**
+ * Operator signatures: operand type classes and result class. `null` operands are checked per operator (call,
+ * tuple); a result of 'typed' is the value's own `type` (const, load, result); 'local' is the local's class (get);
+ * 'callee' is the callee's result (call). A multi-result call and a tuple have no scalar result ('none').
+ */
+type Sig = {
+  readonly args: readonly TypeClass[] | null;
+  readonly result: TypeClass | 'typed' | 'local' | 'callee' | 'none';
+};
+const I32: TypeClass = 'i32',
+  F32: TypeClass = 'f32';
+const sig = (args: readonly TypeClass[] | null, result: Sig['result']): Sig => ({ args, result });
+export const VALUE_SIGNATURES: Readonly<Record<ValueOp, Sig>> = {
+  const: sig([], 'typed'),
+  get: sig([], 'local'),
+  ...(Object.fromEntries(
+    ['add', 'sub', 'mul', 'div', 'rem', 'and', 'or', 'xor', 'shl', 'shr', 'shru']
+      .concat(['eq', 'ne', 'lt', 'gt', 'le', 'ge', 'ltu', 'geu'])
+      .map(op => [op, sig([I32, I32], I32)]),
+  ) as Record<string, Sig>),
+  eqz: sig([I32], I32),
+  load: sig([I32], 'typed'),
+  load16u: sig([I32], I32),
+  call: sig(null, 'callee'),
+  ...(Object.fromEntries(
+    ['fadd', 'fsub', 'fmul', 'fdiv', 'fmin', 'fmax', 'fcopysign'].map(op => [op, sig([F32, F32], F32)]),
+  ) as Record<string, Sig>),
+  ...(Object.fromEntries(
+    ['fneg', 'fabs', 'fsqrt', 'ffloor', 'fceil', 'ftrunc'].map(op => [op, sig([F32], F32)]),
+  ) as Record<string, Sig>),
+  ...(Object.fromEntries(
+    ['feq', 'fne', 'flt', 'fgt', 'fle', 'fge'].map(op => [op, sig([F32, F32], I32)]),
+  ) as Record<string, Sig>),
+  f2i: sig([F32], I32),
+  f2u: sig([F32], I32),
+  f2bits: sig([F32], I32),
+  i2f: sig([I32], F32),
+  u2f: sig([I32], F32),
+  bits2f: sig([I32], F32),
+  caddr: sig([I32, I32], I32),
+  aaddr: sig([], I32),
+  result: sig([], 'typed'),
+  tuple: sig(null, 'none'),
+} as Record<ValueOp, Sig>;
+const VALUE_OPS = new Set(Object.keys(VALUE_SIGNATURES));
 const USE_FIELDS = ['value', 'cond', 'addr'] as const;
 const JUMP_FIELDS = ['to', 'then', 'else'] as const;
 
@@ -125,6 +147,144 @@ export function validateBlocks(value: unknown): asserts value is TypedBlocks {
     state.set(id, 2);
   };
   for (const id of Object.keys(v.values)) visit(id);
+  checkTypes(v);
+}
+
+/**
+ * Types: every operator gets operands of its classes, a set stores a value of its local's class, a return returns
+ * the function's result (a tuple of its leaves for a record result), a multi-result call is the whole value of an
+ * `eval`, and addresses of the frame array area stay inside it.
+ */
+function checkTypes(v: TypedBlocks): void {
+  const fnOf = (fnId: string) => v.fns[fnId.slice(3)];
+  const argOf = new Set<string>();
+  for (const x of Object.values(v.values)) for (const a of x.args) argOf.add(a);
+  const types = new Map<string, TypeClass | 'none'>();
+  const typeOf = (id: string): TypeClass | 'none' => {
+    let t = types.get(id);
+    if (t) return t;
+    const x = v.values[id],
+      s = VALUE_SIGNATURES[x.op],
+      f = fnOf(x.fn);
+    need(x.type === undefined || x.type === 'f32', `value ${id}: type must be absent (i32) or 'f32'`);
+    const own: TypeClass = x.type ?? 'i32';
+    if (s.args) {
+      need(x.args.length === s.args.length, `value ${id}: ${x.op} takes ${s.args.length} operands`);
+      x.args.forEach((a, i) =>
+        need(
+          typeOf(a) === s.args![i],
+          `value ${id}: operand ${i} of ${x.op} must be ${s.args![i]}, not ${typeOf(a)}`,
+        ),
+      );
+    }
+    switch (s.result) {
+      case 'typed':
+        t = own;
+        break;
+      case 'local': {
+        const l = f.locals[x.imm as number];
+        need(l, `value ${id}: get of a missing local ${x.imm}`);
+        t = typeClass(l.type);
+        need(own === t, `value ${id}: get of ${t} local ${l.name} must have type ${t}`);
+        break;
+      }
+      case 'callee': {
+        const callee = v.fns[x.imm as string];
+        need(callee, `value ${id}: call of an unknown function ${x.imm}`);
+        need(
+          x.args.length === callee.params.length,
+          `value ${id}: ${x.imm} takes ${callee.params.length} arguments`,
+        );
+        x.args.forEach((a, i) =>
+          need(
+            typeOf(a) === typeClass(callee.params[i]),
+            `value ${id}: argument ${i} of ${x.imm} must be ${typeClass(callee.params[i])}, not ${typeOf(a)}`,
+          ),
+        );
+        t = callee.results ? 'none' : typeClass(callee.result);
+        need(
+          callee.results ? x.type === undefined : own === t,
+          `value ${id}: call of ${x.imm} must have type ${t}`,
+        );
+        break;
+      }
+      case 'none':
+        t = 'none';
+        need(x.type === undefined, `value ${id}: ${x.op} has no scalar type`);
+        break;
+      default:
+        t = s.result;
+        need(own === t, `value ${id}: ${x.op} must have type ${t}`);
+    }
+    if (x.op === 'tuple') {
+      need(
+        f.results && x.args.length === f.results.length,
+        `value ${id}: a tuple must have ${f.name}'s result leaves`,
+      );
+      x.args.forEach((a, i) =>
+        need(
+          typeOf(a) === typeClass(f.results![i]),
+          `value ${id}: leaf ${i} must be ${typeClass(f.results![i])}`,
+        ),
+      );
+    }
+    if (x.op === 'aaddr')
+      need(
+        Number.isInteger(x.imm) && (x.imm as number) >= 0 && (x.imm as number) < (f.arrayBytes ?? 0),
+        `value ${id}: array offset ${x.imm} outside ${f.name}'s array area`,
+      );
+    if (x.op === 'result')
+      need(Number.isInteger(x.imm) && (x.imm as number) >= 0, `value ${id}: bad result leaf`);
+    if (t === 'none') need(!argOf.has(id), `value ${id}: ${x.op} cannot be an operand`);
+    types.set(id, t);
+    return t;
+  };
+  for (const s of Object.values(v.stmts)) {
+    const f = fnOf(s.fn);
+    const vt = s.value === undefined ? undefined : typeOf(s.value);
+    switch (s.op) {
+      case 'set': {
+        const want = typeClass(f.locals[s.local!].type);
+        need(
+          vt === want,
+          `statement ${s.id}: a ${vt} value set into ${want} local ${f.locals[s.local!].name}`,
+        );
+        break;
+      }
+      case 'store':
+        need(typeOf(s.addr!) === 'i32', `statement ${s.id}: a store address must be i32`);
+        need(
+          s.width === 32 ? vt !== 'none' : vt === 'i32',
+          `statement ${s.id}: store${s.width} of a ${vt} value`,
+        );
+        break;
+      case 'eval':
+        need(vt !== 'none' || v.values[s.value!].op === 'call', `statement ${s.id}: eval of a tuple`);
+        break;
+      case 'br_if':
+        need(typeOf(s.cond!) === 'i32', `statement ${s.id}: a branch condition must be i32`);
+        break;
+      case 'return':
+        if (f.results)
+          need(v.values[s.value!].op === 'tuple', `statement ${s.id}: ${f.name} returns a tuple`);
+        else
+          need(
+            vt === typeClass(f.result),
+            `statement ${s.id}: ${f.name} returns ${typeClass(f.result)}, not ${vt}`,
+          );
+        break;
+      case 'zero':
+        need(
+          Number.isInteger(s.offset) &&
+            Number.isInteger(s.bytes) &&
+            s.offset! >= 0 &&
+            s.bytes! >= 0 &&
+            s.offset! + s.bytes! <= (f.arrayBytes ?? 0),
+          `statement ${s.id}: zero outside ${f.name}'s array area`,
+        );
+        break;
+    }
+  }
 }
 
 export const BlocksIR = defineIR<TypedBlocks>({
@@ -227,10 +387,16 @@ export function blocksRelations(v: TypedBlocks): IRRelation[] {
 /** Logical graph -> native tables. Counters advance past any id an edit inserted, so later fresh ids stay unique. */
 export function rebuildBlocks(base: TypedBlocks, graph: IRGraph): TypedBlocks {
   const byId = new Map(graph.entities.map(e => [e.id, e]));
+  // relations by source and kind, indexed once (a per-entity scan is quadratic on a program of Candela's size)
+  const bySource = new Map<string, IRRelation[]>();
+  for (const r of graph.relations) {
+    const k = `${r.from}\u0000${r.kind}`;
+    const list = bySource.get(k);
+    if (list) list.push(r);
+    else bySource.set(k, [r]);
+  }
   const out = (from: string, kind: string) =>
-    graph.relations
-      .filter(r => r.from === from && r.kind === kind)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    (bySource.get(`${from}\u0000${kind}`) ?? []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const field = (from: string, kind: string, f: string) =>
     out(from, kind).find(r => r.attributes?.field === f)?.to;
   const localIndex = (localEntity: string | undefined) =>
@@ -253,6 +419,8 @@ export function rebuildBlocks(base: TypedBlocks, graph: IRGraph): TypedBlocks {
         name: a.name,
         params: a.params,
         result: a.result,
+        ...(a.results ? { results: a.results } : {}),
+        ...(a.arrayBytes ? { arrayBytes: a.arrayBytes } : {}),
         origin: a.origin,
         locals,
         blocks: out(e.id, 'contains').map(r => r.to),
@@ -318,8 +486,14 @@ export function rebuildBlocks(base: TypedBlocks, graph: IRGraph): TypedBlocks {
   return result;
 }
 
-/** Entities by id, per immutable value: projection resolves every entity, so a scan per call is quadratic. */
-const entityIndex = new WeakMap<object, Map<string, IREntity>>();
+const entityCache = new WeakMap<object, Map<string, IREntity>>();
+/** The projection's entities of a native value by id, built once per immutable value (v6 resolves each one). */
+function entityIndex(v: TypedBlocks): Map<string, IREntity> {
+  let m = entityCache.get(v);
+  if (!m) entityCache.set(v, (m = new Map(blocksEntities(v).map(e => [e.id, e]))));
+  return m;
+}
+
 const storeCache = new WeakMap<object, Store>();
 /** A read-only working store for a native value (cached per immutable value) for printing and queries. */
 export function storeOf(v: TypedBlocks): Store {
@@ -347,11 +521,7 @@ export const blocksAdapter = defineAdapter<TypedBlocks>({
     jump: 'control',
   },
   entities: blocksEntities,
-  resolve: (v, id) => {
-    let index = entityIndex.get(v);
-    if (!index) entityIndex.set(v, (index = new Map(blocksEntities(v).map(e => [e.id, e]))));
-    return index.get(id);
-  },
+  resolve: (v, id) => entityIndex(v).get(id),
   relations: blocksRelations,
   roots: v =>
     Object.values(v.fns)

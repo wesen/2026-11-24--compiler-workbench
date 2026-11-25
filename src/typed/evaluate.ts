@@ -6,8 +6,9 @@
  */
 import { differential, type DifferentialInvariant } from '../framework/contracts/differential.js';
 import type { Artifact } from '../framework/core/types.js';
+import { f32Op, toBits } from './f32.js';
 import { BlocksIR, storeOf } from './ir.js';
-import type { StmtRec, Store, TypedBlocks, ValueRec } from './model.js';
+import type { StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';
 
 /** Compiler Workbench's generator (xorshift32): its seeds must give its cases. */
 export function rng(seed: number): () => number {
@@ -107,7 +108,9 @@ export function readBuffer(bytes: Uint8Array, at: number): number[] {
 /**
  * An input specification per parameter: `[lo, hi]` for i32, `{ buffer: [minLen, maxLen], cell: [lo, hi] }`,
  * `{ cells: [...] }`, `{ string: 'text' }`, `{ bool: true }`, `{ record: { field: spec } }`, `{ oneOf: [...] }`,
- * or a fixed number. Unspecified parameters get defaults by type.
+ * or a fixed number. For an f32: a number, `[lo, hi]` (uniform), `{ bits }` or `{ oneOf: [...] }`; a buffer of f32s:
+ * `{ floats: [minLen, maxLen], range: [lo, hi] }` (without `range`, f32s as an unspecified f32 parameter gets them).
+ * Unspecified parameters get defaults by type.
  */
 export type InputSpec = number | readonly [number, number] | Readonly<Record<string, unknown>>;
 export type FunctionInputs = Readonly<Record<string, InputSpec>>;
@@ -131,6 +134,7 @@ function makeValue(
   name: string,
 ): number {
   const between = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1));
+  if (type === 'f32') return makeF32(spec, rnd);
   if (typeof spec === 'number') return spec | 0;
   if (Array.isArray(spec)) return between(spec[0], spec[1]) | 0;
   if (spec && spec.cells) return mem.buffer(spec.cells, name);
@@ -143,6 +147,17 @@ function makeValue(
       Array.from({ length: len }, () => between(c0, c1)),
       name,
     );
+  }
+  if (spec && spec.floats) {
+    // a buffer of f32s as Typed reads them (getF32(i): UTF-16 units 2i and 2i + 1, the f32 at byte 4 + 4i)
+    const [a, b] = spec.floats,
+      len = between(a, b),
+      cells: number[] = [];
+    for (let i = 0; i < len; i++) {
+      const bits = makeF32(spec.range ?? undefined, rnd);
+      cells.push(bits & 65535, (bits >>> 16) & 65535);
+    }
+    return mem.buffer(cells, name);
   }
   if (spec && spec.bool) return rnd() < 0.5 ? 0 : 1;
   if (spec && spec.record) {
@@ -172,6 +187,37 @@ function makeValue(
         : between(-2147483648, 2147483647);
 }
 
+/**
+ * Edge values of f32, as bits, most telling first: NaN, ±∞, ±0, ±1, the smallest subnormal, the largest finite, the
+ * smallest normal, 0.5, 2^24, ±2^31 (the saturation bounds of to_i32), and the negative smallest subnormal.
+ */
+export const F32_EDGES: readonly number[] = [
+  0x7fc00000, 0x7f800000, -0x800000, -0x80000000, 0, 0x3f800000, -0x40800000, 1, 0x7f7fffff, 0x00800000,
+  0x3f000000, 0x4b800000, 0x4f000000, -0x31000000, -0x7fffffff,
+];
+/**
+ * An f32 argument, as its bits. A number or `[lo, hi]` spec gives that value or a uniform value in the range; `{ bits }`
+ * gives exact bits; `{ oneOf: [...] }` one of the numbers. Unspecified: mostly small values in [-4, 4] and [-1000, 1000],
+ * values in [0, 1], and with low probability an edge value (±0, ±∞, NaN, subnormals, extremes) or any bit pattern.
+ * (`casesFrom` also gives the first cases of a function edge values outright.)
+ */
+function makeF32(spec: any, rnd: () => number): number {
+  if (typeof spec === 'number') return toBits(spec);
+  if (Array.isArray(spec)) return toBits(spec[0] + rnd() * (spec[1] - spec[0]));
+  if (spec && spec.bits !== undefined) return spec.bits | 0;
+  if (spec && spec.oneOf) return toBits(spec.oneOf[Math.floor(rnd() * spec.oneOf.length)]);
+  const r = rnd();
+  return r < 0.55
+    ? toBits(-4 + 8 * rnd())
+    : r < 0.75
+      ? toBits(-1000 + 2000 * rnd())
+      : r < 0.9
+        ? toBits(rnd())
+        : r < 0.97
+          ? F32_EDGES[Math.floor(rnd() * F32_EDGES.length)]
+          : (rnd() * 4294967296) | 0;
+}
+
 export interface Case {
   readonly fn: string;
   readonly n: number;
@@ -190,10 +236,15 @@ export function casesFrom(
     fe = tables(st),
     out: Case[] = [],
     rnd = rng(seed);
+  // the first quarter of the cases (at most one per edge value) give each unspecified f32 parameter an edge value:
+  // parameter i of case k takes edge (k + i), so every edge meets every parameter and NaN meets ordinary values
+  const edges = f.params.includes('f32') ? Math.min(F32_EDGES.length, Math.floor(count / 4)) : 0;
   for (let k = 0; k < count; k++) {
     const mem = new Memory();
     const args = f.params.map((t, i) =>
-      makeValue(inputs[f.locals[i].name], t, mem, rnd, fe, f.locals[i].name),
+      t === 'f32' && k < edges && inputs[f.locals[i].name] === undefined
+        ? F32_EDGES[(k + i) % F32_EDGES.length]
+        : makeValue(inputs[f.locals[i].name], t, mem, rnd, fe, f.locals[i].name),
     );
     out.push({ fn: fname, n: k, args, memory: mem.image(), items: mem.items.slice() });
   }
@@ -264,7 +315,8 @@ export interface RunResult {
   readonly kind: 'run';
   readonly engine: string;
   readonly trap: string | false;
-  readonly result?: number;
+  /** The result: an i32 (an f32's bits), or the leaves of a value-record result. */
+  readonly result?: number | readonly number[];
   readonly at?: string;
   readonly limit: boolean;
   readonly fault?: boolean;
@@ -273,6 +325,22 @@ export interface RunResult {
   readonly counts: Map<string, number> | null;
   readonly bytes: Uint8Array;
 }
+
+/** The stack area the evaluator adds above guest memory when a program has frame arrays (as the interpreter's). */
+export const STACK_BYTES = 65536;
+const hasFrames = new WeakMap<Store, boolean>();
+const I32_BINARY = new Set(
+  ['add', 'sub', 'mul', 'div', 'rem', 'and', 'or', 'xor', 'shl', 'shr', 'shru'].concat([
+    'eq',
+    'ne',
+    'lt',
+    'gt',
+    'le',
+    'ge',
+    'ltu',
+    'geu',
+  ]),
+);
 
 export function evaluate(
   st: Store,
@@ -283,17 +351,32 @@ export function evaluate(
 ): RunResult {
   const limit = opts.limit ?? 2e5,
     counts = opts.counts ? new Map<string, number>() : null;
-  const bytes = new Uint8Array(memBytes);
+  // frame arrays live in a stack area above the guest memory, as on the target; programs without them get none, so
+  // an access past the memory image still traps
+  let frames = hasFrames.get(st);
+  if (frames === undefined) hasFrames.set(st, (frames = [...st.fns.values()].some(f => f.arrayBytes)));
+  const size = frames ? (memBytes.length + STACK_BYTES + 15) & -16 : memBytes.length;
+  const bytes = new Uint8Array(size);
+  bytes.set(memBytes);
   const mem = new DataView(bytes.buffer);
-  let steps = 0;
+  let steps = 0,
+    sp = size;
   const check = (addr: number, w: number) => {
     if (addr < 0 || addr + w > bytes.length) throw new Trap('memory access outside guest memory: ' + addr);
   };
-  function call(name: string, argv: readonly number[], depth: number): number {
+  function call(name: string, argv: readonly number[], depth: number): number | number[] {
     if (depth > 64) throw new Trap('call depth');
-    const f = st.fn(name);
+    const f: WorkFn = st.fn(name);
     const L = new Int32Array(f.locals.length);
     argv.forEach((a, i) => (L[i] = a));
+    const saved = sp;
+    let frame = 0,
+      results: readonly number[] = [];
+    if (f.arrayBytes) {
+      sp = (sp - f.arrayBytes) & -16;
+      if (sp < memBytes.length) throw new Trap('stack overflow');
+      frame = sp;
+    }
     const ev = (id: string): number => {
       const v = st.get(id) as ValueRec;
       switch (v.op) {
@@ -313,63 +396,92 @@ export function evaluate(
           check(a, 2);
           return mem.getUint16(a, true);
         }
-        case 'call':
-          return call(v.imm as string, v.args.map(ev), depth + 1);
+        case 'call': {
+          const r = call(v.imm as string, v.args.map(ev), depth + 1);
+          if (typeof r === 'number') return r;
+          results = r;
+          return 0;
+        }
+        case 'result':
+          return results[v.imm as number];
+        case 'caddr': {
+          // text.checked_address: trap unless position < capacity (unsigned), then receiver + 2 * position
+          const r = ev(v.args[0]),
+            p = ev(v.args[1]);
+          check(r, 4);
+          if (p >>> 0 >= mem.getInt32(r, true) >>> 0) throw new Trap('checked address out of range', id);
+          return (r + (p << 1)) | 0;
+        }
+        case 'aaddr':
+          return (frame + (v.imm as number)) | 0;
+        case 'tuple':
+          throw new Error('evaluator: a tuple is only a returned value');
         default: {
-          const a = ev(v.args[0]),
-            b = ev(v.args[1]);
-          return binop(v.op, a, b);
+          const a = ev(v.args[0]);
+          if (v.args.length === 1) return f32Op(v.op, a)!;
+          const b = ev(v.args[1]);
+          return I32_BINARY.has(v.op) ? binop(v.op, a, b) : f32Op(v.op, a, b)!;
         }
       }
     };
-    let b = f.blocks[0];
-    for (;;) {
-      let next: string | undefined;
-      for (const sid of b.stmts) {
-        if (++steps > limit) {
-          const t = new Trap('step limit ' + limit);
-          t.limit = true;
-          throw t;
-        }
-        if (counts) counts.set(sid, (counts.get(sid) || 0) + 1);
-        const s = st.get(sid) as StmtRec;
-        switch (s.op) {
-          case 'set':
-            L[s.local!] = ev(s.value!);
-            break;
-          case 'eval':
-            ev(s.value!);
-            break;
-          case 'store': {
-            const a = ev(s.addr!) + s.offset!,
-              v = ev(s.value!);
-            if (s.width === 32) {
-              check(a, 4);
-              mem.setInt32(a, v, true);
-            } else {
-              check(a, 2);
-              mem.setUint16(a, v & 65535, true);
-            }
-            break;
+    try {
+      let b = f.blocks[0];
+      for (;;) {
+        let next: string | undefined;
+        for (const sid of b.stmts) {
+          if (++steps > limit) {
+            const t = new Trap('step limit ' + limit);
+            t.limit = true;
+            throw t;
           }
-          case 'br':
-            next = s.to;
-            break;
-          case 'br_if':
-            next = ev(s.cond!) ? s.then : s.else;
-            break;
-          case 'return':
-            return ev(s.value!);
-          case 'trap':
-            throw new Trap(s.why || 'unreachable', sid);
+          if (counts) counts.set(sid, (counts.get(sid) || 0) + 1);
+          const s = st.get(sid) as StmtRec;
+          switch (s.op) {
+            case 'set':
+              L[s.local!] = ev(s.value!);
+              break;
+            case 'eval':
+              ev(s.value!);
+              break;
+            case 'store': {
+              const a = ev(s.addr!) + s.offset!,
+                v = ev(s.value!);
+              if (s.width === 32) {
+                check(a, 4);
+                mem.setInt32(a, v, true);
+              } else {
+                check(a, 2);
+                mem.setUint16(a, v & 65535, true);
+              }
+              break;
+            }
+            case 'zero':
+              bytes.fill(0, frame + s.offset!, frame + s.offset! + s.bytes!);
+              break;
+            case 'br':
+              next = s.to;
+              break;
+            case 'br_if':
+              next = ev(s.cond!) ? s.then : s.else;
+              break;
+            case 'return': {
+              const rv = st.get(s.value!) as ValueRec;
+              return rv.op === 'tuple' ? rv.args.map(ev) : ev(s.value!);
+            }
+            case 'trap':
+              throw new Trap(s.why || 'unreachable', sid);
+          }
+          if (next) break;
         }
-        if (next) break;
+        if (!next) next = b.succ[0];
+        if (!next) throw new Trap('fell off the end of ' + b.id);
+        b = st.get(next);
       }
-      if (!next) next = b.succ[0];
-      if (!next) throw new Trap('fell off the end of ' + b.id);
-      b = st.get(next);
+    } finally {
+      sp = saved;
     }
   }
+  const image = () => (size === memBytes.length ? bytes : bytes.slice(0, memBytes.length));
   try {
     const result = call(fname, args, 0);
     return {
@@ -381,7 +493,7 @@ export function evaluate(
       steps,
       unit: 'statements',
       counts,
-      bytes,
+      bytes: image(),
     };
   } catch (e) {
     if (e instanceof Trap)
@@ -394,13 +506,17 @@ export function evaluate(
         steps,
         unit: 'statements',
         counts,
-        bytes,
+        bytes: image(),
       };
     throw e;
   }
 }
 
-export const outcome = (r: RunResult): number | 'trap' => (r.trap ? 'trap' : r.result!);
+export const outcome = (r: RunResult): number | readonly number[] | 'trap' => (r.trap ? 'trap' : r.result!);
+const sameResult = (a: RunResult['result'], b: RunResult['result']): boolean =>
+  typeof a === 'number' || typeof b === 'number' || a === undefined || b === undefined
+    ? a === b
+    : a.length === b.length && a.every((x, i) => x === b[i]);
 const sameBytes = (a: Uint8Array, b: Uint8Array) => {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
@@ -415,7 +531,7 @@ const sameBytes = (a: Uint8Array, b: Uint8Array) => {
 export function agrees(expected: RunResult, got: RunResult): boolean {
   if (got.fault) return false;
   if (expected.trap) return !!got.trap;
-  if (got.trap || got.result !== expected.result) return false;
+  if (got.trap || !sameResult(got.result, expected.result)) return false;
   const n = Math.min(expected.bytes.length, got.bytes.length);
   return sameBytes(got.bytes.subarray(0, expected.bytes.length), expected.bytes.subarray(0, n));
 }
@@ -470,7 +586,10 @@ export function meaningKept(
       compare: (expected, got, c) =>
         agrees(expected, got)
           ? true
-          : { ok: false, reason: `${c.fn}#${c.n}: expected ${outcome(expected)}, got ${outcome(got)}` },
+          : {
+              ok: false,
+              reason: `${c.fn}#${c.n}: expected ${String(outcome(expected))}, got ${String(outcome(got))}`,
+            },
       describeCase: c => ({ fn: c.fn, n: c.n, args: c.args }),
       maxCounterexamples: 5,
     });

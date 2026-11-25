@@ -16,6 +16,7 @@ import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
   domView,
+  hasEffect,
   isPure,
   liveView,
   rangeView,
@@ -29,10 +30,19 @@ import {
   type RangeView,
   type ReachView,
 } from './analyses.js';
+import { F32_FOLDABLE, F32_OPERANDS, F32_RESULT, f32Op } from './f32.js';
 import { BlocksIR, blocksAdapter, blocksEntities } from './ir.js';
 import { hash, meaningKept, type MeaningParams } from './evaluate.js';
 import { SYMBOL } from './listing.js';
-import { Store, type BlockRec, type StmtRec, type TypedBlocks, type ValueRec, type WorkFn } from './model.js';
+import {
+  Store,
+  typeClass,
+  type BlockRec,
+  type StmtRec,
+  type TypedBlocks,
+  type ValueRec,
+  type WorkFn,
+} from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { binop } from './evaluate.js';
 
@@ -258,6 +268,12 @@ const FOLDABLE = new Set([
 const lastStmt = (st: Store, b: BlockRec) =>
   b.stmts.length ? (st.get(b.stmts.at(-1)!) as StmtRec) : undefined;
 
+/**
+ * Folding is i32 arithmetic (Compiler Workbench's rules), plus the f32 operators in `F32_FOLDABLE`, evaluated on
+ * bits exactly as the target computes them (f32.ts): rounded to nearest even, which is the rule the target applies
+ * statically, so a folded constant is the value the program would compute. Operators that round in another direction
+ * (floor, ceil, trunc, the saturating conversions) are not folded.
+ */
 export const fold = typedPass({
   name: 'fold',
   about: 'constant folding: an operator whose operands are constants becomes a constant',
@@ -267,6 +283,13 @@ export const fold = typedPass({
     tx.rewrite(v => {
       if (v.op === 'eqz' && v.args[0].isConst)
         return tx.const(+(v.args[0].imm === 0), { because: [v.args[0]] });
+      if (F32_FOLDABLE.has(v.op) && v.args.every(a => a.isConst)) {
+        const [a, b] = v.args.map(x => x.imm as number);
+        return tx.const(f32Op(v.op, a, b)!, {
+          because: v.args,
+          ...(F32_RESULT.has(v.op) ? { type: 'f32' as const } : {}),
+        });
+      }
       if (!FOLDABLE.has(v.op) || !v.args.every(a => a.isConst)) return;
       const [a, b] = v.args.map(x => x.imm as number);
       if ((v.op === 'div' || v.op === 'rem') && (b === 0 || (a === -2147483648 && b === -1))) return; // keep the trap
@@ -274,6 +297,11 @@ export const fold = typedPass({
     }),
 });
 
+/**
+ * The identities are i32 identities. None holds for f32 (x + 0 is not x for x = -0; x * 0 is not 0 for NaN or ∞;
+ * x - x is not 0 for ∞; !(a < b) is not a >= b for NaN), so f32 operators are left alone; their own names keep
+ * them out of the rules below, and the guard makes that explicit.
+ */
 export const simplify = typedPass({
   name: 'simplify',
   about: 'algebraic identities: x+0, x*1, x*2^k, x-x, !!x and inverted comparisons',
@@ -281,6 +309,7 @@ export const simplify = typedPass({
   preserves: ['cfg', 'dominators', 'loops'],
   body: ({ tx }) =>
     tx.rewrite(v => {
+      if (F32_OPERANDS.has(v.op) || F32_RESULT.has(v.op)) return;
       const [a, b] = v.args,
         k = b && b.isConst ? (b.imm as number) : null,
         ka = a && a.isConst ? (a.imm as number) : null;
@@ -369,8 +398,10 @@ export const constprop = typedPass({
           );
           if (consts.some(c => c === null) || new Set(consts).size !== 1) return;
           const real = defs.filter(d => !d.startsWith('init:'));
+          // the constant has the local's type: an f32 local's constant is its bits (+0 for a local's initial 0)
           return tx.const(consts[0]!, {
             because: real.length ? real : [`local:${f.name}/${f.locals[v.imm as number].name} starts at 0`],
+            type: typeClass(f.locals[v.imm as number].type),
           });
         },
         [b],
@@ -387,26 +418,14 @@ export const dce = typedPass({
   preserves: ['cfg', 'dominators'],
   body({ st, f, tx, facts }) {
     const live = facts.live!;
-    const { hasEffect } = { hasEffect: (id: string) => effect(st, id) };
     for (const sid of f.blocks.flatMap(b => b.stmts)) {
       const s = st.get(sid) as StmtRec;
-      if (s.op === 'set' && !live.liveAfter(s.id).has(s.local!) && !hasEffect(s.value!))
+      if (s.op === 'set' && !live.liveAfter(s.id).has(s.local!) && !hasEffect(st, s.value!))
         tx.remove(s.id, { because: [`fact:liveness(${f.name})@r${tx.rev - 1}`] });
-      else if (s.op === 'eval' && !hasEffect(s.value!)) tx.remove(s.id, { because: ['no effect'] });
+      else if (s.op === 'eval' && !hasEffect(st, s.value!)) tx.remove(s.id, { because: ['no effect'] });
     }
   },
 });
-const effect = (st: Store, id: string): boolean => {
-  const v = st.get(id) as ValueRec;
-  return (
-    v.op === 'call' ||
-    v.op === 'load' ||
-    v.op === 'load16u' ||
-    v.op === 'div' ||
-    v.op === 'rem' ||
-    v.args.some(a => effect(st, a))
-  );
-};
 
 export const cfg = typedPass({
   name: 'cfg',
@@ -527,6 +546,10 @@ export const licm = typedPass({
         'le',
         'ge',
         'eqz',
+        // f32 operators are pure and never trap, so hoisting one out of a loop is safe
+        ...F32_OPERANDS,
+        ...F32_RESULT,
+        'aaddr',
       ];
       const inv = (id: string): boolean => {
         const v = st.get(id) as ValueRec;
@@ -537,13 +560,15 @@ export const licm = typedPass({
       const hoist = (id: string): string => {
         const v = st.get(id) as ValueRec;
         if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
-          const t = tx.local('inv', { because: [L.id] });
+          const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
           const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
           tx.insert(tx.at.end(pre!), set, { because: [L.id] });
           return tx.get(t, { from: id, because: [set] });
         }
         const args = v.args.map(hoist);
-        return args.some((a, i) => a !== v.args[i]) ? tx.make(v.op, ...args, { imm: v.imm, from: id }) : id;
+        return args.some((a, i) => a !== v.args[i])
+          ? tx.make(v.op, ...args, { imm: v.imm, from: id, type: v.type ?? 'i32' })
+          : id;
       };
       for (const bid of L.body)
         for (const sid of (st.get(bid) as BlockRec).stmts.slice()) {
@@ -565,13 +590,16 @@ export const lvn = typedPass({
   // Compiler Workbench also claims 'loops'; false: adding or removing a `set` in a loop changes its assigned locals.
   preserves: ['cfg', 'dominators'],
   body({ st, f, tx }) {
+    // a key names the operator, its immediate (an array offset, a load offset) and type, so an f32 constant and an
+    // i32 constant with the same bits, or two frame addresses, never share a number
     const key = (id: string): string => {
       const v = st.get(id) as ValueRec;
+      const t = v.type === 'f32' ? 'f' : '';
       return v.op === 'const'
-        ? `#${v.imm}`
+        ? `#${t}${v.imm}`
         : v.op === 'get'
           ? `@${v.imm}`
-          : `${v.op}(${v.args.map(key).join(',')})`;
+          : `${v.op}${v.imm === undefined ? '' : `[${v.imm}]`}${t}(${v.args.map(key).join(',')})`;
     };
     const size = (id: string): number => 1 + (st.get(id) as ValueRec).args.reduce((n, a) => n + size(a), 0);
     for (const b of f.blocks) {
@@ -580,11 +608,11 @@ export const lvn = typedPass({
         const s = st.get(sid) as StmtRec;
         const visit = (id: string): boolean => {
           const v = st.get(id) as ValueRec;
-          if (v.args.length && size(id) >= 3 && isPure(st, id)) {
+          if (v.op !== 'tuple' && v.args.length && size(id) >= 3 && isPure(st, id)) {
             const k = key(id),
               first = seen.get(k);
             if (first && first.value !== id) {
-              const t = tx.local('vn', { because: [first.value] });
+              const t = tx.local('vn', { because: [first.value], type: v.type ?? 'i32' });
               const set = tx.set(t, first.value, {
                 because: [first.value, id],
                 note: `computed once for ${first.stmt} and ${sid}`,
@@ -739,6 +767,7 @@ const copyTree = (tx: Tx, st: Store, id: string, from: string, because: string):
     imm: v.imm,
     from: id,
     because: [because],
+    type: v.type ?? 'i32',
   });
 };
 

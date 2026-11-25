@@ -4,8 +4,9 @@
  * Entities follow Compiler Workbench's model so its algorithms port directly:
  *   - a function `fn:NAME` has parameters, a result type, locals and an ordered list of blocks;
  *   - a block `bb:NAME.N` has an ordered list of statements and its successors;
- *   - a statement `s:NAME.N` is one of set, store, eval, br, br_if, return, trap;
- *   - a value `v:NAME.N` is a pure tree node (const, get, arithmetic, compare, load, call); a value has one user;
+ *   - a statement `s:NAME.N` is one of set, store, eval, br, br_if, return, trap, zero (array.zero);
+ *   - a value `v:NAME.N` is a tree node (const, get, arithmetic, compare, load, call, …); a value has one user;
+ *     its `type` is its result type: absent for i32 (every integer-like Typed type), 'f32' for an f32;
  *   - a front-end op `op:NAME#N` is one operation of the reused front end's tape, with its source position.
  * Every entity except an op carries `origin`: what it was made from, by which pass at which revision, and why that
  * was valid (`because`). Ids are allocated from counters stored in the artifact, so a pass run twice on the same
@@ -16,7 +17,19 @@
  * the prototype's in-memory shapes (a function's `blocks` are block records), and `toNative` writes it back.
  */
 
-export type StmtOp = 'set' | 'store' | 'eval' | 'br' | 'br_if' | 'return' | 'trap';
+export type StmtOp = 'set' | 'store' | 'eval' | 'br' | 'br_if' | 'return' | 'trap' | 'zero';
+/**
+ * Value operators. The i32 operators are Compiler Workbench's. The f32 operators have their own names, so a rule
+ * written for an i32 operator never matches an f32 one (`flt` is not `lt`: its negation is not `fge`, because of NaN).
+ *   f32 → f32       fadd fsub fmul fdiv fmin fmax fcopysign (binary), fneg fabs fsqrt ffloor fceil ftrunc (unary)
+ *   f32 → i32       feq fne flt fgt fle fge (0 or 1), f2i f2u (toward zero, saturating), f2bits (the IEEE bits)
+ *   i32 → f32       i2f u2f (rounded to nearest even), bits2f (the f32 with these bits)
+ *   addressing      caddr(receiver, position): traps unless position <u load32[receiver], else receiver + 2·position
+ *                   aaddr (imm = byte offset): the address of a byte of the function's frame array area
+ *   results         result (imm = k): leaf k of the record result of the latest multi-result call in this frame;
+ *                   tuple(leaves…): a record result, only as the value of a `return`
+ * `load` with `type: 'f32'` is f32.load (the same bits as an i32 load); `store` stores its value's bits.
+ */
 export type ValueOp =
   | 'const'
   | 'get'
@@ -42,7 +55,40 @@ export type ValueOp =
   | 'eqz'
   | 'load'
   | 'load16u'
-  | 'call';
+  | 'call'
+  | 'fadd'
+  | 'fsub'
+  | 'fmul'
+  | 'fdiv'
+  | 'fmin'
+  | 'fmax'
+  | 'fcopysign'
+  | 'fneg'
+  | 'fabs'
+  | 'fsqrt'
+  | 'ffloor'
+  | 'fceil'
+  | 'ftrunc'
+  | 'feq'
+  | 'fne'
+  | 'flt'
+  | 'fgt'
+  | 'fle'
+  | 'fge'
+  | 'f2i'
+  | 'f2u'
+  | 'f2bits'
+  | 'i2f'
+  | 'u2f'
+  | 'bits2f'
+  | 'caddr'
+  | 'aaddr'
+  | 'result'
+  | 'tuple';
+
+/** A value's type class: 'f32', or 'i32' for every other Typed type (absent in a value record). */
+export type TypeClass = 'i32' | 'f32';
+export const typeClass = (type: string | undefined): TypeClass => (type === 'f32' ? 'f32' : 'i32');
 
 export interface SourcePos {
   readonly line: number;
@@ -80,6 +126,10 @@ export interface FnRec {
   name: string;
   params: string[];
   result: string;
+  /** The leaf types of a value-record result (several results, Wasm multi-value); absent for one result. */
+  results?: string[];
+  /** The size in bytes of the function's frame array area (array.address, array.zero); absent when none. */
+  arrayBytes?: number;
   locals: LocalRec[];
   origin: Origin[];
 }
@@ -107,6 +157,8 @@ export interface StmtRec {
   else?: string;
   width?: number;
   offset?: number;
+  /** `zero`: the number of bytes of the frame array area to zero from `offset`. */
+  bytes?: number;
   why?: string;
   origin: Origin[];
 }
@@ -117,6 +169,8 @@ export interface ValueRec {
   fn: string;
   op: ValueOp;
   args: string[];
+  /** The value's result type; absent means i32. An f32 constant's `imm` is its IEEE bits as a signed i32. */
+  type?: 'f32';
   imm?: number | string;
   origin: Origin[];
 }
