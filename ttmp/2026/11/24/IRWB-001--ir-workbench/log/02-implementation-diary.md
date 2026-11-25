@@ -501,3 +501,60 @@ While two subagents worked (f32 and Candela; the UI), I took three items that to
 ### Code review instructions
 - Read `src/typed/specialize.ts` and the `assume` and `specialize` methods in `src/typed/program.ts`, then `tests/typed/specialize.test.mjs`.
 - Run `npm test` (262/262, about 35 s), then `IRWB_FULL=1 npm test`, `node tools/audit-preservation.mjs` and `node tools/reference-check.mjs --o2`.
+
+## Step 7: strategies and user passes from inside the workbench
+
+The user asked whether the compiler can be viewed and edited from within the workbench, so that different compilation strategies can be tried per project. A strategy is already data in this design: a v6 Strategy IR plan over versioned pass algorithms. This step adds the kernel side:
+- strategies as runnable, serializable plans, with metric-based selection among candidates;
+- the prototype's pass builder, producing real framework passes;
+- publishing of a strategy's winning chain into the program's revision timeline.
+
+The UI subagent's brief was extended with the matching views: a Compiler view, a strategy editor and runner, and a read-only source browser.
+
+### Prompt Context
+**User prompt (verbatim):** "also, can we edit / view the typed compiler (using the v6 framework) from within the workbench? to try out different compilation strategies for the different projects?"
+**Assistant interpretation:** Yes. Make strategies first-class per-project data (plans that can be listed, edited, run and compared), let projects define passes that are held to the built-ins' rules, and expose the compiler's declarations and source read-only in the UI.
+**Inferred user intent:** Experiment with compilation choices per project inside the tool, with the same checks that guard the built-in pipeline.
+**Commit (code):** 182c091
+
+### What I did
+- **`src/typed/strategies.ts`:**
+  - `measure` and `typed.metrics@1`: statements, blocks, image bytes, and emulator instructions over 10 seeded cases per function.
+  - `strategyRegistry`: every built-in and user pass, gated by `optimizationContract` under the program's assumptions, plus `typed.keep` and the metrics.
+  - Plan shapes: `passesNode`, `choosePlan` (`chooseBest` over a `fork`) and `untilStablePlan`.
+  - `runStrategy`: executes the plan, walks back from the winning artifact through the recorded pass results, and publishes that chain as revisions.
+  - Plans as files: `toJson`/`fromJson`, and `projectStrategies` (`strategies/<name>.json`).
+- **`src/typed/builder.ts`:** `passBuilder` (CW's builder API), function and statement handles, `USER_PASSES`, and `findPass`. A built-in name is refused (`reservedName`). `Program.resolvePass` consults user passes.
+- **`tests/typed/strategies.test.mjs`** (5 tests).
+- **The UI brief, extended by message:** merge this branch into the UI worktree, then add `wb.pass`, `wb.strategy`, `wb.compiler()` and `wb.source`, a Compiler view, a Strategies view with editor, decision and trace, and browser verification on Blend.
+
+### Why
+- **Built-ins stay read-only.** Editing `src/typed/passes.ts` in the browser would need an in-browser TypeScript build and would let an experiment silently change the reference pipeline. Experiments live as project files instead: user passes in scripts, strategies in `strategies/*.json`. They are held to the same transaction rules, declared-kind checks, preservation checks and meaning contract.
+- **Only the winner is published.** Losing branches of a `chooseBest` exist only inside the strategy execution. The timeline shows what was chosen, and the decision records the alternatives.
+
+### What worked
+`chooseBest` over O0, O1, O2 and loops gave these winners (alternatives in brackets):
+
+| objective | project | winner |
+|---|---|---|
+| instructions | blend | O2 (2255 / 2235 / 1925 / 1945) |
+| instructions | value-numbering | O2 (3721 / 3721 / 3082 / 3082) |
+| instructions | licm-nested | O2 (2677 / 2677 / 1678 / 1678) |
+| bytes | blend | O1 (96 / 88 / 88 / 96) |
+| bytes | orders | O1 (156 / 136 / 136 / 152) |
+| bytes | licm-nested | O0 (all four 68) |
+
+In the bytes rows, the ties are broken by candidate name, as v6's decision record states (`tieBreak: 'lexicographic candidate name (code unit order)'`). After Blend's strategy run, `p.why('s:blend.15')` still answers through the published revisions. On wrong-shift, a candidate containing `div-to-shift` comes back as a rejected alternative (`contract-rejected`), and the plain candidate wins.
+
+### What didn't work
+- Nothing failed in this step's tests on the first run.
+
+### What I learned
+- v6's `chooseBest` already records everything a strategy view needs: the objective, constraints, tie-break, winner, and every alternative with metrics, violations or rejection.
+
+### What warrants a second pair of eyes
+- **Ties.** Name-order tie-breaking picks O0 when all candidates tie, which publishes nothing. That is defensible, because it is the cheapest compile. A secondary objective would need a v6 extension, or a constraint.
+- **User passes are global.** `USER_PASSES` is a module-level registry shared by all programs in one page.
+
+### Code review instructions
+Read `src/typed/strategies.ts` (`runStrategy`) and `src/typed/builder.ts`, then run `npm test` (268/268).
