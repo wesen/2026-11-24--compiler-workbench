@@ -41,6 +41,7 @@ export interface MetricsOptions {
   readonly seed?: number;
 }
 
+const LIMIT = 2e5;
 /** The metrics a candidate program is judged by. */
 export function measure(
   p: Program,
@@ -55,15 +56,22 @@ export function measure(
     for (const b of f.blocks) statements += b.stmts.length;
   }
   const { image } = lowerToImage(art);
-  let instructions = 0;
+  let instructions = 0,
+    limited = 0;
   for (const fn of art.value.fnOrder)
     for (const c of casesFrom(st, fn, {
       count: opts.count ?? 10,
       seed: opts.seed ?? 7,
       inputs: p.inputs[fn] ?? {},
-    }))
-      instructions += runImage(image, fn, c.args, c.memory, { limit: 2e5 }).steps;
-  return { statements, blocks, bytes: image.value.bytes, instructions };
+    })) {
+      // a run that hits the step limit costs the limit (its own step count is unknown); `limited` counts them
+      const r = runImage(image, fn, c.args, c.memory, { limit: LIMIT });
+      if (r.limit || !Number.isFinite(r.steps)) {
+        instructions += LIMIT;
+        limited++;
+      } else instructions += r.steps;
+    }
+  return { statements, blocks, bytes: image.value.bytes, instructions, limited };
 }
 
 /** Algorithms a strategy may name: every built-in and user pass, the identity, and the metrics. */
