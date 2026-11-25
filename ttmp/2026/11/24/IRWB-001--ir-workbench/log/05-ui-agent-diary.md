@@ -813,3 +813,22 @@ Driving the view through its real controls found two bugs I had written: a re-en
 ### Code review instructions
 - Start with `src/workbench/candela.ts` (`renderProgressive`, `compareFrames`), then `site-src/candela.js` (`UI.loadCandela`, `render`, `paintInto`), `tools/build-site.mjs` (the lazy section), and `src/workbench/projects.ts` (`kernelFor`, `addBuiltin`).
 - Run `node --test tests/workbench/candela.test.mjs`. Then `npm run build:site`, `node tools/serve-site.mjs dist/site 8765`, open the Candela layout (Layout ▾), and render B-01 at stride 4 with two engines.
+
+## Step 11: The stock policy in the page: the same image at 2.7× the instructions
+
+The last engine I had not driven in the browser was the reference compiler's `stock` policy. Its R-01 frame is bit-identical to the `kernel` image's, and it needs 2.7× the instructions per pixel. That is the reference compiler's own kernel-policy gain, now visible in the view.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 6.
+**Assistant interpretation:** Cover every engine the view offers before reporting.
+**Inferred user intent:** As in step 6.
+**Commit (code):** the diary-only commit after this step.
+
+### What worked
+- **R-01 at stride 8** (20×20), after the kernel render of step 10:
+  - `stock`: compile 0.22 s; sky 12,707,502 instructions, 1.60 s; pixels 17,981,941 instructions, 44,955 per pixel; 4.75 s
+  - `kernel` (step 10): 6,564,752 instructions, 16,412 per pixel
+  - comparison: "identical: all 4,800 floats from emulator · reference image (kernel)"; `accDifferent: 0`
+
+### What I learned
+- The kernel policy's sky table costs 5.52 M instructions against stock's 12.71 M. Its pixels cost 2.7× less on R-01 and 4.4× less on B-01 at stride 8 (Node, step 6: 3.43 M against 7.63 M).
