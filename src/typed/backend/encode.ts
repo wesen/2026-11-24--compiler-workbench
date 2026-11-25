@@ -1,10 +1,15 @@
 /**
- * RV32IM encoding and decoding, and the machine instructions the backend works on.
+ * RV32IMF encoding and decoding, and the machine instructions the backend works on.
  *
  * The format encoders are reused unchanged from ds-js-os `compiler/rv32/00-encoding.js`, and the disassembler from
  * its `tools/typed-inspect/rv32.mjs` (Espressif PIE words dropped), as in Compiler Workbench's backend.js. Only
  * `lui` and the fixed words for `ret` and `ebreak` are written here. The listing of an image is the disassembler's
  * reading of the encoded words, so it shows what the bytes say, not what the selector meant.
+ *
+ * Registers are numbers: x_n is n and f_n is 32 + n, as in the reference compiler (typed-rv32.js registers.js), so
+ * `r >> 5` is a physical register's class; 64 and up are virtual. The RV32F words follow the reference compiler's
+ * instruction table (typed-rv32.js instructions.js, its RV32F rows): OP-FP (0x53) with funct7, rs2 and the rounding
+ * mode in funct3, flw (0x07) and fsw (0x27).
  */
 import { fail } from './errors.js';
 
@@ -64,12 +69,68 @@ export function divisionMagic(d: number): { magic: number; shift: number } {
 }
 
 // ---------- reused: disassembler (PIE words dropped) ----------
-export const REGS: readonly string[] =
-  'zero ra sp gp tp t0 t1 t2 s0 s1 a0 a1 a2 a3 a4 a5 a6 a7 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 t3 t4 t5 t6'.split(
-    ' ',
-  );
+/** ABI names of x0-x31, then of f0-f31 (index 32 + n). */
+export const REGS: readonly string[] = (
+  'zero ra sp gp tp t0 t1 t2 s0 s1 a0 a1 a2 a3 a4 a5 a6 a7 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 t3 t4 t5 t6 ' +
+  'ft0 ft1 ft2 ft3 ft4 ft5 ft6 ft7 fs0 fs1 fa0 fa1 fa2 fa3 fa4 fa5 fa6 fa7 fs2 fs3 fs4 fs5 fs6 fs7 fs8 fs9 fs10 fs11 ft8 ft9 ft10 ft11'
+).split(' ');
 const sext = (n: number, bits: number) => (n << (32 - bits)) >> (32 - bits);
 const hex = (n: number) => '0x' + n.toString(16);
+/** Rounding modes by funct3 (7, dynamic, is not written, as GNU as and objdump do). */
+const ROUNDING_NAMES = ['rne', 'rtz', 'rdn', 'rup', 'rmm'];
+
+/** An RV32F word (flw, fsw, OP-FP) as text, or undefined when it is not one the F extension defines. */
+function decodeFloat(word: number): Decoded | undefined {
+  const opcode = word & 127,
+    rd = (word >>> 7) & 31,
+    f3 = (word >>> 12) & 7,
+    rs = (word >>> 15) & 31,
+    rt = (word >>> 20) & 31,
+    f7 = word >>> 25;
+  const X = (r: number) => REGS[r],
+    Fr = (r: number) => REGS[32 + r];
+  const fmt = (mnemonic: string, ...args: (string | number)[]) => mnemonic + ' ' + args.join(', ');
+  if (opcode === 0x07 && f3 === 2) {
+    const offset = word >> 20;
+    return {
+      text: fmt('flw', Fr(rd), offset + '(' + X(rs) + ')'),
+      memory: 'load',
+      base: X(rs),
+      offset,
+      reg: Fr(rd),
+    };
+  }
+  if (opcode === 0x27 && f3 === 2) {
+    const offset = sext((f7 << 5) | rd, 12);
+    return {
+      text: fmt('fsw', Fr(rt), offset + '(' + X(rs) + ')'),
+      memory: 'store',
+      base: X(rs),
+      offset,
+      reg: Fr(rt),
+    };
+  }
+  if (opcode !== 0x53) return undefined;
+  const rounded = (mnemonic: string, ...args: string[]) =>
+    f3 === 7 ? fmt(mnemonic, ...args) : f3 < 5 ? fmt(mnemonic, ...args, ROUNDING_NAMES[f3]) : undefined;
+  let text: string | undefined;
+  if (f7 === 0x00 || f7 === 0x04 || f7 === 0x08 || f7 === 0x0c)
+    text = rounded(['fadd.s', 'fsub.s', 'fmul.s', 'fdiv.s'][f7 >> 2], Fr(rd), Fr(rs), Fr(rt));
+  else if (f7 === 0x2c && rt === 0) text = rounded('fsqrt.s', Fr(rd), Fr(rs));
+  else if (f7 === 0x10 && f3 < 3)
+    // the pseudo-instructions fmv.s, fneg.s and fabs.s when both sources are one register
+    text =
+      rs === rt
+        ? fmt(['fmv.s', 'fneg.s', 'fabs.s'][f3], Fr(rd), Fr(rs))
+        : fmt(['fsgnj.s', 'fsgnjn.s', 'fsgnjx.s'][f3], Fr(rd), Fr(rs), Fr(rt));
+  else if (f7 === 0x14 && f3 < 2) text = fmt(f3 ? 'fmax.s' : 'fmin.s', Fr(rd), Fr(rs), Fr(rt));
+  else if (f7 === 0x60 && rt < 2) text = rounded(rt ? 'fcvt.wu.s' : 'fcvt.w.s', X(rd), Fr(rs));
+  else if (f7 === 0x68 && rt < 2) text = rounded(rt ? 'fcvt.s.wu' : 'fcvt.s.w', Fr(rd), X(rs));
+  else if (f7 === 0x70 && rt === 0 && f3 < 2) text = fmt(f3 ? 'fclass.s' : 'fmv.x.w', X(rd), Fr(rs));
+  else if (f7 === 0x50 && f3 < 3) text = fmt(['fle.s', 'flt.s', 'feq.s'][f3], X(rd), Fr(rs), Fr(rt));
+  else if (f7 === 0x78 && rt === 0 && f3 === 0) text = fmt('fmv.w.x', Fr(rd), X(rs));
+  return text === undefined ? undefined : { text };
+}
 
 export interface Decoded {
   readonly text: string;
@@ -91,6 +152,10 @@ export function decode(word: number, pc: number): Decoded {
   const [d, a, b] = [rd, rs, rt].map(i => REGS[i]);
   const fmt = (mnemonic: string, ...args: (string | number)[]) => mnemonic + ' ' + args.join(', ');
   if (word >>> 0 === 0x00100073) return { text: 'ebreak' };
+  if (opcode === 0x07 || opcode === 0x27 || opcode === 0x53) {
+    const fl = decodeFloat(word);
+    if (fl) return fl;
+  }
   if (opcode === 3 || opcode === 35) {
     const load = opcode === 3;
     const offset = load ? imm : sext((top << 5) | rd, 12);
@@ -170,6 +235,17 @@ export interface MInsn {
   why?: string;
   note?: string;
   spill?: 'reload' | 'store';
+  /** RV32F: the rounding mode the instruction names (RNE, RTZ, RDN, RUP); never dynamic. */
+  rm?: number;
+  /**
+   * A load or store at the caller's sp (an incoming stack argument, a result leaf the callee writes): `imm` is the
+   * word's offset from the caller's sp, and finishing adds the frame size.
+   */
+  caller?: boolean;
+  /** A write of a physical result register in a record return: no value live across it may be given that register. */
+  pins?: boolean;
+  /** Physical registers read besides rs1 and rs2: a call's argument registers, a return's result registers. */
+  uses?: number[];
 }
 
 export const R3: Readonly<Record<string, readonly [number, number]>> = {
@@ -220,6 +296,25 @@ export const CALLER: readonly number[] = [5, 6, 7, 28, 29];
 export const ARGS: readonly number[] = [11, 12, 13, 14, 15, 16, 17, 10];
 /** s1-s11 (s0, sp, ra, gp and tp are never allocated). */
 export const CALLEE: readonly number[] = [9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27];
+
+// f registers (f_n = 32 + n)
+export const F0 = 32,
+  FA0 = 42,
+  FT10 = 62,
+  FT11 = 63;
+/** ft0-ft7, ft8, ft9 (ft10 and ft11 are kept back as spill scratch). */
+export const F_CALLER: readonly number[] = [32, 33, 34, 35, 36, 37, 38, 39, 60, 61];
+/** fa1-fa7, then fa0: allocatable only in leaf functions. */
+export const F_ARGS: readonly number[] = [43, 44, 45, 46, 47, 48, 49, 42];
+/** fs0, fs1, fs2-fs11: a function that uses one saves and restores it. */
+export const F_CALLEE: readonly number[] = [40, 41, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59];
+/** Rounding modes named statically (funct3). */
+export const RNE = 0,
+  RTZ = 1,
+  RDN = 2,
+  RUP = 3;
+/** The class of a physical register: 'f' for f0-f31, 'x' otherwise. */
+export const physClass = (r: number): 'x' | 'f' => (r >= 32 && r < 64 ? 'f' : 'x');
 export const fits12 = (n: number): boolean => n >= -2048 && n <= 2047;
 export const log2 = (n: number): number => (n > 0 && (n & (n - 1)) === 0 ? 31 - Math.clz32(n) : -1);
 export const isTerminal = (op: string): boolean =>
@@ -228,6 +323,43 @@ export const isBranch = (op: string): boolean => op in BR;
 
 export const RET_WORD = 0x00008067,
   EBREAK_WORD = 0x00100073;
+
+/**
+ * RV32F operations: [funct7, funct3 or 'rm' (the instruction's rounding mode), rs2 (a fixed field) or 'f' (an f
+ * register), and the classes of rd and rs1].
+ */
+type FloatRow = readonly [number, number | 'rm', number | 'f', 'x' | 'f', 'x' | 'f'];
+export const FLOAT_OPS: Readonly<Record<string, FloatRow>> = {
+  'fadd.s': [0x00, 'rm', 'f', 'f', 'f'],
+  'fsub.s': [0x04, 'rm', 'f', 'f', 'f'],
+  'fmul.s': [0x08, 'rm', 'f', 'f', 'f'],
+  'fdiv.s': [0x0c, 'rm', 'f', 'f', 'f'],
+  'fsqrt.s': [0x2c, 'rm', 0, 'f', 'f'],
+  'fsgnj.s': [0x10, 0, 'f', 'f', 'f'],
+  'fsgnjn.s': [0x10, 1, 'f', 'f', 'f'],
+  'fsgnjx.s': [0x10, 2, 'f', 'f', 'f'],
+  'fmin.s': [0x14, 0, 'f', 'f', 'f'],
+  'fmax.s': [0x14, 1, 'f', 'f', 'f'],
+  'feq.s': [0x50, 2, 'f', 'x', 'f'],
+  'flt.s': [0x50, 1, 'f', 'x', 'f'],
+  'fle.s': [0x50, 0, 'f', 'x', 'f'],
+  'fcvt.w.s': [0x60, 'rm', 0, 'x', 'f'],
+  'fcvt.wu.s': [0x60, 'rm', 1, 'x', 'f'],
+  'fcvt.s.w': [0x68, 'rm', 0, 'f', 'x'],
+  'fcvt.s.wu': [0x68, 'rm', 1, 'f', 'x'],
+  'fmv.x.w': [0x70, 0, 0, 'x', 'f'],
+  'fmv.w.x': [0x78, 0, 0, 'f', 'x'],
+};
+/** The class of each register operand of a machine instruction: rd, rs1, rs2 (undefined when it has none). */
+export function operandClasses(
+  op: string,
+): readonly ['x' | 'f' | undefined, 'x' | 'f' | undefined, 'x' | 'f' | undefined] {
+  const row = FLOAT_OPS[op];
+  if (row) return [row[3], row[4], row[2] === 'f' ? 'f' : undefined];
+  if (op === 'flw') return ['f', 'x', undefined];
+  if (op === 'fsw') return [undefined, 'x', 'f'];
+  return ['x', 'x', 'x'];
+}
 
 /** Encode one finished instruction at `pc`, with its function's labels and every function's entry known. */
 export function encodeOne(
@@ -244,6 +376,25 @@ export function encodeOne(
   const rd = m.rd!,
     rs1 = m.rs1!,
     rs2 = m.rs2!;
+  // every register field must hold a physical register of the class the instruction reads it as
+  const [cd, c1, c2] = operandClasses(m.op);
+  const field = (r: number | undefined, cls: 'x' | 'f' | undefined, name: string): void => {
+    if (cls === undefined || r === undefined) return;
+    if (!(r >= 0 && r < 64) || physClass(r) !== cls)
+      fail('internal', `${m.op}: ${name} ${r} is not an ${cls} register`);
+  };
+  field(m.rd, cd, 'rd');
+  field(m.rs1, c1, 'rs1');
+  field(m.rs2, c2, 'rs2');
+  const frow = FLOAT_OPS[m.op];
+  if (frow) {
+    const [f7, f3, r2] = frow;
+    const mode = f3 === 'rm' ? m.rm : f3;
+    if (mode === undefined || mode < 0 || mode > 4) fail('internal', `${m.op} needs a static rounding mode`);
+    return instruction.r(0x53, rd & 31, mode, rs1 & 31, r2 === 'f' ? rs2 & 31 : r2, f7);
+  }
+  if (m.op === 'flw') return instruction.i(0x07, rd & 31, 2, rs1, m.imm!);
+  if (m.op === 'fsw') return (instruction.s(2, rs1, rs2 & 31, m.imm!) & ~0x7f) | 0x27;
   if (m.op in R3) {
     const [f3, f7] = R3[m.op];
     return instruction.r(0x33, rd, f3, rs1, rs2, f7);

@@ -17,6 +17,7 @@ export { select, type SelectContext, type Selection } from './select.js';
 export { allocate, intervals, machineBlocks, type Allocation, type Interval } from './regalloc.js';
 export {
   compileImage,
+  relaxBranches,
   finish,
   lowerToImage,
   machineCode,

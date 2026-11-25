@@ -10,15 +10,35 @@ import { createIRArtifact } from '../../framework/ir/adapters.js';
 import type { EntityCorrespondence } from '../../framework/ir/types.js';
 import { livenessAnalysis, liveView, rangesAnalysis, rangeView } from '../analyses.js';
 import { storeOf } from '../ir.js';
-import type { Store, TypedBlocks, WorkFn } from '../model.js';
+import { typeClass, type Store, type TypedBlocks, type WorkFn } from '../model.js';
 import { fail } from './errors.js';
-import { CALLEE, RA, REGS, SP, T5, T6, ZERO, decode, encodeOne, type MInsn } from './encode.js';
+import {
+  CALLEE,
+  FT10,
+  FT11,
+  F_CALLEE,
+  RA,
+  REGS,
+  SP,
+  T5,
+  T6,
+  ZERO,
+  INVERT,
+  decode,
+  encodeOne,
+  fits12,
+  isBranch,
+  physClass,
+  type MInsn,
+} from './encode.js';
+import { needsConvention } from '../ilp32f.js';
 import {
   imageAdapter,
   imageCorrespondence,
   insnId,
   toBase64,
   type ImageFn,
+  type ImageSig,
   type ImageInsn,
   type Rv32Image,
 } from './image.js';
@@ -38,31 +58,46 @@ export interface Finished {
 
 /**
  * Rewrite virtual registers onto the allocation. A spilled value is loaded into t5 (first operand) or t6 (second)
- * before each use and stored from t5 after each definition. The frame holds the spill slots at the bottom and the
- * saved registers at the top, rounded up to 16 bytes; jumps to the label that follows are removed, a return with
- * no frame to pop becomes `ret`, and an exit nobody reaches is dropped.
+ * before each use and stored from t5 after each definition; an f32 value likewise through ft10 and ft11 with flw
+ * and fsw. The frame holds, from the bottom: the outgoing stack words of the calls (ilp32f), the frame array area,
+ * the spill slots, and the saved registers at the top, rounded up to 16 bytes. An access at the caller's sp (an
+ * incoming stack argument, a result leaf the callee writes) gets the frame size added to its offset. Jumps to the
+ * label that follows are removed, a return with no frame to pop becomes `ret`, and an exit nobody reaches is dropped.
  */
-export function finish(f: WorkFn, code: readonly MInsn[], alloc: Allocation, leaf: boolean): Finished {
+export function finish(
+  f: WorkFn,
+  code: readonly MInsn[],
+  alloc: Allocation,
+  leaf: boolean,
+  layout: { readonly fregs?: ReadonlySet<number>; readonly outgoing?: number; readonly arrays?: number } = {},
+): Finished {
   const { assign, spilled } = alloc;
-  const slots = new Map([...spilled].map((r, i) => [r, 4 * i]));
-  const usedCallee = [...new Set([...assign.values()].filter(r => CALLEE.includes(r)))].sort((a, b) => a - b);
+  const fregs = layout.fregs ?? new Set<number>();
+  const slotBase = 4 * (layout.outgoing ?? 0) + (layout.arrays ?? 0);
+  const slots = new Map([...spilled].map((r, i) => [r, slotBase + 4 * i]));
+  const usedCallee = [
+    ...new Set([...assign.values()].filter(r => CALLEE.includes(r) || F_CALLEE.includes(r))),
+  ].sort((a, b) => a - b);
   const saved = (leaf ? [] : [RA]).concat(usedCallee);
-  const frame = (slots.size * 4 + saved.length * 4 + 15) & ~15;
+  const frame = (slotBase + slots.size * 4 + saved.length * 4 + 15) & ~15;
   if (frame > 2032) fail('frameTooLarge', `${f.name}: a frame of ${frame} bytes does not fit 12-bit offsets`);
   const saveAt = new Map(saved.map((r, i) => [r, frame - 4 - 4 * i]));
   const out: MInsn[] = [];
+  const isFloat = (r: number) => (r >= 64 ? fregs.has(r) : physClass(r) === 'f');
+  const load = (r: number) => (isFloat(r) ? 'flw' : 'lw'),
+    storeOp = (r: number) => (isFloat(r) ? 'fsw' : 'sw');
   const phys = (r: number | undefined, scratch: number, m: MInsn): number | undefined => {
     if (r === undefined || r < 64) return r;
     if (spilled.has(r)) {
-      out.push({ op: 'lw', rd: scratch, rs1: SP, imm: slots.get(r)!, covers: m.covers, spill: 'reload' });
+      out.push({ op: load(r), rd: scratch, rs1: SP, imm: slots.get(r)!, covers: m.covers, spill: 'reload' });
       return scratch;
     }
     return assign.get(r);
   };
-  const store = (r: number, m: MInsn): MInsn => ({
-    op: 'sw',
+  const store = (r: number, m: MInsn, from = isFloat(r) ? FT10 : T5): MInsn => ({
+    op: storeOp(r),
     rs1: SP,
-    rs2: T5,
+    rs2: from,
     imm: slots.get(r)!,
     covers: m.covers,
     spill: 'store',
@@ -74,7 +109,7 @@ export function finish(f: WorkFn, code: readonly MInsn[], alloc: Allocation, lea
         out.push({ op: 'addi', rd: SP, rs1: SP, imm: -frame, covers: [f.id], note: 'frame' });
         for (const r of saved)
           out.push({
-            op: 'sw',
+            op: storeOp(r),
             rs1: SP,
             rs2: r,
             imm: saveAt.get(r)!,
@@ -84,14 +119,40 @@ export function finish(f: WorkFn, code: readonly MInsn[], alloc: Allocation, lea
       }
       continue;
     }
+    // an f32 copy with a spilled side is one flw or fsw (or both, through ft10)
+    if (m.mv && m.rd !== undefined && isFloat(m.rd) && m.rs1 !== undefined) {
+      const from = spilled.has(m.rs1) ? m.rs1 : null,
+        to = spilled.has(m.rd) ? m.rd : null;
+      if (from !== null || to !== null) {
+        if (from !== null && to !== null) {
+          if (from !== to) {
+            out.push({
+              op: 'flw',
+              rd: FT10,
+              rs1: SP,
+              imm: slots.get(from)!,
+              covers: m.covers,
+              spill: 'reload',
+            });
+            out.push(store(to, m));
+          }
+        } else if (from !== null) {
+          const rd = m.rd < 64 ? m.rd : assign.get(m.rd)!;
+          out.push({ op: 'flw', rd, rs1: SP, imm: slots.get(from)!, covers: m.covers, spill: 'reload' });
+        } else out.push(store(to!, m, m.rs1 < 64 ? m.rs1 : assign.get(m.rs1)!));
+        continue;
+      }
+    }
     const n: MInsn = { ...m };
-    n.rs1 = phys(m.rs1, T5, m);
-    n.rs2 = phys(m.rs2, T6, m);
+    const fl = (r: number | undefined) => r !== undefined && isFloat(r);
+    n.rs1 = phys(m.rs1, fl(m.rs1) ? FT10 : T5, m);
+    // the same f register read twice (fsgnj.s rd, v, v) is reloaded once
+    n.rs2 = fl(m.rs2) && m.rs2 === m.rs1 ? n.rs1 : phys(m.rs2, fl(m.rs2) ? FT11 : T6, m);
     let spillDef: number | null = null;
     if (m.rd !== undefined && m.rd >= 64) {
       if (spilled.has(m.rd)) {
         spillDef = m.rd;
-        n.rd = T5;
+        n.rd = fl(m.rd) ? FT10 : T5;
       } else n.rd = assign.get(m.rd);
     }
     if (n.mv && n.rd === n.rs1) {
@@ -99,14 +160,34 @@ export function finish(f: WorkFn, code: readonly MInsn[], alloc: Allocation, lea
       if (spillDef !== null) out.push(store(spillDef, m));
       continue;
     }
-    if (n.rd === undefined && m.rd !== undefined) n.rd = ZERO; // dead definition with no register
+    if (n.rd === undefined && m.rd !== undefined) {
+      if (fl(m.rd)) fail('internal', `${f.name}: f register v${m.rd - 64} has no register and no slot`);
+      n.rd = ZERO; // dead definition with no register
+    }
+    if (m.caller) {
+      // at the caller's sp: past this function's frame; beyond 12 bits through t6 (loads) or t5 (stores) = sp + frame
+      const at = frame + m.imm!;
+      if (fits12(at)) n.imm = at;
+      else {
+        const base = n.op === 'sw' || n.op === 'fsw' ? T5 : T6;
+        out.push({ op: 'addi', rd: base, rs1: SP, imm: frame, covers: m.covers, note: "the caller's sp" });
+        n.rs1 = base;
+      }
+    }
     out.push(n);
     if (spillDef !== null) out.push(store(spillDef, m));
   }
   // the exit sequence, and jumps to the next label removed
   out.push({ op: 'label', name: 'exit', covers: [] });
   for (const r of saved)
-    out.push({ op: 'lw', rd: r, rs1: SP, imm: saveAt.get(r)!, covers: [f.id], note: 'restore ' + REGS[r] });
+    out.push({
+      op: load(r),
+      rd: r,
+      rs1: SP,
+      imm: saveAt.get(r)!,
+      covers: [f.id],
+      note: 'restore ' + REGS[r],
+    });
   if (frame) out.push({ op: 'addi', rd: SP, rs1: SP, imm: frame, covers: [f.id], note: 'frame' });
   out.push({ op: 'ret', covers: [f.id] });
   const final: MInsn[] = [];
@@ -136,12 +217,58 @@ export function finish(f: WorkFn, code: readonly MInsn[], alloc: Allocation, lea
   if (!final.some(m => m.target === 'exit') && before && ['ret', 'j', 'ebreak'].includes(before.op))
     final.length = exitAt;
   return {
-    code: final,
+    code: relaxBranches(final),
     frame,
     saved,
     spills: slots.size,
     regs: [...new Set(assign.values())].sort((a, b) => a - b),
   };
+}
+
+/**
+ * Branch relaxation: a conditional branch reaches ±4 KiB; one whose target is farther becomes the inverted branch
+ * over a `jal zero, target` (±1 MiB). Repeated until every branch fits, since each expansion moves code.
+ */
+export function relaxBranches(code: readonly MInsn[]): MInsn[] {
+  let out = [...code],
+    far = 0;
+  for (;;) {
+    const at = new Map<string, number>(),
+      pcs: number[] = [];
+    let pc = 0;
+    for (const m of out)
+      if (m.op === 'label') at.set(m.name!, pc);
+      else {
+        pcs.push(pc);
+        pc += 4;
+      }
+    const next: MInsn[] = [];
+    let k = 0,
+      changed = false;
+    for (const m of out) {
+      if (m.op === 'label') {
+        next.push(m);
+        continue;
+      }
+      const here = pcs[k++];
+      // an unknown target is left for the encoder to report
+      const t = isBranch(m.op) ? at.get(m.target!) : undefined;
+      const d = t === undefined ? 0 : t - here;
+      if (d >= -4096 && d <= 4094) {
+        next.push(m);
+        continue;
+      }
+      const over = `far${far++}`;
+      next.push(
+        { ...m, op: INVERT[m.op], target: over },
+        { op: 'j', target: m.target, covers: m.covers, note: 'a branch target beyond ±4 KiB' },
+        { op: 'label', name: over, covers: [] },
+      );
+      changed = true;
+    }
+    out = next;
+    if (!changed) return out;
+  }
 }
 
 /** Facts a caller may supply (e.g. from an AnalysisManager); computed from the artifact otherwise. */
@@ -173,10 +300,17 @@ function compileFunction(
     ranges: ranges ? rangeView(ranges, st, f.name) : null,
   });
   const leaf = !sel.code.some(m => m.op === 'call');
-  const alloc = allocate(sel.code, sel.hints, o, leaf);
-  const fin = finish(f, sel.code, alloc, leaf);
+  const alloc = allocate(sel.code, sel.hints, o, leaf, sel.fregs);
+  const fin = finish(f, sel.code, alloc, leaf, sel);
   return { f, sel, alloc, fin, leaf };
 }
+
+/** A function's signature by type class (i32 or f32), as an image records it. */
+const sigOf = (f: WorkFn): ImageSig => ({
+  params: f.params.map(typeClass),
+  result: typeClass(f.result),
+  ...(f.results ? { results: f.results.map(typeClass) } : {}),
+});
 
 const factsFor = (blocks: Artifact<TypedBlocks>, o: BackendOptions, facts: BackendFacts) => ({
   liveness: facts.liveness ?? livenessAnalysis.solveArtifact(blocks),
@@ -264,6 +398,8 @@ export function compileImage(
       regs: x.fin.regs.map(r => REGS[r]),
       vregs: x.sel.vregs,
       leaf: x.leaf,
+      // the calling convention, for functions a caller cannot call as integers in a0-a7 with a result in a0
+      ...(needsConvention(sigOf(x.f)) ? { sig: sigOf(x.f) } : {}),
     };
   }
   return {
@@ -328,7 +464,8 @@ export function machineCode(
     st = storeOf(blocks.value);
   const { liveness, ranges } = factsFor(blocks, o, facts);
   const { sel, alloc, leaf } = compileFunction(st, st.fn(fname), o, liveness, ranges);
-  const name = (r: number | undefined) => (r === undefined ? '' : r < 64 ? REGS[r] : `v${r - 64}`);
+  const name = (r: number | undefined) =>
+    r === undefined ? '' : r < 64 ? REGS[r] : sel.fregs.has(r) ? `vf${r - 64}` : `v${r - 64}`;
   const show = (m: MInsn) =>
     m.op === 'label'
       ? `${m.name}:`

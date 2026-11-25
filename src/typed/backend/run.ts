@@ -24,9 +24,11 @@ import {
 } from '../evaluate.js';
 import { linesOf } from '../listing.js';
 import type { Store, TypedBlocks } from '../model.js';
+import { changedSavedF, needsConvention, placeCall, readResults, type CallSignature } from '../ilp32f.js';
+import { typeClass } from '../model.js';
 import { requireVendor } from '../vendor.js';
 import { fail } from './errors.js';
-import { decode } from './encode.js';
+import { REGS, decode } from './encode.js';
 import {
   ImageIR,
   codeBytes,
@@ -34,6 +36,7 @@ import {
   toBase64,
   validateImage,
   type ImageInsn,
+  type ImageSig,
   type Rv32Image,
 } from './image.js';
 
@@ -49,16 +52,31 @@ export interface ImageRun extends Omit<RunResult, 'counts'> {
 const valueOf = (img: Rv32Image | Artifact<Rv32Image>): Rv32Image =>
   'formatVersion' in img ? img : (img as Artifact<Rv32Image>).value;
 
+export interface RunImageOptions {
+  /** The emulator's instruction limit (default 2e5). */
+  readonly limit?: number;
+  /**
+   * The function's signature, for ilp32f placement (f32 arguments in fa0-fa7, stack words, record results). Default:
+   * the one the image records; without either, the arguments are integers in a0.. and the result is a0.
+   */
+  readonly sig?: CallSignature;
+  /** Count executions per instruction word (default true; heat needs them, a check does not). */
+  readonly counts?: boolean;
+}
+
 /**
- * Run `fname` of an image on the emulator with `args` in a0.. and `memBytes` as guest memory (the stack is placed
- * above it). A step limit or an access outside guest memory is a trap; any other emulator fault is a fault.
+ * Run `fname` of an image on the emulator with `args` and `memBytes` as guest memory (the stack is placed above it).
+ * A function with an f32 parameter or result, a record result or stack arguments is called under ilp32f
+ * (`placeCall`, `readResults`), and must also preserve fs0-fs11, which the emulator itself does not check; any other
+ * gets its arguments in a0.. as before. A step limit or an access outside guest memory is a trap; any other emulator
+ * fault is a fault.
  */
 export function runImage(
   image: Rv32Image | Artifact<Rv32Image>,
   fname: string,
   args: readonly number[],
   memBytes: Uint8Array,
-  opts: { limit?: number } = {},
+  opts: RunImageOptions = {},
 ): ImageRun {
   const img = valueOf(image);
   const interp = requireVendor('typedRv32Interp');
@@ -69,11 +87,51 @@ export function runImage(
       `entries: ${img.fnOrder.join(', ')}`,
     );
   const program = { image: codeBytes(img), entries: img.entries, relocations: [], imports: [] };
+  const sig = opts.sig ?? img.fns[fname]?.sig;
+  const base = {
+    kind: 'run' as const,
+    engine: 'rv32' as const,
+    program: img.program,
+    unit: 'instructions' as const,
+  };
   try {
+    if (sig && needsConvention(sig)) {
+      const placed = placeCall(sig, args, memBytes, { fsPatterns: true });
+      const r = interp.run(program as unknown as Uint8Array, fname, [], placed.bytes, {
+        registers: placed.registers,
+        fregisters: placed.fregisters,
+        limit: opts.limit ?? 2e5,
+        counts: opts.counts !== false,
+      });
+      const bytes = (r.bytes as Uint8Array).slice(0, memBytes.length);
+      if (r.trap)
+        return { ...base, trap: 'ebreak', limit: false, steps: r.steps, counts: r.counts ?? null, bytes };
+      const changed = changedSavedF(placed, r.fregisters);
+      if (changed >= 0)
+        return {
+          ...base,
+          trap: `callee-saved f${changed} (${REGS[32 + changed]}) changed across the call`,
+          fault: true,
+          limit: false,
+          steps: r.steps,
+          counts: null,
+          bytes,
+        };
+      return {
+        ...base,
+        trap: false,
+        result: readResults(sig, placed, r),
+        limit: false,
+        steps: r.steps,
+        counts: r.counts ?? null,
+        bytes,
+      };
+    }
     // vendor.ts types the first parameter as bytes; the interpreter takes the program object
     // ({ image, entries, relocations, imports }) that typedRv32.compile returns.
     const r = interp.run(program as unknown as Uint8Array, fname, args, memBytes, {
       limit: opts.limit ?? 2e5,
+      ...(opts.counts === false ? { counts: false } : {}),
     });
     return {
       kind: 'run',
@@ -195,15 +253,26 @@ export function imageStatus(
   return k < 0 ? 'stale' : k === revisions.length - 1 ? 'current' : `older (r${k})`;
 }
 
+/** A signature by type class, as an image records it (Typed types: f32 is f32, every other type i32). */
+export const imageSig = (sig: CallSignature): ImageSig => ({
+  params: sig.params.map(typeClass),
+  result: typeClass(sig.result),
+  ...(sig.results ? { results: sig.results.map(typeClass) } : {}),
+});
+
 /**
  * An image another compiler made (for instance ds-js-os's `typedRv32.compile`, an independent oracle) in the
- * `rv32.image` format: functions from its entries, every word decoded, nothing covered.
+ * `rv32.image` format: functions from its entries, every word decoded, nothing covered. With `signatures` (the
+ * reference compiler's `{ name, params, result, results? }` list), functions that need ilp32f record their `sig`, so
+ * `runImage` and `imageAgrees` call them as our own images.
  */
 export function imageFromCode(
   program: string,
   code: Uint8Array,
   entries: Readonly<Record<string, number>>,
+  signatures: readonly (CallSignature & { readonly name: string })[] = [],
 ): Rv32Image {
+  const sigs = new Map(signatures.filter(needsConvention).map(s => [s.name, imageSig(s)]));
   const order = Object.entries(entries).sort((p, q) => p[1] - q[1]);
   const view = new DataView(code.buffer, code.byteOffset, code.byteLength);
   const insns: ImageInsn[] = [],
@@ -224,7 +293,13 @@ export function imageFromCode(
         covers: [],
       });
     }
-    (fns as Record<string, unknown>)[name] = { name, entry, bytes: end - entry, insns: (end - entry) / 4 };
+    (fns as Record<string, unknown>)[name] = {
+      name,
+      entry,
+      bytes: end - entry,
+      insns: (end - entry) / 4,
+      ...(sigs.has(name) ? { sig: sigs.get(name) } : {}),
+    };
   });
   const img: Rv32Image = {
     formatVersion: 1,
@@ -275,6 +350,12 @@ const imageChecks = new Map<string, DifferentialInvariant<ImagePorts>>();
 const describeOutcome = (r: RunResult | ImageRun): string =>
   r.fault ? `fault: ${r.trap}` : String(outcome(r as RunResult));
 
+/** The signature of `fn` in the check's program. */
+const programSig = (ports: { readonly program: unknown }, fn: string): CallSignature => {
+  const f = storeOf((ports.program as Artifact<TypedBlocks>).value).fn(fn);
+  return { params: f.params, result: f.result, ...(f.results ? { results: f.results } : {}) };
+};
+
 /**
  * `rv32.image-agrees`: every function of `image` agrees with the evaluator on `program` (expected) for `count`
  * generated cases per function of the program, with Compiler Workbench's verdict (`agrees`: a fault never agrees,
@@ -304,11 +385,17 @@ export function imageAgrees(params: ImageCheckParams = {}): DifferentialInvarian
         const st = storeOf(program.value);
         return [...st.fns.keys()].flatMap(fn => casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }));
       },
-      run: (side, art, c) =>
+      run: (side, art, c, ports) =>
         side === 'baseline'
           ? evaluate(storeOf((art as Artifact<TypedBlocks>).value), c.fn, c.args, c.memory, { limit })
           : c.fn in (art as Artifact<Rv32Image>).value.entries
-            ? runImage(art as Artifact<Rv32Image>, c.fn, c.args, c.memory, { limit: imageLimit })
+            ? runImage(art as Artifact<Rv32Image>, c.fn, c.args, c.memory, {
+                limit: imageLimit,
+                counts: false,
+                // the program's signature places f32 arguments and reads record results, for an image that
+                // records none (another compiler's)
+                sig: programSig(ports, c.fn),
+              })
             : missing((art as Artifact<Rv32Image>).value, c.fn),
       inconclusive: r => r.limit,
       compare: (expected, got, c) =>

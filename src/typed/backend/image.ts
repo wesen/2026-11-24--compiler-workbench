@@ -50,11 +50,24 @@ export interface ImageInsn {
   readonly callee?: string;
 }
 
+/**
+ * A function's signature by type class, for its ilp32f calling convention: parameters, the result, and a record
+ * result's leaves. An image records it only for functions that a caller cannot call with integers in a0-a7 and a
+ * result in a0 (an f32 parameter or result, a record result, more than eight parameters), so an integer image's
+ * value, and its revision, are what they were before f32.
+ */
+export interface ImageSig {
+  readonly params: readonly ('i32' | 'f32')[];
+  readonly result: 'i32' | 'f32';
+  readonly results?: readonly ('i32' | 'f32')[];
+}
+
 export interface ImageFn {
   readonly name: string;
   readonly entry: number;
   readonly bytes: number;
   readonly insns: number;
+  readonly sig?: ImageSig;
   /** Allocation facts; absent for an image the backend did not make (a reference image). */
   readonly frame?: number;
   readonly saved?: readonly string[];
@@ -182,6 +195,16 @@ export function validateImage(value: unknown): asserts value is Rv32Image {
     need(f.name === name && f.entry === v.entries[name], `function ${name}: entry disagrees with entries`);
     need(f.entry === at, `function ${name} starts at ${f.entry}, not ${at}`);
     need(Number.isInteger(f.insns) && f.bytes === 4 * f.insns, `function ${name}: bytes is 4 * insns`);
+    if (f.sig !== undefined) {
+      const classes = (xs: unknown) => Array.isArray(xs) && xs.every(t => t === 'i32' || t === 'f32');
+      need(
+        f.sig &&
+          classes(f.sig.params) &&
+          (f.sig.result === 'i32' || f.sig.result === 'f32') &&
+          (f.sig.results === undefined || classes(f.sig.results)),
+        `function ${name}: sig is { params, result, results? } of 'i32' and 'f32'`,
+      );
+    }
     for (let i = 0; i < f.insns; i++) owner.push(name);
     at += f.bytes;
   }
