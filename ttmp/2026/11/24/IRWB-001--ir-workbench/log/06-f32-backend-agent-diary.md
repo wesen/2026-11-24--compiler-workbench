@@ -23,9 +23,15 @@ RelatedFiles:
       Note: runImage and imageAgrees with f32 arguments and results
     - Path: repo://src/typed/ilp32f.ts
       Note: the ilp32f argument and result locations, shared by the backend's runner and reference.ts
+    - Path: repo://tests/typed/f32-backend.test.mjs
+      Note: encodings, edge values, conventions, spills, the fs check, relaxation, Candela (IRWB_CANDELA=1 for 100 cases and the O2 head)
+    - Path: repo://tools/candela-image.mjs
+      Note: our images and the reference's on the same cases; bytes and instructions per function
+    - Path: repo://ttmp/2026/11/24/IRWB-001--ir-workbench/various/experiments/f32-backend-01-candela-images.md
+      Note: the final measurement (r0, O2, stock, kernel; 100 cases per function)
 ExternalSources: []
-Summary: "Investigation diary of the subagent that extends the RV32 backend with RV32F (task owi2, design-doc 05 §4), so that every Candela function compiles to an image that agrees with the evaluator."
-LastUpdated: 2026-11-24T22:40:00-05:00
+Summary: "Investigation diary of the subagent that extended the RV32 backend with RV32F (task owi2, design-doc 05 §4): every Candela function compiles at r0 and at the O2 head and agrees with the evaluator on 100 cases per function; the i32 corpus is unchanged by revision."
+LastUpdated: 2026-11-24T23:55:00-05:00
 WhatFor: "Evidence trail and resume point for the f32 backend (P4.5)."
 WhenToUse: "Read before reviewing or extending the backend's f32 lowering, its register classes, or the Candela image numbers."
 ---
@@ -457,3 +463,115 @@ This step ran the `IRWB_CANDELA=1` test, which checks `rv32.image-agrees` throug
 
 ### Technical details
 - The opt-in test's check: `imageAgrees({ count: 100, inputs: candelaInputs(st), limit: 2e5, imageLimit: 2e7 })`, seed 7.
+
+## Step 9: The numbers: r0, the O2 head, stock and kernel on 100 cases per function
+
+This step is the final measurement. Our r0 and O2 images and the reference's `stock` and `kernel` images ran on the same 100 cases per function. No image disagrees with the evaluator on any case, and our images agree with `stock` on every case both decided. The O2 image is 48.5% of `stock`'s bytes and runs 54.4% of its instructions. Against `kernel` it is 34.9% of the bytes and runs 116.4% of the instructions.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Acceptance 3 and 4: zero disagreements on 100 cases per function with the reference image as a second oracle; bytes and instructions per case, per function and in total, at r0 and at O2, against `stock` and `kernel`.
+**Inferred user intent:** See Step 1.
+**Commit (code):** this step's commit (the run used build e3e91b1; 31df57c after it only reformats).
+
+### What I did
+- `/usr/bin/time -v node --max-old-space-size=12288 tools/candela-image.mjs --count 100 --head scratchpad/candela-o2-head.json --policies stock,kernel --json …/various/experiments/f32-backend-01-candela-images.json --table …/f32-backend-01-candela-images.tsv` (task `b2z3nsqme`).
+- `tools/candela-image-summary.mjs` (new): a Markdown summary of the JSON (totals, ratios, the largest gaps and wins against `kernel`), written to `various/experiments/f32-backend-01-candela-images.md` with the command and build.
+
+### Why
+- The JSON keeps every function's row (bytes, agreements, instructions per decided case of every image); the TSV is the per-function table; the Markdown is the readable summary.
+
+### What worked
+- Totals (32,985 of 33,200 cases decided by every image and evaluator; 31,617 values, 1,368 traps):
+
+  | image | bytes | agree | disagree | inconclusive | instructions | per case |
+  |---|---:|---:|---:|---:|---:|---:|
+  | r0 | 183,324 | 32,985 | 0 | 215 | 30,380,140 | 921.0 |
+  | O2 | 151,748 | 32,990 | 0 | 210 | 28,706,118 | 870.3 |
+  | stock | 312,740 | 32,985 | 0 | 215 | 52,730,673 | 1,598.6 |
+  | kernel | 434,996 | 32,985 | 0 | 215 | 24,662,932 | 747.7 |
+
+- Against `stock` (the second oracle): `"vsStock":{"r0":0,"o2":0}`.
+- Ratios: r0/stock bytes 58.6%, instructions 57.6%; r0/kernel 42.1% and 123.2%; O2/stock 48.5% and 54.4%; O2/kernel 34.9% and 116.4%; O2/r0 82.8% and 94.5%.
+- O2 against r0 per function: 180 functions run fewer instructions, 21 more; the largest increase is `fbm3` (+37,458 instructions over its decided cases), then `s15_sdf_0` (+4,600), `s16_bumpN_1` (+4,144).
+- Largest gaps to `kernel` at O2: `fbm3` 1.82 million instructions, `cdlRenderSpan` 0.87 million, `s16_mat_0` 0.21 million (Step 8: inlining).
+- Wall clock 22 min 26 s on the shared machine, 1.54 GB maximum resident.
+- Against Step 7's r0 (before Step 6): 189,216 → 183,324 bytes and 944.7 → 921.0 instructions per case (−2.5%) from sharing fa0–fa7.
+
+### What didn't work
+- My first waits used `until ! pgrep -f "<pattern>"` loops; `pgrep -f` matched the loop's own command line, so they never ended. I stopped them (`TaskStop`) and waited on the output file instead.
+
+### What I learned
+- O2 helps the backend less than its statement count suggests (−23% statements, −5.5% instructions, −17% bytes). Most removed statements were constant assignments that were cheap anyway, and the licm and lvn copies cost a move each where the allocator does not coalesce them.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- "Decided" is the intersection over all four images and both evaluators. That is why O2 alone decides 5 cases more (32,990) than the common set (32,985).
+
+### What should be done in the future
+- See Step 10.
+
+### Code review instructions
+- `ttmp/2026/11/24/IRWB-001--ir-workbench/various/experiments/f32-backend-01-candela-images.{md,tsv,json}`; `node tools/candela-image-summary.mjs <json>`.
+
+### Technical details
+- Cases: `casesFrom(r0 store, fn, { count: 100, seed: 7, inputs: candelaInputs })`; the same cases for every image.
+
+## Step 10: Where this differs from design-doc 05, and what is open
+
+This step closes the task. It runs the final validation on the last commit and lists what I did differently from design-doc 05 §4, and why, together with what remains open.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** The report's "what differs from design-doc 05, and why" and "open issues".
+**Inferred user intent:** The coordinator can merge the branch and plan the per-scene kernels (ckco) on it.
+**Commit (code):** this step's commit.
+
+### What I did
+- `npm test`; `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs` on the final code (results in What worked).
+
+### Why
+- The final code differs from the measured build only by formatting (31df57c) and tools; the suites confirm it.
+
+### What worked
+- `npm test` on 31df57c plus the tools: `tests 310`, `pass 308`, `fail 0`, `skipped 2` (the two `IRWB_CANDELA` tests), 67 s.
+- `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs`: 21 of 21, including "P2.6: the book's table against the reference compiler, and 5160 bytes against 7628" and "P2.6: corpus parity (all projects)".
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Differences from design-doc 05 §4:
+  1. **fa0–fa7 in calling functions (Step 6).** The design pools fa0–fa7 only in leaves. The f class also uses them in functions that call, wherever a liveness of the physical fa registers leaves them free. The x class is allocated exactly as the design says (and as the book does).
+  2. **Record-result leaves are read in place (Step 4).** The table says "ilp32f result locations"; it does not say whether leaves are copied out. They are read straight from a0–a7, fa0–fa7 and the outgoing words, and the selector refuses a `result#k` after another call.
+  3. **Branch relaxation (Step 7)** is new; the O2 head needs it.
+  4. **`rv32.image` records `fns[f].sig`** for functions that need ilp32f, so `runImage` can call them without the program. Integer functions have none, so corpus image revisions do not change.
+  5. **`runImage` checks fs0–fs11** after the call it makes, because the interpreter checks only x registers.
+  6. **`src/typed/ilp32f.ts`** holds the convention for the backend's runner and `reference.ts`.
+  7. **Frames over 2,032 bytes** (the reference's large-frame form) are not implemented, because no Candela function needs one at r0 or at the O2 head.
+  8. **The kernel policy works.** The design expected `kernel` numbers only "if the vendored inline, loops and kernel pass groups load". They do, and `kernel` agrees with the evaluator on all 32,985 decided cases, which is task gxe6's measurement.
+- Open issues:
+  - The gap to `kernel` (116% of its instructions at O2) is mostly inlining (`fbm3` → `noise3` → `q_floor`, `q_fract`), a middle-end pass this compiler does not have.
+  - f32 constants are materialized at every use (`lui`/`addi` and `fmv.w.x`), inside loops too. The reference keeps constants in registers ("constant homes").
+  - O2 makes 21 functions slower than r0 (Step 9). Their copies from licm and lvn are not coalesced.
+  - a0–a7 are still not shared in calling functions, because sharing them would change the book's integer images.
+  - The fs check covers only the entry function. Internal calls are checked only through the results.
+  - The O2 head file (16 MB) is not committed. `node tools/candela-o2.mjs --save <file>` makes it again (about 40 minutes before the merged framework speed-up; the coordinator measured 3–5× faster).
+  - I did not update the ticket's `tasks.md` and `changelog.md`. The coordinator edits them on its branch; the task to tick is owi2.
+
+### What was tricky to build
+- See Steps 4, 6 and 7.
+
+### What warrants a second pair of eyes
+- `physicalOccupancy` and `clashes` in `regalloc.ts` (Step 6), and the `result#k` rule in `select.ts` (Step 4), are the two places where correctness depends on reasoning about physical registers outside the virtual-register intervals.
+
+### What should be done in the future
+- An inline pass for small leaf callees; constant homes for f32 constants in loops; coalescing of copies (or a check of whether the backend should treat `vn`/`inv` copies as moves).
+
+### Code review instructions
+- Start at `src/typed/backend/select.ts` (header table), then `regalloc.ts`, `compile.ts` (`finish`, `relaxBranches`), `run.ts` (`runImage`), `src/typed/ilp32f.ts`; tests in `tests/typed/f32-backend.test.mjs`.
+
+### Technical details
+- Branch commits: 9e96e22, 621845e (merge), cf9d11d, 719e1d6, e327c75, e3e91b1, 1a40b2b, 31df57c, dc39d94, and this step's.
