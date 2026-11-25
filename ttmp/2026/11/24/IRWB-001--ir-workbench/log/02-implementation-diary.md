@@ -603,3 +603,404 @@ I chose 72 columns as the target, measured the corpus, and added a formatting mo
 
 ### Code review instructions
 Read `src/typed/format.ts`, `tools/format-corpus.mjs` and `tests/typed/format.test.mjs`. Run `node tools/format-corpus.mjs --check` and `npm test`.
+
+## Step 9: searching pass orderings, two merges, and reports 2 and 3
+
+The user asked how the compiler compares with the original, and whether the framework allows more ambitious optimizations. I measured instead of asserting. Choosing among four orderings beats O2 on 12 of 44 projects. Following the winners up showed that 11 of the 12 gains are one extra `subst` after O2's final cleanup: the book's `t = i` loop copy, which turns out to be an ordering problem wherever `bce` has removed the check. Per-function search, built in this step, never beat per-program choice on the corpus, even with conflicting candidates.
+
+In the same step I merged both subagents (the browser workbench, and f32 with Candela) and fixed one integration bug the merge created. I also wrote reports 2 and 3 for the vault.
+
+### Prompt Context
+**User prompts (verbatim):**
+- "how good is the compiler compared to the original? or is it the same? are we able to do more ambitious optimizations that wouldn't have been easily opssible?"
+- "ok we can also create new projects and such that try to create sick ass optimizations from candela to rv32, or anything else you think is worth exploring. Make a list of ideas. I'm really curious about what the new framework allows us to do"
+- "ok, create a detailed report in the vault at important milestones, using a textbook authoring style. Make sure all the subagents diligently keep a detailed diary as they work."
+
+**Assistant interpretation:**
+- Answer with measurements: the code is identical by design; the framework enables checked search and specialization.
+- Write the ideas list (design-doc 04, commit 6fc330f).
+- Start on the first idea, ordering search.
+- Write a report at each milestone and enforce the subagents' diaries.
+
+**Commits (code):** 07c1b00 (metrics), ce92601 (per-function search), 6f241cd (UI merge), fcb155f (f32 and Candela merge).
+
+### What I did
+- **`measure`:** a run that hits the step limit costs the limit (2·10^5), and a new `limited` metric counts such runs. Previously one non-terminating case in `my-analysis` made the sum `NaN`, and the interpreter refused it with `IR data must contain only finite numbers`.
+- **`strategies.ts`:**
+  - every pass is also registered restricted to one function, as `typed.<pass>@<fn>`;
+  - `searchPlan` is one `chooseBest` per function, with `typed.metrics` given `{ fn }`.
+- **`tools/search-experiment.mjs`:** O2 against per-program choice against per-function search, over the corpus, by instructions.
+  - Evidence in `various/experiments/01-*`.
+  - The conflicting-candidate run is `scripts/05-per-function-conflicting-candidates.mjs`, with output in `various/experiments/02-*`.
+- **Follow-up of the winners:** after O2, I applied `O2+more`'s extra passes one at a time on checksum and early-exit, then O2 plus one `subst` on all twelve winners.
+- **Diaries:** messaged the UI agent, whose diary was missing (it backfilled steps 1–4 from commits and wrote step 5 live), and the f32 agent, which kept its diary current.
+- **Merges:**
+  - UI: conflict in `strategies.ts`; kept both sides, with per-function passes registered through the agent's `pause` wrapper.
+  - f32: conflict in `ir.ts`; both sides had indexed `resolve`, and I kept the agent's helper.
+  - Added `typedTape` to `site-src/main.js`'s `setVendor`.
+- **Reports in the vault:** report 2 (strategies, search, audit, specialization, browser) and report 3 (Candela).
+
+### Why
+- **Experiment before answering.** "Is it better?" has a measurable answer here, and the ideas list ranks ordering search first because it needs no new pass.
+- **Per-function search** needed per-function passes. Restricting an existing pass body by function name reuses every rule and check, rather than adding a second mechanism.
+
+### What worked
+- **Search (`01-search-o2-per-program-per-function.json`):**
+  `{"projects":44,"fasterPerProgram":12,"fasterPerFunction":12,"fnBeatsProgram":0,"programBeatsFn":0,"allChecksAgree":true}`.
+  - Instructions excluding `my-analysis`: 77,321 → 75,651 (−2.2%).
+  - Bytes: 5,160 → 5,092. Every winner is also smaller.
+  - Compile time: 1,265 s in all.
+- **Winners:**
+  - `constants`: O2 twice (70 → 40).
+  - The other 11: `O2+more`. For each, O2 + one `subst` gives the same count (`checksum 1260 SAME`, … `wrong-shift 1500 SAME`). After O2, Checksum's loop has `s:total.4 t3 = i`. Of the nine extra passes only the first `subst` changes anything (`lvn false 1410`, `subst true 1260`, all others false).
+- **Conflicting candidates** (O1, O2, loops, O2 without licm; 19 multi-function projects): `{"prog":33354,"fn":33354}`. Functions choose different winners (`div-magic: digitsum=O1 sevenths=loops`), but only where the alternatives tie.
+- **Merged tree:** `npm test` 301 pass, 1 skipped (`IRWB_CANDELA`); the `IRWB_FULL=1` corpus parity holds. In the browser, Blend → Run reaches `r6 40/40` with only the favicon 404 in the console.
+
+### What didn't work
+- **`pkill -f "tools/serve-site.mjs"` killed my own shell** (exit 144), because the pattern matched the shell's command line. The same happened with `pgrep -f "node tools/serve-site"`. That aborted the commit command the first time. Use a pattern such as `[s]erve-site`.
+- **Report 2's first draft predicted wrongly.** It said per-function search "becomes useful with candidates that disagree". The conflicting-candidate experiment refuted that for this corpus, and the report now states the measured result.
+- **My first explanation of `O2+more`'s wins was a guess** (more value numbering, more copies). Applying the passes one at a time showed it was a single `subst`.
+
+### What I learned
+- The book's `t7 = i` gap is two problems. Where `bce` removes the check, the copy has one reader and an end-of-pipeline `subst` removes it. Where the check stays (Blend), it has two readers and needs real coalescing.
+- On the corpus's programs, a single choice per program loses nothing to per-function choice.
+
+### What was tricky to build
+- **The f32 merge's browser dependency.** `lift()` now always calls `inferLocalTypes`, which reads the tape's row table even on the default path. `npm test` could not catch the missing vendor in the page; only a browser load did.
+
+### What warrants a second pair of eyes
+- **Per-function passes multiply the registry:** passes × functions, 3,652 algorithms for Candela. They are built on every `strategyRegistry` call.
+- **The search's metric** is 10 cases per function. It decides winners, but the evidence that a winner is correct is the meaning contract (40 cases per pass, plus 40 at the end).
+
+### What should be done in the future
+- Add a pipeline `O2+` (O2, then `subst`), and keep O2 itself for parity with the book.
+- Copy coalescing for copies with several readers, and loop rotation, measured against the reference compiler's 383/292/1,533/1,486.
+- Run the Candela oracle with the `kernel` policy, now that the pass groups are vendored.
+
+### Code review instructions
+Read `src/typed/strategies.ts` (`searchPlan`, the scoped registration, `measure`), then run `node tools/search-experiment.mjs` (about 21 minutes).
+
+## Step 10: bookkeeping caught up, design-doc 05 for the next phase
+
+The user asked me to go ahead with the next phase and to keep its four practices. I caught up the docmgr ticket, which was behind: four finished tasks were unchecked, and the changelog had no entries after the first milestone. Then I measured the three things the next design depends on, and wrote design-doc 05 before writing any code. The doc covers six pieces of work: O2+, framework performance, the f32 backend (for a subagent), `caddr` bounds checks, the kernel-policy oracle, and per-scene kernels.
+
+The user also set the diary cadence: a step at every significant action, more often than commits, about ten per milestone. Steps 1–9 were milestone-sized summaries. From this step on they are not.
+
+### Prompt Context
+**User prompts (verbatim):**
+- "Ok, go go go go. diary docmgr deisgn doc vault report, do you know what that means?"
+- Mid-turn: "diary should be more frequent than milestones, it should be like, at any significant step where something was done, more frequent than commits potentially. A milestone is probably something like 10 diary entris (of course this can vary wildly)"
+
+**Assistant interpretation:**
+- Proceed with the next steps I proposed.
+- For each piece of work: a design doc first, docmgr bookkeeping, frequent diary steps, and a vault report at each milestone.
+
+**Commit:** cbe69a0
+
+### What I did
+- **docmgr:**
+  - checked pb99 (wb layer), es43 (UI), z21g (R2) and m7y3 (a duplicate of the finished inventory task);
+  - added 4c1o (O2+), owi2 (f32 backend), 9rcu (framework performance), t4dq (caddr bce), gxe6 (kernel-policy oracle) and tjdl (R3);
+  - added four changelog entries covering steps 5–9.
+- **Measurements for the design:**
+  - `src/framework/core/data.ts` and `createIRArtifact`: an artifact costs five canonical encodings, two SHA-256 hashes, and two encodings per entity during projection.
+  - The backend is 2,000 lines, with a single register class in `regalloc.ts`.
+  - Candela's scene dispatch reads `q_k.scene`, a field of record `K` (types.typed:156), in five dispatchers. 177 of 332 functions are scene sections (`grep -c "^function s[0-9]*_"` on scenes.typed). Nothing writes `.scene` (`grep "\.scene *=[^=]"` is empty).
+- **Design-doc 05,** related to `data.ts`, `regalloc.ts` and `kernel.typed`.
+- **Memory:** the diary cadence rule is saved, so it applies to me and to every subagent brief.
+
+### Why
+- **Framework performance first among the large items.** Each later Candela experiment runs O2 at least once, and at two minutes per pass every experiment costs half an hour.
+- **Field bindings, not parameter bindings, for scenes.** The scene index is a memory field of a record passed everywhere, so the existing specialization, which substitutes parameter reads, would not reach it.
+
+### What worked
+- The measurements were enough to make every section concrete: the operator table for the backend, the register-class table, and the dispatcher's shape.
+
+### What didn't work
+- Nothing failed in this step.
+
+### What I learned
+- Candela's per-scene sections are more than half of all functions. Specialization plus dead-function elimination should therefore shrink the image far more than any pass ordering.
+
+### What warrants a second pair of eyes
+- **The `immutable` short circuit (design-doc 05, section 3.2)** assumes that a value in the `CANONICAL` set can never contain anything non-canonical. That holds only if every object in it was created by `JSON.parse` of canonical text and then frozen.
+
+### Code review instructions
+Read `design-doc/05-…md`, then `docmgr task list --ticket IRWB-001`.
+
+## Step 11: O2+ (task 4c1o)
+
+This step turns the ordering search's finding into a pipeline: `O2+` is O2 followed by one `subst`. Across the corpus it is faster than O2 on exactly the eleven projects the search predicted, and never slower or larger.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Assistant interpretation:** design-doc 05 §2.
+**Commit (code):** the commit after this step (O2+, tests, scripts/06, experiments/03).
+
+### What I did
+- **`src/typed/passes.ts`:** added `PIPELINES['O2+']`, which is O2's 16 passes plus `subst`, with a comment naming the finding. O2 is unchanged.
+- **`tests/typed/strategies.test.mjs`:** O2+ equals O2 plus `subst`. On Checksum, O2 leaves `t3 = i` and 1,410 instructions; O2+ removes it, giving 1,260, and its check agrees.
+- **`tests/workbench/strategies.test.mjs`:** the compiler's pipeline list now includes `O2+`.
+- **`scripts/06-o2-plus-corpus.mjs`:** O2 against O2+ on all 44 projects. Output in `various/experiments/03-o2-plus-corpus.{json,log}`.
+
+### What worked
+- The corpus comparison:
+  `{"better":[11 projects],"worse":[],"biggerImage":[],"allAgree":true,"totals":{"o2":77321,"plus":75681,"o2b":5160,"plusb":5104}}`.
+- The eleven projects are those of step 9: across-calls, bounds-lab, bounds-two, checksum, early-exit, histogram, ramp, start-here, strength, strings and wrong-shift.
+- `npm test` passes; see the commit.
+
+### What didn't work
+- Nothing failed.
+
+### What I learned
+- O2+ reaches 75,681 instructions; the search's best reached 75,651. The 30-instruction difference is `constants`, which needs O2 twice. O2+ captures 98% of the search's gain at the cost of one pass.
+
+### What warrants a second pair of eyes
+- The strategy presets (`fastest`, `smallest`) still choose among O0, O1, O2 and loops. Adding O2+ to them changes the winners that the UI tests pin.
+
+### Code review instructions
+`src/typed/passes.ts` (`PIPELINES`), then `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/06-o2-plus-corpus.mjs`.
+
+## Step 12: framework performance on large artifacts (task 9rcu)
+
+A pass on Candela cost about two minutes even when it changed nothing. Nearly all of that time was the framework's generic encoding, hashing and freezing. This step removes the repeated work without changing a single hash. The no-change pass went from 86 s to 18 s and `cfg` from 101 s to 31 s. Every corpus project's r0, O2 and image revisions are identical before and after.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Assistant interpretation:** design-doc 05, section 3.
+**Commit (code):** the commit after this step.
+
+### What I did
+- **Baseline.** `scripts/07-framework-cost.mjs` measures Candela r0:
+  `{"createIRArtifact":7897,"project":4792,"cfgAnalysis":4933,"strength":{"ms":86423,"changed":false,"rev":"cd36346ea7c4f175"},"cfg":{"ms":101058,"changed":true,"rev":"4aea7e81dd046901"}}`.
+- **Round 1, `src/framework/core/data.ts`.** `immutable` builds the sorted, frozen copy directly instead of `JSON.parse(canonical(v))`. It returns values it produced unchanged, and records them in a `CANONICAL` WeakSet. `canonical` caches the text of canonical values of 4,096 characters or more.
+  - Result: strength 38 s, cfg 65 s, the same revisions.
+- **Profile** (`--cpu-prof`, attributed to the first caller outside `data.js`):
+  - `validateGraph`/`project`: 7.2 s;
+  - `requireRecord`, called by `validateEntity`: 5.4 s;
+  - `validateEntity`: 3.2 s;
+  - `createIRArtifact`: 2.7 s;
+  - correspondence validation: 2.3 s;
+  - `project` from `openIR`: 2.3 s;
+  - `sha256`: 9.2 s in total.
+- **Round 2.**
+  - `fingerprint` caches the hash of canonical values.
+  - `isCanonical` added; `requireRecord` skips re-encoding values `immutable` already validated.
+  - `sameCanonical(a, b)` compares canonical values structurally; `project` uses it for the per-entity resolve check instead of comparing two encodings.
+  - In `adapters.ts`: a `VERIFIED` WeakSet of artifacts whose hashes were computed or checked, so `validateIRArtifact` does not re-hash them; and a `PROJECTED` cache per captured adapter and canonical value.
+- **Equivalence.** `scripts/08-corpus-revisions.mjs` prints each project's r0 revision, every O2 revision and the image revision. I ran it with the three framework files stashed (old code) and popped (new code), then diffed: `IDENTICAL: 44 projects`.
+
+### Why
+- **Every cache is keyed on objects that cannot change.** A deep-frozen canonical value, a captured (frozen) adapter, or a frozen artifact. The cached text, hash or projection is a deterministic function of such objects, so caching cannot change a result, only skip recomputing it.
+- **`immutable` without text.** `JSON.parse(canonical(v))` encodes the whole value and parses it back. Building the copy directly performs the same validation in one walk.
+
+### What worked
+- **After round 2** (`07-framework-cost.mjs`):
+  `{"createIRArtifact":5027,"project":0,"cfgAnalysis":1184,"strength":{"ms":18195,"changed":false,"rev":"cd36346ea7c4f175"},"cfg":{"ms":30861,"changed":true,"rev":"4aea7e81dd046901"}}`.
+  The revisions equal the baseline's. That is 4.7× on the no-change pass and 3.3× on cfg.
+- **Tests:** framework 221/221; the whole suite 302 pass and 1 skipped. Its duration fell from 49 s to 37 s.
+
+### What didn't work
+- `node --test tests/framework/` failed as `✖ tests/framework`, because `node --test` does not take a bare directory. The glob form `"tests/framework/**/*.test.mjs"` is the right invocation.
+
+### What I learned
+- After round 1 the cost was not encoding as such. It was validation repeated on values already known to be valid: `requireRecord` encodes attributes only to check them, and `project` encodes two entities only to compare them. A set of canonical values makes all of that answerable by lookup.
+
+### What was tricky to build
+- **Matching `JSON.parse` exactly.** `immutable` must give what `JSON.parse(canonical(v))` gave: keys in sorted order, −0 as 0, and a `"__proto__"` key kept as an own property. A plain assignment `o['__proto__'] = x` would set the prototype instead, so the code uses `Object.defineProperty` with the attributes `JSON.parse` uses.
+
+### What warrants a second pair of eyes
+- **The caches assume adapter functions are deterministic.** The framework assumes this already, since revisions are content hashes. A non-deterministic `entities` or `resolve` would now be hidden by the projection cache rather than caught by the resolve check.
+- **Memory:** the text cache keeps strings for large canonical values while those values are alive.
+
+### Code review instructions
+- `src/framework/core/data.ts` (`immutable`, `canonical`, `fingerprint`, `isCanonical`, `sameCanonical`), then `src/framework/ir/adapters.ts` (`VERIFIED`, `PROJECTED`, `project`).
+- Run `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs` on the old and new code and diff the outputs.
+
+## Step 13: what Candela's checked addresses look like, and a first bcm that removed 11 of 559
+
+Design-doc 05 planned `caddr` bounds-check elimination from dominating tests, the existing `bce` argument. Before writing it, I looked at the actual checks. In `oRow` there is no test at all. One statement makes four checked reads from the same buffer at positions `2·q_t0 + 1`, `+3`, `+5`, `+7`. So I measured how the 559 checks relate, and changed the plan to merging checks within a block rather than eliminating them.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Assistant interpretation:** design-doc 05 §5, task t4dq; the doc's rule is revised by measurement.
+
+### What I did
+- **Listing.** Counted caddr per function on Candela r0: 559 in 41 functions (`cdlInit` 256, `finishHit` 32, `skyL_wgsl` 27, `tracePath` 21, …), and printed `oRow`.
+- **`scripts/09-caddr-patterns.mjs`.** Groups checks by block, receiver and the linear base of the position.
+  - First run: `{"total":559,"constPos":0,"groups":559,"inGroupsOf2plus":0}`. At r0 positions are locals (`get t5`), so every check landed in its own group.
+  - After resolving locals with a single assignment: `{"total":559,"constPos":442,"groups":81,"inGroupsOf2plus":538,"removableByMinMax":421}`.
+- **`bcm`, version 1.** Constant positions only, one local deep. It merges a block's checks on one receiver into a check of the largest position at the first site.
+  - Group boundaries: calls, `zero`, and stores not provably inside a buffer's data.
+  - Run with `scripts/10-bcm-candela.mjs` (contract at 40 cases per function):
+    `{"from":"r0","caddrBefore":559,"caddrAfter":548,"changed":true,"edits":12,"ms":46587}`.
+
+### Why
+- **Merging needs no outside fact.** Dominating tests are rare in generated code that indexes rows by computed positions. Proving those reads in bounds would need Candela's row-count facts. Merging does not: if the largest position of a group is in range, every smaller non-negative one is too.
+
+### What worked
+- The contract accepted the pass on Candela, so no sampled case changed meaning.
+
+### What didn't work
+- **Only 11 checks went**, against 421 predicted. The analysis script resolved chains of locals (`t5 = (q_t0 << 1) + 1`, `q_t0 = …`) transitively, while the pass resolved one local and only literal constants. The script measured what a deeper resolution could do, not what the pass did.
+
+### What I learned
+- In generated code the positions are linear in a row index (`(row·6 + k)·4·2 + 1`). The useful form is "base + constant", not "constant".
+
+### What should be done in the future
+- Linear positions with a symbolic base: Step 14.
+
+## Step 14: bcm over linear positions: 559 checks become 100 on Candela r0
+
+The second version of `bcm` handles positions of the form base + constant, computed exactly modulo 2³², with a symbolic base. The rule, for a block's checks on one receiver:
+- **Constant positions:** the largest is checked once, at the first site.
+- **Symbolic base:** the smallest and the largest are checked, at the first two sites. Every other site becomes an unchecked `r + 2p`.
+
+On Candela r0 the 559 checked addresses become 100, and the meaning contract accepts the result.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Commit (code):** the commit after this step.
+
+### What I did
+- **Linear forms** `{terms, k}` over `add`, `sub`, `shl` and `mul` by constants, all modulo 2³² (`Math.imul`, `| 0`).
+- **Stable names for terms.** A local read is named by its single reaching definition when that definition is earlier in the same block (`index(d) < index(site)`). That definition runs once per block execution, so equal names are equal values. Otherwise a local is named as itself, provided the block never assigns it. A literal assigned by a single definition anywhere is a constant.
+- **Explicit roles** per site: `keep` (the site's own check is one of the group's), `check` (rewrite to `caddr(r, p + Δ) − 2Δ`), and `unchecked` (`r + (p << 1)`). Unchecked sites carry `because: [first site's statement]`.
+- **Tests,** `tests/typed/bcm.test.mjs`, on a tape-lifted fixture:
+  - constant positions 0, 3, 1 merge to one check;
+  - `i`, `i+1`, `i+2` keep two checks of three;
+  - `i`, `i+5` stays at two;
+  - a call between two reads keeps both checks;
+  - `why` on an unchecked address reaches the group's check.
+
+  Each test also checks the meaning at 200 cases with texts of length 0–6, so traps occur.
+- **`tests/workbench/strategies.test.mjs`:** the compiler now lists 12 passes.
+
+### Why
+- **Why the base needs both checks.** For a symbolic base, B + kmin and B + kmax below the capacity imply every position between is too, as long as B + kmin + (kmax − kmin) does not wrap. It cannot, because a text's capacity is below 2³¹ units: its units take 2·capacity bytes of a 32-bit address space. For constant positions, all ≥ 0, the largest check alone suffices and needs no such argument.
+- **Why moving the check is sound.** Every caddr of a block runs whenever the block runs, unless something traps first, and a trap aborts the program. The merged check can therefore trap earlier than the original, but never in a run that would not have trapped. Calls end a group because a call might not return. A store ends a group unless it provably writes a buffer's data: a checked caddr at a constant position c ≥ 0 with 2c + offset ≥ 4. Any other store could overwrite a capacity word.
+
+### What worked
+- Candela r0: `{"caddrBefore":559,"caddrAfter":100,"changed":true,"edits":482,"ms":56529}`. In `oRow`, the four checks became two:
+  ```
+  return (loadf32[(caddr(q_bO, (t5 + 6)) + -12)+2], loadf32[(caddr(q_bO, (t6 + -2)) + 4)+2],
+          loadf32[(q_bO + (t7 << 1))+2], loadf32[(q_bO + (t8 << 1))+2])
+  ```
+- `npm test`: 306 pass and 1 skipped.
+
+### What didn't work
+- **A role bug, caught before running.** The first version marked a symbolic group's second site with "no rewrite" when its position already was the smallest, and the rewrite then treated "no rewrite" as "unchecked". That would have dropped a check that must stay. An explicit `mode` per site removed the ambiguity.
+- **The provenance test failed twice.**
+  - It looked for the reason in the edit records (`because: []`), but `make` options are recorded on the new value's origin.
+  - `why` on the statement's load showed only "rebuilt around a changed argument". The reason is one level down, on the rewritten address, which the test now follows.
+
+### What I learned
+- The edit log's `because` is per rewrite call; a per-value reason lives in the value's origin. A UI that shows why a check disappeared has to show the address value's `why`, not the statement's.
+
+### What warrants a second pair of eyes
+- **The capacity bound.** The assumption that a capacity is below 2³¹ units is an argument about the address space, not something the IR states. A text buffer whose capacity word holds garbage would break the symbolic-base case; the meaning contract would see that only if its cases contained such a buffer.
+- **`safeStore`** accepts only constant-position stores, so symbolic-position stores (row writes in loops) end groups. That is conservative, and may leave checks in `cdlInit`.
+
+### Code review instructions
+- `src/typed/passes.ts` (`bcm`) and `tests/typed/bcm.test.mjs`.
+- `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/10-bcm-candela.mjs` (about 1 minute).
+
+## Step 15: the Candela oracle against the reference compiler's kernel policy (task gxe6)
+
+The f32 agent's oracle used the reference compiler's `stock` policy, because its base revision lacked the reference pass groups. They are vendored now, so I ran the oracle against `kernel`, the policy the device uses. It agrees on every decided case, exactly as `stock` did.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10. Mid-step, the user also asked for a separate research-agenda ticket. A Fable subagent was launched for it (IRWB-002, with its own diary), and it is not part of this step.
+
+### What I did
+- `tools/candela-oracle.mjs`: a `--policy P` option (default `stock`), passed to `referenceCompile`.
+- `node tools/candela-oracle.mjs --count 100 --policy kernel --json > various/experiments/04-candela-oracle-kernel-policy.json`.
+
+### What worked
+- `{"functions":332,"cases":33200,"values":31617,"traps":1368,"agree":32985,"disagree":0,"inconclusive":215,"faults":0,"allValueFunctions":330,"ms":312567}`.
+- These are the same counts as with `stock`. The `kernel` policy inlines, rotates loops and unrolls. Its images compute the same results as the evaluator on every decided case, including traps.
+
+### What didn't work
+- Nothing failed. The run took 313 s, against about 40 s for `stock`. Compiling with the kernel passes and running larger images costs more.
+
+### What I learned
+- The evaluator now agrees with two different compilations of Candela. Our own f32 backend's images, when they exist, therefore have a target that is itself cross-checked.
+
+### Code review instructions
+`node tools/candela-oracle.mjs --count 100 --policy kernel` (about 5 minutes).
+
+## Step 16: the full Candela O2 run after the framework speedup
+
+This step re-ran O2 on all of Candela on the build from Step 12, as design-doc 05 §3.3 asked. It took 19 minutes instead of 36. The final check is now at the intended step limit and has fewer inconclusive cases.
+
+### What I did
+- `/usr/bin/time -v node --max-old-space-size=12288 tools/candela-o2.mjs --json --save head.json`. It ran while other measurements shared the CPU (the bcm runs, the oracle and the tests).
+- Evidence: `various/experiments/05-candela-o2-after-framework-speedup.{json,log}`.
+
+### What worked
+- `{"rev":13,"final":{"total":33200,"agree":33184,"disagree":0,"inconclusive":16},"ms":{"pipeline":1128733,"final":256951,"total":1395118}}`, with a maximum RSS of 5.8 GB.
+- **Pipeline:** 1,129 s against 2,178 s before (1.9×, on a busy machine).
+- **Revisions:** the same 13.
+- **Statements:** 12,358 → 9,479, as before.
+- **Final check:** 16 inconclusive cases against 58. This run used `--final-limit` 2·10^5; the earlier run did not.
+
+### What didn't work
+- The per-pass times grew towards the end (`subst` 127 s and 137 s), when the parallel runs started. The 1.9× is a lower bound.
+
+### What I learned
+- Memory, not time, is now the limit for keeping many Candela revisions: 5.8 GB for 13 revisions with their analyses.
+
+## Step 17: rendering Candela scenes, on the emulator and on our evaluator, bit-identical
+
+The user asked to see a Candela program's rendered image when run on the emulator, in the workbench. This step builds the host side.
+- **The scene data:** the gallery's scene table, vendored as data.
+- **The frame loop:** a port of ds-js-os's host protocol.
+- **Two engines:** the reference compiler's RV32 image on the RV32 interpreter, and our evaluator at any revision.
+- **Output:** PNG views of the frame.
+
+"Hello, sphere" renders. Our evaluator, at r0 and at the O2 head, produces the same 19,200 output floats as the emulator, bit for bit.
+
+### Prompt Context
+**User prompt (verbatim):** "can i test one of the candela programs and see te rendered image when run on the emulator in the workbench?"
+**Assistant interpretation:**
+- Not yet; three things are missing: real scene data (the checks so far used synthetic rows), a driver for Candela's frame loop, and a view.
+- Build the host side, verify it, then have the workbench show it.
+
+### What I did
+- **Finding the data.**
+  - In ds-js-os, `apps/typed/candela-gallery/link.js` names the four slot entries (`cdlLayout`, `cdlInit`, `cdlSky`, `cdlRenderSpan`).
+  - `tools/gen/candela/typed/host.mjs` drives them over a memory image; I read it and did not run it.
+  - The packed scenes come from Candela's own front end (`lib/candela.mjs exportScene`), but the generator writes them into `firmware/third_party/candela/gallery/candela_gallery_scenes.c`: per scene the U, O, LI, BV and SD rows as float bit patterns, plus a `cg_scenes[]` table.
+  - I chose that file, so no Candela code runs. It is byte-identical at b19062b and HEAD (`cmp`; SHA-256 `a0039225…`).
+- **Vendored** into `corpus/candela-gallery/candela_gallery_scenes.c`, recorded in its `VENDOR.json` with a note: data only, never compiled.
+- **`src/typed/candela-render.ts`:**
+  - `parseSceneTable`: 18 scenes, with word counts checked against the row counts.
+  - `CandelaHost`: layout, bind and span, ported from `host.mjs`.
+  - `renderScene` (with an optional `stride` for previews) and `viewImage` (colour with automatic exposure, albedo, normal, depth).
+- **`tools/candela-render.mjs`:** `candelaScenes()` (digest-checked), `engineFor('reference' | 'evaluator', { policy, head })`, a minimal PNG writer, and the command-line tool.
+- **`scripts/11-candela-render-compare.mjs`:** renders with two engines and compares every output float bit for bit.
+
+### What worked
+- **`--list`** prints the 18 scenes, in the order `scenes.typed` indexes them (0 B-01 "Hello, sphere" … 17 G-03).
+- **B-01 at 160×160 on the emulator** (`kernel` policy): `{"steps":217105487,"stepsPerPixel":8481,"renderMs":18670,"nonFinite":0}`. The image shows a red sphere on a floor under a sky, at one sample per pixel. Renders are in `various/renders/`.
+- **Comparisons at stride 4** (1,600 pixels, 19,200 floats):
+  - emulator against evaluator at r0: `"differentBits":0`; the emulator ran 13.6 M instructions, the evaluator 4.98 M statements.
+  - emulator against evaluator at the O2 head: `"differentBits":0`; the evaluator ran 3.75 M statements (−25%).
+
+### What didn't work
+- **The first PNG was almost white.** It used a fixed exposure of 1, and Candela's colours are physical radiance (median ≈ 7,000; the centre pixel ≈ 3,092, 557, 359). Automatic exposure fixed it: the log-average luminance maps to 0.18.
+- **A tiny preview cannot show the scene.** At stride 4 the image is 40×40; full size is needed to judge it.
+
+### What I learned
+- Rendering is a far stronger whole-program check than sampled function cases. It runs every entry with real scene data, and bit-identical floats leave no room for tolerance arguments.
+
+### What was tricky to build
+- **`bind` writes capacities in UTF-16 units** (8 per row of 16 bytes), with data from byte 4. K's first five fields are the row buffers. `K.scene` is at word 7, `K.spectral` at 8, `K.skyOn` at 9, which is cleared for `cdlSky` and set afterwards. All of this follows `host.mjs` exactly.
+
+### What should be done in the future
+- The view in the workbench: delegated to the UI agent, resumed with its context.
+- Accumulate several frames for less noise; the gallery's frame indices are 0, then p + 1.
+- Our own RV32 image as a third engine, when the f32 backend lands.
+
+### Code review instructions
+- `src/typed/candela-render.ts`, then run `node tools/candela-render.mjs --scene R-01 --stride 2` and `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/11-candela-render-compare.mjs B-01 4`.

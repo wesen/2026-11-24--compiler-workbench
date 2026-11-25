@@ -29,6 +29,7 @@ export async function installVendor({ reference = false } = {}) {
       loadVendorFile(`compiler/typed/${p}`); // the core, then the pass groups its policies install
   const { setVendor } = await import('../dist/typed/vendor.js');
   setVendor({
+    typedTape: globalThis.typedTape,
     typedWasm: globalThis.typedWasm,
     typedRv32Interp: globalThis.typedRv32Interp,
     ...(reference ? { typedRv32: globalThis.typedRv32 } : {}),

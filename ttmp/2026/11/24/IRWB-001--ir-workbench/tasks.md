@@ -9,7 +9,7 @@
 - [x] Import Compiler Workbench projects zip, analyze it and its overlap with v6 <!-- t:2t5v -->
 - [ ] Decide on the combination proposal (design-doc/01 section 5: stack, flagship, agent hosting, persistence, ds-js-os relationship) <!-- t:ug0h -->
 - [ ] Phase 0: run Compiler Workbench locally (fix build/load paths, regenerate bundles, run test/projects.mjs against ds-js-os typed-rv32.js) <!-- t:fqfc -->
-- [ ] Inventory what Candela build/compile/pack know (constant fields, parameter ranges, per-scene sections) before designing the fact channel <!-- t:m7y3 -->
+- [x] Inventory what Candela build/compile/pack know (constant fields, parameter ranges, per-scene sections) before designing the fact channel <!-- t:m7y3 -->
 - [ ] P0.1 Baseline: snapshot the Compiler Workbench prototype on all 44 projects (parity oracle: revisions, listings, image bytes, checks) <!-- t:x022 -->
 - [x] P1.1 Scaffold the TypeScript project (strict tsc, esbuild, prettier, node:test, layering check) <!-- t:70zr -->
 - [x] P1.2 Lift the v6 framework (core, strategy, contracts, ir) into src/framework, reformat, port its tests <!-- t:txbz -->
@@ -23,10 +23,16 @@
 - [x] P2.4 The eleven passes on definePass and rewrite rules <!-- t:4kh7 -->
 - [x] P2.5 Backend: tiling selection, linear scan, frames, encoding, emulator runs <!-- t:jn6a -->
 - [x] P2.6 O2 and pipelines as Strategy plans; parity with the prototype on 44 projects <!-- t:vhni -->
-- [ ] P3.1 wb API layer: handles, selections, projects, why and lineage <!-- t:pb99 -->
-- [ ] P3.2 Workbench UI on the new kernel, standalone build <!-- t:es43 -->
+- [x] P3.1 wb API layer: handles, selections, projects, why and lineage <!-- t:pb99 -->
+- [x] P3.2 Workbench UI on the new kernel, standalone build <!-- t:es43 -->
 - [x] P4.1 Candela inventory: what build, compile and pack know <!-- t:5smn -->
 - [ ] P4.2 Candela chain: tasks for front end, generator, Typed front end; correspondence <!-- t:lofv -->
 - [ ] P4.3 Candela experiment: per-scene specialization measured on the host <!-- t:ckco -->
 - [x] R1 Obsidian report at the framework + parity milestone <!-- t:3x4l -->
-- [ ] R2 Obsidian report at the Candela milestone <!-- t:z21g -->
+- [x] R2 Obsidian report at the Candela milestone <!-- t:z21g -->
+- [x] P4.4 O2+ pipeline: O2 then subst (the copy finding of the ordering search), O2 kept for parity <!-- t:4c1o -->
+- [ ] P4.5 f32 RV32F backend: selection, fa registers, ilp32f calls, tuples/results, caddr/aaddr/zero, frame arrays (subagent) <!-- t:owi2 -->
+- [ ] P4.6 Framework performance on large artifacts: cached canonical encoding of deep-frozen values, cheaper projection checks, same hashes <!-- t:9rcu -->
+- [ ] P4.7 caddr-aware bounds-check elimination (559 checked addresses in Candela) <!-- t:t4dq -->
+- [x] P4.8 Candela oracle against the reference kernel policy (pass groups now vendored) <!-- t:gxe6 -->
+- [ ] R3 Obsidian report at the f32-backend / Candela-optimization milestone <!-- t:tjdl -->

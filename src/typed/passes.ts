@@ -16,6 +16,7 @@ import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
   domView,
+  hasEffect,
   isPure,
   liveView,
   rangeView,
@@ -29,10 +30,19 @@ import {
   type RangeView,
   type ReachView,
 } from './analyses.js';
+import { F32_FOLDABLE, F32_OPERANDS, F32_RESULT, f32Op } from './f32.js';
 import { BlocksIR, blocksAdapter, blocksEntities } from './ir.js';
 import { hash, meaningKept, type MeaningParams } from './evaluate.js';
 import { SYMBOL } from './listing.js';
-import { Store, type BlockRec, type StmtRec, type TypedBlocks, type ValueRec, type WorkFn } from './model.js';
+import {
+  Store,
+  typeClass,
+  type BlockRec,
+  type StmtRec,
+  type TypedBlocks,
+  type ValueRec,
+  type WorkFn,
+} from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { binop } from './evaluate.js';
 
@@ -258,6 +268,12 @@ const FOLDABLE = new Set([
 const lastStmt = (st: Store, b: BlockRec) =>
   b.stmts.length ? (st.get(b.stmts.at(-1)!) as StmtRec) : undefined;
 
+/**
+ * Folding is i32 arithmetic (Compiler Workbench's rules), plus the f32 operators in `F32_FOLDABLE`, evaluated on
+ * bits exactly as the target computes them (f32.ts): rounded to nearest even, which is the rule the target applies
+ * statically, so a folded constant is the value the program would compute. Operators that round in another direction
+ * (floor, ceil, trunc, the saturating conversions) are not folded.
+ */
 export const fold = typedPass({
   name: 'fold',
   about: 'constant folding: an operator whose operands are constants becomes a constant',
@@ -267,6 +283,13 @@ export const fold = typedPass({
     tx.rewrite(v => {
       if (v.op === 'eqz' && v.args[0].isConst)
         return tx.const(+(v.args[0].imm === 0), { because: [v.args[0]] });
+      if (F32_FOLDABLE.has(v.op) && v.args.every(a => a.isConst)) {
+        const [a, b] = v.args.map(x => x.imm as number);
+        return tx.const(f32Op(v.op, a, b)!, {
+          because: v.args,
+          ...(F32_RESULT.has(v.op) ? { type: 'f32' as const } : {}),
+        });
+      }
       if (!FOLDABLE.has(v.op) || !v.args.every(a => a.isConst)) return;
       const [a, b] = v.args.map(x => x.imm as number);
       if ((v.op === 'div' || v.op === 'rem') && (b === 0 || (a === -2147483648 && b === -1))) return; // keep the trap
@@ -274,6 +297,11 @@ export const fold = typedPass({
     }),
 });
 
+/**
+ * The identities are i32 identities. None holds for f32 (x + 0 is not x for x = -0; x * 0 is not 0 for NaN or ∞;
+ * x - x is not 0 for ∞; !(a < b) is not a >= b for NaN), so f32 operators are left alone; their own names keep
+ * them out of the rules below, and the guard makes that explicit.
+ */
 export const simplify = typedPass({
   name: 'simplify',
   about: 'algebraic identities: x+0, x*1, x*2^k, x-x, !!x and inverted comparisons',
@@ -281,6 +309,7 @@ export const simplify = typedPass({
   preserves: ['cfg', 'dominators', 'loops'],
   body: ({ tx }) =>
     tx.rewrite(v => {
+      if (F32_OPERANDS.has(v.op) || F32_RESULT.has(v.op)) return;
       const [a, b] = v.args,
         k = b && b.isConst ? (b.imm as number) : null,
         ka = a && a.isConst ? (a.imm as number) : null;
@@ -369,8 +398,10 @@ export const constprop = typedPass({
           );
           if (consts.some(c => c === null) || new Set(consts).size !== 1) return;
           const real = defs.filter(d => !d.startsWith('init:'));
+          // the constant has the local's type: an f32 local's constant is its bits (+0 for a local's initial 0)
           return tx.const(consts[0]!, {
             because: real.length ? real : [`local:${f.name}/${f.locals[v.imm as number].name} starts at 0`],
+            type: typeClass(f.locals[v.imm as number].type),
           });
         },
         [b],
@@ -387,26 +418,14 @@ export const dce = typedPass({
   preserves: ['cfg', 'dominators'],
   body({ st, f, tx, facts }) {
     const live = facts.live!;
-    const { hasEffect } = { hasEffect: (id: string) => effect(st, id) };
     for (const sid of f.blocks.flatMap(b => b.stmts)) {
       const s = st.get(sid) as StmtRec;
-      if (s.op === 'set' && !live.liveAfter(s.id).has(s.local!) && !hasEffect(s.value!))
+      if (s.op === 'set' && !live.liveAfter(s.id).has(s.local!) && !hasEffect(st, s.value!))
         tx.remove(s.id, { because: [`fact:liveness(${f.name})@r${tx.rev - 1}`] });
-      else if (s.op === 'eval' && !hasEffect(s.value!)) tx.remove(s.id, { because: ['no effect'] });
+      else if (s.op === 'eval' && !hasEffect(st, s.value!)) tx.remove(s.id, { because: ['no effect'] });
     }
   },
 });
-const effect = (st: Store, id: string): boolean => {
-  const v = st.get(id) as ValueRec;
-  return (
-    v.op === 'call' ||
-    v.op === 'load' ||
-    v.op === 'load16u' ||
-    v.op === 'div' ||
-    v.op === 'rem' ||
-    v.args.some(a => effect(st, a))
-  );
-};
 
 export const cfg = typedPass({
   name: 'cfg',
@@ -527,6 +546,10 @@ export const licm = typedPass({
         'le',
         'ge',
         'eqz',
+        // f32 operators are pure and never trap, so hoisting one out of a loop is safe
+        ...F32_OPERANDS,
+        ...F32_RESULT,
+        'aaddr',
       ];
       const inv = (id: string): boolean => {
         const v = st.get(id) as ValueRec;
@@ -537,13 +560,15 @@ export const licm = typedPass({
       const hoist = (id: string): string => {
         const v = st.get(id) as ValueRec;
         if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
-          const t = tx.local('inv', { because: [L.id] });
+          const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
           const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
           tx.insert(tx.at.end(pre!), set, { because: [L.id] });
           return tx.get(t, { from: id, because: [set] });
         }
         const args = v.args.map(hoist);
-        return args.some((a, i) => a !== v.args[i]) ? tx.make(v.op, ...args, { imm: v.imm, from: id }) : id;
+        return args.some((a, i) => a !== v.args[i])
+          ? tx.make(v.op, ...args, { imm: v.imm, from: id, type: v.type ?? 'i32' })
+          : id;
       };
       for (const bid of L.body)
         for (const sid of (st.get(bid) as BlockRec).stmts.slice()) {
@@ -565,13 +590,16 @@ export const lvn = typedPass({
   // Compiler Workbench also claims 'loops'; false: adding or removing a `set` in a loop changes its assigned locals.
   preserves: ['cfg', 'dominators'],
   body({ st, f, tx }) {
+    // a key names the operator, its immediate (an array offset, a load offset) and type, so an f32 constant and an
+    // i32 constant with the same bits, or two frame addresses, never share a number
     const key = (id: string): string => {
       const v = st.get(id) as ValueRec;
+      const t = v.type === 'f32' ? 'f' : '';
       return v.op === 'const'
-        ? `#${v.imm}`
+        ? `#${t}${v.imm}`
         : v.op === 'get'
           ? `@${v.imm}`
-          : `${v.op}(${v.args.map(key).join(',')})`;
+          : `${v.op}${v.imm === undefined ? '' : `[${v.imm}]`}${t}(${v.args.map(key).join(',')})`;
     };
     const size = (id: string): number => 1 + (st.get(id) as ValueRec).args.reduce((n, a) => n + size(a), 0);
     for (const b of f.blocks) {
@@ -580,11 +608,11 @@ export const lvn = typedPass({
         const s = st.get(sid) as StmtRec;
         const visit = (id: string): boolean => {
           const v = st.get(id) as ValueRec;
-          if (v.args.length && size(id) >= 3 && isPure(st, id)) {
+          if (v.op !== 'tuple' && v.args.length && size(id) >= 3 && isPure(st, id)) {
             const k = key(id),
               first = seen.get(k);
             if (first && first.value !== id) {
-              const t = tx.local('vn', { because: [first.value] });
+              const t = tx.local('vn', { because: [first.value], type: v.type ?? 'i32' });
               const set = tx.set(t, first.value, {
                 because: [first.value, id],
                 note: `computed once for ${first.stmt} and ${sid}`,
@@ -729,6 +757,198 @@ export const bce = typedPass({
   },
 });
 
+/**
+ * Bounds-check merging for checked text addresses. `caddr(r, p)` traps unless p <u capacity(r) and gives r + 2p.
+ * When one block computes several of them on the same receiver, with positions that are one base plus constant
+ * offsets (p = B + k, B possibly 0), checking the smallest and the largest position covers every position between:
+ * if B + kmin and B + kmax are both below the capacity, so is every B + k with kmin ≤ k ≤ kmax. (For a symbolic
+ * B this uses that a text's capacity is below 2^31 units, as its units occupy 2·capacity bytes of a 32-bit
+ * address space, so B + kmin + (kmax - kmin) cannot wrap. For constant positions, all ≥ 0, the largest suffices.)
+ *
+ * The group's first site checks the largest position and its second site the smallest, each rewritten as
+ * `caddr(r, p + Δ) - 2Δ` when its own position is not the one checked; every later site becomes the unchecked
+ * `r + 2p`. The merged checks run before the original check of the largest position did, which changes only
+ * where the program traps, never whether it does:
+ * - every caddr of a block runs whenever the block runs (no value operator evaluates its arguments
+ *   conditionally), unless something traps first;
+ * - a trap aborts the program.
+ * A group ends at anything that could break that or change a capacity: a call (it might not return), a store not
+ * provably inside a buffer's data, or `zero`.
+ *
+ * Linear forms are exact modulo 2^32 (add, sub, shifts and products by constants). A symbolic term names either a
+ * definition earlier in the same block (one execution per block execution, so equal names are equal values) or
+ * a local the block never assigns.
+ */
+export const bcm = typedPass({
+  name: 'bcm',
+  about:
+    'bounds-check merging: checked text addresses on one receiver whose positions differ by constants are checked once for the smallest and once for the largest position',
+  needs: { reach: 'reaching' },
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body({ st, f, tx, facts }) {
+    const reach = facts.reach!;
+    type Lin = { t: Map<string, number>; k: number };
+    type Site = { vid: string; sid: string; key: string; k: number; symbolic: boolean };
+    /** keep: the site's own check is one of the group's; check: rewrite to check `check`; unchecked: r + 2p */
+    type Plan = { site: Site; first: Site; mode: 'keep' | 'check' | 'unchecked'; check?: number };
+    const plan = new Map<string, Plan>();
+    const isLit = (v: ValueRec) => v.op === 'const' && !v.type;
+    const add = (a: Lin, b: Lin, sign = 1): Lin => {
+      const t = new Map(a.t);
+      for (const [x, c] of b.t) t.set(x, ((t.get(x) ?? 0) + sign * c) | 0);
+      return { t, k: (a.k + sign * b.k) | 0 };
+    };
+    const scale = (a: Lin, c: number): Lin => ({
+      t: new Map([...a.t].map(([x, y]) => [x, Math.imul(y, c)])),
+      k: Math.imul(a.k, c),
+    });
+    const baseKey = (a: Lin) =>
+      [...a.t]
+        .filter(([, c]) => c !== 0)
+        .sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))
+        .map(([x, c]) => `${c}*${x}`)
+        .join('+');
+    for (const b of f.blocks) {
+      const index = new Map(b.stmts.map((sid, i) => [sid, i]));
+      const assigned = new Set<number>();
+      for (const sid of b.stmts) {
+        const s = st.get(sid) as StmtRec;
+        if (s.op === 'set') assigned.add(s.local!);
+      }
+      // a local read at `sid` as a stable name within one execution of the block, or null
+      const name = (sid: string, l: number): { def?: StmtRec; key: string } | null => {
+        const defs = reach.reachingAt(sid, l);
+        if (defs.length === 1 && defs[0].startsWith('s:')) {
+          const d = st.get(defs[0]) as StmtRec;
+          if (index.has(d.id) && index.get(d.id)! < index.get(sid)!) return { def: d, key: d.id };
+          // a single definition of a literal is the same constant wherever it reaches
+          if (d.op === 'set' && isLit(st.get(d.value!) as ValueRec)) return { def: d, key: `=${d.id}` };
+        }
+        if (!assigned.has(l)) return { key: `L${l}` };
+        return null;
+      };
+      const lin = (sid: string, id: string, depth = 0): Lin | null => {
+        const v = st.get(id) as ValueRec;
+        if (v.type) return null;
+        if (isLit(v)) return { t: new Map(), k: v.imm as number };
+        if (depth > 12) return null;
+        if (v.op === 'get') {
+          const n = name(sid, v.imm as number);
+          if (!n) return null;
+          if (n.def) {
+            const inner = lin(n.def.id, n.def.value!, depth + 1);
+            if (inner) return inner;
+          }
+          return { t: new Map([[n.key, 1]]), k: 0 };
+        }
+        const x = v.args[0] && lin(sid, v.args[0], depth + 1),
+          y = v.args[1] && lin(sid, v.args[1], depth + 1);
+        if (!x || !y) return null;
+        const yc = y.t.size === 0 || [...y.t.values()].every(c => c === 0) ? y.k : null;
+        const xc = x.t.size === 0 || [...x.t.values()].every(c => c === 0) ? x.k : null;
+        switch (v.op) {
+          case 'add':
+            return add(x, y);
+          case 'sub':
+            return add(x, y, -1);
+          case 'shl':
+            return yc !== null && yc >= 0 && yc < 32 ? scale(x, (2 ** yc) | 0) : null;
+          case 'mul':
+            return yc !== null ? scale(x, yc) : xc !== null ? scale(y, xc) : null;
+          default:
+            return null;
+        }
+      };
+      const recvKey = (sid: string, id: string): string | null => {
+        const v = st.get(id) as ValueRec;
+        if (v.op !== 'get') return null;
+        return name(sid, v.imm as number)?.key ?? null;
+      };
+      let open = new Map<string, Site[]>();
+      const close = () => {
+        const role = (x: Site, first: Site, target: number) =>
+          plan.set(
+            x.vid,
+            x.k === target
+              ? { site: x, first, mode: 'keep' }
+              : { site: x, first, mode: 'check', check: target },
+          );
+        for (const sites of open.values()) {
+          if (sites.length < 2) continue;
+          const ks = sites.map(x => x.k),
+            max = Math.max(...ks),
+            min = Math.min(...ks);
+          const [first, second, ...rest] = sites;
+          if (!first.symbolic || min === max) {
+            // constant positions ≥ 0, or one position repeated: one check covers the group
+            role(first, first, max);
+            for (const x of [second, ...rest]) plan.set(x.vid, { site: x, first, mode: 'unchecked' });
+          } else {
+            if (sites.length < 3) continue;
+            role(first, first, max);
+            role(second, first, min);
+            for (const x of rest) plan.set(x.vid, { site: x, first, mode: 'unchecked' });
+          }
+        }
+        open = new Map();
+      };
+      // a store keeps every capacity word intact when it writes a buffer's data: a checked caddr at a constant
+      // position c ≥ 0 with 2c + offset ≥ 4 (the capacity is the first 4 bytes)
+      const safeStore = (s: StmtRec): boolean => {
+        const a = st.get(s.addr!) as ValueRec;
+        if (a.op !== 'caddr') return false;
+        const p = lin(s.id, a.args[1]);
+        return !!p && baseKey(p) === '' && p.k >= 0 && 2 * p.k + (s.offset ?? 0) >= 4;
+      };
+      const visit = (sid: string, id: string): void => {
+        const v = st.get(id) as ValueRec;
+        v.args.forEach(a => visit(sid, a));
+        if (v.op === 'call') close();
+        else if (v.op === 'caddr') {
+          const recv = recvKey(sid, v.args[0]),
+            p = lin(sid, v.args[1]);
+          if (recv === null || !p) return;
+          const base = baseKey(p);
+          if (!base && p.k < 0) return;
+          const key = `${recv}|${base}`;
+          const sites = open.get(key) ?? [];
+          sites.push({ vid: id, sid, key, k: p.k, symbolic: base !== '' });
+          open.set(key, sites);
+        }
+      };
+      for (const sid of b.stmts) {
+        const s = st.get(sid) as StmtRec;
+        // the evaluator's order: a store's address, then its value; otherwise the one value or condition
+        const fields = s.op === 'store' ? (['addr', 'value'] as const) : (['value', 'cond'] as const);
+        for (const k of fields) if (s[k]) visit(sid, s[k]!);
+        if ((s.op === 'store' && !safeStore(s)) || s.op === 'zero') close();
+      }
+      close();
+    }
+    if (![...plan.values()].some(p => p.mode !== 'keep')) return;
+    tx.rewrite(v => {
+      const p = plan.get(v.id);
+      if (!p || p.mode === 'keep' || v.op !== 'caddr') return;
+      const recv = v.args[0].id,
+        pos = v.args[1].id;
+      if (p.mode === 'check') {
+        const d = (p.check! - p.site.k) | 0;
+        const checked = tx.make('caddr', recv, tx.make('add', pos, tx.const(d)), {
+          note: `checks position ${p.site.symbolic ? 'base + ' : ''}${p.check} for the group on this receiver`,
+        });
+        return tx.make('add', checked, tx.const(Math.imul(-2, d)), {
+          note: 'this address, from the group check',
+        });
+      }
+      return tx.make('add', recv, tx.make('shl', pos, tx.const(1)), {
+        because: [p.first.sid],
+        note: `covered by the group's checks, made where ${p.first.sid} computes the first address on this receiver`,
+      });
+    });
+  },
+});
+
 const countReads = (st: Store, id: string, l: number): number => {
   const v = st.get(id) as ValueRec;
   return (v.op === 'get' && v.imm === l ? 1 : 0) + v.args.reduce((n, a) => n + countReads(st, a, l), 0);
@@ -739,6 +959,7 @@ const copyTree = (tx: Tx, st: Store, id: string, from: string, because: string):
     imm: v.imm,
     from: id,
     because: [because],
+    type: v.type ?? 'i32',
   });
 };
 
@@ -809,6 +1030,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   'div-to-shift': divToShift,
   bce,
   subst,
+  bcm,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */
@@ -832,6 +1054,30 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'subst',
     'dce',
     'cfg',
+  ],
+  /**
+   * O2 followed by one subst: after O2's final dce and cfg, a copy such as `t3 = i` has a single reader and subst
+   * removes it. Found by the ordering search (diary step 9): 11 of the 12 projects that beat O2 do so this way.
+   * O2 itself stays as Compiler Workbench defines it, for parity with the book.
+   */
+  'O2+': [
+    'cfg',
+    'fold',
+    'simplify',
+    'constprop',
+    'fold',
+    'simplify',
+    'dce',
+    'cfg',
+    'licm',
+    'lvn',
+    'strength',
+    'bce',
+    'subst',
+    'subst',
+    'dce',
+    'cfg',
+    'subst',
   ],
   loops: ['cfg', 'simplify', 'licm', 'lvn', 'subst', 'dce', 'cfg'],
   checks: ['cfg', 'simplify', 'bce', 'cfg'],

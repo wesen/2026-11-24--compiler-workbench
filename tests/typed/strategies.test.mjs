@@ -85,3 +85,36 @@ test('strategies are data: JSON round trip, project strategy files, repeat until
   assert.equal(stable.status, 'succeeded');
   assert.ok(stable.published.length > 0);
 });
+
+test('strategies: per-function search chooses a chain for each function, each checked', async () => {
+  const p = open('branches');
+  const fns = p.fns();
+  assert.ok(fns.length >= 2);
+  const r = await S.runStrategy(p, S.searchPlan('search', fns, { O1: 'O1', O2: 'O2' }));
+  assert.equal(r.status, 'succeeded');
+  assert.deepEqual(r.decisions.map(d => d.nodeId), fns.map(f => `choose:${f}`));
+  // every published revision is a pass restricted to one function
+  assert.ok(r.published.every(n => /@/.test(n)));
+  assert.equal(p.check().status, 'agree');
+  // the metric measured only that function's cases
+  for (const d of r.decisions) assert.ok(d.alternatives.every(a => Number.isFinite(a.metrics.instructions)));
+});
+
+test('strategies: a run that hits the step limit costs the limit, not NaN', async () => {
+  const p = open('my-analysis');
+  const m = S.measure(p, p.head);
+  assert.ok(Number.isFinite(m.instructions) && m.limited >= 1);
+});
+
+test('pipelines: O2+ is O2 then subst, and removes the loop copy O2 leaves in Checksum', async () => {
+  const { PIPELINES } = await import('../../dist/typed/passes.js');
+  assert.deepEqual(PIPELINES['O2+'], [...PIPELINES.O2, 'subst']);
+  const a = open('checksum'), b = open('checksum');
+  await a.pipeline('O2');
+  await b.pipeline('O2+');
+  assert.match(a.listing('total'), /t3 = i/);
+  assert.doesNotMatch(b.listing('total'), /t3 = i/);
+  assert.equal(S.measure(a, a.head).instructions, 1410);
+  assert.equal(S.measure(b, b.head).instructions, 1260);
+  assert.equal(b.check().status, 'agree');
+});

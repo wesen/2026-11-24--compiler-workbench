@@ -1,4 +1,4 @@
-import { canonical, immutable } from '../core/data.js';
+import { canonical, immutable, isCanonical } from '../core/data.js';
 import type { IRRef, RevisionRef } from './types.js';
 export class IRError extends Error {
   constructor(
@@ -26,7 +26,8 @@ export function requireText(value: unknown, label: string): asserts value is str
 export function requireRecord(value: unknown, label: string): asserts value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new IRError('ir.invalid', `${label} must be a plain record`);
-  canonical(value);
+  // validated as IR data: a value immutable() produced already is
+  if (!isCanonical(value)) canonical(value);
 }
 export function limit(value: number | undefined, fallback: number, name: string, allowZero = false): number {
   const result = value ?? fallback;

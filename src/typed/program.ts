@@ -35,7 +35,7 @@ import { USER_PASSES } from './builder.js';
 import type { Edit } from './tx.js';
 import { createIRArtifact } from '../framework/ir/adapters.js';
 import { blocksAdapter } from './ir.js';
-import { ingest } from './lift.js';
+import { ingest, type IngestOptions } from './lift.js';
 
 export class WorkbenchError extends Error {
   constructor(
@@ -85,11 +85,17 @@ export class Program {
   constructor(
     readonly name: string,
     readonly source: string,
-    readonly options: { inputs?: ProgramInputs; fileMap?: ProjectSource['fileMap']; project?: string } = {},
+    readonly options: {
+      inputs?: ProgramInputs;
+      fileMap?: ProjectSource['fileMap'];
+      project?: string;
+      /** How to ingest: from the tape (`{ tape: true, maxSourceLength }`, e.g. for Candela) or by default. */
+      ingest?: IngestOptions;
+    } = {},
   ) {
     let r0: Artifact<TypedBlocks>;
     try {
-      r0 = createIRArtifact(blocksAdapter, name, ingest(name, source).toNative());
+      r0 = createIRArtifact(blocksAdapter, name, ingest(name, source, options.ingest).toNative());
     } catch (e) {
       if (!(e instanceof LiftError)) throw e;
       this.status = e.code === 'unsupportedOp' ? 'unsupported' : 'frontEndError';

@@ -1,0 +1,274 @@
+{
+  "pipeline": "O2",
+  "r0": {
+    "blocks": 2409,
+    "stmts": 12358,
+    "values": 37220,
+    "locals": 10383
+  },
+  "head": {
+    "blocks": 1970,
+    "stmts": 9479,
+    "values": 29963,
+    "locals": 10466
+  },
+  "rev": 13,
+  "steps": [
+    {
+      "pass": "cfg",
+      "changed": true,
+      "rev": 1,
+      "edits": 974,
+      "kinds": {
+        "retarget": 488,
+        "unreachable": 438,
+        "replaceStmt": 2,
+        "remove": 4,
+        "move": 38,
+        "merge": 4
+      },
+      "fns": 110,
+      "check": "agree",
+      "stmts": [
+        12358,
+        11918
+      ]
+    },
+    {
+      "pass": "fold",
+      "changed": true,
+      "rev": 2,
+      "edits": 676,
+      "kinds": {
+        "replace": 676
+      },
+      "fns": 103,
+      "check": "agree",
+      "stmts": [
+        11918,
+        11918
+      ]
+    },
+    {
+      "pass": "simplify",
+      "changed": true,
+      "rev": 3,
+      "edits": 48,
+      "kinds": {
+        "replace": 48
+      },
+      "fns": 19,
+      "check": "agree",
+      "stmts": [
+        11918,
+        11918
+      ]
+    },
+    {
+      "pass": "constprop",
+      "changed": true,
+      "rev": 4,
+      "edits": 925,
+      "kinds": {
+        "replace": 925
+      },
+      "fns": 124,
+      "check": "agree",
+      "stmts": [
+        11918,
+        11918
+      ]
+    },
+    {
+      "pass": "fold",
+      "changed": true,
+      "rev": 5,
+      "edits": 114,
+      "kinds": {
+        "replace": 114
+      },
+      "fns": 53,
+      "check": "agree",
+      "stmts": [
+        11918,
+        11918
+      ]
+    },
+    {
+      "pass": "simplify",
+      "changed": false,
+      "rev": 5,
+      "edits": 0,
+      "stmts": [
+        11918,
+        11918
+      ]
+    },
+    {
+      "pass": "dce",
+      "changed": true,
+      "rev": 6,
+      "edits": 2164,
+      "kinds": {
+        "remove": 2164
+      },
+      "fns": 144,
+      "check": "agree",
+      "stmts": [
+        11918,
+        9754
+      ]
+    },
+    {
+      "pass": "cfg",
+      "changed": true,
+      "rev": 7,
+      "edits": 18,
+      "kinds": {
+        "replaceStmt": 3,
+        "retarget": 12,
+        "unreachable": 3
+      },
+      "fns": 3,
+      "check": "agree",
+      "stmts": [
+        9754,
+        9751
+      ]
+    },
+    {
+      "pass": "licm",
+      "changed": true,
+      "rev": 8,
+      "edits": 87,
+      "kinds": {
+        "local": 19,
+        "insert": 27,
+        "replace": 19,
+        "block": 8,
+        "retarget": 14
+      },
+      "fns": 8,
+      "check": "agree",
+      "stmts": [
+        9751,
+        9778
+      ]
+    },
+    {
+      "pass": "lvn",
+      "changed": true,
+      "rev": 9,
+      "edits": 256,
+      "kinds": {
+        "local": 64,
+        "replace": 128,
+        "insert": 64
+      },
+      "fns": 38,
+      "check": "agree",
+      "stmts": [
+        9778,
+        9842
+      ]
+    },
+    {
+      "pass": "strength",
+      "changed": false,
+      "rev": 9,
+      "edits": 0,
+      "stmts": [
+        9842,
+        9842
+      ]
+    },
+    {
+      "pass": "bce",
+      "changed": false,
+      "rev": 9,
+      "edits": 0,
+      "stmts": [
+        9842,
+        9842
+      ]
+    },
+    {
+      "pass": "subst",
+      "changed": true,
+      "rev": 10,
+      "edits": 430,
+      "kinds": {
+        "replace": 215,
+        "remove": 215
+      },
+      "fns": 160,
+      "check": "agree",
+      "stmts": [
+        9842,
+        9627
+      ]
+    },
+    {
+      "pass": "subst",
+      "changed": true,
+      "rev": 11,
+      "edits": 280,
+      "kinds": {
+        "replace": 140,
+        "remove": 140
+      },
+      "fns": 132,
+      "check": "agree",
+      "stmts": [
+        9627,
+        9487
+      ]
+    },
+    {
+      "pass": "dce",
+      "changed": true,
+      "rev": 12,
+      "edits": 2,
+      "kinds": {
+        "remove": 2
+      },
+      "fns": 2,
+      "check": "agree",
+      "stmts": [
+        9487,
+        9485
+      ]
+    },
+    {
+      "pass": "cfg",
+      "changed": true,
+      "rev": 13,
+      "edits": 20,
+      "kinds": {
+        "retarget": 4,
+        "unreachable": 6,
+        "remove": 2,
+        "move": 6,
+        "merge": 2
+      },
+      "fns": 2,
+      "check": "agree",
+      "stmts": [
+        9485,
+        9479
+      ]
+    }
+  ],
+  "final": {
+    "total": 33200,
+    "agree": 33184,
+    "disagree": 0,
+    "inconclusive": 16,
+    "counterexamples": []
+  },
+  "ms": {
+    "pipeline": 1128733,
+    "final": 256951,
+    "total": 1395118
+  }
+}

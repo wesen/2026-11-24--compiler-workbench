@@ -17,7 +17,7 @@ const store = UI.store;
 
 // ---------- the vendored front end and emulator (classic scripts loaded before this module) ----------
 if (!globalThis.typedWasm || !globalThis.typedRv32Interp) throw new Error('vendor scripts did not load: typed-wasm.js and rv32-interp.js must come before app.js');
-setVendor({ typedWasm: globalThis.typedWasm, typedRv32Interp: globalThis.typedRv32Interp });
+setVendor({ typedWasm: globalThis.typedWasm, typedRv32Interp: globalThis.typedRv32Interp, typedTape: globalThis.typedTape });
 
 // ---------- the workbench ----------
 UI.content = { book: BOOK, reference: REFERENCE, sources: SOURCES, build: BUILD };

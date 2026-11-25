@@ -17,6 +17,7 @@ import {
   apply,
   chooseBest,
   fork,
+  literal,
   plan,
   repeatUntilStable,
   sequence,
@@ -38,19 +39,29 @@ import { USER_PASSES } from './builder.js';
 import { casesFrom } from './evaluate.js';
 import { storeOf } from './ir.js';
 import type { TypedBlocks } from './model.js';
-import { optimizationContract, PASSES, PIPELINES, type RevisionReport, type TypedPass } from './passes.js';
+import {
+  optimizationContract,
+  PASSES,
+  PIPELINES,
+  typedPass,
+  type RevisionReport,
+  type TypedPass,
+} from './passes.js';
 import type { Program } from './program.js';
 
 export interface MetricsOptions {
   /** Cases per function for the instruction count (seeded like the checks). */
   readonly count?: number;
   readonly seed?: number;
+  /** Measure only this function's cases (instructions include the callees it runs). */
+  readonly fn?: string;
   /** Awaited before each algorithm runs: a host (a web page) can yield to its event loop between passes. */
   readonly pause?: () => Promise<void>;
   /** The interpreter's trace events as they happen (progress). */
   readonly onEvent?: (event: TraceEvent) => void;
 }
 
+const LIMIT = 2e5;
 /** The metrics a candidate program is judged by. */
 export function measure(
   p: Program,
@@ -65,15 +76,22 @@ export function measure(
     for (const b of f.blocks) statements += b.stmts.length;
   }
   const { image } = lowerToImage(art);
-  let instructions = 0;
-  for (const fn of art.value.fnOrder)
+  let instructions = 0,
+    limited = 0;
+  for (const fn of opts.fn ? [opts.fn] : art.value.fnOrder)
     for (const c of casesFrom(st, fn, {
       count: opts.count ?? 10,
       seed: opts.seed ?? 7,
       inputs: p.inputs[fn] ?? {},
-    }))
-      instructions += runImage(image, fn, c.args, c.memory, { limit: 2e5 }).steps;
-  return { statements, blocks, bytes: image.value.bytes, instructions };
+    })) {
+      // a run that hits the step limit costs the limit (its own step count is unknown); `limited` counts them
+      const r = runImage(image, fn, c.args, c.memory, { limit: LIMIT });
+      if (r.limit || !Number.isFinite(r.steps)) {
+        instructions += LIMIT;
+        limited++;
+      } else instructions += r.steps;
+    }
+  return { statements, blocks, bytes: image.value.bytes, instructions, limited };
 }
 
 /** Algorithms a strategy may name: every built-in and user pass, the identity, and the metrics. */
@@ -100,7 +118,18 @@ export function strategyRegistry(
     );
   const contract = optimizationContract({ inputs: p.inputs, count: 40, seed: 7 });
   const passes: TypedPass[] = [...Object.values(PASSES), ...USER_PASSES.values()];
-  for (const pass of passes)
+  // each pass also restricted to one function, as `typed.<pass>@<fn>` (the per-function search applies these)
+  const scoped: TypedPass[] = passes.flatMap(pass =>
+    p.fns().map(fn =>
+      typedPass({
+        ...pass.typed,
+        name: `${pass.typed.name}@${fn}`,
+        about: `${pass.typed.about} (only in ${fn})`,
+        body: ctx => (ctx.f.name === fn ? pass.typed.body(ctx) : undefined),
+      }),
+    ),
+  );
+  for (const pass of [...passes, ...scoped])
     register(
       passAlgorithm(pass, {
         manager: p.manager,
@@ -121,7 +150,8 @@ export function strategyRegistry(
     version: '1',
     kind: 'metrics',
     description: 'statements, blocks, image bytes, and emulator instructions over seeded cases',
-    run: (_c, input) => measure(p, input as Artifact<TypedBlocks>, opts),
+    run: (_c, input, args) =>
+      measure(p, input as Artifact<TypedBlocks>, { ...opts, ...((args as MetricsOptions | null) ?? {}) }),
   });
   return registry;
 }
@@ -291,6 +321,43 @@ export async function runStrategy(
     execution: summary,
     trace: traceRows(exec.records),
   };
+}
+
+/**
+ * Search per function: for each function in source order, run every candidate pass list restricted to that
+ * function and keep the one that minimizes (or maximizes) the metric on that function's own cases. The choices
+ * chain, so later functions are optimized after earlier ones; every candidate is checked against r0.
+ */
+export function searchPlan(
+  name: string,
+  fns: readonly string[],
+  candidates: Readonly<Record<string, string | readonly string[]>>,
+  objective: { metric: 'statements' | 'blocks' | 'bytes' | 'instructions'; direction?: 'min' | 'max' } = {
+    metric: 'instructions',
+  },
+): StrategyPlan {
+  const steps = fns.map(fn => {
+    const branches = Object.entries(candidates).map(([n, passes]) => {
+      const names = typeof passes === 'string' ? PIPELINES[passes] : passes;
+      if (!names) throw new Error(`unknownPipeline: no pipeline "${passes}"`);
+      return {
+        name: n,
+        strategy: names.length
+          ? sequence(
+              `${fn}:${n}`,
+              ...names.map((x, i) => apply(`${fn}:${n}/${i}:${x}`, algorithm(`typed.${x}@${fn}`, '1'))),
+            )
+          : apply(`${fn}:${n}/keep`, algorithm('typed.keep', '1')),
+      };
+    });
+    return chooseBest(
+      `choose:${fn}`,
+      fork(`candidates:${fn}`, branches),
+      { metric: objective.metric, direction: objective.direction ?? 'min' },
+      { metrics: algorithm('typed.metrics', '1'), args: literal({ fn }) },
+    );
+  });
+  return plan(`typed.strategy.${name}`, steps.length === 1 ? steps[0] : sequence('functions', ...steps));
 }
 
 // ---------- the short form ----------

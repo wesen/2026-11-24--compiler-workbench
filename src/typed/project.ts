@@ -98,6 +98,8 @@ export async function runPipeline(
     inputs?: ProgramInputs;
     count?: number;
     seed?: number;
+    /** The step limit of each case of the meaning check (default the check's 2e4 statements). */
+    limit?: number;
     start?: Artifact<TypedBlocks>;
   },
 ): Promise<{ artifact: Artifact<TypedBlocks>; steps: PipelineStep[] }> {
@@ -110,6 +112,7 @@ export async function runPipeline(
     inputs: options.inputs ?? {},
     count: options.count ?? 40,
     seed: options.seed ?? 7,
+    ...(options.limit === undefined ? {} : { limit: options.limit }),
   });
   let cur = options.start ?? origin;
   const steps: PipelineStep[] = [];

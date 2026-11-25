@@ -103,13 +103,13 @@ test('wb.pass: the kernel builder from a project script; applied, listed, and us
 test('wb.compiler and wb.source: declarations with ids and versions, and where each is defined', () => {
   const { wb } = makeWb();
   const c = wb.compiler();
-  assert.equal(c.passes.length, 11);
+  assert.equal(c.passes.length, 12); // the eleven of Compiler Workbench and bcm
   const licm = c.passes.find(x => x.name === 'licm');
   assert.equal(licm.id, 'typed.licm');
   assert.deepEqual(licm.needs, { loops: 'typed.loops@1' });
   assert.match(licm.source, /^src\/typed\/passes\.ts:\d+$/);
   assert.deepEqual(c.analyses.map(a => a.name), ['cfg', 'dominators', 'loops', 'liveness', 'reaching', 'ranges']);
-  assert.deepEqual(Object.keys(c.pipelines), ['O0', 'O1', 'O2', 'loops', 'checks', 'broken']);
+  assert.deepEqual(Object.keys(c.pipelines), ['O0', 'O1', 'O2', 'O2+', 'loops', 'checks', 'broken']);
   const d = wb.source.definition('licm');
   assert.match(d.text, /name: 'licm'/);
   assert.ok(d.from <= d.line && d.line <= d.to);

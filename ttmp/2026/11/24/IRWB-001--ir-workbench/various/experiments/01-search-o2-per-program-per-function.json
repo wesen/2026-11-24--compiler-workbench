@@ -1,0 +1,768 @@
+{
+ "projects": 44,
+ "fasterPerProgram": 12,
+ "fasterPerFunction": 12,
+ "fnBeatsProgram": 0,
+ "programBeatsFn": 0,
+ "totals": {
+  "o2": 278296,
+  "program": 276626,
+  "fn": 276626,
+  "o2Bytes": 5160,
+  "programBytes": 5092,
+  "fnBytes": 5092
+ },
+ "perProgramGain": "0.60%",
+ "perFunctionGain": "0.60%",
+ "allChecksAgree": true,
+ "rows": [
+  {
+   "id": "across-calls",
+   "o2": 640,
+   "program": 630,
+   "fn": 630,
+   "bytes": [
+    192,
+    188,
+    188
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 28422
+  },
+  {
+   "id": "algebra",
+   "o2": 20,
+   "program": 20,
+   "fn": 20,
+   "bytes": [
+    8,
+    8,
+    8
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 10890
+  },
+  {
+   "id": "blend",
+   "o2": 1925,
+   "program": 1925,
+   "fn": 1925,
+   "bytes": [
+    88,
+    88,
+    88
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 23278
+  },
+  {
+   "id": "bounds-lab",
+   "o2": 5333,
+   "program": 5038,
+   "fn": 5038,
+   "bytes": [
+    280,
+    268,
+    268
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 176389
+  },
+  {
+   "id": "bounds-offset",
+   "o2": 1364,
+   "program": 1364,
+   "fn": 1364,
+   "bytes": [
+    100,
+    100,
+    100
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 28599
+  },
+  {
+   "id": "bounds-param",
+   "o2": 502,
+   "program": 502,
+   "fn": 502,
+   "bytes": [
+    60,
+    60,
+    60
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 16867
+  },
+  {
+   "id": "bounds-two",
+   "o2": 810,
+   "program": 760,
+   "fn": 760,
+   "bytes": [
+    84,
+    80,
+    80
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 16408
+  },
+  {
+   "id": "branches",
+   "o2": 139,
+   "program": 139,
+   "fn": 139,
+   "bytes": [
+    104,
+    104,
+    104
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 23058
+  },
+  {
+   "id": "call-chain",
+   "o2": 1050,
+   "program": 1050,
+   "fn": 1050,
+   "bytes": [
+    172,
+    172,
+    172
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 15698
+  },
+  {
+   "id": "calls",
+   "o2": 651,
+   "program": 651,
+   "fn": 651,
+   "bytes": [
+    212,
+    212,
+    212
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 31649
+  },
+  {
+   "id": "checksum",
+   "o2": 1410,
+   "program": 1260,
+   "fn": 1260,
+   "bytes": [
+    52,
+    48,
+    48
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 10853
+  },
+  {
+   "id": "collatz",
+   "o2": 7461,
+   "program": 7461,
+   "fn": 7461,
+   "bytes": [
+    88,
+    88,
+    88
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 12334
+  },
+  {
+   "id": "constants",
+   "o2": 70,
+   "program": 40,
+   "fn": 40,
+   "bytes": [
+    28,
+    16,
+    16
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 8717
+  },
+  {
+   "id": "dead-code",
+   "o2": 30,
+   "program": 30,
+   "fn": 30,
+   "bytes": [
+    12,
+    12,
+    12
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 10308
+  },
+  {
+   "id": "diagnostics",
+   "o2": 30,
+   "program": 30,
+   "fn": 30,
+   "bytes": [
+    12,
+    12,
+    12
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 7863
+  },
+  {
+   "id": "distinct",
+   "o2": 340,
+   "program": 340,
+   "fn": 340,
+   "bytes": [
+    112,
+    112,
+    112
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 25293
+  },
+  {
+   "id": "div-checks",
+   "o2": 162,
+   "program": 162,
+   "fn": 162,
+   "bytes": [
+    88,
+    88,
+    88
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 35272
+  },
+  {
+   "id": "div-magic",
+   "o2": 769,
+   "program": 769,
+   "fn": 769,
+   "bytes": [
+    136,
+    136,
+    136
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 21236
+  },
+  {
+   "id": "early-exit",
+   "o2": 631,
+   "program": 566,
+   "fn": 566,
+   "bytes": [
+    60,
+    56,
+    56
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 12887
+  },
+  {
+   "id": "first-steps",
+   "o2": 220,
+   "program": 220,
+   "fn": 220,
+   "bytes": [
+    64,
+    64,
+    64
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 7444
+  },
+  {
+   "id": "fixed-point",
+   "o2": 411,
+   "program": 411,
+   "fn": 411,
+   "bytes": [
+    128,
+    128,
+    128
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 23287
+  },
+  {
+   "id": "fragments",
+   "o2": 2299,
+   "program": 2299,
+   "fn": 2299,
+   "bytes": [
+    88,
+    88,
+    88
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 15653
+  },
+  {
+   "id": "gcd",
+   "o2": 324,
+   "program": 324,
+   "fn": 324,
+   "bytes": [
+    36,
+    36,
+    36
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 6527
+  },
+  {
+   "id": "heat-lab",
+   "o2": 8832,
+   "program": 8832,
+   "fn": 8832,
+   "bytes": [
+    240,
+    240,
+    240
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 55179
+  },
+  {
+   "id": "histogram",
+   "o2": 2292,
+   "program": 2230,
+   "fn": 2230,
+   "bytes": [
+    176,
+    172,
+    172
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 38028
+  },
+  {
+   "id": "licm-nested",
+   "o2": 1678,
+   "program": 1678,
+   "fn": 1678,
+   "bytes": [
+    68,
+    68,
+    68
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 22321
+  },
+  {
+   "id": "licm-traps",
+   "o2": 153,
+   "program": 153,
+   "fn": 153,
+   "bytes": [
+    68,
+    68,
+    68
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 11596
+  },
+  {
+   "id": "match-enum",
+   "o2": 251,
+   "program": 251,
+   "fn": 251,
+   "bytes": [
+    156,
+    156,
+    156
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 61947
+  },
+  {
+   "id": "my-analysis",
+   "o2": 200975,
+   "program": 200975,
+   "fn": 200975,
+   "bytes": [
+    52,
+    52,
+    52
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 20828
+  },
+  {
+   "id": "my-first-pass",
+   "o2": 50,
+   "program": 50,
+   "fn": 50,
+   "bytes": [
+    20,
+    20,
+    20
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 10155
+  },
+  {
+   "id": "nested-loops",
+   "o2": 2342,
+   "program": 2342,
+   "fn": 2342,
+   "bytes": [
+    60,
+    60,
+    60
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 17974
+  },
+  {
+   "id": "orders",
+   "o2": 1204,
+   "program": 1204,
+   "fn": 1204,
+   "bytes": [
+    136,
+    136,
+    136
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 42323
+  },
+  {
+   "id": "params-demo",
+   "o2": 2299,
+   "program": 2299,
+   "fn": 2299,
+   "bytes": [
+    88,
+    88,
+    88
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 19781
+  },
+  {
+   "id": "pressure",
+   "o2": 240,
+   "program": 240,
+   "fn": 240,
+   "bytes": [
+    96,
+    96,
+    96
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 37017
+  },
+  {
+   "id": "ramp",
+   "o2": 1040,
+   "program": 970,
+   "fn": 970,
+   "bytes": [
+    80,
+    76,
+    76
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 18828
+  },
+  {
+   "id": "records",
+   "o2": 260,
+   "program": 260,
+   "fn": 260,
+   "bytes": [
+    112,
+    112,
+    112
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 27231
+  },
+  {
+   "id": "regalloc-lab",
+   "o2": 2614,
+   "program": 2614,
+   "fn": 2614,
+   "bytes": [
+    348,
+    348,
+    348
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 75500
+  },
+  {
+   "id": "sort",
+   "o2": 5043,
+   "program": 5043,
+   "fn": 5043,
+   "bytes": [
+    240,
+    240,
+    240
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 39076
+  },
+  {
+   "id": "start-here",
+   "o2": 3871,
+   "program": 3750,
+   "fn": 3750,
+   "bytes": [
+    312,
+    308,
+    308
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 83256
+  },
+  {
+   "id": "strength",
+   "o2": 1938,
+   "program": 1802,
+   "fn": 1802,
+   "bytes": [
+    116,
+    112,
+    112
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 21972
+  },
+  {
+   "id": "strings",
+   "o2": 10833,
+   "program": 10302,
+   "fn": 10302,
+   "bytes": [
+    228,
+    220,
+    220
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 48653
+  },
+  {
+   "id": "ui-gallery",
+   "o2": 1058,
+   "program": 1058,
+   "fn": 1058,
+   "bytes": [
+    176,
+    176,
+    176
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 21128
+  },
+  {
+   "id": "value-numbering",
+   "o2": 3082,
+   "program": 3082,
+   "fn": 3082,
+   "bytes": [
+    92,
+    92,
+    92
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 8657
+  },
+  {
+   "id": "wrong-shift",
+   "o2": 1650,
+   "program": 1500,
+   "fn": 1500,
+   "bytes": [
+    92,
+    88,
+    88
+   ],
+   "status": [
+    "succeeded",
+    "succeeded"
+   ],
+   "ok": true,
+   "ms": 14381
+  }
+ ]
+}

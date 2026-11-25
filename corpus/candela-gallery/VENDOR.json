@@ -1,0 +1,57 @@
+{
+  "repository": "~/code/wesen/2026-10-20--ds-js-os",
+  "commit": "b19062b29fe4fb6b02863e92510501dc5c4bc9b3",
+  "purpose": "The Candela gallery program (apps/typed/candela-gallery): Candela's kernel and the gallery's 18 scene sections as Typed source, copied unchanged; concatenated in app.json's order; and the gallery scene table (data) for rendering",
+  "sources": [
+    "types.typed",
+    "math.typed",
+    "kernel.typed",
+    "scenes.typed",
+    "glue.typed"
+  ],
+  "files": [
+    {
+      "file": "types.typed",
+      "path": "apps/typed/candela-gallery/types.typed",
+      "bytes": 2663,
+      "sha256": "2c071520c1e87f3897e87654fcf37fb9b60e9fbaf87318f5058169d7c19acb17"
+    },
+    {
+      "file": "math.typed",
+      "path": "compiler/typed/lib/math.typed",
+      "bytes": 9852,
+      "sha256": "4c00e548bb66ea537c31941429bb97a0a6f2645d8084d9a5c4d73b9153e50874"
+    },
+    {
+      "file": "kernel.typed",
+      "path": "apps/typed/candela-gallery/kernel.typed",
+      "bytes": 145435,
+      "sha256": "260158aa0c6d82820f3904a782d19f69af771adfb41e0b3407f9cfefc3eaa02e"
+    },
+    {
+      "file": "scenes.typed",
+      "path": "apps/typed/candela-gallery/scenes.typed",
+      "bytes": 144991,
+      "sha256": "2f99239467bc8ce031ce8fc02451bb6aaaddf0a2432564edb21c3388afd65f10"
+    },
+    {
+      "file": "glue.typed",
+      "path": "apps/typed/candela-gallery/glue.typed",
+      "bytes": 8849,
+      "sha256": "d7c86c8b89d6432e16ee60aae9ae48b6efd9cd8f54c801b2ef13e74c8d6602b9"
+    },
+    {
+      "file": "app.json",
+      "path": "apps/typed/candela-gallery/app.json",
+      "bytes": 1069,
+      "sha256": "2d46e7d003302a13660f9c071e3c27b7a24d6c4a32aff467830ca84df54c2ef9"
+    },
+    {
+      "file": "candela_gallery_scenes.c",
+      "path": "firmware/third_party/candela/gallery/candela_gallery_scenes.c",
+      "bytes": 170677,
+      "sha256": "a0039225a2afa28a769d9e9374108f29b8892af0e34de4ee7dc3b4cf092f431b",
+      "note": "data only: the gallery scene table (packed U, O, LI, BV, SD rows as float bit patterns per scene, and display settings); parsed, never compiled or run"
+    }
+  ]
+}
