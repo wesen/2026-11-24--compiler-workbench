@@ -760,3 +760,59 @@ This step turns the ordering search's finding into a pipeline: `O2+` is O2 follo
 
 ### Code review instructions
 `src/typed/passes.ts` (`PIPELINES`), then `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/06-o2-plus-corpus.mjs`.
+
+## Step 12: framework performance on large artifacts (task 9rcu)
+
+A pass on Candela cost about two minutes even when it changed nothing. Nearly all of that time was the framework's generic encoding, hashing and freezing. This step removes the repeated work without changing a single hash. The no-change pass went from 86 s to 18 s and `cfg` from 101 s to 31 s. Every corpus project's r0, O2 and image revisions are identical before and after.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10.
+**Assistant interpretation:** design-doc 05, section 3.
+**Commit (code):** the commit after this step.
+
+### What I did
+- **Baseline.** `scripts/07-framework-cost.mjs` measures Candela r0:
+  `{"createIRArtifact":7897,"project":4792,"cfgAnalysis":4933,"strength":{"ms":86423,"changed":false,"rev":"cd36346ea7c4f175"},"cfg":{"ms":101058,"changed":true,"rev":"4aea7e81dd046901"}}`.
+- **Round 1, `src/framework/core/data.ts`.** `immutable` builds the sorted, frozen copy directly instead of `JSON.parse(canonical(v))`. It returns values it produced unchanged, and records them in a `CANONICAL` WeakSet. `canonical` caches the text of canonical values of 4,096 characters or more.
+  - Result: strength 38 s, cfg 65 s, the same revisions.
+- **Profile** (`--cpu-prof`, attributed to the first caller outside `data.js`):
+  - `validateGraph`/`project`: 7.2 s;
+  - `requireRecord`, called by `validateEntity`: 5.4 s;
+  - `validateEntity`: 3.2 s;
+  - `createIRArtifact`: 2.7 s;
+  - correspondence validation: 2.3 s;
+  - `project` from `openIR`: 2.3 s;
+  - `sha256`: 9.2 s in total.
+- **Round 2.**
+  - `fingerprint` caches the hash of canonical values.
+  - `isCanonical` added; `requireRecord` skips re-encoding values `immutable` already validated.
+  - `sameCanonical(a, b)` compares canonical values structurally; `project` uses it for the per-entity resolve check instead of comparing two encodings.
+  - In `adapters.ts`: a `VERIFIED` WeakSet of artifacts whose hashes were computed or checked, so `validateIRArtifact` does not re-hash them; and a `PROJECTED` cache per captured adapter and canonical value.
+- **Equivalence.** `scripts/08-corpus-revisions.mjs` prints each project's r0 revision, every O2 revision and the image revision. I ran it with the three framework files stashed (old code) and popped (new code), then diffed: `IDENTICAL: 44 projects`.
+
+### Why
+- **Every cache is keyed on objects that cannot change.** A deep-frozen canonical value, a captured (frozen) adapter, or a frozen artifact. The cached text, hash or projection is a deterministic function of such objects, so caching cannot change a result, only skip recomputing it.
+- **`immutable` without text.** `JSON.parse(canonical(v))` encodes the whole value and parses it back. Building the copy directly performs the same validation in one walk.
+
+### What worked
+- **After round 2** (`07-framework-cost.mjs`):
+  `{"createIRArtifact":5027,"project":0,"cfgAnalysis":1184,"strength":{"ms":18195,"changed":false,"rev":"cd36346ea7c4f175"},"cfg":{"ms":30861,"changed":true,"rev":"4aea7e81dd046901"}}`.
+  The revisions equal the baseline's. That is 4.7× on the no-change pass and 3.3× on cfg.
+- **Tests:** framework 221/221; the whole suite 302 pass and 1 skipped. Its duration fell from 49 s to 37 s.
+
+### What didn't work
+- `node --test tests/framework/` failed as `✖ tests/framework`, because `node --test` does not take a bare directory. The glob form `"tests/framework/**/*.test.mjs"` is the right invocation.
+
+### What I learned
+- After round 1 the cost was not encoding as such. It was validation repeated on values already known to be valid: `requireRecord` encodes attributes only to check them, and `project` encodes two entities only to compare them. A set of canonical values makes all of that answerable by lookup.
+
+### What was tricky to build
+- **Matching `JSON.parse` exactly.** `immutable` must give what `JSON.parse(canonical(v))` gave: keys in sorted order, −0 as 0, and a `"__proto__"` key kept as an own property. A plain assignment `o['__proto__'] = x` would set the prototype instead, so the code uses `Object.defineProperty` with the attributes `JSON.parse` uses.
+
+### What warrants a second pair of eyes
+- **The caches assume adapter functions are deterministic.** The framework assumes this already, since revisions are content hashes. A non-deterministic `entities` or `resolve` would now be hidden by the projection cache rather than caught by the resolve check.
+- **Memory:** the text cache keeps strings for large canonical values while those values are alive.
+
+### Code review instructions
+- `src/framework/core/data.ts` (`immutable`, `canonical`, `fingerprint`, `isCanonical`, `sameCanonical`), then `src/framework/ir/adapters.ts` (`VERIFIED`, `PROJECTED`, `project`).
+- Run `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs` on the old and new code and diff the outputs.

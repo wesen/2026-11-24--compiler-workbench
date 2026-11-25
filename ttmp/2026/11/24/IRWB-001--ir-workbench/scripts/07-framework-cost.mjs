@@ -27,7 +27,7 @@ const manager = new AnalysisManager();
 t = performance.now(); await manager.analyse(ANALYSES.cfg, r0); out.cfgAnalysis = ms(t);
 if (!process.argv.includes('--no-pass')) {
   const contract = optimizationContract({ inputs: candelaInputs(st), count: 40, seed: 7 });
-  for (const name of ['strength', 'cfg']) {
+  for (const name of (process.env.ONLY ? [process.env.ONLY] : ["strength", "cfg"])) {
     t = performance.now();
     const r = await applyPass(PASSES[name], r0, { manager, contract, contractInputs: { origin: r0 } });
     out[name] = { ms: ms(t), changed: r.changed, rev: r.artifact.revision.slice(0, 16) };
