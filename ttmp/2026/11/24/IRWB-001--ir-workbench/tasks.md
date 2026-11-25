@@ -28,5 +28,5 @@
 - [x] P4.1 Candela inventory: what build, compile and pack know <!-- t:5smn -->
 - [ ] P4.2 Candela chain: tasks for front end, generator, Typed front end; correspondence <!-- t:lofv -->
 - [ ] P4.3 Candela experiment: per-scene specialization measured on the host <!-- t:ckco -->
-- [ ] R1 Obsidian report at the framework + parity milestone <!-- t:3x4l -->
+- [x] R1 Obsidian report at the framework + parity milestone <!-- t:3x4l -->
 - [ ] R2 Obsidian report at the Candela milestone <!-- t:z21g -->

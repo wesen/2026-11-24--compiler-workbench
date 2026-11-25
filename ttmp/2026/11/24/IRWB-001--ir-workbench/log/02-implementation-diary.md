@@ -369,3 +369,69 @@ In parallel, a subagent is porting the backend in its own worktree. Its diary is
 ### Technical details
 - Pass ids are `typed.<name>`, version `1`. `meaningKept` ids are `typed.meaning-kept@1+<fnv(params)>`. The contract id is `typed.optimization` with the same version.
 - Pipelines are CW's: O0, O1, O2, loops, checks and broken.
+
+## Step 5: backend merged, image parity after O2, the program host, the Candela inventory, report 1
+
+The backend subagent finished its port in its own worktree; its account is in `log/03-backend-agent-diary.md`. I merged its branch without conflicts and turned its one `test.todo` into a parity test, now that O2 exists. The book's numbers hold after O2:
+- Blend lowers to 88 bytes and runs 451 instructions;
+- the instruction `mul t2, a2, a3` covers exactly `v:blend.23` and `s:blend.15`;
+- heat attributes 322 of the 451 instructions to line 5;
+- Checksum is 52 bytes and 366 instructions.
+
+The program host (P3.1) gives the revision timeline and provenance across revisions. `Program.why('s:blend.15')` returns the book's tree node for node.
+
+The Candela inventory (P4.1) measured what the gallery program needs. The f32 middle-end work it calls for is delegated to a second worktree subagent (diary `log/04-f32-candela-agent-diary.md`). Report 1 is in the vault.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Merge the parallel work, prove end-to-end parity, build the host the UI and agent talk to, start the Candela phase, and write the milestone report ("At important milestones, write a detailed project report for the obsidian vault…").
+**Inferred user intent:** A working compiler on the framework, evidence that it behaves like the prototype, and a durable write-up.
+**Commit (code):**
+- c6a8a96: merge of the backend
+- bbd3aff: O2 image parity
+- da9a3a1: pipelines as plans
+- 10d5764: program host
+- 02e8135: inventory
+
+The vault commit is b2db7c2 in go-go-parc, pushed.
+
+### What I did
+- **Merged the backend.** `git merge --no-ff worktree-agent-a7154bb941de25a25` brought in its commits 4bb0369 (backend), 4d16a12 (the `resolve` index in `src/typed/ir.ts`) and 7cb5ab0 (its diary).
+- **Image parity after O2.** `tests/typed/backend.test.mjs` "after O2" runs O2 through `Program.pipeline`, lowers the head revision, and asserts bytes, instructions, the covers of `mul t2, a2, a3`, and `heat(...).byLine.get(5) === 322`.
+- **Pipelines as plans.** `src/typed/strategy.ts` provides `pipelinePlan` and `pipelineRegistry`: E6, with `attempt` plus a `typed.keep` fallback for passes the plan tolerates. `BridgeOptions.contract` is new.
+- **The program host.** `src/typed/program.ts`: `Program` and `createWorkbench`, tested in `tests/typed/program.test.mjs`.
+- **The inventory.** `analysis/03-candela-inventory-…md`, and the f32 subagent launched with that document as its brief.
+- **The report.** Vault note `Projects/2026/11/24/PROJECT REPORT - IR Workbench - A Compiler Defined on Its Own IR Framework - …md`, about 4,100 words. I loaded the obsidian-vault-writing and textbook-authoring skills first and modelled the note on the 2026-11-23 PicoCalc compiler report. I staged only that file.
+
+### Why
+- The image test runs through `Program`, not `runPipeline`, so it also exercises the host's path from pipeline to head revision to lowering.
+- `Program` resolves ids from the head backwards through immutable revision artifacts, rather than keeping a store of every entity ever made, as the prototype does. Revisions stay immutable framework artifacts, and "removed things keep their fields" still holds.
+
+### What worked
+- Merge: no conflicts. Full suite: 257/257 in 19.8 s; it was 32.7 s before the backend's index fix, according to the subagent.
+- The why tree. The test asserts every node of the book's tree for `s:blend.15`, down to `op:blend#35 i32.add (line 5)` and `because loop:blend@bb:blend.1`.
+
+### What didn't work
+- `Program.apply` first read check evidence from `r.contract.checks[0]`, which does not exist. The pipeline test failed with `actual: false, expected: true` (`s.check === '40/40'`). The evidence lives in `PreparedTransformation.execution.checks`, in the entry with `phase: 'ensures'` and `evidence.method: 'sampled'`. My first Python patch for this failed (`ValueError: substring not found`), because prettier had rewrapped the code. I made the change with Edit.
+- The f32 inventory probe:
+  - `typedWasm.compile` on the gallery source threw `SyntaxError: input limit exceeded` (the default is 64 KiB; `maxSourceLength` raises it);
+  - with inspection it threw `Error: unknown tape opcode 151 at 12`;
+  - raw `compileFunctions` plus `typedTape.decode` works for all 332 functions.
+
+### What I learned
+- The backend subagent's table and mine together cover every number the book states for the pipeline. The book is a complete regression oracle for this milestone.
+
+### What was tricky to build
+- `heat` uses the head store for line attribution. Covered values whose origin chain leaves the head (`v:blend.25`) still reach line 5 through their arguments' ops, so the 322 comes out without cross-revision lookup in the backend.
+
+### What warrants a second pair of eyes
+- `Program.statusOf` uses CW's rules: a `remove` edit means removed, a `from` field means replaced, and anything else is detached. Entities that the backend's correspondence marks removed (folded constants) are domain-level "detached", not "removed".
+- The backend subagent's open issues: the reference compiler's pass groups are not vendored (oracle tests use `policy: 'interactive'`); `vendor.ts` types `typedRv32Interp.run`'s first parameter as `Uint8Array`, though it takes a program object. I left the latter for after the f32 merge, because that agent also edits `vendor.ts`.
+
+### What should be done in the future
+- P3.1 remainder: selections (`fn.values().where(...)`), fragments and the agent's YAML surface. P3.2: the UI on the host.
+- Merge and review the f32 subagent's work, then the f32 backend (inventory step 5) and specialization (step 6).
+
+### Code review instructions
+- `src/typed/program.ts` (`lookup`, `why`, `apply`), `src/typed/strategy.ts`, and the "after O2" test in `tests/typed/backend.test.mjs`.
+- Run `npm test`. Expect 257/257.
