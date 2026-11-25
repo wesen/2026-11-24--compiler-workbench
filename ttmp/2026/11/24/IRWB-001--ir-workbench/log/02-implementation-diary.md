@@ -1061,3 +1061,33 @@ All three are built and tested on a fixture. A record-field binding turns a disp
 ### Code review instructions
 - `src/typed/specialize.ts` (the field branch), `src/typed/passes.ts` (`dfe`), `src/typed/program.ts` (`entries`, `assume`, `inputs`).
 - `node --test tests/typed/dfe.test.mjs`.
+
+## Step 19: the first per-scene kernel: the Cornell box keeps 137 of 332 functions and renders bit-identically
+
+This step ran the per-scene pipeline on R-01, the Cornell box:
+1. specialize on `K.scene = 1`;
+2. constprop, fold, cfg, dce, cfg;
+3. dfe from the gallery slot's four entries.
+
+The program falls from 332 to 137 functions and from 12,358 to 5,400 statements (−56%). The frame, rendered by our evaluator on the specialized program, equals the emulator's frame from the reference compiler's general image, bit for bit. The run over all 18 scenes is in progress.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10. Mid-step the user asked whether the Fable research agent was back. It was not: in its worktree it had created IRWB-002, a 729-line guide draft, 5 diary steps and 5 scripts, with no upload yet.
+
+### What I did
+- **`scripts/12-candela-per-scene.mjs`:**
+  - opens a `Program` with `entries` = `cdlLayout`, `cdlInit`, `cdlSky`, `cdlRenderSpan` and `candelaInputs`;
+  - applies `specialize` with the field binding `{ record: 'K', field: 'scene', value: s.index, entity: 'scene/<id>' }`;
+  - runs the five cleanup passes, then `dfe` with those roots;
+  - renders the scene at stride 8, with the evaluator on the head and with the emulator on the `kernel` image, and compares output floats bit for bit.
+- Ran it on R-01. Evidence in `various/experiments/06a-candela-per-scene-R-01.json`. The 18-scene run writes `06-candela-per-scene.{json,log}`.
+
+### What worked
+- **Pass log:** `specialize r1 26 s`, `constprop r2 35 s`, `fold r3 50 s`, `cfg r4 25 s`, `dce r5 31 s`, `cfg - 26 s`, `dfe r6 26 s`. Every pass was gated by the entry-only contract.
+- **Result:** `{"scene":"R-01","fns":"332->137","stmts":"12358->5400","differentBits":0,"ms":332399}`.
+
+### What I learned
+- dfe removed 195 functions. The other 17 scenes' sections account for about 165 of them (177 scene functions in all). The rest is shared code that only other scenes use, such as spectral and volume paths. Specialization reaches beyond the dispatchers.
+
+### What warrants a second pair of eyes
+- **The sampled contract here compares only the four entries**, with synthetic K rows. Many `cdlRenderSpan` cases may hit the step limit. The decisive evidence for a scene kernel is therefore the frame comparison, which uses the scene's real rows.
