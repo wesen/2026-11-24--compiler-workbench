@@ -91,7 +91,7 @@ The outcome is a set of measured facts I can cite, and a list of sixteen ideas (
 **Assistant interpretation:** Establish the current state from the project's own summaries before reading code.
 
 ### What I did
-- Read, in `/home/manuel/code/wesen/go-go-golems/go-go-parc/Projects/2026/11/24/`:
+- Read, in the Obsidian vault, `Projects/2026/11/24/`:
   - report 1 (framework and parity, source revision 240ff36);
   - report 2 (strategies, search, specialization, the browser workbench, fcb155f);
   - report 3 (Candela on the kernel, fcb155f).
@@ -298,3 +298,140 @@ Before drafting I fixed the shape of the guide, the template for an agenda item,
 
 ### Technical details
 - Workstreams chosen: A representation, B rewriting and equality, C analyses, D checking and assurance, E specialization and Candela, F framework capabilities, G loops, H backend, I research tooling.
+
+## Step 6: Drafting Part 1
+
+Part 1 (sections 1 to 17) explains the system in dependency order: artifacts, adapters, the IR, lifting, the evaluator, analyses, passes, contracts, provenance, strategies, specialization, the backend, the host and workbench, the corpus and Candela, and a closing table of gaps. I wrote it in two chunks and checked each line reference against the source after writing.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+
+### What I did
+- Wrote sections 1–8 directly into the design-doc, sections 9–17 as a chunk file appended to it.
+- After each chunk, compared its references with the code and corrected:
+  - the `Lattice` interface (I had written `infiniteHeight?` and omitted `decode`; the source has `readonly infiniteHeight: boolean` and `decode`);
+  - line counts for `src/framework/ir/` (3,886, not 3,877) and for `src/labs` plus `src/conformance` (3,659, not 3,860), by summing the per-file counts;
+  - `differential` is at `differential.ts:70`, not `:69`;
+  - `lowerToImage` returns `{ image, correspondence }` exactly;
+  - the `fold` listing is abridged, and now says so.
+
+### Why
+- Section 17 exists so that Part 2 does not have to argue for each item's relevance from nothing: each gap row cites the code or number and names the items that address it.
+
+### What worked
+- Part 1 came to about 62 KB.
+
+### What didn't work
+- Editing the guide with `sed -i` made the file tool refuse further edits until the file was read again; for a file this size I switched to writing chunk files in the scratch directory and appending them with `cat`.
+
+### What I learned
+- Three things an intern would otherwise find out slowly are now stated outright: a pass visits every function and returns a whole-program value; facts are stored per block and replayed per statement through views; the instruction counts in strategy decisions are sums over ten cases and differ from the book's single-case numbers.
+
+### What was tricky to build
+- Keeping code blocks narrow enough for a PDF page while leaving real signatures recognizable. Signatures are abridged and marked as such.
+
+### What warrants a second pair of eyes
+- Section 14's summary of the allocator and of `select` is from reading the header comments and `allocate`; I did not read all 418 lines of `select.ts`.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `bash scripts/02-exported-api.sh src/typed | grep -n "evaluate\|meaningKept\|typedPass"` and compare with sections 7, 9 and 10.
+
+### Technical details
+- Diagrams are ASCII in code blocks, not Mermaid, because the upload renders through pandoc and LaTeX.
+
+## Step 7: Drafting Part 2, one new measurement, and a scope note
+
+Part 2 was drafted workstream by workstream against the template of Step 5. While writing item H4 I made one measurement that did not exist before. While the last chunk was being written, the coordinator relayed a scope note from the user, and I widened the agenda accordingly.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Scope note (relayed by the coordinator, their wording):** "The agenda should cover wide areas of compiler research, not specifically optimizing Candela programs. … Keep Candela as one workload and running example, not the organizing focus." It lists areas to cover for the remaining workstreams: backend (selection as tiling or rewriting, colouring, SSA-based and PBQP allocation, scheduling, layout, calling convention), search and learning (profile-guided compilation, autotuning, learned cost models, phase ordering), framework capabilities (query-based compilation, persistence, distributed runs, debugging and visualization, language-server tooling), front ends, languages and IR design (staging, MLIR dialects, pattern languages, DSL embedding, ideas from databases, ML compilers and infrastructure-as-code), verification and testing (translation validation, generated programs, proof assistants).
+**Assistant interpretation:** Add items so that each named area has at least one, each with a concrete relevance statement for this codebase; rename what was framed around Candela; keep the template.
+
+### What I did
+- Wrote workstreams A and B, then C, D and E, then F to I and Part 3, as three chunk files.
+- Wrote `scripts/05-candela-duplicate-functions.py` and ran it:
+  `functions found: 324 … identical text: 9 groups, 65 functions removable of 324 … identical modulo scene prefix: 14 groups, 74 functions removable of 324`. The largest groups are `s<k>_customKernel` (17 copies), `s<k>_heightAt` (15), `s<k>_densityOf` (14), `s<k>_sdUser` (12).
+- After the scope note, added nine items and one workstream:
+  - D7 (mechanized semantics and rule proofs);
+  - H5 (target description, scheduling, a WebAssembly backend as second target);
+  - I4 (bisection, case reduction, views), I5 (language-server tooling);
+  - workstream J: J1 (staged builder), J2 (a language for passes), J3 (algorithm and schedule), J4 (cost-based planner with a memo), J5 (plans and stable identity);
+  - in H2, allocation on SSA form and PBQP; in F5, autotuning.
+- Renamed the "Candela" seat to "Specialization and staging" and stated in section 18 that Candela and the corpus are workloads.
+- Checked before writing: `evalRange` covers `add`, `sub`, `mul`, `shl`, `shr`, `div`, `rem`, `and`, `load16u` and comparisons, not `or`, `xor`, `shru`; `validateImage` requires whole words (`image.ts:161`, `:189`); `Store` clones with `structuredClone` (`model.ts:219`); the interpreter's `maxConcurrency` is at `interpreter.ts:146`.
+
+### Why
+- The duplicate count turns "identical-code folding might help" into a number: a fifth of the gallery's functions are textual copies.
+- Where an area in the scope note has weak relevance here, the item says so instead of inventing one. Instruction scheduling has no acceptance number while the only metric is instructions executed, so H5 lists it as deferred until a timing model exists. The polyhedral model is deferred in G3 for a measured reason (19 loop operations in Candela's tapes).
+
+### What worked
+- 54 items, each with idea, pseudocode, why here, needs, acceptance, size and dependencies.
+
+### What didn't work
+- The duplicate-function script finds 324 of the 332 functions; its line-based parser misses functions whose signature does not start a line in the expected form. The guide states this next to the number.
+- My first wording in J5 said that a source edit changes every later id; ids are allocated per function, so only later ids in the edited function change. Corrected in the assembly script.
+
+### What I learned
+- Several areas in the scope note are already half-built in the framework and unused by the Typed compiler: rule schedules and pattern predicates (for J2), the task runtime with cache explanations (for F3 and J5), `recordProof` (for D4). The agenda's cheapest items are connections, not inventions.
+
+### What was tricky to build
+- Keeping the agenda honest about dependencies on the float backend, which is on another branch: acceptance lines that need instructions per pixel say so, and section 22 lists the affected items.
+
+### What warrants a second pair of eyes
+- Sizes and the phase table are estimates.
+- B4's claim that tree extraction is exact here rests on "a value has one user"; `lvn` and `gvn` introduce sharing through locals, which sits outside the trees and is not priced by extraction.
+- The expected saving from compressed instructions (about a quarter) is general RISC-V experience, labelled as such, not measured.
+
+### What should be done in the future
+- An independent reader should go through the guide; my own second pass (Step 8) is not that.
+
+### Code review instructions
+- `python3 scripts/05-candela-duplicate-functions.py` from the repository root.
+- `grep -c '^### [A-J][0-9]' design-doc/01-*.md` prints 54.
+
+### Technical details
+- Item ids are stable references: A1–A6, B1–B6, C1–C6, D1–D7, E1–E5, F1–F6, G1–G3, H1–H5, I1–I5, J1–J5.
+
+## Step 8: Assembly, second pass and bookkeeping
+
+The chunks were assembled by a script that appends the last chunk, splices in the items added after the scope note, and updates every count and table that refers to the item list. Each replacement must match exactly once or the script stops.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+
+### What I did
+- Wrote and ran `scripts/06-assemble-guide.py GUIDE CHUNK_DIR`: output `168848 bytes`.
+- Second pass over the assembled guide for consistency: item count in the front matter, the opening and section 18 (54, ten workstreams); section 17's gap table refers only to items that exist; the phase table, the dependency sketch and the seat table include the added items; no draft markers remain.
+- `docmgr doctor --ticket IRWB-002 --stale-after 30`: `All checks passed`.
+- `docmgr doc relate` on the guide with seven files; four tasks added, two checked; one changelog entry.
+
+### Why
+- A script with exact-once replacements is safer than hand edits across a 170 KB file, and it records what changed after the scope note.
+
+### What worked
+- The guide is one file of about 169 KB.
+
+### What didn't work
+- `docmgr changelog update … --file-note "$G:the guide"` failed with `Error: malformed --file-note value "01-intern-guide-…-next.mdhe guide": expected 'path:note'`. In zsh, `$G:t` is the "tail" modifier, so `$G:the guide` expanded to the file's basename followed by `he guide`. Writing `"${G}:the guide"` fixed it.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The second pass was the author's own reread for consistency, not an independent reader test. Part 1's line numbers were checked; Part 2's citations of IRWB-001 documents were taken from my reading in Step 2 and not re-opened one by one.
+
+### What should be done in the future
+- Turn the Phase 0 items into tickets.
+
+### Code review instructions
+- `docmgr doc list --ticket IRWB-002`; `docmgr task list --ticket IRWB-002`.
+
+### Technical details
+- The chunk files lived in the session's scratch directory and are not kept; the assembled guide is the record, and `06-assemble-guide.py` documents the splice.

@@ -23,7 +23,7 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+A guide for a new researcher and a research agenda for the IR Workbench. The design-doc explains the system as it is (Part 1), lists 54 work items in ten workstreams with pseudocode, first experiments and acceptance measurements (Part 2), and orders them into phases and assignments (Part 3). The diary in `log/` records how it was produced; `scripts/` holds the scripts used. Documentation only: no code was changed.
 
 ## Key Links
 
