@@ -1,12 +1,14 @@
 // O2 on the Candela gallery program, each pass gated by the meaning check against r0 (Compiler Workbench's
 // checkEach), then a final check of the head against r0. Reports what each pass did.
-//   node tools/candela-o2.mjs [--count N] [--final N] [--pipeline O2] [--json]
+//   node tools/candela-o2.mjs [--count N] [--final N] [--final-limit S] [--pipeline O2] [--save head.json] [--json]
+// --count: cases per function for each pass's check (default 40); --final: for the final check (default 100), whose
+// step limit is --final-limit statements (default 2e5); --limit is the per-pass checks' (default the check's 2e4).
 import { installVendor } from './node-vendor.mjs';
 import { candelaInputs, candelaSource, MAX_SOURCE } from './candela.mjs';
 
 await installVendor();
 const { ingest } = await import('../dist/typed/lift.js');
-const { blocksAdapter, storeOf } = await import('../dist/typed/ir.js');
+const { blocksAdapter } = await import('../dist/typed/ir.js');
 const { createIRArtifact } = await import('../dist/framework/ir/index.js');
 const { runPipeline } = await import('../dist/typed/project.js');
 const { meaningKept } = await import('../dist/typed/evaluate.js');
@@ -15,6 +17,8 @@ const { AnalysisManager } = await import('../dist/framework/contracts/index.js')
 const args = process.argv.slice(2);
 const flag = (name, d) => (args.includes(name) ? args[args.indexOf(name) + 1] : d);
 const count = +flag('--count', 40), final = +flag('--final', 100), pipeline = flag('--pipeline', 'O2');
+const finalLimit = +flag('--final-limit', 2e5), save = flag('--save', null);
+const limit = args.includes('--limit') ? +flag('--limit') : undefined;
 const t0 = performance.now();
 const st = ingest('candela', candelaSource(), { tape: true, maxSourceLength: MAX_SOURCE });
 const r0 = createIRArtifact(blocksAdapter, 'candela', st.toNative());
@@ -33,7 +37,7 @@ const { PIPELINES } = await import('../dist/typed/passes.js');
 const run = { artifact: r0, steps: [] };
 for (const name of PIPELINES[pipeline]) {
   const t = performance.now();
-  const one = await runPipeline(r0, [name], { manager, inputs, count, start: run.artifact });
+  const one = await runPipeline(r0, [name], { manager, inputs, count, limit, start: run.artifact });
   run.artifact = one.artifact;
   run.steps.push(...one.steps);
   const s = one.steps[0];
@@ -56,7 +60,10 @@ for (const s of run.steps) {
 }
 const pipelineMs = Math.round(performance.now() - last);
 last = performance.now();
-const ev = (await manager.checkInvariant(meaningKept({ inputs, count: final }), { origin: r0, candidate: run.artifact })).evidence;
+if (save) (await import('node:fs')).writeFileSync(save, JSON.stringify(run.artifact.value));
+const ev = (
+  await manager.checkInvariant(meaningKept({ inputs, count: final, limit: finalLimit }), { origin: r0, candidate: run.artifact })
+).evidence;
 const out = {
   pipeline,
   r0: size(r0),
@@ -74,4 +81,3 @@ else {
     );
   console.log(JSON.stringify({ r0: out.r0, head: out.head, final: out.final, ms: out.ms }));
 }
-void storeOf;
