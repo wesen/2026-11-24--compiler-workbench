@@ -32,4 +32,4 @@ const general = sites(storeOf(p.head.value));
 await p.specialize(createArtifact(BindingsIR, 'gallery', { formatVersion: 1, source: 'candela gallery', bindings: [{ record: 'K', field: 'scene', value: s.index, entity: `scene/${s.id}` }] }));
 for (const x of ['constprop', 'fold', 'cfg', 'dce', 'cfg']) await p.apply(x);
 await p.apply('dfe', { params: { roots: ENTRIES } });
-console.log(JSON.stringify({ scene: s.id, general, scene: sites(storeOf(p.head.value)) }));
+console.log(JSON.stringify({ scene: s.id, general, sceneProgram: sites(storeOf(p.head.value)) }));

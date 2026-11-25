@@ -1351,3 +1351,40 @@ O2+ took 212 s and 179 s: about a fifth of the full-program O2, matching the pro
 ### What warrants a second pair of eyes
 - **The per-function check compares two specialized revisions with each other**, not with r0. It is the frame comparison that ties the specialized program to the general one.
 - `scripts/14-candela-call-sites.mjs` is counting single-call-site functions in the B-01 program, to support the report's claim that inlining after `dfe` is a pure gain for many functions.
+
+## Step 28: report 4 written and checked against the evidence; a claim corrected by measuring call sites
+
+This step wrote the milestone report R3: the fourth IR Workbench report in the vault. It covers framework performance, bcm, the f32 backend, rendering and per-scene kernels. Reading it back against the evidence found eleven sentences that said more than was measured. Ten were corrected from the diaries. For one, I made a new measurement: call sites per function in the B-01 program. It showed that `dfe` does not create single-call-site functions, as I had written, but keeps 55 of them.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10 ("diary docmgr deisgn doc vault report") and the original request ("At important milestones, write a detailed project report for the obsidian vault as a deep dive technical analysis blog post using a textbook writing style (no analogies…)").
+
+### What I did
+- **The report.** Wrote `Projects/2026/11/24/PROJECT REPORT - IR Workbench - Per-Scene Kernels for Candela - … - A Technical Deep Dive.md`. Copied three renders to `_assets/irwb-{b01-colour,b01-normal,r01-colour}.png`.
+- **`scripts/14-candela-call-sites.mjs`:** static call sites per function, in general r0 and in a scene's program after `dfe` → `various/experiments/09-candela-call-sites-B-01.json`.
+- **The second reading.** Corrections:
+  - "kernel" is used in four senses. A definition list now separates the per-scene kernel, the `kernel` policy and the record `K`; the framework is named as such.
+  - "many megabytes" → the measured 16 MB of the saved O2 head.
+  - Result leaves: the protection comes from the allocator's liveness of physical fa registers (backend diary, Step 6), not from "argument registers hold nothing".
+  - Branch relaxation: the exact rewrite, and its one-word cost (backend diary, Step 7).
+  - "All three are middle-end matters" → only inlining is. Constants in registers and copy coalescing belong to the backend.
+  - "hit the step limit on most cases" → the five functions account for the 215 inconclusive cases of 33,200.
+  - "Four engines" listed three kinds.
+  - The `why` output was asserted without being checked; the report now quotes the note text.
+  - "fall only by the dispatches" → "fall by 5–6%", with the mechanism.
+  - "shading functions … every sample" → the measured `q_floor` and `q_fract` inlining into `noise3`.
+  - "many small functions have exactly one call site after `dfe`" → the measured 55 of 131 (29 with at most 20 statements).
+
+### What worked
+- Call sites:
+  - **general r0:** 220 of 332 functions are called exactly once (96 with ≤ 20 statements), and 17 non-entries are never called;
+  - **B-01 after `dfe`:** 55 of 135 are called once (29 small), 76 are called twice or more, and none is uncalled.
+
+### What didn't work
+- **The first call-site run lost the scene id.** The output object had two keys named `scene`, and the second overwrote the first. The script now names the counts `sceneProgram`. The JSON was rewritten from that run's numbers, with a note saying so.
+
+### What I learned
+- **The general program has more single-call functions than a scene's** (220 against 55), because every scene section is called once by a dispatcher. For inlining, what counts is which of them stay on a scene's hot path.
+
+### What warrants a second pair of eyes
+- **The report quotes the backend agent's and the UI agent's measurements** from their diaries and reports. I re-ran only the parts that the merged tree's tests and my own scripts cover.
