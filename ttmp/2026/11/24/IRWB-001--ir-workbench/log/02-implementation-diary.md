@@ -435,3 +435,69 @@ The vault commit is b2db7c2 in go-go-parc, pushed.
 ### Code review instructions
 - `src/typed/program.ts` (`lookup`, `why`, `apply`), `src/typed/strategy.ts`, and the "after O2" test in `tests/typed/backend.test.mjs`.
 - Run `npm test`. Expect 257/257.
+
+## Step 6: auditing every preservation claim, the reference compiler's full policy, and specialization on outer facts
+
+While two subagents worked (f32 and Candela; the UI), I took three items that touch neither agent's files.
+
+1. **Audit mode for preservation claims.** Applied to every pass on every revision of the corpus, it shows the corrected declarations hold. With the prototype's original declarations restored, it refuses all three `loops` claims on real revisions.
+2. **The reference compiler's pass groups are now vendored.** Its default policy works, and the book's chapter 13 and 14 cross-checks against it hold to the case and to the byte.
+3. **The specialization mechanism of design-doc 03.** It works on a corpus program that dispatches on an enum parameter. The restricted contract and the because-chain to the outer fact behave as designed.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Close the open problems from report 1 that can be closed now, and build the specialization mechanism ahead of the f32 work, so Candela only needs lifting.
+**Inferred user intent:** Passes optimize Typed code using facts from the program above it, and every step stays checkable.
+**Commit (code):**
+- 7a107ac: audit
+- c84165e: pass groups and chapter 14
+- a66d348: chapter 13
+- b9f4758: gating the slow corpus-wide size check
+- e563c16: specialization
+
+### What I did
+- **Audit mode.** `ApplyOptions.auditPreservation` (framework, additive): when the manager does not hold a claimed fact for the input, `applyPass` computes it first. `tools/audit-preservation.mjs` applies every pass with claims to every revision of every corpus pipeline. `tests/typed/audit.test.mjs` pins ramp@r3.
+- **Pass groups.** I vendored `typed-rv32-{inline,loops,kernel}.js`, unchanged from b19062b, after checking that they are clean against ds-js-os HEAD. `VENDOR.json` was updated, and `installVendor({reference})` loads them after the core.
+- **Chapter 14 test.** Instructions at r0, after O2, and for the reference compiler on five benchmarks; corpus-wide O2 image bytes against the reference's (the latter only under `IRWB_FULL=1`). `tools/reference-check.mjs [--o2]` and a test cover chapter 13.
+- **Specialization.** `src/typed/specialize.ts` defines `BindingsIR` (`typed.bindings`), `factRef` and the `specialize` pass. In `src/typed/program.ts` (additive): `assumptions`, `inputs` with assumptions merged, `assume`, and `specialize`. Tested in `tests/typed/specialize.test.mjs`.
+
+### Why
+- **Auditing.** Without it a false claim hides whenever nothing had computed the fact, which is how `dce`'s and `subst`'s claims survived the first full run.
+- **Specialization changes the contract.** A program specialized on `s = Square` does not mean what r0 means for other shapes. The meaning check, and every later pass's contract, therefore compares with r0 only on cases satisfying the bindings. Leaving the contract unrestricted would make every specialization fail its check, and dropping the check would make the specialized pipeline unchecked.
+
+### What worked
+- **The audit:** 1,376 applications, and "no false preservation claims" with the corrected declarations. With the prototype's declarations:
+  ```
+  subst -> typed.loops   10 revisions, e.g. bounds-lab@r4 bounds-two@r4 checksum@r4 early-exit@r5
+  lvn -> typed.loops     9 revisions, e.g. orders@r0 orders@r1 orders@r2 orders@r3
+  dce -> typed.loops     2 revisions, e.g. ramp@r3 strength@r3
+  ```
+- **The reference compiler on Blend:** the default policy gives 176 bytes and 383 instructions (the book's reference column); `interactive` gives 116 bytes and 497.
+- **Chapter 14's table, row for row (r0 / O2 / reference):** Blend 531/451/383, Checksum 446/366/292, sort 2022/2022/1533, Collatz 1590/1590/1486, value numbering 690/570/695. O2 images over the 44 projects total 5,160 bytes against the reference's 7,628.
+- **Chapter 13, both halves:** `{"against":"reference images","functions":70,"decided":6986,"agree":6986,"inconclusive":14}` and the same for `our O2 images`.
+- **Specialization on match-enum:** `area` reduces to `bb:area.0 -> [] s:area.15 return (k * k)`. The pipeline's checks under the assumption are 80/80 per revision. The unrestricted `meaningKept` fails, as it should.
+
+### What didn't work
+- **Corpus image total.** The first assertion gave `ours: 5208` against the book's 5160. I had run each project's own pipeline (O1, O0, broken). The book's sentence is about "our O2 images", and O2 everywhere gives 5,160. These five projects differ: algebra, my-first-pass, params-demo, pressure and wrong-shift.
+- **The specialization `why` test.** It first failed with `actual: false, expected: true`. The three branch statements that cfg made (`s:area.16`–`18`) were created and pruned within the same revision. They are in no revision artifact, so `why` reports them as absent.
+
+  This is a real divergence from the prototype, whose store keeps every entity it ever made. Our native value keeps only live entities, so an entity born and removed inside one pass application is resolvable only through the edit log (`replaceStmt` records its `text`). The provenance chain itself is intact: each `replaceStmt` edit's `because` names the folded comparison, and `why` on that comparison reaches `fact:typed.bindings:shapes@…#shape/Square`. The test starts there now.
+
+### What I learned
+- The book's sentences are precise down to which pipeline is meant. A mismatch against it has so far always been a misreading or a missing piece, never a tolerance question.
+- The dispatch-on-a-parameter pattern needs no new pass logic beyond the one substitution. specialize, cfg, constprop, fold, dce and cfg do the work, and the because-chains compose.
+
+### What was tricky to build
+- **Restoring assumptions.** `Program.specialize` must restore the previous assumptions if the pass is rejected, or later checks would silently run under a restriction that no revision justifies.
+
+### What warrants a second pair of eyes
+- Entities created and removed within one revision are not kept. Either keep them in the revision's report (as text or records), or accept that `why` for them starts at the edit.
+- `Program.assume` is global per function and parameter, and there is no `unassume` beyond `specialize`'s rollback. `undo` past a specialization does not drop the assumption yet.
+
+### What should be done in the future
+- Tie assumptions to revisions, so that `undo` or `checkout` before the specialization drops them.
+- Apply the mechanism to Candela's `K.scene` once f32 lifting lands.
+
+### Code review instructions
+- Read `src/typed/specialize.ts` and the `assume` and `specialize` methods in `src/typed/program.ts`, then `tests/typed/specialize.test.mjs`.
+- Run `npm test` (262/262, about 35 s), then `IRWB_FULL=1 npm test`, `node tools/audit-preservation.mjs` and `node tools/reference-check.mjs --o2`.
