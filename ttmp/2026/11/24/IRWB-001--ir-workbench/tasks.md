@@ -21,8 +21,8 @@
 - [x] P2.2 Evaluator, case generation and checks against r0 <!-- t:kko5 -->
 - [x] P2.3 Analyses: cfg, dominators, loops, liveness, reaching, ranges <!-- t:rtdl -->
 - [x] P2.4 The eleven passes on definePass and rewrite rules <!-- t:4kh7 -->
-- [ ] P2.5 Backend: tiling selection, linear scan, frames, encoding, emulator runs <!-- t:jn6a -->
-- [ ] P2.6 O2 and pipelines as Strategy plans; parity with the prototype on 44 projects <!-- t:vhni -->
+- [x] P2.5 Backend: tiling selection, linear scan, frames, encoding, emulator runs <!-- t:jn6a -->
+- [x] P2.6 O2 and pipelines as Strategy plans; parity with the prototype on 44 projects <!-- t:vhni -->
 - [ ] P3.1 wb API layer: handles, selections, projects, why and lineage <!-- t:pb99 -->
 - [ ] P3.2 Workbench UI on the new kernel, standalone build <!-- t:es43 -->
 - [x] P4.1 Candela inventory: what build, compile and pack know <!-- t:5smn -->
