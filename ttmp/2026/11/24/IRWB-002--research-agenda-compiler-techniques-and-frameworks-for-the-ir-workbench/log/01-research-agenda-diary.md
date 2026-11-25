@@ -435,3 +435,49 @@ The chunks were assembled by a script that appends the last chunk, splices in th
 
 ### Technical details
 - The chunk files lived in the session's scratch directory and are not kept; the assembled guide is the record, and `06-assemble-guide.py` documents the splice.
+
+## Step 9: Upload to reMarkable
+
+The guide and this diary were uploaded as one PDF bundle with a table of contents. The upload succeeded on the first attempt, and the work stops here as briefed.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+
+### What I did
+- Before uploading, replaced the one absolute home-directory path in this diary (the vault location in Step 2) by a relative description, and checked both documents for names and addresses: none.
+- Committed the guide, the diary and the scripts.
+- Ran, from the repository root:
+  `remarquee upload bundle <design-doc/01-…md> <log/01-research-agenda-diary.md> --name "IRWB-002 Intern Guide and Research Agenda" --remote-dir "/ai/2026/11/25/IRWB-002" --toc-depth 2 --non-interactive`
+
+### Why
+- A new, ticket-named folder under the dated directory cannot collide with an existing document, so `--force` was neither needed nor used.
+
+### What worked
+- Output:
+  ```text
+  Cached tree found; checking for remote changes (a full resync may still be needed).
+  Synchronizing cloud tree… 0s | 0 HTTP responses, 0 active requests
+  Cloud tree synchronized. 2s | 1 HTTP responses
+  OK: uploaded IRWB-002 Intern Guide and Research Agenda.pdf -> /ai/2026/11/25/IRWB-002
+  ```
+
+### What didn't work
+- No failures. No authentication prompt occurred.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The evidence is the upload command's `OK: uploaded` line. Following the upload skill's policy I did not list the remote folder or inspect the rendered PDF, so the rendering of the wide tables and of the box-drawing diagrams is unverified. This step was appended after the upload, so the uploaded copy of the diary ends at Step 8.
+
+### What should be done in the future
+- If the PDF shows clipped code lines or tables, shorten them in the guide and upload again under a new name.
+
+### Code review instructions
+- `remarquee cloud ls /ai/2026/11/25/IRWB-002 --long --non-interactive` lists the document.
+
+### Technical details
+- Bundle order: the guide, then the diary. Remote path: `/ai/2026/11/25/IRWB-002/IRWB-002 Intern Guide and Research Agenda`.
