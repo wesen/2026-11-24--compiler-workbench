@@ -48,9 +48,16 @@ A second prototype, **Compiler Workbench: projects** (a Typed → RV32 compiler 
 - **Design, combining both:** [design-doc/01-combining-ir-workbench-v6-and-compiler-workbench.md](./design-doc/01-combining-ir-workbench-v6-and-compiler-workbench.md)
 - **Design, worked examples:** [design-doc/02-typed-to-rv32-compiler-on-the-v6-framework-worked-examples.md](./design-doc/02-typed-to-rv32-compiler-on-the-v6-framework-worked-examples.md). The whole Typed → RV32 compiler written on v6, plus the extensions it needs (E1–E9).
 - **Design, Candela chain:** [design-doc/03-candela-to-typed-to-rv32-as-one-artifact-chain-with-candela-facts-driving-passes.md](./design-doc/03-candela-to-typed-to-rv32-as-one-artifact-chain-with-candela-facts-driving-passes.md). Candela at the top of the artifact chain; its facts drive Typed and RV32 passes.
-- **Diary:** [log/01-diary.md](./log/01-diary.md)
+- **Analysis, Candela inventory:** [analysis/03-candela-inventory-for-the-typed-chain-what-the-gallery-program-needs-from-typed-blocks.md](./analysis/03-candela-inventory-for-the-typed-chain-what-the-gallery-program-needs-from-typed-blocks.md). What the gallery program (332 functions, about 13,000 f32 operations) needs from `typed.blocks`, and the ordered plan.
+- **Diaries:** [log/01-diary.md](./log/01-diary.md) (planning), [log/02-implementation-diary.md](./log/02-implementation-diary.md) (implementation, steps 1–6), [log/03-backend-agent-diary.md](./log/03-backend-agent-diary.md) (backend subagent), `log/04-f32-candela-agent-diary.md` (f32 subagent) and `log/05-ui-agent-diary.md` (UI subagent).
+- **Report 1 (vault):** `Projects/2026/11/24/PROJECT REPORT - IR Workbench - A Compiler Defined on Its Own IR Framework - …` in go-go-parc.
 
-Current state: the relevant v6 files are imported into `sources/ir-source-workbench-v6/` and verified against the release manifest, and the analysis is written. Compiler Workbench is imported and its round trip verified; the overlap analysis and the combination proposal are written. Next: decide on the proposal (design-doc/01 §5), then Phase 0 (get both prototypes running).
+Current state (implementation, branch `irwb-001/import-v6-prototype`):
+- **Framework.** v6 is lifted whole into `src/framework/`, with extensions E1–E6.
+- **Typed compiler.** `src/typed/` holds lifting, `typed.blocks`, the evaluator and meaning check, 6 analyses, 11 passes, pipelines as plans, the program host, the RV32 backend, and specialization on outer facts.
+- **Parity.** Every number the Compiler Workbench book states is reproduced by a test: Blend's revisions and why tree, the image sizes and instruction counts, the corpus figure of 6,986 decided cases with 14 at the step limit, and the chapter 13 and 14 comparisons with the reference compiler.
+- **In progress.** f32 and Candela lifting (subagent), and the UI on the new host (subagent).
+- **Blocked by permission policy.** Phase 0, running the downloaded prototypes themselves. Parity uses independent oracles instead.
 
 ## Key Links
 
