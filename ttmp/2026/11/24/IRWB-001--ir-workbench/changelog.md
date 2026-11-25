@@ -166,3 +166,13 @@ Candela view merged (UI subagent): Layout -> Candela renders any of the 18 scene
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/site-src/candela.js — the Candela view
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/workbench/candela.ts — engines and progressive render
+
+## 2026-11-25
+
+P4.3 per-scene Candela kernels: field bindings (K.scene), entry-only contracts (Program entries, MeaningParams.roots), dfe; all 18 scenes 135-147 of 332 functions and frames bit-identical; B-01/R-01 images 42% of general, 5-6% fewer instructions per pixel; O2+ after dfe < 1%. Our RV32 image as a render engine (workbench + CLI). Design-doc 05 section 9 records outcomes and departures.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/passes.ts — dfe
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/specialize.ts — field bindings
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/13-candela-per-scene-images.mjs — per-scene images, O2+ and checks

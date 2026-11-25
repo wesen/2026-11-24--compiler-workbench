@@ -200,3 +200,29 @@ gxe6 kernel-policy oracle ─────────────┘
 ```
 
 O2+ and the oracle are small. Framework performance comes first among the large items, because every Candela experiment after it costs a tenth as much. The backend runs in parallel in its own worktree. The diary gets a step at every significant action, and R3 is written when the per-scene numbers exist.
+
+## 9. Outcomes
+
+Measured results for each section, and where the implementation departs from the design above. The evidence is in `various/experiments/`. The reasoning is in diary steps 11–26 (`log/02-implementation-diary.md`) and in the backend agent's diary (`log/06-f32-backend-agent-diary.md`).
+
+| section | outcome |
+|---|---|
+| §2 O2+ | O2 plus `subst`. Faster on 11 of 44 projects, slower on none: 77,321 → 75,681 instructions, 5,160 → 5,104 bytes. |
+| §3 framework performance | No-change pass on Candela 86 s → 18 s; `cfg` 101 s → 31 s; full O2 36 → 19 min. All 44 projects' revisions identical. |
+| §4 f32 backend | Every Candela function compiles at r0 and at the O2 head. 0 disagreements on 100 cases per function against the evaluator and against `stock`. O2 image 151,748 bytes and 870.3 instructions per case (`kernel`: 434,996 and 747.7). |
+| §5 caddr | Implemented as **merging** (`bcm`), not elimination: in generated code, dominating tests are rare, and checks come in groups sharing a linear base. Candela r0: 559 → 100. |
+| §6 `kernel` oracle | 32,985 agree, 0 disagree, 215 inconclusive. |
+| §7 per-scene kernels | All 18 scenes: 135–147 of 332 functions, statements −51.7% to −57.0%, every frame bit-identical at stride 8. B-01 and R-01 images 42% of the general r0 image, 5–6% fewer instructions per pixel. O2+ afterwards: < 1% more. |
+
+### Departures in §7
+
+- **Binding form.** `{ record: 'K', field: 'scene', value, entity }`, with no parameter name. It applies to every parameter of type `K` in every function. The pass also refuses statically when a function stores to the field through such a parameter.
+- **Assumptions.** These are recorded per function as `'<param>.<field>'` (`q_k.scene`), and `Program.inputs` merges them into the parameter's record spec as `{ oneOf: [v] }`. `candelaInputs` is unchanged.
+- **The contract compares the declared entries only.** It does not compare "functions present in both programs": `Program` option `entries`, `MeaningParams.roots`. Entries are what the program means to its host, and they need no notion of correspondence between functions. The stronger check, every surviving function, is applied as a separate per-function check after O2+ (`scripts/13 … --o2`: 2,699 and 2,739 agree, 0 disagree). Making it part of the contract remains open.
+- **Pipeline.** `specialize`, then `constprop`, `fold`, `cfg`, `dce`, `cfg`, then `dfe`; O2+ is measured separately. The design's O2 before `dfe` would cost the full-program O2 (19 min) per scene, and the light cleanup is enough to remove every dispatch. O2+ after `dfe` was measured on two scenes and changes instructions per pixel by less than 1%.
+- **Instruction measurements cover B-01 and R-01 only.** The frame comparison covers all 18 scenes, through the evaluator.
+
+### What the measurements say about next steps
+
+- **Specialization pays in size, not speed.** The remaining speed gap to `kernel` (B-01 +23%, R-01 +46% instructions per pixel) is not in this compiler's pass list. It comes from transformations it does not perform: inlining, float constants kept in registers, and coalescing copies. These are IRWB-002 items E3 and H2.
+- **The guarded variant of design-doc 04** (clone per scene, dispatch once) is not justified by these numbers. The dispatch itself costs too little.

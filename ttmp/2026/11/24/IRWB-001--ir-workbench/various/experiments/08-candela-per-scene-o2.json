@@ -1,0 +1,72 @@
+[
+ {
+  "scene": "B-01",
+  "stride": 4,
+  "pixels": 1600,
+  "rev": 6,
+  "fns": 135,
+  "bytes": {
+   "general": 183324,
+   "scene": 76244
+  },
+  "perPixel": {
+   "referenceKernel": 8501,
+   "oursGeneral": 11200.4,
+   "oursScene": 10494.4
+  },
+  "differentBits": {
+   "generalVsReference": 0,
+   "sceneVsReference": 0
+  },
+  "o2": {
+   "rev": 16,
+   "ms": 212264,
+   "stmts": "5317->4786",
+   "rejected": [],
+   "check": {
+    "agree": 2699,
+    "disagree": 0,
+    "inconclusive": 1,
+    "bad": []
+   },
+   "bytes": 74044,
+   "perPixel": 10435,
+   "differentBits": 0
+  }
+ },
+ {
+  "scene": "R-01",
+  "stride": 4,
+  "pixels": 1600,
+  "rev": 6,
+  "fns": 137,
+  "bytes": {
+   "general": 183324,
+   "scene": 77688
+  },
+  "perPixel": {
+   "referenceKernel": 15655.9,
+   "oursGeneral": 24070.2,
+   "oursScene": 22881.6
+  },
+  "differentBits": {
+   "generalVsReference": 0,
+   "sceneVsReference": 0
+  },
+  "o2": {
+   "rev": 16,
+   "ms": 179455,
+   "stmts": "5400->4859",
+   "rejected": [],
+   "check": {
+    "agree": 2739,
+    "disagree": 0,
+    "inconclusive": 1,
+    "bad": []
+   },
+   "bytes": 75288,
+   "perPixel": 22850.9,
+   "differentBits": 0
+  }
+ }
+]

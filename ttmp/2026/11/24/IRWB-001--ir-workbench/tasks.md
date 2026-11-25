@@ -27,7 +27,7 @@
 - [x] P3.2 Workbench UI on the new kernel, standalone build <!-- t:es43 -->
 - [x] P4.1 Candela inventory: what build, compile and pack know <!-- t:5smn -->
 - [ ] P4.2 Candela chain: tasks for front end, generator, Typed front end; correspondence <!-- t:lofv -->
-- [ ] P4.3 Candela experiment: per-scene specialization measured on the host <!-- t:ckco -->
+- [x] P4.3 Candela experiment: per-scene specialization measured on the host <!-- t:ckco -->
 - [x] R1 Obsidian report at the framework + parity milestone <!-- t:3x4l -->
 - [x] R2 Obsidian report at the Candela milestone <!-- t:z21g -->
 - [x] P4.4 O2+ pipeline: O2 then subst (the copy finding of the ordering search), O2 kept for parity <!-- t:4c1o -->

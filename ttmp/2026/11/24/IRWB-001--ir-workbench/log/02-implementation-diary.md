@@ -1318,3 +1318,36 @@ The run of Step 19's pipeline over every gallery scene finished. Each scene keep
 
 ### What warrants a second pair of eyes
 - **Stride 8 compares 1–2% of the pixels**, one sample each. B-01 has also been compared at stride 1 for the general program (Step 17), but not for the specialized one.
+
+## Step 27: O2+ on the per-scene programs: correct, and less than 1% faster
+
+Design-doc 05 expected the optimizing passes to find more once each dispatch had become a direct call. On B-01 and R-01, O2+ after `dfe`:
+- removes about 10% of the statements;
+- removes 3% of the image bytes;
+- changes instructions per pixel by 0.6% and 0.1%.
+
+All sixteen passes were accepted. The new per-function check found no disagreement, and both frames remain bit-identical. The remaining gap to `kernel` is therefore not in this compiler's existing pass list. I recorded this, with the other outcomes and the departures from the design, in design-doc 05 §9.
+
+### What I did
+- `scripts/13-candela-per-scene-images.mjs B-01 R-01 --o2` (about 25 min) → `various/experiments/08-candela-per-scene-o2.{json,log}`. After `dfe`, the script:
+  - runs `p.pipeline('O2+')`;
+  - compares every surviving function between the post-`dfe` revision and the O2+ head, on 20 `casesFrom` cases each with the scene assumption in the inputs, limit 2e5, verdicts by `agrees`;
+  - lowers, renders at stride 4 and compares with `kernel`.
+- **Design-doc 05 §9 "Outcomes":** a table per section, the four departures in §7 (binding form, assumption keys, entry-only contract, pipeline), and what the measurements imply.
+- Checked task ckco; added a changelog entry with file notes.
+
+### What worked
+| scene | statements | bytes | instructions per pixel | per-function check | frame |
+|---|---:|---:|---:|---|---|
+| B-01 | 5,317 → 4,786 | 76,244 → 74,044 | 10,494.4 → 10,435.0 | 2,699 agree / 0 / 1 inconclusive | 0 of 19,200 differ |
+| R-01 | 5,400 → 4,859 | 77,688 → 75,288 | 22,881.6 → 22,850.9 | 2,739 agree / 0 / 1 inconclusive | 0 of 19,200 differ |
+
+O2+ took 212 s and 179 s: about a fifth of the full-program O2, matching the program's size.
+
+### What I learned
+- **The speed gap is code generation and inlining.** Against `kernel`, our per-scene O2+ image executes 23% more instructions per pixel on B-01 and 46% more on R-01. The backend agent's per-function comparison already named the causes: `noise3` makes 14 calls where `kernel` makes 8, float constants are rebuilt at every use, and copies are not coalesced.
+- **The guarded clone-per-scene variant of design-doc 04 is not worth building.** The dispatch it would remove is too cheap to matter.
+
+### What warrants a second pair of eyes
+- **The per-function check compares two specialized revisions with each other**, not with r0. It is the frame comparison that ties the specialized program to the general one.
+- `scripts/14-candela-call-sites.mjs` is counting single-call-site functions in the B-01 program, to support the report's claim that inlining after `dfe` is a pure gain for many functions.
