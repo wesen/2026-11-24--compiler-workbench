@@ -411,3 +411,49 @@ This step collected four results. The full test suite passes. The `IRWB_FULL=1` 
 
 ### Technical details
 - B-type range: −4096…+4094 bytes. A relaxed site costs one extra word: `b<inverted> rs1, rs2, farN; jal zero, target; farN:`.
+
+## Step 8: The opt-in Candela test passes at r0 and at the O2 head; formatting; where kernel wins
+
+This step ran the `IRWB_CANDELA=1` test, which checks `rv32.image-agrees` through the framework's `AnalysisManager` at 100 cases per function, on r0 and on the saved O2 head. It passed. In parallel the final measurement (Step 9) ran. I formatted my TypeScript with the repository's Prettier settings and looked at where the reference's `kernel` policy beats our r0 image.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Acceptance 3 through the image check itself (not only the tool's loop), and acceptance 5's opt-in test.
+**Inferred user intent:** See Step 1.
+**Commit (code):** 31df57c — "IRWB-001 P4.5: prettier on the backend and ilp32f.ts (formatting only; corpus image revisions unchanged)"
+
+### What I did
+- `IRWB_CANDELA=1 IRWB_CANDELA_HEAD=scratchpad/candela-o2-head.json node --max-old-space-size=12288 --test tests/typed/f32-backend.test.mjs` (task `bky99iuas`, build e3e91b1).
+- `npx prettier --check` on my files: six were not in the repository's style (`.prettierrc.json`); the base `select.ts` of c3689c1 was. `npx prettier --write src/typed/backend/*.ts src/typed/ilp32f.ts src/typed/reference.ts`; removed a leftover `void t` in the selector's parameter loop.
+- The baseline comparison and `node --test tests/typed/f32-backend.test.mjs` after formatting.
+- From Step 7's r0 rows (`scratchpad/image-r0.json`): functions ranked by Σ instructions (ours − kernel); `scratchpad/probes/show.mjs noise3` (our and the kernel's code, calls counted).
+
+### Why
+- The tool and the invariant use the same verdict (`agrees`), but only the invariant is what a pass contract would use; the acceptance names `imageAgrees`.
+
+### What worked
+- `✔ P4.5: Candela images agree on 100 cases per function at r0 and at the O2 head (IRWB_CANDELA=1) (335526.161309ms)`; 7 of 7 tests pass.
+- After formatting: `projects 44 differ 0 5160`; f32-backend tests 6 pass, 1 skipped.
+- Where the gap to `kernel` is (r0, Step 7's build): 6.50 million instructions over the decided cases in total, of which `fbm3` 2.00 million and `cdlRenderSpan` 1.51 million, then the scenes' material and SDF functions (`s16_mat_0` 0.25 million, …). Our image wins on the record-returning dispatchers (`s15_evalMaterial` 215.1 against 407.0 instructions per case, `hitEmission` 391.5 against 574.8, `noHit` 60 against 157) and on leaves such as `hitAABB` (32 instructions, no frame, against 51 with a 208-byte frame).
+- `noise3`, which `fbm3` calls in its loop: our image makes 14 calls (`q_floor` ×3, `q_fract` ×3, `gnoise` ×8), the `kernel` image 8 (`q_floor` and `q_fract` are inlined).
+
+### What didn't work
+- No failures.
+
+### What I learned
+- The kernel policy's advantage on Candela's hot code is inlining (its `inline` pass group), which belongs to the middle end; our O2 has no inline pass. The backend's own code is as good or better where no call is involved.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The test prints no counts, only the verdict (0 disagreements and the minimum agreement); the counts come from the tool in Step 9, which uses the same verdict on the same cases.
+
+### What should be done in the future
+- An inline pass in the middle end (for small leaf callees like `q_floor`, `q_fract`) would close most of the gap to `kernel`; that is outside the backend.
+
+### Code review instructions
+- `IRWB_CANDELA=1 IRWB_CANDELA_HEAD=<head.json> node --test tests/typed/f32-backend.test.mjs` (about 6 minutes; the head from `node tools/candela-o2.mjs --save <head.json>`).
+
+### Technical details
+- The opt-in test's check: `imageAgrees({ count: 100, inputs: candelaInputs(st), limit: 2e5, imageLimit: 2e7 })`, seed 7.
