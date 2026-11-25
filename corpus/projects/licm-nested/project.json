@@ -1,6 +1,9 @@
 {
   "title": "Hoisting through two loops",
-  "about": "a * b + 7 is invariant in both loops, r * (a + b) only in the inner one. How far does each move?",
+  "about": [
+    "a * b + 7 is invariant in both loops, r * (a + b) only in the",
+    "inner one. How far does each move?"
+  ],
   "group": "Loops",
   "pipeline": "loops",
   "inputs": {
@@ -13,5 +16,14 @@
   },
   "chapter": "loops",
   "focus": 5,
-  "try": ["Why did r * (a + b) stop at the inner preheader? Answer from the loops fact.", "Which hoisted value saves the most instructions? Use heat on the image."]
+  "try": [
+    [
+      "Why did r * (a + b) stop at the inner preheader? Answer from",
+      "the loops fact."
+    ],
+    [
+      "Which hoisted value saves the most instructions? Use heat on",
+      "the image."
+    ]
+  ]
 }

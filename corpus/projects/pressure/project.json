@@ -1,9 +1,15 @@
 {
   "title": "Register pressure",
-  "about": "Sixteen intermediate values in one expression. Turn the registers slider down and watch spills appear.",
+  "about": [
+    "Sixteen intermediate values in one expression. Turn the registers",
+    "slider down and watch spills appear."
+  ],
   "group": "Registers",
   "pipeline": "O1",
   "chapter": "regalloc",
   "focus": 7,
-  "try": ["Plot spills against the register count from 1 to 24.", "Which values does the allocator spill first, and why those?"]
+  "try": [
+    "Plot spills against the register count from 1 to 24.",
+    "Which values does the allocator spill first, and why those?"
+  ]
 }

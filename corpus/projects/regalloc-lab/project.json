@@ -1,21 +1,45 @@
 {
   "title": "Register lab: allocation you can see",
-  "about": "Sliders for the linear-scan allocator, a custom component that draws its live intervals, and a task that sweeps the register count and charts bytes and spills.",
+  "about": [
+    "Sliders for the linear-scan allocator, a custom component that",
+    "draws its live intervals, and a task that sweeps the register",
+    "count and charts bytes and spills."
+  ],
   "group": "Registers",
   "pipeline": "O2",
   "inputs": {
-    "mixer": { "a": [-50, 50], "b": [-50, 50], "c": [-50, 50], "d": [-50, 50] },
-    "accum": { "v": { "buffer": [16, 16], "cell": [0, 255] }, "n": [0, 16] }
+    "mixer": {
+      "a": [-50, 50],
+      "b": [-50, 50],
+      "c": [-50, 50],
+      "d": [-50, 50]
+    },
+    "accum": {
+      "v": { "buffer": [16, 16], "cell": [0, 255] },
+      "n": [0, 16]
+    }
   },
   "scripts": {
-    "replay": { "about": "a fresh copy with the open program's passes replayed, compiled with the options given", "fresh": true }
+    "replay": {
+      "about": [
+        "a fresh copy with the open program's passes replayed,",
+        "compiled with the options given"
+      ],
+      "fresh": true
+    }
   },
   "ui": { "order": ["intervals", "registers", "spill-curve"] },
   "chapter": "backend",
   "focus": 23,
   "try": [
-    "At how many registers does mixer stop spilling, and why that number?",
-    "Compare caller-first and callee-first order on accum: which values cross the call?",
+    [
+      "At how many registers does mixer stop spilling, and why that",
+      "number?"
+    ],
+    [
+      "Compare caller-first and callee-first order on accum: which",
+      "values cross the call?"
+    ],
     "Add a column to the sweep with the frame size in bytes."
   ]
 }

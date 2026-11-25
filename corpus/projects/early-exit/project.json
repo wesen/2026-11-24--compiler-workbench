@@ -1,18 +1,21 @@
 {
   "title": "While with break",
-  "about": "A search loop that leaves early. The break becomes a branch out of the loop body; the loop has two exits.",
+  "about": [
+    "A search loop that leaves early. The break becomes a branch out",
+    "of the loop body; the loop has two exits."
+  ],
   "group": "Control flow",
   "pipeline": "O2",
   "inputs": {
     "find": {
-      "work": {
-        "buffer": [0, 20],
-        "cell": [0, 9]
-      },
+      "work": { "buffer": [0, 20], "cell": [0, 9] },
       "target": [0, 9]
     }
   },
   "chapter": "control",
   "focus": 5,
-  "try": ["Show me the loop fact for find and explain each field.", "Does bce remove the bounds check here? Why?"]
+  "try": [
+    "Show me the loop fact for find and explain each field.",
+    "Does bce remove the bounds check here? Why?"
+  ]
 }

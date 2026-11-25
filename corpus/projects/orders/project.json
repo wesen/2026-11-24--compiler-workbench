@@ -1,18 +1,35 @@
 {
   "title": "Pass orders: which order wins",
-  "about": "A task tries every order of the passes you pick on fresh copies, checks each one and charts the image sizes; a row's button replays that order on the open program.",
+  "about": [
+    "A task tries every order of the passes you pick on fresh copies,",
+    "checks each one and charts the image sizes; a row's button",
+    "replays that order on the open program."
+  ],
   "group": "Writing passes",
   "pipeline": "O2",
   "inputs": {
-    "kernel": { "v": { "buffer": [12, 12], "cell": [0, 255] }, "n": [0, 12], "k": [-20, 20] },
+    "kernel": {
+      "v": { "buffer": [12, 12], "cell": [0, 255] },
+      "n": [0, 12],
+      "k": [-20, 20]
+    },
     "rescale": { "x": [-1000, 1000], "y": [-1000, 1000] }
   },
   "scripts": {
-    "try-order": { "about": "one order of passes on a fresh copy: bytes, statements, steps and a check", "fresh": true }
+    "try-order": {
+      "about": [
+        "one order of passes on a fresh copy: bytes, statements, steps",
+        "and a check"
+      ],
+      "fresh": true
+    }
   },
   "chapter": "passes",
   "try": [
-    "Which orders tie for the smallest image, and what do they have in common?",
+    [
+      "Which orders tie for the smallest image, and what do they have",
+      "in common?"
+    ],
     "Why does lvn before licm beat licm before lvn here?",
     "Add strength to the set and tell me whether the winner changes."
   ]

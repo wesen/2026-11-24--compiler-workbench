@@ -1,18 +1,39 @@
 {
   "title": "Heat lab: where the instructions go",
-  "about": "Run the image on an input you shape with sliders, then see the instruction counts as a heat map on the source, badges on the hottest instructions and a table shaded by a UI fragment.",
+  "about": [
+    "Run the image on an input you shape with sliders, then see the",
+    "instruction counts as a heat map on the source, badges on the",
+    "hottest instructions and a table shaded by a UI fragment."
+  ],
   "group": "Programs",
   "pipeline": "O2",
-  "inputs": { "sort": { "work": { "buffer": [0, 20], "cell": [0, 255] } } },
+  "inputs": {
+    "sort": { "work": { "buffer": [0, 20], "cell": [0, 255] } }
+  },
   "scripts": {
-    "compare": { "about": "the same input on a plain backend and the tuned one, line by line", "fresh": true }
+    "compare": {
+      "about": [
+        "the same input on a plain backend and the tuned one, line by",
+        "line"
+      ],
+      "fresh": true
+    }
   },
   "ui": { "order": ["fragments", "heat", "compare"] },
   "chapter": "backend",
   "focus": 7,
   "try": [
-    "Which line is hottest on a reversed input, and what do its instructions do?",
-    "Where does the tuned backend save the most instructions over the plain one? Use the compare script.",
-    "Add a fragment method to Stat that shows a value as a share of another."
+    [
+      "Which line is hottest on a reversed input, and what do its",
+      "instructions do?"
+    ],
+    [
+      "Where does the tuned backend save the most instructions over",
+      "the plain one? Use the compare script."
+    ],
+    [
+      "Add a fragment method to Stat that shows a value as a share of",
+      "another."
+    ]
   ]
 }

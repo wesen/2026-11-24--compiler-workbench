@@ -558,3 +558,48 @@ In the bytes rows, the ties are broken by candidate name, as v6's decision recor
 
 ### Code review instructions
 Read `src/typed/strategies.ts` (`runStrategy`) and `src/typed/builder.ts`, then run `npm test` (268/268).
+
+## Step 8: everything the workbench shows fits a narrow tile
+
+The user asked for files and presets formatted for a 60–80 column tile, and then clarified: "like the ones visible in the workbench, not necessarily the real source".
+
+I chose 72 columns as the target, measured the corpus, and added a formatting module: a width-aware JSON printer, a Markdown-aware prose wrapper, and a way to write prose fields as lines. A tool reformatted the corpus's `project.json` and `notes.md`, and it verifies each file before writing it. Strategy presets now exist in a short form that fits a tile. The UI subagent has the matching rules for views and saved files.
+
+### Prompt Context
+**User prompts (verbatim):** "make sure all the files and presets and such are formatted for a narrower screen, like 60-80 chars wie, since it's a tile in the browser", then "like the ones visible in the workbench, not necessarily the real source".
+**Assistant interpretation:** Corpus files, strategy presets and serialized plans, and anything the workbench saves or displays raw, should fit about 72 columns. Views should wrap rather than scroll. The compiler's own TypeScript keeps printWidth 110.
+**Commit (code):** ca5be0d
+
+### What I did
+- **Measured.** Typed sources and the scripts and UI scripts were already within 80 columns. In `project.json`, 99 lines were wider (up to 196); in `notes.md`, 49 lines (up to 493). A two-candidate plan serialized by v6 was 57 columns wide but 233 lines long.
+- **`src/typed/format.ts`:**
+  - `formatJson`: inline when the value fits, broken one entry per line otherwise, built structurally.
+  - `wrapProse`, with `splitWords` and `joinText`.
+  - `TILE_WIDTH = 72`.
+- **Strategies.**
+  - `toJson` uses `formatJson`, and plan node ids are shorter (`choose`, `candidates`, `O2/3:constprop`).
+  - The short form `StrategySpec` with `planFromSpec`.
+  - `PRESETS` (O2, fastest, smallest, cleanup) and `presetFiles`.
+  - `projectStrategies` accepts either form.
+- **Corpus.** `src/typed/project.ts` joins prose fields that are written as arrays of lines. `tools/format-corpus.mjs` reformatted 88 files. `tests/typed/format.test.mjs` covers all of this.
+
+### Why
+- **72 columns** leaves room for a gutter and a scrollbar in an 80-column tile, and stays readable at 60.
+- **Prose fields become arrays.** JSON strings cannot span lines, so a long `about` can fit a tile only as a list of lines. `projectSource` joins them, so nothing downstream changes.
+- **Typed sources are left alone.** Their line numbers appear in provenance and in the book's figures (line 5 accounts for 322 of Blend's 451 instructions).
+
+### What worked
+- Every file changed by the formatter passed both pre-write checks: the meaning check (`projectSource` meta deep-equal) and the block check (the renderer's rules: fences, list continuations, paragraph joins).
+- `--check` afterwards reports 0 changes. One line is 73 columns wide (`fixed-point/notes.md:1`), because its next word starts with `>`, which would open a blockquote at the start of a continuation line.
+- 272/272 tests pass, and the full corpus parity is unchanged.
+
+### What didn't work
+- The first run of `tools/format-corpus.mjs` stopped before writing anything: `Error: across-calls: project.json meaning changed`. The normalization in `project.ts` had never been applied. My scripted replacement targeted `const meta = { … }` on one line, but prettier had broken that line, and the replacement silently matched nothing. I applied it with Edit.
+- The same silent-mismatch failure hit the plan id shortening (`fastest/O0/keep` still appeared), for the same reason.
+- Lesson: after a scripted replacement in a prettier-formatted file, confirm that the replacement happened (grep), or use Edit.
+
+### What warrants a second pair of eyes
+- `wrapProse` skips lines indented by four or more spaces, treating them as code, and lines starting with `#`, `|`, `---` or `> [!`. Markdown that relies on other block syntax would need adding to `STARTS_BLOCK`.
+
+### Code review instructions
+Read `src/typed/format.ts`, `tools/format-corpus.mjs` and `tests/typed/format.test.mjs`. Run `node tools/format-corpus.mjs --check` and `npm test`.

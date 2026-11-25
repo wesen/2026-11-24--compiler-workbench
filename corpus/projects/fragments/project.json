@@ -1,17 +1,24 @@
 {
   "title": "Fragments: add members to handles",
-  "about": "A fragment adds a cost attribute to every value and a method to every function, without touching the engine.",
+  "about": [
+    "A fragment adds a cost attribute to every value and a method to",
+    "every function, without touching the engine."
+  ],
   "group": "Writing passes",
   "pipeline": "O2",
   "inputs": {
-    "blend": {
-      "work": {
-        "buffer": [40, 40]
-      },
-      "n": [0, 40]
-    }
+    "blend": { "work": { "buffer": [40, 40] }, "n": [0, 40] }
   },
   "chapter": "handles",
   "focus": 5,
-  "try": ["Write a fragment that gives every statement a depth attribute (its loop nesting).", "What does the error say if two fragments define the same member?"]
+  "try": [
+    [
+      "Write a fragment that gives every statement a depth attribute",
+      "(its loop nesting)."
+    ],
+    [
+      "What does the error say if two fragments define the same",
+      "member?"
+    ]
+  ]
 }

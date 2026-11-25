@@ -12,6 +12,7 @@ import type { ProgramInputs } from './evaluate.js';
 import { blocksAdapter } from './ir.js';
 import { ingest } from './lift.js';
 import type { TypedBlocks } from './model.js';
+import { joinText } from './format.js';
 import { optimizationContract, PASSES, PIPELINES, type RevisionReport } from './passes.js';
 
 export interface ProjectMeta {
@@ -40,6 +41,12 @@ export function projectSource(id: string, files: Readonly<Record<string, string>
     .sort();
   const named = Array.isArray(m.sources) ? (m.sources as string[]) : [];
   const sources = named.filter(f => files[f] !== undefined).concat(typed.filter(f => !named.includes(f)));
+  // prose fields may be written as arrays of lines, so project.json stays narrow; they mean the joined text
+  if (m.about !== undefined) m.about = joinText(m.about);
+  if (Array.isArray(m.try)) m.try = m.try.map(x => joinText(x));
+  if (m.scripts && typeof m.scripts === 'object')
+    for (const sc of Object.values(m.scripts as Record<string, Record<string, unknown>>))
+      if (sc && sc.about !== undefined) sc.about = joinText(sc.about);
   const meta = {
     title: id,
     about: '',

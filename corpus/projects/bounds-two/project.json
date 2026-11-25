@@ -1,21 +1,24 @@
 {
   "title": "Two buffers, one proof",
-  "about": "The loop runs to a.length. That proves reads of a are in range, but says nothing about b.",
+  "about": [
+    "The loop runs to a.length. That proves reads of a are in range,",
+    "but says nothing about b."
+  ],
   "group": "Bounds",
   "pipeline": "O2",
   "inputs": {
     "dot": {
-      "a": {
-        "buffer": [0, 12],
-        "cell": [0, 50]
-      },
-      "b": {
-        "buffer": [0, 12],
-        "cell": [0, 50]
-      }
+      "a": { "buffer": [0, 12], "cell": [0, 50] },
+      "b": { "buffer": [0, 12], "cell": [0, 50] }
     }
   },
   "chapter": "bounds",
   "focus": 4,
-  "try": ["Which of the two checks went, and what in bce tells it which buffer the loop test is about?", "Add a guard so both checks can go, as a new project."]
+  "try": [
+    [
+      "Which of the two checks went, and what in bce tells it which",
+      "buffer the loop test is about?"
+    ],
+    "Add a guard so both checks can go, as a new project."
+  ]
 }

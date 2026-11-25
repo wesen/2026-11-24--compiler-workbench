@@ -1,14 +1,16 @@
 {
   "title": "Enums and match",
-  "about": "An enum with an explicit value, a match over it, and a record. The front end lowers match into compares and branches.",
+  "about": [
+    "An enum with an explicit value, a match over it, and a record.",
+    "The front end lowers match into compares and branches."
+  ],
   "group": "Control flow",
   "pipeline": "O2",
-  "inputs": {
-    "area": {
-      "k": [-50, 50]
-    }
-  },
+  "inputs": { "area": { "k": [-50, 50] } },
   "chapter": "language",
   "focus": 6,
-  "try": ["How does the front end lower match? Show me the ops for line 6.", "How are record fields laid out in memory, judging by the loads?"]
+  "try": [
+    "How does the front end lower match? Show me the ops for line 6.",
+    "How are record fields laid out in memory, judging by the loads?"
+  ]
 }

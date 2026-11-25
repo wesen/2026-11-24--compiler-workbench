@@ -1,1 +1,4 @@
-The entry block declares a and b, so it adds nothing; the branches add a or b, and the loop adds a. The solver is the same one liveness and ranges use. A set over a finite program has finite height, so no widening is needed.
+The entry block declares a and b, so it adds nothing; the branches add a
+or b, and the loop adds a. The solver is the same one liveness and
+ranges use. A set over a finite program has finite height, so no
+widening is needed.

@@ -1,16 +1,19 @@
 {
   "title": "What licm must not hoist",
-  "about": "a / b is invariant, but it can trap. Hoisting it out of a loop that runs zero times would add a trap that was not there.",
+  "about": [
+    "a / b is invariant, but it can trap. Hoisting it out of a loop",
+    "that runs zero times would add a trap that was not there."
+  ],
   "group": "Loops",
   "pipeline": "loops",
-  "inputs": {
-    "ratio": {
-      "n": [0, 5],
-      "a": [-50, 50],
-      "b": [-3, 3]
-    }
-  },
+  "inputs": { "ratio": { "n": [0, 5], "a": [-50, 50], "b": [-3, 3] } },
   "chapter": "loops",
   "focus": 4,
-  "try": ["Write a version of licm that also hoists divisions and show me the counterexample the check finds.", "Where in licm is the purity test?"]
+  "try": [
+    [
+      "Write a version of licm that also hoists divisions and show me",
+      "the counterexample the check finds."
+    ],
+    "Where in licm is the purity test?"
+  ]
 }

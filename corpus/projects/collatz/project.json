@@ -1,14 +1,22 @@
 {
   "title": "Collatz steps",
-  "about": "A data-dependent loop with a branch on the parity. The step limit keeps runaway inputs from hanging the checks.",
+  "about": [
+    "A data-dependent loop with a branch on the parity. The step limit",
+    "keeps runaway inputs from hanging the checks."
+  ],
   "group": "Programs",
   "pipeline": "O2",
-  "inputs": {
-    "collatz": {
-      "n": [1, 2000]
-    }
-  },
+  "inputs": { "collatz": { "n": [1, 2000] } },
   "chapter": "checks",
   "focus": 5,
-  "try": ["Show me how && became a temporary, and what ranges knows about x inside the loop.", "Rewrite collatz so strength can fire, as a new project, and measure the difference."]
+  "try": [
+    [
+      "Show me how && became a temporary, and what ranges knows about",
+      "x inside the loop."
+    ],
+    [
+      "Rewrite collatz so strength can fire, as a new project, and",
+      "measure the difference."
+    ]
+  ]
 }

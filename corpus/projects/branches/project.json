@@ -1,14 +1,19 @@
 {
   "title": "Branches, jump threading, block merging",
-  "about": "A sign function and a grade ladder. The cfg pass threads jumps through empty blocks and merges straight lines.",
+  "about": [
+    "A sign function and a grade ladder. The cfg pass threads jumps",
+    "through empty blocks and merges straight lines."
+  ],
   "group": "Control flow",
   "pipeline": "O1",
-  "inputs": {
-    "grade": {
-      "score": [40, 100]
-    }
-  },
+  "inputs": { "grade": { "score": [40, 100] } },
   "chapter": "control",
   "focus": 7,
-  "try": ["Explain how cfg decides a block can be merged with its successor.", "What do the dominator trees of sign and grade look like?"]
+  "try": [
+    [
+      "Explain how cfg decides a block can be merged with its",
+      "successor."
+    ],
+    "What do the dominator trees of sign and grade look like?"
+  ]
 }

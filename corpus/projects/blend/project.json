@@ -1,14 +1,15 @@
 {
   "title": "Blend: fold, hoist, check bounds",
-  "about": "The running example of the spec: a constant to fold, an expression to hoist out of the loop, and a bounds check on every charCodeAt.",
+  "about": [
+    "The running example of the spec: a constant to fold, an",
+    "expression to hoist out of the loop, and a bounds check on every",
+    "charCodeAt."
+  ],
   "group": "Start here",
   "pipeline": "O2",
   "inputs": {
     "blend": {
-      "work": {
-        "buffer": [40, 40],
-        "cell": [0, 255]
-      },
+      "work": { "buffer": [40, 40], "cell": [0, 255] },
       "n": [0, 40],
       "a": [-100, 100],
       "b": [-100, 100]
@@ -16,5 +17,14 @@
   },
   "chapter": "welcome",
   "focus": 5,
-  "try": ["Why does the bounds check on work.charCodeAt(i) survive O2 here?", "Change the loop bound to work.length in a new project and show me what bce does."]
+  "try": [
+    [
+      "Why does the bounds check on work.charCodeAt(i) survive O2",
+      "here?"
+    ],
+    [
+      "Change the loop bound to work.length in a new project and show",
+      "me what bce does."
+    ]
+  ]
 }

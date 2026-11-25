@@ -1,16 +1,21 @@
 {
   "title": "Nested loops",
-  "about": "Two loops, one inside the other. The loops fact finds both; licm can hoist r * cols out of the inner one.",
+  "about": [
+    "Two loops, one inside the other. The loops fact finds both; licm",
+    "can hoist r * cols out of the inner one."
+  ],
   "group": "Control flow",
   "pipeline": "O2",
   "inputs": {
-    "grid": {
-      "rows": [0, 12],
-      "cols": [0, 12],
-      "k": [-9, 9]
-    }
+    "grid": { "rows": [0, 12], "cols": [0, 12], "k": [-9, 9] }
   },
   "chapter": "loops",
   "focus": 5,
-  "try": ["Which values are invariant in which loop? Answer from the loops fact.", "Run licm twice. Does the second run find anything?"]
+  "try": [
+    [
+      "Which values are invariant in which loop? Answer from the loops",
+      "fact."
+    ],
+    "Run licm twice. Does the second run find anything?"
+  ]
 }

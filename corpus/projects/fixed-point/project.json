@@ -1,20 +1,22 @@
 {
   "title": "Fixed-point arithmetic",
-  "about": "Q8 multiply with rounding and clamping. Shifts by constants and Math.min/max everywhere.",
+  "about": [
+    "Q8 multiply with rounding and clamping. Shifts by constants and",
+    "Math.min/max everywhere."
+  ],
   "group": "Programs",
   "pipeline": "O2",
   "inputs": {
-    "qmul": {
-      "a": [-4096, 4096],
-      "b": [-4096, 4096]
-    },
-    "lerp": {
-      "a": [-1000, 1000],
-      "b": [-1000, 1000],
-      "t": [0, 256]
-    }
+    "qmul": { "a": [-4096, 4096], "b": [-4096, 4096] },
+    "lerp": { "a": [-1000, 1000], "b": [-1000, 1000], "t": [0, 256] }
   },
   "chapter": "backend",
   "focus": 3,
-  "try": ["Show me how Math.min and Math.max are lowered, from ops to instructions.", "Is lerp(a, b, 256) always b? Check it with cases."]
+  "try": [
+    [
+      "Show me how Math.min and Math.max are lowered, from ops to",
+      "instructions."
+    ],
+    "Is lerp(a, b, 256) always b? Check it with cases."
+  ]
 }

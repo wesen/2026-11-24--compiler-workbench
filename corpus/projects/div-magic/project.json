@@ -1,17 +1,22 @@
 {
   "title": "Division by constants",
-  "about": "x % 10 and x / 10 in a loop, and x / 7 and x / -3. The backend uses multiply-high and shifts instead of div.",
+  "about": [
+    "x % 10 and x / 10 in a loop, and x / 7 and x / -3. The backend",
+    "uses multiply-high and shifts instead of div."
+  ],
   "group": "Division",
   "pipeline": "O2",
   "inputs": {
-    "digitsum": {
-      "x": [-100000, 100000]
-    },
-    "sevenths": {
-      "x": [-1000, 1000]
-    }
+    "digitsum": { "x": [-100000, 100000] },
+    "sevenths": { "x": [-1000, 1000] }
   },
   "chapter": "backend",
   "focus": 5,
-  "try": ["Derive the magic number for 7 and check it against the listing.", "How many instructions does digitsum run with and without divmagic?"]
+  "try": [
+    "Derive the magic number for 7 and check it against the listing.",
+    [
+      "How many instructions does digitsum run with and without",
+      "divmagic?"
+    ]
+  ]
 }

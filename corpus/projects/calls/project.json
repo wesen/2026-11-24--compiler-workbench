@@ -1,9 +1,18 @@
 {
   "title": "Helpers and the calling convention",
-  "about": "energy calls sq three times and clamp once. a, b and c are live across the calls, so they need callee-saved registers.",
+  "about": [
+    "energy calls sq three times and clamp once. a, b and c are live",
+    "across the calls, so they need callee-saved registers."
+  ],
   "group": "Calls",
   "pipeline": "O2",
   "chapter": "regalloc",
   "focus": 6,
-  "try": ["Which values cross a call in energy and which registers did they get?", "How big is the frame of energy and what is in it?"]
+  "try": [
+    [
+      "Which values cross a call in energy and which registers did",
+      "they get?"
+    ],
+    "How big is the frame of energy and what is in it?"
+  ]
 }
