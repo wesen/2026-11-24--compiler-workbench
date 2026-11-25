@@ -29,7 +29,7 @@ RelatedFiles:
       Note: O2 on Candela with the meaning check
 ExternalSources: []
 Summary: "Investigation diary of the subagent that extended typed.blocks with f32 values, addressing and value-record results, lifted the Candela gallery program from the tape, checked the evaluator against the reference compiler, and made the passes float-safe (inventory steps 1-4)."
-LastUpdated: 2026-11-24T21:30:00-05:00
+LastUpdated: 2026-11-24T23:10:00-05:00
 WhatFor: "Evidence trail and resume point for inventory steps 1-4 (analysis/03 §5-§6)."
 WhenToUse: "Read before extending the f32 domain, writing the f32 backend (step 5) or the Candela specialization (step 6)."
 ---
@@ -474,3 +474,68 @@ This step started O2 on the whole Candela program with the meaning check against
 
 ### Technical details
 - The per-pass contract is `optimizationContract({ inputs, count: 40, seed: 7 })`: 332 functions × 40 cases = 13,280 cases per pass, compared against r0.
+
+## Step 9: O2 on Candela keeps its meaning; what each pass did
+
+The O2 run of Step 8 finished. All 16 passes ran on the whole Candela program, each checked against r0 on 13,280 cases, and none was rejected. They made 13 revisions and removed 23% of the statements. The head agrees with r0 on all 33,142 decided cases of the final 100-case check; 58 cases hit the step limit, and none disagrees.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 (and the coordinator's request in Step 8).
+**Assistant interpretation:** Task 5, second half: report revisions per pass, statement counts before and after, and rejections.
+**Inferred user intent:** Know whether the existing optimizer is safe on Candela and what it achieves there, as the baseline for the Candela-fact passes of step 6.
+**Commit (code):** fe5a8fe (the tool as run, apart from the later `--limit` and `--final-limit` flags; see What didn't work); this diary step is committed with the next commit.
+
+### What I did
+- `timeout 9000 node --max-old-space-size=12288 tools/candela-o2.mjs --json > scratchpad/o2-candela.json 2> scratchpad/o2-candela.err` (task `bmpm7lntd`), on the build of 0d1bc1f.
+
+### Why
+- See Step 8.
+
+### What worked
+- Per pass (revision, edits by kind, functions touched, statements before and after):
+  ```
+  cfg        r1 974 edits {"retarget":488,"unreachable":438,"replaceStmt":2,"remove":4,"move":38,"merge":4} in 110 fns, stmts 12358 -> 11918
+  fold       r2 676 edits {"replace":676} in 103 fns, stmts 11918 -> 11918
+  simplify   r3 48 edits {"replace":48} in 19 fns, stmts 11918 -> 11918
+  constprop  r4 925 edits {"replace":925} in 124 fns, stmts 11918 -> 11918
+  fold       r5 114 edits {"replace":114} in 53 fns, stmts 11918 -> 11918
+  simplify      -
+  dce        r6 2164 edits {"remove":2164} in 144 fns, stmts 11918 -> 9754
+  cfg        r7 18 edits {"replaceStmt":3,"retarget":12,"unreachable":3} in 3 fns, stmts 9754 -> 9751
+  licm       r8 87 edits {"local":19,"insert":27,"replace":19,"block":8,"retarget":14} in 8 fns, stmts 9751 -> 9778
+  lvn        r9 256 edits {"local":64,"replace":128,"insert":64} in 38 fns, stmts 9778 -> 9842
+  strength      -
+  bce           -
+  subst      r10 430 edits {"replace":215,"remove":215} in 160 fns, stmts 9842 -> 9627
+  subst      r11 280 edits {"replace":140,"remove":140} in 132 fns, stmts 9627 -> 9487
+  dce        r12 2 edits {"remove":2} in 2 fns, stmts 9487 -> 9485
+  cfg        r13 20 edits {"retarget":4,"unreachable":6,"remove":2,"move":6,"merge":2} in 2 fns, stmts 9485 -> 9479
+  ```
+- Sizes: r0 `{"blocks":2409,"stmts":12358,"values":37220,"locals":10383}`, head r13 `{"blocks":1970,"stmts":9479,"values":29963,"locals":10466}`.
+- Final check (100 cases per function, `candelaInputs`, default limit 2·10^4): `{"total":33200,"agree":33142,"disagree":0,"inconclusive":58,"counterexamples":[]}`.
+- Timings: pipeline 2,178 s (36.3 minutes), final check 153 s, total 2,343 s. Per pass 56–226 s (Step 8 lists the first eleven; then bce 70 s, subst 161 s and 226 s, dce 194 s, cfg 147 s).
+
+### What didn't work
+- No pass was rejected and nothing crashed. One deviation: the process loaded `tools/candela-o2.mjs` before I added `--final-limit`. So its final check used the meaning check's default limit (2·10^4), not 2·10^5. Step 8's measurement shows the difference to be small (101 against 87 limit cases per 13,280). The 58 inconclusive cases are of that kind.
+
+### What I learned
+- **Where O2 gains on Candela.** dce removes 2,164 statements, after constprop and fold turn the generator's constant locals into constants and leave their assignments dead. cfg removes 438 unreachable blocks (the generator's `if` arms after returns). subst merges 355 temporaries into their only readers. licm hoists invariant f32 and i32 expressions out of loops in 8 functions, and lvn shares 64 repeated pure expressions; both add statements (copies into `inv` and `vn` locals).
+- **Where it does not.** strength finds no `i32` division or remainder by a power of two with a non-negative operand. bce finds nothing, because on the tape a checked address is one `caddr` value, not the Wasm branch pattern bce recognizes. A `caddr`-aware bounds-check elimination is the gap.
+- The f32 rules held under the real pipeline: fold changed 676 + 114 values (i32 and f32 constants) and simplify 48 (i32 only, by construction), and the meaning check found nothing to reject.
+
+### What was tricky to build
+- Nothing beyond Step 8.
+
+### What warrants a second pair of eyes
+- licm and lvn increase the statement count (9,751 → 9,842). They trade copies for fewer evaluations, which only a backend with a register allocator turns into a gain. Statement count is not the measure of success here; instruction counts of the f32 backend's images (step 5) will be.
+- The per-pass checks are sampled (40 cases per function, with the edge sweep for f32 parameters). They show that no sampled behaviour changed, not that none can.
+
+### What should be done in the future
+- A bounds-check pass for `caddr`.
+- The per-scene specialization (step 6) starts from this head: the scene index is a parameter-derived i32 that constprop cannot see without the Candela fact.
+
+### Code review instructions
+- `tools/candela-o2.mjs`; reproduce with `node --max-old-space-size=12288 tools/candela-o2.mjs` (about 40 minutes, 4–6 GB), or `IRWB_CANDELA=1 node --test tests/typed/candela.test.mjs`.
+
+### Technical details
+- Per-pass contract: `optimizationContract({ inputs: candelaInputs(st), count: 40, seed: 7 })` against r0; final: `meaningKept({ inputs, count: 100 })`.
