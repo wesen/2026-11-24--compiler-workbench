@@ -527,6 +527,7 @@ test("P2.6: the book's table against the reference compiler, and 5160 bytes agai
     const ref = steps(refImage(id, ps.source), st0, fn, bench).steps;
     assert.deepEqual([r0, o2, ref], expected, id);
   }
+  if (process.env.IRWB_FULL !== '1') return; // the corpus-wide sizes run O2 on all 44 projects (~60 s)
   let ours = 0, theirs = 0;
   for (const id of projectIds()) {
     const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
