@@ -153,3 +153,7 @@ Candela rendering: gallery scene table vendored as data; CandelaHost (port of ds
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/candela-render.ts — scene table, host protocol, views
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/candela-render.mjs — render tool
+
+## 2026-11-24
+
+IRWB-002 created by a Fable subagent and merged: intern guide (Part 1, the system from the code) and research agenda (54 items, ten workstreams), uploaded to reMarkable /ai/2026/11/25/IRWB-002 (verified by listing).

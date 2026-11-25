@@ -1091,3 +1091,25 @@ The program falls from 332 to 137 functions and from 12,358 to 5,400 statements 
 
 ### What warrants a second pair of eyes
 - **The sampled contract here compares only the four entries**, with synthetic K rows. Many `cdlRenderSpan` cases may hit the step limit. The decisive evidence for a scene kernel is therefore the frame comparison, which uses the scene's real rows.
+
+## Step 20: the research agenda (IRWB-002) merged; its upload verified
+
+The Fable subagent finished the intern guide and research agenda the user asked for, in its own ticket, IRWB-002. I checked that its branch touches only that ticket, merged it, and confirmed the reMarkable upload by listing the folder.
+
+### Prompt Context
+**User prompts (verbatim):**
+- "So, launch a fable subagent and have them look at @/tmp/irs.md and @/tmp/irs2.md and the current code and approach, and write a new docmgr ticket … Have the subagent stop after the upload. Have them keep a detailed diary as they work, and commit scripts they write…"
+- Later: "does the fable agent specifically look for optimizing candela programs, or are they looking for wide areas of compielr research? (it should be the latter)". I relayed this as a scope steer. The agent applied it: it added workstream J (languages and IR design), D7, H5, I4 and I5, SSA-based and PBQP register allocation, and autotuning. Its section 18 states that Candela is a workload, not the focus.
+
+### What I did
+- `git diff --name-only irwb-001/import-v6-prototype...worktree-agent-afc970df0c231de2f`: only `ttmp/2026/11/24/IRWB-002…` (12 files, 2,886 lines).
+- Merged as `2ad1f33`.
+- `remarquee cloud ls /ai/2026/11/25/IRWB-002` → `[f] IRWB-002 Intern Guide and Research Agenda`.
+
+### What worked
+- **The guide:** 170 KB. Part 1 explains the system from the code. Part 2 has 54 work items in ten workstreams, each with pseudocode, why here, needs, acceptance, size and dependencies. Part 3 has phases, seats, risks, a file index and a glossary.
+- **Its diary:** 9 steps. Its scripts 01–06 are in IRWB-002 `scripts/`.
+- **One new measurement:** 65 Candela functions are exact textual copies of another, 74 ignoring the scene prefix (`scripts/05-candela-duplicate-functions.py`). That supports identical-code folding (H4).
+
+### What warrants a second pair of eyes
+- **The PDF's rendering was not inspected.** It has wide tables and box-drawing diagrams. The uploaded copy also predates the agent's diary step 9.
