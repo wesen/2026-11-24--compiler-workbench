@@ -1004,3 +1004,60 @@ The user asked to see a Candela program's rendered image when run on the emulato
 
 ### Code review instructions
 - `src/typed/candela-render.ts`, then run `node tools/candela-render.mjs --scene R-01 --stride 2` and `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/11-candela-render-compare.mjs B-01 4`.
+
+## Step 18: field bindings, entry-only contracts and dead-function elimination (for task ckco)
+
+Per-scene Candela kernels need three things the compiler did not have:
+- **Field bindings.** Bind a record field, `K.scene`, rather than a parameter.
+- **Entry-only contracts.** A contract that compares only the program's entries, the four functions of the gallery slot, so functions only they call may change or disappear.
+- **A program-level pass.** `dfe` removes functions no call from the entries reaches.
+
+All three are built and tested on a fixture. A record-field binding turns a dispatch into one call, and `dfe` then removes the other callee and an unused function.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10 ("go go go go", design-doc 05 §7).
+**Commit (code):** the commit after this step.
+
+### What I did
+- **`src/typed/evaluate.ts`:** `MeaningParams.roots`. When given, cases come only from those functions, and the roots are part of the check's key and description.
+- **`src/typed/program.ts`:**
+  - `options.entries`: the program's entries. Contracts (`apply`), `check` and `verify` compare only them.
+  - `assume` accepts field bindings `{ record, field, value }`, assuming `<param>.<field>` for every parameter of that record type in every function.
+  - `inputs` turns a dotted assumption into `{ record: { …, field: { oneOf: [v] } } }` inside the parameter's spec.
+- **`src/typed/specialize.ts`:**
+  - `Binding` has either a parameter form (`fn`, `param`) or a field form (`record`, `field`).
+  - The pass reads the record layout from `st.frontEnd.records` (Candela: `K.scene` is the i32 at offset 28). It replaces `load32[p + offset]`, where `p` is a parameter of that record type with its own value, by the constant.
+  - It refuses with `TxError('unsupported')` when the function stores to that field through such a parameter.
+- **`src/typed/passes.ts`:** `dfe`, a `definePass` over the whole program.
+  - Reachability by calls from `params.roots`. Dead functions are removed together with their `op:<fn>#` front-end ops (everything else goes with the function in `toNative`).
+  - Correspondence: one `removed` entry per vanished entity, `because: ["entries: …"]`.
+  - Report edits of kind `removeFn`.
+  - Its spec is marked `program: true`, so `strategyRegistry` does not build per-function variants of it.
+- **`tests/typed/dfe.test.mjs`:**
+  - `dfe` removes `unused` and refuses to run without roots.
+  - Binding `Q.mode = 1`, then constprop, fold, cfg, dce, cfg and dfe, leaves `entry`, `pick` and `two`, and the check compares only `entry`.
+  - A program that writes `q.mode` is refused.
+- **`tests/workbench/strategies.test.mjs`:** the compiler now lists 13 passes.
+
+### Why
+- **Roots are a parameter.** A program cannot know its entries from its own text: an uncalled function may be exactly what the host calls. Candela's entries come from `link.js` (`cdlLayout`, `cdlInit`, `cdlSky`, `cdlRenderSpan`).
+- **The contract has to follow.** After `dfe`, a removed function has no cases to run. Comparing only the entries is what the program means to its host.
+
+### What worked
+- 309 tests pass, 1 skipped.
+
+### What didn't work
+- **The fixture did not parse** (`expected identifier`). The front end requires a final `return` after an if/else whose arms both return; bisecting the fixture's functions found it. The fixture now assigns `r` in both arms and returns it.
+- **`one` was still called** after specialize, fold, cfg, dce and cfg. The specialized `m = 1` is an assignment, so `constprop` must run before `fold`. With it, `pick` reduces to `t5 = two(x); r = t5; return r`.
+- **The first `dfe` declared writes on entity kind `function`.** The projection's kind is `fn`, while the store's record kind is `function`.
+
+### What I learned
+- A field binding is checkable in two ways. Statically, the pass refuses if the function writes the field. Dynamically, the restricted contract compares with r0 only on inputs where the field holds the value.
+
+### What warrants a second pair of eyes
+- **The field rewrite matches only loads through a parameter whose only reaching definition is itself.** A copy of `K` into another local is not followed. In Candela every K-typed value is a parameter (`q_k`).
+- **The static write check covers direct stores through the parameter only.** A store through a computed address that aliases the field is left to the contract.
+
+### Code review instructions
+- `src/typed/specialize.ts` (the field branch), `src/typed/passes.ts` (`dfe`), `src/typed/program.ts` (`entries`, `assume`, `inputs`).
+- `node --test tests/typed/dfe.test.mjs`.

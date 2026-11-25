@@ -71,6 +71,8 @@ export interface TypedPassSpec {
   readonly writes: readonly WriteKind[];
   readonly preserves?: readonly AnalysisName[];
   body(ctx: BodyContext): void;
+  /** A pass over the whole program (it removes functions), not per function: never restricted to one function. */
+  readonly program?: true;
 }
 
 /** Compiler Workbench write kinds -> the entity and relation kinds of the projection they may change. */
@@ -949,6 +951,99 @@ export const bcm = typedPass({
   },
 });
 
+/**
+ * Dead-function elimination: functions no call reaches from the program's entries are removed. The entries are a
+ * parameter (`params.roots`: the functions the host calls, e.g. the four of Candela's gallery slot); a program
+ * cannot know them from its own text, since an uncalled function may be exactly what the host calls.
+ *
+ * Valid under a contract that compares only the entries (`MeaningParams.roots`): a removed function was not
+ * callable from any entry, so no entry's result can depend on it. Typically run after a specialization has turned
+ * dispatches into direct calls, when whole families of functions lose their last caller.
+ */
+const dfeDefinition = definePass<TypedBlocks, Record<string, any>, Record<string, unknown>>({
+  id: 'typed.dfe',
+  version: '1',
+  description:
+    'dead-function elimination: functions no call reaches from the entries (params.roots) are removed',
+  ir: BlocksIR,
+  adapter: blocksAdapter,
+  needs: {},
+  writes: {
+    entities: ['fn', 'local', 'block', 'stmt.*', 'value.*', 'op'],
+    relations: ['declares', 'contains', 'emits', 'uses', 'operand', 'reads', 'writes', 'succ', 'jump'],
+  },
+  preserves: [],
+  run({ before, params }) {
+    const roots = ((params ?? {}) as { roots?: readonly string[] }).roots ?? [];
+    if (!roots.length)
+      throw new TxError('unsupported', 'dfe needs params.roots: the functions the host calls');
+    const st = Store.from(before.value);
+    for (const r of roots) st.fn(r);
+    const callees = (f: WorkFn): string[] => {
+      const out = new Set<string>();
+      const walk = (id: string | undefined) => {
+        if (!id) return;
+        const v = st.get(id) as ValueRec;
+        if (v.op === 'call') out.add(v.imm as string);
+        v.args.forEach(walk);
+      };
+      for (const b of f.blocks)
+        for (const sid of b.stmts) {
+          const s = st.get(sid) as StmtRec;
+          walk(s.value);
+          walk(s.cond);
+          walk(s.addr);
+        }
+      return [...out];
+    };
+    const reached = new Set<string>(roots),
+      todo = [...roots];
+    while (todo.length)
+      for (const c of callees(st.fn(todo.pop()!))) if (!reached.has(c)) (reached.add(c), todo.push(c));
+    const dead = [...st.fns.keys()].filter(n => !reached.has(n));
+    if (!dead.length) return;
+    const rev = before.value.rev + 1;
+    for (const n of dead) {
+      const f = st.fn(n);
+      st.fns.delete(n);
+      st.ents.delete(f.id);
+      for (const id of [...st.ents.keys()]) if (id.startsWith(`op:${n}#`)) st.ents.delete(id);
+    }
+    st.rev = rev;
+    const native = st.toNative();
+    const because = [`entries: ${[...roots].sort().join(', ')}`];
+    const after = new Set(blocksEntities(native).map(e => e.id));
+    const correspondence: CorrespondenceEntry[] = blocksEntities(before.value)
+      .map(e => e.id)
+      .filter(id => !after.has(id))
+      .sort()
+      .map(id => ({ from: [id], to: [], relation: 'removed', because }));
+    const edits: Edit[] = dead.map((fn, i) => ({
+      id: `edit:r${rev}.${i}`,
+      rev,
+      pass: 'dfe',
+      fn,
+      kind: 'removeFn',
+      because,
+      note: `no call reaches ${fn} from the entries`,
+    }));
+    const report: RevisionReport = { pass: 'dfe', rev, edits, fns: dead, kinds: { removeFn: dead.length } };
+    return { native, correspondence, edits: edits.length, report };
+  },
+});
+export const dfe: TypedPass = Object.freeze({
+  ...dfeDefinition,
+  typed: {
+    name: 'dfe',
+    about: 'dead-function elimination: functions no call reaches from the entries (params.roots) are removed',
+    writes: ['cfg', 'locals'],
+    program: true,
+    body: () => {
+      throw new TxError('unsupported', 'dfe works on the whole program');
+    },
+  },
+}) as TypedPass;
+
 const countReads = (st: Store, id: string, l: number): number => {
   const v = st.get(id) as ValueRec;
   return (v.op === 'get' && v.imm === l ? 1 : 0) + v.args.reduce((n, a) => n + countReads(st, a, l), 0);
@@ -1031,6 +1126,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   bce,
   subst,
   bcm,
+  dfe,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */

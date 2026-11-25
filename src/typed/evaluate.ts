@@ -541,6 +541,11 @@ export interface MeaningParams {
   readonly seed?: number;
   readonly inputs?: ProgramInputs;
   readonly limit?: number;
+  /**
+   * The functions the program's host calls. When given, only they are compared: the program's meaning is what its
+   * entries compute, and functions only they call may change or disappear (dead-function elimination).
+   */
+  readonly roots?: readonly string[];
 }
 
 const meaningChecks = new Map<string, DifferentialInvariant<any>>();
@@ -562,14 +567,15 @@ export function meaningKept(
   const count = params.count ?? 40,
     seed = params.seed ?? 7,
     inputs = params.inputs ?? {},
-    limit = params.limit ?? 2e4;
-  const key = canonicalJson({ count, seed, inputs, limit });
+    limit = params.limit ?? 2e4,
+    roots = params.roots ? [...params.roots].sort() : null;
+  const key = canonicalJson(roots ? { count, seed, inputs, limit, roots } : { count, seed, inputs, limit });
   let check = meaningChecks.get(key);
   if (!check) {
     check = differential<{ origin: typeof BlocksIR; candidate: typeof BlocksIR }, Case, RunResult>({
       id: 'typed.meaning-kept',
       version: `1+${hash(key)}`,
-      description: `every function agrees with the origin on ${count} generated cases (seed ${seed})`,
+      description: `${roots ? `the entries ${roots.join(', ')} agree` : 'every function agrees'} with the origin on ${count} generated cases (seed ${seed})`,
       inputs: { origin: BlocksIR, candidate: BlocksIR },
       baseline: 'origin',
       subject: 'candidate',
@@ -578,7 +584,7 @@ export function meaningKept(
       random: rng,
       cases: ({ origin }) => {
         const st = storeOf(origin.value);
-        return [...st.fns.keys()].flatMap(fn => casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }));
+        return (roots ?? [...st.fns.keys()]).flatMap(fn => casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }));
       },
       run: (_side, art, c) =>
         evaluate(storeOf((art as Artifact<TypedBlocks>).value), c.fn, c.args, c.memory, { limit }),

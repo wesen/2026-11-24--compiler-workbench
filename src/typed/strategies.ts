@@ -119,16 +119,18 @@ export function strategyRegistry(
   const contract = optimizationContract({ inputs: p.inputs, count: 40, seed: 7 });
   const passes: TypedPass[] = [...Object.values(PASSES), ...USER_PASSES.values()];
   // each pass also restricted to one function, as `typed.<pass>@<fn>` (the per-function search applies these)
-  const scoped: TypedPass[] = passes.flatMap(pass =>
-    p.fns().map(fn =>
-      typedPass({
-        ...pass.typed,
-        name: `${pass.typed.name}@${fn}`,
-        about: `${pass.typed.about} (only in ${fn})`,
-        body: ctx => (ctx.f.name === fn ? pass.typed.body(ctx) : undefined),
-      }),
-    ),
-  );
+  const scoped: TypedPass[] = passes
+    .filter(pass => !pass.typed.program)
+    .flatMap(pass =>
+      p.fns().map(fn =>
+        typedPass({
+          ...pass.typed,
+          name: `${pass.typed.name}@${fn}`,
+          about: `${pass.typed.about} (only in ${fn})`,
+          body: ctx => (ctx.f.name === fn ? pass.typed.body(ctx) : undefined),
+        }),
+      ),
+    );
   for (const pass of [...passes, ...scoped])
     register(
       passAlgorithm(pass, {

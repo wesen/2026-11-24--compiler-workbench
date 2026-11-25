@@ -91,6 +91,11 @@ export class Program {
       project?: string;
       /** How to ingest: from the tape (`{ tape: true, maxSourceLength }`, e.g. for Candela) or by default. */
       ingest?: IngestOptions;
+      /**
+       * The functions the host calls (Candela: the gallery slot's four). When given, checks compare only these, and
+       * passes may change or remove functions only they call. Absent: every function is an entry.
+       */
+      entries?: readonly string[];
     } = {},
   ) {
     let r0: Artifact<TypedBlocks>;
@@ -139,7 +144,19 @@ export class Program {
     const out: Record<string, Record<string, unknown>> = Object.fromEntries(
       Object.entries(base).map(([f, v]) => [f, { ...v }]),
     );
-    for (const [f, params] of Object.entries(this.assumptions)) out[f] = { ...(out[f] ?? {}), ...params };
+    for (const [f, params] of Object.entries(this.assumptions))
+      for (const [k, v] of Object.entries(params)) {
+        const dot = k.indexOf('.');
+        if (dot < 0) {
+          out[f] = { ...(out[f] ?? {}), [k]: v };
+          continue;
+        }
+        // a record field: fix it inside the parameter's record specification
+        const param = k.slice(0, dot),
+          field = k.slice(dot + 1);
+        const spec = ((out[f] ?? {})[param] ?? { record: {} }) as { record?: Record<string, unknown> };
+        out[f] = { ...(out[f] ?? {}), [param]: { ...spec, record: { ...(spec.record ?? {}), [field]: { oneOf: [v] } } } };
+      }
     return out as ProgramInputs;
   }
   /**
@@ -147,12 +164,21 @@ export class Program {
    * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
    */
   assume(
-    bindings: readonly { fn: string; param: string; value: number }[],
+    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
   ): Record<string, Record<string, number>> {
     const previous = JSON.parse(JSON.stringify(this.assumptions));
     for (const b of bindings) {
-      this.fname(b.fn);
-      (this.assumptions[b.fn] ??= {})[b.param] = b.value;
+      if (b.record && b.field) {
+        // every parameter of that record type, in every function
+        const st = storeOf(this.head.value);
+        for (const f of st.fns.values())
+          f.params.forEach((t, i) => {
+            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value;
+          });
+        continue;
+      }
+      this.fname(b.fn!);
+      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value;
     }
     return previous;
   }
@@ -229,7 +255,12 @@ export class Program {
     const contract =
       opts.check === false
         ? undefined
-        : optimizationContract({ inputs: this.inputs, count: opts.count ?? 40, seed: opts.seed ?? 7 });
+        : optimizationContract({
+            inputs: this.inputs,
+            count: opts.count ?? 40,
+            seed: opts.seed ?? 7,
+            ...(this.options.entries ? { roots: this.options.entries } : {}),
+          });
     const r = await applyPass(pass, this.head, {
       manager: this.manager,
       params: opts.params,
@@ -570,7 +601,8 @@ export class Program {
     this.requireOk();
     const head = storeOf(this.head.value),
       base = storeOf(this.origin.value);
-    const rows = (opts.fn ? [this.fname(opts.fn)] : this.fns()).map(f => {
+    const all = this.options.entries ? this.fns().filter(f => this.options.entries!.includes(f)) : this.fns();
+    const rows = (opts.fn ? [this.fname(opts.fn)] : all).map(f => {
       const cases = casesFrom(head, f, {
         count: opts.count ?? 100,
         seed: opts.seed ?? 7,
@@ -623,7 +655,12 @@ export class Program {
   /** The framework invariant behind `check`: one evidence record for the whole program (E5). */
   async verify(opts: { count?: number; seed?: number } = {}) {
     return this.manager.checkInvariant(
-      meaningKept({ inputs: this.inputs, count: opts.count ?? 100, seed: opts.seed ?? 7 }),
+      meaningKept({
+        inputs: this.inputs,
+        count: opts.count ?? 100,
+        seed: opts.seed ?? 7,
+        ...(this.options.entries ? { roots: this.options.entries } : {}),
+      }),
       { origin: this.origin, candidate: this.head },
     );
   }
