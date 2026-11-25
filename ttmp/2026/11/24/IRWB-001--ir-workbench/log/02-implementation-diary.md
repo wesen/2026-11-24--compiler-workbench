@@ -1144,3 +1144,70 @@ These are the agent's open issues:
 - **Stride 1 holds the page one row at a time, up to 0.9 s.** Splitting rows changes how spans are grouped and can change the output bits (V-03 differed in 36 of 180 compared floats). A Web Worker is the fix that keeps the bits.
 - **Previews pay about 2 ms per engine call** for memory copies in `referenceRun` and `CandelaHost.call`.
 - **`prettier --check`** flags `src/framework/passes/define-pass.ts` and `src/typed/candela-render.ts`.
+
+## Step 22: the f32 RV32F backend merged: every Candela function compiles, at r0 and at the O2 head
+
+The backend subagent finished task owi2. This compiler now lowers f32 code to RV32F: every one of Candela's 332 functions compiles at r0 and at the O2 head. The images agree with the evaluator on 100 cases per function with no disagreement, and they also agree with the reference compiler's `stock` image. I merged the branch without conflicts and repeated the integer parity checks on the merged tree; the i32 corpus is unchanged.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10 ("go go go go", design-doc 05 §4).
+**Commit (code):** f4fe470 (merge). The agent's commits run from 9e96e22 to eeeaeeb; its diary is `log/06-f32-backend-agent-diary.md`, 10 steps.
+
+### What I did
+- Checked that the branch does not touch the framework or the middle end (`src/framework`, `src/typed/{passes,analyses,specialize,strategies,program,evaluate}`). It touches none of them.
+- `git merge --no-ff --no-commit`: automatic, no conflicts.
+- Checks on the merged tree:
+  - `npx tsc`: clean.
+  - Full suite: 325 tests, 322 pass, 3 skipped (the opt-in Candela tests).
+  - `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs`: 21 of 21.
+  - `scripts/08-corpus-revisions.mjs`, diffed with the run before the framework changes: `corpus revisions IDENTICAL (44 projects)`.
+  - `npm run build:site`: ok.
+- Checked tasks owi2, t4dq and 9rcu with `docmgr task check`.
+
+### What worked
+These are the agent's measurements (`various/experiments/f32-backend-01-candela-images.{md,tsv,json}`), over the 32,985 cases every image finished:
+
+| image | bytes | instructions per case | disagree |
+|---|---:|---:|---:|
+| ours, r0 | 183,324 | 921.0 | 0 |
+| ours, O2 head | 151,748 | 870.3 | 0 |
+| reference, `stock` | 312,740 | 1,598.6 | 0 |
+| reference, `kernel` | 434,996 | 747.7 | 0 |
+
+- Our O2 image has 48.5% of `stock`'s bytes and executes 54.4% of its instructions.
+- Against `kernel`, it has 34.9% of the bytes and executes 116.4% of the instructions.
+
+### What I learned
+- **The gap to `kernel` is mostly inlining.** `kernel` inlines `q_floor` and `q_fract` into `noise3`: 8 calls where we make 14. Two further causes are f32 constants rebuilt at every use, and the copies inserted by licm and lvn, which are not coalesced. These match items E3 and H2 of the IRWB-002 agenda.
+- **Branch relaxation was needed** only by the O2 head: `[branchRange] branch of -4512 bytes is out of range`.
+
+### What warrants a second pair of eyes
+- **fa0–fa7 are pooled in calling functions** where a liveness analysis shows them free; the design pooled them in leaves only. This applies to f values only, so integer images are unchanged.
+- **The fs0–fs11 check covers only the function the host calls.**
+- **Frames over 2,032 bytes are refused.** No Candela function needs one.
+
+## Step 23: our own RV32 image as a render engine: B-01 bit-identical to the reference emulator
+
+With the backend in place, the render engine the UI agent had listed as "needs the f32 backend" can exist. The fourth engine lowers a Candela revision with this compiler's backend and runs it on the RV32 interpreter. B-01 at stride 4 rendered from our r0 image is bit-identical to the reference compiler's `kernel` image on the emulator: 0 of 19,200 floats differ.
+
+### What I did
+- **`src/workbench/candela.ts`:**
+  - `candelaArtifact(st)`: a Store as a `typed.blocks` artifact, cached per store, since hashing r0 takes seconds.
+  - `imageEngine(art, label)`: `lowerToImage(art).image`, cached per artifact, run with `runImage(img, name, args, mem, { limit: 4e9, counts: false })`. Its `counts` is set to `null`, because `ImageRun.counts` is a `Uint32Array` while the `RunResult` the host expects has a `Map`.
+- **`site-src/candela.js`:** engine `own` is enabled. It is labelled "our RV32 image · r0", or the project's revision when one is open.
+- **`tools/candela-render.mjs`:** `--engine image`, with `--head <file>` for a saved revision.
+- Exported both functions through `src/workbench/index.ts` and `site-src/wb.js`.
+
+### What worked
+- `scripts/11-candela-render-compare.mjs B-01 4 reference image`:
+  `{"differentBits":0,"reference":{"steps":13601596,"ms":8061},"image":{"steps":17920579,"ms":40214}}`.
+  Our r0 image takes 11,200 instructions per pixel against `kernel`'s 8,501.
+- `npx tsc` is clean. `tests/workbench/candela.test.mjs` passes 7 of 7. `build:site` is ok.
+- In Chromium, after a reload, the engine list shows `our RV32 image · r0` enabled. The render through the page was still running when this step was written.
+
+### What didn't work
+- **The first browser check showed the old, disabled option.** The bundle had the new label: `grep` for the plain text failed only because esbuild writes `·` as `\xB7`. The server sends `no-store`, so the page had been loaded before the rebuild; a reload showed the new list.
+- **The first typecheck failed** on the `counts` type (TS2322), fixed as above.
+
+### What warrants a second pair of eyes
+- **The 40 s wall time for our image is mostly not instructions.** That run lowered r0 inside the timing, and paid the per-call `placeCall` and memory copies of `runImage`. Compare instruction counts, not milliseconds.

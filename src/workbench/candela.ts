@@ -24,6 +24,11 @@ import {
   type CandelaView,
 } from '../typed/candela-render.js';
 import { evaluate, hash } from '../typed/evaluate.js';
+import { lowerToImage, runImage } from '../typed/backend/index.js';
+import { blocksAdapter } from '../typed/ir.js';
+import { createIRArtifact } from '../framework/ir/adapters.js';
+import type { Artifact } from '../framework/core/types.js';
+import type { TypedBlocks } from '../typed/model.js';
 import { ingest } from '../typed/lift.js';
 import { vendor } from '../typed/vendor.js';
 import type { Store } from '../typed/model.js';
@@ -132,6 +137,37 @@ export function evaluatorEngine(st: Store, label: string): CandelaEngineInfo {
     label,
     unit: 'statements',
     setupMs: 0,
+  };
+}
+
+/** A revision of Candela as an artifact (hashing r0's 12,358 statements takes seconds; done once per store). */
+const artifacts = new WeakMap<Store, Artifact<TypedBlocks>>();
+export function candelaArtifact(st: Store): Artifact<TypedBlocks> {
+  let a = artifacts.get(st);
+  if (!a) artifacts.set(st, (a = createIRArtifact(blocksAdapter, 'candela', st.toNative())));
+  return a;
+}
+const ownImages = new WeakMap<object, ReturnType<typeof lowerToImage>['image']>();
+/** This compiler's own RV32 image of a revision (the f32 backend), run on the RV32 interpreter. */
+export function imageEngine(art: Artifact<TypedBlocks>, label: string): CandelaEngineInfo {
+  let image = ownImages.get(art),
+    setupMs = 0;
+  if (!image) {
+    const t0 = performance.now();
+    image = lowerToImage(art).image;
+    setupMs = performance.now() - t0;
+    ownImages.set(art, image);
+  }
+  const img = image;
+  return {
+    engine: (name, args, mem) => ({
+      ...runImage(img, name, args, mem, { limit: 4e9, counts: false }),
+      counts: null,
+    }),
+    label,
+    unit: 'instructions',
+    setupMs,
+    imageBytes: img.value.bytes,
   };
 }
 

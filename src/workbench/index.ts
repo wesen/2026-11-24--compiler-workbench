@@ -30,6 +30,8 @@ export {
   candelaSource,
   compareFrames,
   evaluatorEngine,
+  imageEngine,
+  candelaArtifact,
   frameImage,
   frameOf,
   hasReferenceCompiler,

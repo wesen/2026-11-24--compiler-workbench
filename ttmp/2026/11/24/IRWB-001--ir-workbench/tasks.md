@@ -31,8 +31,8 @@
 - [x] R1 Obsidian report at the framework + parity milestone <!-- t:3x4l -->
 - [x] R2 Obsidian report at the Candela milestone <!-- t:z21g -->
 - [x] P4.4 O2+ pipeline: O2 then subst (the copy finding of the ordering search), O2 kept for parity <!-- t:4c1o -->
-- [ ] P4.5 f32 RV32F backend: selection, fa registers, ilp32f calls, tuples/results, caddr/aaddr/zero, frame arrays (subagent) <!-- t:owi2 -->
-- [ ] P4.6 Framework performance on large artifacts: cached canonical encoding of deep-frozen values, cheaper projection checks, same hashes <!-- t:9rcu -->
-- [ ] P4.7 caddr-aware bounds-check elimination (559 checked addresses in Candela) <!-- t:t4dq -->
+- [x] P4.5 f32 RV32F backend: selection, fa registers, ilp32f calls, tuples/results, caddr/aaddr/zero, frame arrays (subagent) <!-- t:owi2 -->
+- [x] P4.6 Framework performance on large artifacts: cached canonical encoding of deep-frozen values, cheaper projection checks, same hashes <!-- t:9rcu -->
+- [x] P4.7 caddr-aware bounds-check elimination (559 checked addresses in Candela) <!-- t:t4dq -->
 - [x] P4.8 Candela oracle against the reference kernel policy (pass groups now vendored) <!-- t:gxe6 -->
 - [ ] R3 Obsidian report at the f32-backend / Candela-optimization milestone <!-- t:tjdl -->

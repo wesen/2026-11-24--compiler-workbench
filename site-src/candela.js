@@ -14,6 +14,8 @@ import {
   candelaHost,
   referenceEngine,
   evaluatorEngine,
+  imageEngine,
+  candelaArtifact,
   liftCandela,
   renderProgressive,
   frameImage,
@@ -55,7 +57,13 @@ UI.loadCandela = function loadCandela() {
   loading = Promise.all([...lazy.compiler.map(add), add(lazy.data)]).then(() => {
     setVendor({ typedRv32: globalThis.typedRv32 });
     const data = globalThis.candelaData;
-    UI.candela = { data, scenes: parseSceneTable(data.scenes), source: candelaSource(data), r0: null, loadMs: performance.now() - t0 };
+    UI.candela = {
+      data,
+      scenes: parseSceneTable(data.scenes),
+      source: candelaSource(data),
+      r0: null,
+      loadMs: performance.now() - t0,
+    };
     UI.wb._projects.addBuiltin(candelaProject(data));
     return UI.candela;
   });
@@ -76,8 +84,12 @@ function engines() {
     { key: 'kernel', label: 'emulator · reference (kernel)' },
     { key: 'stock', label: 'emulator · reference (stock)' },
     { key: 'r0', label: 'evaluator · r0 (lifted)' },
-    { key: 'head', label: p ? `evaluator · ${p.rev} (project)` : 'evaluator · project (open it below)', off: !p },
-    { key: 'own', label: 'our RV32 image (needs the f32 backend)', off: true },
+    {
+      key: 'head',
+      label: p ? `evaluator · ${p.rev} (project)` : 'evaluator · project (open it below)',
+      off: !p,
+    },
+    { key: 'own', label: p ? `our RV32 image · ${p.rev} (project)` : 'our RV32 image · r0' },
   ];
 }
 function makeEngine(key) {
@@ -95,7 +107,18 @@ function makeEngine(key) {
     if (!p) throw new Error('open the Candela project first (below)');
     return evaluatorEngine(p._p.head, `evaluator · ${p.rev} of the Candela project`);
   }
-  throw new Error('our own RV32 image needs the f32 backend, which does not exist yet');
+  if (key === 'own') {
+    const p = projectOpen();
+    if (p) return imageEngine(p._p.head, `our RV32 image · ${p.rev} of the Candela project`);
+    // r0 lifted, hashed into an artifact once, then lowered by this compiler's backend
+    const t0 = performance.now();
+    c.r0 ??= liftCandela(c.source);
+    const art = candelaArtifact(c.r0);
+    const hashed = performance.now() - t0;
+    const e = imageEngine(art, 'our RV32 image · r0');
+    return { ...e, setupMs: e.setupMs + hashed };
+  }
+  throw new Error(`unknown engine ${key}`);
 }
 
 // ---------- drawing ----------
@@ -124,7 +147,8 @@ function statsHtml() {
   const st = S(),
     j = st.job,
     f = st.live;
-  if (j && j.phase === 'loading') return '<p class="cv-busy">loading the Candela program and the reference compiler…</p>';
+  if (j && j.phase === 'loading')
+    return '<p class="cv-busy">loading the Candela program and the reference compiler…</p>';
   if (j && j.phase === 'engine') return `<p class="cv-busy">preparing ${esc(j.label)}…</p>`;
   if (!f) return '<p class="dim">Pick a scene and an engine, then Render.</p>';
   const h = j ? j.entry : st.history[0];
@@ -136,9 +160,16 @@ function statsHtml() {
   if (h && h.setupMs) rows.push(['setup', `${secs(h.setupMs)} (compiling or lifting, once)`]);
   rows.push(['sky table', f.skyMs ? `${secs(f.skyMs)} · ${fmt(f.skySteps)} ${unit}` : j ? 'building…' : '']);
   if (f.pixelsDone) rows.push([unit, `${fmt(f.steps)} · ${fmt(f.steps / f.pixelsDone)} per pixel`]);
-  rows.push(['time', `${secs(f.ms)}${f.pixelsDone && f.ms > f.skyMs ? ` · ${fmt((f.pixelsDone * 1000) / (f.ms - f.skyMs))} pixels/s` : ''}`]);
+  rows.push([
+    'time',
+    `${secs(f.ms)}${f.pixelsDone && f.ms > f.skyMs ? ` · ${fmt((f.pixelsDone * 1000) / (f.ms - f.skyMs))} pixels/s` : ''}`,
+  ]);
   const passes = h ? h.passes : 1;
-  if (j && j.progress) rows.push(['progress', `pass ${j.progress.pass + 1} of ${passes} · row ${j.progress.row} of ${j.progress.rows}`]);
+  if (j && j.progress)
+    rows.push([
+      'progress',
+      `pass ${j.progress.pass + 1} of ${passes} · row ${j.progress.row} of ${j.progress.rows}`,
+    ]);
   else rows.push(['passes', `${f.passesDone} of ${passes}${f.stopped ? ' · stopped' : ''}`]);
   const cmp = h && h.compare && h.compare.length ? h.compare : null;
   return `<table class="rt kvt">${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}${
@@ -188,7 +219,17 @@ async function render() {
     paint();
     return;
   }
-  const entry = { key: st.engine, label: eng.label, unit: eng.unit, setupMs: eng.setupMs, scene: scene.id, stride: st.stride, passes: st.passes, frame: null, compare: [] };
+  const entry = {
+    key: st.engine,
+    label: eng.label,
+    unit: eng.unit,
+    setupMs: eng.setupMs,
+    scene: scene.id,
+    stride: st.stride,
+    passes: st.passes,
+    frame: null,
+    compare: [],
+  };
   st.job.phase = 'render';
   st.job.entry = entry;
   st.live = null;
@@ -208,7 +249,14 @@ async function render() {
     entry.frame = frame;
     // frames of the same scene and stride from other engines: compare their bits
     for (const h of st.history)
-      if (h.frame && h.key !== entry.key && h.scene === entry.scene && h.stride === entry.stride && !h.frame.stopped && !frame.stopped) {
+      if (
+        h.frame &&
+        h.key !== entry.key &&
+        h.scene === entry.scene &&
+        h.stride === entry.stride &&
+        !h.frame.stopped &&
+        !frame.stopped
+      ) {
         const r = compareFrames(frame, h.frame);
         if (r) entry.compare.push({ label: h.label, ...r });
       }
@@ -267,10 +315,18 @@ V.candela = {
     const c = UI.candela;
     const busy = !!st.job;
     const sceneOpts = c
-      ? c.scenes.map(s => `<option value="${esc(s.id)}" ${s.id === st.scene ? 'selected' : ''}>${esc(s.id)} ${esc(s.title)}${s.spectral ? ' (spectral)' : ''}</option>`).join('')
+      ? c.scenes
+          .map(
+            s =>
+              `<option value="${esc(s.id)}" ${s.id === st.scene ? 'selected' : ''}>${esc(s.id)} ${esc(s.title)}${s.spectral ? ' (spectral)' : ''}</option>`,
+          )
+          .join('')
       : `<option>${esc(st.scene)}</option>`;
     const engOpts = engines()
-      .map(e => `<option value="${e.key}" ${e.key === st.engine ? 'selected' : ''} ${e.off ? 'disabled' : ''}>${esc(e.label)}</option>`)
+      .map(
+        e =>
+          `<option value="${e.key}" ${e.key === st.engine ? 'selected' : ''} ${e.off ? 'disabled' : ''}>${esc(e.label)}</option>`,
+      )
       .join('');
     const seg = (name, values, cur) =>
       `<div class="seg sm">${values.map(v => `<button class="${String(v) === String(cur) ? 'on' : ''}" data-c${name}="${v}" ${busy && name !== 'view' ? 'disabled' : ''}>${v}</button>`).join('')}</div>`;
@@ -292,10 +348,17 @@ V.candela = {
         <div class="cdl-canvas"><canvas width="${st.live ? st.live.width : 1}" height="${st.live ? st.live.height : 1}" ${st.live ? '' : 'hidden'}></canvas></div>
         ${st.error ? `<div class="fail padded">${esc(st.error)}</div>` : ''}
         <div data-cdlstats>${statsHtml()}</div>
-        ${st.history.length > 1 ? `<h4>Earlier renders</h4><table class="rt"><tr><th>scene</th><th>engine</th><th class="num">stride</th><th class="num">passes</th><th class="num">time</th></tr>${st.history
-          .slice(1)
-          .map(x => `<tr><td class="nw">${esc(x.scene)}</td><td>${esc(x.label)}</td><td class="num">${x.stride}</td><td class="num">${x.frame ? x.frame.passesDone : ''}</td><td class="num">${x.frame ? secs(x.frame.ms) : ''}</td></tr>`)
-          .join('')}</table>` : ''}
+        ${
+          st.history.length > 1
+            ? `<h4>Earlier renders</h4><table class="rt"><tr><th>scene</th><th>engine</th><th class="num">stride</th><th class="num">passes</th><th class="num">time</th></tr>${st.history
+                .slice(1)
+                .map(
+                  x =>
+                    `<tr><td class="nw">${esc(x.scene)}</td><td>${esc(x.label)}</td><td class="num">${x.stride}</td><td class="num">${x.frame ? x.frame.passesDone : ''}</td><td class="num">${x.frame ? secs(x.frame.ms) : ''}</td></tr>`,
+                )
+                .join('')}</table>`
+            : ''
+        }
         <h4>The Candela project</h4>
         ${
           p
