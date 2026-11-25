@@ -258,3 +258,114 @@ Each extension is a new module on top of the lifted v6 layers. The only lifted-l
 ### Technical details
 - The flow graph interface is `{entry, blocks, succ(b), preds(b)}`. The solver visits the pending block that comes earliest in (reverse) postorder.
 - `DataflowResult` is `{analysis, direction, regions: {id: {in, out, iterations, loopHeads}}}`, with lattice-encoded facts keyed by block id.
+
+## Step 4: the Typed domain — lifting, evaluator, analyses, the 11 passes, and O2 parity with the book
+
+This step defines the Typed compiler's middle end on the framework:
+- `typed.blocks` as a v6 IR with an adapter;
+- the reused ds-js-os front end, pinned and digest-checked;
+- Compiler Workbench's lifting, evaluator, case generator and six analyses;
+- its transaction and its 11 passes as `definePass` passes, each gated by a differential contract against r0.
+
+The results reproduce the CW book. O2 on Blend makes six revisions (cfg, fold, simplify, constprop, dce, licm). Statement `s:blend.15 inv = ((a * b) + 64)` is made by licm at r6, and its value by constprop at r4. Across all 44 projects, 70 functions and 100 cases per function, 6986 decided cases agree and 14 hit the step limit: exactly the book's numbers.
+
+The framework's preservation check found a real bug in the prototype. CW's `lvn` (and, latently, `dce` and `subst`) claim to preserve `loops`. The claim is false, because adding or removing a `set` in a loop changes the loop's assigned locals.
+
+In parallel, a subagent is porting the backend in its own worktree. Its diary is `log/03-backend-agent-diary.md`.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** P2.1–P2.4 and P2.6. Port the domain onto the framework, prove parity against CW's published numbers, and delegate the separable backend (P2.5) to a subagent that keeps its own diary.
+**Inferred user intent:** The whole compiler is defined with the framework, and it behaves like the prototype it replaces.
+**Commit (code):**
+- ebbf216: P2.1 IR and lifting
+- 8ee5301: P2.2–P2.3 evaluator and analyses
+- fe83f39: P2.4 and P2.6 passes, O2 and parity
+
+### What I did
+- **Vendored components.** `vendor/ds-js-os/`: `tape.js`, `typed-wasm.js` (the front end), `bench/host/rv32-interp.js` and `typed-rv32.js` (oracle only). They are copied unchanged from ds-js-os b19062b, and `VENDOR.json` records each file's SHA-256. `tools/node-vendor.mjs` verifies the digests before `vm.runInThisContext`. The domain reads the vendored code through `src/typed/vendor.ts` (`setVendor` / `requireVendor`), so browser and Node hosts can inject it.
+- **Model (`src/typed/model.ts`).** Native `TypedBlocks` holds id-keyed tables (fns, blocks, stmts, values, ops), plus `fnOrder`, `rev` and the id `counters`, so passes are deterministic. A `Store` is a mutable working copy; `Store.from` and `toNative` convert, and `toNative` keeps only live entities.
+- **Lifting (`src/typed/lift.ts`).** CW's `frontEnd`, `lift` and `prune`, typed. `LiftError` codes are `frontEndError` (with line and column) and `unsupportedOp`.
+- **v6 representation (`src/typed/ir.ts`).**
+  - `BlocksIR` has a validator: references resolve within a function, and value trees are acyclic.
+  - `blocksAdapter` projects six entity kinds: fn, local, block, `stmt.<op>`, `value.<op>` and op. Its relations are containment (declares, contains, emits), dependency (uses, operand, reads), binding (writes) and control (succ, jump). Relation ids are position-based.
+  - `rebuildBlocks` is the projection's exact inverse.
+- **Text and provenance (`src/typed/listing.ts`).** CW's text format, `lineage` and `linesOf`.
+- **Evaluator (`src/typed/evaluate.ts`).** CW's evaluator, memory images, xorshift32 `rng`, FNV `hash` and verdict rule (`agrees`). `meaningKept(params)` is an E5 `differential()` invariant, with one definition object per case-parameter set, whose version carries the parameter hash.
+- **Analyses (`src/typed/analyses.ts`).**
+  - cfg, dominators and loops are `defineAnalysis`.
+  - liveness, reaching definitions and ranges are E4 `dataflow()`.
+  - Views (`liveView`, `reachView`, `rangeView`, `domView`) rebuild CW's query methods from the stored block facts.
+- **Transaction (`src/typed/tx.ts`).** CW's `Tx`, typed, plus value handles.
+- **Passes (`src/typed/passes.ts`).**
+  - `typedPass(spec)` wraps a CW pass body in the framework's `definePass`. It maps CW write kinds to entity and relation kinds, maps `needs` and `preserves` to the v6 analyses, and runs the body per function through a `Tx`. It returns a native result whose correspondence is derived from origins and removal reasons, plus a `RevisionReport` of CW-style edits.
+  - It also defines the 11 passes, `optimizationContract` and the pipelines.
+- **Projects (`src/typed/project.ts`).** CW's project source assembly, and `runPipeline`, which checks each changed revision against r0 and records a rejected pass as a step while the pipeline continues.
+- **Framework additions:**
+  - the solver takes `edge`, `widenAfter` and `strategy: 'round-robin'`;
+  - `differential` takes `random`;
+  - `applyPass` takes `contract` (an override for one application), and the result passes the domain `report` through.
+- **Tests:** `tests/typed/{ingest,evaluate-analyses,passes}.test.mjs`, for 238 tests in total.
+- **Tools:** `tools/parity.mjs`, the corpus report.
+
+### Why
+- **CW's schedule and widening policy.** With widening, the order in which blocks are visited changes the facts. CW widens at a loop head only after three visits, during round-robin sweeps. The E4 worklist widens at the first revisit, so ranges, and with them strength and bce decisions, would differ. The solver therefore offers both schedules, and the typed analyses choose CW's.
+- **Facts are JSON block facts, and pass code reads views.** v6 analysis results must be immutable finite JSON. CW's facts carry methods and Maps. Storing only per-block facts keeps results small and makes preservation comparable by canonical equality, while views rebuild `liveAfter`, `reachingAt` and `ranges.of` on demand.
+- **Views are built on the working store.** `strength` asks `ranges.of(sid, v)` for a value that the same transaction has just rebuilt. CW's facts read the live store, so the views must too.
+- **The contract is supplied per application.** The case inputs are project data, so `optimizationContract(params)` is created per parameter set and passed to `applyPass({contract})`. The pass definitions stay static.
+- **`rev` lives in the native value.** Origins record `rev`, and `because` strings name `@r{rev-1}`. Keeping `rev` in the artifact makes a pass a pure function of its input revision.
+
+### What worked
+- **Lifting.** Blend at r0 has 7 blocks and 13 statements. All 43 single-file projects, and `start-here` through project assembly, ingest and round-trip through `Store` and through the v6 projection.
+- **O2 on Blend:**
+  ```
+  r1 cfg (2 edits; retarget:1 unreachable:1)
+  r2 fold (1 edits; replace:1)
+  r3 simplify (1 edits; replace:1)
+  r4 constprop (1 edits; replace:1)
+  r5 dce (1 edits; remove:1)
+  r6 licm (3 edits; local:1 insert:1 replace:1)
+  ...
+  s:blend.15   inv = ((a * b) + 64)
+  s:blend.15 origin [{"because":["loop:blend@bb:blend.1"],"from":"v:blend.37","kind":"recorded","note":"hoisted out of loop:blend@bb:blend.1","rev":6,"via":"licm"}]
+  ```
+  The book says: "the O2 pipeline makes six revisions (cfg, fold, simplify, constprop, dce, licm)". It also says that `s:blend.15` "was made by licm at r6 from the value `(a * b) + 64`, which constprop made at r4". The test asserts both. It also asserts that `s:blend.0` reads `scale = 64` at r4, and that r5's correspondence removes it because of `fact:liveness(blend)@r4`.
+- **Corpus parity.** `IRWB_FULL=1 node --test --test-name-pattern="corpus parity" tests/typed/passes.test.mjs` passed in 84 s. It asserts `{projects: 44, fns: 70, total: 7000, agree: 6986, inconclusive: 14}`. The book (13-checks.md) says: "Across all 44 projects, 70 functions, 100 cases each … all 6986 decided cases … The other 14 cases hit the step limit."
+- **The wrong pass.** wrong-shift's `div-to-shift` is rejected (`contractRejected`, reason `/disagree/`) and nothing is published.
+
+### What didn't work
+- **The line test.** `ingest.test.mjs` asserted that `scale = 4 * 16` is on line 3. It is on line 2 (line 1 is the signature). The assertion was wrong, not the code.
+- **The corpus parity run.** `node tools/parity.mjs` first ended with:
+  ```
+  value-numbering        ERROR [preserveViolated] Pass typed.lvn claims to preserve typed.loops, but it changed
+  {"projects":44,"functions":69,"cases":6900,"decided":6886,"agree":6886,"inconclusive":14,"failures":1}
+  ```
+  This is a real defect in CW's pass declarations, not in the port. `lvn` inserts `vn = …` inside loop bodies, which changes `loops[i].assigned`. CW never checks preservation claims, so the claim kept a stale loops fact fresh after lvn. That is latent there, because licm runs before lvn in both pipelines that contain them. `dce` and `subst` make the same false claim. `applyPass` checks a claim only when the fact exists for the input revision, and the corpus never had loops computed before those passes, so they did not fire. All three now claim `['cfg', 'dominators']`, with a comment. A regression test shows that the old claim is caught (`preserveViolated`). With the correction, value-numbering gives 100/100, and the totals become 70 functions and 7000 cases, of which 6986 are decided.
+- **An accidental gitlink.** `git add -A` added the subagent's worktree `.claude/worktrees/agent-…` as an embedded repository ("warning: adding embedded git repository"). I ran `git rm --cached`, added `.claude/worktrees/` to `.gitignore`, and amended the unpushed commit.
+- **A tautological test.** I replaced a generator test that compared `rng(7)` with itself by a hand-computed value: `rng(7)() * 2^32 === 0x1CE0E7`.
+
+### What I learned
+- The framework's checked preservation is not just bookkeeping: on the first full run it found a false claim that the prototype had shipped with.
+- CW's published numbers are precise enough to act as a regression oracle for the whole middle end. Lifting, ids, the generator, the evaluator, the verdict rule, the analyses and the pass decisions all have to match for 6986/14 and for `s:blend.15` to come out.
+
+### What was tricky to build
+- **Correspondence for native results.** `makeCorrespondence` auto-retains surviving ids. A source named in an explicit entry is not auto-retained, and a missing target becomes `unmapped-origin`. Entries are therefore grouped by source, and a surviving source is put in its own `to` list. Removals become `{from: [s], to: []}` entries with the edit's `because`, so a removed entity's reason survives.
+- **CW write kinds versus projection kinds.** CW's `stmts` writes include the death of a removed statement's value trees. The mapping gives `stmts` the `value.*` kinds as well. The `Tx` still enforces CW's finer kinds, and the framework enforces the coarser projection kinds.
+
+### What warrants a second pair of eyes
+- `revisionCorrespondence` uses only `origin[0]`. Entities with several origins would lose links. CW records one origin per entity, so this is fine today.
+- `applyPass` checks preservation only when the fact was computed on the input. A paranoid test mode, which always computes and compares, would have caught the `dce` and `subst` claims too.
+- The 84-second full parity run is dominated by per-pass meaning checks (40 cases per function per changed revision) and preservation recomputation. A faster test default should not weaken the CI gate; the subset plus `IRWB_FULL=1` is the compromise for now.
+
+### What should be done in the future
+- A paranoid preservation mode, and a pass-declaration audit (all claims checked on the corpus).
+- Image parity (bytes and instructions) once the backend merges.
+- The reference-compiler cross-check: the evaluator at r0 against the `typed-rv32.js` images.
+
+### Code review instructions
+- Start with `src/typed/passes.ts` (`typedPass`, `revisionCorrespondence`), `src/typed/tx.ts`, `src/typed/analyses.ts` (the round-robin, `edge` and `widenAfter` uses), and `src/framework/dataflow/solver.ts`.
+- Validate with `npm test` (238 tests, 0 failures) and `IRWB_FULL=1 node --test tests/typed/passes.test.mjs`, and inspect with `node tools/parity.mjs`.
+
+### Technical details
+- Pass ids are `typed.<name>`, version `1`. `meaningKept` ids are `typed.meaning-kept@1+<fnv(params)>`. The contract id is `typed.optimization` with the same version.
+- Pipelines are CW's: O0, O1, O2, loops, checks and broken.
