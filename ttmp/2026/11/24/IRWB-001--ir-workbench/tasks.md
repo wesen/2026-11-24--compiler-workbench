@@ -13,7 +13,7 @@
 - [ ] P0.1 Baseline: snapshot the Compiler Workbench prototype on all 44 projects (parity oracle: revisions, listings, image bytes, checks) <!-- t:x022 -->
 - [x] P1.1 Scaffold the TypeScript project (strict tsc, esbuild, prettier, node:test, layering check) <!-- t:70zr -->
 - [x] P1.2 Lift the v6 framework (core, strategy, contracts, ir) into src/framework, reformat, port its tests <!-- t:txbz -->
-- [ ] P1.3 Extensions E1 (control relation category) and E2 (because on edits, why query) <!-- t:2v29 -->
+- [x] P1.3 Extensions E1 (control relation category) and E2 (because on edits, why query) <!-- t:2v29 -->
 - [ ] P1.4 Extension E4: dataflow builder, lattices, widening, checked fact transfer <!-- t:aruk -->
 - [ ] P1.5 Extension E5: differential invariants, case generation, sampled assurance <!-- t:unsw -->
 - [ ] P1.6 Extensions E3 (definePass) and E6 (passes and analyses as strategy algorithms) <!-- t:l28x -->

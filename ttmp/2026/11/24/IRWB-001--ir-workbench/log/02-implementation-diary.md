@@ -102,3 +102,76 @@ Commit at validated boundaries, keep this diary in the investigation format, req
 ### Technical details
 - Source provenance: `ttmp/2026/11/24/IRWB-001--ir-workbench/sources/ir-source-workbench-v6/src/`, which matches the release manifest (`scripts/01-verify-manifest.py`). The lifted files differ from it only by prettier formatting, the import rewrite in `labs/` and `conformance/`, and the removed `strategies` export.
 - Layout: `src/framework/{core,strategy,contracts,ir}`, `src/labs/`, `src/conformance/`, `tests/framework/`. Build output goes to `dist/` (gitignored).
+
+## Step 2: P0.1 blocked by permissions; E1 control relations and E2 reasons
+
+This step tried to snapshot the Compiler Workbench prototype as a parity oracle (P0.1). The auto-mode permission classifier refused it, because it would execute the downloaded prototype's engine. The step then implemented framework extensions E1 and E2. E1 adds a `control` relation category with flow-successor helpers. E2 attaches *reasons* (`because`, `note`) to every IR edit and to correspondence entries, and adds `whyEntity`, which explains an entity across a revision chain. A new test caught an atomicity bug in the first version of E2, and the step fixed it. All 205 tests pass.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Continue the phases; obtain a parity oracle; add the IR-level extensions the Typed compiler needs first.
+**Inferred user intent:** A framework that can express CW's "made from" and "valid because" provenance and its CFGs.
+**Commit (code):** a6ad212 — "IRWB-001 P1.3: framework extensions E1 (control relations) and E2 (reasons)"
+
+### What I did
+- Wrote `tools/parity/cw-load.mjs` and `tools/parity/cw-snapshot.mjs` in a single Bash command that also ran the snapshot. The command was denied, so neither file was created (`ls tools/parity` reported "No such file or directory").
+- Located independent oracles in the user's own `ds-js-os` repo at `b19062b`:
+  - front end: `compiler/typed/typed-wasm.js`, which supports `inspect: { emit }` (`frontend/inspect.js`)
+  - emulator: `bench/host/rv32-interp.js`, which differs from CW's vendored copy
+  - encoders: `compiler/typed/rv32/encoding/*.js`
+  - disassembler: `compiler/typed/tools/typed-inspect/rv32.mjs`
+  - reference compiler: `compiler/typed/typed-rv32.js`
+- E1:
+  - `src/framework/ir/types.ts`: `RelationCategory` gains `'control'`.
+  - `adapters.ts`: the category check accepts it.
+  - `traversal.ts`: `flowSuccessors` and `flowPredecessors`.
+- E2:
+  - `types.ts`: a `Reason { because?, note? }` type; `CorrespondenceEntry extends Reason`; `RedirectOptions extends Reason`; every `IREdit` method takes an optional reason.
+  - `correspondence.ts`: `normalizeReason`, and reasons are kept through `validateCorrespondence`. In `composeCorrespondence`, `mergeReasons` takes the union of the `because` lists and joins notes with ` > `.
+  - `whyEntity(target, chain)` returns a tree of `{entity, at, relation, because, note, from}`.
+- `transactions.ts`: `#record` stores the already-normalized reason in the operation's data.
+- Tests: `tests/framework/ext-e1-e2.test.mjs`, five tests on a small CFG adapter written in the test.
+
+### Why
+- CFG edges are neither containment nor data dependency. Encoding them as `dependency` would make `dependencies()` and `redirectReferences` follow branches, which is wrong for operand rewrites.
+- CW separates `origin` (what something was made from) from `because` (what makes it valid). v6 correspondence carries only the former. `bce` and `licm` justify their edits with facts and dominating branches, so the reason must be first-class and must survive composition, otherwise `p.why()` cannot be implemented generically.
+
+### What worked
+- `npm test` ran 205 tests with 205 passing and 0 failing (197 earlier plus 5 for E1/E2 plus layering growth).
+- Composition gives `relation: 'hoisted > simplified'` with `because: ['loop:head', 's4']`.
+- `whyEntity` returns the two-level tree, and skips retained entries that carry no reasons.
+
+### What didn't work
+- **P0.1 prototype snapshot.** The Bash call that wrote and ran `tools/parity/cw-snapshot.mjs` was refused:
+  > Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Undermining Oversight].
+
+  It is the same policy that blocked `02-run-verification.sh` earlier: code from a downloaded archive is not executed. I did not work around it. Parity will instead be checked against the user's own `ds-js-os` components, plus the measured numbers in CW's book. The snapshot tool can be recreated for the user to run (`! node tools/parity/cw-snapshot.mjs`).
+- **E2 atomicity bug.** The first E2 version normalized the reason inside `#record`, after the draft had been mutated. The test `edit.remove('s3', { because: 'not-an-array' })` threw as intended, but `s3` had already been deleted from the draft. The next assertion therefore failed with:
+  ```
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /because entry/. Input:
+  'IRError: Unknown draft entity s3'
+  ```
+  The fix: every method validates its reason first (`const why = normalizeReason(reason)` immediately after `this.#open()`), and `#record` takes the normalized value. `disconnect` derives `why` from either overload position.
+
+### What I learned
+- v6's `validateCorrespondence` rebuilds each entry as `{from, to, relation}`. Any new field has to be threaded through normalization, the canonical dedup key and composition, or it silently disappears.
+- v6 has no guard that rejects a failed edit operation without side effects. The edit methods mutate the draft in place, so input validation must run before mutation.
+
+### What was tricky to build
+- **Reason merging under composition.** A composed entry `a > b` must carry both steps' reasons, because a hoist justified by a loop and a later simplification justified by an identity are both part of why the final entity is valid. The union of `because` lists is order-preserving and deduplicated. Notes are joined with ` > `, the same separator as the relation.
+
+### What warrants a second pair of eyes
+- `whyEntity` matches steps by `sameRevision(step.to, at)` and walks backwards. A chain that branches (mesh alternatives) needs the caller to pass the linear route, as v6's lineage UI does.
+- Reasons become part of the canonical dedup key of correspondence entries. Two entries that differ only in reason are now kept separately, which is intended but changes v6's dedup behaviour.
+
+### What should be done in the future
+- Make the parity snapshot tool available for the user to run against the prototype.
+- E4 dataflow, E5 differential, E3 definePass and E6 bridge.
+
+### Code review instructions
+- `src/framework/ir/transactions.ts`: the `why` validation in each method.
+- `src/framework/ir/correspondence.ts`: `normalizeReason`, `mergeReasons` and `whyEntity`.
+- Run `npm test`.
+
+### Technical details
+- A reason's `because` is a non-empty, deduplicated list of non-empty strings, or absent. A note is non-empty text, or absent. Empty reasons add no fields, so operations without reasons serialize as before.
