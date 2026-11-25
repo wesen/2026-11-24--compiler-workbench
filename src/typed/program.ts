@@ -31,6 +31,7 @@ import { describeText, lineage, linesOf, listing } from './listing.js';
 import type { TypedBlocks } from './model.js';
 import { optimizationContract, PASSES, PIPELINES, type RevisionReport, type TypedPass } from './passes.js';
 import { ingestProject, projectSource, type ProjectSource } from './project.js';
+import { USER_PASSES } from './builder.js';
 import type { Edit } from './tx.js';
 import { createIRArtifact } from '../framework/ir/adapters.js';
 import { blocksAdapter } from './ir.js';
@@ -202,7 +203,13 @@ export class Program {
   resolvePass(x: string | TypedPass): TypedPass {
     if (typeof x !== 'string') return x;
     return (
-      PASSES[x] ?? fail('unknownPass', `no pass named "${x}"`, `passes: ${Object.keys(PASSES).join(', ')}`)
+      PASSES[x] ??
+      USER_PASSES.get(x) ??
+      fail(
+        'unknownPass',
+        `no pass named "${x}"`,
+        `passes: ${[...Object.keys(PASSES), ...USER_PASSES.keys()].join(', ')}`,
+      )
     );
   }
   /** Apply one pass as one revision; checked against r0 unless `check: false`. Nothing changes on rejection. */
