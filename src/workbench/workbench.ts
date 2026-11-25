@@ -10,12 +10,17 @@
  */
 import { dataflow } from '../framework/dataflow/analysis.js';
 import { intervalLattice, mapLattice, setLattice } from '../framework/dataflow/lattices.js';
-import { flowGraph } from '../typed/analyses.js';
+import { plan as planOf } from '../framework/strategy/builders.js';
+import type { StrategyNode, StrategyPlan } from '../framework/strategy/ir.js';
+import { ANALYSES, flowGraph } from '../typed/analyses.js';
+import { BuilderError, passBuilder as kernelPassBuilder, USER_PASSES } from '../typed/builder.js';
+import { hash } from '../typed/evaluate.js';
 import { backendDefaults, backendOptionsAbout } from '../typed/backend/index.js';
 import { blocksAdapter, BlocksIR, storeOf } from '../typed/ir.js';
 import { describeText, lineage as lineageOf, linesOf, listing as listingOf } from '../typed/listing.js';
 import type { Store, WorkFn } from '../typed/model.js';
-import { PASSES, PIPELINES, typedPass, type TypedPass } from '../typed/passes.js';
+import { PASSES, PIPELINES, type TypedPass } from '../typed/passes.js';
+import { choosePlan, fromJson, passesNode, toJson, untilStablePlan } from '../typed/strategies.js';
 import { createWorkbench, Program } from '../typed/program.js';
 import type { WriteKind } from '../typed/tx.js';
 import { didYouMean, ERRORS, fail, guard, toYaml } from './base.js';
@@ -104,16 +109,17 @@ export function createWb(config: WbConfig = {}) {
       });
   };
 
-  // ---------- user passes and analyses ----------
-  const userPasses = new Map<string, TypedPass>();
+  // ---------- user passes (the kernel's builder) and analyses ----------
+  /** Each user pass's body (for replay keys) and the script that defined it (for the Compiler view). */
+  const userInfo = new WeakMap<TypedPass, { body: string; definedIn: string | null; project: string | null }>();
+  const passNames = () => [...Object.keys(PASSES), ...USER_PASSES.keys()];
   const resolvePass = (x: unknown): TypedPass => {
     if (typeof x === 'string') {
-      const p = PASSES[x] ?? userPasses.get(x);
+      const p = PASSES[x] ?? USER_PASSES.get(x);
       if (!p) {
-        const names = [...Object.keys(PASSES), ...userPasses.keys()];
-        const near = didYouMean(x, names);
+        const near = didYouMean(x, passNames());
         fail('unknownPass', `no pass named "${x}".` + (near ? ` Did you mean "${near}"?` : ''), {
-          fix: `passes: ${names.join(', ')}`,
+          fix: `passes: ${passNames().join(', ')}`,
         });
       }
       return p!;
@@ -123,72 +129,76 @@ export function createWb(config: WbConfig = {}) {
     if (x && typeof x === 'object' && (x as TypedPass).typed) return x as TypedPass;
     return fail('notAPass', 'expected a pass name or a pass made with wb.pass(name)…run(fn)');
   };
-  function passBuilder(name: string) {
-    const spec: {
-      name: string;
-      about: string;
-      needs: Record<string, string>;
-      writes: WriteKind[];
-      preserves: string[];
-    } = {
-      name,
-      about: '',
-      needs: {},
-      writes: [],
-      preserves: [],
-    };
-    const b: any = guard('PassBuilder', {
+  const passKey = (pass: TypedPass) => {
+    const u = userInfo.get(pass);
+    return u ? `${pass.typed.name}#${hash(u.body)}` : pass.typed.name;
+  };
+  /** The kernel builder's refusals as workbench errors (a code and a fix line). */
+  const builderCall = <T>(f: () => T): T => {
+    try {
+      return f();
+    } catch (e) {
+      if (e instanceof BuilderError)
+        fail(e.code, e.message.replace(/^\[\w+\] /, '').split('\n')[0], e.fix ? { fix: e.fix } : {});
+      throw e;
+    }
+  };
+  function passBuilder(name: string, ctx: SyncContext | null) {
+    const b = builderCall(() => kernelPassBuilder(name));
+    const spec = { about: '', needs: {} as Record<string, string>, writes: [] as string[], preserves: [] as string[] };
+    const w: any = guard('PassBuilder', {
       about(t: string) {
-        spec.about = t;
-        return b;
+        spec.about = String(t);
+        b.about(spec.about);
+        return w;
       },
       needs(m: Record<string, string | { name: string }>) {
-        for (const [k, v] of Object.entries(m)) {
-          const a = typeof v === 'string' ? v : v && v.name;
-          if (!['cfg', 'dominators', 'loops', 'liveness', 'reaching', 'ranges'].includes(a))
-            fail('unknownAnalysis', `needs: no built-in analysis "${a}"`, {
-              fix: 'analyses: cfg, dominators, loops, liveness, reaching, ranges',
-            });
-          spec.needs[k] = a;
-        }
-        return b;
+        const names = Object.fromEntries(
+          Object.entries(m || {}).map(([k, v]) => [k, typeof v === 'string' ? v : v && v.name]),
+        );
+        builderCall(() => b.needs(names));
+        Object.assign(spec.needs, names);
+        return w;
       },
-      writes(...k: WriteKind[]) {
-        for (const x of k)
-          if (!KINDS.includes(x)) fail('badArgument', `writes: "${x}" is not one of ${KINDS.join(', ')}`);
+      writes(...k: string[]) {
+        builderCall(() => b.writes(...k));
         spec.writes = k;
-        return b;
+        return w;
       },
       preserves(...a: string[]) {
+        builderCall(() => b.preserves(...a));
         spec.preserves = a;
-        return b;
+        return w;
       },
       run(fn: (fnHandle: any, tx: any, facts: any, params: any) => void) {
-        const pass = typedPass({
-          name,
-          about: spec.about || 'a user pass',
-          needs: spec.needs as never,
-          writes: spec.writes,
-          preserves: spec.preserves.filter(x =>
-            ['cfg', 'dominators', 'loops', 'liveness', 'reaching', 'ranges'].includes(x),
-          ) as never,
-          body: ({ st, f, tx, facts, params }) =>
-            fn(handle(storeHost(st) as never, f.id), tx, guard('Facts', { ...facts }), params),
+        if (typeof fn !== 'function')
+          fail('badArgument', 'run(fn): fn is (fn, tx, facts, params) => …', {
+            fix: ".run((fn, tx) => { tx.rewrite(v => …) })",
+          });
+        const before = USER_PASSES.get(name);
+        const pass = builderCall(() => b.run(fn));
+        const m = ctx && /^([^/]+)\/(scripts\/.+\.js|ui\/.+\.js)$/.exec(ctx.label);
+        userInfo.set(pass, {
+          body: String(fn),
+          definedIn: m ? m[2] : ctx ? ctx.label : null,
+          project: m ? m[1] : null,
         });
-        const tagged = Object.freeze({ ...pass, _user: String(fn) }) as TypedPass;
-        userPasses.set(name, tagged);
+        // a script that defines a pass runs once per replay: tell the views only when the pass is new or changed
+        if (!before || userInfo.get(before)?.body !== String(fn)) emit('passes', { name, user: true });
         return guard('Pass', {
           name,
+          id: pass.id,
+          version: pass.version,
           about: spec.about,
           writes: spec.writes,
           needs: spec.needs,
           preserves: spec.preserves,
-          _pass: tagged,
-          _key: `pass:${name}`,
+          _pass: pass,
+          _key: `pass:${passKey(pass)}`,
         });
       },
     });
-    return b;
+    return w;
   }
   const lattice = guard('Lattices', {
     set: () => setLattice(),
@@ -354,6 +364,8 @@ export function createWb(config: WbConfig = {}) {
     writes,
     focus: (id, p) => focus(id, p),
     resolvePass,
+    passKey,
+    strategyPlan: (x, p) => strategyPlan(x, p.project),
     programHandle,
     replace(p, source) {
       const k = new Program(p.name, source, { inputs: p.k.inputs });
@@ -578,12 +590,309 @@ export function createWb(config: WbConfig = {}) {
       });
       return out.join('\n');
     },
+    /** Where a pass or an analysis of the compiler is defined, with its text. */
+    definition(name: string) {
+      const d = definition(name);
+      if (!d)
+        fail('unknownPass', `no built-in pass or analysis "${name}" in the sources`, {
+          fix: `passes: ${Object.keys(PASSES).join(', ')}; analyses: ${Object.keys(ANALYSES).join(', ')}`,
+        });
+      return d;
+    },
     find(name: string) {
       return source.grep(
         new RegExp(`(function ${name}\\b|class ${name}\\b|const ${name}\\s*=|${name}\\s*\\(.*\\)\\s*[:{])`),
       );
     },
   });
+
+
+  // ---------- where the compiler's parts are defined (for the Compiler view and wb.source.definition) ----------
+  /** The top-level declaration around `line` (0-based), with the comment above it. */
+  const chunk = (lines: string[], line: number) => {
+    const top = /^(export |const |let |function |async function |class |interface |type )/;
+    let a = line;
+    while (a > 0 && !top.test(lines[a])) a--;
+    while (a > 0 && /^(\s*\*|\/\*\*|\/\/)/.test(lines[a - 1])) a--;
+    let b = line + 1;
+    while (b < lines.length && !top.test(lines[b]) && !/^\/\*\*|^\/\/ -/.test(lines[b])) b++;
+    while (b > line + 1 && lines[b - 1].trim() === '') b--;
+    return { from: a + 1, to: b };
+  };
+  const definition = (what: string) => {
+    const name = String(what).replace(/^typed\./, '').replace(/@.*$/, '');
+    const esc = name.replace(/[-.]/g, m => '\\' + m);
+    const anchors = [new RegExp(`^\\s*name: '${esc}',`), new RegExp(`^\\s*id: 'typed\\.${esc}',`)];
+    for (const re of anchors)
+      for (const [path, text] of Object.entries(SOURCES)) {
+        if (!/^src\/typed\/[^/]+\.ts$/.test(path)) continue;
+        const lines = text.split('\n');
+        const i = lines.findIndex(l => re.test(l));
+        if (i >= 0) {
+          const { from, to } = chunk(lines, i);
+          return { path, line: i + 1, from, to, text: lines.slice(from - 1, to).join('\n') };
+        }
+      }
+    return null;
+  };
+
+  // ---------- strategies: plans over the passes, per project ----------
+  const METRICS = ['instructions', 'bytes', 'statements', 'blocks'] as const;
+  const pipelinePlan = (name: string) =>
+    planOf(`typed.pipeline.${name}`, passesNode(name, name), `the ${name} pipeline as a plan`);
+  interface StrategyEntry {
+    name: string;
+    kind: 'project' | 'pipeline';
+    path?: string;
+    id?: string;
+    description?: string;
+    plan?: StrategyPlan;
+    error?: string;
+  }
+  const strategyList = (projectId: string | null = state.projectId): StrategyEntry[] => {
+    const out: StrategyEntry[] = [];
+    if (projectId && projects.exists(projectId))
+      for (const [path, text] of Object.entries(projects.filesOf(projectId))) {
+        const m = /^strategies\/([^/]+)\.json$/.exec(path);
+        if (!m) continue;
+        try {
+          const plan = fromJson(text);
+          out.push({ name: m[1], kind: 'project', path, id: plan.id, description: plan.description, plan });
+        } catch (e) {
+          out.push({ name: m[1], kind: 'project', path, error: String((e as Error).message || e).split('\n')[0] });
+        }
+      }
+    for (const n of Object.keys(PIPELINES)) {
+      const plan = pipelinePlan(n);
+      out.push({ name: n, kind: 'pipeline', id: plan.id, description: plan.description, plan });
+    }
+    return out;
+  };
+  const isPlan = (x: unknown): x is StrategyPlan =>
+    !!x && typeof x === 'object' && (x as StrategyPlan).formatVersion === 1 && !!(x as StrategyPlan).root;
+  function strategyPlan(x: unknown, projectId: string | null = state.projectId): StrategyPlan {
+    if (typeof x === 'string') {
+      const t = x.trim();
+      if (t.startsWith('{')) {
+        try {
+          return fromJson(t);
+        } catch (e) {
+          return fail(
+            'badStrategy',
+            `the strategy JSON does not parse: ${String((e as Error).message).split('\n')[0]}`,
+            { fix: 'wb.strategy.toJson(wb.strategy.choose(…)) shows the format' },
+          );
+        }
+      }
+      const list = strategyList(projectId);
+      const hit = list.find(e => e.name === t || e.id === t || e.path === t);
+      if (!hit) {
+        const near = didYouMean(t, list.map(e => e.name));
+        fail('unknownStrategy', `no strategy "${t}".` + (near ? ` Did you mean "${near}"?` : ''), {
+          fix: `strategies: ${list.map(e => e.name).join(', ')}`,
+        });
+      }
+      if (hit!.error)
+        fail('badStrategy', `${hit!.path}: ${hit!.error}`, { fix: 'fix the JSON in the Strategies view' });
+      return hit!.plan!;
+    }
+    const o = x && typeof x === 'object' ? ((x as { _plan?: unknown })._plan ?? x) : x;
+    if (isPlan(o)) return o;
+    return fail('badArgument', 'a strategy is a plan (wb.strategy.choose(…)), its JSON, or a name', {
+      fix: "wb.strategy.list() names them; wb.strategy.choose('fast', { a: 'O1', b: 'O2' }, 'instructions')",
+    });
+  }
+  const candidate = (x: unknown, what: string): string | string[] => {
+    if (typeof x === 'string') {
+      if (PIPELINES[x]) return x;
+      if (PASSES[x] || USER_PASSES.has(x)) return [x];
+      const names = [...Object.keys(PIPELINES), ...passNames()];
+      const near = didYouMean(x, names);
+      return fail(
+        'unknownPipeline',
+        `${what}: no pipeline or pass "${x}".` + (near ? ` Did you mean "${near}"?` : ''),
+        { fix: `pipelines: ${Object.keys(PIPELINES).join(', ')}; or a list of pass names` },
+      );
+    }
+    if (Array.isArray(x)) {
+      for (const n of x) resolvePass(n);
+      return x.map(String);
+    }
+    return fail('badArgument', `${what}: a pipeline name or a list of pass names`);
+  };
+  /** A plan as indented lines: what runs, in what shape. */
+  const explainPlan = (pl: StrategyPlan) => {
+    const out = [`${pl.id}${pl.description ? ' · ' + pl.description : ''}`];
+    const walk = (n: StrategyNode, depth: number, label = '') => {
+      const pad = '  '.repeat(depth) + label;
+      const k = n as any;
+      switch (n.kind) {
+        case 'apply':
+          out.push(`${pad}apply ${k.algorithm.id}@${k.algorithm.version}`);
+          return;
+        case 'sequence':
+        case 'parallel':
+          if (k.steps.every((x: StrategyNode) => x.kind === 'apply'))
+            out.push(
+              `${pad}${n.kind}: ${k.steps.map((x: any) => x.algorithm.id.replace(/^typed\./, '')).join(' → ')}`,
+            );
+          else {
+            out.push(`${pad}${n.kind}`);
+            k.steps.forEach((x: StrategyNode) => walk(x, depth + 1));
+          }
+          return;
+        case 'fork':
+          out.push(`${pad}fork (${k.branches.length} candidates)`);
+          k.branches.forEach((b: { name: string; strategy: StrategyNode }) =>
+            walk(b.strategy, depth + 1, `${b.name}: `),
+          );
+          return;
+        case 'chooseBest':
+          out.push(
+            `${pad}choose the ${k.objective.direction === 'max' ? 'largest' : 'smallest'} ${k.objective.metric}` +
+              (k.constraints.length
+                ? ` where ${k.constraints.map((c: any) => `${c.metric} ${c.op} ${c.value}`).join(', ')}`
+                : '') +
+              (k.metrics ? ` (measured by ${k.metrics.id}@${k.metrics.version})` : ''),
+          );
+          walk(k.candidates, depth + 1);
+          return;
+        case 'repeatUntilStable':
+          out.push(`${pad}repeat until stable (at most ${k.maxIterations} times)`);
+          walk(k.body, depth + 1);
+          return;
+        default:
+          out.push(`${pad}${n.kind} ${n.id}`);
+          for (const c of ['body', 'then', 'else', 'fallback'] as const)
+            if (k[c]) walk(k[c], depth + 1, `${c}: `);
+      }
+    };
+    walk(pl.root, 1);
+    return out.join('\n');
+  };
+
+  // ---------- the compiler, as data ----------
+  const ref = (d: { id: string; version: string } | undefined) => (d ? `${d.id}@${d.version}` : '?');
+  const passRow = (x: TypedPass) => {
+    const u = userInfo.get(x);
+    const user = !PASSES[x.typed.name];
+    const def = user ? null : definition(x.typed.name);
+    return {
+      name: x.typed.name,
+      id: x.id,
+      version: x.version,
+      about: x.typed.about,
+      kind: user ? 'user' : 'builtin',
+      needs: Object.fromEntries(Object.entries(x.needs ?? {}).map(([alias, d]) => [alias, ref(d as never)])),
+      writes: x.typed.writes,
+      entities: x.writes.entities,
+      relations: x.writes.relations,
+      preserves: (x.preserves ?? []).map(d => ref(d as never)),
+      ...(def ? { source: `${def.path}:${def.line}` } : {}),
+      ...(u ? { definedIn: u.definedIn, project: u.project, body: u.body } : {}),
+    };
+  };
+  const compiler = () => ({
+    passes: Object.values(PASSES).map(passRow),
+    userPasses: [...USER_PASSES.values()].map(passRow),
+    analyses: [
+      ...Object.entries(ANALYSES).map(([name, a]) => {
+        const def = definition(a.id);
+        return {
+          name,
+          id: a.id,
+          version: a.version,
+          about: a.description,
+          kind: 'builtin',
+          ...(def ? { source: `${def.path}:${def.line}` } : {}),
+        };
+      }),
+      ...[...FACTS]
+        .filter(([, a]) => a.user)
+        .map(([name, a]) => ({ name, id: `user.${name}`, version: '1', about: a.about, kind: 'user' })),
+    ],
+    pipelines: Object.fromEntries(Object.entries(PIPELINES).map(([k, v]) => [k, [...v]])),
+    strategies: strategyList().map(({ plan: _plan, ...e }) => e),
+    metrics: { id: 'typed.metrics@1', measures: [...METRICS] },
+    contract: 'every pass is gated by the meaning contract against r0 (typed.meaning-kept, 40 cases)',
+  });
+
+  /** wb.strategy: plans to build, read, save and run. */
+  function strategyApi(ctx: SyncContext | null) {
+    return guard('Strategy', {
+      metrics: METRICS,
+      choose(
+        name: string,
+        candidates: Record<string, unknown>,
+        objective: string | { metric: string; direction?: 'min' | 'max' } = 'instructions',
+        constraints: readonly { metric: string; op: string; value: number }[] = [],
+      ) {
+        if (typeof name !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(name))
+          fail('badArgument', 'choose(name, …): a name of letters, digits, _ . -', {
+            fix: "wb.strategy.choose('fast', { O1: 'O1', O2: 'O2' }, 'instructions')",
+          });
+        if (!candidates || typeof candidates !== 'object' || !Object.keys(candidates).length)
+          fail('badArgument', 'choose(name, candidates): candidates is { name: pipeline or [passes] }', {
+            fix: "{ O1: 'O1', O2: 'O2', mine: ['add-self', 'fold'] }",
+          });
+        const obj = typeof objective === 'string' ? { metric: objective } : objective;
+        if (!METRICS.includes(obj.metric as never)) {
+          const near = didYouMean(obj.metric, [...METRICS]);
+          fail('badArgument', `no metric "${obj.metric}".` + (near ? ` Did you mean "${near}"?` : ''), {
+            fix: `metrics: ${METRICS.join(', ')}`,
+          });
+        }
+        for (const c of constraints)
+          if (!['<=', '>=', '<', '>', '=='].includes(c.op) || typeof c.value !== 'number')
+            fail('badArgument', `constraint ${JSON.stringify(c)}: { metric, op: <= >= < > ==, value: number }`);
+        const cands = Object.fromEntries(
+          Object.entries(candidates).map(([k, v]) => [k, candidate(v, `candidate ${k}`)]),
+        );
+        return choosePlan(name, cands, obj as never, constraints as never);
+      },
+      untilStable(name: string, passes: readonly string[], maxIterations = 8) {
+        for (const n of passes || []) resolvePass(n);
+        return untilStablePlan(name, passes, maxIterations);
+      },
+      pipeline(name: string) {
+        candidate(name, 'pipeline');
+        return pipelinePlan(name);
+      },
+      toJson(plan: unknown) {
+        return toJson(strategyPlan(plan));
+      },
+      fromJson(text: string) {
+        if (typeof text !== 'string' || !text.trim().startsWith('{'))
+          fail('badArgument', 'fromJson(text): the JSON of a plan');
+        return strategyPlan(text);
+      },
+      list() {
+        return strategyList().map(({ plan, ...e }) => ({ ...e, ...(plan ? { root: plan.root.kind } : {}) }));
+      },
+      get(name: string) {
+        return strategyPlan(name);
+      },
+      explain(plan: unknown) {
+        return explainPlan(strategyPlan(plan));
+      },
+      run(p: any, plan?: unknown) {
+        const target = p && typeof p === 'object' && (p as { _p?: WbProgram })._p ? p : null;
+        const h = target ?? (state.current ? programHandle(state.current, ctx) : null);
+        if (!h) fail('noProgram', 'no program open', { fix: "wb.projects.open('blend')" });
+        return h.strategy(target ? plan : p);
+      },
+      save(name: string, plan: unknown) {
+        writes('strategy.save', ctx);
+        const pr = state.projectId;
+        if (!pr) fail('noProject', 'no project open', { fix: "wb.projects.open('blend')" });
+        if (typeof name !== 'string' || !/^[A-Za-z0-9_-]+$/.test(name))
+          fail('badPath', `"${name}" is not a strategy name: letters, digits, _ -`);
+        const text = toJson(strategyPlan(plan));
+        projects.make(ctx).get(pr!).files.write(`strategies/${name}.json`, text);
+        return { saved: `strategies/${name}.json`, project: pr };
+      },
+    });
+  }
 
   // ---------- the root, one per context ----------
   function binding(ctx: SyncContext) {
@@ -648,25 +957,23 @@ export function createWb(config: WbConfig = {}) {
         );
       },
       passes() {
-        return [...Object.values(PASSES), ...userPasses.values()].map(x => ({
+        return [...Object.values(PASSES), ...USER_PASSES.values()].map(x => ({
           name: x.typed.name,
           about: x.typed.about,
           needs: Object.values(x.typed.needs ?? {}),
           writes: x.typed.writes,
           preserves: x.typed.preserves ?? [],
-          ...(userPasses.has(x.typed.name) ? { user: true } : {}),
+          ...(PASSES[x.typed.name] ? {} : { user: true }),
         }));
       },
+      compiler,
+      strategy: strategyApi(ctx),
       analyses() {
         return [...FACTS].map(([name, a]) => ({ name, about: a.about, ...(a.user ? { user: true } : {}) }));
       },
       pass(name: string) {
         writes('pass', ctx);
-        if (PASSES[name])
-          fail('builtinPass', `"${name}" is a built-in pass; pick another name`, {
-            fix: `wb.pass('my-${name}')`,
-          });
-        return passBuilder(name);
+        return passBuilder(name, ctx);
       },
       analysis(name: string) {
         writes('analysis', ctx);
@@ -751,7 +1058,7 @@ export function createWb(config: WbConfig = {}) {
           current: state.current ? state.current.id : null,
           programs: [...state.programs.keys()],
           projects: projectsApi.list().length,
-          passes: Object.keys(PASSES).length + userPasses.size,
+          passes: Object.keys(PASSES).length + USER_PASSES.size,
           analyses: FACTS.size,
           ...(ctx ? { context: ctx.label } : {}),
         };

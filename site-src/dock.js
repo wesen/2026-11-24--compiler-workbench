@@ -6,8 +6,8 @@
 import { UI, esc } from './ui.js';
 
 const store = UI.store;
-const ALL = ['projects', 'files', 'editor', 'scripts', 'source', 'ir', 'cfg', 'lineage', 'facts', 'pipeline', 'timeline', 'checks', 'rv32', 'run', 'console', 'agent', 'book', 'reference', 'code'];
-const KEY = 'wb3.layout.v1';
+const ALL = ['projects', 'files', 'editor', 'scripts', 'source', 'ir', 'cfg', 'lineage', 'facts', 'pipeline', 'strategies', 'timeline', 'checks', 'rv32', 'run', 'console', 'agent', 'book', 'compiler', 'reference', 'code'];
+const KEY = 'wb3.layout.v2'; // v2: the Compiler and Strategies views
 
 const T = (tabs, size = 1) => ({ type: 'tile', tabs, active: tabs[0], size });
 const R = (children, size = 1) => ({ type: 'split', dir: 'row', children, size });
@@ -19,14 +19,14 @@ const LAYOUTS = {
     make: () =>
       R([
         T(['files', 'projects', 'scripts'], 18),
-        C([T(['source', 'editor', 'ir', 'cfg', 'lineage', 'facts'], 55), T(['pipeline', 'timeline', 'checks', 'rv32', 'run', 'console'], 45)], 52),
-        T(['book', 'agent', 'reference', 'code'], 30),
+        C([T(['source', 'editor', 'ir', 'cfg', 'lineage', 'facts'], 55), T(['pipeline', 'strategies', 'timeline', 'checks', 'rv32', 'run', 'console'], 45)], 52),
+        T(['book', 'agent', 'compiler', 'reference', 'code'], 30),
       ]),
   },
   reading: {
     title: 'Reading',
     about: 'the book wide, the agent and the code beside it',
-    make: () => R([T(['book', 'reference', 'projects', 'code'], 58), C([T(['agent'], 58), T(['source', 'ir', 'cfg', 'rv32', 'console'], 42)], 42)]),
+    make: () => R([T(['book', 'reference', 'projects', 'compiler', 'code'], 58), C([T(['agent'], 58), T(['source', 'ir', 'cfg', 'rv32', 'strategies', 'console'], 42)], 42)]),
   },
   compiler: {
     title: 'Compiler',
@@ -34,8 +34,8 @@ const LAYOUTS = {
     make: () =>
       R([
         C([T(['source', 'files', 'projects', 'editor'], 50), T(['ir', 'lineage', 'facts'], 50)], 34),
-        C([T(['cfg', 'timeline'], 55), T(['pipeline', 'checks', 'console', 'scripts'], 45)], 33),
-        C([T(['rv32', 'run'], 60), T(['agent', 'book', 'reference', 'code'], 40)], 33),
+        C([T(['cfg', 'timeline'], 55), T(['pipeline', 'strategies', 'checks', 'console', 'scripts'], 45)], 33),
+        C([T(['rv32', 'run'], 60), T(['compiler', 'agent', 'book', 'reference', 'code'], 40)], 33),
       ]),
   },
   agent: {
@@ -44,8 +44,8 @@ const LAYOUTS = {
     make: () =>
       R([
         T(['agent'], 40),
-        C([T(['source', 'editor', 'ir', 'cfg', 'rv32'], 58), T(['console', 'scripts', 'pipeline', 'timeline', 'checks', 'run', 'lineage', 'facts'], 42)], 40),
-        T(['files', 'projects', 'book', 'reference', 'code'], 20),
+        C([T(['source', 'editor', 'ir', 'cfg', 'rv32'], 58), T(['console', 'scripts', 'pipeline', 'strategies', 'timeline', 'checks', 'run', 'lineage', 'facts'], 42)], 40),
+        T(['files', 'projects', 'compiler', 'book', 'reference', 'code'], 20),
       ]),
   },
 };

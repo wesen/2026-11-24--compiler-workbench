@@ -22,7 +22,13 @@ import {
   sequence,
 } from '../framework/strategy/builders.js';
 import { execute } from '../framework/strategy/interpreter.js';
-import type { StrategyNode, StrategyPlan } from '../framework/strategy/ir.js';
+import type {
+  NodeExecution,
+  StrategyAlgorithm,
+  StrategyNode,
+  StrategyPlan,
+  TraceEvent,
+} from '../framework/strategy/ir.js';
 import { AlgorithmRegistry } from '../framework/strategy/registry.js';
 import { deserialize, serialize } from '../framework/strategy/serialization.js';
 import { lowerToImage, runImage } from './backend/index.js';
@@ -37,6 +43,10 @@ export interface MetricsOptions {
   /** Cases per function for the instruction count (seeded like the checks). */
   readonly count?: number;
   readonly seed?: number;
+  /** Awaited before each algorithm runs: a host (a web page) can yield to its event loop between passes. */
+  readonly pause?: () => Promise<void>;
+  /** The interpreter's trace events as they happen (progress). */
+  readonly onEvent?: (event: TraceEvent) => void;
 }
 
 /** The metrics a candidate program is judged by. */
@@ -70,10 +80,26 @@ export function strategyRegistry(
   opts: MetricsOptions & { onResult?: (r: PassResult<TypedBlocks>) => void } = {},
 ): AlgorithmRegistry {
   const registry = new AlgorithmRegistry();
+  const pause = opts.pause;
+  const register = (a: StrategyAlgorithm) =>
+    registry.register(
+      pause
+        ? {
+            id: a.id,
+            version: a.version,
+            kind: a.kind,
+            description: a.description,
+            run: async (c, input, args) => {
+              await pause();
+              return a.run(c, input, args);
+            },
+          }
+        : a,
+    );
   const contract = optimizationContract({ inputs: p.inputs, count: 40, seed: 7 });
   const passes: TypedPass[] = [...Object.values(PASSES), ...USER_PASSES.values()];
   for (const pass of passes)
-    registry.register(
+    register(
       passAlgorithm(pass, {
         manager: p.manager,
         contract,
@@ -81,14 +107,14 @@ export function strategyRegistry(
         onResult: opts.onResult as never,
       }),
     );
-  registry.register({
+  register({
     id: 'typed.keep',
     version: '1',
     kind: 'transform',
     description: 'the program as it is',
     run: (_c, input) => input,
   });
-  registry.register({
+  register({
     id: 'typed.metrics',
     version: '1',
     kind: 'metrics',
@@ -157,6 +183,46 @@ export interface StrategyRun {
   readonly decisions: readonly unknown[];
   readonly error?: { code: string; message: string };
   readonly execution: { id: string; nodes: number; ms: number };
+  /** One row per node the interpreter ran, in order (no artifacts: their revisions only). */
+  readonly trace?: readonly StrategyTraceRow[];
+}
+
+export interface StrategyTraceRow {
+  readonly nodeId: string;
+  readonly kind: string;
+  readonly path: string;
+  readonly parent?: string;
+  readonly status: string;
+  readonly ms?: number;
+  readonly branch?: string;
+  readonly iteration?: number;
+  /** The revision (content hash) of the node's output artifact, when it produced one. */
+  readonly output?: string;
+  readonly evidence: readonly string[];
+  readonly error?: { readonly code: string; readonly message: string };
+}
+
+const revisionOf = (x: unknown) =>
+  x && typeof x === 'object' && typeof (x as { revision?: unknown }).revision === 'string'
+    ? (x as { revision: string }).revision
+    : undefined;
+
+/** The execution's node records as plain rows. */
+export function traceRows(records: readonly NodeExecution[]): StrategyTraceRow[] {
+  const byId = new Map(records.map(r => [r.id, r.nodeId]));
+  return records.map(r => ({
+    nodeId: r.nodeId,
+    kind: r.kind,
+    path: r.path,
+    ...(r.parentId ? { parent: byId.get(r.parentId) } : {}),
+    status: r.status,
+    ...(r.durationMs !== undefined ? { ms: +r.durationMs.toFixed(1) } : {}),
+    ...(r.branch !== undefined ? { branch: r.branch } : {}),
+    ...(r.iteration !== undefined ? { iteration: r.iteration } : {}),
+    ...(revisionOf(r.output) ? { output: revisionOf(r.output) } : {}),
+    evidence: r.evidence.map(e => e.label),
+    ...(r.error ? { error: { code: r.error.code, message: r.error.message } } : {}),
+  }));
 }
 
 export async function runStrategy(
@@ -169,7 +235,7 @@ export async function runStrategy(
     ...opts,
     onResult: r => r.changed && results.set(r.artifact.revision, r),
   });
-  const exec = await execute(strategy, registry, p.head);
+  const exec = await execute(strategy, registry, p.head, opts.onEvent ? { onEvent: opts.onEvent } : {});
   const decisions = exec.records.flatMap(r =>
     r.evidence.filter(e => e.label === 'selection').map(e => e.data),
   );
@@ -186,6 +252,7 @@ export async function runStrategy(
       decisions,
       error: exec.error,
       execution: summary,
+      trace: traceRows(exec.records),
     };
   // walk back from the winner to the head through the pass results, then publish them in order
   const chain: PassResult<TypedBlocks>[] = [];
@@ -216,6 +283,7 @@ export async function runStrategy(
     published: chain.map(r => (r.report as RevisionReport).pass),
     decisions,
     execution: summary,
+    trace: traceRows(exec.records),
   };
 }
 

@@ -36,6 +36,9 @@ import {
   type Rv32Image,
 } from '../typed/backend/index.js';
 import { benchCase, casesFrom, hash, readBuffer } from '../typed/evaluate.js';
+import type { StrategyPlan } from '../framework/strategy/ir.js';
+import { USER_PASSES } from '../typed/builder.js';
+import { runStrategy, toJson } from '../typed/strategies.js';
 import { storeOf } from '../typed/ir.js';
 import { listing as listingOf } from '../typed/listing.js';
 import type { Store, TypedBlocks, WorkFn } from '../typed/model.js';
@@ -43,7 +46,7 @@ import { PIPELINES, type TypedPass } from '../typed/passes.js';
 import { Program, type Revision } from '../typed/program.js';
 import { didYouMean, fail, guard, now } from './base.js';
 import { handle, selection } from './entities.js';
-import { keyOf, settle, unwrap, type Outcome, type SyncContext } from './sync.js';
+import { keyOf, settle, unwrap, yieldToHost, type Outcome, type SyncContext } from './sync.js';
 
 // ---------- facts, computed synchronously with the kernel's own solvers ----------
 export interface FactRecord {
@@ -218,11 +221,24 @@ export class WbProgram {
     if (chain === this.k.revisions) return;
     this.k.revisions.length = 0;
     this.k.revisions.push(...chain);
+    // the head revision's assumptions are in force (as Program.checkout does)
+    const a = this.k.assumptions as Record<string, unknown>;
+    for (const key of Object.keys(a)) delete a[key];
+    Object.assign(a, JSON.parse(JSON.stringify(chain[chain.length - 1]?.assumptions ?? {})));
   }
-  /** A copy of the kernel program sharing everything but the revision list, for async work off to the side. */
+  /**
+   * A copy of the kernel program sharing everything but the revision list and the assumptions, for async work
+   * off to the side.
+   */
   scratchKernel(chain: readonly Revision[] = this.k.revisions): Program {
     const s = Object.assign(Object.create(Object.getPrototypeOf(this.k)), this.k) as Program;
     Object.defineProperty(s, 'revisions', { value: chain.slice(), writable: true, enumerable: true });
+    const assumptions = chain[chain.length - 1]?.assumptions ?? this.k.assumptions;
+    Object.defineProperty(s, 'assumptions', {
+      value: JSON.parse(JSON.stringify(assumptions ?? {})),
+      writable: true,
+      enumerable: true,
+    });
     return s;
   }
   get head(): Store {
@@ -477,6 +493,10 @@ export interface HandleEnv {
   writes(what: string, ctx: SyncContext | null, p?: WbProgram): void;
   focus(id: string | null, p: WbProgram, ctx: SyncContext | null): unknown;
   resolvePass(x: unknown): TypedPass;
+  /** What identifies a pass in replay keys: its name, and a user pass's source too. */
+  passKey(pass: TypedPass): string;
+  /** A strategy plan from a plan, its JSON, or a name (a project strategy or a pipeline). */
+  strategyPlan(x: unknown, p: WbProgram): StrategyPlan;
   replace(p: WbProgram, source: string): WbProgram;
   programHandle(p: WbProgram, ctx: SyncContext | null): any;
 }
@@ -493,10 +513,7 @@ export function makeProgramHandle(p: WbProgram, env: HandleEnv, ctx: SyncContext
   };
   const passKey = (x: unknown) => {
     const pass = env.resolvePass(x);
-    return {
-      pass,
-      key: `${pass.typed.name}${(pass as any)._user ? '#' + hash(String((pass as any)._user)) : ''}`,
-    };
+    return { pass, key: env.passKey(pass) };
   };
   /** A change made through the async kernel: on a scratch copy, then replayed onto this program. */
   const mutate = <T>(what: string, key: string, run: (scratch: Program) => Promise<T>): T | Promise<T> => {
@@ -667,9 +684,9 @@ export function makeProgramHandle(p: WbProgram, env: HandleEnv, ctx: SyncContext
         names = (x as { passes: string[] }).passes;
         if ((x as { checkEach?: boolean }).checkEach === false) checkEach = false;
       }
-      for (const n of names) env.resolvePass(n);
+      const keys = names.map(n => passKey(n).key);
       const label = typeof x === 'string' ? x : 'adhoc';
-      return mutate('pipeline', `${label}|${names.join(',')}|${checkEach}|${keyOf(opts)}`, async s => {
+      return mutate('pipeline', `${label}|${keys.join(',')}|${checkEach}|${keyOf(opts)}`, async s => {
         if (checkEach && !opts.enabled) {
           const r = await s.pipeline(typeof x === 'string' ? x : names, { count: opts.count });
           return { ...r, pipeline: label };
@@ -696,6 +713,22 @@ export function makeProgramHandle(p: WbProgram, env: HandleEnv, ctx: SyncContext
         }
         return { kind: 'pipelineRun', pipeline: label, program: p.id, rev: `r${s.rev}`, steps };
       });
+    },
+    /**
+     * Run a compilation strategy (a v6 Strategy IR plan, its JSON, or the name of a project strategy or a
+     * pipeline) on the head: the winning chain is published as revisions; the result carries every decision.
+     */
+    strategy(plan: unknown) {
+      const pl = env.strategyPlan(plan, p);
+      const users = [...USER_PASSES.values()].map(x => env.passKey(x)).join(',');
+      return mutate('strategy', `${hash(toJson(pl))}|${hash(users)}`, s =>
+        runStrategy(s, pl, {
+          pause: yieldToHost, // a page keeps painting (and shows progress) between the passes of a long run
+          onEvent: e => {
+            if (e.type === 'start') env.emit('strategyProgress', { program: p.name, plan: pl.id, node: e.nodeId });
+          },
+        }),
+      );
     },
     undo() {
       env.writes('undo', ctx, p);

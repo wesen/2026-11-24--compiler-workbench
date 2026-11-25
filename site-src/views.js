@@ -136,7 +136,7 @@ V.projects = {
 };
 
 // ---------- Files: the open project's files ----------
-const KIND_LABEL = { meta: 'project', notes: 'notes', typed: 'source', script: 'script', ui: 'UI script', json: 'data', file: 'file' };
+const KIND_LABEL = { meta: 'project', notes: 'notes', typed: 'source', script: 'script', ui: 'UI script', strategy: 'strategy', json: 'data', file: 'file' };
 V.files = {
   title: 'Files',
   on: ['files', 'program', 'projects', 'ui'],
@@ -325,6 +325,12 @@ UI.openFile = function openFile(path) {
     S().typedFile = path;
     UI.open('source');
     UI.refresh(['program']);
+  } else if (kind === 'strategy') {
+    const st = (S().strat ??= {});
+    st.sel = path.replace(/^strategies\//, '').replace(/\.json$/, '');
+    st.selKind = 'project';
+    UI.open('strategies');
+    UI.refresh(['strategies']);
   } else {
     UI.open('editor');
     UI.refresh(['files']);

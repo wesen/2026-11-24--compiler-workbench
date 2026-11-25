@@ -57,6 +57,7 @@ function sources() {
   };
   walk(join(root, 'src/workbench'), f => /\.(ts|md)$/.test(f));
   walk(join(root, 'src/typed'), f => /\.ts$/.test(f));
+  walk(join(root, 'src/framework'), f => /\.ts$/.test(f));
   walk(join(root, 'site-src'), f => /\.(js|html)$/.test(f));
   return files;
 }

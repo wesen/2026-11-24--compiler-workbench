@@ -19,7 +19,7 @@ import { WbProgram } from './programs.js';
 import { keyOf, runAsync, runSync, settle, unwrap, type Outcome, type SyncContext } from './sync.js';
 
 export const KEY = 'wb.projects.v1';
-export type FileKind = 'typed' | 'script' | 'ui' | 'meta' | 'notes' | 'json' | 'file';
+export type FileKind = 'typed' | 'script' | 'ui' | 'meta' | 'notes' | 'strategy' | 'json' | 'file';
 export const kindOf = (path: string): FileKind =>
   /\.typed$/.test(path)
     ? 'typed'
@@ -31,9 +31,11 @@ export const kindOf = (path: string): FileKind =>
           ? 'meta'
           : /\.md$/.test(path)
             ? 'notes'
-            : /\.json$/.test(path)
-              ? 'json'
-              : 'file';
+            : /^strategies\/[^/]+\.json$/.test(path)
+              ? 'strategy'
+              : /\.json$/.test(path)
+                ? 'json'
+                : 'file';
 const nameOf = (path: string) => path.replace(/^.*\//, '').replace(/\.js$/, '');
 export const SCRIPT_SCOPE = ['wb', 'p', 'project', 'args', 'param', 'log', 'yaml'];
 export const UI_SCOPE = ['ui', 'wb', 'p', 'project', 'param'];
@@ -95,7 +97,16 @@ export const firstComment = (text: string): string => {
   const first = end >= 0 ? all.slice(0, end + 1) : all;
   return first.length > 160 ? first.slice(0, 157) + '…' : first;
 };
-const ORDER: Record<FileKind, number> = { meta: 0, notes: 1, typed: 2, script: 3, ui: 4, json: 5, file: 6 };
+const ORDER: Record<FileKind, number> = {
+  meta: 0,
+  notes: 1,
+  typed: 2,
+  script: 3,
+  ui: 4,
+  strategy: 5,
+  json: 6,
+  file: 7,
+};
 const sortFiles = (a: string, b: string) => ORDER[kindOf(a)] - ORDER[kindOf(b)] || a.localeCompare(b);
 
 /** The workbench state projects read and change (owned by the root, workbench.ts). */

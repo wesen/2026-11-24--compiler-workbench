@@ -7,6 +7,7 @@ import './views.js';
 import './agent.js';
 import './dock.js';
 import './dsl.js';
+import './compiler.js';
 import { createWb, setVendor, PIPELINES, backendDefaults, didYouMean, yieldToHost } from './wb.js';
 import { PROJECTS, BOOK, REFERENCE, SOURCES, BUILD } from './content.generated.js';
 
@@ -268,7 +269,7 @@ wb.on('*', (event, data) => {
     UI.open(data.view);
     return;
   }
-  if (event === 'log' || event === 'paramValue') return;
+  if (event === 'log' || event === 'paramValue' || event === 'strategyProgress') return;
   // checks, runs and images of fresh copies (scripts and UI scripts make them) are not the open program's
   if (data && data.program && wb.current && data.program !== wb.current.name && ['check', 'run', 'image', 'revision'].includes(event)) return;
   if (event === 'check') S.lastCheck = data.check;
