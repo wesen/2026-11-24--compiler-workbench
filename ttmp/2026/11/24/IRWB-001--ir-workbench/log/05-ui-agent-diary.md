@@ -443,3 +443,80 @@ At a 1000 px window the main tile is 72 columns. The IR listing wraps with a han
 
 ### Technical details
 - The probe's rule: an element whose `overflow-x` is auto or scroll and whose `scrollWidth > clientWidth + 2`, or a non-positioned element whose right edge passes the tile body's. Editors, textareas and book tables or code are excluded as "their own box".
+
+## Step 5: Tests for the wb layer, the strategies, the site and the corpus scripts; npm test green
+
+This step adds `tests/workbench/` (16 tests in 4 files plus a helper that builds a wb root the way the site does) and brings `npm test` to 288/288. The step-4 code, written down in step 4, is in ea1d742. The tests pin the brief's headline behaviour:
+- Blend at O2: the `s:blend.15` line, 88 bytes, the why chain
+- replay semantics, the kernel gate, the projects overlay in storage, params, the book and help
+- strategies: O2 by instructions with 2255/2235/1925/1945, a rejected candidate, the short form at 72 columns, a user pass winning a candidate
+- the compiler as data
+- the site build: CSP, no network calls or keys in the bundle, the docs at 72 columns
+
+With `IRWB_FULL=1` every one of the 46 corpus scripts runs, and only wrong-shift/explore is refused.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 (task 5: "Add `npm run build:site` and tests under `tests/workbench/*.test.mjs`. Keep `npm test` green"), and the coordinator's request for this diary: "Your diary is missing. … From then on, append a step at every meaningful milestone and commit the diary with your code."
+**Assistant interpretation:** Cover the wb layer and the new features with tests that run in `npm test`, keep the slow corpus-wide run behind `IRWB_FULL`, and keep the diary current.
+**Inferred user intent:** Regressions in the port show up in the normal test run.
+**Commit (code):** see the next commit after ea1d742 ("IRWB-001 P3.6: tests/workbench …"), which also carries this step.
+
+### What I did
+- **`tests/workbench/helpers.mjs`:** `makeWb()` with in-memory storage, the corpus projects, the book, the reference and the `src/typed` + `src/workbench` sources; `widest(text)`.
+- **`wb.test.mjs`:** Blend at O2 (listing line, `img:blend@r6` 88 bytes, why via licm from constprop because `loop:blend@bb:blend.1`, related instructions); `wb.sync` (3 attempts for 2 new passes, read-only refusal); the gate on wrong-shift; the projects overlay (storage key, a second root sees edits, reset); `project.json` at 72 columns with prose as lines; params, book and help; events.
+- **`strategies.test.mjs`:**
+  - O2 by instructions, with progress events.
+  - A sync strategy run (by bytes, O1 wins the 88-byte tie).
+  - The rejected candidate; the short form saved, listed and kept at 72 columns.
+  - The kernel builder through `my-first-pass/scripts/explore.js`: a user pass wins a candidate by instructions.
+  - `wb.compiler()` and `wb.source.definition`.
+- **`site.test.mjs`:** builds into `dist/site-test`; checks the files, `connect-src 'none'`, the script order, and that the bundle contains no `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `sk-ant` or `anthropic.com`; runs `format-docs.mjs --check`.
+- **`scripts.test.mjs`:** a sample of 6 scripts by default, every script with `IRWB_FULL=1`. The expected failure set is exactly `{ 'wrong-shift/explore': 'contractRejected' }`.
+- **`workbench.ts`:**
+  - The `wb.help()` index's closing line is split to fit 72 columns.
+  - The unused `KINDS` constant and its import are removed.
+- `npx prettier --write src/workbench/programs.ts src/workbench/workbench.ts`.
+- `DIVERGENCES.md`:
+  - "Removed or reduced" now covers the kernel builder (`reservedName`, page-wide `USER_PASSES`, the kernel's fn handle) and `.needs()` taking only built-in analyses.
+  - A new section, "Added in this build", covers strategies, the compiler as data, and 72-column text.
+  - Rewrapped with `format-docs.mjs`.
+- `corpus/reference.md`: the "Strategies and the compiler" section (written in step 4's work, committed in ea1d742) is what `wb.help('strategies')` prints.
+
+### Why
+- **The corpus-wide run takes 44 s, so it is opt-in.** The repository already keeps corpus-wide image sizes behind `IRWB_FULL`; the default run keeps one script per behaviour the port had to get right: replay, fresh copies, the fact views, `wb.focus` and user passes.
+
+### What worked
+- `node --test "tests/workbench/*.test.mjs"`: `tests 15 … pass 15 … fail 0` (before `scripts.test.mjs` was added).
+- `IRWB_FULL=1 node --test tests/workbench/scripts.test.mjs`: `pass 1 … duration_ms 44198`.
+- `npx prettier --check src/workbench/*.ts src/typed/strategies.ts`: "All matched files use Prettier code style!".
+- `npm test`: `tests 288, pass 288, fail 0, duration_ms 60216`.
+- `node tools/format-docs.mjs --check`: `would change 0 of 19 files`.
+- `grep -o "fetch(\|XMLHttpRequest\|WebSocket\|sendBeacon\|sk-ant\|anthropic\.com\|api_key\|apiKey" dist/site/app.js`: no matches.
+- Final browser check on the rebuilt site (1600×1000, Blend, Run):
+  - `s:blend.15   inv = ((a * b) + 64)   // main.typed:5`, image 88 bytes, why via licm
+  - `wb.strategy.list()` gives `preset:O2 preset:fastest preset:smallest preset:cleanup pipeline:O0 … pipeline:broken`
+  - resource origins: only `http://127.0.0.1:8765`; console: 0 errors, 0 warnings
+
+### What didn't work
+- **`node --test tests/workbench/`** (a directory) failed with `Error: Cannot find module '…/tests/workbench'`. `node --test` takes files or globs: `node --test "tests/workbench/*.test.mjs"`.
+- **`wb.sync: passes are synchronous inside a replay context, and Promises outside it`** failed with `Error [WorkbenchError]: [readOnly] read-only mode: apply() is off` thrown synchronously out of `assert.rejects(Promise.resolve(wb.sync(…)))`. `runSync` rethrows at once when the first attempt fails without suspending. The test now passes an async function to `assert.rejects`. This behaviour is intended: a context that needs no async work stays synchronous.
+- **`params, book and help`** failed `assert.ok(widest(wb.help()) <= 72)`. The index's closing line, `wb.help(topic) prints one section; topics are the headings above (any word of them).`, is 85 characters. Split onto two lines.
+- **`npx prettier --check`** flagged `src/workbench/programs.ts` and `src/workbench/workbench.ts` (long lines from the step-3 and step-4 patches); fixed with `--write`.
+
+### What I learned
+- `runSync`'s mixed return (a value or a Promise) needs care in callers that always want a Promise: `runAsync`, or an async wrapper.
+
+### What was tricky to build
+- **A test that waits for replays.** The replay test counts attempts from inside the function (`attempts++`). That makes the k + 1 rule observable: 2 new passes give 3 attempts.
+
+### What warrants a second pair of eyes
+- **Execution order.** The strategies and wb tests share the process-wide `USER_PASSES`. `strategies.test.mjs` clears it before and after its user-pass test; `node --test` runs files in separate processes but the tests within a file in order.
+
+### What should be done in the future
+- Run the Playwright probes (`.playwright-mcp/probe.js`, `probe-dsl.js`) in CI with a headless browser; they live outside the test suite because they need a browser and a running server.
+
+### Code review instructions
+- `tests/workbench/*.test.mjs`; `npm test`; `IRWB_FULL=1 node --test tests/workbench/scripts.test.mjs`.
+
+### Technical details
+- Test counts: `wb.test.mjs` 7, `strategies.test.mjs` 6, `site.test.mjs` 2, `scripts.test.mjs` 1.

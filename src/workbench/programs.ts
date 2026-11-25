@@ -725,7 +725,8 @@ export function makeProgramHandle(p: WbProgram, env: HandleEnv, ctx: SyncContext
         runStrategy(s, pl, {
           pause: yieldToHost, // a page keeps painting (and shows progress) between the passes of a long run
           onEvent: e => {
-            if (e.type === 'start') env.emit('strategyProgress', { program: p.name, plan: pl.id, node: e.nodeId });
+            if (e.type === 'start')
+              env.emit('strategyProgress', { program: p.name, plan: pl.id, node: e.nodeId });
           },
         }),
       );

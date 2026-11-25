@@ -55,7 +55,6 @@ export interface WbConfig {
   readonly sources?: Readonly<Record<string, string>>;
 }
 
-
 /** Handles over a working store (a pass's), for user pass bodies and user analyses. */
 function storeHost(st: Store): EntityHost {
   const get = (id: string) => st.get(id);
@@ -119,7 +118,10 @@ export function createWb(config: WbConfig = {}) {
 
   // ---------- user passes (the kernel's builder) and analyses ----------
   /** Each user pass's body (for replay keys) and the script that defined it (for the Compiler view). */
-  const userInfo = new WeakMap<TypedPass, { body: string; definedIn: string | null; project: string | null }>();
+  const userInfo = new WeakMap<
+    TypedPass,
+    { body: string; definedIn: string | null; project: string | null }
+  >();
   const passNames = () => [...Object.keys(PASSES), ...USER_PASSES.keys()];
   const resolvePass = (x: unknown): TypedPass => {
     if (typeof x === 'string') {
@@ -153,7 +155,12 @@ export function createWb(config: WbConfig = {}) {
   };
   function passBuilder(name: string, ctx: SyncContext | null) {
     const b = builderCall(() => kernelPassBuilder(name));
-    const spec = { about: '', needs: {} as Record<string, string>, writes: [] as string[], preserves: [] as string[] };
+    const spec = {
+      about: '',
+      needs: {} as Record<string, string>,
+      writes: [] as string[],
+      preserves: [] as string[],
+    };
     const w: any = guard('PassBuilder', {
       about(t: string) {
         spec.about = String(t);
@@ -181,7 +188,7 @@ export function createWb(config: WbConfig = {}) {
       run(fn: (fnHandle: any, tx: any, facts: any, params: any) => void) {
         if (typeof fn !== 'function')
           fail('badArgument', 'run(fn): fn is (fn, tx, facts, params) => …', {
-            fix: ".run((fn, tx) => { tx.rewrite(v => …) })",
+            fix: '.run((fn, tx) => { tx.rewrite(v => …) })',
           });
         const before = USER_PASSES.get(name);
         const pass = builderCall(() => b.run(fn));
@@ -520,8 +527,7 @@ export function createWb(config: WbConfig = {}) {
         REFERENCE.split('\n')
           .filter(l => /^#{2,3} /.test(l))
           .map(l => l.replace(/^#+ /, ''))
-          .join('\n') +
-        '\n\nwb.help(topic) prints one section; topics are the headings above (any word of them).'
+          .join('\n') + '\n\nwb.help(topic) prints one section; a topic is any word of\nthe headings above.'
       );
     const parts = REFERENCE.split(/^(?=## )/m);
     const hit = parts.find(s => s.split('\n')[0].toLowerCase().includes(String(topic).toLowerCase()));
@@ -614,7 +620,6 @@ export function createWb(config: WbConfig = {}) {
     },
   });
 
-
   // ---------- where the compiler's parts are defined (for the Compiler view and wb.source.definition) ----------
   /** The top-level declaration around `line` (0-based), with the comment above it. */
   const chunk = (lines: string[], line: number) => {
@@ -628,7 +633,9 @@ export function createWb(config: WbConfig = {}) {
     return { from: a + 1, to: b };
   };
   const definition = (what: string) => {
-    const name = String(what).replace(/^typed\./, '').replace(/@.*$/, '');
+    const name = String(what)
+      .replace(/^typed\./, '')
+      .replace(/@.*$/, '');
     const esc = name.replace(/[-.]/g, m => '\\' + m);
     const anchors = [new RegExp(`^\\s*name: '${esc}',`), new RegExp(`^\\s*id: 'typed\\.${esc}',`)];
     for (const re of anchors)
@@ -662,7 +669,8 @@ export function createWb(config: WbConfig = {}) {
   /** A strategy file's text: the short form ({ passes } | { choose, by } | { repeat }) or a full plan. */
   const parseStrategy = (name: string, text: string): { plan: StrategyPlan; spec?: StrategySpec } => {
     const value = JSON.parse(text);
-    if (value && typeof value === 'object' && value.formatVersion !== undefined) return { plan: fromJson(text) };
+    if (value && typeof value === 'object' && value.formatVersion !== undefined)
+      return { plan: fromJson(text) };
     return { plan: planFromSpec(name, value), spec: value };
   };
   const strategyList = (projectId: string | null = state.projectId): StrategyEntry[] => {
@@ -676,20 +684,43 @@ export function createWb(config: WbConfig = {}) {
           const about = spec ? joinText(spec.about) : plan.description;
           out.push({ name: m[1], kind: 'project', path, id: plan.id, about, spec, plan });
         } catch (e) {
-          out.push({ name: m[1], kind: 'project', path, error: String((e as Error).message || e).split('\n')[0] });
+          out.push({
+            name: m[1],
+            kind: 'project',
+            path,
+            error: String((e as Error).message || e).split('\n')[0],
+          });
         }
       }
     for (const [n, spec] of Object.entries(PRESETS))
-      out.push({ name: n, kind: 'preset', id: `typed.strategy.${n}`, about: joinText(spec.about), spec, plan: planFromSpec(n, spec) });
+      out.push({
+        name: n,
+        kind: 'preset',
+        id: `typed.strategy.${n}`,
+        about: joinText(spec.about),
+        spec,
+        plan: planFromSpec(n, spec),
+      });
     for (const n of Object.keys(PIPELINES)) {
       const plan = pipelinePlan(n);
-      out.push({ name: n, kind: 'pipeline', id: plan.id, about: plan.description, spec: { passes: n }, plan });
+      out.push({
+        name: n,
+        kind: 'pipeline',
+        id: plan.id,
+        about: plan.description,
+        spec: { passes: n },
+        plan,
+      });
     }
     return out;
   };
   const isPlan = (x: unknown): x is StrategyPlan =>
     !!x && typeof x === 'object' && (x as StrategyPlan).formatVersion === 1 && !!(x as StrategyPlan).root;
-  function strategyPlan(x: unknown, projectId: string | null = state.projectId, name = 'adhoc'): StrategyPlan {
+  function strategyPlan(
+    x: unknown,
+    projectId: string | null = state.projectId,
+    name = 'adhoc',
+  ): StrategyPlan {
     if (typeof x === 'string') {
       const t = x.trim();
       if (t.startsWith('{')) {
@@ -707,7 +738,10 @@ export function createWb(config: WbConfig = {}) {
       // a project's own strategy first, then a preset, then a pipeline of the same name
       const hit = list.find(e => e.name === t || e.id === t || e.path === t);
       if (!hit) {
-        const near = didYouMean(t, list.map(e => e.name));
+        const near = didYouMean(
+          t,
+          list.map(e => e.name),
+        );
         fail('unknownStrategy', `no strategy "${t}".` + (near ? ` Did you mean "${near}"?` : ''), {
           fix: `strategies: ${list.map(e => e.name).join(', ')}`,
         });
@@ -872,7 +906,10 @@ export function createWb(config: WbConfig = {}) {
         }
         for (const c of constraints)
           if (!['<=', '>=', '<', '>', '=='].includes(c.op) || typeof c.value !== 'number')
-            fail('badArgument', `constraint ${JSON.stringify(c)}: { metric, op: <= >= < > ==, value: number }`);
+            fail(
+              'badArgument',
+              `constraint ${JSON.stringify(c)}: { metric, op: <= >= < > ==, value: number }`,
+            );
         const cands = Object.fromEntries(
           Object.entries(candidates).map(([k, v]) => [k, candidate(v, `candidate ${k}`)]),
         );

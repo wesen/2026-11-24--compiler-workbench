@@ -69,9 +69,26 @@ checkEach: false }` turns the gate off.
 - User analyses (`wb.analysis(name)`) take their lattice from
   `wb.lattice` (`set`, `map`, `interval`): the framework's lattices,
   which encode their values as JSON.
-- `wb.source` is the source of this build (src/workbench, src/typed,
-  site-src), not the prototype's.
+- `wb.source` is the source of this build (src/framework, src/typed,
+  src/workbench, site-src), not the prototype's.
+- `wb.pass(name)` is the kernel's pass builder: a pass is registered for
+  the whole page (`USER_PASSES`), a built-in name is refused with
+  `reservedName`, and the body gets the kernel's function handle
+  (`fn.stmts().list()`, `fn.values().list()`).
+- `wb.analysis(name)` names a fact for `fn.fact(name)` only; a user
+  pass's `.needs()` takes the built-in analyses.
 - The agent panel is off unless the page defines `window.WB_AGENT = {
   sample(messages, options) }`; the build has no model connection and
   the page's Content-Security-Policy blocks network requests
   (`connect-src 'none'`).
+
+## Added in this build
+
+- Strategies (`wb.strategy`): plans over the passes, chosen by a metric
+  per project, kept as `strategies/<name>.json`; the Strategies view.
+- `wb.compiler()` and `wb.source.definition(name)`: the passes,
+  analyses, pipelines and strategies as data, and where each is defined;
+  the Compiler view.
+- Everything the workbench writes or bundles fits 72 columns
+  (project.json, strategy files, this reference); the reference's tables
+  are lists, so `wb.help()` reads as text in a narrow tile.
