@@ -1,0 +1,528 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - text: Compiler Workbench
+      - generic [ref=e5]: projects · typed → RV32 · on the IR framework
+    - 'button "Writing passes UI gallery: every component, and the diagnostics ▾" [ref=e2145] [cursor=pointer]':
+      - generic [ref=e8]: Writing passes
+      - generic [ref=e9]: "UI gallery: every component, and the diagnostics"
+      - generic [ref=e10]: ▾
+    - generic [ref=e11]:
+      - generic [ref=e2146]: r0
+      - generic [ref=e2147]: 0 passes applied
+    - generic [ref=e14]:
+      - generic [ref=e2148]: —
+      - generic [ref=e2149]: not checked
+    - generic [ref=e17]:
+      - button "Step" [ref=e18] [cursor=pointer]
+      - button "Run" [ref=e19] [cursor=pointer]
+      - button "Undo" [ref=e20] [cursor=pointer]
+      - button "Check" [ref=e21] [cursor=pointer]
+    - generic [ref=e22]: build 2026-11-25 01:32
+    - button "Book" [ref=e23] [cursor=pointer]
+    - button "Layout ▾" [ref=e24] [cursor=pointer]
+    - button "Dark" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - generic [ref=e2150]:
+      - generic [ref=e2151]:
+        - generic [ref=e2152]:
+          - generic [ref=e2153]:
+            - generic [ref=e2154]:
+              - button "Files 6" [ref=e2155]:
+                - text: Files
+                - generic [ref=e2156]: "6"
+              - button "×" [ref=e2157] [cursor=pointer]
+            - generic [ref=e2158]:
+              - button "Projects" [ref=e2159]
+              - button "×" [ref=e2160] [cursor=pointer]
+            - generic [ref=e2161]:
+              - button "Scripts" [ref=e2162]
+              - button "×" [ref=e2163] [cursor=pointer]
+          - button "+" [ref=e2164] [cursor=pointer]
+          - button "⤢" [ref=e2165] [cursor=pointer]
+        - generic [ref=e2167]:
+          - generic [ref=e2168]:
+            - generic [ref=e2169]: "UI gallery: every component, and the diagnostics"
+            - button "New file" [ref=e2170] [cursor=pointer]
+          - generic [ref=e2171]:
+            - button "project.json project · 15 lines" [ref=e2173] [cursor=pointer]:
+              - generic [ref=e2174]: project.json
+              - generic [ref=e2175]: project · 15 lines
+            - button "notes.md notes · 2 lines" [ref=e2177] [cursor=pointer]:
+              - generic [ref=e2178]: notes.md
+              - generic [ref=e2179]: notes · 2 lines
+            - button "main.typed source · 16 lines" [ref=e2181] [cursor=pointer]:
+              - generic [ref=e2182]: main.typed
+              - generic [ref=e2183]: source · 16 lines
+            - generic [ref=e2184]:
+              - button "scripts/sizes.js script · 8 lines" [ref=e2185] [cursor=pointer]:
+                - generic [ref=e2186]: scripts/sizes.js
+                - generic [ref=e2187]: script · 8 lines
+              - button "Run" [ref=e2188] [cursor=pointer]
+            - generic [ref=e2189]:
+              - button "ui/diagnostics.js UI script · 77 lines" [ref=e2190] [cursor=pointer]:
+                - generic [ref=e2191]: ui/diagnostics.js
+                - generic [ref=e2192]: UI script · 77 lines
+              - button "on" [ref=e2193] [cursor=pointer]
+            - generic [ref=e2194]:
+              - button "ui/gallery.js UI script · 156 lines" [ref=e2195] [cursor=pointer]:
+                - generic [ref=e2196]: ui/gallery.js
+                - generic [ref=e2197]: UI script · 156 lines
+              - button "on" [ref=e2198] [cursor=pointer]
+            - paragraph [ref=e2199]:
+              - text: A built-in project. Edits are kept in this browser;
+              - button "reset" [ref=e2200] [cursor=pointer]
+              - text: brings the original back.
+      - generic "Drag to resize" [ref=e2201]
+      - generic [ref=e2202]:
+        - generic [ref=e2203]:
+          - generic [ref=e2204]:
+            - generic [ref=e2205]:
+              - generic [ref=e2206]:
+                - generic [ref=e2207]:
+                  - button "Source" [ref=e2208]
+                  - button "×" [ref=e2209] [cursor=pointer]
+                - generic [ref=e2210]:
+                  - button "Editor" [ref=e2211]
+                  - button "×" [ref=e2212] [cursor=pointer]
+                - generic [ref=e2213]:
+                  - button "IR r0" [ref=e2214]:
+                    - text: IR
+                    - generic [ref=e2215]: r0
+                  - button "×" [ref=e2216] [cursor=pointer]
+                - generic [ref=e2217]:
+                  - button "CFG" [ref=e2218]
+                  - button "×" [ref=e2219] [cursor=pointer]
+                - generic [ref=e2220]:
+                  - button "Lineage" [ref=e2221]
+                  - button "×" [ref=e2222] [cursor=pointer]
+                - generic [ref=e2223]:
+                  - button "Facts" [ref=e2224]
+                  - button "×" [ref=e2225] [cursor=pointer]
+              - button "+" [ref=e2226] [cursor=pointer]
+              - button "⤢" [ref=e2227] [cursor=pointer]
+            - paragraph [ref=e2232]: "Select something: a statement in IR, a block in CFG, a line number in Source, an instruction in RV32. Its origin, the facts that justify it, and everything derived from it show here."
+          - generic "Drag to resize" [ref=e2233]
+          - generic [ref=e2234]:
+            - generic [ref=e2235]:
+              - generic [ref=e2236]:
+                - generic [ref=e2237]:
+                  - button "Gallery · r0" [ref=e2238]
+                  - button "×" [ref=e2239] [cursor=pointer]
+                - generic [ref=e2240]:
+                  - button "Diagnostics · 12" [ref=e2241]
+                  - button "×" [ref=e2242] [cursor=pointer]
+              - button "+" [ref=e2244] [cursor=pointer]
+              - button "⤢" [ref=e2245] [cursor=pointer]
+            - generic [ref=e2250]:
+              - paragraph [ref=e2253]: Each line ran when this script did; the error is what the DSL threw. Every one names the problem and how to fix it.
+              - generic [ref=e2255]:
+                - generic [ref=e2258]:
+                  - generic [ref=e2260]:
+                    - generic [ref=e2261]: a misspelt member
+                    - generic [ref=e2263]: ui.table(ui.state([])).colums('a')
+                  - paragraph [ref=e2267]:
+                    - code [ref=e2268]: "[unknownMember] Table has no member \"colums\". Did you mean \"columns\"?"
+                  - paragraph [ref=e2271]: "fix: Table members: columns, onRow, highlight, rowClass, empty, sort, limit, title, cellStyle"
+                - generic [ref=e2274]:
+                  - generic [ref=e2276]:
+                    - generic [ref=e2277]: a member ui does not have
+                    - generic [ref=e2279]: ui.histogram([])
+                  - paragraph [ref=e2283]:
+                    - code [ref=e2284]: "[unknownMember] ui has no member \"histogram\"."
+                  - paragraph [ref=e2287]: "fix: ui members: text, stat, badge, code, json, table, list, tree, diff, chart, slider, toggle, select, multiselect, input, button, row, col, section, tabs, when,…"
+                - generic [ref=e2290]:
+                  - generic [ref=e2292]:
+                    - generic [ref=e2293]: a Selection handle
+                    - generic [ref=e2295]: ui.table(p.fn('score').stmts())
+                  - paragraph [ref=e2299]:
+                    - code [ref=e2300]: "[notACell] table() wants a cell or an array, got a Selection (it would never update)"
+                  - paragraph [ref=e2303]: "fix: table(ui.query(({ p }) => fn('score').stmts().list()))"
+                - generic [ref=e2306]:
+                  - generic [ref=e2308]:
+                    - generic [ref=e2309]: a Promise as data
+                    - generic [ref=e2311]: ui.chart(Promise.resolve([]))
+                  - paragraph [ref=e2315]:
+                    - code [ref=e2316]: "[notACell] chart() wants a cell or an array, got a Promise"
+                  - paragraph [ref=e2319]: "fix: ui.query(async ctx => …) makes a cell of async work"
+                - generic [ref=e2322]:
+                  - generic [ref=e2324]:
+                    - generic [ref=e2325]: a side effect in a query
+                    - generic [ref=e2327]: "ui.query(({ p }) => p.apply('fold')).value"
+                  - paragraph [ref=e2331]:
+                    - code [ref=e2332]: "[sideEffectInQuery] a query is read-only, but it tried apply()"
+                  - paragraph [ref=e2335]: "fix: change the program in a handler: ui.button('…').on(({ p }) => p.apply('fold')), or run a script on a copy: ui.from(name, args, { fresh: true })"
+                - generic [ref=e2338]:
+                  - generic [ref=e2340]:
+                    - generic [ref=e2341]: a slider on a plain cell
+                    - generic [ref=e2343]: ui.slider(ui.state(3))
+                  - paragraph [ref=e2347]:
+                    - code [ref=e2348]: "[notAParam] slider() wants a int or float parameter"
+                  - paragraph [ref=e2351]: "fix: const n = ui.param.int('name', { … }); slider(n)"
+                - generic [ref=e2354]:
+                  - generic [ref=e2356]:
+                    - generic [ref=e2357]: a placement that does not exist
+                    - generic [ref=e2359]: "ui.tile('t').place({ splitRigth: 'ir' })"
+                  - paragraph [ref=e2363]:
+                    - code [ref=e2364]: "[badPlacement] place() has no \"splitRigth\". Did you mean \"splitRight\"?"
+                  - paragraph [ref=e2367]: "fix: splitRight, splitLeft, splitAbove, splitBelow, tabWith, replace"
+                - generic [ref=e2370]:
+                  - generic [ref=e2372]:
+                    - generic [ref=e2373]: an object inside a row
+                    - generic [ref=e2375]: "ui.row({ bytes: 12 })"
+                  - paragraph [ref=e2379]:
+                    - code [ref=e2380]: "[notAComponent] row() takes components or text; got an object"
+                  - paragraph [ref=e2383]: "fix: ui.text(…), ui.table(…), ui.stat(label, cell)…"
+                - generic [ref=e2386]:
+                  - generic [ref=e2388]:
+                    - generic [ref=e2389]: setting a computed cell
+                    - generic [ref=e2391]: "ui.query(({ p }) => p.rev).set('r9')"
+                  - paragraph [ref=e2395]:
+                    - code [ref=e2396]: "[readOnlyCell] query: ({ p }) => p.rev is computed from other cells; set the cells it reads"
+                  - paragraph [ref=e2399]: "fix: ui.state(initial) makes a cell you can set"
+                - generic [ref=e2402]:
+                  - generic [ref=e2404]:
+                    - generic [ref=e2405]: a cycle between cells
+                    - generic [ref=e2407]: "{ let b = null; const a = ui.query(() => b.value + 1, 'a'); b = a.map(x => x + 1).as('b'); return a.value;"
+                  - paragraph [ref=e2411]:
+                    - code [ref=e2412]: "[immutable] Cell is read-only; assigning .label has no effect."
+                  - paragraph [ref=e2415]: "fix: change programs only through passes (tx) or their files: p.apply(pass), project.files.write(path, text)"
+                - generic [ref=e2418]:
+                  - generic [ref=e2420]:
+                    - generic [ref=e2421]: a wrong prop on a component
+                    - generic [ref=e2423]: "{ ui.component('pill') .props({ text: 'string' }) .render((d, h, { text }) => h('span', {}, text)) .register(); return ui.pill({ txt: 'hi' });"
+                  - paragraph [ref=e2427]:
+                    - code [ref=e2428]: "[badProps] pill has no prop \"txt\". Did you mean \"text\"?"
+                  - paragraph [ref=e2431]: "fix: props: text (string)"
+                - generic [ref=e2434]:
+                  - generic [ref=e2436]:
+                    - generic [ref=e2437]: a fragment that does not exist
+                    - generic [ref=e2439]: ui.use('sparkle')
+                  - paragraph [ref=e2443]:
+                    - code [ref=e2444]: "[unknownFragment] no UI fragment \"sparkle\""
+                  - paragraph [ref=e2447]: "fix: fragments: heat"
+        - generic "Drag to resize" [ref=e2448]
+        - generic [ref=e2449]:
+          - generic [ref=e2450]:
+            - generic [ref=e2451]:
+              - generic [ref=e2452]:
+                - button "Pipeline" [ref=e2453]
+                - button "×" [ref=e2454] [cursor=pointer]
+              - generic [ref=e2455]:
+                - button "Timeline 1" [ref=e2456]:
+                  - text: Timeline
+                  - generic [ref=e2457]: "1"
+                - button "×" [ref=e2458] [cursor=pointer]
+              - generic [ref=e2459]:
+                - button "Checks" [ref=e2460]
+                - button "×" [ref=e2461] [cursor=pointer]
+              - generic [ref=e2462]:
+                - button "RV32 188 B" [ref=e2463]:
+                  - text: RV32
+                  - generic [ref=e2464]: 188 B
+                - button "×" [ref=e2465] [cursor=pointer]
+              - generic [ref=e2466]:
+                - button "Run" [ref=e2467]
+                - button "×" [ref=e2468] [cursor=pointer]
+              - generic [ref=e2469]:
+                - button "Console" [ref=e2470]
+                - button "×" [ref=e2471] [cursor=pointer]
+            - button "+" [ref=e2473] [cursor=pointer]
+            - button "⤢" [ref=e2474] [cursor=pointer]
+          - generic [ref=e2476]:
+            - generic [ref=e2477]:
+              - generic [ref=e2478]: function
+              - generic [ref=e2479]:
+                - button "score" [ref=e2480] [cursor=pointer]
+                - button "sum" [ref=e2481] [cursor=pointer]
+              - generic [ref=e2482]:
+                - button "Listing" [ref=e2483] [cursor=pointer]
+                - button "Diff" [ref=e2484] [cursor=pointer]
+                - button "Allocation" [ref=e2485] [cursor=pointer]
+              - button "Backend options" [ref=e2486] [cursor=pointer]
+            - generic [ref=e2487]:
+              - generic [ref=e2489]:
+                - term [ref=e2490]: image
+                - definition [ref=e2491]: img:ui_gallery@r0 · current
+                - term [ref=e2492]: score
+                - definition [ref=e2493]: 40 bytes · 10 instructions
+                - term [ref=e2494]: frame
+                - definition [ref=e2495]: 0 bytes
+                - term [ref=e2496]: registers used
+                - definition [ref=e2497]: t0 t1 a0 a1
+                - term [ref=e2498]: spills
+                - definition [ref=e2499]: "0"
+                - term [ref=e2500]: whole image
+                - definition [ref=e2501]: 188 bytes
+              - table [ref=e2502]:
+                - rowgroup [ref=e2503]:
+                  - row [ref=e2504]:
+                    - columnheader "off" [ref=e2505]
+                    - columnheader "instruction" [ref=e2506]
+                    - columnheader "covers" [ref=e2507]
+                    - columnheader [ref=e2508]
+                  - row [ref=e2509]:
+                    - cell "000" [ref=e2510]
+                    - cell [ref=e2511]:
+                      - button "addi t0, zero, 10" [ref=e2512] [cursor=pointer]
+                    - cell [ref=e2513]:
+                      - button "s:score.0" [ref=e2514] [cursor=pointer]
+                      - text: · main.typed:3
+                    - cell [ref=e2515]
+                  - row [ref=e2516]:
+                    - cell "004" [ref=e2517]
+                    - cell [ref=e2518]:
+                      - button "addi t1, zero, 3" [ref=e2519] [cursor=pointer]
+                    - cell [ref=e2520]:
+                      - button "s:score.0" [ref=e2521] [cursor=pointer]
+                      - text: · main.typed:3
+                    - cell [ref=e2522]
+                  - row [ref=e2523]:
+                    - cell "008" [ref=e2524]
+                    - cell [ref=e2525]:
+                      - button "mul t0, t0, t1" [ref=e2526] [cursor=pointer]
+                    - cell [ref=e2527]:
+                      - button "s:score.0" [ref=e2528] [cursor=pointer]
+                      - text: · main.typed:3
+                    - cell [ref=e2529]
+                  - row [ref=e2530]:
+                    - cell "00c" [ref=e2531]
+                    - cell [ref=e2532]:
+                      - button "bge a1, a0, 0x1c" [ref=e2533] [cursor=pointer]
+                    - cell [ref=e2534]:
+                      - button "s:score.1" [ref=e2535] [cursor=pointer]
+                      - text: · main.typed:4
+                    - cell [ref=e2536]
+                  - row [ref=e2537]:
+                    - cell "010" [ref=e2538]
+                    - cell [ref=e2539]:
+                      - button "slli t1, a0, 2" [ref=e2540] [cursor=pointer]
+                    - cell [ref=e2541]:
+                      - button "s:score.2" [ref=e2542] [cursor=pointer]
+                      - text: · main.typed:5
+                    - cell [ref=e2543]
+                  - row [ref=e2544]:
+                    - cell "014" [ref=e2545]
+                    - cell [ref=e2546]:
+                      - button "add a0, t1, t0" [ref=e2547] [cursor=pointer]
+                    - cell [ref=e2548]:
+                      - button "s:score.2" [ref=e2549] [cursor=pointer]
+                      - text: · main.typed:5
+                    - cell [ref=e2550]
+                  - row [ref=e2551]:
+                    - cell "018" [ref=e2552]
+                    - cell [ref=e2553]:
+                      - button "ret" [ref=e2554] [cursor=pointer]
+                    - cell [ref=e2555]:
+                      - button "s:score.2" [ref=e2556] [cursor=pointer]
+                      - text: · main.typed:5, main.typed:6 · return (no frame to pop)
+                    - cell [ref=e2557]
+                  - row [ref=e2558]:
+                    - cell "01c" [ref=e2559]
+                    - cell [ref=e2560]:
+                      - button "slli t1, a1, 2" [ref=e2561] [cursor=pointer]
+                    - cell [ref=e2562]:
+                      - button "s:score.5" [ref=e2563] [cursor=pointer]
+                      - text: · main.typed:7
+                    - cell [ref=e2564]
+                  - row [ref=e2565]:
+                    - cell "020" [ref=e2566]
+                    - cell [ref=e2567]:
+                      - button "sub a0, t1, t0" [ref=e2568] [cursor=pointer]
+                    - cell [ref=e2569]:
+                      - button "s:score.5" [ref=e2570] [cursor=pointer]
+                      - text: · main.typed:7
+                    - cell [ref=e2571]
+                  - row [ref=e2572]:
+                    - cell "024" [ref=e2573]
+                    - cell [ref=e2574]:
+                      - button "ret" [ref=e2575] [cursor=pointer]
+                    - cell [ref=e2576]:
+                      - button "fn:score" [ref=e2577] [cursor=pointer]
+                    - cell [ref=e2578]
+              - paragraph [ref=e2579]: "Each instruction is an entity: select one to see the statement and source line it came from. Counts appear after a run on the image in the Run view."
+      - generic "Drag to resize" [ref=e2580]
+      - generic [ref=e2581]:
+        - generic [ref=e2582]:
+          - generic [ref=e2583]:
+            - generic [ref=e2584]:
+              - button "Book" [ref=e2585]
+              - button "×" [ref=e2586] [cursor=pointer]
+            - generic [ref=e2587]:
+              - button "Agent off" [ref=e2588]:
+                - text: Agent
+                - generic [ref=e2589]: "off"
+              - button "×" [ref=e2590] [cursor=pointer]
+            - generic [ref=e2591]:
+              - button "Reference" [ref=e2592]
+              - button "×" [ref=e2593] [cursor=pointer]
+            - generic [ref=e2594]:
+              - button "Code" [ref=e2595]
+              - button "×" [ref=e2596] [cursor=pointer]
+          - button "+" [ref=e2598] [cursor=pointer]
+          - button "⤢" [ref=e2599] [cursor=pointer]
+        - generic [ref=e2601]:
+          - navigation [ref=e2602]:
+            - generic [ref=e2603]:
+              - generic [ref=e2604]: Inside the Compiler Workbench
+              - generic [ref=e2605]: 17 chapters · written for the prototype; numbers measured there
+            - generic [ref=e2606]: Part I · The workbench
+            - button "1 A workbench, not a compiler" [ref=e2607] [cursor=pointer]:
+              - generic [ref=e2608]: "1"
+              - generic [ref=e2609]: A workbench, not a compiler
+            - button "2 The typed language and its front end" [ref=e2610] [cursor=pointer]:
+              - generic [ref=e2611]: "2"
+              - generic [ref=e2612]: The typed language and its front end
+            - button "3 The store, lifting, and revisions" [ref=e2613] [cursor=pointer]:
+              - generic [ref=e2614]: "3"
+              - generic [ref=e2615]: The store, lifting, and revisions
+            - 'button "4 Provenance: where things came from, and why they are valid" [ref=e2616] [cursor=pointer]':
+              - generic [ref=e2617]: "4"
+              - generic [ref=e2618]: "Provenance: where things came from, and why they are valid"
+            - button "5 Handles, selections and diagnostics" [ref=e2619] [cursor=pointer]:
+              - generic [ref=e2620]: "5"
+              - generic [ref=e2621]: Handles, selections and diagnostics
+            - generic [ref=e2622]: Part II · Passes and facts
+            - button "6 The pass manager" [ref=e2623] [cursor=pointer]:
+              - generic [ref=e2624]: "6"
+              - generic [ref=e2625]: The pass manager
+            - button "7 Folding, simplifying, propagating, deleting" [ref=e2626] [cursor=pointer]:
+              - generic [ref=e2627]: "7"
+              - generic [ref=e2628]: Folding, simplifying, propagating, deleting
+            - 'button "8 Control flow: blocks, dominators, loops" [ref=e2629] [cursor=pointer]':
+              - generic [ref=e2630]: "8"
+              - generic [ref=e2631]: "Control flow: blocks, dominators, loops"
+            - button "9 Analyses, lattices, and a widening bug" [ref=e2632] [cursor=pointer]:
+              - generic [ref=e2633]: "9"
+              - generic [ref=e2634]: Analyses, lattices, and a widening bug
+            - button "10 Moving code out of loops" [ref=e2635] [cursor=pointer]:
+              - generic [ref=e2636]: "10"
+              - generic [ref=e2637]: Moving code out of loops
+            - button "11 Bounds checks and the facts that remove them" [ref=e2638] [cursor=pointer]:
+              - generic [ref=e2639]: "11"
+              - generic [ref=e2640]: Bounds checks and the facts that remove them
+            - 'button "12 Division: semantics, shifts, and a wrong pass" [ref=e2641] [cursor=pointer]':
+              - generic [ref=e2642]: "12"
+              - generic [ref=e2643]: "Division: semantics, shifts, and a wrong pass"
+            - generic [ref=e2644]: Part III · Meaning and machines
+            - 'button "13 Checks: how the workbench knows" [ref=e2645] [cursor=pointer]':
+              - generic [ref=e2646]: "13"
+              - generic [ref=e2647]: "Checks: how the workbench knows"
+            - button "14 From statements to RV32" [ref=e2648] [cursor=pointer]:
+              - generic [ref=e2649]: "14"
+              - generic [ref=e2650]: From statements to RV32
+            - button "15 Registers, calls and frames" [ref=e2651] [cursor=pointer]:
+              - generic [ref=e2652]: "15"
+              - generic [ref=e2653]: Registers, calls and frames
+            - generic [ref=e2654]: Part IV · Projects and the agent
+            - button "16 Projects, and the tiles they build" [ref=e2655] [cursor=pointer]:
+              - generic [ref=e2656]: "16"
+              - generic [ref=e2657]: Projects, and the tiles they build
+            - button "17 The agent, and the workbench's own source" [ref=e2658] [cursor=pointer]:
+              - generic [ref=e2659]: "17"
+              - generic [ref=e2660]: The agent, and the workbench's own source
+          - generic [ref=e2661]:
+            - generic [ref=e2662]:
+              - button "Contents" [ref=e2663] [cursor=pointer]
+              - generic [ref=e2664]: Chapter 1 A workbench, not a compiler
+              - button "Open blend" [ref=e2665] [cursor=pointer]
+              - button "Open first-steps" [ref=e2666] [cursor=pointer]
+            - generic [ref=e2667]:
+              - generic [ref=e2668]:
+                - text: Chapter 1
+                - emphasis [ref=e2669]: · Part I · The workbench
+              - generic [ref=e2670]:
+                - heading "A workbench, not a compiler" [level=1] [ref=e2671]
+                - paragraph [ref=e2672]: This page compiles programs in a small typed language to RISC-V machine code and runs them, but the compiler is not the point. The point is to see what a compiler knows at each step, where every piece of the program came from, and why each change was allowed. Every number in this book was measured by running the workbench on its own projects.
+                - heading "1. What is on the screen" [level=2] [ref=e2673]
+                - paragraph [ref=e2674]: "The header names the open project, its revision and the last check. Under it are four tiles:"
+                - list [ref=e2675]:
+                  - listitem [ref=e2676]:
+                    - text: "Files, Projects and Scripts on the left: the open project's files, 44 projects to study, and the project's scripts. A project is a folder of plain files: typed sources, workbench scripts that query and experiment, and UI scripts that add tiles of their own ("
+                    - link "Projects and the UI DSL ▸" [ref=e2677] [cursor=pointer]:
+                      - /url: "#"
+                    - text: ).
+                  - listitem [ref=e2678]: "Source, IR, CFG, Lineage, Facts in the middle: the program as written, as lifted into blocks of statements, as a graph, the provenance of whatever is selected, and the analyses' results."
+                  - listitem [ref=e2679]: "Pipeline, Timeline, Checks, RV32, Run, Console underneath: what to run next, what has run, whether the meaning survived, the machine code, single runs, and a JavaScript console."
+                  - listitem [ref=e2680]: "Agent, Book, Reference and Code on the right: an agent that drives the same API you do, this book, the API itself, and the workbench's own source."
+                - paragraph [ref=e2681]:
+                  - text: "A project's UI scripts add more:"
+                  - link "Start here ▸" [ref=e2682] [cursor=pointer]:
+                    - /url: "#"
+                  - text: puts a status board, an O2 report and a next-pass helper beside the source.
+                - paragraph [ref=e2683]: "That is only the default. Every tab can be dragged by its label: onto another tile's tab strip to move it there, onto the middle of a tile to add it to that tile, or onto a tile's edge to split the tile and give the view half of it. Gutters resize, × closes a view and + in any tile brings it back, ⤢ maximizes a tile, and the Layout menu has four arrangements (Workbench, Reading, Compiler, Agent). Whatever you arrange is kept in this browser."
+                - paragraph [ref=e2684]: Select anything (a statement in IR, a line number in Source, an instruction in RV32) and every view highlights what is related to it.
+                - heading "2. One program, start to finish" [level=2] [ref=e2685]
+                - paragraph [ref=e2686]:
+                  - text: Open
+                  - link "Blend ▸" [ref=e2687] [cursor=pointer]:
+                    - /url: "#"
+                  - text: . It has a constant to fold, an expression to move out of a loop, and a bounds check on every read of the buffer.
+                - generic [ref=e2688]: "function blend(work: buffer, n: i32, a: i32, b: i32): i32 { const scale = 4 * 16; let s = 0; for (let i = 0; i < n; i = i + 1) { s = s + work.charCodeAt(i) * (a * b + scale); } return s / 8; }"
+                - paragraph [ref=e2690]:
+                  - text: "At r0 the lifted program has 7 blocks and 13 statements, and its RV32 image is 96 bytes. Press Run in the header: the O2 pipeline makes six revisions (cfg, fold, simplify, constprop, dce, licm), checks the program against r0 after each, and the image shrinks to 88 bytes. On a 40-cell buffer with n = 40, the r0 image runs 531 instructions and the O2 image 451;"
+                  - code [ref=e2691]: a * b + 64
+                  - text: is now computed once, before the loop.
+                - generic [ref=e2692]:
+                  - generic [ref=e2693]: const p = wb.projects.open('blend').program; p.pipeline('O2'); return p.listing();
+                  - button "Run in console" [ref=e2695] [cursor=pointer]
+                - paragraph [ref=e2697]:
+                  - text: Try it. Select
+                  - code [ref=e2698]:
+                    - link "s:blend.15" [ref=e2699] [cursor=pointer]:
+                      - /url: "#"
+                  - text: in the IR view after O2 and open Lineage. It says the statement was made by licm at r6 from the value
+                  - code [ref=e2700]: (a * b) + 64
+                  - text: ", which constprop made at r4 from"
+                  - code [ref=e2701]: (a * b) + scale
+                  - text: ", which the front end emitted for line 5. The because line names the loop that made the move valid."
+                - heading "3. What is reused, and what is not" [level=2] [ref=e2702]
+                - paragraph [ref=e2703]: "The workbench reuses from the repo only what its own pass manager does not cover. The front end (parsing, type checking, and the stack code it emits with source spans), the RV32 instruction encoders, the magic numbers for division by constants, the disassembler and the emulator are reused unchanged. Everything a pass could be written against is ours: the store, lifting, revisions, analyses, passes, checks, instruction selection and register allocation."
+                - 'figure "Figure 1.1. The layers. Our code sits between pieces reused from the repo''s compiler. The reference compiler itself is used only as an oracle: its images were built once, and checks can run them." [ref=e2704]':
+                  - img [ref=e2705]:
+                    - generic [ref=e2715]: front end
+                    - generic [ref=e2716]: reused
+                    - generic [ref=e2717]: store, r0
+                    - generic [ref=e2718]: lifting
+                    - generic [ref=e2719]: passes
+                    - generic [ref=e2720]: r1 … rN, through tx
+                    - generic [ref=e2721]: instruction selection
+                    - generic [ref=e2722]: tiles, then linear scan
+                    - generic [ref=e2723]: encoders, disassembler
+                    - generic [ref=e2724]: reused
+                    - generic [ref=e2725]: image entity
+                    - generic [ref=e2726]: instructions cover statements
+                    - generic [ref=e2727]: emulator
+                    - generic [ref=e2728]: reused
+                    - generic [ref=e2729]: checked against r0 after every pass
+                    - generic [ref=e2730]: "grey: reused from the repo unchanged · black: written for the workbench"
+                - heading "4. The rules the API keeps" [level=2] [ref=e2732]
+                - paragraph [ref=e2733]: "Three rules shape everything you will read:"
+                - list [ref=e2734]:
+                  - listitem [ref=e2735]:
+                    - text: Entities have readable ids and cannot be changed directly.
+                    - code [ref=e2736]:
+                      - link "s:blend.7" [ref=e2737] [cursor=pointer]:
+                        - /url: "#"
+                    - text: is a statement,
+                    - code [ref=e2738]:
+                      - link "v:blend.12" [ref=e2739] [cursor=pointer]:
+                        - /url: "#"
+                    - text: a value,
+                    - code [ref=e2740]:
+                      - link "insn:blend+0x1c@r6" [ref=e2741] [cursor=pointer]:
+                        - /url: "#"
+                    - text: an instruction. Handles are read-only proxies; an assignment or a misspelt member is refused with a code and a fix line.
+                  - listitem [ref=e2742]: Change goes through passes. A pass declares what it writes, gets the facts it asked for, and changes the program through a transaction that records what each new thing was made from and why it is valid. Each pass that changes something makes one revision.
+                  - listitem [ref=e2743]: Meaning is checked, not assumed. After every pass the program runs on generated inputs beside r0. The machine code runs beside the evaluator. Results, traps and memory must agree.
+                - paragraph [ref=e2744]:
+                  - text: The rest of the book takes these one at a time.
+                  - link "The typed language ▸" [ref=e2745] [cursor=pointer]:
+                    - /url: "#"
+                  - text: is next; if you would rather start with passes,
+                  - link "the pass manager ▸" [ref=e2746] [cursor=pointer]:
+                    - /url: "#"
+                  - text: stands on its own.
+              - button "Next The typed language and its front end" [ref=e2748] [cursor=pointer]:
+                - generic [ref=e2749]: Next
+                - generic [ref=e2750]: The typed language and its front end

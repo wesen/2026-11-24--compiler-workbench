@@ -117,6 +117,12 @@ export interface ApplyOptions<P> {
   readonly outputId?: string;
   /** A contract for this application, overriding the pass's own (e.g. one carrying a project's case inputs). */
   readonly contract?: TransformationDefinition<Ports, Ports>;
+  /**
+   * Check every preservation claim, computing the fact on the input first when the manager does not hold it.
+   * By default a claim is checked only when the fact exists (there is otherwise nothing to keep); auditing
+   * makes every application a test of the pass's declarations.
+   */
+  readonly auditPreservation?: boolean;
 }
 
 export interface PreservationOutcome {
@@ -276,7 +282,10 @@ export async function applyPass<S, N extends Needs, P>(
 
   const preserved: PreservationOutcome[] = [];
   for (const def of pass.preserves ?? []) {
-    if (!manager.hasAnalysis(def, before)) continue; // nothing to keep
+    if (!manager.hasAnalysis(def, before)) {
+      if (!options.auditPreservation) continue; // nothing to keep
+      await manager.analyse(def, before);
+    }
     try {
       const record = await manager.preserve(
         def,

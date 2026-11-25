@@ -1,0 +1,214 @@
+- generic [ref=f2e2]:
+  - banner [ref=f2e3]:
+    - generic [ref=f2e4]:
+      - text: Compiler Workbench
+      - generic [ref=f2e5]: projects · typed → RV32 · on the IR framework
+    - 'button "Start here Blend: fold, hoist, check bounds ▾" [ref=f2e7] [cursor=pointer]':
+      - generic [ref=f2e8]: Start here
+      - generic [ref=f2e9]: "Blend: fold, hoist, check bounds"
+      - generic [ref=f2e10]: ▾
+    - generic [ref=f2e11]:
+      - generic [ref=f2e12]: r6
+      - generic [ref=f2e13]: 6 passes applied
+    - generic [ref=f2e14]:
+      - generic [ref=f2e15]: 100/100
+      - generic [ref=f2e16]: agree · r6
+    - generic [ref=f2e17]:
+      - button "Step" [ref=f2e18] [cursor=pointer]
+      - button "Run" [ref=f2e19] [cursor=pointer]
+      - button "Undo" [ref=f2e20] [cursor=pointer]
+      - button "Check" [ref=f2e21] [cursor=pointer]
+    - generic [ref=f2e22]: build 2026-11-25 01:38
+    - button "Book" [ref=f2e23] [cursor=pointer]
+    - button "Layout ▾" [ref=f2e24] [cursor=pointer]
+    - button "Dark" [ref=f2e25] [cursor=pointer]
+  - main [ref=f2e26]:
+    - generic [ref=f2e27]:
+      - generic [ref=f2e28]:
+        - generic [ref=f2e29]:
+          - generic [ref=f2e30]:
+            - generic [ref=f2e31]:
+              - button "Files 4" [ref=f2e32]:
+                - text: Files
+                - generic [ref=f2e33]: "4"
+              - button "×" [ref=f2e34] [cursor=pointer]
+            - generic [ref=f2e35]:
+              - button "Projects" [ref=f2e36]
+              - button "×" [ref=f2e37] [cursor=pointer]
+            - generic [ref=f2e38]:
+              - button "Scripts" [ref=f2e39]
+              - button "×" [ref=f2e40] [cursor=pointer]
+          - button "+" [ref=f2e41] [cursor=pointer]
+          - button "⤢" [ref=f2e42] [cursor=pointer]
+        - generic [ref=f2e45]:
+          - generic [ref=f2e46]:
+            - generic [ref=f2e47]:
+              - heading "Workbench scripts" [level=2] [ref=f2e48]
+              - generic [ref=f2e49]: scripts/*.js · queries, passes, checks; they return data
+            - generic [ref=f2e50]:
+              - generic [ref=f2e51]:
+                - generic [ref=f2e52]: explore
+                - generic [ref=f2e53]: "Blend: fold, hoist, check bounds: the walk-through."
+              - button "Run" [ref=f2e54] [cursor=pointer]
+              - button "On r0" [ref=f2e55] [cursor=pointer]
+              - button "Edit" [ref=f2e56] [cursor=pointer]
+          - generic [ref=f2e57]:
+            - generic [ref=f2e58]:
+              - heading "UI scripts" [level=2] [ref=f2e59]
+              - generic [ref=f2e60]: ui/*.js · they make tiles, and update them as things change
+            - paragraph [ref=f2e61]: None yet. New file → ui/name.js.
+      - generic "Drag to resize" [ref=f2e62]
+      - generic [ref=f2e63]:
+        - generic [ref=f2e64]:
+          - generic [ref=f2e65]:
+            - generic [ref=f2e66]:
+              - generic [ref=f2e67]:
+                - button "Source" [ref=f2e68]
+                - button "×" [ref=f2e69] [cursor=pointer]
+              - generic [ref=f2e70]:
+                - button "Editor" [ref=f2e71]
+                - button "×" [ref=f2e72] [cursor=pointer]
+              - generic [ref=f2e73]:
+                - button "IR r6" [ref=f2e74]:
+                  - text: IR
+                  - generic [ref=f2e75]: r6
+                - button "×" [ref=f2e76] [cursor=pointer]
+              - generic [ref=f2e77]:
+                - button "CFG" [ref=f2e78]
+                - button "×" [ref=f2e79] [cursor=pointer]
+              - generic [ref=f2e80]:
+                - button "Lineage" [ref=f2e81]
+                - button "×" [ref=f2e82] [cursor=pointer]
+              - generic [ref=f2e83]:
+                - button "Facts" [ref=f2e84]
+                - button "×" [ref=f2e85] [cursor=pointer]
+            - button "+" [ref=f2e87] [cursor=pointer]
+            - button "⤢" [ref=f2e88] [cursor=pointer]
+          - generic [ref=f2e90]:
+            - generic [ref=f2e91]:
+              - generic [ref=f2e92]: main.typed
+              - generic [ref=f2e93]: 1 functions
+              - generic [ref=f2e94]: Start here
+            - generic [ref=f2e95]:
+              - generic [ref=f2e97]:
+                - generic [ref=f2e98] [cursor=pointer]: "1"
+                - generic [ref=f2e99] [cursor=pointer]: "2"
+                - generic [ref=f2e100] [cursor=pointer]: "3"
+                - generic [ref=f2e101] [cursor=pointer]: "4"
+                - generic [ref=f2e102] [cursor=pointer]: "5"
+                - generic [ref=f2e103] [cursor=pointer]: "6"
+                - generic [ref=f2e104] [cursor=pointer]: "7"
+                - generic [ref=f2e105] [cursor=pointer]: "8"
+              - generic [ref=f2e106]:
+                - generic:
+                  - generic: "function blend(work: buffer, n: i32, a: i32, b: i32): i32 {"
+                  - generic: const scale = 4 * 16;
+                  - generic: let s = 0;
+                  - generic: "for (let i = 0; i < n; i = i + 1) {"
+                  - generic: s = s + work.charCodeAt(i) * (a * b + scale);
+                  - generic: "}"
+                  - generic: return s / 8;
+                  - generic: "}"
+                - textbox [ref=f2e107]: "function blend(work: buffer, n: i32, a: i32, b: i32): i32 { const scale = 4 * 16; let s = 0; for (let i = 0; i < n; i = i + 1) { s = s + work.charCodeAt(i) * (a * b + scale); } return s / 8; }"
+            - generic [ref=f2e108]:
+              - generic [ref=f2e109]: ok
+              - generic [ref=f2e110]: r6 · editing a file starts the program again at r0
+            - generic [ref=f2e111]: "After O2, select the hoisted statement in the IR view: its why() names the loop fact that made the move valid. The bounds check stays, because the loop runs to n, not to work.length."
+        - generic "Drag to resize" [ref=f2e113]
+        - generic [ref=f2e114]:
+          - generic [ref=f2e115]:
+            - generic [ref=f2e116]:
+              - generic [ref=f2e117]:
+                - button "Pipeline" [ref=f2e118]
+                - button "×" [ref=f2e119] [cursor=pointer]
+              - generic [ref=f2e120]:
+                - button "Timeline 7" [ref=f2e121]:
+                  - text: Timeline
+                  - generic [ref=f2e122]: "7"
+                - button "×" [ref=f2e123] [cursor=pointer]
+              - generic [ref=f2e124]:
+                - button "Checks agree" [ref=f2e125]:
+                  - text: Checks
+                  - generic [ref=f2e126]: agree
+                - button "×" [ref=f2e127] [cursor=pointer]
+              - generic [ref=f2e128]:
+                - button "RV32 88 B" [ref=f2e129]:
+                  - text: RV32
+                  - generic [ref=f2e130]: 88 B
+                - button "×" [ref=f2e131] [cursor=pointer]
+              - generic [ref=f2e132]:
+                - button "Run" [ref=f2e133]
+                - button "×" [ref=f2e134] [cursor=pointer]
+              - generic [ref=f2e135]:
+                - button "Console" [ref=f2e136]
+                - button "×" [ref=f2e137] [cursor=pointer]
+            - button "+" [ref=f2e139] [cursor=pointer]
+            - button "⤢" [ref=f2e140] [cursor=pointer]
+          - generic [ref=f2e142]:
+            - generic [ref=f2e144]:
+              - generic [ref=f2e145]: "p.undo(); const r = p.apply('licm'); return { rev: p.rev, edits: r.edits, image: p.compile().bytes, why: p.get('s:blend.15').why() }"
+              - generic [ref=f2e146]: "rev: r6 edits: 3 image: 88 why: id: s:blend.15 kind: stmt text: inv = ((a * b) + 64) status: live via: licm rev: 6 note: hoisted out of loop:blend@bb:blend.1 from: id: v:blend.37 kind: value text: ((a * b) + 64) status: live via: constprop rev: 4 note: rebuilt around a changed argument from: id: v:blend.25 kind: value text: ((a * b) + scale) status: detached via: ingest from: id: op:blend#35 kind: op text: i32.add (line 5) status: live because: - loop:blend@bb:blend.1 value: id: v:blend.37 kind: value text: ((a * b) + 64) status: live"
+              - generic [ref=f2e147]: 281 ms
+            - generic [ref=f2e148]:
+              - textbox "p.apply('fold') · Ctrl+Enter runs" [ref=f2e149]:
+                - /placeholder: p.apply('fold')   ·   Ctrl+Enter runs
+              - generic [ref=f2e150]:
+                - generic [ref=f2e151]: wb.help() lists the API · wb.help('ui') shows the UI DSL
+                - button "Clear" [ref=f2e152] [cursor=pointer]
+                - button "Run" [ref=f2e153] [cursor=pointer]
+      - generic "Drag to resize" [ref=f2e154]
+      - generic [ref=f2e155]:
+        - generic [ref=f2e156]:
+          - generic [ref=f2e157]:
+            - generic [ref=f2e158]:
+              - button "Book" [ref=f2e159]
+              - button "×" [ref=f2e160] [cursor=pointer]
+            - generic [ref=f2e161]:
+              - button "Agent off" [ref=f2e162]:
+                - text: Agent
+                - generic [ref=f2e163]: "off"
+              - button "×" [ref=f2e164] [cursor=pointer]
+            - generic [ref=f2e165]:
+              - button "Reference" [ref=f2e166]
+              - button "×" [ref=f2e167] [cursor=pointer]
+            - generic [ref=f2e168]:
+              - button "Code" [ref=f2e169]
+              - button "×" [ref=f2e170] [cursor=pointer]
+          - button "+" [ref=f2e172] [cursor=pointer]
+          - button "⤢" [ref=f2e173] [cursor=pointer]
+        - generic [ref=f2e175]:
+          - generic [ref=f2e176]:
+            - button "New thread" [ref=f2e178] [cursor=pointer]
+            - button "+ New" [ref=f2e179] [cursor=pointer]
+          - generic [ref=f2e180]:
+            - generic [ref=f2e181]: Mode
+            - generic [ref=f2e182]:
+              - button "Auto" [ref=f2e183] [cursor=pointer]
+              - button "Ask" [ref=f2e184] [cursor=pointer]
+              - button "Read-only" [ref=f2e185] [cursor=pointer]
+            - generic [ref=f2e186]: Model
+            - generic [ref=f2e187]:
+              - button "Fast" [ref=f2e188] [cursor=pointer]
+              - button "Balanced" [ref=f2e189] [cursor=pointer]
+              - button "Deep" [ref=f2e190] [cursor=pointer]
+            - generic [ref=f2e191]: Thinking
+            - generic [ref=f2e192]:
+              - button "Auto" [ref=f2e193] [cursor=pointer]
+              - button "Low" [ref=f2e194] [cursor=pointer]
+              - button "Med" [ref=f2e195] [cursor=pointer]
+              - button "High" [ref=f2e196] [cursor=pointer]
+          - generic [ref=f2e197]:
+            - generic [ref=f2e198]: The agent is off
+            - text: "This build has no model connection: it makes no network requests and carries no API key. The panel, its threads and the eval tool are here; to use them, the page must define window.WB_AGENT = { sample(messages, options) } before app.js loads (see site-src/agent.js). The rest of the workbench works without it."
+          - generic [ref=f2e200]:
+            - paragraph [ref=f2e201]: "Ask about the current program, the passes, the checks, or how the workbench itself is built. The agent has one tool: eval, which runs JavaScript against the same API the console uses."
+            - generic [ref=f2e202]:
+              - button "Why does the bounds check on work.charCodeAt(i) survive O2 here?" [disabled] [ref=f2e203] [cursor=pointer]
+              - button "Change the loop bound to work.length in a new project and show me what bce does." [disabled] [ref=f2e204] [cursor=pointer]
+              - button "Add a tile to this project that charts statements per function across the revisions." [disabled] [ref=f2e205] [cursor=pointer]
+              - button "How does the pass manager decide which facts go stale? Show me the code." [disabled] [ref=f2e206] [cursor=pointer]
+          - generic [ref=f2e207]:
+            - textbox "The agent is off in this build" [disabled] [ref=f2e208]
+            - generic [ref=f2e209]:
+              - generic [ref=f2e210]: 0 steps in this thread
+              - button "Send" [disabled] [ref=f2e211]

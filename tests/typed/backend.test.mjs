@@ -500,3 +500,57 @@ test('P2.4: heat, diffs, machine stages and image status', () => {
     e => e.code === 'unknownFunction',
   );
 });
+
+// Chapter 14, "Against the reference compiler": r0, O2 and the reference compiler (typed-rv32.js, default policy,
+// with its pass groups vendored) on the same benchmarks; and image sizes over all 44 projects.
+test("P2.6: the book's table against the reference compiler, and 5160 bytes against 7628", { timeout: 600000 }, async () => {
+  const { Program } = await import('../../dist/typed/program.js');
+  const { projectSource } = await import('../../dist/typed/project.js');
+  const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
+  const rows = [
+    ['blend', 'blend', { work: cells(40), n: 40, a: 3, b: 5 }, [531, 451, 383]],
+    ['checksum', 'total', { work: cells(40) }, [446, 366, 292]],
+    ['sort', 'sort', { work: { cells: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1] } }, [2022, 2022, 1533]],
+    ['collatz', 'collatz', { n: 27 }, [1590, 1590, 1486]],
+    ['value-numbering', 'halves', { n: 40 }, [690, 570, 695]],
+  ];
+  const refImage = (id, source) => {
+    const r = globalThis.typedRv32.compile(source, [], undefined);
+    return B.imageFromCode(id, r.image, r.entries);
+  };
+  for (const [id, fn, bench, expected] of rows) {
+    const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+    const st0 = storeOf(p.head.value);
+    const r0 = steps(B.lowerToImage(p.head).image, st0, fn, bench).steps;
+    await p.pipeline(ps.meta.pipeline);
+    const o2 = steps(B.lowerToImage(p.head).image, storeOf(p.head.value), fn, bench).steps;
+    const ref = steps(refImage(id, ps.source), st0, fn, bench).steps;
+    assert.deepEqual([r0, o2, ref], expected, id);
+  }
+  if (process.env.IRWB_FULL !== '1') return; // the corpus-wide sizes run O2 on all 44 projects (~60 s)
+  let ours = 0, theirs = 0;
+  for (const id of projectIds()) {
+    const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+    await p.pipeline('O2'); // "our O2 images": O2 on every project, whatever its own pipeline
+    ours += B.lowerToImage(p.head).image.value.bytes;
+    theirs += refImage(id, ps.source).bytes;
+  }
+  assert.deepEqual({ ours, theirs }, { ours: 5160, theirs: 7628 });
+});
+
+// Chapter 13: "our evaluator at r0 agrees with the reference compiler's images on all 6986 decided cases".
+test('P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit)', async () => {
+  const { Program } = await import('../../dist/typed/program.js');
+  const { projectSource } = await import('../../dist/typed/project.js');
+  const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
+  let fns = 0, agree = 0, decided = 0, inconclusive = 0;
+  for (const id of projectIds()) {
+    const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+    const r = globalThis.typedRv32.compile(ps.source, [], undefined);
+    const image = B.imageFromCode(id, r.image, r.entries);
+    for (const f of p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) }).fns) {
+      fns++; agree += f.agree; decided += f.total; inconclusive += f.inconclusive;
+    }
+  }
+  assert.deepEqual({ fns, decided, agree, inconclusive }, { fns: 70, decided: 6986, agree: 6986, inconclusive: 14 });
+});

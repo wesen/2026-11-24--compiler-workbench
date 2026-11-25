@@ -1,7 +1,7 @@
 {
   "repository": "~/code/wesen/2026-10-20--ds-js-os",
   "commit": "b19062b29fe4fb6b02863e92510501dc5c4bc9b3",
-  "purpose": "Typed front end (tape.js, typed-wasm.js), RV32 reference interpreter, reference compiler (oracle only); copied unchanged",
+  "purpose": "Typed front end (tape.js, typed-wasm.js), RV32 reference interpreter, reference compiler with its pass groups (oracle only); copied unchanged",
   "files": [
     {
       "path": "bench/host/rv32-interp.js",
@@ -12,6 +12,21 @@
       "path": "compiler/typed/tape.js",
       "bytes": 12241,
       "sha256": "7f05e1c148672fe4e1bb4747d450d9de33f057c58dc972c6f93a4c40d6c9f528"
+    },
+    {
+      "path": "compiler/typed/typed-rv32-inline.js",
+      "bytes": 26424,
+      "sha256": "fe69676415867191f51ed88b44f17cf36151bd3f8cbdf5802472e5235dd63858"
+    },
+    {
+      "path": "compiler/typed/typed-rv32-kernel.js",
+      "bytes": 55224,
+      "sha256": "bbef001beb4ccbe3e63a5e83521289aef4e5820599475f87cac1b5f89a08f0ec"
+    },
+    {
+      "path": "compiler/typed/typed-rv32-loops.js",
+      "bytes": 36734,
+      "sha256": "8be0a7cd2a98f69ac19839b5473900f87a648543e88654bc293c069feea05509"
     },
     {
       "path": "compiler/typed/typed-rv32.js",

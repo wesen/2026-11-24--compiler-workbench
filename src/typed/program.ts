@@ -31,6 +31,7 @@ import { describeText, lineage, linesOf, listing } from './listing.js';
 import type { TypedBlocks } from './model.js';
 import { optimizationContract, PASSES, PIPELINES, type RevisionReport, type TypedPass } from './passes.js';
 import { ingestProject, projectSource, type ProjectSource } from './project.js';
+import { USER_PASSES } from './builder.js';
 import type { Edit } from './tx.js';
 import { createIRArtifact } from '../framework/ir/adapters.js';
 import { blocksAdapter } from './ir.js';
@@ -59,6 +60,8 @@ export interface Revision {
   readonly ms: number;
   readonly fns?: readonly string[];
   readonly note?: string;
+  /** The assumptions in force when this revision was made (see `Program.assume`). */
+  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
 }
 
 export interface ApplyResult {
@@ -122,8 +125,42 @@ export class Program {
   get id(): string {
     return `prog:${this.name}`;
   }
+  /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
+  readonly assumptions: Record<string, Record<string, number>> = {};
+  /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
   get inputs(): ProgramInputs {
-    return this.options.inputs ?? {};
+    const base = this.options.inputs ?? {};
+    const out: Record<string, Record<string, unknown>> = Object.fromEntries(
+      Object.entries(base).map(([f, v]) => [f, { ...v }]),
+    );
+    for (const [f, params] of Object.entries(this.assumptions)) out[f] = { ...(out[f] ?? {}), ...params };
+    return out as ProgramInputs;
+  }
+  /**
+   * Restrict the program's meaning to inputs satisfying `bindings`: from now on the contract every pass must meet,
+   * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
+   */
+  assume(
+    bindings: readonly { fn: string; param: string; value: number }[],
+  ): Record<string, Record<string, number>> {
+    const previous = JSON.parse(JSON.stringify(this.assumptions));
+    for (const b of bindings) {
+      this.fname(b.fn);
+      (this.assumptions[b.fn] ??= {})[b.param] = b.value;
+    }
+    return previous;
+  }
+  /** Specialize on an outer artifact's facts: assume them, then apply the `specialize` pass under that contract. */
+  async specialize(bindings: Artifact<import('./specialize.js').Bindings>): Promise<ApplyResult> {
+    const { specialize } = await import('./specialize.js');
+    const previous = this.assume(bindings.value.bindings);
+    try {
+      return await this.apply(specialize, { params: { bindings } });
+    } catch (e) {
+      for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
+      Object.assign(this.assumptions, previous);
+      throw e;
+    }
   }
   get rev(): number {
     return this.revisions.length - 1;
@@ -166,7 +203,13 @@ export class Program {
   resolvePass(x: string | TypedPass): TypedPass {
     if (typeof x !== 'string') return x;
     return (
-      PASSES[x] ?? fail('unknownPass', `no pass named "${x}"`, `passes: ${Object.keys(PASSES).join(', ')}`)
+      PASSES[x] ??
+      USER_PASSES.get(x) ??
+      fail(
+        'unknownPass',
+        `no pass named "${x}"`,
+        `passes: ${[...Object.keys(PASSES), ...USER_PASSES.keys()].join(', ')}`,
+      )
     );
   }
   /** Apply one pass as one revision; checked against r0 unless `check: false`. Nothing changes on rejection. */
@@ -198,6 +241,7 @@ export class Program {
       correspondence: r.correspondence,
       ms,
       fns: report.fns,
+      assumptions: JSON.parse(JSON.stringify(this.assumptions)),
     });
     const checks =
       (r.contract as { execution?: { checks?: { phase: string; evidence?: any }[] } } | undefined)?.execution
@@ -299,6 +343,9 @@ export class Program {
     const n = revNumber(rev);
     if (!(n >= 0 && n <= this.rev)) fail('noRevision', `${this.id} has revisions r0 to r${this.rev}`);
     this.revisions.length = n + 1;
+    // the head's assumptions: a specialization undone takes its restriction with it
+    for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
+    Object.assign(this.assumptions, JSON.parse(JSON.stringify(this.revisions[n].assumptions ?? {})));
     return `r${this.rev}`;
   }
   revisionList() {
