@@ -77,7 +77,31 @@ test('P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells
   assert.equal(image.value.insns.find(m => m.op === 'ebreak').why, 'unreachable');
 });
 
-test.todo('P2.4: Blend after O2 matches the book: 88 bytes, 451 instructions (needs the O2 passes)');
+test('P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366', async () => {
+  const { Program } = await import('../../dist/typed/program.js');
+  const { projectSource } = await import('../../dist/typed/project.js');
+  const { projectFiles } = await import('../../tools/corpus.mjs');
+  const o2 = async id => {
+    const p = Program.fromProject(projectSource(id, projectFiles(id)));
+    await p.pipeline('O2');
+    return { p, st: storeOf(p.head.value), image: B.lowerToImage(p.head).image };
+  };
+  const blend = await o2('blend');
+  assert.equal(blend.image.value.bytes, 88);
+  const run = steps(blend.image, blend.st, 'blend', { work: cells(40), n: 40, a: 3, b: 5 });
+  assert.equal(run.steps, 451);
+  // "on a 40-cell run, line 5 accounts for 322 of the 451 instructions executed"
+  assert.equal(B.heat(blend.st, blend.image, run.counts).byLine.get(5), 322);
+  // "the instruction mul t2, a2, a3 in the O2 image of Blend covers v:blend.23 and s:blend.15"
+  const mul = blend.image.value.insns.find(m => m.text === 'mul t2, a2, a3');
+  assert.ok(mul, blend.image.value.insns.map(m => m.text).join('\n'));
+  assert.ok(mul.covers.includes('s:blend.15') && mul.covers.includes('v:blend.23'), JSON.stringify(mul.covers));
+  const checksum = await o2('checksum');
+  assert.equal(checksum.image.value.bytes, 52);
+  const fn = checksum.p.fns()[0];
+  const bench = Object.fromEntries(checksum.st.fn(fn).params.map((t, i) => [checksum.st.fn(fn).locals[i].name, t === 'buffer' ? cells(40) : 40]));
+  assert.equal(steps(checksum.image, checksum.st, fn, bench).steps, 366);
+});
 
 test("P2.4: the book's other r0 numbers reproduce", () => {
   const at = id => {
