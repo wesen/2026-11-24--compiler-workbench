@@ -1211,3 +1211,29 @@ With the backend in place, the render engine the UI agent had listed as "needs t
 
 ### What warrants a second pair of eyes
 - **The 40 s wall time for our image is mostly not instructions.** That run lowered r0 inside the timing, and paid the per-call `placeCall` and memory copies of `runImage`. Compare instruction counts, not milliseconds.
+
+## Step 24: our image renders in the browser, and the page itself reports the frame identical
+
+This step finished Step 23's browser check. In Chromium, rendering B-01 at stride 4 with "our RV32 image · r0" gives exactly the Node figures. Rendering the same scene afterwards on the reference `kernel` image, the view's own comparison row reads `identical: all 19,200 floats from our RV32 image · r0`.
+
+### What I did
+- **Playwright on http://127.0.0.1:8765/**, with the page reloaded after the build:
+  1. engine `own`, stride 4, Render;
+  2. engine `kernel`, Render;
+  3. read the stats and comparison rows from the page text.
+- Saved `various/ui-screenshots/candela-11-B01-our-image-identical.png`.
+
+### What worked
+| engine (B-01, 40×40) | sky table | frame | per pixel | render time |
+|---|---:|---:|---:|---:|
+| our RV32 image · r0 | 8,459,164 instructions, 0.90 s | 17,920,579 instructions | 11,200 | 5.07 s |
+| reference `kernel` | 5,520,419 instructions, 0.97 s | 13,601,596 instructions | 8,501 | 9.32 s |
+
+- The page's comparison row: `identical: all 19,200 floats from our RV32 image · r0`.
+- Our image renders faster in wall time despite executing more instructions. The likely reason: `runImage` with `counts: false` does not count executions per instruction word, while `referenceRun` does. I did not measure this.
+
+### What didn't work
+- **My Playwright wait loop ran to its 600 s timeout** after the first render. It waited for a comparison row, which appears only once a second engine has rendered the same scene and stride in the page. The render itself had finished in about 5 s.
+
+### What warrants a second pair of eyes
+- **The setup time of the `own` engine at r0 includes hashing r0 into an artifact** (`candelaArtifact`), several seconds, on the main thread. The UI agent flagged the same cost for opening Candela as a project.
