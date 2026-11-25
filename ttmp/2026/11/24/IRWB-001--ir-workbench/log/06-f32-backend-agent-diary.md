@@ -178,3 +178,127 @@ The coordinator asked me to merge `irwb-001/import-v6-prototype` at 93da6cc, whi
 
 ### Technical details
 - N/A.
+
+## Step 4: Lowering, two register classes, frames; the corpus unchanged and Candela at r0 compiling and agreeing
+
+This step wrote the lowering of every f32 operator and of the new constructs, the f register class in the allocator, the frame with an outgoing area and an array area, class-aware spill code, and ilp32f runs in `runImage`. The i32 corpus's images are identical by revision under seven option sets. The fixture agreed with the evaluator on 2,800 of 2,800 cases at the first run, and every Candela function compiled at r0 into 189,216 bytes, with 3,300 of 3,300 decided cases agreeing at 10 cases per function.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** The lowering, allocation and image-check parts of the goal.
+**Inferred user intent:** See Step 1.
+**Commit (code):** 9e96e22 — "IRWB-001 P4.5: the f32 RV32F backend: f register class, ilp32f calls and returns, caddr, aaddr, zero, F encodings; ilp32f.ts shared with reference.ts"
+
+### What I did
+- `select.ts`:
+  - virtual registers of class f (`fregs`), a class-aware `move` (`addi rd, rs, 0` or `fsgnj.s rd, rs, rs`);
+  - the f32 tiles of the table in the file's header (design-doc 05 §4.1), `round` as the reference's `FloatMethods.round` with virtual registers instead of t5, t6 and ft11;
+  - f32 constants: `fmv.w.x rd, zero` for +0, else the bits by `li` into an x register and `fmv.w.x`;
+  - `caddr`: `lw cap, 0(r)`, `bltu p, cap, L`, `ebreak`, `L:`, then `slli` and `add` (or one `addi` for a constant position);
+  - `aaddr` as `addi rd, sp, 4·outgoing + c`, and an `aaddr` address folded into the load or store (`sw v, c(sp)`);
+  - `zero`: `sw zero` per word up to 64 bytes, else a three-instruction loop;
+  - calls under ilp32f (`argumentLocations`): moves into a0–a7 and fa0–fa7, `fmv.x.w` for an f32 beyond fa7, `sw`/`fsw` into the outgoing words; a single result from a0 or fa0;
+  - record results: after the call the leaves stay where they return. `result#k` reads the register itself (a0–a7, fa0–fa7) or loads its outgoing word. The selector refuses (`unsupported`) a `result#k` that is not in the block of its call or comes after another call;
+  - `return (…)`: stack leaves first (`sw`/`fsw` at the caller's sp, marked `caller`), then the register moves, marked `pins`. A leaf read from a register that another leaf's move writes is copied first;
+  - entry: parameters from their ilp32f locations (an f32 in an x register through `fmv.w.x`, a stack word through `lw`/`flw` marked `caller`); f32 locals live on entry zeroed with `fmv.w.x v, zero`;
+  - the outgoing area: before selection, the most stack words any call of the function needs (`stackWords`).
+- `regalloc.ts`: `allocate(…, fregs)` scans the x intervals with the x pools and then the f intervals with the f pools, with the same loop. The parameter reservation uses the copy's source register (`m.rs1`, which is a0 + i for every integer parameter). A `pins` write of register r at index i forbids r to every interval with start < i < end.
+- `compile.ts` `finish`: slots above `4·outgoing + arrays`; fs registers saved and restored with `fsw`/`flw`; f spills through ft10 and ft11; a copy with a spilled side is a single `flw` or `fsw`; a `caller` access gets `frame` added to its offset, through t6 (loads) or t5 (stores) = sp + frame when the sum exceeds 12 bits. `ImageFn.sig` is recorded for a function that needs ilp32f (`needsConvention`).
+- `image.ts`: `ImageSig` and its validation. `run.ts`: `runImage(…, { sig, counts })` through `placeCall`/`readResults`, with fs0–fs11 patterns checked after the call (a change is a fault); `imageAgrees` passes the program's signature and `counts: false`; `imageFromCode(…, signatures)`.
+- Commands: `npm run build`; `node scratchpad/probes/baseline.mjs $PWD > scratchpad/baseline-f32.json` and a comparison with Step 2's file; `node scratchpad/probes/fixture.mjs "" down scale ne`; `node --max-old-space-size=8192 scratchpad/probes/candela-r0.mjs 10`; `node --test tests/typed/backend.test.mjs tests/typed/f32.test.mjs tests/typed/candela.test.mjs`.
+
+### Why
+- **Result leaves read in place.** In a function that calls, no allocatable register of either class is an argument register (a0–a7 and fa0–fa7 are pooled only in leaves), so nothing but the next call or the return writes them. The lifter puts every `result#k` in its call's block before the next call (Step 1), and the selector checks that. So a leaf costs nothing until it is used, and a pass-through return (`return (result#0, …, result#25)` of a callee with the same leaf types) is a sequence of identity moves, which disappear.
+- **`pins` instead of a general physical-register liveness.** Only a record return writes several physical registers in a row while virtual registers are still live (in a leaf function, where they may live in a0–a7 or fa0–fa7). Marking those writes keeps every other allocation decision, and so every corpus image, as it was. Marking all writes of physical registers would also have forbidden a0 to intervals that merely span a single return in the linear order (the interval hull), which changes corpus allocations.
+- **The cheaper f32 spill copy only for f32.** The same single `lw`/`sw` for an i32 copy with a spilled side would change the corpus images under small register budgets (`registers: 1` in the tests, `registers: 2` in my baseline).
+- **The signature in the image only where needed.** An integer function's `ImageFn` is unchanged, so the corpus images keep their revisions; an f32 function's image says how to call it, so the workbench's `runImage` calls work without knowing the program.
+
+### What worked
+- The corpus: `projects 44 differ 0 [] 5160`: the r0 image revision under all six option sets and the O2 image revision are identical to Step 2's for every project.
+- The fixture: `true {"total":2800,"agree":2800,"disagree":0,"inconclusive":0}` (100 cases for each of 28 functions, 496 bytes).
+- Candela r0: lifting and projecting 13.4 s, `compileImage` 7.5 s, 189,216 bytes for 332 functions; `{"cases":3320,"agree":3300,"disagree":0,"inconclusive":20,"values":3154}` (evaluator limit 2·10^5 statements, image limit 2·10^7 instructions).
+- `node --test tests/typed/backend.test.mjs tests/typed/f32.test.mjs tests/typed/candela.test.mjs`: 22 tests, 21 pass, 1 skipped (`IRWB_CANDELA`).
+- No Candela frame exceeds 2,032 bytes, so no large-frame form is needed.
+
+### What didn't work
+- `npx tsc --noEmit` reported `Cannot find name 'FT11'` in `compile.ts` once (a missing import); fixed.
+- I had also changed `ImageIR`'s description to say RV32IMF and reverted it: a description is not hashed as far as I know, but the brief's first acceptance criterion is easier to argue with nothing in the IR definition changed.
+
+### What I learned
+- `floor` in the fixture compiles to the reference's sequence exactly: `fmv.s ft0, fa0; fmv.x.w t0, fa0; slli t0, t0, 1; lui t1, 0x96000; bgeu t0, t1, …; fcvt.w.s t0, fa0, rdn; fcvt.s.w ft1, t0, rdn; fsgnj.s ft0, ft1, fa0`.
+
+### What was tricky to build
+- **Keeping the i32 selection byte-identical.** The image revision depends on every instruction, and the allocation on the numbering of virtual registers (intervals tie-break on it). Each i32 path therefore makes the same `fresh()` calls in the same order as before: locals first, then each value's operands before its destination, the call's result register after the call. The new code paths are entered only for f32 types, `caddr`, `aaddr`, `result`, tuples, stack words and `zero`.
+- **Target-directed f32 sequences.** `round` writes its destination first (the copy of x) and reads x afterwards. If the destination is x's own local the copy is skipped; otherwise both are live at once and receive different registers. Every other multi-instruction sequence writes its destination last.
+
+### What warrants a second pair of eyes
+- The `result#k` rule depends on the lifter's guarantee and on passes not moving `result` values across calls (they are impure). The selector fails loudly if it is broken, rather than reading a clobbered register.
+- The fs0–fs11 check covers only the function the host calls; an internal callee that clobbered an fs register would show up only as a wrong result.
+
+### What should be done in the future
+- The interval hull (no holes) is conservative for `pins`: a value live in a block before and after a record return in linear order is refused that return's registers, even where it is not live at the return.
+
+### Code review instructions
+- `src/typed/backend/select.ts` (`call`, `leaf`, `returnTuple`, `round`, `float`, the entry), `regalloc.ts` (`allocate`, `scan`, `pins`), `compile.ts` (`finish`), `run.ts` (`runImage`).
+- `node --test tests/typed/backend.test.mjs`; the baseline comparison in Step 2's probe.
+
+### Technical details
+- Frame, from sp upward: outgoing stack words (4·W bytes), frame arrays (`arrayBytes`), spill slots, saved registers (ra, then s and fs registers ascending), 16-aligned.
+- f pools: non-leaf `ft0–ft7, ft8, ft9, fs0, fs1, fs2–fs11`; leaf `ft0–ft9, fa1–fa7, fa0, fs0–fs11`; `order: 'callee'` puts the fs registers first; `registers: n` takes the first n of each class.
+
+## Step 5: The reference policies all load; a convention fixture; the tests; the Candela image tool
+
+This step found that every reference policy, `kernel` included, now compiles Candela with the vendored pass groups. It added a second fixture for the conventions (record results with stack leaves, a pass-through and a swapped return, f32 arguments in x registers and stack words, fs registers across calls, frame arrays, checked f32 buffers), the test file `tests/typed/f32-backend.test.mjs`, and `tools/candela-image.mjs`, which measures our images and the reference's on the same cases.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Acceptance items 3–5: images against the evaluator and the reference image, the numbers, the tests.
+**Inferred user intent:** See Step 1.
+**Commit (code):** in the commit after this step (with the measurements of Steps 6 and 7).
+
+### What I did
+- `scratchpad/probes/policies.mjs`: `referenceCompile(candela, { policy })` for `stock`, `interactive`, `default`, `balanced`, `kernel`.
+- `tests/typed/f32-backend-fixture.mjs` (`CONVENTION_FIXTURE`, 16 functions) and `tests/typed/f32-backend.test.mjs` (6 tests):
+  1. every F encoding against its disassembly (and one word, `fadd.s ft0, ft1, ft2, rne` = 0x00208053, against its value); refusals of a wrong-class or virtual register and of a missing rounding mode;
+  2. the scalar fixture: `imageAgrees` at 100 cases, every pair of 23 f32 edge values (and 8 i32 edges) on the one- and two-parameter functions, and 30 exact bit results (NaN saturation of `fcvt.w.s`, `fmin.s` with one NaN, ±0 order, payloads through `fsgnjn.s`, canonical NaN from arithmetic, ceil(−0.5) = −0, floor of ≥ 2^23 and of a NaN, `fcvt.s.wu` of 2^32 − 1); the floor sequence itself;
+  3. the convention fixture: `imageAgrees` at 100 cases; the leaf placement in `big`, `bigSum`, `passBig`; `many` and `wide` (x registers, then stack words); fs saves in `keep`; zeroing (eight `sw zero`, and the loop); a checked read out of range traps; our image against the reference's `stock` image on 40 cases per function, and the reference image through `imageAgrees`;
+  4. f spills (`registers: 1`), `registers: 2, spill: 'current'`, `order: 'callee'`, `hints: false` all agree; `machineCode` names f virtual registers `vfN`; a hand-assembled `fmv.w.x fs0, zero; ret` is a fault;
+  5. Candela r0: 332 functions compile, fewer bytes than the reference's `stock`, 3 cases per function agree;
+  6. `IRWB_CANDELA=1`: 100 cases per function at r0, and at the O2 head if `IRWB_CANDELA_HEAD` names a file saved by `tools/candela-o2.mjs --save`.
+- `tools/candela-image.mjs`: compiles r0 (and a saved head with `--head`), the reference's images (`--policies`, default `stock,kernel`, as `imageFromCode(…, signatures)`), and runs every image on the same cases. Each of our images is judged by the evaluator of the revision it was lowered from, a reference image by the evaluator of r0, and our images also against the `stock` image. It sums instructions over the cases that every image and evaluator finished, and reports bytes, agreements and instructions per case per function and in total (`--json` writes all rows). `--invariant` also runs `rv32.image-agrees` through the `AnalysisManager`.
+- Started `node --max-old-space-size=8192 tools/candela-image.mjs --count 100 --json scratchpad/image-r0.json` (task `bsodi34ym`).
+
+### Why
+- **A second fixture for the conventions.** The scalar fixture has only one- and two-parameter functions; none of its calls carries a record or a stack word. Candela exercises all of them, but its failures would be hard to read; the fixture makes each convention a small, named case.
+- **Our image against the reference image directly,** besides both against the evaluator: the two compilers share no code except the vendored encoders' formats and `ilp32f.ts`, so an agreement there is an independent check of the convention.
+- **The tool's own loop rather than only `imageAgrees`.** The invariant gives a verdict and counterexamples, but no per-function instruction counts and no reference images on the same cases.
+
+### What worked
+- All five policies compile Candela: `stock` 312,740 bytes (138 ms), `interactive` 260,540, `default` 501,664, `balanced` 501,012, `kernel` 434,996 (833 ms); 332 entries and 332 signatures each. The f32 agent's diary (04, Step 1) had found that only `stock` and `interactive` worked, before the pass groups were vendored.
+- The convention fixture: `true {"total":1600,"agree":1600,"disagree":0,"inconclusive":0}` (1,780 bytes).
+- Tool smoke test (`--count 10 --only mix,frameOf,hitMesh,traceAll,renderPixel,lobeNone,neeAt,evalMaterial`): 80 of 80 cases agree for r0, `stock` and `kernel`, 0 disagreements against `stock`; instructions per case r0 907.7, `stock` 1,458.6, `kernel` 792.7.
+- `node --test tests/typed/f32-backend.test.mjs`: 5 pass, 1 skipped (after the fix below).
+
+### What didn't work
+- The first run of the test file failed on my own assertion in test 3: I expected `bigSum` to add leaves straight from fa0 and fa1 (`fadd.s …, fa0, fa1`). At r0 the lifter stores each leaf into a temporary (`t15 = result#2`), so the image copies each leaf once (`fmv.s ft9, fa0`, …). The assertion now checks those copies; reading leaves in place shows at the O2 head, where `subst` has merged the temporaries.
+- The default Candela test took 36.8 s, mostly `lowerToImage`'s correspondence, which the test does not need; it now builds the artifact from `compileImage` directly.
+
+### What I learned
+- `mix` compiles to the same four instructions under our backend and the reference's `kernel` policy (`fsub.s`, `fmul.s`, `fadd.s fa0, fa0, …`, `ret`).
+- In a function that calls, parameters are copied out of fa0–fa7 (the argument registers are not allocatable there) and copied back for a call: `swapTwice` spends four `fmv.s` before its call. This is the i32 allocator's rule carried over; see Step 8.
+
+### What was tricky to build
+- **Comparing images on one set of cases.** `runImage` takes the signature from the image (`ImageFn.sig`) or from the caller; a reference image gets its signatures from the reference compiler's `signatures` list, so both images place the same arguments the same way.
+
+### What warrants a second pair of eyes
+- A trap agrees with any trap (Compiler Workbench's verdict), so the trap cases are weaker evidence; the tool counts them apart (`traps`).
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `tests/typed/f32-backend.test.mjs`, `tests/typed/f32-backend-fixture.mjs`, `tools/candela-image.mjs`.
+- `node --test tests/typed/f32-backend.test.mjs`; `node tools/candela-image.mjs --count 10 --only mix,hitMesh`.
+
+### Technical details
+- Instructions per case = Σ steps over the decided cases / their number; a case is decided when every evaluator and every image finished within its limit (2·10^5 statements, 2·10^7 instructions).
