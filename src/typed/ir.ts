@@ -318,6 +318,8 @@ export function rebuildBlocks(base: TypedBlocks, graph: IRGraph): TypedBlocks {
   return result;
 }
 
+/** Entities by id, per immutable value: projection resolves every entity, so a scan per call is quadratic. */
+const entityIndex = new WeakMap<object, Map<string, IREntity>>();
 const storeCache = new WeakMap<object, Store>();
 /** A read-only working store for a native value (cached per immutable value) for printing and queries. */
 export function storeOf(v: TypedBlocks): Store {
@@ -345,7 +347,11 @@ export const blocksAdapter = defineAdapter<TypedBlocks>({
     jump: 'control',
   },
   entities: blocksEntities,
-  resolve: (v, id) => blocksEntities(v).find(e => e.id === id),
+  resolve: (v, id) => {
+    let index = entityIndex.get(v);
+    if (!index) entityIndex.set(v, (index = new Map(blocksEntities(v).map(e => [e.id, e]))));
+    return index.get(id);
+  },
   relations: blocksRelations,
   roots: v =>
     Object.values(v.fns)
