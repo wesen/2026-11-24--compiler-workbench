@@ -459,7 +459,7 @@ With `IRWB_FULL=1` every one of the 46 corpus scripts runs, and only wrong-shift
 **User prompt (verbatim):** see Step 1 (task 5: "Add `npm run build:site` and tests under `tests/workbench/*.test.mjs`. Keep `npm test` green"), and the coordinator's request for this diary: "Your diary is missing. … From then on, append a step at every meaningful milestone and commit the diary with your code."
 **Assistant interpretation:** Cover the wb layer and the new features with tests that run in `npm test`, keep the slow corpus-wide run behind `IRWB_FULL`, and keep the diary current.
 **Inferred user intent:** Regressions in the port show up in the normal test run.
-**Commit (code):** see the next commit after ea1d742 ("IRWB-001 P3.6: tests/workbench …"), which also carries this step.
+**Commit (code):** 8d26689 — "IRWB-001 P3.6: tests/workbench (wb layer, strategies, site, corpus scripts); divergences; diary step 5"
 
 ### What I did
 - **`tests/workbench/helpers.mjs`:** `makeWb()` with in-memory storage, the corpus projects, the book, the reference and the `src/typed` + `src/workbench` sources; `widest(text)`.
