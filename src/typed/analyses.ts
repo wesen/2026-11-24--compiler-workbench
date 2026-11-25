@@ -33,6 +33,10 @@ export function readsOf(st: Store, id: string | undefined, acc = new Set<number>
   for (const a of v.args) readsOf(st, a, acc);
   return acc;
 }
+/**
+ * Whether evaluating a value may do something besides producing it (call, read memory, trap), so it cannot be
+ * dropped: calls, loads, divisions, and checked addresses (a capacity load and a trap). A result leaf has no effect.
+ */
 export function hasEffect(st: Store, id: string | undefined): boolean {
   if (!id) return false;
   const v = st.get(id) as ValueRec;
@@ -42,14 +46,22 @@ export function hasEffect(st: Store, id: string | undefined): boolean {
     v.op === 'load16u' ||
     v.op === 'div' ||
     v.op === 'rem' ||
+    v.op === 'caddr' ||
     v.args.some(a => hasEffect(st, a))
   );
 }
+/**
+ * Whether a value is a function of its operands alone, so it may be computed elsewhere or once (lvn, licm, subst):
+ * not a call, a load, a division (it may trap), a checked address (it traps and reads memory), or a result leaf (it
+ * reads the latest call's results). The f32 operators are pure: the target rounds to nearest even statically and
+ * raises no traps.
+ */
 export function isPure(st: Store, id: string): boolean {
   const v = st.get(id) as ValueRec;
-  if (['call', 'load', 'load16u', 'div', 'rem'].includes(v.op)) return false;
+  if (IMPURE.has(v.op)) return false;
   return v.args.every(a => isPure(st, a));
 }
+const IMPURE = new Set(['call', 'load', 'load16u', 'div', 'rem', 'caddr', 'result']);
 export const stmtValues = (s: StmtRec): string[] => [s.value, s.cond, s.addr].filter((x): x is string => !!x);
 
 // ---------- cfg ----------
@@ -371,7 +383,15 @@ export function evalRange(st: Store, id: string, env: Env): [number, number] {
   const v = st.get(id) as ValueRec,
     I = (lo: number, hi: number): [number, number] => [Math.max(MIN, lo), Math.min(MAX, hi)];
   const full: [number, number] = [MIN, MAX];
+  if (v.type === 'f32') return full; // ranges are of i32s; an f32 local has no interval
   switch (v.op) {
+    case 'feq':
+    case 'fne':
+    case 'flt':
+    case 'fgt':
+    case 'fle':
+    case 'fge':
+      return [0, 1];
     case 'const':
       return [v.imm as number, v.imm as number];
     case 'get': {

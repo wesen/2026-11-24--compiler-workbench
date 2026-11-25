@@ -27,6 +27,7 @@ export async function installVendor({ reference = false } = {}) {
   if (reference) loadVendorFile('compiler/typed/typed-rv32.js');
   const { setVendor } = await import('../dist/typed/vendor.js');
   setVendor({
+    typedTape: globalThis.typedTape,
     typedWasm: globalThis.typedWasm,
     typedRv32Interp: globalThis.typedRv32Interp,
     ...(reference ? { typedRv32: globalThis.typedRv32 } : {}),

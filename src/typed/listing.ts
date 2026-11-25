@@ -3,6 +3,7 @@
  * that follow `origin` records down to front-end ops (`lineage`, `linesOf`). The text format is the prototype's,
  * so listings can be compared with its book and its projects' notes.
  */
+import { formatF32 } from './f32.js';
 import type { BlockRec, StmtRec, Store, ValueRec, WorkFn } from './model.js';
 
 export const SYMBOL: Readonly<Record<string, string>> = {
@@ -25,28 +26,57 @@ export const SYMBOL: Readonly<Record<string, string>> = {
   ge: '>=',
   ltu: '<u',
   geu: '>=u',
+  fadd: '+.',
+  fsub: '-.',
+  fmul: '*.',
+  fdiv: '/.',
+  feq: '==.',
+  fne: '!=.',
+  flt: '<.',
+  fgt: '>.',
+  fle: '<=.',
+  fge: '>=.',
 };
-export const COMPARE = new Set(['eq', 'ne', 'lt', 'gt', 'le', 'ge', 'ltu', 'geu', 'eqz']);
+/** Operators whose result is 0 or 1. */
+export const COMPARE = new Set(
+  ['eq', 'ne', 'lt', 'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'].concat([
+    'feq',
+    'fne',
+    'flt',
+    'fgt',
+    'fle',
+    'fge',
+  ]),
+);
 
 export function show(st: Store, id: string, fnEnt?: WorkFn): string {
   const v = st.get(id) as ValueRec,
     f = fnEnt || (st.get(v.fn) as WorkFn);
+  const arg = (i: number) => show(st, v.args[i], f);
   switch (v.op) {
     case 'const':
-      return String(v.imm);
+      return v.type === 'f32' ? `${formatF32(v.imm as number)}f` : String(v.imm);
     case 'get':
       return f.locals[v.imm as number] ? f.locals[v.imm as number].name : `l${v.imm}`;
     case 'eqz':
-      return `!(${show(st, v.args[0], f)})`;
+      return `!(${arg(0)})`;
     case 'load':
-      return `load32[${show(st, v.args[0], f)}+${v.imm}]`;
+      return `load${v.type === 'f32' ? 'f32' : '32'}[${arg(0)}+${v.imm}]`;
     case 'load16u':
-      return `load16[${show(st, v.args[0], f)}+${v.imm}]`;
+      return `load16[${arg(0)}+${v.imm}]`;
     case 'call':
       return `${v.imm}(${v.args.map(a => show(st, a, f)).join(', ')})`;
-    default:
-      return `(${show(st, v.args[0], f)} ${SYMBOL[v.op] || v.op} ${show(st, v.args[1], f)})`;
+    case 'caddr':
+      return `caddr(${arg(0)}, ${arg(1)})`;
+    case 'aaddr':
+      return `frame+${v.imm}`;
+    case 'result':
+      return `result#${v.imm}`;
+    case 'tuple':
+      return `(${v.args.map(a => show(st, a, f)).join(', ')})`;
   }
+  if (v.args.length === 1 || !SYMBOL[v.op]) return `${v.op}(${v.args.map(a => show(st, a, f)).join(', ')})`;
+  return `(${arg(0)} ${SYMBOL[v.op]} ${arg(1)})`;
 }
 
 const short = (id: string | undefined) => id && id.replace(/^bb:[^.]+\./, '.');
@@ -69,6 +99,8 @@ export function showStmt(st: Store, id: string): string {
       return `return ${show(st, s.value!, f)}`;
     case 'trap':
       return 'trap';
+    case 'zero':
+      return `zero frame+${s.offset}, ${s.bytes} bytes`;
   }
   return s.op;
 }
