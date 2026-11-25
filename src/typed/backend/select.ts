@@ -362,11 +362,19 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
     regs.forEach((r, i) => {
       const l = locs[i];
       if (l.cls === 'stack')
-        emit(classOf(r) === 'x' ? 'sw' : 'fsw', { rs1: SP, rs2: r, imm: 4 * l.word, why: 'stack argument' }, id);
+        emit(
+          classOf(r) === 'x' ? 'sw' : 'fsw',
+          { rs1: SP, rs2: r, imm: 4 * l.word, why: 'stack argument' },
+          id,
+        );
       else if (classOf(r) === l.cls) move(physOf(l), r, id);
       else emit('fmv.x.w', { rd: physOf(l), rs1: r }, id); // an f32 beyond fa7, as its bits in an x register
     });
-    emit('call', { callee: name, argc: regs.length, uses: locs.filter(l => l.cls !== 'stack').map(physOf) }, id);
+    emit(
+      'call',
+      { callee: name, argc: regs.length, uses: locs.filter(l => l.cls !== 'stack').map(physOf) },
+      id,
+    );
     calls++;
     if (sig.results) {
       // the leaves stay where they return, until result#k reads them (before the next call, in this block)
@@ -698,11 +706,17 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
   // entry: copy parameters out of their ilp32f locations, zero the locals read before they are written
   emit('label', { name: 'entry' });
   const incoming = argumentLocations(f.params);
-  f.params.forEach((t, i) => {
+  f.params.forEach((_, i) => {
     const l = incoming[i],
       rd = localReg[i];
     if (l.cls === 'stack') {
-      emit(classOf(rd) === 'f' ? 'flw' : 'lw', { rd, rs1: SP, imm: 4 * l.word, caller: true, why: 'stack argument' });
+      emit(classOf(rd) === 'f' ? 'flw' : 'lw', {
+        rd,
+        rs1: SP,
+        imm: 4 * l.word,
+        caller: true,
+        why: 'stack argument',
+      });
       return;
     }
     const r = physOf(l);
@@ -710,7 +724,6 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
       move(rd, r, undefined, { param: i });
       hints.set(rd, r);
     } else emit('fmv.w.x', { rd, rs1: r, param: i }); // an f32 beyond fa7 arrives as bits in an x register
-    void t;
   });
   for (const l of live.liveIn(f.blocks[0].id))
     if (!f.locals[l].param)
@@ -739,14 +752,19 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
         case 'store': {
           const [base, off] = address(s.addr!, s.offset || 0);
           const v = isConst(s.value!) && cval(s.value!) === 0 ? ZERO : val(s.value!);
-          emit(s.width === 16 ? 'sh' : classOf(v) === 'f' ? 'fsw' : 'sw', { rs1: base, rs2: v, imm: off }, s.value);
+          emit(
+            s.width === 16 ? 'sh' : classOf(v) === 'f' ? 'fsw' : 'sw',
+            { rs1: base, rs2: v, imm: off },
+            s.value,
+          );
           break;
         }
         case 'zero': {
           // array.zero: one sw zero per word up to 16 words, else a loop over the words
           const at = arrayBase + (s.offset ?? 0),
             n = s.bytes ?? 0;
-          if (n % 4 || at % 4) fail('unsupported', `${f.name}: zero of ${n} bytes at ${at} is not whole words`);
+          if (n % 4 || at % 4)
+            fail('unsupported', `${f.name}: zero of ${n} bytes at ${at} is not whole words`);
           if (n <= 64 && fits12(at + n)) {
             for (let k = 0; k < n; k += 4) emit('sw', { rs1: SP, rs2: ZERO, imm: at + k });
             break;

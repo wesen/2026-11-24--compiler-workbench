@@ -162,7 +162,8 @@ export function physicalOccupancy(
     let u = 0;
     for (const r of [m.rs1, m.rs2, ...(m.uses ?? [])]) if (r !== undefined && bit.has(r)) u |= bit.get(r)!;
     use[i] = u;
-    def[i] = m.op === 'call' ? all : m.op !== 'label' && m.rd !== undefined && bit.has(m.rd) ? bit.get(m.rd)! : 0;
+    def[i] =
+      m.op === 'call' ? all : m.op !== 'label' && m.rd !== undefined && bit.has(m.rd) ? bit.get(m.rd)! : 0;
   });
   const blocks = machineBlocks(code);
   const bUse = blocks.map(b => {
@@ -269,7 +270,9 @@ export function allocate(
     // caller-saved first; argument registers in leaf functions (a call would clobber them), or where their physical
     // uses leave them free (argsShared); callee-saved last
     let pool =
-      leaf || argsShared ? [...pools.caller, ...pools.args, ...pools.callee] : [...pools.caller, ...pools.callee];
+      leaf || argsShared
+        ? [...pools.caller, ...pools.args, ...pools.callee]
+        : [...pools.caller, ...pools.callee];
     // s-registers first: every one used is saved and restored
     if (o.order === 'callee') pool = [...pools.callee, ...pool.filter(r => !pools.callee.includes(r))];
     if (o.registers !== 'all') pool = pool.slice(0, Math.max(1, +o.registers));

@@ -61,7 +61,10 @@ const stackOf = (ls: readonly Location[]) => ls.filter(l => l.cls === 'stack').l
 
 /** The stack words a call needs at the caller's sp: its stack arguments, or its stack results if more. */
 export function stackWords(sig: CallSignature): number {
-  return Math.max(stackOf(argumentLocations(sig.params)), sig.results ? stackOf(resultLocations(sig.results)) : 0);
+  return Math.max(
+    stackOf(argumentLocations(sig.params)),
+    sig.results ? stackOf(resultLocations(sig.results)) : 0,
+  );
 }
 
 /** Whether a call needs more than the integer convention (a0–a7 in, a0 out): an f32, a record result or stack words. */
@@ -122,7 +125,11 @@ export function placeCall(
 export function readResults(
   sig: CallSignature,
   placed: PlacedCall,
-  run: { readonly bytes: Uint8Array; readonly registers: ArrayLike<number>; readonly fregisters: ArrayLike<number> },
+  run: {
+    readonly bytes: Uint8Array;
+    readonly registers: ArrayLike<number>;
+    readonly fregisters: ArrayLike<number>;
+  },
 ): number | number[] {
   const after = new DataView(run.bytes.buffer, run.bytes.byteOffset);
   const read = (l: Location) =>

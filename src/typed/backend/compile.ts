@@ -126,7 +126,14 @@ export function finish(
       if (from !== null || to !== null) {
         if (from !== null && to !== null) {
           if (from !== to) {
-            out.push({ op: 'flw', rd: FT10, rs1: SP, imm: slots.get(from)!, covers: m.covers, spill: 'reload' });
+            out.push({
+              op: 'flw',
+              rd: FT10,
+              rs1: SP,
+              imm: slots.get(from)!,
+              covers: m.covers,
+              spill: 'reload',
+            });
             out.push(store(to, m));
           }
         } else if (from !== null) {
@@ -173,7 +180,14 @@ export function finish(
   // the exit sequence, and jumps to the next label removed
   out.push({ op: 'label', name: 'exit', covers: [] });
   for (const r of saved)
-    out.push({ op: load(r), rd: r, rs1: SP, imm: saveAt.get(r)!, covers: [f.id], note: 'restore ' + REGS[r] });
+    out.push({
+      op: load(r),
+      rd: r,
+      rs1: SP,
+      imm: saveAt.get(r)!,
+      covers: [f.id],
+      note: 'restore ' + REGS[r],
+    });
   if (frame) out.push({ op: 'addi', rd: SP, rs1: SP, imm: frame, covers: [f.id], note: 'frame' });
   out.push({ op: 'ret', covers: [f.id] });
   const final: MInsn[] = [];

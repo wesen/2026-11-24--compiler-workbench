@@ -88,7 +88,12 @@ export function runImage(
     );
   const program = { image: codeBytes(img), entries: img.entries, relocations: [], imports: [] };
   const sig = opts.sig ?? img.fns[fname]?.sig;
-  const base = { kind: 'run' as const, engine: 'rv32' as const, program: img.program, unit: 'instructions' as const };
+  const base = {
+    kind: 'run' as const,
+    engine: 'rv32' as const,
+    program: img.program,
+    unit: 'instructions' as const,
+  };
   try {
     if (sig && needsConvention(sig)) {
       const placed = placeCall(sig, args, memBytes, { fsPatterns: true });

@@ -351,7 +351,9 @@ export const FLOAT_OPS: Readonly<Record<string, FloatRow>> = {
   'fmv.w.x': [0x78, 0, 0, 'f', 'x'],
 };
 /** The class of each register operand of a machine instruction: rd, rs1, rs2 (undefined when it has none). */
-export function operandClasses(op: string): readonly ['x' | 'f' | undefined, 'x' | 'f' | undefined, 'x' | 'f' | undefined] {
+export function operandClasses(
+  op: string,
+): readonly ['x' | 'f' | undefined, 'x' | 'f' | undefined, 'x' | 'f' | undefined] {
   const row = FLOAT_OPS[op];
   if (row) return [row[3], row[4], row[2] === 'f' ? 'f' : undefined];
   if (op === 'flw') return ['f', 'x', undefined];
