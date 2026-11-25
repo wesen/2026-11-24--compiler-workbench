@@ -64,3 +64,12 @@ Added design-doc/03: Candela → WGSL → Typed → RV32 as one artifact chain o
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/24/IRWB-001--ir-workbench/design-doc/03-candela-to-typed-to-rv32-as-one-artifact-chain-with-candela-facts-driving-passes.md — Candela chain design
+
+## 2026-11-24
+
+Typed domain on the framework: typed.blocks IR and adapter, CW lifting, evaluator and meaning check (E5), six analyses (E4), 11 passes (E3) and pipelines as Strategy plans (E6). Parity with the CW book: Blend O2 six revisions and s:blend.15 provenance; 44 projects / 70 functions: 6986 decided cases agree, 14 at the step limit. Found and corrected CW's false 'preserves loops' claims (lvn, dce, subst).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/passes.ts — the 11 passes as definePass
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/parity.mjs — corpus parity report

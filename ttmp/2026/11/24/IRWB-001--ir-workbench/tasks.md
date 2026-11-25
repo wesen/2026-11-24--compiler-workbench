@@ -17,10 +17,10 @@
 - [x] P1.4 Extension E4: dataflow builder, lattices, widening, checked fact transfer <!-- t:aruk -->
 - [x] P1.5 Extension E5: differential invariants, case generation, sampled assurance <!-- t:unsw -->
 - [x] P1.6 Extensions E3 (definePass) and E6 (passes and analyses as strategy algorithms) <!-- t:l28x -->
-- [ ] P2.1 typed.blocks IR, adapter and lifting from the vendored Typed front end <!-- t:qnfa -->
-- [ ] P2.2 Evaluator, case generation and checks against r0 <!-- t:kko5 -->
-- [ ] P2.3 Analyses: cfg, dominators, loops, liveness, reaching, ranges <!-- t:rtdl -->
-- [ ] P2.4 The eleven passes on definePass and rewrite rules <!-- t:4kh7 -->
+- [x] P2.1 typed.blocks IR, adapter and lifting from the vendored Typed front end <!-- t:qnfa -->
+- [x] P2.2 Evaluator, case generation and checks against r0 <!-- t:kko5 -->
+- [x] P2.3 Analyses: cfg, dominators, loops, liveness, reaching, ranges <!-- t:rtdl -->
+- [x] P2.4 The eleven passes on definePass and rewrite rules <!-- t:4kh7 -->
 - [ ] P2.5 Backend: tiling selection, linear scan, frames, encoding, emulator runs <!-- t:jn6a -->
 - [ ] P2.6 O2 and pipelines as Strategy plans; parity with the prototype on 44 projects <!-- t:vhni -->
 - [ ] P3.1 wb API layer: handles, selections, projects, why and lineage <!-- t:pb99 -->
