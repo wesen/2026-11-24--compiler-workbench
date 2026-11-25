@@ -536,3 +536,20 @@ test("P2.6: the book's table against the reference compiler, and 5160 bytes agai
   }
   assert.deepEqual({ ours, theirs }, { ours: 5160, theirs: 7628 });
 });
+
+// Chapter 13: "our evaluator at r0 agrees with the reference compiler's images on all 6986 decided cases".
+test('P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit)', async () => {
+  const { Program } = await import('../../dist/typed/program.js');
+  const { projectSource } = await import('../../dist/typed/project.js');
+  const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
+  let fns = 0, agree = 0, decided = 0, inconclusive = 0;
+  for (const id of projectIds()) {
+    const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+    const r = globalThis.typedRv32.compile(ps.source, [], undefined);
+    const image = B.imageFromCode(id, r.image, r.entries);
+    for (const f of p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) }).fns) {
+      fns++; agree += f.agree; decided += f.total; inconclusive += f.inconclusive;
+    }
+  }
+  assert.deepEqual({ fns, decided, agree, inconclusive }, { fns: 70, decided: 6986, agree: 6986, inconclusive: 14 });
+});
