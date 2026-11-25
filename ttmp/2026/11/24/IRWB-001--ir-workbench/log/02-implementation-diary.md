@@ -904,3 +904,27 @@ On Candela r0 the 559 checked addresses become 100, and the meaning contract acc
 ### Code review instructions
 - `src/typed/passes.ts` (`bcm`) and `tests/typed/bcm.test.mjs`.
 - `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/10-bcm-candela.mjs` (about 1 minute).
+
+## Step 15: the Candela oracle against the reference compiler's kernel policy (task gxe6)
+
+The f32 agent's oracle used the reference compiler's `stock` policy, because its base revision lacked the reference pass groups. They are vendored now, so I ran the oracle against `kernel`, the policy the device uses. It agrees on every decided case, exactly as `stock` did.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 10. Mid-step, the user also asked for a separate research-agenda ticket. A Fable subagent was launched for it (IRWB-002, with its own diary), and it is not part of this step.
+
+### What I did
+- `tools/candela-oracle.mjs`: a `--policy P` option (default `stock`), passed to `referenceCompile`.
+- `node tools/candela-oracle.mjs --count 100 --policy kernel --json > various/experiments/04-candela-oracle-kernel-policy.json`.
+
+### What worked
+- `{"functions":332,"cases":33200,"values":31617,"traps":1368,"agree":32985,"disagree":0,"inconclusive":215,"faults":0,"allValueFunctions":330,"ms":312567}`.
+- These are the same counts as with `stock`. The `kernel` policy inlines, rotates loops and unrolls. Its images compute the same results as the evaluator on every decided case, including traps.
+
+### What didn't work
+- Nothing failed. The run took 313 s, against about 40 s for `stock`. Compiling with the kernel passes and running larger images costs more.
+
+### What I learned
+- The evaluator now agrees with two different compilations of Candela. Our own f32 backend's images, when they exist, therefore have a target that is itself cross-checked.
+
+### Code review instructions
+`node tools/candela-oracle.mjs --count 100 --policy kernel` (about 5 minutes).

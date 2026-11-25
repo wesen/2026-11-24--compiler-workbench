@@ -136,3 +136,11 @@ bcm, bounds-check merging for checked text addresses: per block and receiver, po
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/typed/passes.ts — bcm
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/tests/typed/bcm.test.mjs — bcm tests
+
+## 2026-11-24
+
+Candela oracle against the reference kernel policy: 33,200 cases, 32,985 agree, 0 disagree, 215 at the step limit (same as stock).
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/tools/candela-oracle.mjs — --policy option

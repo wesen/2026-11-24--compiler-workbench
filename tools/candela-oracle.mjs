@@ -1,6 +1,7 @@
 // The evaluator at r0 against the reference: Candela compiled by the repository's own RV32 compiler (typed-rv32.js,
-// policy stock) and run on the reference interpreter, on the evaluator's generated cases.
-//   node tools/candela-oracle.mjs [--count N] [--seed S] [--limit statements] [--scalar] [--random] [--json] [fn...]
+// policy stock unless --policy names another, e.g. kernel, the gallery's own) and run on the reference interpreter,
+// on the evaluator's generated cases.
+//   node tools/candela-oracle.mjs [--count N] [--seed S] [--limit statements] [--policy P] [--scalar] [--random] [--json] [fn...]
 // --limit: the evaluator's step limit (default 2e5 statements); the interpreter gets 100 instructions per statement.
 // --scalar: only functions whose parameters are all scalars (i32, u32, bool, f32). --random: K and buffer parameters
 // as the evaluator generates them by default (random words: mostly traps), not candelaInputs' row buffers.
@@ -16,7 +17,8 @@ const args = process.argv.slice(2);
 const flag = (name, d) => (args.includes(name) ? +args[args.indexOf(name) + 1] : d);
 const count = flag('--count', 40), seed = flag('--seed', 7), limit = flag('--limit', 2e5);
 const json = args.includes('--json'), scalar = args.includes('--scalar');
-const only = args.filter((a, i) => !a.startsWith('--') && !['--count', '--seed', '--limit'].includes(args[i - 1]));
+const policy = args.includes('--policy') ? args[args.indexOf('--policy') + 1] : 'stock';
+const only = args.filter((a, i) => !a.startsWith('--') && !['--count', '--seed', '--limit', '--policy'].includes(args[i - 1]));
 
 /** Compare one function over generated cases; returns per-function tallies and the first disagreements. */
 export function compareFunction(st, program, fn, { count, seed, inputs = {}, limit = 2e5 }) {
@@ -48,7 +50,7 @@ const scalarTypes = new Set(['i32', 'u32', 'bool', 'f32']);
 const source = candelaSource();
 const t0 = performance.now();
 const st = ingest('candela', source, { tape: true, maxSourceLength: MAX_SOURCE });
-const program = referenceCompile(source, { maxSourceLength: MAX_SOURCE, policy: 'stock' });
+const program = referenceCompile(source, { maxSourceLength: MAX_SOURCE, policy });
 const names = only.length ? only : [...st.fns.keys()].filter(n => !scalar || st.fn(n).params.every(t => scalarTypes.has(t)));
 const inputs = args.includes('--random') ? {} : candelaInputs(st);
 const rows = names.map(fn => compareFunction(st, program, fn, { count, seed, inputs, limit }));
