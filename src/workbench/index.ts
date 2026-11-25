@@ -21,3 +21,23 @@ export { PIPELINES, PASSES } from '../typed/passes.js';
 export { backendDefaults, backendOptionsAbout, runImage } from '../typed/backend/index.js';
 export { setVendor } from '../typed/vendor.js';
 export { formatJson, wrapProse, TILE_WIDTH } from '../typed/format.js';
+export {
+  CANDELA_INGEST,
+  CANDELA_MAX_SOURCE,
+  candelaHost,
+  candelaInputs,
+  candelaProject,
+  candelaSource,
+  compareFrames,
+  evaluatorEngine,
+  frameImage,
+  frameOf,
+  hasReferenceCompiler,
+  liftCandela,
+  parseSceneTable,
+  referenceEngine,
+  renderProgressive,
+  type CandelaData,
+  type CandelaFrame,
+  type CandelaProgress,
+} from './candela.js';

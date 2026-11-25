@@ -520,3 +520,296 @@ With `IRWB_FULL=1` every one of the 46 corpus scripts runs, and only wrong-shift
 
 ### Technical details
 - Test counts: `wb.test.mjs` 7, `strategies.test.mjs` 6, `site.test.mjs` 2, `scripts.test.mjs` 1.
+
+## Step 6: Candela in the workbench: the merge, what exists, and what rendering costs
+
+The user asked: "can i test one of the candela programs and see te rendered image when run on the emulator in the workbench?" The kernel agent built and verified the host side on `irwb-001/import-v6-prototype`:
+- `src/typed/candela-render.ts`: the scene table, `CandelaHost`, `renderScene` and `viewImage`
+- `tools/candela-render.mjs`: the engines and PNGs
+- the vendored scene table
+The coordinator delegated the view to me. This step merges that work, reads it, and measures what a page will pay before I design anything. The measurements changed the design: a preview's cost is dominated by the sky table and the cost of each engine call, not by the pixels.
+
+### Prompt Context
+**User prompt (verbatim):** "can i test one of the candela programs and see te rendered image when run on the emulator in the workbench?" (relayed by the coordinator, with its task list):
+1. a Candela view: scene, engine, stride, view and passes controls, a pixelated canvas, stats, progressive rendering
+2. bundle the sources, the scene table and the reference compiler, checked against VENDOR.json and loaded lazily
+3. Candela openable as a project, ingested from the tape, with passes warned about and not run by default
+4. controls fit 60–80 columns
+5. verify in the browser: B-01 at stride 4 and 1 on the emulator, the evaluator bit-identical, no console errors
+6. tests
+7. a diary step at every significant action, "more often than commits, about ten per milestone"
+
+**Assistant interpretation:** A view that renders the gallery's scenes with any engine the page can run, progressively and stoppably. Candela becomes a project so the evaluator can render whatever revision the user has made. Bit identity across engines is checked in the page.
+**Inferred user intent:** See Candela's output from inside the workbench, and use it as a whole-program check of the compiler's transformations.
+**Commit (code):** 5b2752e (the merge of 5669996); no code yet.
+
+### What I did
+- `git merge --no-edit irwb-001/import-v6-prototype` (5b2752e, clean).
+- Read:
+  - `src/typed/candela-render.ts`: `parseSceneTable`; `CandelaHost`, with 1 MiB of guest memory, the arena at 4096 and the buffer capacities in UTF-16 units; `renderScene`, with per-pixel spans when stride > 1; `viewImage`.
+  - `src/typed/reference.ts`: `referenceCompile` and `referenceRun`, which copies the memory into a new buffer per call.
+  - `tools/candela-render.mjs`, `tools/candela.mjs` (`candelaSource`, `MAX_SOURCE` = 2²², `candelaInputs`), `corpus/candela-gallery/VENDOR.json`, and step 17 of `02-implementation-diary.md`.
+- Read, but did not run, ds-js-os `tools/gen/candela/typed/host.mjs` `render()`. The gallery renders pass p at `frame = p === 0 ? 0 : p + 1` and sums colour (four channels) per pixel as f32 (`Math.fround`).
+- Scratch measurements in Node (session scratchpad: `candela-cost.mjs`, `candela-calls.mjs`, `candela-spans.mjs`) after `npm run build`.
+
+### What worked
+- `candela-cost.mjs`:
+  - the program: `sourceBytes 311790`, 332 functions, 12,358 statements, ingest from the tape 538 ms, 18 scenes
+  - `stock`: compile 403 ms, image 312,740 bytes; a stride-8 frame of B-01 (400 pixels) in 4004 ms, 7.63 M instructions
+  - `kernel`: compile 1075 ms, image 434,996 bytes; the same frame in 3137 ms, 3.43 M instructions
+  - the evaluator at r0: the same frame in 4431 ms, 1.26 M statements
+- `candela-calls.mjs` (the kernel image):
+  - layout: 16 ms
+  - `bind` (the sky table): 1757 ms, 5.52 M instructions
+  - 40 one-pixel spans: 223 ms, 5.58 ms each
+  - one full 160-pixel row: 300 ms, 1.68 M instructions
+  - a trivial call (`cdlLayout`): 1.95 ms
+- `candela-spans.mjs`, the evaluator: `bind` 1250 ms, one row 499 ms, one pixel 3.34 ms.
+
+### What didn't work
+- My plan was to make small strides cheaper by rendering full rows and subsampling them. `candela-spans.mjs` showed that a pixel's output can depend on how spans are grouped: `"B-01":{"compared":180,"differentBits":0}`, `"W-02":… 0`, but `"V-03":{"compared":180,"differentBits":36}`. Subsampled full rows would not reproduce `renderScene`'s previews, or the kernel agent's numbers for them. Dropped: the view renders exactly as `renderScene` does.
+
+### What I learned
+- At stride ≥ 2, a preview costs about 2 ms per pixel in call overhead (the memory copies in `referenceRun` and `CandelaHost.call`) on top of its instructions. A stride-2 frame (6,400 calls) costs about as much as a full one. The view will show the estimate.
+- The sky table is the fixed cost of every render, about 1.3–1.8 s, and runs as one blocking call.
+
+### What should be done in the future
+- A cheaper call path (memory shared between calls) belongs in `src/typed/reference.ts` (the kernel agent's) if previews matter.
+
+### Code review instructions
+- The three scratch scripts are not in the repo; their outputs are quoted above.
+
+### Technical details
+- Design from here:
+  - **`src/workbench/candela.ts`:** the engines, a progressive render loop that yields between spans, the gallery's accumulation, bit comparison, and the project definition with `candelaInputs`.
+  - **`site-src/candela.js`:** the view.
+  - **The site build** writes `candela/candela-data.js` and the four reference-compiler scripts. The page loads them with `<script>` and SRI integrity only when the view opens; CSP `connect-src 'none'` rules out `fetch()`.
+
+## Step 7: The wb layer's Candela module: engines, a progressive render loop, the project
+
+This step adds `src/workbench/candela.ts` and `candela-inputs.ts`, which put the kernel's Candela host behind what a page needs:
+- engines with their units and setup times
+- a render loop that yields between spans, stops on request, and accumulates passes as the gallery does
+- a bit-for-bit frame comparison
+- the gallery as a project, ingested from the tape, with derived check inputs
+
+In Node, B-01 at stride 16 renders identically on the emulator and on the evaluator: 0 of 1,200 floats and 0 of 400 colour sums differ. Opening Candela as a project works, but takes 8–13 s, almost all of it in the framework's `createIRArtifact`. So the evaluator-at-r0 engine will lift without making a Program.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 6.
+**Assistant interpretation:** Build the page-independent part first and check it in Node, where it is cheap to measure.
+**Inferred user intent:** As in step 6.
+**Commit (code):** pending (committed with the view; see step 10).
+
+### What I did
+- **`src/workbench/candela.ts`:**
+  - `candelaSource(data)` and `candelaProject(data)`. The project's `project.json` is written with `projectJson` and has `group: Candela`, the five sources in app.json's order, `"ingest": { "tape": true, "maxSourceLength": 4194304 }` and `"inputsFrom": "candela"`; `notes.md` is at 72 columns.
+  - `referenceEngine(source, policy)`: compiles once per policy and source hash; unit: instructions.
+  - `evaluatorEngine(store, label)`: unit: statements.
+  - `renderProgressive(host, scene, { stride, passes, signal, onProgress, slice, yieldTo })`: `renderScene`'s span pattern; pass p at frame `frameOf(p)` = 0, then p + 1; colour summed per pixel with `Math.fround`; a yield at least every 30 ms; a stop check after every span. It keeps `frame0`, `acc`, a per-row `count`, steps, sky steps and times.
+  - `frameImage(frame, view, exposure)`: colour is `acc / count[row]`; the other views come from pass 0. Then the kernel's `viewImage`.
+  - `compareFrames(a, b)`: differing words of `frame0` and of `acc`, through `Uint32Array` views.
+- **`src/workbench/candela-inputs.ts`:** `candelaInputs(store)`, a port of `tools/candela.mjs`. It is a module of its own because `projects.ts` imports it and `candela.ts` imports `projects.ts`.
+- **`src/workbench/projects.ts`:**
+  - `kernelFor(id, files, name?)`: if `project.json` has `ingest` or `inputsFrom`, it builds `new Program(…, { ingest })` itself, then fills the inputs object from `candelaInputs(storeOf(head))`; otherwise `env.kernel.open` as before.
+  - `addBuiltin(p)` adds a built-in project after the page loads.
+- `src/workbench/index.ts` exports the Candela API.
+- Scratch checks (session scratchpad): `candela-wb.mjs`, `candela-open.mjs`, `candela-artifact.mjs`.
+
+### Why
+- **Derive the inputs after lifting, by mutating the inputs object.** `Program` reads `this.options.inputs` on every check, and the inputs need the lifted program (its record parameters). The alternative, making the Program twice, would double the costs measured below.
+
+### What worked
+- `npx tsc --noEmit`: clean.
+- `candela-wb.mjs`:
+  - 18 scenes; source 311,790 bytes; the `kernel` image compiled in 1046 ms.
+  - The emulator at stride 16 (10×10): 840,981 instructions for the pixels plus 5,520,419 for the sky; 1398 ms, of which 1065 ms was the sky; 10 progress reports.
+  - The project: `{"title":"Candela gallery","status":"ok","rev":"r0","fns":332}` with files `project.json notes.md glue.typed kernel.typed math.typed scenes.typed types.typed`; 169 functions with derived inputs.
+  - The evaluator on the project's r0 store: 307,594 statements, 1432 ms.
+  - `"compare":{"floats":1200,"different":0,"accFloats":400,"accDifferent":0}`.
+  - Two passes: `passesDone 2`, `count0 2`; frame 0 unchanged (`sameFrame0` 0 differing words); the sums differ in 394 of 400 floats, as a second sample should make them.
+
+### What didn't work
+- **Opening the project took `"openMs":8312`.** `candela-open.mjs` broke it down: `projectSource` 1 ms, `ingest` 694 ms, `toNative` 1293 ms, `new Program` 12,058 ms, inputs 742 ms. `candela-artifact.mjs` then isolated the rest: `{"validateMs":318,"createIRArtifactMs":12726}`. `createIRArtifact` (`src/framework/ir/adapters.ts`, hashing the r0 artifact of 12,358 statements) is the cost, and it is framework code I must not change. Consequences:
+  - The view's "evaluator at r0" engine lifts with `ingest()` (about 0.7 s) and never makes a Program.
+  - Opening Candela as a project is a separate action, with the wait announced.
+  - The cost goes into the report for the kernel agent.
+
+### What I learned
+- "Lifting takes about 0.3 s" holds for `ingest` alone. A Program also hashes its r0 artifact, and that hash is the expensive part.
+
+### What warrants a second pair of eyes
+- `kernelFor` derives inputs only for `"inputsFrom": "candela"`. A general mechanism (a named input deriver) would be the next step if another project needs one.
+
+### Technical details
+- `frameOf(p) = p === 0 ? 0 : p + 1` (ds-js-os `host.mjs` `render`).
+
+## Step 8: The site bundles Candela and the reference compiler, loaded only when the view opens; the Candela view
+
+This step makes the site carry everything a render needs, without loading any of it until the Candela view opens. It also adds the view and wires it into the page.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 6.
+**Assistant interpretation:** The task list's points 1, 2 and 4: the view, the bundled and checked data, narrow controls.
+**Inferred user intent:** Open the workbench, pick a scene, press Render, watch it appear.
+**Commit (code):** pending (step 10).
+
+### What I did
+- **`tools/build-site.mjs`:**
+  - `vendorBytes(path)` checks a file against `vendor/ds-js-os/VENDOR.json`. It now serves both the eager scripts (tape, typed-wasm, rv32-interp) and the four lazy ones (`typed-rv32.js`, `-inline`, `-loops`, `-kernel`).
+  - `candelaFile(f)` checks each Candela file against `corpus/candela-gallery/VENDOR.json`.
+  - The build generates `candela/candela-data.js`, which sets `globalThis.candelaData = { commit, sources, files, scenes }`.
+  - The bundle's content module gains `LAZY.candela`: `{ compiler: [{src, integrity}], data: {src, integrity}, bytes }`, with SHA-384 SRI hashes computed at build time.
+- **`site-src/candela.js`** (the view):
+  - `UI.loadCandela()` appends five `<script async=false integrity=…>` tags, so they run in order and the pass groups come after the compiler core. Then it calls `setVendor({ typedRv32 })`, parses the scenes and registers the project (`addBuiltin`).
+  - Controls in two wrapping toolbars:
+    - scene (id, title, "(spectral)")
+    - engine: emulator kernel or stock; evaluator r0 (lifted); evaluator at the project's revision, disabled until the project is open; our RV32 image, disabled and labelled "needs the f32 backend"
+    - stride 1/2/4/8; view colour/albedo/normal/depth
+    - passes, 1–64
+    - Render, or Stop while a render runs
+  - A canvas sized in frame pixels and scaled with CSS (`image-rendering: pixelated`), redrawn at most every 80 ms during a render.
+  - Stats: setup (compile or lift) time, sky-table time and steps, steps per pixel, total time, pixels/s, progress, and the passes done.
+  - Before rendering, the view shows the pixel count and the number of engine calls the render will need.
+  - Each finished render is kept (the last 8). A new render compares its bits with every earlier one of the same scene and stride from another engine, and shows "identical: all N floats from …" or "k of N floats differ".
+  - A "Candela project" section: "Open Candela as a project", with the wait announced; once the project is open, its revision becomes an engine.
+- **`site-src/main.js`:**
+  - imports the view and passes `UI.content.lazy`
+  - a reload with `wb3.project = candela`, before the data loads, falls back to start-here; previously `#book-…` would fail
+  - Step or Run on a project whose `project.json` has `slowPasses` warns first (a toast) and runs only when clicked again
+- **`site-src/dock.js`:**
+  - `candela` added to `ALL` and to every layout, beside Run
+  - a new Candela layout: the view wide, with projects, source and IR beside it
+  - the narrow tab list gains the Strategies, Candela and Compiler views; the first two were missing since the earlier work
+  - `KEY` bumped to `wb3.layout.v3`, so saved layouts pick the new view up
+- **`site-src/port.css`:** `.cdl-*` rules (selects that shrink with the tile, pixelated canvas, key–value stats), using existing tokens only.
+- `candelaProject` writes `slowPasses: '18 to 60 s'`.
+
+### Why
+- **Script tags, not fetch.** The page's CSP has `connect-src 'none'`, so `fetch()` cannot load anything. Script tags under `script-src 'self'` can, and SRI hashes tie each file to the build that checked it against VENDOR.json.
+- **Warn on the second click, not with `confirm()`.** A modal blocks the page, and a toast cannot be missed when the next click is what starts the pass.
+
+### What worked
+- `node tools/build-site.mjs`: `app.js 2158 KiB … Candela on demand 728 KiB`; `dist/site/candela/candela-data.js` is 492,021 bytes, and the four compiler files have the vendored sizes (134,717, 26,424, 36,734, 55,224).
+
+### What didn't work
+- My first CSS used tokens that do not exist (`--ink-3`, `--bad`, `--bg-2`). I replaced them with `--ink-2`, `--warn` and `--fill` after listing every custom property in the stylesheets.
+
+### What warrants a second pair of eyes
+- `UI.loadCandela` resets its promise on failure so that reopening the view retries; a failed script tag stays in the document.
+
+## Step 9: B-01 renders in the browser: emulator at stride 4 and 1, the evaluator bit-identical
+
+The view works in Chromium (Playwright) against `dist/site` served by `tools/serve-site.mjs`. B-01 ("Hello, sphere") at stride 4 and at full size on the emulator gives the same instruction counts as the kernel agent's Node runs. The evaluator's frame at stride 4 is bit-identical to the emulator's, compared in the page.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 6.
+**Assistant interpretation:** Task-list point 5: browser verification with screenshots.
+**Inferred user intent:** Proof that the page renders the same image as the trusted chain.
+**Commit (code):** pending (step 10).
+
+### What I did
+- `<link rel="icon" href="data:,">` in `index.html`. This removes the favicon 404, the only console error, which an earlier step listed as future work. The CSP's `img-src` allows `data:`.
+- `.playwright-mcp/cdl-render.js` (gitignored): opens the Candela layout, waits for the lazy load, and sets scene, engine, stride and passes through the real controls. It clicks Render, runs a 50 ms timer to measure responsiveness, waits until the job ends, and returns the frame's numbers and the stats text. The settings come from `window.__cdl`.
+- Before opening the view: `document.scripts` held only `tape.js`, `typed-wasm.js`, `rv32-interp.js` and `app.js`; `typedRv32`, `candelaData` and the candela project were all absent.
+
+### What worked
+- **Emulator (kernel), B-01, stride 4** (40×40):
+  - setup (compile) 1.20 s; sky 1.51 s and 5,520,419 instructions
+  - pixels: 13,601,596 instructions, 8,501 per pixel, in 8.45 s
+  - the kernel agent's Node run had 13.6 M
+  - screenshot `various/ui-screenshots/candela-01-B01-stride4-emulator.png`
+- **Evaluator r0 (lifted), B-01, stride 4:**
+  - setup (lift) 0.36 s; sky 0.92 s and 1,809,033 statements
+  - pixels: 4,979,796 statements, 3,112 per pixel, in 8.99 s
+  - the stats row reads "identical: all 19,200 floats from emulator · reference image (kernel)": `{"floats":19200,"different":0,"accFloats":6400,"accDifferent":0}`
+  - screenshot `candela-02-B01-stride4-evaluator-identical.png`
+- **Emulator (kernel), B-01, stride 1** (160×160):
+  - 217,105,487 instructions, 8,481 per pixel, exactly the kernel agent's figures
+  - 38.0 s in the page (Node: 18.7 s); 696 pixels/s
+  - screenshot `candela-03-B01-stride1-emulator.png`: the red sphere on the floor under the sky, at one sample per pixel
+- **Console:** no errors.
+
+### What didn't work
+- **The page is not responsive for a whole row at stride 1.** With one span per row, the longest gap between timer ticks was 911 ms, on the rows through the sphere. At stride 4 it was 131–137 ms. Splitting rows would change how spans are grouped, and step 6 showed that grouping can change bits (V-03). So I kept `renderScene`'s pattern.
+
+### What I learned
+- The emulator runs about 2× slower in the page than in Node: 38 s against 18.7 s for the same 217 M instructions.
+
+## Step 10: Two UI bugs the verification found, a pass on Candela in the page, narrow tiles, tests; commit
+
+Driving the view through its real controls found two bugs I had written: a re-entrant repaint from the passes field, and a comparison that would report a false difference. Running a real pass on Candela in the page found a third: a check line listing 332 functions, which broke the Pipeline view's layout. All three are fixed. A pass on the open Candela project works end to end, and the evaluator's frame at r1 is bit-identical to the emulator's. The controls fit a 69-column tile and a 600 px phone width. `npm test`: 313 passed, 2 skipped.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 6.
+**Assistant interpretation:** Finish points 3, 4 and 6 (the project, narrow tiles, tests), and commit with the diary.
+**Inferred user intent:** As in step 6.
+**Commit (code):** see the commit after this step ("IRWB-001 UI: the Candela view…").
+
+### What I did
+- **Bug 1, the passes field** (found by the probe script):
+  - `NotFoundError: Failed to set the 'innerHTML' property on 'Element': The node to be removed is no longer a child of this node. Perhaps it was moved in a 'blur' event handler?`
+  - `onchange` re-rendered the view. Replacing the HTML removed the focused field, its blur fired a second change, and that re-rendered inside the first.
+  - For a user, typing a number and then clicking Render took this path, and the click could land on a button that had just been replaced.
+  - Fix: `oninput` updates the state and the cost line (`[data-cinfo]`) in place; `onchange` only normalizes the value. `render` now refuses to nest and schedules a repaint instead.
+  - The probe now types into the field and clicks Render, as a user does.
+- **Bug 2, `compareFrames`:** it compared colour sums even when the two frames summed different numbers of passes. It now returns `accDifferent: null` in that case, and the view reports pass-0 identity alone.
+- **Bug 3, the check line:** a check of Candela's 332 functions was written into the run log in full, and the Pipeline view's row widened until the tile scrolled sideways. `checkLine(c)` in `main.js` keeps the full list for up to six functions. Beyond that it prints "N of M functions agree on all K cases", plus up to six functions that disagree.
+- **Header:**
+  - `.bar .proj` gets `min-width: 120px`; the project title had shrunk to "(".
+  - The brand tagline and the build label hide below 1440 px instead of below 1280 px.
+- **The empty canvas** stays hidden until there is a frame; before, it showed as a large grey square.
+- **`tests/workbench/candela.test.mjs`**, eight tests:
+  - The site build writes the five lazy files. `index.html` names none of them. `app.js` carries each file's SHA-384. The compiler bytes match `vendor/ds-js-os/VENDOR.json`. The data script is read as JSON, not run: its sources follow app.json's order, every file matches `corpus/candela-gallery/VENDOR.json`, and its scene table parses to 18 scenes with unique ids, `B-01 "Hello, sphere"` first.
+  - The project files follow app.json's order. `candelaSource` equals `tools/candela.mjs`'s. `project.json` has `ingest`, `inputsFrom` and `slowPasses`, and it and `notes.md` are at most 72 columns.
+  - `renderProgressive` on a stand-in host whose floats encode (frame, y, x, channel):
+    - one span per row at stride 1, one per pixel at stride 4
+    - frames 0, 2, 3 for three passes
+    - the f32 sums
+    - stopping after row 3 keeps three rows and ends with `stopped`
+  - `compareFrames`: −0 against +0 counts as a differing bit; sums over different pass counts give `null`; different sizes give `null`.
+  - B-01 at stride 32 on the kernel image and on the lifted r0: `{ floats: 300, different: 0, accFloats: 100, accDifferent: 0 }`, sky 5,520,419 instructions, image compiled once. This takes about 4 s.
+  - With `IRWB_FULL=1`: Candela opens as a project with 332 functions and derived inputs (7.4 s).
+- `npx prettier --write` on my TypeScript files. `src/framework/passes/define-pass.ts` and `src/typed/candela-render.ts` also fail the check; they are not mine, and I left them.
+
+### What worked
+- **In the page, on the open Candela project:**
+  - Open: 9,730 ms.
+  - Engines: `evaluator · r0 (project)`; our RV32 image listed and disabled.
+  - The first Step warns (toast: "Candela gallery: each pass takes 18 to 60 s, and the page does not respond meanwhile. Step or Run again to start.") and leaves the revision at r0.
+  - The second Step ran `cfg`: r1, 974 edits; the check agreed on 40 of 40 cases for each function (`cdlRenderSpan 26/26`). The pass and its check took about 45 s.
+- **Then "evaluator · r1 (project)", B-01 at stride 4:** 4,756,455 statements, 4.5% fewer than r0's 4,979,796; "identical: all 19,200 floats from emulator · reference image (kernel)". Screenshot `candela-07-project-r1-evaluator-identical.png`.
+- **Also in the page:**
+  - The evaluator at r0, B-01 at stride 1: 79,653,353 statements, 42.1 s, `{"floats":307200,"different":0,"accFloats":102400,"accDifferent":0}` against the emulator's frame.
+  - Three passes at stride 8: 3 of 3, 10,188,227 instructions.
+  - Stop on W-02 at stride 1: stopped after 53 of 160 rows, frame marked stopped. Screenshot `candela-05-W02-progressive.png`: the rows done are drawn, the rest is still black.
+  - The normal view of B-01. Screenshot `candela-04-B01-normal-view.png`.
+  - R-01 at stride 8: 6,564,752 instructions, 2.3 s; canvas 20 px scaled to 480 px, `image-rendering: pixelated`. Screenshot `candela-10-R01-stride8-layout.png`.
+- **Narrow tiles** (measured: tile width ÷ the width of "0" at `--fs-s`):
+  - workbench layout: 727 px, 109 columns
+  - compiler layout: 461 px, 69 columns; the controls wrap to two and three rows
+  - phone: 600 px
+  - none of them has an element scrolling sideways or a document wider than the window
+  - screenshots `candela-08-narrow-tile.png` and `candela-09-phone-width.png`
+- **Reload with `wb3.project = candela`:** the page opens start-here, without an error.
+- **Console:** no errors or warnings after the favicon fix.
+- **Tests:** `node --test tests/workbench/candela.test.mjs`: 7 pass, 1 skipped (the `IRWB_FULL` one, which passes alone). `npm test`: 315 tests, 313 pass, 0 fail, 2 skipped.
+
+### What didn't work
+- My first stand-in test expected 405 for pixel (1, 1) at stride 4. That pixel is scene x 4, y 4, so the encoding gives 404. The mistake was the test's, not the loop's.
+- `browser_navigate` to the same URL with a different hash does not reload the page, so I tested a stale bundle once and got a misleading `setupMs: 0`. Reloads now go through `page.reload()`.
+
+### What I learned
+- On Candela the slow part of a pass in the page is the gate's check: 332 functions × 40 cases on the evaluator. The pass itself is cheaper.
+
+### What warrants a second pair of eyes
+- `kernelFor` mutates the inputs object after the Program is built. It relies on `Program` reading `options.inputs` lazily, at every check.
+
+### What should be done in the future
+- `createIRArtifact` on Candela's r0 (about 12.7 s in Node, 9.7 s for the whole open in the page): the framework owner's to speed up.
+- A row at stride 1 holds the page for up to 0.9 s. The answer that keeps the bits is a Web Worker for the engine, which needs the vendored compiler loaded inside the worker under the same CSP.
+- Our own RV32 image, as a third engine, once the f32 backend lands.
+
+### Code review instructions
+- Start with `src/workbench/candela.ts` (`renderProgressive`, `compareFrames`), then `site-src/candela.js` (`UI.loadCandela`, `render`, `paintInto`), `tools/build-site.mjs` (the lazy section), and `src/workbench/projects.ts` (`kernelFor`, `addBuiltin`).
+- Run `node --test tests/workbench/candela.test.mjs`. Then `npm run build:site`, `node tools/serve-site.mjs dist/site 8765`, open the Candela layout (Layout ▾), and render B-01 at stride 4 with two engines.
