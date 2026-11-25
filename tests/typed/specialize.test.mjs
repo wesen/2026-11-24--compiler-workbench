@@ -49,3 +49,15 @@ test('specialize: a bad binding is refused and the assumptions are restored', as
   assert.deepEqual(p.assumptions, {});
   assert.equal(p.rev, 0);
 });
+
+test('specialize: undoing the specialization drops its assumption', async () => {
+  const p = Program.fromProject(projectSource('match-enum', projectFiles('match-enum')));
+  await p.specialize(square());
+  await p.apply('cfg');
+  assert.deepEqual(p.assumptions, { area: { s: 4 } });
+  p.undo(); // back to the specialized revision: still assumed
+  assert.deepEqual(p.assumptions, { area: { s: 4 } });
+  p.undo(); // back to r0: no restriction
+  assert.deepEqual(p.assumptions, {});
+  assert.equal(p.check({ fn: 'area' }).status, 'agree');
+});

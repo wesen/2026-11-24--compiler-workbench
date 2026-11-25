@@ -59,6 +59,8 @@ export interface Revision {
   readonly ms: number;
   readonly fns?: readonly string[];
   readonly note?: string;
+  /** The assumptions in force when this revision was made (see `Program.assume`). */
+  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
 }
 
 export interface ApplyResult {
@@ -232,6 +234,7 @@ export class Program {
       correspondence: r.correspondence,
       ms,
       fns: report.fns,
+      assumptions: JSON.parse(JSON.stringify(this.assumptions)),
     });
     const checks =
       (r.contract as { execution?: { checks?: { phase: string; evidence?: any }[] } } | undefined)?.execution
@@ -333,6 +336,9 @@ export class Program {
     const n = revNumber(rev);
     if (!(n >= 0 && n <= this.rev)) fail('noRevision', `${this.id} has revisions r0 to r${this.rev}`);
     this.revisions.length = n + 1;
+    // the head's assumptions: a specialization undone takes its restriction with it
+    for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
+    Object.assign(this.assumptions, JSON.parse(JSON.stringify(this.revisions[n].assumptions ?? {})));
     return `r${this.rev}`;
   }
   revisionList() {
