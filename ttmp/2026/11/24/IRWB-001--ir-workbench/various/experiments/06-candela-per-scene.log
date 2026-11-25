@@ -1,0 +1,144 @@
+B-01 specialize r1 61137ms
+B-01 constprop r2 80104ms
+B-01 fold r3 43499ms
+B-01 cfg r4 24682ms
+B-01 dce r5 26818ms
+B-01 cfg - 16416ms
+B-01 dfe r6 24789ms
+{"scene":"B-01","fns":"332->135","stmts":"12358->5317","differentBits":0,"ms":352156}
+R-01 specialize r1 31681ms
+R-01 constprop r2 25515ms
+R-01 fold r3 24406ms
+R-01 cfg r4 20398ms
+R-01 dce r5 19972ms
+R-01 cfg - 12874ms
+R-01 dfe r6 15584ms
+{"scene":"R-01","fns":"332->137","stmts":"12358->5400","differentBits":0,"ms":198611}
+L-03 specialize r1 29962ms
+L-03 constprop r2 36286ms
+L-03 fold r3 33652ms
+L-03 cfg r4 23599ms
+L-03 dce r5 21920ms
+L-03 cfg - 12636ms
+L-03 dfe r6 13106ms
+{"scene":"L-03","fns":"332->136","stmts":"12358->5369","differentBits":0,"ms":225398}
+G-01 specialize r1 36683ms
+G-01 constprop r2 24118ms
+G-01 fold r3 25524ms
+G-01 cfg r4 27555ms
+G-01 dce r5 31400ms
+G-01 cfg - 14152ms
+G-01 dfe r6 13646ms
+{"scene":"G-01","fns":"332->140","stmts":"12358->5577","differentBits":0,"ms":236442}
+E-02 specialize r1 38139ms
+E-02 constprop r2 51333ms
+E-02 fold r3 26970ms
+E-02 cfg r4 22785ms
+E-02 dce r5 21680ms
+E-02 cfg - 19246ms
+E-02 dfe r6 17403ms
+{"scene":"E-02","fns":"332->138","stmts":"12358->5533","differentBits":0,"ms":260354}
+W-02 specialize r1 36336ms
+W-02 constprop r2 25890ms
+W-02 fold r3 52277ms
+W-02 cfg r4 32778ms
+W-02 dce r5 31569ms
+W-02 cfg - 26956ms
+W-02 dfe r6 25345ms
+{"scene":"W-02","fns":"332->147","stmts":"12358->5965","differentBits":0,"ms":328974}
+F-01 specialize r1 41315ms
+F-01 constprop r2 33080ms
+F-01 fold r3 30110ms
+F-01 cfg r4 19831ms
+F-01 dce r5 19475ms
+F-01 cfg - 11937ms
+F-01 dfe r6 14106ms
+{"scene":"F-01","fns":"332->137","stmts":"12358->5411","differentBits":0,"ms":220400}
+V-02 specialize r1 25677ms
+V-02 constprop r2 22395ms
+V-02 fold r3 26624ms
+V-02 cfg r4 23794ms
+V-02 dce r5 23254ms
+V-02 cfg - 14621ms
+V-02 dfe r6 16881ms
+{"scene":"V-02","fns":"332->141","stmts":"12358->5395","differentBits":0,"ms":199888}
+G-02 specialize r1 29085ms
+G-02 constprop r2 25633ms
+G-02 fold r3 26790ms
+G-02 cfg r4 22420ms
+G-02 dce r5 24801ms
+G-02 cfg - 15114ms
+G-02 dfe r6 15337ms
+{"scene":"G-02","fns":"332->141","stmts":"12358->5539","differentBits":0,"ms":203844}
+X-04 specialize r1 28997ms
+X-04 constprop r2 23269ms
+X-04 fold r3 23230ms
+X-04 cfg r4 20139ms
+X-04 dce r5 21031ms
+X-04 cfg - 12225ms
+X-04 dfe r6 12744ms
+{"scene":"X-04","fns":"332->137","stmts":"12358->5445","differentBits":0,"ms":158953}
+S-02 specialize r1 24364ms
+S-02 constprop r2 26892ms
+S-02 fold r3 25267ms
+S-02 cfg r4 22665ms
+S-02 dce r5 23550ms
+S-02 cfg - 14825ms
+S-02 dfe r6 15148ms
+{"scene":"S-02","fns":"332->140","stmts":"12358->5432","differentBits":0,"ms":169862}
+R-05 specialize r1 21340ms
+R-05 constprop r2 18179ms
+R-05 fold r3 19552ms
+R-05 cfg r4 17233ms
+R-05 dce r5 19377ms
+R-05 cfg - 12171ms
+R-05 dfe r6 12687ms
+{"scene":"R-05","fns":"332->143","stmts":"12358->5548","differentBits":0,"ms":149744}
+V-03 specialize r1 24397ms
+V-03 constprop r2 22175ms
+V-03 fold r3 20192ms
+V-03 cfg r4 17956ms
+V-03 dce r5 21196ms
+V-03 cfg - 15013ms
+V-03 dfe r6 15750ms
+{"scene":"V-03","fns":"332->140","stmts":"12358->5410","differentBits":0,"ms":152960}
+V-04 specialize r1 28808ms
+V-04 constprop r2 27351ms
+V-04 fold r3 28903ms
+V-04 cfg r4 19057ms
+V-04 dce r5 19277ms
+V-04 cfg - 11890ms
+V-04 dfe r6 12284ms
+{"scene":"V-04","fns":"332->140","stmts":"12358->5420","differentBits":0,"ms":176629}
+R-08 specialize r1 23995ms
+R-08 constprop r2 21603ms
+R-08 fold r3 23083ms
+R-08 cfg r4 17942ms
+R-08 dce r5 18695ms
+R-08 cfg - 12396ms
+R-08 dfe r6 12007ms
+{"scene":"R-08","fns":"332->143","stmts":"12358->5494","differentBits":0,"ms":142815}
+X-03 specialize r1 27397ms
+X-03 constprop r2 25834ms
+X-03 fold r3 23576ms
+X-03 cfg r4 19432ms
+X-03 dce r5 19370ms
+X-03 cfg - 12059ms
+X-03 dfe r6 12924ms
+{"scene":"X-03","fns":"332->142","stmts":"12358->5484","differentBits":0,"ms":154088}
+R-04 specialize r1 23608ms
+R-04 constprop r2 21774ms
+R-04 fold r3 23159ms
+R-04 cfg r4 19268ms
+R-04 dce r5 21947ms
+R-04 cfg - 14474ms
+R-04 dfe r6 15652ms
+{"scene":"R-04","fns":"332->141","stmts":"12358->5427","differentBits":0,"ms":159917}
+G-03 specialize r1 28261ms
+G-03 constprop r2 25976ms
+G-03 fold r3 28080ms
+G-03 cfg r4 20818ms
+G-03 dce r5 19208ms
+G-03 cfg - 12108ms
+G-03 dfe r6 12300ms
+{"scene":"G-03","fns":"332->139","stmts":"12358->5378","differentBits":0,"ms":172667}

@@ -1279,3 +1279,42 @@ The size gain is the large one. The speed gain is small, because this pipeline r
   - check every surviving function against the post-`dfe` revision on 20 cases each;
   - lower, render and compare again.
   The entry-only contract alone is weak for internal functions, since many `cdlRenderSpan` cases hit the step limit; the per-function check closes that gap, and is valid because the assumption `K.scene = v` is part of every function's inputs.
+
+## Step 26: all 18 scenes specialized: 185–197 of 332 functions removed per scene, every frame bit-identical
+
+The run of Step 19's pipeline over every gallery scene finished. Each scene keeps 135–147 functions and 5,317–5,965 statements, against 332 and 12,358: a cut of 51.7–57.0%. Each scene's frame is rendered by our evaluator on its specialized program and compared with the reference `kernel` image on the emulator, every output float at stride 8. No float differs in any scene.
+
+### What I did
+- `scripts/12-candela-per-scene.mjs` over all 18 scenes (75 min) → `various/experiments/06-candela-per-scene.{json,log}`.
+
+### What worked
+| scene | K.scene | functions | statements | cut | floats compared (stride 8) | differ |
+|---|---:|---:|---:|---:|---:|---:|
+| B-01 | 0 | 135 | 5,317 | 57.0% | 4,800 | 0 |
+| R-01 | 1 | 137 | 5,400 | 56.3% | 4,800 | 0 |
+| L-03 | 2 | 136 | 5,369 | 56.6% | 4,800 | 0 |
+| G-01 | 3 | 140 | 5,577 | 54.9% | 4,800 | 0 |
+| E-02 | 4 | 138 | 5,533 | 55.2% | 4,800 | 0 |
+| W-02 | 5 | 147 | 5,965 | 51.7% | 4,800 | 0 |
+| F-01 | 6 | 137 | 5,411 | 56.2% | 4,800 | 0 |
+| V-02 | 7 | 141 | 5,395 | 56.3% | 4,800 | 0 |
+| G-02 | 8 | 141 | 5,539 | 55.2% | 4,800 | 0 |
+| X-04 | 9 | 137 | 5,445 | 55.9% | 1,200 | 0 |
+| S-02 | 10 | 140 | 5,432 | 56.0% | 1,200 | 0 |
+| R-05 | 11 | 143 | 5,548 | 55.1% | 1,200 | 0 |
+| V-03 | 12 | 140 | 5,410 | 56.2% | 1,200 | 0 |
+| V-04 | 13 | 140 | 5,420 | 56.1% | 1,200 | 0 |
+| R-08 | 14 | 143 | 5,494 | 55.5% | 1,200 | 0 |
+| X-03 | 15 | 142 | 5,484 | 55.6% | 1,200 | 0 |
+| R-04 | 16 | 141 | 5,427 | 56.1% | 1,200 | 0 |
+| G-03 | 17 | 139 | 5,378 | 56.5% | 1,200 | 0 |
+
+- Scenes 9–17 are 80×80 in the scene table, hence 100 pixels at stride 8.
+- Every pass in every scene was accepted by the entry-only contract. The runs took 2.4–5.9 minutes each.
+
+### What I learned
+- **More is removed than the other scenes' code.** 185–197 removed functions exceed what the other 17 sections hold (163–170 functions). The rest is shared code that only other scenes reach.
+- **Evaluator cost per frame varies 34-fold:** from 654,182 statements (X-04) to 22,032,217 (G-03), both for 100 pixels. The scenes differ far more in their own work than in their code size.
+
+### What warrants a second pair of eyes
+- **Stride 8 compares 1–2% of the pixels**, one sample each. B-01 has also been compared at stride 1 for the general program (Step 17), but not for the specialized one.

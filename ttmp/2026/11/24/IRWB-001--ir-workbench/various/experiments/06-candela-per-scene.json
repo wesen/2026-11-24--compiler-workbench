@@ -1,0 +1,596 @@
+[
+ {
+  "scene": "B-01",
+  "index": 0,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 135,
+   "stmts": 5317,
+   "blocks": 1199
+  },
+  "removedFns": 197,
+  "stmtCut": 57,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 1047133,
+   "emulatorInstructions": 3430936
+  },
+  "ms": 352156,
+  "log": [
+   "specialize r1 61137ms",
+   "constprop r2 80104ms",
+   "fold r3 43499ms",
+   "cfg r4 24682ms",
+   "dce r5 26818ms",
+   "cfg - 16416ms",
+   "dfe r6 24789ms"
+  ]
+ },
+ {
+  "scene": "R-01",
+  "index": 1,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 137,
+   "stmts": 5400,
+   "blocks": 1208
+  },
+  "removedFns": 195,
+  "stmtCut": 56.3,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 2425263,
+   "emulatorInstructions": 6564752
+  },
+  "ms": 198611,
+  "log": [
+   "specialize r1 31681ms",
+   "constprop r2 25515ms",
+   "fold r3 24406ms",
+   "cfg r4 20398ms",
+   "dce r5 19972ms",
+   "cfg - 12874ms",
+   "dfe r6 15584ms"
+  ]
+ },
+ {
+  "scene": "L-03",
+  "index": 2,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 136,
+   "stmts": 5369,
+   "blocks": 1205
+  },
+  "removedFns": 196,
+  "stmtCut": 56.6,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 786890,
+   "emulatorInstructions": 2657652
+  },
+  "ms": 225398,
+  "log": [
+   "specialize r1 29962ms",
+   "constprop r2 36286ms",
+   "fold r3 33652ms",
+   "cfg r4 23599ms",
+   "dce r5 21920ms",
+   "cfg - 12636ms",
+   "dfe r6 13106ms"
+  ]
+ },
+ {
+  "scene": "G-01",
+  "index": 3,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 140,
+   "stmts": 5577,
+   "blocks": 1229
+  },
+  "removedFns": 192,
+  "stmtCut": 54.9,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 1825289,
+   "emulatorInstructions": 5253890
+  },
+  "ms": 236442,
+  "log": [
+   "specialize r1 36683ms",
+   "constprop r2 24118ms",
+   "fold r3 25524ms",
+   "cfg r4 27555ms",
+   "dce r5 31400ms",
+   "cfg - 14152ms",
+   "dfe r6 13646ms"
+  ]
+ },
+ {
+  "scene": "E-02",
+  "index": 4,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 138,
+   "stmts": 5533,
+   "blocks": 1234
+  },
+  "removedFns": 194,
+  "stmtCut": 55.2,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 793031,
+   "emulatorInstructions": 2308195
+  },
+  "ms": 260354,
+  "log": [
+   "specialize r1 38139ms",
+   "constprop r2 51333ms",
+   "fold r3 26970ms",
+   "cfg r4 22785ms",
+   "dce r5 21680ms",
+   "cfg - 19246ms",
+   "dfe r6 17403ms"
+  ]
+ },
+ {
+  "scene": "W-02",
+  "index": 5,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 147,
+   "stmts": 5965,
+   "blocks": 1274
+  },
+  "removedFns": 185,
+  "stmtCut": 51.7,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 2891269,
+   "emulatorInstructions": 8209485
+  },
+  "ms": 328974,
+  "log": [
+   "specialize r1 36336ms",
+   "constprop r2 25890ms",
+   "fold r3 52277ms",
+   "cfg r4 32778ms",
+   "dce r5 31569ms",
+   "cfg - 26956ms",
+   "dfe r6 25345ms"
+  ]
+ },
+ {
+  "scene": "F-01",
+  "index": 6,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 137,
+   "stmts": 5411,
+   "blocks": 1206
+  },
+  "removedFns": 195,
+  "stmtCut": 56.2,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 1243730,
+   "emulatorInstructions": 3986577
+  },
+  "ms": 220400,
+  "log": [
+   "specialize r1 41315ms",
+   "constprop r2 33080ms",
+   "fold r3 30110ms",
+   "cfg r4 19831ms",
+   "dce r5 19475ms",
+   "cfg - 11937ms",
+   "dfe r6 14106ms"
+  ]
+ },
+ {
+  "scene": "V-02",
+  "index": 7,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 141,
+   "stmts": 5395,
+   "blocks": 1214
+  },
+  "removedFns": 191,
+  "stmtCut": 56.3,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 3192613,
+   "emulatorInstructions": 9146151
+  },
+  "ms": 199888,
+  "log": [
+   "specialize r1 25677ms",
+   "constprop r2 22395ms",
+   "fold r3 26624ms",
+   "cfg r4 23794ms",
+   "dce r5 23254ms",
+   "cfg - 14621ms",
+   "dfe r6 16881ms"
+  ]
+ },
+ {
+  "scene": "G-02",
+  "index": 8,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 141,
+   "stmts": 5539,
+   "blocks": 1223
+  },
+  "removedFns": 191,
+  "stmtCut": 55.2,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 2016761,
+   "emulatorInstructions": 6741060
+  },
+  "ms": 203844,
+  "log": [
+   "specialize r1 29085ms",
+   "constprop r2 25633ms",
+   "fold r3 26790ms",
+   "cfg r4 22420ms",
+   "dce r5 24801ms",
+   "cfg - 15114ms",
+   "dfe r6 15337ms"
+  ]
+ },
+ {
+  "scene": "X-04",
+  "index": 9,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 137,
+   "stmts": 5445,
+   "blocks": 1203
+  },
+  "removedFns": 195,
+  "stmtCut": 55.9,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 654182,
+   "emulatorInstructions": 1916885
+  },
+  "ms": 158953,
+  "log": [
+   "specialize r1 28997ms",
+   "constprop r2 23269ms",
+   "fold r3 23230ms",
+   "cfg r4 20139ms",
+   "dce r5 21031ms",
+   "cfg - 12225ms",
+   "dfe r6 12744ms"
+  ]
+ },
+ {
+  "scene": "S-02",
+  "index": 10,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 140,
+   "stmts": 5432,
+   "blocks": 1212
+  },
+  "removedFns": 192,
+  "stmtCut": 56,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 759812,
+   "emulatorInstructions": 2376266
+  },
+  "ms": 169862,
+  "log": [
+   "specialize r1 24364ms",
+   "constprop r2 26892ms",
+   "fold r3 25267ms",
+   "cfg r4 22665ms",
+   "dce r5 23550ms",
+   "cfg - 14825ms",
+   "dfe r6 15148ms"
+  ]
+ },
+ {
+  "scene": "R-05",
+  "index": 11,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 143,
+   "stmts": 5548,
+   "blocks": 1226
+  },
+  "removedFns": 189,
+  "stmtCut": 55.1,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 758995,
+   "emulatorInstructions": 2219923
+  },
+  "ms": 149744,
+  "log": [
+   "specialize r1 21340ms",
+   "constprop r2 18179ms",
+   "fold r3 19552ms",
+   "cfg r4 17233ms",
+   "dce r5 19377ms",
+   "cfg - 12171ms",
+   "dfe r6 12687ms"
+  ]
+ },
+ {
+  "scene": "V-03",
+  "index": 12,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 140,
+   "stmts": 5410,
+   "blocks": 1210
+  },
+  "removedFns": 192,
+  "stmtCut": 56.2,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 1604535,
+   "emulatorInstructions": 5584307
+  },
+  "ms": 152960,
+  "log": [
+   "specialize r1 24397ms",
+   "constprop r2 22175ms",
+   "fold r3 20192ms",
+   "cfg r4 17956ms",
+   "dce r5 21196ms",
+   "cfg - 15013ms",
+   "dfe r6 15750ms"
+  ]
+ },
+ {
+  "scene": "V-04",
+  "index": 13,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 140,
+   "stmts": 5420,
+   "blocks": 1210
+  },
+  "removedFns": 192,
+  "stmtCut": 56.1,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 2259402,
+   "emulatorInstructions": 7940929
+  },
+  "ms": 176629,
+  "log": [
+   "specialize r1 28808ms",
+   "constprop r2 27351ms",
+   "fold r3 28903ms",
+   "cfg r4 19057ms",
+   "dce r5 19277ms",
+   "cfg - 11890ms",
+   "dfe r6 12284ms"
+  ]
+ },
+ {
+  "scene": "R-08",
+  "index": 14,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 143,
+   "stmts": 5494,
+   "blocks": 1222
+  },
+  "removedFns": 189,
+  "stmtCut": 55.5,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 1915112,
+   "emulatorInstructions": 7152617
+  },
+  "ms": 142815,
+  "log": [
+   "specialize r1 23995ms",
+   "constprop r2 21603ms",
+   "fold r3 23083ms",
+   "cfg r4 17942ms",
+   "dce r5 18695ms",
+   "cfg - 12396ms",
+   "dfe r6 12007ms"
+  ]
+ },
+ {
+  "scene": "X-03",
+  "index": 15,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 142,
+   "stmts": 5484,
+   "blocks": 1222
+  },
+  "removedFns": 190,
+  "stmtCut": 55.6,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 7193397,
+   "emulatorInstructions": 29541285
+  },
+  "ms": 154088,
+  "log": [
+   "specialize r1 27397ms",
+   "constprop r2 25834ms",
+   "fold r3 23576ms",
+   "cfg r4 19432ms",
+   "dce r5 19370ms",
+   "cfg - 12059ms",
+   "dfe r6 12924ms"
+  ]
+ },
+ {
+  "scene": "R-04",
+  "index": 16,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 141,
+   "stmts": 5427,
+   "blocks": 1209
+  },
+  "removedFns": 191,
+  "stmtCut": 56.1,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 14469368,
+   "emulatorInstructions": 51717086
+  },
+  "ms": 159917,
+  "log": [
+   "specialize r1 23608ms",
+   "constprop r2 21774ms",
+   "fold r3 23159ms",
+   "cfg r4 19268ms",
+   "dce r5 21947ms",
+   "cfg - 14474ms",
+   "dfe r6 15652ms"
+  ]
+ },
+ {
+  "scene": "G-03",
+  "index": 17,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 139,
+   "stmts": 5378,
+   "blocks": 1207
+  },
+  "removedFns": 193,
+  "stmtCut": 56.5,
+  "frame": {
+   "stride": 8,
+   "floats": 1200,
+   "differentBits": 0,
+   "evaluatorSteps": 22032217,
+   "emulatorInstructions": 76674259
+  },
+  "ms": 172667,
+  "log": [
+   "specialize r1 28261ms",
+   "constprop r2 25976ms",
+   "fold r3 28080ms",
+   "cfg r4 20818ms",
+   "dce r5 19208ms",
+   "cfg - 12108ms",
+   "dfe r6 12300ms"
+  ]
+ }
+]
