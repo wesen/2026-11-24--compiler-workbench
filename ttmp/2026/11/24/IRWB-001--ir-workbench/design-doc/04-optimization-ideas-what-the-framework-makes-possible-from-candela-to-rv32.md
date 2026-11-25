@@ -65,7 +65,14 @@ Each candidate was checked against r0 after every pass. 12 of 43 projects get fa
 | strength | extra cleanup | −7.0 % |
 | ramp | extra cleanup | −6.7 % |
 
-The corpus total drops by 2.2 %. One project (`my-analysis`) ended with an internal algorithm error under this strategy, which remains to be investigated. Its inputs include non-terminating cases. The pass ordering in O2 is a fixed choice, and a per-project search beats it without any new pass.
+The corpus total drops by 2.2 %. One project (`my-analysis`) at first ended with an algorithm error: a non-terminating case made the instruction sum `NaN`. A limited run now costs the limit, and the experiment covers all 44 projects. The pass ordering in O2 is a fixed choice, and a per-project search beats it without any new pass.
+
+**Update after the full run** (diary step 9):
+- 12 of 44 projects get faster.
+- 11 of the 12 gains are O2 followed by one `subst`, which removes the loop copy `t = i` wherever `bce` has removed the bounds check.
+- Per-function search (idea 9) found nothing beyond per-program choice on this corpus, even with conflicting candidates.
+
+Idea 12's copy coalescing is therefore needed only for copies with several readers, as in Blend.
 
 ## 2. Ideas specific to Candela → RV32
 

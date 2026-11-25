@@ -1,0 +1,39 @@
+across-calls     per-program 640  per-function 640    w=O1 keep=O2
+bounds-lab       per-program 5333  per-function 5333    total=O2 window=O1 pairs=O2 tail=O2
+branches         per-program 139  per-function 139    sign=O1 grade=O1
+call-chain       per-program 1050  per-function 1050    h=O1 g=O1 f=O1
+calls            per-program 651  per-function 651    sq=O1 clamp=O1 energy=O1
+distinct         per-program 340  per-function 340    add=O1 perimeter=O1
+div-checks       per-program 162  per-function 162    share=O1 safeShare=O1
+div-magic        per-program 729  per-function 729    digitsum=O1 sevenths=loops
+first-steps      per-program 220  per-function 220    scale=O1 twice=O1
+fixed-point      per-program 411  per-function 411    qmul=O1 lerp=O1
+match-enum       per-program 251  per-function 251    area=O1 dist=O1
+orders           per-program 1204  per-function 1204    kernel=O2 rescale=O2
+records          per-program 260  per-function 260    manhattan=O1 nudge=O1
+regalloc-lab     per-program 2614  per-function 2614    mixer=O1 step=O1 accum=O1
+start-here       per-program 3871  per-function 3871    clamp=O1 weight=O1 smooth=O1 peak=O2
+strength         per-program 1938  per-function 1938    meter=O2 signed=O1
+strings          per-program 10833  per-function 10833    vowels=O2 digits=O2
+ui-gallery       per-program 1058  per-function 1058    score=O1 sum=O1
+wrong-shift      per-program 1650  per-function 1650    eighth=O1 bucket=O2
+across-calls     per-program 640  per-function 640    w=O1 keep=O2
+bounds-lab       per-program 5333  per-function 5333    total=O2 window=O1 pairs=O2 tail=O2
+branches         per-program 139  per-function 139    sign=O1 grade=O1
+call-chain       per-program 1050  per-function 1050    h=O1 g=O1 f=O1
+calls            per-program 651  per-function 651    sq=O1 clamp=O1 energy=O1
+distinct         per-program 340  per-function 340    add=O1 perimeter=O1
+div-checks       per-program 162  per-function 162    share=O1 safeShare=O1
+div-magic        per-program 729  per-function 729    digitsum=O1 sevenths=loops
+first-steps      per-program 220  per-function 220    scale=O1 twice=O1
+fixed-point      per-program 411  per-function 411    qmul=O1 lerp=O1
+match-enum       per-program 251  per-function 251    area=O1 dist=O1
+orders           per-program 1204  per-function 1204    kernel=O2 rescale=O2
+records          per-program 260  per-function 260    manhattan=O1 nudge=O1
+regalloc-lab     per-program 2614  per-function 2614    mixer=O1 step=O1 accum=O1
+start-here       per-program 3871  per-function 3871    clamp=O1 weight=O1 smooth=O1 peak=O2
+strength         per-program 1938  per-function 1938    meter=O2 signed=O1
+strings          per-program 10833  per-function 10833    vowels=O2 digits=O2
+ui-gallery       per-program 1058  per-function 1058    score=O1 sum=O1
+wrong-shift      per-program 1650  per-function 1650    eighth=O1 bucket=O2
+{"prog":33354,"fn":33354}

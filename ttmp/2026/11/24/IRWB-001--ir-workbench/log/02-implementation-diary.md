@@ -603,3 +603,79 @@ I chose 72 columns as the target, measured the corpus, and added a formatting mo
 
 ### Code review instructions
 Read `src/typed/format.ts`, `tools/format-corpus.mjs` and `tests/typed/format.test.mjs`. Run `node tools/format-corpus.mjs --check` and `npm test`.
+
+## Step 9: searching pass orderings, two merges, and reports 2 and 3
+
+The user asked how the compiler compares with the original, and whether the framework allows more ambitious optimizations. I measured instead of asserting. Choosing among four orderings beats O2 on 12 of 44 projects. Following the winners up showed that 11 of the 12 gains are one extra `subst` after O2's final cleanup: the book's `t = i` loop copy, which turns out to be an ordering problem wherever `bce` has removed the check. Per-function search, built in this step, never beat per-program choice on the corpus, even with conflicting candidates.
+
+In the same step I merged both subagents (the browser workbench, and f32 with Candela) and fixed one integration bug the merge created. I also wrote reports 2 and 3 for the vault.
+
+### Prompt Context
+**User prompts (verbatim):**
+- "how good is the compiler compared to the original? or is it the same? are we able to do more ambitious optimizations that wouldn't have been easily opssible?"
+- "ok we can also create new projects and such that try to create sick ass optimizations from candela to rv32, or anything else you think is worth exploring. Make a list of ideas. I'm really curious about what the new framework allows us to do"
+- "ok, create a detailed report in the vault at important milestones, using a textbook authoring style. Make sure all the subagents diligently keep a detailed diary as they work."
+
+**Assistant interpretation:**
+- Answer with measurements: the code is identical by design; the framework enables checked search and specialization.
+- Write the ideas list (design-doc 04, commit 6fc330f).
+- Start on the first idea, ordering search.
+- Write a report at each milestone and enforce the subagents' diaries.
+
+**Commits (code):** 07c1b00 (metrics), ce92601 (per-function search), 6f241cd (UI merge), fcb155f (f32 and Candela merge).
+
+### What I did
+- **`measure`:** a run that hits the step limit costs the limit (2·10^5), and a new `limited` metric counts such runs. Previously one non-terminating case in `my-analysis` made the sum `NaN`, and the interpreter refused it with `IR data must contain only finite numbers`.
+- **`strategies.ts`:**
+  - every pass is also registered restricted to one function, as `typed.<pass>@<fn>`;
+  - `searchPlan` is one `chooseBest` per function, with `typed.metrics` given `{ fn }`.
+- **`tools/search-experiment.mjs`:** O2 against per-program choice against per-function search, over the corpus, by instructions.
+  - Evidence in `various/experiments/01-*`.
+  - The conflicting-candidate run is `scripts/05-per-function-conflicting-candidates.mjs`, with output in `various/experiments/02-*`.
+- **Follow-up of the winners:** after O2, I applied `O2+more`'s extra passes one at a time on checksum and early-exit, then O2 plus one `subst` on all twelve winners.
+- **Diaries:** messaged the UI agent, whose diary was missing (it backfilled steps 1–4 from commits and wrote step 5 live), and the f32 agent, which kept its diary current.
+- **Merges:**
+  - UI: conflict in `strategies.ts`; kept both sides, with per-function passes registered through the agent's `pause` wrapper.
+  - f32: conflict in `ir.ts`; both sides had indexed `resolve`, and I kept the agent's helper.
+  - Added `typedTape` to `site-src/main.js`'s `setVendor`.
+- **Reports in the vault:** report 2 (strategies, search, audit, specialization, browser) and report 3 (Candela).
+
+### Why
+- **Experiment before answering.** "Is it better?" has a measurable answer here, and the ideas list ranks ordering search first because it needs no new pass.
+- **Per-function search** needed per-function passes. Restricting an existing pass body by function name reuses every rule and check, rather than adding a second mechanism.
+
+### What worked
+- **Search (`01-search-o2-per-program-per-function.json`):**
+  `{"projects":44,"fasterPerProgram":12,"fasterPerFunction":12,"fnBeatsProgram":0,"programBeatsFn":0,"allChecksAgree":true}`.
+  - Instructions excluding `my-analysis`: 77,321 → 75,651 (−2.2%).
+  - Bytes: 5,160 → 5,092. Every winner is also smaller.
+  - Compile time: 1,265 s in all.
+- **Winners:**
+  - `constants`: O2 twice (70 → 40).
+  - The other 11: `O2+more`. For each, O2 + one `subst` gives the same count (`checksum 1260 SAME`, … `wrong-shift 1500 SAME`). After O2, Checksum's loop has `s:total.4 t3 = i`. Of the nine extra passes only the first `subst` changes anything (`lvn false 1410`, `subst true 1260`, all others false).
+- **Conflicting candidates** (O1, O2, loops, O2 without licm; 19 multi-function projects): `{"prog":33354,"fn":33354}`. Functions choose different winners (`div-magic: digitsum=O1 sevenths=loops`), but only where the alternatives tie.
+- **Merged tree:** `npm test` 301 pass, 1 skipped (`IRWB_CANDELA`); the `IRWB_FULL=1` corpus parity holds. In the browser, Blend → Run reaches `r6 40/40` with only the favicon 404 in the console.
+
+### What didn't work
+- **`pkill -f "tools/serve-site.mjs"` killed my own shell** (exit 144), because the pattern matched the shell's command line. The same happened with `pgrep -f "node tools/serve-site"`. That aborted the commit command the first time. Use a pattern such as `[s]erve-site`.
+- **Report 2's first draft predicted wrongly.** It said per-function search "becomes useful with candidates that disagree". The conflicting-candidate experiment refuted that for this corpus, and the report now states the measured result.
+- **My first explanation of `O2+more`'s wins was a guess** (more value numbering, more copies). Applying the passes one at a time showed it was a single `subst`.
+
+### What I learned
+- The book's `t7 = i` gap is two problems. Where `bce` removes the check, the copy has one reader and an end-of-pipeline `subst` removes it. Where the check stays (Blend), it has two readers and needs real coalescing.
+- On the corpus's programs, a single choice per program loses nothing to per-function choice.
+
+### What was tricky to build
+- **The f32 merge's browser dependency.** `lift()` now always calls `inferLocalTypes`, which reads the tape's row table even on the default path. `npm test` could not catch the missing vendor in the page; only a browser load did.
+
+### What warrants a second pair of eyes
+- **Per-function passes multiply the registry:** passes × functions, 3,652 algorithms for Candela. They are built on every `strategyRegistry` call.
+- **The search's metric** is 10 cases per function. It decides winners, but the evidence that a winner is correct is the meaning contract (40 cases per pass, plus 40 at the end).
+
+### What should be done in the future
+- Add a pipeline `O2+` (O2, then `subst`), and keep O2 itself for parity with the book.
+- Copy coalescing for copies with several readers, and loop rotation, measured against the reference compiler's 383/292/1,533/1,486.
+- Run the Candela oracle with the `kernel` policy, now that the pass groups are vendored.
+
+### Code review instructions
+Read `src/typed/strategies.ts` (`searchPlan`, the scoped registration, `measure`), then run `node tools/search-experiment.mjs` (about 21 minutes).
