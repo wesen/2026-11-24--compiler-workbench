@@ -1,0 +1,305 @@
+/**
+ * IRWB-001 E3: passes with declared needs, writes and preservation, applied through v6's machinery.
+ *
+ * A pass is versioned code that turns one artifact revision into the next. It declares:
+ *   - `needs`: analyses whose results it reads (v6 analyses, e.g. dataflow facts), computed for the exact input;
+ *   - `writes`: the entity and relation kinds it may change; any other change is `undeclaredWrite`;
+ *   - `preserves`: analyses whose results it claims survive. Each claim is checked: first by the analysis's own
+ *     transfer verifier (E4: unchanged reads), otherwise by recomputing on the output and comparing. A claim that
+ *     neither confirms is `preserveViolated`, and the pass is not published;
+ *   - `contract`: an optional v6 transformation contract the output must satisfy before it is accepted.
+ *
+ * A pass edits either through a v6 `IREdit` on the logical projection (generic, pattern-friendly), or by returning
+ * a new native value with explicit correspondence entries (efficient for domain code). Either way the framework
+ * derives the v6 change set by diffing the two projections, validates the native value through the adapter, builds
+ * the correspondence, enforces `writes`, runs the contract, and checks the preservation claims. Nothing is
+ * published unless all of that succeeds.
+ */
+import type { Artifact } from '../core/types.js';
+import { canonical } from '../core/data.js';
+import { createIRArtifact, openIR } from '../ir/index.js';
+import { diff } from '../ir/diff.js';
+import { makeCorrespondence } from '../ir/correspondence.js';
+import type {
+  ChangeSet,
+  CorrespondenceEntry,
+  EntityCorrespondence,
+  IRAdapter,
+  IREdit,
+  IRStore,
+  IRView,
+} from '../ir/index.js';
+import type {
+  AnalysisDefinition,
+  AnalysisRecord,
+  Correspondence,
+  IRType,
+  Ports,
+  TransformationDefinition,
+} from '../contracts/types.js';
+import type { AnalysisManager } from '../contracts/analysis-manager.js';
+
+export class PassError extends Error {
+  constructor(
+    readonly code: 'undeclaredWrite' | 'preserveViolated' | 'contractRejected' | 'badResult' | 'passFailed',
+    message: string,
+    readonly evidence?: unknown,
+  ) {
+    super(`[${code}] ${message}`);
+    this.name = 'PassError';
+  }
+}
+
+export type Needs = Readonly<Record<string, AnalysisDefinition<any, any>>>;
+export type FactValues<N extends Needs> = {
+  readonly [K in keyof N]: N[K] extends AnalysisDefinition<any, infer R> ? R : never;
+};
+
+export interface PassRunContext<S, N extends Needs, P> {
+  readonly before: Artifact<S>;
+  readonly view: IRView<S>;
+  readonly facts: FactValues<N>;
+  readonly records: { readonly [K in keyof N]: AnalysisRecord<unknown> };
+  readonly params: P;
+  /** A v6 edit on the logical projection; used when `run` returns nothing. */
+  readonly edit: IREdit<S>;
+}
+
+/** A native result: the new value, and how its entities relate to the input's (merge, split, replace…). */
+export interface NativeResult<S> {
+  readonly native: S;
+  readonly correspondence?: readonly CorrespondenceEntry[];
+  /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
+  readonly edits?: number;
+}
+
+export interface PassSpec<S, N extends Needs, P = unknown> {
+  readonly id: string;
+  readonly version: string;
+  readonly description: string;
+  readonly ir: IRType<S>;
+  readonly adapter: IRAdapter<S>;
+  readonly needs?: N;
+  /** Entity kinds (glob `prefix*`) and relation kinds the pass may change. */
+  readonly writes: { readonly entities: readonly string[]; readonly relations: readonly string[] };
+  readonly preserves?: readonly AnalysisDefinition<any, any>[];
+  readonly contract?: TransformationDefinition<Ports, Ports>;
+  /** Extra contract inputs beyond `input` (e.g. `origin`: r0), supplied by the caller per application. */
+  run(ctx: PassRunContext<S, N, P>): void | NativeResult<S> | Promise<void | NativeResult<S>>;
+}
+
+export type Pass<S, N extends Needs = Needs, P = unknown> = Readonly<PassSpec<S, N, P>> & {
+  readonly category: 'pass';
+};
+
+export function definePass<S, N extends Needs = {}, P = unknown>(spec: PassSpec<S, N, P>): Pass<S, N, P> {
+  if (!spec.id || !spec.version) throw new Error('A pass needs an id and a version');
+  if (typeof spec.run !== 'function') throw new Error(`Pass ${spec.id} needs run`);
+  if (!spec.writes || !Array.isArray(spec.writes.entities) || !Array.isArray(spec.writes.relations))
+    throw new Error(`Pass ${spec.id} must declare writes { entities, relations }`);
+  return Object.freeze({
+    ...spec,
+    needs: spec.needs ?? ({} as N),
+    preserves: spec.preserves ?? [],
+    category: 'pass' as const,
+  });
+}
+
+export interface ApplyOptions<P> {
+  readonly manager: AnalysisManager;
+  readonly store?: IRStore;
+  readonly params?: P;
+  /** Additional contract inputs, e.g. `{ origin: r0 }` for a check against the original program. */
+  readonly contractInputs?: Readonly<Record<string, unknown>>;
+  /** Artifact id of the output (default: the input's). */
+  readonly outputId?: string;
+}
+
+export interface PreservationOutcome {
+  readonly analysis: string;
+  readonly how: 'transferred' | 'confirmed-by-recompute';
+  readonly evidence: unknown;
+}
+
+export interface PassResult<S> {
+  readonly pass: { readonly id: string; readonly version: string };
+  readonly changed: boolean;
+  readonly before: Artifact<S>;
+  readonly artifact: Artifact<S>;
+  readonly changes?: ChangeSet;
+  readonly correspondence?: EntityCorrespondence;
+  readonly edits: number;
+  readonly preserved: readonly PreservationOutcome[];
+  readonly contract?: unknown;
+}
+
+const glob = (patterns: readonly string[], kind: string) =>
+  patterns.some(p => (p.endsWith('*') ? kind.startsWith(p.slice(0, -1)) : p === kind));
+
+/** The changes a pass made outside what it declared it writes. */
+export function undeclaredWrites(
+  writes: PassSpec<any, any>['writes'],
+  changes: ChangeSet,
+): readonly string[] {
+  const out = new Set<string>();
+  for (const c of changes.entities)
+    for (const e of [c.before, c.after])
+      if (e && !glob(writes.entities, e.kind)) out.add(`${c.kind} entity ${c.entity} (${e.kind})`);
+  for (const c of changes.relations)
+    for (const r of [c.before, c.after])
+      if (r && !glob(writes.relations, r.kind)) out.add(`${c.kind} relation ${c.relation} (${r.kind})`);
+  return [...out].sort();
+}
+
+/**
+ * v6's semantic correspondence record for an entity correspondence between two revisions. The analysis manager
+ * matches records to a contract's `correspondence` requirements by `id` and `relation`, so applyPass builds one
+ * record per requirement (default: `entities` / `generic-ir-edit`, as v6's own labs name it).
+ */
+export function semanticCorrespondence(
+  c: EntityCorrespondence,
+  id = 'entities',
+  relation = 'generic-ir-edit',
+): Correspondence {
+  return {
+    id,
+    from: { artifact: c.from.artifact, revision: c.from.revision },
+    to: { artifact: c.to.artifact, revision: c.to.revision },
+    relation,
+    entities: c.entries.map(e => ({ from: e.from, to: e.to })),
+    evidence: {
+      formatVersion: c.formatVersion,
+      relations: c.entries.map(e => e.relation),
+      sourceEntities: c.sourceEntities,
+      targetEntities: c.targetEntities,
+    },
+  };
+}
+
+export async function applyPass<S, N extends Needs, P>(
+  pass: Pass<S, N, P>,
+  before: Artifact<S>,
+  options: ApplyOptions<P>,
+): Promise<PassResult<S>> {
+  const { manager } = options;
+  const view = openIR(before, pass.adapter, options.store);
+  const facts: Record<string, unknown> = {},
+    records: Record<string, AnalysisRecord<unknown>> = {};
+  for (const [name, def] of Object.entries(pass.needs ?? {})) {
+    const record = await manager.analyse(def, before);
+    records[name] = record;
+    facts[name] = record.value;
+  }
+  const edit = view.beginEdit();
+  let produced: void | NativeResult<S>;
+  try {
+    produced = await pass.run({
+      before,
+      view,
+      facts: facts as FactValues<N>,
+      records: records as PassRunContext<S, N, P>['records'],
+      params: options.params as P,
+      edit,
+    });
+  } catch (e) {
+    if (edit.state === 'open') edit.rollback('pass threw');
+    throw e;
+  }
+  let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
+  if (produced && typeof produced === 'object' && 'native' in produced) {
+    if (edit.state === 'open') edit.rollback('native result');
+    const id = options.outputId ?? before.id;
+    after = createIRArtifact(pass.adapter, id, produced.native);
+    const afterView = openIR(after, pass.adapter, options.store);
+    changes = diff(view, afterView);
+    correspondence = makeCorrespondence(
+      { artifact: before.id, revision: before.revision },
+      { artifact: after.id, revision: after.revision },
+      view.entities().map(r => r.entity),
+      afterView.entities().map(r => r.entity),
+      produced.correspondence ?? [],
+    );
+    edits = produced.edits ?? changes.entities.length;
+  } else {
+    if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
+    const prepared = edit.prepare();
+    after = prepared.artifact;
+    changes = prepared.changes;
+    correspondence = prepared.correspondence;
+    edits = changes.operations.filter(o => o.kind !== 'correspond').length;
+    edit.rollback('applyPass publishes revisions itself');
+  }
+  if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
+    return {
+      pass: { id: pass.id, version: pass.version },
+      changed: false,
+      before,
+      artifact: before,
+      edits: 0,
+      preserved: [],
+    };
+
+  const undeclared = undeclaredWrites(pass.writes, changes);
+  if (undeclared.length)
+    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
+      undeclared: undeclared.slice(0, 20),
+    });
+
+  let contract: unknown;
+  if (pass.contract) {
+    try {
+      const prepared = await manager.verifyTransformation(
+        { input: before, ...(options.contractInputs ?? {}) } as never,
+        { output: after } as never,
+        pass.contract,
+        pass.contract.correspondence.length
+          ? pass.contract.correspondence.map(req =>
+              semanticCorrespondence(correspondence, req.id, req.relation),
+            )
+          : [semanticCorrespondence(correspondence)],
+      );
+      contract = prepared;
+    } catch (e) {
+      throw new PassError('contractRejected', `Pass ${pass.id} output rejected: ${(e as Error).message}`, {
+        cause: String(e),
+      });
+    }
+  }
+
+  const preserved: PreservationOutcome[] = [];
+  for (const def of pass.preserves ?? []) {
+    if (!manager.hasAnalysis(def, before)) continue; // nothing to keep
+    try {
+      const record = await manager.preserve(
+        def,
+        before,
+        after,
+        semanticCorrespondence(correspondence),
+      );
+      preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
+    } catch {
+      const old = await manager.analyse(def, before),
+        fresh = await manager.analyse(def, after);
+      if (canonical(old.value) !== canonical(fresh.value))
+        throw new PassError(
+          'preserveViolated',
+          `Pass ${pass.id} claims to preserve ${def.id}, but it changed`,
+          {
+            analysis: def.id,
+          },
+        );
+      preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+    }
+  }
+  return {
+    pass: { id: pass.id, version: pass.version },
+    changed: true,
+    before,
+    artifact: after,
+    changes,
+    correspondence,
+    edits,
+    preserved,
+    contract,
+  };
+}
