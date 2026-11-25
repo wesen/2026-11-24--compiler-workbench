@@ -1113,3 +1113,34 @@ The Fable subagent finished the intern guide and research agenda the user asked 
 
 ### What warrants a second pair of eyes
 - **The PDF's rendering was not inspected.** It has wide tables and box-drawing diagrams. The uploaded copy also predates the agent's diary step 9.
+
+## Step 21: the Candela view merged: scenes render on the emulator inside the workbench
+
+The UI agent built the Candela view the user asked for in Step 17. I merged it with no conflicts. The merged tree passes its tests and builds, and the site is served locally on the merged build.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 17 ("can i test one of the candela programs and see te rendered image when run on the emulator in the workbench?").
+**Commit (code):** e4d5497 (merge). The agent's commits are 5b2752e, 4c30a6d and 4cd57be; its diary steps 6–11 are in `log/05-ui-agent-diary.md`.
+
+### What I did
+- Merged `worktree-agent-a0d04b6b5f2b020be`. The checks:
+  - `npx tsc`: clean.
+  - Full suite: 316 pass, 2 skipped.
+  - `npm run build:site`: `Candela on demand 728 KiB`.
+- Stopped the agent's site server by PID (`kill 2614445`). I did not use `pkill -f`, which matched my own shell in Step 9.
+- Started `node tools/serve-site.mjs` from the main checkout, on http://127.0.0.1:8765/.
+- Viewed `various/ui-screenshots/candela-03-B01-stride1-emulator.png`. B-01 is at 160×160; the sky table took 1.23 s and 5,520,419 instructions; the frame took 217,105,487 instructions (8,481 per pixel) in 38.0 s.
+
+### What worked
+These are the agent's measurements in Chromium:
+- The emulator's instruction counts equal the Node runs exactly.
+- Evaluator frames are bit-identical: 0 of 307,200 floats differ at stride 1.
+- At r1, after `cfg` was applied in the page, 0 of 19,200 floats differ.
+- R-01 under the `stock` policy takes 44,955 instructions per pixel, against 16,412 under `kernel`.
+
+### What warrants a second pair of eyes
+These are the agent's open issues:
+- **Opening Candela as a project holds the page for about 10 s.** It is `createIRArtifact` hashing r0, which needs framework work: a Web Worker, or incremental hashing.
+- **Stride 1 holds the page one row at a time, up to 0.9 s.** Splitting rows changes how spans are grouped and can change the output bits (V-03 differed in 36 of 180 compared floats). A Web Worker is the fix that keeps the bits.
+- **Previews pay about 2 ms per engine call** for memory copies in `referenceRun` and `CandelaHost.call`.
+- **`prettier --check`** flags `src/framework/passes/define-pass.ts` and `src/typed/candela-render.ts`.

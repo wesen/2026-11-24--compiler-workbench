@@ -157,3 +157,12 @@ Candela rendering: gallery scene table vendored as data; CandelaHost (port of ds
 ## 2026-11-24
 
 IRWB-002 created by a Fable subagent and merged: intern guide (Part 1, the system from the code) and research agenda (54 items, ten workstreams), uploaded to reMarkable /ai/2026/11/25/IRWB-002 (verified by listing).
+
+## 2026-11-24
+
+Candela view merged (UI subagent): Layout -> Candela renders any of the 18 scenes on the emulator (reference image, kernel/stock) or the evaluator (r0 or the open project's revision), progressive, with stats and bit-for-bit comparison across engines; Candela data and the reference compiler load on demand with SRI.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/site-src/candela.js — the Candela view
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/src/workbench/candela.ts — engines and progressive render
