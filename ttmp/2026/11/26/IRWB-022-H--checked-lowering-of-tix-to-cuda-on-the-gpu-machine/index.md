@@ -19,7 +19,7 @@ WhenToUse: ""
 
 # Checked lowering of Tix to CUDA on the GPU machine
 
-Implementation and verification complete. See the [measurements and framework finding](reference/02-gb10-results-and-framework-finding.md).
+Implementation and verification complete. See the [final report, measurements and independent evaluation](reference/02-report.md).
 
 - [Design and proposed change ledger](design-doc/01-lowering-and-checking-one-cuda-translation-unit.md)
 - [Diary and GB10 probe replay](reference/01-stage-2-diary.md)
