@@ -53,3 +53,7 @@ sha256sum "$dir/out/words"
 ```
 
 Observed digest: `1039ed88a0b69224c051b20233ad5996a4e8d3580264a0496248bf222adac745`. No full suite or timed GPU runs in this step. After review, start with source emission and tests on the existing IR, not an alternative kernel representation.
+
+## Step 2: Review correction
+
+Accepted both required changes. Reading `runDifferentialAsync` confirmed `todo` already removes replayed indices before delegation; the proposed packet analysis duplicated that work. Preload all kernels before events using `cudaFuncGetAttributes`. Dropped tool changes, profile queries and concurrent request handling. Baseline `npm run build` succeeded.
