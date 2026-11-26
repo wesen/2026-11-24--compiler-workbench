@@ -17,8 +17,9 @@
 //
 //   node --max-old-space-size=12288 tools/mutation-score-candela.mjs [--count 30] [--bcm 6] [--max-steps 2000]
 //        [--functions a,b] [--gates default,check100,strong,strong-cases,default+div] [--sample 400]
-//        [--no-classify] [--json out.json] [--jsonl out.jsonl]
-import { writeFileSync } from 'node:fs';
+//        [--caller-sample 100] [--fn-budget 900 (s per function; later sites are counted as skipped)]
+//        [--no-classify] [--json out.json] [--jsonl out.jsonl (appended per function)]
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { installVendor } from './node-vendor.mjs';
 import { candelaInputs, candelaSource, MAX_SOURCE } from './candela.mjs';
 
@@ -128,8 +129,13 @@ if (!chosen) {
 console.error(`cheap functions: ${cheap.length}; chosen: ${chosen.length}: ${chosen.join(', ')}`);
 
 const records = [], baseVerdicts = {}, crossCheck = { compared: 0, differ: 0 };
-const callerSample = +flag('--caller-sample', 100);
+const callerSample = +flag('--caller-sample', 100), fnBudget = 1000 * +flag('--fn-budget', 900);
+const jsonl = flag('--jsonl', null);
+if (jsonl) writeFileSync(jsonl, ''); // records are appended per function, so a stopped run keeps what it finished
+const perFn = {};
 for (const f of chosen) {
+  const tf = performance.now(), times = { build: 0, judge: 0, classify: 0 };
+  let skipped = 0;
   const A = M.affected(basest, f), own = M.closure(basest, [f]);
   // classification on Candela: the mutated function's own cases in full (sample + 200 boundary + unconstrained),
   // its callers' at callerSample (+ 40 boundary); step limit 2e4 with a 10x re-run of a mutant where r0 finished
@@ -151,6 +157,11 @@ for (const f of chosen) {
   });
   const frameworkGate = A.length === 1 ? meaningKept({ inputs, count: 40, seed: 7, roots: [f] }) : null;
   for (const site of sites) {
+    if (performance.now() - tf > fnBudget) {
+      skipped++; // the function's time budget is spent: remaining sites are counted, not judged
+      continue;
+    }
+    let tb = performance.now();
     const rec = { subject: 'candela', base: 'r0+bcm', fn: site.fn, operator: site.operator, variant: site.variant, target: site.target, stmt: site.stmt, text: site.text, affected: A.length, gates: {} };
     let mutant;
     try {
@@ -162,6 +173,8 @@ for (const f of chosen) {
     }
     rec.mutantRev = mutant.revision.slice(0, 12);
     const mst = M.overlay(basest, storeOf(mutant.value));
+    times.build += performance.now() - tb;
+    tb = performance.now();
     for (const g of gates) {
       const t = performance.now(), e = judge(g, A, mst, f);
       rec.gates[g] = { verdict: e.disagree ? 'killed' : 'survived', ...e, ms: +(performance.now() - t).toFixed(2) };
@@ -174,16 +187,21 @@ for (const f of chosen) {
         rec.crossCheck = ev.reason;
       }
     }
+    times.judge += performance.now() - tb;
+    tb = performance.now();
     if (!args.includes('--no-classify') && Object.values(rec.gates).some(g => g.verdict === 'survived')) rec.classification = classify(mst, site);
+    times.classify += performance.now() - tb;
     records.push(rec);
   }
+  perFn[f] = { affected: A.length, sites: sites.length, judged: sites.length - skipped, skipped, ms: Object.fromEntries(Object.entries(times).map(([k, v]) => [k, Math.round(v)])) };
+  if (jsonl) appendFileSync(jsonl, records.filter(r => r.fn === f).map(r => JSON.stringify(r)).join('\n') + (records.some(r => r.fn === f) ? '\n' : ''));
   const mine = records.filter(r => r.fn === f && r.gates.default);
   const strongKilled = records.filter(r => r.fn === f && r.gates.strong?.verdict === 'killed').length;
-  console.error(`${f.padEnd(22)} |A| ${String(A.length).padStart(3)} sites ${String(sites.length).padStart(3)} default killed ${mine.filter(r => r.gates.default.verdict.startsWith('killed')).length}/${mine.length} strong ${strongKilled}  cross-check ${JSON.stringify(crossCheck)}  ${Math.round(performance.now() - t0)} ms`);
+  console.error(`${f.padEnd(22)} |A| ${String(A.length).padStart(3)} sites ${String(sites.length).padStart(3)} default killed ${mine.filter(r => r.gates.default.verdict.startsWith('killed')).length}/${mine.length} strong ${strongKilled} skipped ${skipped}  ${JSON.stringify(perFn[f].ms)}  cross-check ${JSON.stringify(crossCheck)}  ${Math.round(performance.now() - t0)} ms`);
 }
 console.error(`framework gate vs replicated gate (functions nothing calls): ${JSON.stringify(crossCheck)}`);
-const summary = C.summarize(records, gateNames, { subject: 'candela', base: 'r0+bcm', chosen, cheap: cheap.length, maxSteps, sample, baseCheck, baseVerdicts, crossCheck, ms: Math.round(performance.now() - t0) });
+const summary = C.summarize(records, gateNames, { subject: 'candela', base: 'r0+bcm', chosen, cheap: cheap.length, maxSteps, sample, baseCheck, baseVerdicts, crossCheck, perFn, ms: Math.round(performance.now() - t0) });
 C.printTables(summary);
 console.log(`total ${summary.ms} ms`);
 if (flag('--json', null)) writeFileSync(flag('--json'), JSON.stringify(summary, null, 1));
-if (flag('--jsonl', null)) writeFileSync(flag('--jsonl'), records.map(r => JSON.stringify(r)).join('\n') + '\n');
+
