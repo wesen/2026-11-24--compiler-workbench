@@ -38,7 +38,9 @@ This is a **sketch**. Nothing here is implemented. The weight is on the parts of
 
 > **The direction in one screen.**
 > - The ingredients exist. `simplify` is a table of 27 rules and `fold` one of 40. Every rule carries recorded evidence of soundness, and the verifier rejects all seven deliberately unsound candidates. A single-assignment view `typed.ssa` is checked against reaching definitions on all of Candela.
-> - What does not exist is search. Of `simplify`'s 27 rules, 18 never fire on the corpus's O2, and no rule at all applies to an f32 operator. Section 8 shows what that leaves in `noise3`: constants rebuilt on every use, and multiply-then-add pairs.
+> - What does not exist is search. Of `simplify`'s 27 rules, 18 never fire on the corpus's O2, and no rule at all applies to an f32 operator.
+> - The target is hot where it runs. In V-04 ("A cloud"), 81.8 % of a frame's executed instructions are in `noise3`, `fbm3` and the functions they call. In X-03 the share is 35.3 %. O2 leaves `noise3` unchanged. Of `noise3`'s own instructions, 14.5 % are arithmetic, 21.1 % rebuild constants, and 37.0 % are register moves for its 14 calls (section 8).
+> - What exact rewriting can reach there today is small: `x * 2.0 → x + x` saves 0.40 % of V-04's frame. The largest pattern, multiply-then-add (3.9–4.8 % of a frame), is inexact and belongs to IRWB-011. Inlining creates the shapes rule search could work on, provided rules can be guarded by float facts.
 > - The proposal is a loop. Hot instructions whose provenance shows no rule fired yield shapes. Candidate rules are enumerated for those shapes, verified, and added to a table. An e-graph applies the table and extracts by RV32 cost, and its result is one ordinary, checked revision whose explanation cites only verified rules.
 
 # Part 1: The parts of the system you need
@@ -202,7 +204,75 @@ Two observations carry into Part 3. Exact algebra on f32 can pay in this backend
 
 ## 8. The target: `noise3` and `fbm3`, measured
 
-MEASURE-PLACEHOLDER
+This section is the ticket's own grounding measurement, called E0 in Part 4. It shows what the target code looks like, where it runs, and where its executed instructions go. The scripts are `01-candela-o2-head.mjs`, `02-value-tree-shapes.mjs` and `03-heat.mjs`; the diary records the commands (steps 2 and 3).
+
+**What the functions compute.** `fbm3(p, oct, lac, gain, mode)` (`kernel.typed:167`) sums `oct` octaves of `noise3` at frequencies multiplied by `lac` and amplitudes multiplied by `gain` ("fractional Brownian motion"). `noise3(x)` (`:152`) is gradient noise:
+
+- the integer and fractional parts of each coordinate (`q_floor`, `q_fract`);
+- a smoothing weight `w = f²(3 − 2f)` per axis;
+- eight calls to `gnoise`, one per corner of the unit cube, each the dot product of a pseudo-random gradient with the offset from that corner;
+- trilinear interpolation of the eight values by lerps `a + (b − a)·w`.
+
+`gnoise` (`:147`) takes its gradient from `hash3` (`:2690`), which hashes the bit patterns of the corner's coordinates with integer multiply-adds, shifts and exclusive-ors, and converts three results to floats in [−1, 1).
+
+**Where they run.** Only thirteen scene sections call `fbm3` or `noise3`, in scenes 5 (W-02) and 12–17 (V-03, V-04, R-08, X-03, R-04, G-03): `s5_mat_0`, `s12_dens_0`, `s13_dens_0`, `s14_sdf_0..2`, `s14_mat_1`, `s15_sdf_0`, `s16_hf_0`, `s16_bumpH_1`, `s16_mat_0` and `s17_hf_0` (`grep` over `scenes.typed`; diary step 1). B-01 and R-01, the scenes most of the project's measurements use, never reach them.
+
+**Shapes at r0 and at the O2 head** (`various/02-value-tree-shapes.json`; the O2 head is the official chain, r0 `cd36346ea7c4` → `b33d1737c725`, 13 revisions):
+
+| function | blocks | statements | values | calls | f32 constants: distinct / uses | max depth | largest tree |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `noise3` r0 → O2 | 1 → 1 | 33 → 31 | 177 → 175 | 14 | 4 / 30 | 7 | 13 → 21 |
+| `fbm3` | 10 → 8 | 27 | 50 → 51 | 2 | 3 / 3 | 4 | 5 |
+| `gnoise` | 1 | 5 | 30 | 1 | 0 / 0 | 5 | 17 |
+| `hash3` | 1 | 17 → 16 | 94 → 91 | 0 | 3 / 5 → 2 / 6 | 6 | 25 |
+| `q_floor` | 10 → 8 | 13 → 11 | 20 | 0 | 3 / 3 | 3 | 3 |
+
+Of `noise3`'s 30 constant uses, 24 are the offsets `0.0` and `1.0` passed to its eight `gnoise` calls, and six are the `2.0` and `3.0` of the three smoothing weights. O2 barely changes the function. Two statements go, six plain copies such as `t5 = t23` remain, and every constant is still rebuilt at each use. Here are two of its O2 statements (`various/02-noise-listings.txt`):
+
+```text
+s:noise3.13  t10 = ((t7 *. t7) *. (3f -. (2f *. t7)))                  smoothing weight
+s:noise3.18  a = (q_t0 +. ((t28 -. q_t0) *. t9))                         lerp: fsub, fmul, fadd
+```
+
+**Where the executed instructions go.** `03-heat.mjs` lowers r0 and the O2 head with the default backend options. It renders pass 0 of V-04 ("A cloud") and X-03 ("A procedural planet") on a 20 × 20 grid with execution counts, and attributes every count to its function and to the value it covers (`various/03-heat.json`). At the O2 head:
+
+| | V-04 | X-03 |
+|---|---:|---:|
+| instructions per pixel (this compiler's image) | 108,341 | 365,180 |
+| share of the frame in `hash3`, `gnoise`, `noise3`, `q_floor`, `q_fract`, `fbm3` | **81.8 %** | **35.3 %** |
+| `hash3` · `gnoise` · `noise3` · `q_floor` · `q_fract` · `fbm3` | 33.9 · 21.7 · 15.0 · 7.1 · 2.4 · 1.7 % | 14.5 · 9.3 · 6.4 · 3.1 · 1.0 · 0.9 % |
+| executions of `noise3` | 28,685 | 41,466 |
+| instructions that build an f32 constant (cover a `const`), whole frame | 15.0 % | 20.2 % |
+| `fadd.s`/`fsub.s` whose value has an `fmul` operand (fusable), whole frame | 3.93 % | 4.81 % |
+
+Inside `noise3`, which has the same breakdown in both scenes:
+
+- 37.0 % of its executed instructions are `fsgnj.s`, the float register move, mostly moving arguments into place for its 14 calls;
+- 21.1 % build constants;
+- 14.5 % are the arithmetic itself (`fmul.s`, `fadd.s`, `fsub.s`).
+
+In `gnoise`, 26.8 % are moves and 29.3 % are float stores and loads to the stack. In `hash3`, 18.8 % build f32 constants, and its integer constants add further `lui` and `addi`. The r0 and O2 counts for `noise3` and `gnoise` are identical. `hash3` is slightly *slower* at O2 (14,686,720 against 14,457,240 in V-04), because `constprop` substitutes the folded constant `2/2²⁴` into three products, each of which then rebuilds it.
+
+**Candidate patterns** (`02-value-tree-shapes.mjs`; the classes are defined in section 18; counts are sites, not executions):
+
+| pattern | class | `noise3` | `gnoise` | `hash3` | Candela at O2 |
+|---|---|---:|---:|---:|---:|
+| `fadd(fmul(a,b), c)`, `fsub(fmul(a,b), c)`, `fsub(c, fmul(a,b))` | inexact (contraction) | 10 | 2 | 3 | 820 |
+| nested `fadd(fadd(a,b), c)` | inexact (reassociation) | 0 | 1 | 0 | 227 |
+| `fmul(x, 2.0) → fadd(x, x)` | exact | 3 | 0 | 0 | 38 |
+| `fmul(x, 1.0) → x`, `fdiv(x, 1.0) → x` | exact except NaN payloads | 0 | 0 | 0 | 197 + 5 |
+| `fadd(x, +0.0) → x`, `fmul(x, 0.0) → 0`, `fsub(x, x) → 0` | real-number only | 0 | 0 | 0 | 7 + 5 + 6 |
+| `fdiv(x, c)` | exact if c = 2^k (15), inexact otherwise (22) | 0 | 0 | 0 | 37 |
+| `(x ⊕ c1) ⊕ c2`, constants | inexact for f32 (10), exact for i32 (0 at O2) | 0 | 0 | 0 | 10 |
+
+`fmul(x, 1.0)` grows from 25 sites at r0 to 197 at O2. `constprop` substitutes constants into products, and no rule may remove a product by 1.0, because it is wrong for a non-canonical NaN.
+
+**What this says about the search, before any search is built.**
+
+- **Algebra is a minority of the hot code.** In `noise3`, arithmetic is 14.5 % of the executed instructions. Moves for calls, constant rebuilds and stack traffic are most of the rest. Those costs belong to inlining, copy coalescing and constants kept in registers. IRWB-003 built exactly these and measured B-01 at 8,267.7 instructions per pixel under its `speed` pipeline, against 10,435 under O2+ (IRWB-003 diary step 14, at `90fed9c`).
+- **The one exact f32 rewrite in sight is small.** `x * 2.0 → x + x` has 3 sites in `noise3`. Each saves 2 instructions (section 7), so it saves 3 × 2 × 28,685 = 172,110 instructions of V-04's 43,336,282, or 0.40 %. In X-03 the saving is 0.17 %.
+- **The largest pattern is inexact.** The fusable pairs are 3.9–4.8 % of the frame, and no exact table can touch them. They are IRWB-011's subject. IRWB-011 has measured contraction on Candela frames.
+- **Inlining changes the picture.** Once `gnoise` is inlined into `noise3`, its offset arguments become `i + 0.0`, `f − 0.0`, `i + 1.0` and so on. `f − 0.0 → f` is exact except for NaN payloads. `i + 0.0 → i` is wrong for `i = −0`, and `hash3` reads the *bits* of `i + o`, so the sign of zero is observable. The rewrite becomes valid with a fact that `i` is never −0. Reading `q_floor` (`kernel.typed:3–8`) suggests it never returns −0, but that is a claim from reading the code, not a measurement. A sign analysis would have to establish it. This is the case for fact-guarded f32 rules as e-class analyses (section 18). After inlining, rule search has real work to do.
 
 # Part 2: Background, from scratch
 
@@ -509,8 +579,9 @@ Each experiment states its question, its setup, what to measure, and when to con
 **E2. Exact f32 rules for the shapes of `noise3` (B3, f32).**
 - *Setup.* Targeted enumeration over `fmul, fadd, fsub, fneg` with the constants of section 8. Fingerprint on `F32_SPECIALS` and random values. Verify with the f32-special and random methods, and exhaustively over 2³² for one-variable rules.
 - *Measure.* The sound rules; whether `x * 2.0 → x + x` is among them, and its evidence strength; firings in `noise3` and `fbm3`; executed instructions per pixel on the scenes of section 8 before and after (the rule removes the constant's `lui` and `fmv.w.x`).
-- *Continue if* per-pixel instructions fall on X-03 by at least the share that section 8's constant-building count predicts.
+- *Continue if* per-pixel instructions on V-04 fall by at least the 0.40 % that section 8 predicts for `x * 2.0 → x + x` alone, and the measured fall matches the prediction.
 - *Stop if* the only sound rules are already in the candidates file. In that case the f32 gains are all inexact and belong to IRWB-011.
+- *Then, with inlining.* Repeat on the output of IRWB-003's `inline` pass. Its new shapes, such as `i + 0.0` and `f − 0.0`, need fact-guarded rules (section 18), and that is the real test of f32 rule search.
 
 **E3. Per-statement equality saturation with today's tables (B4's first experiment).**
 - *Setup.* A framework-independent e-graph (union-find, hash-consing, rebuild, e-matching over the rule form of `form.ts`). One graph per statement tree, with the `simplify` and `fold` tables and the proposed reassociation rule. Extraction by static tile cost.
@@ -524,8 +595,8 @@ Each experiment states its question, its setup, what to measure, and when to con
 - *Continue if* every explanation checks. Feed the result to IRWB-008 as the first producer of rule-citing edits.
 - *Stop if* explanations are routinely longer than the trees they explain. Then a minimization step is needed first, as Flatt et al. study.
 
-**E5. The missed-optimization loop on X-03.**
-- *Setup.* Section 21's report on the O2 head's image, rendering X-03. Take the ten hottest untouched shapes and enumerate for them.
+**E5. The missed-optimization loop on V-04.**
+- *Setup.* Section 21's report on the O2 head's image, rendering V-04, where the noise family is 81.8 % of the frame. Take the ten hottest untouched shapes and enumerate for them.
 - *Measure.* How many new sound rules apply to those shapes, and the executed instructions they save.
 - *Continue if* the loop finds a rule for at least one of the ten.
 - *Stop if* it finds none for any. That says the remaining cost is not algebraic (calls, constants, copies), as IRWB-003 found, and the effort belongs there.
@@ -542,7 +613,7 @@ Each experiment states its question, its setup, what to measure, and when to con
 
 | risk | why it is real here | mitigation |
 |---|---|---|
-| e-graph blowup | commutativity and associativity rules; `noise3`'s trees have depth up to the figure in §8 | node and iteration budgets; per-statement scope; report budget hits |
+| e-graph blowup | commutativity and associativity rules; `noise3`'s trees reach depth 7 and 21 nodes at O2 (§8) | node and iteration budgets; per-statement scope; report budget hits |
 | extraction picks a tree the backend lowers worse | tiles span nodes; f32 constants cost per use | validate by lowering; calibrate the static cost (§19) |
 | a sound-looking rule is wrong at 32 bits | reduced-width evidence needs an argument; sampled evidence is not a proof | strength in every explanation; the gate still runs; mutation testing (IRWB-005) of the new pass |
 | discovered rules are useless | Candela's cost is calls and constants (IRWB-003), not algebra | E1/E2 stop criteria; E5 measures it directly |

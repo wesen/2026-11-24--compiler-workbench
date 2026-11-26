@@ -1,0 +1,39 @@
+cfg r1 8971 ms
+fold r2 7353 ms
+simplify r3 10034 ms
+constprop r4 11345 ms
+fold r5 6805 ms
+simplify - 477 ms
+dce r6 5923 ms
+cfg r7 5170 ms
+licm r8 5290 ms
+lvn r9 9766 ms
+strength - 3715 ms
+bce - 2157 ms
+subst r10 6342 ms
+subst r11 6398 ms
+dce r12 5872 ms
+cfg r13 5391 ms
+	Command being timed: "node --max-old-space-size=10240 scripts/01-candela-o2-head.mjs --out-dir /tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/candela"
+	User time (seconds): 117.05
+	System time (seconds): 5.12
+	Percent of CPU this job got: 108%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:52.73
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 2971424
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 1912174
+	Voluntary context switches: 9393
+	Involuntary context switches: 23758
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 67464
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

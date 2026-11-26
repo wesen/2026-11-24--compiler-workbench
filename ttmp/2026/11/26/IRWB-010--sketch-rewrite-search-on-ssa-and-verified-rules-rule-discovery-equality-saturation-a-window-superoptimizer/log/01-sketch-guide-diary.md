@@ -80,3 +80,105 @@ The main finding of the reading is that the three ingredients the direction name
 
 ### Technical details
 - The vault report is deferred to the implementation milestone (coordinator's correction, received during this step); none was written.
+
+## Step 2: The O2 head, the shapes of noise3 and fbm3, and a measured phase-ordering example
+
+This step produces the grounding numbers for the guide's section 8 and its background examples: Candela's O2 head (to compare trees at r0 and O2), a census of the value trees in `noise3`, `fbm3` and their callees with counts of candidate rewrite patterns, and the instruction counts of a few one-line functions that show the backend's costs and the phase-ordering problem.
+
+The O2 head is the official chain (r0 `cd36346ea7c4`, head `b33d1737c725`, 13 revisions, as in IRWB-006). `noise3` is one block of 31 statements at O2 with 14 calls and 30 uses of only four f32 constants; O2 changes almost nothing in it. Across Candela, the most frequent candidate is a product feeding an addition or subtraction (820 sites at O2), which no exact rule can touch.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** The brief's cheap IRWB-010 measurement: tree shapes at r0 and O2 (operators, depth, constants), which candidate rewrites apply, and their share of executed instructions (next step).
+**Inferred user intent:** Ground the sketch in what the target code really looks like.
+**Commit (code):** de2fc14 holds the scripts; the outputs are committed with the next step.
+
+### What I did
+- `scripts/04-phase-order-example.mjs` (no Candela): `new Program(name, source)`, `p.pipeline('O2')`, `lowerToImage(p.head).image.value.insns` for one-line functions. First run failed (below); output `various/04-phase-order-example.txt`.
+- `scripts/01-candela-o2-head.mjs`: ingest from the tape, `createIRArtifact`, then `applyPass(PASSES[name], cur, { manager })` for each pass of `PIPELINES.O2`, without the per-pass meaning checks (IRWB-006's method, diary step 5 there). Under the cap: `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 /usr/bin/time -v node --max-old-space-size=10240 scripts/01-candela-o2-head.mjs --out-dir <scratchpad>/candela` → `various/01-candela-o2-head.{json,log}`; r0 and head JSON (18.2 MB and 16.3 MB) stay in the scratchpad.
+- `scripts/02-value-tree-shapes.mjs --dir <scratchpad>/candela --json various/02-value-tree-shapes.json --listing various/02-noise-listings.txt` (under the cap) → `various/02-value-tree-shapes.txt`.
+
+### Why
+- Applying O2 without checks is valid for measuring shapes: the checks do not change a pass's output, and the head hash equals the checked chain's.
+
+### What worked
+- O2: `{"r0":"cd36346ea7c4","head":"b33d1737c725","revisions":13}`, 1 min 53 s wall, peak RSS 2,971,424 KB, exit 0.
+- One-line functions, instructions without `ret`: f32 `x * 2.0` 3 (`lui`, `fmv.w.x`, `fmul.s`); `x + x` 1; `(x*x)*(3.0 - 2.0*x)` 8; `a + (b - a) * t` 3; i32 `(x * 2) * 3` becomes `(x << 1) * 3` under O2 (1 revision), 3 instructions; `x * 6` 2; `(x << 2) + (x << 1)` 3.
+- Focus functions (r0 → O2): `noise3` 1 block, 33 → 31 statements, 177 → 175 values, 14 calls, f32 constants 4 distinct / 30 uses at both (0.0 × 12, 1.0 × 12, 2.0 × 3, 3.0 × 3), maximum depth 7, largest tree 13 → 21 nodes; patterns at both: 7 `fadd(fmul, ·)`, 3 `fsub(c, fmul)`, 3 `fmul(x, 2.0)`. `fbm3`: 10 → 8 blocks, 27 statements, 2 calls, 1 `fadd(fmul, ·)`. `gnoise`: 5 statements, 30 values, depth 5, 2 `fadd(fmul, ·)`, 1 nested `fadd`. `hash3`: 17 → 16 statements, 94 → 91 values, 9 `mul`, 9 `add`, 6 `shru`, 3 `xor`; 3 `fsub(fmul, c)`; its one `fdiv` at r0 is `2.0 / 16777216.0` (kernel.typed:2706), which `fold` evaluates to 1.1920929e-7 and `constprop` substitutes into the three products (O2: that constant with 3 uses).
+- Candela at O2, pattern sites: contraction 820 (678 `fadd(fmul)`, 81 `fsub(c, fmul)`, 61 `fsub(fmul, c)`); any nested `fadd` 227; `fmul(x, 1.0)` 197 (25 at r0); `fmul(x, 2.0)` 38; `fdiv(x, c)` with c not a power of two 22, with c a power of two 15; `fadd(x, +0.0)` 7; `fmul(x, 0.0)` 5; `fsub(x, x)` 6; `fdiv(x, 1.0)` 5; constant reassociation `fmul(fmul(x, c1), c2)` 9, `fadd(fadd(x, c1), c2)` 1; i32 `mul(mul(x, c1), c2)` 1 at r0, 0 at O2.
+
+### What didn't work
+- `scripts/04-phase-order-example.mjs`, first run: `TypeError: Cannot read properties of undefined (reading 'filter')` at `image.insns`: `lowerToImage(...).image` is an artifact, and the image is its `.value`. Fixed there and in `03-heat.mjs` and IRWB-011's `03-float-candidates.mjs` with one `sed` each (`lowered.value ?? lowered`).
+- `git add` of both ticket directories staged the O2 run's partial output while it was running; `git restore --staged` on the two files before the commit.
+
+### What I learned
+- `constprop` multiplies the payload-class pattern `fmul(x, 1.0)` by eight (25 → 197): it substitutes constants into products, and no rule removes a product by 1.0, because `x · 1.0 → x` is wrong for a non-canonical NaN `x`. A fact "x is an arithmetic result" (every NaN the evaluator computes is canonical, `f32.ts:11`) would make it valid on those sites.
+- In `noise3`, 24 of the 30 constant uses are the `0.0`/`1.0` offset arguments of its eight `gnoise` calls. After inlining (IRWB-003) they become `i + 0.0` and `f − 0.0`. `i + 0.0 → i` is wrong for `i = −0`, and `hash3` reads the bits of `i + o` (`f2bits`), so the sign of zero is observable. It is valid only with a fact that `i` is not −0. `q_floor` never returns −0 by its code: `q_floor(−0)` returns `t = f32(i32(−0)) = +0` (kernel.typed:3–8), a claim from reading, not measured.
+- O2 leaves `noise3` nearly unchanged: six copies (`t5 = t23` …) survive, and every constant is still rebuilt at each use.
+
+### What was tricky to build
+- Pattern matching on raw records rather than on `ValueHandle`s: the census needs no transaction, so it walks `st.get(id)` records directly; the reassociation patterns needed both operand orders (`nestedConst`).
+
+### What warrants a second pair of eyes
+- The census counts shapes, not rewrites the rules would make: overlapping patterns count once per matching node, and "any nested fadd" includes the constant case.
+
+### What should be done in the future
+- The heat measurement (next step): how much of a frame these shapes are.
+
+### Code review instructions
+- `scripts/02-value-tree-shapes.mjs` (`patternsOf`, `census`); `various/02-noise-listings.txt` for the four functions at r0 and O2.
+
+### Technical details
+- Pass times in the O2 run (ms): cfg 8,971; fold 7,353; simplify 10,034; constprop 11,345; fold 6,805; simplify (no change) 477; dce 5,923; cfg 5,170; licm 5,290; lvn 9,766; others in `various/01-candela-o2-head.json`.
+
+## Step 3: Where a frame's instructions go in the scenes that call noise3
+
+This step measures the share of executed instructions that `noise3`, `fbm3` and their callees take in two scenes that call them, at r0 and at the O2 head, and how those instructions split into arithmetic, constants, moves and calls. It is what decides whether rewrite search on these functions can pay.
+
+The answer is that the functions are hot where they run (81.8 % of V-04's frame, 35.3 % of X-03's) but that their cost is mostly not algebra: in `noise3`, arithmetic is 14.5 % of its instructions, constant rebuilds 21.1 %, and register moves for its 14 calls 37.0 %. The only exact f32 rewrite visible, `x * 2.0 → x + x`, would save 0.40 % of V-04's frame.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "their share of executed instructions if available from heat counts".
+**Inferred user intent:** Know whether the target is worth a search before building one.
+**Commit (code):** de2fc14 holds the script; outputs are committed after this step.
+
+### What I did
+- `scripts/03-heat.mjs`: for r0 and the O2 head, `createIRArtifact` + `lowerToImage` (default options), a `CandelaHost` whose engine calls `runImage(…, { counts })` and sums the per-word counts only while the frame is rendered (after `bind`); pass 0, stride 8 for 160 × 160 scenes and 4 for 80 × 80 ones (20 × 20 pixels). Attribution per `ImageInsn.fn`, per machine `op`, and per covered value (`covers[0]`): an instruction is "constant building" if it covers an f32 `const` value, and "fusable" if it is an `fadd.s`/`fsub.s` covering an `fadd`/`fsub` with an `fmul` operand.
+- `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 /usr/bin/time -v node --max-old-space-size=10240 scripts/03-heat.mjs --dir <scratchpad>/candela --scenes X-03,V-04 --stride 8 --json various/03-heat.json` → `various/03-heat.{txt,log}`.
+- Derived numbers with a `node -e` over `various/03-heat.json` (noise3 executions = its internal calls / 14; shares by op).
+
+### Why
+- X-03 and V-04 are two of the seven scenes that reach `fbm3` (Step 1); V-04 is a volume whose density is noise, X-03 a planet with noise terrain.
+
+### What worked
+- 1 min 53 s wall, peak RSS 1,298,176 KB, exit 0. In every row the counted instructions equal the host's step count (`counted === steps`).
+- At the O2 head: V-04 108,341 instructions per pixel, noise family 81.8 % (`hash3` 33.9, `gnoise` 21.7, `noise3` 15.0, `q_floor` 7.1, `q_fract` 2.4, `fbm3` 1.7 %); X-03 365,180 per pixel, noise family 35.3 % (`hash3` 14.5, `logTail` 10.3, `gnoise` 9.3, `exp2f` 6.7, `noise3` 6.4 %, …). At r0: V-04 108,839, X-03 367,086.
+- f32 constant building: 15.0 % (V-04) and 20.2 % (X-03) of the whole frame at O2. Fusable `fadd.s`/`fsub.s`: 3.93 % and 4.81 %; of these, 85.9 % (V-04) and 30.1 % (X-03) are inside the noise family.
+- Inside `noise3` (same proportions in both scenes): `fsgnj.s` 37.0 %, constant building 21.1 %, `fmul.s` + `fadd.s` + `fsub.s` 14.5 %; 14 calls per execution; 28,685 executions in V-04, 41,466 in X-03. `gnoise`: `fsgnj.s` 26.8 %, `fsw` + `flw` 29.3 %. `hash3`: `lui` 18.8 %, f32 constant building 18.8 % (its integer constants' `lui`/`addi` are not separated by the script).
+- r0 against O2: `noise3` and `gnoise` identical (9,412,782 and 13,600,848 in X-03); `hash3` 14,457,240 → 14,686,720 in V-04 and 20,898,864 → 21,230,592 in X-03, slower at O2; its f32 constant building rises 2,294,800 → 2,753,760 in V-04.
+- `x * 2.0 → x + x` estimate: 3 sites × 2 instructions × 28,685 = 172,110 of 43,336,282 (0.40 %) in V-04; 248,796 of 146,072,040 (0.17 %) in X-03.
+
+### What didn't work
+- No failure in this step.
+
+### What I learned
+- The scenes most measurements use (B-01, R-01) say nothing about this target; V-04 is the scene where it matters.
+- O2 can make a float function slower: propagating a constant into several products multiplies its rebuilds. A cost-aware search would not have done that, which is an argument for extraction by backend cost (guide §19).
+- The cost of `noise3` is calls and constants. That is IRWB-003's territory (inlining, coalescing, constants in registers); rewrite search becomes interesting after inlining, when `gnoise`'s constant offsets become `x + 0.0` and `x − 0.0` shapes.
+
+### What was tricky to build
+- Counting only the frame: the host's engine closure counts while a flag is set, and the flag is set only around the pixel loop, so layout, init and the sky table are excluded.
+
+### What warrants a second pair of eyes
+- "Fusable" counts the `fadd.s`/`fsub.s` instruction of each pair; it is an upper bound on what contraction saves, since IRWB-011's fusion also requires the two instructions to be fusable without intervening writes.
+- Our image's instructions per pixel on X-03 (365,180 at O2) are 21 % above the reference `kernel` image's (302,871 = 121,148,536 / 400; IRWB-011 diary step 2).
+
+### What should be done in the future
+- Repeat on IRWB-003's `speed` pipeline with its three backend options once merged: constants in registers and inlining change every share above.
+
+### Code review instructions
+- `scripts/03-heat.mjs` (the engine closure, the attribution loop); `various/03-heat.json`.
+
+### Technical details
+- Lowering took 15.0 s (r0) and 16.6 s (O2); rendering X-03 36.6 s and 20.4 s, V-04 11.6 s and 5.5 s.
