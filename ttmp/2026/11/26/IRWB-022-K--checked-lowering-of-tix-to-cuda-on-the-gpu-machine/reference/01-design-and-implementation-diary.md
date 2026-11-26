@@ -158,3 +158,10 @@ The design's change ledger is the implementation worklist after review. Review t
 The reviewer measured 0.115 ms for a cold trivial launch and 0.003 ms on repeat. Querying kernel attributes first reduced the first interval to 0.004 ms. The revised driver preloads every kernel in the process recording events. Benchmarks run the warm-up and three measured sequences in that same process.
 
 The cold check compares the reported host, device name, compute capability and CUDA runtime version. The compiler build and flags belong to the versioned checker configuration. Concurrent cold checks on identical batch bytes motivate isolated runner directories. All review requests were accepted. Implementation starts from design checkpoint 160f768.
+## Step 3. Emit and execute the current tensor IR
+
+Implemented direct CUDA emission, the generated binary main, the Node batch codec and the asynchronous runner. A public runTixCuda probe of a 2 × 3 row sum returned [6, 15], shape [2], with a 0.019616 ms event interval. All six benchmark programs then compiled and ran. Each kernel was preloaded in its own process and all four benchmark executions shared a single process and measurement lock. The first run of the TypeScript build found TS2345 on the Buffer array used for concatenation. An explicit Buffer[] accepts both ordinary and shared underlying array buffers.
+
+The runner now creates a private remote job for each call and publishes the compiled binary under a per-key flock via rename. Compilation reuse and the full-input hash retain their existing semantics. Failed fetches throw. The previous shared out directory could race between simultaneous cold checks.
+
+The benchmark driver uses one sample per interpreter workload. The interpreter and GPU consume the same deterministic f32 arrays. Raw measurements and the comparison table will be recorded after the interpreter completes.

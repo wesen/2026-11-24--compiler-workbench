@@ -46,3 +46,5 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
   });
   return { program: { origin, current }, steps };
 }
+export { cudaSource } from './cuda-source.js';
+export { runTixCuda } from './cuda-run.js';

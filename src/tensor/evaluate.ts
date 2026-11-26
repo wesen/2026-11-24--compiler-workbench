@@ -3,6 +3,7 @@ export interface BufferValue {
   shape: number[];
   data: Float32Array | Float64Array;
 }
+export type F32Inputs = Record<string, { shape: number[]; data: Float32Array }>;
 export type Inputs = Record<string, BufferValue>;
 export type Precision = 'f32' | 'f64';
 export const size = (shape: number[]) => shape.reduce((a, b) => a * b, 1);
