@@ -45,6 +45,7 @@
     "fixed-point",
     "collatz",
     "distinct",
-    "regex-nfa"
+    "regex-nfa",
+    "f32-dsp"
   ]
 }

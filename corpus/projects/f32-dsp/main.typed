@@ -1,0 +1,77 @@
+function fft(work: buffer, twiddles: buffer, n: i32): i32 {
+    // Put the samples in bit-reversed order before the butterfly stages.
+    for (let i = 0; i < n; i = i + 1) {
+        let j = 0;
+        let sourceBits = i;
+        for (let bits = n; bits > 1; bits = bits >> 1) {
+            j = 2 * j + (sourceBits & 1);
+            sourceBits = sourceBits >> 1;
+        }
+        if (i < j) {
+            const ir = work.getF32(2 * i);
+            const ii = work.getF32(2 * i + 1);
+            const jr = work.getF32(2 * j);
+            const ji = work.getF32(2 * j + 1);
+            work.setF32(2 * i, jr);
+            work.setF32(2 * i + 1, ji);
+            work.setF32(2 * j, ir);
+            work.setF32(2 * j + 1, ii);
+        }
+    }
+
+    for (let span = 2; span <= n; span = 2 * span) {
+        const half = span / 2;
+        const stride = 16 / span;
+        for (let base = 0; base < n; base = base + span) {
+            for (let j = 0; j < half; j = j + 1) {
+                const root = 2 * (j * stride);
+                const wr = twiddles.getF32(root);
+                const wi = twiddles.getF32(root + 1);
+                const u = 2 * (base + j);
+                const v = 2 * (base + j + half);
+                const ur = work.getF32(u);
+                const ui = work.getF32(u + 1);
+                const vr = work.getF32(v);
+                const vi = work.getF32(v + 1);
+                const tr: f32 = wr * vr - wi * vi;
+                const ti: f32 = wr * vi + wi * vr;
+                work.setF32(u, ur + tr);
+                work.setF32(u + 1, ui + ti);
+                work.setF32(v, ur - tr);
+                work.setF32(v + 1, ui - ti);
+            }
+        }
+    }
+    return n;
+}
+
+function dot3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32): f32 {
+    return (a * b + c * d) + e * f;
+}
+
+function biquadBank(samples: buffer, coefficients: buffer, output: buffer): i32 {
+    for (let band = 0; band < 2; band = band + 1) {
+        const row = 5 * band;
+        const b0 = coefficients.getF32(row);
+        const b1 = coefficients.getF32(row + 1);
+        const b2 = coefficients.getF32(row + 2);
+        const a1 = coefficients.getF32(row + 3);
+        const a2 = coefficients.getF32(row + 4);
+        let x1: f32 = 0.0;
+        let x2: f32 = 0.0;
+        let y1: f32 = 0.0;
+        let y2: f32 = 0.0;
+
+        for (let i = 0; i < 16; i = i + 1) {
+            const x = samples.getF32(i);
+            const feed = dot3(b0, x, b1, x1, b2, x2);
+            const y = (feed - a1 * y1) - a2 * y2;
+            output.setF32(16 * band + i, y);
+            x2 = x1;
+            x1 = x;
+            y2 = y1;
+            y1 = y;
+        }
+    }
+    return 16;
+}

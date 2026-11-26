@@ -1,17 +1,28 @@
 ---
-Title: f32 DSP design diary
+Title: f32 DSP design and implementation diary
 Ticket: IRWB-016
 Status: active
-Topics: [compiler, ir, performance]
+Topics:
+    - compiler
+    - ir
+    - performance
 DocType: reference
 Intent: short-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://corpus/projects/f32-dsp/main.typed
+      Note: FFT butterfly and direct-form-I filter bank
+    - Path: repo://corpus/projects/f32-dsp/project.json
+      Note: Fixed tables and generated case domain
+    - Path: repo://corpus/projects/f32-dsp/scripts/compare.js
+      Note: Fresh workbench instruction comparison
+    - Path: repo://tests/typed/f32-dsp.test.mjs
+      Note: Exact and binary64 oracles with specialization measurements
 ExternalSources: []
-Summary: Design decisions and feature probe results for the f32 DSP corpus project.
+Summary: Design decisions, oracle checks, and instruction measurements for the f32 DSP corpus project.
 LastUpdated: 2026-11-26T10:57:58.594360545-05:00
-WhatFor: Record the evidence and choices behind the f32 DSP design.
-WhenToUse: Reviewing the design and the feature probe results.
+WhatFor: Record implementation evidence and decisions for the f32 DSP corpus project.
+WhenToUse: Reviewing the design, tests, and specialization measurements.
 ---
 
 # IRWB-016 diary
@@ -79,3 +90,84 @@ Chose FFT sizes 8 and 16, a 16-sample two-band bank and fixed packed tables. The
 ## Step 4 — Validate and stage the ticket
 
 The first `docmgr doctor --ticket IRWB-016 --stale-after 30` flagged the diary's missing frontmatter. Added reference metadata and a numeric filename, and reran validation. Checked the design length and local Markdown links. The initial git add hit a read-only worktree index and required escalation for staging and committing.
+
+## Step 5 — Implement and register the kernels
+
+Implemented the FFT and filter bank in ordinary Typed. The FFT keeps its runtime bound and table reads, and the bank calls a six-argument f32 helper inside its sample loop.
+
+### Prompt context
+
+<details>
+<summary>Implementation request (verbatim)</summary>
+
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node). It contains a compiler from Typed, a small statically typed language with TypeScript-like syntax, to 32-bit RISC-V (RV32IMF), built on an IR framework in which every optimization pass is checked against the original program. Your task: implement the corpus project designed in your ticket IRWB-016. The design document is in `ttmp/2026/11/26/IRWB-016--*/design-doc/`. It has been reviewed; implement it as designed. Where the design turns out to be wrong about the code, follow the code and record the deviation in your diary.
+
+## Read first
+- Your design document.
+- `corpus/reference.md` and two or three existing corpus projects (for example `corpus/projects/sort`, `checksum`, `histogram`).
+- `tests/typed/project-meta.test.mjs`: `project.json` now supports `"ingest": { "tape": true }` (needed for frame arrays) and `"entries": [...]` (checks generate cases for the listed entry functions only), in `Program.fromProject`, `ingestProject` and `tools/parity.mjs`.
+
+## Deliverables
+- The corpus project under `corpus/projects/<name>/` as the design describes (`.typed` sources, `project.json`, `notes.md`, any scripts the design calls for).
+- The tests and checks the design calls for, under `tests/typed/`.
+- Your ticket's diary (use your docmgr and diary skills), tasks and changelog, kept current as you work.
+
+## Environment
+- `node_modules` is found from the repository root. Run `npm run build` once before using `dist/`.
+- Six agents share this machine. Run only your own tests (`node --test tests/typed/<your-test>.test.mjs`) and, for your project, `node tools/parity.mjs <name>` or `node tools/reference-check.mjs <name>` if useful. Do not run the full test suite (`npm test`), corpus-wide tools without a project argument, or anything that touches Candela.
+
+## Constraints
+- Do not modify `src/`, `tools/`, other corpus projects, other tickets, or existing tests. Adding your project's id to `corpus/projects/index.json` is allowed.
+- Never run code from downloaded archives under `ttmp/**/sources/`.
+- Commit at sensible points on your current branch with messages starting `IRWB-016:`. Do not push.
+- Final message: what you built (paths), how it was checked (commands and results), what deviates from the design, and the commit hashes.
+Your ticket is IRWB-016. Your design document is `ttmp/2026/11/26/IRWB-016--f32-dsp-corpus-playground/design-doc/01-f32-dsp-corpus-playground.md`.
+
+</details>
+
+The implementation should expose the butterfly and recurrence as optimization workloads, with both compiler parity and numerical correctness checked independently.
+
+### Implementation and rationale
+
+- Added the Typed source, metadata, notes and comparison script under `corpus/projects/f32-dsp/`, with the butterfly's real-product sum as the default focus.
+- Used DataView to encode the fixed tables as little-endian f32 words. The notes explain the float layout and point to the butterfly and inlining site.
+- The default loader probe via `Program.fromProject` returned `ok null [ 'fft', 'dot3', 'biquadBank' ]`. Buffers do not require frame-array ingest. Retained generation for all three functions as specified in the design.
+
+### Evidence and review
+
+- `npm run build` exited 0 before loading any built modules.
+- `node tools/parity.mjs f32-dsp` reported 9 revisions, 300/300 decided agreements, zero limits and zero failures.
+- The reviewed design proposes changing the reference-check tool. The implementation instructions exclude changes to tools, and the local tool iterates all projects even when given a project argument. The project test will call the signature-aware stock reference runner directly.
+- Review the two complex sample loads before the bit-reversal stores and the filter's history update order in `main.typed`. The following step checks both with independent numerical oracles.
+
+## Step 6 — Verify the kernels and measure specialization
+
+The directed cases passed for complex impulses at both FFT lengths, the filter impulse, and silence. The seeded cases also passed. The dense binary64 DFT checked phase and bin order. The binary64 filter used indexed histories, so it could catch an error in the Typed history updates.
+
+### Prompt context
+
+See the implementation request in Step 5. The corpus checkpoint is `dc6c6c41bb358345157d90f2d57785d8c8931807` (“IRWB-016: add f32 DSP corpus kernels and comparison script”).
+
+### Checks and review
+
+- `node --test --test-isolation=none tests/typed/f32-dsp.test.mjs` passed all three tests. The isolated run of `node --test tests/typed/f32-dsp.test.mjs` reported the file as one passing test. The no-isolation run showed individual results and measurement diagnostics.
+- The general test checked 120 seeded and six directed calls. The two RV32 paths and each published evaluator revision matched the r0 return and complete guest memory. The independent numerical checks also required exact bytes outside each result region, including the unused FFT tail, input buffers and length headers.
+- The checked `speed` pipeline used 40 cases per function and seed 7. `node tools/parity.mjs --json f32-dsp` reported nine changed revisions, zero rejected passes and 300/300 final agreements with no limits or disagreements.
+- The specialization test checked another 120 seeded calls under the narrowed case specification and compared the general and specialized images on the same 40 size-16 FFT inputs. Binding recorded `120/120` in its ordinary gate. The workbench script test ran through the actual project loader and verified that the open revision stayed at r0.
+- The first staging attempt failed with `fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/impl-irwb-016/index.lock': Read-only file system`. Escalating the scoped Git add and commit produced the corpus checkpoint.
+
+### Measurements
+
+The Node test used `chains`, `coalesce` and `homes` for both measured workbench images. Statement counts are maxima over the sampled calls. The checked column covers every published general optimization revision. The filter dB column gives the worse band across all calls. The cap remained 20,000 evaluator statements.
+
+| Kernel | r0 statements | Checked statements | Worst r0 error (dB) | r0 instructions | Speed instructions |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| FFT at 8 | 913 | 913 | −143.12 | 1,591 | 1,544 |
+| FFT at 16 | 2,337 | 2,337 | −141.60 | 4,154 | 4,065 |
+| Biquad bank | 674 | 898 | −138.92 | 1,464 | 1,096 |
+
+On the size-16 calls, the specialized `speed` image used 4,064 instructions and the general `speed` image used 4,065. Examining the FFT edit log showed five substitutions of `n` in the outer permutation bound, bit-counter initializer, stage bound, group bound and return. The optimized listing contains literal 16 in those places. Neither run had a `fold` edit in FFT, and the specialize run kept `span / 2`, `16 / span` and both twiddle loads in the listing. The matching FFT edits after the binding came from `cfg`, `simplify`, `lvn` and `rotate`.
+
+### Deviation from the design
+
+The stock reference was verified directly through `referenceCompile` and `referenceRun` in the project test. The design's suggested change to the corpus-wide reference CLI falls outside the authorized implementation scope. The default ingest worked for the packed buffers, and keeping all three functions in case generation preserved the designed `dot3` coverage.
