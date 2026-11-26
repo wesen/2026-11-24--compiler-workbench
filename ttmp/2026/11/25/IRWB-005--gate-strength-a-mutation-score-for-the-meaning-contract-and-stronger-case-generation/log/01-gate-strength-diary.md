@@ -854,3 +854,47 @@ The four functions the failure cut off were run under the cap, with the same sel
 
 ### Technical details
 - Gate time over 3,931 mutants (ms): default 185,004; check100 553,646; strong 412,458; default+div 222,864.
+
+## Step 19: Two classification errors on Candela, and the corrected numbers
+
+Reading the Candela summary of Step 18, one number did not fit: under `check100` the equivalent count was 405 against 417 under the other gates, so `check100` had killed 12 mutants the classifier called equivalent. A gate's kill is a disagreement on one of its cases; if that case follows the specification, the mutant cannot be equivalent under it. The material functions take only f32 parameters, have no specification at all, and the tool judges the mutated function's own cases first, so a disagreement among the first 100 is on a specified case. The classifier had simply missed what `check100`'s case 62 found. The same reasoning exposed a second error: for a function with no specification, the classifier's "specified" sample and its "unconstrained" sample come from the same distribution, so an unconstrained witness is a specified witness, and `equivalent-spec` is the wrong class. After both corrections 29 Candela mutants move from equivalent to wrong, and the default gate's Candela kill rate is 96.8 % (upper), with 114 wrong mutants accepted instead of 85. Neither error touches the corpus: every corpus mutant a gate killed was also classified as killed, and every corpus `equivalent-spec` mutant has a specified function (24 at the head, 30 at r0).
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Equivalent mutants must be identified, not counted as survivors"; their classification has to be right.
+**Inferred user intent:** Equivalence claims that hold.
+**Commit (code):** f34bffe — "IRWB-005: classification audit: ..."
+
+### What I did
+- Counted, in every run, mutants classified `equivalent-*` that some gate killed: corpus head 0, corpus r0 0, f32 fixture 0, Candela part 1 12 (all killed by `check100` only), part 2 0.
+- `scripts/23-equivalent-spec-audit.mjs`: every `equivalent-spec` mutant with the specification of its function: head 24, r0 30, none with an unspecified function (`various/23-equivalent-spec-audit-{corpus,origin}.txt`).
+- `scripts/22-candela-summary.mjs`: two rules applied before tallying. (1) An `equivalent-*` mutant killed by a gate on a specified case becomes `survived-wrong` (`gate-witness:<gate>`): version 2's cases are always specified; version 1's are when the disagreement is within the mutated function's own cases (counts ≤ the gate's case count, since the tool judges them first) and the function takes no record (`RECORD_FNS`: hdriPdf, s12_heightAt, s15_customKernel, s17_sdUser, skyL_wgsl, cameraRay, cdlInit, cdlLayout, envL, from the source signatures). (2) An `equivalent-spec` mutant whose unconstrained witness is in its own unspecified function becomes `survived-wrong` (`unconstrained-is-specified`).
+- `tools/mutation-classify.mjs`: rule (2) in the classifier itself, for future runs.
+
+### Why
+- An equivalent mutant is excluded from the kill rate; calling a wrong one equivalent inflates the rate.
+
+### What worked
+- Reclassified on Candela: 11 by rule 1 (all `check100`), 18 by rule 2. Corrected totals (killed, wrong accepted, equivalent, lower..upper): default 3,429 114 388, 87.4 %..96.8 %; check100 3,477 67 387, 88.7 %..98.1 %; strong 3,443 100 388, 87.8 %..97.2 %; default+div 3,430 113 388, 87.5 %..96.8 %. Classes under default: survived-wrong 114 (sample 85, gate-witness 11, unconstrained-is-specified 18), equivalent-spec 9, equivalent-presumed 379.
+- Per function (default, upper): s9_sdf_0 37 killed / 70 wrong (34.6 %), s5_mat_4 82.2 %, s10_mat_1 and s3_mat_1 92.1 %, everything else ≥ 97.6 %.
+
+### What didn't work
+- My first reading in Step 18 attributed the 12 `check100`-only kills to the record-layout defect; the source signatures show the material functions take no record, so that explanation was wrong.
+
+### What I learned
+- "Under the specification" has to be decided per function: for a function nobody specified, every input is specified.
+
+### What was tricky to build
+- Deciding whether a version-1 kill on Candela was on a specified case without the case itself in the record: the judging order (own cases first, stop at the first disagreement) makes the counts sufficient.
+
+### What warrants a second pair of eyes
+- The 379 presumed-equivalent Candela mutants were not deep-searched; on Candela the lower bound (87.4 %) is the safer number.
+
+### What should be done in the future
+- Record the disagreeing case's function in each gate verdict, so rule 1 does not need the counting argument.
+
+### Code review instructions
+- `scripts/22-candela-summary.mjs` (the two rules), `tools/mutation-classify.mjs` (rule 2), `various/13-candela-summary.txt`.
+
+### Technical details
+- The 11 rule-1 mutants: 3 `swap` of `((1 + sqrt(m)) / (1 − sqrt(m)))` in s10_mat_1, s3_mat_1, s5_mat_4, and 8 more of s5_mat_4 (`fadd`, `fmin` ×2, `swap` ×2, `sign`, `fmul`, `fsub`).
