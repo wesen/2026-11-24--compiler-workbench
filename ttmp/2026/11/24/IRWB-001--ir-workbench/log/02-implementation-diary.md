@@ -1687,3 +1687,30 @@ The corpus runs 20.0% fewer instructions, and both Candela frames are bit-identi
 - Strategy metrics compile with default backend options, so `fastest-all` cannot see the options.
 - The other 16 per-scene measurements are a task in the IRWB-003 ticket.
 - **The combined synthesis report** (user, mid-turn: "you should write a combined one as well, when done") follows once IRWB-007 and IRWB-010/011 have uploaded their guides.
+
+## Step 38: an experiment: six Codex agents (gpt-6.2-sol, medium) design the playground programs
+
+The user asked for an experiment. Six Codex agents each create a docmgr ticket and a design doc for one of the six optimization-playground programs I proposed. I then review the docs for over-complexity, which the user expects from this model, and report how they did.
+
+### Prompt Context
+**User prompts (verbatim):**
+- "ok, let's run an experiment, and run codex openai agents to build each of these, using 6.2-sol on medium, and ask them to create the docmgr ticket and the design doc. Then, review the design docs and catch what sol loves doing: overcomplexifying things. Then give me a breakdown of how you think they did"
+- "for all of them"
+
+### What I did
+- **Codex CLI:** v0.172.0. The default model in `~/.codex/config.toml` is `gpt-6.2-astra`. A test call `codex exec -m gpt-6.2-sol -c model_reasoning_effort=medium -s read-only "Reply with exactly: OK"` answered `OK` (13,284 tokens). Codex has its own `docmgr` and `diary` skills.
+- **The chess engine:** found in the user's repo, `2026-10-20--ds-js-os/apps/typed/chess/` (`position`, `moves`, `search`, `state` .typed), with `bench/reference/chess/reference-positions.json`.
+- **Prompts** in `various/codex-playground/prompts/`:
+  - a common brief (`00-common.md`): context to read, the ticket and doc requirements, constraints. It is deliberately neutral, with no instruction to keep things simple, so that the review measures the model's own tendency;
+  - one spec per program (`IRWB-012` … `IRWB-017`), taken from my proposal to the user.
+- **The launcher**, `scripts/15-codex-playground-launch.sh`:
+  - one `git worktree` per agent at `.claude/worktrees/codex-irwb-0NN`, on branch `codex/irwb-0NN`, from `d4de7a3`;
+  - `codex exec -m gpt-6.2-sol -c model_reasoning_effort=medium -s workspace-write --add-dir <repo>/.git` (`.git` so that a worktree commit can be written), with `-o` for the last message;
+  - logs in `various/codex-playground/logs/`.
+- The agents are told to write only inside their ticket directory, and not to implement the program.
+
+### Interpretation recorded
+- **"build each of these" + "create the docmgr ticket and the design doc"** became: ticket and design doc now, implementation after the review. That way over-complexity is caught before it is built, and the review is the experiment's measured output.
+
+### What warrants a second pair of eyes
+- **The sandbox reported `approval: on-request`.** In `exec` mode nobody can approve a request, so a command needing escalation fails rather than waits.
