@@ -2,10 +2,25 @@
 Title: IRWB-015 diary
 Ticket: IRWB-015
 Status: active
-Topics: [compiler, ir, performance]
+Topics:
+    - compiler
+    - ir
+    - performance
 DocType: reference
 Intent: short-term
+Owners: []
+RelatedFiles:
+    - Path: repo://corpus/projects/regex-nfa/main.typed
+      Note: Typed pattern compiler and NFA simulation
+    - Path: repo://corpus/projects/regex-nfa/project.json
+      Note: Tape loader, entry scope and default generated inputs
+    - Path: repo://tests/typed/regex-nfa.test.mjs
+      Note: Oracle agreement, pass evidence and RV32 measurements
+ExternalSources: []
 Summary: Corpus reading, feature probes, and design decisions.
+LastUpdated: 0001-01-01T00:00:00Z
+WhatFor: ""
+WhenToUse: ""
 ---
 
 # IRWB-015 diary
@@ -77,3 +92,111 @@ I chose a small concatenation grammar with ranges and stars, then used a dense m
 The first `docmgr doctor --ticket IRWB-015 --stale-after 30` reported `frontmatter delimiters '---' not found` on this diary. I added frontmatter with the existing `reference` document type and reran the metadata checks before staging the ticket.
 
 The metadata checks passed. The sandboxed `git add -- ttmp/2026/11/26/IRWB-015--thompson-regex-matcher` could not create the worktree's `index.lock` because the Git administrative path was mounted read-only.
+
+## Step 5 — Implement the matcher and project metadata
+
+The project compiles the bounded pattern into nine possible Thompson states in a frame array. It uses separate current and next membership arrays and marks states before enqueueing them for epsilon closure. The workbench focuses the scalar range helper call.
+
+### Prompt Context
+
+<details>
+<summary>User implementation request verbatim</summary>
+
+> You are working in a git worktree of the IR Workbench repository (TypeScript, Node). It contains a compiler from Typed, a small statically typed language with TypeScript-like syntax, to 32-bit RISC-V (RV32IMF), built on an IR framework in which every optimization pass is checked against the original program. Your task: implement the corpus project designed in your ticket IRWB-015. The design document is in `ttmp/2026/11/26/IRWB-015--*/design-doc/`. It has been reviewed; implement it as designed. Where the design turns out to be wrong about the code, follow the code and record the deviation in your diary.
+>
+> ## Read first
+> - Your design document.
+> - `corpus/reference.md` and two or three existing corpus projects (for example `corpus/projects/sort`, `checksum`, `histogram`).
+> - `tests/typed/project-meta.test.mjs`: `project.json` now supports `"ingest": { "tape": true }` (needed for frame arrays) and `"entries": [...]` (checks generate cases for the listed entry functions only), in `Program.fromProject`, `ingestProject` and `tools/parity.mjs`.
+>
+> ## Deliverables
+> - The corpus project under `corpus/projects/<name>/` as the design describes (`.typed` sources, `project.json`, `notes.md`, any scripts the design calls for).
+> - The tests and checks the design calls for, under `tests/typed/`.
+> - Your ticket's diary (use your docmgr and diary skills), tasks and changelog, kept current as you work.
+>
+> ## Environment
+> - `node_modules` is found from the repository root. Run `npm run build` once before using `dist/`.
+> - Six agents share this machine. Run only your own tests (`node --test tests/typed/<your-test>.test.mjs`) and, for your project, `node tools/parity.mjs <name>` or `node tools/reference-check.mjs <name>` if useful. Do not run the full test suite (`npm test`), corpus-wide tools without a project argument, or anything that touches Candela.
+>
+> ## Constraints
+> - Do not modify `src/`, `tools/`, other corpus projects, other tickets, or existing tests. Adding your project's id to `corpus/projects/index.json` is allowed.
+> - Never run code from downloaded archives under `ttmp/**/sources/`.
+> - Commit at sensible points on your current branch with messages starting `IRWB-015:`. Do not push.
+> - Final message: what you built (paths), how it was checked (commands and results), what deviates from the design, and the commit hashes.
+> Your ticket is IRWB-015. Your design document is `ttmp/2026/11/26/IRWB-015--thompson-regex-matcher/design-doc/01-thompson-regex-matcher-corpus-design.md`.
+
+</details>
+
+**Assistant interpretation** Implement the reviewed algorithm and exercise the existing project loaders and backends within the listed file boundaries.
+
+**Inferred user intent** Provide a runnable optimizer workload with trustworthy correctness and instruction-count measurements.
+
+### What I did
+
+- Added the Typed source and project metadata under `corpus/projects/regex-nfa/` and registered the project in the corpus index.
+- Used existing tape ingestion and declared `regexMatch` as the sole public entry. The matcher calls `inRange` normally so it can be inlined.
+- Used the fixed benchmark pattern `[a-c]*[b-d]*a*d` for ordinary pass checks. It has both matching and nonmatching texts in the generated alphabet. The project's focused test uses fixed-string specs per pattern to generate 100 texts across all eight planned patterns, with seeds beginning at 7.
+
+### Why
+
+The existing generator accepts `{ string: ... }` and has no `{ strings: [...] }` form. The design's proposed generator and reference documentation changes fall outside the implementation file boundaries. The ticket's design probe already established that numeric `oneOf` cannot allocate string buffers. Entry metadata also supersedes the design's separate direct checks of the scalar helper.
+
+### What worked
+
+`npm run build` exited successfully. A `node --input-type=module` probe loaded the new project through `Program.fromProject` and evaluated four smoke cases. Empty/empty and `a*b`/ `aaab` accepted. Empty/`a` and `ab`/`aba` rejected. The respective evaluator statement counts were 54, 1,133, 106, and 537.
+
+### What didn't work
+
+The first `node --input-type=module` probe returned `frontEndError` with `{"message":"expected identifier","line":96,"col":1}` when the only return was inside the matcher loop. Breaking at the final text position and returning the accept bit after the loop satisfied the front end. The final closure still runs before the accept bit is read.
+
+### What I learned
+
+The Node loader already forwards the tape flag, so the design's loader edits were unnecessary. The project-scoped CLI command is `node tools/parity.mjs regex-nfa`. The current `reference-check.mjs` has no project filter, so the focused test calls the same reference compiler and emulator APIs directly.
+
+### What was tricky to build
+
+Keeping the range emission shared between starred and plain pieces required remembering the outgoing state before moving past the split row. The five-word layout and state numbering are the same for both cases.
+
+### What warrants a second pair of eyes
+
+Legacy corpus-wide tests still enumerate all project directories. In `tests/typed/backend.test.mjs`, the P2.4 loader calls `ingest` without metadata and its aggregates assume 44 projects. The chapter 13 test also fixes the old totals. Full corpus parity fixes its old totals and omits entry metadata. Those tests were outside the permitted edits and run scope.
+
+### What should be done in the future
+
+Update the existing corpus-wide tests to honor project metadata and scope historical totals to their original project set.
+
+### Code review instructions
+
+Start with `main.typed`, especially the split edges and the copy-and-clear loop. Run the focused test and project-scoped parity command.
+
+### Technical details
+
+The arrays occupy 45 + 9 + 9 + 9 i32 slots, or 288 bytes. Tags and destinations are stored only in frame memory.
+
+## Step 6 — Verify and commit the corpus and its focused checks
+
+The JavaScript oracle agreed with r0 IR, the workbench's optimized RV32 image, and the reference RV32 image on 100 generated calls and 10 explicit fixtures. The tests verified trap-free results and unchanged input memory. The workbench opened the project and ran the fresh-copy exploration script.
+
+### Prompt Context
+
+**User prompt** See Step 5.
+
+**Assistant interpretation** Verify the corpus's three execution paths, checked optimization, and benchmark.
+
+**Inferred user intent** Leave a reproducible baseline for later compiler work.
+
+### Evidence and commits
+
+- `node --test tests/typed/regex-nfa.test.mjs` passed. The default isolated reporter summarized only the test file in this setup. `node --test --test-isolation=none tests/typed/regex-nfa.test.mjs` reported both named tests passing and printed the measurements.
+- All 12 changing `speed` passes agreed with r0 on their 40 generated cases and had zero inconclusives. `node tools/parity.mjs regex-nfa` reported 12 revisions, 100/100 decided cases agreeing, zero inconclusives, and zero failures.
+- The benchmark `[a-c]*[b-d]*a*d` over `abccabbd` returned 1 in 8,183 RV32 instructions at r0, 8,040 after `speed`, and 6,628 with the reference compiler. Both workbench images used default backend options.
+- The maximal-active-set fixture took 5,290 IR statements at r0 and 4,175 after `speed`, below the 20,000-statement pass-check limit.
+- Commit `0beef65` adds the corpus and its focused tests. The initial sandboxed `git add` and `git commit` reported a read-only filesystem for the worktree's `index.lock`. The escalated retry staged the six intended files, passed `git diff --cached --check`, and committed them.
+
+### Noteworthy decisions or failures
+
+The exploration script uses the existing per-script fresh-copy option, which lets it measure r0 and apply `speed` without advancing the open project. The only verification scope exception is the legacy corpus-wide test coverage described in Step 5.
+
+### Remaining requirements and next action
+
+All implementation tasks in this ticket are checked. The legacy aggregate assertions described in Step 5 remain outside this ticket's authorized edits.
