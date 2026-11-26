@@ -19,3 +19,4 @@ common.md
 developer-instructions*.md
 impl-fmt.md
 summary-*.md
+*.claude-prompt.md
