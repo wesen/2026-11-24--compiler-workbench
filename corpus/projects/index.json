@@ -43,6 +43,7 @@
     "gcd",
     "fixed-point",
     "collatz",
-    "distinct"
+    "distinct",
+    "f32-dsp"
   ]
 }

@@ -79,3 +79,52 @@ Chose FFT sizes 8 and 16, a 16-sample two-band bank and fixed packed tables. The
 ## Step 4 — Validate and stage the ticket
 
 The first `docmgr doctor --ticket IRWB-016 --stale-after 30` flagged the diary's missing frontmatter. Added reference metadata and a numeric filename, and reran validation. Checked the design length and local Markdown links. The initial git add hit a read-only worktree index and required escalation for staging and committing.
+
+## Step 5 — Implement and register the kernels
+
+Implemented the FFT and filter bank in ordinary Typed. The FFT keeps its runtime bound and table reads, and the bank calls a six-argument f32 helper inside its sample loop.
+
+### Prompt context
+
+<details>
+<summary>Implementation request (verbatim)</summary>
+
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node). It contains a compiler from Typed, a small statically typed language with TypeScript-like syntax, to 32-bit RISC-V (RV32IMF), built on an IR framework in which every optimization pass is checked against the original program. Your task: implement the corpus project designed in your ticket IRWB-016. The design document is in `ttmp/2026/11/26/IRWB-016--*/design-doc/`. It has been reviewed; implement it as designed. Where the design turns out to be wrong about the code, follow the code and record the deviation in your diary.
+
+## Read first
+- Your design document.
+- `corpus/reference.md` and two or three existing corpus projects (for example `corpus/projects/sort`, `checksum`, `histogram`).
+- `tests/typed/project-meta.test.mjs`: `project.json` now supports `"ingest": { "tape": true }` (needed for frame arrays) and `"entries": [...]` (checks generate cases for the listed entry functions only), in `Program.fromProject`, `ingestProject` and `tools/parity.mjs`.
+
+## Deliverables
+- The corpus project under `corpus/projects/<name>/` as the design describes (`.typed` sources, `project.json`, `notes.md`, any scripts the design calls for).
+- The tests and checks the design calls for, under `tests/typed/`.
+- Your ticket's diary (use your docmgr and diary skills), tasks and changelog, kept current as you work.
+
+## Environment
+- `node_modules` is found from the repository root. Run `npm run build` once before using `dist/`.
+- Six agents share this machine. Run only your own tests (`node --test tests/typed/<your-test>.test.mjs`) and, for your project, `node tools/parity.mjs <name>` or `node tools/reference-check.mjs <name>` if useful. Do not run the full test suite (`npm test`), corpus-wide tools without a project argument, or anything that touches Candela.
+
+## Constraints
+- Do not modify `src/`, `tools/`, other corpus projects, other tickets, or existing tests. Adding your project's id to `corpus/projects/index.json` is allowed.
+- Never run code from downloaded archives under `ttmp/**/sources/`.
+- Commit at sensible points on your current branch with messages starting `IRWB-016:`. Do not push.
+- Final message: what you built (paths), how it was checked (commands and results), what deviates from the design, and the commit hashes.
+Your ticket is IRWB-016. Your design document is `ttmp/2026/11/26/IRWB-016--f32-dsp-corpus-playground/design-doc/01-f32-dsp-corpus-playground.md`.
+
+</details>
+
+The implementation should expose the butterfly and recurrence as optimization workloads, with both compiler parity and numerical correctness checked independently.
+
+### Implementation and rationale
+
+- Added the Typed source, metadata, notes and comparison script under `corpus/projects/f32-dsp/`, with the butterfly's real-product sum as the default focus.
+- Used DataView to encode the fixed tables as little-endian f32 words. The notes explain the float layout and point to the butterfly and inlining site.
+- The default loader probe via `Program.fromProject` returned `ok null [ 'fft', 'dot3', 'biquadBank' ]`. Buffers do not require frame-array ingest. Retained generation for all three functions as specified in the design.
+
+### Evidence and review
+
+- `npm run build` exited 0 before loading any built modules.
+- `node tools/parity.mjs f32-dsp` reported 9 revisions, 300/300 decided agreements, zero limits and zero failures.
+- The reviewed design proposes changing the reference-check tool. The implementation instructions exclude changes to tools, and the local tool iterates all projects even when given a project argument. The project test will call the signature-aware stock reference runner directly.
+- Review the two complex sample loads before the bit-reversal stores and the filter's history update order in `main.typed`. The following step checks both with independent numerical oracles.
