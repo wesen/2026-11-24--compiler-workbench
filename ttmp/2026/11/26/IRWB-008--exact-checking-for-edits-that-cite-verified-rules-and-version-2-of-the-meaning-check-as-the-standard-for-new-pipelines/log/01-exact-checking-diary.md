@@ -266,3 +266,156 @@ Three findings follow, and they change the order of the plan: the validator need
 
 ### Technical details
 - Local indices in the printed trees: Blend's locals are `work n a b scale s i t7` (0–7), so `get#6` is `i` and `get#1` is `n`.
+
+## Step 5: The guide's first draft
+
+With the system read and the measurements in, I wrote the whole guide in one pass: Part 1 the system (revisions and what lies outside the hash, `Tx` and edit records, provenance and correspondence, `applyPass`, version 1, the memo, version 2, the rules and their evidence, the mutation results), Part 2 the measurements, Part 3 the design, Part 4 risks, falsification, future work and related work, Part 5 the plan. The design follows the measurements more than the brief's wording in one respect: since the validator re-derives without citations, it comes first and runs in shadow mode on O2, and the rule-citing variants come later, for provenance.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** The guide's content list in the brief, every number with its source, related work only where certain.
+**Inferred user intent:** A design an intern can implement and falsify.
+**Commit (code):** none yet (committed after the second pass).
+
+### What I did
+- `docmgr doc add --ticket IRWB-008 --doc-type design-doc --title "Intern guide: exact checking for edits that cite verified rules, and version 2 of the meaning check for new pipelines"`, then wrote the document (30 sections).
+- Checked two claims before relying on them: `Program.why` reads `origin[0]` only (`program.ts:469`), and the only read of `origin` in `src/typed/passes.ts` is `revisionCorrespondence` (`:140`); `sccp.ts`, `specialize.ts` and `analyses.ts` read none. So origins cannot change a pass's decisions, and a pipeline of citing variants makes O2's programs up to origins.
+
+### Why
+- Writing the whole draft before reviewing is the writing guidance's first pass; the review notes come next, separately.
+
+### What worked
+- The design's main pieces each rest on a measured or read fact: re-derivation (1,232 of 1,232), semantic part keys (the memo's closure keys, IRWB-004), citations in three places (the `algebra` edit), version 3's cost (an estimate from 0.419 ms per run, labelled as one).
+
+### What didn't work
+- Nothing failed.
+
+### What I learned
+- `Program.apply(pass, { check: false })` (`program.ts:256`) publishes a revision without any contract. An exact step applied after it would inherit no acceptance. The chain assumption of the design is therefore a real precondition, which the version 3 contract must check rather than assume.
+
+### What was tricky to build
+- Keeping three different "1,232"s apart: IRWB-006's 1,232 comparisons (616 steps, each compared twice) and this ticket's 1,232 re-derived edits (394 + 838) are unrelated. The draft used both; the review must remove the collision.
+
+### What warrants a second pair of eyes
+- The cost estimates for version 2 on Candela (section 21) assume a version 2 run costs what a version 1 run costs.
+
+### What should be done in the future
+- The second pass (Step 6).
+
+### Code review instructions
+- `$T/design-doc/01-intern-guide-exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-for-new-pipelines.md`.
+
+### Technical details
+- N/A.
+
+## Step 6: Second pass: the draft reread as its reader, review notes before revising
+
+I reread the whole draft (821 lines) as a newcomer would, writing down each place where a reader would ask "what is this for?", "which thing does this mean?" or "is that true?", and checking the claims that carry the argument against the code. The notes are below, split into comprehension gaps and technical corrections; the revision applies them all (Step 7).
+
+The most consequential finding is a correction to the design itself. The draft made the version 3 check *require* that its input had been accepted, and listed a violated chain assumption as a risk. Rereading it against the memo's mechanics shows the requirement is unnecessary. A verdict is replayed only if it was decided on a closure with the same semantic key, so the chain argument is carried by the memo case by case, and a revision published with `check: false` simply has its cases run. The precondition becomes a property the existing reuse-on/reuse-off test already measures.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Second pass: reread it as its reader and revise."
+**Inferred user intent:** A guide that a newcomer can follow without the author.
+**Commit (code):** none.
+
+### What I did
+- Read the draft in four parts with the editor's reader, and checked: `Program.why` reads `origin[0]` only (`program.ts:469`); the evaluator counts executed statements (`++steps > limit`, `evaluate.ts:454`); `constprop` calls `tx.rewrite` once per block, not once per function (`passes.ts:296–297`); the prototype's re-derivation is lines 47–99 of script 01.
+
+### Review notes: comprehension gaps
+1. Introduction: "40 of 949 deliberately wrong programs" gives no context for 949. State that of 1,144 mutants, 949 were shown wrong on a specified input.
+2. §11: "three ways", with a four-row table that follows.
+3. §12: a reader will ask how the validator knows which table a pass used. Point forward to §17 ("any verified set will do").
+4. §15: "roughly a three-hundredth" is vague and not quite the ratio (22 ms / 6,198 ms = 1/282). Give the two numbers.
+5. §16 link 3 and §18: nothing says why inconclusive cases stay inconclusive after a derived step. The skeleton is unchanged and the evaluator counts executed statements, so the same statements run and the step limit is hit on the same cases. Say it in both places.
+6. §17: `tree(after, s[k])` is ambiguous (whose `s`?), and the algorithm does not say what happens when every field's tree is structurally equal but ids differ. Name it "unchanged up to ids and origins".
+7. §19 table header "what an error in it would need" reads oddly. Rename it "what would have to be wrong".
+8. §20: "applies a table bottom-up to a fixed point" is wrong: `Tx.rewrite` makes one bottom-up walk and does not revisit a replacement. Say "in one bottom-up walk".
+9. API references: Part 1 cites functions with line numbers, but nothing gives the implementer one table of the existing signatures to call. Add one to §30.
+10. A short glossary at the end for the terms the design introduces (derived, residual, semantic key, skeleton, citation, version 1/2/3).
+
+### Review notes: technical corrections
+11. §9: "1,232 comparisons on the corpus" (IRWB-006: 616 steps compared twice) collides with this ticket's 1,232 re-derived edits. Rephrase IRWB-006's number as 616 steps.
+12. §3: "`simplify`, `fold`, `constprop` and `strength` are all written as one call to it"; `constprop` calls it per block. Say "are written with it".
+13. §3 table: `licm` also makes `retarget` edits (8 on the corpus).
+14. §6: "No Typed check produces `checked-exact` today" needs its source (IRWB-002 item D3).
+15. §8: "kills every mutant version 1 kills at the same count" is imprecise, because IRWB-005 step 5 found the gate non-monotone under the no-decided-case rule. Say instead that every disagreement version 1 finds, version 2 finds too.
+16. §10: "33 of the 40 … loop forever (an increment `i + 1` became `i + 0`)": step 8 gives that as one cause of two. Say "for example".
+17. §12 and §17: "about 60 lines" should be about 50.
+18. §16, §17 trust table, §21 pseudocode and §22, §23 risks, §24 F6: the chain assumption, as above. Replace "require: input accepted" with replay-by-semantic-key, and make F6 the reuse-on/reuse-off identity test.
+19. §21: "about a ninth of what version 2 would cost without keys": 54 / 290 is about a fifth.
+20. §27 Phase 2 acceptance: add identical evidence with reuse on and off under version 3.
+
+### What worked
+- Every number in the draft was traced to its source file or diary step; besides items 11, 17 and 19, none needed correcting.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The memo makes the compositional argument mechanical. Each replayed verdict was decided on content with the same semantic key, so "r(k) agrees with r0 on C" holds case by case without a separate claim about the history of acceptance.
+- Script 01's local strength order (`STRENGTH_ORDER`) puts `by-construction` above `reduced-width+argument`, the reverse of the guide's order. No re-derived edit fires rules from both tables, so the reported "weakest" counts are the same under either order.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- That memo replay alone carries the chain: this relies on the alias map holding only derivations, and on `closureKey` capturing every dependency, which is IRWB-004's open review point.
+
+### What should be done in the future
+- Apply the notes (Step 7).
+
+### Code review instructions
+- Compare the guide before and after the next commit.
+
+### Technical details
+- N/A.
+
+## Step 7: Revision from the review notes, and IRWB-005's final numbers
+
+I applied all twenty review notes of Step 6. While I was revising, the coordinator reported that IRWB-005 had finished and been merged into `irwb-001/import-v6-prototype`, with final head `bff08a6`, and that some of its numbers had changed after a deep search and a classification audit. I verified each figure in IRWB-005's diary at that commit (steps 19–22) and in its vault report (§5, §7.4, §15) before using it. The guide now cites `bff08a6` throughout.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator message (summarized): IRWB-005 merged, final head `bff08a6`. Use the final numbers from its diary up to step 22 and report §15: corpus 1,144 mutants, 192 equivalent; default 909 of 952 killed, 43 accepted, 83.1 %..95.5 %; 33 of the 43 diverge, 30 of them a loop increment made `+0`; version 2 accepts 5 (99.5 %) at about twice the default's time; Candela 96.8 % upper, 87.4 % lower being the safer figure; the five recommendations of report §15 are undecided and the user's, the first a correctness fix (records laid out by offset; `K` scrambled in the cases of 168 functions). No reply needed.
+**Assistant interpretation:** Replace the `d9cf4e9` figures with verified final ones, and present the recommendations as the user's open decisions.
+**Inferred user intent:** A guide that does not repeat superseded numbers.
+**Commit (code):** see the commit after this step.
+
+### What I did
+- Read IRWB-005 at `bff08a6` through the shared repository from this worktree: its log of the last eight commits; its diary steps 19–22 and `various/13-candela-summary.txt` (TOTAL rows) at that commit; the source diff between `d9cf4e9` and `bff08a6` restricted to `src/` (empty, so the cited line numbers of `cases-strong.ts` stand, which a grep of that file at `bff08a6` confirmed); and §5, §7.4 and §15 of the IRWB-005 vault report (read only).
+- Edits to the guide: the introduction (1,144 / 952 / 43 / 5); conventions (`bff08a6`); §3 (`constprop` calls `Tx.rewrite` per block; `licm` makes `retarget`); §6 (source of "no `checked-exact`"); §8 (superset of disagreements, not of kills); §9 (IRWB-006's 616 steps); §10 (final table, lower bounds, Candela follow-up, the five recommendations); §11 ("four ways"); §12 (50 lines; how the validator picks a table); §15 (22 ms against 6,198 ms); §16 (step limit; the chain carried by replay, `check: false`); §17 (notation, "unchanged up to ids", trust-table row for the memo); §18 (two more safety points); §19 (table header); §20 ("one bottom-up walk"); §21 (no `require` line; "a fifth"); §22 (replay chain); §23 (risk: memo keys); §24 (F4 thresholds 99.5 % / 99.9 % / 97.2 %; F6 reuse identity); §27 (rebase onto the merged branch; F6 in Phase 2); §29 (open question 6); §30 (existing-API table); §31 (glossary).
+- A grep of the guide for stale figures and phrases (`99.8`, `95.8`, `97.3`, `97.7`, `97.6`, `d9cf4e9`, "accepted revision", "assumption", "ninth", "60 lines", "three ways", "1,232 comparisons", "fixed point"): only intended occurrences remain.
+
+### Why
+- The final figures supersede the earlier ones. The deep search found 3 more wrong mutants on the corpus (95.8 % → 95.5 %; version 2 99.8 % → 99.5 %), and the audit moved 29 Candela mutants from equivalent to wrong (97.3 % → 96.8 %; version 2 97.7 % → 97.2 %).
+
+### What worked
+- Verified final figures:
+  - Corpus, default gate: 909 killed, 43 wrong, 192 equivalent (26 proved, 24 specification-only, 142 presumed), 83.1 %..95.5 %.
+  - Wrong mutants accepted per gate on the final records: default 43, default80 40, check100 39, strong-cases 39, default+div 10, strong 5, strong-cov 5 (step 20).
+  - Candela TOTAL rows: default 3,429 / 114 / 388, 87.4 %..96.8 %; check100 67, 98.1 %; strong 100, 97.2 %; default+div 113, 96.8 % (step 19).
+  - Follow-up on `s9_sdf_0` and `s10_mat_1`: 400 random cases kill 180 of 242, version 2 120, coverage 121, default 110 (step 21).
+  - Report §5: 30 of the 33 divergent mutants are `const −1` on a loop increment.
+
+### What didn't work
+- My first attempt to append this step with a shell heredoc was refused by the worktree isolation check ("this command names git in a form too complex to verify that it stays inside the worktree"), because the step's text quoted git commands; appended with the editor instead.
+- My first edit of §10 said version 2 "already contains the first four" recommendations. Recommendation 4 lists three NaNs, and version 2's `F32_EXTRA` has two of them (0xffc00000 and 0x7fa00000, not 0x7fc00001). I corrected it to "the first three, and two of the fourth's three NaNs".
+
+### What I learned
+- The held-out r0 measurement (96.2 % / 99.9 %, step 12) was not deep-searched, so it is not directly comparable with the heads' final 95.5 % / 99.5 %. The guide says so in the table.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The F4 threshold for Candela (97.2 % upper) inherits the unresolved presumed equivalents there; IRWB-005 names 87.4 % (lower) as the safer figure.
+
+### What should be done in the future
+- docmgr bookkeeping, commit, upload (Step 8).
+
+### Code review instructions
+- Diff the guide between the next commit and `635d2ff`.
+
+### Technical details
+- N/A.
