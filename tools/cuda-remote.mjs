@@ -10,7 +10,10 @@
 // --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so concurrent timed
 // users do not disturb each other's timings. Untimed runs do not wait for it.
 // Prints one JSON object: { host, hash, compiled, compileMs, runMs, exit, stdout, stderr, outputs }.
-// Environment: CUDA_REMOTE_HOST (default manuel@bling), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
+// Environment: CUDA_REMOTE_HOST (default manuel@bling, the Tailscale name; bling.local resolves only on the home
+// LAN), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
+// Inside the Codex sandbox, ssh needs network access (-c sandbox_workspace_write.network_access=true); without it,
+// agents request escalation instead.
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync, mkdirSync } from 'node:fs';
