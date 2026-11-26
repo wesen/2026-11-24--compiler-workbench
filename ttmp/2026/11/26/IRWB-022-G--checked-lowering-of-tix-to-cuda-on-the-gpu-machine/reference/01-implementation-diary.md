@@ -182,3 +182,7 @@ No production source, existing tool, tests or corpus files changed at this check
 ## Step 2: Review revision
 
 Accepted both timing corrections and the proposed cut: preload functions before normal timing, emit `--benchmark` in the same main, and reuse process-local verdicts without remote identity queries. Runtime arguments change execution but not compilation. Keep per-job directories for concurrent identical inputs. The reviewer measured 0.115 vs 0.004 ms before/after preload on GB10. Base design: `35e01c4`. Next: implement and check the reviewed stage.
+
+## Step 3: Batch-only differential engine
+
+Implemented the approved spec variant and guards in `differential.ts`; no change to local worker execution. An initial `npm run build` reported TS2345 on `runDifferential(spec, ...)` because the sync entry accepted only local specs. Narrowing inside that entry makes the runtime sync-mode diagnostic reachable for both TS and JS callers. Rebuild passed. `node --test tests/framework/batch-differential.test.mjs` passed cold, replay, partial replay, failure/retry and forbidden sync paths. Wider regressions follow integration.

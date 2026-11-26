@@ -161,3 +161,7 @@ These rules enforce use of the explicit effect port. They do not sandbox arbitra
 ## Scope
 
 This module implements semantic pass contracts and analysis management. It does not introduce a universal AST, generic rewrite matcher, transaction-based IR editor, e-graph, static effect inference, persistent cache backend or formal proof engine. Those are separate architectural layers.
+
+## Batch-only differential checks
+
+Use `BatchDifferentialSpec` when an engine has no local synchronous evaluator. Supply `cases`, `decide` and optionally `baselineKey`/`subjectKey`; do not supply `run` or `compare`. `decide(inputs, cases, todo)` must resolve one verdict per requested index, in order. Throw on transport/protocol failures rather than reporting agreement or caching an inconclusive verdict. An invariant check or `runDifferentialAsync` awaits the batch and reuses decided cases. `runDifferential` and worker extraction (`differentialSpec`) reject a batch-only specification.
