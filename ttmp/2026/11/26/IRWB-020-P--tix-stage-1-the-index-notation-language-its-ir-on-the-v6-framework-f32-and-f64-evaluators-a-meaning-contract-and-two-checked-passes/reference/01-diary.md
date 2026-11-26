@@ -584,3 +584,95 @@ errors, the bound, the verdict table, and the manager path.
 ### Technical details
 
 - `tests/tensor/helpers.mjs` holds the corpus loader, the test data generator and `sameBits`.
+
+## Step 8: Diagnose the evaluation's failures, write the report
+
+The independent evaluation passed 22 of 25 hidden tests. All three failures are one compile error, and its cause is
+a rule I added to the language that the task did not state. I changed no code in this step, as instructed.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Turn 3 for IRWB-020-P: your stage-1 implementation has been evaluated; diagnose the failures and write your final report. Same rules as before (your worktree only, no push)." followed by the results (hidden suite 22/25 at revision `2f82984`, the three failures all with `5:8: 'x' is a tensor and cannot be an index`; 25/25 with one index renamed; cross-check 180/180 in f32 and f64; `inline` and `split-sum` accepted and correct on 60/60) and the instructions: no changes under `src/`, `tests/` or `corpus/`; diagnose every failure with `file:line` in the diary; write `reference/02-report.md`; commit.
+
+**Assistant interpretation:** Find the cause of the three failures, say whether the result is right, and write the
+publishable report.
+
+**Inferred user intent:** An honest account of what was built and measured, including what failed and why.
+
+### What I did
+
+- Wrote `scripts/04-repro-index-named-like-tensor.mjs` and ran it against the built evaluated revision.
+- Wrote `reference/02-report.md`.
+
+### Why
+
+- One error message appears in all three failures, so one reproduction covers them.
+
+### What worked
+
+Output of the reproduction:
+
+```
+index named x (also the input tensor): 4:8: 'x' is a tensor and cannot be an index
+index renamed to e: compiles; result 1.6823840141296387
+1:29: 'y' is a tensor and cannot be an index   <- fn f(a: f32[N]): f32[N] { y[y] = a[y]; return y; }
+1:38: 'a' is a tensor and cannot be an index   <- fn f(a: f32[N]): f32[N] { y[i] = sum(a) a[a] * 0 + a[i]; return y; }
+```
+
+### What didn't work
+
+The three failures and their one cause:
+
+| Hidden test | Cause |
+| --- | --- |
+| f32 meaning, bit-exact: mlp | `src/tensor/check.ts:123-124` |
+| f64 precision against an f64 reference: mlp | `src/tensor/check.ts:123-124` |
+| optimizeTix inline on the corpus programs | `src/tensor/check.ts:123-124` (the suite's mlp is one of the programs) |
+
+`check.ts:123-124`, in `bind`, the function that brings an index into scope:
+
+```ts
+if (tensors.has(n.name) || n.name === s.name)
+  throw new TixError(n.pos, `'${n.name}' is a tensor and cannot be an index`);
+```
+
+The suite's mlp has `y[i, x] = (sum(f) g[i, f] * w2[f, x]) + b2[x];` where `x` is also the input tensor.
+
+### What I learned
+
+- The rule comes from my design, section 3, rule 2: "shape names, tensor names and index names are disjoint sets".
+  Only part of it has a reason. An index must not share a name with a *shape*, because a bare name in an expression
+  is a shape value and the `max(` rule decides call or reduction by shape names. An index and a *tensor* cannot be
+  confused: a tensor name occurs only before `[`, an index name only inside subscripts and binder lists.
+- Nothing after the checker depends on the rule. `validateTix` keeps `bound` (indices) and `rank` (tensors) apart;
+  `evaluateFn` keeps index slots and the tensor map apart; `inlineFn` substitutes index names only inside affine
+  forms; `splitFn` makes fresh names against index and shape names. Deleting lines 123-124 would accept the program.
+  I did not delete them: the evaluated revision stays as it is.
+- I think the suite's result is right and the failure is mine. The brief does not say the names may coincide, but
+  it gives a grammar in which they can, and I narrowed it.
+- My tests did not find it because my corpus mlp, and every test program I wrote, uses index names that are not
+  tensor names. The test list even asserts the restriction for shape names and never tries a tensor name.
+
+### What was tricky to build
+
+- N/A.
+
+### What warrants a second pair of eyes
+
+- The same reasoning applies to "no shadowing" (design rule 5): `sum(j) a[i, j] + sum(j) b[i, j]` parses as a
+  nested reduction that rebinds `j` and is rejected. The hidden suite and the 60 random programs did not exercise
+  it, so I do not know which reading they take.
+
+### What should be done in the future
+
+- Remove `check.ts:123-124` and add a test with an index named like a parameter and like the statement itself.
+- Decide the shadowing rule against the reference evaluator used in the cross-check.
+
+### Code review instructions
+
+- `npm run build && node ttmp/2026/11/26/IRWB-020-P--*/scripts/04-repro-index-named-like-tensor.mjs`.
+
+### Technical details
+
+- The error position `5:8` in the suite and `4:8` in my reproduction differ by the suite's extra first line; both
+  point at the `x` in `y[i, x]`.
