@@ -242,7 +242,7 @@ export function guardText(g: Guard): string {
   if ('pure' in g) return `pure ${g.pure}`;
   if ('pow2' in g) return `pow2 ${g.pow2}`;
   if ('boolean' in g) return `bool ${g.boolean}`;
-  return `no trap ${g.op}(${g.noTrap.join(', ')})`;
+  return `no trap(${g.noTrap.join(', ')})`;
 }
 /** A rule as one line: `mul(x, #k) → shl(x, #log2 k) if pow2 k`. */
 export function ruleText(r: Rule): string {

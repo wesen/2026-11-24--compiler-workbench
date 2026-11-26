@@ -1,0 +1,78 @@
+simplify           add-zero         sound    proof                        48 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           zero-add         sound    proof                        59 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           sub-zero         sound    proof                        59 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           sub-self         sound    proof                        90 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           mul-one          sound    proof                        76 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           one-mul          sound    proof                        76 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           mul-zero         sound    proof                        88 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           zero-mul         sound    proof                        87 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           mul-pow2         sound    proof                      3477 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           pow2-mul         sound    proof                      3781 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           div-one          sound    exhaustive               131445 ms  structural,exhaustive-w8,random-32,exhaustive-32
+simplify           or-zero          sound    proof                       209 ms  structural,bitwise-w1,exhaustive-w8,random-32
+simplify           xor-zero         sound    proof                       368 ms  structural,bitwise-w1,exhaustive-w8,random-32
+simplify           shl-zero         sound    proof                       375 ms  structural,symbolic-linear,exhaustive-w8,random-32
+simplify           shr-zero         sound    exhaustive               170119 ms  structural,exhaustive-w8,random-32,exhaustive-32
+simplify           shru-zero        sound    exhaustive               236482 ms  structural,exhaustive-w8,random-32,exhaustive-32
+simplify           and-zero         sound    proof                       191 ms  structural,bitwise-w1,exhaustive-w8,random-32
+simplify           and-ones         sound    proof                       175 ms  structural,bitwise-w1,exhaustive-w8,random-32
+simplify           not-lt           sound    reduced-width+argument      359 ms  structural,exhaustive-w8,random-32
+simplify           not-ge           sound    reduced-width+argument      517 ms  structural,exhaustive-w8,random-32
+simplify           not-gt           sound    reduced-width+argument      285 ms  structural,exhaustive-w8,random-32
+simplify           not-le           sound    reduced-width+argument      311 ms  structural,exhaustive-w8,random-32
+simplify           not-eq           sound    reduced-width+argument      258 ms  structural,exhaustive-w8,random-32
+simplify           not-ne           sound    reduced-width+argument      207 ms  structural,exhaustive-w8,random-32
+simplify           not-ltu          sound    reduced-width+argument      228 ms  structural,exhaustive-w8,random-32
+simplify           not-geu          sound    reduced-width+argument      247 ms  structural,exhaustive-w8,random-32
+simplify           not-not          sound    exhaustive                  271 ms  structural,exhaustive-w8,random-32,exhaustive-32
+fold               fold-eqz         sound    by-construction             225 ms  structural,by-construction,random-32
+fold               fold-fadd        sound    by-construction             353 ms  structural,by-construction,f32-special
+fold               fold-fsub        sound    by-construction             397 ms  structural,by-construction,f32-special
+fold               fold-fmul        sound    by-construction             456 ms  structural,by-construction,f32-special
+fold               fold-fdiv        sound    by-construction             430 ms  structural,by-construction,f32-special
+fold               fold-fmin        sound    by-construction             445 ms  structural,by-construction,f32-special
+fold               fold-fmax        sound    by-construction             472 ms  structural,by-construction,f32-special
+fold               fold-fcopysign   sound    by-construction             542 ms  structural,by-construction,f32-special
+fold               fold-feq         sound    by-construction             717 ms  structural,by-construction,f32-special
+fold               fold-fne         sound    by-construction             603 ms  structural,by-construction,f32-special
+fold               fold-flt         sound    by-construction             581 ms  structural,by-construction,f32-special
+fold               fold-fgt         sound    by-construction             441 ms  structural,by-construction,f32-special
+fold               fold-fle         sound    by-construction             414 ms  structural,by-construction,f32-special
+fold               fold-fge         sound    by-construction             426 ms  structural,by-construction,f32-special
+fold               fold-fneg        sound    by-construction             392 ms  structural,by-construction,f32-special
+fold               fold-fabs        sound    by-construction             528 ms  structural,by-construction,f32-special
+fold               fold-fsqrt       sound    by-construction             446 ms  structural,by-construction,f32-special
+fold               fold-i2f         sound    by-construction             444 ms  structural,by-construction,random-32
+fold               fold-u2f         sound    by-construction             389 ms  structural,by-construction,random-32
+fold               fold-f2bits      sound    by-construction             382 ms  structural,by-construction,f32-special
+fold               fold-bits2f      sound    by-construction             369 ms  structural,by-construction,random-32
+fold               fold-add         sound    by-construction             505 ms  structural,by-construction,random-32
+fold               fold-sub         sound    by-construction             636 ms  structural,by-construction,random-32
+fold               fold-mul         sound    by-construction             573 ms  structural,by-construction,random-32
+fold               fold-and         sound    by-construction             375 ms  structural,by-construction,random-32
+fold               fold-or          sound    by-construction             370 ms  structural,by-construction,random-32
+fold               fold-xor         sound    by-construction             369 ms  structural,by-construction,random-32
+fold               fold-shl         sound    by-construction             426 ms  structural,by-construction,random-32
+fold               fold-shr         sound    by-construction             489 ms  structural,by-construction,random-32
+fold               fold-shru        sound    by-construction             537 ms  structural,by-construction,random-32
+fold               fold-eq          sound    by-construction             467 ms  structural,by-construction,random-32
+fold               fold-ne          sound    by-construction             475 ms  structural,by-construction,random-32
+fold               fold-lt          sound    by-construction             427 ms  structural,by-construction,random-32
+fold               fold-gt          sound    by-construction             473 ms  structural,by-construction,random-32
+fold               fold-le          sound    by-construction             657 ms  structural,by-construction,random-32
+fold               fold-ge          sound    by-construction             454 ms  structural,by-construction,random-32
+fold               fold-ltu         sound    by-construction             540 ms  structural,by-construction,random-32
+fold               fold-geu         sound    by-construction             481 ms  structural,by-construction,random-32
+fold               fold-div         sound    by-construction             562 ms  structural,by-construction,random-32
+fold               fold-rem         sound    by-construction             466 ms  structural,by-construction,random-32
+unsound-candidates div-pow2-shr     unsound  -                             1 ms  structural,exhaustive-w8  {"bindings":{"x":-127,"k":2},"lhs":-63,"rhs":-64,"method":"exhaustive-w8","width":8}
+unsound-candidates mul-zero-impure  unsound  -                             0 ms  structural  x is dropped (1 on the left, 0 on the right) without pure(x): its traps or effects would change
+unsound-candidates fadd-pos-zero    unsound  -                             0 ms  structural,f32-special  {"bindings":{"x":-2147483648},"lhs":0,"rhs":-2147483648,"method":"f32-special","width":32}
+unsound-candidates fmul-pos-zero    unsound  -                             0 ms  structural,f32-special  {"bindings":{"x":-2147483648},"lhs":-2147483648,"rhs":0,"method":"f32-special","width":32}
+unsound-candidates fsub-self        unsound  -                             0 ms  structural,f32-special  {"bindings":{"x":2139095040},"lhs":2143289344,"rhs":0,"method":"f32-special","width":32}
+unsound-candidates not-flt          unsound  -                             0 ms  structural,f32-special  {"bindings":{"a":0,"b":2143289344},"lhs":1,"rhs":0,"method":"f32-special","width":32}
+unsound-candidates fadd-neg-zero    unsound  -                             0 ms  structural,f32-special  {"bindings":{"x":2143289345},"lhs":2143289344,"rhs":2143289345,"method":"f32-special","width":32}
+f32-candidates     fneg-fneg        sound    exhaustive               941672 ms  structural,f32-special,exhaustive-32
+f32-candidates     fabs-fneg        sound    exhaustive              2487554 ms  structural,f32-special,exhaustive-32
+{"rules":67,"ms":3997858}
+node   3481.76s user 2.42s system 87% cpu 1:06:38.03 total

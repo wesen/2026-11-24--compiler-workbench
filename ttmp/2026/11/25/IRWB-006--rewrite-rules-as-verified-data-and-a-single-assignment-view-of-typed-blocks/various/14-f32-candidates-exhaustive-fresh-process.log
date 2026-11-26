@@ -1,0 +1,4 @@
+fneg-fneg sound exhaustive 306203 ms structural:pass,f32-special:pass,exhaustive-32:pass
+fabs-fneg sound exhaustive 622828 ms structural:pass,f32-special:pass,exhaustive-32:pass
+
+[exited with code 0]

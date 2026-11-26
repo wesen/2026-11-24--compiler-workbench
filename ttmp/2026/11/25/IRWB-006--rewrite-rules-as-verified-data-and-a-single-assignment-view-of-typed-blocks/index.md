@@ -16,6 +16,14 @@ RelatedFiles:
       Note: dominators and reaching definitions the SSA view is checked against
     - Path: repo://src/typed/passes.ts
       Note: simplify and fold, the passes turned into rule tables
+    - Path: repo://src/typed/rules/compile.ts
+      Note: 'rule compiler: a rule table to a Tx.rewrite visitor'
+    - Path: repo://src/typed/rules/verify.ts
+      Note: the rule verifier and its methods
+    - Path: repo://src/typed/sccp.ts
+      Note: sccp and O2-sccp, the first SSA consumer
+    - Path: repo://src/typed/ssa.ts
+      Note: typed.ssa, the SSA view, and checkSsa
     - Path: repo://src/typed/tx.ts
       Note: Tx.rewrite, the only way a rule changes a program
 ExternalSources: []

@@ -130,6 +130,12 @@ export function compileSide(
         const a = p(env);
         return a === TRAP ? TRAP : +(a === 0);
       };
+    const u = w === 32 ? F32_UNARY[o] : undefined;
+    if (u)
+      return env => {
+        const a = p(env);
+        return a === TRAP ? TRAP : u(a);
+      };
     return env => opW(o, [p(env)], w);
   }
   const [p, q] = parts;
@@ -139,6 +145,13 @@ export function compileSide(
       const a = p(env),
         b = q(env);
       return a === TRAP || b === TRAP ? TRAP : f(a, b, w);
+    };
+  const g = w === 32 ? (F32_BINARY[o] ?? F32_COMPARE[o]) : undefined;
+  if (g)
+    return env => {
+      const a = p(env),
+        b = q(env);
+      return a === TRAP || b === TRAP ? TRAP : g(a, b);
     };
   return env => opW(o, [p(env), q(env)], w);
 }

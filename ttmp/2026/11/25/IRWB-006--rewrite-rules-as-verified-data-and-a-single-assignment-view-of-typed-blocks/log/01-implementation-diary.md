@@ -344,7 +344,7 @@ B2 needs the meaning of a rule's two sides independent of any program, and metho
 **User prompt (verbatim):** see Step 1.
 **Assistant interpretation:** A1: dominator tree, frontiers, phis, renaming, a mapping back, validation against reaching definitions on every corpus function and Candela r0.
 **Inferred user intent:** A sparse representation that is trustworthy because it is checked against the analysis it replaces.
-**Commit (code):** see Step 9.
+**Commit (code):** a74063b — "IRWB-006 A1/A2: typed.ssa … agrees with reaching definitions on every corpus revision and Candela r0; sccp and O2-sccp outside the registries; framework pattern cross-check; diary steps 6-9"
 
 ### What I did
 - `scripts/05-ssa-check-corpus.mjs`: every project, O2, every revision (r0 included): `typed.reaching`, `typed.ssa` and `typed.liveness` through a fresh `AnalysisManager`, then `checkSsa` and `deadPhis` for every function. The first run iterated `p.revisionList()`, which has hashes and no artifacts, and checked nothing (`"revisions": 0`); fixed to `p.revisions`.
@@ -356,6 +356,7 @@ B2 needs the meaning of a rule's two sides independent of any program, and metho
 
 ### What worked
 - Corpus (`various/09-ssa-check-corpus.json`): at r0, 70 functions, 794 gets, 1,033 (definition, use) pairs, 1,004 names, 228 phis of which 115 dead, 0 mismatches, 0 violations. Over all 194 revisions: 306 function instances, 3,329 gets, 4,392 pairs, 996 phis (509 dead), 0 unreachable blocks, 0 mismatches, 0 violations. Time over all revisions: `typed.ssa` 556 ms, `typed.reaching` 667 ms.
+- Blend at r0: the phis, names and use mapping that the guide (section 20) predicted before any code existed are exactly what `ssaOf` produces (`bb:blend.1`: `s.2 = φ(bb:blend.0: s.1, bb:blend.7: s.3)`, `i.2`, `t7.1`; `reachingDefs('i.2')` = `[s:blend.11, s:blend.2]`); `tests/typed/ssa.test.mjs` asserts them.
 - Candela r0 after the fix (`various/10-ssa-check-candela.json`): 332 functions, 2,409 blocks, 14,598 gets, 16,800 pairs, 23,850 names, 4,245 phis (2,840 dead, 67 %; at most 1,877 in one function), 0 unreachable blocks, 0 entry loops, 0 mismatches, 0 violations. `typed.reaching` 5,341 / 3,287 / 3,040 ms; `typed.ssa` 1,270 / 1,162 / 1,210 ms; the check 879 ms. Fact sizes as JSON: reaching 10,718,740 bytes, ssa 3,400,010 bytes (3,399,774 before the fix).
 
 ### What didn't work
@@ -394,7 +395,7 @@ B2 needs the meaning of a rule's two sides independent of any program, and metho
 **User prompt (verbatim):** see Step 1.
 **Assistant interpretation:** At least one consumer of the SSA view, e.g. an SCCP prototype measured against constprop, in a new pipeline, not O2.
 **Inferred user intent:** Evidence that the view pays for itself.
-**Commit (code):** see Step 9.
+**Commit (code):** a74063b — "IRWB-006 A1/A2: typed.ssa … agrees with reaching definitions on every corpus revision and Candela r0; sccp and O2-sccp outside the registries; framework pattern cross-check; diary steps 6-9"
 
 ### What I did
 - Scratch run on `function f(n) { let x = 1; let y = 0; if (x === 1) { y = 7; } else { y = 9; } return y + n; }`. A first version with `==` failed in the front end: `LiftError: expected bool, got i32` (Typed wants `===`).
@@ -446,7 +447,7 @@ The guide's decision (Step 2) was to apply rules through `Tx.rewrite` and only c
 **User prompt (verbatim):** see Step 1.
 **Assistant interpretation:** The brief says the framework's rule engine may be used as is; evaluate it and record why it is or is not used.
 **Inferred user intent:** No parallel rule machinery without a measured reason.
-**Commit (code):** see Step 10.
+**Commit (code):** a74063b (with Steps 7 and 8)
 
 ### What I did
 - `scripts/08-framework-pattern-crosscheck.mjs`: for every corpus project, r0 and O2's revision after `cfg, fold` (71 distinct revisions; some projects' `cfg, fold` change nothing), `openIR(art, blocksAdapter)`, then for each of the 67 rules `searchPattern(view, toNodePattern(rule).pattern, { maxSteps: 1e7, maxMatches: 1e6 })`, counting distinct match roots, and `matchPat(rule.lhs, …)` over every value (no guards on either side). Timed both.
@@ -480,3 +481,97 @@ The guide's decision (Step 2) was to apply rules through `Tx.rewrite` and only c
 
 ### Technical details
 - Decision recorded (task qkls): rules are applied by the compiled visitor; the framework's engine is not used for application, for three reasons — its edits do not allocate through `Tx` (no Typed origins, ids outside the counters), it publishes one artifact per application, and its repeat semantics differ (this step, measured).
+
+## Step 10: Recorded evidence, the rules listing, the tests
+
+The evidence run (`scripts/04-verify-rules.mjs`, 10⁶ random assignments, exhaustive 2³² checks on) took 66.6 minutes and wrote `src/typed/rules/evidence.ts` and `various/08-rule-evidence.json`. Every table rule is sound with the expected strength, every unsound candidate is rejected, and the two sound f32 candidates are exhaustive. With the evidence in place, the rules test (9 tests), the SSA test (6 tests) and `wb.rules()` (both tables at 72 columns) pass.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** B2's "each rule carries recorded evidence" and "a test with a deliberately unsound rule"; the workbench listing (tiles are 72 columns).
+**Inferred user intent:** Evidence that is checked in, pinned to the rule it was computed for, and visible where rules are shown.
+**Commit (code):** see the commit after this step.
+
+### What I did
+- Started `(time node …/scripts/04-verify-rules.mjs) > …/various/08-rule-evidence.log 2>&1` in the background before Step 7, then built SSA, SCCP and the cross-check while it ran.
+- The run spent most of its time on the two sound f32 candidates (`fneg-fneg`, `fabs-fneg`), whose exhaustive 2³² check went through `opW` (an array per call). While it ran I changed `compileSide` to call `F32_UNARY`/`F32_BINARY`/`F32_COMPARE` directly at 32 bits; a scratch benchmark of `fneg-fneg`'s closures alone went from 795 ms to 411 ms per 2²⁴ inputs. The running process kept the old code. `scripts/11-f32-candidates-exhaustive.mjs` timed both candidates in a fresh process with the new code (`various/14-…log`).
+- To build and test SSA before the evidence existed, I wrote a placeholder `evidence.ts` (empty record); the run overwrote it. The rules test failed on the placeholder exactly where expected (3 tests: evidence present, fast re-run agreement, listing shows `none`), and passed after.
+- `npx prettier --write` on the generated file and the new sources, `npm run build`, `node --test tests/typed/rules.test.mjs`, and `wb.rules()` through `createWb()` (`various/15-wb-rules-listing.txt`).
+- Replaced an awkward assertion on `fmul-pos-zero`'s counterexample with the property: the replacement is +0 and the original is not.
+
+### Why
+- Pinning by fingerprint: a test compares each record's `fingerprint` with `ruleFingerprint(rule)`, so editing a rule without re-running the verifier fails the test suite.
+- The "fast re-run agreement" test re-verifies every table rule with 2,000 random assignments and requires the same verdict and, except where only exhaustive-32 distinguishes, the same strength; it keeps `evidence.ts` honest against changes to the verifier.
+
+### What worked
+- Totals (`various/08-rule-evidence.json`): `simplify` 15 proof, 4 exhaustive, 8 reduced-width+argument; `fold` 40 by-construction; unsound candidates 7 of 7 rejected; f32 candidates 2 sound, exhaustive.
+- Times in the recorded run: proved rules 48 ms (`add-zero`) to 3,781 ms (`pow2-mul`); `fold` 18.7 s for all 40; exhaustive checks `div-one` 131,445 ms, `shr-zero` 170,119 ms, `shru-zero` 236,482 ms (with other milestone scripts sharing the machine); `fneg-fneg` 941,672 ms, `fabs-fneg` 2,487,554 ms; whole run 3,997,858 ms (`time`: 3,481.76 s user, 1:06:38 wall clock).
+- Fresh process with direct f32 calls: `fneg-fneg` 306,203 ms, `fabs-fneg` 622,828 ms, both sound and exhaustive.
+- `node --test tests/typed/rules.test.mjs`: 9 of 9 pass (the subset equivalence test 23.8 s). `tests/typed/ssa.test.mjs`: 6 of 6.
+- `wb.rules()`: two tables, widest line 72 columns; `simplify` ends `27 rules: 15 proof, 4 exhaustive, 8 w8+argument`, `fold` ends `40 rules: 40 by evaluator`; `wb.rules('nope')` fails with `unknownRuleSet` and the fix `rule sets: simplify, fold`.
+
+### What didn't work
+- The evidence run took 67 minutes, most of it on two candidate rules outside the tables. The f32 candidates' exhaustive checks dominate: in the long-running process the same check cost about three times what it cost in a fresh one, even before the direct-call change. I did not profile it; the likely cause is that one process compiled closures for all 76 rules first. The table rules' evidence does not depend on those two candidates.
+
+### What I learned
+- `fneg` and `fabs` are single bit operations (`a ^ SIGN`, `a & 0x7fffffff`), so 71 ns per input in the fresh run is the cost of the verifier's loop, not of f32 arithmetic. An exhaustive f32 check of a richer rule would cost more; 2³² is the practical limit for one f32 variable.
+
+### What was tricky to build
+- Keeping the build green while the evidence did not yet exist: `listing.ts` and the workbench import `evidence.ts`, so the placeholder had to type-check (`Readonly<Record<string, RuleEvidence>>`).
+
+### What warrants a second pair of eyes
+- `evidence.ts` is generated and 2,086 lines after formatting; review the generator (`scripts/04-verify-rules.mjs`) and spot-check records rather than reading it.
+
+### What should be done in the future
+- Profile the exhaustive loop if more f32 rules need exhaustive evidence.
+
+### Code review instructions
+- `src/typed/rules/listing.ts` (`rulesListing`, `evidenceLabel`), `src/workbench/workbench.ts` (`rules`), `tests/typed/rules.test.mjs`.
+
+### Technical details
+- Evidence options recorded in the file: `{"random":1000000,"seed":7,"exhaustive32":true}`.
+
+## Step 11: Final frozen gates
+
+With the evidence recorded and every new test passing, the frozen gates were run on the final source. Everything is green and the corpus revisions are identical to the baseline recorded at the start.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** O2, its passes' results and the book's numbers stay frozen: the test files, the full passes and backend tests, parity, and the corpus revision diff.
+**Inferred user intent:** Nothing this milestone added changes what the compiler already did.
+**Commit (code):** see the commit after this step.
+
+### What I did
+- While the evidence was still running, `scripts/10-frozen-gates-part.sh various/13-gates-final` (the gates that do not import `evidence.ts`): `IRWB_FULL=1` passes and backend, `tools/parity.mjs`, and the corpus revisions against `various/01-baseline-corpus-revisions.txt`.
+- After the evidence and the rebuild: `node --test --test-concurrency=3 "tests/**/*.test.mjs"` into `various/13-gates-final/gate-npm-test.log`.
+
+### Why
+- Splitting the gates saved waiting time; the three gates of the first part depend on the passes, the backend and the evaluator, none of which changed after they ran (only `evidence.ts`, the listing and the tests did).
+
+### What worked
+- `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs`: 21 tests, 21 pass, 65.4 s.
+- Parity: `{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}`.
+- Corpus revisions: IDENTICAL to the baseline (44 lines).
+- Test files: 340 tests, 337 pass, 0 fail, 3 skipped (the environment-gated Candela tests), 114.8 s. 340 = 325 before this milestone + 9 (rules) + 6 (ssa).
+- `various/13-gates-final/summary.txt` collects these.
+
+### What didn't work
+- Nothing.
+
+### What I learned
+- Nothing new; the gates confirm that `passes.ts`'s only change (Step 5) is still invisible in every frozen number.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The test files ran with `--test-concurrency=3` instead of `npm test`'s default, to share the machine; the set of test files is the same (`tests/**/*.test.mjs`), and `npm test`'s build step was run separately.
+
+### What should be done in the future
+- After the coordinator merges IRWB-003 (new passes in `passes.ts`), re-run `tests/typed/rules.test.mjs` with `IRWB_FULL=1`: the table/hand-written comparison runs every pipeline, including any new ones that contain `simplify` or `fold`.
+
+### Code review instructions
+- `various/13-gates-final/summary.txt`, `scripts/10-frozen-gates-part.sh`.
+
+### Technical details
+- Source for the gates: a74063b plus the working tree that becomes the next commit.

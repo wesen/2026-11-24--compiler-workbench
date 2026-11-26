@@ -20,6 +20,7 @@ import { blocksAdapter, BlocksIR, storeOf } from '../typed/ir.js';
 import { describeText, lineage as lineageOf, linesOf, listing as listingOf } from '../typed/listing.js';
 import type { Store, WorkFn } from '../typed/model.js';
 import { PASSES, PIPELINES, type TypedPass } from '../typed/passes.js';
+import { RULE_SETS, rulesListing } from '../typed/rules/listing.js';
 import { formatJson, joinText } from '../typed/format.js';
 import {
   choosePlan,
@@ -1051,6 +1052,16 @@ export function createWb(config: WbConfig = {}) {
           preserves: x.typed.preserves ?? [],
           ...(PASSES[x.typed.name] ? {} : { user: true }),
         }));
+      },
+      /** The rewrite rules of simplify and fold with the strength of their recorded evidence, at 72 columns. */
+      rules(set?: string) {
+        const names = set === undefined ? Object.keys(RULE_SETS) : [set];
+        for (const n of names)
+          if (!RULE_SETS[n])
+            fail('unknownRuleSet', `no rule set "${n}"`, {
+              fix: `rule sets: ${Object.keys(RULE_SETS).join(', ')}`,
+            });
+        return names.map(n => rulesListing(RULE_SETS[n])).join('\n\n');
       },
       compiler,
       strategy: strategyApi(ctx),
