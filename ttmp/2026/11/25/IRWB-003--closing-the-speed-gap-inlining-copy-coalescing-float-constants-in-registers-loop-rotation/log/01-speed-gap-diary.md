@@ -387,3 +387,110 @@ The full suite failed once after Step 6, in a frozen test: `tests/typed/backend.
 
 ### Technical details
 - Option names in a refusal's fix line now read `registers, fuse, immediates, divmagic, useRanges, order, spill, hints, layout, chains, coalesce, homes`; the frozen test matches only their start (`/fix: options: registers, fuse/`).
+
+## Step 8: The inline pass
+
+This step wrote `inline` (`src/typed/inline.ts`), a whole-program pass like `dfe`, and its tests. On the `calls` project it removes all four calls of `energy` in one application, the contract agrees on 120 of 120 cases, and `why` on an inlined statement reaches both the callee's return (`s:sq.0`, source line 2) and the removed call (`s:energy.2`, line 6). On the f32 convention fixture it turns record results into locals and leaves no leaf read behind, and the image agrees with the evaluator with and without the new backend options.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** E3 as the guide's §15 designs it: single-site and small callees, record results, parameters as locals, provenance, the contract, entry-only programs.
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit of Step 9.
+
+### What I did
+- `src/typed/inline.ts`: `makeInline(correspond)` returns a `TypedPass` (`definePass` with `id: 'typed.inline'`, needs `liveness`, writes entities `local`, `block`, `stmt.*`, `value.*` and relations `declares`, `contains`, `uses`, `operand`, `reads`, `writes`, `succ`, `jump`; `typed.program: true`). Per caller, sites at the root of `set`, `eval` and `return`; per site: new locals `g_<name>`; a continuation block with the rest of the block; argument assignments; `0` for the callee's non-parameter locals live at its entry; copies of the callee's blocks (callee bodies always from the input revision); each `return` rewritten by the site's kind; leaf reads after a record call rewritten to `get g_r<j>` up to the next record call; the new blocks placed after the call's block, in the callee's order, then the continuation.
+- Refusals: callees in a call-graph cycle, with a frame array, with `zero` or `aaddr`, with a return that is not their declared result, or whose leaf reads do not follow their call in the same block; a caller whose own leaf reads do not; a site after which a leaf read belongs to an earlier call (the result-leaf rule).
+- Limits (params, defaults `maxSize` 16, `maxSingle` 200, `maxCaller` 3,000 statements).
+- `src/typed/passes.ts`: `import { makeInline } from './inline.js'`; `export const inline = makeInline(revisionCorrespondence)`; `inline` in `PASSES`.
+- `scripts/07-inline-probe.mjs <project> [--before …] [--params …] [--after …] [--why]`.
+- `tests/typed/inline.test.mjs`, 7 tests (registration; `calls` with provenance; the f32 record fixture through the backend; limits and frame-array refusal; entry-only contract and `dfe`; zeroing; the corpus under the new pipeline with `IRWB_FULL=1`).
+
+### Why
+- `makeInline` takes the correspondence function as an argument so that `inline.ts` imports only types from `passes.ts`: a runtime import would form a cycle in which `passes.ts` reads `inline` before `inline.ts` has run, whenever `inline.ts` is loaded first.
+- Callee bodies from the input revision make one application one level of inlining, deterministic regardless of the order callers are visited in.
+
+### What worked
+- `node scripts/07-inline-probe.mjs calls --why`: `{"pass":"inline","rev":"r1","edits":34,"changed":true,"kinds":{"local":12,"block":14,"remove":4,"inline":4},"ms":67.13,"check":"120/120"}`.
+- `why` of `s:energy.16 t6 = (sq_x2 * sq_x2)`: `via: inline`, `note: inlined from sq into energy at s:energy.2`, `from: s:sq.0 return (x * x)` ← `op:sq#3 end (line 2)`, `because: [v:energy.8 sq(c) (detached), s:energy.2 t6 = sq(c) (removed@r1, call 0 (line 6))]`.
+- `node --test tests/typed/inline.test.mjs`: 7 of 7; with `IRWB_FULL=1`: 7 of 7, the corpus test 44.1 s.
+
+### What didn't work
+- First test run: 2 of 7 failed. (1) `6 !== 3`: each callee `return` becomes two statements (`set` and `br`), both with `from: s:sq.0`; the test now counts the `set`s. (2) `[notCompiled] prog:limits did not compile: recursive call cycle: fact -> fact`: the Typed front end refuses recursion, so the cycle rule cannot be shown on a Typed program; the test shows the frame-array refusal instead.
+- The zeroing test as first written did not exercise zeroing: Typed initializes every local, so lifted code reads none before writing it, and the pass made no zero assignment (checked: the list of statements with note `starts at 0` was `[]`). The test now first applies a small user pass that removes `last`'s `t = 0` (valid: a fresh frame holds 0); `t` is then live at `last`'s entry, the inlined copy in `sum`'s loop gets `last_t = 0`, and the contract agrees. Without the zeroing, `last(k & 1)` for even `k` would return the previous call's `7 + i`.
+
+### What I learned
+- In lifted code, no local is live at a function's entry except parameters, so zeroing never fires on lifted programs; it matters only after a pass removes an initialization.
+- After `inline` and O2, the parameter copies (`sq_x = a`) remain: O2 has no copy propagation, and `subst` only substitutes a temporary read once. The backend's `coalesce` removes the corresponding `mv`s.
+
+### What was tricky to build
+- The evaluator's leaf reads are frame-wide ("the latest multi-result call in this frame", `evaluate.ts:405`): after inlining, a record call inside the copied body runs in the caller's frame. The pass therefore requires every leaf read of the caller and the callee to follow its call in its own block (the backend's rule, `select.ts:392–396`), and rewrites the reads of an inlined record call up to and including the next record call's arguments.
+
+### What warrants a second pair of eyes
+- `inlineSite` mutates block statement lists directly and records `remove`, `replace` and `inline` edits itself; `tx.commit()` derives successors and prunes. The copied blocks always end with a terminator (an explicit `br` where the callee's block fell through), so the source layout's fall-through assumption is never needed for them.
+
+### What should be done in the future
+- Copy propagation in a pass pipeline would remove the parameter copies before the backend.
+
+### Code review instructions
+- `src/typed/inline.ts` (`inlineSite`, `inlineCaller`, `refuseCallee`, `leavesStayPut`); `tests/typed/inline.test.mjs`.
+
+### Technical details
+- Provenance table as built: copies `from` the callee entity, `because [call value, call statement]`; argument assignments `from` the call value, `because [fn:g]`; zero assignments the same, note `g's local l starts at 0`; continuation `from` the call's block, note `after the call to g`; the branch into the copy `from` the call statement; rewritten leaf reads `from` the `result` value, `because [call value]`.
+
+## Step 9: The `speed` pipeline (not `O3`), presets, the workbench options row; corpus and benchmarks
+
+This step added the pipeline, the presets and the RV32 options row, and measured. The pipeline is named `speed`, not `O3` as the brief suggested: a frozen workbench test asserts that `O3` is an unknown pipeline. Under `speed` and the three options, the corpus runs 728,450 instructions against O2's 910,718 (−20.0%), in 4,356 bytes against 5,160, with no project slower and every case agreeing with r0; Blend runs in 370 and insertion sort in 1,824.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "The workbench must offer the new pipeline and options (presets, `PIPELINES`, the strategy registry)"; npm test identical.
+**Inferred user intent:** See Step 1.
+**Commit (code):** this step's commit.
+
+### What I did
+- `PIPELINES.speed = ['inline', 'inline', …O2+…, 'rotate', 'cfg']` (first named `O3`).
+- `PRESETS`: `speed` (the pipeline as one plan) and `fastest-all` (the fewest instructions among O0, O1, O2, loops, O2+ and speed; the strategy metrics compile with the default backend options).
+- `tests/workbench/strategies.test.mjs`: 14 → 15 passes, `inline`'s source in `src/typed/inline.ts`, `speed` after `O2+` in the pipeline list.
+- Workbench: `backendExtras` exported through `src/workbench/index.ts` and `site-src/wb.js`; `wb.backendOptions()` includes the extras; `site-src/main.js` starts the UI state with them; `site-src/views.js` filters and counts options against both tables and has a row "Speed, chosen per function by the estimate" with toggles `chains`, `coalesce`, `homes`. `npm run build:site`: `dist/site built in 462 ms: app.js 2325 KiB …`.
+- `scripts/05-corpus-options.mjs --pipeline O3 --options '{"chains":true,"coalesce":true,"homes":true}' --base O2 --json various/10-corpus-o3-all-options.json` (the same pipeline, before the rename).
+- `scripts/01-benchmark-probe.mjs --pipeline O3 --options …` with `{}` and the three options.
+
+### Why
+- `tests/workbench/strategies.test.mjs:74`: `assert.throws(() => wb.strategy.choose('x', { a: 'O3' }), e => e.code === 'unknownPipeline' …)`. Naming the pipeline `O3` would make that frozen refusal pass the choose and fail the test; `speed` keeps it.
+
+### What worked
+- Corpus: `{"pipeline":"O3","options":{"chains":true,"coalesce":true,"homes":true},"instructions":728450,"bytes":4356,"agree":6986,"decided":6986,"inconclusive":14,"disagree":0,"rejected":[],"base":{"instructions":910718,"bytes":5160},"faster":39,"slower":[]}`.
+- Benchmarks (every result `same`):
+
+  | pipeline, options | blend | checksum | sort | collatz | value-numbering |
+  |---|---:|---:|---:|---:|---:|
+  | O2, defaults (book) | 451 | 366 | 2022 | 1590 | 570 |
+  | speed, defaults | 450 | 325 | 1985 | 1480 | 569 |
+  | speed, all three | 370 | 286 | 1824 | 1218 | 451 |
+  | reference compiler | 383 | 292 | 1533 | 1486 | 695 |
+
+- `npm test`: `tests 340`, `pass 337`, `fail 0`, `skipped 3` (baseline 325/322/0/3; 15 new tests).
+- `scripts/08 | diff`: `REVISIONS-IDENTICAL`.
+
+### What didn't work
+- `node --test tests/workbench/strategies.test.mjs` with the pipeline named `O3`: `✖ wb.strategy: project files in the short form, presets and pipelines, at tile width … Missing expected exception.` and the pipeline enumeration. Renamed; the enumeration grows by `speed`.
+- A test-fixing Node script fed by a heredoc was refused by the worktree guard; edits made with the Edit tool.
+
+### What I learned
+- Frozen tests pin names as well as numbers: `layout: 'loops'` (Step 7) and `O3` are both refused by name in them.
+
+### What was tricky to build
+- The UI's option state starts from the defaults and counts every key that differs from them; the extras had to be in both the initial state and the comparison table, or `chains: false` would show as "1 changed".
+
+### What warrants a second pair of eyes
+- `fastest-all` judges by instructions with the default backend options (`measure`, `strategies.ts:66`), so it sees the passes' effect only; under the defaults `speed` is barely faster than O2+ (rotation needs `chains`).
+
+### What should be done in the future
+- A strategy metric with backend options, so that a preset can choose by the speed the options give.
+
+### Code review instructions
+- `src/typed/passes.ts` (`PIPELINES.speed`), `src/typed/strategies.ts` (`PRESETS`), `site-src/views.js` (`ALL_DEFAULTS`, `optionsBlock`).
+
+### Technical details
+- Outputs: `various/10-corpus-o3-all-options.json`.

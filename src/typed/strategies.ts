@@ -415,6 +415,19 @@ export const PRESETS: Readonly<Record<string, StrategySpec>> = Object.freeze({
     about: ['Constant folding, propagation and dead code,', 'repeated until nothing changes.'],
     repeat: ['cfg', 'fold', 'simplify', 'constprop', 'dce'],
   },
+  // IRWB-003
+  speed: {
+    about: [
+      'Two levels of inlining, O2+, loop rotation, as one plan.',
+      'Meant for the options chains, coalesce, homes.',
+    ],
+    passes: 'speed',
+  },
+  'fastest-all': {
+    about: ['The pipeline that runs the fewest instructions,', 'O2+ and speed included.'],
+    choose: { O0: 'O0', O1: 'O1', O2: 'O2', loops: 'loops', 'O2+': 'O2+', speed: 'speed' },
+    by: 'instructions',
+  },
 });
 
 /** The presets as the files the workbench shows (`strategies/<name>.json`, at tile width). */

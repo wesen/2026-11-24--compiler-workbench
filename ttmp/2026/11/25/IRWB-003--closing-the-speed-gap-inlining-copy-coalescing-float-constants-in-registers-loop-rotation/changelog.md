@@ -21,3 +21,12 @@ Backend options chains, coalesce, homes (backendExtras, absent from images at th
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/src/typed/backend/variants.ts — per-function choice by the estimate
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/src/typed/rotate.ts — the rotate pass
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/tests/typed/speed.test.mjs — the tests
+
+## 2026-11-26
+
+inline pass (whole program, record results as locals, provenance to callee and call); speed pipeline (named speed, not O3: a frozen test refuses O3); presets speed and fastest-all; RV32 options row. Corpus under speed with all options: 910,718 -> 728,450 instructions, 0 slower, all agree; Blend 370, sort 1824
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/src/typed/inline.ts — the inline pass
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/tests/typed/inline.test.mjs — inline tests

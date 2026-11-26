@@ -7,8 +7,8 @@
 - [x] rotate pass (src/typed/rotate.ts) with tests <!-- t:ojpc -->
 - [x] coalesce option (src/typed/backend/coalesce.ts) with tests <!-- t:4ftv -->
 - [x] homes option: constants in registers (src/typed/backend/homes.ts) with tests <!-- t:ci5w -->
-- [ ] inline pass (src/typed/inline.ts): record results, zeroing, provenance, tests <!-- t:20ki -->
-- [ ] O3 pipeline, presets, workbench options row <!-- t:bu6q -->
+- [x] inline pass (src/typed/inline.ts): record results, zeroing, provenance, tests <!-- t:20ki -->
+- [x] O3 pipeline, presets, workbench options row <!-- t:bu6q -->
 - [ ] Measure: benchmarks, corpus under O3, Candela per case, per scene B-01 and R-01 (18 if time) <!-- t:vhn4 -->
 - [ ] Frozen checks diffed against various/01-04 <!-- t:78cr -->
 - [ ] Vault report written and checked against the diary <!-- t:xuku -->

@@ -2,7 +2,7 @@
 // { title, on: [events], render(el, ctx) }. Views read through the wb API and its handles, and change programs
 // only through it. Rendering is synchronous; the only async calls (passes) happen in Step, Run and handlers.
 import { UI, esc } from './ui.js';
-import { toYaml, kindOf, PIPELINES, backendDefaults } from './wb.js';
+import { toYaml, kindOf, PIPELINES, backendDefaults, backendExtras } from './wb.js';
 
 const V = (UI.views = UI.views || {});
 const S = () => UI.S;
@@ -931,9 +931,11 @@ V.checks = {
     };
   },
 };
+// the frozen options and IRWB-003's (chains, coalesce, homes), which an image records only when they are on
+const ALL_DEFAULTS = { ...backendDefaults, ...backendExtras };
 const backendOpts = () => {
   const b = S().backend;
-  return Object.fromEntries(Object.entries(b).filter(([k, v]) => v !== undefined && k in backendDefaults && backendDefaults[k] !== v));
+  return Object.fromEntries(Object.entries(b).filter(([k, v]) => v !== undefined && k in ALL_DEFAULTS && ALL_DEFAULTS[k] !== v));
 };
 UI.backendOpts = backendOpts;
 
@@ -992,7 +994,7 @@ V.rv32 = {
         return;
       }
       if (e.target.closest('[data-optreset]')) {
-        s.backend = { ...backendDefaults };
+        s.backend = { ...ALL_DEFAULTS };
         delete s.backend.layout;
         UI.refresh(['image']);
         return;
@@ -1024,7 +1026,7 @@ V.rv32 = {
 };
 function optCount() {
   const b = S().backend,
-    d = backendDefaults;
+    d = ALL_DEFAULTS;
   const n = Object.keys(b).filter(k => b[k] !== undefined && b[k] !== d[k]).length;
   return n ? ` <span class="count">${n} changed</span>` : '';
 }
@@ -1034,6 +1036,9 @@ const OPT_ABOUT = {
   divmagic: 'divide by a constant with mulh and shifts instead of div',
   useRanges: 'read the ranges fact to drop division checks the facts make unnecessary',
   hints: 'parameters prefer their a-register and returned values a0, so copies disappear',
+  chains: 'order blocks so hot edges fall through; a rotated loop ends in one branch (IRWB-003)',
+  coalesce: 'merge a copy with its source when the two never hold different values at once (IRWB-003)',
+  homes: 'build a constant used in a loop once per function, in a register of its own (IRWB-003)',
 };
 function optionsBlock() {
   const b = S().backend;
@@ -1050,6 +1055,7 @@ function optionsBlock() {
         ['current', 'the new one'],
       ])}
       <button class="tog${b.hints ? ' on' : ''}" data-opt="hints" title="${esc(OPT_ABOUT.hints)}">hints</button></div>
+    <div class="optrow"><span class="lbl">Speed, chosen per function by the estimate</span>${['chains', 'coalesce', 'homes'].map(k => `<button class="tog${b[k] ? ' on' : ''}" data-opt="${k}" title="${esc(OPT_ABOUT[k])}">${k}</button>`).join('')}</div>
     <p class="note">These go to every image this view makes, and to Diff and Allocation. In code: <code>p.compile(${esc(JSON.stringify(UI.backendOpts()))})</code>. <button class="link" data-optreset>Reset to defaults</button></p></div>`;
 }
 function currentImage(p, opts) {
