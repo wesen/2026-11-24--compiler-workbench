@@ -1,0 +1,98 @@
+{
+ "IRWB-022-J": {
+  "config": "sm",
+  "model": "gpt-6.2-sol",
+  "effort": "medium",
+  "round": "t2-sm",
+  "harness": "codex",
+  "policy": "v1"
+ },
+ "IRWB-022-I": {
+  "config": "sh",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "round": "t2-sh",
+  "harness": "codex",
+  "policy": "v1"
+ },
+ "IRWB-022-B": {
+  "config": "sx",
+  "model": "gpt-6.2-sol",
+  "effort": "xhigh",
+  "round": "t2-sx",
+  "harness": "codex",
+  "policy": "v1"
+ },
+ "IRWB-022-A": {
+  "config": "am",
+  "model": "gpt-6.2-astra",
+  "effort": "medium",
+  "round": "t2-am",
+  "harness": "codex",
+  "policy": "v1"
+ },
+ "IRWB-022-K": {
+  "config": "ah",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "round": "t2-ah",
+  "harness": "codex",
+  "policy": "v1"
+ },
+ "IRWB-022-L": {
+  "config": "ax",
+  "model": "gpt-6.2-astra",
+  "effort": "xhigh",
+  "round": "t2-ax",
+  "harness": "codex",
+  "policy": "v1"
+ },
+ "IRWB-022-F": {
+  "config": "pi-sm",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "medium",
+  "round": "t2-pi-sm",
+  "harness": "pi",
+  "policy": "v1"
+ },
+ "IRWB-022-E": {
+  "config": "pi-sh",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "high",
+  "round": "t2-pi-sh",
+  "harness": "pi",
+  "policy": "v1"
+ },
+ "IRWB-022-C": {
+  "config": "pi-sx",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "xhigh",
+  "round": "t2-pi-sx",
+  "harness": "pi",
+  "policy": "v1"
+ },
+ "IRWB-022-H": {
+  "config": "pi-am",
+  "model": "openai-codex/gpt-6.2-astra",
+  "effort": "medium",
+  "round": "t2-pi-am",
+  "harness": "pi",
+  "policy": "v1"
+ },
+ "IRWB-022-D": {
+  "config": "pi-ah",
+  "model": "openai-codex/gpt-6.2-astra",
+  "effort": "high",
+  "round": "t2-pi-ah",
+  "harness": "pi",
+  "policy": "v1"
+ },
+ "IRWB-022-G": {
+  "config": "pi-ax",
+  "model": "openai-codex/gpt-6.2-astra",
+  "effort": "xhigh",
+  "round": "t2-pi-ax",
+  "harness": "pi",
+  "policy": "v1"
+ }
+}
