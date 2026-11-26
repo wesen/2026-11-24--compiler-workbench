@@ -1,0 +1,45 @@
+f32-fixture      r4 sites 61  default killed 58/61  200286 ms
+
+gate default: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+f32                   33    32    0    1 100.0% 100.0%
+swap                   5     5    0    0 100.0% 100.0%
+const                 20    19    1    0  95.0%  95.0%
+cmp-flip               1     1    0    0 100.0% 100.0%
+cmp-weaken             2     1    1    0  50.0%  50.0%
+TOTAL                 61    58    2    1  96.7%  96.7%
+
+gate check100: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+f32                   33    32    0    1 100.0% 100.0%
+swap                   5     5    0    0 100.0% 100.0%
+const                 20    19    1    0  95.0%  95.0%
+cmp-flip               1     1    0    0 100.0% 100.0%
+cmp-weaken             2     1    1    0  50.0%  50.0%
+TOTAL                 61    58    2    1  96.7%  96.7%
+
+gate strong: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+f32                   33    32    0    1 100.0% 100.0%
+swap                   5     5    0    0 100.0% 100.0%
+const                 20    20    0    0 100.0% 100.0%
+cmp-flip               1     1    0    0 100.0% 100.0%
+cmp-weaken             2     2    0    0 100.0% 100.0%
+TOTAL                 61    60    0    1 100.0% 100.0%
+
+gate strong-cases: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+f32                   33    32    0    1 100.0% 100.0%
+swap                   5     5    0    0 100.0% 100.0%
+const                 20    19    1    0  95.0%  95.0%
+cmp-flip               1     1    0    0 100.0% 100.0%
+cmp-weaken             2     1    1    0  50.0%  50.0%
+TOTAL                 61    58    2    1  96.7%  96.7%
+
+gate default+div: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+f32                   33    32    0    1 100.0% 100.0%
+swap                   5     5    0    0 100.0% 100.0%
+const                 20    20    0    0 100.0% 100.0%
+cmp-flip               1     1    0    0 100.0% 100.0%
+cmp-weaken             2     2    0    0 100.0% 100.0%
+TOTAL                 61    60    0    1 100.0% 100.0%
+
+gate time (ms): {"default":14285.7,"check100":8562.1,"strong":25209.3,"strong-cases":13525.3,"default+div":8601.7}
+total 200290 ms
+node tools/mutation-score.mjs --no-corpus --fixture f32 --gates  --json     141.08s user 0.68s system 70% cpu 3:20.86 total

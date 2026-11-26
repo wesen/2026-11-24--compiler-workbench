@@ -72,12 +72,18 @@ function casesOf(g, fn) {
   }
   return x;
 }
-/** runDifferential's rules on the cases of A (guide section 10). */
-function judge(g, A, mst) {
+/**
+ * runDifferential's rules on the cases of A (guide section 10). With `first`, those cases run first and the
+ * judgement stops at the first disagreement: the verdict needs only one (the counts are then partial).
+ */
+function judge(g, A, mst, first = null) {
   const G = GATE_SPEC[g], e = { agree: 0, disagree: 0, inconclusive: 0 };
-  for (const fn of A) {
+  const order = first ? [first, ...A.filter(x => x !== first)] : A;
+  for (const fn of order) {
+    if (first && e.disagree) break;
     const { cases, runs } = casesOf(g, fn);
     for (let i = 0; i < cases.length; i++) {
+      if (first && e.disagree) break;
       const a = runs[i], c = cases[i];
       if (a.limit) {
         e.inconclusive++;
@@ -157,7 +163,7 @@ for (const f of chosen) {
     rec.mutantRev = mutant.revision.slice(0, 12);
     const mst = M.overlay(basest, storeOf(mutant.value));
     for (const g of gates) {
-      const t = performance.now(), e = judge(g, A, mst);
+      const t = performance.now(), e = judge(g, A, mst, f);
       rec.gates[g] = { verdict: e.disagree ? 'killed' : 'survived', ...e, ms: +(performance.now() - t).toFixed(2) };
     }
     if (frameworkGate && rec.gates.default) {
@@ -172,7 +178,8 @@ for (const f of chosen) {
     records.push(rec);
   }
   const mine = records.filter(r => r.fn === f && r.gates.default);
-  console.error(`${f.padEnd(22)} |A| ${String(A.length).padStart(3)} sites ${String(sites.length).padStart(3)} default killed ${mine.filter(r => r.gates.default.verdict.startsWith('killed')).length}/${mine.length}  ${Math.round(performance.now() - t0)} ms`);
+  const strongKilled = records.filter(r => r.fn === f && r.gates.strong?.verdict === 'killed').length;
+  console.error(`${f.padEnd(22)} |A| ${String(A.length).padStart(3)} sites ${String(sites.length).padStart(3)} default killed ${mine.filter(r => r.gates.default.verdict.startsWith('killed')).length}/${mine.length} strong ${strongKilled}  cross-check ${JSON.stringify(crossCheck)}  ${Math.round(performance.now() - t0)} ms`);
 }
 console.error(`framework gate vs replicated gate (functions nothing calls): ${JSON.stringify(crossCheck)}`);
 const summary = C.summarize(records, gateNames, { subject: 'candela', base: 'r0+bcm', chosen, cheap: cheap.length, maxSteps, sample, baseCheck, baseVerdicts, crossCheck, ms: Math.round(performance.now() - t0) });
