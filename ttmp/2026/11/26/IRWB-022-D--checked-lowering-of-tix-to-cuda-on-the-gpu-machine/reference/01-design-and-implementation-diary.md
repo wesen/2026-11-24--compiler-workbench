@@ -184,3 +184,9 @@ Now do the following in this session:
 4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
 
 </details>
+
+## Step 3: Run the first emitted kernel chain
+
+Changed the emitter, runtime and batch codec, and isolated the remote run from its locked build cache. The original design probe still returned the same mismatch counts with the new tool; JSON now reported nvcc V13.0.88. An emitted two-row exp/sum returned `[10.107337951660156,74.68368530273438]`, with a 0.004512 ms warmed event interval. `npm run build` exceeded the initial 20 s command timeout under shared-host load; a first import before the asynchronous rebuild completed reported `does not provide an export named runTixCuda`. Retried after `tsc` emitted the files. No code workaround.
+
+Review `cuda-source.ts` for lexical loop/rounding sites, `cuda-run.ts` for wire validation and `tools/cuda-remote.mjs` for lock scope. No framework change. Full-size CPU evaluations are running separately with raw output saved for comparison. Next: test the checked transformation and concurrent remote runs.
