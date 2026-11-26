@@ -1,0 +1,17 @@
+ingest + bcm 48259 ms; bcm changed 35 functions
+base (r0 + bcm) vs r0, 40 gate cases per function: {"agree":13258,"disagree":0,"inconclusive":22}
+cheap functions: 325; chosen: 18: acosf, exp2f, hdriPdf, lum, q_absi, s10_mat_1, s12_heightAt, s15_customKernel, s17_sdUser, s3_mat_1, s5_mat_4, s7_mat_2, s9_sdf_0, skyL_wgsl, cameraRay, cdlInit, cdlLayout, envL
+acosf                  |A|  18 sites  60 default killed 48/60 strong 48 skipped 0  {"build":10374,"judge":64016,"classify":47301}  cross-check {"compared":0,"differ":0}  203105 ms
+exp2f                  |A|  38 sites  47 default killed 37/47 strong 37 skipped 0  {"build":7056,"judge":125087,"classify":92522}  cross-check {"compared":0,"differ":0}  440824 ms
+hdriPdf                |A|   4 sites  47 default killed 41/47 strong 41 skipped 0  {"build":27241,"judge":15553,"classify":13677}  cross-check {"compared":0,"differ":0}  500348 ms
+lum                    |A|  19 sites  11 default killed 11/11 strong 11 skipped 0  {"build":452,"judge":3,"classify":0}  cross-check {"compared":0,"differ":0}  506948 ms
+q_absi                 |A|   1 sites   9 default killed 6/9 strong 7 skipped 0  {"build":441,"judge":651,"classify":489}  cross-check {"compared":9,"differ":0}  508695 ms
+s10_mat_1              |A|  11 sites 116 default killed 70/116 strong 70 skipped 0  {"build":34591,"judge":160373,"classify":131713}  cross-check {"compared":9,"differ":0}  839437 ms
+s12_heightAt           |A|  16 sites   2 default killed 2/2 strong 2 skipped 0  {"build":45,"judge":0,"classify":0}  cross-check {"compared":9,"differ":0}  844029 ms
+s15_customKernel       |A|   4 sites   6 default killed 6/6 strong 6 skipped 0  {"build":146,"judge":1,"classify":0}  cross-check {"compared":9,"differ":0}  845612 ms
+s17_sdUser             |A|  16 sites   2 default killed 2/2 strong 2 skipped 0  {"build":71,"judge":0,"classify":0}  cross-check {"compared":9,"differ":0}  849807 ms
+s3_mat_1               |A|  11 sites 116 default killed 70/116 strong 70 skipped 0  {"build":38650,"judge":136026,"classify":109379}  cross-check {"compared":9,"differ":0}  1138996 ms
+s5_mat_4               |A|  11 sites 332 default killed 88/182 strong 88 skipped 150  {"build":109503,"judge":270379,"classify":219227}  cross-check {"compared":9,"differ":0}  1740356 ms
+s7_mat_2               |A|  11 sites   4 default killed 4/4 strong 4 skipped 0  {"build":406,"judge":1,"classify":0}  cross-check {"compared":9,"differ":0}  1744042 ms
+s9_sdf_0               |A|  17 sites 224 default killed 37/140 strong 47 skipped 84  {"build":42542,"judge":341832,"classify":213130}  cross-check {"compared":9,"differ":0}  2345631 ms
+skyL_wgsl              |A|  10 sites 351 default killed 310/351 strong 311 skipped 0  {"build":132516,"judge":99314,"classify":69407}  cross-check {"compared":9,"differ":0}  2649438 ms

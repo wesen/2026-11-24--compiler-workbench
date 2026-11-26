@@ -764,3 +764,47 @@ Nine projects re-measured on the merged branch (blend, bounds-lab, branches, div
 
 ### Technical details
 - The pre-merge run measured `strong` before the Step 9 fix of wasted re-runs; the post-merge run after it.
+
+## Step 17: The machine stopped responding; what survived and what has to be re-run
+
+The machine stopped responding during the night and was rebooted in the morning; this session resumed afterwards. `journalctl --list-boots` shows the previous boot ending at Thu 2026-11-26 01:39:07 EST and the current one starting at 09:14:46. The coordinator reports that the previous boot's log ends abruptly, with no shutdown and no OOM-killer entry. The cause is not confirmed and I do not attribute one. At the time, two long processes of mine were running: the Candela mutation run (a Candela-scale process, about 2.9 GB resident when I last looked at 00:48 with `ps`) and the deep search of the corpus's presumed-equivalent mutants (corpus scale, about 0.4 GB). IRWB-003's per-scene speed run was running too, according to the coordinator. Every commit up to 486744b (01:36) is intact.
+
+From now on every Candela-scale process runs under a memory cap (coordinator's rule): `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 node --max-old-space-size=10240 …`. Over the limit, the kernel kills only that process, with exit code 137. Only one such process runs at a time, with at most 2 worker threads.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator message (summarized): the machine stopped responding; previous boot's log ends at 01:39:07 without shutdown or OOM-killer entry, reboot at 09:14; the cause is not confirmed. New rule: Candela-scale node processes under `systemd-run --user --scope -p MemoryMax=14G -p MemorySwapMax=0` with `--max-old-space-size=10240`, one at a time, at most 2 workers; on exit 137 reduce what the process holds, never raise the cap. Next: a diary step with the facts and the memory per function if measurable; commit the valid partial outputs labelled as cut off; resume Candela under the cap, skipping finished functions; investigate the 0-byte deep-search output; finish as briefed.
+**Assistant interpretation:** Record the facts without a cause, keep what is valid, re-run the rest under the cap.
+**Inferred user intent:** Lose no valid work, and never freeze the shared machine again.
+**Commit (code):** 486744b was the last commit before the failure; partial outputs committed with this step.
+
+### What I did
+- `journalctl --list-boots`: boot −1 `Thu 2026-11-19 11:00:45 EST — Thu 2026-11-26 01:39:07 EST`, boot 0 from `Thu 2026-11-26 09:14:46 EST`. The last lines of boot −1 (`journalctl -b -1 -n 3`) are routine service and audit messages at 01:39:02–01:39:07.
+- Candela outputs: `13-candela.jsonl` (683,603 bytes, 01:36) holds 1,093 records for 14 complete functions (acosf through skyL_wgsl): the tool appends a function's records only after the function is finished, so every function in the file is complete. `13-candela.txt` ends with the `skyL_wgsl` line at 2,649,438 ms. Renamed to `13-candela-part1-cut-off.{txt,jsonl}` and committed as valid but cut off; the four functions not reached (`cameraRay`, `cdlInit`, `cdlLayout`, `envL`) are run again (Step 18).
+- Deep search: `10-corpus-final-deep.txt` is 0 bytes with mtime 00:11. That is the time the shell's redirection created the file when the script started, not the time it stopped: script 10 writes its summary and its output JSONL only when it finishes. The process was alive long after 00:11: at about 01:26 `ps -o etime,time -p 3950068` gave `01:14:14 01:06:25` (elapsed, CPU). It was killed by the failure before it finished, about 88 minutes in. Renamed to `10-corpus-final-deep-run1-killed.txt`; the search is re-run with progress output and incremental writing (Step 19).
+
+### Why
+- A record set that is complete per function is valid as measured; only the unreached functions need measuring again.
+
+### What worked
+- No committed work was lost; the per-function appending added before this run (6f80cb8) kept 14 functions' results.
+
+### What didn't work
+- Script 10 wrote nothing until the end, so 88 minutes of the deep search left no trace.
+
+### What I learned
+- A long measurement must write as it goes. Both re-runs now do.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The memory held per Candela function is measured on the re-run (Step 18), since the cut-off run did not record it.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `various/13-candela-part1-cut-off.{txt,jsonl}`, `various/10-corpus-final-deep-run1-killed.txt` (empty).
+
+### Technical details
+- Functions complete in part 1 (sites judged / sites): acosf 60/60, exp2f 47/47, hdriPdf 47/47, lum 11/11, q_absi 9/9, s10_mat_1 116/116, s12_heightAt 2/2, s15_customKernel 6/6, s17_sdUser 2/2, s3_mat_1 116/116, s5_mat_4 182/332 (150 skipped by the 600 s budget), s7_mat_2 4/4, s9_sdf_0 140/224 (84 skipped), skyL_wgsl 351/351.
