@@ -19,7 +19,7 @@ WhenToUse: ""
 
 # Checked lowering of Tix to CUDA on the GPU machine
 
-Awaiting design review. This stage checks emitted CUDA against the stage-1 reference on the GB10, then measures the six corpus programs. No backend implementation or benchmark results yet.
+Implementation and verification complete. See the [measurements and framework finding](reference/02-gb10-results-and-framework-finding.md).
 
 - [Design and proposed change ledger](design-doc/01-lowering-and-checking-one-cuda-translation-unit.md)
 - [Diary and GB10 probe replay](reference/01-stage-2-diary.md)

@@ -65,3 +65,7 @@ Added ordinal CUDA generation and a shared versioned packet runner. `npm run bui
 ## Step 4: Check emitted bytes, not an interpreter of the candidate
 
 `cuda-contract.ts` uses a heterogeneous transformation with the async differential postcondition. Replayed verdicts use the emitted revision and the origin/function, not timing records. A wrong block count on the GB10 failed at an output coordinate although the unmodified candidate had already passed. All six corpus gates passed unchanged. GPU tests also exercised empty and signed-zero behavior; small local tests checked packet validation and preloading. The first full run passed 20/20; after adding coverage a combined build/test command hit the host-side 180 s command timeout after nine successful tests, so I reran the requested test command separately. No framework or tool sources changed.
+
+## Step 5: Verify and measure
+
+`npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed 23/23 (100.76 s), including the dedicated network tests. Did not run the full suite. `03-bench.mjs cpu` completed unchanged at all six full sizes; the MLP alone took 35.6 minutes on the shared host. The GPU endpoint sanity check used matching digests. `04-budget.mjs` recorded elementwise error maxima separately from cached pass verdicts. Results, commands and caveats are in the report. Code commits: `9d8b846` and `e04fade`; reviewed design `15ea177`.

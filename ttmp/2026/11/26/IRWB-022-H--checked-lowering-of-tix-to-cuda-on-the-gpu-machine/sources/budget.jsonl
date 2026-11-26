@@ -1,0 +1,6 @@
+{"fn":"matmul","cases":15,"worst":0.02887056986129308,"location":{"shapeValues":[7,7,7],"stream":"signed","flatIndex":19,"outputShape":[7,7]}}
+{"fn":"softmax","cases":15,"worst":0.0063790334356534015,"location":{"shapeValues":[3,5],"stream":"signed","flatIndex":7,"outputShape":[5,3]}}
+{"fn":"layernorm","cases":14,"worst":0.01282103626500886,"location":{"shapeValues":[7,7],"stream":"positive","flatIndex":18,"outputShape":[7,7]}}
+{"fn":"attention","cases":15,"worst":0.010000035085998027,"location":{"shapeValues":[7,7,7,7],"stream":"signed","flatIndex":43,"outputShape":[7,7]}}
+{"fn":"mlp","cases":15,"worst":0.03253128228603276,"location":{"shapeValues":[7,7,7,7],"stream":"signed","flatIndex":9,"outputShape":[7,7]}}
+{"fn":"conv2d","cases":12,"worst":0.24667780669497222,"location":{"shapeValues":[7,7,7,7,7],"stream":"signed","flatIndex":699,"outputShape":[7,7,5,5]}}
