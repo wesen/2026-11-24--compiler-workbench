@@ -136,6 +136,53 @@ The reviewer asked for a single distance-to-f64 relation, no identity round trip
 
 ### Review and evidence
 
-The review required a committed design revision before implementation, the exact three public CUDA exports, the tensor tests, and a final accounting of framework changes, deviations and commit hashes. It also kept the separate arithmetic rounding sites, JS extrema, one async batch and CUDA kernel preloading.
+**User prompt (verbatim)**
+
+````text
+A reviewer has read your design for IRWB-022-B. The review:
+
+# Review of your design
+
+## Must change
+
+1. **State the relation you actually enforce.** "For finite `s`, require finite `g` and `abs(g - s) <= B(s)`. When `r` is also finite, require `abs(g - r) <= max(B(r), abs(s - r) + B(s)/8)`." By the triangle inequality the second clause holds whenever `abs(g - s) <= B(s)/8`. So the governing bound is the distance to the f32 result, not a tolerance against f64 as the brief asks. The 1/8 constant is justified on "2,048 rows of 32 values … with corpus verification still to come", not on the contract's own cases. Write the relation in one line and justify its constants on the cases `checkLowering` generates. For reference (my local check): on the stage-1 tolerance cases, the f32 meaning of every corpus program (original and optimized) uses at most 25% of `B(r)` against f64.
+
+## Cut
+
+1. "Add an `--identity` query and an optional `--expect-identity` … On a warm check the identity query runs". The memo is process-local; this adds an SSH round trip per check to catch a mid-process toolchain change.
+2. "The local runner also coalesces identical in-flight checks under the same keys". No caller of the fixed API needs this.
+3. "A small device struct carries bound dimensions and a pointer per tensor." The parameter-block worry is speculative; pass shapes and pointers as kernel parameters.
+
+## Framework and tool changes
+
+- No framework change: correct. `execute` takes differently typed ports and awaits an async `ensures`. `decide`, `baselineKey` and `subjectKey` already batch the cases and replay verdicts.
+- `--input cases.bin`, kept out of the compile key: needed, minimal, correctly placed.
+- Per-invocation directory, compile lock, atomic install: needed once the data leaves the key.
+- `--identity`: not needed.
+
+## Keep
+
+Keep the `__f*_rn` rounding sites, the literal bits, the JS min/max rule, the single `decide` batch, and "load kernels with `cudaFuncGetAttributes` before timing". In my probe on the GB10, a kernel's first event interval in a process was 0.115 ms and its second 0.003 ms; with that preload the first was 0.004 ms.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-022-B:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+````
 
 `node ttmp/2026/11/26/IRWB-022-B--*/scripts/03-corpus-calibration.mjs` exercised the selected case recipe across all six corpus functions, original and with both optimization orders. It found 16–24 admitted cases per variant and a largest f32-to-f64 error of 24.67% of the existing tolerance, in conv2d. The earlier cancellation microbenchmark shows why that tolerance is a sampled obligation. The end-to-end GPU checks will measure the same recipe against emitted code. [Calibration results](../scripts/03-corpus-calibration.jsonl)
+
+Design revision `4a00e67` — `IRWB-022-B: Revise CUDA lowering design after review`.
+
+## Step 3 — Implement direct emission and the checked remote path
+
+The emitter materializes statements in the current revision, generates scoped C++ loops from the binder IDs, and implements the f32 rounding points explicitly. The generated main and the Node runner share the binary case protocol. The same translation unit runs a single user input, a sampled batch, or repeated event intervals for timing.
+
+The checked transformation uses `AnalysisManager.execute` and the existing differential invariant with an async `decide`. I extracted the Stage 1 input generation and tolerance into `src/tensor/samples.ts`, preserving the existing optimizer's case order. The CUDA check adds the zero-dimension assignment and uses the current f64 reference to screen cases. The remote tool uses the compile file key for reuse and a private job directory for data and results.
+
+### Build and recovery
+
+`npm run build` initially reported TS2339 for `axes`, `body` and `op` inside the emitter's nested loop function and for `revision` on the differential framework's union of port values. I captured the narrowed reduction fields before defining the nested function and read the typed `subject` input inside `subjectKey`. The next build and the three local CUDA tests passed.
+
+The CPU timing job runs in tmux with one measured Stage 1 f32 execution per shape. `node --test tests/tensor/*.test.mjs` passed all 25 tests, including original and optimized corpus lowerings, semantic witnesses, an altered kernel's rejection, memo replay, and isolation between jobs sharing a compile key.

@@ -61,6 +61,11 @@ export interface Fn {
 export interface Module {
   functions: Fn[];
 }
+export function functionNamed(module: Module, name: string): Fn {
+  const fn = module.functions.find(f => f.name === name);
+  if (!fn) throw Error('Unknown function ' + name);
+  return fn;
+}
 export const width = 4;
 export function mapExpr(e: Expr, f: (e: Expr) => Expr): Expr {
   if (e.kind === 'op') e = { ...e, args: e.args.map(x => mapExpr(x, f)) };

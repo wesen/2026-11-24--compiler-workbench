@@ -4,9 +4,11 @@ import { applyNativePassSync, PassError } from '../framework/passes/index.js';
 import { meaningGate } from './contract.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
-import type { Module } from './model.js';
+import { functionNamed, type Module } from './model.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
+
+export { cudaSource, runTixCuda, checkLowering } from './cuda.js';
 
 export interface TixProgram {
   readonly origin: Artifact<Module>;
@@ -22,8 +24,7 @@ export function runTix(
   inputs: Inputs,
   options?: { precision?: Precision },
 ): BufferValue {
-  const f = program.current.value.functions.find(f => f.name === fn);
-  if (!f) throw Error('Unknown function ' + fn);
+  const f = functionNamed(program.current.value, fn);
   return evaluate(f, inputs, options?.precision ?? 'f32');
 }
 export function optimizeTix(program: TixProgram, passes: string[]) {
