@@ -1,72 +1,268 @@
 # Things we can work on: the v6 framework and the workbench
 
-A worklist of research tasks and fixes for `src/framework/` (the v6 IR framework), the Typed → RV32 domain, the tensor domain, and the workbench. Each item says why it is worth doing (with the evidence), how success is measured, and what it depends on. Keep it current: move items between sections, and link the ticket when one is opened.
+A worklist of research tasks and fixes for `src/framework/` (the v6 IR framework), the Typed → RV32 domain, the tensor domain, and the workbench. Each entry records:
+- **what we know:** measured facts, with where they come from;
+- **what we don't know:** the research the item needs;
+- **approach:** the first steps;
+- **measure:** how success is decided;
+- **depends on:** what must come first.
 
-**Status:**
-- **running:** agents are on it;
-- **ready:** it can be briefed now;
-- **prep:** the coordinator must build something first (a benchmark, a held-out set);
-- **decision:** it needs the user's call;
-- **idea:** not yet sized.
+Keep it current: update an entry when a round finishes, move items between statuses, and link the ticket when one is opened.
 
-**Size:** S = one agent-session, M = a design plus an implementation round, L = several stages.
+**Status:** *running* (agents are on it), *ready* (it can be briefed now), *prep* (the coordinator must build something first, such as a benchmark or a held-out set), *decision* (it needs the user's call), *idea* (not yet sized).
 
-## 1. Tensor track (IRWB-019): a second domain on the same framework
+**Size:** S = one agent-session; M = a design plus an implementation round; L = several stages.
 
-Tix (index notation) → `tensor` IR → CUDA on the GB10 (`ssh manuel@bling.local`, `tools/cuda-remote.mjs`). The primary result of every stage is the list of changes `src/framework` needs.
+## Index
 
-| Item | Status | Size | Measure | Depends on |
-|---|---|---|---|---|
-| **T1** Tix front end, IR as a v6 artifact, f32/f64 evaluators, contract with exact and tolerance relations, `inline` and `split-sum` passes, six-program corpus (IRWB-020, 12 configurations) | running | M | hidden acceptance suite (bit-exact f32, f64, errors, passes); framework changes needed | — |
-| **R1** research design: derive streaming attention (online softmax, FlashAttention form) by checked rewrites (IRWB-021, 12 configurations) | running | M | blind rubric: mathematical correctness, derivation completeness, the new reduction construct, checking, experiment | — |
-| **T2** lowering to a kernel IR, CUDA C, one kernel per statement, run on bling, GPU-vs-f64 contract with tolerance | ready after T1 | M | GPU outputs within tolerance on the corpus; compile and run cost per check; framework changes for a remote engine | T1 |
-| **T3** checked fusion: elementwise, epilogue, reductions (softmax, layernorm), with many-to-one correspondence | idea | M | kernel count and GPU time against T2; every fusion accepted by the contract | T2 |
-| **T4** tolerance calibration with mutants: the floating-point version of C1 | idea | M | miss rate of the tolerance relation against mutant class and case count | T1 |
-| **T5** implement R1's derivation: the streaming attention kernel derived, not hand-written | idea | L | GPU time and bytes moved against T2's unfused attention and a hand-written streaming kernel | R1, T2, T3 |
-| **T6** tiled contractions (shared memory) as strategies, against cuBLAS | idea | M | matmul GFLOP/s against cuBLAS on the GB10 | T2 |
-| **T7** autotuning under noisy cost (GPU timings), with the strategy layer | idea | M | regret against an exhaustive search; repeatability | T6 |
-| **T8** ONNX importer into Tix (optional, for real models; no Python) | idea | M | the operators covered; models imported | T1 |
+| ID | Item | Status | Size |
+|---|---|---|---|
+| T1 | Tix front end, IR, evaluators, contract, two passes | running | M |
+| R1 | research: derive streaming attention by checked rewrites | running | M |
+| T2 | CUDA lowering, one kernel per statement, run on the GB10 | ready after T1 | M |
+| T3 | checked fusion | idea | M |
+| T4 | tolerance calibration with mutants | idea | M |
+| T5 | implement the streaming-attention derivation | idea | L |
+| T6 | tiled contractions against cuBLAS | idea | M |
+| T7 | autotuning under noisy GPU cost | idea | M |
+| T8 | ONNX importer into Tix | idea | M |
+| D1 | why `speed` slows the bytecode VM | ready | S–M |
+| D2 | missed optimizations from provenance | ready | M |
+| B1 | specialize the VM on its bytecode | ready | M–L |
+| B2 | specialize Candela on its scene buffers | idea | L |
+| A0 | measure: share of edits that are local value rewrites | ready | S |
+| A1 | e-graph over value trees with verified rules | decision | L |
+| C1 | calibrated gate | prep | M |
+| E1 | incremental checking per function | prep | L |
+| F1–F12 | framework and workbench fixes found by agents | mostly ready | S each |
+| M1–M5 | agent methodology | running / ready | — |
+
+---
+
+## 1. Tensor track (IRWB-019)
+
+The question behind the track: `src/framework/` has carried one domain, Typed, and its generality is untested. Tensor programs differ in every way that should stress it: values are shaped arrays, legitimate optimizations change floating-point results, the fast engine is a remote GPU, and the cost (GPU time) is noisy. The primary result of every stage is the list of changes `src/framework` needs, each with its reason.
+
+Shared facts:
+- **The GPU machine:** `ssh manuel@bling.local`, an NVIDIA GB10 (sm_121, 121 GB unified memory, aarch64) with CUDA 13.0 `nvcc`, and no torch. The laptop has no NVIDIA GPU.
+- **The runner:** `tools/cuda-remote.mjs <dir> [--timed]` copies a directory holding `main.cu` to the machine, keyed by content, so identical inputs compile once (about 0.5 s). It brings `out/` back. `--timed` runs under a GPU lock.
+  - A sandboxed Codex agent needs `-c sandbox_workspace_write.network_access=true` to reach the machine.
+- **The language,** Tix, fixed in the T1 brief: five constructs (shaped parameters, pointwise expressions, `sum` and `max` over named indices, single assignment, affine indices). Its f32 meaning is exact: every operation is rounded, and reductions accumulate in lexicographic index order.
+- **The structure Tix exposes:** `torch.export` of a transformer block gives 40 Core ATen nodes, 26 of which are `view`, `permute` or `expand`. In Tix these are index renamings and do not appear.
+
+### T1: Tix front end, IR as a v6 artifact, evaluators, contract, `inline` and `split-sum` *(running: IRWB-020)*
+- **What we know:**
+  - Twelve configurations are designing it on the same brief: Codex or Pi, Sol or Astra, medium, high or xhigh.
+  - The four Codex medium and high designs took 5–8 minutes each and run to 2,600–2,900 words. The four Pi designs are done; the xhigh ones are running.
+  - A hidden acceptance suite exists outside the repository. It checks bit-exact f32 and f64 on six programs, the precedence rules, the order of accumulation, four compile errors, and both passes.
+- **What we don't know:**
+  - Which IR form the framework accommodates without changes.
+  - What the contract with a tolerance relation needs from `src/framework/contracts` (the domain × observation × relation idea of report 10).
+  - Whether design scores predict hidden-suite results.
+  - How the configurations differ.
+- **Approach:** blind judge and blind review of all twelve designs; each author revises and implements; hidden acceptance; the best implementation is merged as the base for T2.
+- **Measure:** the hidden suite; the list and size of framework changes; blind design scores.
+- **Depends on:** nothing.
+
+### R1: deriving streaming attention by checked rewrites *(running: IRWB-021, design only)*
+- **What we know:**
+  - Plain attention in Tix materializes N×N scores. The streaming form (FlashAttention) keeps a running maximum, normalizer and output per row, rescaled when the maximum grows, and moves O(N·D) bytes instead of O(N²).
+  - Tix's `sum` and `max` have scalar state. The streaming form needs a reduction whose state is a tuple, combined associatively.
+  - The same twelve configurations are designing it.
+- **What we don't know:**
+  - Whether the derivation can be a sequence of local, mechanically checkable rules.
+  - What their side conditions are (the empty prefix, −∞, the rescaling factor).
+  - Which steps can be checked exactly and which only within a tolerance.
+  - Which other programs the rules reach: softmax followed by a contraction, log-sum-exp, layernorm statistics in one pass.
+- **Approach:** blind scoring with a rubric that checks the mathematics; the best design feeds T5.
+- **Measure:** the rubric (mathematical correctness, derivation completeness, the new construct, checking, generality, experiment, insight).
+- **Depends on:** nothing.
+
+### T2: lowering to CUDA, one kernel per statement, run on the GB10 *(ready after T1)*
+- **What we know:** the remote path works end to end, with a 0.5 s compile, cached reruns, correct outputs and the lock. Context start-up dominates a small run (about 370 ms, against 1.3 ms of kernel time).
+- **What we don't know:**
+  - How a contract should consume an expensive, remote, asynchronous engine: caching evidence by content hash, batching cases into one launch.
+  - What tolerance GPU math (`expf`, fused multiply-add contraction, a different reduction order) needs against the f64 reference.
+  - What framework changes a remote engine forces.
+- **Approach:** a kernel IR as a second v6 artifact, a CUDA C emitter, a GPU-vs-f64 invariant, the same 12-cell matrix (or the best cells from T1).
+- **Measure:** GPU results within tolerance on the corpus; cost per checked pass; the framework changes.
+- **Depends on:** T1.
+
+### T3: checked fusion *(idea)*
+- **What we know:** fusion legality is visible in index notation (shared iteration domains, reductions that separate statements). The framework's correspondence must then express many-to-one mappings.
+- **What we don't know:** whether correspondence handles many-to-one as is; how much the kernel count and GPU time fall on the corpus.
+- **Approach:** elementwise and epilogue fusion first, then reductions (softmax, layernorm); every fusion checked by the T1/T2 contract.
+- **Measure:** kernels and GPU time against T2.
+- **Depends on:** T2.
+
+### T4: tolerance calibration with mutants *(idea)*
+- **What we know:** C1's question in floating point. A tolerance accepts reassociation, and must still reject real bugs.
+- **What we don't know:** which bug classes hide inside any tolerance loose enough to accept legal reassociation.
+- **Approach:** mutants of the Tix passes; miss rate against the tolerance and the number of cases.
+- **Measure:** miss rate per mutant class.
+- **Depends on:** T1.
+
+### T5: implement R1's derivation *(idea)*
+- **What we know:** depends on R1's results.
+- **What we don't know:** whether a derived streaming kernel comes close to a hand-written one on the GB10.
+- **Approach:** the rules as checked passes, plus the tuple-state reduction construct in the IR.
+- **Measure:** GPU time and bytes moved against T2's unfused attention and a hand-written streaming kernel.
+- **Depends on:** R1, T2, T3.
+
+### T6: tiled contractions against cuBLAS *(idea)*
+- **What we know:** cuBLAS ships with the CUDA toolkit on bling, so a strong baseline exists.
+- **What we don't know:** how close strategy-driven tiling (shared memory, thread mapping as checked data) gets on the GB10.
+- **Approach:** tiling as a strategy in `src/framework/strategy`.
+- **Measure:** matmul GFLOP/s against cuBLAS.
+- **Depends on:** T2.
+
+### T7: autotuning under noisy cost *(idea)*
+- **What we know:** GPU timings vary between runs. The lock removes interference from other agents, but not the noise itself.
+- **What we don't know:** how the strategy search should treat a noisy objective (repeats, confidence, early stopping).
+- **Measure:** regret against an exhaustive search; repeatability of the chosen schedule.
+- **Depends on:** T6.
+
+### T8: ONNX importer into Tix *(idea, optional)*
+- **What we know:** ONNX is a protobuf file that can be read without Python. Its operator set is large (about 190).
+- **What we don't know:** how many operators real models need once views and broadcasts disappear into indices.
+- **Depends on:** T1.
+
+---
 
 ## 2. Research programmes on the Typed → RV32 domain
 
-The six programs added in IRWB-012 to 017 (bytecode VM, SHA-256/ChaCha20, LZ, regex, f32 DSP, chess) turned several of the earlier programmes into tasks with objective metrics.
+The six programs added in IRWB-012 to 017 (bytecode VM, SHA-256/ChaCha20, LZ, regex, f32 DSP, chess) gave the earlier programmes (A to E, reports 8 to 10) concrete targets.
 
-| Item | Programme | Status | Size | What and why | Measure |
-|---|---|---|---|---|---|
-| **D1** why `speed` slows the bytecode VM | D (cost attribution) | ready | S–M | `speed` takes Fibonacci from 7,678 to 9,286 RV32 instructions and checksum from 6,874 to 8,218 (IRWB-012). Credit the extra instructions to a decision through correspondence, then fix it. | VM instructions at or below r0; corpus totals with no regression; parity clean |
-| **D2** missed optimizations from provenance | D | ready | M | Regex after `speed`: 8,040 instructions, against the reference compiler's 6,628. 18 of simplify's 27 rules never fire on the corpus. Find hot instructions that no rule touched, propose rules, verify them, add them. | instructions on the six programs and the corpus; every rule verified |
-| **B1** specialize the VM on its bytecode (a first Futamura projection) | B | ready | M–L | The hand-specialized loops take 75 and 74 instructions, against 7,678 for the general VM. Scalar specialization does almost nothing: FFT length 4,065 → 4,064; LZ chain limit −0.06%. Constant-memory partial evaluation of the dispatch loop. | VM instructions against 75 and 7,678; code size; meaning check passes |
-| **B2** the same on Candela: specialize the renderer on its scene buffers | B | idea | L | Scene-index specialization gave −58% code but only 5–6% fewer instructions per pixel, because the buffers are still interpreted. | instructions per pixel; frames bit-identical |
-| **A1** e-graph over value trees, with only verified rules merging classes, and RV32-cost extraction | A | decision | L | If most value-level edits are local rewrites, a whole function's equivalence can be assembled from per-rule proofs. Needs bit-vector reasoning: a small decision procedure, or z3 compiled to Wasm (downloaded code: the user's call). | instructions against today's simplify/fold; share of value edits with proofs |
-| **A0** measurement first: what share of O2/`speed` edits are local value rewrites | A | ready | S | Tests A1's founding hypothesis before building anything. | the share per pass and per program |
-| **C1** calibrated gate | C | prep | M | The gate uses 40 cases by convention. Measure, per mutant class, how often inputs expose each bug on the six programs; adaptive case counts; boundary and coverage inputs. The coordinator must prepare a held-out mutant set. | miss rate on held-out mutants at a fixed case budget |
-| **E1** incremental checking per function | E | prep | L | With content-addressed function parts, the cost of checking one edit should not grow with program size. The coordinator must write an edit-stream benchmark (chess, Candela). | cost per edit against program size; suites green |
+### D1: why `speed` slows the bytecode VM *(ready)*
+- **What we know:**
+  - At `n = 12, seed = 8`, `speed` takes Fibonacci from 7,678 to 9,286 RV32 instructions and checksum from 6,874 to 8,218. It is the only one of the six programs the optimizer makes worse (IRWB-012 final report).
+  - Every executed instruction maps back through correspondence to passes and rules.
+- **What we don't know:** which decision causes the extra 1,608 instructions (an inline, an unroll, register pressure from a hoist), and whether one guard fixes it without losing gains elsewhere.
+- **Approach:** credit executed instructions to decisions through correspondence (programme D's method at its smallest); then a guard or a cost check.
+- **Measure:** VM instructions at or below r0; corpus totals with no regression; parity clean.
+- **Depends on:** nothing.
 
-## 3. Framework and workbench fixes found by agents (small, concrete)
+### D2: missed optimizations from provenance *(ready)*
+- **What we know:**
+  - Regex after `speed`: 8,040 instructions, against the reference compiler's 6,628.
+  - LZ: 157,682 against 156,405. Chess: 10.08M, below the reference's 10.83M.
+  - 18 of simplify's 27 rules never fire on the corpus.
+- **What we don't know:**
+  - Which code shapes account for the regex gap.
+  - Whether the closed loop works: hot instructions with no rule in their provenance, candidate rules, verification, a larger table.
+- **Measure:** instructions on the six programs and the corpus; every added rule verified.
+- **Depends on:** nothing. It shares its attribution method with D1.
 
-| Item | Status | Size | Evidence | Fix |
-|---|---|---|---|---|
-| **F1** one cross-engine check (evaluator × RV32 image × reference compiler, calling signatures handled) | ready | S–M | Five of six IRWB-012..017 test files wrote the same private harness; P2.6 omitted `signatures` and an f32 entry looked 100% wrong (IRWB-018 step 10) | a framework call; delete the copies; measure test lines removed |
-| **F2** `imageFromCode` signatures: required, or carried with the compile result | ready | S | P2.6 / `dot3` (fixed in `d2e198f` by passing them) | make the omission impossible |
-| **F3** `tools/reference-check.mjs` ignores its project argument | ready | S | four of six implementers worked around it | honour the argument |
-| **F4** `wrapProse` mis-wraps already-wrapped list items, so `tools/format-corpus.mjs` refuses the file | ready | S | chess `notes.md` (IRWB-018 step 10) | wrap list items as units |
-| **F5** corpus-wide tests hard-code totals (44 projects, 70 functions, 6,986 cases) | ready | S | five tests broke when six projects were added; every per-function assertion passed | assert per-project properties, or derive the totals from the corpus |
-| **F6** one manifest parser for `project.json` (`projectSource` and the workbench's `metaOf` each read it) | ready | S | `ingest`/`entries` had to be wired in both (`6ad38d0`) | a single parser and type |
-| **F7** focus links by label, not by source line | idea | S | the chess focus moved when its files were reformatted | label-based focus |
-| **F8** the meaning check: `agrees` treats any two traps as agreeing; every guest byte is compared; every function is checked on independent random inputs | idea | M | report 10 §4.4: the programs absorbed these properties as defensive contracts | the contract from domain × observation × relation (the tensor track's T1 forces it) |
-| **F9** input grammar: correlated parameters, `oneOf` over records and buffers, generators for valid structured inputs | ready | M | regex checked with one fixed pattern; LZ only at maximum size; no way to generate chess positions | the smallest extension of `inputs`; measured with C1 |
-| **F10** IR and language features the designs asked for: read-only static tables, `match` on integers, `requires(...)`, `rot`/`fma` IR ops, guarded rules over interval × known-bits facts | idea | M each | IRWB-018 design reviews | one at a time, each with the program that needs it |
-| **F11** a repository `AGENTS.md`: tile widths, the formatter, what the corpus-wide tests already check, the sandbox EPERM note, Candela memory limits | decision | S | IRWB-018: three classes of integration failure came from conventions agents could not see | write it (it changes every agent session in this repository) |
-| **F12** the statement limit (2e4) of the meaning check | idea | S | chess search and Candela runs hit or approach it | per-project limits, or a cost-aware case budget |
+### B1: specialize the VM on its bytecode, a first Futamura projection *(ready)*
+- **What we know:**
+  - Hand-specialized loops take 75 and 74 instructions, against 7,678 and 6,874 for the general VM.
+  - Specializing on scalars does almost nothing: binding the FFT length takes 4,065 to 4,064 instructions; binding LZ's chain limit saves 0.06%.
+  - The existing field and scalar specialization (IRWB-009/010) binds values, not memory.
+- **What we don't know:**
+  - How a binding-time analysis over a constant buffer (the bytecode) should work with the checked buffer capacities.
+  - When to unroll the dispatch loop on a known program counter, and how to stop.
+  - How much of the gap automatic specialization closes.
+- **Approach:** a host promise that a buffer is constant, checked like the field binding; specialize the dispatch loop over it.
+- **Measure:** instructions against 75 and 7,678; code size; the meaning check passes.
+- **Depends on:** nothing. B2 builds on it.
 
-## 4. Agent methodology (the experiments around the work)
+### B2: specialize Candela on its scene buffers *(idea)*
+- **What we know:** specializing on the scene index gave −58% code size but only 5–6% fewer instructions per pixel, because what remains is interpreting the buffers. The gallery's per-scene `s<k>_` sections are hand staging of the same idea.
+- **What we don't know:**
+  - termination and generalization on BVH recursion;
+  - polyvariance (how many specialized copies to make);
+  - code growth against what the device can hold.
+- **Measure:** instructions per pixel; frames bit-identical; automatic specialization against the gallery's hand staging.
+- **Depends on:** B1.
 
-| Item | Status | Measure |
-|---|---|---|
-| **M1** the harness × model × effort matrix (Codex/Pi × sol/astra × medium/high/xhigh) on T1 and R1 | running | blind design scores; hidden-suite results; behaviour from transcripts |
-| **M2** repeat the cells that differ most (single runs are not conclusive) | idea | variance per cell |
-| **M3** the effect of the review loop: what review content changes designs and implementations | running (from T1) | design score before and after revision; hidden-suite results |
-| **M4** Claude models in the same matrix | idea | the same measures |
-| **M5** implementers' over-testing: tell designers what is already checked | ready | test lines and duplicated layers per project (IRWB-018: half of each test matrix repeated corpus-wide checks) |
+### A0: what share of edits are local value rewrites *(ready, measurement only)*
+- **What we know:** programme A's founding hypothesis, which is not yet measured: if most O2/`speed` value edits are local rewrites, a function's equivalence can be assembled from per-rule proofs.
+- **What we don't know:** the share, per pass and per program.
+- **Approach:** classify every edit in O2 and `speed` runs on the corpus, using correspondence: local rewrite, structural (cfg, licm, inline), other.
+- **Measure:** the share, as a table.
+- **Depends on:** nothing.
 
-The playbooks for running these are in the go-go-parc vault, under `Research/playbooks/agents/`, with scripts in `agent-design-review/`.
+### A1: an e-graph over value trees, with verified rules *(decision)*
+- **What we know:**
+  - The 8 comparison-flip rules are verified "exhaustively at 8 bits plus an argument". The other rules carry sampled evidence.
+  - Provenance already records every derivation step, which is what an equality-saturation explanation needs.
+- **What we don't know:** whether extraction by RV32 cost beats today's simplify/fold, and what share of executed instructions gets proof-backed derivations.
+- **Decision needed:** bit-vector reasoning. Either write a small decision procedure, or vendor z3 compiled to Wasm. The latter is downloaded code, so it is the user's call.
+- **Measure:** instructions against today's simplify/fold; the share of value edits with proofs.
+- **Depends on:** A0 (whether it is worth it) and the decision.
+
+### C1: a calibrated gate *(prep)*
+- **What we know:**
+  - The gate accepts a pass after 40 sampled cases, by convention.
+  - IRWB-005 produced mutants whose equivalence to the original is known.
+  - The new programs have narrow valid domains: regex is checked with one fixed pattern, and LZ only at maximum size. That probably lowers how often a bug is exposed.
+- **What we don't know:** the fraction of inputs that exposes each bug class, and how the miss probability falls with the number of cases.
+- **Approach:** measure exposure per mutant class; case counts that adapt; boundary and coverage inputs; send the classes that sampling cannot catch (such as NaN payloads) to A.
+- **Prep:** the coordinator builds a held-out mutant set first.
+- **Measure:** miss rate on held-out mutants at a fixed case budget.
+- **Depends on:** the prep. F9 (input grammar) interacts with it.
+
+### E1: incremental checking per function *(prep)*
+- **What we know:** function parts are content-addressed, so an edit to one function should not require checking the others.
+- **What we don't know:** the cost per edit today, as a function of program size, and how much queries with early cutoff (salsa-style), lazy projection and analyses keyed by function part reduce it.
+- **Prep:** the coordinator writes an edit-stream benchmark (chess, Candela), which the workbench can record.
+- **Measure:** cost per edit against program size; all suites green.
+- **Depends on:** the prep.
+
+---
+
+## 3. Framework and workbench fixes found by agents
+
+Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
+
+- **F1: one cross-engine check** *(ready, S–M)*.
+  - *Known:* five of six implementers each wrote the same private harness (evaluator, RV32 image, `speed`, reference compiler, compare), with 4 to 17 helper functions per test file. P2.6 left out the calling signatures, so an f32 entry looked 100% wrong (IRWB-018 step 10).
+  - *Needed:* one framework call that handles signatures. Then delete the copies.
+  - *Measure:* test lines removed; suites green.
+- **F2: make `imageFromCode` signatures impossible to omit** *(ready, S)*.
+  - *Known:* `dot3`'s 100 "disagreements" came from the missing `signatures` (fixed in `d2e198f`).
+  - *Needed:* require them, or carry them with the compile result.
+- **F3: `tools/reference-check.mjs` ignores its project argument** *(ready, S)*.
+  - *Known:* four of six implementers worked around it.
+- **F4: `wrapProse` mis-wraps already-wrapped list items** *(ready, S)*.
+  - *Known:* it drops the continuation indent and splits the item, so `tools/format-corpus.mjs` refuses the file (chess `notes.md`).
+- **F5: corpus-wide tests hard-code totals** *(ready, S)*.
+  - *Known:* five tests broke when six projects were added (44 projects, 70 functions, 6,986 cases), while every per-function assertion passed.
+  - *Needed:* assert per-project properties, or derive the totals.
+- **F6: one parser for `project.json`** *(ready, S)*.
+  - *Known:* `projectSource` and the workbench's `metaOf` each read it, so `ingest` and `entries` had to be wired twice (`6ad38d0`).
+- **F7: focus links by label, not by line** *(idea, S)*.
+  - *Known:* the chess focus line moved when its files were reformatted.
+- **F8: the meaning check's assumptions** *(idea, M)*.
+  - *Known:* `agrees` treats any two traps as agreeing, every guest byte is compared, and every function is checked on independent random inputs. Report 10 §4.4 showed the programs absorbing these as defensive contracts.
+  - *Needed:* the contract built from domain × observation × relation. T1 forces it for tensors; bringing it back to Typed is this item.
+- **F9: an input grammar** *(ready, M)*.
+  - *Known:* `casesFrom` draws parameters independently, and `oneOf` picks only scalars. Regex is checked with one fixed pattern, and there is no way to generate a valid chess position.
+  - *Needed:* the smallest extension of `inputs` (correlated parameters, `oneOf` over records and buffers, structured generators), measured with C1.
+- **F10: IR and language features the designs asked for** *(idea, M each)*.
+  - Read-only static tables; `match` on integers; `requires(...)`; `rot` and `fma` IR ops; guarded rules over interval × known-bits facts.
+  - Each should come with the program that needs it.
+- **F11: a repository `AGENTS.md`** *(decision, S)*.
+  - *Known:* three classes of integration failure in IRWB-018 came from conventions agents could not see: tile widths, the formatter, and what the corpus-wide tests already check. Also worth stating: the sandbox EPERM note and Candela's memory limits.
+  - *Decision:* it changes every agent session in this repository.
+- **F12: the meaning check's statement limit (2e4)** *(idea, S)*.
+  - *Known:* chess search and Candela approach or hit it.
+  - *Needed:* per-project limits, or a case budget that accounts for cost.
+
+---
+
+## 4. Agent methodology
+
+The experiments around the work. The playbooks are in the go-go-parc vault under `Research/playbooks/agents/`, with scripts in `agent-design-review/`.
+
+- **M1: the harness × model × effort matrix** *(running)*.
+  - *Known:* Codex or Pi × Sol or Astra × medium, high or xhigh, 12 cells, on T1 and R1.
+  - Pi's own system-prompt text is about 2.3K characters, against Codex's 27.7K. Pi lacks the coding and writing rules that report 10 tied to over-engineering.
+  - In Codex, Astra read no skill file in three of four cells, and Sol read them in all four.
+  - *Unknown:* everything the round will measure.
+- **M2: repeat the cells that differ most** *(idea)*. One run per cell is suggestive, not conclusive.
+- **M3: the effect of the review loop** *(running from T1)*.
+  - *Unknown:* which review content changes designs and implementations, and whether it does so the same way for every configuration.
+- **M4: Claude models in the same matrix** *(idea)*.
+- **M5: tell designers what is already checked** *(ready)*.
+  - *Known:* in IRWB-018, half of each project's test matrix repeated corpus-wide checks, because the designs prescribed it and nothing said what was covered.
