@@ -196,6 +196,9 @@ const entryWrites = Object.fromEntries(ENTRIES.map(e => {
   for (const f of reachFns(e)) for (const x of writes.get(f) ?? []) (out[x] ??= []).push(f);
   return [e, Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.sort()]))];
 }));
+// functions an entry shares with cdlRenderSpan: a promise made for one entry does not hold in the other's calls
+const renderReach = reachFns('cdlRenderSpan');
+const sharedWithRender = Object.fromEntries(ENTRIES.filter(e => e !== 'cdlRenderSpan').map(e => [e, [...reachFns(e)].filter(f => renderReach.has(f)).sort()]));
 const sceneReaders = [...directReaders].filter(([, s]) => [...s].some(b => SCENE.has(b))).map(([n]) => n);
 const sceneReach = [...reaches].filter(([, s]) => [...s].some(b => SCENE.has(b))).map(([n]) => n);
 const sections = fns.filter(f => /^s\d+_/.test(f.name)).length;
@@ -209,6 +212,8 @@ const summary = {
   functionsReachingSceneBuffers: sceneReach.length,
   readersByBuffer: Object.fromEntries([...BUFFERS].map(b => [b, [...directReaders].filter(([, s]) => s.has(b)).map(([n]) => n).sort()])),
   entryWrites,
+  functionsReachedByCdlRenderSpan: renderReach.size,
+  sharedWithRender,
   loops: loopsOut.length,
   loopsByKind: loopsOut.reduce((a, l) => ((a[l.kind] = (a[l.kind] ?? 0) + 1), a), {}),
 };
@@ -220,6 +225,7 @@ const lines = [
   ...[...BUFFERS].map(b => `  ${b.padEnd(5)} read by ${summary.readersByBuffer[b].length}: ${summary.readersByBuffer[b].join(' ')}`),
   'stores reachable from each entry (what it writes: by whom):',
   ...ENTRIES.map(e => `  ${e}: ${Object.entries(entryWrites[e]).map(([k, v]) => `${k} (${v.length}: ${v.slice(0, 6).join(' ')}${v.length > 6 ? ' …' : ''})`).join('; ')}`),
+  `functions cdlRenderSpan reaches: ${renderReach.size}; shared with the other entries: ${Object.entries(sharedWithRender).map(([e, v]) => `${e} ${v.length}${v.length ? ' (' + v.join(' ') + ')' : ''}`).join('; ')}`,
   `natural loops: ${loopsOut.length}; ${Object.entries(summary.loopsByKind).map(([k, v]) => `${k} ${v}`).join(', ')}`,
   ...loopsOut.filter(l => l.kind === 'scene-data bound' || l.kind === 'constant or frame-array bound').map(l => `  ${l.kind.padEnd(29)} ${l.fn}@${l.head}  exits ${l.exits}  ${l.sources.join(' ')}`),
 ];

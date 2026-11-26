@@ -10,12 +10,26 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://corpus/candela-gallery/kernel.typed
+      Note: 'oRow, hitObj, finishHit, traceAll: the interpreter of the scene buffers'
+    - Path: repo://src/typed/candela-render.ts
+      Note: CandelaHost, the host protocol and the memory map of the frame-constant regions
+    - Path: repo://src/typed/evaluate.ts
+      Note: load, caddr and store semantics every fold must keep; the cells input spec for real-row cases
+    - Path: repo://src/typed/program.ts
+      Note: 'assume, inputs, entries, specialize: the contract a host promise restricts'
+    - Path: repo://src/typed/sccp.ts
+      Note: the lattice and propagation Phase 1 extends with abstract pointers into constant memory
+    - Path: repo://src/typed/specialize.ts
+      Note: the specializer that exists; the fact, factRef and field rewrite this design generalizes
+    - Path: repo://ttmp/2026/11/26/IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory/scripts/03-binding-time-profile.mjs
+      Note: measurement 3, the binding-time profile that bounds the gain
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-26T10:12:52.050567464-05:00
-WhatFor: ""
-WhenToUse: ""
+Summary: 'Intern guide for IRWB-007: Candela as an interpreter of its scene buffers, the host protocol and memory map, specialization as it exists, partial-evaluation background, a binding-time profile of all 18 scenes bounding the gain (monovariant at most 1.68x, polyvariant 2.1-4.5x on 11 scenes, below 1.7x on the 7 ray-marched ones), and a phased design: constant-memory facts, a checked host promise, load folding, versions, the BVH walk, The Trick, budgets and provenance.'
+LastUpdated: 2026-11-26T11:30:00-05:00
+WhatFor: Starting the implementation of partial evaluation over Candela's constant memory (IRWB-002 item E4), and judging the hypothesis that it gains factors per pixel.
+WhenToUse: Before writing the constant-memory fact, the host promise or any specialization phase, and when reviewing their measurements.
 ---
 
 # Intern guide: specializing Candela on its scene data
@@ -48,9 +62,9 @@ The measurement made for this guide (§9) runs the real host protocol on the rea
 | bound on the gain, polyvariant but merging at every function return | 2.2–2.5× | same |
 | bound on the gain, **monovariant** (offline, one version per function) | **1.1–1.2×** | same |
 
-Over all 18 gallery scenes (`various/04-profile-summary.txt`), the polyvariant bound is at least 2× on 11 scenes (2.1× to 4.5× at its low end) and between 1.0× and 1.7× on the other 7. The 7 are the ray-marched and volume scenes (X-04, V-03, V-04, R-08, X-03, R-04, G-03), whose per-pixel cost is dynamic arithmetic: distance fields, noise and density evaluated along the ray. The monovariant bound is at most 1.7× on every scene.
+Over all 18 gallery scenes (`various/04-profile-summary.txt`), the polyvariant bound is at least 2× on 11 scenes (2.1× to 4.5× at its low end) and between 1.0× and 1.7× on the other 7. The 7 are the ray-marched and volume scenes (X-04, V-03, V-04, R-08, X-03, R-04, G-03), whose per-pixel cost is dynamic arithmetic: distance fields, noise and density evaluated along the ray. The monovariant bound is at most 1.23× on 17 scenes and 1.68× on the eighteenth.
 
-The hypothesis the user proposed, per-pixel gains of multiples rather than percents, is therefore possible on this program, but only in part of the gallery and only for a specializer that makes several versions of a function or a loop when the static data differs (a **polyvariant** specializer). It holds for the scenes whose cost is the interpretation of the object table and the BVH. It is false for the scenes whose cost is arithmetic on the ray, whatever the specializer. A specializer that gives every function one binding-time classification gets percents everywhere, because the object index, the BVH node index and the light index reach the readers as dynamic values. The design follows from that:
+The hypothesis the user proposed, per-pixel gains of multiples rather than percents, is therefore possible on this program, but only in part of the gallery and only for a specializer that makes several versions of a function or a loop when the static data differs (a **polyvariant** specializer). It can hold for the scenes whose cost is the interpretation of the object table and the BVH. It cannot hold for the scenes whose cost is arithmetic on the ray, whatever the specializer. A specializer that gives every function one binding-time classification gets percents, because the object index, the BVH node index and the light index reach the readers as dynamic values. The design follows from that:
 
 1. **A constant-memory fact** (Proposed `typed.memory`): per scene, the words of each buffer the kernel reads, identified by the path from the kernel record (`K.bO` means the buffer whose address is in field `bO` of `K`), with each word traced back to the scene object it describes.
 2. **A host promise** that, while `cdlRenderSpan` runs, those buffers hold those words. It is checked statically (no store reachable from `cdlRenderSpan` writes them; at r0 none does, §13) and dynamically (the restricted meaning contract on real-row cases, and the frame comparison, which already exists).
@@ -65,7 +79,7 @@ The project compiles **Typed**, a statically typed subset of JavaScript, to RV32
 
 The program has three layers, and the difference between them is the subject of this ticket.
 
-- **The fixed kernel** (`kernel.typed`, 155 functions with `math.typed`): ray generation, intersection, the BVH walk, BSDF sampling, light sampling, the path loop. It is the same for every scene. It learns what the scene contains by reading buffers.
+- **The fixed kernel** (`kernel.typed`, with `math.typed` and the entries in `glue.typed`: 155 functions): ray generation, intersection, the BVH walk, BSDF sampling, light sampling, the path loop. It is the same for every scene. It learns what the scene contains by reading buffers.
 - **The scene sections** (`scenes.typed`, 177 functions named `s<k>_…`): for each of the 18 scenes, its materials (`s0_mat_0`, `s0_mat_1`, …), its user distance fields, height fields, densities and custom integrator, as Typed code with the scene's constants written in. Candela's generator produced them from each scene's material graph, so they are **staged by hand**: the generator did, for materials, exactly the specialization this ticket wants the compiler to do for the rest.
 - **Five dispatchers** (`evalMaterial` at `kernel.typed:2782`, `sdUser` :2855, `heightAt` :2928, `densityOf` :3001, `customKernel` :3074) read `q_k.scene` and binary-search to the scene's section.
 
@@ -211,7 +225,7 @@ bb:oRow.0  -> []
 
 | buffer | sites | positions | functions |
 |---|---:|---|---|
-| U (`bU`) | 174 | all constant | 31, from `renderPixel` to `traceAll` and 8 scene sections |
+| U (`bU`) | 174 | all constant | 31, among them `renderPixel`, `cameraRay`, `tracePath`, `traceAll` and 10 scene sections |
 | O (`bO`) | 4 | variable | `oRow` only |
 | LI (`bL`) | 4 | variable | `lRow` only |
 | BV (`bB`) | 8 | variable | `traceAll` only |
@@ -251,7 +265,9 @@ function traceAll(q_k: K, ro…, rd…, tmax: f32, shadow: bool): TraceR {
 
 The BVH loop's own control is static: `sp` starts at 1 and changes by constants, and the node indices it pushes come from BV rows. But it runs under a dynamic test, `hitAABB`, that depends on the ray. Whether a specializer can keep `sp` static there is the central question of §16.
 
-**What `cdlRenderSpan` writes.** The same scan classifies every store reachable from each entry. From `cdlRenderSpan`, the stores are into the output buffer, into K's scratch fields (`rngS` by `renderPixel` and `rnd`; `gTime`, `gLam`, `gTau` by `renderPixel`; `gTri`, `gBary__x`, `gBary__y` by `hitMesh`) and into frame arrays (the BVH stacks of `traceAll` and `hitMesh`). None writes a scene buffer, the GGX table or the sky table, and no store has an unclassified address. `cdlInit` writes only the GGX table and `cdlSky` only the sky table. This is the fact the host promise of §13 checks statically.
+**What `cdlRenderSpan` writes.** The same scan classifies every store reachable from each entry. From `cdlRenderSpan`, the stores are into the output buffer, into K's scratch fields (`rngS` by `renderPixel` and `rnd`; `gTime`, `gLam`, `gTau` by `renderPixel`; `gTri`, `gBary__x`, `gBary__y` by `hitMesh`) and into frame arrays (the BVH stacks of `traceAll` and `hitMesh`). None writes a scene buffer, the GGX table or the sky table, and no store has an unclassified address. `cdlInit` writes only the GGX table and `cdlSky` only the sky table. This is the fact the host promise of §13 checks statically. One caveat: the output buffer is a parameter, `out`, so nothing in the program shows that it does not overlap a scene buffer; that has to be part of what the host promises.
+
+**What the entries share.** `cdlRenderSpan` reaches 310 of the 332 functions at r0 (every scene section, through the dispatchers). It shares 10 of them with `cdlSky`: `skyL_wgsl`, which reads U, and nine math functions (`acosf`, `asinPositive`, `perez`, `q_cos`, `q_exp`, `q_floor`, `q_sin`, `safeNorm`, `xyz2rgb`). It shares none with `cdlLayout` or `cdlInit`. A fact that holds while `cdlRenderSpan` runs may be used inside a shared function only if it also holds while `cdlSky` runs (§13).
 
 ## 5. Specialization today
 
@@ -390,7 +406,7 @@ Where the static work is, in the data mode:
 
 - **The object table.** `oRow` runs 59.8 times per pixel and executes 1,374.7 operations per pixel, all static: 35% of everything. They are four loads from O, four checked addresses, and the index arithmetic.
 - **Loads.** 432.6 static loads per pixel: O 239.1, U 82.7, BV 19.8, K's pointer and flag words 91.1. Checked addresses: 353.5 static per pixel. The sky table is the only dynamic-address lookup (X 25.5 per pixel), indexed by the ray direction.
-- **Calls.** 200.1 calls per pixel. 102.9 of them have only static arguments (C 25.6, M 77.3) and would disappear entirely.
+- **Calls.** 200.1 calls per pixel. 102.9 of them have only static arguments (C 25.6, M 77.3). Those whose callee reads no dynamic memory (`oRow`, `lRow`, `mBase`, …) disappear with their call sequences; those that read the RNG state do not (`rnd(q_k)` has a static argument, the K pointer, and runs 10.7 times per pixel).
 - **Float arithmetic** is mostly dynamic: 970.3 of 1,185.2 f32 operations per pixel. Of the dynamic f32 additions, subtractions and multiplications, 213.3 per pixel have a static operand equal to ±0 or ±1, mostly the zeros and ones of identity transforms. They are not counted as removable (§10.4).
 
 And in the control mode: the object index reaches `oRow` as a dynamic value inside the BVH walk, so the O loads become X (239.1 per pixel) and the work around them D. What stays static is what does not depend on any index: U at constant positions (73.1 loads per pixel) and K's words. That is the monovariant specializer's 1.1–1.2×.
@@ -423,7 +439,7 @@ Geometric means over the 18 scenes: data 2.08–2.33, gen 1.79–1.98, control 1
 What the table says:
 
 - **Two kinds of scene.** In the first twelve scenes but X-04, most of a pixel's work reads the scene: the M share is 44–67% and `oRow` alone is 25–47%. There the polyvariant bound is 2.1–4.5×. In the ray-marched and volume scenes, a pixel executes 30,000 to 415,000 operations, almost all dynamic: distance-field and noise evaluation at every step of a march, density along the ray. Their M share is 1–13%, and no specializer that keeps the arithmetic gains more than 1.3×. X-04, the Menger sponge, is between the two: a distance field, but with a quarter of its work in the scene's tables.
-- **Polyvariance is the whole difference.** The control mode never exceeds 1.68×, and its geometric mean is 1.08–1.16×. A monovariant specializer gets percents on every scene.
+- **Polyvariance is the whole difference.** The control mode stays at or below 1.23× on every scene but L-03, and its geometric mean is 1.08–1.16×. L-03 (1.52–1.68×) shows the mechanism from the other side: one of its three objects lies outside the BVH and is tested in the loop over unbounded objects, which runs under no dynamic test, so that object's index, and with it its rows, stays static even in the monovariant model.
 - **Merging at returns costs a quarter of the gain.** The gen mode keeps most of the data mode's bound (geometric means 1.79–1.98 against 2.08–2.33). Continuation splitting beyond function boundaries (§17) is worth having but is not where most of the gain is.
 - **The high end is not free.** Where the bound's two ends differ much (X-03 1.04–1.30, G-03 1.01–1.19), the difference is C operations: loop counters and constant arithmetic in the noise and fbm loops, which O2 does not remove because it does not unroll. They count only if the specializer unrolls those loops.
 
@@ -455,7 +471,7 @@ A polyvariant specializer instead specializes the loop head per static state. Fo
    [0]  [1 2]  [1 5 6]  [1 5]  [1]  [3 4]  [3]  []        8 = 7 nodes + 1
 ```
 
-The walk terminates because every state is a proper suffix of the traversal, and the specializer terminates because the memo table on states is finite. In the gallery, 16 states is the most any scene needs (R-05, 15 nodes). The guard `if (sp < 38)` is static in every state.
+The walk terminates because each node is pushed at most once (a tree has no cycles), and the specializer terminates because the memo table holds at most one entry per state and there are finitely many states. In the gallery, 16 states is the most any scene needs (R-05, 15 nodes). The guard `if (sp < 38)` is static in every state.
 
 Generalization still matters elsewhere. `tracePath`'s bounce loop runs up to `maxDepth + 1` times (6 for B-01) and carries state that dynamic events select: the current medium, whether the last bounce was specular, whether the AOV outputs are done. Specializing each iteration separately multiplies the loop body (934 statements at r0) by the trip count. The data mode's bound includes that; a practical specializer generalizes at the bounce loop's head.
 
@@ -474,7 +490,7 @@ Every version costs bytes. The scene sizes of §3 bound the versions: at most 24
 The bound counts operations, not instructions, and it assumes the specializer keeps the arithmetic. Three effects lie outside it:
 
 - **Float identities.** 213.3 dynamic f32 operations per pixel on B-01 have an operand that is ±0 or ±1, mostly from identity transforms. Folding `0 · x` to `0` is wrong for infinite or NaN `x`, and `x + 0` to `x` is wrong for `x = −0`, so these stay unless a fact proves the operands finite (IRWB-002's item C6, float ranges) or a tolerance contract is accepted (IRWB-011).
-- **Instruction weights.** Static work is load- and check-heavy (B-01: 432.6 loads and 353.5 checked addresses per pixel); in our images a load is one instruction and a checked address several. Calls with static arguments (102.9 per pixel) disappear with their call sequences. How the operation ratio translates into instructions is not measured; Phase 1 measures it.
+- **Instruction weights.** Static work is load- and check-heavy (B-01: 432.6 loads and 353.5 checked addresses per pixel); in our images a load is one instruction and a checked address several. Calls with only static arguments to callees that read no dynamic memory disappear with their call sequences, and calls are not counted as operations. How the operation ratio translates into instructions is not measured; Phase 1 measures it.
 - **The bounding box tests.** `hitAABB` is dynamic and stays. In B-01 the single leaf's box contains both objects, so the test could be dropped only if the compiler could prove that no ray it rejects would hit either object. That is a geometric fact about floats, not a program fact the compiler has. The design keeps the test (decision D4, §21).
 
 # Part 3: The design
@@ -528,13 +544,15 @@ export interface MemoryRegion {
   readonly entities: readonly { readonly from: number; readonly to: number; readonly entity: string }[];
   /** 'data': copied from the scene table. 'computed': the program computed it (cdlSky), at that revision. */
   readonly origin: { readonly kind: 'data' } | { readonly kind: 'computed'; readonly fn: string; readonly rev: string };
+  /** The entries during whose calls the region holds these words (the scene rows: cdlSky and cdlRenderSpan). */
+  readonly entries: readonly string[];
 }
 export interface MemoryFacts {
   readonly formatVersion: 1;
   readonly source: string;                         // 'candela gallery'
   readonly scene: string;                          // 'B-01'
-  /** The entries the promise holds for: the host calls them only with memory as described. */
-  readonly entries: readonly string[];             // ['cdlRenderSpan']
+  /** The entries the promise is made for (each region lists the subset during which it holds). */
+  readonly entries: readonly string[];             // ['cdlSky', 'cdlRenderSpan']
   /** Scalar fields, as typed.bindings field bindings. */
   readonly fields: readonly { readonly record: string; readonly field: string; readonly value: number; readonly entity: string }[];
   readonly regions: readonly MemoryRegion[];
@@ -542,9 +560,9 @@ export interface MemoryFacts {
 export const MemoryIR = defineIR<MemoryFacts>({ id: 'typed.memory', version: '1', /* validate: words are i32, ranges in bounds */ });
 ```
 
-**How it is made.** A builder (Proposed `memoryFacts(program, scene)`) runs the static prefix of the host protocol on the evaluator at r0 (`CandelaHost` with `evaluate`) and reads the regions back through K's pointer words. This is exactly what measurement 3 does at its start (`scripts/03-binding-time-profile.mjs`, the `regions` array). The scene buffers are `kind: 'data'` with entities from the scene table's rows: object `i` is words `24i … 24i + 23` of O, light `j` words `24j …` of LI, node `n` words `8n … 8n + 7` of BV. The GGX table is computed by `cdlInit` and the sky table by `cdlSky`, so they are `kind: 'computed'` with the function and the revision.
+**How it is made.** A builder (Proposed `memoryFacts(program, scene)`) runs the static prefix of the host protocol on the evaluator at r0 (`CandelaHost` with `evaluate`) and reads the regions back through K's pointer words. This is exactly what measurement 3 does at its start (`scripts/03-binding-time-profile.mjs`, the `regions` array). The scene buffers are `kind: 'data'` with entities from the scene table's rows: object `i` is words `24i … 24i + 23` of O, light `j` words `24j …` of LI, node `n` words `8n … 8n + 7` of BV. The GGX table is computed by `cdlInit` and the sky table by `cdlSky`, so they are `kind: 'computed'` with the function and the revision. Each region lists the entries during which it holds: the five scene buffers and the GGX table are fixed before `cdlSky` and stay fixed through every `cdlRenderSpan`; the sky table holds only during `cdlRenderSpan`, because `cdlSky` writes it.
 
-For B-01 the artifact holds 248 words of scene data, 256 of GGX table and 12,288 of sky table, about 51 KB as JSON. Its revision hash names the scene's data exactly; two scenes with equal rows have equal facts.
+For B-01 the artifact holds 248 words of scene data, 256 of GGX table and 12,288 of sky table: 12,792 words, 51,168 bytes as binary and roughly three times that as JSON numbers. Its revision hash names the data exactly, so equal facts have equal hashes; that is what a cache of compiled scene images can be keyed on.
 
 **Why access paths, not addresses.** The host places buffers where it likes; `CandelaHost` puts the rows after the output buffer, and the device's host may not. The kernel never computes a buffer's address; it only loads it from K. A region named by its path is independent of the layout. The fold rule (§14) recognizes the path the same way `specialize` recognizes `K.scene`.
 
@@ -552,17 +570,17 @@ For B-01 the artifact holds 248 words of scene data, 256 of GGX table and 12,288
 
 A fact is useful only if it is true while the code that relies on it runs. The **host promise** (Proposed) is the statement:
 
-> During every call of an entry in `facts.entries`, the K record passed to it has, in each region's path field, a pointer to a buffer holding exactly the region's capacity and words, and each scalar field holds its value; and no code the entry runs writes them.
+> During every call of an entry in a region's `entries`, the K record passed to it has, in the region's path field, a pointer to a buffer holding exactly the region's capacity and words; each scalar field holds its value; the regions, K and the output buffer do not overlap; and no code the entry runs writes the regions.
 
 The first half is the host's obligation; the second half is the program's, and the compiler checks it. Three checks, in increasing strength:
 
-1. **Static: no store reaches a promised region.** For every function reachable from the entries, classify every `store` by its address, as measurement 2 does: through a checked address on a local holding a K buffer, into a K field through a K parameter, into a frame array, or unclassified. Refuse the specialization (`TxError('unsupported')`, as `specialize.ts:99–109` does for a field) if a store targets a promised region or if any store is unclassified. At r0 the check passes: `cdlRenderSpan` reaches stores into the output buffer, K's scratch fields and frame arrays only. The check must be re-run on every revision the specializer works on, because a later pass could in principle introduce a store; it is cheap (one walk over statements).
+1. **Static: no store reaches a promised region.** For every function reachable from the entries, classify every `store` by its address, as measurement 2 does: through a checked address on a local holding a K buffer, into a K field through a K parameter, into a frame array, or unclassified. Refuse the specialization (`TxError('unsupported')`, as `specialize.ts:99–109` does for a field) if a store targets a promised region or if any store is unclassified. At r0 the check passes: `cdlRenderSpan` reaches stores into the output buffer, K's scratch fields and frame arrays only, and `cdlSky` writes only the sky table, which is not promised during its calls. A store into the output buffer is safe because the promise says the output buffer overlaps no region; the static check cannot show that, so the sampled check's cases lay the buffers out disjointly (the evaluator's `Memory.alloc` does by construction, `evaluate.ts:66`) and the runtime guard, if used, compares addresses too. The check must be re-run on every revision the specializer works on, because a later pass could in principle introduce a store; it is cheap (one walk over statements).
 2. **Sampled: the restricted meaning contract on real rows.** `Program.assume` gains a region form (Proposed `assumeMemory(facts)`). For each promised entry, its K parameter's spec gets `{ cells: <the region's words as UTF-16 cells> }` for each path field, `{ oneOf: [v] }` for each scalar field, and the pixel arguments get one-pixel spans inside the image (`y ∈ [0, h)`, `x0 ∈ [0, w)`, `x1 = x0 + 1`). Then every pass is checked against r0 on cases that are real pixels of the real scene. Two practical points: a pixel costs 3,139 evaluator statements on B-01 and up to about 220,000 on G-03 (IRWB-001 step 26: 22 million statements for 100 pixels), so the contract's step limit must be raised for these cases; and a case is a pixel the frame comparison may not cover, which makes the two checks complementary.
 3. **The frame comparison** stays the decisive check. It runs the whole protocol on the specialized program and compares every output float with the reference image's, bit for bit.
 
-**An optional runtime guard** (Proposed variant). The promise can also be checked by the residual program itself. A guard at the entry compares the regions with the promised words and calls the general kernel on any difference. With the guard, the specialized image means what the general one means on every input, and no contract restriction is needed (this is IRWB-002's item E2, guarded specialization, applied to memory). Its cost per call is a comparison of B-01's 248 scene words. The sky table's 12,288 words are better covered by comparing the U rows `cdlSky` reads, since `cdlSky` is deterministic. Spread over a span of 160 pixels at about 8,000 instructions each, that is far below 1%; for one-pixel spans it is not. Whether the guard is worth its code is a decision for the device integration (§23).
+**An optional runtime guard** (Proposed variant). The promise can also be checked by the residual program itself. A guard at the entry compares the regions with the promised words and calls the general kernel on any difference. With the guard, the specialized image means what the general one means on every input, and no contract restriction is needed (this is IRWB-002's item E2, guarded specialization, applied to memory). Its cost per call is a comparison of B-01's 248 scene words. The sky table's 12,288 words are better covered by comparing the U rows `cdlSky` reads, since `cdlSky` is deterministic. Spread over a span of 160 pixels at about 8,000 instructions each, that is far below 1%; for one-pixel spans it is not. Whether the guard is worth its code is a decision for the device integration (§25).
 
-**Scope.** The promise is per entry, unlike the field binding, which applies to every function with a K parameter. `cdlInit` and `cdlSky` write the GGX and sky tables, so the promise cannot hold for them; they stay general (they run once per bind). This is a deliberate difference from `Binding`'s field form (decision D2).
+**Scope.** The promise is per region and per entry, unlike the field binding, which applies to every function with a K parameter. The scene rows and the GGX table are promised during `cdlSky` and `cdlRenderSpan`; the sky table only during `cdlRenderSpan`; nothing during `cdlInit`, which runs before the scene is bound. A fold inside a function may use a region only if the region is promised during every entry that reaches the function. At r0 that matters for one function: `skyL_wgsl`, shared by `cdlSky` and `cdlRenderSpan`, reads U, which is promised during both, so it may fold. A function that read the sky table and were reached from `cdlSky` would need a clone for `cdlRenderSpan` before folding. This is a deliberate difference from `Binding`'s field form (decision D2).
 
 ## 14. Phase 1: folding loads from constant memory
 
@@ -588,9 +606,9 @@ evalTree(load[a + imm])           a -> ptr(R, off), off + imm = 4 + 4w
 anything else on a ptr            -> bot
 ```
 
-The rewrite then replaces each folded `load` by its constant and each folded `caddr` by nothing (its users read the folded load). Every replacement carries `because: [factRef(memoryFacts, region entity of word w)]`. After it, `fold`, `cfg` and `dce` do what they do after `specialize`: `nNodes > 0`, `spp`, `mode === 20`, `q_k.spectral` and the sun and fog flags become constant branches, and their dead arms go.
+The rewrite then replaces each folded `load` by its constant; the folded `caddr` under it disappears with it. A `ptr` value is never materialized: `get q_bO` stays where it is not folded away, and `dce` removes the assignment once nothing reads it. Every replacement carries `because: [factRef(memoryFacts, region entity of word w)]`. After it, `fold`, `cfg` and `dce` do what they do after `specialize`: `nNodes > 0`, `spp`, `mode === 20`, `q_k.spectral` and the sun and fog flags become constant branches, and their dead arms go.
 
-On B-01, Phase 1 should remove the branches `renderPixel` takes on U (mode, spectral, motion), the U reads of `cameraRay`, `tracePath`'s settings and `traceAll`'s counts. That is the control mode's static share: about 10% of the operations (`memoryShare` 10.3 in the control mode). Phase 1 is necessary groundwork, and by itself it is a percent result.
+On B-01, Phase 1 should remove the branches `renderPixel` takes on U and on K's flags (integrator mode, `K.spectral`, motion keys), the U reads of `cameraRay`, `tracePath`'s settings and `traceAll`'s counts. That is roughly the control mode's static share: 10.3% of the operations are M in the control mode. Phase 1 is necessary groundwork, and by itself it is a percent result.
 
 **What to watch.** The `caddr` fold must compare the position with the region's capacity, not assume it; a wrong fold here turns a trap into a read past the buffer. The meaning contract's real-row cases exercise it.
 
@@ -736,7 +754,7 @@ The generator staged the parts of a scene that cost little per pixel. In the obj
 
 **The experiment to set up** (Proposed, Phase 5):
 
-1. **Measure the two parts separately** after each phase, with the profile of §9 on the specialized revision: operations, static and residual, in `s<k>_` functions and in kernel functions. Automatic specialization succeeds where the kernel's residual fraction approaches the sections'.
+1. **Measure the two parts separately** after each phase, with the profile of §9 on the specialized revision: operations, static and residual, in `s<k>_` functions and in kernel functions. Automatic specialization has matched the hand staging when the kernel's remaining work is as little static as the sections' is: at r0 on B-01, 2.8 of the sections' 26.3 operations per pixel are M (11%), against 1,999 of the kernel's 3,884.2 (51%).
 2. **Undo the staging for one material.** Write a small Typed interpreter for one material kind (a lobe chosen by a table row of parameters instead of literals), give scene 0's two materials as rows in a new region, and specialize. If the specializer reproduces `s0_mat_0`'s code (the same residual operations per call, the same constants), it has matched the generator on its own ground. This needs no Candela tooling, only a corpus project, and it is the cleanest test of the claim that the compiler can do the generator's job.
 3. **Report the division.** Compare the generator's binding-time division (what it put in code, what in buffers) with the specializer's (what its BTA or its online run found static). A place where the specializer finds static work inside a section is something the generator left on the table.
 
@@ -745,8 +763,8 @@ The generator staged the parts of a scene that cost little per pixel. In the obj
 | | decision | alternatives | reason | status |
 |---|---|---|---|---|
 | D1 | regions are named by access path from K (`K.bO`), not by address | absolute address ranges | layout-independent; the kernel only reaches buffers through K; matches how `specialize` recognizes `K.scene` | proposed |
-| D2 | the promise holds per entry (`cdlRenderSpan`), not for every function | every function with a K parameter, as the field binding does | `cdlInit` and `cdlSky` write the tables; a promise for them would be false | proposed |
-| D3 | an online specializer (SCCP extended with memory, then versions) rather than an offline BTA first | offline BTA with annotations | measurement 3: a monovariant offline division is worth 1.1–1.2×, the polyvariant one up to 2.7–3.0× on B-01 | proposed |
+| D2 | the promise holds per region and per entry, not for every function | every function with a K parameter, as the field binding does | `cdlInit` runs before the scene is bound and `cdlSky` writes the sky table; a promise for every function would be false | proposed |
+| D3 | an online specializer (SCCP extended with memory, then versions) rather than an offline BTA first | offline BTA with annotations | measurement 3: a monovariant division is worth at most 1.68× on any scene (1.12–1.21× on B-01), the polyvariant one up to 2.66–3.04× on B-01 and 4.51–4.94× on R-01 | proposed |
 | D4 | the bounding-box tests stay | drop them for one-leaf scenes | no program fact proves them redundant in float arithmetic; the frame comparison would test one frame, not prove it | proposed |
 | D5 | inlining first, cloning with a memo table second | cloning only | inlining exists (IRWB-003) and covers the small readers (`oRow`, `lRow`); cloning needs a new write kind | proposed |
 | D6 | the static prefix (`cdlLayout`, `cdlInit`, `bind`, `cdlSky`) runs on the evaluator at compile time to produce the fact | recompute the tables in the specializer by partial evaluation of `cdlSky` | the evaluator is the specification; the tables are computed facts with provenance; `cdlSky` runs once per bind and is not hot | proposed |
@@ -784,9 +802,9 @@ The generator staged the parts of a scene that cost little per pixel. In the obj
 
 Every phase ends with the same three measurements on B-01 and R-01, unless stated: **operations per pixel** (the profile of §9, run on the phase's output revision), **instructions per pixel** and **bytes** of the image (IRWB-003's per-scene script), and a **bit-identical frame** at stride 8 against the reference. The baselines are §5's and §9's tables.
 
-**Phase 0: the measuring harness.** Move `scripts/03-binding-time-profile.mjs` into `tools/` as a profile any revision can be given (it takes the store to execute). Add the per-scene instruction measurement for a saved head, which IRWB-003's `scripts/08-candela-scene-speed.mjs` already does. *Acceptance:* the profile of the per-scene revision after `specialize` and `dfe` agrees with the r0 profile minus the K operations, and reproduces 0 differing floats.
+**Phase 0: the measuring harness.** Move `scripts/03-binding-time-profile.mjs` into `tools/` as a profile any revision can be given (it takes the store to execute). Add the per-scene instruction measurement for a saved head, which IRWB-003's `scripts/08-candela-scene-speed.mjs` already does. *Acceptance:* the profile reproduces measurement 3's B-01 numbers exactly on r0; on the per-scene revision after `specialize` and `dfe` it reports 0 K operations and 0 differing floats.
 
-**Phase 1: the fact, the promise, constant-address loads.** `typed.memory`, `memoryFacts(program, scene)`, `assumeMemory` with `{ cells }` specs and one-pixel spans, the static no-store check, and the memory extension of SCCP (`ptr` values, folded `load` and `caddr`) as a pass `memory-sccp` in `SSA_PASSES`. *Acceptance:* every U read at a constant position and every read of K's words 0–9 folded in every function reachable from `cdlRenderSpan` (count 0 remaining), each fold with a `because` to a region entity; the contract accepts on real-row cases; frames bit-identical; instructions per pixel reported against 8,267.7. Expected from the control-mode profile: about 10% of operations.
+**Phase 1: the fact, the promise, constant-address loads.** `typed.memory`, `memoryFacts(program, scene)`, `assumeMemory` with `{ cells }` specs and one-pixel spans, the static no-store check, and the memory extension of SCCP (`ptr` values, folded `load` and `caddr`) as a pass `memory-sccp` in `SSA_PASSES`. *Acceptance:* every U read at a constant position and every read of K's words 0–9 folded in every function reachable from `cdlRenderSpan`, under the scope rule of §13 (count 0 remaining), each fold with a `because` to a region entity; the contract accepts on real-row cases; frames bit-identical; instructions per pixel reported against 8,267.7. Expected from the control-mode profile: about 10% of operations.
 
 **Phase 2: versions and unrolling.** `inline` (IRWB-003) for `oRow`, `lRow`, `mBase`, `hitAABB`; the write kind `fns`, `tx.cloneFunction`, and a `clone` pass with a memo table for `hitObj`, `finishHit`, `xfP`, `xfD`, `xfN`; full unrolling of loops with constant trip counts under the budget. *Acceptance:* no `oRow` call remains with a static object index; no loop with a constant trip count below the budget remains; clones per function and bytes reported; operations per pixel compared with the gen bound; instructions per pixel.
 
@@ -802,7 +820,19 @@ Every phase ends with the same three measurements on B-01 and R-01, unless state
                          │ { cells } specs (exists)      │ fns write kind, clone (E2)         │ as values (E5, per state)
 ```
 
-## 25. API reference
+## 25. Open questions
+
+None of these blocks Phase 0 or Phase 1. The first three must be answered before the work reaches the device.
+
+1. **The device's code limit, and where per-scene images are compiled.** The gallery compiles its Typed module on the device on first use after a firmware update, in about 85 s, and caches it (`app.json` notes). Eighteen specialized images either multiply that work or must be compiled ahead and shipped; the cache must then be keyed by the fact's revision hash. The limit on code size decides the budget of §18 (decision D7).
+2. **The runtime guard.** It makes the specialized image correct for any input, at a cost that depends on the span length the device's host uses (§13). Whether the device host renders whole rows per call, as `CandelaHost` does at stride 1, decides whether the guard is cheap.
+3. **Whether the host can keep the promise.** The device host must not rebind a scene without recompiling or without the guard, and must keep the output buffer disjoint from the scene buffers.
+4. **Phase order with IRWB-003.** Inline before cloning, after, or both; to be measured (§22).
+5. **Float facts first?** 213.3 dynamic f32 operations per pixel on B-01 have a ±0 or ±1 operand (§10.4). If float range facts (IRWB-002 item C6) could prove the ray coordinates finite, identity transforms would fold. Whether that is worth doing before Phase 2 depends on Phase 1's instruction measurement.
+6. **The ray-marched scenes.** This ticket cannot give them a factor (§23). Whether they are worth specializing at all (`sdLocal`'s type dispatch per march step is static per object) is a Phase 2 measurement, not a hypothesis.
+7. **The per-function check in the contract.** IRWB-001 left open whether comparing every surviving function, not just the entries, should be part of the contract (design-doc 05 §9). Clones make it harder: a clone has no counterpart in r0 to be compared with, only its original under the clone's static arguments.
+
+## 26. API reference
 
 **Existing** (at `a4beda6`, except where marked):
 
@@ -838,7 +868,7 @@ Every phase ends with the same three measurements on B-01 and R-01, unless state
 | `trick` | a pass on call sites | Phase 4 (§17) |
 | `tools/candela-profile.mjs` | `tools/` | Phase 0's profile of any revision |
 
-## 26. File reference
+## 27. File reference
 
 | file | why you will open it |
 |---|---|
@@ -857,7 +887,7 @@ Every phase ends with the same three measurements on B-01 and R-01, unless state
 | IRWB-001 `scripts/12-candela-per-scene.mjs`, `13-candela-per-scene-images.mjs` | the per-scene pipeline and the frame comparison |
 | IRWB-003 `scripts/08-candela-scene-speed.mjs` (branch `90fed9c`) | per-scene instructions per pixel under `speed` |
 
-## 27. Related work
+## 28. Related work
 
 - Yoshihiko Futamura, "Partial evaluation of computation process: an approach to a compiler-compiler", *Systems, Computers, Controls*, 1971. The three projections; this ticket is the first.
 - Neil D. Jones, Carsten K. Gomard and Peter Sestoft, *Partial Evaluation and Automatic Program Generation*, Prentice Hall, 1993. Binding-time analysis, online and offline specialization, polyvariance, generalization, The Trick.
@@ -867,7 +897,7 @@ Every phase ends with the same three measurements on B-01 and R-01, unless state
 - Mark N. Wegman and F. Kenneth Zadeck, "Constant propagation with conditional branches", TOPLAS 1991. The algorithm in `sccp.ts`, which Phase 1 extends.
 - Hiralal Agrawal and Joseph R. Horgan, "Dynamic program slicing", PLDI 1990. The slicing method of measurement 3, including the treatment of statements not executed.
 
-## 28. Glossary
+## 29. Glossary
 
 - **Access path:** the way a region is reached from an entry's parameters, e.g. `K.bO`.
 - **Binding time:** whether a value is static (known at specialization time) or dynamic.

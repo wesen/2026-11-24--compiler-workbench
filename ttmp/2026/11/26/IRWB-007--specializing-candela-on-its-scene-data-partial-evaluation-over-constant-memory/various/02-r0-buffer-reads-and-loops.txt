@@ -1,4 +1,4 @@
-Candela r0: 332 functions (177 scene sections), lifted in 502 ms
+Candela r0: 332 functions (177 scene sections), lifted in 423 ms
 checked addresses: 559; by K buffer (constant position / variable position / functions):
   etab   256    4    2
   bO       0    4    1
@@ -21,6 +21,7 @@ stores reachable from each entry (what it writes: by whom):
   cdlInit: buf:etab (1: cdlInit)
   cdlSky: buf:sky (1: skyBuild)
   cdlRenderSpan: buf:? (1: cdlRenderSpan); K.rngS (2: renderPixel rnd); K.gTime (1: renderPixel); K.gLam (1: renderPixel); K.gTau (1: renderPixel); frame (2: hitMesh traceAll); K.gTri (1: hitMesh); K.gBary__x (1: hitMesh); K.gBary__y (1: hitMesh)
+functions cdlRenderSpan reaches: 310; shared with the other entries: cdlLayout 0; cdlInit 0; cdlSky 10 (acosf asinPositive perez q_cos q_exp q_floor q_sin safeNorm skyL_wgsl xyz2rgb)
 natural loops: 19; parameter bound 4, constant or frame-array bound 7, scene-data bound 8
   constant or frame-array bound voronoi3@bb:voronoi3.1  exits 1  
   constant or frame-array bound voronoi3@bb:voronoi3.4  exits 1  

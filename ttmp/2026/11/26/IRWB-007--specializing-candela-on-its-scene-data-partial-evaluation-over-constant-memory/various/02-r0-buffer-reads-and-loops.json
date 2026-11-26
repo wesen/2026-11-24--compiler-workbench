@@ -1,6 +1,6 @@
 {
  "summary": {
-  "liftMs": 502,
+  "liftMs": 423,
   "functions": 332,
   "sceneSections": 177,
   "kFieldOffsets": {
@@ -175,6 +175,23 @@
      "hitMesh"
     ]
    }
+  },
+  "functionsReachedByCdlRenderSpan": 310,
+  "sharedWithRender": {
+   "cdlLayout": [],
+   "cdlInit": [],
+   "cdlSky": [
+    "acosf",
+    "asinPositive",
+    "perez",
+    "q_cos",
+    "q_exp",
+    "q_floor",
+    "q_sin",
+    "safeNorm",
+    "skyL_wgsl",
+    "xyz2rgb"
+   ]
   },
   "loops": 19,
   "loopsByKind": {
