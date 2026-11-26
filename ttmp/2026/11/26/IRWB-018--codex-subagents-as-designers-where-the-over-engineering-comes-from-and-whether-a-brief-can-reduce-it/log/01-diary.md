@@ -322,3 +322,18 @@ The user asked what compiler-framework research to give Sol next, pointing at th
 - **Laptop:** Intel Iris Xe only, PyTorch 2.11 CPU. `torch.export(...).run_decompositions()` of a LayerNorm + attention + MLP block gives 40 Core ATen nodes with 11 distinct operators (`view` 16, `permute` 6, `addmm` 5, `expand` 4, `bmm` 2, `add` 2, `native_layer_norm`, `_softmax`, `gelu`, `div`, `getitem`).
 - **bling:** NVIDIA GB10 (sm_121), 121 GB unified memory, aarch64, CUDA 13.0 `nvcc`, no torch or triton. An axpy in a `mktemp -d` compiled in 0.59 s and ran correctly (`y[3]=34`), 1.37 ms for 2^24 floats, 147.5 GB/s; the directory was removed afterwards.
 - **Proposed to the user:** a tensor → CUDA domain on the same `src/framework`, with every framework change as the primary metric, tickets G1 to G4. Awaiting their decisions on code location, a torch install on bling, and launching designers.
+
+## Step 12: command counts recounted from CommandExecution events (corrections)
+
+While comparing skill reads across models in IRWB-019, the extractor reported that Codex Astra read no skill file. It had read them. Astra batches commands as a JavaScript array mapped over `tools.exec_command`, and the regex the extractors used (`cmd: "…"` in the tool-call text) does not see them. Codex rollouts record every command actually run as an `item_completed` event of type `CommandExecution`, with the command, a parsed form and the exit code. The kit's `04-` and `11-` now use these events. `scripts/07-recount-with-command-events.mjs` recounts this ticket's rounds per turn.
+
+### Corrections ledger
+- **Report 10, Section 3:** "IRWB-015 ran five `node` probes; IRWB-017 ran six". The events give 4 and 8 `node` commands.
+- **Round 2:** "1 to 8 probes per run, and five of six round-2 runs ran four or more". The events give 5 to 11 `node` commands per run, so all six ran four or more.
+- **Implementation round (step 9 table):** test runs were 4 to 7, not 2 to 4. Bookkeeping commands were 10 to 16, 28% to 50% of each agent's commands (34% on average), not 4 to 16.
+- **These held under the recount:**
+  - baseline commands touching the research guides, 2 to 6;
+  - three of six baseline runs ran no `node`, and IRWB-013 ran it once;
+  - all six round-2 runs ran `node`.
+
+Report 10 was patched (vault `a63e57b`), with a note in its Limits section.

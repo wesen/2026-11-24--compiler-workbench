@@ -1,0 +1,80 @@
+0	cat /home/manuel/.codex/skills/diary/SKILL.md
+1	pwd
+2	cat /home/manuel/.codex/skills/docmgr/SKILL.md
+3	ls -a
+4	rg --files --hidden -g AGENTS.md -g "!.git" -g "!ttmp"
+5	rg --files src/framework src/typed tests/framework
+6	git status --short --branch
+7	cat src/framework/{contracts,ir,strategy}/README.md
+8	cat src/framework/passes/{define-pass,bridge}.ts
+9	cat src/typed/{passes,evaluate,project}.ts
+10	cat src/framework/contracts/{definitions,differential}.ts
+11	cat .ttmp.yaml ttmp/vocabulary.yaml package.json tsconfig.json
+12	docmgr --help
+13	cat tests/framework/core.test.mjs
+14	cat /home/manuel/.codex/skills/diary/references/{investigation-entry,evidence-levels}.md
+15	docmgr status --summary-only
+16	cat src/framework/passes/define-pass.ts
+17	rg -n "meaning|differential|definePass|defineIR|baseline|verify" src/typed/{passes,evaluate,project,ir}.ts
+18	cat src/typed/meaning-exec.ts | head -160
+19	cat src/framework/passes/bridge.ts | head -110
+20	cat ttmp/vocabulary.yaml | head -55
+21	cat src/framework/ir/README.md
+22	tsc --version
+23	cat src/framework/contracts/differential.ts
+24	node --version
+25	docmgr ticket create-ticket --help
+26	docmgr ticket create-ticket --ticket IRWB-020-D --title 'Tix language, tensor IR, evaluators, meaning contract and checked passes' --topics ir,verification
+27	docmgr doc add --ticket IRWB-020-D --doc-type design-doc --title 'Stage 1 design for the Tix tensor domain'
+28	docmgr doc add --ticket IRWB-020-D --doc-type reference --title 'Design and implementation diary'
+29	command -v npm && command -v esbuild
+30	cat src/framework/ir/README.md
+31	cat src/framework/ir/{adapters,store}.ts | head -240
+32	cat ttmp/2026/11/26/IRWB-020-D*/{index.md,design-doc/*.md,reference/*.md}
+33	ls -d node_modules dist vendor/* && git status --short
+34	rg -n "^#" src/framework/{contracts,strategy}/README.md
+35	sed -n '595,642p' src/typed/evaluate.ts && sed -n '167,256p' src/typed/passes.ts
+36	rg -n "export (function|interface)|^(export )?type" src/framework/{ir/{common,types},contracts/definitions}.ts
+37	cat .ttmp.yaml && sed -n '1,56p' ttmp/vocabulary.yaml
+38	rg --files tests/typed | rg "meaning|pass|ir|contract|optimiz|differ"
+39	cat src/framework/core/data.ts | head -200
+40	sed -n '1,85p' src/framework/contracts/definitions.ts && cat src/framework/passes/index.ts
+41	cat src/typed/project.ts | head -80 && sed -n '80,120p' src/framework/strategy/README.md
+42	rg -n -C 4 "beginEdit|\.rebuild" src/framework/ir/{view,transactions}.ts
+43	ls tests/typed
+44	npm ci --offline --ignore-scripts --no-audit --no-fund
+45	git rev-parse --short HEAD
+46	cat src/framework/ir/types.ts | head -90
+47	cat tests/framework/ext-e3-e6.test.mjs | head -135
+48	rg -n "beginEdit|function.*run|rebuild" src/framework/passes/define-pass.ts
+49	cat src/framework/ir/index.ts
+50	npm run build
+51	node --input-type=module <<'JS'\nimport { defineIR } from './dist/framework/contracts/definitions.js';\nimport { differential, differentialSpec, runDifferential } from './dist/framework/contracts/differential.js';\nimport { createIRArtifact, defineAdapter, openIR } from './dist/framework/ir/index.js';\nimport { applyPass, definePass } from './dist/framework/passes/index.js';\nimport { AnalysisManager } from './dist/framework/contracts/index.js';\nconst ir = defineIR({id:'probe.tensor', version:'1',description:'probe',validate(){}});\nconst entity = value => ({id:'s',kind:'stmt',attributes:value});\nconst adapter = defineAdapter({id:'probe',version:'1',kind:ir.id,schemaVersion:ir.version,description:'native',relationKinds:{},entities:v=>[entity(v)],resolve:(v,id)=>id==='s'?entity(v):undefined,relations:()=>[],describe:()=>({label:'s'}),validate:ir.validate});\nconst artifact = createIRArtifact(adapter,'p',{block:2});\nconsole.log('projection',openIR(artifact,adapter).graph().entities.length);\nconst pending = applyPass(definePass({id:'probe.copy',version:'1',description:'native',adapter,ir,writes:{entities:['stmt'],relations:[]},run:({before})=>({native:before.value})}),artifact,{manager:new AnalysisManager()});\nconsole.log('promise',pending instanceof Promise);\ntry { await pending; } catch(e) { console.log(e.message); }\nconst v=[1,0,2**-24,2**-24,0.25];\nconst sum=xs=>xs.reduce((s,x)=>Math.fround(s+x),0);\nconst flat=sum(v), blocked=sum([sum(v.slice(0,2)),sum(v.slice(2,4)),sum(v.slice(4))]), reference=v.reduce((s,x)=>s+x,0);\nconst bits=x=>new Uint32Array(new Float32Array([x]).buffer)[0].toString(16);\nconsole.log({flat:bits(flat),blocked:bits(blocked),reference,tailDropped:blocked-0.25});\nfor (const mode of ['exact','tolerance','wrong-tail']) {\nconst check=differential({id:'probe.'+mode, version:'1',description:'probe',inputs:{origin:ir,candidate:ir},baseline:'origin',subject:'candidate',count:1,cases:()=>[v],run:side=>side==='baseline'?(mode==='exact'?flat:reference):(mode==='wrong-tail'?blocked-0.25:blocked),compare:(a,b)=>mode==='exact'?bits(a)===bits(b):Math.abs(a-b)<=1e-6+1e-5*Math.abs(a)});\nconsole.log(mode,runDifferential(differentialSpec(check),{origin:artifact,candidate:artifact}).status);\n}\nJS
+52	docmgr task add --ticket IRWB-020-D --text 'Prepare the stage-1 design, framework probes and diary for review'
+53	docmgr task check --ticket IRWB-020-D --id 5prt
+54	docmgr task add --ticket IRWB-020-D --text 'Review the design and resolve stage-1 decisions in this session'
+55	docmgr task add --ticket IRWB-020-D --text 'After review, implement Tix, both evaluators, the framework change, checked passes and corpus, then run tensor, framework and affected Typed tests'
+56	sed -n '140,164p' src/framework/contracts/README.md
+57	node --input-type=module <<'JS'\nimport {immutable} from './dist/framework/core/data.js';\nconst cell = new Float32Array([1,2,4,8]);\nconst transposed = [cell[0],cell[2],cell[1],cell[3]];\nconsole.log({storedMinusZero:Object.is(immutable([-0])[0],-0),inlineCorrect:transposed,wrong:Array.from(cell)});\nJS
+58	docmgr changelog update --help | head -35
+59	git status --short && git check-ignore dist node_modules
+60	cat 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-the-tix-tensor-domain.md'
+61	cat 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-design-and-implementation-diary.md'
+62	cat 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md'
+63	docmgr doc relate --doc 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-the-tix-tensor-domain.md' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/src/framework/passes/define-pass.ts:Native pass preparation and the proposed synchronous checked entry point' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/src/framework/contracts/differential.ts:Existing synchronous sampling and per-side evaluation' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/src/framework/ir/transactions.ts:Edit constructor requires a rebuild capability' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/src/typed/passes.ts:Original-revision contract binding in the first domain'
+64	docmgr changelog update --ticket IRWB-020-D --entry 'Submitted the stage-1 design for review. Probed the synchronous pass boundary and measured an exact-versus-tolerant split-sum witness.'
+65	head -40 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-the-tix-tensor-domain.md'
+66	cat 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/changelog.md'
+67	cat 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md'
+68	rg --files --hidden 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes'
+69	git status --short
+70	docmgr doctor --ticket IRWB-020-D --stale-after 30
+71	cat 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/README.md' && git status --short --branch
+72	cat 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/README.md'
+73	git add -- 'ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes'
+74	git diff --cached --stat
+75	git diff --cached --check
+76	docmgr doctor --ticket IRWB-020-D --stale-after 30
+77	git commit -m 'IRWB-020-D: Design the Tix tensor IR, evaluators and checked passes'
+78	git rev-parse HEAD
+79	git status --short --branch

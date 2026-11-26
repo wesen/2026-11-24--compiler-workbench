@@ -152,3 +152,19 @@ The user asked: "ok, add xhigh to the matrix". There are four new cells per task
 - **`10-dispatch-turn.sh <task> <turn> <template> [reviews] [--only …] [--network]`:** builds one prompt per agent from a template, with `<REVIEW>` filled from that agent's blind review. It resumes Codex cells with `02-` and Pi cells with `13-`, and writes the Claude cells' prompts for `SendMessage`.
 - **The kit's `01`/`02` take `CODEX_EXTRA`,** for example `-c sandbox_workspace_write.network_access=true`, which the GPU stage needs.
 - **`various/prompts/t1/turn2.md`** (`0d8cd78`): the review, then revise (keeping and justifying any disagreement), implement, check (own tests; framework tests if the framework changed; never `npm test`), and the final message.
+
+## Step 5: the "Astra skips skills" finding was an extractor artifact; the first Claude designs
+
+- **The artifact.** The user asked which skills, and how Astra managed without them.
+  - The rollout of IRWB-020-D (Codex, Astra, high) shows `cat ~/.codex/skills/diary/SKILL.md` and `cat ~/.codex/skills/docmgr/SKILL.md` as `CommandExecution` events. They were issued inside one code-mode script, as an array mapped over `exec_command`. The regex extractor only matches `cmd: "…"`.
+  - Recounted from the events, all twelve Codex cells read docmgr and diary, with reference files, on both tasks.
+  - Astra runs more commands than Sol (71 to 84 against 43 to 48 at high and xhigh), batched several per tool call.
+  - Steps 2 and 3 of this diary are wrong on this point. The kit's `04-` and `11-` are fixed (vault `a377c40`). IRWB-018's report numbers that depended on the old count were recounted and corrected (IRWB-018 step 12).
+- **Claude designs, turn 1:**
+  - IRWB-020-N (Opus, medium): 136K subagent tokens, 27 tool uses, 8 minutes.
+  - IRWB-020-P (Fable, medium): 169K, 24, 13 minutes.
+  - Both propose the same two framework changes, found by probing the built framework with a toy second domain, and both changes are in `src/framework/passes/define-pass.ts`:
+    - `applyPass` always opens an IR edit, which throws "is not Rewritable" for an adapter without `rebuild`, even when the pass never edits;
+    - checked application is async-only, while `optimizeTix` is synchronous, hence an `applyPassSync`.
+  - Fable also measured that a fixed relative tolerance does not separate correct from wrong programs: correct programs reach 9.9e-3, wrong ones go down to 1.6e-6. It proposes a running first-order error bound instead.
+- **Claude usage** is logged per turn in `various/results/claude-usage.json`.

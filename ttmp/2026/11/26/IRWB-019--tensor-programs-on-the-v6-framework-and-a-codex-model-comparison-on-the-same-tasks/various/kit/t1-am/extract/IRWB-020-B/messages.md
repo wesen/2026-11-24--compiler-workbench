@@ -1,0 +1,17 @@
+## 1
+
+I’ll use the docmgr and diary skills to create IRWB-020-B. I’ll trace how Typed checks a pass and probe the framework APIs before proposing any changes.
+
+## 2
+
+The probe confirmed that the differential checker can run synchronously. The pass runner returns a Promise and opens an IR edit even for a pass that returns a native value. I’ll propose one small addition to the pass layer and keep tensor shapes, rounding, and tolerance in `src/tensor/`.
+
+## 3
+
+IRWB-020-B is ready for design review. The ticket, design and diary are committed as `9b0c3ff` on `t1-am/irwb-020-b`. The worktree is clean.
+
+**Proposed framework change:** add a synchronous entry point for checked passes that return a native IR value. It would reuse the existing artifact validation, diff, correspondence and write checks. A probe confirmed that the current pass runner returns a Promise and requires a rebuild-capable adapter even for a native identity pass. The existing differential checker already supports both tensor relations synchronously.
+
+The design includes a seven-element `split-sum` witness. Sequential f32 evaluation produced `1`, while blocked f32 produced `1.000000238418579`. The blocked result fails bit equality and falls within the proposed tolerance of the f64 reference. The baseline build and ticket validation passed. Implementation awaits review.
+
+[Ticket index](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-am-irwb-020-b/ttmp/2026/11/26/IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md) · [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-am-irwb-020-b/ttmp/2026/11/26/IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-semantics-and-checked-tensor-rewrites.md) · [Diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-am-irwb-020-b/ttmp/2026/11/26/IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-implementation-diary.md)

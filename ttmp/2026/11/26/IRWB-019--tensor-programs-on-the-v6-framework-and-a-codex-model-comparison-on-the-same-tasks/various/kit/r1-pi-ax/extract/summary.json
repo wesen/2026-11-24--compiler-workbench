@@ -1,0 +1,29 @@
+{
+ "IRWB-021-L": {
+  "minutes": 8.5,
+  "toolCalls": 41,
+  "byTool": {
+   "read": 24,
+   "bash": 10,
+   "write": 4,
+   "edit": 3
+  },
+  "commands": 10,
+  "interpreterRuns": 3,
+  "skills": [
+   "docmgr/SKILL.md",
+   "diary/SKILL.md",
+   "git-commit-instructions/SKILL.md",
+   "diary/references/investigation-entry.md",
+   "diary/references/milestone-entry.md",
+   "ticket-research-docmgr-remarkable/SKILL.md",
+   "ticket-research-docmgr-remarkable/references/deliverable-checklist.md",
+   "ticket-research-docmgr-remarkable/references/phase-checklists.md"
+  ],
+  "tokens": {
+   "input": 212028,
+   "output": 16664,
+   "cacheRead": 671232
+  }
+ }
+}

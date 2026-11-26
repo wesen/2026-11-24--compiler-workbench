@@ -1,0 +1,24 @@
+{
+ "IRWB-020-H": {
+  "minutes": 5,
+  "toolCalls": 32,
+  "byTool": {
+   "read": 24,
+   "bash": 5,
+   "write": 3
+  },
+  "commands": 5,
+  "interpreterRuns": 1,
+  "skills": [
+   "docmgr/SKILL.md",
+   "diary/SKILL.md",
+   "diary/references/investigation-entry.md",
+   "git-commit-instructions/SKILL.md"
+  ],
+  "tokens": {
+   "input": 130118,
+   "output": 10296,
+   "cacheRead": 303360
+  }
+ }
+}

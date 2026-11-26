@@ -1,0 +1,43 @@
+{
+  "sharedLengths": {
+    "system-prompt": 27309,
+    "skills-catalogue": 35983,
+    "multi-agent": 2511,
+    "agents-md": 3928
+  },
+  "differs": {},
+  "sessions": [
+    {
+      "id": "IRWB-020-D",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T12-38-59-01a218f0-6cc7-7352-b5bc-c92916d879a7.jsonl",
+      "model": "gpt-6.2-astra",
+      "effort": "high",
+      "minutes": 7.4,
+      "toolCalls": 29,
+      "commands": 80,
+      "commandSource": "CommandExecution events",
+      "failedCommands": 4,
+      "tools": {
+        "exec_command": 26,
+        "exec": 3,
+        "apply_patch": 2
+      },
+      "interpreterRuns": 3,
+      "skillReads": [
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,evidence-levels}.md"
+      ],
+      "reasoningItems": 14,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2001086,
+        "cached_input_tokens": 1943168,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13580,
+        "reasoning_output_tokens": 2628,
+        "total_tokens": 2014666
+      }
+    }
+  ]
+}

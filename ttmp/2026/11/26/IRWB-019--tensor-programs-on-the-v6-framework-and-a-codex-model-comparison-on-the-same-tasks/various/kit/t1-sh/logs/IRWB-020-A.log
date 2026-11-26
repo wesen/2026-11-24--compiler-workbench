@@ -5945,3 +5945,100 @@ Put the Stage 1 design in review. The proposed synchronous native pass path shar
 [73yt] [ ] Implement the synchronous native pass path, meaning contract, and checked passes
 [bzsw] [ ] Add the six tensor programs, negative witnesses, and regression coverage
 
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+root=Path('ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes')
+p=root/'design-doc/01-tix-stage-1-design.md'
+s=p.read_text()
+s=s.replace('Oversized or over-budget cases supply no evidence. A changed artifact requires at least one completed case per function. Reserve cases with nonempty outputs during selection when such a binding is found.', 'Screen cases against those limits using the original artifact. A changed artifact requires at least one eligible case per function, and the candidate must complete every selected case within the budget. Reserve cases with nonempty outputs during selection when such a binding is found.')
+s=s.replace('check row totals.', 'check row totals.')
+p.write_text(s)
+p=root/'reference/01-diary.md'
+s=p.read_text()
+s=s.replace('Chose bounded scalar expression trees inside indexed statements.', 'Chose scalar expression trees with explicit iteration bounds inside indexed statements.')
+s=s.replace('exited successfully under Node "'`v24.18.0`.'"', 'exited successfully under Node "'`v24.18.0`. The rerun with `--test-isolation=none` reported all seven tests passing.'"')
+p.write_text(s)
+p=root/'changelog.md'
+p.write_text(\"\"\"# Changelog
+
+## 2026-11-26
+
+- Created the ticket and put the Stage 1 design in review. The proposed synchronous native pass path shares candidate validation and write enforcement with Typed and uses the existing sampled differential checker. [Stage 1 design](./design-doc/01-tix-stage-1-design.md), [diary](./reference/01-diary.md)
+\"\"\")
+PY
+git add -- 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes' && git diff --cached --check && git diff --cached --stat" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ exited 128 in 337ms:
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/t1-sh-irwb-020-a/index.lock': Read-only file system
+
+exec
+/usr/bin/zsh -lc "git add -- 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 340ms:
+exec
+/usr/bin/zsh -lc 'docmgr doctor --ticket IRWB-020-A --stale-after 30' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc 'git diff --cached --check && git diff --cached --stat && git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 267ms:
+ .../README.md                                      |  21 ++++
+ .../changelog.md                                   |   5 +
+ .../design-doc/01-tix-stage-1-design.md            | 110 +++++++++++++++++
+ .../index.md                                       |  49 ++++++++
+ .../reference/01-diary.md                          | 137 +++++++++++++++++++++
+ .../tasks.md                                       |   8 ++
+ 6 files changed, 330 insertions(+)
+## t1-sh/irwb-020-a
+A  ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/README.md
+A  ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+A  ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+A  ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md
+A  ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+A  ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+
+ succeeded in 446ms:
+## Doctor Report (1 findings)
+
+### IRWB-020-A
+
+- ✅ All checks passed
+
+
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-020-A: Design Tix stage 1 and checked native passes'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 204ms:
+[t1-sh/irwb-020-a 13a833f] IRWB-020-A: Design Tix stage 1 and checked native passes
+ 6 files changed, 330 insertions(+)
+ create mode 100644 ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/README.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -1 --format='%H%n%s'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 235ms:
+## t1-sh/irwb-020-a
+13a833fb0128ce38c35f43cf0645d20e4be4e8a0
+IRWB-020-A: Design Tix stage 1 and checked native passes
+
+codex
+IRWB-020-A is ready for review. The commit contains the [ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md), [Stage 1 design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md), and [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md). Implementation awaits review.
+
+The proposed framework change is confined to the pass layer. Add `defineNativePass` and `applyNativePassSync`, sharing artifact validation, diffs, correspondence, and declared-write checks with `applyPass`. The synchronous path can check a native rewrite without opening a graph edit or requiring the adapter to implement `rebuild`.
+
+The design uses sampled exact checks for `inline` and sampled tolerance checks against the original f64 result for `split-sum`. It also documents where conservative affine bounds checking may reject valid programs.
+
+The build, seven existing framework tests, and `docmgr doctor` passed. A probe using the existing differential checker rejected the reduction witness under exact comparison and accepted it under tolerance.
+
+Commit `13a833fb0128ce38c35f43cf0645d20e4be4e8a0` on `t1-sh/irwb-020-a`. The worktree is clean.
+tokens used
+119,321
+IRWB-020-A is ready for review. The commit contains the [ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md), [Stage 1 design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md), and [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md). Implementation awaits review.
+
+The proposed framework change is confined to the pass layer. Add `defineNativePass` and `applyNativePassSync`, sharing artifact validation, diffs, correspondence, and declared-write checks with `applyPass`. The synchronous path can check a native rewrite without opening a graph edit or requiring the adapter to implement `rebuild`.
+
+The design uses sampled exact checks for `inline` and sampled tolerance checks against the original f64 result for `split-sum`. It also documents where conservative affine bounds checking may reject valid programs.
+
+The build, seven existing framework tests, and `docmgr doctor` passed. A probe using the existing differential checker rejected the reduction witness under exact comparison and accepted it under tolerance.
+
+Commit `13a833fb0128ce38c35f43cf0645d20e4be4e8a0` on `t1-sh/irwb-020-a`. The worktree is clean.

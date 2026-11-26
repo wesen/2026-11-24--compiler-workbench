@@ -1,0 +1,11 @@
+Warning: No models match pattern "lunaroute/glm-5.3"
+Warning: No models match pattern "lunaroute/glm-5.3-flash"
+Warning: No models match pattern "lunaroute/deepseek-4.1-flash"
+Warning: No models match pattern "lunaroute/deepseek-4.1-flash-background"
+IRWB-020-F is ready for review. The [ticket](ttmp/2026/11/26/IRWB-020-F--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md), [design](ttmp/2026/11/26/IRWB-020-F--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-tix-and-checked-tensor-passes.md), and [diary](ttmp/2026/11/26/IRWB-020-F--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md) are committed.
+
+The design proposes two framework changes to support the fixed synchronous API: a native-pass runner that reuses v6 artifact and write checks without requiring graph rebuild, and a synchronous runner for context-free contract postconditions that reuses differential evidence. The existing async APIs stay unchanged.
+
+**Commit:** `770f4fb9e1b0f90b8d44e834d4947e8c780ced1d`
+
+No source code changed. Implementation awaits review.

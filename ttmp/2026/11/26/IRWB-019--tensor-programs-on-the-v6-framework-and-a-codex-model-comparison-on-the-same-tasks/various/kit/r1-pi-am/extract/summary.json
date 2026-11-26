@@ -1,0 +1,23 @@
+{
+ "IRWB-021-F": {
+  "minutes": 3.4,
+  "toolCalls": 14,
+  "byTool": {
+   "read": 7,
+   "bash": 4,
+   "write": 3
+  },
+  "commands": 4,
+  "interpreterRuns": 0,
+  "skills": [
+   "docmgr/SKILL.md",
+   "diary/SKILL.md",
+   "diary/references/investigation-entry.md"
+  ],
+  "tokens": {
+   "input": 83386,
+   "output": 6975,
+   "cacheRead": 75904
+  }
+ }
+}

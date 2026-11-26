@@ -21,14 +21,18 @@
       "effort": "medium",
       "minutes": 5.6,
       "toolCalls": 20,
-      "commands": 29,
+      "commands": 36,
+      "commandSource": "CommandExecution events",
+      "failedCommands": 4,
       "tools": {
         "exec_command": 32
       },
-      "interpreterRuns": 6,
+      "interpreterRuns": 8,
       "skillReads": [
         "/home/manuel/.codex/skills/docmgr/SKILL.md",
-        "/home/manuel/.codex/skills/diary/SKILL.md"
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry,evidence-levels}.md",
+        "/home/manuel/.codex/skills/docmgr/references/docmgr.md"
       ],
       "reasoningItems": 15,
       "reasoningSummaries": 0,
@@ -49,6 +53,8 @@
       "minutes": 7.2,
       "toolCalls": 25,
       "commands": 40,
+      "commandSource": "CommandExecution events",
+      "failedCommands": 7,
       "tools": {
         "exec_command": 40
       },
@@ -77,6 +83,8 @@
       "minutes": 6.1,
       "toolCalls": 22,
       "commands": 34,
+      "commandSource": "CommandExecution events",
+      "failedCommands": 7,
       "tools": {
         "exec_command": 34
       },
@@ -104,14 +112,17 @@
       "effort": "medium",
       "minutes": 6.2,
       "toolCalls": 24,
-      "commands": 17,
+      "commands": 36,
+      "commandSource": "CommandExecution events",
+      "failedCommands": 7,
       "tools": {
         "exec_command": 26
       },
-      "interpreterRuns": 3,
+      "interpreterRuns": 10,
       "skillReads": [
         "/home/manuel/.codex/skills/docmgr/SKILL.md",
-        "/home/manuel/.codex/skills/diary/SKILL.md"
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
       ],
       "reasoningItems": 14,
       "reasoningSummaries": 0,
@@ -131,11 +142,13 @@
       "effort": "medium",
       "minutes": 6.2,
       "toolCalls": 17,
-      "commands": 27,
+      "commands": 28,
+      "commandSource": "CommandExecution events",
+      "failedCommands": 5,
       "tools": {
         "exec_command": 28
       },
-      "interpreterRuns": 7,
+      "interpreterRuns": 8,
       "skillReads": [
         "/home/manuel/.codex/skills/docmgr/SKILL.md",
         "/home/manuel/.codex/skills/diary/SKILL.md",
@@ -159,11 +172,13 @@
       "effort": "medium",
       "minutes": 7,
       "toolCalls": 20,
-      "commands": 19,
+      "commands": 30,
+      "commandSource": "CommandExecution events",
+      "failedCommands": 6,
       "tools": {
         "exec_command": 24
       },
-      "interpreterRuns": 6,
+      "interpreterRuns": 10,
       "skillReads": [
         "/home/manuel/.codex/skills/docmgr/SKILL.md",
         "/home/manuel/.codex/skills/diary/SKILL.md",
