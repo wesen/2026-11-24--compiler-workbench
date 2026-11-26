@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "22c3d937062e1e8578cb36dc4f2b3e804071547a392b4e9e822a9e730589a1aa",
+  "request": {
+    "ticket": "IRWB-021-L",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the design: seven checked edits, explicit f32 fold order, and a falsifiable three-arm GB10 study. No implementation or GPU measurements."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-25f23a492347ab9807c6134ea01601fd",
+    "state": "committed",
+    "created_at": "2026-11-26T18:01:44.64993856Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "index.md": "443598a55067d2170a98eaab192af3f1cd29baeaf6d7436ae7f3b0f9fa91c6f1"
+    },
+    "after": {
+      "changelog.md": "b34db93e72441ea47dc912a2f13e07574999f56b5ad7eef33170e68449c05a24",
+      "index.md": "f918892f515f185ac72d660e7efdb2efe03c64288b161d84c6342377174d5129"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKQ29tcGxldGVkIHRoZSBkZXNpZ246IHNldmVuIGNoZWNrZWQgZWRpdHMsIGV4cGxpY2l0IGYzMiBmb2xkIG9yZGVyLCBhbmQgYSBmYWxzaWZpYWJsZSB0aHJlZS1hcm0gR0IxMCBzdHVkeS4gTm8gaW1wbGVtZW50YXRpb24gb3IgR1BVIG1lYXN1cmVtZW50cy4K"
+    },
+    {
+      "path": "index.md",
+      "before": "443598a55067d2170a98eaab192af3f1cd29baeaf6d7436ae7f3b0f9fa91c6f1",
+      "after": "LS0tClRpdGxlOiBEZXJpdmluZyBzdHJlYW1pbmcgYXR0ZW50aW9uIGJ5IGNoZWNrZWQgcmV3cml0ZXMKVGlja2V0OiBJUldCLTAyMS1MClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBpcgogICAgLSB2ZXJpZmljYXRpb24KICAgIC0gcmVzZWFyY2gKICAgIC0gcGVyZm9ybWFuY2UKRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogUmVzZWFyY2ggZGVzaWduIGZvciBkZXJpdmluZyBhIGJsb2NrLXN0cmVhbWluZyBhdHRlbnRpb24ga2VybmVsIHdpdGhvdXQgYW4gYXR0ZW50aW9uLXNwZWNpZmljIHN1YnN0aXR1dGlvbi4KTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjZUMTM6MDE6NDQuNjQ5ODgzNTQtMDU6MDAKV2hhdEZvcjogSWRlbnRpZnkgdGhlIGRlc2lnbiwgZXZpZGVuY2UgYW5kIHNjb3BlIG9mIElSV0ItMDIxLUwuCldoZW5Ub1VzZTogUmV2aWV3aW5nIHRoZSBUaXgtdG8tQ1VEQSBhdHRlbnRpb24gcmVzZWFyY2ggcXVlc3Rpb24uCi0tLQoKIyBEZXJpdmluZyBzdHJlYW1pbmcgYXR0ZW50aW9uIGJ5IGNoZWNrZWQgcmV3cml0ZXMKCkNhbiBhIGNvbXBpbGVyIHR1cm4gdGhlIHBsYWluIFRpeCByZWR1Y3Rpb25zIGludG8gb25lIHBhc3Mgb3ZlciBrZXkgYmxvY2tzLCB3aXRoIGEgY2hlY2sgYXQgZXZlcnkgZWRpdD8gVGhlIFtkZXNpZ25dKGRlc2lnbi1kb2MvMDEtZnJvbS1kZW5zZS1zb2Z0bWF4LXRvLWEtY2hlY2tlZC1ibG9jay1mb2xkLm1kKSBnaXZlcyB0aGUgbG9jYWwgbGF3cywgdGhlIG9yZGVyZWQgdHVwbGUgZm9sZCB0aGV5IHByb2R1Y2UsIGFuZCBhbiBleHBlcmltZW50IHRoYXQgY291bGQgcmVqZWN0IGVpdGhlciB0aGUgbnVtZXJpY2FsIG9yIHBlcmZvcm1hbmNlIGNsYWltLiBJdCBkaXN0aW5ndWlzaGVzIGVsaW1pbmF0aW5nIGEgcXVhZHJhdGljIGludGVybWVkaWF0ZSBmcm9tIHJlZHVjaW5nIG1lYXN1cmVkIEdCMTAgbWVtb3J5IHRyYWZmaWMuCgpUaGUgZGVsaXZlcmFibGUgaXMgdGhlIGRlc2lnbiBvbmx5LiBObyBjaGFuZ2UgdG8gVGl4IG9yIHRoZSBmcmFtZXdvcmssIGtlcm5lbCBpbXBsZW1lbnRhdGlvbiBvciBHUFUgcmVzdWx0IGlzIGNsYWltZWQuCgotIFtSZXNlYXJjaCBkaWFyeV0ocmVmZXJlbmNlLzAxLXJlc2VhcmNoLWRpYXJ5Lm1kKQotIFtUYXNrc10odGFza3MubWQpIMK3IFtDaGFuZ2Vsb2ddKGNoYW5nZWxvZy5tZCkK"
+    }
+  ]
+}
