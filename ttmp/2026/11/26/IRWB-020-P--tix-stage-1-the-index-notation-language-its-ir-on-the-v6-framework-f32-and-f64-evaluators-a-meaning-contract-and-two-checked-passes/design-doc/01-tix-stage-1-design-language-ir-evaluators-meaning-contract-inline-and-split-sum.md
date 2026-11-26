@@ -14,6 +14,10 @@ RelatedFiles:
       Note: the differential check the meaning contract is built on
     - Path: repo://src/framework/passes/define-pass.ts
       Note: applyPass, the target of proposed changes F1 and F2
+    - Path: repo://src/tensor/contract.ts
+      Note: the meaning contract
+    - Path: repo://src/tensor/passes.ts
+      Note: inline, split-sum and the wrong variants
     - Path: repo://src/typed/project.ts
       Note: runPipeline, the model for optimizeTix
     - Path: repo://ttmp/2026/11/26/IRWB-020-P--tix-stage-1-the-index-notation-language-its-ir-on-the-v6-framework-f32-and-f64-evaluators-a-meaning-contract-and-two-checked-passes/scripts/01-probe-framework-fit.mjs
@@ -164,7 +168,7 @@ its dim instead, and a failed check is an outcome the contract compares (section
 | `returns` | binding | fn to its result tensor |
 
 The adapter has `entities`, `resolve`, `relations`, `roots`, `describe`, `validate`, `serialize` and `deserialize`.
-It has no `rebuild` (see F2). "Single use" in `inline` is a count of incoming `reads` relations on the view.
+It has no `rebuild` (see F2).
 
 ## 5. Evaluators
 
@@ -183,7 +187,7 @@ accumulate in increasing lexicographic order of the indices, applying the arithm
 `max` and `min` are `Math.max` and `Math.min`. A subscript outside its dim throws `TixTrap`.
 
 `runTix` uses `f32` or `f64` by `options.precision` (default `f32`) and returns `Float32Array` or `Float64Array`
-data. `bound` is exported as `runTixBound` for the contract and its tests.
+data. `bound` is exported from `evaluate.ts` as `runBound` for the contract and its tests.
 
 ## 6. The meaning contract
 
@@ -316,7 +320,7 @@ statement qualifies. Correspondence: D and its consumer merge into the consumer.
 It is bit-identical because the f32 meaning rounds every operation separately and an inlined expression performs the
 same operations on the same values.
 
-**`wrongInline`** (exported from `src/tensor/passes.ts` in `WRONG_PASSES`, not in the public pass table) binds D's indices to the subscripts in reverse order. For rank 2 and above it reads the wrong
+**The wrong inline** (`WRONG_PASSES.inline`, exported from `src/tensor/passes.ts`, not in the public pass table) binds D's indices to the subscripts in reverse order. For rank 2 and above it reads the wrong
 elements (or traps, on a non-square shape). For rank 1 it is the correct pass, so the demonstration uses a rank-2
 statement.
 
@@ -331,7 +335,7 @@ sum(jb) sum(ji) body[j := 4*jb + ji]      jb in ceildiv(E, 4),  ji in min(4, E -
 with fresh names for `jb` and `ji`. The block size 4 is the pass's parameter default. Sums over several indices
 (conv2d's) and sums already split are left unchanged.
 
-**`wrongSplitSum`** (in `WRONG_PASSES`) uses `floor(E / 4)` blocks, written as `ceildiv(E - 3, 4)`, with `ji` in 4. It drops the
+**The wrong split-sum** (`WRONG_PASSES.splitSum`) uses `floor(E / 4)` blocks, written as `ceildiv(E - 3, 4)`, with `ji` in 4. It drops the
 partial last block.
 
 ### 7.3 Expected verdicts
@@ -531,6 +535,27 @@ None. The two questions of the first version were answered by the review (sectio
 One addition the review did not ask for: the differential spec has a third port, `origin`, next to `reference` and
 `candidate`. Cases must come from the origin under both relations, and under `exact` the reference is the pass's
 input, whose extents after a `split-sum` are no longer plain affine forms.
+
+## 18. As built
+
+The implementation follows this document. The differences:
+
+| Design | As built | Reason |
+| --- | --- | --- |
+| `inline` counts single uses as incoming `reads` relations on the view | It counts references in the native statements | The pass inlines to a fixed point, and the view describes only the first round |
+| A plain use is a whole subscript | A subscript whose affine form is one index (`j + 0` counts) | The checker decides on the normalised form |
+| Tests listed four files | Also `tests/tensor/helpers.mjs` (corpus loading, test data) | Shared by the four |
+| attention divides by a statement holding `sqrt(D)` | The scale is written inline, `/ sqrt(D)` | A statement needs an index; a scalar has none |
+| An error position is the node's | For a subscript it is where the subscript starts | A binary node's own position is its operator |
+
+Measured on the built evaluators (`tests/tensor/contract.test.mjs`, 48 cases per program, f32 against f64 of the
+same program): the largest error as a share of the bound is 0.073 (attention), 0.701 (conv2d), 0.568 (layernorm),
+0.568 (matmul), 0.464 (mlp), 0.462 (softmax). No case exceeded its bound. 19 of layernorm's 48 cases are
+inconclusive, as section 6.1 predicts for `eps`.
+
+Verdicts on the corpus (`tests/tensor/passes.test.mjs`): the table of section 7.3 holds wherever a pass changes the
+program. conv2d is changed by no pass (its sum has three indices and it has no pointwise statement). On layernorm
+the wrong inline is the correct pass, because the statement it inlines has rank 1.
 
 ## References
 

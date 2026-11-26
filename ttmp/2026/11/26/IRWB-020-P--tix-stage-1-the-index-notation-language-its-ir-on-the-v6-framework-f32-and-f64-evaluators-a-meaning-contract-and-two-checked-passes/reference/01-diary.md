@@ -345,3 +345,242 @@ changes recorded.
 ### Technical details
 
 - Cache key: `relation/count/seed`; id `tensor.meaning-<relation>`, version `1+<count>.<seed>`.
+
+## Step 5: Framework changes F2 and F1
+
+I made the two framework changes first, since the tensor passes cannot be applied without them. Both are in
+`src/framework/passes/define-pass.ts`. The synchronous middle of `applyPass` moved into one internal function,
+`settle`, which `applyPass` and the new `applyPassSync` both call.
+
+### Prompt Context
+
+**User prompt (verbatim):** see Step 4.
+
+**Assistant interpretation:** Implement F1 and F2 as revised (no `store`, required `check`).
+
+**Inferred user intent:** The framework changes are the stage's primary result, so they are a commit of their own
+with their own tests.
+
+**Commit (code):** 6022b40 — "IRWB-020-P: framework F1 applyPassSync and F2 edit opened on first use, with tests/framework/pass-sync.test.mjs"
+
+### What I did
+
+- F2: `lazyEdit(view)`; `PassRunContext.edit` is a getter. A pass that returns nothing without reading `edit` is
+  unchanged.
+- F1: `applyPassSync(pass, before, { params?, outputId?, check })`. It refuses a pass with `needs` or `preserves`
+  and a `run` that returns a thenable (`badResult`), and a missing `check`.
+- `tests/framework/pass-sync.test.mjs`: 6 tests on a toy domain without `rebuild`.
+
+### Why
+
+- F1: `optimizeTix` is synchronous in the fixed API; `applyPass` is async. F2: `beginEdit` requires `rebuild`.
+
+### What worked
+
+- `node --test tests/framework/*.test.mjs`: 231 pass, 0 fail.
+- `node --test tests/typed/{passes,rules,mutate,ssa,f32,project-meta,meaning-memo,parallel,audit,regex-nfa,candela}.test.mjs`
+  (the Typed tests that apply passes): 53 tests, 52 pass, 0 fail, 1 skipped (the skip is in the test file).
+
+### What didn't work
+
+- No failures.
+
+### What I learned
+
+- `define-pass.ts` was not Prettier-clean before my change (15 diff lines on the committed file), so formatting the
+  file also reflowed a few lines I did not write.
+
+### What was tricky to build
+
+- An unchanged result must not be checked, and an undeclared write must be refused before the check runs. `settle`
+  returns `undefined` for "unchanged" and throws for the write, so both happen before either caller reaches its
+  gate. The test counts check calls to pin this.
+
+### What warrants a second pair of eyes
+
+- `applyPassSync` opens the input and the output each in a fresh `IRStore`, as `applyPass` does when it is given no
+  store.
+
+### What should be done in the future
+
+- N/A.
+
+### Code review instructions
+
+- `src/framework/passes/define-pass.ts`: `lazyEdit`, `settle`, `applyPassSync`; then `applyPass`, which now calls
+  `settle`.
+
+### Technical details
+
+- A rejected check throws `PassError('contractRejected', ..., { check })`, the same code a rejected contract has.
+
+## Step 6: The tensor domain
+
+`src/tensor/` in seven files and the six corpus programs. The first smoke run over the corpus (four passes, two
+relations) gave the design's verdict table at once, except for one crash in my comparison code.
+
+### Prompt Context
+
+**User prompt (verbatim):** see Step 4.
+
+**Assistant interpretation:** Implement stage 1 as revised.
+
+**Inferred user intent:** see Step 4.
+
+**Commit (code):** c4e699e — "IRWB-020-P: src/tensor (Tix parser and checker, IR and adapter, evaluator in three arithmetics, meaning contract, inline and split-sum, API) and corpus/tensor"
+
+### What I did
+
+- `ir.ts` (types, affine forms, validation, IR type, adapter), `syntax.ts` (tokens, parser), `check.ts` (extent
+  inference, bounds, lowering), `evaluate.ts` (one evaluator, arithmetics `F32`, `F64`, `BOUND`), `contract.ts`
+  (domain, cases, the two relations, cached spec and contract, `checkMeaning`), `passes.ts` (`inline`, `split-sum`,
+  `WRONG_PASSES`, `applyChecked`), `index.ts` (the fixed API, nothing else exported).
+- `corpus/tensor/{matmul,softmax,layernorm,attention,mlp,conv2d}/main.tix`.
+
+### Why
+
+- The split into files follows the design's sections.
+
+### What worked
+
+- Smoke run, per program, pass/relation → verdict (`-` is unchanged):
+
+  ```
+  attention inline/e:ok inline/t:ok split/e:REJ split/t:ok wInline/e:REJ wInline/t:REJ wSplit/e:REJ wSplit/t:REJ
+  conv2d    inline/e:-  inline/t:-  split/e:-   split/t:-  wInline/e:-   wInline/t:-   wSplit/e:-   wSplit/t:-
+  layernorm inline/e:ok inline/t:ok split/e:REJ split/t:ok wInline/e:ok  wInline/t:ok  wSplit/e:REJ wSplit/t:REJ
+  matmul    inline/e:-  inline/t:-  split/e:REJ split/t:ok wInline/e:-   wInline/t:-   wSplit/e:REJ wSplit/t:REJ
+  mlp       inline/e:ok inline/t:ok split/e:REJ split/t:ok wInline/e:REJ wInline/t:REJ wSplit/e:REJ wSplit/t:REJ
+  softmax   inline/e:-  inline/t:-  split/e:REJ split/t:ok wInline/e:-   wInline/t:-   wSplit/e:REJ wSplit/t:REJ
+  ```
+
+- A whole program's eight checks take 5 to 70 ms.
+
+### What didn't work
+
+- First smoke run crashed in the tolerance comparison on layernorm's wrong split:
+
+  ```
+  TypeError: Cannot read properties of undefined (reading '0')
+      at Object.compare (dist/tensor/contract.js:185:75)
+  ```
+
+  A candidate with one non-finite element has no bound (rule 2 decides it), but the loop reached finite elements
+  before the non-finite one and read `bound[i]`. Fixed: without a bound, only the non-finite element is reported.
+- `tsc`: `Property 'bound' does not exist on type 'Outcome'` in `inconclusive`; narrowed with
+  `o.trap === undefined`.
+
+### What I learned
+
+- conv2d is changed by none of the four passes, and layernorm's only inlinable statement has rank 1, where the
+  wrong inline is the correct one. The verdict table is therefore shown on four programs for `split-sum` and on two
+  (attention, mlp) for the wrong inline, plus the small programs in the tests.
+- An inline chain (a into b, then b into c) needs one correspondence entry per final consumer; an entry naming a
+  statement that no longer exists is not a valid target.
+
+### What was tricky to build
+
+- The differential spec needs the origin under both relations (cases come from it), but under `exact` the reference
+  is the pass's input. It has three ports, `origin`, `reference` and `candidate`; `tolerance` binds the first two to
+  the same artifact.
+- The framework asks `inconclusive` before `compare`, per outcome, without the other side. To keep the rule order
+  (candidate wrong shape or not finite: disagree; bound not finite: inconclusive), the candidate's run computes a
+  bound only when its result has the origin's shape and is finite, so "has a bound that is not finite" is the only
+  inconclusive candidate.
+
+### What warrants a second pair of eyes
+
+- `check.ts`, `nonNegative`: the bounds proof is a sufficient test (non-negative coefficients, non-negative at all
+  ones). It rejects programs that are in bounds only through a relation between shape names.
+- `syntax.ts`, the `max(` rule: a list of two or more bare names that are all shape names is a call.
+
+### What should be done in the future
+
+- N/A.
+
+### Code review instructions
+
+- Start at `src/tensor/index.ts`, then `passes.ts` (`applyChecked`), `contract.ts` (`makeSpec`), `evaluate.ts`
+  (`evaluateFn`, `BOUND`).
+
+### Technical details
+
+- attention's first draft had `scale[t] = sqrt(D) + 0 * q[t, 0];` to give a scalar an index. Replaced by
+  `/ sqrt(D)` inline.
+
+## Step 7: Tests
+
+33 tests in four files under `tests/tensor/`. Writing them found two defects in the implementation and several
+wrong expectations of mine.
+
+### Prompt Context
+
+**User prompt (verbatim):** see Step 4.
+
+**Assistant interpretation:** Put the tests where the risk is: evaluation order and rounding, the checker's
+errors, the bound, the verdict table, and the manager path.
+
+**Inferred user intent:** see Step 4.
+
+**Commit (code):** 34db3b5 — "IRWB-020-P: tests/tensor (front end, evaluators, contract, passes), subscript error positions, -0 in reasons"
+
+### What I did
+
+- `syntax-check.test.mjs` (7): precedence, the reduction body rule, the `max(` rule, 35 check errors with their
+  `line:col`.
+- `evaluate.test.mjs` (7): all six corpus programs bit-identical to hand-written `Math.fround` loops; conv2d's loop
+  order distinguished from the swapped order; f64; input validation; a trap on hand-built IR; one bound by hand.
+- `contract.test.mjs` (8): cases deterministic, JSON-safe and accepted by `immutable`; redraw for conv2d; the bound
+  holds on the corpus; self-check; inconclusive; `-0`; changed signature; cached objects.
+- `passes.test.mjs` (11): the verdict table on the corpus; inline with affine subscripts; split-sum against
+  hand-blocked loops at N = 1, 3, 4, 5, 8, 11; the wrong variants; the pipeline `split-sum` then `inline`; manager
+  parity in one manager; changes and correspondence.
+
+### Why
+
+- Nothing else checks tensor programs.
+
+### What worked
+
+- `node --test tests/tensor/*.test.mjs`: 33 pass, 0 fail, about 0.5 s.
+- The bound on the built evaluators, largest error / bound over 48 cases: attention 0.073, conv2d 0.701, layernorm
+  0.568, matmul 0.568, mlp 0.464, softmax 0.462. layernorm: 29 decided, 19 inconclusive.
+- All six evaluator comparisons with hand-written loops passed on the first run.
+
+### What didn't work
+
+- Defect: an affine subscript's error pointed at its operator (`1:46` for `x[i + 1]`), because a binary node's
+  position is its operator. Now the subscript's start (`1:44`).
+- Defect: a rejection reason printed `-0` as `0` (`element 0 is 0, the reference has 0`). Reasons now show `-0`.
+- My expectations, not the code: three column numbers pointed at the statement instead of the index; a comment in a
+  one-line test source swallowed `return y; }`; a test program used `u[j + 1, j]` under a declared `N - 1`, which
+  the checker correctly rejects (`j` has a plain use of extent N); the framework names a changed entity `updated`.
+  I checked each actual position against the source text before changing the expected value.
+
+### What I learned
+
+- With the default 16 cases, the exact relation rejects `split-sum` on 3 to 7 cases of 16 per program: most cases
+  have extents too small to reassociate.
+
+### What was tricky to build
+
+- The manager-parity test asserts the rejection's message (`sampled cases disagree`), not only the verdict, because
+  `applyPass` reports any throw from the manager as `contractRejected`.
+
+### What warrants a second pair of eyes
+
+- `passes.test.mjs` asserts that the wrong inline is *accepted* on layernorm (rank 1). That is a property of the
+  chosen wrong variant, not of the contract.
+
+### What should be done in the future
+
+- A corpus program on which every pass applies to conv-style code (a pointwise statement feeding conv2d) would
+  extend the table to conv2d.
+
+### Code review instructions
+
+- `npm run build && node --test tests/tensor/*.test.mjs`.
+
+### Technical details
+
+- `tests/tensor/helpers.mjs` holds the corpus loader, the test data generator and `sameBits`.
