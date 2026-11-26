@@ -1728,3 +1728,31 @@ The third research-guide agent finished. Its guide is uploaded to `/ai/2026/11/2
   So "multiples, not percents" holds only for a polyvariant specializer. It is already false for the 7 ray-marched and volume scenes, where dynamic arithmetic dominates.
 - **The hand staging was a small part of the cost.** The gallery's `s<k>_` sections are at most 3% of a pixel's operations in the object-and-BVH scenes.
 - **A stated falsifier:** if Phases 2 and 3 leave B-01 above 6,000 instructions per pixel (from IRWB-003's 8,267.7), the hypothesis fails.
+
+## Step 40: IRWB-010/011 merged; the six Codex design docs reviewed
+
+The last research-guide agent finished, so the guide round (IRWB-007..011) is complete. The six Codex agents also finished, and I reviewed their docs against the code.
+
+### What I did
+- **IRWB-010/011:** `remarquee cloud ls` lists both sketch guides under `/ai/2026/11/26/IRWB-010` and `/IRWB-011`. The branch touches ticket files only, and I merged it as `b7146bf`. Their headline measurements:
+  - `noise3` costs the same at r0 and O2; the cost is calls and constant rebuilds, so rule search pays only after inlining;
+  - contraction into fused multiply-adds saves 1.62–4.17% and changes no displayed level in six of eight scenes;
+  - the draft's same-seed RMS budget mixed bias with path divergence, so the contract was revised.
+- **The six Codex runs** all exited 0, in 5–8 minutes each, using 105–138K tokens. Each made one commit, touched only its ticket and passed `docmgr doctor`. The branch heads are `codex/irwb-012..017`.
+- **Fact checks:** I verified the docs' technical claims against `evaluate.ts`, `inline.ts`, `typed-wasm.js`, `program.ts` and `projects.ts`. A probe (`scripts/16-probe-int32array-ingest.mjs`) reproduced IRWB-015's blocker: default ingest of a frame array gives `unknown tape opcode 252`, while `{ tape: true }` works. IRWB-012, -013 and -014 missed this, and they ran no probes.
+- **The review** is in `various/codex-playground/02-review.md`, and the logs are committed alongside it (1.8 MB).
+
+### What I learned
+- **The over-complexity is in the contract, not the programs.** The algorithms and sizes are right. The excess is:
+  - invented status-code interfaces and checking orders;
+  - input domains wider than the experiment needs;
+  - boundary tests of the program's own guards;
+  - test plans for features that don't exist yet;
+  - two self-defeating choices: IRWB-012's fuel counter works against specialization, and IRWB-017 hand-builds fixtures for 53 functions instead of wiring `entries`.
+- **Part of it was my brief.** "A size in an input buffer" produced the 1-cell config and policy buffers. The list of six tickets produced padded six-row tables in every doc.
+- **The agents that ran probes found the real problems.** IRWB-015 found the ingest blocker. IRWB-017 found that opening perft 1 takes 20,778 statements, over the 20,000 limit.
+
+### What should be done next
+- Pass `ingest` and `entries` through the Node project loaders before implementing any of these.
+- Apply the cuts the review lists, then implement IRWB-012 and IRWB-013 first.
+- The combined synthesis report is now due, since every guide is in.
