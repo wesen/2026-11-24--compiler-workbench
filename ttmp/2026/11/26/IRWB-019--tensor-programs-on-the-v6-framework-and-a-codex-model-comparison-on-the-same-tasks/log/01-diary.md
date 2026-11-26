@@ -124,3 +124,31 @@ The user asked: "ok, add xhigh to the matrix". There are four new cells per task
 - The user asked: "also keep a playbook draft as you go, updating it as you refine or extend your techniques".
   - Vault `e6fc169`: `Research/playbooks/agents/PLAYBOOK - Comparing Coding-Agent Configurations on the Same Design-and-Implement Tasks.md` (`status: draft`).
   - The preference is recorded in memory, alongside the diary and report cadence.
+
+## Step 4: Claude cells, and coordinator scripts to keep the overhead small
+
+### The user's instructions while away
+- "I'm gonna go swim, so blast through all this stuff, research, improve, keep an eye on overengineering an dimproving prompting for the sol agents, and in fact, also launch a bunch of claude opus (low medium high extra high) and fable (low medium high xhigh) as well, but be a bit more restrained on those."
+- "like, don't launch a whole fleet, keep an eye on usage".
+- "don't forget to update documents as they go, since we have so much going on. whatever scripts you can write to make your job easier and more token efficient is good too" / "(like when keeping an eye on the agents, etc...)".
+
+### Claude cells
+- **A headless run was blocked.** `claude -p --model claude-fable-5-2 --effort low --dangerously-skip-permissions --output-format json …` was denied by the auto-mode classifier as "[Undermining Oversight]". I did not try to route around it.
+- **The sanctioned route** is the coordinator's Agent tool, with `model` and `effort`. Effort is allowed here because the user named the levels.
+- **Restraint:** four cells, on t1 only:
+  - Opus 5.5 at medium (IRWB-020-N) and xhigh (M);
+  - Fable 5.2 at medium (P) and xhigh (O).
+  
+  They span both models' effort ranges. `low` and `high` are left for later if usage allows. No Claude cells run in r1.
+- **Setup:** I created each worktree at `19ad269`. Each brief is in a file outside the repository (`scratchpad/claude-briefs/`), so an agent pointed at it does not wander into IRWB-019's keys and rubrics. The prompt itself is three lines that point at the brief. The agent ids are stored in `t1-config-key.json`, for `SendMessage`.
+- **Confounds:**
+  - Claude Code's subagent prompt, rather than its CLI prompt;
+  - the policy in the task text, rather than in the system prompt;
+  - "start every command with `cd <worktree> && `", because subagent shell state does not persist.
+
+### Scripts (`1216cd7`, `2a9b285`; vault kit `CODEX_EXTRA`)
+- **`08-status.mjs [task]`:** one line per agent, across 28 agents, all harnesses. It shows state, commits, design words, lines added per area (`src/tensor`, `tests/tensor`, `corpus/tensor`, `src/framework`), other paths touched, and the last commit subject. It replaces about ten ad-hoc commands per check.
+- **`09-judge-pack.sh <task> <dir> <rubric>`:** writes missing `heads.json` (Claude cells), runs the kit's blind pack, renames the key to `blind-key-<task>.json` (the kit writes a fixed name), and copies in the rubric and the brief with the ticket id neutralized.
+- **`10-dispatch-turn.sh <task> <turn> <template> [reviews] [--only …] [--network]`:** builds one prompt per agent from a template, with `<REVIEW>` filled from that agent's blind review. It resumes Codex cells with `02-` and Pi cells with `13-`, and writes the Claude cells' prompts for `SendMessage`.
+- **The kit's `01`/`02` take `CODEX_EXTRA`,** for example `-c sandbox_workspace_write.network_access=true`, which the GPU stage needs.
+- **`various/prompts/t1/turn2.md`** (`0d8cd78`): the review, then revise (keeping and justifying any disagreement), implement, check (own tests; framework tests if the framework changed; never `npm test`), and the final message.
