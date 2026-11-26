@@ -70,5 +70,21 @@
   "subagent_tokens": 170983,
   "tool_uses": 13,
   "minutes": 13.8
+ },
+ {
+  "item": "IRWB-020-P",
+  "cell": "fable/medium",
+  "turn": "report",
+  "subagent_tokens": 300075,
+  "tool_uses": 6,
+  "minutes": 2.7
+ },
+ {
+  "item": "IRWB-020-N",
+  "cell": "opus/medium",
+  "turn": "report",
+  "subagent_tokens": 258493,
+  "tool_uses": 9,
+  "minutes": 3.1
  }
 ]

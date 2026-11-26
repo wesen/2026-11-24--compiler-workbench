@@ -431,3 +431,27 @@ Nine cells meet (1): A, B, C, D, F, G, I, J, L. B and D tie on (2), at +85/−27
 - The worst-case conditioning quoted in each text is computed per agent: 3.7e-7 for program 39, 1.6e-7 for K's five.
 - **Dispatch:** the twelve Codex and Pi cells by `10-dispatch-turn.sh` (which now accepts per-item `<RESULTS>` files); N and P by SendMessage.
 - **The suite and the cross-check** are committed after the report turn, so that the reports are written without them.
+
+## Step 17: B merged; the report turn's diagnoses; the right denominators
+
+- **B merged** into `irwb-001/import-v6-prototype` (`98b04da`), with no conflicts; main had not touched `src/framework` or the tensor paths since `19ad269`. Full suite after the merge: 414 tests, 411 pass, 0 fail, 3 skipped (was 394 pass). B's report turn changed no code (`e970be0`, report 2,775 words, one diagram, "Failure causes: none").
+- **A correction to step 16:** only four implementations made `applyPass`'s edit lazy (I, K, N, P), although all sixteen designs proposed it. J changed no existing framework file; it added `passes/sampled-sync.ts`. Report 11 §7 was corrected.
+- **The denominators** (N pointed out that "accepted 60/60" includes programs a pass cannot change). From the sources:
+  - `split-sum` applies to 32 of the 60 programs (a one-index `sum`);
+  - `inline` applies to 15 (a pointwise statement with exactly one use, not the result);
+  - all six rejected programs are among the 32.
+  
+  The false-rejection rates are K 5/32, E 1/32, H 1/32. No `inline` rejections.
+- **The diagnoses (turn 3).** Every agent with a failure found its cause with `file:line`. The causes are of three kinds:
+  - **N and P (Claude):** both accepted the suite's verdict. P: "The suite's result is right and the failure is mine" (`check.ts:123-124`). N: "The evaluation's verdict is right, and the restriction was mine" (`check.ts:121-122`).
+    - Both explain that the grammar keeps tensor names (before `[`) and index names (inside brackets) apart, and that only the shape/index separation is needed (to tell `max(N, D)` from a reduction).
+    - Neither applied the fix, as instructed. Both wrote a repro script.
+    - P raised a further rule the brief leaves open: `sum(j) a[i, j] + sum(j) b[i, j]` parses, by the reduction-body rule, as a nested reduction that rebinds `j`. P's checker rejects the shadowing. Neither the suite nor the random programs exercise it.
+  - **E and H (Pi, Astra), program 39:** on their own sampled inputs (E: C = 4, N = 5), the program cancels, and the *original* f32 result already exceeds the bound against f64. E's original error is 1.20e-5 against a bound of 5.93e-6 (`contract.ts:84-85`). The rewritten program is bit-identical to the original at the failing elements.
+    - Both call it "a real accuracy violation, not a rewrite regression". That is accurate about the program. But the pass was correct and is rejected, so the contract cannot accept a correct pass on an ill-conditioned origin.
+    - N's design ("inconclusive" when the origin's own f32 result fails the bound) and P's running error bound handle exactly this case.
+    - My turn-3 text said the program is well conditioned "on the evaluation's inputs", which was true for mine. Conditioning depends on the inputs.
+  - **K:** its sampled domain includes zero-size extents. An empty `max` gives −∞ in both programs (31), and division by C = 0 gives +∞ (34). Its gate treats identical infinities as a mismatch (`meaning.ts:117`).
+    - The brief says inputs are finite but is silent on zero extents.
+    - K diagnosed two of five and said, correctly, that the other three had no source or counterexample: I had included only two sources.
+- **Claude usage:** the two report turns took 300K (P) and 258K (N), most of it reading the long context. Total Claude subagent tokens so far: about 2.84M.
