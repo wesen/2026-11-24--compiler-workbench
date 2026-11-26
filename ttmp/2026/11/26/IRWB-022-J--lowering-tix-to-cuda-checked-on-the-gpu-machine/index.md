@@ -28,6 +28,7 @@ Checked CUDA lowering for Tix is implemented and verified on the GB10. The timin
 
 - [Checked Tix to CUDA lowering](design-doc/01-checked-tix-to-cuda-lowering.md)
 - [Diary](reference/01-diary.md)
+- [Final report](reference/02-report.md)
 - [Verification and corpus timings](reference/02-cuda-verification-and-corpus-timings.md)
 
 - **Related Files**: See frontmatter RelatedFiles field

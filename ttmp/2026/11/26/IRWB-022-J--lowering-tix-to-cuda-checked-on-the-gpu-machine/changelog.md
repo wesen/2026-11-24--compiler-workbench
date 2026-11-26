@@ -24,3 +24,7 @@ Implemented and checked direct CUDA emission, batched v6 verification and isolat
 ## 2026-11-26
 
 Verified all 33 tensor tests and recorded the six full-size GB10 and Stage 1 interpreter timings
+
+## 2026-11-26
+
+Recorded the independent evaluation, diagnosed the precision differences and added the final report
