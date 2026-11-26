@@ -22,7 +22,7 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 2 lowers each Tix statement to a CUDA kernel and checks the selected function against the Stage 1 evaluators. The design is ready for review. Implementation and corpus measurements follow the review.
+Stage 2 lowers each Tix statement to a CUDA kernel and checks the selected function against the Stage 1 f64 evaluator. The design incorporates the review and is ready for implementation.
 
 ## Key Links
 

@@ -129,3 +129,13 @@ Your ticket ID is IRWB-022-B. Name the ticket after the stage-2 work (lowering T
 The default tool key couples input bytes to compilation and puts concurrent jobs with the same key in the same working directory. The proposed runtime-input option and per-invocation workspace let one binary process many distinct batches and keep output fetches independent. The driver and compiler queries ran on the remote host through the probe. A versioned engine identity gives verdict replay a boundary independent of the compile cache.
 
 The numerical review should focus on the treatment of cancellation and nonfinite results, plus the choice of the current revision as the reference for optimized functions. The staged implementation can then exercise the proposed comparison on emitted CUDA and produce full-size timings. [Design](../design-doc/01-checked-cuda-lowering-for-tix.md)
+
+## Step 2 — Apply the review and calibrate the proposed relation
+
+The reviewer asked for a single distance-to-f64 relation, no identity round trip or in-flight coalescing, and ordinary kernel arguments. I adopted all of those changes. The contract uses the existing Stage 1 absolute and relative budget directly on finite f64 references from the selected revision.
+
+### Review and evidence
+
+The review required a committed design revision before implementation, the exact three public CUDA exports, the tensor tests, and a final accounting of framework changes, deviations and commit hashes. It also kept the separate arithmetic rounding sites, JS extrema, one async batch and CUDA kernel preloading.
+
+`node ttmp/2026/11/26/IRWB-022-B--*/scripts/03-corpus-calibration.mjs` exercised the selected case recipe across all six corpus functions, original and with both optimization orders. It found 16–24 admitted cases per variant and a largest f32-to-f64 error of 24.67% of the existing tolerance, in conv2d. The earlier cancellation microbenchmark shows why that tolerance is a sampled obligation. The end-to-end GPU checks will measure the same recipe against emitted code. [Calibration results](../scripts/03-corpus-calibration.jsonl)
