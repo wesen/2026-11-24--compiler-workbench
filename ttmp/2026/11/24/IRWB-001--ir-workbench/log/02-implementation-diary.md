@@ -1454,3 +1454,46 @@ The first of the four milestone agents finished. IRWB-006 turned `simplify` (27 
 ### Open (from the agent)
 - **Registering `sccp` and `O2-sccp`** in the shared lists after the IRWB-003 merge; then re-run `IRWB_FULL=1 node --test tests/typed/rules.test.mjs`.
 - **A pruned SSA variant.** 2,840 of Candela's 4,245 phis are dead.
+
+## Step 31: IRWB-004 merged (cheap experiments); report 6 pushed; the two running agents briefed on the API changes
+
+The cheap-experiments agent finished with every revision hash unchanged:
+- **Speed:** full O2 on Candela 12:06 → 3:27 (base measured by the agent); `cfg` 51/41 s → 13.6 s; a per-scene run 312 s → 119 s.
+- **The contract:** verdicts replayed from a memo, and 1.95× on four warm worker threads.
+- **The browser:** renders on a Web Worker, with frames bit-identical.
+
+Two targets were missed, and the agent reported both with profiles:
+- **The first no-change pass** takes 4.3 s, against the 1 s target. It is 0.66 s once `ranges` has been solved.
+- **Opening Candela and running a pass in the browser** are still single main-thread tasks: 8.6 s and 21.3 s, down from about 10 s and about 45 s.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 29.
+
+### What I did
+- **Scope check.** Changes span `src/framework/**` (owned by this milestone), `src/typed/{evaluate,ir,model,passes}.ts`, new `src/typed/{parts,meaning-exec}.ts` and `src/typed/parallel/*`, the site (`engine-worker.js`, `index.html`, `candela.js`, `wb.js`) and `tools/{build-site,serve-site}.mjs`.
+- **Merge.** `git merge --no-ff --no-commit` → `CONFLICT (content): Merge conflict in src/typed/passes.ts`, the import lines only. IRWB-006 had dropped `F32_FOLDABLE` and `f32Op`, and IRWB-004 had added `entityIdSet`; I kept both changes.
+- **Gates on the combined tree:**
+  - `tsc`: clean;
+  - tests: 350, 347 pass, 3 skipped;
+  - `IRWB_FULL` passes and backend: 21/21;
+  - `IRWB_FULL` rules and SSA tests: 15/15 (IRWB-006's code on IRWB-004's frozen-record `storeOf`);
+  - parity: 6,986/6,986;
+  - `scripts/08`: identical on 44 projects;
+  - `build:site`: ok ("Candela on demand 1448 KiB", up from 728 KiB with the worker bundle).
+- Merge commit `1f45c94`.
+- Restarted the site server on port 8765 by PID. It now sends the CSP header with `worker-src 'self'`.
+- **Messaged the IRWB-003 and IRWB-005 agents** with the API changes and asked them to merge the integration branch before their final gates. The changes: `storeOf` returns frozen records; the meaning check is async (`decide`); the evaluator reuses its buffers; the memo exports.
+- **Report 6.** Read in full. Changed the alias to "report 6", and added a sentence reconciling its base O2 time (12:06) with report 4's 19 minutes (a different machine load). Vault commit `8223464`, pushed, with the report and `irwb004-{browser-worker-render,contract-threads,o2-per-pass}.png` only.
+- `remarquee cloud ls /ai/2026/11/25/IRWB-004` lists the guide.
+
+### What didn't work
+- **My first merge commit failed** ("Committing is not possible because you have unmerged files"): I had resolved the conflict but not staged it. Staged and committed.
+- **I gave the agents a made-up integration hash.** My first message to them said "head 3c3f2a4 or later", written before the merge commit existed. I sent both a correction naming `1f45c94`.
+- **The site server's first health check returned 000.** The server had not finished starting; the second check returned 200.
+
+### What I learned
+- **The garbage-collector finding is the largest single effect in this milestone.** Every evaluation allocated a 64 KiB stack area, which triggered full marks of the main thread's 464 MB heap. The calling thread's contract went from 46.7 s to 9.1 s with one reused buffer.
+
+### What warrants a second pair of eyes
+- **Report 6 links to IRWB-005's report by title.** That report is still a draft in the vault; check the link when it is pushed.
+- **The worker script's SHA-384 is recorded but not enforced.** Browsers do not check SRI on worker scripts. It is a same-origin build output, like `app.js`.
