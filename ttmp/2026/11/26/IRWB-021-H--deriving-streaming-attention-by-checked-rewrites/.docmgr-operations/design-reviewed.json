@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "digest": "46d2d0ed249f20269de67b7dae9aede235f7b63598f6331b319cbb74ba6d587e",
+  "request": {
+    "ticket": "IRWB-021-H",
+    "operation_id": "design-reviewed",
+    "summary": "Specified six checked rewrites, the tuple-fold meaning contract and a falsifiable GB10 experiment; no implementation or benchmark.",
+    "phase": "validate",
+    "next": "Review the design before scheduling implementation.",
+    "task_ids": [
+      "anjm",
+      "5vzx"
+    ],
+    "evidence": null,
+    "expected": null
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "design-reviewed",
+    "state": "committed",
+    "created_at": "2026-11-26T17:51:53.804946923Z",
+    "changed_paths": [
+      "tasks.md",
+      "changelog.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "tasks.md": "8a01e3ffc726b186b72e7e2a5f55b39e97973b4db710c4660e1e51bcb0e19dd8"
+    },
+    "after": {
+      "changelog.md": "7ece1f0784dfe8fda47fceec9518a702f19a7e62c84f375f1a7ae9ddae1d11b0",
+      "tasks.md": "c412dc3886ab756582a90467ee5dc07b1bf54f5bd0f4568cf837e310bf0ba3e7"
+    }
+  },
+  "changes": [
+    {
+      "path": "tasks.md",
+      "before": "8a01e3ffc726b186b72e7e2a5f55b39e97973b4db710c4660e1e51bcb0e19dd8",
+      "after": "IyBUYXNrcwoKIyMgVE9ETwotIFt4XSBTcGVjaWZ5IHRoZSBjaGVja2VkIGRlcml2YXRpb24sIGNvbnRyYWN0IGFuZCBHQjEwIGV4cGVyaW1lbnQgPCEtLSB0OmFuam0gLS0+Ci0gW3hdIFJldmlldyBhbmQgdmFsaWRhdGUgdGhlIHRpY2tldCBkb2N1bWVudHMgPCEtLSB0OjV2enggLS0+Cg=="
+    },
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKU3BlY2lmaWVkIHNpeCBjaGVja2VkIHJld3JpdGVzLCB0aGUgdHVwbGUtZm9sZCBtZWFuaW5nIGNvbnRyYWN0IGFuZCBhIGZhbHNpZmlhYmxlIEdCMTAgZXhwZXJpbWVudDsgbm8gaW1wbGVtZW50YXRpb24gb3IgYmVuY2htYXJrLgoKT3BlcmF0aW9uOiBgZGVzaWduLXJldmlld2VkYAo="
+    }
+  ]
+}
