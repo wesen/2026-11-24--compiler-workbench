@@ -591,9 +591,7 @@ export function meaningKept(
       random: rng,
       cases: ({ origin }) => {
         const st = storeOf(origin.value);
-        return (roots ?? [...st.fns.keys()]).flatMap(fn =>
-          casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }),
-        );
+        return (roots ?? [...st.fns.keys()]).flatMap(fn => casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }));
       },
       run: (_side, art, c) =>
         evaluate(storeOf((art as Artifact<TypedBlocks>).value), c.fn, c.args, c.memory, { limit }),
