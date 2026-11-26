@@ -1,7 +1,37 @@
+reclassified 29 (a gate's own disagreement on a specified case, or an unconstrained witness of an unspecified function):
+  s10_mat_1 swap swap "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(f: equivalent-presumed -> survived-wrong (killed by check100 on a specified case)
+  s3_mat_1 swap swap "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(f: equivalent-presumed -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 swap swap "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(f: equivalent-presumed -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 swap swap "((u -. f1_2) /. fmax((1f -. f1_2), 0.000001f))": equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 f32 fadd "(u -. f1_2)": equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 f32 fmin "fmax((1f -. f1_2), 0.000001f)": equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 swap swap "(1f -. f1_2)": equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 f32 sign "1f": equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 f32 fmul "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(f: equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 f32 fsub "(1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f)))": equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s5_mat_4 f32 fmin "fmax(m1, 0f)": equivalent-spec -> survived-wrong (killed by check100 on a specified case)
+  s9_sdf_0 f32 sign "0.6f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 sign "1f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "1f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "2f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "1f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "1f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 fdiv "(t46 *. -3f)": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "-3f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "-3f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "1f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 fmin "fmax(q20, q21)": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "3f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "3f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "2f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "1f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "1f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 fdiv "(t90 *. -3f)": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
+  s9_sdf_0 f32 ulp "-3f": equivalent-spec -> survived-wrong (unspecified function: the unconstrained witness is a specified case)
 
 gate default: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
-swap                 545   514    1   30  94.7%  99.8%
-f32                 1221   830   83  308  69.3%  90.9%
+swap                 545   514    6   25  94.3%  98.8%
+f32                 1221   830  107  284  68.0%  88.6%
 const               1042  1007    1   34  97.0%  99.9%
 shift                912   892    0   20  97.8% 100.0%
 drop-check            10     0    0   10   0.0%    -  
@@ -9,11 +39,11 @@ check-range           10     0    0   10   0.0%    -
 cmp-flip               9     7    0    2  77.8% 100.0%
 cmp-weaken             4     1    0    3  33.3% 100.0%
 drop-store           178   178    0    0 100.0% 100.0%
-TOTAL               3931  3429   85  417  88.0%  97.6%
+TOTAL               3931  3429  114  388  87.4%  96.8%
 
 gate check100: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
 swap                 545   519    1   25  95.2%  99.8%
-f32                 1221   872   48  301  72.5%  94.8%
+f32                 1221   872   66  283  71.4%  93.0%
 const               1042  1008    0   34  97.1% 100.0%
 shift                912   892    0   20  97.8% 100.0%
 drop-check            10     0    0   10   0.0%    -  
@@ -21,11 +51,11 @@ check-range           10     0    0   10   0.0%    -
 cmp-flip               9     7    0    2  77.8% 100.0%
 cmp-weaken             4     1    0    3  33.3% 100.0%
 drop-store           178   178    0    0 100.0% 100.0%
-TOTAL               3931  3477   49  405  89.1%  98.6%
+TOTAL               3931  3477   67  387  88.7%  98.1%
 
 gate strong: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
-swap                 545   515    0   30  94.8% 100.0%
-f32                 1221   842   71  308  70.3%  92.2%
+swap                 545   515    5   25  94.5%  99.0%
+f32                 1221   842   95  284  69.0%  89.9%
 const               1042  1008    0   34  97.1% 100.0%
 shift                912   892    0   20  97.8% 100.0%
 drop-check            10     0    0   10   0.0%    -  
@@ -33,11 +63,11 @@ check-range           10     0    0   10   0.0%    -
 cmp-flip               9     7    0    2  77.8% 100.0%
 cmp-weaken             4     1    0    3  33.3% 100.0%
 drop-store           178   178    0    0 100.0% 100.0%
-TOTAL               3931  3443   71  417  88.4%  98.0%
+TOTAL               3931  3443  100  388  87.8%  97.2%
 
 gate default+div: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
-swap                 545   514    1   30  94.7%  99.8%
-f32                 1221   831   82  308  69.4%  91.0%
+swap                 545   514    6   25  94.3%  98.8%
+f32                 1221   831  106  284  68.1%  88.7%
 const               1042  1007    1   34  97.0%  99.9%
 shift                912   892    0   20  97.8% 100.0%
 drop-check            10     0    0   10   0.0%    -  
@@ -45,7 +75,7 @@ check-range           10     0    0   10   0.0%    -
 cmp-flip               9     7    0    2  77.8% 100.0%
 cmp-weaken             4     1    0    3  33.3% 100.0%
 drop-store           178   178    0    0 100.0% 100.0%
-TOTAL               3931  3430   84  417  88.0%  97.6%
+TOTAL               3931  3430  113  388  87.5%  96.8%
 
 gate time (ms): {"default":185003.9,"check100":553645.8,"strong":412457.8,"default+div":222863.9}
 
@@ -55,71 +85,72 @@ exp2f                 47    37    0   10  78.7% 100.0%
 hdriPdf               47    41    1    5  87.2%  97.6%
 lum                   11    11    0    0 100.0% 100.0%
 q_absi                 9     6    1    2  66.7%  85.7%
-s10_mat_1            116    70    5   41  60.3%  93.3%
+s10_mat_1            116    70    6   40  60.3%  92.1%
 s12_heightAt           2     2    0    0 100.0% 100.0%
 s15_customKernel       6     6    0    0 100.0% 100.0%
 s17_sdUser             2     2    0    0 100.0% 100.0%
-s3_mat_1             116    70    5   41  60.3%  93.3%
-s5_mat_4             182    88   10   84  50.6%  89.8%
+s3_mat_1             116    70    6   40  60.3%  92.1%
+s5_mat_4             182    88   19   75  48.4%  82.2%
 s7_mat_2               4     4    0    0 100.0% 100.0%
-s9_sdf_0             140    37   52   51  30.3%  41.6%
+s9_sdf_0             140    37   70   33  26.4%  34.6%
 skyL_wgsl            351   310    7   34  88.6%  97.8%
 cameraRay            314   278    1   35  88.8%  99.6%
 cdlInit             2171  2166    0    5  99.8% 100.0%
 cdlLayout            109    99    0   10  95.2% 100.0%
 envL                 244   154    2   88  63.4%  98.7%
 
-classes and methods (default): {"equivalent-presumed / sample+unconstrained":382,"survived-wrong / sample":85,"equivalent-spec / sample+unconstrained":35}
+classes and methods (default): {"equivalent-presumed / sample+unconstrained":379,"survived-wrong / sample":85,"survived-wrong / gate-witness:check100":11,"survived-wrong / unconstrained-is-specified":18,"equivalent-spec / sample+unconstrained":9}
 
-wrong mutants accepted by default: 85
-  f32 sign: 22  e.g. s9_sdf_0 "2f" (sample: expected 1007567361, got 1041329319)
-  f32 fdiv: 15  e.g. s5_mat_4 "(wo__x *. h__N__x)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
-  f32 ulp: 14  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
+wrong mutants accepted by default: 114
+  f32 ulp: 27  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
+  f32 sign: 25  e.g. s5_mat_4 "1f" (gate-witness:check100: )
+  f32 fdiv: 17  e.g. s5_mat_4 "(wo__x *. h__N__x)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
+  f32 fmin: 9  e.g. s10_mat_1 "fmax(m1, 0f)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
+  f32 fsub: 7  e.g. s5_mat_4 "(((wo__x *. h__N__x) +. (wo__y *. h__N__y)) +. (wo__z *. h__N__z))" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
+  f32 fadd: 7  e.g. s5_mat_4 "(u -. f1_2)" (gate-witness:check100: )
+  swap swap: 6  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (gate-witness:check100: )
   f32 fmax: 6  e.g. s10_mat_1 "fmin(fmax(m1, 0f), 0.99f)" (sample: expected 1,1028443341,1028443341,1028443341,0,0,0,0,0,106954)
-  f32 fmin: 6  e.g. s10_mat_1 "fmax(m1, 0f)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
-  f32 fsub: 6  e.g. s5_mat_4 "(((wo__x *. h__N__x) +. (wo__y *. h__N__y)) +. (wo__z *. h__N__z))" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
-  f32 fadd: 6  e.g. s9_sdf_0 "(t40 -. 1f)" (sample: expected 1007567361, got 1041329319)
-  f32 fmul: 3  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
+  f32 fmul: 4  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
   f32 fle: 3  e.g. s10_mat_1 "(u <. f0_1)" (sample: expected 1,1028443341,1028443341,1028443341,0,0,0,0,0,106954)
   f32 f2u: 1  e.g. hdriPdf "f2i(t17)" (sample: expected 1040410918, got 1043837050)
   const -1: 1  e.g. q_absi "0" (sample: expected 1, got -1)
-  swap swap: 1  e.g. s9_sdf_0 "(q27 -. 1f)" (sample: expected 1036433450, got 1042088286)
   f32 fge: 1  e.g. cameraRay "(t13 >. 0f)" (sample: expected 1065353216,1056964608,1082113655,0,0,0, got 1065353)
 
-wrong mutants accepted by check100: 49
-  f32 sign: 16  e.g. s9_sdf_0 "2f" (sample: expected 964209687, got 1035308806)
-  f32 ulp: 10  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
-  f32 fdiv: 10  e.g. s5_mat_4 "(wo__z *. h__N__z)" (sample: expected 1,1044859365,1051982869,1022501165,0,0,0,0,0,106954)
+wrong mutants accepted by check100: 67
+  f32 ulp: 23  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
+  f32 sign: 18  e.g. s9_sdf_0 "0.6f" (unconstrained-is-specified: expected 1043043364, got 1043043360)
+  f32 fdiv: 12  e.g. s5_mat_4 "(wo__z *. h__N__z)" (sample: expected 1,1044859365,1051982869,1022501165,0,0,0,0,0,106954)
   f32 fsub: 4  e.g. s9_sdf_0 "(q5 +. q11)" (sample: expected 1007567361, got 1036831951)
   f32 fadd: 4  e.g. s9_sdf_0 "(t39 -. 1f)" (sample: expected 964209687, got 1035308806)
-  f32 fmin: 2  e.g. s9_sdf_0 "fmax(q21, q23)" (sample: expected 1041847053, got 1015436340)
+  f32 fmin: 3  e.g. s9_sdf_0 "fmax(q20, q21)" (unconstrained-is-specified: expected 1043043364, got 1024208487)
   f32 f2u: 1  e.g. hdriPdf "f2i(t17)" (sample: expected 1040410918, got 1043837050)
   swap swap: 1  e.g. s9_sdf_0 "(q27 -. 1f)" (sample: expected 1036433450, got 1042088286)
   f32 fge: 1  e.g. cameraRay "(t13 >. 0f)" (sample: expected 1065353216,1056964608,1082113655,0,0,0, got 1065353)
 
-wrong mutants accepted by strong: 71
-  f32 sign: 21  e.g. s9_sdf_0 "2f" (sample: expected 1007567361, got 1041329319)
-  f32 fdiv: 12  e.g. s5_mat_4 "(wo__x *. h__N__x)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
-  f32 ulp: 9  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
+wrong mutants accepted by strong: 100
+  f32 sign: 24  e.g. s5_mat_4 "1f" (gate-witness:check100: )
+  f32 ulp: 22  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
+  f32 fdiv: 14  e.g. s5_mat_4 "(wo__x *. h__N__x)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
+  f32 fmin: 7  e.g. s10_mat_1 "fmax(m1, 0f)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
+  f32 fsub: 7  e.g. s5_mat_4 "(((wo__x *. h__N__x) +. (wo__y *. h__N__y)) +. (wo__z *. h__N__z))" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
+  f32 fadd: 7  e.g. s5_mat_4 "(u -. f1_2)" (gate-witness:check100: )
   f32 fmax: 6  e.g. s10_mat_1 "fmin(fmax(m1, 0f), 0.99f)" (sample: expected 1,1028443341,1028443341,1028443341,0,0,0,0,0,106954)
-  f32 fsub: 6  e.g. s5_mat_4 "(((wo__x *. h__N__x) +. (wo__y *. h__N__y)) +. (wo__z *. h__N__z))" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
-  f32 fadd: 6  e.g. s9_sdf_0 "(t40 -. 1f)" (sample: expected 1007567361, got 1041329319)
-  f32 fmin: 4  e.g. s10_mat_1 "fmax(m1, 0f)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
-  f32 fmul: 3  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
+  swap swap: 5  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (gate-witness:check100: )
+  f32 fmul: 4  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
   f32 fle: 3  e.g. s10_mat_1 "(u <. f0_1)" (sample: expected 1,1028443341,1028443341,1028443341,0,0,0,0,0,106954)
   f32 f2u: 1  e.g. hdriPdf "f2i(t17)" (sample: expected 1040410918, got 1043837050)
 
-wrong mutants accepted by default+div: 84
-  f32 sign: 22  e.g. s9_sdf_0 "2f" (sample: expected 1007567361, got 1041329319)
-  f32 fdiv: 15  e.g. s5_mat_4 "(wo__x *. h__N__x)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
-  f32 ulp: 13  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
+wrong mutants accepted by default+div: 113
+  f32 ulp: 26  e.g. acosf "0.16666752f" (sample: expected 1065028654, got 1065028655)
+  f32 sign: 25  e.g. s5_mat_4 "1f" (gate-witness:check100: )
+  f32 fdiv: 17  e.g. s5_mat_4 "(wo__x *. h__N__x)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
+  f32 fmin: 9  e.g. s10_mat_1 "fmax(m1, 0f)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
+  f32 fsub: 7  e.g. s5_mat_4 "(((wo__x *. h__N__x) +. (wo__y *. h__N__y)) +. (wo__z *. h__N__z))" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
+  f32 fadd: 7  e.g. s5_mat_4 "(u -. f1_2)" (gate-witness:check100: )
+  swap swap: 6  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (gate-witness:check100: )
   f32 fmax: 6  e.g. s10_mat_1 "fmin(fmax(m1, 0f), 0.99f)" (sample: expected 1,1028443341,1028443341,1028443341,0,0,0,0,0,106954)
-  f32 fmin: 6  e.g. s10_mat_1 "fmax(m1, 0f)" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
-  f32 fsub: 6  e.g. s5_mat_4 "(((wo__x *. h__N__x) +. (wo__y *. h__N__y)) +. (wo__z *. h__N__z))" (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1045388328)
-  f32 fadd: 6  e.g. s9_sdf_0 "(t40 -. 1f)" (sample: expected 1007567361, got 1041329319)
-  f32 fmul: 3  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
+  f32 fmul: 4  e.g. s10_mat_1 "((1f +. fsqrt(fmin(fmax(m1, 0f), 0.99f))) /. (1f -. fsqrt(fmin(fmax(m (sample: expected 3,1065353216,1065353216,1065353216,0,0,0,1035489772)
   f32 fle: 3  e.g. s10_mat_1 "(u <. f0_1)" (sample: expected 1,1028443341,1028443341,1028443341,0,0,0,0,0,106954)
   f32 f2u: 1  e.g. hdriPdf "f2i(t17)" (sample: expected 1040410918, got 1043837050)
   const -1: 1  e.g. q_absi "0" (sample: expected 1, got -1)
-  swap swap: 1  e.g. s9_sdf_0 "(q27 -. 1f)" (sample: expected 1036433450, got 1042088286)
   f32 fge: 1  e.g. cameraRay "(t13 >. 0f)" (sample: expected 1065353216,1056964608,1082113655,0,0,0, got 1065353)

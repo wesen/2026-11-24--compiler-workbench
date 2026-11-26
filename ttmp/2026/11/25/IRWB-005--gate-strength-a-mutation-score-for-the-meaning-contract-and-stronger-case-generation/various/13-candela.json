@@ -14,54 +14,54 @@
   "default": {
    "killed": 3429,
    "killed-inconclusive": 0,
-   "survived-wrong": 85,
+   "survived-wrong": 114,
    "equivalent-spec-proved": 0,
-   "equivalent-spec": 35,
-   "equivalent-presumed": 382,
+   "equivalent-spec": 9,
+   "equivalent-presumed": 379,
    "invalid": 0,
    "unclassified": 0,
    "mutants": 3931,
-   "upper": 0.9758110415480934,
-   "lower": 0.8801334702258727
+   "upper": 0.9678238780694327,
+   "lower": 0.8742988271290159
   },
   "check100": {
    "killed": 3477,
    "killed-inconclusive": 0,
-   "survived-wrong": 49,
+   "survived-wrong": 67,
    "equivalent-spec-proved": 0,
-   "equivalent-spec": 27,
+   "equivalent-spec": 9,
    "equivalent-presumed": 378,
    "invalid": 0,
    "unclassified": 0,
    "mutants": 3931,
-   "upper": 0.9861032331253545,
-   "lower": 0.890625
+   "upper": 0.9810948081264108,
+   "lower": 0.8865374808771035
   },
   "strong": {
    "killed": 3443,
    "killed-inconclusive": 0,
-   "survived-wrong": 71,
+   "survived-wrong": 100,
    "equivalent-spec-proved": 0,
-   "equivalent-spec": 35,
-   "equivalent-presumed": 382,
+   "equivalent-spec": 9,
+   "equivalent-presumed": 379,
    "invalid": 0,
    "unclassified": 0,
    "mutants": 3931,
-   "upper": 0.9797951052931133,
-   "lower": 0.8837268993839835
+   "upper": 0.9717753316398532,
+   "lower": 0.8778684344722081
   },
   "default+div": {
    "killed": 3430,
    "killed-inconclusive": 0,
-   "survived-wrong": 84,
+   "survived-wrong": 113,
    "equivalent-spec-proved": 0,
-   "equivalent-spec": 35,
-   "equivalent-presumed": 382,
+   "equivalent-spec": 9,
+   "equivalent-presumed": 379,
    "invalid": 0,
    "unclassified": 0,
    "mutants": 3931,
-   "upper": 0.9760956175298805,
-   "lower": 0.8803901437371663
+   "upper": 0.9681061247530341,
+   "lower": 0.874553799082101
   }
  },
  "bySubject": {
@@ -69,60 +69,60 @@
    "candela": {
     "killed": 3429,
     "killed-inconclusive": 0,
-    "survived-wrong": 85,
+    "survived-wrong": 114,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 35,
-    "equivalent-presumed": 382,
+    "equivalent-spec": 9,
+    "equivalent-presumed": 379,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 3931,
-    "upper": 0.9758110415480934,
-    "lower": 0.8801334702258727
+    "upper": 0.9678238780694327,
+    "lower": 0.8742988271290159
    }
   },
   "check100": {
    "candela": {
     "killed": 3477,
     "killed-inconclusive": 0,
-    "survived-wrong": 49,
+    "survived-wrong": 67,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 27,
+    "equivalent-spec": 9,
     "equivalent-presumed": 378,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 3931,
-    "upper": 0.9861032331253545,
-    "lower": 0.890625
+    "upper": 0.9810948081264108,
+    "lower": 0.8865374808771035
    }
   },
   "strong": {
    "candela": {
     "killed": 3443,
     "killed-inconclusive": 0,
-    "survived-wrong": 71,
+    "survived-wrong": 100,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 35,
-    "equivalent-presumed": 382,
+    "equivalent-spec": 9,
+    "equivalent-presumed": 379,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 3931,
-    "upper": 0.9797951052931133,
-    "lower": 0.8837268993839835
+    "upper": 0.9717753316398532,
+    "lower": 0.8778684344722081
    }
   },
   "default+div": {
    "candela": {
     "killed": 3430,
     "killed-inconclusive": 0,
-    "survived-wrong": 84,
+    "survived-wrong": 113,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 35,
-    "equivalent-presumed": 382,
+    "equivalent-spec": 9,
+    "equivalent-presumed": 379,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 3931,
-    "upper": 0.9760956175298805,
-    "lower": 0.8803901437371663
+    "upper": 0.9681061247530341,
+    "lower": 0.874553799082101
    }
   }
  },
@@ -131,28 +131,28 @@
    "swap": {
     "killed": 514,
     "killed-inconclusive": 0,
-    "survived-wrong": 1,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 2,
-    "equivalent-presumed": 28,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 25,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 545,
-    "upper": 0.9980582524271845,
-    "lower": 0.9465930018416207
+    "upper": 0.9884615384615385,
+    "lower": 0.9431192660550459
    },
    "f32": {
     "killed": 830,
     "killed-inconclusive": 0,
-    "survived-wrong": 83,
+    "survived-wrong": 107,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 24,
+    "equivalent-spec": 0,
     "equivalent-presumed": 284,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 1221,
-    "upper": 0.9090909090909091,
-    "lower": 0.6934001670843776
+    "upper": 0.8858057630736392,
+    "lower": 0.6797706797706797
    },
    "const": {
     "killed": 1007,
@@ -263,15 +263,15 @@
    "f32": {
     "killed": 872,
     "killed-inconclusive": 0,
-    "survived-wrong": 48,
+    "survived-wrong": 66,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 18,
+    "equivalent-spec": 0,
     "equivalent-presumed": 283,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 1221,
-    "upper": 0.9478260869565217,
-    "lower": 0.7248545303408146
+    "upper": 0.929637526652452,
+    "lower": 0.7141687141687142
    },
    "const": {
     "killed": 1008,
@@ -369,28 +369,28 @@
    "swap": {
     "killed": 515,
     "killed-inconclusive": 0,
-    "survived-wrong": 0,
+    "survived-wrong": 5,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 2,
-    "equivalent-presumed": 28,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 25,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 545,
-    "upper": 1,
-    "lower": 0.9484346224677717
+    "upper": 0.9903846153846154,
+    "lower": 0.944954128440367
    },
    "f32": {
     "killed": 842,
     "killed-inconclusive": 0,
-    "survived-wrong": 71,
+    "survived-wrong": 95,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 24,
+    "equivalent-spec": 0,
     "equivalent-presumed": 284,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 1221,
-    "upper": 0.9222343921139102,
-    "lower": 0.7034252297410192
+    "upper": 0.8986125933831377,
+    "lower": 0.6895986895986896
    },
    "const": {
     "killed": 1008,
@@ -488,28 +488,28 @@
    "swap": {
     "killed": 514,
     "killed-inconclusive": 0,
-    "survived-wrong": 1,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 2,
-    "equivalent-presumed": 28,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 25,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 545,
-    "upper": 0.9980582524271845,
-    "lower": 0.9465930018416207
+    "upper": 0.9884615384615385,
+    "lower": 0.9431192660550459
    },
    "f32": {
     "killed": 831,
     "killed-inconclusive": 0,
-    "survived-wrong": 82,
+    "survived-wrong": 106,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 24,
+    "equivalent-spec": 0,
     "equivalent-presumed": 284,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 1221,
-    "upper": 0.9101861993428259,
-    "lower": 0.6942355889724311
+    "upper": 0.8868729989327642,
+    "lower": 0.6805896805896806
    },
    "const": {
     "killed": 1007,
@@ -674,14 +674,14 @@
    "candela.s10_mat_1": {
     "killed": 70,
     "killed-inconclusive": 0,
-    "survived-wrong": 5,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
     "equivalent-spec": 0,
-    "equivalent-presumed": 41,
+    "equivalent-presumed": 40,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 116,
-    "upper": 0.9333333333333333,
+    "upper": 0.9210526315789473,
     "lower": 0.603448275862069
    },
    "candela.s12_heightAt": {
@@ -726,28 +726,28 @@
    "candela.s3_mat_1": {
     "killed": 70,
     "killed-inconclusive": 0,
-    "survived-wrong": 5,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
     "equivalent-spec": 0,
-    "equivalent-presumed": 41,
+    "equivalent-presumed": 40,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 116,
-    "upper": 0.9333333333333333,
+    "upper": 0.9210526315789473,
     "lower": 0.603448275862069
    },
    "candela.s5_mat_4": {
     "killed": 88,
     "killed-inconclusive": 0,
-    "survived-wrong": 10,
+    "survived-wrong": 19,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 8,
-    "equivalent-presumed": 76,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 75,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 182,
-    "upper": 0.8979591836734694,
-    "lower": 0.5057471264367817
+    "upper": 0.822429906542056,
+    "lower": 0.4835164835164835
    },
    "candela.s7_mat_2": {
     "killed": 4,
@@ -765,15 +765,15 @@
    "candela.s9_sdf_0": {
     "killed": 37,
     "killed-inconclusive": 0,
-    "survived-wrong": 52,
+    "survived-wrong": 70,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 18,
+    "equivalent-spec": 0,
     "equivalent-presumed": 33,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 140,
-    "upper": 0.4157303370786517,
-    "lower": 0.30327868852459017
+    "upper": 0.34579439252336447,
+    "lower": 0.2642857142857143
    },
    "candela.skyL_wgsl": {
     "killed": 310,
@@ -1001,15 +1001,15 @@
    "candela.s9_sdf_0": {
     "killed": 48,
     "killed-inconclusive": 0,
-    "survived-wrong": 41,
+    "survived-wrong": 59,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 18,
+    "equivalent-spec": 0,
     "equivalent-presumed": 33,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 140,
-    "upper": 0.5393258426966292,
-    "lower": 0.39344262295081966
+    "upper": 0.4485981308411215,
+    "lower": 0.34285714285714286
    },
    "candela.skyL_wgsl": {
     "killed": 314,
@@ -1146,14 +1146,14 @@
    "candela.s10_mat_1": {
     "killed": 70,
     "killed-inconclusive": 0,
-    "survived-wrong": 5,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
     "equivalent-spec": 0,
-    "equivalent-presumed": 41,
+    "equivalent-presumed": 40,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 116,
-    "upper": 0.9333333333333333,
+    "upper": 0.9210526315789473,
     "lower": 0.603448275862069
    },
    "candela.s12_heightAt": {
@@ -1198,28 +1198,28 @@
    "candela.s3_mat_1": {
     "killed": 70,
     "killed-inconclusive": 0,
-    "survived-wrong": 5,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
     "equivalent-spec": 0,
-    "equivalent-presumed": 41,
+    "equivalent-presumed": 40,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 116,
-    "upper": 0.9333333333333333,
+    "upper": 0.9210526315789473,
     "lower": 0.603448275862069
    },
    "candela.s5_mat_4": {
     "killed": 88,
     "killed-inconclusive": 0,
-    "survived-wrong": 10,
+    "survived-wrong": 19,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 8,
-    "equivalent-presumed": 76,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 75,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 182,
-    "upper": 0.8979591836734694,
-    "lower": 0.5057471264367817
+    "upper": 0.822429906542056,
+    "lower": 0.4835164835164835
    },
    "candela.s7_mat_2": {
     "killed": 4,
@@ -1237,15 +1237,15 @@
    "candela.s9_sdf_0": {
     "killed": 47,
     "killed-inconclusive": 0,
-    "survived-wrong": 42,
+    "survived-wrong": 60,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 18,
+    "equivalent-spec": 0,
     "equivalent-presumed": 33,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 140,
-    "upper": 0.5280898876404494,
-    "lower": 0.38524590163934425
+    "upper": 0.4392523364485981,
+    "lower": 0.3357142857142857
    },
    "candela.skyL_wgsl": {
     "killed": 311,
@@ -1382,14 +1382,14 @@
    "candela.s10_mat_1": {
     "killed": 70,
     "killed-inconclusive": 0,
-    "survived-wrong": 5,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
     "equivalent-spec": 0,
-    "equivalent-presumed": 41,
+    "equivalent-presumed": 40,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 116,
-    "upper": 0.9333333333333333,
+    "upper": 0.9210526315789473,
     "lower": 0.603448275862069
    },
    "candela.s12_heightAt": {
@@ -1434,28 +1434,28 @@
    "candela.s3_mat_1": {
     "killed": 70,
     "killed-inconclusive": 0,
-    "survived-wrong": 5,
+    "survived-wrong": 6,
     "equivalent-spec-proved": 0,
     "equivalent-spec": 0,
-    "equivalent-presumed": 41,
+    "equivalent-presumed": 40,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 116,
-    "upper": 0.9333333333333333,
+    "upper": 0.9210526315789473,
     "lower": 0.603448275862069
    },
    "candela.s5_mat_4": {
     "killed": 88,
     "killed-inconclusive": 0,
-    "survived-wrong": 10,
+    "survived-wrong": 19,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 8,
-    "equivalent-presumed": 76,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 75,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 182,
-    "upper": 0.8979591836734694,
-    "lower": 0.5057471264367817
+    "upper": 0.822429906542056,
+    "lower": 0.4835164835164835
    },
    "candela.s7_mat_2": {
     "killed": 4,
@@ -1473,15 +1473,15 @@
    "candela.s9_sdf_0": {
     "killed": 37,
     "killed-inconclusive": 0,
-    "survived-wrong": 52,
+    "survived-wrong": 70,
     "equivalent-spec-proved": 0,
-    "equivalent-spec": 18,
+    "equivalent-spec": 0,
     "equivalent-presumed": 33,
     "invalid": 0,
     "unclassified": 0,
     "mutants": 140,
-    "upper": 0.4157303370786517,
-    "lower": 0.30327868852459017
+    "upper": 0.34579439252336447,
+    "lower": 0.2642857142857143
    },
    "candela.skyL_wgsl": {
     "killed": 310,

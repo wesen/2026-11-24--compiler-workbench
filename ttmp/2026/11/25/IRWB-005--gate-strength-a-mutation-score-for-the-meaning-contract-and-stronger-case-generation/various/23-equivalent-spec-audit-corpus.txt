@@ -1,0 +1,25 @@
+blend.blend cmp-weaken geu "(i >= n)" affected=1 spec={"work":{"buffer":[40,40],"cell":[0,255]},"n":[0,40],"a":[-100,100],"b
+blend.blend drop-check branch "if (t7 >=u load32[work+0]) goto .4 else .7" affected=1 spec={"work":{"buffer":[40,40],"cell":[0,255]},"n":[0,40],"a":[-100,100],"b
+blend.blend check-range len+1 "if (t7 >=u load32[work+0]) goto .4 else .7" affected=1 spec={"work":{"buffer":[40,40],"cell":[0,255]},"n":[0,40],"a":[-100,100],"b
+bounds-lab.window cmp-weaken geu "(i >= k)" affected=1 spec={"a":{"buffer":[0,24]},"k":[0,30]}
+bounds-param.prefix cmp-weaken geu "(i >= n)" affected=1 spec={"work":{"buffer":[0,16]},"n":[0,20]}
+fragments.blend cmp-weaken geu "(i >= n)" affected=1 spec={"work":{"buffer":[40,40]},"n":[0,40]}
+fragments.blend drop-check branch "if (t7 >=u load32[work+0]) goto .4 else .7" affected=1 spec={"work":{"buffer":[40,40]},"n":[0,40]}
+fragments.blend check-range len+1 "if (t7 >=u load32[work+0]) goto .4 else .7" affected=1 spec={"work":{"buffer":[40,40]},"n":[0,40]}
+orders.kernel cmp-weaken geu "(i >= n)" affected=1 spec={"v":{"buffer":[12,12],"cell":[0,255]},"n":[0,12],"k":[-20,20]}
+orders.kernel drop-check branch "if (t8 >=u load32[v+0]) goto .4 else .7" affected=1 spec={"v":{"buffer":[12,12],"cell":[0,255]},"n":[0,12],"k":[-20,20]}
+orders.kernel check-range len+1 "if (t8 >=u load32[v+0]) goto .4 else .7" affected=1 spec={"v":{"buffer":[12,12],"cell":[0,255]},"n":[0,12],"k":[-20,20]}
+params-demo.blend cmp-weaken ltu "(i < n)" affected=1 spec={"work":{"buffer":[40,40]},"n":[0,40]}
+params-demo.blend drop-check branch "if (t7 >=u load32[work+0]) goto .4 else .5" affected=1 spec={"work":{"buffer":[40,40]},"n":[0,40]}
+params-demo.blend check-range len+1 "if (t7 >=u load32[work+0]) goto .4 else .5" affected=1 spec={"work":{"buffer":[40,40]},"n":[0,40]}
+ramp.ramp cmp-weaken ltu "(t5 < 65535)" affected=1 spec={"out":{"buffer":[0,16]},"step":[0,9000]}
+regalloc-lab.accum cmp-weaken geu "(i >= n)" affected=1 spec={"v":{"buffer":[16,16],"cell":[0,255]},"n":[0,16]}
+regalloc-lab.accum drop-check branch "if (t7 >=u load32[v+0]) goto .4 else .7" affected=1 spec={"v":{"buffer":[16,16],"cell":[0,255]},"n":[0,16]}
+regalloc-lab.accum check-range len+1 "if (t7 >=u load32[v+0]) goto .4 else .7" affected=1 spec={"v":{"buffer":[16,16],"cell":[0,255]},"n":[0,16]}
+start-here.smooth cmp-weaken geu "(i >= n)" affected=1 spec={"samples":{"buffer":[24,24],"cell":[0,255]},"n":[0,24],"gain":[-8,8]}
+start-here.smooth drop-check branch "if (t5 >=u load32[samples+0]) goto .4 else .7" affected=1 spec={"samples":{"buffer":[24,24],"cell":[0,255]},"n":[0,24],"gain":[-8,8]}
+start-here.smooth check-range len+1 "if (t5 >=u load32[samples+0]) goto .4 else .7" affected=1 spec={"samples":{"buffer":[24,24],"cell":[0,255]},"n":[0,24],"gain":[-8,8]}
+ui-gallery.sum cmp-weaken geu "(i >= n)" affected=1 spec={"v":{"buffer":[10,10],"cell":[0,20]},"n":[0,10]}
+ui-gallery.sum drop-check branch "if (t4 >=u load32[v+0]) goto .4 else .7" affected=1 spec={"v":{"buffer":[10,10],"cell":[0,20]},"n":[0,10]}
+ui-gallery.sum check-range len+1 "if (t4 >=u load32[v+0]) goto .4 else .7" affected=1 spec={"v":{"buffer":[10,10],"cell":[0,20]},"n":[0,10]}
+equivalent-spec: 24; with an unspecified mutated function: 0

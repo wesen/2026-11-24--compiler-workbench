@@ -101,6 +101,10 @@ export function classifier({
     const u = over(A, mst, 'free');
     out.unconstrained = { cases: u.total, differs: !!u.witness, ...(u.witness ? { witness: u.witness } : {}) };
     if (proved) return { ...out, class: 'equivalent-spec-proved', method: 'exhaustive' };
+    // a function with no specification at all is specified for every input: its unconstrained witness is a
+    // specified one (found in the Candela summary, diary step 19; no corpus mutant is affected)
+    if (u.witness && Object.keys(inputs[u.witness.fn] ?? {}).length === 0)
+      return { ...out, class: 'survived-wrong', method: 'unconstrained-is-specified', witness: u.witness };
     return { ...out, class: u.witness ? 'equivalent-spec' : 'equivalent-presumed', method: 'sample+unconstrained' };
   };
 }
