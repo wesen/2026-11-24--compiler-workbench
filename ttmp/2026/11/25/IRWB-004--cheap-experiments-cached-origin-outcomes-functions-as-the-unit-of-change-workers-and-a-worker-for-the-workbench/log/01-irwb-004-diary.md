@@ -587,3 +587,83 @@ The Candela view now renders on a Web Worker: compiling the reference image, lif
 
 ### Code review instructions
 - `site-src/engine-worker.js`, the worker section of `site-src/candela.js`, the worker block in `tools/build-site.mjs`; `npm run build:site && node tools/serve-site.mjs dist/site 8772`, Candela layout, Render with the default (worker) and with `wbUI.S.cdl.where = 'page'`.
+
+## Step 12: The job pool, and the remaining acceptance measurements
+
+A small pool for independent runs completes F4 in Node. The remaining acceptance numbers were then measured, each against the base build where the machine's load made earlier numbers incomparable:
+- cfg on r0 takes 13.6 s against 41–51 s for the base build, measured alternately with it.
+- A per-scene run takes 119 s against 312 s, back to back.
+- The no-change pass takes 4.3 s cold and 0.66 s once its analysis is solved.
+
+Every gate is green on the final code.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Task 3bga (job pool, one per-scene run before and after) and aa2m (acceptance measurements).
+**Inferred user intent:** Numbers that can be compared, and a statement of what was not reached.
+**Commit (code):** `7324ded` — "IRWB-004 F4 (jobs): a worker-thread pool for independent runs …"
+
+### What I did
+- `src/typed/parallel/job-pool.ts` (new): `startJobPool(module, exportName, { threads, maxOldSpaceMB })`. It is an eval'd CommonJS worker that imports the module once. Each job goes to the first idle worker, and results come back in call order.
+- `$T/scripts/11-corpus-job.mjs` (one project through O2 as a job), `12-corpus-evidence-pool.mjs` (the corpus through the pool).
+- `$T/scripts/10-candela-per-scene.mjs`: a copy of IRWB-001's `12-candela-per-scene.mjs` that honours `IRWB_ROOT`, so one scene runs on both builds. Run R-01 on this build, then on `<scratchpad>/baseline/`.
+- `02-framework-cost.mjs --passes strength --repeat 2` with a CPU profile; `02-framework-cost.mjs --passes cfg` alternating base, new, base, new (`various/24-cfg-back-to-back.txt`).
+- `$T/scripts/13-figures.py`: the two figures for the report.
+
+### What worked
+- Per-scene R-01 (`various/21-per-scene-R01-*.json`, `23-final-measurements.txt`):
+
+  | step | this build (ms) | base build (ms) |
+  |---|---|---|
+  | specialize | 14,071 | 71,254 |
+  | constprop | 13,188 | 51,811 |
+  | fold | 10,520 | 35,454 |
+  | cfg | 9,536 | 34,267 |
+  | dce | 7,527 | 36,199 |
+  | cfg (no change) | 411 | 24,377 |
+  | dfe | 9,090 | 25,879 |
+  | **total** | **118,870** | **312,243** |
+
+  The loads were 9.4–11.3 and 11.3–8.7. Both runs went from 332 to 137 functions and from 12,358 to 5,400 statements, the frame records are identical, and `differentBits` is 0.
+- cfg alternated: base 51,177 ms (load 13.4), new 13,565 (10.5), base 40,736 (9.9), new 13,555 (8.5). The revision was `4aea7e81dd04` and the check 13,280 / 13,258 / 0 / 22 in all four runs.
+- No-change `strength`: 4,295 ms, then 655 ms. Both returned revision `cd36346ea7c4f175…` with `changed: false`.
+- Job pool, the corpus through O2: 2,709 ms on one thread without the pool, 2,822 ms with a 1-thread pool, 2,267 ms with a 4-thread pool. All three outputs equal `10-corpus-evidence-baseline.txt`.
+- Final gates:
+  - `npm test`: 335 tests, 332 pass, 0 fail, 3 skipped.
+  - Parity: `{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}`.
+  - `IRWB_FULL`: 21 of 21, 11.2 s.
+  - Corpus revisions: `IDENTICAL-44`.
+
+### What didn't work
+- The no-change pass is not under 1 s the first time. The profile (`profiles/22-final-strength.cpuprofile`, 3,508 ms under `applyPass`) splits it as follows:
+  - the `ranges` analysis solved for the first time, 2,362 ms: `immutable` of its result 1,510 ms, the solver 699 ms;
+  - `typedPass.run`, 876 ms, of which `Store.from` is 368 ms;
+  - `beginEdit`, 211 ms.
+
+  The framework's per-revision steps do not run.
+- The job pool gains little on the corpus (2.3 s against 2.7 s): each worker imports the compiler and the vendored front end itself. Candela-scale jobs in parallel were not run, because the machine allowed one Candela-scale process at a time.
+
+### What I learned
+- On this machine, comparisons across runs made minutes apart differ by 2–3× (the base build's cfg was 18.6 s in Step 3 and 51.2 s here). Only alternated or back-to-back runs are evidence.
+
+### What should be done in the future
+- Per-function analysis results keyed by part, so that a first analysis after a small change re-solves only the changed functions.
+
+## Step 13: The vault report
+
+The report is written in the vault, with three figures in `_assets/` under the `irwb004-` prefix. I reread it against this diary and corrected it in four places. The vault is not committed, as the brief asks.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** A deep-dive report in textbook style, no analogies, frontmatter as the 2026/11/24 reports; checked against the diary.
+**Commit (code):** this step's commit (diary and figures script only).
+
+### What I did
+- `/home/manuel/code/wesen/go-go-golems/go-go-parc/Projects/2026/11/25/PROJECT REPORT - IR Workbench - Cheap Experiments - Shared Records, Replayed Verdicts, Worker Threads and an Engine Worker, With Every Revision Unchanged - A Technical Deep Dive.md`.
+- Figures: `irwb004-o2-per-pass.png` and `irwb004-contract-threads.png` (from `13-figures.py`), and `irwb004-browser-worker-render.png` (the screenshot `18-…`).
+
+### What didn't work
+- My first draft of section 1 credited the base cfg's time to copying records ("several seconds"). Step 3's profile says `Store.from` took 0.33 s and `toNative` 0.32 s, so section 1 now gives the profile's figures.
+- The draft's intro said a no-change pass took 18 s. That is IRWB-001's figure; this milestone measured 13.3–15.9 s, and the intro now says 13 to 18 s.
+- The draft said "D1 alone" for the 6:10 O2 run. That run had A1–A7, F1 and D1 in place, so the text now says that.
+- The draft said Candela's "evidence" was identical. On Candela the comparison covered revisions and check counts, not the full evidence records (the full evidence was compared on the corpus), and the text now says that.

@@ -22,3 +22,7 @@ Increments 1-4: A1-A7 (9d3ea30), F1 records keep identity (8e81345), D1 + F4 con
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/site-src/engine-worker.js — the Candela view's engine worker
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/src/framework/contracts/differential.ts — D1 reuse, decide hook, decideCase
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/src/typed/parts.ts — function parts, closure keys, programs as parts
+
+## 2026-11-26
+
+Job pool for independent runs; final measurements (cfg 13.6 s vs 41-51 s base alternated; per-scene R-01 119 s vs 312 s; no-change 4.3 s cold / 0.66 s warm); vault report written (not committed). Open: browser open/pass still on the main thread (8.6 s / 21.3 s); per-function validation (rodj part).
