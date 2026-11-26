@@ -278,3 +278,43 @@ This step reread the complete draft as the only explanation a new intern would h
 
 ### Technical details
 - The vault report for this ticket is deferred to the implementation milestone, as the coordinator relayed from the user; none was written in this round.
+
+## Step 6: Upload to reMarkable
+
+The guide, as revised in Step 5 (commit `69ae7a0`), was uploaded as one PDF bundle with a two-level table of contents and the upload was verified by listing the folder. This ends the guide round; no implementation was started.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 ("Store in the ticket and the nupload to remarkable").
+**Assistant interpretation:** Upload with the brief's exact command, verify with a listing, never `--force`.
+**Inferred user intent:** Read the guide on the device.
+**Commit (code):** the commit after this step.
+
+### What I did
+- `remarquee upload bundle ttmp/2026/11/26/IRWB-007--…/design-doc/01-intern-guide-specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory.md --name "IRWB-007 Intern Guide: Specializing Candela on Its Scene Data" --remote-dir "/ai/2026/11/26/IRWB-007" --toc-depth 2 --non-interactive`
+- `remarquee cloud ls /ai/2026/11/26/IRWB-007 --long --non-interactive`
+- `docmgr task check --ticket IRWB-007 --id j5d7`; a changelog entry for the upload.
+
+### What worked
+- `OK: uploaded IRWB-007 Intern Guide: Specializing Candela on Its Scene Data.pdf -> /ai/2026/11/26/IRWB-007`
+- Listing: `[f]	IRWB-007 Intern Guide: Specializing Candela on Its Scene Data`
+
+### What didn't work
+- No failures; no overwrite was needed (the folder was new).
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The upload proves cloud delivery, not that the device has synchronized.
+
+### What should be done in the future
+- Implementation phases 0–5 (tasks `h6j5`, `zaq6`, `r4yf`, `hx1o`, `wtaa`, `gjtu`), and the vault report after the implementation milestone.
+
+### Code review instructions
+- The guide: `design-doc/01-intern-guide-specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory.md`.
+
+### Technical details
+- Guide: 910 lines, 15,155 words at upload.

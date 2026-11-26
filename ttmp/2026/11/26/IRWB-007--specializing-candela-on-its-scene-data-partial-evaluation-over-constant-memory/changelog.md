@@ -12,3 +12,7 @@ Intern guide (design-doc 01) and its measurements: scene table inventory (224-91
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a835ea9e40615941e/ttmp/2026/11/26/IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory/design-doc/01-intern-guide-specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory.md — the guide
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a835ea9e40615941e/ttmp/2026/11/26/IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory/various/04-profile-summary.txt — measurement 3 tables
+
+## 2026-11-26
+
+Guide uploaded to reMarkable: /ai/2026/11/26/IRWB-007/IRWB-007 Intern Guide: Specializing Candela on Its Scene Data (listed). Vault report deferred to the implementation milestone.
