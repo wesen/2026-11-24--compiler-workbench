@@ -152,3 +152,9 @@ Review the boundary between baseline-case reuse and subject verdict reuse, espec
 ### Next work and review instructions
 
 The design's change ledger is the implementation worklist after review. Review the per-operation table and exact witness, then follow the proposed transformation's output text through the batched postcondition. The probe kernel exercises arithmetic only. The six corpus timing rows, generated translation units and deliberate lowering-mutant rejection belong to implementation after review. [Design and evidence](../design-doc/01-checked-cuda-lowering-for-tix.md)
+
+## Step 2. Incorporate the timing and identity review
+
+The reviewer measured 0.115 ms for a cold trivial launch and 0.003 ms on repeat. Querying kernel attributes first reduced the first interval to 0.004 ms. The revised driver preloads every kernel in the process recording events. Benchmarks run the warm-up and three measured sequences in that same process.
+
+The cold check compares the reported host, device name, compute capability and CUDA runtime version. The compiler build and flags belong to the versioned checker configuration. Concurrent cold checks on identical batch bytes motivate isolated runner directories. All review requests were accepted. Implementation starts from design checkpoint 160f768.
