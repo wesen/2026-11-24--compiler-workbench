@@ -1,0 +1,505 @@
+[
+  {
+    "doc": "doc-A.md",
+    "program": "IRWB-012",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 0, "R3_quotes": [],
+    "R4": 0, "R4_quotes": [],
+    "R5": 0, "R5_quotes": [],
+    "R6": 0, "R6_quotes": [],
+    "R7": "yes", "R7_quotes": ["Choosing between two separate arrays would require a buffer-valued choice spec, since the current `oneOf` generator coerces its choice to an integer."],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "Lean and complete. It has nine opcodes and a contract that covers only the valid path (\"Keep any fallback return needed by Typed outside the valid path\"), and project.json contains the full 64-cell fixture image. I checked the cell encodings, the 15n+4 / 13n+4 dispatch formulas and the n=12, seed=8 Fibonacci result of 1,152, and all of them are right. Sizing is explicit (11,904 projected statements against 20,000), and the JavaScript reference VM is independent of the compiler. A hand-specialized in-memory project lets the general-versus-specialized measurement run on today's compiler instead of waiting for constant-memory specialization. For tape ingest it proposes the small loader change rather than working around it. Its one workaround is a single shared image with scalar entry offsets, because oneOf cannot choose a buffer. That costs little and keeps a single generated profile. Nothing needs cutting, and dispatch, pc/sp liveness and checked stack, local and code accesses are all exposed."
+  },
+  {
+    "doc": "doc-B.md",
+    "program": "IRWB-012",
+    "R1": 1, "R1_quotes": ["Return zero for an unknown opcode or after the loop exhausts fuel. Zero is also a valid result."],
+    "R2": 0, "R2_quotes": [],
+    "R3": 2, "R3_quotes": [
+      "[non-terminating bytecode] Give the loop 192 iterations. Each iteration consumes one unit of fuel, including the iteration that halts.",
+      "[malformed bytecode] Return zero for an unknown opcode",
+      "[malformed bytecode] Check JS indices explicitly so out-of-range reads and writes are classified as bounds traps."
+    ],
+    "R4": 6, "R4_quotes": [
+      "[5 items] Cover the checked access families with directed traps for truncated code (`P` with no operand cell), stack underflow (`H`), stack overflow (`P 1; J 0`), an invalid local (`L 4`), and an invalid data index (`P 0; I` with empty data).",
+      "[1 item] Use a checksum at length 16 with all cells set to 1 to exercise fuel exhaustion on a normal loop path."
+    ],
+    "R5": 1, "R5_quotes": ["A code-content binding is the prerequisite for comparing specialized images. Once available, compile one variant per fixture and run each on the matching code and the same data cases as the general VM."],
+    "R6": 0, "R6_quotes": [],
+    "R7": "no", "R7_quotes": [],
+    "R8": 1, "R8_quotes": ["Run a fresh checked `speed` pipeline with the checksum spec in the Node test so every changing pass is checked on both workloads."],
+    "R9": 0, "R9_quotes": [],
+    "A1": 4, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 3,
+    "fitness": 7,
+    "justification": "A sound, compact VM design. The two listings are correct (9+15n and 6+14n dispatches, checksum of [1,2,3] = 2946, wrap case -131071), the JavaScript VM is an independent oracle, and the 15,616-statement sizing is explicit. The over-engineering is moderate. It adds a 192-step fuel counter, an unknown-opcode return of zero that collides with valid results, an oracle that classifies out-of-range accesses as traps, five directed trap programs plus a fuel-exhaustion case, and a second checked profile for the checksum. The specialized measurement the spec asks for is deferred to a code-content binding that the document says does not exist, and there is no interim hand-specialized baseline. The code cells are left as placeholders, but encoding them from the listings is mechanical."
+  },
+  {
+    "doc": "doc-C.md",
+    "program": "IRWB-016",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 0, "R3_quotes": [],
+    "R4": 0, "R4_quotes": [],
+    "R5": 0, "R5_quotes": [],
+    "R6": 0, "R6_quotes": [],
+    "R7": "no", "R7_quotes": ["[proposes the change] For corpus integration, keep the tool's reference compilation policy and delegate its reference runs to the existing signature-aware `referenceRun`."],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "Lean and well matched to the spec. The FFT size n (8 or 16) is a scalar, so today's Program.specialize can bind it. Twiddles and coefficients are fixed read-only tables, and the stability claim for both coefficient rows checks out. Exact pipelines are covered by the bit-exact r0 gate plus the reference compiler. Tolerance pipelines are covered by a float64 dense-DFT and biquad oracle with a -100 dB RMS bound. Sizing is explicit (under 5,000 and 2,500 statements), and the dot3 helper gives an inlining site. It proposes the small reference-check signature fix instead of designing around it. Maximum-size work buffers avoid correlated input specs at little cost. Nothing needs cutting."
+  },
+  {
+    "doc": "doc-D.md",
+    "program": "IRWB-014",
+    "R1": 2, "R1_quotes": [
+      "Reject with `-1` before any writes if `src.length > 32`, `packed.length < 2 * src.length`, or `policy` is anything other than one cell containing 1–4.",
+      "Return `-1` for an invalid stream, including an invalid `used` or output that would exceed `dst.length` or 32 cells.",
+      "Return the packed length on success, `-1` for input or codec rejection, or `-2` for a decoded length or cell mismatch."
+    ],
+    "R2": 4, "R2_quotes": [
+      "Reject with `-1` before any writes",
+      "Keep the prefix produced by complete valid tokens before the error.",
+      "Validate an entire token before any stores for that token so error results have defined memory.",
+      "Test successful writes followed by failure and all sentinel tails."
+    ],
+    "R3": 3, "R3_quotes": [
+      "[full u16 alphabet] Encode every possible u16 value, including NUL, isolated surrogates, and `0xFFFF`.",
+      "[malformed streams] `0x8100`–`0xFFFE` | Reserved. Reject.",
+      "[argument/capacity validation] Validate `0 <= used <= packed.length` and `used <= 64` up front."
+    ],
+    "R4": 16, "R4_quotes": [
+      "[9 items] Negative or oversized `used`, reserved word, truncated escape, low escape payload, match at `w = 0`, distance one greater than `w`, overflow of destination and of the 32-cell limit.",
+      "[1 item] Test successful writes followed by failure and all sentinel tails.",
+      "[5 items] Test short output buffers, source length 33 and empty, oversized or out-of-range policy.",
+      "[1 item, generated decoder profile] two failures (`used = 3` cuts the escape and `used = 7` exceeds capacity)"
+    ],
+    "R5": 2, "R5_quotes": [
+      "Fix the read-only policy buffer to `[4]` at the host and see what partial evaluation can recover from its length, load, guard and bound on traversal.",
+      "The scalar/record-field binding pass in `src/typed/specialize.ts` does not supply general constant-buffer loads.",
+      "For specialization, first run the general image with policy `[4]`, then a future specialized image with the same policy and the same source cells."
+    ],
+    "R6": 1, "R6_quotes": ["`policy` is anything other than one cell containing 1–4"],
+    "R7": "yes", "R7_quotes": ["Length and content specs are independent in `casesFrom`, and the current `oneOf` path coerces its choice to i32. Use the fixed-capacity scratch buffers and fixture tables above to cover correlated inputs and exact boundaries."],
+    "R8": 3, "R8_quotes": [
+      "[2 extra seeds] replay several fixed seeds, for example 1, 7 and 29",
+      "[1] Include exhaustive input strings up to length 8 over a two-cell alphabet as a small directed sweep."
+    ],
+    "R9": 1, "R9_quotes": ["[extra wrapper entry] `roundTrip(src: buffer, policy: buffer, packed: buffer, dst: buffer): i32`"],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 6,
+    "fitness": 7,
+    "justification": "A careful, correct and very implementable codec. The token arithmetic and golden streams check out (0x8012, 0x80F0/0x80A0, 0x8003/0x8017), the index invariants are argued, and the 16,616-statement budget is itemized. A large share of the document, though, defends against inputs that the round-trip purpose does not need. That includes the full u16 alphabet with an escape token and a reserved range, -1/-2 statuses across three functions, before-write and partial-prefix guarantees, and sixteen rejection and capacity tests. It also passes the probe budget in a one-cell policy buffer instead of a scalar and adds an extra roundTrip wrapper entry, extra seeds and an exhaustive sweep. The constant-buffer specialization plans depend on a feature the document says is missing. The relational bounds checks, bit packing and loop-carried dependencies that the spec targets are all intact."
+  },
+  {
+    "doc": "doc-E.md",
+    "program": "IRWB-013",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 0, "R3_quotes": [],
+    "R4": 0, "R4_quotes": [],
+    "R5": 0, "R5_quotes": [],
+    "R6": 0, "R6_quotes": [],
+    "R7": "no", "R7_quotes": [
+      "[proposes the change] Add optional `ingest?: IngestOptions` to `ProjectMeta` and forward it from both `Program.fromProject` and `ingestProject`, preserving their defaults.",
+      "[proposes the change] In `tools/reference-check.mjs`, pass the reference compiler's `r.signatures` as the fourth argument to `imageFromCode`"
+    ],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 4,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "Lean and backed by evidence. It uses one padded SHA-256 block (0-55 ASCII bytes, full 64-round schedule) and one ChaCha20 block with sixteen named scalar locals. The rotate helpers use exactly the idiom the spec targets. The oracles are published vectors plus the framework SHA-256, the statement estimates are explicit (~8,000 and ~4,500), and the metric is instructions per 64-byte block. A probe found two real infrastructure gaps, tape ingest in the Node loader and missing signatures in reference-check, and the document proposes small fixes for both instead of designing around them. The round table lives in an input buffer, so constant propagation on K must wait for constant-memory specialization. The IV and ChaCha constants stay literals. Nothing needs cutting."
+  },
+  {
+    "doc": "doc-F.md",
+    "program": "IRWB-014",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 0, "R3_quotes": [],
+    "R4": 0, "R4_quotes": [],
+    "R5": 0, "R5_quotes": [],
+    "R6": 0, "R6_quotes": [],
+    "R7": "no", "R7_quotes": ["[proposes the change] For Node corpus consumers, type the field as optional `IngestOptions` in `ProjectMeta`, forward it through `Program.fromProject` and pass it to `ingest` from `ingestProject`."],
+    "R8": 0, "R8_quotes": [],
+    "R9": 1, "R9_quotes": ["[extra wrapper entry] roundTrip(input: buffer, packed: buffer, output: buffer, chainLimit: i32): i32"],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "The leanest of the three LZ designs, and fully specified. A 7-bit alphabet lets a one-byte tagged token encode both literals and matches without escapes. Every call is valid by contract (\"The codec makes no claims about other calls\"). chainLimit is a scalar, so the existing Program.specialize can be used now. The golden streams and the AABBAAB hash-collision example check out, the 12,440-statement budget is itemized, and the saved original input is the independent oracle. It proposes the tape-ingest loader change. The only optional piece is the roundTrip wrapper entry, which is worth keeping because it routes varied streams to the decoder under the generated gate. Relational bounds, bit fields and the overlapping copy are all present."
+  },
+  {
+    "doc": "doc-G.md",
+    "program": "IRWB-012",
+    "R1": 9, "R1_quotes": [
+      "Output length differs from two.",
+      "Code is empty, odd-length, or longer than 128 cells.",
+      "Data exceeds 16 cells.",
+      "Fuel exhausted before the next fetch.",
+      "Unknown opcode.",
+      "PC outside the instruction stream, including fall-through.",
+      "Operand stack underflow or overflow.",
+      "Local index outside 0–7.",
+      "Popped data index outside the data buffer."
+    ],
+    "R2": 2, "R2_quotes": [
+      "Every guest error returns a nonzero status before any output write.",
+      "On guest errors verify the output sentinel is intact."
+    ],
+    "R3": 3, "R3_quotes": [
+      "[buffer-shape validation] At entry, check output length, code length, then data length.",
+      "[malformed bytecode] Use ordinary, explicit validation to give invalid guest code defined outcomes.",
+      "[non-terminating bytecode] Use a counted `while (fuel > 0)` with a fuel error after the loop"
+    ],
+    "R4": 18, "R4_quotes": [
+      "[13 items] Exercise odd and empty code, bad output size, oversized buffers, unknown opcode, fall-through, taken and untaken invalid branches, full and empty stack, local 7 versus 8, negative data index via subtraction, the last valid data index and the one-past-end index.",
+      "[1] Use `J 0` for exhaustion.",
+      "[1] Also run a checksum at length 16 and check that the oracle expects fuel exhaustion before the normal halt.",
+      "[1] To check the inclusive fuel boundary, run Fibonacci with n = 12 after inserting `J 24` at instruction 23 and moving `H` to 24.",
+      "[1] Include a variant with one more jump before the halt to check that the next fetch never occurs.",
+      "[1] Run a same-length program with one changed cell through the specialization router to confirm it does not select the specialized image for different code."
+    ],
+    "R5": 3, "R5_quotes": [
+      "[section] Full bytecode specialization depends on the constant-memory work in",
+      "[section] With a constant-memory proof, propagate `pc` along each guest edge until the next fetch becomes known.",
+      "[test] Run a same-length program with one changed cell through the specialization router",
+      "[plan] When constant-memory bindings can express the fixed code artifact, run the same checks and measurements on separately bound Fibonacci and checksum images."
+    ],
+    "R6": 0, "R6_quotes": [],
+    "R7": "yes", "R7_quotes": ["`casesFrom` generates each parameter independently and `oneOf` coerces the selected value to a scalar. Use fixed `cells` per fixture and explicit tuples for extra cases."],
+    "R8": 1, "R8_quotes": ["Start a fresh Program from the same source and this alternate input spec, and run every checked pipeline from r0 on it."],
+    "R9": 4, "R9_quotes": [
+      "[fixture assembler] Assemble the following annotated listings in a host-side fixture builder during implementation.",
+      "[dispatcher] A host that selects variants can compare the length and complete cell sequence once before the call",
+      "[alternate result encoding] The output buffer has exactly two u16 cells. On success, pop the result and write its low and high halves",
+      "[optional extra entry] A scalar-only helper such as `vmCellIndex(pc: i32): i32` is optional for an inlining experiment."
+    ],
+    "A1": 4, "A2": "yes", "A3": "yes", "A4": 4,
+    "over_engineering": 8,
+    "fitness": 6,
+    "justification": "The core is correct and thorough. Both fixture cell arrays and the 11+15n / 8+14n formulas check out, the JavaScript oracle is independent, and the sizing is explicit. However, guest validation that the purpose does not need dominates the design. There are nine error statuses, and a two-cell output buffer exists only so results cannot collide with statuses. Every arm has a fixed validation order, there is a fuel limit, and eighteen tests exercise those guards and the fuel boundaries. It also adds a host assembler, an optional helper entry, and a long specialization section with residualization and a specialization router. That section depends on a constant-memory binding the document says does not exist. An implementer could cut roughly half the document. The dispatch, stack and bounds-check workload survives, but every arm now also carries explicit guard branches."
+  },
+  {
+    "doc": "doc-H.md",
+    "program": "IRWB-014",
+    "R1": 1, "R1_quotes": [
+      "Return `-1` before writing if `src.length > 32`, `packed.length < 2 * src.length`, or `policy` is empty.",
+      "Return `-1` for an invalid length, truncated escape, backward distance beyond the produced prefix, or insufficient output space."
+    ],
+    "R2": 4, "R2_quotes": [
+      "Return `-1` before writing",
+      "A failing token leaves only the output from earlier complete tokens.",
+      "Test rejection and unchanged tails directly on the Typed functions using sentinel-filled outputs.",
+      "Include a valid prefix before an invalid token to check where writes stop."
+    ],
+    "R3": 4, "R3_quotes": [
+      "[full u16 alphabet] The token format handles every u16 value.",
+      "[malformed streams] For an escape require another cell before `used`.",
+      "[argument/capacity validation] Return `-1` before writing if `src.length > 32`, `packed.length < 2 * src.length`, or `policy` is empty.",
+      "[policy clamp and extra literal-only mode] The first policy cell sets the probe budget, capped at 4. Zero selects literal-only encoding."
+    ],
+    "R4": 9, "R4_quotes": [
+      "[4 items] Try an out-of-range `used`, a trailing escape, a match before there is enough history and a match that exceeds the destination by one.",
+      "[1] Include a valid prefix before an invalid token to check where writes stop.",
+      "[3 items] Try a 33-cell source, a buffer shorter than twice the input length, and an empty policy.",
+      "[1, generated decoder profile] Prefix length 3 truncates the escape and 7 exceeds the stream buffer."
+    ],
+    "R5": 2, "R5_quotes": [
+      "Fix the read-only policy buffer to `[4]` and keep the source variable.",
+      "The current scalar and record-field binding pass does not provide it.",
+      "For the later specialization experiment compare general and specialized images on identical variable source cases with `policy = [4]`."
+    ],
+    "R6": 1, "R6_quotes": ["The first policy cell sets the probe budget, capped at 4."],
+    "R7": "no", "R7_quotes": [],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 5,
+    "fitness": 7,
+    "justification": "Implementable and correct. The match words 0x8380 and 0x8027 and the 0x801C collision case check out, and both the host JavaScript decoder and the round trip are independent oracles. It is somewhat lighter than doc-D but widens the domain in the same way. It has a full-u16 alphabet with an escape word, -1 rejection paths with before-write and partial-output guarantees, and nine rejection tests. The probe budget sits in a one-cell policy buffer that also clamps the value and adds a literal-only mode. The step budget gives work bounds (384 comparisons, 64 hashes) rather than a statement estimate, but it does tie them to the 20,000 limit. The specialization comparison depends on a constant-buffer feature the document says is missing. The relational-bounds workload is fully preserved."
+  },
+  {
+    "doc": "doc-I.md",
+    "program": "IRWB-017",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 0, "R3_quotes": [],
+    "R4": 0, "R4_quotes": [],
+    "R5": 0, "R5_quotes": [],
+    "R6": 0, "R6_quotes": [],
+    "R7": "yes", "R7_quotes": [
+      "A whole-board choice would add variety, but would require extending the current input generator, whose `oneOf` produces scalar values.",
+      "[but proposes the entries change] Add optional `entries` to `ProjectMeta` and forward it in `Program.fromProject` and the browser `kernelFor` path, including fresh runs."
+    ],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 4, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 1,
+    "fitness": 8,
+    "justification": "A lean port plan. It has two entries (a search wrapper and perft), trims the search record out of WorldState, and deliberately drops the upstream guards (\"Omit the source's bad-depth, budget-clamping, and move-list overflow handling\"). Each entry gets one legal fixture. Probe-measured statement counts were used to choose budget 2 and perft depth 1 so the gate stays under 20,000. It proposes the small entries-metadata wiring rather than supplying inputs for all 53 helpers. It accepts one board per entry because oneOf cannot choose buffers. At budget 2 the generated search cases only reach the fallback path, so deeper behaviour is checked by concrete reference-position fixtures outside the gate. Some layout detail is left to the upstream source, which is appropriate for a port."
+  },
+  {
+    "doc": "doc-J.md",
+    "program": "IRWB-015",
+    "R1": 2, "R1_quotes": ["`-1` for an invalid or unsupported pattern and `-2` when a capacity is exceeded"],
+    "R2": 0, "R2_quotes": [],
+    "R3": 3, "R3_quotes": [
+      "[any UTF-16 text] the text can contain any UTF-16 code unit, including a zero, a newline or an individual surrogate",
+      "[malformed patterns] Empty alternatives and groups, repeated postfix operators, escapes, wildcards, flags and all syntax outside this grammar return `-1`.",
+      "[oversized inputs/capacity overflow] Reject an oversized buffer at entry."
+    ],
+    "R4": 16, "R4_quotes": [
+      "[8 items] `a\\|`, `(a`, `a)`, `()`, `a**`, `[c-a]`, `a[`, `.` | empty | −1 each",
+      "[1] `(abcdefghijklmn)` | `abcdefghijkl` | 0 | Exactly 16 pattern units",
+      "[1] `a*a*a*a*a*` | twelve `a` units | 1 | Exactly 16 states and 12 text units",
+      "[2] `a*a*a*a*a*a` / `a*a*a*a*a*a*` | empty | −2 each | Overflow at Accept / during emission",
+      "[2] 17 literal units / `a*` | empty / 13 text units | −2 each | Buffer length guards",
+      "[1, generated profile] Malformed input | `{\"string\":\"a[\"}`",
+      "[1, generated helper spec with invalid tags] \"kind\": { \"oneOf\": [1, 2, 3, 4, 5, 0, -1] }"
+    ],
+    "R5": 2, "R5_quotes": [
+      "[IRWB-007 plan] The current scalar/record-field `specialize` pass in `src/typed/specialize.ts` does not bind buffer contents.",
+      "[residual-CFG plan] Once opcodes or active-state facts become known, SCCP on SSA can expose constant branches."
+    ],
+    "R6": 0, "R6_quotes": [],
+    "R7": "yes", "R7_quotes": [
+      "In `casesFrom`, `oneOf` for these integer helper parameters selects numbers. It does not select objects such as buffer specifications.",
+      "Add correlated cases outside the generator."
+    ],
+    "R8": 6, "R8_quotes": [
+      "[1] Varying literal sequences",
+      "[2] `{\"string\":\"([a-c]\\|[b-d])*\"}` and `{\"string\":\"(a*)*\"}`, in separate runs",
+      "[1] Maximum live-state stress",
+      "[1] Malformed input",
+      "[1] An exhaustive small sweep over texts of length 0–4 on `{a,b,c,d}` for several fixed patterns"
+    ],
+    "R9": 3, "R9_quotes": [
+      "[generator/fuzzer] generate a short grammar-valid pattern from an independently seeded grammar generator, reject over-budget draws, and test it with a witness derived during generation plus a mutation",
+      "[dispatcher] If exposed beyond the fixed-pattern experiment, dispatch other patterns to the general entry.",
+      "[ceiling project] put a small hand-written DFA in a sibling project named `regex-nfa-fixed`"
+    ],
+    "A1": 4, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 7,
+    "fitness": 7,
+    "justification": "The most complete of the regex designs. It covers groups, alternation and star, uses mark-on-push closure, and gives a clear fragment table. JavaScript RegExp with an end-of-input lookahead is the independent oracle. The itemized allowance of 18,960 statements is close to the 20,000 limit, but it is checked against a 16,000 measured target. It adds a lot that the purpose does not need: -1/-2 statuses with detailed error-precedence rules, arbitrary UTF-16 text including lone surrogates, and sixteen error and capacity fixtures. It also has five extra generated profiles plus an exhaustive sweep, a separate grammar generator with mutations, a dispatcher for non-fixed patterns, a hand-written DFA sibling project and a design-references section. It works around oneOf with extra profiles and an outside generator instead of proposing a buffer-choice spec. The specialization, jump-threading and character-class targets are excellent."
+  },
+  {
+    "doc": "doc-K.md",
+    "program": "IRWB-017",
+    "R1": 1, "R1_quotes": ["Return -1 before writes for malformed lengths, mode, or slice size."],
+    "R2": 1, "R2_quotes": ["Return -1 before writes for malformed lengths, mode, or slice size."],
+    "R3": 2, "R3_quotes": [
+      "[options validation] Require a full arena and exactly four option cells",
+      "[slice-length option] slice length (1–64)",
+      "[slice-length option] finishing the same run at slice sizes 1 and 19 yields the same result and search fields"
+    ],
+    "R4": 1, "R4_quotes": [
+      "Run explicit companion cases for terminal return, malformed options, and a budget-one unwind.",
+      "Exercise invalid option inputs at the wrapper boundary."
+    ],
+    "R5": 1, "R5_quotes": [
+      "Begin with the separate read-only options buffer.",
+      "Treat buffer-content specialization as research beyond the current scalar parameter binder."
+    ],
+    "R6": 4, "R6_quotes": [
+      "depth, node budget, advanced flag (0/1), slice length (1–64)",
+      "`chessRunSearch.options` is `{ \"cells\": [1, 4, 0, 16] }`"
+    ],
+    "R7": "yes", "R7_quotes": ["`Program` has an explicit `entries` constructor option, but project metadata does not wire it through. Supply inputs for every ported signature so the project works with today's loaders and parity tools."],
+    "R8": 1, "R8_quotes": ["Run a second focused checked pipeline on the same source with an inputs override for `chessRunSearch` using legal en passant and options `[2, 1, 1, 4]`."],
+    "R9": 3, "R9_quotes": [
+      "[third oracle] record upstream reference tuples (packed move, score, completed depth, nodes) using the pinned source and compare to the port with the same inputs",
+      "[debug tool] On a perft failure, run a root divide in the host by making each legal move",
+      "[fixture generator] Derive checked-in JSON from the FEN encoder and a small per-function fixture table."
+    ],
+    "A1": 4, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 6,
+    "fitness": 6,
+    "justification": "Thorough and accurate on the chess side, covering the layout, move encoding, the perft table and the mate assertions, with independent reference positions and probe measurements. Most of the extra weight comes from one workaround. The document notes that project metadata does not pass `entries` to the loader. Instead of proposing that small change, it designs per-function generated fixtures and state snapshots for every ported helper. It also adds a four-cell options buffer for scalar knobs, a -1 rejection path, a user-chosen slice length with suspension-equivalence tests, and an extra checked profile. On top of that come upstream reference tuples as a third oracle and a perft-divide tool. The core port is implementable, and most of the generated-input section would disappear with the entries change."
+  },
+  {
+    "doc": "doc-L.md",
+    "program": "IRWB-013",
+    "R1": 1, "R1_quotes": ["return `-1` before any output write on a length mismatch"],
+    "R2": 2, "R2_quotes": [
+      "return `-1` before any output write on a length mismatch",
+      "require status -1 and unchanged guest memory"
+    ],
+    "R3": 4, "R3_quotes": [
+      "[two-block SHA] One hashes up to 119 bytes with SHA-256",
+      "[non-byte cells] Interpret byte inputs with `cell & 255`, so the upper eight bits of a byte cell are immaterial.",
+      "[alternate constant tables, incl. sigma] Alternate table contents are useful for compiler tests because the entry points consume the bytes they receive.",
+      "[length validation] At the top of each entry, check the lengths in the table"
+    ],
+    "R4": 7, "R4_quotes": ["[7 items] For explicit wrong-length cases (SHA 120 bytes, short K, short output, and wrong lengths for ChaCha key, nonce, sigma and output) require status -1 and unchanged guest memory."],
+    "R5": 3, "R5_quotes": [
+      "[IRWB-007 row] specialize on the standard `roundK` and `sigma` bytes and their lengths",
+      "[specialization paragraph] A specialized image may be called under that explicit precondition, or a dispatcher may check it and use the general path otherwise.",
+      "[IRWB-010 row] Search for profitable equivalent forms of rotate idioms and SHA Boolean expressions in short arithmetic windows.",
+      "[document says not available] Use it for the specialization, rule discovery and allocation experiments as those mechanisms become available."
+    ],
+    "R6": 0, "R6_quotes": [],
+    "R7": "yes", "R7_quotes": ["`oneOf` in `makeValue` selects a scalar, so use explicit calls for whole-buffer fixtures and SHA boundary lengths."],
+    "R8": 3, "R8_quotes": [
+      "[extra seed 29] repeat the final check with 100 cases per function at seeds 7 and 29",
+      "[alternate-data profile] clone the manifest in memory with `roundK` generated as 128 cells in `[0,65535]` and `sigma` as 16 cells in `[0,255]` for a separate seed-controlled general run",
+      "[length sweep] Use all SHA lengths 0–119 at least once"
+    ],
+    "R9": 4, "R9_quotes": [
+      "[3rd oracle] For a genuinely separate portable path, use `new Sha256().update(text).digest()`",
+      "[4th oracle] use Node's `createHash('sha256').update(Uint8Array.from(bytes)).digest('hex')` in the host test",
+      "[5th oracle] use a small host reference with an indexed 16-word state and DataView serialization",
+      "[dispatcher] or a dispatcher may check it and use the general path otherwise"
+    ],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 4,
+    "over_engineering": 6,
+    "fitness": 7,
+    "justification": "Correct and complete, with good published vectors and explicit sizing (~10,772 and ~3,630 statements), but heavier than needed. It supports two-block SHA (up to 119 bytes), passes sigma as an input buffer, treats alternate table contents as a goal and masks byte cells to 8 bits. It adds -1 length guards with unchanged-memory guarantees and seven wrong-length tests. It uses five oracles: published vectors, two framework SHA paths, Node crypto and a host ChaCha. It also plans an extra seed, an alternate-data run, a full length sweep, register-budget sweeps and an optional specialization dispatcher. The specialization and rule-discovery plans depend on mechanisms the document says are not yet available. The rotate idioms and the sixteen live ChaCha words are intact, but with sigma in a buffer, ChaCha's constants are no longer available to constant propagation."
+  },
+  {
+    "doc": "doc-M.md",
+    "program": "IRWB-015",
+    "R1": 1, "R1_quotes": ["`-1` for invalid input"],
+    "R2": 0, "R2_quotes": [],
+    "R3": 3, "R3_quotes": [
+      "[any code unit text] The text may contain any code unit.",
+      "[malformed patterns] The grammar rejects empty patterns or alternatives, groups, escapes, and repeated stars.",
+      "[oversized inputs] Both buffers are read-only and limited to 12 UTF-16 code units each. Check length at entry."
+    ],
+    "R4": 8, "R4_quotes": [
+      "[6 items] Empty pattern, `a\\|`, `(a)`, `a**`, `[c-a]`, `a[` | empty | −1 each",
+      "[2 items] Thirteen literal units / `a*` | empty / thirteen `a` units | −1 each"
+    ],
+    "R5": 1, "R5_quotes": ["The current `specialize` pass binds scalar parameters or record fields. Constant buffer contents are the proposed IRWB-007 input."],
+    "R6": 0, "R6_quotes": [],
+    "R7": "no", "R7_quotes": ["[proposes the change] Before adding the project to the shared corpus, wire the existing metadata through `Program.fromProject` and `ingestProject`"],
+    "R8": 1, "R8_quotes": ["Repeat on a fresh program with `pattern: { buffer: [1, 12], cell: [97, 99] }` and the same text spec to exercise varying patterns."],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 3,
+    "fitness": 8,
+    "justification": "A compact, implementable Thompson matcher. It supports alternation and star without groups, derives a 13-state bound from the 12-unit cap, and uses flag banks that double as visited sets. The budget is a clear order-of-magnitude check (494 visits at ~40 statements each) that measurement will confirm. JavaScript RegExp with a strict end-of-input lookahead is the independent oracle. The over-engineering is limited to a -1 status for malformed or oversized input, eight rejection fixtures, text that may contain any code unit, and one extra generated profile. It proposes the tape-ingest wiring. The fixed-pattern experiment depends on a constant-buffer binding the document says is missing, but that section is short. The specialization, jump-threading and character-class targets all remain."
+  },
+  {
+    "doc": "doc-N.md",
+    "program": "IRWB-015",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 0, "R3_quotes": [],
+    "R4": 0, "R4_quotes": [],
+    "R5": 0, "R5_quotes": [],
+    "R6": 0, "R6_quotes": [],
+    "R7": "no", "R7_quotes": [
+      "[proposes the change] Add `{ strings: [...] }` to `makeValue` in `src/typed/evaluate.ts`",
+      "Current `oneOf` coerces its choice to an integer. A new string-list form keeps numeric specs and fixed strings on their existing paths."
+    ],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 4,
+    "over_engineering": 1,
+    "fitness": 8,
+    "justification": "The leanest regex design. The grammar is restricted to at most four pieces over a-d, with one Range kind for both literals and classes. That lets sequential state numbering replace a patch list, and the input spec fixes the valid domain, so there is no validation code. RegExp is the oracle, and the 15,608-statement budget is itemized against the all-states-active case. It identifies the oneOf limitation and proposes the small `{ strings: [...] }` generator change, so eight NFA topologies go through the pass gate. Leaving out alternation narrows the topologies available for jump threading. Star still produces simultaneous active states and Split dispatch."
+  },
+  {
+    "doc": "doc-O.md",
+    "program": "IRWB-013",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 1, "R3_quotes": ["[alternate constant table] On one explicit fixture with a modified round table, require the general image to agree with r0 and confirm that the changed table changes the digest."],
+    "R4": 0, "R4_quotes": [],
+    "R5": 1, "R5_quotes": [
+      "Compare the same SHA source with the round table dynamic and under a specialization precondition fixing its length and read-only contents.",
+      "A fixed `cells` input spec supplies fixtures and by itself grants no specialization assumption."
+    ],
+    "R6": 0, "R6_quotes": [],
+    "R7": "no", "R7_quotes": [],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 4,
+    "over_engineering": 1,
+    "fitness": 8,
+    "justification": "Concise and implementable. It uses one padded SHA block, a ChaCha block with sixteen named scalar locals, and rotate helpers. NIST and RFC vectors plus the framework SHA-256 are the oracles, the sizing is explicit (~5,300 and ~3,400), and the metric is instructions per byte. Optional material is minimal: one modified-round-table fixture, and an IRWB-007 bullet that relies on a specialization precondition the document implies is not available. It does not discuss loader or ingest risk for its frame arrays, which makes it slightly less ready to build than a design that checks that path. The round table in a buffer means constant propagation on K must wait for constant-memory specialization."
+  },
+  {
+    "doc": "doc-P.md",
+    "program": "IRWB-017",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 0, "R3_quotes": [],
+    "R4": 0, "R4_quotes": [],
+    "R5": 1, "R5_quotes": [
+      "so future specialization can bind the settings on the same source and vary the position",
+      "Bind contents of the read-only options buffer, then compare general and specialized runs on the same settings across multiple boards."
+    ],
+    "R6": 3, "R6_quotes": [
+      "It reads three u16 cells for depth, budget, and the advanced flag (0 or 1)",
+      "`options: {\"cells\":[1,4,0]}`"
+    ],
+    "R7": "yes", "R7_quotes": ["The normal project loader and parity runner check every function, so give each stateful helper valid arguments using the current input format."],
+    "R8": 0, "R8_quotes": [],
+    "R9": 1, "R9_quotes": ["[snapshot fixture generator] For search helpers, capture the started root, prepared root, and pending child from that same search."],
+    "A1": 4, "A2": "yes", "A3": "yes", "A4": 5,
+    "over_engineering": 4,
+    "fitness": 6,
+    "justification": "A terser version of doc-K's port. The layout, upstream assertions and parity plan are accurate, and probe numbers size the generated cases. Because it accepts that the loader checks every function and does not propose scoping the checks, it must give every stateful helper valid generated arguments. It does this with live snapshots from a forced search, and that section is vaguer than the rest (\"Reuse the forced board for other board helpers where its arguments fit\"). It also moves depth, budget and the advanced flag into a three-cell options buffer, justified only by a future buffer specialization. Otherwise the host supplies valid inputs and the design adds no error statuses or guard tests."
+  },
+  {
+    "doc": "doc-Q.md",
+    "program": "IRWB-016",
+    "R1": 0, "R1_quotes": [],
+    "R2": 0, "R2_quotes": [],
+    "R3": 1, "R3_quotes": ["[special float values] Put signed zeros, subnormals, infinities and a non-canonical NaN into raw-word exact-only cases for both kernels."],
+    "R4": 0, "R4_quotes": [],
+    "R5": 2, "R5_quotes": [
+      "[IRWB-007 row] Memory proof and staging require compiler support beyond current scalar bindings.",
+      "[FMA witness for tolerance mode] One additional finite bank case distinguishes exact and tolerant modes.",
+      "[document says not yet supported] add specialization and tolerance runs when supported"
+    ],
+    "R6": 1, "R6_quotes": ["`config.charCodeAt(0)` is `log2N` in 3–5, stored in a one-cell buffer."],
+    "R7": "no", "R7_quotes": [],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 4,
+    "over_engineering": 3,
+    "fitness": 8,
+    "justification": "Lean and well specified. The FFT computes its twiddles with an f32 half-angle recurrence and calls a butterfly helper at statement root, and the parallel biquad writes direct form I out explicitly. The oracle is a float64 DFT plus transposed DF-II with a dB bound, and sizing is explicit (under 7,300 and ~2,100 statements). There are a few extras. The FFT size is passed as a one-cell config buffer, which blocks today's scalar specialization. It adds raw-word special-value cases, an FMA witness fixture aimed at a tolerance mode the document says is not yet supported, and an IRWB-007 plan. The float straight-line code and the reassociation targets are intact."
+  },
+  {
+    "doc": "doc-R.md",
+    "program": "IRWB-016",
+    "R1": 1, "R1_quotes": ["On an invalid length or exponent they return `-1` and leave all guest bytes alone."],
+    "R2": 3, "R2_quotes": [
+      "return `-1` and leave all guest bytes alone",
+      "Invalid public inputs must produce the specified `-1` and unchanged memory.",
+      "Verify the no-write error paths and packed buffer layout."
+    ],
+    "R3": 2, "R3_quotes": [
+      "[length/exponent validation] Both public kernels check the lengths before accessing any elements.",
+      "[special float values] replay signed zero, subnormal, infinities and a non-canonical NaN as raw words in exact-only cases"
+    ],
+    "R4": 3, "R4_quotes": ["[3 items] Include wrong-size buffers, an invalid exponent and an odd signal length for the error paths."],
+    "R5": 3, "R5_quotes": [
+      "[IRWB-007 row] Specialize `fft` on config length and cell value and `biquadBank` on coefficient length and 15 exact words.",
+      "[memory specialization paragraph] Memory specialization follows IRWB-007's proposed per-entry promise.",
+      "The current `specialize.ts` binds scalar parameters or integer record fields.",
+      "[FMA witness test] Include a finite FMA witness in section 0",
+      "Use actual single-rounding emulator FMA for the FMA experiment when the backend can emit it."
+    ],
+    "R6": 1, "R6_quotes": ["`config` is one cell containing `log2N` in 3–5."],
+    "R7": "no", "R7_quotes": [],
+    "R8": 0, "R8_quotes": [],
+    "R9": 0, "R9_quotes": [],
+    "A1": 5, "A2": "yes", "A3": "yes", "A4": 4,
+    "over_engineering": 5,
+    "fitness": 7,
+    "justification": "The core is similar to doc-Q's and just as implementable: a half-angle twiddle recurrence via s/(2c), an explicit biquad evaluation order, a float64 oracle and itemized sizing (~6,550 and 2,575 statements). It adds a lot around that core. There is input-length and exponent validation with -1 returns and no-write guarantees, three error-path tests, special-value raw-word cases and a second peak-dB budget. There is also a long discussion of future tolerance pipelines and memory specialization, an FMA witness for a backend feature it says is not yet available, and a large measurement matrix. The log2N config value is a scalar passed in a buffer. The DSP workload itself is intact."
+  }
+]

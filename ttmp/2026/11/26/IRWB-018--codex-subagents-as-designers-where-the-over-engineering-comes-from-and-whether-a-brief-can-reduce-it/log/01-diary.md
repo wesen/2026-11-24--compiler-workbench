@@ -121,3 +121,28 @@ All 12 runs exited 0. Each made one commit, touched only its ticket and left a c
   - Chess kept the per-function fixture regime: "The stock checks need coherent inputs for every function."
   - Some cuts simplified the program itself: regex lost grouping, SHA lost multi-block input, the DSP lost a filter section. The judge's A4 score should show whether that cost optimization value.
 - **Tokens.** Output per run is 13.5–26.8K, and reported reasoning 1.7–5.2K. Most of the 1.7–4.1M total is cached input.
+
+## Step 5: blind judge results and figures
+
+A fresh agent scored the 18 shuffled docs against `scripts/05-judge-rubric.md`. It worked only from the pack directory and was told nothing about rounds or the hypothesis. Its scores are in `various/results/judge-scores.json`, and every quote is verified verbatim by script, by the judge itself.
+
+### What I learned
+| round | over-engineering (0–10) | fitness (0–10) | R1 error values | R2 memory-on-error | R3 domain widening | R4 self-guard tests | A1 implementability | A4 optimization value |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| baseline | 6.33 | 6.67 | 16 | 12 | 17 | 61 | 4.50 | 4.50 |
+| round 2 (revised brief) | 1.00 | 8.67 | 0 | 0 | 0 | 0 | 4.83 | 4.67 |
+| round 3 (self-review) | 3.17 | 7.33 | 3 | 4 | 11 | 23 | 4.67 | 4.67 |
+
+R1–R4 are summed over the six docs; the other columns are means.
+
+- **I spot-checked the judge.** Baseline VM (G): 9 error values, which matches my count (10 statuses including success).
+- **R7 ("designed around a missing piece") was marked yes on two round-2 docs.** Both quote the `oneOf` scalar-only limit (VM: "would require a buffer-valued choice spec"; chess: "would require extending the current input generator"). Chess round 2 also proposes forwarding `entries` through `ProjectMeta` and `Program.fromProject`. So even the leanest designs run into the input-generator limit.
+- **Simplifying did not cost optimization value:** A4 went from 4.50 to 4.67 in both rounds.
+- **Alternatives:** round 2 weighs them, at 1.37 "would … but" constructions and 0.57 "simpler/easier" per 1,000 words. Baseline and round 3 have 0 of each.
+- **Figures** (`scripts/06-figures.py`, dataviz reference palette slots 1–3, validated with a worst adjacent CVD ΔE of 12.6): `various/figures/irwb018-rounds.png` and `irwb018-style-markers.png`.
+
+### What warrants a second pair of eyes
+- **The rubric's R items come from my review.** Round 2 was told rules covering the same categories, so its zeros are partly built into the comparison. The less circular evidence:
+  - fitness and A1/A4, which a design that went too far would lose;
+  - the discoveries the rubric does not measure: tape ingest found in 4 of 4 frame-array designs, and the `entries` wiring proposed.
+- **The judge is not fully blind.** Round-2 docs have "Later" sections and similar lengths, and the judge is a Claude model, as I am.
