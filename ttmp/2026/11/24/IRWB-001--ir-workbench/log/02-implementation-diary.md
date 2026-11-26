@@ -1388,3 +1388,35 @@ This step wrote the milestone report R3: the fourth IR Workbench report in the v
 
 ### What warrants a second pair of eyes
 - **The report quotes the backend agent's and the UI agent's measurements** from their diaries and reports. I re-ran only the parts that the merged tree's tests and my own scripts cover.
+
+## Step 29: four milestones launched as tickets IRWB-003 to IRWB-006
+
+The user chose milestones 1–4 of the plan I proposed after report 4. For each: a ticket, an intern guide uploaded to reMarkable, an implementation with commits and a detailed diary, and a textbook-style vault report. I created the four tickets in the main checkout, so that four subagents can branch from one commit with fixed ids, and launched one subagent per milestone in its own worktree.
+
+### Prompt Context
+**User prompt (verbatim):** "Do 1-4, ask subagents to always commit at appropriate intervals and keep a detailed diary as you work (using the diary format from the skill). When a milestone is finished,  write a detailed project report for the obsidian vault as a deep dive technical analysis blog post using a textbook writing style (no analogies, see skill).      
+ Commit and push the bsidian vault when done (go-go-parc vault).   For each, create a ticket and design doc (if you don't have already)  Create  a detailed analysis / design / implementation guide that is for a new intern, explaining all the parts of the system needed to understand what it is, with prose paragraphs and bullet point sand pseudocode and diagrams and api references and file references. It should be very clear and technical. Store in the ticket and the nupload to remarkable.
+
+
+Then implement, use subagents as you like"
+
+### What I did
+- **Topics:** added `performance` and `verification` to the vocabulary.
+- **Tickets:**
+  - **IRWB-003:** the speed gap. Inlining, copy coalescing, float constants in registers, loop rotation.
+  - **IRWB-004:** cheap experiments. Cached origin outcomes, functions as the unit of change, workers, and a worker for the workbench.
+  - **IRWB-005:** gate strength. A mutation score for the meaning contract, and stronger case generation.
+  - **IRWB-006:** rewrite rules as verified data, and a single-assignment view of `typed.blocks`.
+- **One subagent per ticket**, with `isolation: worktree`. Every brief carries:
+  - the standing constraints: no downloaded code, no flashing, no code push, Co-Authored-By;
+  - the freeze: O2, default backend options and the book's numbers keep every corpus revision identical, and new behaviour goes into new pipelines or options;
+  - resource limits for four parallel agents on 8 cores and 62 GB;
+  - the diary cadence;
+  - the guide, the reMarkable upload, and a vault report written but not committed (I review and push).
+
+### Why
+- **The vault push stays with me.** Four agents committing to one vault at once would race on its index, and report 4 needed eleven corrections after a reading against the evidence.
+- **New code in new files where possible.** IRWB-003 and IRWB-006 both add passes, and IRWB-004 and IRWB-005 both touch `evaluate.ts`. Keeping edits to shared files at the level of registration lines keeps the merges small.
+
+### What warrants a second pair of eyes
+- **Parallel Candela runs.** IRWB-003 and IRWB-004 both need them. The briefs limit each agent to one Candela-scale process at a time, with a 12 GB heap.

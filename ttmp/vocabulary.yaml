@@ -15,6 +15,10 @@ topics:
       description: TypeScript implementation code
     - slug: candela
       description: Candela path-tracing scenes and their compilation (ds-js-os)
+    - slug: performance
+      description: Compile-time and run-time performance of the compiler and its framework
+    - slug: verification
+      description: Meaning checks, oracles, mutation testing and proofs of passes and rules
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
