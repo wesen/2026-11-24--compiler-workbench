@@ -130,3 +130,7 @@ Start with the design's framework ledger, then review the scope of the proposed 
 ## Step 2. Incorporate the review
 
 Accepted all four cuts. Direct input axes bind symbols, and compile-time checks use source positions. Inline checks its immediate input on origin-derived cases. A split checks the original in f64. An unchanged pass skips verification. The native entry takes an existing Pass and a two-artifact gate. The tensor caller owns the origin. Review target is the ledger and composition paragraph in the revised design.
+
+## Step 3. Implement the native pass path and executable IR
+
+Extracted native preparation and write enforcement from applyPass and reused them in applyNativePassSync. The new runner rejects manager-dependent declarations and returns immediately on an unchanged revision. Its regression test uses an adapter without rebuild. Added the parser, lexical binder resolution, affine forms, IR projection and evaluator. After npm run build, a worktree probe parsed a row sum, created a tensor.tix artifact and evaluated [1,2,3] to Float32Array [6]. The installed formatter was available through npm exec --offline.
