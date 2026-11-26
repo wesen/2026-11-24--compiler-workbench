@@ -143,3 +143,42 @@ The standalone cudaFuncGetAttributes probe compiled and ran on GB10 (30860346433
 Review the timing boundary in cuda-source.ts and the origin and subject bindings in cuda-contract.ts. The latter uses a new manager per invocation and the framework's existing process-local differential memo. All six corpus gates passed on the GB10, and a valid compiled source with its final store changed to zero was rejected at a specific coordinate. No framework edits were needed.
 
 The first sandboxed tmux benchmark session ended before the output file was created. I restarted the interpreter in a persistent tmux server and verified its output in reference/cpu.jsonl. The GPU measurements ran through the helper's timed lock, with one warm-up and three intervals per process.
+
+### Review and implementation request received at Step 2 (verbatim)
+
+~~~~
+A reviewer has read your design for IRWB-022-A. The review:
+
+# Review of your design
+
+## Must change
+
+1. **`gpuMs` of `runTixCuda` includes kernel loading.** "Record CUDA start and stop events on the launch stream around the contiguous kernel sequence." Only the benchmark warms up, so a one-case run times kernels that have not been loaded yet. Under CUDA 13's default lazy loading, the first launch of each kernel loads its module inside the interval. In my probe on the GB10, a trivial kernel's first interval was 0.115 ms and its second 0.003 ms; after `cudaFuncGetAttributes` the first was 0.004 ms. The fixed API excludes start-up, so say how kernels are loaded before the start event.
+2. **The engine-change rule cannot fire.** "pinned engine configuration (host, GPU/architecture, toolkit and flags). Scope reuse to a process with a fixed execution environment, refreshing the namespace if the engine changes." Nothing in the design observes the toolkit or the driver: the tool does not report them, and you add no query. Declare these values constants of the checker's version for the life of the process, or name their source.
+
+## Cut
+
+Nothing material.
+
+## Framework and tool changes
+
+- No framework change: correct. `defineTransformation` with a text output, `decide` over all missing indices, and `baselineKey`/`subjectKey` cover the check, as your probe showed.
+- Per-invocation directory with a per-hash compile lock: with the full-input key kept, two runs collide only if they upload byte-identical directories at the same time, for example two concurrent `checkLowering` calls on one function. It is needed only for that case, and it is minimal and correctly placed. Your verification's "distinct program arguments" has no caller in this design.
+- No change missed.
+
+## Keep
+
+Keep the short, direct design: the rounding table with literal bits and the JS zero and NaN rules, and the origin f64 reference with the unchanged stage-1 budget (the f32 meaning of every corpus program uses at most 25% of it on the stage-1 cases; my local check). Also keep the references built inside `cases`, and the warm-up plus three intervals in one timed process.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-022-A:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+~~~~
+
+## Step 4 — Check the public API and rejection boundary
+
+The first full tensor test run passed 28 of 29. The NaN propagation test reported “Values have same structure but are not reference-equal” for two Float32Arrays displaying [-0, -0, NaN]. A typed-array byte comparison had imposed a NaN payload requirement. Comparing the decoded scalar values retains both zero-sign assertions and checks NaN propagation. The subsequent node --test tests/tensor/*.test.mjs run passed all 29 tests. A targeted rerun of the strengthened split-tail test also passed with both transformations changing the program. npm run build succeeded on Node 24.18.0.
+
+The tests use the binary decoder for malformed frames and the actual engine for candidate rejection and replay. This is the verification change from the revised design's proposed fake batch runner. The compile-lock experiment is reproducible via scripts/05-check-isolation.mjs. The public exports live at dist/tensor/index.js after the build.
