@@ -210,8 +210,7 @@ more than twice the precision. For `exp`, `log` and `tanh`, the meaning is by de
 JavaScript's double function.
 
 **Why an interpreter and not compiled JavaScript.** The meaning should be the easiest thing in the domain to
-trust, and the check cases are small (shape values up to 8). The independent tests compare it bit for bit with
-hand-written `Math.fround` loops for matmul, softmax and conv2d.
+trust, and the check cases are small (shape values up to 8).
 
 ## 4. The meaning contract
 
@@ -332,12 +331,8 @@ alone.
 
 ## 6. The framework changes
 
-The rest of the framework fitted without change:
-- artifacts with floating-point payloads;
-- the adapter and projection;
-- the declared-writes check;
-- the sampled differential invariant, with a custom outcome type and an inconclusive rule;
-- per-application contract overrides, which is how the tests apply `split-sum` under the exact contract.
+The rest of the framework fitted without change: artifacts with floating-point payloads, the adapter, the
+declared-writes check, the sampled differential invariant, and per-application contract overrides.
 
 A probe run against the built framework before any design was written (`scripts/01-probe-framework-fit.mjs`)
 found the two places where it did not fit.
@@ -416,9 +411,6 @@ sequenceDiagram
   - total correspondence.
 - **Required suites:** the 228 framework tests, plus the Typed tests that go through `applyPass` (40). All pass.
 
-Measured margins are recorded in the diary, together with the scripts that produce them (`scripts/02` and
-`scripts/03`).
-
 ## 8. Independent evaluation
 
 The evaluation was run on revision `5c025fd` by someone else, with tests written from the brief before any
@@ -477,12 +469,9 @@ and add the repro programs as front-end tests.
   tensor-name rule does not. The test suite also had no case asserting that a legal-but-unusual program is
   *accepted*. All eighteen error tests assert rejections. A small set of positive "odd but valid" programs
   (reused names, broadcast indices, literal dimensions, comments everywhere) would have caught this.
-- **Report "no change" separately from "accepted".** `optimizeTix` uses one flag for both. That makes 60 of 60
-  accepted less informative than it looks, and it would hide a pass that silently stopped firing.
-- **Treat the synchronous host API as a finding earlier.** F2 works, but it means tensor pass applications leave
-  no facts in the analysis manager. If later stages need fact reuse across passes, an asynchronous `optimizeTix`
-  variant built on `applyPass` is the right next step. F2 then becomes a convenience rather than the main path.
-- **Keep the wide case, and say less about guarantees.** The reviewer was right that the uniform cases alone
-  made the exact rejection fragile: on softmax it now rests on two of nine cases. A per-element error bound from
-  an absolute-value evaluator (the γₙ·Σ|x| bound) would make the tolerance rigorous instead of argued. It is the
-  first thing I would add to the contract.
+- **Report "no change" separately from "accepted".** `optimizeTix` uses one flag for both, which would hide a
+  pass that silently stopped firing.
+- **Plan for facts.** With F2, tensor pass applications leave no facts in the analysis manager. If later stages
+  need fact reuse across passes, an asynchronous `optimizeTix` variant built on `applyPass` is the next step.
+- **Make the tolerance rigorous.** A per-element error bound from an absolute-value evaluator (the γₙ·Σ|x|
+  bound) would make the tolerance proven instead of argued. It is the first thing I would add to the contract.
