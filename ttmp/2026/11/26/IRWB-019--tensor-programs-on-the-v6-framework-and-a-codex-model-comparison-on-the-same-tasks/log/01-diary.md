@@ -329,3 +329,27 @@ Only the two medium Claude cells implement: Opus N and Fable P. Medium is cheape
 - **E rejected a correct `split-sum` on one cross-check program** (program 39, no reason in the step). That program is well conditioned on the generated cases: f32 against f64 within 4e-7 relative. So this is a false rejection by E's contract on its own sampled cases.
 - **Five independent implementations agree bit for bit with the tree-walking reference** on all 180 random cases. The fixed core's f32 meaning is precise enough to implement identically.
 - **Claude usage:** P's implementation took 280K tokens, N's 237K. Total Claude subagent tokens in IRWB-019 so far: about 2.04M (designs 0.90M, implementations 0.52M, judges and reviewer 0.62M).
+
+## Step 13: Sol policy v2 against v1, scored in one session; policy v3 launched
+
+The judge (Claude subagent, 171K tokens) scored the four v1 and four v2 Sol designs blind in one session. Its quotes verify, 104 of 104. Scores are in `results/judge-scores-t1-v2.json`, the key in `blind-key-t1-v2.json`.
+
+| Sol cell | excess v1 → v2 | R2 (non-finite) | over-eng. | fitness | A1 (fidelity) | words |
+|---|---|---|---|---|---|---|
+| Codex medium (C → T) | 12 → 5 | 6 → 3 | 3 → 1 | 7 → 7 | 4 → 4 | 2,510 → 2,827 |
+| Codex high (A → R) | 10 → 7 | 4 → 3 | 3 → 2 | 8 → 7 | 5 → 3 | 2,764 → 2,664 |
+| Pi medium (F → Q) | 14 → 10 | 7 → 4 | 4 → 2 | 8 → 8 | 5 → 3 | 2,748 → 1,921 |
+| Pi high (G → S) | 13 → 14 | 4 → 5 | 3 → 3 | 8 → 7 | 5 → 3 | 2,739 → 2,931 |
+| **mean** | **12.25 → 9.00** | 5.25 → 3.75 | **3.25 → 2.00** | 7.75 → 7.25 | 4.75 → 3.25 | 2,690 → 2,586 |
+
+- **v2 reduces excess in three of four cells.** The Pi high cell is unchanged. Over-engineering falls by 1.25 points.
+- **The fitness loss is my policy's fault.** v2's language rule gave as its example "affine expressions in parameter types that no program uses", to be rejected. But those are part of the brief's fixed grammar.
+  - All four v2 designs restricted parameter dimensions to bare names.
+  - The judge deducted fidelity (A1) for exactly that in A, D, E and H, the four v2 documents.
+  - Without A1, v2's fitness equals v1's. A policy rule must not contradict a fixed specification. The agents followed the policy over the brief, which shows the policy's rank.
+- **The largest remaining excess is non-finite handling** (R2: NaN encodings, finiteness checks, non-finite clauses in the tolerance check), although the brief says inputs are finite. v1's "state the domain and specify behaviour only within it" did not prevent it.
+- **The judges disagree.** On the same four v1 documents, the first judge and this one differ by up to 4 excess items and 2 fitness points (for example Pi Sol high: fitness 6 then 8). Scores are comparable within a session, not across sessions. That is why the v1 documents were rescored here, and why v3 will be scored together with v1 and v2.
+- **Policy v3** (`prompts/developer-instructions-v3.md`): v2 with the language rule replaced by "accept everything the brief fixes; cover it with the simplest method that works; where full generality would need machinery no example uses, reject that case with an ordinary error", plus "rely on the assumptions the brief states about inputs; do not specify checks, encodings or rules for inputs that violate them".
+  - It runs on the same four Sol cells, items U–X (`scripts/13-launch-t1-v3.sh`).
+  - The 12 Sol designs (v1, v2, v3) will be judged in one session.
+- **F (Pi, Sol, medium) implementation:** 25/25 on the frozen suite, 25/25 on the variant, cross-check 180/180 bit-exact, `inline` and `split-sum` accepted and correct on all 60 programs.
