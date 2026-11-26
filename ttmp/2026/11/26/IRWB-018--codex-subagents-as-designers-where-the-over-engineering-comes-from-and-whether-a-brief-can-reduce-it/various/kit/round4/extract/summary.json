@@ -1,0 +1,184 @@
+{
+  "sharedLengths": {
+    "system-prompt": 27750,
+    "skills-catalogue": 48131,
+    "multi-agent": 2511,
+    "agents-md": 3921
+  },
+  "differs": {
+    "skills-catalogue": [
+      "IRWB-017"
+    ],
+    "multi-agent": [
+      "IRWB-017"
+    ]
+  },
+  "sessions": [
+    {
+      "id": "IRWB-012",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T11-53-58-01a218c7-365f-7e73-833c-28970a537721.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 5.6,
+      "toolCalls": 20,
+      "commands": 29,
+      "tools": {
+        "exec_command": 32
+      },
+      "interpreterRuns": 6,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "reasoningItems": 15,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 1570236,
+        "cached_input_tokens": 1485440,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13884,
+        "reasoning_output_tokens": 1802,
+        "total_tokens": 1584120
+      }
+    },
+    {
+      "id": "IRWB-013",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T11-53-58-01a218c7-377f-7bf2-9db3-267aa278f261.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 7.2,
+      "toolCalls": 25,
+      "commands": 40,
+      "tools": {
+        "exec_command": 40
+      },
+      "interpreterRuns": 8,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry,evidence-levels}.md"
+      ],
+      "reasoningItems": 18,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2423695,
+        "cached_input_tokens": 2296832,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 17892,
+        "reasoning_output_tokens": 3460,
+        "total_tokens": 2441587
+      }
+    },
+    {
+      "id": "IRWB-014",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T11-53-59-01a218c7-3881-7801-8956-5656cfab46c2.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 6.1,
+      "toolCalls": 22,
+      "commands": 34,
+      "tools": {
+        "exec_command": 34
+      },
+      "interpreterRuns": 6,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "reasoningItems": 15,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 1859875,
+        "cached_input_tokens": 1767040,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 15103,
+        "reasoning_output_tokens": 2492,
+        "total_tokens": 1874978
+      }
+    },
+    {
+      "id": "IRWB-015",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T11-53-59-01a218c7-3a6a-7eb2-ac36-75df4cd6cabe.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 6.2,
+      "toolCalls": 24,
+      "commands": 17,
+      "tools": {
+        "exec_command": 26
+      },
+      "interpreterRuns": 3,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "reasoningItems": 14,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2001574,
+        "cached_input_tokens": 1907584,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 14979,
+        "reasoning_output_tokens": 1973,
+        "total_tokens": 2016553
+      }
+    },
+    {
+      "id": "IRWB-016",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T11-53-59-01a218c7-3b8f-7061-b78e-24d6c4dc1e51.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 6.2,
+      "toolCalls": 17,
+      "commands": 27,
+      "tools": {
+        "exec_command": 28
+      },
+      "interpreterRuns": 7,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "reasoningItems": 9,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 1356197,
+        "cached_input_tokens": 1270528,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 14695,
+        "reasoning_output_tokens": 1929,
+        "total_tokens": 1370892
+      }
+    },
+    {
+      "id": "IRWB-017",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T11-54-00-01a218c7-3ecb-7882-b1cc-e957b169fc85.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 7,
+      "toolCalls": 20,
+      "commands": 19,
+      "tools": {
+        "exec_command": 24
+      },
+      "interpreterRuns": 6,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "reasoningItems": 15,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 1618468,
+        "cached_input_tokens": 1529984,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16930,
+        "reasoning_output_tokens": 2315,
+        "total_tokens": 1635398
+      }
+    }
+  ]
+}

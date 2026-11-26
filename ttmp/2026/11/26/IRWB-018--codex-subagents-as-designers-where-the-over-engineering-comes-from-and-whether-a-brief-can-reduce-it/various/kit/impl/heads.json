@@ -1,0 +1,38 @@
+{
+ "IRWB-012": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012",
+  "branch": "impl/irwb-012",
+  "base": "77ad469",
+  "rev": "6e7b620"
+ },
+ "IRWB-013": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013",
+  "branch": "impl/irwb-013",
+  "base": "77ad469",
+  "rev": "b8f65c2"
+ },
+ "IRWB-014": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014",
+  "branch": "impl/irwb-014",
+  "base": "77ad469",
+  "rev": "6c60d01"
+ },
+ "IRWB-015": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-015",
+  "branch": "impl/irwb-015",
+  "base": "77ad469",
+  "rev": "a48847e"
+ },
+ "IRWB-016": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016",
+  "branch": "impl/irwb-016",
+  "base": "77ad469",
+  "rev": "a3126e9"
+ },
+ "IRWB-017": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017",
+  "branch": "impl/irwb-017",
+  "base": "77ad469",
+  "rev": "1d01966"
+ }
+}

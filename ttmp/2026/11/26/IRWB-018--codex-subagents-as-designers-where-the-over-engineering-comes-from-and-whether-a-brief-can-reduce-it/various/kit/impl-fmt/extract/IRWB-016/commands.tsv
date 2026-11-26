@@ -1,0 +1,9 @@
+0	git status --short; git log -3 --oneline; cat tools/format-corpus.mjs; cat tests/typed/format.test.mjs
+0	rg -n '.{74}' corpus/projects/f32-dsp -g '*.json' -g '*.md'; rg -n '.{81}' corpus/projects/f32-dsp -g '*.typed' -g '*.js'; nl -ba corpus/projects/f32-dsp/main.typed; cat corpus/projects/f32-dsp/scripts/compare.js; rg -n 'focus|main\.typed:|line [0-9]+' corpus/projects/f32-dsp; ls -d dist
+1	node tools/format-corpus.mjs && node tools/format-corpus.mjs --check; git status --short; git diff --check; git diff --stat
+2	node --test tests/typed/format.test.mjs
+2	node --test --test-isolation=none tests/typed/f32-dsp.test.mjs
+2	node --input-type=module <<'EOF'\nimport assert from 'node:assert/strict';\nimport { readFileSync } from 'node:fs';\nconst path = 'corpus/projects/f32-dsp/';\nconst source = readFileSync(path + 'main.typed', 'utf8').split('\\n');\nconst { focus } = JSON.parse(readFileSync(path + 'project.json', 'utf8'));\nassert.match(source[focus - 1], /const tr: f32/);\nconsole.log('Butterfly focus verified on line', focus);\nfor (const file of ['main.typed', 'scripts/compare.js', 'project.json', 'notes.md']) {\n  const width = Math.max(...readFileSync(path + file, 'utf8').split('\\n').map(line => line.length));\n  assert.ok(width <= (/\\.(json|md)$/.test(file) ? 73 : 80), file);\n  console.log(file, width);\n}\nEOF\ngit diff --check; git diff -- corpus/projects/f32-dsp/{main.typed,notes.md,scripts/compare.js}
+3	node --test --test-isolation=none tests/typed/format.test.mjs
+4	node --test tests/typed/format.test.mjs
+6	git add -- corpus/projects/f32-dsp/main.typed corpus/projects/f32-dsp/project.json corpus/projects/f32-dsp/notes.md corpus/projects/f32-dsp/scripts/compare.js && git diff --cached --check && git commit -m 'IRWB-016: fit f32 DSP corpus files to workbench tiles' && git status --short && git log -1 --format=%H

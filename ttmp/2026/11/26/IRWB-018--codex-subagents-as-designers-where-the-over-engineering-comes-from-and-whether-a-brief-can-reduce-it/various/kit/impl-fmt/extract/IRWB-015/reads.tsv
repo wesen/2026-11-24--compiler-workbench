@@ -1,0 +1,3 @@
+0	tools/format-corpus.mjs
+0	tests/typed/format.test.mjs
+0	corpus/projects/regex-nfa/{project.json,notes.md,main.typed,scripts/explore.js}

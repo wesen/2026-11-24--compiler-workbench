@@ -220,3 +220,105 @@ The user asked: "update the analysis skill, i think there should be an upated on
   - the go-minitrace repo's own copy, which would need the merged refinements as a change there;
   - `go-minitrace-transcript-analysis` (3 files differ);
   - `daily-log` (8 files differ).
+
+## Step 8: global AGENTS.md cleanup, round 4 (the policy as developer_instructions), and the policy in the Codex config
+
+The user asked: "ok, clean it up. All my AGENTS.md are a bit old so don't take them too seriously. remove the bootstrap part. and then yes do it. and then actually start implementing and watching what the subagents do, because I suspect they will still overindex on testing and overcautious frameworking". "Yes do it" answered my offer to run the six-agent round with the policy as `developer_instructions`. Round 4 kept the baseline brief exactly (`diff` against `00-common.md`: identical) and moved only the general part of the policy into a developer message. The question was how much of round 2's effect a project-independent instruction carries.
+
+### What I did
+- **Rewrote `~/.codex/AGENTS.md`** (backup `~/.codex/AGENTS.md.2026-11-26.bak`). Bootstrap was removed and the docmgr path corrected. The rest was grouped under "Everywhere", "Go repositories (a `go.mod` at the root)" and "Web front ends". This is a confound for round 4, whose global AGENTS.md is no longer the Go-only one.
+- **Added `DEV_INSTRUCTIONS_FILE`** to the kit's `01`/`02` launchers. The file is passed as `-c developer_instructions=<JSON string>`; a JSON string is also a valid TOML basic string. Tested with quotes and backslashes against the stub `codex`.
+- **Ran round 4** (`d91f3e3`, `scripts/07-launch-round4.sh`, base `d521d97`). It used `prompts/developer-instructions-round4.md`, the general block plus one isolation line. All six exited 0, with one commit each and nothing outside their tickets. The extracted skills catalogue starts with the policy in all six. IRWB-017's context differs only by an extra `mcp__playwright` line in its tool list.
+- **Blind-judged round 4 against round 2** with a second judge instance. It used the same rubric plus the counting conventions from the first judging, and a new pack (seed 44). The judge's 52 quotes were verified verbatim by `07-verify-quotes.mjs`.
+
+### Results
+
+| round | over-engineering | fitness | R1+R2 | R3 | R5 | R7 yes | R8 | words | testing % |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| baseline (judge 1) | 6.33 | 6.67 | 28 | | | | | 3,419 | 19.7 |
+| round 2 (judge 1) | 1.00 | 8.67 | 0 | | | | | 2,064 | 16.8 |
+| round 2 (judge 2) | 1.17 | 8.83 | 0 | 3 | 0 | 2 | 2 | 2,064 | 16.8 |
+| round 4 (judge 2) | 3.00 | 7.33 | 0 | 4 | 5 | 4 | 12 | 2,832 | 20.9 |
+
+- **The general layer removes the error contracts completely.** R1 and R2 are 0 in round 4, as in round 2. In the content metrics, error-contract sentences fall to 5.0%, against 10.9% in the baseline.
+- **The remaining excess is the scope the project brief controlled.** That is extra input profiles (R8, 12), measurement plans beyond the primary metric (R5, 5) and designing around a missing piece (R7, 4 of 6). The general block deliberately lacks the brief's "leave out alternate input profiles and measurement methodology" line and its word target.
+- **Judge 2 reproduces judge 1 on round 2** within 0.17 points, so the two scales are comparable.
+- **Testing share is not reduced by either policy.** It is 16.8% in round 2 and 20.9% in round 4, against 19.7% in the baseline.
+
+### The policy in the Codex config
+I added the general block to `~/.codex/config.toml` as top-level `developer_instructions` (backup `~/.codex/config.toml.2026-11-26.bak`, it parses with `tomllib`). A fresh low-effort session (`01a218e0-7dee-7da2-baa2-e51f32c270b6`, run with stdin closed) has the policy in developer message 1. A first attempt without `< /dev/null` hung on "Reading additional input from stdin...".
+
+## Step 9: the implementation round (six Codex implementers)
+
+### Prerequisites
+- **`6ad38d0`:** `project.json`'s `ingest` and `entries` reach `Program.fromProject`, `ingestProject`, `runPipeline` (`roots`), the browser `kernelFor`, and `tools/parity.mjs`. Four tests are in `tests/typed/project-meta.test.mjs`. My first version of the test misused the API (`exec('entry', 3)` instead of `[3]`, `check().map` instead of `check().fns`). The 26 tests in the six nearest suites pass.
+- **`77ad469`:** merged the six round-2 design branches (ticket directories only, checked) as the designs to implement.
+- **`a76ead3`:** the brief `prompts/impl/common.md`.
+  - Implement as designed and record deviations.
+  - Run only your own tests, never `npm test` or Candela.
+  - Do not modify `src/`, `tools/`, other projects or existing tests.
+  - The brief says nothing about test volume, on purpose.
+
+  Developer instructions: the policy plus an isolation line.
+- **`11-snapshot-round.mjs`,** added to the vault kit (`2a10c6e`), snapshots every five minutes:
+  - lines per category from `git diff --numstat` plus untracked files;
+  - test cases, assertions, helper functions;
+  - edits under `src/` and `tools/`;
+  - from the live rollout: minutes, test runs and the latest commentary.
+
+### Results (`various/results/impl-metrics.json`)
+
+| item | min | source + | test + | harness + | test/source | test blocks | asserts | test runs | bookkeeping cmds |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| IRWB-012 VM | 5.9 | 58 | 231 | 21 | 3.98 | 3 | 35 | 2 | 4 |
+| IRWB-013 SHA/ChaCha | 7.5 | 245 | 170 | 33 | 0.69 | 2 | 18 | 2 | 11 |
+| IRWB-014 LZ | 5.9 | 86 | 177 | 12 | 2.06 | 2 | 18 | 3 | 9 |
+| IRWB-015 regex | 4.8 | 101 | 136 | 10 | 1.35 | 2 | 19 | 3 | 13 |
+| IRWB-016 DSP | 5.7 | 77 | 267 | 27 | 3.47 | 3 | 23 | 4 | 11 |
+| IRWB-017 chess | 8.7 | 625 | 51 | 272 | 0.08 | 4 | 12 | 4 | 16 |
+
+- **Nothing outside scope.** No agent touched `src/` or `tools/`. Three added their id to `corpus/projects/index.json`, which the brief allowed.
+- **All checks passed in the agents' own runs.** `tools/parity.mjs` agreed on every case in all six: 100, 200, 400, 100, 300 and 200 cases.
+- **Test volume follows the design.** The designs' oracle sections prescribe the matrix (for example IRWB-012's 442-combination replay, and IRWB-016's binary64 oracle with a −100 dB bound). No implementation added layers beyond its design.
+- **One matrix, six times.** All six test files check the evaluator, RV32 images, the `speed` pipeline, the reference compiler and a workbench run. Five of six built the same private helpers for this: `evalCase`/`imageCase`/`checkedSpeed`/`assertCompleted` and the like, 4 to 17 functions per file.
+  - Three layers duplicate corpus-wide tests that already cover every project: image agreement at r0 (P2.4), reference agreement (P2.6) and the O2 pipeline (parity).
+  - The agents could not know this. Nothing in the repository says what the corpus-wide tests cover, and the brief kept them away from those tests.
+- **Four of six worked around `tools/reference-check.mjs` ignoring its project argument.** The brief forbade fixing `tools/`, so this was the right call under the brief, and they recorded it as a deviation.
+- **Bookkeeping is the largest command class** (4 to 16 commands, about a third), more than tests (2 to 4 runs).
+- **Optimizer measurements:**
+  - `speed` makes the VM slower (Fibonacci 7,678 → 9,286 instructions; checksum 6,874 → 8,218), against 75 and 74 for the hand-specialized loops.
+  - Regex: 8,040 after `speed`, against 6,628 with the reference compiler.
+  - LZ: 157,682 against 156,405.
+  - Chess: 10.08M, below the reference's 10.83M.
+  - SHA: 220.4 → 124.4 instructions per byte; ChaCha 120.2 → 53.1.
+  - Scalar specialization does almost nothing: FFT length 4,065 → 4,064; LZ `chainLimit` 54,993 → 54,959.
+
+## Step 10: integration: eight corpus-wide failures, their causes, and a resumed fix-up turn
+
+Merging the six implementations (`4cfbf5f` to `fea7941`) was clean except `corpus/projects/index.json`. My first resolver tried to parse the diff3 conflict text as JSON and failed. The second took the union of `order` from stages `:2` and `:3`. The full suite under the memory cap gave 397 tests: 386 pass, 8 fail, 3 skipped.
+
+### The failures
+1. **Stale totals:** P2.4 (44 → 50 projects, 70 → 135 functions), A1 (`[70, 794]` → `[135, 3322]`), P4.2 (20 → 22 checked tape lifts), wb scripts (46 → 52), `build:site` (44 → 50 projects). Every per-function assertion in them passed.
+2. **Loaders that ignore `ingest`:** P2.3 (`evaluate-analyses.test.mjs`, which also read only `main.typed`) and the P2.4 loader in `backend.test.mjs`. Both failed with `unknown tape opcode 252`.
+3. **P2.6: 100 disagreements, all `f32-dsp`'s `dot3`.** Every `got` equalled the first argument's bits. The test built the reference image with `imageFromCode(id, r.image, r.entries)`, without `r.signatures`, so `runImage` read `a0` for an ilp32f function that returns in `fa0`. This was a gap in the test harness, exposed by the first corpus entry that takes f32 scalars. With signatures, 8,286 of 8,286 decided cases agree.
+4. **Tile widths:** `.typed`/`.js` files up to 108 columns (the limit is 80), `project.json`/`notes.md` over 73. `tools/format-corpus.mjs` refused chess's `notes.md`: `wrapProse` re-wraps an already-wrapped list item line by line, drops the continuation indent, and splits the item. This bug is pre-existing and not fixed here.
+
+### What I did
+- **`d2e198f`:** fixed 1 to 3 in the tests (loaders honor `ingest`; P2.6 passes `signatures`; totals updated).
+- **Resumed each implementer for the widths** (`87f583c`, `scripts/09-resume-impl-format.sh`, `prompts/impl-fmt.md`) rather than reformatting their Typed code myself. I reverted my own formatter run in the main checkout first, so their commits would merge cleanly.
+  - All six fixed their files in 0.9 to 3.8 minutes.
+  - All six had to rerun `format.test.mjs` outside the sandbox, because it spawns `node` (EPERM).
+  - Chess also updated its test for moved lines.
+- **Merged the fixes** (`411a278`). The full suite is now 397 tests: 394 pass, 0 fail, 3 skipped.
+
+### What I learned
+- **A repository's conventions belong in a repo AGENTS.md, together with the list of checks a new project must pass.** The 80-column rule and the coverage of P2.4, P2.6 and parity were invisible to agents told not to run corpus-wide tests. They would have needed one paragraph.
+- **Keeping agents off shared code moves the cost to integration.** Every workaround the agents recorded (reference-check, loader, widths) reappeared there. A narrow "you may fix X" in the brief is cheaper than a ban on `tools/`.
+
+## Step 11: follow-up research directions, and the GPU machine
+
+The user asked what compiler-framework research to give Sol next, pointing at the earlier A–E programme, and then said they want to try a different language or backend for CUDA/GPU work "to use / test / improve our v6 framework", using `manuel@bling.local`.
+
+- **Laptop:** Intel Iris Xe only, PyTorch 2.11 CPU. `torch.export(...).run_decompositions()` of a LayerNorm + attention + MLP block gives 40 Core ATen nodes with 11 distinct operators (`view` 16, `permute` 6, `addmm` 5, `expand` 4, `bmm` 2, `add` 2, `native_layer_norm`, `_softmax`, `gelu`, `div`, `getitem`).
+- **bling:** NVIDIA GB10 (sm_121), 121 GB unified memory, aarch64, CUDA 13.0 `nvcc`, no torch or triton. An axpy in a `mktemp -d` compiled in 0.59 s and ran correctly (`y[3]=34`), 1.37 ms for 2^24 floats, 147.5 GB/s; the directory was removed afterwards.
+- **Proposed to the user:** a tensor → CUDA domain on the same `src/framework`, with every framework change as the primary metric, tickets G1 to G4. Awaiting their decisions on code location, a torch install on bling, and launching designers.

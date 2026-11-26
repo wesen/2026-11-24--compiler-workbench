@@ -1,0 +1,7 @@
+2	node tools/format-corpus.mjs --check
+3	node --input-type=module <<'EOF'\nimport { readFileSync } from 'node:fs';\nconst file = 'corpus/projects/bytecode-vm/notes.md';\nfor (const [i, line] of readFileSync(file, 'utf8').split('\\n').entries()) {\n  if (line.startsWith('|') && line.length > 72) console.log(i + 1, line.length, line);\n}\nEOF
+5	node tools/format-corpus.mjs && node tools/format-corpus.mjs --check && git status --short && git diff --check && git diff --stat && nl -ba corpus/projects/bytecode-vm/main.typed | sed -n '7,12p' && rg -n '"focus"' corpus/projects/bytecode-vm/project.json
+7	node --test --test-isolation=none tests/typed/format.test.mjs
+10	node tools/format-corpus.mjs --check && git diff --check
+11	node --test tests/typed/format.test.mjs tests/typed/bytecode-vm.test.mjs
+13	git add -- corpus/projects/bytecode-vm/{notes.md,project.json,scripts/explore.js} && git diff --cached --check && git commit -m 'IRWB-012: fit Bytecode VM files within tile widths' && git status --short --branch && git rev-parse --short HEAD

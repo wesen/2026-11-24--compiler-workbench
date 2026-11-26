@@ -1,0 +1,110 @@
+[
+ {
+  "name": "doc-A.md",
+  "item": "IRWB-017",
+  "round": "round4",
+  "rev": "01cec24",
+  "path": "ttmp/2026/11/26/IRWB-017--typed-chess-search-corpus-project/design-doc/01-porting-typed-chess-search-into-the-corpus.md",
+  "words": 3062,
+  "fullWords": 3175
+ },
+ {
+  "name": "doc-B.md",
+  "item": "IRWB-014",
+  "round": "round4",
+  "rev": "4484713",
+  "path": "ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-project/design-doc/01-lz-style-compressor-and-decompressor-corpus-design.md",
+  "words": 2783,
+  "fullWords": 2907
+ },
+ {
+  "name": "doc-C.md",
+  "item": "IRWB-016",
+  "round": "round4",
+  "rev": "4273041",
+  "path": "ttmp/2026/11/26/IRWB-016--f32-dsp/design-doc/01-f32-dsp-corpus-program.md",
+  "words": 2675,
+  "fullWords": 2796
+ },
+ {
+  "name": "doc-D.md",
+  "item": "IRWB-015",
+  "round": "round2",
+  "rev": "01d22c4",
+  "path": "ttmp/2026/11/26/IRWB-015--thompson-regex-matcher/design-doc/01-thompson-regex-matcher-corpus-design.md",
+  "words": 2008,
+  "fullWords": 2130
+ },
+ {
+  "name": "doc-E.md",
+  "item": "IRWB-013",
+  "round": "round4",
+  "rev": "b47b6e9",
+  "path": "ttmp/2026/11/26/IRWB-013--sha-256-and-chacha20/design-doc/01-sha-256-and-chacha20-corpus-design.md",
+  "words": 3155,
+  "fullWords": 3279
+ },
+ {
+  "name": "doc-F.md",
+  "item": "IRWB-017",
+  "round": "round2",
+  "rev": "7c2d389",
+  "path": "ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/design-doc/01-port-the-typed-chess-engine-into-the-optimization-corpus.md",
+  "words": 2115,
+  "fullWords": 2239
+ },
+ {
+  "name": "doc-G.md",
+  "item": "IRWB-014",
+  "round": "round2",
+  "rev": "95fd5c2",
+  "path": "ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/design-doc/01-lz-style-compression-corpus-project.md",
+  "words": 2112,
+  "fullWords": 2236
+ },
+ {
+  "name": "doc-H.md",
+  "item": "IRWB-013",
+  "round": "round2",
+  "rev": "59e24dc",
+  "path": "ttmp/2026/11/26/IRWB-013--sha-256-and-chacha20/design-doc/01-sha-256-and-chacha20-corpus-project.md",
+  "words": 2120,
+  "fullWords": 2238
+ },
+ {
+  "name": "doc-I.md",
+  "item": "IRWB-012",
+  "round": "round2",
+  "rev": "fce3791",
+  "path": "ttmp/2026/11/26/IRWB-012--bytecode-vm/design-doc/01-a-stack-machine-bytecode-vm-for-specialization.md",
+  "words": 1947,
+  "fullWords": 2073
+ },
+ {
+  "name": "doc-J.md",
+  "item": "IRWB-016",
+  "round": "round2",
+  "rev": "9cdbd6b",
+  "path": "ttmp/2026/11/26/IRWB-016--f32-dsp-corpus-playground/design-doc/01-f32-dsp-corpus-playground.md",
+  "words": 2083,
+  "fullWords": 2213
+ },
+ {
+  "name": "doc-K.md",
+  "item": "IRWB-012",
+  "round": "round4",
+  "rev": "1d4ce51",
+  "path": "ttmp/2026/11/26/IRWB-012--bytecode-vm/design-doc/01-bytecode-vm-corpus-project.md",
+  "words": 2504,
+  "fullWords": 2633
+ },
+ {
+  "name": "doc-L.md",
+  "item": "IRWB-015",
+  "round": "round4",
+  "rev": "26c5f6c",
+  "path": "ttmp/2026/11/26/IRWB-015--thompson-nfa-regex-matcher/design-doc/01-thompson-nfa-regex-matcher.md",
+  "words": 2812,
+  "fullWords": 2932
+ }
+]

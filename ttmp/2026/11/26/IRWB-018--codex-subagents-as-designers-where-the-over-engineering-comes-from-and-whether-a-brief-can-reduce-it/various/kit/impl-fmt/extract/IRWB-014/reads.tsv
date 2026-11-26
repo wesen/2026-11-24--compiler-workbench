@@ -1,0 +1,8 @@
+0	tools/format-corpus.mjs
+0	tests/typed/format.test.mjs
+0	dist/typed/program.js
+3	corpus/projects/lz-roundtrip/project.json
+3	corpus/projects/lz-roundtrip/notes.md
+3	src/typed/format.ts
+7	src/workbench/projects.ts
+7	'scripts\\?\\.

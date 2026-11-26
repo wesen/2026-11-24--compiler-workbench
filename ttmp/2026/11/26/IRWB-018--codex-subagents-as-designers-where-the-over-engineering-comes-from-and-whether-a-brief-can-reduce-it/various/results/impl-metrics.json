@@ -1,0 +1,161 @@
+{
+ "at": "2026-11-26T17:07:55.445Z",
+ "note": "Final snapshot of the IRWB-018 implementation round (11-snapshot-round.mjs), plus command classes from extract/<item>/commands.tsv; lines are added lines vs 77ad469",
+ "rows": [
+  {
+   "item": "IRWB-012",
+   "minutes": 5.9,
+   "commits": 2,
+   "lines": {
+    "source": 58,
+    "docs": 256,
+    "data": 26,
+    "harness": 21,
+    "test": 231
+   },
+   "testToSource": 3.98,
+   "testCases": 3,
+   "assertions": 35,
+   "helperFunctions": 6,
+   "testRuns": 4,
+   "commandClasses": {
+    "bookkeeping": 4,
+    "read": 2,
+    "probeOrRun": 3,
+    "test": 2,
+    "git": 3
+   }
+  },
+  {
+   "item": "IRWB-013",
+   "minutes": 7.5,
+   "commits": 2,
+   "lines": {
+    "source": 245,
+    "docs": 271,
+    "data": 168,
+    "harness": 33,
+    "test": 170
+   },
+   "testToSource": 0.69,
+   "testCases": 2,
+   "assertions": 18,
+   "helperFunctions": 9,
+   "testRuns": 4,
+   "commandClasses": {
+    "git": 4,
+    "read": 9,
+    "bookkeeping": 11,
+    "probeOrRun": 8,
+    "toolCheck": 2,
+    "build": 1,
+    "test": 2
+   }
+  },
+  {
+   "item": "IRWB-014",
+   "minutes": 5.9,
+   "commits": 2,
+   "lines": {
+    "source": 86,
+    "docs": 158,
+    "data": 34,
+    "harness": 12,
+    "test": 177
+   },
+   "testToSource": 2.06,
+   "testCases": 2,
+   "assertions": 18,
+   "helperFunctions": 8,
+   "testRuns": 5,
+   "commandClasses": {
+    "bookkeeping": 9,
+    "read": 8,
+    "build": 1,
+    "probeOrRun": 3,
+    "git": 2,
+    "test": 3,
+    "toolCheck": 1,
+    "other": 1
+   }
+  },
+  {
+   "item": "IRWB-015",
+   "minutes": 4.8,
+   "commits": 2,
+   "lines": {
+    "data": 21,
+    "source": 101,
+    "docs": 183,
+    "harness": 10,
+    "test": 136
+   },
+   "testToSource": 1.35,
+   "testCases": 2,
+   "assertions": 19,
+   "helperFunctions": 4,
+   "testRuns": 5,
+   "commandClasses": {
+    "bookkeeping": 13,
+    "read": 6,
+    "build": 1,
+    "probeOrRun": 2,
+    "test": 3,
+    "toolCheck": 1,
+    "git": 1
+   }
+  },
+  {
+   "item": "IRWB-016",
+   "minutes": 5.7,
+   "commits": 2,
+   "lines": {
+    "source": 77,
+    "docs": 130,
+    "data": 35,
+    "harness": 27,
+    "test": 267
+   },
+   "testToSource": 3.47,
+   "testCases": 3,
+   "assertions": 23,
+   "helperFunctions": 17,
+   "testRuns": 6,
+   "commandClasses": {
+    "bookkeeping": 11,
+    "read": 9,
+    "probeOrRun": 3,
+    "build": 1,
+    "toolCheck": 3,
+    "git": 2,
+    "test": 4
+   }
+  },
+  {
+   "item": "IRWB-017",
+   "minutes": 8.7,
+   "commits": 2,
+   "lines": {
+    "data": 614,
+    "source": 625,
+    "docs": 157,
+    "harness": 272,
+    "test": 51
+   },
+   "testToSource": 0.08,
+   "testCases": 4,
+   "assertions": 12,
+   "helperFunctions": 16,
+   "testRuns": 7,
+   "commandClasses": {
+    "bookkeeping": 16,
+    "read": 18,
+    "toolCheck": 4,
+    "probeOrRun": 10,
+    "build": 1,
+    "test": 4,
+    "git": 4
+   }
+  }
+ ]
+}

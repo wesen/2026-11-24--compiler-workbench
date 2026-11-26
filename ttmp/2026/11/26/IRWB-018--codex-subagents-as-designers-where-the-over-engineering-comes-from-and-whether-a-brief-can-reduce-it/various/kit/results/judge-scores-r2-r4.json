@@ -1,0 +1,434 @@
+[
+  {
+    "doc": "doc-A.md",
+    "program": "IRWB-017",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 0,
+    "R3_quotes": [],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 1,
+    "R5_quotes": [
+      "Measure ordinary calls over multiple positions and repeat with a single frozen `position` buffer and fixed requested depth.",
+      "A fixed buffer case measures the same generic code until memory-backed specialization exists."
+    ],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "yes",
+    "R7_quotes": [
+      "Random board cells would rarely yield valid chess positions, and `oneOf` cannot choose whole buffers. Put extra positions in the explicit oracle and measurement fixtures"
+    ],
+    "R8": 0,
+    "R8_quotes": [],
+    "R9": 2,
+    "R9_quotes": [
+      "At positive depth leave the root legal move list available in the root lane of `work`, with its length in cell 67.",
+      "The perft root lane exposes the same canonical IDs in the low cell of each pair and clears their high cells.",
+      "Run virtual root divisions for failures by applying a root move in the independent host harness and counting the child position at one less depth."
+    ],
+    "A1": 3,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 4,
+    "over_engineering": 3,
+    "fitness": 6,
+    "justification": "A port design that says the upstream files 'were outside this design's inspection scope', so it invents a new 67-cell position layout, a canonical move encoding and a translate-at-entry fallback, and leaves the move encoding, evaluation and mate convention to a later audit; an implementer has to work these out. Error handling is not the problem: it has no status codes or error-memory guarantees. The extra parts are an exposed and normalised root move lane, a perft-divide diagnostic, a frozen-buffer specialization measurement that the doc says measures nothing new yet, and a workaround for `oneOf`'s scalar-only choice (it also proposes the entries/tape loader change). The oracles are independent (published perft counts and the upstream host) and sizing is explicit, but the generated cases are deliberately trivial (two kings, depth at most 2), so the checked workload gives the passes little branchy work. Real work happens only in the explicit fixtures."
+  },
+  {
+    "doc": "doc-B.md",
+    "program": "IRWB-014",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 1,
+    "R3_quotes": [
+      "A one-cell read-only `policy` buffer supplies the maximum number of candidates per hash lookup (1–4)."
+    ],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 1,
+    "R5_quotes": [
+      "keep paired fixtures with the same bytes and policy `[4]` for a future specialized comparison",
+      "For IRWB-007, extend specialization bindings to read-only buffer cells with a corresponding restricted case contract."
+    ],
+    "R6": 1,
+    "R6_quotes": [
+      "A one-cell read-only `policy` buffer supplies the maximum number of candidates per hash lookup",
+      "Probe cap at cell 0"
+    ],
+    "R7": "yes",
+    "R7_quotes": [
+      "Candela's tape ingestion option compiled and evaluated the tiny frame-array probe, but `Program.fromProject` does not select it.",
+      "Caller-supplied scratch buffers avoid a loader change and keep the memory traffic visible to the pass checker."
+    ],
+    "R8": 0,
+    "R8_quotes": [],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 5,
+    "over_engineering": 2,
+    "fitness": 8,
+    "justification": "A precise, directly buildable LZ design: an exact single-cell token format, the hash, the chain search, the forward overlapping copy, an index-range argument, and golden fixtures that check out. Sizing is explicit (about 15,800 statements, with a 16,000 target). The round trip plus an independent JS decoder give strong independent checking, and the hash chains, two-index bounds checks and mask/shift extraction serve the spec's optimizations well. The over-engineering is small but real. The probe cap is a configurable mode passed as a one-cell buffer, kept mainly for a future buffer-specialization comparison that the doc says cannot happen yet. Tape ingestion is designed around with caller-supplied heads/prev scratch buffers ('avoid a loader change') instead of forwarding the existing option."
+  },
+  {
+    "doc": "doc-C.md",
+    "program": "IRWB-016",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 0,
+    "R3_quotes": [],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 1,
+    "R5_quotes": [
+      "These overrides define an exact case suite and the data a future specialization pass would consume.",
+      "It cannot bind buffer contents, so the fixed profile today runs the same general code on those inputs."
+    ],
+    "R6": 1,
+    "R6_quotes": [
+      "`size` has one u16 exponent in {3, 4, 5}, giving N = 8, 16 or 32."
+    ],
+    "R7": "no",
+    "R7_quotes": [
+      "Derive M from the signal buffer to avoid a separate length argument that the generator cannot correlate with the buffer."
+    ],
+    "R8": 2,
+    "R8_quotes": [
+      "For a fixed-configuration experiment, restrict `fft.size`",
+      "Restrict `biquadBank.coeff` to `cells` made by packing these three rows as f32",
+      "Keep samples variable in both profiles."
+    ],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 4,
+    "over_engineering": 3,
+    "fitness": 8,
+    "justification": "Very concrete: an exact float layout, FFT pseudocode with a stage-root recurrence, the biquad grouping, a manifest with the packed root bits, a float64 DFT/convolution oracle with a peak-error dB contract, and a statement budget per kernel. The main costs come from designing for specialization that does not exist yet. The FFT size exponent is a scalar passed in a one-cell buffer, which the existing scalar specializer cannot bind, so the spec's 'FFT size as a specialization constant' is blocked today. A second fixed-configuration profile for both kernels is added that, by the doc's own account, 'runs the same general code'. The rounding-witness fixture and the tolerance discussion follow the spec's IRWB-011 question and are not counted as excess (the only R7 quote is the excluded correlated-length case)."
+  },
+  {
+    "doc": "doc-D.md",
+    "program": "IRWB-015",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 0,
+    "R3_quotes": [],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 0,
+    "R5_quotes": [],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "no",
+    "R7_quotes": [
+      "Add `{ strings: [...] }` to `makeValue` in `src/typed/evaluate.ts`",
+      "Teach the Node project entry points `Program.fromProject` and `ingestProject` to honor the same `ProjectMeta.ingest` option."
+    ],
+    "R8": 0,
+    "R8_quotes": [],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 4,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "A lean, complete design. It has a tiny grammar (letters a–d, single ranges, star, at most four pieces), one Range kind for literals and classes, an exact 9x5 NFA row layout, a forward compile without patch lists, and a queue-based closure with dense sets. Its step budget (15,608) leaves headroom. The RegExp oracle uses anchored whole-text matching and is independent of the Typed code. Where infrastructure is missing it proposes the small changes: forwarding tape ingest in Node, and a `strings` list spec so pass checks see several NFA topologies. It does not design around them. There are no error codes, guards or extra profiles. Optimization value is good, though full pattern specialization has to wait for buffer bindings."
+  },
+  {
+    "doc": "doc-E.md",
+    "program": "IRWB-013",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 2,
+    "R3_quotes": [
+      "Both entries also accept all bit patterns in their configuration words. Those cases run the same computation with replacement constants and serve as differential cases.",
+      "One block would cover SHA’s compression core. Allowing up to 119 bytes also tests the transition at 56 bytes"
+    ],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 1,
+    "R5_quotes": [
+      "Use identical concrete cases for measuring the general image and a future specialized image and label the restricted contract.",
+      "Once immutable-buffer facts are supported, constant-index ChaCha loads are early candidates."
+    ],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "no",
+    "R7_quotes": [
+      "The small integration change is to type optional `ProjectMeta.ingest` as `IngestOptions` and forward it from both helpers.",
+      "Use the existing tape option instead of adding another source or replacing frame arrays with guest scratch buffers just for ingestion."
+    ],
+    "R8": 3,
+    "R8_quotes": [
+      "for each standard configuration and keep the data inputs variable",
+      "Run the checked pipelines against r0 with the general metadata, then with standard configuration cases",
+      "as the second SHA implementation for generated ASCII inputs. Construct one character per input byte for that cohort"
+    ],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 4,
+    "over_engineering": 4,
+    "fitness": 7,
+    "justification": "Technically thorough and implementable. It gives the helper signatures, SHA padding and rounds, the ChaCha quarter-round schedule with 16 named locals, a manifest, published vectors, and a statement budget per kernel. It correctly proposes the tape-ingest change. The widening, though, is deliberate: both kernels take their round/constant words as inputs and 'accept all bit patterns', and SHA handles two blocks (up to 119 bytes) although the doc says one block covers the core. The checks are spread across three extra cohorts (a standard-constants cohort per kernel and an ASCII cohort), and an IRWB-007 plan depends on immutable-buffer facts that do not exist. Loading K and the ChaCha constants from buffers also takes away the constant-propagation work the spec names. The rotates and register pressure remain."
+  },
+  {
+    "doc": "doc-F.md",
+    "program": "IRWB-017",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 2,
+    "R3_quotes": [
+      "Keep the position as caller-supplied array data and depth, node budget, and advanced evaluation as scalar parameters.",
+      "Keep the source's material and activity scores, tactical extensions, stable move ordering, iterative deepening, and budget unwind."
+    ],
+    "R4": 1,
+    "R4_quotes": [
+      "Check the mate, terminal, and unwind cases"
+    ],
+    "R5": 0,
+    "R5_quotes": [],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "yes",
+    "R7_quotes": [
+      "A whole-board choice would add variety, but would require extending the current input generator, whose `oneOf` produces scalar values. Use `{cells: [...]}` with the actual zero-padded FEN encoding."
+    ],
+    "R8": 0,
+    "R8_quotes": [],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 5,
+    "over_engineering": 2,
+    "fitness": 9,
+    "justification": "The strongest port design. It pins an upstream revision, reuses the source layout and helpers, and gives exact cell offsets for perft and search. It defines the two entries (with a small wrapper driving `chessSearchStep`) and drops upstream validation, clamping and overflow handling. It also proposes the missing `entries` metadata change. Probes measured real statement counts (9,206 for perft; 12,054–12,953 for search at budget 2), so the generated cases are sized against the gate from evidence. The oracle is the copied, independent chess.js reference data plus perft counts. The counted items are mostly faithful retention of upstream features: the node budget and the advanced-evaluation mode stay as inputs, and the budget-unwind path is tested. It also uses a fixed single board per entry as a workaround for `oneOf`'s scalar-only choice. Branchy search, ordering and extensions stay intact, giving the passes real work."
+  },
+  {
+    "doc": "doc-G.md",
+    "program": "IRWB-014",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 1,
+    "R3_quotes": [
+      "Take `chainLimit` as a scalar in 1–3. A hardcoded visit limit is simpler, but a scalar keeps the same source usable for general runs and specialization."
+    ],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 0,
+    "R5_quotes": [],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "no",
+    "R7_quotes": [
+      "For Node corpus consumers, type the field as optional `IngestOptions` in `ProjectMeta`, forward it through `Program.fromProject` and pass it to `ingest` from `ingestProject`."
+    ],
+    "R8": 1,
+    "R8_quotes": [
+      "Record a scalar specialization comparison on the same cases restricted to `chainLimit = 3`."
+    ],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 5,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "A compact, exact LZ design. It has a one-byte tagged token over a 7-bit alphabet, frame-array heads/prev, a precise search/insert/emit order and a forward overlapping copy. Its fixtures decode correctly (for example 24 A's become `[65,224,224,224,192]`). The round trip against the saved original input is an independent oracle, golden `compress` fixtures check match selection, and the 12,440-statement estimate is explicit. It proposes forwarding tape ingest and does not design around it. The only extras are a scalar chain limit (a mild extra mode) and one specialization comparison on cases restricted to that limit, which uses the existing scalar specializer. It hits the spec's two-index bounds checks, bit extraction and loop-carried copy directly."
+  },
+  {
+    "doc": "doc-H.md",
+    "program": "IRWB-013",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 0,
+    "R3_quotes": [],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 0,
+    "R5_quotes": [],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "no",
+    "R7_quotes": [
+      "Add optional `ingest?: IngestOptions` to `ProjectMeta` and forward it from both `Program.fromProject` and `ingestProject`, preserving their defaults.",
+      "In `tools/reference-check.mjs`, pass the reference compiler's `r.signatures` as the fourth argument to `imageFromCode`"
+    ],
+    "R8": 0,
+    "R8_quotes": [],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 4,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "Tight and well scoped: one SHA-256 block (0–55 ASCII), the full 64-entry schedule, IV and ChaCha constants as literals, and 16 scalar ChaCha locals through a value-record quarter helper. The oracles are the published FIPS/RFC vectors plus the framework's SHA-256 on ASCII input, which avoids the UTF-8 issue. Sizing is explicit (about 8,000 and 4,500 statements). It proposes the two small infrastructure fixes (tape forwarding, passing signatures to the reference runner) instead of working around them. It has no status codes, widening or extra profiles. The one cost is that K comes from an input buffer 'so a future specialization can bind the table', which limits constant propagation on the round table today. Rotates and register pressure remain fully exposed."
+  },
+  {
+    "doc": "doc-I.md",
+    "program": "IRWB-012",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 0,
+    "R3_quotes": [],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 0,
+    "R5_quotes": [],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "yes",
+    "R7_quotes": [
+      "Choosing between two separate arrays would require a buffer-valued choice spec, since the current `oneOf` generator coerces its choice to an integer.",
+      "Choosing a scalar entry in a shared image uses the existing fixed-buffer and numeric choice specs."
+    ],
+    "R8": 0,
+    "R8_quotes": [],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 4,
+    "over_engineering": 1,
+    "fitness": 8,
+    "justification": "A minimal, fully specified VM: nine opcodes, two-cell instructions, an integer if/else dispatch, and frame-array stack and locals. The complete 64-cell bytecode image is given and checks out (15n+4 and 13n+4 dispatches; 1,152 at n=12, seed=8). The step bound (11,904) and a JS reference VM give sizing and an independent oracle. A separate hand-specialized project stands in for specialization, which cannot bind buffer contents yet. It proposes the tape-ingest change. The only counted item is that it concatenates the two programs into one image with a scalar entry as a workaround for `oneOf`'s scalar-only choice. That is cheap, but it is still a workaround. The fixtures have no memory opcode, so sieve/sort-style memory traffic is absent. That slightly limits the bounds-check workload."
+  },
+  {
+    "doc": "doc-J.md",
+    "program": "IRWB-016",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 0,
+    "R3_quotes": [],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 0,
+    "R5_quotes": [],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "no",
+    "R7_quotes": [
+      "For corpus integration, keep the tool's reference compilation policy and delegate its reference runs to the existing signature-aware `referenceRun`."
+    ],
+    "R8": 1,
+    "R8_quotes": [
+      "Rerun `speed` under the resulting narrowed case spec and compare general and specialized images on identical size-16 inputs."
+    ],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 5,
+    "over_engineering": 1,
+    "fitness": 9,
+    "justification": "Lean and well aimed. The FFT length is a scalar `n` in {8, 16}, so the existing specializer can bind it today, which directly serves the spec's specialization-constant point. It has a read-only twiddle table, a fixed stable two-band biquad with a small `dot3` inlining site, and a binary64 DFT/direct-recurrence oracle with an RMS dB bound. Small estimates (under 5,000 and under 2,500 statements) sit well within the gate. The only extra configuration is the narrowed n=16 case spec from the scalar specialization step. The table cells are given as placeholders, but the doc says exactly how to compute and pack them. It proposes the reference-runner signature fix instead of working around it. Nothing an implementer would cut."
+  },
+  {
+    "doc": "doc-K.md",
+    "program": "IRWB-012",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 0,
+    "R3_quotes": [],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 0,
+    "R5_quotes": [],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "yes",
+    "R7_quotes": [
+      "An independent random buffer would overwhelmingly generate invalid bytecode, and current case specs have no choice among whole buffer literals. A fixed spec per fixture gets valid cases through the normal gate without extending the generator."
+    ],
+    "R8": 1,
+    "R8_quotes": [
+      "Run an additional fresh instance of the same project source with just the `inputs.run` entry replaced by the checksum spec."
+    ],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 5,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 5,
+    "over_engineering": 2,
+    "fitness": 8,
+    "justification": "Complete and correct. It has ten opcodes including a data READ and MUL, ordinal PCs, a `wordAdd` call for the inliner, and exact fixture cells that check out (6+15n and 4+14n dispatches, checksum 157 for `[2,5]`). It also sizes against the gate (14,980, target 15,000) and uses an independent JS VM. It explicitly excludes verification, fuel and invalid input from the domain. A manually residualized source gives the specialized-against-unspecialized comparison the current compiler supports. Extra parts: the second fixture runs as a separate project instance with its own input spec, as a workaround for the missing buffer choice in `oneOf`, plus a sizeable directed-test list. Neither weighs much. It exercises dispatch, code/stack/data bounds checks and register-resident VM state well."
+  },
+  {
+    "doc": "doc-L.md",
+    "program": "IRWB-015",
+    "R1": 0,
+    "R1_quotes": [],
+    "R2": 0,
+    "R2_quotes": [],
+    "R3": 1,
+    "R3_quotes": [
+      "The supported text is 0–10 ASCII code units (0–127), including newline and NUL."
+    ],
+    "R4": 0,
+    "R4_quotes": [],
+    "R5": 1,
+    "R5_quotes": [
+      "On the representative fixed pattern, future specialization experiments should compare general and specialized images on identical text inputs with identical backend options.",
+      "Fixed case inputs alone do not specialize the code."
+    ],
+    "R6": 0,
+    "R6_quotes": [],
+    "R7": "yes",
+    "R7_quotes": [
+      "Its generic `oneOf` coerces the chosen value to an integer, so it cannot select between string specifications. Use a fixed valid pattern per profile and generate text for that pattern."
+    ],
+    "R8": 6,
+    "R8_quotes": [
+      "Run the same checked pipeline with profiles for empty, `ab`, `a|bc|d`, `a?a?`, `a*b` and `a?a?a?a?|a*a*|[a-c]*[a-c]*`.",
+      "100 generated cases per profile for seeds 7 and 23"
+    ],
+    "R9": 0,
+    "R9_quotes": [],
+    "A1": 4,
+    "A2": "yes",
+    "A3": "yes",
+    "A4": 4,
+    "over_engineering": 4,
+    "fitness": 7,
+    "justification": "A workable but heavier regex design. It supports a broader grammar (alternation of up to three branches, `?` and `*`, a–z, at most eight atoms) with a right-to-left Thompson compiler and four state kinds. The compiler is described clearly enough, though alternation merging takes care to get right. It widens the text domain to all ASCII including NUL and newline, which needs a lookahead-based RegExp oracle. Because `oneOf` cannot choose strings, it designs around this with six extra fixed-pattern profiles run as separate Programs, plus an exhaustive sweep. It also gives a paragraph to future specialization experiments the doc says cannot run yet. The planning budget of 18,680 against the 20,000 gate leaves little headroom. The oracle is independent and the dispatch, range-test and closure work gives the passes real targets."
+  }
+]

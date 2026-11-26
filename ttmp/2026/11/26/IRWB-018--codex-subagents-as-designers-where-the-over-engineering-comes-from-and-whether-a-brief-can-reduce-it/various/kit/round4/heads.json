@@ -1,0 +1,38 @@
+{
+ "IRWB-012": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-012",
+  "branch": "round4/irwb-012",
+  "base": "d521d97",
+  "rev": "1d4ce51"
+ },
+ "IRWB-013": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-013",
+  "branch": "round4/irwb-013",
+  "base": "d521d97",
+  "rev": "b47b6e9"
+ },
+ "IRWB-014": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-014",
+  "branch": "round4/irwb-014",
+  "base": "d521d97",
+  "rev": "4484713"
+ },
+ "IRWB-015": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-015",
+  "branch": "round4/irwb-015",
+  "base": "d521d97",
+  "rev": "26c5f6c"
+ },
+ "IRWB-016": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-016",
+  "branch": "round4/irwb-016",
+  "base": "d521d97",
+  "rev": "4273041"
+ },
+ "IRWB-017": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-017",
+  "branch": "round4/irwb-017",
+  "base": "d521d97",
+  "rev": "01cec24"
+ }
+}

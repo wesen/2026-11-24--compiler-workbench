@@ -1,0 +1,11 @@
+0	git status --short --branch; node --version; awk 'length($0)>80{print FILENAME,FNR,length($0),$0}' corpus/projects/regex-nfa/{main.typed,scripts/explore.js}; awk 'length($0)>73{print FILENAME,FNR,length($0),$0}' corpus/projects/regex-nfa/{project.json,notes.md}
+0	cat tools/format-corpus.mjs; cat tests/typed/format.test.mjs; cat corpus/projects/regex-nfa/{project.json,notes.md,main.typed,scripts/explore.js}
+1	node tools/format-corpus.mjs --check; rg -n 'inRange\(' corpus/projects/regex-nfa/main.typed; test -f dist/typed/format.js
+2	node tools/format-corpus.mjs && node tools/format-corpus.mjs --check && git diff --check && git diff --stat && git diff -- corpus/projects/regex-nfa
+3	python3 - <<'PY'\nfrom pathlib import Path\nfrom textwrap import fill\n\nnotes = Path("corpus/projects/regex-nfa/notes.md")\nblocks = notes.read_text().rstrip("\\n").split("\\n\\n")\nfor index, block in enumerate(blocks):\n    if not block.startswith(("#", "|")):\n        blocks[index] = fill(" ".join(block.splitlines()), width=72)\nnotes.write_text("\\n\\n".join(blocks) + "\\n")\nPY\nnode tools/format-corpus.mjs --check && git diff --check && git diff --stat
+4	node --test tests/typed/format.test.mjs
+4	node --test tests/typed/regex-nfa.test.mjs
+4	awk '{if (length($0)>max[FILENAME]) max[FILENAME]=length($0)} END {for (file in max) print file, max[file]}' corpus/projects/regex-nfa/{main.typed,scripts/explore.js,project.json,notes.md}; git diff -- corpus/projects/regex-nfa/notes.md
+5	node tools/format-corpus.mjs --check && node --test --test-isolation=none tests/typed/format.test.mjs tests/typed/regex-nfa.test.mjs && git diff --check
+7	node --test --test-isolation=none tests/typed/format.test.mjs tests/typed/regex-nfa.test.mjs
+9	git add -- corpus/projects/regex-nfa/main.typed corpus/projects/regex-nfa/notes.md && git diff --cached --check && git commit -m 'IRWB-015: fit regex corpus files to workbench tiles' && git status --short --branch

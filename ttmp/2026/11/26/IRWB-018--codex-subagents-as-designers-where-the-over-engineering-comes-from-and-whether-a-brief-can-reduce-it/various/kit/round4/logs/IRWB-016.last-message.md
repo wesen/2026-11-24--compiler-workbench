@@ -1,0 +1,5 @@
+- [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-016/ttmp/2026/11/26/IRWB-016--f32-dsp/design-doc/01-f32-dsp-corpus-program.md)
+- [IRWB-016 ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-016/ttmp/2026/11/26/IRWB-016--f32-dsp/index.md)
+- Commit `427304103c56ced5458f12db6fc4f6fae6f645ec`
+
+The design specifies one Typed corpus project with an iterative radix-2 FFT and a three-channel biquad filter bank. It defines packed f32 inputs, generated cases, bit-exact checks against r0 and the reference RV32 image, and a proposed −100 dB bound against independent float64 DFT and convolution oracles. It also identifies the buffer constants for future specialization and gives an RV32 instruction-count measurement plan. A small probe verified the required Typed features end to end. The full kernels and their estimated statement budgets await implementation. Docmgr validation passed, and the worktree is clean.

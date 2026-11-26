@@ -1,0 +1,196 @@
+{
+  "sharedLengths": {
+    "system-prompt": 27750,
+    "skills-catalogue": 48139,
+    "multi-agent": 2511,
+    "agents-md": 3907
+  },
+  "differs": {
+    "skills-catalogue": [
+      "IRWB-017"
+    ],
+    "multi-agent": [
+      "IRWB-017"
+    ]
+  },
+  "sessions": [
+    {
+      "id": "IRWB-012",
+      "file": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl/rollouts/IRWB-012.turn1.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 5.9,
+      "toolCalls": 30,
+      "commands": 15,
+      "tools": {
+        "exec_command": 24,
+        "write_stdin": 7,
+        "apply_patch": 2
+      },
+      "interpreterRuns": 5,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "reasoningItems": 18,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2293757,
+        "cached_input_tokens": 2212736,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 13299,
+        "reasoning_output_tokens": 1517,
+        "total_tokens": 2307056
+      }
+    },
+    {
+      "id": "IRWB-013",
+      "file": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl/rollouts/IRWB-013.turn1.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 7.5,
+      "toolCalls": 36,
+      "commands": 38,
+      "tools": {
+        "exec_command": 38,
+        "web__run": 2,
+        "write_stdin": 8,
+        "apply_patch": 4
+      },
+      "interpreterRuns": 12,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry,evidence-levels}.md"
+      ],
+      "reasoningItems": 21,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2921671,
+        "cached_input_tokens": 2832000,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16728,
+        "reasoning_output_tokens": 1635,
+        "total_tokens": 2938399
+      }
+    },
+    {
+      "id": "IRWB-014",
+      "file": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl/rollouts/IRWB-014.turn1.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 5.9,
+      "toolCalls": 27,
+      "commands": 29,
+      "tools": {
+        "exec_command": 29,
+        "write_stdin": 8,
+        "apply_patch": 1
+      },
+      "interpreterRuns": 9,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "reasoningItems": 16,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2006971,
+        "cached_input_tokens": 1931776,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12860,
+        "reasoning_output_tokens": 1975,
+        "total_tokens": 2019831
+      }
+    },
+    {
+      "id": "IRWB-015",
+      "file": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl/rollouts/IRWB-015.turn1.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 4.8,
+      "toolCalls": 20,
+      "commands": 28,
+      "tools": {
+        "exec_command": 28,
+        "write_stdin": 6,
+        "apply_patch": 2
+      },
+      "interpreterRuns": 7,
+      "skillReads": [
+        "/home/manuel/.codex/skills/{docmgr,diary}/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "reasoningItems": 15,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 1387118,
+        "cached_input_tokens": 1317248,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 10248,
+        "reasoning_output_tokens": 907,
+        "total_tokens": 1397366
+      }
+    },
+    {
+      "id": "IRWB-016",
+      "file": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl/rollouts/IRWB-016.turn1.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 5.7,
+      "toolCalls": 25,
+      "commands": 34,
+      "tools": {
+        "exec_command": 34,
+        "write_stdin": 10,
+        "apply_patch": 2
+      },
+      "interpreterRuns": 9,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry,evidence-levels}.md"
+      ],
+      "reasoningItems": 14,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2037764,
+        "cached_input_tokens": 1952512,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12486,
+        "reasoning_output_tokens": 975,
+        "total_tokens": 2050250
+      }
+    },
+    {
+      "id": "IRWB-017",
+      "file": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl/rollouts/IRWB-017.turn1.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 8.7,
+      "toolCalls": 54,
+      "commands": 58,
+      "tools": {
+        "exec_command": 58,
+        "write_stdin": 23
+      },
+      "interpreterRuns": 14,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "reasoningItems": 39,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 5721835,
+        "cached_input_tokens": 5596288,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16911,
+        "reasoning_output_tokens": 2284,
+        "total_tokens": 5738746
+      }
+    }
+  ]
+}

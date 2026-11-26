@@ -1,0 +1,5 @@
+- [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-015/ttmp/2026/11/26/IRWB-015--thompson-nfa-regex-matcher/design-doc/01-thompson-nfa-regex-matcher.md)
+- [IRWB-015 ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-015/ttmp/2026/11/26/IRWB-015--thompson-nfa-regex-matcher/index.md)
+- Commit `26c5f6c3068727429f2ac023da78227a0885ab45`
+
+The design specifies a bounded Thompson NFA matcher in Typed, with explicit state sets, JavaScript `RegExp` as an independent oracle, and generated cases for checked optimization and RV32 instruction measurement. A smoke test confirmed that frame arrays work through tape ingestion and identified the Node corpus loader change needed for integration. The 20,000-statement budget estimate remains to be verified on the matcher. The commit contains only the ticket documentation, and `docmgr doctor` passed.

@@ -1,0 +1,831 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a218ca-a32c-7b30-8cf9-4b3bb3c5acff
+--------
+user
+Integration of your branch found one problem in IRWB-012's project. The workbench shows each corpus file in a tile, and `tests/typed/format.test.mjs` requires every `.typed` and `.js` file of a corpus project to fit in 80 columns, and `project.json` and `notes.md` to fit in 73. Some files of your project are wider. `tools/format-corpus.mjs` formats `project.json` and `notes.md` (run it, then `node tools/format-corpus.mjs --check`). It mis-wraps list items that are already wrapped and then refuses the file with "renders differently"; in that case wrap `notes.md` by hand to 72 columns. Reformat the `.typed` and `.js` files by hand without changing their meaning. If lines move in a `.typed` file, update whatever refers to source lines (focus links, line numbers in `notes.md` or `project.json`).
+
+Then run `node --test tests/typed/format.test.mjs` and your own test, and commit with a message starting `IRWB-012:`. Corpus-wide test totals that changed because of the new projects are handled during integration and are not part of this task. Final message: the files you changed, the commands you ran with their results, and the commit hash.
+codex
+I’ll check which Bytecode VM lines exceed the tile limits, reflow them, and verify that the source focus still points to the opcode fetch. Then I’ll run the format test and the VM test.
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -3 --oneline && awk 'length > (FILENAME ~ /\\.(js|typed)"'$/ ? 80 : 73) {print FILENAME ":" FNR ":" length ": " $0}'"' corpus/projects/bytecode-vm/{main.typed,project.json,notes.md,scripts/explore.js}" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+exec
+/usr/bin/zsh -lc 'cat tools/format-corpus.mjs && cat tests/typed/format.test.mjs && ls -ld dist' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+exec
+/usr/bin/zsh -lc "rg -n 'focus|line [0-9]|main\\.typed[:#]' corpus/projects/bytecode-vm tests/typed/bytecode-vm.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ succeeded in 611ms:
+// Format the corpus files the workbench shows for a tile (TILE_WIDTH columns): project.json with prose fields
+// as lines, notes.md hard-wrapped. Verifies before writing: the project's meaning (projectSource) and the
+// rendered Markdown blocks are unchanged. node tools/format-corpus.mjs [--check]
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
+import { corpusDir, projectIds, projectFiles } from './corpus.mjs';
+const { formatJson, wrapProse, splitWords, TILE_WIDTH } = await import('../dist/typed/format.js');
+const { projectSource } = await import('../dist/typed/project.js');
+
+const check = process.argv.includes('--check');
+const W = TILE_WIDTH;
+// prose → lines that fit at the indentation the printer will give them (quotes and comma take 3 columns)
+const lines = (text, indent) => {
+  if (typeof text !== 'string' || indent + text.length + 3 <= W) return text;
+  return splitWords(text, W - indent - 3);
+};
+function narrowProject(j) {
+  const out = { ...j };
+  if (out.about !== undefined) out.about = lines(out.about, 4);
+  if (Array.isArray(out.try)) out.try = out.try.map(t => lines(t, 6));
+  if (out.scripts)
+    out.scripts = Object.fromEntries(Object.entries(out.scripts).map(([k, v]) => [k, v && v.about !== undefined ? { ...v, about: lines(v.about, 8) } : v]));
+  return out;
+}
+// the renderer's block structure (ui/md.js rules): fences verbatim, list items with continuations, paragraphs joined
+function blocks(md) {
+  const ls = md.replace(/\r/g, '').split('\n'), out = [];
+  let para = [];
+  const flush = () => { if (para.length) out.push(['p', para.join(' ')]); para = []; };
+  for (let i = 0; i < ls.length; ) {
+    const l = ls[i];
+    if (/^```/.test(l)) { flush(); const body = [l]; i++; while (i < ls.length && !/^```\s*$/.test(ls[i])) body.push(ls[i++]); body.push(ls[i++]); out.push(['code', body.join('\n')]); continue; }
+    const li = /^(\s*)([-*]|\d+\.) (.*)$/.exec(l);
+    if (li) { flush(); let item = li[3]; i++; while (i < ls.length && /^\s{2,}\S/.test(ls[i]) && !/^(\s*)([-*]|\d+\.) /.test(ls[i])) item += ' ' + ls[i++].trim(); out.push(['li', li[2], item]); continue; }
+    if (/^\s*$/.test(l)) { flush(); i++; continue; }
+    if (/^(#|\||---|>)/.test(l)) { flush(); out.push(['raw', l]); i++; continue; }
+    para.push(l.trim()); i++;
+  }
+  flush();
+  return out;
+}
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+let changed = 0, wide = [];
+for (const id of projectIds()) {
+  const dir = join(corpusDir, id), files = projectFiles(id);
+  const before = projectSource(id, files).meta;
+  if (files['project.json']) {
+    const text = formatJson(narrowProject(JSON.parse(files['project.json'])), W);
+    const after = projectSource(id, { ...files, 'project.json': text }).meta;
+    if (!isDeepStrictEqual(before, after)) throw new Error(`${id}: project.json meaning changed`);
+    if (text !== files['project.json']) { changed++; if (!check) writeFileSync(join(dir, 'project.json'), text); }
+    if (width(text) > W) wide.push(`${id}/project.json ${width(text)}`);
+  }
+  const notes = join(dir, 'notes.md');
+  if (existsSync(notes)) {
+    const md = readFileSync(notes, 'utf8'), wrapped = wrapProse(md, W);
+    if (!isDeepStrictEqual(blocks(md), blocks(wrapped))) throw new Error(`${id}: notes.md renders differently`);
+    if (wrapped !== md) { changed++; if (!check) writeFileSync(notes, wrapped); }
+    if (width(wrapped) > W) wide.push(`${id}/notes.md ${width(wrapped)}`);
+  }
+}
+console.log(`${check ? 'would change' : 'changed'} ${changed} files; still wider than ${W}: ${wide.length ? wide.join(', ') : 'none'}`);
+if (check && changed) process.exit(1);
+// Tile-width formatting: what the workbench shows must read in a 60–80 column tile.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { corpusDir, projectIds } from '../../tools/corpus.mjs';
+
+const { formatJson, wrapProse, joinText, TILE_WIDTH } = await import('../../dist/typed/format.js');
+const S = await import('../../dist/typed/strategies.js');
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+const files = dir =>
+  readdirSync(dir).flatMap(f => (statSync(join(dir, f)).isDirectory() ? files(join(dir, f)) : [join(dir, f)]));
+
+test('format: JSON keeps what fits on one line, breaks the rest, and round-trips', () => {
+  const v = { a: [1, 2, 3], b: { c: 'x [ y ] z', d: null }, long: Array.from({ length: 30 }, (_, i) => `item-${i}`) };
+  const text = formatJson(v, 40);
+  assert.deepEqual(JSON.parse(text), v);
+  assert.ok(width(text) <= 40, text);
+  assert.match(text, /"a": \[1, 2, 3\]/);
+  assert.match(text, /"c": "x \[ y \] z"/); // string contents untouched
+});
+
+test('format: prose wraps without changing blocks; lists keep their items', () => {
+  const md = '# Title\n\nA ' + 'word '.repeat(40) + '\n\n- item ' + 'more '.repeat(30) + '\n\n```\ncode line that is very long and must not be wrapped by the formatter at all\n```\n';
+  const out = wrapProse(md, 60);
+  assert.ok(out.split('\n').filter(l => !l.startsWith('code')).every(l => l.length <= 60));
+  assert.match(out, /^ {2}more/m); // list continuation is indented, so it stays in the item
+  assert.match(out, /code line that is very long and must not be wrapped by the formatter at all/);
+  assert.equal(joinText(['a', 'b']), 'a b');
+});
+
+test('format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH', () => {
+  const wide = [];
+  for (const id of projectIds())
+    for (const f of files(join(corpusDir, id))) {
+      if (!/\.(typed|js|json|md)$/.test(f)) continue;
+      const w = width(readFileSync(f, 'utf8'));
+      const limit = /(project\.json|notes\.md)$/.test(f) ? TILE_WIDTH + 1 : 80; // +1: a word carried past a block marker
+      if (w > limit) wide.push(`${f}: ${w}`);
+    }
+  assert.deepEqual(wide, []);
+  // the formatter has nothing left to do
+  execFileSync(process.execPath, ['tools/format-corpus.mjs', '--check'], { stdio: 'pipe' });
+});
+
+test('format: strategy presets and plans fit TILE_WIDTH', () => {
+  for (const [path, text] of Object.entries(S.presetFiles())) {
+    assert.ok(width(text) <= TILE_WIDTH, `${path}: ${width(text)}`);
+    const name = path.replace(/^strategies\/|\.json$/g, '');
+    assert.equal(S.projectStrategies({ [path]: text })[name].id, `typed.strategy.${name}`);
+    assert.ok(width(S.toJson(S.planFromSpec(name, JSON.parse(text)))) <= TILE_WIDTH);
+  }
+});
+drwxrwxr-x 7 manuel manuel 4096 Nov 26 11:58 dist
+
+ succeeded in 626ms:
+corpus/projects/bytecode-vm/project.json:8:  "focus": 10,
+
+ succeeded in 632ms:
+## impl/irwb-012
+6e7b620 IRWB-012: record implementation and verification in the ticket
+c2500fb IRWB-012: add the bytecode VM corpus and differential checks
+77ad469 IRWB-012..017: merge the round-2 design docs (Codex gpt-6.2-sol, revised brief; IRWB-018) as the designs to implement
+corpus/projects/bytecode-vm/project.json:4:82:   "about": "A stack interpreter running seeded Fibonacci and a rolling checksum.",
+corpus/projects/bytecode-vm/notes.md:3:77: One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling checksum
+corpus/projects/bytecode-vm/notes.md:4:74: at entry 34. The corpus uses the fixed 64-cell code image in project.json,
+corpus/projects/bytecode-vm/notes.md:5:74: with integer counts from 0 through 12 and seeds from −8 through 8. Local 0
+corpus/projects/bytecode-vm/notes.md:6:74: starts at the count, local 1 at the seed, and locals 2 and 3 at zero. Each
+corpus/projects/bytecode-vm/notes.md:9:75: Each instruction is an opcode and an operand in adjacent u16 cells. Offsets
+corpus/projects/bytecode-vm/notes.md:27:74: Local 2 holds the current value, local 1 the next value, and local 3 their
+corpus/projects/bytecode-vm/notes.md:28:75: sum during each update. The fixture executes 15n + 4 instructions including
+corpus/projects/bytecode-vm/notes.md:93:108: | Fixture at n = 12, seed = 8 | Result | Guest instructions | r0 RV32 | speed RV32 | Hand-specialized RV32 |
+corpus/projects/bytecode-vm/notes.md:95:78: | Seeded Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
+corpus/projects/bytecode-vm/notes.md:96:86: | Rolling checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+corpus/projects/bytecode-vm/notes.md:99:74: this comparison. Across the 442 valid calls, the evaluator reached at most
+corpus/projects/bytecode-vm/notes.md:100:74: 4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and 3,699 at r0
+corpus/projects/bytecode-vm/notes.md:101:75: and 4,690 at `speed` for checksum. All finished within the 20,000-statement
+corpus/projects/bytecode-vm/scripts/explore.js:19:83:     return { entry: offset, r0: measure(r0, input), speed: measure(speed, input) };
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/notes.md
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/scripts/explore.js
+diff --git a/corpus/projects/bytecode-vm/notes.md b/corpus/projects/bytecode-vm/notes.md
+index ad16708d7cb6a8fefa6143bd885f879df82f5bc1..e28507b93a732a6510fe169bbdc1e19769a3aa5c
+--- a/corpus/projects/bytecode-vm/notes.md
++++ b/corpus/projects/bytecode-vm/notes.md
+@@ -90,10 +90,12 @@
+ takes only the two scalars, and runs through the same checked `speed`
+ pipeline. Its ratios use the original bytecode dispatch count.
+ 
+-| Fixture at n = 12, seed = 8 | Result | Guest instructions | r0 RV32 | speed RV32 | Hand-specialized RV32 |
++At n = 12 and seed = 8, the counts are as follows.
++
++| Fixture | Result | Guest | r0 | speed | Hand-specialized |
+ | --- | ---: | ---: | ---: | ---: | ---: |
+-| Seeded Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
+-| Rolling checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
++| Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
++| Checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+ 
+ The `speed` revision executed more RV32 instructions for both fixtures in
+ this comparison. Across the 442 valid calls, the evaluator reached at most
+diff --git a/corpus/projects/bytecode-vm/scripts/explore.js b/corpus/projects/bytecode-vm/scripts/explore.js
+index 51479a2c19cf1d225fce26c2980f99dd391d2459..dd2e9a1b6bdf5c432d10f862b6b13c3b42068d02
+--- a/corpus/projects/bytecode-vm/scripts/explore.js
++++ b/corpus/projects/bytecode-vm/scripts/explore.js
+@@ -16,6 +16,10 @@
+   rejected: pipeline.steps.filter(step => step.rejected).map(step => step.pass),
+   fixtures: entry.oneOf.map(offset => {
+     const input = [code.cells, offset, 12, 8];
+-    return { entry: offset, r0: measure(r0, input), speed: measure(speed, input) };
++    return {
++      entry: offset,
++      r0: measure(r0, input),
++      speed: measure(speed, input),
++    };
+   }),
+ };
+
+exec
+/usr/bin/zsh -lc 'node tools/format-corpus.mjs --check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ exited 1 in 448ms:
+would change 2 files; still wider than 72: bytecode-vm/notes.md 78, fixed-point/notes.md 73
+
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'EOF'
+import { readFileSync } from 'node:fs';
+const file = 'corpus/projects/bytecode-vm/notes.md';
+for (const [i, line] of readFileSync(file, 'utf8').split('\\n').entries()) {
+  if (line.startsWith('|') && line.length > 72) console.log(i + 1, line.length, line);
+}
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ succeeded in 284ms:
+98 78 | Checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/notes.md
+diff --git a/corpus/projects/bytecode-vm/notes.md b/corpus/projects/bytecode-vm/notes.md
+index ad16708d7cb6a8fefa6143bd885f879df82f5bc1..9c9185531f595983dc0b826ef71025446f78e7cc
+--- a/corpus/projects/bytecode-vm/notes.md
++++ b/corpus/projects/bytecode-vm/notes.md
+@@ -90,10 +90,13 @@
+ takes only the two scalars, and runs through the same checked `speed`
+ pipeline. Its ratios use the original bytecode dispatch count.
+ 
+-| Fixture at n = 12, seed = 8 | Result | Guest instructions | r0 RV32 | speed RV32 | Hand-specialized RV32 |
+-| --- | ---: | ---: | ---: | ---: | ---: |
+-| Seeded Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
+-| Rolling checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
++At n = 12 and seed = 8, Fibonacci returns 1,152 and checksum returns
++1,298,667,478.
++
++| Fixture | Guest | r0 | speed | Hand-specialized |
++| --- | ---: | ---: | ---: | ---: |
++| Fibonacci | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
++| Checksum | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+ 
+ The `speed` revision executed more RV32 instructions for both fixtures in
+ this comparison. Across the 442 valid calls, the evaluator reached at most
+diff --git a/corpus/projects/bytecode-vm/scripts/explore.js b/corpus/projects/bytecode-vm/scripts/explore.js
+index 51479a2c19cf1d225fce26c2980f99dd391d2459..dd2e9a1b6bdf5c432d10f862b6b13c3b42068d02
+--- a/corpus/projects/bytecode-vm/scripts/explore.js
++++ b/corpus/projects/bytecode-vm/scripts/explore.js
+@@ -16,6 +16,10 @@
+   rejected: pipeline.steps.filter(step => step.rejected).map(step => step.pass),
+   fixtures: entry.oneOf.map(offset => {
+     const input = [code.cells, offset, 12, 8];
+-    return { entry: offset, r0: measure(r0, input), speed: measure(speed, input) };
++    return {
++      entry: offset,
++      r0: measure(r0, input),
++      speed: measure(speed, input),
++    };
+   }),
+ };
+
+exec
+/usr/bin/zsh -lc "node tools/format-corpus.mjs && node tools/format-corpus.mjs --check && git status --short && git diff --check && git diff --stat && nl -ba corpus/projects/bytecode-vm/main.typed | sed -n '7,12p' && rg -n '\"focus\"' corpus/projects/bytecode-vm/project.json" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ succeeded in 738ms:
+changed 2 files; still wider than 72: fixed-point/notes.md 73
+would change 0 files; still wider than 72: fixed-point/notes.md 73
+ M corpus/projects/bytecode-vm/notes.md
+ M corpus/projects/bytecode-vm/project.json
+ M corpus/projects/bytecode-vm/scripts/explore.js
+ corpus/projects/bytecode-vm/notes.md           | 49 +++++++++++------
+ corpus/projects/bytecode-vm/project.json       | 73 ++++++++++++++++++++++++--
+ corpus/projects/bytecode-vm/scripts/explore.js |  6 ++-
+ 3 files changed, 105 insertions(+), 23 deletions(-)
+     7	    let pc = entry;
+     8	
+     9	    while (true) {
+    10	        const opcode = code.charCodeAt(pc);
+    11	        const operand = code.charCodeAt(pc + 1);
+    12	        pc = pc + 2;
+11:  "focus": 10,
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/bytecode-vm.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+exec
+/usr/bin/zsh -lc "git diff -- corpus/projects/bytecode-vm/{notes.md,project.json,scripts/explore.js}
+node --input-type=module <<'EOF'
+import { readFileSync } from 'node:fs';
+for (const file of ['main.typed', 'project.json', 'notes.md', 'scripts/explore.js']) {
+  const text = readFileSync('corpus/projects/bytecode-vm/' + file, 'utf8');
+  console.log(file, Math.max(...text.split('\\n').map(line => line.length)));
+}
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ succeeded in 668ms:
+diff --git a/corpus/projects/bytecode-vm/notes.md b/corpus/projects/bytecode-vm/notes.md
+index ad16708..5e05b97 100644
+--- a/corpus/projects/bytecode-vm/notes.md
++++ b/corpus/projects/bytecode-vm/notes.md
+@@ -1,12 +1,17 @@
+ # Bytecode VM
+ 
+-One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling checksum
+-at entry 34. The corpus uses the fixed 64-cell code image in project.json,
+-with integer counts from 0 through 12 and seeds from −8 through 8. Local 0
+-starts at the count, local 1 at the seed, and locals 2 and 3 at zero. Each
++One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling
++checksum
++at entry 34. The corpus uses the fixed 64-cell code image in
++project.json,
++with integer counts from 0 through 12 and seeds from −8 through 8. Local
++0
++starts at the count, local 1 at the seed, and locals 2 and 3 at zero.
++Each
+ fixture reaches HALT with one value on the operand stack.
+ 
+-Each instruction is an opcode and an operand in adjacent u16 cells. Offsets
++Each instruction is an opcode and an operand in adjacent u16 cells.
++Offsets
+ are absolute cell indices. Unused operands are zero. Arithmetic wraps to
+ signed i32.
+ 
+@@ -24,8 +29,10 @@ signed i32.
+ 
+ ## Seeded Fibonacci
+ 
+-Local 2 holds the current value, local 1 the next value, and local 3 their
+-sum during each update. The fixture executes 15n + 4 instructions including
++Local 2 holds the current value, local 1 the next value, and local 3
++their
++sum during each update. The fixture executes 15n + 4 instructions
++including
+ HALT.
+ 
+ ```text
+@@ -76,7 +83,8 @@ instructions including HALT.
+ 
+ Open Bytecode VM and select Explore in the Scripts view, or run
+ `project.run('explore')` in the console. It starts from a fresh r0,
+-applies the checked `speed` pipeline, and reports the two images' results
++applies the checked `speed` pipeline, and reports the two images'
++results
+ and executed RV32 instruction counts. Select the opcode fetch in the
+ source to inspect the corresponding IR. Compare the dispatch loop with
+ `p.asmDiff('r0', p.rev, { fn: 'runVm', coalesce: true })`
+@@ -90,15 +98,22 @@ instruction. The hand-specialized image uses one Typed loop per fixture,
+ takes only the two scalars, and runs through the same checked `speed`
+ pipeline. Its ratios use the original bytecode dispatch count.
+ 
+-| Fixture at n = 12, seed = 8 | Result | Guest instructions | r0 RV32 | speed RV32 | Hand-specialized RV32 |
+-| --- | ---: | ---: | ---: | ---: | ---: |
+-| Seeded Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
+-| Rolling checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+-
+-The `speed` revision executed more RV32 instructions for both fixtures in
+-this comparison. Across the 442 valid calls, the evaluator reached at most
+-4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and 3,699 at r0
+-and 4,690 at `speed` for checksum. All finished within the 20,000-statement
++At n = 12 and seed = 8, Fibonacci returns 1,152 and checksum returns
++1,298,667,478.
++
++| Fixture | Guest | r0 | speed | Hand-specialized |
++| --- | ---: | ---: | ---: | ---: |
++| Fibonacci | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
++| Checksum | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
++
++The `speed` revision executed more RV32 instructions for both fixtures
++in
++this comparison. Across the 442 valid calls, the evaluator reached at
++most
++4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and 3,699 at
++r0
++and 4,690 at `speed` for checksum. All finished within the
++20,000-statement
+ pass-check limit.
+ 
+ Reproduce the measurement with
+diff --git a/corpus/projects/bytecode-vm/project.json b/corpus/projects/bytecode-vm/project.json
+index c508619..f039b72 100644
+--- a/corpus/projects/bytecode-vm/project.json
++++ b/corpus/projects/bytecode-vm/project.json
+@@ -1,7 +1,10 @@
+ {
+   "title": "Bytecode VM",
+   "group": "Programs",
+-  "about": "A stack interpreter running seeded Fibonacci and a rolling checksum.",
++  "about": [
++    "A stack interpreter running seeded Fibonacci and a rolling",
++    "checksum."
++  ],
+   "sources": ["main.typed"],
+   "pipeline": "speed",
+   "ingest": { "tape": true },
+@@ -11,10 +14,70 @@
+     "runVm": {
+       "code": {
+         "cells": [
+-          2, 0, 7, 30, 2, 2, 2, 1, 4, 0, 3, 3, 2, 1, 3, 2,
+-          2, 3, 3, 1, 2, 0, 1, 1, 5, 0, 3, 0, 8, 0, 2, 2, 0, 0,
+-          2, 0, 7, 60, 2, 1, 1, 33, 6, 0, 2, 0, 4, 0, 3, 1,
+-          2, 0, 1, 1, 5, 0, 3, 0, 8, 34, 2, 1, 0, 0
++          2,
++          0,
++          7,
++          30,
++          2,
++          2,
++          2,
++          1,
++          4,
++          0,
++          3,
++          3,
++          2,
++          1,
++          3,
++          2,
++          2,
++          3,
++          3,
++          1,
++          2,
++          0,
++          1,
++          1,
++          5,
++          0,
++          3,
++          0,
++          8,
++          0,
++          2,
++          2,
++          0,
++          0,
++          2,
++          0,
++          7,
++          60,
++          2,
++          1,
++          1,
++          33,
++          6,
++          0,
++          2,
++          0,
++          4,
++          0,
++          3,
++          1,
++          2,
++          0,
++          1,
++          1,
++          5,
++          0,
++          3,
++          0,
++          8,
++          34,
++          2,
++          1,
++          0,
++          0
+         ]
+       },
+       "entry": { "oneOf": [0, 34] },
+diff --git a/corpus/projects/bytecode-vm/scripts/explore.js b/corpus/projects/bytecode-vm/scripts/explore.js
+index 51479a2..dd2e9a1 100644
+--- a/corpus/projects/bytecode-vm/scripts/explore.js
++++ b/corpus/projects/bytecode-vm/scripts/explore.js
+@@ -16,6 +16,10 @@ return {
+   rejected: pipeline.steps.filter(step => step.rejected).map(step => step.pass),
+   fixtures: entry.oneOf.map(offset => {
+     const input = [code.cells, offset, 12, 8];
+-    return { entry: offset, r0: measure(r0, input), speed: measure(speed, input) };
++    return {
++      entry: offset,
++      r0: measure(r0, input),
++      speed: measure(speed, input),
++    };
+   }),
+ };
+main.typed 66
+project.json 65
+notes.md 72
+scripts/explore.js 80
+
+ exited 1 in 978ms:
+✖ tests/typed/format.test.mjs (283.406215ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 296.124586
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (283.406215ms)
+  'test failed'
+
+ succeeded in 3860ms:
+✔ tests/typed/bytecode-vm.test.mjs (3137.818085ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3149.071672
+
+exec
+/usr/bin/zsh -lc 'node --test --test-isolation=none tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ exited 1 in 761ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (2.266444ms)
+✔ format: prose wraps without changing blocks; lists keep their items (0.901156ms)
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (95.62531ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (15.045821ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 194.835501
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:33:1
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (95.62531ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/tests/typed/format.test.mjs:44:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ 'tools/format-corpus.mjs', '--check' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/notes.md
+diff --git a/corpus/projects/bytecode-vm/notes.md b/corpus/projects/bytecode-vm/notes.md
+index ad16708d7cb6a8fefa6143bd885f879df82f5bc1..0da989a508a9ea67fe7d1a9384b92f21ea2d19ae
+--- a/corpus/projects/bytecode-vm/notes.md
++++ b/corpus/projects/bytecode-vm/notes.md
+@@ -1,14 +1,15 @@
+ # Bytecode VM
+ 
+-One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling checksum
+-at entry 34. The corpus uses the fixed 64-cell code image in project.json,
+-with integer counts from 0 through 12 and seeds from −8 through 8. Local 0
+-starts at the count, local 1 at the seed, and locals 2 and 3 at zero. Each
+-fixture reaches HALT with one value on the operand stack.
++One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling
++checksum at entry 34. The corpus uses the fixed 64-cell code image in
++project.json, with integer counts from 0 through 12 and seeds from −8
++through 8. Local 0 starts at the count, local 1 at the seed, and locals
++2 and 3 at zero. Each fixture reaches HALT with one value on the operand
++stack.
+ 
+-Each instruction is an opcode and an operand in adjacent u16 cells. Offsets
+-are absolute cell indices. Unused operands are zero. Arithmetic wraps to
+-signed i32.
++Each instruction is an opcode and an operand in adjacent u16 cells.
++Offsets are absolute cell indices. Unused operands are zero. Arithmetic
++wraps to signed i32.
+ 
+ | Opcode | Mnemonic | Effect |
+ | --- | --- | --- |
+@@ -24,9 +25,9 @@
+ 
+ ## Seeded Fibonacci
+ 
+-Local 2 holds the current value, local 1 the next value, and local 3 their
+-sum during each update. The fixture executes 15n + 4 instructions including
+-HALT.
++Local 2 holds the current value, local 1 the next value, and local 3
++their sum during each update. The fixture executes 15n + 4 instructions
++including HALT.
+ 
+ ```text
+  0  LOAD  0     fib_loop
+@@ -76,9 +77,10 @@
+ 
+ Open Bytecode VM and select Explore in the Scripts view, or run
+ `project.run('explore')` in the console. It starts from a fresh r0,
+-applies the checked `speed` pipeline, and reports the two images' results
+-and executed RV32 instruction counts. Select the opcode fetch in the
+-source to inspect the corresponding IR. Compare the dispatch loop with
++applies the checked `speed` pipeline, and reports the two images'
++results and executed RV32 instruction counts. Select the opcode fetch
++in the source to inspect the corresponding IR. Compare the dispatch loop
++with
+ `p.asmDiff('r0', p.rev, { fn: 'runVm', coalesce: true })`
+ after applying `p.pipeline('speed')` to the open program.
+ 
+@@ -90,16 +92,19 @@
+ takes only the two scalars, and runs through the same checked `speed`
+ pipeline. Its ratios use the original bytecode dispatch count.
+ 
+-| Fixture at n = 12, seed = 8 | Result | Guest instructions | r0 RV32 | speed RV32 | Hand-specialized RV32 |
+-| --- | ---: | ---: | ---: | ---: | ---: |
+-| Seeded Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
+-| Rolling checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
++At n = 12 and seed = 8, Fibonacci returns 1,152 and checksum returns
++1,298,667,478.
+ 
+-The `speed` revision executed more RV32 instructions for both fixtures in
+-this comparison. Across the 442 valid calls, the evaluator reached at most
+-4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and 3,699 at r0
+-and 4,690 at `speed` for checksum. All finished within the 20,000-statement
+-pass-check limit.
++| Fixture | Guest | r0 | speed | Hand-specialized |
++| --- | ---: | ---: | ---: | ---: |
++| Fibonacci | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
++| Checksum | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
++
++The `speed` revision executed more RV32 instructions for both fixtures
++in this comparison. Across the 442 valid calls, the evaluator reached
++at most 4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and
++3,699 at r0 and 4,690 at `speed` for checksum. All finished within the
++20,000-statement pass-check limit.
+ 
+ Reproduce the measurement with
+ `node --test --test-isolation=none tests/typed/bytecode-vm.test.mjs`
+diff --git a/corpus/projects/bytecode-vm/scripts/explore.js b/corpus/projects/bytecode-vm/scripts/explore.js
+index 51479a2c19cf1d225fce26c2980f99dd391d2459..dd2e9a1b6bdf5c432d10f862b6b13c3b42068d02
+--- a/corpus/projects/bytecode-vm/scripts/explore.js
++++ b/corpus/projects/bytecode-vm/scripts/explore.js
+@@ -16,6 +16,10 @@
+   rejected: pipeline.steps.filter(step => step.rejected).map(step => step.pass),
+   fixtures: entry.oneOf.map(offset => {
+     const input = [code.cells, offset, 12, 8];
+-    return { entry: offset, r0: measure(r0, input), speed: measure(speed, input) };
++    return {
++      entry: offset,
++      r0: measure(r0, input),
++      speed: measure(speed, input),
++    };
+   }),
+ };
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/notes.md
+diff --git a/corpus/projects/bytecode-vm/notes.md b/corpus/projects/bytecode-vm/notes.md
+index ad16708d7cb6a8fefa6143bd885f879df82f5bc1..096309b65876574443300ed579ea38d343d3f159
+--- a/corpus/projects/bytecode-vm/notes.md
++++ b/corpus/projects/bytecode-vm/notes.md
+@@ -1,14 +1,15 @@
+ # Bytecode VM
+ 
+-One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling checksum
+-at entry 34. The corpus uses the fixed 64-cell code image in project.json,
+-with integer counts from 0 through 12 and seeds from −8 through 8. Local 0
+-starts at the count, local 1 at the seed, and locals 2 and 3 at zero. Each
+-fixture reaches HALT with one value on the operand stack.
++One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling
++checksum at entry 34. The corpus uses the fixed 64-cell code image in
++project.json, with integer counts from 0 through 12 and seeds from −8
++through 8. Local 0 starts at the count, local 1 at the seed, and locals
++2 and 3 at zero. Each fixture reaches HALT with one value on the operand
++stack.
+ 
+-Each instruction is an opcode and an operand in adjacent u16 cells. Offsets
+-are absolute cell indices. Unused operands are zero. Arithmetic wraps to
+-signed i32.
++Each instruction is an opcode and an operand in adjacent u16 cells.
++Offsets are absolute cell indices. Unused operands are zero. Arithmetic
++wraps to signed i32.
+ 
+ | Opcode | Mnemonic | Effect |
+ | --- | --- | --- |
+@@ -24,9 +25,9 @@
+ 
+ ## Seeded Fibonacci
+ 
+-Local 2 holds the current value, local 1 the next value, and local 3 their
+-sum during each update. The fixture executes 15n + 4 instructions including
+-HALT.
++Local 2 holds the current value, local 1 the next value, and local 3
++their sum during each update. The fixture executes 15n + 4 instructions
++including HALT.
+ 
+ ```text
+  0  LOAD  0     fib_loop
+@@ -76,11 +77,11 @@
+ 
+ Open Bytecode VM and select Explore in the Scripts view, or run
+ `project.run('explore')` in the console. It starts from a fresh r0,
+-applies the checked `speed` pipeline, and reports the two images' results
+-and executed RV32 instruction counts. Select the opcode fetch in the
+-source to inspect the corresponding IR. Compare the dispatch loop with
+-`p.asmDiff('r0', p.rev, { fn: 'runVm', coalesce: true })`
+-after applying `p.pipeline('speed')` to the open program.
++applies the checked `speed` pipeline, and reports the two images'
++results and executed RV32 instruction counts. Select the opcode fetch
++in the source to inspect the corresponding IR. To compare the dispatch
++loop, apply `p.pipeline('speed')` to the open program, then run
++`p.asmDiff('r0', p.rev, { fn: 'runVm', coalesce: true })`.
+ 
+ ## Measurements
+ 
+@@ -90,16 +91,19 @@
+ takes only the two scalars, and runs through the same checked `speed`
+ pipeline. Its ratios use the original bytecode dispatch count.
+ 
+-| Fixture at n = 12, seed = 8 | Result | Guest instructions | r0 RV32 | speed RV32 | Hand-specialized RV32 |
+-| --- | ---: | ---: | ---: | ---: | ---: |
+-| Seeded Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
+-| Rolling checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
++At n = 12 and seed = 8, Fibonacci returns 1,152 and checksum returns
++1,298,667,478.
+ 
+-The `speed` revision executed more RV32 instructions for both fixtures in
+-this comparison. Across the 442 valid calls, the evaluator reached at most
+-4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and 3,699 at r0
+-and 4,690 at `speed` for checksum. All finished within the 20,000-statement
+-pass-check limit.
++| Fixture | Guest | r0 | speed | Hand-specialized |
++| --- | ---: | ---: | ---: | ---: |
++| Fibonacci | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
++| Checksum | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
++
++The `speed` revision executed more RV32 instructions for both fixtures
++in this comparison. Across the 442 valid calls, the evaluator reached
++at most 4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and
++3,699 at r0 and 4,690 at `speed` for checksum. All finished within the
++20,000-statement pass-check limit.
+ 
+ Reproduce the measurement with
+ `node --test --test-isolation=none tests/typed/bytecode-vm.test.mjs`
+diff --git a/corpus/projects/bytecode-vm/scripts/explore.js b/corpus/projects/bytecode-vm/scripts/explore.js
+index 51479a2c19cf1d225fce26c2980f99dd391d2459..dd2e9a1b6bdf5c432d10f862b6b13c3b42068d02
+--- a/corpus/projects/bytecode-vm/scripts/explore.js
++++ b/corpus/projects/bytecode-vm/scripts/explore.js
+@@ -16,6 +16,10 @@
+   rejected: pipeline.steps.filter(step => step.rejected).map(step => step.pass),
+   fixtures: entry.oneOf.map(offset => {
+     const input = [code.cells, offset, 12, 8];
+-    return { entry: offset, r0: measure(r0, input), speed: measure(speed, input) };
++    return {
++      entry: offset,
++      r0: measure(r0, input),
++      speed: measure(speed, input),
++    };
+   }),
+ };
+
+codex
+The Bytecode VM files now fit the tile limits, and the focus still points to line 10. The format test passed its width assertion, then hit a sandbox error when it tried to launch the formatter subprocess. I’ll rerun it with subprocess access.
+exec
+/usr/bin/zsh -lc 'node tools/format-corpus.mjs --check && git diff --check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ succeeded in 305ms:
+would change 0 files; still wider than 72: fixed-point/notes.md 73
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs tests/typed/bytecode-vm.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ succeeded in 1719ms:
+✔ bytecode fixtures match independent results and dispatch counts (1.648321ms)
+✔ generated and exhaustive VM cases agree across evaluators and RV32 compilers (927.375692ms)
+ℹ entry 0, 184 guest instructions. RV32 r0/speed/specialized: 7678 / 9286 / 75 instructions, 41.73 / 50.47 / 0.41 per guest instruction
+ℹ entry 34, 160 guest instructions. RV32 r0/speed/specialized: 6874 / 8218 / 74 instructions, 42.96 / 51.36 / 0.46 per guest instruction
+ℹ maximum evaluator statements by entry: {"0":{"r0":4131,"speed":5350},"34":{"r0":3699,"speed":4690}}
+✔ the workbench opens the project and explores both entries on a fresh copy (447.158779ms)
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (1.458403ms)
+✔ format: prose wraps without changing blocks; lists keep their items (0.59991ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (76.241115ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (11.062646ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1497.768163
+
+exec
+/usr/bin/zsh -lc "git add -- corpus/projects/bytecode-vm/{notes.md,project.json,scripts/explore.js} && git diff --cached --check && git commit -m 'IRWB-012: fit Bytecode VM files within tile widths' && git status --short --branch && git rev-parse --short HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012
+ succeeded in 217ms:
+[impl/irwb-012 85e29a4] IRWB-012: fit Bytecode VM files within tile widths
+ 3 files changed, 102 insertions(+), 31 deletions(-)
+## impl/irwb-012
+85e29a4
+
+codex
+Reformatted [project.json](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/project.json), [notes.md](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/notes.md), and [scripts/explore.js](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/scripts/explore.js). All Bytecode VM files fit their tile limits. The source focus still points to the opcode fetch on line 10.
+
+- `node tools/format-corpus.mjs` formatted two files. The subsequent `--check` passed with zero pending changes.
+- `node --test tests/typed/format.test.mjs tests/typed/bytecode-vm.test.mjs` passed all seven tests after rerunning with subprocess access.
+
+Committed as `85e29a4`. The worktree is clean.
+tokens used
+111,480
+Reformatted [project.json](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/project.json), [notes.md](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/notes.md), and [scripts/explore.js](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-012/corpus/projects/bytecode-vm/scripts/explore.js). All Bytecode VM files fit their tile limits. The source focus still points to the opcode fetch on line 10.
+
+- `node tools/format-corpus.mjs` formatted two files. The subsequent `--check` passed with zero pending changes.
+- `node --test tests/typed/format.test.mjs tests/typed/bytecode-vm.test.mjs` passed all seven tests after rerunning with subprocess access.
+
+Committed as `85e29a4`. The worktree is clean.

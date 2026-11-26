@@ -1,0 +1,1370 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a218ca-b483-7940-80fe-989d1496145d
+--------
+user
+Integration of your branch found one problem in IRWB-017's project. The workbench shows each corpus file in a tile, and `tests/typed/format.test.mjs` requires every `.typed` and `.js` file of a corpus project to fit in 80 columns, and `project.json` and `notes.md` to fit in 73. Some files of your project are wider. `tools/format-corpus.mjs` formats `project.json` and `notes.md` (run it, then `node tools/format-corpus.mjs --check`). It mis-wraps list items that are already wrapped and then refuses the file with "renders differently"; in that case wrap `notes.md` by hand to 72 columns. Reformat the `.typed` and `.js` files by hand without changing their meaning. If lines move in a `.typed` file, update whatever refers to source lines (focus links, line numbers in `notes.md` or `project.json`).
+
+Then run `node --test tests/typed/format.test.mjs` and your own test, and commit with a message starting `IRWB-017:`. Corpus-wide test totals that changed because of the new projects are handled during integration and are not part of this task. Final message: the files you changed, the commands you ran with their results, and the commit hash.
+codex
+I’ll check the chess project against the tile-width limits, wrap the affected files, and verify that the workbench focus and IR links still resolve before running the requested tests.
+exec
+/usr/bin/zsh -lc 'git status --short && cat tools/format-corpus.mjs tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+exec
+/usr/bin/zsh -lc "awk 'length("'$0)>80 {print FILENAME ":" FNR ":" length($0) ":" $0}'"' corpus/projects/chess-search/*.typed corpus/projects/chess-search/scripts/*.js
+awk 'length("'$0)>73 {print FILENAME ":" FNR ":" length($0) ":" substr($0,1,110)}'"' corpus/projects/chess-search/{project.json,notes.md} | awk 'NR<26 {print} END {print NR \" over-width lines\"}'
+sed -n '1,65p' corpus/projects/chess-search/notes.md; sed -n '1,38p' corpus/projects/chess-search/project.json
+rg -n 'focus|locate' tests/typed/chess-search.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 574ms:
+corpus/projects/chess-search/main.typed:1:103:function chessSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool): i32 {
+corpus/projects/chess-search/moves.typed:1:82:// A frame reserves 512 moves. Sixteen pieces with at most 27 moves per piece fit.
+corpus/projects/chess-search/moves.typed:2:98:function chessAdd(board: buffer, list: i32, count: i32, from: i32, to: i32, promotion: i32): i32 {
+corpus/projects/chess-search/moves.typed:7:86:function chessPawnAdd(board: buffer, list: i32, count: i32, from: i32, to: i32): i32 {
+corpus/projects/chess-search/moves.typed:8:89:    if (to / 16 !== 0 && to / 16 !== 7) return chessAdd(board, list, count, from, to, 0);
+corpus/projects/chess-search/moves.typed:16:90:function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i32): i32 {
+corpus/projects/chess-search/moves.typed:33:82:            const enemy = target !== 0 && target / 8 !== side && target % 8 !== 6;
+corpus/projects/chess-search/moves.typed:34:107:            const passed = to === ep && target === 0 && board.charCodeAt(to - step) === 1 + (1 - side) * 8;
+corpus/projects/chess-search/moves.typed:42:87:function chessCastle(board: buffer, list: i32, count: i32, from: i32, side: i32): i32 {
+corpus/projects/chess-search/moves.typed:47:81:    if (!chessRight(rights, mask) && !chessRight(rights, mask * 2)) return count;
+corpus/projects/chess-search/moves.typed:52:83:            && board.charCodeAt(from + 1) === 0 && board.charCodeAt(from + 2) === 0
+corpus/projects/chess-search/moves.typed:57:83:            && board.charCodeAt(from - 1) === 0 && board.charCodeAt(from - 2) === 0
+corpus/projects/chess-search/moves.typed:58:95:            && board.charCodeAt(from - 3) === 0 && !chessAttacked(board, from - 1, 1 - side)) {
+corpus/projects/chess-search/moves.typed:64:92:function chessPieceMoves(board: buffer, list: i32, count: i32, from: i32, piece: i32): i32 {
+corpus/projects/chess-search/moves.typed:155:84:                chessUnmake(board, board.charCodeAt(163 + ply * 4), 256 + ply * 10);
+corpus/projects/chess-search/position.typed:46:106:    if (chessIsPiece(board, pawn - 1, color + 1) || chessIsPiece(board, pawn + 1, color + 1)) return true;
+corpus/projects/chess-search/position.typed:48:81:        if (chessIsPiece(board, square + chessKnight(i), color + 2)) return true;
+corpus/projects/chess-search/position.typed:59:99:                    if (kind === 5 || (i < 4 && kind === 4) || (i >= 4 && kind === 3)) return true;
+corpus/projects/chess-search/position.typed:73:87:function chessRight(rights: i32, mask: i32): bool { return (rights / mask) % 2 === 1; }
+corpus/projects/chess-search/position.typed:97:96:    if (kind === 1 && to === enPassant && board.charCodeAt(to) === 0 && from % 16 !== to % 16) {
+corpus/projects/chess-search/position.typed:101:99:    for (let i = 0; i < 6; i = i + 1) { board.setCharCodeAt(undo + i, board.charCodeAt(129 + i)); }
+corpus/projects/chess-search/position.typed:128:93:    if (side === 1) { board.setCharCodeAt(134, Math.min(65535, board.charCodeAt(134) + 1)); }
+corpus/projects/chess-search/position.typed:157:99:    for (let i = 0; i < 6; i = i + 1) { board.setCharCodeAt(129 + i, board.charCodeAt(undo + i)); }
+corpus/projects/chess-search/search.typed:59:97:        const center = chessCenter(white % 16, white / 16) - chessCenter(black % 16, black / 16);
+corpus/projects/chess-search/search.typed:70:83:    if (to === board.charCodeAt(130) && board.charCodeAt(chessFrom(move)) % 8 === 1
+corpus/projects/chess-search/search.typed:88:89:    if (promotion !== 0) { key = key + chessValue(chessPromotedKind(promotion)) + 6000; }
+corpus/projects/chess-search/search.typed:111:88:            board.setCharCodeAt(list + 512 + at, board.charCodeAt(list + 512 + at - 1));
+corpus/projects/chess-search/search.typed:135:91:function chessInitNode(board: buffer, frame: i32, depth: i32, alpha: i32, beta: i32): i32 {
+corpus/projects/chess-search/search.typed:144:108:function chessStartSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool): i32 {
+corpus/projects/chess-search/search.typed:168:94:        chessUnmake(board, board.charCodeAt(chessFrame(state.ply) + 7), chessUndo(state.ply));
+corpus/projects/chess-search/search.typed:174:82:function chessAcceptScore(board: buffer, frame: i32, move: i32, score: i32): i32 {
+corpus/projects/chess-search/search.typed:180:87:    if (value > board.charCodeAt(frame + 2)) { board.setCharCodeAt(frame + 2, value); }
+corpus/projects/chess-search/search.typed:227:92:            if (!state.advanced || capped || stand + 32768 >= board.charCodeAt(frame + 3)) {
+corpus/projects/chess-search/search.typed:232:97:            board.setCharCodeAt(frame + 2, Math.max(board.charCodeAt(frame + 2), stand + 32768));
+corpus/projects/chess-search/search.typed:235:90:            // At the quiescence cap still evaluate legal evasions; no stand pat in check.
+corpus/projects/chess-search/search.typed:259:84:    if (board.charCodeAt(frame) === 0) return chessPrepareNode(board, state, frame);
+corpus/projects/chess-search/search.typed:263:104:            if (board.charCodeAt(frame + 9) === 1) return chessCompleteNode(board, state, -30000 + ply);
+corpus/projects/chess-search/search.typed:266:84:        return chessCompleteNode(board, state, board.charCodeAt(frame + 4) - 32768);
+corpus/projects/chess-search/search.typed:284:105:    chessInitNode(board, chessFrame(ply + 1), Math.max(0, board.charCodeAt(frame + 1) - 1), alpha, beta);
+corpus/projects/chess-search/scripts/explore.js:7:100:  changedPasses: run.steps.filter(step => step.changed).map(({ pass, check }) => ({ pass, check })),
+corpus/projects/chess-search/project.json:20:88:      "about": "Check speed and locate the search step and attack-ray loops in the IR.",
+corpus/projects/chess-search/project.json:28:202:          0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+corpus/projects/chess-search/project.json:29:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:30:205:          0, 0, 128, 116, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+corpus/projects/chess-search/project.json:31:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:32:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:33:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:34:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:35:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:36:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:37:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:38:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:39:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:40:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:41:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:42:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:43:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:44:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:45:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:46:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:47:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:48:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:49:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:50:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+corpus/projects/chess-search/project.json:51:201:          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+189 over-width lines
+At r0, inspect the [search step](focus:fn:chessSearchStep), [ray directions](focus:bb:chessAttacked.16), and [ray traversal](focus:bb:chessAttacked.19) in the [IR view](view:ir).
+
+Ported from `apps/typed/chess/` in ds-js-os at revision
+`b19062b29fe4fb6b02863e92510501dc5c4bc9b3`. The board is a caller-supplied
+u16 buffer with eight ranks at stride 16, starting at rank 8. The first eight
+cells of each rank hold files a–h. Cells 128–134 store side to move, castling
+rights, the en passant square, both king squares, and both clocks.
+
+- `chessPerft(board, depth)` takes a 2,048-cell legal position buffer and
+  depth 0–3. It counts legal move paths of exactly that depth and returns 1
+  at depth zero.
+- `chessSearch(board, state, depth, budget, advanced)` takes a 9,216-cell
+  legal position buffer, a fresh zeroed `SearchState`, depth 1–3, a positive
+  node budget, and an advanced-evaluation flag. It runs iterative-deepening
+  alpha-beta and returns a packed move, or zero at a terminal position.
+  On budget exhaustion it returns the last completed iteration's move or
+  the first legal move if the search completed no iteration. The state
+  records the score, visited nodes, and completed depth.
+
+Both entries restore cells 0–134 and use the remaining cells as scratch.
+Packed moves use `4096 * promotion + 64 * fromDense + toDense`, with dense
+square zero at a8 and promotion codes 1–4 for queen, rook, bishop, and knight.
+
+Run **explore** in the workbench Scripts view to check `speed` on a fresh
+copy and find the search step and attack-ray loop headers in the IR. The
+generated cases use pinned en passant at depth one and a promotion position
+with budget two. The concrete cases use the included chess 1.11.2 fixtures
+and compare the evaluator with all three RV32 images.
+
+From the repository root, after `npm run build`:
+
+```sh
+node --test tests/typed/chess-search.test.mjs
+node tools/parity.mjs chess-search
+node corpus/projects/chess-search/scripts/fixtures.mjs
+node corpus/projects/chess-search/scripts/fixtures.mjs measure
+```
+
+The measurement uses `quiet-mate-in-two` at depth 3, budget 1,600, with
+advanced evaluation. All images returned `d6c7`, scored 29,997, completed
+depth 3 in 1,344 search nodes, and agreed with the evaluator on every
+guest memory byte.
+
+| Position | r0 instructions | Checked speed instructions | Reference instructions |
+| --- | ---: | ---: | ---: |
+| Quiet mate in two | 14,804,396 | 10,079,349 | 10,827,760 |
+
+The speed image enables `chains`, `coalesce`, and `homes`. The reference
+compiler receives the exact same assembled Typed source.
+{
+  "title": "Chess search",
+  "about": "Branch-heavy integer alpha-beta and legal move generation.",
+  "group": "Programs",
+  "pipeline": "speed",
+  "sources": [
+    "state.typed",
+    "main.typed",
+    "position.typed",
+    "moves.typed",
+    "search.typed"
+  ],
+  "entries": [
+    "chessSearch",
+    "chessPerft"
+  ],
+  "focus": 16,
+  "scripts": {
+    "explore": {
+      "about": "Check speed and locate the search step and attack-ray loops in the IR.",
+      "fresh": true
+    }
+  },
+  "inputs": {
+    "chessSearch": {
+      "board": {
+        "cells": [
+          0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 128, 116, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+41:  assert.deepEqual(wb.current.locate(project.meta.focus), { file: 'main.typed', line: 4 });
+
+ succeeded in 577ms:
+// Format the corpus files the workbench shows for a tile (TILE_WIDTH columns): project.json with prose fields
+// as lines, notes.md hard-wrapped. Verifies before writing: the project's meaning (projectSource) and the
+// rendered Markdown blocks are unchanged. node tools/format-corpus.mjs [--check]
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
+import { corpusDir, projectIds, projectFiles } from './corpus.mjs';
+const { formatJson, wrapProse, splitWords, TILE_WIDTH } = await import('../dist/typed/format.js');
+const { projectSource } = await import('../dist/typed/project.js');
+
+const check = process.argv.includes('--check');
+const W = TILE_WIDTH;
+// prose → lines that fit at the indentation the printer will give them (quotes and comma take 3 columns)
+const lines = (text, indent) => {
+  if (typeof text !== 'string' || indent + text.length + 3 <= W) return text;
+  return splitWords(text, W - indent - 3);
+};
+function narrowProject(j) {
+  const out = { ...j };
+  if (out.about !== undefined) out.about = lines(out.about, 4);
+  if (Array.isArray(out.try)) out.try = out.try.map(t => lines(t, 6));
+  if (out.scripts)
+    out.scripts = Object.fromEntries(Object.entries(out.scripts).map(([k, v]) => [k, v && v.about !== undefined ? { ...v, about: lines(v.about, 8) } : v]));
+  return out;
+}
+// the renderer's block structure (ui/md.js rules): fences verbatim, list items with continuations, paragraphs joined
+function blocks(md) {
+  const ls = md.replace(/\r/g, '').split('\n'), out = [];
+  let para = [];
+  const flush = () => { if (para.length) out.push(['p', para.join(' ')]); para = []; };
+  for (let i = 0; i < ls.length; ) {
+    const l = ls[i];
+    if (/^```/.test(l)) { flush(); const body = [l]; i++; while (i < ls.length && !/^```\s*$/.test(ls[i])) body.push(ls[i++]); body.push(ls[i++]); out.push(['code', body.join('\n')]); continue; }
+    const li = /^(\s*)([-*]|\d+\.) (.*)$/.exec(l);
+    if (li) { flush(); let item = li[3]; i++; while (i < ls.length && /^\s{2,}\S/.test(ls[i]) && !/^(\s*)([-*]|\d+\.) /.test(ls[i])) item += ' ' + ls[i++].trim(); out.push(['li', li[2], item]); continue; }
+    if (/^\s*$/.test(l)) { flush(); i++; continue; }
+    if (/^(#|\||---|>)/.test(l)) { flush(); out.push(['raw', l]); i++; continue; }
+    para.push(l.trim()); i++;
+  }
+  flush();
+  return out;
+}
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+let changed = 0, wide = [];
+for (const id of projectIds()) {
+  const dir = join(corpusDir, id), files = projectFiles(id);
+  const before = projectSource(id, files).meta;
+  if (files['project.json']) {
+    const text = formatJson(narrowProject(JSON.parse(files['project.json'])), W);
+    const after = projectSource(id, { ...files, 'project.json': text }).meta;
+    if (!isDeepStrictEqual(before, after)) throw new Error(`${id}: project.json meaning changed`);
+    if (text !== files['project.json']) { changed++; if (!check) writeFileSync(join(dir, 'project.json'), text); }
+    if (width(text) > W) wide.push(`${id}/project.json ${width(text)}`);
+  }
+  const notes = join(dir, 'notes.md');
+  if (existsSync(notes)) {
+    const md = readFileSync(notes, 'utf8'), wrapped = wrapProse(md, W);
+    if (!isDeepStrictEqual(blocks(md), blocks(wrapped))) throw new Error(`${id}: notes.md renders differently`);
+    if (wrapped !== md) { changed++; if (!check) writeFileSync(notes, wrapped); }
+    if (width(wrapped) > W) wide.push(`${id}/notes.md ${width(wrapped)}`);
+  }
+}
+console.log(`${check ? 'would change' : 'changed'} ${changed} files; still wider than ${W}: ${wide.length ? wide.join(', ') : 'none'}`);
+if (check && changed) process.exit(1);
+// Tile-width formatting: what the workbench shows must read in a 60–80 column tile.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { corpusDir, projectIds } from '../../tools/corpus.mjs';
+
+const { formatJson, wrapProse, joinText, TILE_WIDTH } = await import('../../dist/typed/format.js');
+const S = await import('../../dist/typed/strategies.js');
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+const files = dir =>
+  readdirSync(dir).flatMap(f => (statSync(join(dir, f)).isDirectory() ? files(join(dir, f)) : [join(dir, f)]));
+
+test('format: JSON keeps what fits on one line, breaks the rest, and round-trips', () => {
+  const v = { a: [1, 2, 3], b: { c: 'x [ y ] z', d: null }, long: Array.from({ length: 30 }, (_, i) => `item-${i}`) };
+  const text = formatJson(v, 40);
+  assert.deepEqual(JSON.parse(text), v);
+  assert.ok(width(text) <= 40, text);
+  assert.match(text, /"a": \[1, 2, 3\]/);
+  assert.match(text, /"c": "x \[ y \] z"/); // string contents untouched
+});
+
+test('format: prose wraps without changing blocks; lists keep their items', () => {
+  const md = '# Title\n\nA ' + 'word '.repeat(40) + '\n\n- item ' + 'more '.repeat(30) + '\n\n```\ncode line that is very long and must not be wrapped by the formatter at all\n```\n';
+  const out = wrapProse(md, 60);
+  assert.ok(out.split('\n').filter(l => !l.startsWith('code')).every(l => l.length <= 60));
+  assert.match(out, /^ {2}more/m); // list continuation is indented, so it stays in the item
+  assert.match(out, /code line that is very long and must not be wrapped by the formatter at all/);
+  assert.equal(joinText(['a', 'b']), 'a b');
+});
+
+test('format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH', () => {
+  const wide = [];
+  for (const id of projectIds())
+    for (const f of files(join(corpusDir, id))) {
+      if (!/\.(typed|js|json|md)$/.test(f)) continue;
+      const w = width(readFileSync(f, 'utf8'));
+      const limit = /(project\.json|notes\.md)$/.test(f) ? TILE_WIDTH + 1 : 80; // +1: a word carried past a block marker
+      if (w > limit) wide.push(`${f}: ${w}`);
+    }
+  assert.deepEqual(wide, []);
+  // the formatter has nothing left to do
+  execFileSync(process.execPath, ['tools/format-corpus.mjs', '--check'], { stdio: 'pipe' });
+});
+
+test('format: strategy presets and plans fit TILE_WIDTH', () => {
+  for (const [path, text] of Object.entries(S.presetFiles())) {
+    assert.ok(width(text) <= TILE_WIDTH, `${path}: ${width(text)}`);
+    const name = path.replace(/^strategies\/|\.json$/g, '');
+    assert.equal(S.projectStrategies({ [path]: text })[name].id, `typed.strategy.${name}`);
+    assert.ok(width(S.toJson(S.planFromSpec(name, JSON.parse(text)))) <= TILE_WIDTH);
+  }
+});
+
+exec
+/usr/bin/zsh -lc 'cat src/typed/format.ts; node tools/format-corpus.mjs --check; git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 294ms:
+/**
+ * Formatting for text the workbench shows in tiles (60–80 columns wide): 72 columns by default, so files and
+ * presets read without horizontal scrolling. Typed sources are left as written (all within 80 columns), because
+ * their line numbers are part of provenance.
+ *
+ *   formatJson(value, width)  JSON that keeps an object or array on one line when it fits, and breaks it one
+ *                             entry per line otherwise (prettier's rule for JSON), so plans and project files are
+ *                             short and narrow.
+ *   wrapProse(markdown, width) hard-wraps paragraphs and list items of Markdown at word boundaries, leaving code
+ *                             fences, tables, headings, callout markers and rules alone. The workbench's renderer
+ *                             joins a paragraph's lines with spaces and a list item's indented continuation lines,
+ *                             so the rendered text is unchanged; a continuation line never starts with a token
+ *                             that would begin another block.
+ *   joinText(x)               a prose field may be a string or an array of lines (JSON strings cannot span lines);
+ *                             this joins the lines with spaces.
+ */
+
+export const TILE_WIDTH = 72;
+
+const scalar = (v: unknown) => JSON.stringify(v);
+
+export function formatJson(value: unknown, width = TILE_WIDTH, indent = 2): string {
+  // the one-line form, built structurally (string contents are never touched)
+  const inlineOf = (v: unknown): string => {
+    if (v === null || typeof v !== 'object') return scalar(v);
+    if (Array.isArray(v)) return `[${v.map(inlineOf).join(', ')}]`;
+    const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined);
+    return entries.length
+      ? `{ ${entries.map(([k, x]) => `${scalar(k)}: ${inlineOf(x)}`).join(', ')} }`
+      : '{}';
+  };
+  const print = (v: unknown, col: number, pad: string): string => {
+    if (v === null || typeof v !== 'object') return scalar(v);
+    const inline = inlineOf(v);
+    // a trailing comma follows every entry but the last; leave room for it
+    if (col + inline.length + 1 <= width) return inline;
+    const inner = pad + ' '.repeat(indent);
+    if (Array.isArray(v)) {
+      if (!v.length) return '[]';
+      return `[\n${v.map(x => inner + print(x, inner.length, inner)).join(',\n')}\n${pad}]`;
+    }
+    const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined);
+    if (!entries.length) return '{}';
+    return `{\n${entries
+      .map(([k, x]) => {
+        const key = `${scalar(k)}: `;
+        return inner + key + print(x, inner.length + key.length, inner);
+      })
+      .join(',\n')}\n${pad}}`;
+  };
+  return print(value, 0, '') + '\n';
+}
+
+/** Split prose into lines of at most `width` columns at spaces (a word longer than the width stays whole). */
+export function splitWords(text: string, width: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean),
+    out: string[] = [];
+  let line = '';
+  for (const w of words) {
+    if (line && line.length + 1 + w.length > width) {
+      out.push(line);
+      line = w;
+    } else line = line ? `${line} ${w}` : w;
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/** A line that would start another Markdown block if it began a continuation. */
+const STARTS_BLOCK = /^(#|>|\||```|---|[-*+] |\d+[.)] )/;
+
+function wrapWords(words: string[], first: string, rest: string, width: number): string[] {
+  const out: string[] = [];
+  let line = first,
+    empty = true;
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const prefix = out.length ? rest : first;
+    if (!empty && line.length + 1 + w.length > width) {
+      // never begin a continuation line with a block marker: carry one more word on this line instead
+      const tail = words.slice(i).join(' ');
+      if (STARTS_BLOCK.test(tail)) {
+        line += ' ' + w;
+        continue;
+      }
+      out.push(line);
+      line = rest + w;
+    } else line = empty ? prefix + w : `${line} ${w}`;
+    empty = false;
+  }
+  if (!empty) out.push(line);
+  return out;
+}
+
+export function wrapProse(markdown: string, width = TILE_WIDTH): string {
+  const lines = markdown.replace(/\r/g, '').split('\n');
+  const out: string[] = [];
+  let i = 0,
+    fenced = false;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^```/.test(l)) {
+      fenced = !fenced;
+      out.push(l);
+      i++;
+      continue;
+    }
+    if (fenced || l.length <= width || /^\s*$/.test(l) || /^(#|\||---|> ?\[!)/.test(l) || /^\s{4,}/.test(l)) {
+      out.push(l);
+      i++;
+      continue;
+    }
+    const li = /^(\s*)([-*]|\d+\.) (.*)$/.exec(l);
+    if (li) {
+      const lead = `${li[1]}${li[2]} `;
+      const hang = ' '.repeat(Math.max(2, lead.length));
+      out.push(...wrapWords(li[3].split(/\s+/).filter(Boolean), lead, hang, width));
+    } else {
+      const q = /^(> ?)(.*)$/.exec(l);
+      if (q) out.push(...wrapWords(q[2].split(/\s+/).filter(Boolean), q[1], q[1], width));
+      else out.push(...wrapWords(l.trim().split(/\s+/).filter(Boolean), '', '', width));
+    }
+    i++;
+  }
+  return out.join('\n');
+}
+
+export function joinText(x: unknown): string {
+  return Array.isArray(x) ? x.join(' ') : String(x ?? '');
+}
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/tools/format-corpus.mjs:58
+    if (!isDeepStrictEqual(blocks(md), blocks(wrapped))) throw new Error(`${id}: notes.md renders differently`);
+                                                               ^
+
+Error: chess-search: notes.md renders differently
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/tools/format-corpus.mjs:58:64
+
+Node.js v24.18.0
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+root = Path('corpus/projects/chess-search')
+def edit(file, pairs):
+    path = root / file
+    text = path.read_text()
+    for old, new in pairs:
+        assert text.count(old) == 1, old
+        text = text.replace(old, new)
+    path.write_text(text)
+edit('main.typed', [
+    ('depth: i32, budget:', 'depth: i32,\\n                     budget:'),
+])
+edit('moves.typed', [
+    ('// A frame reserves 512 moves. Sixteen pieces with at most 27 moves per piece fit.', '// A 512-move frame fits sixteen pieces with up to 27 moves each.'),
+    ('from: i32, to: i32, promotion: i32): i32 {', 'from: i32,\\n                  to: i32, promotion: i32): i32 {'),
+    ('function chessPawnAdd(board: buffer, list: i32, count: i32, from: i32, to: i32)', 'function chessPawnAdd(board: buffer, list: i32, count: i32,\\n                      from: i32, to: i32)'),
+    ('if (to / 16 "'!== 0 && to / 16 !== 7) return'"', 'if (to / 16 "'!== 0 && to / 16 !== 7)'"\\n        return'),
+    ('function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i32)', 'function chessPawnMoves(board: buffer, list: i32, count: i32,\\n                        from: i32, side: i32)'),
+    ('const enemy = target "'!== 0 && target / 8 !== side && target % 8 !== 6;'"', 'const enemy = target "'!== 0 && target / 8 !== side'"\\n                && target % 8 "'!== 6;'"'),
+    ('const passed = to === ep && target === 0 && board.charCodeAt(to - step) === 1 + (1 - side) * 8;', 'const passed = to === ep && target === 0\\n                && board.charCodeAt(to - step) === 1 + (1 - side) * 8;'),
+    ('function chessCastle(board: buffer, list: i32, count: i32, from: i32, side: i32)', 'function chessCastle(board: buffer, list: i32, count: i32,\\n                     from: i32, side: i32)'),
+    ('"'!chessRight(rights, mask * 2)) return count;'"', '"'!chessRight(rights, mask * 2))'"\\n        return count;'),
+    ('board.charCodeAt(from + 1) === 0 && board.charCodeAt(from + 2) === 0', 'board.charCodeAt(from + 1) === 0\\n            && board.charCodeAt(from + 2) === 0'),
+    ('board.charCodeAt(from - 1) === 0 && board.charCodeAt(from - 2) === 0', 'board.charCodeAt(from - 1) === 0\\n            && board.charCodeAt(from - 2) === 0'),
+    ('board.charCodeAt(from - 3) === 0 && "'!chessAttacked(board, from - 1, 1 - side)'"', 'board.charCodeAt(from - 3) === 0\\n            && "'!chessAttacked(board, from - 1, 1 - side)'"'),
+    ('function chessPieceMoves(board: buffer, list: i32, count: i32, from: i32, piece: i32)', 'function chessPieceMoves(board: buffer, list: i32, count: i32,\\n                         from: i32, piece: i32)'),
+    ('chessUnmake(board, board.charCodeAt(163 + ply * 4), 256 + ply * 10);', 'chessUnmake(board, board.charCodeAt(163 + ply * 4),\\n                            256 + ply * 10);'),
+])
+edit('position.typed', [
+    ('if (chessIsPiece(board, pawn - 1, color + 1) || chessIsPiece(board, pawn + 1, color + 1)) return true;', 'if (chessIsPiece(board, pawn - 1, color + 1)\\n            || chessIsPiece(board, pawn + 1, color + 1)) return true;'),
+    ('if (chessIsPiece(board, square + chessKnight(i), color + 2)) return true;', 'if (chessIsPiece(board, square + chessKnight(i), color + 2))\\n            return true;'),
+    ('if (kind === 5 || (i < 4 && kind === 4) || (i >= 4 && kind === 3)) return true;', 'if (kind === 5 || (i < 4 && kind === 4)\\n                            || (i >= 4 && kind === 3)) return true;'),
+    ('function chessRight(rights: i32, mask: i32): bool { return (rights / mask) % 2 === 1; }', 'function chessRight(rights: i32, mask: i32): bool {\\n    return (rights / mask) % 2 === 1;\\n}'),
+    ('if (kind === 1 && to === enPassant && board.charCodeAt(to) === 0 && from % 16 "'!== to % 16) {'"', 'if (kind === 1 && to === enPassant && board.charCodeAt(to) === 0\\n            && from % 16 "'!== to % 16) {'"'),
+    ('{ board.setCharCodeAt(undo + i, board.charCodeAt(129 + i)); }', '{\\n        board.setCharCodeAt(undo + i, board.charCodeAt(129 + i));\\n    }'),
+    ('if (side === 1) { board.setCharCodeAt(134, Math.min(65535, board.charCodeAt(134) + 1)); }', 'if (side === 1) {\\n        board.setCharCodeAt(134, Math.min(65535, board.charCodeAt(134) + 1));\\n    }'),
+    ('{ board.setCharCodeAt(129 + i, board.charCodeAt(undo + i)); }', '{\\n        board.setCharCodeAt(129 + i, board.charCodeAt(undo + i));\\n    }'),
+])
+edit('search.typed', [
+    (' - chessCenter(black % 16, black / 16);', '\\n            - chessCenter(black % 16, black / 16);'),
+    ('&& board.charCodeAt(chessFrom(move)) % 8 === 1', '\\n            && board.charCodeAt(chessFrom(move)) % 8 === 1'),
+    ('if (promotion "'!== 0) { key = key + chessValue(chessPromotedKind(promotion)) + 6000; }'"', 'if (promotion "'!== 0) {'"\\n        key = key + chessValue(chessPromotedKind(promotion)) + 6000;\\n    }'),
+    ('board.setCharCodeAt(list + 512 + at, board.charCodeAt(list + 512 + at - 1));', 'board.setCharCodeAt(list + 512 + at,\\n                                board.charCodeAt(list + 512 + at - 1));'),
+    ('depth: i32, alpha: i32, beta: i32): i32 {', 'depth: i32,\\n                       alpha: i32, beta: i32): i32 {'),
+    ('function chessStartSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool)', 'function chessStartSearch(board: buffer, state: SearchState, depth: i32,\\n                          budget: i32, advanced: bool)'),
+    ('chessUnmake(board, board.charCodeAt(chessFrame(state.ply) + 7), chessUndo(state.ply));', 'chessUnmake(board, board.charCodeAt(chessFrame(state.ply) + 7),\\n                    chessUndo(state.ply));'),
+    ('function chessAcceptScore(board: buffer, frame: i32, move: i32, score: i32)', 'function chessAcceptScore(board: buffer, frame: i32,\\n                          move: i32, score: i32)'),
+    ('if (value > board.charCodeAt(frame + 2)) { board.setCharCodeAt(frame + 2, value); }', 'if (value > board.charCodeAt(frame + 2)) {\\n        board.setCharCodeAt(frame + 2, value);\\n    }'),
+    ('if ("'!state.advanced || capped || stand + 32768 >= board.charCodeAt(frame + 3)) {'"', 'if ("'!state.advanced || capped'"\\n                    || stand + 32768 >= board.charCodeAt(frame + 3)) {'),
+    ('board.setCharCodeAt(frame + 2, Math.max(board.charCodeAt(frame + 2), stand + 32768));', 'board.setCharCodeAt(frame + 2,\\n                                Math.max(board.charCodeAt(frame + 2),\\n                                         stand + 32768));'),
+    ('// At the quiescence cap still evaluate legal evasions; no stand pat in check.', '// At the quiescence cap, evaluate legal evasions in check.'),
+    ('if (board.charCodeAt(frame) === 0) return chessPrepareNode(board, state, frame);', 'if (board.charCodeAt(frame) === 0)\\n        return chessPrepareNode(board, state, frame);'),
+    ('if (board.charCodeAt(frame + 9) === 1) return chessCompleteNode(board, state, -30000 + ply);', 'if (board.charCodeAt(frame + 9) === 1)\\n                return chessCompleteNode(board, state, -30000 + ply);'),
+    ('return chessCompleteNode(board, state, board.charCodeAt(frame + 4) - 32768);', 'return chessCompleteNode(board, state,\\n                                 board.charCodeAt(frame + 4) - 32768);'),
+    ('chessInitNode(board, chessFrame(ply + 1), Math.max(0, board.charCodeAt(frame + 1) - 1), alpha, beta);', 'chessInitNode(board, chessFrame(ply + 1),\\n                  Math.max(0, board.charCodeAt(frame + 1) - 1), alpha, beta);'),
+])
+edit('scripts/explore.js', [
+    ('run.steps.filter(step => step.changed).map', 'run.steps\\n    .filter(step => step.changed)\\n    .map'),
+])
+edit('project.json', [('\"focus\": 16', '\"focus\": 17')])
+test = Path('tests/typed/chess-search.test.mjs')
+test.write_text(test.read_text().replace(\"{ file: 'main.typed', line: 4 }\", \"{ file: 'main.typed', line: 5 }\"))
+PY
+awk 'length("'$0)>80 {print FILENAME ":" FNR ":" length($0) ":" $0}'"' corpus/projects/chess-search/*.typed corpus/projects/chess-search/scripts/*.js
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ exited 2 in 364ms:
+corpus/projects/chess-search/search.typed:71: trailing whitespace.
++    if (to === board.charCodeAt(130) 
+
+exec
+/usr/bin/zsh -lc "sed -i 's/[[:blank:]]*"'$//'"' corpus/projects/chess-search/search.typed
+chess_format_dir="'$(mktemp -d /tmp/irwb-017-format.XXXXXX)
+mkdir -p "$chess_format_dir/tools" "$chess_format_dir/corpus/projects"
+cp tools/{format-corpus,corpus}.mjs "$chess_format_dir/tools/"
+ln -s "$PWD/dist" "$chess_format_dir/dist"
+cp -r corpus/projects/chess-search "$chess_format_dir/corpus/projects/"
+node "$chess_format_dir/tools/format-corpus.mjs"
+cp "$chess_format_dir/corpus/projects/chess-search/project.json" corpus/projects/chess-search/project.json
+awk '"'length("'$0)>72 {print FNR ":" length($0) ":" $0}'"' corpus/projects/chess-search/notes.md
+git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 313ms:
+file:///tmp/irwb-017-format.whiUYb/tools/format-corpus.mjs:58
+    if (!isDeepStrictEqual(blocks(md), blocks(wrapped))) throw new Error(`${id}: notes.md renders differently`);
+                                                               ^
+
+Error: chess-search: notes.md renders differently
+    at file:///tmp/irwb-017-format.whiUYb/tools/format-corpus.mjs:58:64
+
+Node.js v24.18.0
+1:178:At r0, inspect the [search step](focus:fn:chessSearchStep), [ray directions](focus:bb:chessAttacked.16), and [ray traversal](focus:bb:chessAttacked.19) in the [IR view](view:ir).
+4:74:`b19062b29fe4fb6b02863e92510501dc5c4bc9b3`. The board is a caller-supplied
+5:77:u16 buffer with eight ranks at stride 16, starting at rank 8. The first eight
+6:77:cells of each rank hold files a–h. Cells 128–134 store side to move, castling
+9:73:- `chessPerft(board, depth)` takes a 2,048-cell legal position buffer and
+10:75:  depth 0–3. It counts legal move paths of exactly that depth and returns 1
+12:73:- `chessSearch(board, state, depth, budget, advanced)` takes a 9,216-cell
+13:76:  legal position buffer, a fresh zeroed `SearchState`, depth 1–3, a positive
+14:75:  node budget, and an advanced-evaluation flag. It runs iterative-deepening
+21:74:Packed moves use `4096 * promotion + 64 * fromDense + toDense`, with dense
+22:78:square zero at a8 and promotion codes 1–4 for queen, rook, bishop, and knight.
+24:73:Run **explore** in the workbench Scripts view to check `speed` on a fresh
+26:75:generated cases use pinned en passant at depth one and a promotion position
+27:74:with budget two. The concrete cases use the included chess 1.11.2 fixtures
+40:73:advanced evaluation. All images returned `d6c7`, scored 29,997, completed
+44:84:| Position | r0 instructions | Checked speed instructions | Reference instructions |
+ M corpus/projects/chess-search/main.typed
+ M corpus/projects/chess-search/moves.typed
+ M corpus/projects/chess-search/position.typed
+ M corpus/projects/chess-search/project.json
+ M corpus/projects/chess-search/scripts/explore.js
+ M corpus/projects/chess-search/search.typed
+ M tests/typed/chess-search.test.mjs
+
+exec
+/usr/bin/zsh -lc "cat > corpus/projects/chess-search/notes.md <<'EOF'
+At r0, select the [search step](focus:fn:chessSearchStep) in [IR](view:ir).
+
+The attack code has loops for [directions](focus:bb:chessAttacked.16)
+and [ray traversal](focus:bb:chessAttacked.19).
+
+Ported from "'`apps/typed/chess/` in ds-js-os at revision
+`b19062b29fe4fb6b02863e92510501dc5c4bc9b3`. The board is a
+caller-supplied u16 buffer with eight ranks at stride 16, starting at
+rank 8. The first eight cells of each rank hold files a–h. Cells 128–134
+store side to move, castling rights, the en passant square, both king
+squares, and both clocks.
+
+- `chessPerft(board, depth)` takes a 2,048-cell legal position buffer
+  and depth 0–3. It counts legal move paths of exactly that depth and
+  returns 1 at depth zero.
+- `chessSearch(board, state, depth, budget, advanced)` takes a
+  9,216-cell legal position buffer, a fresh zeroed `SearchState`,
+  depth 1–3, a positive node budget, and an advanced-evaluation flag.
+  It runs iterative-deepening alpha-beta and returns a packed move,
+  or zero at a terminal position. On budget exhaustion it returns the
+  last completed iteration'"'s move or the first legal move if the search
+  completed no iteration. The state records the score, visited nodes,
+  and completed depth.
+
+Both entries restore cells 0–134 and use the remaining cells as scratch.
+Packed moves use "'`4096 * promotion + 64 * fromDense + toDense`, with
+dense square zero at a8. Promotion codes 1–4 represent queen, rook,
+bishop, and knight.
+
+Run **explore** in the workbench Scripts view to check `speed` on a fresh
+copy and find the search step and attack-ray loop headers in the IR.
+The generated cases use pinned en passant at depth one and a promotion
+position with budget two. The concrete cases use the included chess
+1.11.2 fixtures and compare the evaluator with all three RV32 images.
+
+From the repository root, after `npm run build`
+
+```sh
+node --test tests/typed/chess-search.test.mjs
+node tools/parity.mjs chess-search
+node corpus/projects/chess-search/scripts/fixtures.mjs
+node corpus/projects/chess-search/scripts/fixtures.mjs measure
+```
+
+The measurement uses `quiet-mate-in-two` at depth 3, budget 1,600, with
+advanced evaluation. All images returned `d6c7`, scored 29,997,
+completed depth 3 in 1,344 search nodes, and agreed with the evaluator
+on every guest memory byte. The table gives executed RV32 instructions.
+
+| Position | r0 | Checked speed | Reference |
+| --- | ---: | ---: | ---: |
+| Quiet mate in two | 14,804,396 | 10,079,349 | 10,827,760 |
+
+The speed image enables `chains`, `coalesce`, and `homes`. The reference
+compiler receives the exact same assembled Typed source.
+EOF
+node tools/format-corpus.mjs --check
+awk '"'length("'$0)>72 {print FNR ":" length($0) ":" $0}'"' corpus/projects/chess-search/notes.md
+git diff --stat" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 297ms:
+would change 1 files; still wider than 72: fixed-point/notes.md 73
+1:75:At r0, select the [search step](focus:fn:chessSearchStep) in [IR](view:ir).
+30:73:Run **explore** in the workbench Scripts view to check `speed` on a fresh
+ corpus/projects/chess-search/main.typed         |     3 +-
+ corpus/projects/chess-search/moves.typed        |    41 +-
+ corpus/projects/chess-search/notes.md           |    60 +-
+ corpus/projects/chess-search/position.typed     |    28 +-
+ corpus/projects/chess-search/project.json       | 11464 +++++++++++++++++++++-
+ corpus/projects/chess-search/scripts/explore.js |     4 +-
+ corpus/projects/chess-search/search.typed       |    50 +-
+ tests/typed/chess-search.test.mjs               |     2 +-
+ 8 files changed, 11392 insertions(+), 260 deletions(-)
+
+exec
+/usr/bin/zsh -lc "sed -i 's/At r0, select the /At r0, open the /; s/Run \\*\\*explore\\*\\* in the workbench Scripts view to check/Run **explore** in Scripts to check/' corpus/projects/chess-search/notes.md
+node tools/format-corpus.mjs --check && node tools/format-corpus.mjs && node tools/format-corpus.mjs --check
+git diff --check
+node --input-type=module <<'EOF'
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { projectFiles } from './tools/corpus.mjs';
+import { loadProject } from './corpus/projects/chess-search/scripts/fixtures.mjs';
+const { project, program, backend } = await loadProject();
+const { Program } = await import('./dist/typed/program.js');
+const { projectSource } = await import('./dist/typed/project.js');
+const files = projectFiles(project.id);
+const previous = projectSource(project.id, Object.fromEntries(Object.keys(files).map(name => [
+  name, execFileSync('git', ['show', "'`HEAD:corpus/projects/${project.id}/${name}`], { encoding: '"'utf8' }),
+])));
+const old = Program.fromProject(previous);
+assert.equal(old.status, 'ok');
+assert.deepEqual(project.meta.inputs, previous.meta.inputs);
+assert.equal(backend.lowerToImage(program.origin).image.value.code, backend.lowerToImage(old.origin).image.value.code);
+assert.deepEqual(typedRv32.compile(project.source, [], undefined).image, typedRv32.compile(previous.source, [], undefined).image);
+assert.deepEqual(program.locate(project.meta.focus), { file: 'main.typed', line: 5 });
+assert.match(project.source.split('\\n')[project.meta.focus - 1], /chessSearchStep\\(board, state\\)/);
+for (const [id, expectedLine] of [['bb:chessAttacked.16', 52], ['bb:chessAttacked.19', 55]]) {
+  assert.deepEqual(program.where(id), ["'`position.typed:${expectedLine}`]);
+}
+assert.ok(program.has('"'fn:chessSearchStep'));
+console.log('Identical r0 and reference image bytes, identical input specs, and valid focus links.');
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ exited 1 in 878ms:
+would change 1 files; still wider than 72: fixed-point/notes.md 73
+node:internal/child_process:1143
+    result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+                   ^
+
+<ref *1> Error: spawnSync git EPERM
+    at Object.spawnSync (node:internal/child_process:1143:20)
+    at spawnSync (node:child_process:911:24)
+    at execFileSync (node:child_process:954:15)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/[eval1]:10:9
+    at Array.map (<anonymous>)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/[eval1]:9:82
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'spawnSync git',
+  path: 'git',
+  spawnargs: [ 'show', 'HEAD:corpus/projects/chess-search/main.typed' ],
+  error: [Circular *1],
+  status: 0,
+  signal: null,
+  output: [
+    null,
+    'function chessSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool): i32 {\n' +
+      '    chessStartSearch(board, state, depth, budget, advanced);\n' +
+      '    while (state.running) {\n' +
+      '        chessSearchStep(board, state);\n' +
+      '    }\n' +
+      '    return state.bestMove;\n' +
+      '}\n',
+    ''
+  ],
+  pid: 411,
+  stdout: 'function chessSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool): i32 {\n' +
+    '    chessStartSearch(board, state, depth, budget, advanced);\n' +
+    '    while (state.running) {\n' +
+    '        chessSearchStep(board, state);\n' +
+    '    }\n' +
+    '    return state.bestMove;\n' +
+    '}\n',
+  stderr: ''
+}
+
+Node.js v24.18.0
+
+exec
+/usr/bin/zsh -lc "sed -i '1s/At r0, open the/At r0, open/' corpus/projects/chess-search/notes.md
+awk 'length("'$0)>72 {print FNR ":" length($0) ":" $0}'"' corpus/projects/chess-search/notes.md
+node tools/format-corpus.mjs --check && node tools/format-corpus.mjs && node tools/format-corpus.mjs --check
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 474ms:
+would change 0 files; still wider than 72: fixed-point/notes.md 73
+changed 0 files; still wider than 72: fixed-point/notes.md 73
+would change 0 files; still wider than 72: fixed-point/notes.md 73
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/chess-search.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+exec
+/usr/bin/zsh -lc 'chess_before=$(mktemp -d /tmp/irwb-017-before.XXXXXX)
+for chess_file in corpus/projects/chess-search/*.typed corpus/projects/chess-search/project.json; do
+  git show "HEAD:$chess_file" > "$chess_before/${chess_file:t}" || exit
+done
+node --input-type=module - "$chess_before" <<'"'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { projectFiles } from './tools/corpus.mjs';
+import { loadProject } from './corpus/projects/chess-search/scripts/fixtures.mjs';
+const { project, program, backend } = await loadProject();
+const { Program } = await import('./dist/typed/program.js');
+const { projectSource } = await import('./dist/typed/project.js');
+const previous = projectSource(project.id, Object.fromEntries(Object.keys(projectFiles(project.id)).map(name => [
+  name, readFileSync(join(process.argv[2], name), 'utf8'),
+])));
+const old = Program.fromProject(previous);
+assert.equal(old.status, 'ok');
+assert.deepEqual(project.meta.inputs, previous.meta.inputs);
+assert.equal(backend.lowerToImage(program.origin).image.value.code, backend.lowerToImage(old.origin).image.value.code);
+assert.deepEqual(typedRv32.compile(project.source, [], undefined).image, typedRv32.compile(previous.source, [], undefined).image);
+assert.deepEqual(program.locate(project.meta.focus), { file: 'main.typed', line: 5 });
+assert.match(project.source.split('\\n')[project.meta.focus - 1], /chessSearchStep\\(board, state\\)/);
+for (const [id, expectedLine] of [['bb:chessAttacked.16', 52], ['bb:chessAttacked.19', 55]]) {
+  assert.deepEqual(program.where(id), ["'`position.typed:${expectedLine}`]);
+}
+assert.ok(program.has('"'fn:chessSearchStep'));
+console.log('Identical r0 and reference image bytes, identical input specs, and valid focus links.');
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ exited 1 in 558ms:
+✖ tests/typed/format.test.mjs (219.114802ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 226.983258
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (219.114802ms)
+  'test failed'
+
+ exited 1 in 2437ms:
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/[eval1]:17
+assert.deepEqual(program.locate(project.meta.focus), { file: 'main.typed', line: 5 });
+                         ^
+
+TypeError: program.locate is not a function
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/[eval1]:17:26
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.18.0
+
+exec
+/usr/bin/zsh -lc 'node --test --test-isolation=none tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ exited 1 in 416ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (1.574027ms)
+✔ format: prose wraps without changing blocks; lists keep their items (0.617478ms)
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (71.506671ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (11.478973ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 134.777997
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:33:1
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (71.506671ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/tests/typed/format.test.mjs:44:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ 'tools/format-corpus.mjs', '--check' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 666ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (2.115197ms)
+✔ format: prose wraps without changing blocks; lists keep their items (0.939933ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (120.608644ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (18.229496ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 272.295091
+
+exec
+/usr/bin/zsh -lc 'chess_before=$(mktemp -d /tmp/irwb-017-before.XXXXXX)
+for chess_file in corpus/projects/chess-search/*.typed corpus/projects/chess-search/project.json; do
+  git show "HEAD:$chess_file" > "$chess_before/${chess_file:t}" || exit
+done
+node --input-type=module - "$chess_before" <<'"'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { projectFiles } from './tools/corpus.mjs';
+import { loadProject } from './corpus/projects/chess-search/scripts/fixtures.mjs';
+const { project, program, backend } = await loadProject();
+const { Program } = await import('./dist/typed/program.js');
+const { projectSource } = await import('./dist/typed/project.js');
+const { createWb } = await import('./dist/workbench/index.js');
+const files = projectFiles(project.id);
+const previous = projectSource(project.id, Object.fromEntries(Object.keys(files).map(name => [
+  name, readFileSync(join(process.argv[2], name), 'utf8'),
+])));
+const old = Program.fromProject(previous);
+assert.equal(old.status, 'ok');
+assert.deepEqual(project.meta.inputs, previous.meta.inputs);
+assert.equal(backend.lowerToImage(program.origin).image.value.code, backend.lowerToImage(old.origin).image.value.code);
+assert.deepEqual(typedRv32.compile(project.source, [], undefined).image, typedRv32.compile(previous.source, [], undefined).image);
+const wb = createWb({ projects: [{ id: project.id, files }] });
+wb.projects.open(project.id);
+assert.deepEqual(wb.current.locate(project.meta.focus), { file: 'main.typed', line: 5 });
+assert.match(project.source.split('\\n')[project.meta.focus - 1], /chessSearchStep\\(board, state\\)/);
+for (const [id, expectedLine] of [['bb:chessAttacked.16', 52], ['bb:chessAttacked.19', 55]]) {
+  assert.deepEqual(wb.current.where(id), ["'`position.typed:${expectedLine}`]);
+}
+assert.ok(wb.current.has('"'fn:chessSearchStep'));
+console.log('Identical r0 and reference image bytes, identical input specs, and valid focus links.');
+EOF
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 3791ms:
+Identical r0 and reference image bytes, identical input specs, and valid focus links.
+
+exec
+/usr/bin/zsh -lc "git diff -- corpus/projects/chess-search/main.typed corpus/projects/chess-search/scripts/explore.js tests/typed/chess-search.test.mjs
+node --input-type=module <<'EOF'
+import {readdirSync,readFileSync} from 'node:fs';
+const root='corpus/projects/chess-search/';
+for (const file of [...readdirSync(root).filter(f=>f.endsWith('.typed')), 'scripts/explore.js', 'project.json','notes.md']) {
+  console.log(file,Math.max(...readFileSync(root+file,'utf8').split('\\n').map(line=>line.length)));
+}
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 485ms:
+diff --git a/corpus/projects/chess-search/main.typed b/corpus/projects/chess-search/main.typed
+index 69c8639..2a9a614 100644
+--- a/corpus/projects/chess-search/main.typed
++++ b/corpus/projects/chess-search/main.typed
+@@ -1,4 +1,5 @@
+-function chessSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool): i32 {
++function chessSearch(board: buffer, state: SearchState, depth: i32,
++                     budget: i32, advanced: bool): i32 {
+     chessStartSearch(board, state, depth, budget, advanced);
+     while (state.running) {
+         chessSearchStep(board, state);
+diff --git a/corpus/projects/chess-search/scripts/explore.js b/corpus/projects/chess-search/scripts/explore.js
+index 40baa3f..a8b6b58 100644
+--- a/corpus/projects/chess-search/scripts/explore.js
++++ b/corpus/projects/chess-search/scripts/explore.js
+@@ -4,7 +4,9 @@ const search = p.fn('chessSearchStep');
+ const attacks = p.fn('chessAttacked');
+ return {
+   revision: run.rev,
+-  changedPasses: run.steps.filter(step => step.changed).map(({ pass, check }) => ({ pass, check })),
++  changedPasses: run.steps
++    .filter(step => step.changed)
++    .map(({ pass, check }) => ({ pass, check })),
+   rejectedPasses: run.steps.filter(step => step.rejected),
+   entries: p.check({ count: 20 }).fns,
+   searchStep: search.id,
+diff --git a/tests/typed/chess-search.test.mjs b/tests/typed/chess-search.test.mjs
+index 7238b2c..381a11e 100644
+--- a/tests/typed/chess-search.test.mjs
++++ b/tests/typed/chess-search.test.mjs
+@@ -38,7 +38,7 @@ test('chess-search workbench and fresh inspector check the configured roots', as
+       assert.equal(row.inconclusive, 0, row.fn);
+     }
+   };
+-  assert.deepEqual(wb.current.locate(project.meta.focus), { file: 'main.typed', line: 4 });
++  assert.deepEqual(wb.current.locate(project.meta.focus), { file: 'main.typed', line: 5 });
+   checkRows(wb.current.check({ count: 1 }).fns, 1);
+   const inspection = await project.run('explore');
+   assert.equal(wb.current.rev, 'r0');
+main.typed 67
+moves.typed 80
+position.typed 80
+search.typed 80
+state.typed 20
+scripts/explore.js 74
+project.json 72
+notes.md 72
+
+codex
+The chess project now fits the tile limits, and the formatter reports no remaining edits. A before-and-after probe confirmed byte-identical r0 and reference RV32 images, unchanged input specs, and a valid focus at assembled line 17. The format tests passed, and the chess regression is still running.
+exec
+/usr/bin/zsh -lc 'git diff -- corpus/projects/chess-search/{moves,position,search}.typed
+git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 323ms:
+diff --git a/corpus/projects/chess-search/moves.typed b/corpus/projects/chess-search/moves.typed
+index d4ba24a..26b1683 100644
+--- a/corpus/projects/chess-search/moves.typed
++++ b/corpus/projects/chess-search/moves.typed
+@@ -1,11 +1,14 @@
+-// A frame reserves 512 moves. Sixteen pieces with at most 27 moves per piece fit.
+-function chessAdd(board: buffer, list: i32, count: i32, from: i32, to: i32, promotion: i32): i32 {
++// A 512-move frame fits sixteen pieces with up to 27 moves each.
++function chessAdd(board: buffer, list: i32, count: i32, from: i32,
++                  to: i32, promotion: i32): i32 {
+     board.setCharCodeAt(list + count, chessMove(from, to, promotion));
+     return count + 1;
+ }
+ 
+-function chessPawnAdd(board: buffer, list: i32, count: i32, from: i32, to: i32): i32 {
+-    if (to / 16 !== 0 && to / 16 !== 7) return chessAdd(board, list, count, from, to, 0);
++function chessPawnAdd(board: buffer, list: i32, count: i32,
++                      from: i32, to: i32): i32 {
++    if (to / 16 !== 0 && to / 16 !== 7)
++        return chessAdd(board, list, count, from, to, 0);
+     let n = count;
+     for (let promotion = 1; promotion < 5; promotion = promotion + 1) {
+         n = chessAdd(board, list, n, from, to, promotion);
+@@ -13,7 +16,8 @@ function chessPawnAdd(board: buffer, list: i32, count: i32, from: i32, to: i32):
+     return n;
+ }
+ 
+-function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i32): i32 {
++function chessPawnMoves(board: buffer, list: i32, count: i32,
++                        from: i32, side: i32): i32 {
+     let n = count;
+     const step = chessPawnStep(side);
+     const next = from + step;
+@@ -30,8 +34,10 @@ function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i
+     while (to <= next + 1) {
+         if (chessOnBoard(to)) {
+             const target = board.charCodeAt(to);
+-            const enemy = target !== 0 && target / 8 !== side && target % 8 !== 6;
+-            const passed = to === ep && target === 0 && board.charCodeAt(to - step) === 1 + (1 - side) * 8;
++            const enemy = target !== 0 && target / 8 !== side
++                && target % 8 !== 6;
++            const passed = to === ep && target === 0
++                && board.charCodeAt(to - step) === 1 + (1 - side) * 8;
+             if (enemy || passed) { n = chessPawnAdd(board, list, n, from, to); }
+         }
+         to = to + 2;
+@@ -39,29 +45,35 @@ function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i
+     return n;
+ }
+ 
+-function chessCastle(board: buffer, list: i32, count: i32, from: i32, side: i32): i32 {
++function chessCastle(board: buffer, list: i32, count: i32,
++                     from: i32, side: i32): i32 {
+     const home = 116 - side * 112;
+     if (from !== home) return count;
+     const rights = board.charCodeAt(129);
+     const mask = 1 + side * 3;
+-    if (!chessRight(rights, mask) && !chessRight(rights, mask * 2)) return count;
++    if (!chessRight(rights, mask) && !chessRight(rights, mask * 2))
++        return count;
+     if (chessAttacked(board, from, 1 - side)) return count;
+     let n = count;
+     const rook = 4 + side * 8;
+     if (chessRight(rights, mask) && board.charCodeAt(from + 3) === rook
+-            && board.charCodeAt(from + 1) === 0 && board.charCodeAt(from + 2) === 0
++            && board.charCodeAt(from + 1) === 0
++            && board.charCodeAt(from + 2) === 0
+             && !chessAttacked(board, from + 1, 1 - side)) {
+         n = chessAdd(board, list, n, from, from + 2, 0);
+     }
+     if (chessRight(rights, mask * 2) && board.charCodeAt(from - 4) === rook
+-            && board.charCodeAt(from - 1) === 0 && board.charCodeAt(from - 2) === 0
+-            && board.charCodeAt(from - 3) === 0 && !chessAttacked(board, from - 1, 1 - side)) {
++            && board.charCodeAt(from - 1) === 0
++            && board.charCodeAt(from - 2) === 0
++            && board.charCodeAt(from - 3) === 0
++            && !chessAttacked(board, from - 1, 1 - side)) {
+         n = chessAdd(board, list, n, from, from - 2, 0);
+     }
+     return n;
+ }
+ 
+-function chessPieceMoves(board: buffer, list: i32, count: i32, from: i32, piece: i32): i32 {
++function chessPieceMoves(board: buffer, list: i32, count: i32,
++                         from: i32, piece: i32): i32 {
+     const side = piece / 8;
+     const kind = piece % 8;
+     if (kind === 1) return chessPawnMoves(board, list, count, from, side);
+@@ -152,7 +164,8 @@ function chessPerft(board: buffer, depth: i32): i32 {
+         } else {
+             ply = ply - 1;
+             if (ply >= 0) {
+-                chessUnmake(board, board.charCodeAt(163 + ply * 4), 256 + ply * 10);
++                chessUnmake(board, board.charCodeAt(163 + ply * 4),
++                            256 + ply * 10);
+             }
+         }
+     }
+diff --git a/corpus/projects/chess-search/position.typed b/corpus/projects/chess-search/position.typed
+index 9691044..a336965 100644
+--- a/corpus/projects/chess-search/position.typed
++++ b/corpus/projects/chess-search/position.typed
+@@ -43,9 +43,11 @@ function chessIsPiece(board: buffer, square: i32, piece: i32): bool {
+ function chessAttacked(board: buffer, square: i32, side: i32): bool {
+     const color = side * 8;
+     const pawn = square - chessPawnStep(side);
+-    if (chessIsPiece(board, pawn - 1, color + 1) || chessIsPiece(board, pawn + 1, color + 1)) return true;
++    if (chessIsPiece(board, pawn - 1, color + 1)
++            || chessIsPiece(board, pawn + 1, color + 1)) return true;
+     for (let i = 0; i < 8; i = i + 1) {
+-        if (chessIsPiece(board, square + chessKnight(i), color + 2)) return true;
++        if (chessIsPiece(board, square + chessKnight(i), color + 2))
++            return true;
+     }
+     for (let i = 0; i < 8; i = i + 1) {
+         const step = chessRay(i);
+@@ -56,7 +58,8 @@ function chessAttacked(board: buffer, square: i32, side: i32): bool {
+                 if (piece / 8 === side) {
+                     const kind = piece % 8;
+                     if (kind === 6 && at === square + step) return true;
+-                    if (kind === 5 || (i < 4 && kind === 4) || (i >= 4 && kind === 3)) return true;
++                    if (kind === 5 || (i < 4 && kind === 4)
++                            || (i >= 4 && kind === 3)) return true;
+                 }
+                 break;
+             }
+@@ -70,7 +73,9 @@ function chessInCheck(board: buffer, side: i32): bool {
+     return chessAttacked(board, board.charCodeAt(131 + side), 1 - side);
+ }
+ 
+-function chessRight(rights: i32, mask: i32): bool { return (rights / mask) % 2 === 1; }
++function chessRight(rights: i32, mask: i32): bool {
++    return (rights / mask) % 2 === 1;
++}
+ function chessRemoveRight(rights: i32, mask: i32): i32 {
+     if (chessRight(rights, mask)) return rights - mask;
+     return rights;
+@@ -94,11 +99,14 @@ function chessMake(board: buffer, move: i32, undo: i32): i32 {
+     const kind = piece % 8;
+     let captureSquare = to;
+     const enPassant = board.charCodeAt(130);
+-    if (kind === 1 && to === enPassant && board.charCodeAt(to) === 0 && from % 16 !== to % 16) {
++    if (kind === 1 && to === enPassant && board.charCodeAt(to) === 0
++            && from % 16 !== to % 16) {
+         captureSquare = to - chessPawnStep(side);
+     }
+     const captured = board.charCodeAt(captureSquare);
+-    for (let i = 0; i < 6; i = i + 1) { board.setCharCodeAt(undo + i, board.charCodeAt(129 + i)); }
++    for (let i = 0; i < 6; i = i + 1) {
++        board.setCharCodeAt(undo + i, board.charCodeAt(129 + i));
++    }
+     board.setCharCodeAt(undo + 6, piece);
+     board.setCharCodeAt(undo + 7, captured);
+     board.setCharCodeAt(undo + 8, captureSquare);
+@@ -125,7 +133,9 @@ function chessMake(board: buffer, move: i32, undo: i32): i32 {
+     let clock = Math.min(65535, board.charCodeAt(133) + 1);
+     if (kind === 1 || captured !== 0) { clock = 0; }
+     board.setCharCodeAt(133, clock);
+-    if (side === 1) { board.setCharCodeAt(134, Math.min(65535, board.charCodeAt(134) + 1)); }
++    if (side === 1) {
++        board.setCharCodeAt(134, Math.min(65535, board.charCodeAt(134) + 1));
++    }
+     board.setCharCodeAt(128, 1 - side);
+     board.setCharCodeAt(from, 0);
+     if (captureSquare !== to) { board.setCharCodeAt(captureSquare, 0); }
+@@ -154,6 +164,8 @@ function chessUnmake(board: buffer, move: i32, undo: i32): i32 {
+     board.setCharCodeAt(to, 0);
+     board.setCharCodeAt(board.charCodeAt(undo + 8), board.charCodeAt(undo + 7));
+     board.setCharCodeAt(128, side);
+-    for (let i = 0; i < 6; i = i + 1) { board.setCharCodeAt(129 + i, board.charCodeAt(undo + i)); }
++    for (let i = 0; i < 6; i = i + 1) {
++        board.setCharCodeAt(129 + i, board.charCodeAt(undo + i));
++    }
+     return 0;
+ }
+diff --git a/corpus/projects/chess-search/search.typed b/corpus/projects/chess-search/search.typed
+index d591ea8..8f6233c 100644
+--- a/corpus/projects/chess-search/search.typed
++++ b/corpus/projects/chess-search/search.typed
+@@ -56,7 +56,8 @@ function chessEvaluate(board: buffer, advanced: bool): i32 {
+         if (bishopsBlack >= 2) { value = value - 24; }
+         const white = board.charCodeAt(131);
+         const black = board.charCodeAt(132);
+-        const center = chessCenter(white % 16, white / 16) - chessCenter(black % 16, black / 16);
++        const center = chessCenter(white % 16, white / 16)
++            - chessCenter(black % 16, black / 16);
+         if (phase < 2200) { value = value + center * 4; }
+         else { value = value - center * 3; }
+     }
+@@ -67,7 +68,8 @@ function chessCapture(board: buffer, move: i32): i32 {
+     const to = chessTo(move);
+     const target = board.charCodeAt(to);
+     if (target !== 0) return target;
+-    if (to === board.charCodeAt(130) && board.charCodeAt(chessFrom(move)) % 8 === 1
++    if (to === board.charCodeAt(130)
++            && board.charCodeAt(chessFrom(move)) % 8 === 1
+             && chessFrom(move) % 16 !== to % 16) {
+         return 1 + (1 - chessSide(board)) * 8;
+     }
+@@ -85,7 +87,9 @@ function chessPriority(board: buffer, move: i32, previous: i32): i32 {
+     if (capture === 0 && promotion === 0) return 0;
+     const attacker = chessValue(board.charCodeAt(chessFrom(move)) % 8);
+     let key = 1200 + 8 * chessValue(capture % 8) - attacker;
+-    if (promotion !== 0) { key = key + chessValue(chessPromotedKind(promotion)) + 6000; }
++    if (promotion !== 0) {
++        key = key + chessValue(chessPromotedKind(promotion)) + 6000;
++    }
+     return key;
+ }
+ 
+@@ -108,7 +112,8 @@ function chessOrder(board: buffer, list: i32, count: i32, previous: i32): i32 {
+         let at = i;
+         while (at > 0 && key > board.charCodeAt(list + 512 + at - 1)) {
+             board.setCharCodeAt(list + at, board.charCodeAt(list + at - 1));
+-            board.setCharCodeAt(list + 512 + at, board.charCodeAt(list + 512 + at - 1));
++            board.setCharCodeAt(list + 512 + at,
++                                board.charCodeAt(list + 512 + at - 1));
+             at = at - 1;
+         }
+         board.setCharCodeAt(list + at, move);
+@@ -132,7 +137,8 @@ function chessFrame(ply: i32): i32 { return 160 + ply * 16; }
+ function chessUndo(ply: i32): i32 { return 384 + ply * 10; }
+ function chessList(ply: i32): i32 { return 1024 + ply * 1024; }
+ 
+-function chessInitNode(board: buffer, frame: i32, depth: i32, alpha: i32, beta: i32): i32 {
++function chessInitNode(board: buffer, frame: i32, depth: i32,
++                       alpha: i32, beta: i32): i32 {
+     board.setCharCodeAt(frame, 0);
+     board.setCharCodeAt(frame + 1, depth);
+     board.setCharCodeAt(frame + 2, alpha + 32768);
+@@ -141,7 +147,8 @@ function chessInitNode(board: buffer, frame: i32, depth: i32, alpha: i32, beta:
+     return 0;
+ }
+ 
+-function chessStartSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool): i32 {
++function chessStartSearch(board: buffer, state: SearchState, depth: i32,
++                          budget: i32, advanced: bool): i32 {
+     state.running = false;
+     state.ply = 0;
+     state.depth = 1;
+@@ -165,19 +172,23 @@ function chessStartSearch(board: buffer, state: SearchState, depth: i32, budget:
+ function chessStopSearch(board: buffer, state: SearchState): i32 {
+     while (state.ply > 0) {
+         state.ply = state.ply - 1;
+-        chessUnmake(board, board.charCodeAt(chessFrame(state.ply) + 7), chessUndo(state.ply));
++        chessUnmake(board, board.charCodeAt(chessFrame(state.ply) + 7),
++                    chessUndo(state.ply));
+     }
+     state.running = false;
+     return 0;
+ }
+ 
+-function chessAcceptScore(board: buffer, frame: i32, move: i32, score: i32): i32 {
++function chessAcceptScore(board: buffer, frame: i32,
++                          move: i32, score: i32): i32 {
+     const value = score + 32768;
+     if (value > board.charCodeAt(frame + 4)) {
+         board.setCharCodeAt(frame + 4, value);
+         board.setCharCodeAt(frame + 8, move);
+     }
+-    if (value > board.charCodeAt(frame + 2)) { board.setCharCodeAt(frame + 2, value); }
++    if (value > board.charCodeAt(frame + 2)) {
++        board.setCharCodeAt(frame + 2, value);
++    }
+     if (value >= board.charCodeAt(frame + 3)) {
+         board.setCharCodeAt(frame + 6, board.charCodeAt(frame + 5));
+     }
+@@ -224,15 +235,18 @@ function chessPrepareNode(board: buffer, state: SearchState, frame: i32): i32 {
+                 return chessCompleteNode(board, state, 0);
+             }
+             const stand = chessEvaluate(board, state.advanced);
+-            if (!state.advanced || capped || stand + 32768 >= board.charCodeAt(frame + 3)) {
++            if (!state.advanced || capped
++                    || stand + 32768 >= board.charCodeAt(frame + 3)) {
+                 return chessCompleteNode(board, state, stand);
+             }
+             best = stand;
+             legal = 1;
+-            board.setCharCodeAt(frame + 2, Math.max(board.charCodeAt(frame + 2), stand + 32768));
++            board.setCharCodeAt(frame + 2,
++                                Math.max(board.charCodeAt(frame + 2),
++                                         stand + 32768));
+             count = chessTacticalMoves(board, list, count);
+         } else if (capped) {
+-            // At the quiescence cap still evaluate legal evasions; no stand pat in check.
++            // At the quiescence cap, evaluate legal evasions in check.
+             mode = 2;
+         }
+     }
+@@ -256,14 +270,17 @@ function chessPrepareNode(board: buffer, state: SearchState, frame: i32): i32 {
+ function chessSearchStep(board: buffer, state: SearchState): i32 {
+     const ply = state.ply;
+     const frame = chessFrame(ply);
+-    if (board.charCodeAt(frame) === 0) return chessPrepareNode(board, state, frame);
++    if (board.charCodeAt(frame) === 0)
++        return chessPrepareNode(board, state, frame);
+     const next = board.charCodeAt(frame + 6);
+     if (next >= board.charCodeAt(frame + 5)) {
+         if (board.charCodeAt(frame + 11) === 0) {
+-            if (board.charCodeAt(frame + 9) === 1) return chessCompleteNode(board, state, -30000 + ply);
++            if (board.charCodeAt(frame + 9) === 1)
++                return chessCompleteNode(board, state, -30000 + ply);
+             return chessCompleteNode(board, state, 0);
+         }
+-        return chessCompleteNode(board, state, board.charCodeAt(frame + 4) - 32768);
++        return chessCompleteNode(board, state,
++                                 board.charCodeAt(frame + 4) - 32768);
+     }
+     const move = board.charCodeAt(chessList(ply) + next);
+     board.setCharCodeAt(frame + 6, next + 1);
+@@ -281,7 +298,8 @@ function chessSearchStep(board: buffer, state: SearchState): i32 {
+     board.setCharCodeAt(frame + 7, move);
+     const alpha = 32768 - board.charCodeAt(frame + 3);
+     const beta = 32768 - board.charCodeAt(frame + 2);
+-    chessInitNode(board, chessFrame(ply + 1), Math.max(0, board.charCodeAt(frame + 1) - 1), alpha, beta);
++    chessInitNode(board, chessFrame(ply + 1),
++                  Math.max(0, board.charCodeAt(frame + 1) - 1), alpha, beta);
+     state.ply = ply + 1;
+     return 1;
+ }
+ M corpus/projects/chess-search/main.typed
+ M corpus/projects/chess-search/moves.typed
+ M corpus/projects/chess-search/notes.md
+ M corpus/projects/chess-search/position.typed
+ M corpus/projects/chess-search/project.json
+ M corpus/projects/chess-search/scripts/explore.js
+ M corpus/projects/chess-search/search.typed
+ M tests/typed/chess-search.test.mjs
+
+ succeeded in 55429ms:
+✔ tests/typed/chess-search.test.mjs (55097.978832ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 55105.426631
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/log/01-diary.md <<'EOF'
+
+## Step 8 — Fit the corpus files to the workbench tiles
+
+Integration found over-width lines in the Typed sources, inspector,
+metadata, and notes. I wrapped the sources and updated the focus to
+assembled line 17, which resolves to "'`main.typed:5`. Both ray loop block
+IDs still resolve, now at `position.typed:52` and `position.typed:55`.
+
+<details>
+<summary>Integration request</summary>
+
+> Integration of your branch found one problem in IRWB-017'"'s project. The workbench shows each corpus file in a tile, and "'`tests/typed/format.test.mjs` requires every `.typed` and `.js` file of a corpus project to fit in 80 columns, and `project.json` and `notes.md` to fit in 73. Some files of your project are wider. `tools/format-corpus.mjs` formats `project.json` and `notes.md` (run it, then `node tools/format-corpus.mjs --check`). It mis-wraps list items that are already wrapped and then refuses the file with "renders differently"; in that case wrap `notes.md` by hand to 72 columns. Reformat the `.typed` and `.js` files by hand without changing their meaning. If lines move in a `.typed` file, update whatever refers to source lines (focus links, line numbers in `notes.md` or `project.json`).
+>
+> Then run `node --test tests/typed/format.test.mjs` and your own test, and commit with a message starting `IRWB-017:`. Corpus-wide test totals that changed because of the new projects are handled during integration and are not part of this task. Final message: the files you changed, the commands you ran with their results, and the commit hash.
+
+</details>
+
+### Evidence
+
+- The formatter reported `chess-search: notes.md renders differently`.
+  I used the generated JSON and wrapped Markdown manually. Both files
+  now fit in 72 columns.
+- `node tools/format-corpus.mjs` and its `--check` invocation both
+  reported zero changes. The existing fixed-point note is 73 columns,
+  which the format test allows.
+- A before-and-after probe compared the input specs and the r0 and
+  reference RV32 image bytes. All were identical. The workbench probe
+  resolved the wrapper focus, search function and both ray loop blocks.
+- `node --test tests/typed/format.test.mjs` passed all four tests after
+  rerunning outside the sandbox. The sandbox run failed with
+  `spawnSync …/bin/node EPERM` when the test called the formatter.
+EOF
+docmgr changelog update --ticket IRWB-017 --entry '"'Wrapped the chess corpus files to the workbench tile limits and verified the updated source focus and identical RV32 image bytes.'
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 571ms:
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017/ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/changelog.md
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/log/01-diary.md <<'EOF'
+- "'`node --test tests/typed/chess-search.test.mjs` passed.
+EOF
+git diff --check && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 278ms:
+ M corpus/projects/chess-search/main.typed
+ M corpus/projects/chess-search/moves.typed
+ M corpus/projects/chess-search/notes.md
+ M corpus/projects/chess-search/position.typed
+ M corpus/projects/chess-search/project.json
+ M corpus/projects/chess-search/scripts/explore.js
+ M corpus/projects/chess-search/search.typed
+ M tests/typed/chess-search.test.mjs
+ M ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/changelog.md
+ M ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/log/01-diary.md
+
+exec
+/usr/bin/zsh -lc "git add -- corpus/projects/chess-search/{main.typed,moves.typed,notes.md,position.typed,project.json,scripts/explore.js,search.typed} tests/typed/chess-search.test.mjs ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/{changelog.md,log/01-diary.md} && git diff --cached --check && git commit -m 'IRWB-017: fit chess corpus files to workbench tiles'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 213ms:
+[impl/irwb-017 7a57fd4] IRWB-017: fit chess corpus files to workbench tiles
+ 10 files changed, 11429 insertions(+), 261 deletions(-)
+
+exec
+/usr/bin/zsh -lc "git status --short && git log -1 --format='%h %s'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-017
+ succeeded in 229ms:
+7a57fd4 IRWB-017: fit chess corpus files to workbench tiles
+
+codex
+Reformatted `main.typed`, `moves.typed`, `position.typed`, `search.typed`, `scripts/explore.js`, `project.json`, and `notes.md`. Updated `tests/typed/chess-search.test.mjs` for the focus move to assembled line 17 and recorded the fix in the ticket diary and changelog.
+
+The Typed and JavaScript files fit within 80 columns. `project.json` and `notes.md` fit within 72. A before-and-after check confirmed identical r0 and reference RV32 image bytes and verified that the focus and ray links resolve.
+
+- `node tools/format-corpus.mjs` and its `--check` run reported zero changes after the notes were wrapped by hand.
+- `node --test tests/typed/format.test.mjs` passed all four tests after rerunning outside the sandbox, which had blocked the nested formatter process.
+- `node --test tests/typed/chess-search.test.mjs` passed.
+
+Committed as `7a57fd4`. The worktree is clean.
+tokens used
+184,395
+Reformatted `main.typed`, `moves.typed`, `position.typed`, `search.typed`, `scripts/explore.js`, `project.json`, and `notes.md`. Updated `tests/typed/chess-search.test.mjs` for the focus move to assembled line 17 and recorded the fix in the ticket diary and changelog.
+
+The Typed and JavaScript files fit within 80 columns. `project.json` and `notes.md` fit within 72. A before-and-after check confirmed identical r0 and reference RV32 image bytes and verified that the focus and ray links resolve.
+
+- `node tools/format-corpus.mjs` and its `--check` run reported zero changes after the notes were wrapped by hand.
+- `node --test tests/typed/format.test.mjs` passed all four tests after rerunning outside the sandbox, which had blocked the nested formatter process.
+- `node --test tests/typed/chess-search.test.mjs` passed.
+
+Committed as `7a57fd4`. The worktree is clean.

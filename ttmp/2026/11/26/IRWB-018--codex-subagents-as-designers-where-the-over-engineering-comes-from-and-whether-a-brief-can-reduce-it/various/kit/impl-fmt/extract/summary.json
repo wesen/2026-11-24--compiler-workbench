@@ -1,0 +1,166 @@
+{
+  "sharedLengths": {
+    "system-prompt": 68,
+    "skills-catalogue": 66,
+    "multi-agent": 0,
+    "agents-md": 0
+  },
+  "differs": {},
+  "sessions": [
+    {
+      "id": "IRWB-012",
+      "file": "ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl-fmt/rollouts/IRWB-012.turn2.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 1.9,
+      "toolCalls": 14,
+      "commands": 7,
+      "tools": {
+        "exec_command": 9,
+        "apply_patch": 4,
+        "write_stdin": 2
+      },
+      "interpreterRuns": 6,
+      "skillReads": [],
+      "reasoningItems": 9,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 3775236,
+        "cached_input_tokens": 3680768,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 17012,
+        "reasoning_output_tokens": 2306,
+        "total_tokens": 3792248
+      }
+    },
+    {
+      "id": "IRWB-013",
+      "file": "ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl-fmt/rollouts/IRWB-013.turn2.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 1.1,
+      "toolCalls": 9,
+      "commands": 11,
+      "tools": {
+        "exec_command": 11,
+        "apply_patch": 1,
+        "write_stdin": 2
+      },
+      "interpreterRuns": 5,
+      "skillReads": [],
+      "reasoningItems": 3,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 3963617,
+        "cached_input_tokens": 3865472,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 18548,
+        "reasoning_output_tokens": 1917,
+        "total_tokens": 3982165
+      }
+    },
+    {
+      "id": "IRWB-014",
+      "file": "ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl-fmt/rollouts/IRWB-014.turn2.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 1.7,
+      "toolCalls": 12,
+      "commands": 13,
+      "tools": {
+        "exec_command": 13,
+        "apply_patch": 2,
+        "write_stdin": 2
+      },
+      "interpreterRuns": 6,
+      "skillReads": [],
+      "reasoningItems": 6,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 3237102,
+        "cached_input_tokens": 3145344,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16213,
+        "reasoning_output_tokens": 2641,
+        "total_tokens": 3253315
+      }
+    },
+    {
+      "id": "IRWB-015",
+      "file": "ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl-fmt/rollouts/IRWB-015.turn2.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 1.3,
+      "toolCalls": 10,
+      "commands": 11,
+      "tools": {
+        "exec_command": 11,
+        "apply_patch": 2,
+        "write_stdin": 4
+      },
+      "interpreterRuns": 8,
+      "skillReads": [],
+      "reasoningItems": 4,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2359522,
+        "cached_input_tokens": 2277632,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12139,
+        "reasoning_output_tokens": 1305,
+        "total_tokens": 2371661
+      }
+    },
+    {
+      "id": "IRWB-016",
+      "file": "ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl-fmt/rollouts/IRWB-016.turn2.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 0.9,
+      "toolCalls": 7,
+      "commands": 9,
+      "tools": {
+        "exec_command": 9,
+        "apply_patch": 1,
+        "write_stdin": 1
+      },
+      "interpreterRuns": 6,
+      "skillReads": [],
+      "reasoningItems": 2,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 2864131,
+        "cached_input_tokens": 2767872,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 14086,
+        "reasoning_output_tokens": 1214,
+        "total_tokens": 2878217
+      }
+    },
+    {
+      "id": "IRWB-017",
+      "file": "ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/kit/impl-fmt/rollouts/IRWB-017.turn2.jsonl",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "minutes": 3.8,
+      "toolCalls": 19,
+      "commands": 20,
+      "tools": {
+        "exec_command": 20,
+        "write_stdin": 4
+      },
+      "interpreterRuns": 13,
+      "skillReads": [],
+      "reasoningItems": 12,
+      "reasoningSummaries": 0,
+      "tokens": {
+        "input_tokens": 8794863,
+        "cached_input_tokens": 8636032,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 25564,
+        "reasoning_output_tokens": 3644,
+        "total_tokens": 8820427
+      }
+    }
+  ]
+}

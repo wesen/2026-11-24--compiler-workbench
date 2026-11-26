@@ -1,0 +1,559 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a218ca-ad31-7d93-9067-b2a193ed06fb
+--------
+user
+Integration of your branch found one problem in IRWB-016's project. The workbench shows each corpus file in a tile, and `tests/typed/format.test.mjs` requires every `.typed` and `.js` file of a corpus project to fit in 80 columns, and `project.json` and `notes.md` to fit in 73. Some files of your project are wider. `tools/format-corpus.mjs` formats `project.json` and `notes.md` (run it, then `node tools/format-corpus.mjs --check`). It mis-wraps list items that are already wrapped and then refuses the file with "renders differently"; in that case wrap `notes.md` by hand to 72 columns. Reformat the `.typed` and `.js` files by hand without changing their meaning. If lines move in a `.typed` file, update whatever refers to source lines (focus links, line numbers in `notes.md` or `project.json`).
+
+Then run `node --test tests/typed/format.test.mjs` and your own test, and commit with a message starting `IRWB-016:`. Corpus-wide test totals that changed because of the new projects are handled during integration and are not part of this task. Final message: the files you changed, the commands you ran with their results, and the commit hash.
+codex
+I’ll check which f32 DSP files exceed the tile widths, reflow them, and verify that the source focus still points to the butterfly.
+exec
+/usr/bin/zsh -lc 'git status --short; git log -3 --oneline; cat tools/format-corpus.mjs; cat tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+exec
+/usr/bin/zsh -lc "rg -n '.{74}' corpus/projects/f32-dsp -g '*.json' -g '*.md'; rg -n '.{81}' corpus/projects/f32-dsp -g '*.typed' -g '*.js'; nl -ba corpus/projects/f32-dsp/main.typed; cat corpus/projects/f32-dsp/scripts/compare.js; rg -n 'focus|main\\.typed:|line [0-9]+' corpus/projects/f32-dsp; ls -d dist" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+ succeeded in 351ms:
+a3126e9 IRWB-016: verify DSP oracles and measure FFT specialization
+dc6c6c4 IRWB-016: add f32 DSP corpus kernels and comparison script
+77ad469 IRWB-012..017: merge the round-2 design docs (Codex gpt-6.2-sol, revised brief; IRWB-018) as the designs to implement
+// Format the corpus files the workbench shows for a tile (TILE_WIDTH columns): project.json with prose fields
+// as lines, notes.md hard-wrapped. Verifies before writing: the project's meaning (projectSource) and the
+// rendered Markdown blocks are unchanged. node tools/format-corpus.mjs [--check]
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
+import { corpusDir, projectIds, projectFiles } from './corpus.mjs';
+const { formatJson, wrapProse, splitWords, TILE_WIDTH } = await import('../dist/typed/format.js');
+const { projectSource } = await import('../dist/typed/project.js');
+
+const check = process.argv.includes('--check');
+const W = TILE_WIDTH;
+// prose → lines that fit at the indentation the printer will give them (quotes and comma take 3 columns)
+const lines = (text, indent) => {
+  if (typeof text !== 'string' || indent + text.length + 3 <= W) return text;
+  return splitWords(text, W - indent - 3);
+};
+function narrowProject(j) {
+  const out = { ...j };
+  if (out.about !== undefined) out.about = lines(out.about, 4);
+  if (Array.isArray(out.try)) out.try = out.try.map(t => lines(t, 6));
+  if (out.scripts)
+    out.scripts = Object.fromEntries(Object.entries(out.scripts).map(([k, v]) => [k, v && v.about !== undefined ? { ...v, about: lines(v.about, 8) } : v]));
+  return out;
+}
+// the renderer's block structure (ui/md.js rules): fences verbatim, list items with continuations, paragraphs joined
+function blocks(md) {
+  const ls = md.replace(/\r/g, '').split('\n'), out = [];
+  let para = [];
+  const flush = () => { if (para.length) out.push(['p', para.join(' ')]); para = []; };
+  for (let i = 0; i < ls.length; ) {
+    const l = ls[i];
+    if (/^```/.test(l)) { flush(); const body = [l]; i++; while (i < ls.length && !/^```\s*$/.test(ls[i])) body.push(ls[i++]); body.push(ls[i++]); out.push(['code', body.join('\n')]); continue; }
+    const li = /^(\s*)([-*]|\d+\.) (.*)$/.exec(l);
+    if (li) { flush(); let item = li[3]; i++; while (i < ls.length && /^\s{2,}\S/.test(ls[i]) && !/^(\s*)([-*]|\d+\.) /.test(ls[i])) item += ' ' + ls[i++].trim(); out.push(['li', li[2], item]); continue; }
+    if (/^\s*$/.test(l)) { flush(); i++; continue; }
+    if (/^(#|\||---|>)/.test(l)) { flush(); out.push(['raw', l]); i++; continue; }
+    para.push(l.trim()); i++;
+  }
+  flush();
+  return out;
+}
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+let changed = 0, wide = [];
+for (const id of projectIds()) {
+  const dir = join(corpusDir, id), files = projectFiles(id);
+  const before = projectSource(id, files).meta;
+  if (files['project.json']) {
+    const text = formatJson(narrowProject(JSON.parse(files['project.json'])), W);
+    const after = projectSource(id, { ...files, 'project.json': text }).meta;
+    if (!isDeepStrictEqual(before, after)) throw new Error(`${id}: project.json meaning changed`);
+    if (text !== files['project.json']) { changed++; if (!check) writeFileSync(join(dir, 'project.json'), text); }
+    if (width(text) > W) wide.push(`${id}/project.json ${width(text)}`);
+  }
+  const notes = join(dir, 'notes.md');
+  if (existsSync(notes)) {
+    const md = readFileSync(notes, 'utf8'), wrapped = wrapProse(md, W);
+    if (!isDeepStrictEqual(blocks(md), blocks(wrapped))) throw new Error(`${id}: notes.md renders differently`);
+    if (wrapped !== md) { changed++; if (!check) writeFileSync(notes, wrapped); }
+    if (width(wrapped) > W) wide.push(`${id}/notes.md ${width(wrapped)}`);
+  }
+}
+console.log(`${check ? 'would change' : 'changed'} ${changed} files; still wider than ${W}: ${wide.length ? wide.join(', ') : 'none'}`);
+if (check && changed) process.exit(1);
+// Tile-width formatting: what the workbench shows must read in a 60–80 column tile.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { corpusDir, projectIds } from '../../tools/corpus.mjs';
+
+const { formatJson, wrapProse, joinText, TILE_WIDTH } = await import('../../dist/typed/format.js');
+const S = await import('../../dist/typed/strategies.js');
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+const files = dir =>
+  readdirSync(dir).flatMap(f => (statSync(join(dir, f)).isDirectory() ? files(join(dir, f)) : [join(dir, f)]));
+
+test('format: JSON keeps what fits on one line, breaks the rest, and round-trips', () => {
+  const v = { a: [1, 2, 3], b: { c: 'x [ y ] z', d: null }, long: Array.from({ length: 30 }, (_, i) => `item-${i}`) };
+  const text = formatJson(v, 40);
+  assert.deepEqual(JSON.parse(text), v);
+  assert.ok(width(text) <= 40, text);
+  assert.match(text, /"a": \[1, 2, 3\]/);
+  assert.match(text, /"c": "x \[ y \] z"/); // string contents untouched
+});
+
+test('format: prose wraps without changing blocks; lists keep their items', () => {
+  const md = '# Title\n\nA ' + 'word '.repeat(40) + '\n\n- item ' + 'more '.repeat(30) + '\n\n```\ncode line that is very long and must not be wrapped by the formatter at all\n```\n';
+  const out = wrapProse(md, 60);
+  assert.ok(out.split('\n').filter(l => !l.startsWith('code')).every(l => l.length <= 60));
+  assert.match(out, /^ {2}more/m); // list continuation is indented, so it stays in the item
+  assert.match(out, /code line that is very long and must not be wrapped by the formatter at all/);
+  assert.equal(joinText(['a', 'b']), 'a b');
+});
+
+test('format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH', () => {
+  const wide = [];
+  for (const id of projectIds())
+    for (const f of files(join(corpusDir, id))) {
+      if (!/\.(typed|js|json|md)$/.test(f)) continue;
+      const w = width(readFileSync(f, 'utf8'));
+      const limit = /(project\.json|notes\.md)$/.test(f) ? TILE_WIDTH + 1 : 80; // +1: a word carried past a block marker
+      if (w > limit) wide.push(`${f}: ${w}`);
+    }
+  assert.deepEqual(wide, []);
+  // the formatter has nothing left to do
+  execFileSync(process.execPath, ['tools/format-corpus.mjs', '--check'], { stdio: 'pipe' });
+});
+
+test('format: strategy presets and plans fit TILE_WIDTH', () => {
+  for (const [path, text] of Object.entries(S.presetFiles())) {
+    assert.ok(width(text) <= TILE_WIDTH, `${path}: ${width(text)}`);
+    const name = path.replace(/^strategies\/|\.json$/g, '');
+    assert.equal(S.projectStrategies({ [path]: text })[name].id, `typed.strategy.${name}`);
+    assert.ok(width(S.toJson(S.planFromSpec(name, JSON.parse(text)))) <= TILE_WIDTH);
+  }
+});
+
+ succeeded in 375ms:
+corpus/projects/f32-dsp/notes.md:9:`biquadBank` runs two direct-form-I filters over the same 16 real samples.
+corpus/projects/f32-dsp/project.json:3:  "about": "An in-place complex FFT and a two-band biquad bank on packed float buffers.",
+corpus/projects/f32-dsp/project.json:12:        0, 16256, 0, 0, 33630, 16236, 61205, 48835, 1267, 16181, 1267, 48949, 61205, 16067, 33630, 49004,
+corpus/projects/f32-dsp/project.json:13:        0, 0, 0, 49024, 61205, 48835, 33630, 49004, 1267, 48949, 1267, 48949, 33630, 49004, 61205, 48835
+corpus/projects/f32-dsp/project.json:20:        36700, 15938, 47186, 16030, 49807, 15861, 28836, 48829, 23593, 15887,
+corpus/projects/f32-dsp/project.json:21:        49807, 16117, 20972, 48952, 49807, 15989, 7864, 48773, 36700, 15810
+corpus/projects/f32-dsp/project.json:31:    "compare": { "about": "Measure both kernels before and after the checked speed pipeline.", "fresh": true }
+corpus/projects/f32-dsp/main.typed:52:function biquadBank(samples: buffer, coefficients: buffer, output: buffer): i32 {
+corpus/projects/f32-dsp/scripts/compare.js:11:  ['biquadBank', [samples, inputs.biquadBank.coefficients.cells, Array(64).fill(0)]],
+corpus/projects/f32-dsp/scripts/compare.js:17:if (rejected.length) throw new Error(rejected.map(step => step.pass + ': ' + step.rejected).join('\n'));
+corpus/projects/f32-dsp/scripts/compare.js:24:    throw new Error(fn + ': ' + (baseline.trap || optimized.trap || 'emulator fault'));
+corpus/projects/f32-dsp/scripts/compare.js:26:  return { fn, r0Instructions: baseline.steps, speedInstructions: optimized.steps };
+     1	function fft(work: buffer, twiddles: buffer, n: i32): i32 {
+     2	    // Put the samples in bit-reversed order before the butterfly stages.
+     3	    for (let i = 0; i < n; i = i + 1) {
+     4	        let j = 0;
+     5	        let sourceBits = i;
+     6	        for (let bits = n; bits > 1; bits = bits >> 1) {
+     7	            j = 2 * j + (sourceBits & 1);
+     8	            sourceBits = sourceBits >> 1;
+     9	        }
+    10	        if (i < j) {
+    11	            const ir = work.getF32(2 * i);
+    12	            const ii = work.getF32(2 * i + 1);
+    13	            const jr = work.getF32(2 * j);
+    14	            const ji = work.getF32(2 * j + 1);
+    15	            work.setF32(2 * i, jr);
+    16	            work.setF32(2 * i + 1, ji);
+    17	            work.setF32(2 * j, ir);
+    18	            work.setF32(2 * j + 1, ii);
+    19	        }
+    20	    }
+    21	
+    22	    for (let span = 2; span <= n; span = 2 * span) {
+    23	        const half = span / 2;
+    24	        const stride = 16 / span;
+    25	        for (let base = 0; base < n; base = base + span) {
+    26	            for (let j = 0; j < half; j = j + 1) {
+    27	                const root = 2 * (j * stride);
+    28	                const wr = twiddles.getF32(root);
+    29	                const wi = twiddles.getF32(root + 1);
+    30	                const u = 2 * (base + j);
+    31	                const v = 2 * (base + j + half);
+    32	                const ur = work.getF32(u);
+    33	                const ui = work.getF32(u + 1);
+    34	                const vr = work.getF32(v);
+    35	                const vi = work.getF32(v + 1);
+    36	                const tr: f32 = wr * vr - wi * vi;
+    37	                const ti: f32 = wr * vi + wi * vr;
+    38	                work.setF32(u, ur + tr);
+    39	                work.setF32(u + 1, ui + ti);
+    40	                work.setF32(v, ur - tr);
+    41	                work.setF32(v + 1, ui - ti);
+    42	            }
+    43	        }
+    44	    }
+    45	    return n;
+    46	}
+    47	
+    48	function dot3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32): f32 {
+    49	    return (a * b + c * d) + e * f;
+    50	}
+    51	
+    52	function biquadBank(samples: buffer, coefficients: buffer, output: buffer): i32 {
+    53	    for (let band = 0; band < 2; band = band + 1) {
+    54	        const row = 5 * band;
+    55	        const b0 = coefficients.getF32(row);
+    56	        const b1 = coefficients.getF32(row + 1);
+    57	        const b2 = coefficients.getF32(row + 2);
+    58	        const a1 = coefficients.getF32(row + 3);
+    59	        const a2 = coefficients.getF32(row + 4);
+    60	        let x1: f32 = 0.0;
+    61	        let x2: f32 = 0.0;
+    62	        let y1: f32 = 0.0;
+    63	        let y2: f32 = 0.0;
+    64	
+    65	        for (let i = 0; i < 16; i = i + 1) {
+    66	            const x = samples.getF32(i);
+    67	            const feed = dot3(b0, x, b1, x1, b2, x2);
+    68	            const y = (feed - a1 * y1) - a2 * y2;
+    69	            output.setF32(16 * band + i, y);
+    70	            x2 = x1;
+    71	            x1 = x;
+    72	            y2 = y1;
+    73	            y1 = y;
+    74	        }
+    75	    }
+    76	    return 16;
+    77	}
+// Measure fixed impulse inputs on a fresh copy with the checked speed pipeline.
+const options = { chains: true, coalesce: true, homes: true };
+const { inputs } = JSON.parse(project.files.read('project.json'));
+const work = Array(64).fill(0);
+work[13] = 0x3f80; // Real part of complex sample 3 is 1.0.
+work[15] = 0xbf00; // Imaginary part is -0.5.
+const samples = Array(32).fill(0);
+samples[1] = 0x3f80;
+const cases = [
+  ['fft', [work, inputs.fft.twiddles.cells, 16]],
+  ['biquadBank', [samples, inputs.biquadBank.coefficients.cells, Array(64).fill(0)]],
+];
+
+const before = p.compile(options);
+const run = p.pipeline('speed', { count: 40 });
+const rejected = run.steps.filter(step => step.rejected);
+if (rejected.length) throw new Error(rejected.map(step => step.pass + ': ' + step.rejected).join('\n'));
+const after = p.compile(options);
+
+return cases.map(([fn, args]) => {
+  const baseline = before.run(fn, args);
+  const optimized = after.run(fn, args);
+  if (baseline.trap || optimized.trap || baseline.fault || optimized.fault) {
+    throw new Error(fn + ': ' + (baseline.trap || optimized.trap || 'emulator fault'));
+  }
+  return { fn, r0Instructions: baseline.steps, speedInstructions: optimized.steps };
+});
+corpus/projects/f32-dsp/project.json:7:  "focus": 36,
+dist
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016/corpus/projects/f32-dsp/main.typed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016/corpus/projects/f32-dsp/scripts/compare.js
+diff --git a/corpus/projects/f32-dsp/main.typed b/corpus/projects/f32-dsp/main.typed
+index bd2899e28cb28bf2ed67d5fdb653f01b5c9ed604..5edfcb536a3cc7668a140f49466528aa2eadda2f
+--- a/corpus/projects/f32-dsp/main.typed
++++ b/corpus/projects/f32-dsp/main.typed
+@@ -49,7 +49,11 @@
+     return (a * b + c * d) + e * f;
+ }
+ 
+-function biquadBank(samples: buffer, coefficients: buffer, output: buffer): i32 {
++function biquadBank(
++    samples: buffer,
++    coefficients: buffer,
++    output: buffer
++): i32 {
+     for (let band = 0; band < 2; band = band + 1) {
+         const row = 5 * band;
+         const b0 = coefficients.getF32(row);
+diff --git a/corpus/projects/f32-dsp/scripts/compare.js b/corpus/projects/f32-dsp/scripts/compare.js
+index 727ba88cf29d82f1762a0f58ccf1081a62fab68b..de1b8d364ea0bde24dd6a7f1f9bf06d51b8c6756
+--- a/corpus/projects/f32-dsp/scripts/compare.js
++++ b/corpus/projects/f32-dsp/scripts/compare.js
+@@ -8,20 +8,32 @@
+ samples[1] = 0x3f80;
+ const cases = [
+   ['fft', [work, inputs.fft.twiddles.cells, 16]],
+-  ['biquadBank', [samples, inputs.biquadBank.coefficients.cells, Array(64).fill(0)]],
++  [
++    'biquadBank',
++    [samples, inputs.biquadBank.coefficients.cells, Array(64).fill(0)],
++  ],
+ ];
+ 
+ const before = p.compile(options);
+ const run = p.pipeline('speed', { count: 40 });
+ const rejected = run.steps.filter(step => step.rejected);
+-if (rejected.length) throw new Error(rejected.map(step => step.pass + ': ' + step.rejected).join('\n'));
++if (rejected.length) {
++  throw new Error(
++    rejected.map(step => step.pass + ': ' + step.rejected).join('\n'),
++  );
++}
+ const after = p.compile(options);
+ 
+ return cases.map(([fn, args]) => {
+   const baseline = before.run(fn, args);
+   const optimized = after.run(fn, args);
+   if (baseline.trap || optimized.trap || baseline.fault || optimized.fault) {
+-    throw new Error(fn + ': ' + (baseline.trap || optimized.trap || 'emulator fault'));
++    const reason = baseline.trap || optimized.trap || 'emulator fault';
++    throw new Error(fn + ': ' + reason);
+   }
+-  return { fn, r0Instructions: baseline.steps, speedInstructions: optimized.steps };
++  return {
++    fn,
++    r0Instructions: baseline.steps,
++    speedInstructions: optimized.steps,
++  };
+ });
+
+exec
+/usr/bin/zsh -lc 'node tools/format-corpus.mjs && node tools/format-corpus.mjs --check; git status --short; git diff --check; git diff --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+ succeeded in 417ms:
+changed 2 files; still wider than 72: fixed-point/notes.md 73
+would change 0 files; still wider than 72: fixed-point/notes.md 73
+ M corpus/projects/f32-dsp/main.typed
+ M corpus/projects/f32-dsp/notes.md
+ M corpus/projects/f32-dsp/project.json
+ M corpus/projects/f32-dsp/scripts/compare.js
+ corpus/projects/f32-dsp/main.typed         |  6 +-
+ corpus/projects/f32-dsp/notes.md           |  3 +-
+ corpus/projects/f32-dsp/project.json       | 89 ++++++++++++++++++++++++++----
+ corpus/projects/f32-dsp/scripts/compare.js | 20 +++++--
+ 4 files changed, 100 insertions(+), 18 deletions(-)
+
+exec
+/usr/bin/zsh -lc 'node --test --test-isolation=none tests/typed/f32-dsp.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const path = 'corpus/projects/f32-dsp/';
+const source = readFileSync(path + 'main.typed', 'utf8').split('\\n');
+const { focus } = JSON.parse(readFileSync(path + 'project.json', 'utf8'));
+assert.match(source[focus - 1], /const tr: f32/);
+console.log('Butterfly focus verified on line', focus);
+for (const file of ['main.typed', 'scripts/compare.js', 'project.json', 'notes.md']) {
+  const width = Math.max(...readFileSync(path + file, 'utf8').split('\\n').map(line => line.length));
+  assert.ok(width <= (/\\.(json|md)"'$/.test(file) ? 73 : 80), file);
+  console.log(file, width);
+}
+EOF
+git diff --check; git diff -- corpus/projects/f32-dsp/{main.typed,notes.md,scripts/compare.js}' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+ succeeded in 330ms:
+Butterfly focus verified on line 36
+main.typed 73
+scripts/compare.js 80
+project.json 67
+notes.md 71
+diff --git a/corpus/projects/f32-dsp/main.typed b/corpus/projects/f32-dsp/main.typed
+index bd2899e..5edfcb5 100644
+--- a/corpus/projects/f32-dsp/main.typed
++++ b/corpus/projects/f32-dsp/main.typed
+@@ -49,7 +49,11 @@ function dot3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32): f32 {
+     return (a * b + c * d) + e * f;
+ }
+ 
+-function biquadBank(samples: buffer, coefficients: buffer, output: buffer): i32 {
++function biquadBank(
++    samples: buffer,
++    coefficients: buffer,
++    output: buffer
++): i32 {
+     for (let band = 0; band < 2; band = band + 1) {
+         const row = 5 * band;
+         const b0 = coefficients.getF32(row);
+diff --git a/corpus/projects/f32-dsp/notes.md b/corpus/projects/f32-dsp/notes.md
+index 2a384d9..b6a64ed 100644
+--- a/corpus/projects/f32-dsp/notes.md
++++ b/corpus/projects/f32-dsp/notes.md
+@@ -6,7 +6,8 @@ imaginary lanes. At size 8 it leaves the final 16 floats untouched. Its
+ read-only table contains the first eight complex roots for size 16.
+ The butterfly's `stride` selects the roots for the current stage.
+ 
+-`biquadBank` runs two direct-form-I filters over the same 16 real samples.
++`biquadBank` runs two direct-form-I filters over the same 16 real
++samples.
+ Each coefficient row is `b0, b1, b2, a1, a2`, with denominator
+ `1 + a1*z^-1 + a2*z^-2`. Each band starts with zero history and writes
+ 16 consecutive floats starting at `16 * band`. The samples and
+diff --git a/corpus/projects/f32-dsp/scripts/compare.js b/corpus/projects/f32-dsp/scripts/compare.js
+index 727ba88..de1b8d3 100644
+--- a/corpus/projects/f32-dsp/scripts/compare.js
++++ b/corpus/projects/f32-dsp/scripts/compare.js
+@@ -8,20 +8,32 @@ const samples = Array(32).fill(0);
+ samples[1] = 0x3f80;
+ const cases = [
+   ['fft', [work, inputs.fft.twiddles.cells, 16]],
+-  ['biquadBank', [samples, inputs.biquadBank.coefficients.cells, Array(64).fill(0)]],
++  [
++    'biquadBank',
++    [samples, inputs.biquadBank.coefficients.cells, Array(64).fill(0)],
++  ],
+ ];
+ 
+ const before = p.compile(options);
+ const run = p.pipeline('speed', { count: 40 });
+ const rejected = run.steps.filter(step => step.rejected);
+-if (rejected.length) throw new Error(rejected.map(step => step.pass + ': ' + step.rejected).join('\n'));
++if (rejected.length) {
++  throw new Error(
++    rejected.map(step => step.pass + ': ' + step.rejected).join('\n'),
++  );
++}
+ const after = p.compile(options);
+ 
+ return cases.map(([fn, args]) => {
+   const baseline = before.run(fn, args);
+   const optimized = after.run(fn, args);
+   if (baseline.trap || optimized.trap || baseline.fault || optimized.fault) {
+-    throw new Error(fn + ': ' + (baseline.trap || optimized.trap || 'emulator fault'));
++    const reason = baseline.trap || optimized.trap || 'emulator fault';
++    throw new Error(fn + ': ' + reason);
+   }
+-  return { fn, r0Instructions: baseline.steps, speedInstructions: optimized.steps };
++  return {
++    fn,
++    r0Instructions: baseline.steps,
++    speedInstructions: optimized.steps,
++  };
+ });
+
+ exited 1 in 505ms:
+✖ tests/typed/format.test.mjs (174.673858ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 182.288032
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (174.673858ms)
+  'test failed'
+
+exec
+/usr/bin/zsh -lc 'node --test --test-isolation=none tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+ exited 1 in 1195ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (6.062168ms)
+✔ format: prose wraps without changing blocks; lists keep their items (1.181754ms)
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (136.871813ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (21.542797ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 325.213266
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:33:1
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (136.871813ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016/tests/typed/format.test.mjs:44:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ 'tools/format-corpus.mjs', '--check' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+ succeeded in 5356ms:
+✔ f32 DSP agrees with the binary64 oracles and both RV32 compilers (1237.925877ms)
+ℹ {"fft(8)":{"errorDb":-143.1191794631096,"r0Statements":913,"r0Instructions":1591,"speedInstructions":1544,"checkedStatements":913},"fft(16)":{"errorDb":-141.60053532496528,"r0Statements":2337,"r0Instructions":4154,"speedInstructions":4065,"checkedStatements":2337},"biquadBank":{"errorDb":-138.91748039422097,"r0Statements":674,"r0Instructions":1464,"speedInstructions":1096,"checkedStatements":898}}
+✔ binding FFT length preserves sampled results and measures the size-16 images on identical inputs (2169.208791ms)
+ℹ {"generalInstructions":4065,"specializedInstructions":4064}
+✔ the workbench comparison runs on a fresh copy (1522.756619ms)
+ℹ [{"fn":"fft","r0Instructions":4154,"speedInstructions":4065},{"fn":"biquadBank","r0Instructions":1464,"speedInstructions":1096}]
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5002.028267
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+ succeeded in 1539ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (3.621542ms)
+✔ format: prose wraps without changing blocks; lists keep their items (1.457109ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (226.388622ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (45.712688ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 530.261613
+
+exec
+/usr/bin/zsh -lc "git add -- corpus/projects/f32-dsp/main.typed corpus/projects/f32-dsp/project.json corpus/projects/f32-dsp/notes.md corpus/projects/f32-dsp/scripts/compare.js && git diff --cached --check && git commit -m 'IRWB-016: fit f32 DSP corpus files to workbench tiles' && git status --short && git log -1 --format=%H" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-016
+ succeeded in 384ms:
+[impl/irwb-016 e43c9f2] IRWB-016: fit f32 DSP corpus files to workbench tiles
+ 4 files changed, 100 insertions(+), 18 deletions(-)
+e43c9f25e518502dcb0208c901177bce391f614f
+
+codex
+Reformatted `main.typed`, `scripts/compare.js`, `project.json`, and `notes.md` under `corpus/projects/f32-dsp/`. All four fit the tile limits, and the butterfly focus still points to line 36.
+
+- `node tools/format-corpus.mjs` reformatted two files. `--check` reported zero pending changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests outside the sandbox after the sandbox blocked its nested Node process.
+- `node --test --test-isolation=none tests/typed/f32-dsp.test.mjs` passed all three tests.
+
+Commit `e43c9f25e518502dcb0208c901177bce391f614f`. The worktree is clean.
+tokens used
+110,345
+Reformatted `main.typed`, `scripts/compare.js`, `project.json`, and `notes.md` under `corpus/projects/f32-dsp/`. All four fit the tile limits, and the butterfly focus still points to line 36.
+
+- `node tools/format-corpus.mjs` reformatted two files. `--check` reported zero pending changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests outside the sandbox after the sandbox blocked its nested Node process.
+- `node --test --test-isolation=none tests/typed/f32-dsp.test.mjs` passed all three tests.
+
+Commit `e43c9f25e518502dcb0208c901177bce391f614f`. The worktree is clean.

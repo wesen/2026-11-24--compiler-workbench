@@ -1,0 +1,5 @@
+- [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-017/ttmp/2026/11/26/IRWB-017--typed-chess-search-corpus-project/design-doc/01-porting-typed-chess-search-into-the-corpus.md)
+- [IRWB-017 ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-017/ttmp/2026/11/26/IRWB-017--typed-chess-search-corpus-project/)
+- Commit `01cec245035b32d0cac0146c4ee9e47bdad6be54`
+
+The design specifies a single corpus project with legal move generation, perft, and fixed-depth explicit-stack alpha-beta search. It defines the buffer layout, generated cases, independent chess oracles, qualification against the 20,000-statement pass limit, and RV32 instruction measurements. A smoke test verified the required tape ingestion path and agreement with both RV32 images. The worktree-only scope left the upstream engine and host runner for the implementation audit. The commit contains only the ticket documents.

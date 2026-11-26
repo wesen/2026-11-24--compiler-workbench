@@ -1,0 +1,5 @@
+0	tools/format-corpus.mjs
+0	tests/typed/format.test.mjs
+0	corpus/projects/chess-search/notes.md
+0	corpus/projects/chess-search/project.json
+1	src/typed/format.ts

@@ -1,0 +1,437 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a218ca-a464-7851-8361-26a96d84e892
+--------
+user
+Integration of your branch found one problem in IRWB-013's project. The workbench shows each corpus file in a tile, and `tests/typed/format.test.mjs` requires every `.typed` and `.js` file of a corpus project to fit in 80 columns, and `project.json` and `notes.md` to fit in 73. Some files of your project are wider. `tools/format-corpus.mjs` formats `project.json` and `notes.md` (run it, then `node tools/format-corpus.mjs --check`). It mis-wraps list items that are already wrapped and then refuses the file with "renders differently"; in that case wrap `notes.md` by hand to 72 columns. Reformat the `.typed` and `.js` files by hand without changing their meaning. If lines move in a `.typed` file, update whatever refers to source lines (focus links, line numbers in `notes.md` or `project.json`).
+
+Then run `node --test tests/typed/format.test.mjs` and your own test, and commit with a message starting `IRWB-013:`. Corpus-wide test totals that changed because of the new projects are handled during integration and are not part of this task. Final message: the files you changed, the commands you ran with their results, and the commit hash.
+codex
+I’ll check the tile widths, reflow the affected lines, and verify that the project’s focus still points to the SHA compression loop.
+exec
+/usr/bin/zsh -lc "rg --files -g AGENTS.md -g '"'!ttmp/**'"' -g '"'!vendor/**'"'; sed -n '1,110p' tools/format-corpus.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+exec
+/usr/bin/zsh -lc "git status --short --branch; git log -3 --oneline; ls -d dist; awk 'length > 80 { print FNR, length, "'$0 }'"' corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/*.js; awk 'length > 72 { print FNR, length, "'$0 }'"' corpus/projects/sha-chacha/project.json corpus/projects/sha-chacha/notes.md; rg -n 'focus|line [0-9]+' corpus/projects/sha-chacha; cat tests/typed/format.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ succeeded in 607ms:
+// Format the corpus files the workbench shows for a tile (TILE_WIDTH columns): project.json with prose fields
+// as lines, notes.md hard-wrapped. Verifies before writing: the project's meaning (projectSource) and the
+// rendered Markdown blocks are unchanged. node tools/format-corpus.mjs [--check]
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
+import { corpusDir, projectIds, projectFiles } from './corpus.mjs';
+const { formatJson, wrapProse, splitWords, TILE_WIDTH } = await import('../dist/typed/format.js');
+const { projectSource } = await import('../dist/typed/project.js');
+
+const check = process.argv.includes('--check');
+const W = TILE_WIDTH;
+// prose → lines that fit at the indentation the printer will give them (quotes and comma take 3 columns)
+const lines = (text, indent) => {
+  if (typeof text !== 'string' || indent + text.length + 3 <= W) return text;
+  return splitWords(text, W - indent - 3);
+};
+function narrowProject(j) {
+  const out = { ...j };
+  if (out.about !== undefined) out.about = lines(out.about, 4);
+  if (Array.isArray(out.try)) out.try = out.try.map(t => lines(t, 6));
+  if (out.scripts)
+    out.scripts = Object.fromEntries(Object.entries(out.scripts).map(([k, v]) => [k, v && v.about !== undefined ? { ...v, about: lines(v.about, 8) } : v]));
+  return out;
+}
+// the renderer's block structure (ui/md.js rules): fences verbatim, list items with continuations, paragraphs joined
+function blocks(md) {
+  const ls = md.replace(/\r/g, '').split('\n'), out = [];
+  let para = [];
+  const flush = () => { if (para.length) out.push(['p', para.join(' ')]); para = []; };
+  for (let i = 0; i < ls.length; ) {
+    const l = ls[i];
+    if (/^```/.test(l)) { flush(); const body = [l]; i++; while (i < ls.length && !/^```\s*$/.test(ls[i])) body.push(ls[i++]); body.push(ls[i++]); out.push(['code', body.join('\n')]); continue; }
+    const li = /^(\s*)([-*]|\d+\.) (.*)$/.exec(l);
+    if (li) { flush(); let item = li[3]; i++; while (i < ls.length && /^\s{2,}\S/.test(ls[i]) && !/^(\s*)([-*]|\d+\.) /.test(ls[i])) item += ' ' + ls[i++].trim(); out.push(['li', li[2], item]); continue; }
+    if (/^\s*$/.test(l)) { flush(); i++; continue; }
+    if (/^(#|\||---|>)/.test(l)) { flush(); out.push(['raw', l]); i++; continue; }
+    para.push(l.trim()); i++;
+  }
+  flush();
+  return out;
+}
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+let changed = 0, wide = [];
+for (const id of projectIds()) {
+  const dir = join(corpusDir, id), files = projectFiles(id);
+  const before = projectSource(id, files).meta;
+  if (files['project.json']) {
+    const text = formatJson(narrowProject(JSON.parse(files['project.json'])), W);
+    const after = projectSource(id, { ...files, 'project.json': text }).meta;
+    if (!isDeepStrictEqual(before, after)) throw new Error(`${id}: project.json meaning changed`);
+    if (text !== files['project.json']) { changed++; if (!check) writeFileSync(join(dir, 'project.json'), text); }
+    if (width(text) > W) wide.push(`${id}/project.json ${width(text)}`);
+  }
+  const notes = join(dir, 'notes.md');
+  if (existsSync(notes)) {
+    const md = readFileSync(notes, 'utf8'), wrapped = wrapProse(md, W);
+    if (!isDeepStrictEqual(blocks(md), blocks(wrapped))) throw new Error(`${id}: notes.md renders differently`);
+    if (wrapped !== md) { changed++; if (!check) writeFileSync(notes, wrapped); }
+    if (width(wrapped) > W) wide.push(`${id}/notes.md ${width(wrapped)}`);
+  }
+}
+console.log(`${check ? 'would change' : 'changed'} ${changed} files; still wider than ${W}: ${wide.length ? wide.join(', ') : 'none'}`);
+if (check && changed) process.exit(1);
+
+ succeeded in 642ms:
+## impl/irwb-013
+b8f65c2 IRWB-013: verify vectors and checked RV32 images
+109b6db IRWB-013: add SHA-256 and ChaCha20 corpus kernels
+77ad469 IRWB-012..017: merge the round-2 design docs (Codex gpt-6.2-sol, revised brief; IRWB-018) as the designs to implement
+dist
+54 82         const k = roundK.charCodeAt(2 * t) | (roundK.charCodeAt(2 * t + 1) << 16);
+115 84 function chacha20Block(key: buffer, counter: i32, nonce: buffer, out: buffer): i32 {
+6 98     Array.from('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012', ch => ch.charCodeAt(0)),
+25 106     return { revision, fn, instructions: steps, instructionsPerByte: steps / 64, frame, spills, hottest };
+32 85 if (rejected.length) throw new Error(rejected.map(step => step.rejected).join('\n'));
+corpus/projects/sha-chacha/project.json:8:  "focus": 43,
+// Tile-width formatting: what the workbench shows must read in a 60–80 column tile.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { corpusDir, projectIds } from '../../tools/corpus.mjs';
+
+const { formatJson, wrapProse, joinText, TILE_WIDTH } = await import('../../dist/typed/format.js');
+const S = await import('../../dist/typed/strategies.js');
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+const files = dir =>
+  readdirSync(dir).flatMap(f => (statSync(join(dir, f)).isDirectory() ? files(join(dir, f)) : [join(dir, f)]));
+
+test('format: JSON keeps what fits on one line, breaks the rest, and round-trips', () => {
+  const v = { a: [1, 2, 3], b: { c: 'x [ y ] z', d: null }, long: Array.from({ length: 30 }, (_, i) => `item-${i}`) };
+  const text = formatJson(v, 40);
+  assert.deepEqual(JSON.parse(text), v);
+  assert.ok(width(text) <= 40, text);
+  assert.match(text, /"a": \[1, 2, 3\]/);
+  assert.match(text, /"c": "x \[ y \] z"/); // string contents untouched
+});
+
+test('format: prose wraps without changing blocks; lists keep their items', () => {
+  const md = '# Title\n\nA ' + 'word '.repeat(40) + '\n\n- item ' + 'more '.repeat(30) + '\n\n```\ncode line that is very long and must not be wrapped by the formatter at all\n```\n';
+  const out = wrapProse(md, 60);
+  assert.ok(out.split('\n').filter(l => !l.startsWith('code')).every(l => l.length <= 60));
+  assert.match(out, /^ {2}more/m); // list continuation is indented, so it stays in the item
+  assert.match(out, /code line that is very long and must not be wrapped by the formatter at all/);
+  assert.equal(joinText(['a', 'b']), 'a b');
+});
+
+test('format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH', () => {
+  const wide = [];
+  for (const id of projectIds())
+    for (const f of files(join(corpusDir, id))) {
+      if (!/\.(typed|js|json|md)$/.test(f)) continue;
+      const w = width(readFileSync(f, 'utf8'));
+      const limit = /(project\.json|notes\.md)$/.test(f) ? TILE_WIDTH + 1 : 80; // +1: a word carried past a block marker
+      if (w > limit) wide.push(`${f}: ${w}`);
+    }
+  assert.deepEqual(wide, []);
+  // the formatter has nothing left to do
+  execFileSync(process.execPath, ['tools/format-corpus.mjs', '--check'], { stdio: 'pipe' });
+});
+
+test('format: strategy presets and plans fit TILE_WIDTH', () => {
+  for (const [path, text] of Object.entries(S.presetFiles())) {
+    assert.ok(width(text) <= TILE_WIDTH, `${path}: ${width(text)}`);
+    const name = path.replace(/^strategies\/|\.json$/g, '');
+    assert.equal(S.projectStrategies({ [path]: text })[name].id, `typed.strategy.${name}`);
+    assert.ok(width(S.toJson(S.planFromSpec(name, JSON.parse(text)))) <= TILE_WIDTH);
+  }
+});
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013/corpus/projects/sha-chacha/main.typed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013/corpus/projects/sha-chacha/scripts/explore.js
+diff --git a/corpus/projects/sha-chacha/main.typed b/corpus/projects/sha-chacha/main.typed
+index 6505e7cb06c7593e85830ba85a61b6b6749f1274..d61616f328d1ec6e4cf6d430b32031cd1878824d
+--- a/corpus/projects/sha-chacha/main.typed
++++ b/corpus/projects/sha-chacha/main.typed
+@@ -51,7 +51,8 @@
+         const sum1 = e6 ^ e11 ^ e25;
+         const choice = (e & f) ^ ((e ^ -1) & g);
+         const majority = (a & b) ^ (a & c) ^ (b & c);
+-        const k = roundK.charCodeAt(2 * t) | (roundK.charCodeAt(2 * t + 1) << 16);
++        const k = roundK.charCodeAt(2 * t)
++            | (roundK.charCodeAt(2 * t + 1) << 16);
+         const t1 = h + sum1 + choice + k + w[t];
+         const t2 = sum0 + majority;
+ 
+@@ -112,7 +113,9 @@
+     return Quarter(qa, qb, qc, qd);
+ }
+ 
+-function chacha20Block(key: buffer, counter: i32, nonce: buffer, out: buffer): i32 {
++function chacha20Block(
++    key: buffer, counter: i32, nonce: buffer, out: buffer
++): i32 {
+     const initial0 = 0x61707865;
+     const initial1 = 0x3320646e;
+     const initial2 = 0x79622d32;
+diff --git a/corpus/projects/sha-chacha/scripts/explore.js b/corpus/projects/sha-chacha/scripts/explore.js
+index 506a53469ae105eae0a735262467e2dcdac4f3e8..ae359f56cca9299fe78002e86d238c96b369df87
+--- a/corpus/projects/sha-chacha/scripts/explore.js
++++ b/corpus/projects/sha-chacha/scripts/explore.js
+@@ -3,7 +3,10 @@
+ const { inputs } = JSON.parse(project.files.read('project.json'));
+ const cases = {
+   sha256Block: [
+-    Array.from('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012', ch => ch.charCodeAt(0)),
++    Array.from(
++      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012',
++      ch => ch.charCodeAt(0),
++    ),
+     inputs.sha256Block.roundK.cells,
+     Array(16).fill(0),
+   ],
+@@ -22,12 +25,22 @@
+     const { steps, trap, hottest } = image.heat(fn, args);
+     if (trap) throw new Error(`${revision} ${fn}: ${trap}`);
+     const { frame, spills } = image.fns[fn];
+-    return { revision, fn, instructions: steps, instructionsPerByte: steps / 64, frame, spills, hottest };
++    return {
++      revision,
++      fn,
++      instructions: steps,
++      instructionsPerByte: steps / 64,
++      frame,
++      spills,
++      hottest,
++    };
+   });
+ }
+ 
+ const baseline = measure('r0');
+ const speed = p.pipeline('speed');
+ const rejected = speed.steps.filter(step => step.rejected);
+-if (rejected.length) throw new Error(rejected.map(step => step.rejected).join('\n'));
++if (rejected.length) {
++  throw new Error(rejected.map(step => step.rejected).join('\n'));
++}
+ return { options, measurements: [...baseline, ...measure(speed.rev)] };
+
+exec
+/usr/bin/zsh -lc "node tools/format-corpus.mjs && node tools/format-corpus.mjs --check && git status --short && git diff --check && awk 'NR == 43 {print \"SHA focus line\", NR, "'$0}'"' corpus/projects/sha-chacha/main.typed" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ succeeded in 385ms:
+changed 0 files; still wider than 72: fixed-point/notes.md 73
+would change 0 files; still wider than 72: fixed-point/notes.md 73
+ M corpus/projects/sha-chacha/main.typed
+ M corpus/projects/sha-chacha/scripts/explore.js
+SHA focus line 43     for (let t = 0; t < 64; t = t + 1) {
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/sha-chacha.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+exec
+/usr/bin/zsh -lc "awk 'FNR==1 && NR>1 {print f, m; m=0} { f=FILENAME; if(length>m)m=length } END {print f, m}' corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/explore.js corpus/projects/sha-chacha/project.json corpus/projects/sha-chacha/notes.md; git diff --stat" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ succeeded in 892ms:
+corpus/projects/sha-chacha/main.typed 75
+corpus/projects/sha-chacha/scripts/explore.js 71
+corpus/projects/sha-chacha/project.json 61
+corpus/projects/sha-chacha/notes.md 72
+ corpus/projects/sha-chacha/main.typed         |  7 +++++--
+ corpus/projects/sha-chacha/scripts/explore.js | 19 ++++++++++++++++---
+ 2 files changed, 21 insertions(+), 5 deletions(-)
+
+ exited 1 in 1318ms:
+✖ tests/typed/format.test.mjs (310.900757ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 320.437248
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (310.900757ms)
+  'test failed'
+
+exec
+/usr/bin/zsh -lc 'git diff --check && git diff -- corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/explore.js' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ succeeded in 728ms:
+diff --git a/corpus/projects/sha-chacha/main.typed b/corpus/projects/sha-chacha/main.typed
+index 6505e7c..d61616f 100644
+--- a/corpus/projects/sha-chacha/main.typed
++++ b/corpus/projects/sha-chacha/main.typed
+@@ -51,7 +51,8 @@ function sha256Block(message: buffer, roundK: buffer, out: buffer): i32 {
+         const sum1 = e6 ^ e11 ^ e25;
+         const choice = (e & f) ^ ((e ^ -1) & g);
+         const majority = (a & b) ^ (a & c) ^ (b & c);
+-        const k = roundK.charCodeAt(2 * t) | (roundK.charCodeAt(2 * t + 1) << 16);
++        const k = roundK.charCodeAt(2 * t)
++            | (roundK.charCodeAt(2 * t + 1) << 16);
+         const t1 = h + sum1 + choice + k + w[t];
+         const t2 = sum0 + majority;
+ 
+@@ -112,7 +113,9 @@ function quarter(a: i32, b: i32, c: i32, d: i32): Quarter {
+     return Quarter(qa, qb, qc, qd);
+ }
+ 
+-function chacha20Block(key: buffer, counter: i32, nonce: buffer, out: buffer): i32 {
++function chacha20Block(
++    key: buffer, counter: i32, nonce: buffer, out: buffer
++): i32 {
+     const initial0 = 0x61707865;
+     const initial1 = 0x3320646e;
+     const initial2 = 0x79622d32;
+diff --git a/corpus/projects/sha-chacha/scripts/explore.js b/corpus/projects/sha-chacha/scripts/explore.js
+index 506a534..ae359f5 100644
+--- a/corpus/projects/sha-chacha/scripts/explore.js
++++ b/corpus/projects/sha-chacha/scripts/explore.js
+@@ -3,7 +3,10 @@ const options = { coalesce: true, chains: true, homes: true };
+ const { inputs } = JSON.parse(project.files.read('project.json'));
+ const cases = {
+   sha256Block: [
+-    Array.from('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012', ch => ch.charCodeAt(0)),
++    Array.from(
++      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012',
++      ch => ch.charCodeAt(0),
++    ),
+     inputs.sha256Block.roundK.cells,
+     Array(16).fill(0),
+   ],
+@@ -22,12 +25,22 @@ function measure(revision) {
+     const { steps, trap, hottest } = image.heat(fn, args);
+     if (trap) throw new Error(`${revision} ${fn}: ${trap}`);
+     const { frame, spills } = image.fns[fn];
+-    return { revision, fn, instructions: steps, instructionsPerByte: steps / 64, frame, spills, hottest };
++    return {
++      revision,
++      fn,
++      instructions: steps,
++      instructionsPerByte: steps / 64,
++      frame,
++      spills,
++      hottest,
++    };
+   });
+ }
+ 
+ const baseline = measure('r0');
+ const speed = p.pipeline('speed');
+ const rejected = speed.steps.filter(step => step.rejected);
+-if (rejected.length) throw new Error(rejected.map(step => step.rejected).join('\n'));
++if (rejected.length) {
++  throw new Error(rejected.map(step => step.rejected).join('\n'));
++}
+ return { options, measurements: [...baseline, ...measure(speed.rev)] };
+
+exec
+/usr/bin/zsh -lc 'node tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ exited 1 in 1648ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (3.920587ms)
+✔ format: prose wraps without changing blocks; lists keep their items (1.671195ms)
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (180.761832ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (40.599793ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 240.328702
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:33:1
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (180.761832ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013/tests/typed/format.test.mjs:44:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ 'tools/format-corpus.mjs', '--check' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+ succeeded in 12524ms:
+✔ tests/typed/sha-chacha.test.mjs (11497.86089ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11512.701279
+
+codex
+Both files now fit within 80 columns, and the SHA focus stays on line 43. The formatter found no changes to make. The format test hit a sandbox error when it tried to launch the formatter as a child process, so I’ll rerun it outside that restriction.
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ succeeded in 592ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (1.987277ms)
+✔ format: prose wraps without changing blocks; lists keep their items (0.839275ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (96.261857ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (15.090225ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 251.249543
+
+exec
+/usr/bin/zsh -lc 'git add -- corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/explore.js' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ succeeded in 429ms:
+exec
+/usr/bin/zsh -lc "git diff --cached --check && git commit -m 'IRWB-013: fit SHA-256 and ChaCha20 files in workbench tiles' && git status --short --branch" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013
+ succeeded in 502ms:
+[impl/irwb-013 48a8c52] IRWB-013: fit SHA-256 and ChaCha20 files in workbench tiles
+ 2 files changed, 21 insertions(+), 5 deletions(-)
+## impl/irwb-013
+
+codex
+Reflowed [main.typed](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013/corpus/projects/sha-chacha/main.typed) to 75 columns and [explore.js](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013/corpus/projects/sha-chacha/scripts/explore.js) to 71. The SHA compression-loop focus still points to line 43.
+
+- `node tools/format-corpus.mjs` and `node tools/format-corpus.mjs --check` both passed with zero changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests on rerun with subprocess permission. The first run hit a sandbox `EPERM`.
+- `node --test tests/typed/sha-chacha.test.mjs` passed.
+
+Commit `48a8c52` — `IRWB-013: fit SHA-256 and ChaCha20 files in workbench tiles`. The worktree is clean.
+tokens used
+116,693
+Reflowed [main.typed](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013/corpus/projects/sha-chacha/main.typed) to 75 columns and [explore.js](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-013/corpus/projects/sha-chacha/scripts/explore.js) to 71. The SHA compression-loop focus still points to line 43.
+
+- `node tools/format-corpus.mjs` and `node tools/format-corpus.mjs --check` both passed with zero changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests on rerun with subprocess permission. The first run hit a sandbox `EPERM`.
+- `node --test tests/typed/sha-chacha.test.mjs` passed.
+
+Commit `48a8c52` — `IRWB-013: fit SHA-256 and ChaCha20 files in workbench tiles`. The worktree is clean.

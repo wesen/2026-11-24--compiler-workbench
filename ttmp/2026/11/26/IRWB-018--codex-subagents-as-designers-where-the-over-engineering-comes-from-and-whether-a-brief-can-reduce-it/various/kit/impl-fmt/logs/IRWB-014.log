@@ -1,0 +1,1018 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a218ca-a619-7f50-94d7-06f977cc931c
+--------
+user
+Integration of your branch found one problem in IRWB-014's project. The workbench shows each corpus file in a tile, and `tests/typed/format.test.mjs` requires every `.typed` and `.js` file of a corpus project to fit in 80 columns, and `project.json` and `notes.md` to fit in 73. Some files of your project are wider. `tools/format-corpus.mjs` formats `project.json` and `notes.md` (run it, then `node tools/format-corpus.mjs --check`). It mis-wraps list items that are already wrapped and then refuses the file with "renders differently"; in that case wrap `notes.md` by hand to 72 columns. Reformat the `.typed` and `.js` files by hand without changing their meaning. If lines move in a `.typed` file, update whatever refers to source lines (focus links, line numbers in `notes.md` or `project.json`).
+
+Then run `node --test tests/typed/format.test.mjs` and your own test, and commit with a message starting `IRWB-014:`. Corpus-wide test totals that changed because of the new projects are handled during integration and are not part of this task. Final message: the files you changed, the commands you ran with their results, and the commit hash.
+codex
+I’ll check the LZ project’s line widths, reflow the files, and update the decoder focus before running both requested tests.
+exec
+/usr/bin/zsh -lc "git status --short
+git log -3 --oneline
+awk 'length("'$0)>80 { print FILENAME ":" FNR ":" length($0) ": " $0 }'"' corpus/projects/lz-roundtrip/main.typed corpus/projects/lz-roundtrip/scripts/explore.js
+awk 'length("'$0)>73 { print FILENAME ":" FNR ":" length($0) ": " $0 }'"' corpus/projects/lz-roundtrip/project.json corpus/projects/lz-roundtrip/notes.md
+rg -n 'focus|main\\.typed[:#]|line [0-9]+' corpus/projects/lz-roundtrip ttmp/2026/11/26/IRWB-014--*" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+exec
+/usr/bin/zsh -lc "cat tools/format-corpus.mjs tests/typed/format.test.mjs
+test -e dist/typed/program.js && printf '%s\\n' 'dist/typed/program.js exists'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 269ms:
+// Format the corpus files the workbench shows for a tile (TILE_WIDTH columns): project.json with prose fields
+// as lines, notes.md hard-wrapped. Verifies before writing: the project's meaning (projectSource) and the
+// rendered Markdown blocks are unchanged. node tools/format-corpus.mjs [--check]
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
+import { corpusDir, projectIds, projectFiles } from './corpus.mjs';
+const { formatJson, wrapProse, splitWords, TILE_WIDTH } = await import('../dist/typed/format.js');
+const { projectSource } = await import('../dist/typed/project.js');
+
+const check = process.argv.includes('--check');
+const W = TILE_WIDTH;
+// prose → lines that fit at the indentation the printer will give them (quotes and comma take 3 columns)
+const lines = (text, indent) => {
+  if (typeof text !== 'string' || indent + text.length + 3 <= W) return text;
+  return splitWords(text, W - indent - 3);
+};
+function narrowProject(j) {
+  const out = { ...j };
+  if (out.about !== undefined) out.about = lines(out.about, 4);
+  if (Array.isArray(out.try)) out.try = out.try.map(t => lines(t, 6));
+  if (out.scripts)
+    out.scripts = Object.fromEntries(Object.entries(out.scripts).map(([k, v]) => [k, v && v.about !== undefined ? { ...v, about: lines(v.about, 8) } : v]));
+  return out;
+}
+// the renderer's block structure (ui/md.js rules): fences verbatim, list items with continuations, paragraphs joined
+function blocks(md) {
+  const ls = md.replace(/\r/g, '').split('\n'), out = [];
+  let para = [];
+  const flush = () => { if (para.length) out.push(['p', para.join(' ')]); para = []; };
+  for (let i = 0; i < ls.length; ) {
+    const l = ls[i];
+    if (/^```/.test(l)) { flush(); const body = [l]; i++; while (i < ls.length && !/^```\s*$/.test(ls[i])) body.push(ls[i++]); body.push(ls[i++]); out.push(['code', body.join('\n')]); continue; }
+    const li = /^(\s*)([-*]|\d+\.) (.*)$/.exec(l);
+    if (li) { flush(); let item = li[3]; i++; while (i < ls.length && /^\s{2,}\S/.test(ls[i]) && !/^(\s*)([-*]|\d+\.) /.test(ls[i])) item += ' ' + ls[i++].trim(); out.push(['li', li[2], item]); continue; }
+    if (/^\s*$/.test(l)) { flush(); i++; continue; }
+    if (/^(#|\||---|>)/.test(l)) { flush(); out.push(['raw', l]); i++; continue; }
+    para.push(l.trim()); i++;
+  }
+  flush();
+  return out;
+}
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+let changed = 0, wide = [];
+for (const id of projectIds()) {
+  const dir = join(corpusDir, id), files = projectFiles(id);
+  const before = projectSource(id, files).meta;
+  if (files['project.json']) {
+    const text = formatJson(narrowProject(JSON.parse(files['project.json'])), W);
+    const after = projectSource(id, { ...files, 'project.json': text }).meta;
+    if (!isDeepStrictEqual(before, after)) throw new Error(`${id}: project.json meaning changed`);
+    if (text !== files['project.json']) { changed++; if (!check) writeFileSync(join(dir, 'project.json'), text); }
+    if (width(text) > W) wide.push(`${id}/project.json ${width(text)}`);
+  }
+  const notes = join(dir, 'notes.md');
+  if (existsSync(notes)) {
+    const md = readFileSync(notes, 'utf8'), wrapped = wrapProse(md, W);
+    if (!isDeepStrictEqual(blocks(md), blocks(wrapped))) throw new Error(`${id}: notes.md renders differently`);
+    if (wrapped !== md) { changed++; if (!check) writeFileSync(notes, wrapped); }
+    if (width(wrapped) > W) wide.push(`${id}/notes.md ${width(wrapped)}`);
+  }
+}
+console.log(`${check ? 'would change' : 'changed'} ${changed} files; still wider than ${W}: ${wide.length ? wide.join(', ') : 'none'}`);
+if (check && changed) process.exit(1);
+// Tile-width formatting: what the workbench shows must read in a 60–80 column tile.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { corpusDir, projectIds } from '../../tools/corpus.mjs';
+
+const { formatJson, wrapProse, joinText, TILE_WIDTH } = await import('../../dist/typed/format.js');
+const S = await import('../../dist/typed/strategies.js');
+const width = text => Math.max(0, ...text.split('\n').map(l => l.length));
+const files = dir =>
+  readdirSync(dir).flatMap(f => (statSync(join(dir, f)).isDirectory() ? files(join(dir, f)) : [join(dir, f)]));
+
+test('format: JSON keeps what fits on one line, breaks the rest, and round-trips', () => {
+  const v = { a: [1, 2, 3], b: { c: 'x [ y ] z', d: null }, long: Array.from({ length: 30 }, (_, i) => `item-${i}`) };
+  const text = formatJson(v, 40);
+  assert.deepEqual(JSON.parse(text), v);
+  assert.ok(width(text) <= 40, text);
+  assert.match(text, /"a": \[1, 2, 3\]/);
+  assert.match(text, /"c": "x \[ y \] z"/); // string contents untouched
+});
+
+test('format: prose wraps without changing blocks; lists keep their items', () => {
+  const md = '# Title\n\nA ' + 'word '.repeat(40) + '\n\n- item ' + 'more '.repeat(30) + '\n\n```\ncode line that is very long and must not be wrapped by the formatter at all\n```\n';
+  const out = wrapProse(md, 60);
+  assert.ok(out.split('\n').filter(l => !l.startsWith('code')).every(l => l.length <= 60));
+  assert.match(out, /^ {2}more/m); // list continuation is indented, so it stays in the item
+  assert.match(out, /code line that is very long and must not be wrapped by the formatter at all/);
+  assert.equal(joinText(['a', 'b']), 'a b');
+});
+
+test('format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH', () => {
+  const wide = [];
+  for (const id of projectIds())
+    for (const f of files(join(corpusDir, id))) {
+      if (!/\.(typed|js|json|md)$/.test(f)) continue;
+      const w = width(readFileSync(f, 'utf8'));
+      const limit = /(project\.json|notes\.md)$/.test(f) ? TILE_WIDTH + 1 : 80; // +1: a word carried past a block marker
+      if (w > limit) wide.push(`${f}: ${w}`);
+    }
+  assert.deepEqual(wide, []);
+  // the formatter has nothing left to do
+  execFileSync(process.execPath, ['tools/format-corpus.mjs', '--check'], { stdio: 'pipe' });
+});
+
+test('format: strategy presets and plans fit TILE_WIDTH', () => {
+  for (const [path, text] of Object.entries(S.presetFiles())) {
+    assert.ok(width(text) <= TILE_WIDTH, `${path}: ${width(text)}`);
+    const name = path.replace(/^strategies\/|\.json$/g, '');
+    assert.equal(S.projectStrategies({ [path]: text })[name].id, `typed.strategy.${name}`);
+    assert.ok(width(S.toJson(S.planFromSpec(name, JSON.parse(text)))) <= TILE_WIDTH);
+  }
+});
+dist/typed/program.js exists
+
+ succeeded in 283ms:
+6c60d01 IRWB-014: verify LZ round trips and record instruction counts
+70388b8 IRWB-014: add the LZ round-trip corpus project
+77ad469 IRWB-012..017: merge the round-2 design docs (Codex gpt-6.2-sol, revised brief; IRWB-018) as the designs to implement
+corpus/projects/lz-roundtrip/main.typed:16:104:             const bucket = hash3(input.charCodeAt(i), input.charCodeAt(i + 1), input.charCodeAt(i + 2));
+corpus/projects/lz-roundtrip/main.typed:51:108:                 const bucket = hash3(input.charCodeAt(p), input.charCodeAt(p + 1), input.charCodeAt(p + 2));
+corpus/projects/lz-roundtrip/main.typed:83:89: function roundTrip(input: buffer, packed: buffer, output: buffer, chainLimit: i32): i32 {
+corpus/projects/lz-roundtrip/project.json:4:75:     "Find repeated triples through a hash chain, then decode literals and",
+corpus/projects/lz-roundtrip/project.json:13:102:     "explore": { "about": "Encode and decode 24 A cells and count RV32 instructions.", "fresh": true }
+corpus/projects/lz-roundtrip/notes.md:3:78: The input holds up to 24 seven-bit characters, one per u16 cell. Pass distinct
+corpus/projects/lz-roundtrip/notes.md:4:76: 24-cell buffers for the packed stream and decoded output. The chain limit is
+corpus/projects/lz-roundtrip/notes.md:6:76: `decompress`, which requires a valid stream that expands to at most 24 cells
+corpus/projects/lz-roundtrip/notes.md:7:76: and returns the number of decoded cells. `roundTrip` connects the two calls.
+corpus/projects/lz-roundtrip/notes.md:21:76: Run this in the workbench console with the project open to encode and decode
+corpus/projects/lz-roundtrip/notes.md:28:76: The packed prefix is `[65, 224, 224, 224, 192]`. The script also returns all
+ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/design-doc/01-lz-style-compression-corpus-project.md:83:Create `corpus/projects/lz-roundtrip/main.typed`, `project.json`, `notes.md`, and `scripts/explore.js`. Set the title to “LZ round trip”, group to `Programs`, sources to `["main.typed"]`, pipeline to `speed`, and focus to the decoder's back-reference load once it has a source line. Put the token layout and two runnable examples in the notes. The fresh `explore` script should run the pipeline and compile its result. Run `compress` directly for the packed prefix and `roundTrip` for the decoded prefix and RV32 instruction count, using the 24-A example below with limit 3. The corpus builder already discovers new project directories. [Corpus API](../../../../../../corpus/reference.md), [corpus discovery](../../../../../../tools/corpus.mjs).
+ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/log/01-design-diary.md:40:> - `corpus/projects/*/`: each project has `main.typed`, `project.json` (pipeline, input specifications for generated cases, focus), `notes.md`, `scripts/`. Look at several, e.g. `blend`, `checksum`, `sort`, `histogram`, `records`, `match-enum`, `strings`.
+ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/log/01-design-diary.md:131:- The decoder's focus points to line 74, where a match loads a cell from its own output.
+corpus/projects/lz-roundtrip/project.json:11:  "focus": 74,
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/corpus/projects/lz-roundtrip/main.typed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/corpus/projects/lz-roundtrip/project.json
+diff --git a/corpus/projects/lz-roundtrip/main.typed b/corpus/projects/lz-roundtrip/main.typed
+index 9b0c981aa99c57a4fe2bf7598438c55edb19a51c..2a36e0eb283944c3a9296c94c1a6b7a584b2bd35
+--- a/corpus/projects/lz-roundtrip/main.typed
++++ b/corpus/projects/lz-roundtrip/main.typed
+@@ -13,7 +13,11 @@
+         let bestLen = 0;
+         let bestDistance = 0;
+         if (i + 3 <= n) {
+-            const bucket = hash3(input.charCodeAt(i), input.charCodeAt(i + 1), input.charCodeAt(i + 2));
++            const bucket = hash3(
++                input.charCodeAt(i),
++                input.charCodeAt(i + 1),
++                input.charCodeAt(i + 2)
++            );
+             let link = head[bucket];
+             let visits = 0;
+             while (link !== 0 && visits < chainLimit) {
+@@ -48,7 +52,11 @@
+         // Insert every consumed position that begins a complete triple.
+         for (let p = i; p < i + advance; p = p + 1) {
+             if (p + 3 <= n) {
+-                const bucket = hash3(input.charCodeAt(p), input.charCodeAt(p + 1), input.charCodeAt(p + 2));
++                const bucket = hash3(
++                    input.charCodeAt(p),
++                    input.charCodeAt(p + 1),
++                    input.charCodeAt(p + 2)
++                );
+                 prev[p] = head[bucket];
+                 head[bucket] = p + 1;
+             }
+@@ -80,7 +88,12 @@
+     return written;
+ }
+ 
+-function roundTrip(input: buffer, packed: buffer, output: buffer, chainLimit: i32): i32 {
++function roundTrip(
++    input: buffer,
++    packed: buffer,
++    output: buffer,
++    chainLimit: i32
++): i32 {
+     const packedLen = compress(input, packed, chainLimit);
+     return decompress(packed, packedLen, output);
+ }
+diff --git a/corpus/projects/lz-roundtrip/project.json b/corpus/projects/lz-roundtrip/project.json
+index 29c1419c169a93c80bd9cbb8314acb5f1343a098..0f0cc8849e2cca3a331e6116f7a9d9c59c7709d5
+--- a/corpus/projects/lz-roundtrip/project.json
++++ b/corpus/projects/lz-roundtrip/project.json
+@@ -1,14 +1,14 @@
+ {
+   "title": "LZ round trip",
+   "about": [
+-    "Find repeated triples through a hash chain, then decode literals and",
+-    "overlapping back-references with checked buffer accesses."
++    "Find repeated triples through a hash chain, then decode literals",
++    "and overlapping back-references with checked buffer accesses."
+   ],
+   "group": "Programs",
+   "sources": ["main.typed"],
+   "pipeline": "speed",
+   "ingest": { "tape": true },
+-  "focus": 74,
++  "focus": 82,
+   "scripts": {
+     "explore": { "about": "Encode and decode 24 A cells and count RV32 instructions.", "fresh": true }
+   },
+
+exec
+/usr/bin/zsh -lc "node tools/format-corpus.mjs
+git status --short
+rg -n 'output\\.charCodeAt|focus' corpus/projects/lz-roundtrip/{main.typed,project.json}" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 300ms:
+changed 2 files; still wider than 72: fixed-point/notes.md 73, lz-roundtrip/project.json 75
+ M corpus/projects/lz-roundtrip/main.typed
+ M corpus/projects/lz-roundtrip/notes.md
+ M corpus/projects/lz-roundtrip/project.json
+corpus/projects/lz-roundtrip/main.typed:82:                const cell = output.charCodeAt(written - distance);
+corpus/projects/lz-roundtrip/project.json:11:  "focus": 82,
+
+exec
+/usr/bin/zsh -lc "awk 'length("'$0)>72 {print FILENAME,FNR,length($0),$0}'"' corpus/projects/lz-roundtrip/{project.json,notes.md}
+cat corpus/projects/lz-roundtrip/project.json
+git diff --stat
+git diff -- corpus/projects/lz-roundtrip/notes.md
+sed -n '1,125p' src/typed/format.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 310ms:
+corpus/projects/lz-roundtrip/project.json 14 75       "about": "Encode and decode 24 A cells and count RV32 instructions.",
+{
+  "title": "LZ round trip",
+  "about": [
+    "Find repeated triples through a hash chain, then decode literals",
+    "and overlapping back-references with checked buffer accesses."
+  ],
+  "group": "Programs",
+  "sources": ["main.typed"],
+  "pipeline": "speed",
+  "ingest": { "tape": true },
+  "focus": 82,
+  "scripts": {
+    "explore": {
+      "about": "Encode and decode 24 A cells and count RV32 instructions.",
+      "fresh": true
+    }
+  },
+  "inputs": {
+    "hash3": { "a": [0, 127], "b": [0, 127], "c": [0, 127] },
+    "compress": {
+      "input": { "buffer": [0, 24], "cell": [65, 66] },
+      "packed": { "buffer": [24, 24], "cell": [0, 0] },
+      "chainLimit": [1, 3]
+    },
+    "decompress": {
+      "packed": { "cells": [65, 224, 66, 192, 127] },
+      "packedLen": 5,
+      "output": { "buffer": [24, 24], "cell": [0, 0] }
+    },
+    "roundTrip": {
+      "input": { "buffer": [0, 24], "cell": [65, 66] },
+      "packed": { "buffer": [24, 24], "cell": [0, 0] },
+      "output": { "buffer": [24, 24], "cell": [0, 0] },
+      "chainLimit": [1, 3]
+    }
+  }
+}
+ corpus/projects/lz-roundtrip/main.typed   | 19 ++++++++++++++++---
+ corpus/projects/lz-roundtrip/notes.md     | 27 ++++++++++++++++++---------
+ corpus/projects/lz-roundtrip/project.json | 11 +++++++----
+ 3 files changed, 41 insertions(+), 16 deletions(-)
+diff --git a/corpus/projects/lz-roundtrip/notes.md b/corpus/projects/lz-roundtrip/notes.md
+index db14983..4e04047 100644
+--- a/corpus/projects/lz-roundtrip/notes.md
++++ b/corpus/projects/lz-roundtrip/notes.md
+@@ -1,10 +1,14 @@
+ # LZ round trip
+ 
+-The input holds up to 24 seven-bit characters, one per u16 cell. Pass distinct
+-24-cell buffers for the packed stream and decoded output. The chain limit is
++The input holds up to 24 seven-bit characters, one per u16 cell. Pass
++distinct
++24-cell buffers for the packed stream and decoded output. The chain
++limit is
+ 1–3. `compress` returns the number of packed cells. Pass that length to
+-`decompress`, which requires a valid stream that expands to at most 24 cells
+-and returns the number of decoded cells. `roundTrip` connects the two calls.
++`decompress`, which requires a valid stream that expands to at most 24
++cells
++and returns the number of decoded cells. `roundTrip` connects the two
++calls.
+ 
+ Each packed cell holds one byte.
+ 
+@@ -13,22 +17,26 @@ Each packed cell holds one byte.
+ | `0ccccccc` | Emit the literal character `c` (0–127). |
+ | `1llddddd` | Copy `ll + 3` cells from `ddddd + 1` cells back. |
+ 
+-The compressor visits hash-chain links newest first and keeps the nearest
++The compressor visits hash-chain links newest first and keeps the
++nearest
+ match on ties. It inserts all consumed positions that begin a complete
+ triple. The decoder copies forward, so a distance-one match can extend a
+ run by reading cells from earlier iterations of the same copy loop.
+ 
+-Run this in the workbench console with the project open to encode and decode
++Run this in the workbench console with the project open to encode and
++decode
+ 24 A cells on a fresh optimized program.
+ 
+ ```js
+ return wb.projects.current.run('explore');
+ ```
+ 
+-The packed prefix is `[65, 224, 224, 224, 192]`. The script also returns all
++The packed prefix is `[65, 224, 224, 224, 192]`. The script also returns
++all
+ 24 decoded cells and the RV32 instruction count for the round trip.
+ 
+-The next console example encodes `AABBAAB` with one and two chain visits.
++The next console example encodes `AABBAAB` with one and two chain
++visits.
+ 
+ ```js
+ const input = [65, 65, 66, 66, 65, 65, 66];
+@@ -38,6 +46,7 @@ return [1, 2].map(limit => {
+ });
+ ```
+ 
+-One visit yields seven literals. Two visits yield `[65, 65, 66, 66, 131]`
++One visit yields seven literals. Two visits yield `[65, 65, 66, 66,
++131]`
+ because the older `AAB` matches at distance four after the newer `BAA`
+ collides in the same bucket.
+/**
+ * Formatting for text the workbench shows in tiles (60–80 columns wide): 72 columns by default, so files and
+ * presets read without horizontal scrolling. Typed sources are left as written (all within 80 columns), because
+ * their line numbers are part of provenance.
+ *
+ *   formatJson(value, width)  JSON that keeps an object or array on one line when it fits, and breaks it one
+ *                             entry per line otherwise (prettier's rule for JSON), so plans and project files are
+ *                             short and narrow.
+ *   wrapProse(markdown, width) hard-wraps paragraphs and list items of Markdown at word boundaries, leaving code
+ *                             fences, tables, headings, callout markers and rules alone. The workbench's renderer
+ *                             joins a paragraph's lines with spaces and a list item's indented continuation lines,
+ *                             so the rendered text is unchanged; a continuation line never starts with a token
+ *                             that would begin another block.
+ *   joinText(x)               a prose field may be a string or an array of lines (JSON strings cannot span lines);
+ *                             this joins the lines with spaces.
+ */
+
+export const TILE_WIDTH = 72;
+
+const scalar = (v: unknown) => JSON.stringify(v);
+
+export function formatJson(value: unknown, width = TILE_WIDTH, indent = 2): string {
+  // the one-line form, built structurally (string contents are never touched)
+  const inlineOf = (v: unknown): string => {
+    if (v === null || typeof v !== 'object') return scalar(v);
+    if (Array.isArray(v)) return `[${v.map(inlineOf).join(', ')}]`;
+    const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined);
+    return entries.length
+      ? `{ ${entries.map(([k, x]) => `${scalar(k)}: ${inlineOf(x)}`).join(', ')} }`
+      : '{}';
+  };
+  const print = (v: unknown, col: number, pad: string): string => {
+    if (v === null || typeof v !== 'object') return scalar(v);
+    const inline = inlineOf(v);
+    // a trailing comma follows every entry but the last; leave room for it
+    if (col + inline.length + 1 <= width) return inline;
+    const inner = pad + ' '.repeat(indent);
+    if (Array.isArray(v)) {
+      if (!v.length) return '[]';
+      return `[\n${v.map(x => inner + print(x, inner.length, inner)).join(',\n')}\n${pad}]`;
+    }
+    const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined);
+    if (!entries.length) return '{}';
+    return `{\n${entries
+      .map(([k, x]) => {
+        const key = `${scalar(k)}: `;
+        return inner + key + print(x, inner.length + key.length, inner);
+      })
+      .join(',\n')}\n${pad}}`;
+  };
+  return print(value, 0, '') + '\n';
+}
+
+/** Split prose into lines of at most `width` columns at spaces (a word longer than the width stays whole). */
+export function splitWords(text: string, width: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean),
+    out: string[] = [];
+  let line = '';
+  for (const w of words) {
+    if (line && line.length + 1 + w.length > width) {
+      out.push(line);
+      line = w;
+    } else line = line ? `${line} ${w}` : w;
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/** A line that would start another Markdown block if it began a continuation. */
+const STARTS_BLOCK = /^(#|>|\||```|---|[-*+] |\d+[.)] )/;
+
+function wrapWords(words: string[], first: string, rest: string, width: number): string[] {
+  const out: string[] = [];
+  let line = first,
+    empty = true;
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const prefix = out.length ? rest : first;
+    if (!empty && line.length + 1 + w.length > width) {
+      // never begin a continuation line with a block marker: carry one more word on this line instead
+      const tail = words.slice(i).join(' ');
+      if (STARTS_BLOCK.test(tail)) {
+        line += ' ' + w;
+        continue;
+      }
+      out.push(line);
+      line = rest + w;
+    } else line = empty ? prefix + w : `${line} ${w}`;
+    empty = false;
+  }
+  if (!empty) out.push(line);
+  return out;
+}
+
+export function wrapProse(markdown: string, width = TILE_WIDTH): string {
+  const lines = markdown.replace(/\r/g, '').split('\n');
+  const out: string[] = [];
+  let i = 0,
+    fenced = false;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^```/.test(l)) {
+      fenced = !fenced;
+      out.push(l);
+      i++;
+      continue;
+    }
+    if (fenced || l.length <= width || /^\s*$/.test(l) || /^(#|\||---|> ?\[!)/.test(l) || /^\s{4,}/.test(l)) {
+      out.push(l);
+      i++;
+      continue;
+    }
+    const li = /^(\s*)([-*]|\d+\.) (.*)$/.exec(l);
+    if (li) {
+      const lead = `${li[1]}${li[2]} `;
+      const hang = ' '.repeat(Math.max(2, lead.length));
+      out.push(...wrapWords(li[3].split(/\s+/).filter(Boolean), lead, hang, width));
+    } else {
+      const q = /^(> ?)(.*)$/.exec(l);
+      if (q) out.push(...wrapWords(q[2].split(/\s+/).filter(Boolean), q[1], q[1], width));
+      else out.push(...wrapWords(l.trim().split(/\s+/).filter(Boolean), '', '', width));
+    }
+    i++;
+  }
+  return out.join('\n');
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/corpus/projects/lz-roundtrip/notes.md
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/corpus/projects/lz-roundtrip/project.json
+diff --git a/corpus/projects/lz-roundtrip/main.typed b/corpus/projects/lz-roundtrip/main.typed
+index 9b0c981aa99c57a4fe2bf7598438c55edb19a51c..2a36e0eb283944c3a9296c94c1a6b7a584b2bd35
+--- a/corpus/projects/lz-roundtrip/main.typed
++++ b/corpus/projects/lz-roundtrip/main.typed
+@@ -13,7 +13,11 @@
+         let bestLen = 0;
+         let bestDistance = 0;
+         if (i + 3 <= n) {
+-            const bucket = hash3(input.charCodeAt(i), input.charCodeAt(i + 1), input.charCodeAt(i + 2));
++            const bucket = hash3(
++                input.charCodeAt(i),
++                input.charCodeAt(i + 1),
++                input.charCodeAt(i + 2)
++            );
+             let link = head[bucket];
+             let visits = 0;
+             while (link !== 0 && visits < chainLimit) {
+@@ -48,7 +52,11 @@
+         // Insert every consumed position that begins a complete triple.
+         for (let p = i; p < i + advance; p = p + 1) {
+             if (p + 3 <= n) {
+-                const bucket = hash3(input.charCodeAt(p), input.charCodeAt(p + 1), input.charCodeAt(p + 2));
++                const bucket = hash3(
++                    input.charCodeAt(p),
++                    input.charCodeAt(p + 1),
++                    input.charCodeAt(p + 2)
++                );
+                 prev[p] = head[bucket];
+                 head[bucket] = p + 1;
+             }
+@@ -80,7 +88,12 @@
+     return written;
+ }
+ 
+-function roundTrip(input: buffer, packed: buffer, output: buffer, chainLimit: i32): i32 {
++function roundTrip(
++    input: buffer,
++    packed: buffer,
++    output: buffer,
++    chainLimit: i32
++): i32 {
+     const packedLen = compress(input, packed, chainLimit);
+     return decompress(packed, packedLen, output);
+ }
+diff --git a/corpus/projects/lz-roundtrip/notes.md b/corpus/projects/lz-roundtrip/notes.md
+index 4e04047ee1fb9d9f83b82e0ab050b22101cfb509..3e1d456642c4fe41da34218d568998d8f9eb68fa
+--- a/corpus/projects/lz-roundtrip/notes.md
++++ b/corpus/projects/lz-roundtrip/notes.md
+@@ -1,14 +1,11 @@
+ # LZ round trip
+ 
+ The input holds up to 24 seven-bit characters, one per u16 cell. Pass
+-distinct
+-24-cell buffers for the packed stream and decoded output. The chain
+-limit is
+-1–3. `compress` returns the number of packed cells. Pass that length to
+-`decompress`, which requires a valid stream that expands to at most 24
+-cells
+-and returns the number of decoded cells. `roundTrip` connects the two
+-calls.
++distinct 24-cell buffers for the packed stream and decoded output. The
++chain limit is 1–3. `compress` returns the number of packed cells. Pass
++that length to `decompress`, which requires a valid stream that expands
++to at most 24 cells and returns the number of decoded cells. `roundTrip`
++connects the two calls.
+ 
+ Each packed cell holds one byte.
+ 
+@@ -18,22 +15,20 @@
+ | `1llddddd` | Copy `ll + 3` cells from `ddddd + 1` cells back. |
+ 
+ The compressor visits hash-chain links newest first and keeps the
+-nearest
+-match on ties. It inserts all consumed positions that begin a complete
+-triple. The decoder copies forward, so a distance-one match can extend a
+-run by reading cells from earlier iterations of the same copy loop.
++nearest match on ties. It inserts all consumed positions that begin a
++complete triple. The decoder copies forward, so a distance-one match
++can extend a run by reading cells from earlier iterations of the same
++copy loop.
+ 
+ Run this in the workbench console with the project open to encode and
+-decode
+-24 A cells on a fresh optimized program.
++decode 24 A cells on a fresh optimized program.
+ 
+ ```js
+ return wb.projects.current.run('explore');
+ ```
+ 
+ The packed prefix is `[65, 224, 224, 224, 192]`. The script also returns
+-all
+-24 decoded cells and the RV32 instruction count for the round trip.
++all 24 decoded cells and the RV32 instruction count for the round trip.
+ 
+ The next console example encodes `AABBAAB` with one and two chain
+ visits.
+@@ -46,7 +41,6 @@
+ });
+ ```
+ 
+-One visit yields seven literals. Two visits yield `[65, 65, 66, 66,
+-131]`
+-because the older `AAB` matches at distance four after the newer `BAA`
+-collides in the same bucket.
++One visit yields seven literals. Two visits yield
++`[65, 65, 66, 66, 131]` because the older `AAB` matches at distance four
++after the newer `BAA` collides in the same bucket.
+diff --git a/corpus/projects/lz-roundtrip/project.json b/corpus/projects/lz-roundtrip/project.json
+index 29c1419c169a93c80bd9cbb8314acb5f1343a098..0ff1f6c97e65080673ddce90c1ebdf2dd2dfe76f
+--- a/corpus/projects/lz-roundtrip/project.json
++++ b/corpus/projects/lz-roundtrip/project.json
+@@ -1,16 +1,19 @@
+ {
+   "title": "LZ round trip",
+   "about": [
+-    "Find repeated triples through a hash chain, then decode literals and",
+-    "overlapping back-references with checked buffer accesses."
++    "Find repeated triples through a hash chain, then decode literals",
++    "and overlapping back-references with checked buffer accesses."
+   ],
+   "group": "Programs",
+   "sources": ["main.typed"],
+   "pipeline": "speed",
+   "ingest": { "tape": true },
+-  "focus": 74,
++  "focus": 82,
+   "scripts": {
+-    "explore": { "about": "Encode and decode 24 A cells and count RV32 instructions.", "fresh": true }
++    "explore": {
++      "about": ["Encode and decode 24 A cells", "and count RV32 instructions."],
++      "fresh": true
++    }
+   },
+   "inputs": {
+     "hash3": { "a": [0, 127], "b": [0, 127], "c": [0, 127] },
+
+exec
+/usr/bin/zsh -lc "set -e
+node tools/format-corpus.mjs
+node tools/format-corpus.mjs --check
+node --input-type=module <<'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const dir = 'corpus/projects/lz-roundtrip/';
+for (const [name, limit] of [['main.typed', 80], ['scripts/explore.js', 80], ['project.json', 73], ['notes.md', 73]]) {
+  const width = Math.max(...readFileSync(dir + name, 'utf8').split('\\n').map(line => line.length));
+  assert.ok(width <= limit, name);
+  console.log(name, width);
+}
+const { focus } = JSON.parse(readFileSync(dir + 'project.json', 'utf8'));
+assert.match(readFileSync(dir + 'main.typed', 'utf8').split('\\n')[focus - 1], /output\\.charCodeAt\\(written - distance\\)/);
+EOF
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 636ms:
+changed 1 files; still wider than 72: fixed-point/notes.md 73
+would change 0 files; still wider than 72: fixed-point/notes.md 73
+main.typed 75
+scripts/explore.js 73
+project.json 71
+notes.md 72
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/lz-roundtrip.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+exec
+/usr/bin/zsh -lc 'git diff -- corpus/projects/lz-roundtrip && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 751ms:
+diff --git a/corpus/projects/lz-roundtrip/main.typed b/corpus/projects/lz-roundtrip/main.typed
+index 9b0c981..2a36e0e 100644
+--- a/corpus/projects/lz-roundtrip/main.typed
++++ b/corpus/projects/lz-roundtrip/main.typed
+@@ -13,7 +13,11 @@ function compress(input: buffer, packed: buffer, chainLimit: i32): i32 {
+         let bestLen = 0;
+         let bestDistance = 0;
+         if (i + 3 <= n) {
+-            const bucket = hash3(input.charCodeAt(i), input.charCodeAt(i + 1), input.charCodeAt(i + 2));
++            const bucket = hash3(
++                input.charCodeAt(i),
++                input.charCodeAt(i + 1),
++                input.charCodeAt(i + 2)
++            );
+             let link = head[bucket];
+             let visits = 0;
+             while (link !== 0 && visits < chainLimit) {
+@@ -48,7 +52,11 @@ function compress(input: buffer, packed: buffer, chainLimit: i32): i32 {
+         // Insert every consumed position that begins a complete triple.
+         for (let p = i; p < i + advance; p = p + 1) {
+             if (p + 3 <= n) {
+-                const bucket = hash3(input.charCodeAt(p), input.charCodeAt(p + 1), input.charCodeAt(p + 2));
++                const bucket = hash3(
++                    input.charCodeAt(p),
++                    input.charCodeAt(p + 1),
++                    input.charCodeAt(p + 2)
++                );
+                 prev[p] = head[bucket];
+                 head[bucket] = p + 1;
+             }
+@@ -80,7 +88,12 @@ function decompress(packed: buffer, packedLen: i32, output: buffer): i32 {
+     return written;
+ }
+ 
+-function roundTrip(input: buffer, packed: buffer, output: buffer, chainLimit: i32): i32 {
++function roundTrip(
++    input: buffer,
++    packed: buffer,
++    output: buffer,
++    chainLimit: i32
++): i32 {
+     const packedLen = compress(input, packed, chainLimit);
+     return decompress(packed, packedLen, output);
+ }
+diff --git a/corpus/projects/lz-roundtrip/notes.md b/corpus/projects/lz-roundtrip/notes.md
+index db14983..3e1d456 100644
+--- a/corpus/projects/lz-roundtrip/notes.md
++++ b/corpus/projects/lz-roundtrip/notes.md
+@@ -1,10 +1,11 @@
+ # LZ round trip
+ 
+-The input holds up to 24 seven-bit characters, one per u16 cell. Pass distinct
+-24-cell buffers for the packed stream and decoded output. The chain limit is
+-1–3. `compress` returns the number of packed cells. Pass that length to
+-`decompress`, which requires a valid stream that expands to at most 24 cells
+-and returns the number of decoded cells. `roundTrip` connects the two calls.
++The input holds up to 24 seven-bit characters, one per u16 cell. Pass
++distinct 24-cell buffers for the packed stream and decoded output. The
++chain limit is 1–3. `compress` returns the number of packed cells. Pass
++that length to `decompress`, which requires a valid stream that expands
++to at most 24 cells and returns the number of decoded cells. `roundTrip`
++connects the two calls.
+ 
+ Each packed cell holds one byte.
+ 
+@@ -13,22 +14,24 @@ Each packed cell holds one byte.
+ | `0ccccccc` | Emit the literal character `c` (0–127). |
+ | `1llddddd` | Copy `ll + 3` cells from `ddddd + 1` cells back. |
+ 
+-The compressor visits hash-chain links newest first and keeps the nearest
+-match on ties. It inserts all consumed positions that begin a complete
+-triple. The decoder copies forward, so a distance-one match can extend a
+-run by reading cells from earlier iterations of the same copy loop.
++The compressor visits hash-chain links newest first and keeps the
++nearest match on ties. It inserts all consumed positions that begin a
++complete triple. The decoder copies forward, so a distance-one match
++can extend a run by reading cells from earlier iterations of the same
++copy loop.
+ 
+-Run this in the workbench console with the project open to encode and decode
+-24 A cells on a fresh optimized program.
++Run this in the workbench console with the project open to encode and
++decode 24 A cells on a fresh optimized program.
+ 
+ ```js
+ return wb.projects.current.run('explore');
+ ```
+ 
+-The packed prefix is `[65, 224, 224, 224, 192]`. The script also returns all
+-24 decoded cells and the RV32 instruction count for the round trip.
++The packed prefix is `[65, 224, 224, 224, 192]`. The script also returns
++all 24 decoded cells and the RV32 instruction count for the round trip.
+ 
+-The next console example encodes `AABBAAB` with one and two chain visits.
++The next console example encodes `AABBAAB` with one and two chain
++visits.
+ 
+ ```js
+ const input = [65, 65, 66, 66, 65, 65, 66];
+@@ -38,6 +41,6 @@ return [1, 2].map(limit => {
+ });
+ ```
+ 
+-One visit yields seven literals. Two visits yield `[65, 65, 66, 66, 131]`
+-because the older `AAB` matches at distance four after the newer `BAA`
+-collides in the same bucket.
++One visit yields seven literals. Two visits yield
++`[65, 65, 66, 66, 131]` because the older `AAB` matches at distance four
++after the newer `BAA` collides in the same bucket.
+diff --git a/corpus/projects/lz-roundtrip/project.json b/corpus/projects/lz-roundtrip/project.json
+index 29c1419..bc154b6 100644
+--- a/corpus/projects/lz-roundtrip/project.json
++++ b/corpus/projects/lz-roundtrip/project.json
+@@ -1,16 +1,22 @@
+ {
+   "title": "LZ round trip",
+   "about": [
+-    "Find repeated triples through a hash chain, then decode literals and",
+-    "overlapping back-references with checked buffer accesses."
++    "Find repeated triples through a hash chain, then decode literals",
++    "and overlapping back-references with checked buffer accesses."
+   ],
+   "group": "Programs",
+   "sources": ["main.typed"],
+   "pipeline": "speed",
+   "ingest": { "tape": true },
+-  "focus": 74,
++  "focus": 82,
+   "scripts": {
+-    "explore": { "about": "Encode and decode 24 A cells and count RV32 instructions.", "fresh": true }
++    "explore": {
++      "about": [
++        "Encode and decode 24 A cells",
++        "and count RV32 instructions."
++      ],
++      "fresh": true
++    }
+   },
+   "inputs": {
+     "hash3": { "a": [0, 127], "b": [0, 127], "c": [0, 127] },
+ M corpus/projects/lz-roundtrip/main.typed
+ M corpus/projects/lz-roundtrip/notes.md
+ M corpus/projects/lz-roundtrip/project.json
+
+ exited 1 in 1145ms:
+✖ tests/typed/format.test.mjs (321.705197ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 336.876578
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:1:1
+✖ tests/typed/format.test.mjs (321.705197ms)
+  'test failed'
+
+ succeeded in 4601ms:
+✔ tests/typed/lz-roundtrip.test.mjs (3784.535864ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3801.20936
+
+exec
+/usr/bin/zsh -lc "sed -n '190,228p;475,493p' src/workbench/projects.ts
+rg -n 'scripts\\?\\.|\\.scripts\\(\\)|\\.about' src/workbench/projects.ts | head -35" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 238ms:
+      if (text === null) delete base[path];
+      else base[path] = text;
+    }
+    return base;
+  }
+  function metaOf(id: string): Record<string, any> {
+    const files = filesOf(id);
+    let m: Record<string, any> = {};
+    if (files['project.json']) {
+      try {
+        m = JSON.parse(files['project.json']);
+      } catch (e) {
+        m = { _error: (e as Error).message };
+      }
+    }
+    // prose fields may be arrays of lines (so project.json fits a tile): they mean the joined text
+    if (m.about !== undefined) m.about = joinText(m.about);
+    if (Array.isArray(m.try)) m.try = m.try.map((x: unknown) => joinText(x));
+    if (m.scripts && typeof m.scripts === 'object')
+      for (const sc of Object.values(m.scripts as Record<string, Record<string, unknown>>))
+        if (sc && sc.about !== undefined) sc.about = joinText(sc.about);
+    const typed = Object.keys(files)
+      .filter(f => kindOf(f) === 'typed')
+      .sort();
+    const named: string[] = Array.isArray(m.sources) ? m.sources : [];
+    const sources = named.filter(f => files[f] !== undefined).concat(typed.filter(f => !named.includes(f)));
+    return {
+      title: id,
+      about: '',
+      group: 'Mine',
+      pipeline: 'O2',
+      inputs: {},
+      scripts: {},
+      ui: {},
+      ...m,
+      sources,
+    };
+  }
+  /** Only the files the program is built from (project.json for its inputs and order, and the sources). */
+        rename(from: string, to: string) {
+          const t = H.files.read(from);
+          H.files.write(to, t);
+          H.files.remove(from);
+          return { renamed: from, to };
+        },
+      }),
+      scripts() {
+        const f = filesOf(id),
+          m = metaOf(id);
+        return Object.keys(f)
+          .filter(x => kindOf(x) === 'script')
+          .sort()
+          .map(x => ({
+            name: nameOf(x),
+            path: x,
+            about: ((m.scripts || {})[nameOf(x)] || {}).about || firstComment(f[x]),
+          }));
+      },
+36:  if (out.about !== undefined) out.about = lines(joinText(out.about), 4);
+42:        v && v.about !== undefined ? { ...v, about: lines(joinText(v.about), 8) } : v,
+206:    if (m.about !== undefined) m.about = joinText(m.about);
+210:        if (sc && sc.about !== undefined) sc.about = joinText(sc.about);
+399:        return metaOf(id).about;
+491:            about: ((m.scripts || {})[nameOf(x)] || {}).about || firstComment(f[x]),
+551:          about: m.about,
+557:          scripts: H.scripts().map((s: { name: string }) => s.name),
+579:                (x.title + ' ' + x.about + ' ' + x.id)
+587:            about: x.about,
+643:            about: opts.about || '',
+
+exec
+/usr/bin/zsh -lc 'node --test --test-isolation=none tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ exited 1 in 454ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (1.495637ms)
+✔ format: prose wraps without changing blocks; lists keep their items (0.629987ms)
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (72.316433ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (11.488004ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 136.244779
+
+✖ failing tests:
+
+test at tests/typed/format.test.mjs:33:1
+✖ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (72.316433ms)
+  <ref *1> Error: spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node EPERM
+      at Object.spawnSync (node:internal/child_process:1143:20)
+      at spawnSync (node:child_process:911:24)
+      at execFileSync (node:child_process:954:15)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/tests/typed/format.test.mjs:44:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    errno: -1,
+    code: 'EPERM',
+    syscall: 'spawnSync /home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    path: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node',
+    spawnargs: [ 'tools/format-corpus.mjs', '--check' ],
+    error: [Circular *1],
+    status: 0,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer > ],
+    pid: 395,
+    stdout: <Buffer >,
+    stderr: <Buffer >
+  }
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/format.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 412ms:
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (1.963374ms)
+✔ format: prose wraps without changing blocks; lists keep their items (0.866803ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (71.283636ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (11.105272ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 174.207925
+
+codex
+All four LZ files fit their tiles, and the decoder focus now points to line 82. The round-trip test passed. The format suite also passed all four tests after I reran it outside the sandbox, where it could launch the nested formatter.
+exec
+/usr/bin/zsh -lc 'set -e
+ticket=ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor
+cat >> "$ticket/log/01-design-diary.md" <<'"'EOF'
+
+## Step 6 — Fit the corpus files to the Workbench tiles
+
+Wrapped the Typed calls and wrapper signature, reflowed the notes, and split the JSON prose into shorter lines. The decoder focus moved from line 74 in Step 4 to line 82. The exploration script already fit its tile at 73 columns.
+
+- "'`node tools/format-corpus.mjs` normalized the JSON and notes. `node tools/format-corpus.mjs --check` reported zero changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests after a rerun outside the sandbox. The sandboxed run failed at the nested formatter launch with `spawnSync …/bin/node EPERM`.
+- `node --test tests/typed/lz-roundtrip.test.mjs` passed.
+EOF
+docmgr changelog update --ticket IRWB-014 --entry '"'Wrapped the corpus files to the Workbench tile widths and updated the decoder focus to line 82. The format suite and focused LZ test pass.'
+git diff --check
+git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 418ms:
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/changelog.md
+ M corpus/projects/lz-roundtrip/main.typed
+ M corpus/projects/lz-roundtrip/notes.md
+ M corpus/projects/lz-roundtrip/project.json
+ M ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/changelog.md
+ M ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/log/01-design-diary.md
+
+exec
+/usr/bin/zsh -lc "git add -- corpus/projects/lz-roundtrip/main.typed corpus/projects/lz-roundtrip/notes.md corpus/projects/lz-roundtrip/project.json ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/changelog.md ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/log/01-design-diary.md && git diff --cached --check && git commit -m 'IRWB-014: fit LZ corpus files to workbench tiles' && git status --short && git rev-parse HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014
+ succeeded in 244ms:
+[impl/irwb-014 5ee005c] IRWB-014: fit LZ corpus files to workbench tiles
+ 5 files changed, 58 insertions(+), 24 deletions(-)
+5ee005c93a77cbcf8b1b9a4e4534d02851499325
+
+codex
+Reformatted `corpus/projects/lz-roundtrip/main.typed`, `project.json`, and `notes.md` to fit the Workbench tiles. The decoder focus now points to line 82. `scripts/explore.js` already fit at 73 columns. Updated the IRWB-014 diary and changelog.
+
+- `node tools/format-corpus.mjs` applied formatting. The subsequent `--check` reported zero changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests after an out-of-sandbox rerun resolved a nested process permission error.
+- `node --test tests/typed/lz-roundtrip.test.mjs` passed.
+
+Commit `5ee005c93a77cbcf8b1b9a4e4534d02851499325`. The worktree is clean.
+tokens used
+107,971
+Reformatted `corpus/projects/lz-roundtrip/main.typed`, `project.json`, and `notes.md` to fit the Workbench tiles. The decoder focus now points to line 82. `scripts/explore.js` already fit at 73 columns. Updated the IRWB-014 diary and changelog.
+
+- `node tools/format-corpus.mjs` applied formatting. The subsequent `--check` reported zero changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests after an out-of-sandbox rerun resolved a nested process permission error.
+- `node --test tests/typed/lz-roundtrip.test.mjs` passed.
+
+Commit `5ee005c93a77cbcf8b1b9a4e4534d02851499325`. The worktree is clean.

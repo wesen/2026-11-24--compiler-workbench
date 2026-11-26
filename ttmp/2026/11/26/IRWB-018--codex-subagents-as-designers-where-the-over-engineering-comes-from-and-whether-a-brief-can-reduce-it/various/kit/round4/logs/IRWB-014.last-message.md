@@ -1,0 +1,5 @@
+- [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-project/design-doc/01-lz-style-compressor-and-decompressor-corpus-design.md)
+- [Ticket IRWB-014](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/round4-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-project/index.md)
+- Commit `44847139ce7890ab8abced16c724e8af1cbb3954`
+
+The design specifies one Typed corpus project with bounded hash-chain search, packed literal and match tokens, and forward decoding of overlapping matches. It defines generated cases, an independent byte-for-byte round-trip oracle, and a plan to compare RV32 instruction counts across r0, O2, and `speed`. Small probes confirmed the scratch-buffer layout works with the normal corpus loader and both RV32 compilers. The step budget remains an estimate for implementation. Docmgr validation passed, and the commit contains only the ticket files.

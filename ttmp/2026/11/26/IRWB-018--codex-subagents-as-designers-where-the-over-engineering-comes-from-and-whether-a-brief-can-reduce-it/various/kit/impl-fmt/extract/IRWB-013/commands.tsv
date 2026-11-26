@@ -1,0 +1,11 @@
+0	git status --short --branch; git log -3 --oneline; ls -d dist; awk 'length > 80 { print FNR, length, $0 }' corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/*.js; awk 'length > 72 { print FNR, length, $0 }' corpus/projects/sha-chacha/project.json corpus/projects/sha-chacha/notes.md; rg -n 'focus|line [0-9]+' corpus/projects/sha-chacha; cat tests/typed/format.test.mjs
+0	rg --files -g AGENTS.md -g '!ttmp/**' -g '!vendor/**'; sed -n '1,110p' tools/format-corpus.mjs
+2	node tools/format-corpus.mjs && node tools/format-corpus.mjs --check && git status --short && git diff --check && awk 'NR == 43 {print "SHA focus line", NR, $0}' corpus/projects/sha-chacha/main.typed
+3	node --test tests/typed/format.test.mjs
+3	node --test tests/typed/sha-chacha.test.mjs
+3	awk 'FNR==1 && NR>1 {print f, m; m=0} { f=FILENAME; if(length>m)m=length } END {print f, m}' corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/explore.js corpus/projects/sha-chacha/project.json corpus/projects/sha-chacha/notes.md; git diff --stat
+4	git diff --check && git diff -- corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/explore.js
+5	node tests/typed/format.test.mjs
+6	node --test tests/typed/format.test.mjs
+7	git add -- corpus/projects/sha-chacha/main.typed corpus/projects/sha-chacha/scripts/explore.js
+8	git diff --cached --check && git commit -m 'IRWB-013: fit SHA-256 and ChaCha20 files in workbench tiles' && git status --short --branch
