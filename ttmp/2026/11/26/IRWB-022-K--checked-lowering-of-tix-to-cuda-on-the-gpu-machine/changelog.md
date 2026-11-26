@@ -15,3 +15,7 @@ Applied the review in 7b3dc67, implemented direct CUDA emission and private runn
 ## 2026-11-26
 
 Ticket closed
+
+## 2026-11-26
+
+Published the final report for evaluated revision a441c31 with independent small, optimized, random and full-size results. One untimed paired GB10 job isolated the expf and tanhf differences in the corpus.

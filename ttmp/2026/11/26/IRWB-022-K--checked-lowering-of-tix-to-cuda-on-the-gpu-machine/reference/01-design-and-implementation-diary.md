@@ -222,4 +222,91 @@ At implementation revision 6f94de2, the build and the final 29 tensor tests comp
 
 The additional Typed differential consumers in evaluate-analyses, tape, specialize, f32, bytecode-vm and candela passed 22 tests. The suite skipped its opt-in Candela O2 workload. Combined with the previous Typed run, 59 passed and one skipped. Importing the built tensor entry point returned exactly checkLowering, compileTix, cudaSource, optimizeTix, runTix and runTixCuda.
 
-Reproduce the measurements from the repository root with the ticket's scripts/04-benchmark.mjs, passing cpu or gpu. Both modes construct the same seed-20 inputs. The CPU mode uses the stage-1 interpreter and can take many minutes. The raw results preserve all six shapes and all 18 measured GPU intervals. [Results, commands and framework findings](02-cuda-lowering-results-and-framework-findings.md)
+Reproduce the measurements from the repository root with the ticket's scripts/04-benchmark.mjs, passing cpu or gpu. Both modes construct the same seed-20 inputs. The CPU mode uses the stage-1 interpreter and can take many minutes. The raw results preserve all six shapes and all 18 measured GPU intervals. [Results, commands and framework findings](02-report.md)
+
+## Step 6. Identify the first differing operation
+
+I traced the independently reported output differences at `a441c31` through the generated kernels for both original and optimized functions. The word counts below refer to outputs. Several differing outputs in a normalized row can trace back to a single differing exponential.
+
+### Prompt context
+
+**User request (verbatim)**
+
+~~~~text
+Stage 2 of IRWB-022-K has been evaluated independently, at your last commit. Your results:
+
+- **Stage-1 hidden suite:** 25/25 passed. The three API functions are exported.
+- **Corpus programs, small sizes, through `runTixCuda`:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.2e-7
+  - softmax: 54/76 elements bit-identical to the f32 meaning, largest difference 3.0e-8 (scaled by max(1, |r|)), largest difference from f64 5.3e-8
+  - layernorm: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 1.3e-7
+  - attention: 56/72 elements bit-identical to the f32 meaning, largest difference 6.0e-8 (scaled by max(1, |r|)), largest difference from f64 6.6e-8
+  - mlp: 21/24 elements bit-identical to the f32 meaning, largest difference 8.9e-8 (scaled by max(1, |r|)), largest difference from f64 3.6e-7
+  - conv: 160/160 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.1e-7
+- **After `optimizeTix(p, ['inline', 'split-sum'])`, compared with your own f32 run of the optimized program:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 2.2e-7
+  - softmax: 56/76 elements bit-identical to the f32 meaning, largest difference 3.0e-8 (scaled by max(1, |r|)), largest difference from f64 4.9e-8
+  - attention: 47/72 elements bit-identical to the f32 meaning, largest difference 3.0e-8 (scaled by max(1, |r|)), largest difference from f64 4.4e-8
+  - mlp: 18/24 elements bit-identical to the f32 meaning, largest difference 1.2e-7 (scaled by max(1, |r|)), largest difference from f64 3.4e-7
+- **20 random programs from the fixed core:** 16/20 bit-identical to the f32 meaning on every element; largest difference 1.2e-7.
+- **Corpus at the brief's sizes:**
+  - matmul: 262144/262144 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.262
+  - softmax: 2616298/4194304 elements bit-identical to the f32 meaning, largest difference 3.7e-9 (scaled by max(1, |r|)); your `gpuMs` 0.461
+  - layernorm: 4194304/4194304 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.493
+  - attention: 10618/65536 elements bit-identical to the f32 meaning, largest difference 3.7e-8 (scaled by max(1, |r|)); your `gpuMs` 1.507
+  - mlp: 231045/262144 elements bit-identical to the f32 meaning, largest difference 2.2e-5 (scaled by max(1, |r|)); your `gpuMs` 1.025
+  - conv: 984064/984064 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.360
+- **`checkLowering` on the six corpus programs and ten random ones:** accepted 16/16, relation tolerance, 4.0 s per check on average.
+- **Independently of your work,** the coordinator compared CUDA's double-precision `exp`, `log` and `tanh`, rounded to f32 (`__double2float_rn(exp((double)x))` and so on), with the f32 meaning's `Math.fround(Math.exp(x))` and so on, for all 2³² f32 inputs on the GB10. They agree on every input, with NaN compared as a class. In IEEE mode, `+ − * /` and `sqrtf` are correctly rounded, and the f32 meaning rounds each of them in the same way.
+
+In this turn, do not change any code under `src/`, `tests/`, `corpus/` or `tools/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every result above that is not bit-identical, find which operation in your emitted code causes the difference and state it with `file:line` in your diary. Reproduce it with a short script or GPU probe in your ticket's `scripts/` if that helps; keep GPU runs few and untimed. Then state, in one paragraph, whether the relation your contract checks is the strongest one your implementation and the evidence above support, and why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - the lowering and the emitted CUDA (with a short excerpt);
+   - the form you chose (kernel IR or direct emission) and why;
+   - the contract: relation, cases, batching and reuse, and the probe behind the relation;
+   - each framework and tool change and why it was needed;
+   - the timing method and the measured times;
+   - how you checked the work;
+   - the evaluation results above, including every difference and its cause;
+   - what you would do differently.
+
+   Write prose first, with at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-022-K:`). Final message: the report's path, the commit hash, one line per difference cause, and your one-paragraph answer on the relation.
+~~~~
+
+### Diagnosis at the evaluated revision
+
+| Evaluation group | Differing f32 words (small original / small optimized / full-size original) | Source operation, emitter and interpreter |
+| --- | --- | --- |
+| Softmax | 22/76 · 20/76 · 1,578,006/4,194,304 | Shifted exp at `corpus/tensor/softmax/main.tix:3` selects `expf` at `src/tensor/cuda-source.ts:26`. Tix uses `Math.exp` at `src/tensor/evaluate.ts:16` then rounds at line 81. The row sum at Tix line 4 and divide at line 5 propagate the change. |
+| Attention | 16/72 · 25/72 · 54,918/65,536 | Shifted exp at `corpus/tensor/attention/main.tix:4` selects the same `expf` at `src/tensor/cuda-source.ts:26`. Lines 5–7 of that Tix file normalize the affected row and fold weighted values. Its square root at Tix line 2 selects `__fsqrt_rn` at `src/tensor/cuda-source.ts:28`. |
+| MLP | 3/24 · 6/24 · 31,099/262,144 | GELU at `corpus/tensor/mlp/main.tix:3` selects `tanhf` at `src/tensor/cuda-source.ts:29`. Host tanh is `src/tensor/evaluate.ts:19`, rounded at line 81. The output dot product at Tix line 4 combines differences across hidden units. |
+| Random fixed core | 4/20 programs had at least one difference, maximum 1.2e−7 | The reproducible finite intrinsic discrepancies are `expf` at `src/tensor/cuda-source.ts:26`, `logf` at `src/tensor/cuda-source.ts:27` and `tanhf` at `src/tensor/cuda-source.ts:29`. For log the host path is `src/tensor/evaluate.ts:17` then line 81. The aggregate lacks the individual programs, inputs and divergent expressions. It does not determine which call each of the four executed. |
+
+All three choices above become device calls at `src/tensor/cuda-source.ts:103`. For the optimized comparisons the interpreter and GPU consume the same tree. The blocked sum is constructed at `src/tensor/passes.ts:67` and the GPU rounds its accumulator at `src/tensor/cuda-source.ts:114`. Reassociation changes the tree relative to the original but is shared by the two sides of this comparison.
+
+**Differences from f64.** The f32 and f64 interpreters select different rounding policies at `src/tensor/evaluate.ts:27`; arithmetic and folds round at lines 81 and 86. Exact f32 agreement for matmul, layernorm and conv2d leaves their nonzero differences from f64 intact. For matrix products and convolution, rounded multiplication (`src/tensor/cuda-source.ts:23`) and accumulation (line 114) are precision boundaries. Layernorm also rounds division (line 24), its epsilon literal (line 87) and square root (line 28). The small f64 differences for softmax, attention and MLP can include ordinary f32 rounding as well as the selected math call. Output maxima alone do not identify a unique term responsible for each f64 discrepancy. The two reference comparisons and all the supplied maxima are recorded in the [publication report](02-report.md).
+
+### Reproduction and evidence
+
+I printed the kernels returned by `cudaSource` for each named nonmatching function, before and after the two rewrites. Softmax had four kernels in both cases. Attention had six then five. MLP had three then two. Each retained its suspect intrinsic call. Running `node "$ticket/scripts/02-compare.mjs"` on the retained probe bytes reproduced the grid results, including these first differing words (host → GPU).
+
+| Operation | Input | f32 words |
+| --- | --- | --- |
+| exp | −3.998291015625 | 0x3c964c61 → 0x3c964c60 |
+| log | abs(−3.985595703125) + 0.125 | 0x3fb4efcb → 0x3fb4efcc |
+| tanh | −3.69189453125 | 0xbf7faea0 → 0xbf7fae9f |
+
+For a paired intervention, run `node "$ticket/scripts/06-isolate-math.mjs"` from the worktree root with the evaluated build. The script uses the actual emitted functions, fresh seed-20 f32 inputs, a shared host/device runtime and private names for each generated kernel sequence. Its diagnostic copy substitutes only the selected scalar math implementation. One untimed runner job (`f18b8be41eb9c276`, NVIDIA GB10, 12.1, runtime 13000) executed all pairs. Stock differed on 69/152 and 65/152 softmax words, 84/143 and 87/143 attention words, and 28/84 and 24/84 MLP words (original then optimized). The double-call copies, rounded to f32 at the original operation boundary, matched every word. This is a reproduction of the mechanism on known inputs. The coordinator supplied the independent counts and the exhaustive scalar comparison.
+
+### Strength of the relation
+
+Of the brief's two uniform relations, sampled tolerance to original f64 is the strongest justified for this emitter across the fixed core. A single `expf` witness falsifies universal f32 equality, and the same issue occurs for `logf` and `tanhf`. A conditional exact check against current f32 is stronger on computations using only matching operations in the prescribed order, treating NaNs as a class. The coordinator's exhaustive result supports exact intrinsic agreement for a different implementation using double calls followed by f32 rounding. It does not transfer those words to the shipped calls or prove a tight global tolerance to original f64.
+
+### Review and follow-up
+
+Inspect the three operation selections, the full-program paired comparison and the two separate reference columns in the report. An exact lowering check against current f32 and an origin-f64 budget after split-sum would make the two obligations separately visible. Attaching a per-program identifier and the first divergent operation to future random-evaluation summaries would make every failure replayable.
+
+The final publication check resolved all ticket links, matched the CUDA excerpt against generated matmul, validated the independent word-count rows and passed docmgr doctor. A path-scoped diff against a441c31 was empty for src, tests, corpus and tools.
