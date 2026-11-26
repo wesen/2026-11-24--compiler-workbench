@@ -192,3 +192,9 @@ Now do the following in this session:
 Design revision `0ed7084` incorporated the review. Both runners now build the native revision, diff and correspondence through the same function and check declared writes. The asynchronous path opens an editor on demand. The synchronous path applies the caller's invariant only to a changed candidate.
 
 A locked offline install initially failed during esbuild's version check with `spawnSync .../bin/esbuild EPERM`; the approved rerun of `npm ci --offline --no-audit --no-fund` succeeded. `npm run build` passed. Running `node tests/framework/native-pass-sync.test.mjs` exercised both new tests successfully, including failed write/meaning checks on a real v6 artifact.
+
+## Step 4 — Check and execute indexed programs
+
+The scanner and precedence parser resolve tensor reads and lexical index binders while constructing the IR. A second traversal validates the artifact and diagnoses impossible affine bounds. The same validator checks native rewrite results. The evaluator binds each expression to its inputs and loops, with f32 rounding at each operation and reduction step.
+
+`npm run build` and the five tests in `node tests/tensor/language.test.mjs` passed. These checks include an affine transpose, two valid readings of `max(A,B) - …`, reduction order visible in f32, empty reductions, and diagnostics after a line comment. Commit `ecf9a93` contains the preceding framework change.
