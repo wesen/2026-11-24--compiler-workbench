@@ -8,6 +8,9 @@ import type { Module } from './model.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
+export { cudaSource } from './cuda-source.js';
+export { runTixCuda } from './cuda-run.js';
+
 export interface TixProgram {
   readonly origin: Artifact<Module>;
   readonly current: Artifact<Module>;

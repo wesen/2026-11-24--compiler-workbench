@@ -57,3 +57,7 @@ Observed digest: `1039ed88a0b69224c051b20233ad5996a4e8d3580264a0496248bf222adac7
 ## Step 2: Review correction
 
 Accepted both required changes. Reading `runDifferentialAsync` confirmed `todo` already removes replayed indices before delegation; the proposed packet analysis duplicated that work. Preload all kernels before events using `cudaFuncGetAttributes`. Dropped tool changes, profile queries and concurrent request handling. Baseline `npm run build` succeeded.
+
+## Step 3: Emit and run the actual translation unit
+
+Added ordinal CUDA generation and a shared versioned packet runner. `npm run build` initially reported TS2345 (Buffer<ArrayBufferLike> vs Buffer<ArrayBuffer>); explicitly typing the packet list fixed it. Built successfully and launched the full-size CPU and timed GPU benchmark script. GB10 compiled the emitted MLP, convolution, matmul and attention programs and returned event samples and endpoint values. No tool change.
