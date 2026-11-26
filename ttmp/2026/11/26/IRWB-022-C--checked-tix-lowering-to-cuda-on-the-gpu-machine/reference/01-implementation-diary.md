@@ -186,3 +186,23 @@ Now do the following in this session:
 ```
 
 **Revision:** Fix 128 threads and call checked `cudaFuncGetAttributes` for every generated kernel outside the event span. Benchmark one warm-up and five recorded repeats in the same CUDA process with the same buffers, and one recorded interpreter run given the size of the workloads. Include the host and tool configuration in `subjectKey` directly. Keep process-local replay, without coalescing concurrent cold checks. `git diff --check` and the Docmgr review task update passed. Implementation now follows the reviewed design.
+
+## Step 3: Wire direct emission through the remote tool and the framework gate
+
+The lowering now emits runnable, shape-generic CUDA from the current Tix revision. The same binary ABI serves public one-case execution, batched checking, and benchmark invocations. Runtime buffers and concrete shapes are separate from the CUDA source, so the tool can cache a build independently of batch data.
+
+### What I did and why
+
+- `src/tensor/cuda-source.ts` emits one 128-thread-block kernel per statement, sequential folds and stable binder identities. The generated host driver preloads all kernels, owns buffers, and brackets only launch sequences with CUDA events. The benchmark driver reuses those buffers across one warm-up and five measured repetitions.
+- `src/tensor/cuda-remote.ts` validates concrete shape bindings, preserves LE f32 words in the wire format, invokes the tool asynchronously and rejects invalid or incomplete results. `tools/cuda-remote.mjs` keys compilations on the compiler and flags and either all staged inputs or `main.cu`, locks builds through atomic publication, and isolates run/output directories. No change to an environment outside the worktree was needed except the CUDA tool's normal run and cache directories.
+- `src/tensor/cuda-contract.ts` checks the exact candidate text against the immediately preceding Tix revision. The manager rejects a malformed launch or different answer before accepting the transformation. Only decided per-case verdicts are reused. On a cold batch the invariant records the actual profile, build, case count and worst finite error/budget fraction separately from the verdict. No framework files changed.
+
+### Evidence and failures
+
+- `npm run build` succeeded after `npm ci --prefer-offline --no-audit --no-fund` installed the declared dev dependencies locally. A manual GPU smoke call on a `[2,3]` sum produced `[6,15]` and an event time; two `checkLowering` calls accepted it.
+- The first run of `node --test tests/tensor/*.test.mjs` found a stray `EOF` token in each new test file (`ReferenceError: EOF is not defined`). Removed the tokens; the local suite passed 19 tests with six GPU tests skipped on purpose.
+- The first opt-in GPU test run hit the command timeout after the first three tests. The edge-case test showed why the tolerance contract compares NaN class rather than NaN words: Node typed-array deep comparison rejects even two different NaN payloads. A minimal Node probe confirmed it on `0x7fc00000` vs `0xffc00000`. The exact-witness helper now compares numbers with `SameValue` (still distinguishes signed zero), matching the design. Full GPU validation and measurements are tracked separately below.
+
+### Next checkpoint
+
+Capture six corpus check summaries, rerun the repaired opt-in tests, and report benchmark measurements from `node corpus/tensor/benchmark.mjs`. The benchmark runs the unchanged stage-1 f32 evaluator, so the large reduction workloads can take substantially longer than the remote launches.

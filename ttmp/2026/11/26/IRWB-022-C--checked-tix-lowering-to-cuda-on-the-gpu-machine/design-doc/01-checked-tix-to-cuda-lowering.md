@@ -17,6 +17,10 @@ RelatedFiles:
       Note: Async batch delegation and case verdict reuse
     - Path: repo://src/framework/passes/define-pass.ts
       Note: Same-IR native and edit pass runners contrasted with emission
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: Checked transformation and batch comparison
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Direct CUDA emission, kernel loading and event timing
     - Path: repo://src/tensor/evaluate.ts
       Note: Stage-1 f32 and f64 reference execution
     - Path: repo://src/tensor/model.ts

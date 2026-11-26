@@ -7,6 +7,9 @@ import { adapter } from './ir.js';
 import type { Module } from './model.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
+import { selectFunction, verifyCuda } from './cuda-contract.js';
+import { engine, runCudaBatch, type CudaInputs, type CudaResult } from './cuda-remote.js';
+import { emitCuda } from './cuda-source.js';
 
 export interface TixProgram {
   readonly origin: Artifact<Module>;
@@ -45,4 +48,28 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     }
   });
   return { program: { origin, current }, steps };
+}
+
+export function cudaSource(program: TixProgram, fn: string): string {
+  return emitCuda(selectFunction(program.current.value, fn));
+}
+
+export async function runTixCuda(
+  program: TixProgram,
+  fn: string,
+  inputs: CudaInputs,
+  options?: { host?: string },
+): Promise<CudaResult> {
+  const selected = selectFunction(program.current.value, fn);
+  const {
+    cases: [{ shape, data, times }],
+  } = await runCudaBatch(selected, emitCuda(selected), [inputs], engine(options?.host));
+  return { shape, data, gpuMs: times[0] };
+}
+
+export function checkLowering(
+  program: TixProgram,
+  fn: string,
+): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
+  return verifyCuda(program.current, fn);
 }
