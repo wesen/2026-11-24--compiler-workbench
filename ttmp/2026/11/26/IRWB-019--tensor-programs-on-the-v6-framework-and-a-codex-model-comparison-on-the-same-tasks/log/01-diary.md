@@ -296,3 +296,10 @@ Only the two medium Claude cells implement: Opus N and Fable P. Medium is cheape
 - **The four v2 Sol designs finished:** Q (Pi, medium) 1,921 words, S (Pi, high) 2,931, T (Codex, medium) 2,827, R (Codex, high) 2,664.
   - They are packed blind with the turn-1 v1 designs of the same four cells (A, C, F, G, taken from the t1 pack, not from the worktrees, which turn 2 is revising). The key is `results/blind-key-t1-v2.json`.
   - A judge scores all eight in one session. Its prompt adds, explicitly, the four scoring rules the first judge chose for itself (R2, R4, R5, R8), so the v1 designs are rescored under the same rules rather than compared with their first scores.
+
+## Step 11: first acceptance results; the suite fix confirmed; the suite frozen
+
+- **Two implementations pass all 25 hidden tests,** bit for bit: IRWB-020-B (Codex, Astra, medium, `343f7a8`) and IRWB-020-E (Pi, Astra, medium, `a0277f9`). They are independent implementations from different harnesses, and both match the hand-written references, which supports the references themselves.
+- **The v1 suite would have failed both on the invalid test** found in step 10 ("a two-index reduction accumulates lexicographically": 22 of 23 passing). Both reject that program, as the brief requires: B with "2:5 Cannot infer extent", E with "2:31: cannot infer index extent".
+- **The suite is frozen** from here: `acceptance.test.mjs` sha256 `ca81276f0939aade…` (v1: `ca4f792e16ed96a9…`). Adding tests after seeing results would fit the suite to the implementations.
+- **If most implementations reach 25 of 25,** the suite is a floor, not a ranking. The planned objective comparison beyond it is a differential cross-check: random programs from the fixed core, run on every implementation bit for bit, with disagreements resolved against a hand reference. It uses only the brief, so it can be written now without looking at any implementation.
