@@ -38,9 +38,8 @@ f32 bits; `split-sum` may change them within a sampled tolerance against the ori
 
 The framework's representation and differential checker already fit. The mismatch is execution: the fixed Tix
 API is synchronous, while even a synchronous body and evaluator go through asynchronous `applyPass` and
-`AnalysisManager` entry points. The proposal is a small synchronous native-pass path and a context-free
-postcondition runner, not a second analysis manager. This document is the proposed framework change ledger;
-no implementation has landed.
+`AnalysisManager` entry points. The sole framework addition is a synchronous native-pass runner with a
+`CheckResult` gate. Tix owns the gate and invokes the existing differential checker directly.
 
 ## Source and shape checking
 
@@ -77,6 +76,13 @@ no implementation has landed.
   inconsistencies are compile errors; mismatched concrete shapes or violations of residual constraints
   cannot be diagnosed until `runTix` gets the shapes and are checked before evaluation. Inferred extents
   that disagree are not turned into runtime equality guards.
+
+**Review decision:** Keep affine signature binding and concrete access checks. Direct-name-only binding
+would reject legal signatures such as `f32[2 * N + 1]` and coupled affine signatures. Rejecting every
+symbolically unprovable access would also reject useful programs, such as a fixed-coordinate read whose
+validity depends on the input extent. Source errors remain compile errors with `line:col`; the runtime
+shape domain is determined by r0's planner, even after optimization. No separate obligation artifact or
+general constraint solver is needed.
 
 The evaluator domain is well-formed Tix with dimensions and row-major allocations representable on the
 host and finite input values in the selected precision (in f32 mode, after conversion). Zero extents are
@@ -124,20 +130,30 @@ candidate payload; r0 is not part of any tensor entity. Before the sampled check
 names, parameters and normalized signatures and keep the original invocation-domain obligations. Do not
 silently discard constraints when an intermediate tensor is removed.
 
-**Sample domain.** Generate cases from r0, for every entry function, never from the candidate. Try uniform
-shape-name assignments, single-name perturbations and bounded mixed assignments from
-`{1,2,3,4,5,6,8,9}`, in a fixed order, deduplicated after binding. Keep up to eight valid, affordable shapes
-per function; reserve half for nonuniform assignments if there are multiple names and feasible choices.
-Include an empty assignment for concrete signatures. Prioritize block-boundary values `1,3,4,5,6,8,9`
-for a single shape name. Skip shapes violating r0's checked shape constraints. Use a
-fixed search budget (256 proposals per function), 16K elements per tensor and a deterministic budget of
-250K evaluator steps per run. For each retained shape use zeros (including signed-zero patterns), ones,
-axis-dependent ramps, alternating signs, and seed-7 f32-rounded draws in `[-1,1]`; also use a sparse
-leading-1 / half-ulp pattern along input axes of length six (the witness below). Short deterministic
-patterns and seeded variation serve different purposes: they expose sign, access and tail bugs that random
-values alone may miss. If any function has no cases, or an evaluated case exhausts its budget, the changed
-candidate cannot be accepted. This is a bounded test domain, not a proof of exactness or stability for all
-shapes and finite values. No user API is needed to configure it.
+**Sample domain.** Generate cases from r0 for every function. Sort shape names by code-unit order; use
+`V = [1,3,4,5,6,8,9,2]`. A concrete signature gets one empty assignment; a single name gets `V` in order.
+For multiple names, construct two streams:
+
+1. Uniform: all names take each value in `V`, in order.
+2. Nonuniform: for each base in `V`, each name in sorted order, and each replacement in `V` except the base,
+   change only that name. Then enumerate tuples lexicographically by position in `V`, skipping uniform tuples.
+
+Try uniforms first, then nonuniforms (stop after eight valid nonuniforms or 256 total distinct proposals).
+Deduplicate assignments before counting proposals. Keep the first four valid uniforms and four valid
+nonuniforms, then backfill up to eight total from remaining uniforms followed by remaining nonuniforms.
+A proposal is valid if the r0 shape planner accepts it, every tensor has at most 16,384 elements, and the
+r0 cost is at most 250,000 steps. Count a cell store, scalar-tree node evaluation, loop iteration and
+accumulation as one step each; compute cost from the bound loop sizes before evaluation. For any retained
+case, give both the predecessor (when used for exact checking) and candidate 500,000 steps, independently
+of r0's cost. Even at the r0 cap, blocking adds at most one outer iteration and accumulation per input
+term, which is less than the existing per-term cost. More expensive compositions can still be rejected.
+
+For each retained shape, in order, use all `+0`, alternating `-0`/`+0`, ones, a row-major ramp, alternating
+signs, and f32-rounded draws in `[-1,1]` from the framework PRNG (seed 7). Then for each input in signature
+order and each axis of length six in axis order, use a separate sparse pattern: put
+`[1,0,0,0,2^-24,2^-24]` along that axis with all other coordinates zero, and zero all other inputs.
+No cases for any function or any exhausted budget rejects a changed candidate. This bounded sample is
+not a proof of exactness or stability over all shapes and values.
 
 **Observation and relation.** Compare the returned shape and every row-major element. A candidate unable to
 run an r0 case does not agree. Exact compares the f32 buffer's `Uint32Array` words (including zero sign and
@@ -151,10 +167,9 @@ forward-error guarantee on ill-conditioned programs; a large reference error or 
 valid reassociation. Do not tune the policy to pass every transformation. Record sampled evidence and
 replayable case information (function, shape, pattern/seed, first differing element, and bits or error bound).
 
-For `inline`, check exact against the immediate predecessor and against r0 if still in exact mode. After an
-accepted tolerant edit, additionally require the r0 tolerance check instead of exact against r0. For
-`split-sum`, check tolerance against r0, not the previous candidate, to prevent drift. These are separate
-checks: an exact rewrite after a tolerant one cannot exploit the remaining error budget. Test the split
+For `inline`, check exact against the immediate predecessor, on the same r0-derived cases. This preserves
+whatever the predecessor established, so no additional r0 comparison is needed. For `split-sum`, check
+tolerance against r0, not the previous candidate, to prevent drift. Test the split
 kernel under an exact gate too; that override is an internal test seam, not a public option. A no-op leaves
 meaning unchanged and counts as accepted. A failed semantic check reports `accepted: false`, keeps the last
 accepted revision and continues with the next named pass. Only supported pass names (`inline`, `split-sum`)
@@ -190,15 +205,13 @@ are part of the fixed API; test mutants use the same framework runner without re
 
 | Area | Proposed change and reason | What stays unchanged |
 | --- | --- | --- |
-| `framework/passes/` | Add `applyNativePassSync` for synchronous native results. Share native candidate preparation with `applyPass`: v6 artifact creation, projection/diff, correspondence and declared-write checks. The tensor adapter need not implement `rebuild` just to satisfy `applyPass`'s eager edit creation. Accept after the sync postcondition gate; return evidence with the result. | No synchronous `IREdit`, store publication, analysis needs or preservation claims. Reject unsupported declarations, missing gates or thenable results in the new path. Existing async pass API and behavior stay intact. |
-| `framework/contracts/` | Add an explicit context-free, synchronous invariant definition and a `verifyPostconditionsSync` runner for already-computed artifact pairs. Reuse definition/port binding, immutable snapshots, artifact validation and check/evidence validation; let local-only `differential` invariants opt into the same callback used on the async path. This preserves the contract vocabulary and sampled evidence without blocking on a Promise. | Only pure invariant `ensures`; no requirements, effects, body runner, transfer, correspondence requirements, async checks or analysis lifecycle in this path. Unsupported clauses fail explicitly; no silent skip and no fake `ContractContext`. No cache or `AnalysisManager` journal; the pass caller gets the checked evidence directly. |
+| `framework/passes/define-pass.ts` | Add `applyNativePassSync` for synchronous native results. Share native candidate preparation with `applyPass`: v6 artifact creation, projection/diff, correspondence and declared-write checks. The tensor adapter does not need `rebuild`. Require a synchronous `CheckResult` gate and return its evidence. | No synchronous `IREdit`, store publication, analysis needs, preservation or transformation declarations. No changes to the async API. |
+| `framework/contracts/` | No change. Tix builds `differential` invariants and uses `runDifferential(differentialSpec(inv), ports)` in the synchronous gate. | No new invariant kind, postcondition runner, or `AnalysisManager` journal for this path. |
 | `framework/core`, `ir`, `dataflow`, `strategy` | No changes proposed. Use finite JSON artifacts and v6 views as-is; sequence the two named passes directly. | No new IR substrate, dataflow lattice or strategy operator. |
 
-A tensor-local driver calling `runDifferential` directly would be shorter at first but would make tensor own
-contract port validation, gating and write checks. Making `optimizeTix` async would reuse the existing manager
-but break the fixed API. General synchronous analysis transactions would grow the framework for capabilities
-this domain does not exercise. Review the narrow sync split first; record any different framework need with
-its reason in this ledger before expanding scope.
+A fully tensor-local pass driver would duplicate v6 revision and write checking. An async `optimizeTix`
+would break the fixed API. The native runner avoids both; existing differential logic supplies the verdict
+without a second contract executor. Tix owns the policy that selects the baseline, cases and relation.
 
 ## Corpus and validation plan
 
@@ -215,15 +228,15 @@ Add six `corpus/tensor/<name>/main.tix` fixtures and test all through the built 
 
 Implement frontend/validator and evaluators first; cover diagnostic locations, shape unification and affine
 bounds, reduction precedence, shadowing, lexicographic order, signed zero, zero extents and f32 vs f64
-rounding. Then add the sync framework path with tests for exact port/shape validation, undeclared writes,
-refusal of unsupported async/semantic declarations and evidence on rejected candidates. Implement passes
+rounding. Then add the sync framework path with tests for artifact validation, undeclared writes, refusal
+of unsupported async/semantic declarations and evidence on rejected candidates. Implement passes
 and case generation, exercise the witness and both mutants, and test a pass sequence with a rejected step
 and an exact step after a tolerant one. The corpus fixtures also exercise optimized output, but the witness
 and mutant tests are the required pass acceptance evidence, independent of corpus-wide sampling.
 
-Post-implementation gate: `npm run build`, `node --test tests/tensor/`, `node --test tests/framework/`, and
+Post-implementation gate: `npm run build`, `node --test tests/tensor/*.test.mjs`, `node --test tests/framework/*.test.mjs`, and
 at least `node --test tests/typed/{passes,inline,meaning-memo}.test.mjs` for the shared pass preparation and
-differential changes. Request escalation if a test's Node spawn hits sandbox EPERM. No Typed code, tools or
+Typed's differential integration. Request escalation if a test's Node spawn hits sandbox EPERM. No Typed code, tools or
 existing Typed fixtures/tests change.
 
 ## Review focus and scope boundary
