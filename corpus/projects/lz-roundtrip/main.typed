@@ -1,0 +1,86 @@
+function hash3(a: i32, b: i32, c: i32): i32 {
+    return ((a * 31 + b) * 31 + c) & 15;
+}
+
+function compress(input: buffer, packed: buffer, chainLimit: i32): i32 {
+    const head = new Int32Array(16);
+    const prev = new Int32Array(24);
+    const n = input.length;
+    let i = 0;
+    let k = 0;
+
+    while (i < n) {
+        let bestLen = 0;
+        let bestDistance = 0;
+        if (i + 3 <= n) {
+            const bucket = hash3(input.charCodeAt(i), input.charCodeAt(i + 1), input.charCodeAt(i + 2));
+            let link = head[bucket];
+            let visits = 0;
+            while (link !== 0 && visits < chainLimit) {
+                const candidate = link - 1;
+                let len = 0;
+                while (len < 6 && i + len < n) {
+                    const current = input.charCodeAt(i + len);
+                    const earlier = input.charCodeAt(candidate + len);
+                    if (current !== earlier) {
+                        break;
+                    }
+                    len = len + 1;
+                }
+                if (len > bestLen) {
+                    bestLen = len;
+                    bestDistance = i - candidate;
+                }
+                link = prev[candidate];
+                visits = visits + 1;
+            }
+        }
+
+        let advance = 1;
+        if (bestLen < 3) {
+            packed.setCharCodeAt(k, input.charCodeAt(i));
+        } else {
+            const token = 128 | ((bestLen - 3) << 5) | (bestDistance - 1);
+            packed.setCharCodeAt(k, token);
+            advance = bestLen;
+        }
+
+        // Insert every consumed position that begins a complete triple.
+        for (let p = i; p < i + advance; p = p + 1) {
+            if (p + 3 <= n) {
+                const bucket = hash3(input.charCodeAt(p), input.charCodeAt(p + 1), input.charCodeAt(p + 2));
+                prev[p] = head[bucket];
+                head[bucket] = p + 1;
+            }
+        }
+        i = i + advance;
+        k = k + 1;
+    }
+    return k;
+}
+
+function decompress(packed: buffer, packedLen: i32, output: buffer): i32 {
+    let written = 0;
+    for (let k = 0; k < packedLen; k = k + 1) {
+        const token = packed.charCodeAt(k);
+        if ((token & 128) === 0) {
+            output.setCharCodeAt(written, token);
+            written = written + 1;
+        } else {
+            const len = ((token >>> 5) & 3) + 3;
+            const distance = (token & 31) + 1;
+            // Forward copying lets a match read cells it has just written.
+            for (let copied = 0; copied < len; copied = copied + 1) {
+                const cell = output.charCodeAt(written - distance);
+                output.setCharCodeAt(written, cell);
+                written = written + 1;
+            }
+        }
+    }
+    return written;
+}
+
+function roundTrip(input: buffer, packed: buffer, output: buffer, chainLimit: i32): i32 {
+    const packedLen = compress(input, packed, chainLimit);
+    return decompress(packed, packedLen, output);
+}

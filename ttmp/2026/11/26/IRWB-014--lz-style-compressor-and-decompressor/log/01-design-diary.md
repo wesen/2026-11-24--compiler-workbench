@@ -9,9 +9,18 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://corpus/projects/lz-roundtrip/main.typed
+      Note: Codec implementation
+    - Path: repo://corpus/projects/lz-roundtrip/project.json
+      Note: Tape ingestion and valid generated input specs
+    - Path: repo://corpus/projects/lz-roundtrip/scripts/explore.js
+      Note: Fresh workbench experiment
 ExternalSources: []
 Summary: Design decisions and probe results for the LZ corpus project.
+LastUpdated: 0001-01-01T00:00:00Z
+WhatFor: ""
+WhenToUse: ""
 ---
 
 # LZ corpus design diary
@@ -77,3 +86,57 @@ The actual feature probe hit `unknown tape opcode 252 at 9` through `Program.fro
 Specified a single-byte token with a three-to-six-character match, a bounded chain over 16 bucket heads, and an overlapping forward decoder. Used a fixed standalone decoder case so all current function checks have valid arguments. The collision fixture distinguishes one chain visit from two. The design records the arithmetic step estimate and leaves actual codec measurements to implementation. See the [design document](../design-doc/01-lz-style-compression-corpus-project.md).
 
 Validated local links, document length, and the 12,440-statement budget arithmetic. Added the diary frontmatter after docmgr flagged the missing delimiters, then reran `docmgr doctor --ticket IRWB-014 --stale-after 30` with all checks passing.
+
+## Step 4 — Implemented the codec and opened the project
+
+The reviewed design's Node loader change is already present. Both `Program.fromProject` and `ingestProject` forward the metadata to the tape lifter. The codec uses that path with the two local dictionaries. The Workbench opens the same files and runs the exploration script on a fresh revision.
+
+### Prompt context
+
+<details>
+<summary>User implementation request, verbatim</summary>
+
+> You are working in a git worktree of the IR Workbench repository (TypeScript, Node). It contains a compiler from Typed, a small statically typed language with TypeScript-like syntax, to 32-bit RISC-V (RV32IMF), built on an IR framework in which every optimization pass is checked against the original program. Your task: implement the corpus project designed in your ticket IRWB-014. The design document is in `ttmp/2026/11/26/IRWB-014--*/design-doc/`. It has been reviewed; implement it as designed. Where the design turns out to be wrong about the code, follow the code and record the deviation in your diary.
+>
+> ## Read first
+> - Your design document.
+> - `corpus/reference.md` and two or three existing corpus projects (for example `corpus/projects/sort`, `checksum`, `histogram`).
+> - `tests/typed/project-meta.test.mjs`: `project.json` now supports `"ingest": { "tape": true }` (needed for frame arrays) and `"entries": [...]` (checks generate cases for the listed entry functions only), in `Program.fromProject`, `ingestProject` and `tools/parity.mjs`.
+>
+> ## Deliverables
+> - The corpus project under `corpus/projects/<name>/` as the design describes (`.typed` sources, `project.json`, `notes.md`, any scripts the design calls for).
+> - The tests and checks the design calls for, under `tests/typed/`.
+> - Your ticket's diary (use your docmgr and diary skills), tasks and changelog, kept current as you work.
+>
+> ## Environment
+> - `node_modules` is found from the repository root. Run `npm run build` once before using `dist/`.
+> - Six agents share this machine. Run only your own tests (`node --test tests/typed/<your-test>.test.mjs`) and, for your project, `node tools/parity.mjs <name>` or `node tools/reference-check.mjs <name>` if useful. Do not run the full test suite (`npm test`), corpus-wide tools without a project argument, or anything that touches Candela.
+>
+> ## Constraints
+> - Do not modify `src/`, `tools/`, other corpus projects, other tickets, or existing tests. Adding your project's id to `corpus/projects/index.json` is allowed.
+> - Never run code from downloaded archives under `ttmp/**/sources/`.
+> - Commit at sensible points on your current branch with messages starting `IRWB-014:`. Do not push.
+> - Final message: what you built (paths), how it was checked (commands and results), what deviates from the design, and the commit hashes.
+> Your ticket is IRWB-014. Your design document is `ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/design-doc/01-lz-style-compression-corpus-project.md`.
+
+</details>
+
+The implementation should preserve the design's search, token format and decoder while staying within the corpus and test boundaries.
+
+### Changes and rationale
+
+- Added the four Typed functions, metadata, notes and `explore` to `corpus/projects/lz-roundtrip/`. The corpus already discovers the directory. The default check scope covers all four functions, which each have valid input specs.
+- The decoder's focus points to line 74, where a match loads a cell from its own output.
+- The CLI loads metadata directly. The workbench uses its normal built-in project loader, with only this project supplied to the in-memory probe.
+
+### Validation and debugging
+
+- `npm run build` passed before loading `dist/`.
+- A `node --input-type=module` probe with the actual codec confirmed all five exact encoding fixtures and the 14-cell decoding fixture at r0.
+- The first workbench probe passed the projects as a `builtins` config key. It failed with `[unknownProject] no project "lz-roundtrip".` The rerun used `createWb({ projects: [{ id, files }] })`. The script produced the expected five tokens and 24 A cells in 3,181 RV32 instructions, with the open program still at r0.
+- A second `node --input-type=module` probe compiled the project with the vendored reference path. A four-A round trip produced four A cells in 549 instructions.
+- Inspection found an existing script-inventory assertion in `tests/workbench/scripts.test.mjs` that hardcodes 46. There are 46 tracked scripts before this change and 47 with `explore`. The implementation constraints leave that assertion outside this ticket. The existing test was outside the permitted execution scope.
+
+### Review and next action
+
+Start at the two checked loads in the compressor and the forward copy in the decoder. Use exact fixture prefixes to review the distance and length fields. The next checkpoint will add the repeatable oracles, measure the pass budget and report paired instruction totals.
