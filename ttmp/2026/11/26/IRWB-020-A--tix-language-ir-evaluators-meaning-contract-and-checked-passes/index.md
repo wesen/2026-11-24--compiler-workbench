@@ -1,7 +1,7 @@
 ---
 Title: Tix Language, IR, Evaluators, Meaning Contract, and Checked Passes
 Ticket: IRWB-020-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: Stage 1 design and review checkpoint for Tix on the v6 framework.
-LastUpdated: 2026-11-26T13:50:06.946283682-05:00
+LastUpdated: 2026-11-26T14:55:42.81071031-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -22,7 +22,7 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 1 adds Tix indexed tensor programs as a second domain on the v6 framework. The design review is complete and Stage 1 implementation is underway.
+Stage 1 adds Tix indexed tensor programs as a second domain on the v6 framework. Stage 1 is implemented and verified. The public API is built into `dist/tensor/index.js`.
 
 ## Key Links
 
@@ -31,7 +31,7 @@ Stage 1 adds Tix indexed tensor programs as a second domain on the v6 framework.
 
 ## Status
 
-The ticket is **active**.
+The ticket is **complete**.
 
 ## Topics
 

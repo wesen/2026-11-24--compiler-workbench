@@ -1,7 +1,7 @@
 ---
 Title: Tix Stage 1 Design
 Ticket: IRWB-020-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -23,7 +23,7 @@ RelatedFiles:
       Note: Existing native pass and strategy regression tests
 ExternalSources: []
 Summary: Indexed tensor IR, f32 and f64 evaluation, sampled pass acceptance, and the synchronous native pass proposal.
-LastUpdated: 2026-11-26T13:50:07.010969984-05:00
+LastUpdated: 2026-11-26T14:55:42.89516298-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -74,7 +74,7 @@ The absolute term allows small reduction-order errors when the sum nearly cancel
 
 Both passes use `definePass`, with declared v6 writes and native tree results. Each requested pass proposes one module revision containing its eligible rewrites. A no-op is an accepted step. A contract rejection leaves the current revision in use for the next step.
 
-- **`inline`.** In source order, find a non-returned pointwise producer (no reduction) referenced at exactly one syntactic read. Recompute read counts after each removal and continue until there are no more eligible producers. Substitute its expression at the read, composing its output binders with the consumer's affine subscripts. Resolved IDs avoid capture even under nested reductions. Remove the producer. Keep the original expression tree and the f32 operations at its nodes. A materialized f32 value is already rounded and loading it adds no new arithmetic. Projected writes are statements, containment and reads. Replacing only same-name, identity-index reads is simpler but would miss a permuted read. Test permutation under a reduction and a signed-zero result. A wrong inline variant ignores a square tensor's index permutation. The generated row-major alternating-sign tensor at fixed shape 2×2 exposes the changed off-diagonal bits.
+- **`inline`.** In source order, find a non-returned pointwise producer (no reduction) referenced at exactly one syntactic read. Recompute read counts after each removal and continue until there are no more eligible producers. Substitute its expression at the read, composing its output binders with the consumer's affine subscripts. Resolved IDs avoid capture even under nested reductions. Remove the producer when the composed affine coefficients fit the IR's safe-integer representation. Leave an unrepresentable substitution alone. Keep the original expression tree and the f32 operations at its nodes. A materialized f32 value is already rounded and loading it adds no new arithmetic. Projected writes are statements, containment and reads. Replacing only same-name, identity-index reads is simpler but would miss a permuted read. Test permutation under a reduction and a signed-zero result. A wrong inline variant ignores a square tensor's index permutation. The generated row-major alternating-sign tensor at fixed shape 2×2 exposes the changed off-diagonal bits.
 - **`split-sum`.** Replace a one-index sum of extent `E` with ordered blocks of four. Each block folds indices `4*b` through `min(4*b+4,E)-1` from `+0`. The outer loop folds the block results from `+0` in block order. Empty domains return `+0`. Leave max, multi-index sums and existing blocked sums alone. Only the statement body's projected attributes change. A single dedicated IR node expresses the two levels and clipped tail without introducing storage for partial sums. Test lengths 0, 1, 4, 5 and 6, and check that a second application is a no-op. For a fixed length-six sum, `[1,0,0,0,2^-24,2^-24]` gives sequential f32 bits `3f800000`, blocked bits `3f800001`, and an f64 reference exactly equal to the blocked result. Check the same candidate through both relations. The exact one rejects and the tolerance one accepts. A wrong variant omits the final partial block. On six ones its f32 result is 4 and the reference is 6, so the tolerance check rejects.
 
 Exercise the deliberately wrong native rewrites through the same framework pass gate using test-local definitions and the production-generated cases. The tests assert the pattern named in the rejection evidence. Check the rejected candidate was structurally valid and that the public pipeline returns a runnable accepted artifact. Also check repeated optimization calls and an exact inline after a split to exercise the two reference anchors.

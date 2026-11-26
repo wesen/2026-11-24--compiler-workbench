@@ -1,7 +1,7 @@
 ---
 Title: Diary
 Ticket: IRWB-020-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -10,10 +10,18 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/index.ts
+      Note: Public compiler, evaluator and optimizer entry points
+    - Path: repo://src/tensor/meaning.ts
+      Note: Deterministic contracts and counterexample evidence
+    - Path: repo://tests/framework/native-pass-sync.test.mjs
+      Note: New synchronous native runner regression coverage
+    - Path: repo://tests/tensor/passes.test.mjs
+      Note: Generated mutation, reduction ordering and budget checks
 ExternalSources: []
 Summary: Stage 1 design decisions, framework probes, and the implementation handoff.
-LastUpdated: 2026-11-26T12:45:58.575718124-05:00
+LastUpdated: 2026-11-26T14:55:42.957481433-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -202,3 +210,26 @@ The synchronous runner uses an ordinary `Pass` and runs the same native artifact
 - `src/framework/passes/define-pass.ts` adds `applyNativePassSync`. The synchronous path rejects managed clauses, thenables and graph edit access. It validates the supplied `CheckResult` and returns a changed artifact only on acceptance.
 - `tests/framework/native-pass-sync.test.mjs` checks native artifact validation, correspondence, declared writes, evidence on rejection and synchronous boundaries. The existing tests are unchanged.
 - `npm run build` succeeded. `node --test --test-isolation=none tests/framework/native-pass-sync.test.mjs tests/framework/ext-e3-e6.test.mjs` passed all 10 subtests. The full requested framework and selected Typed suite commands are recorded at the implementation checkpoint.
+
+## Step 4. Implement and verify Tix and the corpus
+
+Built the parser, checker, native artifact and evaluator under `src/tensor/`. The tensor contract and two passes run through the framework entry point from `3802855`. All six corpus programs accepted both pass steps on generated inputs. The reviewed design is recorded in `df5c3ee`.
+
+### What worked
+
+- `npm run build` succeeded with Node `v24.18.0`. An import of `dist/tensor/index.js` confirmed the three required runtime exports. Prettier 3.6.2 checked the new TypeScript and test files.
+- `node --test tests/tensor/*.test.mjs` passed all three files. Running the same files with `--test-isolation=none` reported 21 passing subtests.
+- `node --test tests/framework/*.test.mjs` passed all 18 files. `node --test tests/typed/passes.test.mjs tests/typed/meaning-memo.test.mjs tests/typed/strategies.test.mjs` passed all three files.
+- The generated alternating-sign case detected the wrong transpose inline. The generated ones detected the dropped tail at length six. The generated half-ULP case rejected the correct blocked reduction under exact comparison and accepted it under tolerance.
+- Layernorm sampled with its positive literal epsilon. A separate test exercised NaN and infinity reference handling. A near-cap case confirmed that physical block overhead does not exhaust the logical budget. A cancellation case exercised a public pipeline rejection and continuation on its input revision.
+
+### What needed correction
+
+- The first Tix build reported `TS7006: Parameter 'term' implicitly has an 'any' type` in the IR witness validator and `TS2367` for the parser's EOF comparison after TypeScript narrowed the token. An explicit affine dimension type and token-position termination resolved them. The evaluator also needed its missing `children` import.
+- The first language test run expected `1` for f32 `log(exp(1))`. Actual output was `0.9999999403953552` because `exp(1)` rounds first. The test now checks the rounded composition.
+
+### Implementation detail and review entry points
+
+A singleton index can make a source access valid even when composing two valid affine subscripts would overflow the IR's coefficient representation. The inliner skips that substitution and continues with other producers. The design and a regression test record this case.
+
+Start at `src/tensor/index.ts` for the API, `src/tensor/meaning.ts` for the checked domain, and `tests/tensor/passes.test.mjs` for the negative witnesses. The framework diff is confined to `src/framework/passes/define-pass.ts`. [Stage 1 design](../design-doc/01-tix-stage-1-design.md)
