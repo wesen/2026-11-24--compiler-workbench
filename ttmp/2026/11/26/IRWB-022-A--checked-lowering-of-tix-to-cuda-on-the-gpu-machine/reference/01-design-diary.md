@@ -129,3 +129,7 @@ The helper returned NVIDIA GB10 sm_121 nvcc 13.0, hash a0e28fa1ac988562, compile
 The first invocation of the third command failed with ERR_MODULE_NOT_FOUND for dist/framework/contracts/index.js because its relative import climbed one directory too far. Correcting the path produced one batch [0,1], delegated=2 and replayed=2. The dispatch probe exercises the manager independently of hardware.
 
 For review, follow cases() in src/tensor/contract.ts into the proposed invariant and inspect prepare(), memoKeys() and runDifferentialAsync() in src/framework/contracts/differential.ts. The main correctness questions are whether the cache identifies the actual emitted source and whether the baseline survives a split followed by inline. In the remote helper, trace out/ from deletion through tar retrieval for two concurrent invocations. After review, implement the three exports, exercise the gate with a wrong candidate, and collect the six timing pairs.
+
+## Step 2 — Review revisions
+
+The reviewer measured first-launch overhead on the GB10 (0.115 ms versus 0.003 ms warm, 0.004 ms after cudaFuncGetAttributes). I accepted both requested corrections. Every run now calls for preloading kernel functions before timing. The checker assumes a fixed engine for one process lifetime. Its cache has no driver discovery step. The concurrency test now exercises duplicate calls with identical arguments. The implementation request refers to the three CUDA exports and the six measurements from Step 1.
