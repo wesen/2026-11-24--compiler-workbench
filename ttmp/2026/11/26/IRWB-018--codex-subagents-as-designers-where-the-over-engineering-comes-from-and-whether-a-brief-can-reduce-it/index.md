@@ -8,7 +8,15 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/scripts/01-extract-codex-sessions.mjs
+      Note: Rollout extraction used for the analysis
+    - Path: repo://ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/scripts/04-blind-pack.mjs
+      Note: Blind pack for the judge
+    - Path: repo://ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/prompts/00-common-round2.md
+      Note: Revised brief (round 2)
+    - Path: repo://ttmp/2026/11/26/IRWB-018--codex-subagents-as-designers-where-the-over-engineering-comes-from-and-whether-a-brief-can-reduce-it/various/results/judge-scores.json
+      Note: Blind judge scores (18 docs)
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T10:51:48.307112484-05:00

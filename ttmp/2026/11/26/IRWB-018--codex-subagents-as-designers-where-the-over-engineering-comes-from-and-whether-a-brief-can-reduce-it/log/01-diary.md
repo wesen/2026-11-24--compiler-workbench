@@ -146,3 +146,51 @@ R1–R4 are summed over the six docs; the other columns are means.
   - fitness and A1/A4, which a design that went too far would lose;
   - the discoveries the rubric does not measure: tape ingest found in 4 of 4 frame-array designs, and the `entries` wiring proposed.
 - **The judge is not fully blind.** Round-2 docs have "Later" sections and similar lengths, and the judge is a Claude model, as I am.
+
+## Step 6: vault report 10 and the playbook with a reusable script kit
+
+The report is written, its claims are checked, and it is pushed. While I worked, the user asked for more: "also write a playbook in the parc vault (look for the playbook locations) about how to run this kind of judging / review and also store scripts in there that might be useful. that way we can redo this kind of optimizing prompting for say, models that tend to overengineer, in other projects".
+
+### What I did
+- **Report:** `go-go-parc/Projects/2026/11/26/PROJECT REPORT - IR Workbench - Codex Agents as Designers - …md`, with figures `_assets/irwb018-rounds.png` and `irwb018-style-markers.png`. Vault commit `4941518`, pushed.
+- **Corrections before committing,** each checked against the sources:
+  - only chess measured its sizes; the regex agent's run was a feature probe, not sizing;
+  - round-2 probe counts are 1 to 8, not 4 to 8;
+  - three baseline runs used `node`, not two;
+  - five integer programs carry the integer-only tolerance-ticket row, not four;
+  - the measurement-record phrasing appears in five designs, not six;
+  - I removed the claim that the judge found no algorithm too large, because the rubric does not score algorithm size;
+  - I verified that every agent's second command searched for `AGENTS.md`.
+- **Playbook location.** Playbooks live in `Research/playbooks/<area>/PLAYBOOK - ….md` with `scripts/<name>/`, following `infra/`. I created `Research/playbooks/agents/PLAYBOOK - Measuring and Reducing Over-Engineering in Agent-Written Designs.md` and `Research/playbooks/agents/scripts/agent-design-review/`:
+  - `00`: env;
+  - `01`/`02`: fresh and resumed Codex rounds, recording `heads.json`;
+  - `03`: rollouts, turn cutting, sidecars by time window;
+  - `04`: context extraction;
+  - `05`: content metrics with replaceable families;
+  - `06`: blind pack;
+  - `07`: quote verification;
+  - `08`: aggregate;
+  - `09`: figures;
+  - `10`: contamination check;
+  - five templates;
+  - a README.
+
+  Vault commit `e2692e1`, pushed.
+- **Tests on the IRWB-018 data,** in the scratchpad (`kit-test/`):
+  - `03`/`04` reproduce the extraction: baseline tool calls 21, 22, 20, 29, 23, 27, and the same minutes;
+  - `06` reproduces the pack's word counts exactly;
+  - `08` reproduces the report's table;
+  - `07` finds 183 of 183 judge quotes;
+  - `10` reports round 2 clean.
+
+  The launchers were tested with a stub `codex` in a throwaway repo: worktrees, logs and `heads.json` all work, and the resumed round records its new heads.
+
+### What didn't work at first
+- **The baseline turn wasn't cut off.** The first `03` used a resumed baseline rollout whole: IRWB-012 showed 29 calls, where its baseline turn has 21. `03` now always cuts to the requested turn, by default turn 1.
+- **`07` reported 9 of 183 quotes missing.** It had stripped every bracketed span, including regex classes like `[c-a]` in the documents. It now drops a bracketed span only when the document does not contain it.
+- **`10` flagged `~/.codex/skills/` paths** for a round named `codex`. A branch reference now has to follow whitespace, a quote, `:` or `=`.
+- **The probe count overstated probing.** `04`'s "probes" counted `python3` heredocs that edit files, so the field is now `interpreterRuns`.
+
+### Corrections ledger
+- **Diary step 4** said round 2 wrote "seven approval sidecars". With sidecars assigned by time window, round 2 had 5 and round 3 had 2. The round-3 resumes started in the same minute, in other worktrees.
+- **The playbook's first draft** said Claude Code subagents live inside the parent transcript. They have their own `<session>/subagents/agent-<id>.jsonl`. Fixed before commit.
