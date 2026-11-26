@@ -150,3 +150,15 @@ Review the baseline choice, when the f64 comparison applies, and whether the pro
 and invocation isolation are sufficient. Read the [design](../design-doc/01-checked-tix-to-cuda-lowering.md)
 and [task list](../tasks.md) before resuming implementation. Replay the numeric probe from the
 worktree root with `node <ticket>/scripts/02-probe-numerics.mjs`.
+
+## Step 2 — Incorporate design review
+
+The review clarified the numerical rule boundary and identified CUDA lazy loading inside the first timed
+interval. Rule 2 now covers exactly the complement of rule 1. The host harness will call
+`cudaFuncGetAttributes` before events even for a one-shot run. The design uses the review’s GB10
+measurement as the initial probe and will verify the actual generated path during implementation.
+
+I adopted all three scope cuts. Untimed runs retain their documented lock behavior, completed verdicts
+use the existing cache without coalescing in-flight checks, and the full-size benchmark compares timings
+without requiring a second reference precision. The Stage 1 revision and replayable GB10 arithmetic probe
+remain the starting evidence. See the design for the revised implementation boundary.

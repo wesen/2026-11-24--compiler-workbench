@@ -140,14 +140,15 @@ reference `s`, define `budget(x) = 2e-6 + 2e-5 * abs(x)`.
 1. Where both references are finite and `abs(s - r) <= budget(r)/2`, require a finite GPU result within
    `budget(r)` of `r`. The half-budget threshold leaves room for CUDA/V8 differences. The constants are
    an empirical sampled comparison budget, using the probe and the Stage 1 budget as anchors.
-2. Where f64 is an unsuitable oracle for the specified f32 evaluation, require a finite result within
-   `budget(s)` of finite `s`, or the same nonfinite class as `s` (NaN regardless of payload, +∞ or −∞).
+2. Apply this rule exactly when rule 1’s condition fails, meaning either reference is nonfinite or
+   `abs(s - r) > budget(r)/2`. Require a finite result within `budget(s)` of finite `s`, or the same
+   nonfinite class as `s` (NaN regardless of payload, +∞ or −∞).
    This covers cancellation, overflow and undefined intrinsic arguments, including empty max.
 3. Check the sign of returned zero when both the f32 and GPU values are zero.
 
 An unconditional f32 comparison would be simpler but would drop the f64 reference even on well-conditioned
-coordinates. Report the first mismatch with case, coordinate, reference values and the rule used. Count coordinates
-under each rule in the benchmark report. A shape-only empty-result case has no element comparisons
+coordinates. Report the first mismatch with case, coordinate, reference values and the rule used. A shape-only
+empty-result case has no element comparisons
 and is identifiable in evidence.
 Fixed large functions can have no eligible bounded cases. Report that limit without claiming agreement.
 This check estimates agreement on a finite sample. Reduction structure and deliberate rounding witnesses
@@ -159,9 +160,7 @@ Use `differential` with a baseline key containing the current revision, function
 reused cases carry both reference buffers. Use a subject key containing the source hash and the target and
 tool policy for the pinned CUDA 13.0 GB10 session. The invariant version covers comparison policy.
 `decide(inputs, cases, todo)` submits only the uncached indices in one executable invocation and returns
-verdicts in the requested order. Use a process-local map of active verdict promises to coalesce
-concurrent calls for the same revision/function/source/session. Remove active entries on settlement. Completed verdict reuse is delegated to the existing differential
-cache. Start a new process on a target/toolchain change. No persisted
+verdicts in the requested order. The existing differential cache replays completed verdicts. Start a new process on a target/toolchain change. No persisted
 verdicts or cross-host reuse. Transport, compilation and incomplete batch failures reject the invocation
 without filling the verdict cache. Retain the differential tally and its replayable case descriptions in the contract record. An invariant that independently starts SSH for every case would exercise the same
 numeric relation with avoidable compilation and transport costs.
@@ -181,7 +180,6 @@ inflate the large benchmark transfers.
 | --- | --- |
 | Add an explicit standalone-source cache mode. Cache by source, arch, compile policy and nvcc identity in that mode. Keep full-bundle compilation for callers that supply includes. | The current full-directory key recompiles the same translation unit whenever sample data or benchmark sizes change. Separately passing data to the executable still needs staging and isolation. |
 | Stage every invocation in its own remote directory. Compile missing executables into a temporary file under a per-key build lock, then rename into the cache. Run in the invocation directory, fetch from it and clean it up. Surface copy, compile, execution and fetch failures with the phase and diagnostic. | The existing shared `out/` and `prog` can race on identical input. A single global lock for the full lifecycle would fix races but would serialize unrelated transfers and compilation. |
-| Give ordinary executable runs a shared GPU lock and retain exclusive `--timed` for benchmark executions. Keep compilation, transfers and cleanup outside that lock. | Today an ordinary run can overlap a timed run. Keeping the current policy would require a separate agreement to suspend correctness runs. The updated tool coordinates users of the same lock policy. |
 
 The checker uses the ordinary run path. The timing harness is the only planned caller passing `--timed`.
 Probe both cache hit and miss with different payloads for one source, simultaneous calls with isolated
@@ -192,8 +190,8 @@ outputs, and missing output/fetch failure handling after the tool change.
 Use the original six corpus functions as the main comparison. Generate deterministic f32 inputs once per
 function, with signed asymmetric values, a positive epsilon for layernorm and a recorded seed and scale.
 Run GPU and local Stage 1 f32 on identical bits. Report the GB10 runtime identity, compiler policy, Node
-version and commit, event milliseconds, local f32 interpreter milliseconds, their ratio, and the
-comparison's maximum errors and coverage. Record the raw trials and case generation in this ticket.
+version and commit, event milliseconds, local f32 interpreter milliseconds and their ratio. Record
+the raw trials and case generation in this ticket.
 
 | Function | Shape bindings |
 | --- | --- |
@@ -204,7 +202,11 @@ comparison's maximum errors and coverage. Record the raw trials and case generat
 | mlp | N = 1024, D = 256, H = 1024, O = 256 |
 | conv2d | N = 8, C = 16, H = W = 64, O = 32 with 3 × 3 weights |
 
-Allocate/copy inputs and initialize the CUDA context before timing. Record CUDA events immediately before
+Allocate/copy inputs and initialize the CUDA context before timing. Call `cudaFuncGetAttributes` on
+each kernel that will launch before recording the start event, including in the one-shot API. Context
+initialization alone leaves kernels subject to lazy loading under CUDA 13. The reviewer measured
+0.115 ms on a trivial kernel’s first interval and 0.004 ms with the attribute call (0.003 ms on a
+subsequent launch). Record CUDA events immediately before
 the first launch and after the final launch on the same stream, synchronize the end event and collect its
 elapsed time before copying the result. This includes inter-kernel gaps on the stream. Use zero ms when
 there are no launches. For the benchmark, run one untimed warmup and five event intervals per case in one
