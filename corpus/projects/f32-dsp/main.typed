@@ -49,7 +49,11 @@ function dot3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32): f32 {
     return (a * b + c * d) + e * f;
 }
 
-function biquadBank(samples: buffer, coefficients: buffer, output: buffer): i32 {
+function biquadBank(
+    samples: buffer,
+    coefficients: buffer,
+    output: buffer
+): i32 {
     for (let band = 0; band < 2; band = band + 1) {
         const row = 5 * band;
         const b0 = coefficients.getF32(row);

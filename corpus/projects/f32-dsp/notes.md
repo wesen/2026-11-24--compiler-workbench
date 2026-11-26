@@ -6,7 +6,8 @@ imaginary lanes. At size 8 it leaves the final 16 floats untouched. Its
 read-only table contains the first eight complex roots for size 16.
 The butterfly's `stride` selects the roots for the current stage.
 
-`biquadBank` runs two direct-form-I filters over the same 16 real samples.
+`biquadBank` runs two direct-form-I filters over the same 16 real
+samples.
 Each coefficient row is `b0, b1, b2, a1, a2`, with denominator
 `1 + a1*z^-1 + a2*z^-2`. Each band starts with zero history and writes
 16 consecutive floats starting at `16 * band`. The samples and

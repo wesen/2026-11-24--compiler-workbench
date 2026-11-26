@@ -1,6 +1,9 @@
 {
   "title": "f32 DSP",
-  "about": "An in-place complex FFT and a two-band biquad bank on packed float buffers.",
+  "about": [
+    "An in-place complex FFT and a two-band biquad bank on packed",
+    "float buffers."
+  ],
   "group": "Programs",
   "sources": ["main.typed"],
   "pipeline": "speed",
@@ -8,26 +11,88 @@
   "inputs": {
     "fft": {
       "work": { "floats": [32, 32], "range": [-1, 1] },
-      "twiddles": { "cells": [
-        0, 16256, 0, 0, 33630, 16236, 61205, 48835, 1267, 16181, 1267, 48949, 61205, 16067, 33630, 49004,
-        0, 0, 0, 49024, 61205, 48835, 33630, 49004, 1267, 48949, 1267, 48949, 33630, 49004, 61205, 48835
-      ] },
+      "twiddles": {
+        "cells": [
+          0,
+          16256,
+          0,
+          0,
+          33630,
+          16236,
+          61205,
+          48835,
+          1267,
+          16181,
+          1267,
+          48949,
+          61205,
+          16067,
+          33630,
+          49004,
+          0,
+          0,
+          0,
+          49024,
+          61205,
+          48835,
+          33630,
+          49004,
+          1267,
+          48949,
+          1267,
+          48949,
+          33630,
+          49004,
+          61205,
+          48835
+        ]
+      },
       "n": { "oneOf": [8, 16] }
     },
     "biquadBank": {
       "samples": { "floats": [16, 16], "range": [-1, 1] },
-      "coefficients": { "cells": [
-        36700, 15938, 47186, 16030, 49807, 15861, 28836, 48829, 23593, 15887,
-        49807, 16117, 20972, 48952, 49807, 15989, 7864, 48773, 36700, 15810
-      ] },
+      "coefficients": {
+        "cells": [
+          36700,
+          15938,
+          47186,
+          16030,
+          49807,
+          15861,
+          28836,
+          48829,
+          23593,
+          15887,
+          49807,
+          16117,
+          20972,
+          48952,
+          49807,
+          15989,
+          7864,
+          48773,
+          36700,
+          15810
+        ]
+      },
       "output": { "buffer": [64, 64], "cell": [0, 0] }
     },
     "dot3": {
-      "a": [-1, 1], "b": [-1, 1], "c": [-1, 1],
-      "d": [-1, 1], "e": [-1, 1], "f": [-1, 1]
+      "a": [-1, 1],
+      "b": [-1, 1],
+      "c": [-1, 1],
+      "d": [-1, 1],
+      "e": [-1, 1],
+      "f": [-1, 1]
     }
   },
   "scripts": {
-    "compare": { "about": "Measure both kernels before and after the checked speed pipeline.", "fresh": true }
+    "compare": {
+      "about": [
+        "Measure both kernels before and after the checked speed",
+        "pipeline."
+      ],
+      "fresh": true
+    }
   }
 }
