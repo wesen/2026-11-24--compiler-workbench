@@ -1756,3 +1756,44 @@ The last research-guide agent finished, so the guide round (IRWB-007..011) is co
 - Pass `ingest` and `entries` through the Node project loaders before implementing any of these.
 - Apply the cuts the review lists, then implement IRWB-012 and IRWB-013 first.
 - The combined synthesis report is now due, since every guide is in.
+
+## Step 41: the combined synthesis report (report 9) written, checked and pushed
+
+Every guide is now uploaded and merged, so I wrote the combined report the user asked for. It covers the per-scene kernels, the four milestones (IRWB-003..006) and the five research plans (IRWB-007..011) as plans. It leaves out the Codex playground experiment.
+
+### Prompt Context
+**User prompt (verbatim, mid-turn during Step 37's round):** "you should write a combined one as well, when done"
+
+### What I did
+- **Read the sources:**
+  - the summaries of reports 4–8 and report 8's per-scene table;
+  - IRWB-007 `various/01` and `04` and design doc §§1, 9, 24;
+  - IRWB-008 `various/01`, `03` and `05` and design doc §§10, 14–15, 19, 25, 29;
+  - IRWB-009 design doc §§1, 3.4, 6.3, 10 and 21;
+  - IRWB-010 `various/03` and design doc §§8 and 26;
+  - IRWB-011 design doc §§10–11;
+  - this diary's steps 30, 32, 34 and 37.
+- **Checked every number against its source.** One label I nearly copied was wrong: step 37 labels B-01's 10,435 as "O2", but report 8 has it as O2+. I removed three derived claims that no source states:
+  - a "factor of about 100" between scenes' noise;
+  - "a quarter of the time";
+  - an equivalence between the monovariant bound and report 4's gain.
+- **Figures:** `scripts/17-synthesis-figures.py` (`python3 -I … <vault>/Projects/2026/11/26/_assets`) writes two:
+  - `irwb-synthesis-ladder.png`: B-01 and R-01 at five stages, from reports 4 and 8;
+  - `irwb-synthesis-bounds.png`: IRWB-007's three bounds per scene, parsed from `04-profile-summary.txt`, with an assert that there are 18 rows.
+- **Vault:** `Projects/2026/11/26/PROJECT REPORT - IR Workbench - Synthesis - Four Milestones, Five Research Plans, and the Order the Measurements Suggest - A Technical Deep Dive.md` (report 9). Commit `2ffb012`, pushed; the commit stages only the report and the two figures.
+
+### What I learned
+- **The plans split the gallery in two:**
+  - **11 scenes are dominated by scene data.** The polyvariant bound is at least 2.10× there, so IRWB-007 applies.
+  - **7 scenes are dominated by arithmetic.** The polyvariant bound is at most 1.69× there. They include V-04 and X-03, the scenes where IRWB-010 found the noise functions hot (81.8% and 35.3% of the frame) and where IRWB-011's contraction pays most (3.35% and 4.17%).
+- **The per-scene binding of report 4 was monovariant.** Its 5–6% gain is consistent with IRWB-007's measurement that monovariant specialization is bounded at a geometric mean of 1.08–1.16× beyond it.
+- **The suggested order**, which is the report's reading and not a decision:
+  1. records laid out by offset;
+  2. IRWB-007 as a polyvariant specializer;
+  3. fused multiply-adds behind a tolerance contract;
+  4. rule search after inlining;
+  5. IRWB-009 P1/P2 and IRWB-008 run alongside.
+
+### What warrants a second pair of eyes
+- **§5's order is an interpretation across plans.** Each guide's own phase order still governs its ticket.
+- **IRWB-010's E0 numbers predate IRWB-003's options.** The report says so in §4.2 and §7.
