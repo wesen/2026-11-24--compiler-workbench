@@ -16,7 +16,9 @@
  * published unless all of that succeeds.
  */
 import type { Artifact } from '../core/types.js';
-import { canonical } from '../core/data.js';
+import { canonical, immutable } from '../core/data.js';
+import { synchronous } from '../ir/common.js';
+import { validateArtifact } from '../contracts/definitions.js';
 import { createIRArtifact, openIR } from '../ir/index.js';
 import { diff } from '../ir/diff.js';
 import { makeCorrespondence } from '../ir/correspondence.js';
@@ -32,6 +34,7 @@ import type {
 import type {
   AnalysisDefinition,
   AnalysisRecord,
+  CheckResult,
   Correspondence,
   IRType,
   Ports,
@@ -187,6 +190,97 @@ export function semanticCorrespondence(
   };
 }
 
+function prepareNative<S>(
+  view: IRView<S>,
+  adapter: IRAdapter<S>,
+  id: string,
+  produced: NativeResult<S>,
+  store?: IRStore,
+) {
+  const after = createIRArtifact(adapter, id, produced.native);
+  const afterView = openIR(after, adapter, store);
+  const changes = diff(view, afterView);
+  const correspondence = makeCorrespondence(
+    { artifact: view.artifact.id, revision: view.artifact.revision },
+    { artifact: after.id, revision: after.revision },
+    view.graph().entities.map(e => e.id),
+    afterView.graph().entities.map(e => e.id),
+    produced.correspondence ?? [],
+  );
+  return {
+    after,
+    changes,
+    correspondence,
+    edits: produced.edits ?? changes.entities.length,
+    report: produced.report,
+  };
+}
+
+function assertWrites(pass: { id: string; writes: PassSpec<any, any>['writes'] }, changes: ChangeSet) {
+  const undeclared = undeclaredWrites(pass.writes, changes);
+  if (undeclared.length)
+    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
+      undeclared: undeclared.slice(0, 20),
+    });
+}
+
+export interface NativePassSpec<S>
+  extends Pick<PassSpec<S, {}>, 'id' | 'version' | 'description' | 'ir' | 'adapter' | 'writes'> {
+  readonly needs?: never;
+  readonly preserves?: never;
+  readonly contract?: never;
+  run(ctx: { readonly before: Artifact<S>; readonly view: IRView<S> }): NativeResult<S> | undefined;
+}
+
+/** Apply a native-only rewrite without a rebuild adapter or an asynchronous semantic lifecycle. */
+export function applyNativePassSync<S>(
+  pass: NativePassSpec<S>,
+  before: Artifact<S>,
+  gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
+): PassResult<S> {
+  if ('needs' in pass || 'preserves' in pass || 'contract' in pass)
+    throw new PassError(
+      'badResult',
+      'A synchronous native pass cannot declare needs, preservation or a transformation contract',
+    );
+  if (typeof gate !== 'function')
+    throw new PassError('badResult', 'A synchronous native pass needs a check gate');
+  const view = openIR(before, pass.adapter);
+  before = view.artifact;
+  validateArtifact(pass.ir, before);
+  const identity = { pass: { id: pass.id, version: pass.version }, before, preserved: [] };
+  const noChange = { ...identity, changed: false, artifact: before, edits: 0 };
+  const produced = synchronous(pass.run({ before, view }), 'Native pass body');
+  if (produced === undefined) return noChange;
+  if (!produced || typeof produced !== 'object' || !Object.hasOwn(produced, 'native'))
+    throw new PassError('badResult', `Expected a native result from ${pass.id}`);
+  const { after, changes, correspondence, edits, report } = prepareNative(
+    view,
+    pass.adapter,
+    before.id,
+    produced,
+  );
+  if (after.revision === before.revision) return noChange;
+  assertWrites(pass, changes);
+  validateArtifact(pass.ir, after);
+  const check = synchronous(gate(before, after), 'Native pass check gate');
+  if (
+    !check ||
+    typeof check !== 'object' ||
+    typeof check.ok !== 'boolean' ||
+    (check.reason !== undefined && typeof check.reason !== 'string')
+  )
+    throw new PassError('badResult', `Expected a CheckResult from ${pass.id}'s check gate`);
+  const contract = immutable(check);
+  if (!contract.ok)
+    throw new PassError(
+      'contractRejected',
+      `Pass ${pass.id} output rejected: ${contract.reason ?? 'check failed'}`,
+      contract.evidence,
+    );
+  return { ...identity, changed: true, artifact: after, changes, correspondence, edits, report, contract };
+}
+
 export async function applyPass<S, N extends Needs, P>(
   pass: Pass<S, N, P>,
   before: Artifact<S>,
@@ -220,20 +314,13 @@ export async function applyPass<S, N extends Needs, P>(
   let report: unknown;
   if (produced && typeof produced === 'object' && 'native' in produced) {
     if (edit.state === 'open') edit.rollback('native result');
-    const id = options.outputId ?? before.id;
-    after = createIRArtifact(pass.adapter, id, produced.native);
-    const afterView = openIR(after, pass.adapter, options.store);
-    changes = diff(view, afterView);
-    correspondence = makeCorrespondence(
-      { artifact: before.id, revision: before.revision },
-      { artifact: after.id, revision: after.revision },
-      // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
-      view.graph().entities.map(e => e.id),
-      afterView.graph().entities.map(e => e.id),
-      produced.correspondence ?? [],
-    );
-    edits = produced.edits ?? changes.entities.length;
-    report = produced.report;
+    ({ after, changes, correspondence, edits, report } = prepareNative(
+      view,
+      pass.adapter,
+      options.outputId ?? before.id,
+      produced,
+      options.store,
+    ));
   } else {
     if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
     if (edit.operationCount === 0) {
@@ -266,11 +353,7 @@ export async function applyPass<S, N extends Needs, P>(
       preserved: [],
     };
 
-  const undeclared = undeclaredWrites(pass.writes, changes);
-  if (undeclared.length)
-    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
-      undeclared: undeclared.slice(0, 20),
-    });
+  assertWrites(pass, changes);
 
   let contract: unknown;
   const gate = options.contract ?? pass.contract;
@@ -281,9 +364,7 @@ export async function applyPass<S, N extends Needs, P>(
         { output: after } as never,
         gate,
         gate.correspondence.length
-          ? gate.correspondence.map(req =>
-              semanticCorrespondence(correspondence, req.id, req.relation),
-            )
+          ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
           : [semanticCorrespondence(correspondence)],
       );
       contract = prepared;
@@ -301,12 +382,7 @@ export async function applyPass<S, N extends Needs, P>(
       await manager.analyse(def, before);
     }
     try {
-      const record = await manager.preserve(
-        def,
-        before,
-        after,
-        semanticCorrespondence(correspondence),
-      );
+      const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
       preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
     } catch {
       const old = await manager.analyse(def, before),
