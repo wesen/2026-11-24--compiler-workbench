@@ -2,8 +2,8 @@
 //
 //   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121] [-- program args...]
 //
-// <dir> holds main.cu and any input files. The directory is copied to <host>:~/irwb-cuda/<hash>/, where <hash> is
-// the SHA-256 of its files, so identical inputs reuse an earlier compile. There it is compiled with
+// <dir> holds main.cu and any input files. Each invocation uses a private directory under ~/irwb-cuda/<hash>/,
+// where <hash> is derived from its files and architecture, so identical inputs reuse an earlier compile. It uses
 // `nvcc -O3 -arch=<arch> -o prog main.cu` (skipped when prog already exists) and run as `./prog args...` with the
 // directory as its working directory. Files the program writes under out/ are copied back to <dir>/out/.
 // --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so that concurrent users do
@@ -12,9 +12,9 @@
 // Environment: CUDA_REMOTE_HOST (default manuel@bling, the Tailscale name; bling.local resolves only on the home
 // LAN), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
 // Inside the Codex sandbox, ssh needs network access (-c sandbox_workspace_write.network_access=true).
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, mkdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const argv = process.argv.slice(2);
@@ -46,7 +46,7 @@ for (const f of files)
     .update('\0')
     .update(readFileSync(join(dir, f)));
 const hash = h.digest('hex').slice(0, 16);
-const remote = `irwb-cuda/${hash}`;
+const remote = `irwb-cuda/${hash}/run-${randomUUID()}`;
 const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host];
 const q = s => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
@@ -61,11 +61,12 @@ if (put.status !== 0) throw new Error(`ssh copy: ${put.stderr}`);
 // compile if needed, then run; timings measured on the remote side
 const lock = flag('--timed') ? 'flock ~/irwb-cuda/.gpu.lock' : '';
 const script = [
-  `cd ~/${remote}`,
+  `set -e; cd ~/${remote}`,
   `compiled=0; c0=$(date +%s%N)`,
-  `if [ ! -x prog ]; then ${nvcc} -O3 -arch=${arch} -o prog main.cu 2> compile.err || { echo "@@compile-failed"; cat compile.err >&2; exit 97; }; compiled=1; fi`,
-  `c1=$(date +%s%N); rm -rf out; mkdir -p out`,
-  `r0=$(date +%s%N); ${lock} ./prog ${progArgs.map(q).join(' ')}; status=$?; r1=$(date +%s%N)`,
+  `exec 9>../compile.lock; flock 9`,
+  `if [ ! -x ../prog ]; then ${q(nvcc)} -O3 -arch=${q(arch)} -o prog main.cu 2> compile.err || { echo "@@compile-failed"; cat compile.err >&2; exit 97; }; mv prog ../prog; compiled=1; fi`,
+  `ln ../prog prog; exec 9>&-; c1=$(date +%s%N); mkdir out`,
+  `status=0; r0=$(date +%s%N); ${lock} ./prog ${progArgs.map(q).join(' ')} || status=$?; r1=$(date +%s%N)`,
   `echo "@@meta $compiled $(( (c1 - c0) / 1000000 )) $(( (r1 - r0) / 1000000 )) $status"`,
   `exit 0`,
 ].join('\n');
@@ -85,9 +86,10 @@ const result = {
 };
 
 // fetch out/
-if (meta) {
-  const get = spawnSync('ssh', [...ssh, `tar -C ~/${remote}/out -cf - .`], { maxBuffer: 1 << 30 });
-  if (get.status === 0 && get.stdout.length) {
+try {
+  if (meta) {
+    const get = spawnSync('ssh', [...ssh, `tar -C ~/${remote}/out -cf - .`], { maxBuffer: 1 << 30 });
+    if (get.status !== 0) throw Error(`ssh fetch: ${get.stderr}`);
     mkdirSync(join(dir, 'out'), { recursive: true });
     execFileSync('tar', ['-C', join(dir, 'out'), '-xf', '-'], { input: get.stdout });
     const outs = [];
@@ -100,6 +102,8 @@ if (meta) {
     w2(join(dir, 'out'));
     result.outputs = outs.sort();
   }
+} finally {
+  spawnSync('ssh', [...ssh, `rm -rf ~/${remote}`]);
 }
 process.stdout.write(JSON.stringify(result) + '\n');
 if (result.exit !== 0) process.exitCode = 1;

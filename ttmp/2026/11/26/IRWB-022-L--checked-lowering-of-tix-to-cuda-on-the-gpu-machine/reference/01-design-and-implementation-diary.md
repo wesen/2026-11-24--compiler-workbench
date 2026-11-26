@@ -190,3 +190,11 @@ Now do the following in this session:
 3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
 4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
 ~~~~
+
+## Step 3. Direct emission and isolated execution
+
+Revision `196e944` incorporates all review items. The new emitter walks the current statement trees and uses the same generated translation unit for warm public runs and untimed batch execution. The binary view encoder preserves an input subarray's exact data range. The remote tool now uploads into a UUID-named run directory, uses a per-hash compile lock and publishes only a finished executable.
+
+A first build exposed a TypeScript 5.9 inference issue in `cuda-run.ts`: “Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'Buffer<ArrayBuffer>'.” Typing the list of input chunks as `Buffer[]` resolved it. `npm run build` passed. The generated kernel for `y[i]=x[i]*2` returned shape [2] and values [6, −2] on the GB10, with a 0.005664 ms warmed interval. The numeric probe through the isolated runner reused the existing binary and reproduced the original output digest. The requested benchmarks are running in ticket-specific tmux sessions.
+
+The checked pass uses `verifyTransformation` on the emitted bytes and shares the stage-1 sample generator and comparison. On the network-free gate, all 19 tests passed, including rejection when a fixed input shape exceeds the evidence domain. The built tensor barrel exports the required three additional functions. No framework source edits were needed.
