@@ -174,3 +174,7 @@ Accepted all review items. Positive profiles now depend on the declared singleto
 ## Step 3: Exercise private prepared edits
 
 Implemented the reviewed synchronous differential-only entry point and package export. It checks the supported clauses and artifact ports before running the body, checks write kinds before meaning, and disposes of its private draft. A lab expression edit produced the same revision, correspondence and sampled evidence under the sync runner and AnalysisManager. `node --test tests/framework/sampled-sync.test.mjs`: 2 passed; `npm run build`: passed. No changes to the async runner or contracts. Design revision: `7f77e8c`.
+
+## Step 4: Compile, evaluate and optimize index graphs
+
+Added the Tix API, scoped extent inference, finite index graph validator/adapter, and row-major evaluators. A clipped inner reduction binds to its outer block start. Inlining moves the already-rounded scalar tree and substitutes binder IDs simultaneously. The sampler charges actual graph structure; exact and tolerant gates generate from r0 even on subsequent calls. All six corpus sources compiled and both requested pass names returned accepted steps in a smoke run. `node --test tests/tensor/language.test.mjs` initially expected `/2:17/` but got `2:15: subscript not provably in bounds` (the load token). Corrected the fixture column; all 6 tests passed. Full regression and negative controls follow. Framework commit: `b51b4eb`.

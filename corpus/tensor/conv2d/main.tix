@@ -1,0 +1,5 @@
+// NCHW input, OIHW kernel; valid cross-correlation, stride 1.
+fn conv2d(x: f32[N,C,H,W], w: f32[O,C,3,3]): f32[N,O,H-2,W-2] {
+  out[n,o,y,z]: f32[N,O,H-2,W-2] = sum(c,dy,dx) x[n,c,y+dy,z+dx] * w[o,c,dy,dx];
+  return out;
+}

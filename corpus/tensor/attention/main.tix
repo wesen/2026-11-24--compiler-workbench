@@ -1,0 +1,9 @@
+fn attention(q: f32[T,D], k: f32[S,D], v: f32[S,V]): f32[T,V] {
+  score[i,j] = (sum(d) q[i,d] * k[j,d]) / sqrt(D);
+  peak[i] = max(j) score[i,j];
+  e[i,j] = exp(score[i,j] - peak[i]);
+  denom[i] = sum(j) e[i,j];
+  weight[i,j] = e[i,j] / denom[i];
+  y[i,d] = sum(j) weight[i,j] * v[j,d];
+  return y;
+}
