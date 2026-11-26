@@ -133,3 +133,13 @@ For review, follow cases() in src/tensor/contract.ts into the proposed invariant
 ## Step 2 — Review revisions
 
 The reviewer measured first-launch overhead on the GB10 (0.115 ms versus 0.003 ms warm, 0.004 ms after cudaFuncGetAttributes). I accepted both requested corrections. Every run now calls for preloading kernel functions before timing. The checker assumes a fixed engine for one process lifetime. Its cache has no driver discovery step. The concurrency test now exercises duplicate calls with identical arguments. The implementation request refers to the three CUDA exports and the six measurements from Step 1.
+
+## Step 3 — Run the emitted CUDA through the checked pass
+
+I implemented the three exports in src/tensor and shared the stage-1 sample generator and comparator between its existing gate and the CUDA invariant. The emitter visits the current expression tree, including split extents and affine loads. The transformation checks the source it actually returned. Node frames complete batches in binary and calls the helper asynchronously. The remote helper compiles under a per-hash flock and gives each run a private workspace through result retrieval.
+
+The standalone cudaFuncGetAttributes probe compiled and ran on GB10 (308603464332bac2). An async Node child-process probe returned v24.18.0. The public runner then returned [1, 2.7182817459106445] for exp([0,1]). The first npm run build reported TS2345 about Buffer<ArrayBufferLike> and Buffer<ArrayBuffer> in the frame encoder. Typing the concatenation list as Buffer[] resolved it, and the build passed. The isolated compile probe launched identical jobs concurrently against cold hash 8865d20ab29c74fe. Exactly one compiled, both exited zero, and both retrieved identical 393216-byte outputs.
+
+Review the timing boundary in cuda-source.ts and the origin and subject bindings in cuda-contract.ts. The latter uses a new manager per invocation and the framework's existing process-local differential memo. All six corpus gates passed on the GB10, and a valid compiled source with its final store changed to zero was rejected at a specific coordinate. No framework edits were needed.
+
+The first sandboxed tmux benchmark session ended before the output file was created. I restarted the interpreter in a persistent tmux server and verified its output in reference/cpu.jsonl. The GPU measurements ran through the helper's timed lock, with one warm-up and three intervals per process.
