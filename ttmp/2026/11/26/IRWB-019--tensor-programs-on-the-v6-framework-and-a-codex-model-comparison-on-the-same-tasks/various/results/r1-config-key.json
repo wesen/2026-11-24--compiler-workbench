@@ -1,0 +1,26 @@
+{
+ "IRWB-021-D": {
+  "config": "sm",
+  "model": "gpt-6.2-sol",
+  "effort": "medium",
+  "round": "r1-sm"
+ },
+ "IRWB-021-B": {
+  "config": "sh",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "round": "r1-sh"
+ },
+ "IRWB-021-C": {
+  "config": "am",
+  "model": "gpt-6.2-astra",
+  "effort": "medium",
+  "round": "r1-am"
+ },
+ "IRWB-021-A": {
+  "config": "ah",
+  "model": "gpt-6.2-astra",
+  "effort": "high",
+  "round": "r1-ah"
+ }
+}
