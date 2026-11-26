@@ -11,7 +11,21 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/contracts/differential.ts
+      Note: DifferentialSpec, compare and assuranceOf, where a tolerance would plug in
+    - Path: repo://src/typed/backend/select.ts
+      Note: the RV32F tiles; no fused multiply-add emitted
+    - Path: repo://src/typed/candela-render.ts
+      Note: the frame protocol, 12 floats per pixel, viewImage
+    - Path: repo://src/typed/evaluate.ts
+      Note: agrees and meaningKept, the bit-exact per-pass gate; F32_EDGES
+    - Path: repo://src/typed/f32.ts
+      Note: the bit-exact definition of every f32 result (RNE, canonical NaN)
+    - Path: repo://ttmp/2026/11/26/IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/scripts/02-noise-floor.mjs
+      Note: the noise-floor metrics (display PSNR, z statistics)
+    - Path: repo://ttmp/2026/11/26/IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/scripts/03-float-candidates.mjs
+      Note: fma, recip and reassociation judged against exact frames
 ExternalSources: []
 Summary: 'Intern-grade sketch: why every float result is bit-exact today, IEEE-754 rounding and what reassociation, contraction and reciprocals change, Monte Carlo noise and statistical tests from scratch, the measured noise floor of eight Candela scenes, three measured float transformations judged against it, the design space of a tolerance contract kept apart from the exact pipelines, first experiments and open questions.'
 LastUpdated: 2026-11-26T10:02:52.895528747-05:00
@@ -35,7 +49,7 @@ This is a **sketch**. Nothing is implemented. The ticket measured the noise floo
 
 > **The direction in one screen.**
 > - **Today every float is exact.** The evaluator defines each f32 operation bit for bit, the backend never fuses, and the meaning check compares bits. The gallery's own C core is compiled with `-ffp-contract=off` "so the device and the host round alike".
-> - **The renderer's noise is large.** One pass against another differs by 8.0–17.4 dB PSNR on the displayed image, and two 16-pass accumulations by 10.8–30.5 dB, depending on the scene (section 9).
+> - **The renderer's noise is large.** One pass against another differs by 8.0–17.4 dB PSNR on the displayed image, and two 16-pass accumulations by 10.8–30.5 dB, depending on the scene (section 10).
 > - **The proposal** is a contract judged on rendered frames, per scene, at the accumulation depth the gallery displays. It uses two comparisons: a paired one with the same seeds, which detects small systematic changes, and an independent one with different seeds, which asks whether the candidate is the same estimator. It lives in its own pipelines and its own revisions, and never in O2.
 
 # Part 1: The parts of the system you need
@@ -98,7 +112,7 @@ q_k.rngS = pcgH(px + py*9781 + frameIx*6271 + 17) ^ pcgH(frameIx*26699 + 3 + u32
 
 The gallery renders progressively. "One pass is one sample per pixel. Pass p uses Candela's frame index … 0, then p + 1". It keeps, per pixel, "the sum of colour and the sample count", so "every pixel is displayed as its own mean, at any moment" (ds-js-os `firmware/nucleus/candela_gallery.h:10–14`; `cg_frame_index` at `candela_gallery.c:21`). A scene ends after `TARGET_PASSES = 64` passes (`firmware/port/esp32p4/main/candela_gallery_p4.c:56`). Frame index 1 is never used.
 
-The workbench's preview `viewImage` (`candela-render.ts:190`) maps colour to 8 bits with an automatic exposure (the log-average luminance maps to 0.18), the curve `x / (1 + x)` and the sRGB transfer function. It is not the scene's own tone map. The measurements here use it with the exposure fixed per scene, so that two images of the same scene are mapped identically (section 9).
+The workbench's preview `viewImage` (`candela-render.ts:190`) maps colour to 8 bits with an automatic exposure (the log-average luminance maps to 0.18), the curve `x / (1 + x)` and the sRGB transfer function. It is not the scene's own tone map. The measurements here use it with the exposure fixed per scene, so that two images of the same scene are mapped identically (section 10).
 
 ## 5. Contracts, and where a tolerance would plug in
 
@@ -173,7 +187,7 @@ max   = max_i |a_i - b_i|                  in 8-bit levels
 
 PSNR against a reference answers "how different", not "different in what way". A candidate that adds unbiased noise and one that shifts every pixel by a small bias can have the same PSNR against the reference, and they are not equally acceptable. The noise disappears with more passes; the bias does not (section 16). This is why the brief asks for the error to be judged against the estimator's own sample variance, with a statistical test across seeds or frames, and not only by PSNR to a reference.
 
-Linear-radiance metrics (MSE of the raw floats, the maximum absolute error) are worse still for a path tracer, because single fireflies dominate them. Section 9 measures this.
+Linear-radiance metrics (MSE of the raw floats, the maximum absolute error) are worse still for a path tracer, because single fireflies dominate them. Section 10 measures this.
 
 ## 9. Statistical tests across seeds
 
@@ -195,7 +209,7 @@ A **paired** comparison is the other tool. Render candidate and exact with the *
 
 ## 10. The noise floor of eight scenes
 
-`scripts/01-render-passes.mjs` rendered eight scenes on the reference emulator, the reference compiler's `kernel` image, which is bit-identical to the evaluator on these scenes (IRWB-001 diary step 26). It rendered every pixel of a 20 × 20 grid (stride 8 for the 160 × 160 scenes, stride 4 for the 80 × 80 ones), 32 passes (X-03: 16) with the gallery's frame indices 0, 2, 3, …. The harness reproduces IRWB-001's numbers: B-01's pass 0 executes 3,430,936 instructions, IRWB-001's figure for the same frame. `scripts/02-noise-floor.mjs` compares the accumulation of passes [0, n) with the independent accumulation of passes [n, 2n), on the display mapping of section 4 with one exposure per scene. Output: `various/02-noise-floor.txt` and `.json`; commands and timings: the diary, step 2.
+`scripts/01-render-passes.mjs` rendered eight scenes on the reference emulator, running the reference compiler's `kernel` image. IRWB-001 found that image's frames bit-identical to the evaluator's on every scene it compared (diary steps 17 and 26), and section 11's harness check confirms it for pass 0 of all eight scenes here. It rendered every pixel of a 20 × 20 grid (stride 8 for the 160 × 160 scenes, stride 4 for the 80 × 80 ones), 32 passes (X-03: 16) with the gallery's frame indices 0, 2, 3, …. The harness reproduces IRWB-001's numbers: B-01's pass 0 executes 3,430,936 instructions, IRWB-001's figure for the same frame. `scripts/02-noise-floor.mjs` compares the accumulation of passes [0, n) with the independent accumulation of passes [n, 2n), on the display mapping of section 4 with one exposure per scene. Output: `various/02-noise-floor.txt` and `.json`; commands and timings: the diary, step 2.
 
 | scene | what it is | instructions per pass | PSNR, 1 pass vs 1 | max diff (of 255) | PSNR, 16 vs 16 | one pass's relative std (median / p90) |
 |---|---|---:|---:|---:|---:|---:|
@@ -227,7 +241,7 @@ Five findings follow from these tables, and each shapes the design of Part 4.
 
 1. **The noise is large.** One pass differs from another by 8 to 17 dB, and single pixels by up to the full 255 levels. A compile-time change whose frames differ from the exact frames by, say, 40 dB is far below the noise of any single pass.
 2. **It depends strongly on the scene.** At 16 passes the scenes span 10.8 to 30.5 dB. A single threshold for all scenes would be too loose for L-03 or too tight for S-02. **Budgets must be per scene.**
-3. **Accumulation works, mostly as theory says.** Five scenes gain 2.3 to 3.3 dB per doubling of passes, close to the 3.01 dB of variance ∝ 1/n. V-02 and S-02 gain far less (0.6 to 0.9 dB per doubling). Their per-pixel spread is three times the others' (median relative std 2.23). The gallery's 64 passes would add about another 6 dB to the well-behaved scenes. That is an extrapolation at 3 dB per doubling, not a measurement.
+3. **Accumulation works, mostly as theory says.** Five scenes gain 2.3 to 3.3 dB per doubling of passes, close to the 3.01 dB of variance ∝ 1/n. V-02 and S-02 gain far less (0.6 to 0.9 dB per doubling). Their per-pixel spread is much larger: a median relative std of 2.23 against 0.15–0.91 for the others. The gallery's 64 passes would add about another 6 dB to the well-behaved scenes. That is an extrapolation at 3 dB per doubling, not a measurement.
 4. **Linear metrics are decided by fireflies.** In S-02, one sample in pass 30 has luminance 7.39 × 10⁵, while the frame mean in the other passes inspected is 5.8 to 11.2. That one sample makes the linear RMS difference of the two 16-pass means larger than that of two single passes (relative RMS 2.4 against 0.021). In B-01 and S-02, the largest 1 % of squared differences carry 87 % of the total at n = 1. **A tolerance must be stated on the displayed image (or a robust statistic), not on raw radiance.** S-02 also shows that spectral rendering produces negative colour channels: about 380 of its 400 pixels have a negative r, g or b in every pass, which the display map clamps to 0.
 5. **The z test behaves on the well-behaved scenes.** Between the two halves (16 passes against 16), 0.25 % to 0.58 % of channel values have |z| > 3, against 0.27 % for a normal distribution, and the mean z² is 1.02 to 1.14. On V-02 and S-02 no value exceeds 3, because the fireflies inflate the variance estimates. X-03 (8 against 8) has 1.09 % and a mean z² of 1.27, the fewest passes and the noisiest scene.
 
@@ -279,10 +293,10 @@ The measured noise floor turns the question "how wrong is acceptable?" into a ch
 
 ```text
 budget_s(n) = f · σ_s / √n          (per pixel and channel, display domain)
-equivalently, in PSNR:  PSNR_paired(candidate, exact; n) ≥ PSNR_noise_s(n) + 20·log10(1/f) dB
+in PSNR:  PSNR_paired(candidate, exact; n) ≥ PSNR_noise_s(n) + 20·log10(1/f) + 3.01 dB
 ```
 
-With `f = 0.1` the candidate's paired difference must be at least 20 dB below the scene's noise at the same depth. The choice of `f` is the one policy decision. It is a statement of the form "the compiler may add at most a tenth of the noise the renderer already has", and it can be reviewed without knowing anything about floats. Because the budget scales with σ_s, noisy scenes (S-02, V-02) tolerate more absolute change than clean ones (L-03). That is the intended behaviour: a change invisible under S-02's noise may be visible in L-03's sky.
+(`PSNR_noise_s(n)` is the measured PSNR of two *independent* n-pass means, as in section 10. Their difference has √2 times the spread of one mean, hence the 3.01 dB.) With `f = 0.1`, the candidate's paired difference must be at least 23 dB below the scene's measured noise PSNR at the same depth. The choice of `f` is the one policy decision. It is a statement of the form "the compiler may add at most a tenth of the noise the renderer already has", and it can be reviewed without knowing anything about floats. Because the budget scales with σ_s, noisy scenes (S-02, V-02) tolerate more absolute change than clean ones (L-03). That is the intended behaviour: a change invisible under S-02's noise may be visible in L-03's sky.
 
 ## 15. Two tests, because there are two questions
 
@@ -309,7 +323,7 @@ after n passes:   noise σ/√n,   bias b
 bias becomes visible when  b > σ/√n,  i.e. after  n* = (σ/b)²  passes
 ```
 
-A bias at 1 % of a single pass's noise becomes as large as the noise after 10,000 passes, and is far below it at 64. A bias at 10 % of single-pass noise matches the noise at 100 passes and is already a third of it at the gallery's 64. The contract must therefore judge at the depth the gallery displays (64 passes), or at a smaller depth with the budget scaled by √(64/n). A candidate accepted at 1 pass with `f = 0.1` could be visible at 64. Extra variance from divergence behaves like noise: it slows convergence slightly and does not shift the mean, so it is judged by the independent test.
+A bias at 1 % of a single pass's noise becomes as large as the noise after 10,000 passes, and is 8 % of it at 64, where the noise is σ/8. A bias at 10 % of single-pass noise matches the noise at 100 passes and is already 80 % of it at the gallery's 64. The contract must therefore judge at the depth the gallery displays (64 passes), or at a smaller depth with the budget scaled by √(64/n). A candidate accepted at 1 pass with `f = 0.1` could be visible at 64. Extra variance from divergence behaves like noise: it slows convergence slightly and does not shift the mean, so it is judged by the independent test.
 
 ## 17. A tolerance revision: provenance, composition and frozen pipelines
 

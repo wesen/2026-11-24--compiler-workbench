@@ -11,7 +11,11 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://ttmp/2026/11/26/IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/design-doc/01-sketch-guide-image-level-contracts-for-float-freedom.md
+      Note: the sketch guide
+    - Path: repo://ttmp/2026/11/26/IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/log/01-sketch-guide-diary.md
+      Note: the investigation diary
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T09:41:27.93341293-05:00

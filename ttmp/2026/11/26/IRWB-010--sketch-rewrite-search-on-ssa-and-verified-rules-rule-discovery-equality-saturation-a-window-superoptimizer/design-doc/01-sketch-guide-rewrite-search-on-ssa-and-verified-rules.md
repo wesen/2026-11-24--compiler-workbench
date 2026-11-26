@@ -10,12 +10,26 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://corpus/candela-gallery/kernel.typed
+      Note: noise3, fbm3, gnoise, hash3 (lines 147-184, 2690-2708)
+    - Path: repo://src/typed/backend/select.ts
+      Note: the tiles an extraction cost must model; no fused multiply-add
+    - Path: repo://src/typed/rules/compile.ts
+      Note: the compiled rule visitor; provenance without rule names (lines 72-76)
+    - Path: repo://src/typed/rules/verify.ts
+      Note: verifyRule and evidence strengths, the filter every discovered rule must pass
+    - Path: repo://src/typed/ssa.ts
+      Note: the SSA view whose names would be the leaves of a cross-statement e-graph
+    - Path: repo://ttmp/2026/11/26/IRWB-010--sketch-rewrite-search-on-ssa-and-verified-rules-rule-discovery-equality-saturation-a-window-superoptimizer/scripts/02-value-tree-shapes.mjs
+      Note: shape and pattern census at r0 and O2
+    - Path: repo://ttmp/2026/11/26/IRWB-010--sketch-rewrite-search-on-ssa-and-verified-rules-rule-discovery-equality-saturation-a-window-superoptimizer/scripts/03-heat.mjs
+      Note: where a frame's instructions go in V-04 and X-03
 ExternalSources: []
 Summary: 'Intern-grade sketch: the system parts rewrite search needs (value trees, Tx provenance, the meaning gate, rule tables with evidence, the SSA view, the RV32 backend), e-graphs, explanations and superoptimization from scratch, measured shapes and heat of noise3 and fbm3, the design space, first experiments with stop criteria, and open questions.'
 LastUpdated: 2026-11-26T10:02:52.18704216-05:00
-WhatFor: ""
-WhenToUse: ""
+WhatFor: "Picking up the rewrite-search direction (rule discovery, equality saturation, a window superoptimizer) with the system background, measurements and first experiments in one place."
+WhenToUse: "Before starting any of experiments E1-E6, or when deciding whether rewrite search on noise3 and fbm3 is worth building."
 ---
 
 # Sketch guide: rewrite search on SSA and verified rules
@@ -39,7 +53,7 @@ This is a **sketch**. Nothing here is implemented. The weight is on the parts of
 > **The direction in one screen.**
 > - The ingredients exist. `simplify` is a table of 27 rules and `fold` one of 40. Every rule carries recorded evidence of soundness, and the verifier rejects all seven deliberately unsound candidates. A single-assignment view `typed.ssa` is checked against reaching definitions on all of Candela.
 > - What does not exist is search. Of `simplify`'s 27 rules, 18 never fire on the corpus's O2, and no rule at all applies to an f32 operator.
-> - The target is hot where it runs. In V-04 ("A cloud"), 81.8 % of a frame's executed instructions are in `noise3`, `fbm3` and the functions they call. In X-03 the share is 35.3 %. O2 leaves `noise3` unchanged. Of `noise3`'s own instructions, 14.5 % are arithmetic, 21.1 % rebuild constants, and 37.0 % are register moves for its 14 calls (section 8).
+> - The target is hot where it runs. In V-04 ("A cloud"), 81.8 % of a frame's executed instructions are in `noise3`, `fbm3` and the functions they call. In X-03 the share is 35.3 %. O2 does not change how many instructions `noise3` executes. Of `noise3`'s own instructions, 14.5 % are arithmetic, 21.1 % rebuild constants, and 37.0 % are register moves for its 14 calls (section 8).
 > - What exact rewriting can reach there today is small: `x * 2.0 → x + x` saves 0.40 % of V-04's frame. The largest pattern, multiply-then-add (3.9–4.8 % of a frame), is inexact and belongs to IRWB-011. Inlining creates the shapes rule search could work on, provided rules can be guarded by float facts.
 > - The proposal is a loop. Hot instructions whose provenance shows no rule fired yield shapes. Candidate rules are enumerated for those shapes, verified, and added to a table. An e-graph applies the table and extracts by RV32 cost, and its result is one ordinary, checked revision whose explanation cites only verified rules.
 
@@ -145,9 +159,9 @@ One detail matters for proof-producing search. The provenance a rule application
 |---|---|---|
 | `structural` | dropped, duplicated or reordered variables need `pure`; types from the operator signatures | (a precondition) |
 | `by-construction` | for `fold`: the replacement is the evaluator's own value of the matched operator; guards exclude every trapping input | `by-construction` |
-| `symbolic-linear` | both sides as normal forms `c₀ + Σ cᵢ·xᵢ` over ℤ/2³², once per guard instance | `proof` |
+| `symbolic-linear` | both sides as normal forms `c₀ + Σ cᵢ·xᵢ` over ℤ/2³², once per guard instance (for `mul-pow2`, once for each of the 31 powers of two `k` may be) | `proof` |
 | `bitwise-w1` | rules built from `and`, `or`, `xor`, checked on one bit | `proof` |
-| `exhaustive-w8` | every assignment at 8 bits, plus a width-transfer argument where one exists | `reduced-width+argument` |
+| `exhaustive-w8` | every assignment at 8 bits, plus an argument that the identity does not depend on the width, where one exists (for rules built only from comparisons, `argumentFor`, `verify.ts:90`) | `reduced-width+argument` |
 | `random-32`, `f32-special` | boundary or special values crossed, then N random assignments at 32 bits | `sampled` |
 | `exhaustive-32` | every value of a single 32-bit variable (2³² inputs), and small domains always | `exhaustive` |
 
@@ -247,11 +261,11 @@ s:noise3.18  a = (q_t0 +. ((t28 -. q_t0) *. t9))                         lerp: f
 
 Inside `noise3`, which has the same breakdown in both scenes:
 
-- 37.0 % of its executed instructions are `fsgnj.s`, the float register move, mostly moving arguments into place for its 14 calls;
+- 37.0 % of its executed instructions are `fsgnj.s`, the float register move;
 - 21.1 % build constants;
 - 14.5 % are the arithmetic itself (`fmul.s`, `fadd.s`, `fsub.s`).
 
-In `gnoise`, 26.8 % are moves and 29.3 % are float stores and loads to the stack. In `hash3`, 18.8 % build f32 constants, and its integer constants add further `lui` and `addi`. The r0 and O2 counts for `noise3` and `gnoise` are identical. `hash3` is slightly *slower* at O2 (14,686,720 against 14,457,240 in V-04), because `constprop` substitutes the folded constant `2/2²⁴` into three products, each of which then rebuilds it.
+(`fmv.s` is `fsgnj.s` with both sources equal.) The script does not attribute the moves to call sites. That most of them place arguments for the 14 calls is an inference: each `gnoise` call passes nine f32 arguments and returns a result in `fa0`. In `gnoise`, 26.8 % are moves and 29.3 % are float stores and loads (`fsw`, `flw`). `gnoise` reads no memory in its source, so these are frame traffic: saved registers or spills, which the script does not separate. In `hash3`, 18.8 % build f32 constants, and its integer constants add further `lui` and `addi`. The r0 and O2 counts for `noise3` and `gnoise` are identical. `hash3` is slightly *slower* at O2 (14,686,720 against 14,457,240 in V-04), because `constprop` substitutes the folded constant `2/2²⁴` into three products, each of which then rebuilds it.
 
 **Candidate patterns** (`02-value-tree-shapes.mjs`; the classes are defined in section 18; counts are sites, not executions):
 
@@ -344,11 +358,13 @@ Each `union(a, b)` in an e-graph has a reason. Either a rule instance (rule `r` 
 
 What this offers the project is a proof object for the whole extracted tree, not just a sampled verdict:
 
+The example below is a two-step explanation. It shows a rule step and a congruence step, which lifts a rewrite inside a subterm to the whole term:
+
 ```text
-explanation for  (x * 2) * 3  =  x * 6 :
-   step 1  rule reassoc-mul-const@1  σ = { x: x, c1: 2, c2: 3 }      evidence: <fingerprint>, strength S1
-   (one step; if mul-pow2 had been applied first, the chain would be:
-    (x*2)*3 ← (x<<1)*3 is not needed: extraction never chose that e-node)
+explanation for  (x * 1) * 4  =  x << 2 :                      (rules from simplify.ts)
+   step 1  rule mul-one@1   σ = { x: x }           x * 1  =  x          evidence fp1, strength proof
+   step 2  congruence      mul(x * 1, 4) = mul(x, 4)    (the child was rewritten by step 1)
+   step 3  rule mul-pow2@1  σ = { x: x, k: 4 }      x * 4  =  x << 2     evidence fp2, strength proof
 check(explanation):
    for each step: the rule is in the table at that version; its evidence record's fingerprint matches;
                   the substitution instantiates the rule's lhs to the step's input and its rhs to the output;
@@ -485,7 +501,7 @@ eqsat(tree t, table T, budget):                                      # Proposed
 - **The minimum strength.** `proof`, `exhaustive` and `by-construction` are exact. `reduced-width+argument` is exact only if the argument is accepted. `sampled` is not exact. A table may admit sampled rules and mark every explanation that uses one as sampled, or it may refuse them. The first is more productive, the second gives cleaner proofs. *Open*, but the explanation must report the weakest strength on its chain whichever way it is decided.
 - **Guards as e-class analyses.** Today's guards (`pure`, `pow2`, `boolean`, `noTrap`) are decidable on the matched tree. Discovered rules will want guards such as "x ≥ 0" (from `ranges`) or "x is not a non-canonical NaN". In an e-graph these become analyses per class. For example, `nanCanonical(c)` is true when every e-node in `c` is an arithmetic result, because every NaN the evaluator computes is canonical (`src/typed/f32.ts:11`; IRWB-005 diary step 14). That fact would make `x * 1.0 → x` valid on computed operands, where today it is wrong in general.
 - **Three classes of f32 rule.** The pattern census of section 8 counts each class.
-  - **Exact for every bit pattern.** Examples: `x * 2.0 → x + x`, `−(−x) → x`, `|−x| → |x|`. They can go into an exact table. `x * 2.0 → x + x` is exact because both sides round the same real value 2x once, and both return the canonical NaN for any NaN input (`f32.ts:58–60`). This is a claim for the verifier to confirm, not a recorded result yet.
+  - **Exact for every bit pattern.** Examples: `x * 2.0 → x + x`, `−(−x) → x`, `|−x| → |x|`. They can go into an exact table. `x * 2.0 → x + x` is exact because both sides round the same real value 2x once, so they overflow and underflow alike, and both return the canonical NaN for any NaN input (`f32.ts:58–60`). This is a claim for the verifier to confirm, not a recorded result yet. The rule uses `x` twice, so it needs the guard `pure(x)`, and extraction pays for both copies of `x`. It is a gain only when `x` is a leaf or a cheap tree.
   - **Exact except for NaN payloads.** Examples: `x * 1.0 → x`, `x + (−0) → x`, `x / 1.0 → x`. These are wrong for a non-canonical NaN input and correct otherwise. They need the `nanCanonical` guard.
   - **Inexact.** Contraction into a fused multiply-add, reassociation, and replacing `x / c` with `x · fl(1/c)`. These change the last bit and do not belong in an exact table at all. They are IRWB-011's subject: under a tolerance contract judged on rendered frames, they become checked trades, and IRWB-011 measures their image-level effect on Candela.
 
@@ -534,7 +550,7 @@ missed(program rN, image, heat):                                      # Proposed
   group the report by shape; the top shapes are the enumeration targets of B3
 ```
 
-The starting evidence is already in the diaries: 18 of `simplify`'s 27 rules never fire on the corpus's O2, and on Candela's O2 four of them fire (section 5), and no f32 operator has any rule. Section 8 adds which shapes `noise3` and `fbm3` are made of.
+The starting evidence is already in the diaries: 18 of `simplify`'s 27 rules never fire on the corpus's O2, and on Candela's O2 four of them fire (section 5), and no f32 operator has any rule. Section 8 adds which shapes `noise3` and `fbm3` are made of, and it already predicts the loop's first answer for V-04. No rule touched a tree of `noise3` or `gnoise`, their executed instructions are identical at r0 and O2, and together with `hash3` they are 70.6 % of the frame. So the whole noise family would head the report.
 
 The loop's output feeds **targeted enumeration**. Instead of all terms of size 3, enumerate terms over the operators and constants that occur in the hot shapes. For `noise3` that means `fmul`, `fadd` and `fsub` with the constants 2.0, 3.0 and 1.0. The search stays small, and every rule found applies to code that runs. Souper's experience with LLVM suggests that a synthesizer pointed at real code finds peepholes a hand-written set lacks (Sasnauskas et al., 2017). Whether that holds for this compiler's much smaller rule set is exactly what experiment E5 measures.
 
@@ -639,7 +655,7 @@ Each experiment states its question, its setup, what to measure, and when to con
 - **IRWB-009** (a function-incremental framework) changes the economics of section 23. If a pass costs time proportional to what it changes, a search that tries many candidates per function becomes affordable. A persistent store keyed by tree hash would let identical trees reuse their extraction, and Candela's per-scene sections repeat many small trees.
 - **IRWB-007** (specializing Candela on its scene data) creates constants where today there are loads. More constants mean more `fold` firings and new shapes for the enumerator, so the census of section 8 should be repeated on a specialized program.
 - **IRWB-011** (image-level contracts for float freedom) owns the inexact f32 rewrites of section 18. Contraction, reassociation and reciprocals cannot enter an exact table. Under IRWB-011's tolerance contract they become candidates judged on rendered frames. IRWB-011 has measured them on Candela.
-- **IRWB-003** (not merged, `90fed9c`) closed most of the speed gap with inlining, coalescing and constants in registers. Its `homes` option keeps f32 constants in registers, which competes with `x * 2.0 → x + x` for the same instructions. Section 8's constant-building count should be re-measured with IRWB-003's options before E2's gain is claimed.
+- **IRWB-003** (not merged, `90fed9c`) closed most of the speed gap with inlining, coalescing and constants in registers. Its `homes` option gives constants a home register instead of rebuilding them at each use (IRWB-003 guide §14), which competes with `x * 2.0 → x + x` for the same instructions. Section 8's constant-building count should be re-measured with IRWB-003's options before E2's gain is claimed.
 - **IRWB-005** (not merged, `d9cf4e9`) supplies the mutation harness that should test any new search pass, and the finding that the default gate's weak spot on Candela is float code in narrow input regions.
 
 # Appendix A: API reference
