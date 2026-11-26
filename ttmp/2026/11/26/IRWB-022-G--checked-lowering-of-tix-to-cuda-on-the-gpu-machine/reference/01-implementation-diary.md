@@ -186,3 +186,9 @@ Accepted both timing corrections and the proposed cut: preload functions before 
 ## Step 3: Batch-only differential engine
 
 Implemented the approved spec variant and guards in `differential.ts`; no change to local worker execution. An initial `npm run build` reported TS2345 on `runDifferential(spec, ...)` because the sync entry accepted only local specs. Narrowing inside that entry makes the runtime sync-mode diagnostic reachable for both TS and JS callers. Rebuild passed. `node --test tests/framework/batch-differential.test.mjs` passed cold, replay, partial replay, failure/retry and forbidden sync paths. Wider regressions follow integration.
+
+## Step 4: From the current revision to a running GPU unit
+
+`cuda-source.ts` emits each statement and its scoped private folds; `cuda-runtime.ts` supplies input, preload/events, repeated launch and output. `cuda-run.ts` executes one binary batch through the revised tool, validates its framing and copies f32 words without text conversion. `cuda-check.ts` binds the actual text output to an origin-derived f64 batch using the contract variant in `de9177a`. The existing sampler/comparator are shared; stage-1 execution is unchanged.
+
+An actual GB10 smoke run on shape [3] returned [2,4,-6] and event time 0.017312 ms. All six corpus checks and the K=7 changed-split/mutant check then passed; the framework regression (227 tests) and selected Typed regression (36 tests) passed. More GPU edge tests and the long full-size local runs continue. The tool now obtains the compiler build inside the compile step, publishes a successful binary under a per-key lock, and fetches only the private job output; shell arguments for host/file operands are separated from options. No remote lookup on evidence replay.
