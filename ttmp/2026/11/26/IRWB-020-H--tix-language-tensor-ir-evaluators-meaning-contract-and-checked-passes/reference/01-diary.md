@@ -193,3 +193,58 @@ Two additional probes tightened the compiler tests. A 309-digit input dimension 
 The six `corpus/tensor/*/main.tix` programs now run before and after both passes against independent small fixtures in f32 and f64. The six cases include large logits, a constant normalization row, unequal attention lengths, signed GELU inputs and the last valid conv window. The kernel and contract checkpoint was `afc165c`.
 
 On Node v24.18.0, `npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed 20/20; `node --test tests/framework/*.test.mjs` passed 226/226; `node --test tests/typed/{passes,project-meta,strategies,audit,inline}.test.mjs` passed 27/27. A direct import of `dist/tensor/index.js` exposed exactly `compileTix`, `optimizeTix`, and `runTix`. No full suite, device tests or push. No material deviations from the reviewed design. Numerical acceptance is sampled, and each symbol needs a plain input axis, as reviewed.
+
+## Step 6: Attribute the independent evaluation's one rejection
+
+The evaluation at `e0233f2` left one question: did reassociation introduce an out-of-budget error, or was the result already out of budget? I reproduced the public verdict first, then captured its candidate and replayed the exact inputs with both f32 programs and the origin f64 program. The two failing coordinates were already wrong by the same amount before the pass.
+
+### Prompt context
+
+**User prompt (verbatim):**
+
+````text
+Stage 1 of IRWB-020-H has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `e0233f2`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 59/60, and every accepted result computes the same function (f64 run within 1e-9).
+- **`split-sum` was rejected on 1 program(s):** 39. Every program is valid and the pass is correct on each, and plain f32 evaluation of these programs stays within 3.7e-7 of f64 (relative to max(1, |r|)) on the evaluation's inputs. So each rejection is a false rejection unless your contract found a real violation. Source:
+
+```
+fn g(x: f32[N, C], u: f32[N], v: f32[C]): f32[C] {
+  t0[i0] = (sum(r1, r2) -(v[i0] / (v[i0] * v[i0] + 1)) * u[r1] - u[r2]);
+  t1[i3, i4] = (sqrt(v[i4] * v[i4] + 0.5) - (sum(r5) v[i4] + v[r5])) / C - u[i3];
+  t2[i6] = u[i6] - -u[i6];
+  t3[i7] = (sum(r8) (sum(r9) C - v[r9]) + (t0[i7] - x[r8, i7]));
+  return t3;
+}
+```
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-H:`). Final message: the report's path, the commit hash, and one line per failure cause.
+````
+
+### Experiment and diagnosis
+
+- From this worktree, Node `v24.18.0`: `npm run build && node ttmp/*/*/*/IRWB-020-H*/scripts/01-replay-program-39.mjs`. Build and replay succeeded. The script asserts the rejection before instrumentation, delegates to the unmodified check in the observed run, then recreates the sample stream and cross-checks a hand-coded reduction on the two failing elements. No access to the hidden generator was assumed.
+- **Program 39, `split-sum`:** `src/tensor/contract.ts:98` evaluates the origin in f64; `src/tensor/contract.ts:126` tests total candidate-f32 error against `2e-6 + 2e-5*abs(ref)`, not incremental error over origin f32. `src/tensor/passes.ts:137–139` declines the revision on disagreement. Positive cases #13 and #17 (zero-based, seed 7) fail. In case #13 (`N=C=5`) element 4 has error `0.000009695974174661615` > `0.000008967274342235257`; in #17 (`N=C=9`) the error is `0.000042413039096800276` > `0.00003096508165921944`. The other 22 cases agree.
+- **Mechanism:** `src/tensor/passes.ts:88` excludes `t0`'s multi-index reduction. `src/tensor/evaluate.ts:23,73,80` select f32 and round scalar ops and each combine. The positive inner sum in `t3` nearly cancels `t0[i]-x[r8,i]`; upstream rounding errors matter relative to the small residual, and the outer sum repeats them. In both failing elements origin f32 and candidate f32 are bit-identical. The f64 reference and f32 result pairs, respectively, were `(-0.34836371711176284, -0.3483734130859375)` and `(1.4482540829609718, 1.448211669921875)`. Across all 24 calls four other elements changed with splitting; no new threshold violation occurred.
+
+### Interpretation and follow-up
+
+This is a real violation of the implemented accuracy requirement, not a demonstrated regression due to splitting. No other failure or rejection was reported. The independent evaluation used different inputs, so its accuracy result need not match either replay error. For review, start with the [report](02-report.md) and [replay](../scripts/01-replay-program-39.mjs); compare the captured f32 baseline to the candidate before attributing error to the rewrite. I would include that baseline in future failure evidence, not tune the tolerance against this evaluation. No compiler, test or corpus changes were made.

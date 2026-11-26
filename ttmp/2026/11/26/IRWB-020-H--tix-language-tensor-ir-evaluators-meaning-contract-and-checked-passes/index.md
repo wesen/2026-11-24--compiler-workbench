@@ -21,6 +21,7 @@ WhenToUse: Start here for IRWB-020-H
 
 **Stage 1 implemented and checked.** `src/tensor/` implements Tix, both CPU evaluators and the two checked passes. `corpus/tensor/` contains six executable source fixtures. The only framework change was extracting synchronous native-candidate preparation. GPU work is outside this ticket.
 
+- [Stage 1 report](reference/02-report.md) — results and the cause of the program 39 rejection.
 - [Design and framework change ledger](design-doc/01-stage-1-design-checking-tix-tensor-transformations.md) — reviewed plan and actual framework change.
 - [Diary](reference/01-diary.md) — request, investigation and arithmetic probe.
 - [Tasks](tasks.md) · [Changelog](changelog.md)
