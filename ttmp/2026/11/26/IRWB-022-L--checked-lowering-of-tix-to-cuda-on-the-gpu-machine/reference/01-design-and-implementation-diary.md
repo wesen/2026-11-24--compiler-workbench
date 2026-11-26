@@ -208,3 +208,8 @@ The first `node --test tests/tensor/*.test.mjs` run had 28 passes and one failed
 The sandbox reported `index.lock': Read-only file system` while staging the backend. The authorized escalated Git commands completed the commit. The CPU benchmark initially lost its detached tmux session when the launching shell exited. It is now running at an explicit worktree path with a live `tmux wait-for` client. The GPU measurement session used the same arrangement and completed all six rows.
 
 The corrected `node --test tests/tensor/*.test.mjs` run passed all 29 tests with zero skipped in 249.0 s. The corpus checks, split mutant, binary identities, empty reductions and concurrent retrieval ran on the GB10. The pass reused all previously decided cases on the warm check and ran the changed source against the cached origin cases. [Test receipt](../various/tensor-tests.log)
+
+## Step 5. Timing the six corpus functions
+
+The GB10 regression commit is `ad1502a`. The benchmark script uses the encoded repetition count three and the runner's exclusive timing lock, and stores each event interval, input digest and output shape. All six GPU measurements completed. Their medians span 0.166208 ms for conv2d to 0.988288 ms for MLP. The host uses the stage-1 f32 interpreter at the exact same input sizes, with no extrapolation. The first host row (512³ matmul) took 813945.980 ms. [Benchmark harness](../scripts/05-benchmark.mjs) · [Device observations](../scripts/07-gpu.jsonl)
+
