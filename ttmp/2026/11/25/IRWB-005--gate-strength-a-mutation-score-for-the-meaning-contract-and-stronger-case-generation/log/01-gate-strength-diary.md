@@ -674,3 +674,50 @@ The coordinator relayed a finding from IRWB-006: `F32_EDGES` contains only the c
 
 ### Technical details
 - Version 1's check counts both functions' 40 cases (80); version 2's, 80 per function (160).
+
+## Step 15: Merging IRWB-004 and IRWB-006 (integration head 1f45c94)
+
+The coordinator asked for a merge of `irwb-001/import-v6-prototype` at 1f45c94, which contains IRWB-004 (cheap experiments: an asynchronous meaning check with a verdict memo, reused evaluator buffers, frozen records from `storeOf`, a worker pool) and IRWB-006 (rewrite rules as verified data, SSA). The merge applied without conflicts, `src/typed/evaluate.ts` included: my `observe` hook now sits next to IRWB-004's reused locals window, and receives that window. One change of mine followed from reading the new `differential.ts`. The divergence rule of version 2 learned whether r0 finished from the baseline's run of the same case. With IRWB-004's memo or a worker, a baseline outcome can be replayed instead of run, which would have switched the rule off silently. The subject's `run` now runs the origin itself when it does not know. Version 2 sets no `baselineKey`, so today nothing is replayed for it, and verdicts are unchanged. After the merge, all gates pass and the frozen outputs are identical to the milestone's baseline.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator messages (summarized): merge `irwb-001/import-v6-prototype` (head 1f45c94) into this branch soon; resolve conflicts in `evaluate.ts` keeping both intents; re-run the gates and a sample of the mutation measurements; record the merge in the diary. Changes listed: async meaning check (`decide`), verdict memo keyed by origin revision, case and limit (`decideCase`, `differentialSpec`, `runDifferentialAsync`, `setDifferentialReuse`, `differentialStats`), reused evaluator buffers, frozen `storeOf` records, a worker pool (not default).
+**Assistant interpretation:** Merge, check that nothing of mine depends on what changed, re-validate.
+**Inferred user intent:** One integration line in which all milestones' work holds together.
+**Commit (code):** f6a1fa8 (merge), 2948ae8 (divergence rule independent of run order), 9707c12 (gates on the merged branch).
+
+### What I did
+- `git merge --no-ff --no-commit irwb-001/import-v6-prototype` (`git rev-parse` = 1f45c94c4cbeca09c400740facf2f487bd9afd41): "Automatic merge went well"; 155 files, src: 36 files.
+- Read the merged `evaluate.ts` (observe at line 466, called with `L = LOCALS.subarray(base, base + n)`) and `differential.ts` (`prepare`, `decideCase`, `memoKeys`, `runDifferential`, `runDifferentialAsync`).
+- `cases-strong.ts`: in `run('subject', art, c, ports)`, if the origin's outcome for `c` is unknown, evaluate `ports.origin` on `c` at the limit and remember it.
+- `npx tsc`; `node --test tests/typed/mutate.test.mjs tests/typed/facts-check.test.mjs`: 12 of 12.
+- `scripts/01-freeze-baseline.sh various/final-merged`; `scripts/18-freeze-diff.sh various/baseline various/final-merged > various/18-freeze-diff-merged.txt`.
+- A sample of the corpus measurement on the merged code (Step 16).
+
+### Why
+- Every assumption of the harness about the gate's internals (baseline before subject, a fresh array per call, mutable records) had to be checked against the new code, not assumed.
+
+### What worked
+- npm test on the merged branch: `tests 362 pass 359 fail 0 skipped 3`; no test removed; 37 added (12 of mine, 25 from IRWB-004/006). `IRWB_FULL=1` suites: 21/21, identical names. `tools/parity.mjs`: identical. Corpus revision fingerprints: identical to 420d8e1, so IRWB-006's rule tables and IRWB-004's changes give the same revisions, as their reports say.
+- The pinned version strings still hold (`1+82965c92`, `1+2686cc23`, `1+c4dbecf4`): IRWB-004 added fields to the differential specification but not to the contract's key.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The memo keys a candidate's verdicts by `closureKey(value, fn)`, a hash of the code a case can reach, so two mutants share a replayed verdict only when their reachable code is identical; no mutant can inherit another's verdict.
+- `observe` receives a window of a shared `Int32Array`; reading it during the callback is correct, keeping it is not (the facts checker only reads).
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The deep search (Step 17) and the Candela run (Step 18) were started before the merge and ran on the pre-merge build; the post-merge sample (Step 16) is the evidence that the merge changes none of their kind of result.
+
+### What should be done in the future
+- Version 2 could adopt the memo (`baselineKey`/`subjectKey`) for speed; its divergence rule is now safe under replay.
+
+### Code review instructions
+- `git show 2948ae8`; `various/18-freeze-diff-merged.txt`.
+
+### Technical details
+- Merge commit f6a1fa8 has parents 83a4f71 (this branch) and 1f45c94 (the integration head).
