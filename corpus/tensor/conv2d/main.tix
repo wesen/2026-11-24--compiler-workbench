@@ -1,0 +1,5 @@
+// NCHW, stride one, valid 3x3 windows.
+fn conv2d(x: f32[N,C,H,W], w: f32[F,C,3,3]): f32[N,F,H-2,W-2] {
+  y[n,f,i,j]: f32[N,F,H-2,W-2] = sum(c,dy,dx) x[n,c,i+dy,j+dx] * w[f,c,dy,dx];
+  return y;
+}

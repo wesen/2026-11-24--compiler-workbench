@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "b4754c1205f5a6453bdebcc00d41341e688281854908094f84b243763871c71f",
+  "request": {
+    "ticket": "IRWB-020-E",
+    "status": "complete",
+    "intent": "",
+    "entry": "Implemented Stage 1 and checked tensor, framework and affected Typed tests."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-1071600be4b6da4ee56a17cca25bd773",
+    "state": "committed",
+    "created_at": "2026-11-26T18:57:31.895850805Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "eb21937d0f5674d07481e0510883094421416dd435ee248aeecd5da8fc618299",
+      "index.md": "302f220f5baed8665474d73e3d4d972f0414371baf3bab7599de523d602fd0f9"
+    },
+    "after": {
+      "changelog.md": "8465519439ef190aced615b4899d58e60181fb983455307a07404911faa8da70",
+      "index.md": "ba7731ab83a5ac0eadaa82f7cff452f91e366887cccd38adb7e060567f04ffad"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "eb21937d0f5674d07481e0510883094421416dd435ee248aeecd5da8fc618299",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKUHJvcG9zZWQgc3RhZ2UgMSBkZXNpZ24gZm9yIHJldmlldzsgbm8gaW1wbGVtZW50YXRpb24gY2hhbmdlcy4KCiMjIDIwMjYtMTEtMjYKCkltcGxlbWVudGVkIFN0YWdlIDEgYW5kIGNoZWNrZWQgdGVuc29yLCBmcmFtZXdvcmsgYW5kIGFmZmVjdGVkIFR5cGVkIHRlc3RzLgo="
+    },
+    {
+      "path": "index.md",
+      "before": "302f220f5baed8665474d73e3d4d972f0414371baf3bab7599de523d602fd0f9",
+      "after": "LS0tClRpdGxlOiBUaXggbGFuZ3VhZ2UsIElSLCBldmFsdWF0b3JzLCBtZWFuaW5nIGNvbnRyYWN0IGFuZCBjaGVja2VkIHBhc3NlcwpUaWNrZXQ6IElSV0ItMDIwLUUKU3RhdHVzOiBjb21wbGV0ZQpUb3BpY3M6CiAgICAtIGNvbXBpbGVyCiAgICAtIGlyCiAgICAtIHZlcmlmaWNhdGlvbgpEb2NUeXBlOiBpbmRleApJbnRlbnQ6IGxvbmctdGVybQpPd25lcnM6IFtdClJlbGF0ZWRGaWxlczogW10KRXh0ZXJuYWxTb3VyY2VzOiBbXQpTdW1tYXJ5OiAiIgpMYXN0VXBkYXRlZDogMjAyNi0xMS0yNlQxMzo1NzozMS44OTU3MjQwMjEtMDU6MDAKV2hhdEZvcjogIiIKV2hlblRvVXNlOiAiIgotLS0KCiMgVGl4IHN0YWdlIDEKClN0YWdlIDEgaW1wbGVtZW50ZWQgYW5kIGNoZWNrZWQuIFRoZSBUaXggZG9tYWluIGxpdmVzIGluIGBzcmMvdGVuc29yL2A7IGl0cyBzaXggZXhhbXBsZXMgYW5kIHRlc3RzIGFyZSBpbiBgY29ycHVzL3RlbnNvci9gIGFuZCBgdGVzdHMvdGVuc29yL2AuIFRoZSBkZXNpZ24gbGVkZ2VyIGlkZW50aWZpZXMgdGhlIHNpbmdsZSBmcmFtZXdvcmsgc291cmNlIGNoYW5nZTsgdGhlIGRpYXJ5IHJlY29yZHMgdGhlIHZlcmlmaWNhdGlvbiBjb21tYW5kcy4KCi0gW0Rlc2lnbiBhbmQgZnJhbWV3b3JrIGNoYW5nZSBsZWRnZXJdKGRlc2lnbi1kb2MvMDEtc3RhZ2UtMS1kZXNpZ24ubWQpCi0gW0ludmVzdGlnYXRpb24gZGlhcnldKHJlZmVyZW5jZS8wMS1kaWFyeS5tZCkKLSBbSW1wbGVtZW50YXRpb24gY2hlY2tsaXN0XSh0YXNrcy5tZCkK"
+    }
+  ]
+}

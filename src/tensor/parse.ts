@@ -2,7 +2,6 @@ import {
   arity,
   constant,
   fail,
-  plain,
   plus,
   same,
   variable,
@@ -117,7 +116,11 @@ export function parse(source: string): Module {
         if (ts[i].s !== ',') break;
         i++;
       }
-      return ts[i]?.s === ')' && ns.length > 0 && !(ns.length === 2 && ns.every(n => shapes.has(n)));
+      if (ts[i]?.s !== ')' || !ns.length) return false;
+      const next = ts[i + 1]?.s ?? '';
+      // Only '-' can both start a reduction body and continue a completed max call.
+      if (next === '-') return !(ns.length === 2 && ns.every(n => shapes.has(n)));
+      return next === '(' || ident.test(next) || /^[.\d]/.test(next);
     }
     function expr(prec = 0): Expr {
       let a: Expr;

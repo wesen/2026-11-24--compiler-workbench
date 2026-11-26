@@ -14,8 +14,12 @@ RelatedFiles:
       Note: Synchronous sampled comparison already supports asymmetric evaluators
     - Path: repo://src/framework/passes/define-pass.ts
       Note: Async boundary and proposed shared native candidate preparation
+    - Path: repo://src/tensor/contract.ts
+      Note: Concrete domain and relators
     - Path: repo://src/typed/project.ts
       Note: Existing origin and pass application pattern
+    - Path: repo://tests/tensor/passes.test.mjs
+      Note: Nine-element witness and negative controls
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T12:48:04.009330926-05:00

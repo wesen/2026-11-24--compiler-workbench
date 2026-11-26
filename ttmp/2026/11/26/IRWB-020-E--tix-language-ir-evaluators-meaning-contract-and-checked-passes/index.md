@@ -1,7 +1,7 @@
 ---
 Title: Tix language, IR, evaluators, meaning contract and checked passes
 Ticket: IRWB-020-E
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -12,14 +12,14 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T12:48:03.820458974-05:00
+LastUpdated: 2026-11-26T13:57:31.895724021-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Tix stage 1
 
-Review pending; no implementation yet. The deliverable is a second checked compiler domain and an account of what it required of v6.
+Stage 1 implemented and checked. The Tix domain lives in `src/tensor/`; its six examples and tests are in `corpus/tensor/` and `tests/tensor/`. The design ledger identifies the single framework source change; the diary records the verification commands.
 
 - [Design and framework change ledger](design-doc/01-stage-1-design.md)
 - [Investigation diary](reference/01-diary.md)

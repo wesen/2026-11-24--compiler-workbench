@@ -132,6 +132,41 @@ Start at the [framework change ledger](../design-doc/01-stage-1-design.md#framew
 
 Accepted every review item. The contract now enumerates concrete bindings in order, samples positive parameters (eps:f32[1]), and uses only one relation per step. Plain input axes bind symbols. The sync gate takes an existing Pass, not a second pass spec. The design diff is the review checklist. Next implement, build and test using globs.
 
+### User prompt for Step 2 (verbatim)
+
+````text
+A reviewer has read your design for IRWB-020-E. The review:
+
+# Review of your design
+
+## Must change
+
+1. **Positive inputs and non-finite references.** "positive samples for log/sqrt" gives no rule for which parameters feed `log` or `sqrt`, and layernorm's eps form is unspecified. Together with "Fail closed if a required reference/candidate is nonfinite", a signed eps makes `sqrt(var + eps)` NaN and rejects the correct `split-sum` on a corpus program. State the eps form and the positive-sample rule in terms of the signature, or define how a non-finite origin reference is handled.
+2. **Shape domain.** "Try shape bindings cycling through 1, 3, 4, 5, 9 and unequal per-axis permutations" does not say which assignments are generated, in what order, or how many are kept per function. Write the enumeration down.
+
+## Cut
+
+1. "Also check every candidate against original program: exact until an approximate step is accepted, tolerance thereafter (carry this state with the handle across calls)". Inline's exact check against its immediate input, on the same origin-derived cases, already implies this check. The extra check and its state can go.
+2. "Parameter shape expressions define a linear system in shape names … at call time solve against actual dimensions", and "Carry unresolved shape-only inequalities as domain constraints on concrete shapes". No corpus program needs this. It adds a call-time error contract beyond compile errors with `line:col`.
+3. "Measure deviations on corpus; report outliers rather than increasing threshold". This is a measurement plan, not stage-1 design.
+
+## Framework changes
+
+- **Shared native-candidate preparation plus a synchronous checked-native application:** needed, because the fixed `optimizeTix` is synchronous and `applyPass` is async. It belongs in `define-pass.ts`.
+- **"Give it a restricted spec type (pure native function of `before` and view; writes, IR, adapter)":** not minimal. `definePass` already carries this metadata. Take a `Pass` and refuse `needs` and `preserves`.
+- No missed change: the design does not call the async `applyPass` on a read-only adapter.
+
+## Keep
+
+Keep the nine-element witness with its 0.25 tail inside the domain (`1.25` against `1.2500001192092896`, verified), which catches both the reassociation and a dropped partial block. Also keep the elementwise, fail-closed comparison against the untransformed origin's f64.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-020-E:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+````
+
 ## Step 3: Checked indexed representation and execution
 
 Implemented lexical binder IDs, affine composition and bounds checks on each revision, a read-only v6 projection, and precision-parametric row-major evaluation. `npm run build` passed after installing locked dependencies. No source translation via Typed. Next wire the sampled gate and run independent oracles.
@@ -139,3 +174,9 @@ Implemented lexical binder IDs, affine composition and bounds checks on each rev
 ## Step 4: Synchronous native acceptance
 
 At front-end checkpoint `e0e2556`, the read-only adapter fit the native-result path but not the async edit lifecycle. Shared candidate preparation and write enforcement in `define-pass.ts`; the synchronous caller supplies the semantics callback. The expression fixture exercises rejection before publication, unsupported clauses and async checks. `node --test tests/framework/*.test.mjs` passed 226/226; `node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs` passed 26/26. No escalation required.
+
+## Step 5: Differential witnesses and corpus qualification
+
+Wired both passes through the native gate from `adb8fab`. The nine-lane case distinguishes sequential f32 (1.25) from blocked f32 (1.2500001192092896); the latter agrees with origin f64. The same gate rejects a truncated final block and a transposed inline substitution. The six corpus programs also have independent numerical oracles.
+
+`node --check tests/tensor/corpus.test.mjs` initially found `SyntaxError: Unexpected token ')'` in the conv2d oracle; removed the extra closing parenthesis. Final `npm run build` succeeded; `node --test tests/tensor/*.test.mjs` passed 17/17. The built index exports exactly compileTix, optimizeTix and runTix. See Step 4 for framework and Typed checks. Ticket doctor passed; no full-suite run. Remaining limitation: the deterministic finite test domain is evidence, not proof for all shapes or data.

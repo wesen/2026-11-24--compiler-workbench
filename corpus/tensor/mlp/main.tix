@@ -1,0 +1,6 @@
+fn mlp(x: f32[N,D], w: f32[D,H], b: f32[H], u: f32[H,F], a: f32[F]): f32[N,F] {
+  h[i,j] = (sum(d) x[i,d] * w[d,j]) + b[j];
+  g[i,j] = 0.5 * h[i,j] * (1 + tanh(0.7978845608028654 * (h[i,j] + 0.044715 * h[i,j] * h[i,j] * h[i,j])));
+  y[i,j] = (sum(k) g[i,k] * u[k,j]) + a[j];
+  return y;
+}

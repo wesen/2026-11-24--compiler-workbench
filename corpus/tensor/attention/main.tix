@@ -1,0 +1,9 @@
+fn attention(q: f32[M,D], k: f32[N,D], v: f32[N,V]): f32[M,V] {
+  score[i,j] = (sum(d) q[i,d] * k[j,d]) / sqrt(D);
+  peak[i] = max(j) score[i,j];
+  e[i,j] = exp(score[i,j] - peak[i]);
+  z[i] = sum(j) e[i,j];
+  p[i,j] = e[i,j] / z[i];
+  out[i,c] = sum(j) p[i,j] * v[j,c];
+  return out;
+}
