@@ -149,3 +149,33 @@ Start with the [stage 1 design](../design-doc/01-tix-stage-1-design.md), especia
 “Meaning contract and pass policy” and “Framework change.” Implementation, the corpus and
 the tensor and framework test suites follow the design review. The ticket's design commit
 contains this checkpoint and can be found by its `IRWB-020-C:` subject.
+
+## Step 2 — Revise the design after review
+
+The review tightened the synchronous pass surface and made the sampling policy
+reproducible. I revised the design before beginning implementation. The native path
+accepts an existing `Pass`, and inline keeps its prior relation to the origin by
+matching the incoming revision exactly on the same origin-derived cases.
+
+### Prompt context
+
+The user supplied the review, then requested a design-only revision commit followed by
+implementation, scoped test runs, and implementation commits in this session.
+
+### What changed and why
+
+- Replaced simultaneous affine binding with direct single-name anchors. This keeps
+  shifted dimensions such as `H - 2` and makes the supported signature domain explicit.
+- Made bounds a compile-time obligation, with ordinary shape validation when instantiating
+  tensor types.
+- Specified the decimal NUMBER grammar, the sixteen deterministic shape assignments and
+  the separate origin and candidate work budgets.
+- Specified the tail-dropping kernel, its in-domain prefix and the expected tolerance
+  rejection through the synchronous gate. Retained the original f64 reference and finite
+  reference case selection.
+- Marked the review complete. The implementation checkpoint will record code and tests.
+
+### Checks
+
+`docmgr doctor` checks the revised ticket. No implementation tests belong to this
+checkpoint.

@@ -37,12 +37,13 @@ for native-value passes with a mandatory check.
 
 Use the fixed grammar with one or more nonrecursive functions, each with at least one tensor
 parameter and one returned parameter or statement tensor. Identifiers and shape names resolve by
-scope. Numeric expressions accept finite JS numeric literals. Affine expressions use integer
-constants and coefficients, grouping, addition, subtraction and multiplication by integer
-constants. At call time, shape names and extents are nonnegative safe integers. Support empty axes
-and row-major tensors whose sizes can be represented and allocated in the requested typed array.
-Inputs have the named parameter shapes, exactly the number of elements their shapes specify, and
-finite values in either API carrier. A finite f64 carrier value can round to infinity in f32.
+scope. A `NUMBER` token is `[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?` and must convert to a
+finite JS number. Unary signs are separate tokens. Affine expressions use integer tokens
+(`[0-9]+`), grouping, addition, subtraction and multiplication by integer constants. Shape
+names and extents are nonnegative safe integers. Support empty axes and row-major tensors
+whose sizes can be represented and allocated in the requested typed array. Inputs have the named
+parameter shapes, exactly the number of elements their shapes specify, and finite values in either
+API carrier. A finite f64 carrier value can round to infinity in f32.
 
 A lexer retains 1-based line and column. Use recursive descent with infix precedence levels and
 parse a reduction body with the full expression parser through the current delimiter. Parentheses
@@ -52,13 +53,13 @@ Otherwise a bare identifier list followed by a body selects the reduction. Test 
 prefix alongside ordinary calls, reductions and subtraction. A separate parser-generator
 dependency would add build plumbing for this small grammar.
 
-Normalize shape and index expressions to an integer constant plus ordered coefficients. Bind shape
-names from parameter dimensions by solving the affine signature equations. Compile the equation
-structure once and require full column rank so that a consistent call has a unique binding. This
-allows signatures such as `f32[H - 2]` without requiring a bare `H` elsewhere. Exact integer
-arithmetic in checking and rational elimination avoid silently accepting a rounded dimension or a
-fractional binding. Require output annotations and shape-valued scalar expressions to refer to
-names bound by the signature.
+Normalize shape and index expressions to an integer constant plus ordered coefficients.
+Anchor each shape name to an input dimension. Prefer a bare name. A dimension `a*N+b` with one
+name is also an anchor, by directly inverting that dimension. Other affine dimensions may use any
+anchored names. A signature with names that occur exclusively in coupled dimensions is outside the
+supported binding domain. A simultaneous equation solver would accept those additional signatures.
+Direct anchors keep binding local while supporting shifted signatures such as `f32[H - 2]`.
+Annotations and shape-valued scalar expressions use names anchored by the signature.
 
 Check statements in order. Keep one tensor namespace for parameters and new definitions, and a
 lexical namespace for index binders. Assign each LHS or reduction index a distinct ID. Only an axis
@@ -68,17 +69,15 @@ must agree with the axes that have one. A reduction index has no annotation, so 
 use within its lexical scope. Reject duplicate binders in a list, undefined tensors or indices,
 wrong ranks, unresolved extents and a return type that differs from the returned tensor type.
 
-For each affine access, derive the minimum and maximum from its active index ranges using
-coefficient signs. Check them against the referenced dimension. An access inside an empty
-iteration space requires no bounds check. Reject statically inconsistent shapes and access bounds
-with the relevant source location. Record constraints that depend on concrete sizes and check them
-when the call binds its input shapes, before evaluation. For example, a convolution with output
-`H - 2` needs a nonnegative output extent and its input accesses must be valid for that extent.
-`compileTix(source)` has no concrete input shapes, so a conflict between two supplied tensor
-shapes can only be diagnosed by `runTix`. Use the same shape and bounds preflight to select
-contract cases. The simpler bare-name binder would exclude affine-only parameter signatures.
-Requiring symbolic extent agreement keeps this stage from introducing a general constraint solver
-for state such as conditional equality between independently bound dimensions.
+For an affine access, derive its minimum and maximum from the active index ranges using
+coefficient signs. Prove that the minimum is nonnegative and the maximum is less than the
+referenced dimension. Assume nonnegative shape names and tensor dimensions, and positive
+active extents on the path. Normalize first and use constants and lower bounds from
+single-name dimensions. A statically empty iteration space needs no bounds proof. Reject
+inconsistent extents and access bounds that cannot be established, with source locations.
+Runtime access guards would accept additional programs whose indices are safe only at some
+sizes. The valid call domain gives each parameter its declared shape and each tensor a
+nonnegative extent. Binding validates those dimensions and data lengths when instantiating types.
 
 ## Artifact and evaluators
 
@@ -119,20 +118,24 @@ oracles in the tests will check the shared traversal.
 ## Meaning contract and pass policy
 
 Use versioned `differential()` definitions, and run their specs with `runDifferential()` on
-the synchronous path. The baseline always determines the case suite. Cases are deterministic,
-small, valid calls for each entry function, driven by the origin signature and checked extents.
-Try shape-name bindings of 0, 1, 2, 3, 4, 5, 7 and 9, plus seeded mixed assignments from those
-sizes and targeted shapes with a full block and a tail. Fixed-size signatures use their declared
-dimensions. Keep cases with at most 4,096 elements in any parameter or statement tensor and
-at most 100,000 scalar evaluation visits per origin case. Fail the check if a candidate
-exhausts that budget on a selected case. Include zero and signed zero, ones, a
-nonuniform signed or positive bounded pattern, and seeded values. Case values are finite
-and f32-representable so both precisions read the same numbers. Include the rounding witness
-below in the fixture domain. The checker requires cases for every entry being checked. A pass
-cannot acquire acceptance from an empty suite or a suite with zero comparable cases for an entry.
-The seed, entry name, shapes, input pattern and first differing element make failures
-reproducible. Report the decision as sampled evidence. These bounds limit contract work
-independently of which call shapes the evaluator supports.
+the synchronous path. The baseline always determines the case suite. Cases are deterministic, small, valid calls for each entry function. Try eight uniform
+shape assignments, setting every name to each of `[0, 1, 2, 3, 4, 5, 7, 9]` in order,
+then eight mixed assignments whose choices come from the same list using framework
+`seededRandom(7)` in shape-name order. Sizes 5, 7 and 9 include a full block and a tail.
+Deduplicate concrete parameter shapes. Fixed-size signatures yield one shape. For each shape
+try zeros (alternating +0 and −0), ones, a deterministic nonuniform signed pattern, and
+seeded positive f32 data. Include the rounding witness whenever an input is shaped `[1,9]`,
+using that row for such parameters and ones for the others. Skip shape assignments outside
+the valid call domain or with more than 4,096 elements in any origin parameter or statement.
+
+Count each scalar expression visit and each reduction accumulation as one unit of work.
+Limit the origin to 100,000 units per case. Give each current or candidate evaluation
+200,000 units and limit each of its tensors to 4,096 elements. A split adds at most one
+outer accumulation per original term, so splitting an origin near its cap fits this allowance.
+A candidate exceeding its cap fails on that case. This also bounds extra work when inlining
+causes more evaluations than materialization. Require at least one comparable case per
+entry under check. Record sampled evidence with seed, entry, shapes, data pattern and first
+differing element. The evaluator also supports calls outside these sampling bounds.
 
 The observation is the returned tensor shape and all its row-major elements. Protect parameter
 names and shapes, return type and function set by a structural signature comparison as part of the
@@ -151,16 +154,13 @@ gate.
   candidate. A nonfinite candidate on a selected case fails. A relative-only bound is unusable
   at zero and a bound scaled by input magnitude could hide substantial errors after cancellation.
 
-Run requested passes in order. A changed `inline` must agree exactly with its immediate input.
-Check the result against the original as well, with exact comparison for functions still in
-exact mode and tolerance for functions where an earlier split was accepted. For `split-sum`,
-use the tolerance comparison against the original on functions whose bodies were changed by the
-pass, and keep the prior relation for the others. Store the set of functions that entered
-tolerance mode along with the original artifact so subsequent calls to `optimizeTix` keep the
-same baseline. Exact checks on the current input prevent a later inline from spending the split's
-error budget. Comparing tolerant revisions pairwise would allow error to accumulate across runs.
-A rejected meaning check yields `accepted: false` and the next named pass sees the current
-accepted artifact. A pass with no edit records an accepted identity.
+Run requested passes in order. A changed `inline` compares exactly with its immediate
+input on origin-derived cases. That preserves the prior relation to the origin on those
+cases. Use tolerance for `split-sum` on each function changed by that application. Its
+baseline is always the original unoptimized f64 function, including across later calls to
+`optimizeTix`. Unchanged functions retain their previous code. A rejected meaning check
+yields `accepted: false` and the next pass sees the current accepted artifact. An identity
+yields `accepted: true`.
 
 ## Rewrites and evidence
 
@@ -178,18 +178,20 @@ accepted artifact. A pass with no edit records an accepted identity.
   `min(4*b + 4, extent) - 1`, then add the subtotal to the outer accumulator. Preserve the
   body and its original index ID. Leave max, multi-index sums and already blocked nodes alone.
   Using source reductions to express the rewrite would require adding division and a truncated
-  tail to affine bounds; the internal node expresses those bounds directly. Mutate the block
-  result to drop the final partial block in the test candidate. In the fixed-shape fixture,
-  make a valid eight-column prefix with `prefix[i,d]: f32[1,8] = x[i,d+i];` and block the
-  sum over that prefix.
+  tail to affine bounds; the internal node expresses those bounds directly. The wrong split kernel adds
+  `prefix[i,d]: f32[1,8] = x[i,d+i];` in the fixed-shape witness and blocks the sum over the
+  prefix. With `i` of extent 1, it copies columns 0 through 7 and drops column 8. It is valid
+  IR. Run it as a `definePass` kernel through `applyNativePassSync` with the ordinary
+  tolerance gate and origin-derived cases. The gate must reject it on the rounding witness.
+  Run the wrong inline kernel through the same entry point with the ordinary exact gate.
 
-Use `x: f32[1,9]` and `y[i] = sum(d) x[i,d];` to return a tensor of length one. The input row is `[1, 0, 0, 0, 2^-24, 2^-24, 2^-24, 2^-24, 0.25]`. Linear f32 returns
+Use `x: f32[1,9]` and `y[i] = sum(d) x[i,d];` to return a tensor of length one. The witness
+row is `[1, 0, 0, 0, 2^-24, 2^-24, 2^-24, 2^-24, 0.25]`. Linear f32 returns
 `1.25` (word `0x3fa00000`). Blocked f32 and the original f64 reference return
-`1.250000238418579` (f32 word `0x3fa00002`). The exact gate must reject the real rewrite
-and the tolerance gate must accept it. The tail-dropping candidate returns
-`1.000000238418579`, so the tolerance gate must reject it. Node 24 reproduced these
-values in a probe using the built framework's differential runner. These probes are policy and
-numeric checks. The implementation tests will exercise the artifacts and gates end to end.
+`1.250000238418579` (f32 word `0x3fa00002`). The exact gate must reject the real rewrite and
+the tolerance gate must accept it. The tail-dropping candidate returns `1.000000238418579`,
+so tolerance must reject it. Run all three decisions through the native entry point. Node 24
+reproduced the values with the built differential runner during design.
 
 ## Framework change
 
@@ -198,13 +200,13 @@ numeric checks. The implementation tests will exercise the artifacts and gates e
 | `src/framework/passes/define-pass.ts` | Add `applyNativePassSync` for a native kernel that returns a candidate or an identity and a required synchronous semantic check. Share native artifact construction, projection diff, correspondence and declared-write checks with `applyPass`. Return the existing pass result shape and use `PassError('contractRejected', …)` for a negative verdict. |
 | `src/framework/passes/index.ts` | The existing wildcard export already exposes the new function. |
 
-The native synchronous entry point receives a pass ID, version, IR definition, adapter, write
-declarations, kernel and mandatory check. The kernel takes the input artifact and parameters.
-The framework checks the matching IR definition and adapter, validates the produced artifact,
-checks writes, and invokes the gate with immutable before and candidate artifacts. It requires
-a synchronous `CheckResult`. The caller gets the candidate only once the check accepts. Use
-private views for diffing and keep this entry point limited to native revisions and pure sampled
-checks without analysis dependencies, edit transactions, effects or a caller-supplied store.
+The synchronous entry point takes a `Pass` from `definePass`, an input artifact and
+options with a mandatory check and pass parameters. It refuses nonempty `needs` and
+`preserves`, a declared manager contract, and kernels that use the logical edit or
+return a promise. The kernel has the ordinary input artifact and view. The framework
+validates the IR definition and adapter, prepares the candidate, checks writes and invokes
+the gate with immutable artifacts. The gate returns a synchronous `CheckResult`. Private
+IR views suffice for this path, which runs without analysis or effect transactions.
 
 The built `applyPass` probe returned a promise even for a synchronous kernel. It also attempted
 to open a graph edit and failed with `ir.capability` when the adapter had no `rebuild`. The
@@ -233,7 +235,7 @@ affine bounds, row-major observations, f32 primitive rounding and f64 reference 
 Assert the pass witnesses, both semantically wrong candidates, continued optimization after
 rejection, and origin preservation across calls. Add focused framework tests for the synchronous
 path's native validation, write enforcement and mandatory gate, including a projection-only
-adapter. After implementation, build and run the tensor suite, `node --test tests/framework/`,
+adapter. After implementation, build and run the tensor suite, `node --test tests/framework/*.test.mjs`,
 and Typed pass, inline, and meaning tests that cover the shared path. Tests that spawn Node may
 need sandbox escalation.
 
