@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "digest": "83e50c1bd4832fd87d5e23d390aa3e333290a89a8b407ea1b4b8a2cfc1318062",
+  "request": {
+    "ticket": "IRWB-020-S",
+    "operation_id": "stage-1-design-review",
+    "summary": "Proposed the Tix stage-1 design and documented the v6 native-pass mismatch",
+    "phase": "checkpoint",
+    "next": "Review the stage-1 design before implementing",
+    "task_ids": [
+      "i82t"
+    ],
+    "evidence": null,
+    "expected": null
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "stage-1-design-review",
+    "state": "committed",
+    "created_at": "2026-11-26T18:49:51.855366014Z",
+    "changed_paths": [
+      "tasks.md",
+      "changelog.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "tasks.md": "54f6be2689a34f583a2ca114f99046e19189edb82a20885253c12c4b0eb3bd8a"
+    },
+    "after": {
+      "changelog.md": "c5defa79f1c0d46ad228f1c236c457bddc96b676b55a061ec80b77800dcd055e",
+      "tasks.md": "c544ef537aa1ef70063ea960728a6156cd464d2e467e4c2726200a34cf356ebb"
+    }
+  },
+  "changes": [
+    {
+      "path": "tasks.md",
+      "before": "54f6be2689a34f583a2ca114f99046e19189edb82a20885253c12c4b0eb3bd8a",
+      "after": "IyBUYXNrcwoKIyMgVE9ETwotIFt4XSBXcml0ZSBzdGFnZS0xIGRlc2lnbiBhbmQgc3RhcnQgZGlhcnkgPCEtLSB0Omk4MnQgLS0+Ci0gWyBdIFJldmlldyBzdGFnZS0xIGRlc2lnbiBiZWZvcmUgaW1wbGVtZW50YXRpb24gPCEtLSB0OnN1Y3QgLS0+Ci0gWyBdIEltcGxlbWVudCBUaXggcGFyc2VyLCBzaGFwZSBjaGVja2luZywgdjYgSVIgYW5kIGV2YWx1YXRvcnMgPCEtLSB0OnBwazIgLS0+Ci0gWyBdIEltcGxlbWVudCBmcmFtZXdvcmsgZXh0ZW5zaW9uIGFuZCBleGFjdC90b2xlcmFudCBjaGVja2VkIHBhc3NlcyB3aXRoIG11dGF0aW9uIHdpdG5lc3NlcyA8IS0tIHQ6Y2JqNCAtLT4KLSBbIF0gQWRkIHRoZSBzaXggdGVuc29yIGNvcnB1cyBrZXJuZWxzIGFuZCBydW4gdGVuc29yLCBmcmFtZXdvcmsgYW5kIGFmZmVjdGVkIFR5cGVkIHRlc3RzIDwhLS0gdDpjMWh1IC0tPgo="
+    },
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKUHJvcG9zZWQgdGhlIFRpeCBzdGFnZS0xIGRlc2lnbiBhbmQgZG9jdW1lbnRlZCB0aGUgdjYgbmF0aXZlLXBhc3MgbWlzbWF0Y2gKCk9wZXJhdGlvbjogYHN0YWdlLTEtZGVzaWduLXJldmlld2AK"
+    }
+  ]
+}
