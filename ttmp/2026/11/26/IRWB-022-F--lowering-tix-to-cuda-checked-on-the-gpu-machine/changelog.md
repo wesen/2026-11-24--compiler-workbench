@@ -23,3 +23,11 @@ Implemented checked CUDA lowering, passed all 24 tensor tests, and recorded all 
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sm-irwb-022-f/ttmp/2026/11/26/IRWB-022-F--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/02-cuda-lowering-results-and-corpus-timings.md — Validation and benchmark results
+
+## 2026-11-26
+
+Published the stage-2 report and attributed independent f32 discrepancies with a paired GB10 probe. The evaluated backend is unchanged.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sm-irwb-022-f/ttmp/2026/11/26/IRWB-022-F--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/02-report.md — Final report and evaluation

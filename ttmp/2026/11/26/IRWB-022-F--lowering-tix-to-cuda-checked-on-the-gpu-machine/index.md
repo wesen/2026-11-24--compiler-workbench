@@ -28,7 +28,8 @@ Stage 2: lower Tix statements to CUDA, check candidate results on the GB10, and 
 - [Design: Checked Tix to CUDA lowering](design-doc/01-checked-tix-to-cuda-lowering.md)
 - [Implementation diary](reference/01-implementation-diary.md)
 - [Standalone GB10 numerical probe](scripts/01-probe-numerics.mjs)
-- [Validation and corpus timings](reference/02-cuda-lowering-results-and-corpus-timings.md)
+- [Final report and independent evaluation](reference/02-report.md)
+- [Validation and raw corpus timing samples](reference/02-cuda-lowering-results-and-corpus-timings.md)
 
 ## Status
 
