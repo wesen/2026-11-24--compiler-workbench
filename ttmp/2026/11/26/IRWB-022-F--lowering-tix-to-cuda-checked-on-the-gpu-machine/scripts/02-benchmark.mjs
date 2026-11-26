@@ -56,12 +56,9 @@ for (const name of names) {
       .map(n => [n, 4]),
   );
   runTix(program, fn.name, fixtures(fn, warmDims));
-  const cpuMs = [];
-  for (let i = 0; i < 3; i++) {
-    const start = performance.now();
-    const output = runTix(program, fn.name, inputs);
-    cpuMs.push(performance.now() - start);
-    if (String(output.shape) !== String(gpu.shape)) throw Error(`Shape mismatch for ${name}`);
-  }
-  console.log(JSON.stringify({ name, cpuMs, cpuMedianMs: [...cpuMs].sort((a, b) => a - b)[1] }));
+  const start = performance.now();
+  const output = runTix(program, fn.name, inputs);
+  const cpuMs = performance.now() - start;
+  if (String(output.shape) !== String(gpu.shape)) throw Error(`Shape mismatch for ${name}`);
+  console.log(JSON.stringify({ name, cpuMs }));
 }

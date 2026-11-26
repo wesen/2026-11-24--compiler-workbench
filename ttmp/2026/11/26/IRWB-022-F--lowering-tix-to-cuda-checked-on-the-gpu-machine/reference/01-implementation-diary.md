@@ -202,3 +202,9 @@ An initial build of the candidate files reported `TS2345` (`Buffer<ArrayBufferLi
 ### Review focus
 
 Review `cuda-source.ts` for loop-local declarations and timing placement, `cuda-contract.ts` for sample ownership and rejection evidence, and `tools/cuda-remote.mjs` for compiler cache vs. invocation lifetime. No `src/framework/` edits were needed.
+
+## Step 4: Validate the backend and measure the corpus
+
+`node --test tests/tensor/*.test.mjs` passed all 24 tests, including the six-corpus GPU contract test, exact split-order witness, emitted mutant rejection and concurrent compile-cache test. The implementation checkpoint was `d1d8a7e`; no source changes were needed after that run. I did not run framework or Typed tests because their code was unchanged.
+
+Ran the [benchmark script](../scripts/02-benchmark.mjs) at all requested sizes. The [results](02-cuda-lowering-results-and-corpus-timings.md) record the three GPU samples per function and local f32 interpreter time. The initial three matmul interpreter repetitions varied from 327.839 to 827.310 seconds on the shared machine, so I kept their median and switched the remaining programs to one interpreter run each. GPU timing still used three repetitions with preloading and warm-up in the same process. I stopped redundant follow-on measurements once those programs had results from the separate invocations; the stopped commands exited on SIGTERM, not a compiler or CUDA failure. No full-sized f64 runs were made.
