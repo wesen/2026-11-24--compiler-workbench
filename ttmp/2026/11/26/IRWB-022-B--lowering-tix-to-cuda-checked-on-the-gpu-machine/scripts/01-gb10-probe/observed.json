@@ -1,0 +1,208 @@
+{
+  "node": "v24.18.0",
+  "remote": {
+    "host": "manuel@bling",
+    "hash": "d377f959c54ccb45",
+    "compiled": false,
+    "compileMs": 1,
+    "runMs": 324,
+    "exit": 0,
+    "stdout": "580.178.04, 12.1\nnvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Wed_Aug_20_01:57:39_PM_PDT_2025\nCuda compilation tools, release 13.0, V13.0.88\nBuild cuda_13.0.r13.0/compiler.36424714_0\nNVIDIA GB10 sm_121 driver=13000 runtime=13000 nvcc=13.0.88\nCUDA events recorded a positive elapsed interval\n",
+    "stderr": "",
+    "outputs": [
+      "observations.bin"
+    ]
+  },
+  "sha256": {
+    "source": "a01570bee2777131920bfb64e285762f25a3fa9960c25b926898965b2dea8731",
+    "inputs": "965849ee0dfed4d3f6034c7b34c2200b97f32536fd203bbbf8fd89863a6aa4de",
+    "outputs": "8d391a431825b5dbc5cdfa7ba051632d1924c2e215ea2e940bd84d7d9bfe93ef"
+  },
+  "count": 65536,
+  "width": 32,
+  "stats": {
+    "add": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65532,
+      "worstFixedBudgetFraction": 0.0029628525253784614,
+      "worstAdaptiveFraction": 0.0029628525253784614,
+      "worstF32Fraction": 0
+    },
+    "sub": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65531,
+      "worstFixedBudgetFraction": 0.002978266221380127,
+      "worstAdaptiveFraction": 0.002978266221380127,
+      "worstF32Fraction": 0
+    },
+    "mul": {
+      "f32Mismatches": 0,
+      "f64Comparable": 57198,
+      "worstFixedBudgetFraction": 0.002963172486453385,
+      "worstAdaptiveFraction": 0.002963172486453385,
+      "worstF32Fraction": 0
+    },
+    "div": {
+      "f32Mismatches": 0,
+      "f64Comparable": 57147,
+      "worstFixedBudgetFraction": 0.0029521068030093785,
+      "worstAdaptiveFraction": 0.0029521068030093785,
+      "worstF32Fraction": 0
+    },
+    "neg": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65535,
+      "worstFixedBudgetFraction": 0,
+      "worstAdaptiveFraction": 0,
+      "worstF32Fraction": 0
+    },
+    "sqrt": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65535,
+      "worstFixedBudgetFraction": 0.002951003924421977,
+      "worstAdaptiveFraction": 0.002951003924421977,
+      "worstF32Fraction": 0
+    },
+    "max": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65534,
+      "worstFixedBudgetFraction": 0,
+      "worstAdaptiveFraction": 0,
+      "worstF32Fraction": 0
+    },
+    "min": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65534,
+      "worstFixedBudgetFraction": 0,
+      "worstAdaptiveFraction": 0,
+      "worstF32Fraction": 0
+    },
+    "expf": {
+      "f32Mismatches": 19892,
+      "f64Comparable": 65535,
+      "worstFixedBudgetFraction": 0.006757123859275676,
+      "worstAdaptiveFraction": 0.006757123859275676,
+      "worstF32Fraction": 0.008278876676313158,
+      "firstMismatch": [
+        "45917da2",
+        "45917da3"
+      ]
+    },
+    "logf": {
+      "f32Mismatches": 2148,
+      "f64Comparable": 65534,
+      "worstFixedBudgetFraction": 0.0034167964049090856,
+      "worstAdaptiveFraction": 0.0034167964049090856,
+      "worstF32Fraction": 0.0059453391228570076,
+      "firstMismatch": [
+        "424d9c7f",
+        "424d9c80"
+      ]
+    },
+    "tanhf": {
+      "f32Mismatches": 2447,
+      "f64Comparable": 65536,
+      "worstFixedBudgetFraction": 0.007429542136019045,
+      "worstAdaptiveFraction": 0.007429542136019045,
+      "worstF32Fraction": 0.009365511332193788,
+      "firstMismatch": [
+        "3f11509b",
+        "3f11509c"
+      ]
+    },
+    "exp(double)": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65535,
+      "worstFixedBudgetFraction": 0.002947449563338347,
+      "worstAdaptiveFraction": 0.002947449563338347,
+      "worstF32Fraction": 0
+    },
+    "log(double)": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65534,
+      "worstFixedBudgetFraction": 0.0029631096432753234,
+      "worstAdaptiveFraction": 0.0029631096432753234,
+      "worstF32Fraction": 0
+    },
+    "tanh(double)": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65536,
+      "worstFixedBudgetFraction": 0.0024365725741708356,
+      "worstAdaptiveFraction": 0.0024365725741708356,
+      "worstF32Fraction": 0
+    },
+    "default mul-add": {
+      "f32Mismatches": 966,
+      "f64Comparable": 49000,
+      "worstFixedBudgetFraction": 0.002959865809940347,
+      "worstAdaptiveFraction": 0.002959865809940347,
+      "worstF32Fraction": 0.10772505114360262,
+      "firstMismatch": [
+        "0",
+        "28800000"
+      ]
+    },
+    "separate mul-add": {
+      "f32Mismatches": 0,
+      "f64Comparable": 49000,
+      "worstFixedBudgetFraction": 0.10894070457915965,
+      "worstAdaptiveFraction": 0.10894070457915965,
+      "worstF32Fraction": 0
+    },
+    "shape cast": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65536,
+      "worstFixedBudgetFraction": 0.0029802320433702915,
+      "worstAdaptiveFraction": 0.0029802320433702915,
+      "worstF32Fraction": 0
+    },
+    "literal bits": {
+      "f32Mismatches": 0,
+      "f64Comparable": 65536,
+      "worstFixedBudgetFraction": 0,
+      "worstAdaptiveFraction": 0,
+      "worstF32Fraction": 0
+    },
+    "ordered sum": {
+      "f32Mismatches": 0,
+      "f64Comparable": 2048,
+      "worstFixedBudgetFraction": 2.92650693008786,
+      "worstAdaptiveFraction": 0.9590343330637774,
+      "worstF32Fraction": 0
+    },
+    "ordered double tanh sum": {
+      "f32Mismatches": 0,
+      "f64Comparable": 2048,
+      "worstFixedBudgetFraction": 0.24463345832481057,
+      "worstAdaptiveFraction": 0.24463345832481057,
+      "worstF32Fraction": 0
+    },
+    "width-4 split sum": {
+      "f32Mismatches": 0,
+      "f64Comparable": 2048,
+      "worstFixedBudgetFraction": 2.3589413422354295,
+      "worstAdaptiveFraction": 0.9496744957537624,
+      "worstF32Fraction": 0
+    },
+    "ordered float tanh sum": {
+      "f32Mismatches": 190,
+      "f64Comparable": 2048,
+      "worstFixedBudgetFraction": 0.26382573336191606,
+      "worstAdaptiveFraction": 0.26382573336191606,
+      "worstF32Fraction": 0.21335383805952976,
+      "firstMismatch": [
+        "3f5e0806",
+        "3f5e0807"
+      ]
+    }
+  },
+  "mulAddWitness": {
+    "default": 1.4210854715202004e-14,
+    "separate": 0
+  },
+  "sumWitness": {
+    "ordered": 1,
+    "blocked": 1.000000238418579,
+    "f64": 1.0000001788139343
+  }
+}
