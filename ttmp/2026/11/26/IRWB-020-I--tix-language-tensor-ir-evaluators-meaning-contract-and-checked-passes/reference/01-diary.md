@@ -186,3 +186,9 @@ Now do the following in this session:
 4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
 
 </details>
+
+## Step 3 — Share native candidate preparation
+
+Design revision `0ed7084` incorporated the review. Both runners now build the native revision, diff and correspondence through the same function and check declared writes. The asynchronous path opens an editor on demand. The synchronous path applies the caller's invariant only to a changed candidate.
+
+A locked offline install initially failed during esbuild's version check with `spawnSync .../bin/esbuild EPERM`; the approved rerun of `npm ci --offline --no-audit --no-fund` succeeded. `npm run build` passed. Running `node tests/framework/native-pass-sync.test.mjs` exercised both new tests successfully, including failed write/meaning checks on a real v6 artifact.

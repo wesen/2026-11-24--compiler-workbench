@@ -31,6 +31,8 @@ WhenToUse: ""
 
 ## Framework change ledger
 
+Implemented both entries in `src/framework/passes/define-pass.ts`. The regression in `tests/framework/native-pass-sync.test.mjs` checks both runners on a read-only projection, identical native change records, mandatory verification and identity bypass.
+
 | Site | Proposed change and reason | Simpler alternative considered |
 | --- | --- | --- |
 | `src/framework/passes/define-pass.ts` (`applyPass`, beside `definePass`) | Add `applyNativePassSync(pass, before, verify)` for synchronous native `definePass` kernels with empty analysis needs/preservation and a mandatory synchronous meaning check. It returns a `PassResult` on acceptance. Factor the native candidate construction, structural diff, correspondence and declared-write checks out of the existing runner so both paths use them. | Calling `applyPass` directly returns a Promise, which breaks `optimizeTix`. Copying its structural checks into Tix gives two implementations of pass acceptance. |
