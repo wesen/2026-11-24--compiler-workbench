@@ -20,7 +20,78 @@ import {
   renderProgressive,
   frameImage,
   compareFrames,
+  partsRef,
+  partsOf,
+  partHash,
+  partText,
 } from './wb.js';
+
+// ---------- the engine worker (IRWB-004 F4) ----------
+// Engines run in a Web Worker (candela/engine-worker.js) unless UI.S.cdl.where is 'page', so a render never holds the
+// page. The worker gets the Candela data once; a project revision travels as function parts, and only the parts the
+// worker does not have yet (src/typed/parts.ts), so after the first render of a revision the next one sends a few.
+let worker = null;
+const sentParts = new Set();
+function engineWorker() {
+  if (worker) return worker;
+  const lazy = UI.content.lazy.candela.worker;
+  if (!lazy || typeof Worker === 'undefined') return null;
+  const w = new Worker(lazy.src);
+  const waiting = new Map();
+  let next = 1;
+  w.onmessage = e => {
+    const m = e.data,
+      job = waiting.get(m.id);
+    if (!job) return;
+    if (m.ok || m.error) {
+      waiting.delete(m.id);
+      if (m.error) job.reject(new Error(m.error));
+      else job.resolve(m);
+    } else job.onEvent?.(m);
+  };
+  w.onerror = e => {
+    for (const job of waiting.values()) job.reject(new Error(`the engine worker failed: ${e.message || 'error'}`));
+    waiting.clear();
+    worker = null;
+  };
+  const call = (msg, onEvent, transfer) => {
+    const id = next++;
+    const p = new Promise((resolve, reject) => waiting.set(id, { resolve, reject, onEvent }));
+    w.postMessage({ ...msg, id }, transfer || []);
+    return { id, done: p };
+  };
+  worker = { w, call, stop: id => w.postMessage({ type: 'stop', id }) };
+  call({ type: 'init', data: UI.candela.data });
+  return worker;
+}
+// The parts of `art` the worker lacks, made a few at a time so the page keeps responding
+async function partsFor(art) {
+  const out = [];
+  let last = performance.now();
+  for (const p of partsOf(art.value).values()) {
+    const h = partHash(p);
+    if (sentParts.has(h)) continue;
+    out.push([h, partText(p)]);
+    if (performance.now() - last > 30) {
+      await new Promise(r => setTimeout(r, 0));
+      last = performance.now();
+    }
+  }
+  return out;
+}
+async function workerRender(eng, scene, st, onEvent) {
+  const wk = engineWorker();
+  const msg = { type: 'render', engine: eng.key, label: eng.label, scene: scene.id, stride: st.stride, passes: st.passes };
+  if (eng.art) {
+    msg.program = partsRef(eng.art.revision, eng.art.value, true);
+    msg.parts = await partsFor(eng.art);
+  }
+  const job = wk.call(msg, onEvent);
+  st.job.workerId = job.id;
+  const m = await job.done;
+  for (const [h] of msg.parts || []) sentParts.add(h);
+  return m.frame;
+}
 
 const V = (UI.views = UI.views || {});
 const S = () =>
@@ -136,7 +207,9 @@ function draw() {
     cv.width = f.width;
     cv.height = f.height;
   }
-  cv.getContext('2d').putImageData(new ImageData(frameImage(f, st.view), f.width, f.height), 0, 0);
+  // IRWB-004: a canvas kept in memory (willReadFrequently): putImageData then never waits on the GPU process, which
+  // held the page for 0.6-3 s per update while a render was drawn progressively (CanvasRenderingContext2D::FinalizeFrame)
+  cv.getContext('2d', { willReadFrequently: true }).putImageData(new ImageData(frameImage(f, st.view), f.width, f.height), 0, 0);
 }
 const scheduleDraw = () => {
   if (!drawSoon) drawSoon = setTimeout(draw, 80);
@@ -210,9 +283,22 @@ async function render() {
   st.job.label = label;
   paint();
   await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+  const where = st.where === 'page' || !engineWorker() ? 'page' : 'worker';
   let eng;
   try {
-    eng = makeEngine(st.engine);
+    if (where === 'page') eng = makeEngine(st.engine);
+    else {
+      // the worker makes the engine; a project revision goes with the render as parts
+      const p = projectOpen();
+      if (st.engine === 'head' && !p) throw new Error('open the Candela project first (below)');
+      eng = {
+        key: st.engine,
+        label: st.engine === 'head' ? `evaluator · ${p.rev} of the Candela project` : st.engine === 'own' && p ? `our RV32 image · ${p.rev} of the Candela project` : label,
+        unit: st.engine === 'r0' || st.engine === 'head' ? 'statements' : 'instructions',
+        setupMs: 0,
+        art: (st.engine === 'head' || st.engine === 'own') && p ? p._p.head : null,
+      };
+    }
   } catch (e) {
     st.job = null;
     st.error = e.message;
@@ -221,7 +307,8 @@ async function render() {
   }
   const entry = {
     key: st.engine,
-    label: eng.label,
+    where,
+    label: eng.label + (where === 'worker' ? '' : ' (in the page)'),
     unit: eng.unit,
     setupMs: eng.setupMs,
     scene: scene.id,
@@ -235,23 +322,32 @@ async function render() {
   st.live = null;
   paint();
   try {
-    const frame = await renderProgressive(candelaHost(eng), scene, {
-      stride: st.stride,
-      passes: st.passes,
-      signal: st.job.signal,
-      onProgress: p => {
-        st.job.progress = p;
-        st.live = p.frame;
-        scheduleDraw();
-        paintStats();
-      },
-    });
+    const onProgress = p => {
+      st.job.progress = p;
+      st.live = p.frame;
+      scheduleDraw();
+      paintStats();
+    };
+    const frame =
+      where === 'worker'
+        ? await workerRender(eng, scene, st, m => {
+            if (m.engine) {
+              entry.setupMs = m.engine.setupMs;
+              entry.unit = m.engine.unit;
+            } else if (m.progress) onProgress({ ...m.progress, frame: m.frame });
+          })
+        : await renderProgressive(candelaHost(eng), scene, {
+            stride: st.stride,
+            passes: st.passes,
+            signal: st.job.signal,
+            onProgress,
+          });
     entry.frame = frame;
-    // frames of the same scene and stride from other engines: compare their bits
+    // frames of the same scene and stride from other engines (or the same engine elsewhere): compare their bits
     for (const h of st.history)
       if (
         h.frame &&
-        h.key !== entry.key &&
+        (h.key !== entry.key || h.where !== entry.where) &&
         h.scene === entry.scene &&
         h.stride === entry.stride &&
         !h.frame.stopped &&
@@ -400,6 +496,7 @@ V.candela = {
       if (t('[data-crender]')) return render();
       if (t('[data-cstop]') && st.job) {
         st.job.signal.aborted = true;
+        if (st.job.workerId && worker) worker.stop(st.job.workerId);
         return;
       }
       if (t('[data-copen]')) {

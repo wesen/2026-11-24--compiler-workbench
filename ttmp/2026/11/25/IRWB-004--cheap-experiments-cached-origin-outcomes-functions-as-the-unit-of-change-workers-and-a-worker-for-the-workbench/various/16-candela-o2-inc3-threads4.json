@@ -1,0 +1,311 @@
+{
+ "pipeline": "O2",
+ "node": "v24.18.0",
+ "r0": "cd36346ea7c4f175d7db025afe953e89f078902ef1ee44beaf15a7906b140456",
+ "openMs": 15538,
+ "head": "b33d1737c725506c7880b8701899d0a0d78f71d6a7b981db89d85d84f48c40d9",
+ "steps": [
+  {
+   "pass": "cfg",
+   "ms": 28900,
+   "changed": true,
+   "rev": 1,
+   "revision": "4aea7e81dd046901b550627db94bd36074be8797e59d9a75323c68e03472b1a3",
+   "fns": 110,
+   "edits": 974,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 2282
+  },
+  {
+   "pass": "fold",
+   "ms": 17461,
+   "changed": true,
+   "rev": 2,
+   "revision": "79007a4f826ab3b35f3fe67ce79729d15d29c6a309da84546c69aecb51cf4f86",
+   "fns": 103,
+   "edits": 676,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 2840
+  },
+  {
+   "pass": "simplify",
+   "ms": 13291,
+   "changed": true,
+   "rev": 3,
+   "revision": "28af3dbb9e5b4f16b4f975cf9fef28dc0f39988988be187ad22808315894f0a4",
+   "fns": 19,
+   "edits": 48,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 3242
+  },
+  {
+   "pass": "constprop",
+   "ms": 19985,
+   "changed": true,
+   "rev": 4,
+   "revision": "33425ba057ac4a89c2d0075559862bbff8dadb4817c251505f0cb13f16d07e77",
+   "fns": 124,
+   "edits": 925,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 4087
+  },
+  {
+   "pass": "fold",
+   "ms": 12221,
+   "changed": true,
+   "rev": 5,
+   "revision": "28ff4a86b2796fb49b5b9763d983f8c50a3438200cbf28580ac774c06f0f4c73",
+   "fns": 53,
+   "edits": 114,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 4559
+  },
+  {
+   "pass": "simplify",
+   "ms": 978,
+   "changed": false,
+   "rev": 5,
+   "revision": "28ff4a86b2796fb49b5b9763d983f8c50a3438200cbf28580ac774c06f0f4c73",
+   "fns": 0,
+   "edits": 0,
+   "checks": [],
+   "rssMB": 4593
+  },
+  {
+   "pass": "dce",
+   "ms": 20515,
+   "changed": true,
+   "rev": 6,
+   "revision": "8d4265f3a9dafbf2c26bc0bb449554ce239a1fe83d629f76b06543a7ced5427f",
+   "fns": 144,
+   "edits": 2164,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 4489
+  },
+  {
+   "pass": "cfg",
+   "ms": 9959,
+   "changed": true,
+   "rev": 7,
+   "revision": "e60948d78f340ddd3aba60ed8048290bd1e39fe4966f8ebb85b9d7d7912a8b24",
+   "fns": 3,
+   "edits": 18,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 4681
+  },
+  {
+   "pass": "licm",
+   "ms": 11910,
+   "changed": true,
+   "rev": 8,
+   "revision": "d4a9b9e51fccb3cdc52abb4d5544c935e5cdbf5df164d5a836f50ee0d5ff08b4",
+   "fns": 8,
+   "edits": 87,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 3780
+  },
+  {
+   "pass": "lvn",
+   "ms": 13254,
+   "changed": true,
+   "rev": 9,
+   "revision": "5d3725175064f3c3063a82d6789ba2e3f8189d5d31e52099c29a745b8a8de99d",
+   "fns": 38,
+   "edits": 256,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 4212
+  },
+  {
+   "pass": "strength",
+   "ms": 5712,
+   "changed": false,
+   "rev": 9,
+   "revision": "5d3725175064f3c3063a82d6789ba2e3f8189d5d31e52099c29a745b8a8de99d",
+   "fns": 0,
+   "edits": 0,
+   "checks": [],
+   "rssMB": 4433
+  },
+  {
+   "pass": "bce",
+   "ms": 3737,
+   "changed": false,
+   "rev": 9,
+   "revision": "5d3725175064f3c3063a82d6789ba2e3f8189d5d31e52099c29a745b8a8de99d",
+   "fns": 0,
+   "edits": 0,
+   "checks": [],
+   "rssMB": 4633
+  },
+  {
+   "pass": "subst",
+   "ms": 14149,
+   "changed": true,
+   "rev": 10,
+   "revision": "f61345f3f442635fdc9ac38285d5abae8315297ec29a0fbc6e260d9a208d05fc",
+   "fns": 160,
+   "edits": 430,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 5727
+  },
+  {
+   "pass": "subst",
+   "ms": 13545,
+   "changed": true,
+   "rev": 11,
+   "revision": "a41ec1727418de4032505293094153a373aebfc7860034f4a05e083c6664d026",
+   "fns": 132,
+   "edits": 280,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 6282
+  },
+  {
+   "pass": "dce",
+   "ms": 10332,
+   "changed": true,
+   "rev": 12,
+   "revision": "f7ff969f7ff9098088ab5fc236012d2abcb7db1567f5db8bbeeecc8fbda89e05",
+   "fns": 2,
+   "edits": 2,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 6733
+  },
+  {
+   "pass": "cfg",
+   "ms": 9387,
+   "changed": true,
+   "rev": 13,
+   "revision": "b33d1737c725506c7880b8701899d0a0d78f71d6a7b981db89d85d84f48c40d9",
+   "fns": 2,
+   "edits": 20,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 7085
+  }
+ ],
+ "totalMs": 220885,
+ "passesMs": 205336,
+ "threads": 4,
+ "pool": {
+  "jobs": 13,
+  "local": 0,
+  "cases": 64040,
+  "partsSent": 4920,
+  "casesSent": 13280,
+  "busyMs": [
+   33899.2766,
+   35552.492662999975,
+   32896.76721299996,
+   33945.602469000034
+  ]
+ },
+ "differential": {
+  "baselineRuns": 0,
+  "subjectRuns": 0,
+  "replayed": 108600,
+  "delegated": 64040
+ }
+}

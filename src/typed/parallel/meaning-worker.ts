@@ -9,18 +9,11 @@
  */
 import { parentPort } from 'node:worker_threads';
 import { decideCase, differentialSpec, type Decided } from '../../framework/contracts/differential.js';
-import { immutable } from '../../framework/core/data.js';
 import { meaningKept, type Case } from '../evaluate.js';
-import type { BlockRec, FnRec, OpRec, StmtRec, TypedBlocks, ValueRec } from '../model.js';
+import type { TypedBlocks } from '../model.js';
+import { assembleParts, parsePart, type PartRecords } from '../parts.js';
 import { CASE_SETS_MAX, type JobMessage, type ProgramRef, type ReplyMessage } from './protocol.js';
 
-type PartRecords = readonly [
-  FnRec & { readonly blocks: readonly string[] },
-  readonly BlockRec[],
-  readonly StmtRec[],
-  readonly ValueRec[],
-  readonly OpRec[],
-];
 const PARTS = new Map<string, PartRecords>();
 const PROGRAMS = new Map<string, { value: TypedBlocks }>();
 const PROGRAMS_MAX = 4;
@@ -34,43 +27,16 @@ function program(ref: ProgramRef): { value: TypedBlocks } {
     PROGRAMS.set(ref.revision, art);
     return art;
   }
-  const fns: Record<string, unknown> = {},
-    blocks: Record<string, BlockRec> = {},
-    stmts: Record<string, StmtRec> = {},
-    values: Record<string, ValueRec> = {},
-    ops: Record<string, OpRec> = {};
-  ref.fnOrder.forEach((name, i) => {
-    const p = PARTS.get(ref.hashes[i]);
-    if (!p) throw new Error(`meaning worker: no part ${ref.hashes[i]} for ${name}`);
-    fns[name] = p[0];
-    for (const b of p[1]) blocks[b.id] = b;
-    for (const s of p[2]) stmts[s.id] = s;
-    for (const x of p[3]) values[x.id] = x;
-    for (const o of p[4]) ops[o.id] = o;
-  });
-  // the records are canonical already, so this builds only the tables; the evaluator reads records by id and
-  // functions by name, which is all a program assembled from its parts has to agree on with the original
-  const value = immutable({
-    formatVersion: 1,
-    program: ref.program,
-    rev: ref.rev,
-    counters: {},
-    fnOrder: ref.fnOrder,
-    fns,
-    blocks,
-    stmts,
-    values,
-    ops,
-    frontEnd: {},
-  }) as unknown as TypedBlocks;
-  art = { value };
+  // without counters and front end: the evaluator reads records by id and functions by name, which is all a
+  // program assembled from its parts has to agree on with the original
+  art = { value: assembleParts(ref, h => PARTS.get(h)) };
   PROGRAMS.set(ref.revision, art);
   while (PROGRAMS.size > PROGRAMS_MAX) PROGRAMS.delete(PROGRAMS.keys().next().value!);
   return art;
 }
 
 function run(job: JobMessage): readonly Decided[] {
-  for (const [hash, text] of job.parts) if (!PARTS.has(hash)) PARTS.set(hash, immutable(JSON.parse(text)));
+  for (const [hash, text] of job.parts) if (!PARTS.has(hash)) PARTS.set(hash, parsePart(text));
   let cases = CASES.get(job.caseSet);
   if (!cases) {
     CASES.set(job.caseSet, (cases = []));

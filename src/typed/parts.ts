@@ -16,7 +16,7 @@
  *                        evaluator's outcome for a case of f depends (see evaluate.ts: calls by name, and a stack
  *                        area above guest memory when any function has frame arrays)
  */
-import { canonical, isCanonical } from '../framework/core/data.js';
+import { canonical, immutable, isCanonical } from '../framework/core/data.js';
 import { sha256Parts } from '../framework/core/sha256.js';
 import type { BlockRec, FnRec, OpRec, StmtRec, TypedBlocks, ValueRec } from './model.js';
 
@@ -137,6 +137,89 @@ export function closureOf(v: TypedBlocks, f: string): readonly string[] {
     if (p) for (const c of calleesOf(p)) if (!seen.has(c)) todo.push(c);
   }
   return [...seen].sort();
+}
+
+// ---------- programs as parts, between threads (IRWB-004 F4) ----------
+
+/**
+ * A program named by its parts: per function (in `fnOrder`) the hash of its part, and, when `full`, the two
+ * program-wide records that are not in any part (`counters`, `frontEnd`). A thread that holds the parts by hash can
+ * rebuild the value from this (`assembleParts`); with `full`, the rebuilt value has the original's revision.
+ */
+export interface PartsRef {
+  readonly revision: string;
+  readonly program: string;
+  readonly rev: number;
+  readonly fnOrder: readonly string[];
+  readonly hashes: readonly string[];
+  readonly counters?: Readonly<Record<string, number>>;
+  readonly frontEnd?: TypedBlocks['frontEnd'];
+}
+export function partsRef(revision: string, v: TypedBlocks, full = false): PartsRef {
+  const parts = partsOf(v);
+  return {
+    revision,
+    program: v.program,
+    rev: v.rev,
+    fnOrder: v.fnOrder,
+    hashes: v.fnOrder.map(n => partHash(parts.get(n)!)),
+    ...(full ? { counters: v.counters, frontEnd: v.frontEnd } : {}),
+  };
+}
+/** A part's records as `partText` writes them: [fn, blocks, stmts, values, ops]. */
+export type PartRecords = readonly [
+  FnRec & { readonly blocks: readonly string[] },
+  readonly BlockRec[],
+  readonly StmtRec[],
+  readonly ValueRec[],
+  readonly OpRec[],
+];
+/** The records of a part text, frozen and canonical (as `immutable` makes them). */
+export function parsePart(text: string): PartRecords {
+  return immutable(JSON.parse(text)) as PartRecords;
+}
+/** The value a `PartsRef` names, from parts by hash; frozen. Without `counters`/`frontEnd`, they are empty. */
+export function assembleParts(ref: PartsRef, part: (hash: string) => PartRecords | undefined): TypedBlocks {
+  const fns: Record<string, unknown> = {},
+    blocks: Record<string, BlockRec> = {},
+    stmts: Record<string, StmtRec> = {},
+    values: Record<string, ValueRec> = {},
+    ops: Record<string, OpRec> = {};
+  ref.fnOrder.forEach((name, i) => {
+    const p = part(ref.hashes[i]);
+    if (!p) throw new Error(`no part ${ref.hashes[i]} for ${name}`);
+    fns[name] = p[0];
+    for (const b of p[1]) blocks[b.id] = b;
+    for (const s of p[2]) stmts[s.id] = s;
+    for (const x of p[3]) values[x.id] = x;
+    for (const o of p[4]) ops[o.id] = o;
+  });
+  // the records are canonical already, so this builds the tables only
+  return immutable({
+    formatVersion: 1,
+    program: ref.program,
+    rev: ref.rev,
+    counters: ref.counters ?? {},
+    fnOrder: ref.fnOrder,
+    fns,
+    blocks,
+    stmts,
+    values,
+    ops,
+    frontEnd: ref.frontEnd ?? {},
+  }) as unknown as TypedBlocks;
+}
+/** The part texts of `v` whose hashes `have` lacks, as [hash, text] (and adds them to `have`). */
+export function missingParts(v: TypedBlocks, have: Set<string>): [string, string][] {
+  const out: [string, string][] = [];
+  for (const p of partsOf(v).values()) {
+    const h = partHash(p);
+    if (!have.has(h)) {
+      have.add(h);
+      out.push([h, partText(p)]);
+    }
+  }
+  return out;
 }
 
 const KEYS = new WeakMap<object, Map<string, string>>();
