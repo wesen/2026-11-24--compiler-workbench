@@ -1,0 +1,58 @@
+function runVm(code: buffer, entry: i32, n: i32, seed: i32): i32 {
+    const stack = new Int32Array(4);
+    const locals = new Int32Array(4);
+    locals[0] = n;
+    locals[1] = seed;
+    let sp = 0;
+    let pc = entry;
+
+    while (true) {
+        const opcode = code.charCodeAt(pc);
+        const operand = code.charCodeAt(pc + 1);
+        pc = pc + 2;
+
+        if (opcode === 0) { // HALT
+            return stack[sp - 1];
+        } else if (opcode === 1) { // PUSH
+            stack[sp] = operand;
+            sp = sp + 1;
+        } else if (opcode === 2) { // LOAD
+            stack[sp] = locals[operand];
+            sp = sp + 1;
+        } else if (opcode === 3) { // STORE
+            sp = sp - 1;
+            locals[operand] = stack[sp];
+        } else if (opcode === 4) { // ADD
+            sp = sp - 1;
+            const right = stack[sp];
+            sp = sp - 1;
+            const left = stack[sp];
+            stack[sp] = left + right;
+            sp = sp + 1;
+        } else if (opcode === 5) { // SUB
+            sp = sp - 1;
+            const right = stack[sp];
+            sp = sp - 1;
+            const left = stack[sp];
+            stack[sp] = left - right;
+            sp = sp + 1;
+        } else if (opcode === 6) { // MUL
+            sp = sp - 1;
+            const right = stack[sp];
+            sp = sp - 1;
+            const left = stack[sp];
+            stack[sp] = left * right;
+            sp = sp + 1;
+        } else if (opcode === 7) { // JZ
+            sp = sp - 1;
+            if (stack[sp] === 0) {
+                pc = operand;
+            }
+        } else if (opcode === 8) { // JUMP
+            pc = operand;
+        } else {
+            break;
+        }
+    }
+    return 0;
+}
