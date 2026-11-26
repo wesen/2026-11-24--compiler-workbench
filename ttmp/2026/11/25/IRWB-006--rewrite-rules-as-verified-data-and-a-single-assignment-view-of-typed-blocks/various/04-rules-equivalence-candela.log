@@ -1,0 +1,231 @@
+cfg r1 14025 ms 
+fold r2 15702 ms {"table":{"revision":true,"edits":true,"corr":true,"ms":15932},"handwritten":{"revision":true,"edits":true,"corr":true,"ms":18170}}
+simplify r3 19287 ms {"table":{"revision":true,"edits":true,"corr":true,"ms":14302},"handwritten":{"revision":true,"edits":true,"corr":true,"ms":11552}}
+constprop r4 21630 ms 
+fold r5 15404 ms {"table":{"revision":true,"edits":true,"corr":true,"ms":17062},"handwritten":{"revision":true,"edits":true,"corr":true,"ms":14940}}
+simplify - 12274 ms {"table":{"revision":true,"edits":true,"corr":true,"ms":10700},"handwritten":{"revision":true,"edits":true,"corr":true,"ms":10949}}
+dce r6 13068 ms 
+cfg r7 19391 ms 
+licm r8 27304 ms 
+lvn r9 15477 ms 
+strength - 17746 ms 
+bce - 25219 ms 
+subst r10 21245 ms 
+subst r11 21834 ms 
+dce r12 19797 ms 
+cfg r13 13755 ms 
+{
+ "r0": "cd36346ea7c4",
+ "head": "b33d1737c725",
+ "steps": [
+  {
+   "pass": "cfg",
+   "changed": true,
+   "rev": 1,
+   "edits": 974,
+   "revision": "4aea7e81dd04",
+   "ms": 14025
+  },
+  {
+   "pass": "fold",
+   "changed": true,
+   "rev": 2,
+   "edits": 676,
+   "revision": "79007a4f826a",
+   "ms": 15702,
+   "compare": {
+    "table": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 15932
+    },
+    "handwritten": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 18170
+    }
+   }
+  },
+  {
+   "pass": "simplify",
+   "changed": true,
+   "rev": 3,
+   "edits": 48,
+   "revision": "28af3dbb9e5b",
+   "ms": 19287,
+   "compare": {
+    "table": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 14302
+    },
+    "handwritten": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 11552
+    }
+   }
+  },
+  {
+   "pass": "constprop",
+   "changed": true,
+   "rev": 4,
+   "edits": 925,
+   "revision": "33425ba057ac",
+   "ms": 21630
+  },
+  {
+   "pass": "fold",
+   "changed": true,
+   "rev": 5,
+   "edits": 114,
+   "revision": "28ff4a86b279",
+   "ms": 15404,
+   "compare": {
+    "table": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 17062
+    },
+    "handwritten": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 14940
+    }
+   }
+  },
+  {
+   "pass": "simplify",
+   "changed": false,
+   "rev": 5,
+   "edits": 0,
+   "revision": "28ff4a86b279",
+   "ms": 12274,
+   "compare": {
+    "table": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 10700
+    },
+    "handwritten": {
+     "revision": true,
+     "edits": true,
+     "corr": true,
+     "ms": 10949
+    }
+   }
+  },
+  {
+   "pass": "dce",
+   "changed": true,
+   "rev": 6,
+   "edits": 2164,
+   "revision": "8d4265f3a9da",
+   "ms": 13068
+  },
+  {
+   "pass": "cfg",
+   "changed": true,
+   "rev": 7,
+   "edits": 18,
+   "revision": "e60948d78f34",
+   "ms": 19391
+  },
+  {
+   "pass": "licm",
+   "changed": true,
+   "rev": 8,
+   "edits": 87,
+   "revision": "d4a9b9e51fcc",
+   "ms": 27304
+  },
+  {
+   "pass": "lvn",
+   "changed": true,
+   "rev": 9,
+   "edits": 256,
+   "revision": "5d3725175064",
+   "ms": 15477
+  },
+  {
+   "pass": "strength",
+   "changed": false,
+   "rev": 9,
+   "edits": 0,
+   "revision": "5d3725175064",
+   "ms": 17746
+  },
+  {
+   "pass": "bce",
+   "changed": false,
+   "rev": 9,
+   "edits": 0,
+   "revision": "5d3725175064",
+   "ms": 25219
+  },
+  {
+   "pass": "subst",
+   "changed": true,
+   "rev": 10,
+   "edits": 430,
+   "revision": "f61345f3f442",
+   "ms": 21245
+  },
+  {
+   "pass": "subst",
+   "changed": true,
+   "rev": 11,
+   "edits": 280,
+   "revision": "a41ec1727418",
+   "ms": 21834
+  },
+  {
+   "pass": "dce",
+   "changed": true,
+   "rev": 12,
+   "edits": 2,
+   "revision": "f7ff969f7ff9",
+   "ms": 19797
+  },
+  {
+   "pass": "cfg",
+   "changed": true,
+   "rev": 13,
+   "edits": 20,
+   "revision": "b33d1737c725",
+   "ms": 13755
+  }
+ ],
+ "differ": 0,
+ "firings": {
+  "simplify": {
+   "add-zero": 1,
+   "mul-pow2": 39,
+   "not-le": 4,
+   "not-lt": 12
+  },
+  "fold": {
+   "fold-add": 430,
+   "fold-eqz": 3,
+   "fold-fadd": 98,
+   "fold-fdiv": 106,
+   "fold-fmax": 285,
+   "fold-fmin": 199,
+   "fold-fmul": 139,
+   "fold-fsqrt": 196,
+   "fold-fsub": 122,
+   "fold-or": 4,
+   "fold-shl": 430,
+   "fold-sub": 69
+  }
+ },
+ "ms": 412481
+}
+node --max-old-space-size=12288 $T/scripts/02-rules-equivalence-candela.mjs    438.74s user 9.39s system 108% cpu 6:52.82 total

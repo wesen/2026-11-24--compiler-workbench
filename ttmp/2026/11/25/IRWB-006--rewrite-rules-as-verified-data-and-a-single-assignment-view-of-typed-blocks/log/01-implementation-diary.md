@@ -176,3 +176,113 @@ The guide (`design-doc/01-intern-guide-…md`, 867 lines after revision) has fiv
 
 ### Technical details
 - Uploaded PDF name: `IRWB-006 Intern Guide: Rules as Data and SSA`, folder `/ai/2026/11/25/IRWB-006`.
+
+## Step 4: The rule form, the rule compiler, and both tables; corpus equivalence
+
+This step implements B1's core: the rule form (`src/typed/rules/form.ts`), the compiler from a table to a `Tx.rewrite` visitor (`compile.ts`), the 27-rule `simplify` table (`simplify.ts`), the 40-rule `fold` table (`fold.ts`), a verbatim copy of the two hand-written bodies (`handwritten.ts`), and passes built from each under the original specs (`rules/passes.ts`). `passes.ts` is not touched yet. On the corpus the table passes reproduce the hand-written ones exactly: 1,232 comparisons, 0 differences.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** B1: simplify's identities, and fold's cases if practical, as a listable table whose pass produces identical revisions; keep the hand-written pass until the diffs prove it.
+**Inferred user intent:** Rules that are data without any change to what O2 produces.
+**Commit (code):** c9f43d6 — "IRWB-006 B1: rule form, rule compiler to a Tx.rewrite visitor, simplify and fold as rule tables; corpus equivalence 1232/1232 identical"
+
+### What I did
+- `form.ts`: the `Pat`/`Guard`/`Num`/`Tpl`/`Rule`/`RuleSet` types, builders (`v`, `kv`, `c`, `same`, `op`, `rule`, `ruleSet`), a run-time well-formedness check (`checkRule`: bound-once variables, declared types, guards on bound variables, `pow2`/`noTrap` only on constant variables, the left side a pattern and the right side a template), one-line text (`ruleText`), and `toNodePattern` to the framework's pattern language.
+- `compile.ts`: `matchPat`, `guardHolds`, `evalOp` (eqz, `f32Op` for `F32_FOLDABLE`, else `binop`), `instantiate` (children first, provenance on the outermost made value only), `indexRules` (by root operator, table order), `compileRules(rules, firings?)`, `tableBody`.
+- `fold.ts` builds one rule per operator: `fold-eqz`, one per `F32_FOLDABLE` operator (arity from `VALUE_SIGNATURES`), one per integer operator of fold's `FOLDABLE` list with `noTrap` on `div` and `rem`.
+- `scripts/01-rules-equivalence-corpus.mjs`: for each of the 44 projects and each pipeline containing `simplify` or `fold` (`O1`, `O2`, `O2+`, `loops`, `checks`), run the pipeline with the passes of `passes.ts` under the meaning contract; at each `simplify`/`fold` step apply the table pass and the hand-written copy to the same input and compare revision hash, canonical edit list and canonical correspondence entries. It also counts firings in O2.
+- `npx prettier --write "src/typed/rules/*.ts"`; `npm run build`.
+
+### Why
+- Comparing at each step against the same input, rather than running two full chains, is equivalent by induction (equal inputs and equal outputs at every step give equal chains) and costs half.
+- The edit list and the correspondence are compared besides the hash because the edit `text` is not part of the revision.
+
+### What worked
+- `node scripts/01-rules-equivalence-corpus.mjs --json various/02-rules-equivalence-corpus.json --firings various/03-rule-firings-corpus-o2.json`:
+  ```text
+  {"projects":44,"pipelines":["O1","O2","O2+","loops","checks"],"compared":1232,"stepsThatChanged":210,"differ":0,"ms":61664}
+  O2 firings: {"simplify":{"add-zero":4,"mul-one":2,"mul-pow2":15,"mul-zero":2,"not-gt":1,"not-lt":32,"not-ne":1,"sub-self":1,"sub-zero":1},
+               "fold":{"fold-add":1,"fold-gt":1,"fold-mul":9,"fold-shl":1,"fold-sub":6}}
+  ```
+  616 `simplify`/`fold` steps, each compared twice (table, hand-written copy); 210 of them changed the program.
+
+### What didn't work
+- First build: `src/typed/rules/simplify.ts(26,24): error TS2345: Argument of type 'Tpl' is not assignable to parameter of type 'OpPat'`, then, with a generic `op<A>`, `Argument of type '{ readonly constVar: string; }' is not assignable to parameter of type '{ readonly var: string; }'` (inference fixed `A` from the first argument). Resolved by giving `op` one signature whose result is assignable to both `OpPat` and `Tpl`, and checking at run time in `checkRule` that the left side is a pattern and the right side a template.
+
+### What I learned
+- In O2 over the corpus, 9 of the 27 `simplify` rules fire and 18 never do (`zero-add`, `one-mul`, `zero-mul`, `pow2-mul`, `div-one`, the five zero-right rules, `and-zero`, `and-ones`, `not-ge`, `not-le`, `not-eq`, `not-ltu`, `not-geu`, `not-not`); `not-lt` (32) and `mul-pow2` (15) dominate. Only 5 of the 40 `fold` rules fire.
+
+### What was tricky to build
+- Provenance reproduction. `because: 'const-args'` must be the constant operands of the *matched node*, not the constants the pattern names, and only the outermost made value carries `because` and `note`; the inner `log2` constant of `mul-pow2` has neither. `instantiate` passes `{}` to inner values, which `tx.make` pops as its options object (it has no `id`), so the call shapes are identical to the hand-written ones.
+
+### What warrants a second pair of eyes
+- The comparison's sensitivity: equal results prove nothing if the check could not see a difference. The rules test (later step) must include a mutated table that the same comparison rejects.
+
+### What should be done in the future
+- Candela equivalence (running), then the switch in `passes.ts`.
+
+### Code review instructions
+- `src/typed/rules/compile.ts` (`instantiate`, `provenance`), `src/typed/rules/simplify.ts` against `src/typed/passes.ts:307–373`.
+- Re-run: `npm run build && node ttmp/2026/11/25/IRWB-006--*/scripts/01-rules-equivalence-corpus.mjs` (about 62 s).
+
+### Technical details
+- Rule counts: `simplify` 27 (add 2, sub 2, mul 6, div 1, zero-right 5, and 2, comparison inversions 8, not-not 1); `fold` 40 (eqz 1, f32 20, i32 19), checked with `node -e` over the built tables.
+
+## Step 5: Candela equivalence, then the switch of simplify and fold to the tables
+
+The corpus check of Step 4 is strong but small; Candela is 332 functions with f32 throughout. This step runs O2 on Candela once and, at each of its four `simplify`/`fold` steps, applies the table pass and the hand-written copy to the same input revision. All four steps are identical in revision hash, edit list and correspondence. With every compared revision identical on both workloads, `simplify` and `fold` in `passes.ts` now use the tables; the corpus revisions after the switch equal the baseline line for line.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Switch simplify to the table only if every revision is identical" (corpus r0→O2 and Candela O2).
+**Inferred user intent:** No behaviour change from turning code into data.
+**Commit (code):** see the commit after this step ("IRWB-006 B1: simplify and fold use the rule tables …").
+
+### What I did
+- `scripts/02-rules-equivalence-candela.mjs`: ingest Candela from the tape, then O2 pass by pass with `applyPass` and a single `AnalysisManager`, without the per-pass meaning checks (they do not change a pass's output, and O2 on Candela has no rejected pass); at `fold` and `simplify` steps also apply `tablePass(name, firings)` and `R.*Handwritten` to the same input and compare.
+- `node --max-old-space-size=12288 scripts/02-rules-equivalence-candela.mjs --json various/04-rules-equivalence-candela.json` (background, alone on Candela).
+- Switch: in `src/typed/passes.ts`, `fold.body = tableBody(FOLD_RULES.rules)` and `simplify.body = tableBody(SIMPLIFY_RULES.rules)`; removed the now-unused `FOLDABLE` set and the `f32Op`, `F32_FOLDABLE`, `SYMBOL` and `binop` imports; added imports of `tableBody`, `FOLD_RULES`, `SIMPLIFY_RULES`. The comments say where the hand-written bodies went (`rules/handwritten.ts`). `isPow2` and `log2` stay: `strength` and `div-to-shift` use them.
+- `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs > various/06-corpus-revisions-after-switch.txt; diff various/01-baseline-corpus-revisions.txt various/06-…` → no output (`IDENTICAL`).
+- Started `scripts/03-frozen-gates.sh various/07-gates-after-switch` in the background (build, the test files with `--test-concurrency=3`, `IRWB_FULL=1` passes and backend, parity, revisions diff).
+
+### Why
+- One Candela process, one pipeline run, both variants compared at the same inputs: the cheapest run that still covers every `simplify`/`fold` application of Candela's O2.
+
+### What worked
+- Candela (6 min 53 s wall, 438.7 s user):
+  ```text
+  cfg r1 14025 ms
+  fold r2 15702 ms {"table":{"revision":true,"edits":true,"corr":true,"ms":15932},"handwritten":{"revision":true,"edits":true,"corr":true,"ms":18170}}
+  simplify r3 19287 ms {"table":{"revision":true,"edits":true,"corr":true,"ms":14302},"handwritten":{…true…,"ms":11552}}
+  constprop r4 21630 ms
+  fold r5 15404 ms {"table":{…true…,"ms":17062},"handwritten":{…true…,"ms":14940}}
+  simplify - 12274 ms {"table":{…true…,"ms":10700},"handwritten":{…true…,"ms":10949}}
+  … 13 revisions in all, r0 cd36346ea7c4 → head b33d1737c725, differ 0
+  ```
+  Edits: fold r2 676, simplify r3 48, fold r5 114, the second simplify none.
+- Firings on Candela's O2: simplify `add-zero` 1, `mul-pow2` 39, `not-le` 4, `not-lt` 12 (56 firings for 48 statement edits: one edit can carry several rewrites in one tree); fold `fold-add` 430, `fold-shl` 430, `fold-fmax` 285, `fold-fmin` 199, `fold-fsqrt` 196, `fold-fmul` 139, `fold-fsub` 122, `fold-fdiv` 106, `fold-fadd` 98, `fold-sub` 69, `fold-or` 4, `fold-eqz` 3.
+- Corpus revisions after the switch: identical to the baseline (44 lines).
+
+### What didn't work
+- A combined command (`npm run build && … ; diff … && echo; git diff --stat`) was refused by the worktree isolation check because it contained `git` in a compound form; re-run as separate commands.
+
+### What I learned
+- Pass time on Candela is dominated by the framework (projection, hashing, diff): the table and the hand-written `simplify` take 10.7–14.3 s and 10.9–11.6 s for the same work, within run-to-run noise of each other. The rule compiler's dispatch is not a measurable cost at this scale.
+- The 13 revisions and the r0 hash `cd36346e…` match the IRWB-002 guide's Candela numbers (§16, §3), so this run is the official O2 chain.
+
+### What was tricky to build
+- Nothing new; the switch is a two-line change because the table passes were built under the original specs.
+
+### What warrants a second pair of eyes
+- The Candela comparison ran without meaning checks. That is valid because the compared quantity is each pass's output on a fixed input, which the contract does not influence; it would not be valid for a pipeline with a rejected pass.
+
+### What should be done in the future
+- After the gates: B2's recorded evidence.
+
+### Code review instructions
+- `git show` of the switch commit for `src/typed/passes.ts` (two bodies, imports, one removed constant).
+- Re-run: `node --max-old-space-size=12288 ttmp/2026/11/25/IRWB-006--*/scripts/02-rules-equivalence-candela.mjs` (about 7 min).
+
+### Technical details
+- `various/04-rules-equivalence-candela.json` has every step with revision prefix, edits and timings; `various/04-…log` the progress lines.
