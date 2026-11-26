@@ -1497,3 +1497,36 @@ Two targets were missed, and the agent reported both with profiles:
 ### What warrants a second pair of eyes
 - **Report 6 links to IRWB-005's report by title.** That report is still a draft in the vault; check the link when it is pushed.
 - **The worker script's SHA-384 is recorded but not enforced.** Browsers do not check SRI on worker scripts. It is a same-origin build output, like `app.js`.
+
+## Step 32: the machine stopped at 01:39; no OOM kill was logged; Candela jobs now run under a memory cap
+
+The session ended while two agents were still running: IRWB-003 (speed gap) and IRWB-005 (gate strength). The machine was rebooted. The user's question: "i think we might have crashed, probably due to memory (I don't know if we were doing lots of calls or so)?" The logs do not establish the cause. They do show what was running, so I added a guard that turns a runaway job into a killed process instead of a frozen machine, and resumed both agents.
+
+### Prompt Context
+**User prompt (verbatim):** "i think we might have crashed, probably due to memory (I don't know if we were doing lots of calls or so)?"
+
+### What I did
+- `uptime`: up 20 min. `journalctl --list-boots`:
+  - the previous boot ran from 2026-11-19 11:00:45 to 2026-11-26 01:39:07;
+  - this boot started 09:14:46.
+- **The previous boot's log** (`journalctl -b -1`):
+  - no OOM-killer, memory-pressure, hung-task or soft-lockup entries between 00:30 and 01:40;
+  - its last lines are routine cron and php session cleanup at 01:39;
+  - no shutdown sequence follows them.
+- **Swap:** `/swap.img`, 8 GB, swappiness 60; 0 B used now.
+- **What was running**, from file times in the worktrees:
+  - IRWB-003: last commit 01:18; `various/11-candela-scenes-speed.log` last written 01:29, during the per-scene speed pipeline (B-01: inlining to 44 functions and 8,390 statements).
+  - IRWB-005: last commit 01:36; `various/13-candela.jsonl` (683,603 bytes) last written 01:36, during Candela mutants of `skyL_wgsl`, a function whose measurement took 2,649 s.
+- **The guard, tested:**
+  - `systemd-run --user --scope --quiet -p MemoryMax=200M -p MemorySwapMax=0 node -e "<allocate 800 MB>"` → exit 137, killed, nothing else affected;
+  - a small job under the same cap → exit 0.
+- **Resumed both agents** with the facts, their worktree state and a mandatory rule: every Candela-scale node process runs under `MemoryMax=14G`, `MemorySwapMax=0`, `--max-old-space-size=10240`, with at most 2 worker threads. On exit 137 they reduce what the process holds rather than raise the cap.
+- Restarted the site server on port 8765.
+
+### What I learned
+- **The evidence fits a freeze, but not a specific cause.** An abrupt end of the log without any kernel message is consistent with a machine that stopped responding, for example while thrashing swap. Memory pressure that keeps the kernel reclaiming need not reach the OOM killer, so the absence of an OOM entry does not rule memory out. Nor does anything confirm it.
+- **The cap's value is the same whichever way it was.** A capped process is killed at 14 GB, and two capped jobs cannot together exceed 28 GB of the 62 GB.
+
+### What warrants a second pair of eyes
+- **The caps cover only the agents' Candela jobs.** Chromium under Playwright and the Claude processes themselves are not capped.
+- **A system-wide guard would cover everything.** An OOM daemon such as earlyoom or systemd-oomd would also catch uncapped processes. That is a change to the user's system configuration and needs the user's decision.
