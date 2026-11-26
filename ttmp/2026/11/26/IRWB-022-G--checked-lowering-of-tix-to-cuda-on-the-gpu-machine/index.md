@@ -21,7 +21,7 @@ WhenToUse: ""
 
 ## Overview
 
-Propose a statement-per-kernel lowering and a remote meaning check on the NVIDIA GB10. The initial design and numerical probes are ready for review. Implementation and full-size measurements have not started.
+Implemented a statement-per-kernel lowering and remote f64 tolerance check on the NVIDIA GB10. All six corpus functions passed. Full-size GPU event and interpreter wall times, sampling evidence and reproduction instructions are in the [results report](reference/02-cuda-lowering-results-and-timing-protocol.md).
 
 ## Key Links
 

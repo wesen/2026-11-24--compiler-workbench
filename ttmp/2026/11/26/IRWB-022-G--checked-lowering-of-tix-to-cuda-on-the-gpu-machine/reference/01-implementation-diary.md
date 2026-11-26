@@ -183,6 +183,39 @@ No production source, existing tool, tests or corpus files changed at this check
 
 Accepted both timing corrections and the proposed cut: preload functions before normal timing, emit `--benchmark` in the same main, and reuse process-local verdicts without remote identity queries. Runtime arguments change execution but not compilation. Keep per-job directories for concurrent identical inputs. The reviewer measured 0.115 vs 0.004 ms before/after preload on GB10. Base design: `35e01c4`. Next: implement and check the reviewed stage.
 
+### Prompt context for Step 2 (user, verbatim)
+
+````text
+A reviewer has read your design for IRWB-022-G. The review:
+
+# Review of your design
+
+## Must change
+
+1. **Benchmark mode is unspecified.** "In benchmark mode only, copy inputs once, launch a warm-up sequence then three measured sequences using the same allocated buffers". The unit has a single `main`. The design never says how this mode is selected (a program argument, or a field in `in.bin`) or whether `cudaSource` emits it. Program arguments are not part of the tool's hash. Specify the switch.
+2. **`gpuMs` of `runTixCuda` includes kernel loading.** "`gpuMs` is the elapsed time between events on that stream immediately surrounding the sequence". Outside benchmark mode, nothing loads the kernels before timing. Under CUDA 13's default lazy loading, the first launch of each kernel loads its module inside the interval. In my probe on the GB10, a trivial kernel's first interval was 0.115 ms and its second 0.003 ms; after `cudaFuncGetAttributes` the first was 0.004 ms. The fixed API excludes start-up.
+
+## Cut
+
+1. "`--describe` below is one cheap identity lookup per check even on replay", and the stamp in the run JSON. The memo is process-local, so an SSH query on every replay buys little.
+
+## Framework and tool changes
+
+- Batch-only `differential` variant: a small, real finding, since today's type forces placeholder `run`/`compare` when `decide` decides everything. Keep it to a spec type with `decide` required and no `run`/`compare`, plus guards on the sync and worker paths. It belongs in `differential.ts`; your tests are right.
+- Compiler build and flags in the compile key: fine. `--describe`: not needed.
+- Private invocation directory with a per-content compile lock: with the full-input key, two runs collide only if they upload byte-identical directories at the same time, for example two concurrent `checkLowering` calls on one function. It is needed only for that case, and it is minimal. Your test uses "different echoed arguments", but nothing in the design passes arguments.
+
+## Keep
+
+Keep the rounding-site table, the origin f64 budget with "do not increase the budget", the single `decide` batch with the references in the cases, failing the batch before memoizing anything, and the mutant submitted through `verifyTransformation`.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-022-G:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+````
+
 ## Step 3: Batch-only differential engine
 
 Implemented the approved spec variant and guards in `differential.ts`; no change to local worker execution. An initial `npm run build` reported TS2345 on `runDifferential(spec, ...)` because the sync entry accepted only local specs. Narrowing inside that entry makes the runtime sync-mode diagnostic reachable for both TS and JS callers. Rebuild passed. `node --test tests/framework/batch-differential.test.mjs` passed cold, replay, partial replay, failure/retry and forbidden sync paths. Wider regressions follow integration.
@@ -198,3 +231,9 @@ An actual GB10 smoke run on shape [3] returned [2,4,-6] and event time 0.017312 
 At backend `abcbdfd`, the corpus oracles are shared between a network-free test and a separately runnable GPU test. The GPU tests submit a valid tail-dropping unit through `verifyTransformation`, then inspect rejected evidence for a coordinate; another checks that blocked K=7 really changed the bits. The concurrent normal/benchmark test compares the returned binary median to the benchmark stdout, so a swapped `out/` is observable.
 
 `npm run build` passed; `node --test tests/tensor/*.test.mjs` passed 31/31, including the GB10 runs. `node --test tests/framework/*.test.mjs` passed 227/227. `node --test tests/typed/{meaning-memo,parallel,evaluate-analyses,passes,mutate,strategies}.test.mjs` passed 36/36. No EPERM, skipped case reported as success, or full-suite invocation. Next: record the six benchmark pairs and separate sampled-budget audit.
+
+## Step 6: Measure the straight lowering, without extrapolating the interpreter
+
+All six full-size CPU runs completed using the stage-1 evaluator, and each matched the input digest of its locked GB10 job. The [report](02-cuda-lowering-results-and-timing-protocol.md) gives every GPU sample and median, CPU wall time, and full-result comparison. The CPU machine was busy; the times are observed wall times, not exclusive CPU timings. Maximum absolute difference from the full f32 returns ranged from 0 to 1.43e-6. This is a diagnostic separate from the versioned tolerance relation.
+
+`05-benchmark.mjs` ran `cpu`, `gpu`, then `compare` (comparison outside both timers). `06-budget.mjs` audited 86 eligible small cases; the worst fraction of the f64 budget was 0.246678 on conv2d. No tolerance adjustment. Build, scoped regression results and probe reproduction are recorded above and in the report. Test commit: `9d5130b`. No production deviations from the revised design.

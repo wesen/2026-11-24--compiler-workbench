@@ -5,4 +5,4 @@
 - [x] Review design and record approved framework/tool ledgers <!-- t:98g2 -->
 - [x] Implement direct CUDA emission and binary batch runner <!-- t:k9pb -->
 - [x] Integrate the checked pass, test rejection and evidence reuse locally and on the GPU <!-- t:0d2r -->
-- [ ] Measure all six corpus GPU/CPU pairs and document findings <!-- t:13z7 -->
+- [x] Measure all six corpus GPU/CPU pairs and document findings <!-- t:13z7 -->
