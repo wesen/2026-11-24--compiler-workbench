@@ -219,3 +219,45 @@ The new framework entry point takes the existing `definePass` object and reuses 
 - A targeted `node --input-type=module` probe using the `proof` fixture in `tests/tensor/passes.test.mjs` exposed a valid original program for which a composed affine read failed with `3:21: Cannot prove index 1 of 'x' is in bounds`. Inline now retains that producer when the conservative proof cannot establish the composed access. Only the explicit bounds-proof failure is treated as inapplicability. The regression checks the normal public optimization entry and evaluation.
 - `npm run build` and `node --test tests/tensor/*.test.mjs` passed. The three tensor files exercise 23 tests, including independent corpus references, rounding, affine diagnostics, both wrong kernels, rejection and continuation, and source reference lifetime. `node --test tests/framework/*.test.mjs` passed 18 files, and `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` passed both files.
 - Prettier checked the added TypeScript and tests and the changed framework pass file. Ticket validation and staged whitespace checks are part of the implementation checkpoint.
+
+## Step 5 — Record the independent evaluation and write the report
+
+The evaluation of `1c217ab` reported complete agreement on its acceptance suite and both differential precision checks. It reported acceptance on all 60 programs for each optimization. There are no reported failures or rejections to diagnose and no evidence that contradicts a reported result. I used the implementation and test files to document the measured results and the limits of the acceptance counts.
+
+### Prompt context
+
+**User prompt (verbatim)**
+
+> Stage 1 of IRWB-020-L has been evaluated independently. Your results:
+>
+> - **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `1c217ab`): 25/25 passed.
+> - **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+> - **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+> - **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+>
+> In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+>
+> 1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+> 2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+>    - Tix;
+>    - the IR you chose and why;
+>    - the evaluators;
+>    - the meaning contract: relations, cases, the tolerance and how you justified it;
+>    - the two passes;
+>    - each framework change and why it was needed;
+>    - how you checked the work;
+>    - the evaluation results above, including every failure and its cause;
+>    - what you would do differently.
+>
+>    Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+> 3. **Commit** (message starting `IRWB-020-L:`). Final message: the report's path, the commit hash, and one line per failure cause.
+
+### Diagnosis and evidence
+
+- Independent failure causes. None reported. The hidden suite passed 25/25. The f32 cross-check agreed bitwise on 180/180 calls and the f64 cross-check met its relative criterion on 180/180. Each pass was accepted on all 60 programs with the reported agreement in its comparison.
+- Acceptance alone does not count rewrites. `src/framework/passes/define-pass.ts:261` returns the input when the kernel produces no change. `src/tensor/index.ts:47` reports that step as accepted. The evaluation supplied aggregate verdicts without revised-artifact counts.
+- The deliberate local rejections are reproducible tests. The real split kernel changes fold order at `src/tensor/evaluate.ts:149`, and the f32 word comparison at `src/tensor/meaning.ts:147` rejects the one-bit mismatch in `tests/tensor/passes.test.mjs:25`. The wrong inline emits subtraction at `tests/tensor/passes.test.mjs:154`. The wrong split truncates a length-seven bound to four in `tests/tensor/passes.test.mjs:189`, so the tolerance comparison at `src/tensor/meaning.ts:149` rejects the ones case.
+- Reran `npm run build`, `node --test tests/tensor/*.test.mjs` (3 files), `node --test tests/framework/*.test.mjs` (18 files), and `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` (2 files). All passed on Node 24.18.0. The external results are attributed to the evaluator and the local commands rerun the repository checks.
+- Checked all report links and the structure of the Mermaid flowchart. The report stays within the requested word range. `git diff --exit-code 1c217ab -- src tests corpus` confirmed the evaluated source, tests, and corpus match the evaluation revision.
+
+[Final report](02-report.md)
