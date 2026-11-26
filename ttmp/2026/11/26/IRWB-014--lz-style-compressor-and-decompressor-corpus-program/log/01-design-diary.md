@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: "Chronological notes on researching, drafting and reviewing the codec design."
-LastUpdated: 2026-11-26T10:39:36-05:00
+LastUpdated: 2026-11-26T11:00:37-05:00
 WhatFor: "Record the design decisions and validation evidence."
 WhenToUse: "Review how the proposal was developed."
 ---
@@ -96,3 +96,32 @@ The repeat doctor check passed. Staging with `git add -- <ticket-dir>`
 hit `Unable to create .../index.lock: Read-only file system` in
 the worktree's shared Git metadata. The commit step needs write
 access to that metadata.
+
+## Step 4 — Review the design for simpler experiment boundaries
+
+I reviewed the design from commit `43baa4b` using the current
+worktree. The host already sees both output buffers, so it can
+compose the kernels and own the equality check. An alphabet
+straddling the literal escape boundary covers both literal forms
+and repeated matches in the same generated encoder input.
+
+I removed the stand-alone packing helper, the extra match caps and
+the wrapper-specific sizing. The 32-cell block and four-probe
+limit still bound the candidate comparisons. The revised grammar
+uses the destination's actual capacity and an explicit history
+check. I kept the independent decoder for successful streams and
+a directed fixture for each behavior that shapes the hot loops.
+The guide ends with the cuts and their reasons.
+
+### User request (verbatim)
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-014: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+
+## Step 5 — Validate the revised guide
+
+I parsed the metadata example, checked the local links, verified
+the revised golden token fields and long-distance collision, and
+checked the bound of 384 candidate comparisons. Both frontmatter
+checks, `docmgr doctor --ticket IRWB-014 --stale-after 30` and
+`git diff --check` passed. The codec and statement timings remain
+work for implementation.
