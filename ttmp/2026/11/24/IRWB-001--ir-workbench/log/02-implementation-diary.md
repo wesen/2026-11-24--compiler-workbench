@@ -1530,3 +1530,33 @@ The session ended while two agents were still running: IRWB-003 (speed gap) and 
 ### What warrants a second pair of eyes
 - **The caps cover only the agents' Candela jobs.** Chromium under Playwright and the Claude processes themselves are not capped.
 - **A system-wide guard would cover everything.** An OOM daemon such as earlyoom or systemd-oomd would also catch uncapped processes. That is a change to the user's system configuration and needs the user's decision.
+
+## Step 33: five research tickets (IRWB-007 to IRWB-011), their intern guides delegated
+
+The user asked for a ticket per research direction from my recommendation, each with an intern guide stored in the ticket and uploaded to reMarkable. Numbers 4 and 5 are "sketch tickets", recorded so that the ideas are not lost. Nothing is implemented in this round.
+
+### Prompt Context
+**User prompt (verbatim):** "ok, create ticket for each of: [the pasted list of five directions and two smaller items] You can make "sketch tickets" for 4 and 5, i just don't want to lose the idea. For each, Create  a detailed analysis / design / implementation guide that is for a new intern, explaining all the parts of the system needed to understand what it is, with prose paragraphs and bullet point sand pseudocode and diagrams and api references and file references. It should be very clear and technical. Store in the ticket and the nupload to remarkable."
+
+### What I did
+- **Topic:** added `research` to the vocabulary.
+- **Tickets** (created under `ttmp/2026/11/26/`):
+  - **IRWB-007:** specializing Candela on its scene data (partial evaluation over constant memory).
+  - **IRWB-008:** exact checking for edits that cite verified rules, and version 2 of the check as the standard for new pipelines.
+  - **IRWB-009:** a function-incremental framework (analyses per function part, a lazy projection, a persistent store, demand-driven queries).
+  - **IRWB-010 (sketch):** rewrite search on SSA and verified rules.
+  - **IRWB-011 (sketch):** image-level contracts for float freedom.
+- **The two smaller items** became IRWB-001 tasks:
+  - backend: register allocation and loop unrolling;
+  - hardware: a user-run device check of instructions per pixel against real time.
+- **Four writing subagents**, each in its own worktree:
+  - IRWB-007;
+  - IRWB-008;
+  - IRWB-009;
+  - IRWB-010 and IRWB-011 together, because they share rules, the verifier, float semantics and contracts.
+
+  Each writes a diary, commits its scripts, uploads to `/ai/2026/11/26/<ticket>`, and stops after the upload.
+
+### Why
+- **The guides also carry the research framing** I gave the user: hypotheses, related work, what would falsify each idea. Examples are the first Futamura projection for IRWB-007, Alive2 and proof-producing e-graphs for IRWB-008 and IRWB-010, salsa-style early cutoff for IRWB-009, and calibrated miss probabilities as future work in IRWB-008.
+- **No Candela-scale runs beyond small grounding measurements**, under the memory cap from Step 32. IRWB-003 and IRWB-005 are still running theirs.

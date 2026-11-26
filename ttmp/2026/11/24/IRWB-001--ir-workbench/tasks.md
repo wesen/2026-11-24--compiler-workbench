@@ -36,3 +36,5 @@
 - [x] P4.7 caddr-aware bounds-check elimination (559 checked addresses in Candela) <!-- t:t4dq -->
 - [x] P4.8 Candela oracle against the reference kernel policy (pass groups now vendored) <!-- t:gxe6 -->
 - [x] R3 Obsidian report at the f32-backend / Candela-optimization milestone <!-- t:tjdl -->
+- [ ] Follow-up (backend): finish the register allocator (graph colouring or SSA-based allocation on typed.ssa) and add loop unrolling, the one reference-compiler technique still missing; measure on the corpus gap table and Candela per pixel <!-- t:qz9c -->
+- [ ] Follow-up (hardware, user-run): one PicoCalc device run to check whether emulator instructions per pixel track real time on the RP2350 (the coordinator may not flash the board) <!-- t:xzzl -->

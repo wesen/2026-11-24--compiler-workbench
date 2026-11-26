@@ -19,6 +19,8 @@ topics:
       description: Compile-time and run-time performance of the compiler and its framework
     - slug: verification
       description: Meaning checks, oracles, mutation testing and proofs of passes and rules
+    - slug: research
+      description: Research-grade directions, sketch tickets and design spaces
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
