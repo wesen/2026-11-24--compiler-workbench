@@ -1,7 +1,7 @@
 ---
 Title: 'Stage 1 design: Tix language, IR, evaluators, contract, inline and split-sum'
 Ticket: IRWB-020-N
-Status: review
+Status: active
 Topics:
     - tensor
     - compiler
@@ -32,6 +32,16 @@ WhenToUse: "Reading or reviewing the tensor domain's stage 1"
 ---
 
 # Stage 1 design: Tix language, IR, evaluators, contract, inline and split-sum
+
+## Revision 2 (after review)
+
+| Review item | Change | Where |
+| --- | --- | --- |
+| Must change 1: exact rejection not guaranteed | Added a deterministic wide case (shapes at 8, magnitudes `±2⁻ᵏ`). Explained why no domain can guarantee this for arbitrary programs, and that a test pins the verdict for the corpus. | §6.1 |
+| Must change 2: scope of test edits | The framework test goes in a new file. | §9 F1 |
+| Must change 3: evidence encoding | Specified a JSON-safe `describeCase` and string reasons. | §6.1 |
+| Cut: measurement plan | Removed. | §6.4 |
+| F2: drop `store?` | Removed, with the reason. | §9 F2 |
 
 ## 1. Summary
 
@@ -174,13 +184,34 @@ following `typed.optimization`.
 
 ### 6.1 Domain: the sampled cases
 
-- For each function in the program, the checker generates 8 cases from seed 1 with `seededRandom`.
-- In each case, every shape name is drawn uniformly from 1 to 8. The draw is repeated, at most 100 times, until
-  every parameter dimension, result dimension and statement extent is at least 1. A function with no valid draw
-  makes the check fail, which is the framework's rule for "no decided case".
-- Each input element is drawn uniformly from [−1, 1] and rounded to f32.
-- The cases come from the baseline port's program. Passes do not change signatures, so both sides accept the
-  same cases.
+Per function, the checker generates 9 cases, all from seed 1 with `seededRandom`, so a verdict is a
+deterministic function of the two programs:
+
+- **Case 0, the wide case** (added after review, item 1).
+  - Every shape name is set to 8. If that makes some dimension smaller than 1, each name is lowered by one
+    until all are valid.
+  - Each input element is `±2⁻ᵏ`, with the sign and the integer `k ∈ [0, 24]` drawn at random.
+  - At extent 8, every single-index sum has 8 terms and so two blocks of 4. With magnitudes spread over 24
+    binades, the low bits of a block's partial sum are routinely absorbed in the sequential order but not in
+    the blocked one. This makes the case built to change bits under reassociation, which the uniform cases are
+    not: values drawn from [−1, 1] share a binade, and small extents give a single block.
+- **Cases 1 to 8, the uniform cases.**
+  - Every shape name is drawn uniformly from 1 to 8. The draw is repeated, at most 100 times, until every
+    parameter dimension, result dimension and statement extent is at least 1. A function with no valid draw
+    contributes no case.
+  - Each input element is drawn uniformly from [−1, 1] and rounded to f32.
+- **Source of the cases.** They come from the baseline port's program. Passes do not change signatures, so both
+  sides accept the same cases.
+- **Evidence.** `describeCase` returns `{fn, n, shapes}`: the function name, the case index and the shape
+  values, all finite integers and strings. The disagreement reason is a string. Typed-array data never reaches
+  the evidence. This matters because `AnalysisManager` freezes the evidence with `immutable`, which throws on
+  typed arrays and on non-finite numbers, and the error would replace the real reason (review item 3).
+
+**What is guaranteed, and what is not.** No case domain can guarantee that an *arbitrary* reassociation changes
+bits. `sum(j) 1`, for example, gives the same result in every order. So the guarantee is this: the wide case is
+built to make a bit change likely, and the verdict is deterministic. A test pins the exact relation's rejection
+of `split-sum` on each named corpus program (section 10). If a program change ever made that verdict flip, the
+test would fail. The verdict cannot pass by chance.
 
 ### 6.2 Observation
 
@@ -219,11 +250,6 @@ observed, because `inline` removes them.
    element hide errors in small ones. The mixed scale is absolute near zero and relative above 1.
 4. **The inconclusive rule** covers ill-conditioned cases that the a-priori argument does not, such as a
    layernorm row with near-zero variance. Those cases are never counted as agreement.
-
-During implementation I will measure, over the corpus cases, the largest scaled error of each origin program,
-the largest error of the honest `split-sum` output, and the smallest failing error of `split-sum-wrong`. I will
-record all three in the diary. If the honest margin is under 10×, I will reopen this choice. I will not quietly
-retune τ.
 
 **Alternatives.**
 - The simplest relation would be a single global relative tolerance against the f32 origin. It is rejected
@@ -355,8 +381,8 @@ The other three corpus programs:
 - **Simplest alternative.** Give the Tix adapter a `rebuild` that throws. It is rejected because it advertises
   a capability, `Rewritable`, that the adapter does not have, and every future native-result domain would
   repeat the workaround.
-- **Test.** Add a test in `tests/framework/ext-e3-e6.test.mjs`: a native-result pass on a non-rewritable
-  adapter is applied and its contract checked. This is a new test case. Existing tests are not modified.
+- **Test.** A new file, `tests/framework/pass-native-sync.test.mjs`, applies a native-result pass on a
+  non-rewritable adapter and checks its contract. Existing test files stay untouched (review item 2).
 
 ### F2. `applyPassSync`, a synchronous checked application
 
@@ -370,7 +396,9 @@ The other three corpus programs:
   - Factor out of `applyPass` the steps that follow a native result: build the artifact, diff, make the
     correspondence, enforce `writes`. They become one internal function that both entry points call.
   - Add
-    `applyPassSync(pass, before, {contract?, contractInputs?, outputId?, store?, params?}): PassResult<S>`.
+    `applyPassSync(pass, before, {contract?, contractInputs?, outputId?, params?}): PassResult<S>`.
+  - It takes no `store` (review). With a native result, `openIR(after, adapter, store)` throws
+    `ir.unpublished`, because the store already holds a head for that artifact id.
   - Its domain:
     - `pass.run` returns a `NativeResult` synchronously.
     - The pass has no `needs` and no `preserves`.

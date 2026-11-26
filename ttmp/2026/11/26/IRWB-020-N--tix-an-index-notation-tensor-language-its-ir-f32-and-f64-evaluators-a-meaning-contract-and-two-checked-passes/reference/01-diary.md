@@ -101,3 +101,36 @@ reasons are the result that matters.
 ### Technical details
 - Node v24.18.0. The probe's adapter has `relationKinds: {contains: 'containment'}`. The allowed relation
   categories are `containment, dependency, binding, adjacency, provenance, control` (`src/framework/ir/adapters.ts:13`).
+
+## Step 2: Revise the design after review
+
+I applied the reviewer's three must-change items, the one cut, and the F2 narrowing. I did not disagree with
+any item. On item 1 I disagree in part, and I kept the reason in the design: no case domain can guarantee
+that an arbitrary reassociation changes bits (for example, `sum(j) 1`). The revision therefore adds a
+deterministic case built to change bits under reassociation, and a test pins the verdict for the corpus.
+
+### Prompt Context
+**User prompt (verbatim):** The coordinator's turn-2 message, which is the review plus "revise it, then
+implement stage 1". It is in this session and summarised here, not copied.
+**Assistant interpretation:** Revise the design document, record the revision, commit, then implement.
+**Inferred user intent:** A design that can be built without re-tuning during implementation, and that stays
+inside the test-edit scope.
+**Commit (code):** see the following commit, "IRWB-020-N: design revision 2 after review".
+
+### What I did
+- §6.1:
+  - Added case 0, the wide case: shapes at 8, values `±2⁻ᵏ` with `k ∈ [0,24]`.
+  - Added a JSON-safe `describeCase` (`{fn, n, shapes}`) and string reasons.
+  - Added a paragraph on what is guaranteed and what is not.
+- §6.4: removed the measurement plan.
+- §9 F1: the test moves to a new file, `tests/framework/pass-native-sync.test.mjs`.
+- §9 F2: dropped `store?`, with the `ir.unpublished` reason.
+- Added a revision table at the top of the document.
+
+### Why
+- Item 3: a typed array in the evidence would make `immutable` throw inside the manager, and that error would
+  replace the real rejection reason.
+
+### What warrants a second pair of eyes
+- Whether the wide case really changes bits on every corpus program with a single-index sum. The tests decide
+  it.
