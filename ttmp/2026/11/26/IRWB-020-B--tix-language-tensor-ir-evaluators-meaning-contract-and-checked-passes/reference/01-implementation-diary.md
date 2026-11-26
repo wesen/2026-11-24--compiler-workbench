@@ -126,3 +126,7 @@ On the same Node version, fold with `(acc,x) => Math.fround(acc+x)`, initial 0, 
 ### Review and follow-up
 
 Start with the design's framework ledger, then review the scope of the proposed synchronous path, symbolic shape checks and the contract for inline after split-sum. Following review, implement and run the framework, tensor and affected Typed tests listed in the design. This checkpoint qualifies only the probes and documents.
+
+## Step 2. Incorporate the review
+
+Accepted all four cuts. Direct input axes bind symbols, and compile-time checks use source positions. Inline checks its immediate input on origin-derived cases. A split checks the original in f64. An unchanged pass skips verification. The native entry takes an existing Pass and a two-artifact gate. The tensor caller owns the origin. Review target is the ledger and composition paragraph in the revised design.
