@@ -1,0 +1,5 @@
+{"program":"softmax","stage2Ms":0.7936,"fusedDoubleExpMs":0.3525,"fusedFastExpMs":0.1712,"speedupVsStage2":4.63,"wordsDifferentFromStage2":{"fusedDoubleExp":0,"fusedFastExp":0},"fusedFastGBps":196.0}
+{"program":"layernorm","stage2Ms":0.4744,"fusedDoubleExpMs":0.1641,"fusedFastExpMs":0.1641,"speedupVsStage2":2.89,"wordsDifferentFromStage2":{"fusedDoubleExp":0,"fusedFastExp":0},"fusedFastGBps":204.4}
+{"program":"attention","stage2Ms":1.0454,"fusedDoubleExpMs":0.7771,"fusedFastExpMs":0.7213,"speedupVsStage2":1.45,"wordsDifferentFromStage2":{"fusedDoubleExp":0,"fusedFastExp":0},"fusedFastGBps":1.5}
+{"program":"attention-phases","scoresOnlyMs":0.4755,"throughSoftmaxMs":0.5493,"allMs":0.7213}
+{"program":"attention-3-kernels","stage2Ms":1.0454,"fusedDoubleExpMs":0.1877,"fusedFastExpMs":0.1405,"speedupVsStage2":7.44,"wordsDifferentFromStage2":{"fusedDoubleExp":0,"fusedFastExp":0},"fusedFastGBps":67.2}

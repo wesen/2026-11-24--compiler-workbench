@@ -10,32 +10,234 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: ttmp/2026/11/26/IRWB-023-C--best-in-class-tix-exact-meaning-performance-research/scripts/01-exact-gemm/main.cu
+      Note: Exact tiled GEMM, cuBLAS via dlopen, batch invariance and sample-shape bugs
+    - Path: ttmp/2026/11/26/IRWB-023-C--best-in-class-tix-exact-meaning-performance-research/scripts/02-exact-exp/main.cu
+      Note: Fast exact exp and its exhaustive 2^32 check
+    - Path: ttmp/2026/11/26/IRWB-023-C--best-in-class-tix-exact-meaning-performance-research/scripts/03-fused-exact.mjs
+      Note: Fused row kernels checked against the unmodified Stage 2 translation units
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-26T18:30:23.896577725-05:00
-WhatFor: ""
-WhenToUse: ""
+Summary: Chronological record of the IRWB-023-C research round, including experiments that failed.
+LastUpdated: 2026-11-26T18:50:00-05:00
+WhatFor: Reproducing and reviewing the evidence behind the IRWB-023-C design
+WhenToUse: Read before re-running an experiment or extending a proposal
 ---
 
 # Research diary
 
-## Goal
+## Step 1: Orientation, ticket and the working thesis
 
-<!-- What is the purpose of this reference document? -->
+I read the Stage 1 (IRWB-020-B) and Stage 2 (IRWB-022-I) designs and final reports, then the Tix code in `src/tensor/` (model, evaluator, passes, contract, CUDA emitter, CUDA contract and runtime). I created ticket IRWB-023-C with docmgr, a design document and this diary. The outcome of the reading is a working thesis: Tix's distinguishing asset is that its f32 meaning fixes every rounding site and every fold order, so "best in class" should mean *the fastest code that is bit-identical to a portable specification*, not the fastest code full stop.
 
-## Context
+### Prompt Context
+**User prompt (verbatim):** "You are a research agent in a comparison of agent configurations. Your working directory is the git worktree /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r2-op-irwb-023-c (branch r2-op/irwb-023-c). Run every command there, using absolute paths, and commit on that branch only. Your complete brief is the file /tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/claude-briefs/r2-IRWB-023-C.md. Read it now and follow it exactly, including its standing instructions: work only from your worktree, the web and the GPU machine; do not read other worktrees, other branches, or the parent repository's working tree; do not read anything else in the scratchpad directory. Use your docmgr and diary skills for the ticket and the diary. Work through the whole brief before you stop: research, experiments, the design document, the diary, and the commits. Your final message is the one the brief specifies."
+**Assistant interpretation:** A research round (no product-code changes): define best in class for Tix, propose ranked compiler work, and back it with literature and GB10 experiments, in a docmgr ticket with a design document, a diary and `IRWB-023-C:` commits.
+**Inferred user intent:** Find ideas that only make sense because of Tix's exact f32 meaning, index notation and checked passes, and test them, including tests that could refute them.
+**Commit (code):** 2a32592 — "IRWB-023-C: create ticket and record first GB10 experiments (exact GEMM, exact exp)"
 
-<!-- Provide background context needed to use this reference -->
+### What I did
+- Read both tickets' design docs and reports, then `src/tensor/{model,evaluate,passes,contract,cuda-source,cuda-contract,cuda-runtime,index}.ts` and the six corpus programs.
+- `docmgr ticket create-ticket --ticket IRWB-023-C ...`, `docmgr doc add` for the design doc and this diary.
+- Probes: `npm run build` (exit 0) and a device-properties program through `tools/cuda-remote.mjs` (`scripts/00-device`).
 
-## Quick Reference
+### Why
+- The meaning (`evaluate.ts`) rounds at every operator and folds `sum` in lexicographic binder order starting at +0. Every Stage 2 kernel reproduces that per output element. That fact decides which optimizations are free (anything that leaves each element's operation sequence alone) and which are meaning changes.
 
-<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
+### What worked
+- Device probe: `NVIDIA GB10`, sm 12.1, 48 SMs, 2.418 GHz, 24 MB L2, 99 KB opt-in shared memory per block.
 
-## Usage Examples
+### What didn't work
+- No failures in this step.
 
-<!-- Show how to use this reference in practice -->
+### What I learned
+- The Stage 2 report already recommends switching the lowering relation from the f64 tolerance to f32 word equality. My experiments assume that relation.
+- The sample recipe (`contract.ts` `cases`) caps every tensor at 4,096 elements and uses extents 0, 1, 3, 4, 7 and a 3/5/7 mix. No case reaches 8 along a reduced axis.
 
-## Related
+### What was tricky to build
+- N/A (reading only).
 
-<!-- Link to related documents or resources -->
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- Start with `src/tensor/evaluate.ts` (the meaning) and `src/tensor/cuda-source.ts` (the per-element loop shape every later experiment is compared to).
+
+### Technical details
+- Device JSON: `{"name":"NVIDIA GB10","sm":"12.1","sms":48,"clockKHz":2418000,"memClockKHz":8533000,"busWidth":256,"smemPerBlockOptin":101376,"regsPerSM":65536,"l2":25165824}`.
+
+## Step 2: Experiment 01, how fast an exact GEMM can be, and whether cuBLAS is batch invariant
+
+I wrote `scripts/01-exact-gemm/main.cu`, which has a naive kernel shaped like Stage 2's output (the oracle), a register-blocked tiled kernel that keeps `__fmul_rn`/`__fadd_rn` and strictly increasing k per output, the same kernel with `fmaf`, a split-K kernel whose chunk size (128) depends only on K, and cuBLAS SGEMM loaded with `dlopen`, since the runner links no libraries. The tiled exact kernels were bit-identical to the naive kernel at every size up to 4096³. cuBLAS differed from the Tix meaning on 93% of words, and it is not batch invariant. Row 0 computed as a 1×N problem differs from row 0 of the M×N problem in 471 of 512 words at 512³.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Measure the price of keeping the meaning exact for the dominant workload.
+**Inferred user intent:** Evidence for or against "exact and fast" as a definition of best in class.
+**Commit (code):** 2a32592 (scripts and `results/01-exact-gemm-perf.json`)
+
+### What I did
+- `node tools/cuda-remote.mjs <ticket>/scripts/01-exact-gemm -- perf 256 512` (untimed, correctness first), then added cuBLAS through `dlopen("libcublas.so.13")`, then `--timed -- perf 512 1024 2048 4096`.
+- Timing: CUDA events, one warmup, median of 21 (≤1024), 7 (2048) or 3 (4096) runs.
+
+### Why
+- Tiling the free indices i, j changes *which thread* computes an element and *where* operands are staged. It does not change the element's fold order. If that argument is right, the tiled kernel must equal the naive one word for word, at full size, on random data.
+
+### What worked
+- `wordsDifferentFromNaive` was 0 for both exact tile shapes at all four sizes (262,144 to 16,777,216 outputs).
+- Timed results (ms; TFLOP/s in parentheses):
+
+| size | naive | exact 64-tile | exact 128-tile | fma 64 | exact split-K(128) | cuBLAS |
+|---|---|---|---|---|---|---|
+| 512³ | 0.250 (1.07) | 0.0617 (4.35) | 0.113 (2.38) | 0.0513 (5.23) | 0.0546 (4.92) | 0.0350 (7.67) |
+| 1024³ | 2.047 (1.05) | 0.310 (6.94) | 0.347 (6.18) | 0.244 (8.80) | 0.456 (4.71) | 0.138 (15.61) |
+| 2048³ | 17.02 (1.01) | 2.213 (7.76) | 2.038 (8.43) | 1.694 (10.14) | 3.884 (4.42) | 0.992 (17.31) |
+| 4096³ | 271.0 (0.51) | 18.55 (7.41) | 15.27 (9.00) | 20.57 (6.68) | 29.64 (4.64) | 7.26 (18.93) |
+
+- Split-K equals its own tree oracle (`naive_chunk`, one thread per output folding 128-element chunks in order) in 0 words at every size and is batch invariant (0 row-0 differences), while differing from the sequential meaning on 93% of words, as a reassociation must.
+- cuBLAS row-0 batch-invariance differences: 471/512, 924/1024, 1928/2048, 4014/4096 words.
+
+### What didn't work
+- My kernels are not cuBLAS-quality: the fma variant reaches 5.2–10.1 TFLOP/s against cuBLAS's 7.7–18.9, so the exact/cuBLAS ratio mixes the semantic price with an engineering gap. At 4096³ the fma variant was even slower than the exact one (20.6 vs 15.3 ms with 3 runs), which I attribute to code generation and noise rather than semantics. Step 3 separates the two with an instruction-throughput probe.
+- A first ulp metric (ordered-integer distance) reported meaningless six-digit "ulps" for outputs near zero; I replaced it with `maxRelDiffFromNaive` scaled by max(1,|r|).
+
+### What I learned
+- At 4096³ cuBLAS and my sequential-k fma kernel differ from the meaning in exactly the same number of words (15,283,973) and have the same max relative difference (3.59e-5). This is suggestive but unproven: I did not compare cuBLAS to the fma kernel directly.
+- The 512³ problem has too few 64×64 tiles (64) for 48 SMs. Split-K would be the vendor answer, and it changes the meaning. A K-only chunk tree keeps batch invariance and is exactly reproducible, so it is a meaning *choice*, not a loss of determinism.
+
+### What was tricky to build
+- Tile padding. Zero-filling M and N padding is harmless because padded outputs are never stored. Zero-filling the K tail would fold extra `RN(0*b)` terms. Under the meaning that is still exact *if* the partner is finite and the accumulator can never be −0. A +0-initialized RN sum can only become −0 if both operands are −0, so it never is. Intermediate tensors can hold ±inf, however, and 0×inf is NaN. The kernel therefore uses a shorter K-tail loop instead of padding.
+
+### What warrants a second pair of eyes
+- The `dlopen` cuBLAS call uses the column-major trick (C^T = B^T A^T). It is correct for the shapes measured because cuBLAS results agree with the meaning to 3.6e-5 relative.
+
+### What should be done in the future
+- Compare cuBLAS to the sequential-fma kernel directly at each size (done in Step 6).
+
+### Code review instructions
+- `scripts/01-exact-gemm/main.cu`: `tiled<...>` (exact path lines with `__fadd_rn(acc, __fmul_rn(a, b))`), `perf()`, `results/01-exact-gemm-perf.json`.
+
+### Technical details
+- Tile configs: `<128,128,8,8,8>` and `<64,64,8,4,4>`, 256 threads, `As[BK][BM]`, `Bs[BK][BN]`.
+
+## Step 3: Experiment 02, a fast exp that is proven equal to the meaning on all 2^32 inputs
+
+Stage 2 implements `exp` as `__double2float_rn(exp((double)x))`. The GB10 runs FP64 at 0.386 TFLOP/s, against 26.98 TFLOP/s for FP32 FFMA (a 70:1 ratio), so this exact exp runs at 92 GB/s in a streaming kernel, well short of the 244 GB/s the memory system delivers. I wrote a float-float exp in f32 arithmetic only: a 64-entry table, Cody–Waite reduction with an exact FMA step and a degree-5 polynomial. A Ziv-style rounding test returns a result only when the rounding is determined, and the lane otherwise falls back to the double routine. All 2^32 inputs were checked on the GPU in 0.59 s. There were 0 mismatches, and the rounding test was undecided on 200,354 in-range inputs. Streaming throughput rose to 218 GB/s with 0 words changed.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Find an optimization whose correctness can be *proved* rather than sampled, using the GPU as the prover.
+**Inferred user intent:** Ideas exploiting "an exactly specified f32 meaning" plus "a GPU for experiments".
+**Commit (code):** 2a32592 and the commit after Step 4 (bound sweep results)
+
+### What I did
+- `scripts/02-exact-exp/main.cu`: modes `peak`, `exhaust [b]`, `stream`.
+- Computed constants with Node: `Math.fround(Math.LN2/64) = 0.0108304247260093688965`, low part `-2.97602221e-11`.
+- Runs (all `--timed`): `exhaust`, `peak`, `stream`, then `exhaust b` for b = 38, 40, 42, 44, 52, 64 to test the bound's role.
+
+### Why
+- Unary f32 functions are the one place where a meaning check can be exhaustive: 2^32 inputs is a few seconds of GPU time. Equality on every input is a proof for that compiled binary, not a sample.
+
+### What worked
+- `exhaust` (bound 2^-36): `{"mismatches":0,"fallbacks":2057572002,"inRangeRoundingTestFallbacks":200354,"ms":592.0}`. Most fallbacks are the out-of-range words (NaN, |x| beyond the normal-result range). Within range the test is undecided about once in 11,000 inputs.
+- `peak`: FFMA 26.98 TFLOP/s, FMUL+FADD 14.39 (53%), DFMA 0.386.
+- `stream` (2^26 softmax-like arguments in [-12, 0]): double exp 5.83 ms (92 GB/s); fast exact 2.47 ms (218 GB/s, 0 words different); `expf` 2.17 ms (20,444,397 words different); `__expf` 2.15 ms (50,286,309 different).
+
+### What didn't work
+- My first low constant (`-2.98161650e-11`) was wrong. I caught it by computing it in Node before the first run. With the wrong constant, the exhaustive check would have reported the error as fallbacks or mismatches.
+- Bound sweep (the refutation test): 2^-38 is still sound (0 mismatches, 49,964 fallbacks), while 2^-40 gives 66 mismatches, 2^-42 gives 705, 2^-44 gives 861, and 2^-52 and 2^-64 give 882. The first failing word at 2^-52 is `0x33800000` (2^-24), where exp lies just above the midpoint between 1 and 1+2^-23. My a-priori error estimate (≈2^-38) was right within a factor of four. The default 2^-36 has a 4× margin.
+
+### What I learned
+- The exactness of a fast path is a property of the compiled binary and its error bound, and exhaustive enumeration separates a sound bound from an unsound one without an error proof. The 882 failures show that a fast path without the test is not exact, even though it is more accurate than `expf`.
+
+### What was tricky to build
+- `r1 = fma(-n, L_HI, x)` must be exact. `n·L_HI` is a multiple of 2^-30, and for |x| ≥ 2^-8 (where n can be nonzero) x is a multiple of 2^-31. The difference is below 2^-7, so it fits in 24 bits. For |x| < 2^-8, n = 0.
+- The rounding test uses monotonicity of RN: if RN(lower) == RN(upper) for an interval that contains the true value, the result is determined. Computing `ph + (pl ± E)` adds one rounding of `pl ± E`, which is covered by doubling E.
+
+### What warrants a second pair of eyes
+- The proof is for this binary on this GPU with `nvcc -O3 -arch=sm_121` (no fast-math). A different compiler version must re-run `exhaust` (0.6 s).
+
+### What should be done in the future
+- The same treatment for `tanh` (GELU) and `log`.
+
+### Code review instructions
+- `fast_exp_try` in `scripts/02-exact-exp/main.cu`; results in `scripts/results/02-exact-exp-*.json`.
+
+### Technical details
+- Reference: `__double2float_rn(exp((double)x))`, NaN compared as a class, everything else by word.
+
+## Step 4: Experiment 01 shapes, why the current sample recipe cannot check a tiled kernel
+
+I added two deliberate bugs to the tiled kernel. `pair` adds products in pairs inside full K tiles only, a common ILP rewrite that reassociates. `rowstride` uses BN instead of BM as the block-row stride, a copy-paste bug that matters only when BM ≠ BN and M > BM. I ran both at the Stage 1/2 recipe shapes and at tile-aware shapes. At the recipe shapes both bugs were invisible to the exact relation and to the tolerance. At tile-aware shapes the exact relation caught `pair` whenever K ≥ 8, and the tolerance never caught it at any shape.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Test whether the current checking would protect an optimizing backend.
+**Inferred user intent:** Claims tested by experiments that could refute them.
+**Commit (code):** commit after this step
+
+### What I did
+- `node tools/cuda-remote.mjs <ticket>/scripts/01-exact-gemm -- shapes` with tile `<64,128,8,4,8>`; outputs NaN-filled before each variant so unwritten rows cannot look correct.
+
+### What worked
+- Recipe shapes (1,3,4,7, 5/3/7 mix, zero extents): `pair` 0/0 and `rowstride` 0/0 (exact mismatches / tolerance failures).
+- `cap-64` (64³, the largest square case the 4,096-element cap admits): `pair` 3,347 exact mismatches, 0 tolerance failures; `rowstride` invisible (M = BM).
+- Tile-aware (65,9,129), (63,8,127), (64,16,128), (129,17,257): `pair` caught by exact every time (3,395–18,761 words), tolerance never (worst budget fraction 0.15). `rowstride` caught by both when M > 64 (129 and 16,448 failures).
+
+### What didn't work
+- My first `rowstride` run would have compared against a buffer still holding the previous variant's correct output. The NaN fill fixed that before any result was recorded.
+
+### What I learned
+- A sample recipe has to be derived from the schedule: at least one extent at T−1, T and T+1 per tiled axis, and more than T along a reduced axis. Under the 4,096-element cap a 2-D tensor cannot have two extents above 64.
+- Tolerance cannot police reassociation: the pair bug is a legal-looking meaning change within 15% of the budget.
+
+### What should be done in the future
+- Full-size exact checks on the GPU against the naive kernel (Step 2 already does this at 512–4096).
+
+### Code review instructions
+- `shape_case()` and `main()` in `scripts/01-exact-gemm/main.cu`; `scripts/results/01-exact-gemm-shapes.json`.
+
+## Step 5: Experiment 03, fused exact kernels against the unmodified Stage 2 code
+
+A Node generator (`scripts/03-fused-exact.mjs`) builds one translation unit from three sources. The first is the unmodified Stage 2 output of `cudaSource()` for softmax, layernorm and attention, each in its own namespace, with its `run_case` driven through `fmemopen`/`open_memstream`. The second is the fast exp, copied verbatim from experiment 02. The third is my fused kernels. All fused kernels were bit-identical to Stage 2: softmax 4.63× faster, layernorm 2.89× and attention 7.44×.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Check that fusion plus exactly associative max trees plus the exact exp keep the meaning at full size, and measure the gain.
+**Inferred user intent:** Show what an exact-meaning optimizer could reach on the corpus.
+**Commit (code):** commit after this step
+
+### What I did
+- Fused row kernels: one block per row. Max is a tree of the Stage 2 `minmax` joins, `exp` is double or fast, `sum` is folded in order by one thread from shared memory, and the pointwise epilogue is written once.
+- Attention: first a single fused kernel (one block per query row), then four rows per block with staged tiles, then three kernels (transpose of k, the experiment-01 exact GEMM for scores, a row kernel, the exact GEMM for weight × v).
+- Timed run: `node <ticket>/scripts/03-fused-exact.mjs --timed`.
+
+### What worked (timed, `results/03-fused-exact.jsonl`)
+
+| program | Stage 2 (run_case, median of 3) | fused, double exp | fused, fast exp | words different |
+|---|---|---|---|---|
+| softmax 4096×1024 | 0.794 ms | 0.353 ms | 0.171 ms (196 GB/s) | 0 / 0 |
+| layernorm 4096×1024 | 0.474 ms | 0.164 ms | — | 0 |
+| attention, one fused kernel | 1.045 ms | 0.777 ms | 0.721 ms | 0 / 0 |
+| attention, three kernels | 1.045 ms | 0.188 ms | 0.141 ms | 0 / 0 |
+
+### What didn't work
+- The single fused attention kernel was *slower* than Stage 2 at first (1.69 ms). Removing a runtime 64-bit division from the tile loads gave 1.49 ms, four rows per block with staged K and V tiles gave 0.96 ms, and unrolling gave 0.72 ms. A phase probe showed the score phase alone took 0.475 ms (0.28 TFLOP/s). A thread-per-score loop is latency-bound, and fusing it with the softmax did not repair that. Reusing the register-blocked GEMM for the score and value contractions, with only the 4 MB score matrix in global memory, was the version that worked.
+- The first three-kernel version differed in all 65,536 output words: the transpose kernel indexed with `t % R` instead of `t % C`. Word comparison flagged it at once. The fix restored 0 differences.
+
+### What I learned
+- In softmax, half of the gain comes from the exp. The fused kernel with the double exp is limited to 0.353 ms by FP64, and the fast exp halves that.
+- The sequential row sum by one thread is not the bottleneck at these sizes: the softmax fused kernel reaches 196 GB/s (80% of the streaming kernel).
+- Fusion granularity matters more than fusion itself: the profitable attention is "GEMM, row kernel, GEMM", not one kernel.
+
+### What was tricky to build
+- Reusing Stage 2 code verbatim. Each translation unit defines the same helper names, so each is wrapped in a namespace with its `#include` lines hoisted, and `int main` is cut off. `run_case` reads and writes `FILE*`, so the harness feeds it in-memory streams.
+
+### What warrants a second pair of eyes
+- The exactness argument for the max tree: `minmax` returns canonical NaN if either operand is NaN, the bitwise AND of equal-comparing words for max (so +0 wins over −0) and otherwise the larger. That is a join on a semilattice, so any bracketing gives the same word. The experiments confirm it on these inputs only.
+
+### Code review instructions
+- `scripts/03-fused/fused.cuh` (kernels and harness), `scripts/03-fused-exact.mjs` (generator), `scripts/results/03-fused-exact.jsonl`.
