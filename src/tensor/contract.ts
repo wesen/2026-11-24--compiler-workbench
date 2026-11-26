@@ -152,6 +152,8 @@ type Outcome =
       readonly bound?: Float64Array;
     };
 
+/** A number as text, with -0 told apart from 0 (the exact relation does). */
+const show = (v: number) => (Object.is(v, -0) ? '-0' : String(v));
 type Ports = { origin: typeof TixIRType; reference: typeof TixIRType; candidate: typeof TixIRType };
 const finite = (a: ArrayLike<number>) => {
   for (let i = 0; i < a.length; i++) if (!Number.isFinite(a[i])) return false;
@@ -213,15 +215,15 @@ function makeSpec(relation: Relation, count: number, seed: number): Differential
           c = got.data[i];
         if (relation === 'exact') {
           if (!Object.is(r, c))
-            return { ok: false, reason: `${at}: element ${i} is ${c}, the reference has ${r}` };
+            return { ok: false, reason: `${at}: element ${i} is ${show(c)}, the reference has ${show(r)}` };
         } else if (!got.bound) {
           // rule 2: the candidate has an element that is not finite where the reference is finite
           if (!Number.isFinite(c))
-            return { ok: false, reason: `${at}: element ${i} is ${c}, the reference has ${r}` };
+            return { ok: false, reason: `${at}: element ${i} is ${show(c)}, the reference has ${show(r)}` };
         } else if (!(Math.abs(c - r) <= TOLERANCE_FACTOR * got.bound![i])) {
           return {
             ok: false,
-            reason: `${at}: element ${i} is ${c}, the reference has ${r}: off by ${Math.abs(c - r)}, allowed ${TOLERANCE_FACTOR * got.bound![i]}`,
+            reason: `${at}: element ${i} is ${show(c)}, the reference has ${show(r)}: off by ${Math.abs(c - r)}, allowed ${TOLERANCE_FACTOR * got.bound![i]}`,
           };
         }
       }

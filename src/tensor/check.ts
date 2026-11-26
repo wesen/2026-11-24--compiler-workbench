@@ -33,6 +33,9 @@ interface Binder {
   extent?: Aff;
 }
 
+/** Where an expression starts (a binary node's own position is its operator). */
+const startOf = (e: AExpr): Pos => (e.k === 'bin' ? startOf(e.a) : e.pos);
+
 /** An affine form over the names `allowed` accepts (it throws for the others). */
 function toAff(e: AExpr, allowed: (n: Named) => void): Aff {
   switch (e.k) {
@@ -161,7 +164,7 @@ function checkFn(f: AFn): Fn {
               if (!b.extent) b.extent = dims[k];
               else if (!affEqual(b.extent, dims[k]))
                 throw new TixError(
-                  sub.pos,
+                  startOf(sub),
                   `inconsistent shapes: index '${plain}' ranges over ${affText(b.extent)} but dim ${k} of '${e.name}' is ${affText(dims[k])}`,
                 );
               return a;
@@ -179,7 +182,7 @@ function checkFn(f: AFn): Fn {
               }
               if (!nonNegative(lo) || !nonNegative(affAdd(affAdd(dims[k], aff(1), -1), hi, -1)))
                 throw new TixError(
-                  sub.pos,
+                  startOf(sub),
                   `subscript may be out of bounds: it ranges over ${affText(lo)} .. ${affText(hi)} in dim ${k} of '${e.name}', which is ${affText(dims[k])}`,
                 );
             });
