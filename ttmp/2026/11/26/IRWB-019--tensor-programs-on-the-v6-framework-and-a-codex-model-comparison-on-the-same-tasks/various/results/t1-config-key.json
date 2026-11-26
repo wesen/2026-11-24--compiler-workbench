@@ -54,5 +54,33 @@
   "effort": "high",
   "round": "t1-pi-ah",
   "harness": "pi"
+ },
+ "IRWB-020-L": {
+  "config": "sx",
+  "model": "gpt-6.2-sol",
+  "effort": "xhigh",
+  "round": "t1-sx",
+  "harness": "codex"
+ },
+ "IRWB-020-I": {
+  "config": "ax",
+  "model": "gpt-6.2-astra",
+  "effort": "xhigh",
+  "round": "t1-ax",
+  "harness": "codex"
+ },
+ "IRWB-020-K": {
+  "config": "pi-sx",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "xhigh",
+  "round": "t1-pi-sx",
+  "harness": "pi"
+ },
+ "IRWB-020-J": {
+  "config": "pi-ax",
+  "model": "openai-codex/gpt-6.2-astra",
+  "effort": "xhigh",
+  "round": "t1-pi-ax",
+  "harness": "pi"
  }
 }
