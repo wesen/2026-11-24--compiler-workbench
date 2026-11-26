@@ -131,3 +131,7 @@ Start at the [framework change ledger](../design-doc/01-stage-1-design.md#framew
 ## Step 2: Review boundary
 
 Accepted every review item. The contract now enumerates concrete bindings in order, samples positive parameters (eps:f32[1]), and uses only one relation per step. Plain input axes bind symbols. The sync gate takes an existing Pass, not a second pass spec. The design diff is the review checklist. Next implement, build and test using globs.
+
+## Step 3: Checked indexed representation and execution
+
+Implemented lexical binder IDs, affine composition and bounds checks on each revision, a read-only v6 projection, and precision-parametric row-major evaluation. `npm run build` passed after installing locked dependencies. No source translation via Typed. Next wire the sampled gate and run independent oracles.
