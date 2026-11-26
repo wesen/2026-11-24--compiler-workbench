@@ -1,0 +1,37 @@
+✔ matmul agrees with the numerical oracle before and after optimization (569.712361ms)
+✔ softmax agrees with the numerical oracle before and after optimization (279.253332ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (289.445677ms)
+✔ attention agrees with the numerical oracle before and after optimization (1245.026426ms)
+✔ mlp agrees with the numerical oracle before and after optimization (345.47845ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (9.904298ms)
+✔ matmul on the GB10 agrees with the origin before and after optimization (19186.521724ms)
+✔ softmax on the GB10 agrees with the origin before and after optimization (15494.665895ms)
+✔ layernorm on the GB10 agrees with the origin before and after optimization (18705.34089ms)
+✔ attention on the GB10 agrees with the origin before and after optimization (23433.50008ms)
+✔ mlp on the GB10 agrees with the origin before and after optimization (15892.048524ms)
+✔ conv2d on the GB10 agrees with the origin before and after optimization (11430.345125ms)
+✔ a changed split executes two folds; the gate replays a warm check and rejects dropped lanes (31137.344154ms)
+✔ overlapping identical checks both fetch complete evidence on cold and cached compiles (23238.311822ms)
+✔ return parameter, unused definition, zero-grid and empty folds (41356.305445ms)
+✔ scoped indices, affine loads, rounding and JS extrema (46852.472626ms)
+✔ source selects the executable revision and numbers binders independently of Tix names (362.315374ms)
+✔ wire records preserve offsets, signed zeros, shape and the chosen timing mode (34.291171ms)
+✔ no eligible origin case cannot authorize a lowering (486.073169ms)
+✔ every operation, input and literal rounds at the selected precision (368.700811ms)
+✔ lexicographic reductions, explicit grouping and nested binder scope (94.716372ms)
+✔ zero extents, empty reductions and shape values (19.592515ms)
+✔ affine shape normalization, annotations and multiple functions (9.638715ms)
+✔ invalid programs give source coordinates (17.205601ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (386.940844ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (277.573389ms)
+✔ passes compose across calls and preserve the source baseline (133.139719ms)
+✔ coverage required per function and screening is origin-only (156.073513ms)
+✔ exact comparison detects a changed zero sign (60.332382ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 249046.182675
