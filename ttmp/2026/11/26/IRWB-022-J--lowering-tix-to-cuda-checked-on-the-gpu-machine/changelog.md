@@ -1,0 +1,14 @@
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+
+## 2026-11-26
+
+Drafted the checked CUDA lowering and recorded the GB10 numeric and framework probes
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sm-irwb-022-j/ttmp/2026/11/26/IRWB-022-J--lowering-tix-to-cuda-checked-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md — Design and numeric contract
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sm-irwb-022-j/ttmp/2026/11/26/IRWB-022-J--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/01-diary.md — Design checkpoint and validation
