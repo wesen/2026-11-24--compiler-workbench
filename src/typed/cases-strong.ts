@@ -418,16 +418,26 @@ export function meaningKeptStrong(
         }
         return cases;
       },
-      run: (side, art, c): Diverged => {
+      run: (side, art, c, ports): Diverged => {
         const st = storeOf((art as Artifact<TypedBlocks>).value),
           r = evaluate(st, c.fn, c.args, c.memory, { limit });
         if (side === 'baseline') {
           originFinished.set(c, !r.limit);
           return r;
         }
-        // re-run only where the origin finished: elsewhere the case is no verdict whatever the candidate does
-        // (runDifferential runs a case's baseline before its subject)
-        if (!r.limit || !divergence || originFinished.get(c) !== true) return r;
+        // re-run only where the origin finished: elsewhere the case is no verdict whatever the candidate does.
+        // runDifferential runs a case's baseline before its subject, so this is usually known; where the baseline's
+        // outcome was replayed instead (a memo, a worker), the origin is run here
+        if (!r.limit || !divergence) return r;
+        let finished = originFinished.get(c);
+        if (finished === undefined) {
+          const origin = (ports as { origin?: Artifact<TypedBlocks> } | undefined)?.origin;
+          finished = origin
+            ? !evaluate(storeOf(origin.value), c.fn, c.args, c.memory, { limit }).limit
+            : false;
+          originFinished.set(c, finished);
+        }
+        if (!finished) return r;
         const again = evaluate(st, c.fn, c.args, c.memory, { limit: limit * divergence });
         // not inconclusive: if the origin finished, compare reports the divergence; if not, the case is skipped
         return again.limit ? { ...again, limit: false, diverged: true } : again;
