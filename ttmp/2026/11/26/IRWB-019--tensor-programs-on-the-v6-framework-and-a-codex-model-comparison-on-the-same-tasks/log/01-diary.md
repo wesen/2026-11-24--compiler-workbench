@@ -483,3 +483,27 @@ A judge (Claude subagent, 203K tokens) scored the twelve Sol designs (four cells
   - the results (`results/acceptance-t1*.json`, `crosscheck-t1.json`, `crosscheck-applicable.json`).
 - **All fourteen reports are written** (2,456–4,072 words, each with a Mermaid diagram), and no agent changed evaluated code. Each report states its own results, including failures. K, for example: "This is a false rejection of those rewrites if the goal is to preserve the program's behavior".
 - **Claude usage:** total Claude subagent tokens in IRWB-019, about 2.97M.
+
+## Step 19: stage 2 (CUDA lowering) launched on twelve cells
+
+- **Base:** branch `t2-base` at `1880fc4`. It is stage 1 as merged (B's branch, which sits on `19ad269`) plus `tools/cuda-remote.mjs` with the Tailscale default. It does not contain the IRWB-019 ticket, so the agents cannot see the keys, reviews, hidden material or results.
+- **Rules stage 1 left open (F16), probed on B and stated in the brief as the base implements them:**
+  - an index may share a tensor's name (`y[x] = x[x] * 2` gives 2, 4, 6) or a shape name's;
+  - a repeated reduction index nests and shadows (`sum(j) a[i, j] + sum(j) b[i, j]` gives 63 = (1 + 30) + (2 + 30));
+  - a zero extent makes `sum` 0 and `max` −∞;
+  - `max(N, C) - x[i, 0]` is a call on two shape values.
+- **The brief** (`prompts/t2/common.md`):
+  - lower each Tix function to CUDA C, one kernel per statement and one thread per output element, with each reduction a sequential loop in the f32 meaning's order;
+  - run it through the tool on the GB10;
+  - check the lowering with a contract whose candidate runs remotely. The agent decides the relation, exact or tolerance, and must establish it by probing (flags, the implementation of each operation and intrinsic);
+  - design batching and evidence reuse for an expensive asynchronous engine;
+  - measure kernel time at fixed sizes, given in the corpus's own shape names.
+  
+  The fixed API additions are `cudaSource`, `runTixCuda` (with `gpuMs` from CUDA events) and `checkLowering`.
+  
+  The question I expect to separate designs, and did not state: CUDA's `+ − * /` and `sqrt` are correctly rounded in IEEE mode, so with contraction off and the transcendentals in double, a one-thread-per-element backend can be bit-exact with the f32 meaning.
+- **Matrix:** the twelve Codex and Pi cells (Sol or Astra, medium, high or xhigh), policy v1, items IRWB-022-A…L (`results/t2-config-key.json`, seed 20261135).
+  - Codex runs with `sandbox_workspace_write.network_access=true`, so that its ssh stays inside the sandbox.
+  - No Claude cells in stage 2, to save usage (about 2.97M Claude subagent tokens so far).
+- `scripts/16-launch-t2-design.sh`; `08-status.mjs` now takes each round's base from `heads.json`.
+- **Bling before the launch:** load 0.06, 20 cores, 1.1 TB free.

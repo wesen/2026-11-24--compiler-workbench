@@ -23,7 +23,9 @@ for (const f of fs.readdirSync(path.join(T, 'various/results')).filter(f => f.en
     const logs = path.join(T, 'various/kit', c.round, 'logs');
     let state = c.harness === 'claude-code-subagent' ? 'agent' : 'running';
     try { const m = fs.readFileSync(path.join(logs, 'exits.txt'), 'utf8').match(new RegExp(`${item} exit (\\d+)`)); if (m) state = m[1] === '0' ? 'done' : `exit ${m[1]}`; } catch {}
-    const base = '19ad269';
+    // the round's base: heads.json records it for Codex and Pi rounds; stage 2 branches from t2-base
+    let base = task.startsWith('t2') ? '1880fc4' : '19ad269';
+    try { base = JSON.parse(fs.readFileSync(path.join(T, 'various/kit', c.round, 'heads.json'), 'utf8'))[item]?.base ?? base; } catch {}
     const commits = git(w, 'rev-list', '--count', `${base}..HEAD`) || '-';
     const changed = git(w, 'diff', '--numstat', base).split('\n').filter(Boolean).map(l => l.split('\t'));
     const add = re => changed.filter(([, , p]) => re.test(p)).reduce((s, [a]) => s + (Number(a) || 0), 0);
