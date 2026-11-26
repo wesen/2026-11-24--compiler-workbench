@@ -150,3 +150,17 @@ The GPU run used the tool's `nvcc -O3 -arch=sm_121` and Node 24.18.0. The sample
 ### Review and continuation
 
 Review the finite f64 budget and nonfinite rule, the exact revision of the candidate source used for checks, and the separation between a shared compiled binary and a run directory. The probe covered arithmetic and reduction grouping. GPU launcher behavior, runner changes, corpus cases and performance measurements remain for implementation after review.
+
+## Step 2. Incorporate design review
+
+The reviewer pointed out that the differential invariant already delegates a batch and reuses decided verdicts. I switched the design to that path, cut the redundant tensor memo and its resource and identity plumbing, and retained the tool’s existing timed-only GPU lock. I also verified the reviewer’s lazy-loading observation on the GB10.
+
+### Prompt context
+
+The review in this session asks for the design revision and commit, followed by implementation, focused verification, and the corpus measurements. It calls for the framework’s `decide`, `baselineKey` and `subjectKey`, for preloading kernels before public timing, and for keeping the index and tail mutants.
+
+### Evidence and decisions
+
+- An inline Node probe used `differential` and `AnalysisManager.checkInvariant` with three cases and two subject keys. Four checks generated cases once and delegated two batches of three. Both true and false verdicts replayed. The Node little-endian unsigned 64-bit read/write round trip also passed.
+- The CUDA launch timing probe ran through `tools/cuda-remote.mjs <probe-dir> --timed`. GB10 event intervals were 0.060768 ms for a cold launch, 0.003584 ms for its repeat, and 0.003360 ms for the first launch of a second kernel after `cudaFuncGetAttributes`. Generated code will preload each launched kernel before the event interval.
+- The revised design uses the differential memo's existing lifetime and accepts duplicate concurrent cold checks. The remote per-invocation directory and compile lock handle those concurrent requests.
