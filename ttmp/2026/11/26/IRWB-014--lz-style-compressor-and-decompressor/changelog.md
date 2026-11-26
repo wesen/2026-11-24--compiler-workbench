@@ -19,3 +19,7 @@ Verified exact token fixtures and complete decoded prefixes on the evaluator and
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/tests/typed/lz-roundtrip.test.mjs — Project-local reference oracle and measurements
+
+## 2026-11-26
+
+Wrapped the corpus files to the Workbench tile widths and updated the decoder focus to line 82. The format suite and focused LZ test pass.

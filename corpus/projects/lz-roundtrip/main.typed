@@ -13,7 +13,11 @@ function compress(input: buffer, packed: buffer, chainLimit: i32): i32 {
         let bestLen = 0;
         let bestDistance = 0;
         if (i + 3 <= n) {
-            const bucket = hash3(input.charCodeAt(i), input.charCodeAt(i + 1), input.charCodeAt(i + 2));
+            const bucket = hash3(
+                input.charCodeAt(i),
+                input.charCodeAt(i + 1),
+                input.charCodeAt(i + 2)
+            );
             let link = head[bucket];
             let visits = 0;
             while (link !== 0 && visits < chainLimit) {
@@ -48,7 +52,11 @@ function compress(input: buffer, packed: buffer, chainLimit: i32): i32 {
         // Insert every consumed position that begins a complete triple.
         for (let p = i; p < i + advance; p = p + 1) {
             if (p + 3 <= n) {
-                const bucket = hash3(input.charCodeAt(p), input.charCodeAt(p + 1), input.charCodeAt(p + 2));
+                const bucket = hash3(
+                    input.charCodeAt(p),
+                    input.charCodeAt(p + 1),
+                    input.charCodeAt(p + 2)
+                );
                 prev[p] = head[bucket];
                 head[bucket] = p + 1;
             }
@@ -80,7 +88,12 @@ function decompress(packed: buffer, packedLen: i32, output: buffer): i32 {
     return written;
 }
 
-function roundTrip(input: buffer, packed: buffer, output: buffer, chainLimit: i32): i32 {
+function roundTrip(
+    input: buffer,
+    packed: buffer,
+    output: buffer,
+    chainLimit: i32
+): i32 {
     const packedLen = compress(input, packed, chainLimit);
     return decompress(packed, packedLen, output);
 }
