@@ -11,3 +11,7 @@ Designed the f32 FFT and biquad corpus workload and verified the required Typed,
 ## 2026-11-26
 
 Added and registered the f32 DSP project with packed tables, both kernels, and a fresh comparison script.
+
+## 2026-11-26
+
+Verified the kernels against independent binary64 and exact compiler oracles, measured the checked images and FFT length binding, and recorded the results and reference CLI deviation in the diary.

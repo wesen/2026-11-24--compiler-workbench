@@ -20,6 +20,8 @@ const after = p.compile(options);
 return cases.map(([fn, args]) => {
   const baseline = before.run(fn, args);
   const optimized = after.run(fn, args);
-  if (baseline.trap || optimized.trap) throw new Error(fn + ': ' + (baseline.trap || optimized.trap));
+  if (baseline.trap || optimized.trap || baseline.fault || optimized.fault) {
+    throw new Error(fn + ': ' + (baseline.trap || optimized.trap || 'emulator fault'));
+  }
   return { fn, r0Instructions: baseline.steps, speedInstructions: optimized.steps };
 });
