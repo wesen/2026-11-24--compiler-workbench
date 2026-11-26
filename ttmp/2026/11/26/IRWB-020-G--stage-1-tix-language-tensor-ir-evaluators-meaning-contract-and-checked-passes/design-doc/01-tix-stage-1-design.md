@@ -62,22 +62,15 @@ names `inline` and `split-sum`. The contract checks a bounded subset of valid ca
   declared axis of its own. Reject missing extents, mismatching proposals, annotated/return shape mismatches,
   and statically invalid dimensions/subscripts in `compileTix`, at the relevant token. Different, unproven
   symbolic extents are not unified on the assumption that a caller will make them equal.
-- Shape variables come only from input types. Concrete shapes have nonnegative safe-integer dimensions
-  (including zero), consistent rank and row-major element count, and finite supplied numbers. Shape variables
-  are solved as safe integers. For affine input types, build the joint coefficient matrix once at compile time,
-  reject a signature that cannot uniquely determine all its shape names, and solve the exact equations on a
-  call. This supports `x: f32[N - 2]` and jointly determined names, rather than requiring every name on a
-  standalone axis. Binding standalone axes first would be simpler but leave valid affine-only signatures
-  unhandled. Use integer/rational arithmetic with `BigInt` internally (safe-integer coefficients in IR),
-  not floating-point rank or equality. Concrete disagreements between input shapes, nonintegral solutions,
-  and invalid instantiated dimensions require the caller's shapes and are checked at call entry, before loops.
-- For an affine load, compute the min/max over the enclosing rectangular index ranges from coefficient signs.
-  Check the two inequalities against the source extent; an empty enclosing loop makes the access vacuous.
-  Discharge bounds statically when normalization decides them (including constant bad subscripts into fixed
-  shapes); retain shape-dependent bounds as call-entry predicates. For NCHW stride-1 conv, `y + dy` reaches
-  `H - 1` with extents `H - KH + 1` and `KH`. This avoids runtime per-element bounds tests or an out-of-bounds
-  padding rule. Full symbolic inequality solving is unnecessary for the fixed core. Evaluation is for sizes
-  whose element counts and buffers fit the Node process; the contract uses a much smaller domain below.
+- Bind each shape name from an input axis that isolates it (`N`, `N - 2`, or `2 * N`, for example).
+  Mixed input axes are consistency checks; signatures with no isolating axis for a name are outside this
+  stage's supported source domain. Use safe integers, not a general equation solver. Valid calls supply
+  nonnegative concrete extents and matching finite row-major buffers. Compile-time checks diagnose source
+  errors; mismatches in actual input buffers necessarily belong to call validation.
+- Prove affine loads in bounds at compile time from their extrema on the enclosing rectangular ranges.
+  Normalize and use nonnegative inputs and nonempty loop extents; reject accesses the simple proof cannot
+  establish. A statically empty loop cannot load anything. For NCHW conv, `y + dy` reaches `H - 1` with
+  extents `H - KH + 1` and `KH`. Do not retain call-entry range predicates or implement a general solver.
 
 Keep the parsed source spans for diagnostics and rewrite provenance. No implicit broadcasting, reordering of
 scalar arithmetic, or function calls between Tix definitions. Explicit reuse of fewer indices, as in `m[i]` in
@@ -86,7 +79,12 @@ softmax, is how the source expresses broadcasting.
 ## Artifact and evaluators
 
 `TixProgram = Artifact<TensorModule>`; define `tensor.tix@1` with `defineIR` and a matching `defineAdapter`.
-`compileTix` uses `createIRArtifact`. The native JSON value has ordered functions, each with shape parameters and
+`compileTix` uses `createIRArtifact`. A domain-owned `WeakMap<TixProgram, TixProgram>` links optimized
+artifacts returned by this API to their compiled origin. Another `optimizeTix` call on the returned object
+recovers that same origin. Initial artifacts are their own origin. This avoids duplicating semantic payloads;
+the API works with its in-process artifacts, not detached serialized copies.
+
+The native JSON value has ordered functions, each with shape parameters and
 ordered tensor parameters/definitions, a result tensor ID, and a normalized signature. A definition has ordered
 output binders with extents, a scalar expression tree, and an inferred or declared shape. Expressions are
 literal text, shape value, affine tensor load, unary/binary operation, intrinsic, ordered reduction, or the
@@ -123,19 +121,19 @@ independent fixtures will check that logic and both arithmetic policies.
 
 | Pass | Rewrite and legality | Required relation |
 |---|---|---|
-| `inline` | A producer with no reductions, exactly one syntactic load across the function, and no return use. The load must give a full-axis bijection of plain, distinct consumer indices (which may include reduction binders); axis extents must match. Substitute the producer's index IDs with those of the consumer, clone with fresh node IDs, then remove the definition. Preserve the producer tree and rounding points. | Bit-identical f32 to the input revision on every case. |
+| `inline` | A producer with no reductions, exactly one syntactic load across the function, and no return use. Substitute producer index IDs with the corresponding affine subscripts, composing normalized forms. This includes `t[i+1]`, constants, repeated indices and permutations. Clone with fresh expression IDs, then remove the definition. Preserve the producer tree and rounding points. | Bit-identical f32 to the input revision on every case. |
 | `split-sum` | Replace each ordinary single-index `sum` in the input snapshot with `blockedSum(index, extent, blockSize: 4, body)`. In order, add partial sums over slices `[b, min(b + 4, extent))`, for `b = 0, 4, …`. Each partial and the outer sum starts at `+0` and rounds every add. The body sees the original absolute index. No padding, no rewriting `max`, multi-index `sum`, or already blocked nodes. | Candidate f32 versus original f64, within tolerance. |
 
-The inline restriction avoids affine substitution/range proof machinery; preserving the tree preserves scalar
-arithmetic, including rounding before a consumer sees the value. A separate `blockedSum` is smaller than adding
+Composing subscripts instead of renaming indices covers slices and diagonals without moving any scalar
+arithmetic. Resolved IDs prevent capture under reductions. A separate `blockedSum` is smaller than adding
 non-affine bounds and index remapping to the general reduction IR; its two ordered loops and tail are explicit
-and executable. Both passes use `definePass`, declare actual entity/relation writes, and use the contract as a
+and executable. Both passes use `definePass`, declare actual entity/relation writes, and use the sampled gate as a
 postcondition. Neither claims framework analysis preservation. No-match is an accepted identity. A rejected
 candidate leaves the preceding accepted revision as the next step's input.
 
 ## Meaning contract
 
-Use versioned `differential()` invariants in `defineTransformation().ensures`. The domain and relation live in
+Use versioned `differential()` invariants via `runDifferential(differentialSpec(inv), ports)` in the sync gate. The domain and relation live in
 `src/tensor`, not in framework policy. Check the public function set and parameter/return signatures, then use
 identical concrete shapes and finite f32-representable input values for both sides. Observe the returned shape
 and **every** row-major output element; no statistics or unobserved suffix. A candidate call that cannot run a
@@ -144,16 +142,15 @@ counterexample with function, concrete shapes, input pattern/seed, output index,
 values. At least one decided case is required **per function** for a changed candidate: if the generator
 cannot provide one, include a case that explicitly records the missing coverage as a disagreement.
 
-- **Sampled domain:** for each function try uniform shape bindings from `1, 2, 3, 4, 5, 8, 9`, then one-axis
-  perturbations around `4` and seeded mixed bindings from the same set. Derive parameter shapes from these
-  bindings (fixed axes stay fixed), deduplicate, and keep up to eight valid tuples, favoring distinct/tail
-  sizes. Admit cases whose staged tensors fit 8,192 elements each and whose evaluator work fits 200,000
-  expression/loop steps per call. Bound mixed search (32 trials); do not assume the small search covers every
-  affine signature. If no shape with decided cases exists for any function, reject the changed candidate.
-  Check zero-extent semantics separately in evaluator fixtures. Include ones, signed/asymmetric dyadic values
-  in `[-1, 1]`, and the small-addend witness below where a parameter's size permits it. Use deterministic,
-  origin-derived cases independent of the candidate, with seed `20`. A budget cutoff must not silently turn a
-  candidate failure on a completed baseline case into agreement.
+- **Sampled domain:** per function, try uniform bindings in order `1, 2, 3, 4, 5, 8, 9`, then one-axis
+  variations of the all-4 binding (shape names in source order, same size order), then 32 seeded mixed
+  attempts from those sizes. Derive input shapes, skip duplicates and invalid or over-budget tuples, and
+  stop at the first eight admitted tuples. Cap tensors at 8,192 elements and work at 200,000 expression/loop
+  steps per call. Test ones, signed asymmetric dyadics in `[-1, 1]`, and the witness repeated in groups of
+  eight cells, truncated at the buffer end. Every length-one input named `eps` uses exactly `2^-10` instead;
+  layernorm can exercise tolerance with positive epsilon without changing the language. Use origin-derived
+  cases and seed `20`. An over-budget candidate disagrees on a completed origin case. Check zero extents
+  separately in evaluator fixtures.
 - **Exact:** use the raw f32 words of returned arrays, including signed zero, not JS numeric equality or JSON
   array equality. Compare `inline` with its immediate input, using origin-derived cases. Before any accepted
   reassociation this is also exact to the original by induction; after one, an exact inline preserves the
@@ -195,16 +192,12 @@ caller. Finite JSON already suffices for symbolic IR and bit evidence. Neither n
 
 | Framework location | Change and reason |
 |---|---|
-| `src/framework/passes/define-pass.ts` (already re-exported by `passes/index.ts`) | Add `applyPassSync` for a synchronous native-result pass (or identity) with a pure invariant-only postcondition. Share native artifact construction/projection, correspondence, no-op detection and write validation with `applyPass`. Do not silently skip `needs`, `preserves`, unsupported contract clauses or other semantics: the restricted entry refuses those definitions and thenable results. No store or managed analysis context in this entry. |
-| `src/framework/contracts/` (`definitions.ts`, `analysis-manager.ts`, new `pure-sync.ts`) | Factor reusable named-port and check-result validation out of the manager for a small synchronous pure postcondition verifier. Validate exact input/output ports and revisions, bind the existing `ensures` selectors, run context-free invariant callbacks, and return immutable, versioned check evidence. No resources, context queries, property/fact transfer, correspondence requirements, transformation kernels, or manager history; reject definitions requiring them. A false `CheckResult` becomes a pass `contractRejected`; malformed/async checks are not successful verdicts. Document this restricted path in `contracts/README.md`. |
+| `src/framework/passes/define-pass.ts` (already re-exported by `passes/index.ts`) | Add `applyPassSync` for a synchronous native-result pass or identity. Share artifact construction, projection/diff, correspondence, write validation and no-op detection with `applyPass`. Require a host callback returning synchronous `CheckResult` on a changed candidate. Return immutable check evidence or reject under `contractRejected`. Refuse managed `contract`, `needs`, `preserves`, graph edits and async results rather than silently skipping them. |
 
-Validate capabilities up front for the sync entry. A callback that returns a thenable is rejected (observe native
-promise rejections so failure does not leak unhandled work); no attempt to block on asynchronous JS. Both paths
-still take versioned pass and transformation definitions. Leaving the async machinery intact avoids a sync
-port of the transactional manager. Calling tensor comparators from a separate tensor-only pass runner would be
-simpler locally but bypass framework write and acceptance behavior, the thing this ticket is meant to test.
-No changes to `core`, `ir`, `dataflow`, `strategy`, or differential sampling are proposed. Strategy would add an
-async scheduler around a list of passes; it is unnecessary for the fixed synchronous API.
+The domain runs the existing differential checker and supplies its verdict; no new manager or helper in
+`contracts/`. A tensor-only runner would bypass framework write checks; a synchronous port of the manager
+would add transaction machinery this task does not need. No changes to `core`, `ir`, `contracts`, `dataflow`,
+`strategy`, or differential sampling. The strategy scheduler is not needed for a synchronous pass list.
 
 ## Implementation and validation after review
 
@@ -217,19 +210,11 @@ async scheduler around a list of passes; it is unnecessary for the fixed synchro
 3. Add `corpus/tensor/<name>/main.tix`: `matmul`, max-shifted `softmax`, `layernorm` with gamma, beta and a
    positive `eps` fixture (a length-one input), scaled dot-product single-head `attention` with max shift,
    two-layer `mlp` with biases and tanh-GELU, and stride-1 valid NCHW `conv2d`. Test each against a hand-computed
-   fixture or independent JS loop reference using nontrivial shapes. Test pipeline acceptance independently from
-   corpus coverage: e.g. signed generated epsilon may make a layernorm tolerance case nonfinite and reject.
-4. Build with `npm run build`, then run `node --test tests/tensor/` and `node --test tests/framework/`, plus
+   fixture or independent JS loop reference using nontrivial shapes. Check layernorm tolerance acceptance.
+4. Build with `npm run build`, then run `node --test tests/tensor/*.test.mjs` and `node --test tests/framework/*.test.mjs`, plus
    `tests/typed/passes.test.mjs`, `evaluate-analyses.test.mjs`, `meaning-memo.test.mjs` and `strategies.test.mjs`
    for shared pass/contract behavior. Request escalation if the sandbox blocks a test's `node` spawn. Record
    every actual framework change and any deviation from this inventory in the design and diary.
-
-## Review focus
-
-- Is the synchronous pure postcondition subset the right boundary, without introducing a second general manager?
-- Are normalized extent equality, input binding, and the line between static and call-dependent checks right
-  for comparable Tix implementations?
-- Are the sample domain and fail-closed tolerance appropriate for this experiment?
 
 ## Later (out of scope)
 

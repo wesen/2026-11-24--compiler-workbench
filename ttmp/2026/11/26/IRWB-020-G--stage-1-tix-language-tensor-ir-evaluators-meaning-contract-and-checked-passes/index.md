@@ -1,7 +1,7 @@
 ---
 Title: 'Stage 1: Tix language, tensor IR, evaluators, meaning contract and checked passes'
 Ticket: IRWB-020-G
-Status: review
+Status: active
 Topics:
     - compiler
     - ir
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T12:52:52.243154074-05:00
+LastUpdated: 2026-11-26T13:51:18.101935276-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
