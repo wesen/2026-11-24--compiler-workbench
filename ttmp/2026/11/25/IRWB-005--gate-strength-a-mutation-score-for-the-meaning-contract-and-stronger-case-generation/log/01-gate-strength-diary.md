@@ -454,3 +454,45 @@ The check-time measurement first showed version 2 at 1,977 ms against 817 ms wit
 
 ### Technical details
 - Cases per all-project check: v1-40 2,800; v1-80 5,600; v1-100 7,000; v2 5,600.
+
+## Step 10: The float operators on the f32 fixture
+
+The corpus is integer only, so the `f32` operator has no site there. The f32 fixture (`tests/typed/f32-fixture.mjs`, five functions after its pipeline, r4) gives 61 mutants: 33 `f32` (operator swaps such as `fadd`→`fsub`, `flt`→`fle`, `ffloor`→`fceil`, `f2i`→`f2u`, and constants changed by one ulp or by their sign bit), 20 `const`, 5 `swap`, 2 `cmp-weaken`, 1 `cmp-flip`. The default gate kills every non-equivalent float mutant (32 of 32). The two wrong mutants it accepts are integer mutants of the loop in `scale`, and both diverge; version 2 and `default+div` kill both. The one equivalent mutant is `floorConst`'s `2.5f` moved by one ulp: `floor(2.5)` and `floor(2.5 + ulp)` are both 2, proved on the exhaustive domain.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Operator "wrong f32 operator or bit pattern" measured where floats exist.
+**Inferred user intent:** The float half of the gate is measured, not assumed.
+**Commit (code):** 690e2a1 — "IRWB-005: f32 fixture mutation score (61 mutants, default 96.7%, v2 100%); ..."
+
+### What I did
+- `node tools/mutation-score.mjs --no-corpus --fixture f32 --gates default,check100,strong,strong-cases,default+div --json various/16-f32-fixture.json --jsonl various/16-f32-fixture.jsonl` → `various/16-f32-fixture.txt`; 3 min 21 s wall (load average about 12).
+
+### Why
+- Candela is the real float program but costs minutes per function; the fixture covers every float operator class cheaply.
+
+### What worked
+- Default: 61 mutants, killed 58, survived-wrong 2, equivalent 1; 96.7 % (both bounds, no presumed mutant). `strong` and `default+div`: 60 killed, 0 wrong, 100 %. `check100`, `strong-cases`: as default.
+- Survivors of default: `scale cmp-weaken geu (i >= n)` (sample-diverges; `args [-897, -2147483648, 0]`, baseline 5 steps: with `n` negative the unsigned comparison never ends the loop) and `scale const -1 "1"` (the increment, sample-diverges, baseline 113 steps).
+- Gate time (ms, 61 mutants): default 14,286; check100 8,562; strong 25,209; strong-cases 13,525; default+div 8,602.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Every float operator change on the fixture changes a result on at least one of the 40 default cases. A likely reason (not isolated by an ablation): for an f32 parameter without a specification, the first min(15, ⌊count/4⌋) = 10 cases sweep `F32_EDGES` (evaluate.ts:241–246), so NaN, ±∞, ±0, 1, −1, the smallest subnormal, the largest finite value and the smallest normal are the first parameter's values in every such function's cases.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The fixture is small (61 sites); Candela (Step 14) is the larger float test.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `various/16-f32-fixture.jsonl`, records with a `classification`.
+
+### Technical details
+- Site variants: `f32 ulp` 6, `f32 sign` 6, `fsub` 3, `fdiv` 2, `fceil` 2, `ffloor` 2, one each of `fadd fle fmax fmin fmul fne feq flt f2u f2i u2f i2f`.
