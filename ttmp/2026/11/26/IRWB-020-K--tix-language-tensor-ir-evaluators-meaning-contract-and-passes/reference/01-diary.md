@@ -211,3 +211,25 @@ Now do the following in this session:
 ### Review and resumption
 
 See design §§1, 3 and 5 for the decisions. Next: build the checked IR and evaluators, then exercise the new pass mode and the two gates.
+
+## Step 3: Add the two native pass hooks
+
+The framework now distinguishes native-only passes from edit-backed passes. Both runners create and verify the same candidate, but the synchronous runner takes a host verdict rather than starting a semantic manager transaction.
+
+### Prompt context
+
+See Step 2. Revised design commit: `dcf0145`.
+
+### What I did and why
+
+- In `src/framework/passes/define-pass.ts`, added the native pass mode without a draft, and a runner that requires a synchronous `CheckResult` gate for changed artifacts. Fact and resource lifecycle remain on the existing async path.
+- Shared native candidate creation, correspondence and write checks. The sync gate reuses the framework's `Check` validator and snapshots evidence; it does not evaluate `TransformationDefinition` clauses or report managed facts.
+- Added `tests/framework/native-pass-sync.test.mjs` for parity on a read-only adapter, no-op behavior, undeclared writes, gate rejection, invalid and async verdicts, and refusal of manager-only features.
+
+### What worked / what didn't
+
+The first `npm run build` failed with `TS2322` and `TS2345` because the shared pass context's `records` lost its mapped generic type. Using the runner's existing `PassRunContext['records']` type at the context boundary fixed it. The three new framework tests passed; the full framework glob passed (228 tests), and the pass, evaluator/analysis, audit, and strategy Typed regressions passed (21 tests).
+
+### Review instructions
+
+Start at `applyNativePassSync` and compare its candidate preparation to `applyPass`. Confirm that `CheckResult` is a verdict from the host, not an alternate manager implementation. Existing edit-backed passes still get their draft and take the original async contract path.
