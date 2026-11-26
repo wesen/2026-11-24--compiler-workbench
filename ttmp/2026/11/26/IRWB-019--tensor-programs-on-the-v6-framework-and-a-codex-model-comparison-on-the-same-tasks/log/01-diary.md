@@ -281,3 +281,18 @@ Only the two medium Claude cells implement: Opus N and Fable P. Medium is cheape
   - justify every numeric threshold by an error argument or a measurement.
   
   Items Q–T (`scripts/11-launch-t1-v2.sh`). They will be judged blind in one session with the four v1 Sol designs, to avoid judge drift between sessions.
+
+## Step 10: the hidden acceptance suite had an invalid test; the v2 designs are in
+
+- **An invalid test in the suite.** Rereading the hidden suite against the brief before any implementation landed, the two-index reduction test used `y[q] = sum(i, j) x[i, j] * 1`. Here `q` has no use at all, and the brief says "an extent that cannot be inferred is a check error at compile time". A correct implementation must reject that program, so the test would have failed exactly the implementations that follow the brief.
+  - Fixed: `y[q] = sum(i, j) x[i, j] * w[q]` with exact weights (1, −1, 0.5).
+  - The test now asserts that its data distinguishes row-major from column-major accumulation. In plain JavaScript the two orders give 0 and −0.37.
+- **The inline test did not exercise inlining.** The brief's `inline` substitutes "a pointwise statement with a single use". In softmax, layernorm and attention every pointwise statement has two or more uses, so only mlp could change.
+  - Added two programs where inlining applies: a chain `t → u → sum`, and a transposed read `y[a, b] = t[b, a] / 7`, which catches a wrong subscript binding.
+  - The corpus-program inline test is kept.
+- **The suite also gained** a ragged `split-sum` case (matmul with K = 257, 7 and 1, in addition to 256) and a `log`/`min` test.
+- v1 is kept as `acceptance.test.mjs.v1`. The suite stays in the scratchpad, outside the repository, until all implementations are done.
+- **Lesson for the playbook:** a hidden suite needs the same reading against the brief as a design does. Writing it from memory of the brief introduced a test that contradicts a stated rule.
+- **The four v2 Sol designs finished:** Q (Pi, medium) 1,921 words, S (Pi, high) 2,931, T (Codex, medium) 2,827, R (Codex, high) 2,664.
+  - They are packed blind with the turn-1 v1 designs of the same four cells (A, C, F, G, taken from the t1 pack, not from the worktrees, which turn 2 is revising). The key is `results/blind-key-t1-v2.json`.
+  - A judge scores all eight in one session. Its prompt adds, explicitly, the four scoring rules the first judge chose for itself (R2, R4, R5, R8), so the v1 designs are rescored under the same rules rather than compared with their first scores.
