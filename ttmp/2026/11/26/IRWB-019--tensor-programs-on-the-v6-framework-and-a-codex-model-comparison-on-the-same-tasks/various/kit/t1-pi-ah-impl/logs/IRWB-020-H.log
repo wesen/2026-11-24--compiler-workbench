@@ -1,0 +1,22 @@
+Warning: No models match pattern "lunaroute/glm-5.3"
+Warning: No models match pattern "lunaroute/glm-5.3-flash"
+Warning: No models match pattern "lunaroute/deepseek-4.1-flash"
+Warning: No models match pattern "lunaroute/deepseek-4.1-flash-background"
+IRWB-020-H is complete. `src/tensor/` implements the Tix parser and checker, v6 IR, f32 and f64 evaluators, and checked `inline` and `split-sum` passes. `dist/tensor/index.js` exports exactly `compileTix`, `runTix`, and `optimizeTix`. The six corpus programs are in `corpus/tensor/`; their tests are in `tests/tensor/`.
+
+**Only framework change:** `src/framework/passes/define-pass.ts` now exposes `prepareNativeCandidate`. The synchronous Tix optimizer reuses artifact validation, diffing, correspondence, and write checks without changing the async pass lifecycle. Numerical acceptance stays in tensor code.
+
+On the nine-element witness, serial f32 returned `1` and blocked f32 returned `1.000000238418579`. The exact relation rejected the rewrite; the f64-reference tolerance accepted it. Both valid-IR mutants were rejected numerically.
+
+| Check | Result |
+|---|---:|
+| `npm run build` | Passed |
+| `node --test tests/tensor/*.test.mjs` | 20/20 |
+| `node --test tests/framework/*.test.mjs` | 226/226 |
+| `node --test tests/typed/{passes,project-meta,strategies,audit,inline}.test.mjs` | 27/27 |
+
+No deviations from the revised design. Acceptance is sampled, not a proof for every input. The worktree is clean; nothing was pushed.
+
+[Ticket](ttmp/2026/11/26/IRWB-020-H--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md) · [Revised design and framework ledger](ttmp/2026/11/26/IRWB-020-H--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-checking-tix-tensor-transformations.md) · [Diary](ttmp/2026/11/26/IRWB-020-H--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md)
+
+**Commits:** `7cf52a5` initial design · `cf658d3` review revision · `2cb41d7` language and evaluators · `afc165c` checked passes and framework extraction · `e0233f2` corpus and validation.

@@ -1,0 +1,7 @@
+IRWB-020-T is ready for design review. [Ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v2-sm-irwb-020-t/ttmp/2026/11/26/IRWB-020-T--tix-stage-1-language-ir-evaluators-contract-and-passes/index.md) · [Design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v2-sm-irwb-020-t/ttmp/2026/11/26/IRWB-020-T--tix-stage-1-language-ir-evaluators-contract-and-passes/design-doc/01-tix-stage-1-design.md) · [Diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v2-sm-irwb-020-t/ttmp/2026/11/26/IRWB-020-T--tix-stage-1-language-ir-evaluators-contract-and-passes/reference/01-design-and-implementation-diary.md)
+
+The sole proposed framework change extracts native pass candidate preparation from `applyPass`. This lets synchronous `optimizeTix` share artifact validation, IR diffs, declared-write checks, and correspondence before running the existing synchronous differential checker. [define-pass.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v2-sm-irwb-020-t/src/framework/passes/define-pass.ts)
+
+`docmgr doctor` passed, and Node 24 probes verified the reassociation witness and dropped-tail rejection at the proposed tolerance. Implementation and its test suites follow review.
+
+Committed locally as `4c3d96393cd59e34b155341d2ba24157f32fb01b`. The working tree is clean.

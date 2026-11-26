@@ -1,0 +1,9 @@
+IRWB-020-S is ready for design review. No implementation changes were made.
+
+- [Ticket](ttmp/2026/11/26/IRWB-020-S--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/index.md)
+- [Stage 1 design](ttmp/2026/11/26/IRWB-020-S--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/design-doc/01-stage-1-design.md)
+- [Diary](ttmp/2026/11/26/IRWB-020-S--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/reference/01-diary.md)
+
+**Proposed framework change:** Add a synchronous entry point for native-result passes with sampled contracts. It reuses v6’s candidate validation, diff and write checks, and differential evaluator without requiring an editable projection. The existing async path stays unchanged, and tensor-specific tolerance stays in `src/tensor/`.
+
+`docmgr doctor` passed. The Node 24 arithmetic probe confirmed the split-sum witness differs by one f32 ULP. Commit: `ec674b44faca0d5aca191647b30068c4adde9082`.

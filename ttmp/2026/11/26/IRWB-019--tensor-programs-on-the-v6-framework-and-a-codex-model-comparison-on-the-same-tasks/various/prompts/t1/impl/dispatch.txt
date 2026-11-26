@@ -1,0 +1,14 @@
+IRWB-020-C t1-sm gpt-6.2-sol medium codex
+IRWB-020-A t1-sh gpt-6.2-sol high codex
+IRWB-020-B t1-am gpt-6.2-astra medium codex
+IRWB-020-D t1-ah gpt-6.2-astra high codex
+IRWB-020-F t1-pi-sm openai-codex/gpt-6.2-sol medium pi
+IRWB-020-G t1-pi-sh openai-codex/gpt-6.2-sol high pi
+IRWB-020-E t1-pi-am openai-codex/gpt-6.2-astra medium pi
+IRWB-020-H t1-pi-ah openai-codex/gpt-6.2-astra high pi
+IRWB-020-L t1-sx gpt-6.2-sol xhigh codex
+IRWB-020-I t1-ax gpt-6.2-astra xhigh codex
+IRWB-020-K t1-pi-sx openai-codex/gpt-6.2-sol xhigh pi
+IRWB-020-J t1-pi-ax openai-codex/gpt-6.2-astra xhigh pi
+IRWB-020-N t1-op-m claude-opus-5-5 medium claude-code-subagent
+IRWB-020-P t1-fa-m claude-fable-5-2 medium claude-code-subagent

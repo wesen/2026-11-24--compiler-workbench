@@ -1,0 +1,3079 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a218f0-6c34-7410-af19-b7fb946e304e
+--------
+user
+A reviewer has read your design for IRWB-020-C. The review:
+
+# Review of your design
+
+## Must change
+
+1. **Wrong `split-sum` variant.** "Mutate the block result to drop the final partial block in the test candidate. In the fixed-shape fixture, make a valid eight-column prefix with `prefix[i,d]: f32[1,8] = x[i,d+i];` and block the sum over that prefix." What the prefix fixture shows, and its expected verdict, are never stated. Define the wrong variant as a pass kernel run through the sync gate on the contract's cases.
+2. **Budget.** "Fail the check if a candidate exhausts that budget on a selected case". The budget is measured "per origin case", and `split-sum` adds outer accumulation visits. A correct candidate near the cap is therefore rejected. Say how the candidate's budget is set.
+3. **`NUMBER` is undefined.** "Numeric expressions accept finite JS numeric literals" admits `0x10`, `1_0` and `.5`. Give the token grammar.
+4. **Case selection.** "plus seeded mixed assignments from those sizes and targeted shapes with a full block and a tail" fixes neither how many assignments there are nor how they are chosen.
+
+## Cut
+
+1. Inline's second check, "Check the result against the original as well … tolerance for functions where an earlier split was accepted", and "Store the set of functions that entered tolerance mode". Exact agreement with the input on the same origin-derived cases implies both.
+2. "Bind shape names … by solving the affine signature equations … rational elimination" and "Record constraints that depend on concrete sizes and check them when the call binds". These add a solver and a call-time error contract.
+
+## Framework changes
+
+- **`applyNativePassSync` with shared native-candidate preparation:** needed, because the fixed API is synchronous, and correctly placed. As specified it is not minimal: "receives a pass ID, version, IR definition, adapter, write declarations, kernel and mandatory check" duplicates `definePass`. Take a `Pass` and refuse `needs` and `preserves`.
+- No missed change.
+
+## Keep
+
+Keep the rule that tolerance cases are chosen "with entirely finite reference outputs independently of the candidate". Keep the 0.25-tail witness (`0x3fa00000` against `0x3fa00002`, verified), which catches both the reassociation and a dropped tail.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-020-C:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+codex
+I’ll revise and commit the design first, then implement it and run the focused suites. I’ll continue the docmgr ticket and diary through both checkpoints.
+exec
+/usr/bin/zsh -lc "git status --short; ls node_modules/typescript/bin; rg --files ttmp/2026/11/26/IRWB-020-C*; cat src/framework/passes/define-pass.ts; sed -n '130,210p' src/framework/ir/adapters.ts; cat src/framework/ir/types.ts | head -90" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 557ms:
+tsc
+tsserver
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/index.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/README.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md
+/**
+ * IRWB-001 E3: passes with declared needs, writes and preservation, applied through v6's machinery.
+ *
+ * A pass is versioned code that turns one artifact revision into the next. It declares:
+ *   - `needs`: analyses whose results it reads (v6 analyses, e.g. dataflow facts), computed for the exact input;
+ *   - `writes`: the entity and relation kinds it may change; any other change is `undeclaredWrite`;
+ *   - `preserves`: analyses whose results it claims survive. Each claim is checked: first by the analysis's own
+ *     transfer verifier (E4: unchanged reads), otherwise by recomputing on the output and comparing. A claim that
+ *     neither confirms is `preserveViolated`, and the pass is not published;
+ *   - `contract`: an optional v6 transformation contract the output must satisfy before it is accepted.
+ *
+ * A pass edits either through a v6 `IREdit` on the logical projection (generic, pattern-friendly), or by returning
+ * a new native value with explicit correspondence entries (efficient for domain code). Either way the framework
+ * derives the v6 change set by diffing the two projections, validates the native value through the adapter, builds
+ * the correspondence, enforces `writes`, runs the contract, and checks the preservation claims. Nothing is
+ * published unless all of that succeeds.
+ */
+import type { Artifact } from '../core/types.js';
+import { canonical } from '../core/data.js';
+import { createIRArtifact, openIR } from '../ir/index.js';
+import { diff } from '../ir/diff.js';
+import { makeCorrespondence } from '../ir/correspondence.js';
+import type {
+  ChangeSet,
+  CorrespondenceEntry,
+  EntityCorrespondence,
+  IRAdapter,
+  IREdit,
+  IRStore,
+  IRView,
+} from '../ir/index.js';
+import type {
+  AnalysisDefinition,
+  AnalysisRecord,
+  Correspondence,
+  IRType,
+  Ports,
+  TransformationDefinition,
+} from '../contracts/types.js';
+import type { AnalysisManager } from '../contracts/analysis-manager.js';
+
+export class PassError extends Error {
+  constructor(
+    readonly code: 'undeclaredWrite' | 'preserveViolated' | 'contractRejected' | 'badResult' | 'passFailed',
+    message: string,
+    readonly evidence?: unknown,
+  ) {
+    super(`[${code}] ${message}`);
+    this.name = 'PassError';
+  }
+}
+
+export type Needs = Readonly<Record<string, AnalysisDefinition<any, any>>>;
+export type FactValues<N extends Needs> = {
+  readonly [K in keyof N]: N[K] extends AnalysisDefinition<any, infer R> ? R : never;
+};
+
+export interface PassRunContext<S, N extends Needs, P> {
+  readonly before: Artifact<S>;
+  readonly view: IRView<S>;
+  readonly facts: FactValues<N>;
+  readonly records: { readonly [K in keyof N]: AnalysisRecord<unknown> };
+  readonly params: P;
+  /** A v6 edit on the logical projection; used when `run` returns nothing. */
+  readonly edit: IREdit<S>;
+}
+
+/** A native result: the new value, and how its entities relate to the input's (merge, split, replace…). */
+export interface NativeResult<S> {
+  readonly native: S;
+  readonly correspondence?: readonly CorrespondenceEntry[];
+  /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
+  readonly edits?: number;
+  /** Domain report (e.g. the edit records of a Compiler Workbench revision), passed through to the result. */
+  readonly report?: unknown;
+}
+
+export interface PassSpec<S, N extends Needs, P = unknown> {
+  readonly id: string;
+  readonly version: string;
+  readonly description: string;
+  readonly ir: IRType<S>;
+  readonly adapter: IRAdapter<S>;
+  readonly needs?: N;
+  /** Entity kinds (glob `prefix*`) and relation kinds the pass may change. */
+  readonly writes: { readonly entities: readonly string[]; readonly relations: readonly string[] };
+  readonly preserves?: readonly AnalysisDefinition<any, any>[];
+  readonly contract?: TransformationDefinition<Ports, Ports>;
+  /** Extra contract inputs beyond `input` (e.g. `origin`: r0), supplied by the caller per application. */
+  run(ctx: PassRunContext<S, N, P>): void | NativeResult<S> | Promise<void | NativeResult<S>>;
+}
+
+export type Pass<S, N extends Needs = Needs, P = unknown> = Readonly<PassSpec<S, N, P>> & {
+  readonly category: 'pass';
+};
+
+export function definePass<S, N extends Needs = {}, P = unknown>(spec: PassSpec<S, N, P>): Pass<S, N, P> {
+  if (!spec.id || !spec.version) throw new Error('A pass needs an id and a version');
+  if (typeof spec.run !== 'function') throw new Error(`Pass ${spec.id} needs run`);
+  if (!spec.writes || !Array.isArray(spec.writes.entities) || !Array.isArray(spec.writes.relations))
+    throw new Error(`Pass ${spec.id} must declare writes { entities, relations }`);
+  return Object.freeze({
+    ...spec,
+    needs: spec.needs ?? ({} as N),
+    preserves: spec.preserves ?? [],
+    category: 'pass' as const,
+  });
+}
+
+export interface ApplyOptions<P> {
+  readonly manager: AnalysisManager;
+  readonly store?: IRStore;
+  readonly params?: P;
+  /** Additional contract inputs, e.g. `{ origin: r0 }` for a check against the original program. */
+  readonly contractInputs?: Readonly<Record<string, unknown>>;
+  /** Artifact id of the output (default: the input's). */
+  readonly outputId?: string;
+  /** A contract for this application, overriding the pass's own (e.g. one carrying a project's case inputs). */
+  readonly contract?: TransformationDefinition<Ports, Ports>;
+  /**
+   * Check every preservation claim, computing the fact on the input first when the manager does not hold it.
+   * By default a claim is checked only when the fact exists (there is otherwise nothing to keep); auditing
+   * makes every application a test of the pass's declarations.
+   */
+  readonly auditPreservation?: boolean;
+}
+
+export interface PreservationOutcome {
+  readonly analysis: string;
+  readonly how: 'transferred' | 'confirmed-by-recompute';
+  readonly evidence: unknown;
+}
+
+export interface PassResult<S> {
+  readonly pass: { readonly id: string; readonly version: string };
+  readonly changed: boolean;
+  readonly before: Artifact<S>;
+  readonly artifact: Artifact<S>;
+  readonly changes?: ChangeSet;
+  readonly correspondence?: EntityCorrespondence;
+  readonly edits: number;
+  readonly preserved: readonly PreservationOutcome[];
+  readonly contract?: unknown;
+  readonly report?: unknown;
+}
+
+const glob = (patterns: readonly string[], kind: string) =>
+  patterns.some(p => (p.endsWith('*') ? kind.startsWith(p.slice(0, -1)) : p === kind));
+
+/** The changes a pass made outside what it declared it writes. */
+export function undeclaredWrites(
+  writes: PassSpec<any, any>['writes'],
+  changes: ChangeSet,
+): readonly string[] {
+  const out = new Set<string>();
+  for (const c of changes.entities)
+    for (const e of [c.before, c.after])
+      if (e && !glob(writes.entities, e.kind)) out.add(`${c.kind} entity ${c.entity} (${e.kind})`);
+  for (const c of changes.relations)
+    for (const r of [c.before, c.after])
+      if (r && !glob(writes.relations, r.kind)) out.add(`${c.kind} relation ${c.relation} (${r.kind})`);
+  return [...out].sort();
+}
+
+/**
+ * v6's semantic correspondence record for an entity correspondence between two revisions. The analysis manager
+ * matches records to a contract's `correspondence` requirements by `id` and `relation`, so applyPass builds one
+ * record per requirement (default: `entities` / `generic-ir-edit`, as v6's own labs name it).
+ */
+export function semanticCorrespondence(
+  c: EntityCorrespondence,
+  id = 'entities',
+  relation = 'generic-ir-edit',
+): Correspondence {
+  return {
+    id,
+    from: { artifact: c.from.artifact, revision: c.from.revision },
+    to: { artifact: c.to.artifact, revision: c.to.revision },
+    relation,
+    entities: c.entries.map(e => ({ from: e.from, to: e.to })),
+    evidence: {
+      formatVersion: c.formatVersion,
+      relations: c.entries.map(e => e.relation),
+      sourceEntities: c.sourceEntities,
+      targetEntities: c.targetEntities,
+    },
+  };
+}
+
+export async function applyPass<S, N extends Needs, P>(
+  pass: Pass<S, N, P>,
+  before: Artifact<S>,
+  options: ApplyOptions<P>,
+): Promise<PassResult<S>> {
+  const { manager } = options;
+  const view = openIR(before, pass.adapter, options.store);
+  const facts: Record<string, unknown> = {},
+    records: Record<string, AnalysisRecord<unknown>> = {};
+  for (const [name, def] of Object.entries(pass.needs ?? {})) {
+    const record = await manager.analyse(def, before);
+    records[name] = record;
+    facts[name] = record.value;
+  }
+  const edit = view.beginEdit();
+  let produced: void | NativeResult<S>;
+  try {
+    produced = await pass.run({
+      before,
+      view,
+      facts: facts as FactValues<N>,
+      records: records as PassRunContext<S, N, P>['records'],
+      params: options.params as P,
+      edit,
+    });
+  } catch (e) {
+    if (edit.state === 'open') edit.rollback('pass threw');
+    throw e;
+  }
+  let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
+  let report: unknown;
+  if (produced && typeof produced === 'object' && 'native' in produced) {
+    if (edit.state === 'open') edit.rollback('native result');
+    const id = options.outputId ?? before.id;
+    after = createIRArtifact(pass.adapter, id, produced.native);
+    const afterView = openIR(after, pass.adapter, options.store);
+    changes = diff(view, afterView);
+    correspondence = makeCorrespondence(
+      { artifact: before.id, revision: before.revision },
+      { artifact: after.id, revision: after.revision },
+      // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+      view.graph().entities.map(e => e.id),
+      afterView.graph().entities.map(e => e.id),
+      produced.correspondence ?? [],
+    );
+    edits = produced.edits ?? changes.entities.length;
+    report = produced.report;
+  } else {
+    if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
+    if (edit.operationCount === 0) {
+      // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
+      // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
+      edit.rollback('no operations');
+      return {
+        pass: { id: pass.id, version: pass.version },
+        changed: false,
+        before,
+        artifact: before,
+        edits: 0,
+        preserved: [],
+      };
+    }
+    const prepared = edit.prepare();
+    after = prepared.artifact;
+    changes = prepared.changes;
+    correspondence = prepared.correspondence;
+    edits = changes.operations.filter(o => o.kind !== 'correspond').length;
+    edit.rollback('applyPass publishes revisions itself');
+  }
+  if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
+    return {
+      pass: { id: pass.id, version: pass.version },
+      changed: false,
+      before,
+      artifact: before,
+      edits: 0,
+      preserved: [],
+    };
+
+  const undeclared = undeclaredWrites(pass.writes, changes);
+  if (undeclared.length)
+    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
+      undeclared: undeclared.slice(0, 20),
+    });
+
+  let contract: unknown;
+  const gate = options.contract ?? pass.contract;
+  if (gate) {
+    try {
+      const prepared = await manager.verifyTransformation(
+        { input: before, ...(options.contractInputs ?? {}) } as never,
+        { output: after } as never,
+        gate,
+        gate.correspondence.length
+          ? gate.correspondence.map(req =>
+              semanticCorrespondence(correspondence, req.id, req.relation),
+            )
+          : [semanticCorrespondence(correspondence)],
+      );
+      contract = prepared;
+    } catch (e) {
+      throw new PassError('contractRejected', `Pass ${pass.id} output rejected: ${(e as Error).message}`, {
+        cause: String(e),
+      });
+    }
+  }
+
+  const preserved: PreservationOutcome[] = [];
+  for (const def of pass.preserves ?? []) {
+    if (!manager.hasAnalysis(def, before)) {
+      if (!options.auditPreservation) continue; // nothing to keep
+      await manager.analyse(def, before);
+    }
+    try {
+      const record = await manager.preserve(
+        def,
+        before,
+        after,
+        semanticCorrespondence(correspondence),
+      );
+      preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
+    } catch {
+      const old = await manager.analyse(def, before),
+        fresh = await manager.analyse(def, after);
+      if (canonical(old.value) !== canonical(fresh.value))
+        throw new PassError(
+          'preserveViolated',
+          `Pass ${pass.id} claims to preserve ${def.id}, but it changed`,
+          {
+            analysis: def.id,
+          },
+        );
+      preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+    }
+  }
+  return {
+    pass: { id: pass.id, version: pass.version },
+    changed: true,
+    before,
+    artifact: after,
+    changes,
+    correspondence,
+    edits,
+    preserved,
+    contract,
+    report,
+  };
+}
+  requireText(id, 'Artifact ID');
+  const snapshot = immutable(value);
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot, r => synchronous(r, 'Adapter validation'), adapter);
+  const artifact = immutable({
+    id,
+    kind: adapter.kind,
+    schemaVersion: adapter.schemaVersion,
+    value: snapshot,
+    contentHash: fingerprint(snapshot),
+    revision: revisionOf(adapter.kind, adapter.schemaVersion, snapshot),
+  });
+  project(adapter, artifact.value);
+  VERIFIED.add(artifact);
+  return artifact;
+}
+export function validateIRArtifact<T>(definition: IRAdapter<T>, artifact: Artifact<T>): Artifact<T> {
+  const adapter = defineAdapter(definition),
+    snapshot = immutable(artifact);
+  requireText(snapshot.id, 'Artifact ID');
+  if (snapshot.kind !== adapter.kind || snapshot.schemaVersion !== adapter.schemaVersion)
+    throw new IRError('ir.kind', `Adapter ${adapter.id} requires ${adapter.kind}@${adapter.schemaVersion}`);
+  if (
+    !VERIFIED.has(snapshot) &&
+    (snapshot.contentHash !== fingerprint(snapshot.value) ||
+      snapshot.revision !== revisionOf(snapshot.kind, snapshot.schemaVersion, snapshot.value))
+  )
+    throw new IRError('ir.revision', 'Artifact content/revision hash does not match its value');
+  VERIFIED.add(snapshot);
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot.value, r => synchronous(r, 'Adapter validation'), adapter);
+  return snapshot;
+}
+export function validateEntity(entity: IREntity): IREntity {
+  const e = immutable(entity);
+  requireText(e.id, 'Entity ID');
+  requireText(e.kind, 'Entity kind');
+  requireRecord(e.attributes, 'Entity attributes');
+  if (Object.keys(e).some(k => !['id', 'kind', 'attributes'].includes(k)))
+    throw new IRError('ir.entity', 'Entity projection permits only id, kind and attributes');
+  return e;
+}
+/**
+ * IRWB-004: frozen entities `validateEntity` accepted, and, per captured adapter, frozen relations whose own fields
+ * were checked against its relation kinds. Both checks are functions of the frozen object (and the frozen adapter),
+ * so a projection that shares most of them with the previous revision checks only the new ones. What depends on the
+ * whole graph (dangling ends, duplicate ids, roots) is checked every time.
+ */
+const VALID_ENTITIES = new WeakSet<object>();
+const VALID_RELATIONS = new WeakMap<object, WeakSet<object>>();
+export function validateGraph(adapter: IRAdapter<any>, input: IRGraph): IRGraph {
+  const graph = immutable(input);
+  if (!Array.isArray(graph.entities) || !Array.isArray(graph.relations) || !Array.isArray(graph.roots))
+    throw new IRError('ir.graph', 'Expected entities, relations and roots arrays');
+  const entities = new Set<string>(),
+    relations = new Set<string>();
+  for (const e of graph.entities) {
+    if (!VALID_ENTITIES.has(e)) {
+      validateEntity(e);
+      VALID_ENTITIES.add(e); // `graph` is canonical, so `e` is frozen
+    }
+    if (entities.has(e.id)) throw new IRError('ir.entity', `Duplicate entity ${e.id}`);
+    entities.add(e.id);
+  }
+  let shaped = captured.has(adapter) ? VALID_RELATIONS.get(adapter) : undefined;
+  if (!shaped && captured.has(adapter)) VALID_RELATIONS.set(adapter, (shaped = new WeakSet()));
+  for (const r of graph.relations) {
+    const known = !!shaped?.has(r);
+    if (!known) {
+      requireText(r.id, 'Relation ID');
+      requireText(r.kind, 'Relation kind');
+      if (!Object.hasOwn(adapter.relationKinds, r.kind) || adapter.relationKinds[r.kind] !== r.category)
+        throw new IRError('ir.relation', `Undeclared or mistyped relation ${r.kind}`);
+    }
+    if (!entities.has(r.from) || !entities.has(r.to))
+      throw new IRError('ir.relation', `Dangling relation ${r.id}: ${r.from} -> ${r.to}`);
+    if (relations.has(r.id)) throw new IRError('ir.relation', `Duplicate relation ${r.id}`);
+    if (!known) {
+      if (r.order !== undefined && (!Number.isSafeInteger(r.order) || r.order < 0))
+        throw new IRError('ir.relation', `Invalid order on ${r.id}`);
+      if (r.attributes !== undefined) requireRecord(r.attributes, 'Relation attributes');
+import type { Artifact, Diagnostic, EntityRef } from '../core/types.js';
+export interface VersionRef {
+  readonly id: string;
+  readonly version: string;
+}
+export interface RevisionRef {
+  readonly artifact: string;
+  readonly revision: string;
+}
+export interface IRRef extends EntityRef {
+  readonly entity: string;
+}
+export type EntityTarget = string | IRRef;
+/** IRWB-001 E1 adds 'control': control-flow successor edges (a CFG), distinct from containment and dataflow. */
+export type RelationCategory =
+  | 'containment'
+  | 'dependency'
+  | 'binding'
+  | 'adjacency'
+  | 'provenance'
+  | 'control';
+export type Capability =
+  | 'Traversable'
+  | 'Queryable'
+  | 'Rewritable'
+  | 'Diffable'
+  | 'Verifiable'
+  | 'Serializable'
+  | 'Visualizable'
+  | 'Operations';
+/** A logical projection. Native domain storage remains owned by the adapter. */
+export interface IREntity {
+  readonly id: string;
+  readonly kind: string;
+  readonly attributes: Readonly<Record<string, unknown>>;
+}
+export interface IRRelation {
+  readonly id: string;
+  readonly kind: string;
+  readonly category: RelationCategory;
+  readonly from: string;
+  readonly to: string;
+  readonly order?: number;
+  readonly attributes?: Readonly<Record<string, unknown>>;
+}
+export interface IRGraph {
+  readonly entities: readonly IREntity[];
+  readonly relations: readonly IRRelation[];
+  readonly roots: readonly string[];
+}
+export interface EntityDescription {
+  readonly label: string;
+  readonly detail?: string;
+  readonly stats?: Readonly<Record<string, number | string>>;
+}
+export interface Operation {
+  readonly name: string;
+  readonly operands: readonly string[];
+}
+export interface IRVisualization {
+  readonly kind: string;
+  readonly data: unknown;
+}
+export interface IRAdapter<T = unknown> extends VersionRef {
+  readonly kind: string;
+  readonly schemaVersion: string;
+  readonly description: string;
+  readonly relationKinds: Readonly<Record<string, RelationCategory>>;
+  entities(value: T): Iterable<IREntity>;
+  resolve(value: T, entity: string): IREntity | undefined;
+  relations(value: T): Iterable<IRRelation>;
+  describe(value: T, entity: string): EntityDescription;
+  roots?(value: T): readonly string[];
+  validate?(value: unknown): void;
+  /** Translate a validated logical edit back into this representation's native storage. */
+  rebuild?(base: T, graph: IRGraph): T;
+  operation?(value: T, entity: string): Operation | undefined;
+  serialize?(value: T): string;
+  deserialize?(text: string): T;
+  visualize?(value: T, selection: readonly string[]): IRVisualization;
+}
+export interface AdapterDescriptor extends VersionRef {
+  readonly kind: string;
+  readonly schemaVersion: string;
+  readonly description: string;
+  readonly relationKinds: Readonly<Record<string, RelationCategory>>;
+  readonly capabilities: readonly Capability[];
+}
+export interface WalkOptions {
+  readonly order?: 'pre' | 'post' | 'breadth';
+
+exec
+/usr/bin/zsh -lc "rg -n 'checkResult|thenable' src/framework/contracts/{analysis-manager,definitions}.ts src/framework/ir/common.ts; rg -n 'export function (defineIR|validateArtifact)' src/framework/contracts/definitions.ts; cat ttmp/2026/11/26/IRWB-020-C*/tasks.md; command -v docmgr; npm run build" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 3718ms:
+src/framework/contracts/analysis-manager.ts:95:const checkResult = (v: unknown): CheckResult => {
+src/framework/contracts/analysis-manager.ts:738:        result = checkResult(analysis.value);
+src/framework/contracts/analysis-manager.ts:886:      checked = checkResult(analysis.value);
+src/framework/contracts/analysis-manager.ts:976:      const justification = checkResult(
+src/framework/contracts/analysis-manager.ts:1141:      const result = checkResult(await definition.check(this.context(frame), captured));
+286:export function validateArtifact<T>(ir: IRType<T>, value: unknown): asserts value is Artifact<T> {
+# Tasks
+
+## TODO
+- [x] Write the Stage 1 design and start the diary <!-- t:052m -->
+- [ ] Review the design in the working session <!-- t:lx1c -->
+- [ ] Implement the reviewed Tix and native-pass design, corpus and tests <!-- t:ooa3 -->
+/home/manuel/.local/bin/docmgr
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-020-C--*')
+python3 - \""'$ticket" <<'"'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])/'design-doc/01-tix-stage-1-design.md'
+s=p.read_text()
+def replace(a,b,r):
+    global s
+    i=s.index(a); j=s.index(b,i)
+    s=s[:i]+r+s[j:]
+replace('Numeric expressions accept', 'A lexer retains', \"\"\"A "'`NUMBER` token is `[0-9]+('"\\\\.[0-9]+)?([eE][+-]?[0-9]+)?"'` and must convert to a
+finite JS number. Unary signs are separate tokens. Affine expressions use integer tokens
+(`[0-9]+`), grouping, addition, subtraction and multiplication by integer constants. At call time,
+shape names and extents are nonnegative safe integers. Support empty axes and row-major tensors
+whose sizes can be represented and allocated in the requested typed array. Inputs have the named
+parameter shapes, exactly the number of elements their shapes specify, and finite values in either
+API carrier. A finite f64 carrier value can round to infinity in f32.
+
+""")
+replace('"'Normalize shape and index', 'Check statements in order.', \"\"\"Normalize shape and index expressions to an integer constant plus ordered coefficients.
+Anchor each shape name to an input dimension. Prefer a bare name. A dimension "'`a*N+b` with one
+name is also an anchor, by directly inverting that dimension. Other affine dimensions may use any
+anchored names. A signature with names that occur exclusively in coupled dimensions is outside the
+supported binding domain. A simultaneous equation solver would accept those additional signatures.
+Direct anchors keep binding local while supporting shifted signatures such as `f32[H - 2]`.
+Annotations and shape-valued scalar expressions use names anchored by the signature.
+
+""")
+replace('"'For each affine access', '## Artifact and evaluators', \"\"\"For each affine access, derive the minimum and maximum from its active index ranges using
+coefficient signs. Prove the lower bound is nonnegative and the maximum is less than the
+referenced dimension, assuming shape names and tensor dimensions are nonnegative and the
+active extents on the path are positive. Normalize first and use constants and lower bounds
+from single-name dimensions in the proof. A statically empty iteration space needs no bounds
+proof. Reject inconsistent extent expressions and access bounds that cannot be established, with
+the relevant source location. Checking a particular substitution at call time would accept
+additional programs whose indices are safe only at some sizes, at the cost of runtime guards
+in a language with compile-time checking. The valid call domain gives each parameter its declared
+shape and gives every tensor a nonnegative extent. Binding validates those dimensions and the
+data length as part of instantiating the types.
+
+\"\"\")
+replace('Cases are deterministic,', 'The observation is', \"\"\"Cases are deterministic, small, valid calls for each entry function, driven by the origin
+signature and checked extents. Try eight uniform shape assignments, setting every name to each of
+"'`[0, 1, 2, 3, 4, 5, 7, 9]` in order, then eight mixed assignments whose choices come from the same
+list using framework `seededRandom(7)` in shape-name order. Sizes 5, 7 and 9 exercise a full block
+and a tail. Deduplicate concrete parameter shapes. Fixed-size signatures yield one shape. For each
+shape try zero (alternating +0 and −0), ones, a deterministic nonuniform signed pattern, and
+seeded positive f32 data. Include the rounding witness whenever an input is shaped `[1,9]`, using
+that row for such parameters and ones for the others. Skip shape assignments outside the valid
+call domain or with more than 4,096 elements in any origin parameter or statement tensor.
+
+Count each scalar expression visit and each reduction accumulation as one unit of work. Limit the
+origin to 100,000 units per case. Give each current or candidate evaluation 200,000 units and
+limit each of its tensors to 4,096 elements. Each new split adds at most one outer addition per
+original term, so splitting an origin near its cap fits this allowance. A candidate exceeding its
+cap fails the check on that case. This also bounds extra work from evaluating an inlined producer
+more often than the original materialized it. The checker requires at least one comparable case
+per entry under check. The seed, entry name, shapes, data pattern and first differing element
+make failures reproducible. The evidence is sampled. Independent small shape and work limits make
+the checker predictable, while the evaluator supports larger calls.
+
+""")
+replace('"'Run requested passes in order.', '## Rewrites and evidence', \"\"\"Run requested passes in order. A changed "'`inline` compares exactly with its immediate
+input on origin-derived cases. That check preserves any already established relation to the
+origin on those cases, so no second check or per-function mode is needed. Use tolerance for
+`split-sum` on each function changed by that application. Its baseline is always the original
+unoptimized f64 function, including across later calls to `optimizeTix`. Unchanged functions
+retain their previous code. Rejected meaning checks yield `accepted: false`, and the next
+named pass sees the current accepted artifact. An identity yields `accepted: true`.
+
+""")
+replace('"'  Mutate the block', '\\n## Framework change', \"\"\"  The test-only wrong split kernel adds an eight-column prefix in the fixed-shape witness,
+  "'`prefix[i,d]: f32[1,8] = x[i,d+i];`, then replaces the original sum with a blocked sum over
+  that prefix. Here `i` has extent 1, so the prefix copies columns 0 through 7 and drops
+  column 8. It is valid IR. Run it as a `definePass` kernel through `applyNativePassSync`
+  with the same tolerance gate and origin-derived cases as the real pass. The contract must
+  reject it on the rounding witness. Run the wrong inline kernel through the same entry
+  point with the normal exact gate.
+
+Use `x: f32[1,9]` and `y[i] = sum(d) x[i,d];` to return a tensor of length one. The witness
+row is `[1, 0, 0, 0, 2''^-24, 2''^-24, 2''^-24, 2''^-24, 0.25]`. Linear f32 returns
+`1.25` (word `0x3fa00000`). Blocked f32 and the original f64 reference return
+`1.250000238418579` (f32 word `0x3fa00002`). The exact gate must reject the real rewrite
+and the tolerance gate must accept it. The tail-dropping candidate returns
+`1.000000238418579`, so the tolerance gate must reject it. Run all three decisions
+through the native entry point. Node 24 reproduced the values with the built differential
+runner during design.
+""")
+replace('"'The native synchronous entry point receives', 'The built "'`applyPass` probe'"', \"\"\"The native synchronous entry point takes a "'`Pass` from `definePass`, an input artifact,
+and options with parameters and a required callable check. It refuses nonempty `needs` and
+`preserves`, a declared async-manager contract, and kernels that use the logical edit
+or return a promise. The kernel has access to the ordinary input artifact and view. The
+framework validates the IR definition and adapter, prepares the native candidate, checks writes,
+and invokes the gate with immutable before and candidate artifacts. It requires a synchronous
+`CheckResult`. The caller gets a changed candidate only once the check accepts. Private IR
+views are sufficient for this path, which has no analysis, effects or transaction dependencies.
+
+""")
+s=s.replace('"'Node may\\nneed sandbox escalation.', 'Node may\\nneed sandbox escalation. Use explicit "'`*.test.mjs` globs for the tensor and framework suites on Node 24.'"')
+p.write_text(s)
+PY
+rg -n 'Stage|origin|budget|Mutate the block|Prefix|applyNativePassSync' \""'$ticket/design-doc/01-tix-stage-1-design.md" | tail -25' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 619ms:
+Traceback (most recent call last):
+  File "<stdin>", line 70, in <module>
+  File "<stdin>", line 7, in replace
+ValueError: substring not found
+89:binders and resolved extents. The split form adds an internal blocked-sum node with the original
+106:artifact and its original artifact. The clean compile shares one artifact for both. Evaluators
+123:small, valid calls for each entry function, driven by the origin signature and checked extents.
+127:at most 100,000 scalar evaluation visits per origin case. Fail the check if a candidate
+128:exhausts that budget on a selected case. Include zero and signed zero, ones, a
+144:- **Tolerance** compares candidate f32 against the original unoptimized f64 program on the same
+155:Check the result against the original as well, with exact comparison for functions still in
+157:use the tolerance comparison against the original on functions whose bodies were changed by the
+159:tolerance mode along with the original artifact so subsequent calls to `optimizeTix` keep the
+161:error budget. Comparing tolerant revisions pairwise would allow error to accumulate across runs.
+177:  For block `b`, visit original indices `4*b` through
+179:  body and its original index ID. Leave max, multi-index sums and already blocked nodes alone.
+181:  tail to affine bounds; the internal node expresses those bounds directly. Mutate the block
+187:`1.25` (word `0x3fa00000`). Blocked f32 and the original f64 reference return
+198:| `src/framework/passes/define-pass.ts` | Add `applyNativePassSync` for a native kernel that returns a candidate or an identity and a required synchronous semantic check. Share native artifact construction, projection diff, correspondence and declared-write checks with `applyPass`. Return the existing pass result shape and use `PassError('contractRejected', …)` for a negative verdict. |
+234:rejection, and origin preservation across calls. Add focused framework tests for the synchronous
+
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-020-C--*')
+python3 - \""'$ticket" <<'"'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])/'design-doc/01-tix-stage-1-design.md'
+s=p.read_text()
+def replace(a,b,r):
+    global s
+    i=s.index(a); j=s.index(b,i)
+    s=s[:i]+r+s[j:]
+replace('Numeric expressions accept', 'A lexer retains', \"\"\"A "'`NUMBER` token is `[0-9]+('"\\\\.[0-9]+)?([eE][+-]?[0-9]+)?"'` and must convert to a
+finite JS number. Unary signs are separate tokens. Affine expressions use integer tokens
+(`[0-9]+`), grouping, addition, subtraction and multiplication by integer constants. Shape
+names and extents are nonnegative safe integers. Support empty axes and row-major tensors
+whose sizes can be represented and allocated in the requested typed array. Inputs have the named
+parameter shapes, exactly the number of elements their shapes specify, and finite values in either
+API carrier. A finite f64 carrier value can round to infinity in f32.
+
+""")
+replace('"'Normalize shape and index', 'Check statements in order.', \"\"\"Normalize shape and index expressions to an integer constant plus ordered coefficients.
+Anchor each shape name to an input dimension. Prefer a bare name. A dimension "'`a*N+b` with one
+name is also an anchor, by directly inverting that dimension. Other affine dimensions may use any
+anchored names. A signature with names that occur exclusively in coupled dimensions is outside the
+supported binding domain. A simultaneous equation solver would accept those additional signatures.
+Direct anchors keep binding local while supporting shifted signatures such as `f32[H - 2]`.
+Annotations and shape-valued scalar expressions use names anchored by the signature.
+
+""")
+replace('"'For each affine access', '## Artifact and evaluators', \"\"\"For an affine access, derive its minimum and maximum from the active index ranges using
+coefficient signs. Prove that the minimum is nonnegative and the maximum is less than the
+referenced dimension. Assume nonnegative shape names and tensor dimensions, and positive
+active extents on the path. Normalize first and use constants and lower bounds from
+single-name dimensions. A statically empty iteration space needs no bounds proof. Reject
+inconsistent extents and access bounds that cannot be established, with source locations.
+Runtime access guards would accept additional programs whose indices are safe only at some
+sizes. The valid call domain gives each parameter its declared shape and each tensor a
+nonnegative extent. Binding validates those dimensions and data lengths when instantiating types.
+
+\"\"\")
+replace('Cases are deterministic,', 'The observation is', \"\"\"Cases are deterministic, small, valid calls for each entry function. Try eight uniform
+shape assignments, setting every name to each of "'`[0, 1, 2, 3, 4, 5, 7, 9]` in order,
+then eight mixed assignments whose choices come from the same list using framework
+`seededRandom(7)` in shape-name order. Sizes 5, 7 and 9 include a full block and a tail.
+Deduplicate concrete parameter shapes. Fixed-size signatures yield one shape. For each shape
+try zeros (alternating +0 and −0), ones, a deterministic nonuniform signed pattern, and
+seeded positive f32 data. Include the rounding witness whenever an input is shaped `[1,9]`,
+using that row for such parameters and ones for the others. Skip shape assignments outside
+the valid call domain or with more than 4,096 elements in any origin parameter or statement.
+
+Count each scalar expression visit and each reduction accumulation as one unit of work.
+Limit the origin to 100,000 units per case. Give each current or candidate evaluation
+200,000 units and limit each of its tensors to 4,096 elements. A split adds at most one
+outer accumulation per original term, so splitting an origin near its cap fits this allowance.
+A candidate exceeding its cap fails on that case. This also bounds extra work when inlining
+causes more evaluations than materialization. Require at least one comparable case per
+entry under check. Record sampled evidence with seed, entry, shapes, data pattern and first
+differing element. The evaluator also supports calls outside these sampling bounds.
+
+""")
+replace('"'Run requested passes in order.', '## Rewrites and evidence', \"\"\"Run requested passes in order. A changed "'`inline` compares exactly with its immediate
+input on origin-derived cases. That preserves the prior relation to the origin on those
+cases. Use tolerance for `split-sum` on each function changed by that application. Its
+baseline is always the original unoptimized f64 function, including across later calls to
+`optimizeTix`. Unchanged functions retain their previous code. A rejected meaning check
+yields `accepted: false` and the next pass sees the current accepted artifact. An identity
+yields `accepted: true`.
+
+""")
+replace('"'Mutate the block', '\\n## Framework change', \"\"\"The wrong split kernel adds
+  "'`prefix[i,d]: f32[1,8] = x[i,d+i];` in the fixed-shape witness and blocks the sum over the
+  prefix. With `i` of extent 1, it copies columns 0 through 7 and drops column 8. It is valid
+  IR. Run it as a `definePass` kernel through `applyNativePassSync` with the ordinary
+  tolerance gate and origin-derived cases. The gate must reject it on the rounding witness.
+  Run the wrong inline kernel through the same entry point with the ordinary exact gate.
+
+Use `x: f32[1,9]` and `y[i] = sum(d) x[i,d];` to return a tensor of length one. The witness
+row is `[1, 0, 0, 0, 2''^-24, 2''^-24, 2''^-24, 2''^-24, 0.25]`. Linear f32 returns
+`1.25` (word `0x3fa00000`). Blocked f32 and the original f64 reference return
+`1.250000238418579` (f32 word `0x3fa00002`). The exact gate must reject the real rewrite and
+the tolerance gate must accept it. The tail-dropping candidate returns `1.000000238418579`,
+so tolerance must reject it. Run all three decisions through the native entry point. Node 24
+reproduced the values with the built differential runner during design.
+""")
+replace('"'The native synchronous entry point receives', 'The built "'`applyPass` probe'"', \"\"\"The synchronous entry point takes a "'`Pass` from `definePass`, an input artifact and
+options with a mandatory check and pass parameters. It refuses nonempty `needs` and
+`preserves`, a declared manager contract, and kernels that use the logical edit or
+return a promise. The kernel has the ordinary input artifact and view. The framework
+validates the IR definition and adapter, prepares the candidate, checks writes and invokes
+the gate with immutable artifacts. The gate returns a synchronous `CheckResult`. Private
+IR views suffice for this path, which runs without analysis or effect transactions.
+
+""")
+s=s.replace('"'"'`node --test tests/framework/`'"','"'`node --test tests/framework/*.test.mjs`'"')
+p.write_text(s)
+PY
+cat >> \""'$ticket/analysis/01-diary.md" <<'"'EOF'
+
+## Step 2 — Revise the design after review
+
+The review tightened the synchronous pass surface and made the sampling policy
+reproducible. I revised the design before beginning implementation. The native path
+accepts an existing "'`Pass`, and inline keeps its prior relation to the origin by
+matching the incoming revision exactly on the same origin-derived cases.
+
+### Prompt context
+
+The user supplied the review, then requested a design-only revision commit followed by
+implementation, scoped test runs, and implementation commits in this session.
+
+### What changed and why
+
+- Replaced simultaneous affine binding with direct single-name anchors. This keeps
+  shifted dimensions such as `H - 2` and makes the supported signature domain explicit.
+- Made bounds a compile-time obligation, with ordinary shape validation when instantiating
+  tensor types.
+- Specified the decimal NUMBER grammar, the sixteen deterministic shape assignments and
+  the separate origin and candidate work budgets.
+- Specified the tail-dropping kernel, its in-domain prefix and the expected tolerance
+  rejection through the synchronous gate. Retained the original f64 reference and finite
+  reference case selection.
+- Marked the review complete. The implementation checkpoint will record code and tests.
+
+### Checks
+
+`docmgr doctor` checks the revised ticket. No implementation tests belong to this
+checkpoint.
+EOF
+docmgr task check --ticket IRWB-020-C --id lx1c
+docmgr changelog update --ticket IRWB-020-C --entry '"'Revised the design after review. Specified case selection, candidate work limits, token grammar, and mutation checks. Narrowed the synchronous entry point to existing pass definitions.'
+docmgr doctor --ticket IRWB-020-C --stale-after 30
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 1026ms:
+Task checked: lx1c (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md)
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+## Doctor Report (1 findings)
+
+### IRWB-020-C
+
+- ✅ All checks passed
+
+
+exec
+/usr/bin/zsh -lc "git commit -am 'IRWB-020-C: Revise Tix design after review'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 227ms:
+[t1-sm/irwb-020-c 4cedbf8] IRWB-020-C: Revise Tix design after review
+ 4 files changed, 104 insertions(+), 68 deletions(-)
+
+exec
+/usr/bin/zsh -lc "rg -A24 -n 'function synchronous|function syncFunction' src/framework/ir/common.ts; sed -n '270,310p' src/framework/contracts/definitions.ts; sed -n '90,114p' src/framework/contracts/analysis-manager.ts; ls src/tensor tests/tensor corpus/tensor 2>/dev/null" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ exited 2 in 246ms:
+42:export function synchronous<T>(value: T, label: string): T {
+43-  if (
+44-    value &&
+45-    (typeof value === 'object' || typeof value === 'function') &&
+46-    typeof (
+47-      value as {
+48-        then?: unknown;
+49-      }
+50-    ).then === 'function'
+51-  ) {
+52-    void Promise.resolve(value).catch(() => {});
+53-    throw new IRError('ir.async', `${label} must be synchronous`);
+54-  }
+55-  return value;
+56-}
+57:export function syncFunction(fn: Function, label: string): void {
+58-  if (
+59-    fn.constructor.name === 'AsyncFunction' ||
+60-    fn.constructor.name === 'AsyncGeneratorFunction' ||
+61-    fn.constructor.name === 'GeneratorFunction'
+62-  )
+63-    throw new IRError('ir.async', `${label} must be synchronous`);
+64-}
+65-export const revisionRef = (artifact: { id: string; revision: string }): RevisionRef =>
+66-  immutable({
+67-    artifact: artifact.id,
+68-    revision: artifact.revision,
+69-  });
+70-export const sameRevision = (a: RevisionRef, b: RevisionRef): boolean =>
+71-  a.artifact === b.artifact && a.revision === b.revision;
+72-export const refKey = (ref: IRRef): string => canonical([ref.artifact, ref.revision, ref.entity]);
+73-export const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+  if (!nonempty(id)) throw new Error('Artifact id required');
+  const captured = immutable(value);
+  ir.validate(captured);
+  return immutable({
+    id,
+    kind: ir.id,
+    schemaVersion: ir.version,
+    contentHash: fingerprint(captured),
+    revision: fingerprint({
+      kind: ir.id,
+      schemaVersion: ir.version,
+      value: captured,
+    }),
+    value: captured,
+  });
+}
+export function validateArtifact<T>(ir: IRType<T>, value: unknown): asserts value is Artifact<T> {
+  if (!value || typeof value !== 'object') throw new Error(`Expected ${ir.id} artifact`);
+  const a = value as Artifact<T>;
+  if (a.kind !== ir.id || a.schemaVersion !== ir.version || !nonempty(a.id))
+    throw new Error(`Expected ${ir.id}@${ir.version} artifact`);
+  // IRWB-004: a frozen value the validator accepted is not validated again; the revision is computed once per value;
+  // and an artifact `immutable` built is encodable by construction (it passed the same checks as `canonical`)
+  validateOnce(ir.validate, a.value, undefined, ir);
+  if (a.contentHash !== fingerprint(a.value) || a.revision !== revisionOf(a.kind, a.schemaVersion, a.value))
+    throw new Error('Artifact content/revision hash does not match its immutable value');
+  if (!isCanonical(a)) canonical(a);
+}
+export const Check: ValueType<CheckResult> = defineType<CheckResult>({
+  id: 'contract.check-result',
+  version: '1',
+  description: 'Dynamically checked proposition and its evidence',
+  validate(v: unknown): asserts v is CheckResult {
+    if (!v || typeof v !== 'object' || typeof (v as CheckResult).ok !== 'boolean')
+      throw new Error('Expected {ok:boolean, reason?, evidence?}');
+    if ((v as CheckResult).reason !== undefined && typeof (v as CheckResult).reason !== 'string')
+      throw new Error('Check reason must be text');
+  },
+});
+export const FiniteNumber = defineType<number>({
+  id: 'contract.finite-number',
+    schemaVersion: a.schemaVersion,
+  });
+const uniquePush = (items: Dependency[], dependency: Dependency) => {
+  if (!items.some(d => canonical(d) === canonical(dependency))) items.push(immutable(dependency));
+};
+const checkResult = (v: unknown): CheckResult => {
+  Check.validate(v);
+  return immutable(v);
+};
+/** Revision-specific semantic facts, dependency-aware analyses and transactional verification. */
+export class AnalysisManager {
+  readonly registry: ContractRegistry;
+  readonly resources: ResourcePort;
+  private readonly store: Store = {
+    analyses: new Map(),
+    facts: new Map(),
+    analysisHistory: new Map(),
+    factHistory: new Map(),
+  };
+  private readonly executions: MutableExecution[] = [];
+  private readonly events: ContractEvent[] = [];
+  private readonly epochs = new Map<string, number>();
+  private readonly activeFrames = new Map<string, Frame>();
+  private readonly transformCache = new Map<string, CacheEntry>();
+  private serial = 0;
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/framework/passes/define-pass.ts')
+s=p.read_text().replace(\"import { canonical }\", \"import { canonical, immutable }\")
+s=s.replace(\"import { diff }\", \"import { synchronous } from '../ir/common.js';\\nimport { Check, validateArtifact } from '../contracts/definitions.js';\\nimport { diff }\")
+s=s.replace('  Correspondence,\\n', '  Correspondence,\\n  CheckResult,\\n')
+start=s.index('    const id = options.outputId ?? before.id;')
+end=s.index('\\n  } else {',start)
+s=s[:start]+'''    ({ after, changes, correspondence, edits, report } = prepareNativeCandidate(
+      pass,
+      view,
+      produced,
+      options.outputId ?? before.id,
+      options.store,
+    ));'''+s[end:]
+start=s.index('      return {\\n        pass:')
+end=s.index('\\n    }',start)
+s=s[:start]+'      return identity(pass, before);'+s[end:]
+start=s.index('  if (after.revision === before.revision')
+end=s.index('\\n  let contract:',start)
+s=s[:start]+'''  if (unchanged(before, after, changes)) return identity(pass, before);
+  assertDeclaredWrites(pass, changes);
+'''+s[end:]
+i=s.index('export async function applyPass')
+s=s[:i]+'''function prepareNativeCandidate<S>(
+  pass: Pick<PassSpec<S, Needs>, 'adapter'>,
+  view: IRView<S>,
+  produced: NativeResult<S>,
+  id: string,
+  store?: IRStore,
+) {
+  const before = view.artifact;
+  const after = createIRArtifact(pass.adapter, id, produced.native);
+  const afterView = openIR(after, pass.adapter, store);
+  const changes = diff(view, afterView);
+  const correspondence = makeCorrespondence(
+    { artifact: before.id, revision: before.revision },
+    { artifact: after.id, revision: after.revision },
+    view.graph().entities.map(e => e.id),
+    afterView.graph().entities.map(e => e.id),
+    produced.correspondence ?? [],
+  );
+  return { after, changes, correspondence, edits: produced.edits ?? changes.entities.length, report: produced.report };
+}
+
+function unchanged(before: Artifact, after: Artifact, changes: ChangeSet): boolean {
+  return after.revision === before.revision && "'!changes.entities.length && !changes.relations.length;
+}
+
+function identity<S>(pass: Pick<PassSpec<S, Needs>, '"'id' | 'version'>, before: Artifact<S>): PassResult<S> {
+  return {
+    pass: { id: pass.id, version: pass.version },
+    changed: false,
+    before,
+    artifact: before,
+    edits: 0,
+    preserved: [],
+  };
+}
+
+function assertDeclaredWrites(pass: Pick<PassSpec<any, any>, 'id' | 'writes'>, changes: ChangeSet): void {
+  const undeclared = undeclaredWrites(pass.writes, changes);
+  if (undeclared.length)
+    throw new PassError('undeclaredWrite', "'`Pass ${pass.id} changed kinds it did not declare in writes`, {
+      undeclared: undeclared.slice(0, 20),
+    });
+}
+
+/** Apply a native-only pass with a mandatory synchronous gate and private IR views. */
+export function applyNativePassSync<S, N extends Needs, P>(
+  pass: Pass<S, N, P>,
+  input: Artifact<S>,
+  options: {
+    readonly params?: P;
+    readonly check: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult;
+  },
+): PassResult<S> {
+  if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
+    throw new PassError('"'badResult', "'`Pass ${pass.id} requires the asynchronous pass runner`);
+  if (typeof options?.check !== '"'function')
+    throw new PassError('badResult', "'`Pass ${pass.id} requires a synchronous check`);
+
+  const view = openIR(input, pass.adapter);
+  const before = view.artifact;
+  validateArtifact(pass.ir, before);
+  const produced = synchronous(
+    pass.run({
+      before,
+      view,
+      facts: {} as FactValues<N>,
+      records: {} as PassRunContext<S, N, P>['"'records'],
+      params: options.params as P,
+      get edit(): IREdit<S> {
+        throw new PassError('badResult', "'`Pass ${pass.id} requires a native result on the synchronous path`);
+      },
+    }),
+    `Pass ${pass.id} kernel`,
+  );
+  if (produced === undefined) return identity(pass, before);
+  if (!produced || typeof produced !== '"'object' || "'!('"'native' in produced))
+    throw new PassError('badResult', "'`Pass ${pass.id} must return a native result`);
+
+  const { after, changes, correspondence, edits, report } = prepareNativeCandidate(
+    pass, view, produced, before.id,
+  );
+  validateArtifact(pass.ir, after);
+  if (unchanged(before, after, changes)) return identity(pass, before);
+  assertDeclaredWrites(pass, changes);
+  const verdict = synchronous(options.check(before, after), `Pass ${pass.id} check`);
+  Check.validate(verdict);
+  const contract = immutable(verdict);
+  if (!contract.ok)
+    throw new PassError('"'contractRejected', "'`Pass ${pass.id} output rejected: ${contract.reason ?? '"'check failed'}"'`,
+      contract.evidence);
+  return {
+    pass: { id: pass.id, version: pass.version },
+    changed: true,
+    before,
+    artifact: after,
+    changes,
+    correspondence,
+    edits,
+    preserved: [],
+    contract,
+    report,
+  };
+}
+
+'"'''+s[i:]
+p.write_text(s)
+PY
+mkdir -p src/tensor tests/tensor corpus/tensor/{matmul,softmax,layernorm,attention,mlp,conv2d}" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 345ms:
+exec
+/usr/bin/zsh -lc "cat > src/tensor/model.ts <<'EOF'
+export interface Location {
+  readonly line: number;
+  readonly col: number;
+}
+
+export function fail(at: Location, message: string): never {
+  throw new Error("'`${at.line}:${at.col}: ${message}`);
+}
+
+export interface Affine {
+  readonly constant: number;
+  readonly terms: readonly (readonly [name: string, coefficient: number])[];
+}
+
+export const constant = (value: number): Affine => ({ constant: value, terms: [] });
+export const variable = (name: string): Affine => ({ constant: 0, terms: [[name, 1]] });
+
+export function affineSum(at: Location, parts: readonly (readonly [Affine, number])[]): Affine {
+  let offset = 0n;
+  const coefficients = new Map<string, bigint>();
+  for (const [affine, multiplier] of parts) {
+    const scale = BigInt(multiplier);
+    offset += BigInt(affine.constant) * scale;
+    for (const [name, coefficient] of affine.terms)
+      coefficients.set(name, (coefficients.get(name) ?? 0n) + BigInt(coefficient) * scale);
+  }
+  const safe = (value: bigint) => {
+    const number = Number(value);
+    if (!Number.isSafeInteger(number)) fail(at, '"'affine coefficient or constant exceeds the safe integer range');
+    return number;
+  };
+  const terms = [...coefficients.keys()].sort().flatMap(name => {
+    const coefficient = coefficients.get(name)"'!;
+    return coefficient ? [[name, safe(coefficient)] as const] : [];
+  });
+  return { constant: safe(offset), terms };
+}
+
+export function affineValue(affine: Affine, bindings: ReadonlyMap<string, number>): bigint {
+  let value = BigInt(affine.constant);
+  for (const [name, coefficient] of affine.terms)
+    value += BigInt(coefficient) * BigInt(bindings.get(name)!);
+  return value;
+}
+
+export function sameAffine(left: Affine, right: Affine): boolean {
+  return left.constant === right.constant && left.terms.length === right.terms.length &&
+    left.terms.every(([name, coefficient], index) =>
+      name === right.terms[index]![0] && coefficient === right.terms[index]![1]);
+}
+
+export function plainIndex(affine: Affine): string | undefined {
+  if (affine.constant === 0 && affine.terms.length === 1 && affine.terms[0]![1] === 1)
+    return affine.terms[0]![0];
+}
+
+export interface Binder {
+  readonly id: string;
+  readonly extent: Affine;
+}
+
+type Primitive = '"'+' | '-' | '*' | '/' | 'neg' | 'exp' | 'log' | 'sqrt' | 'tanh' | 'max' | 'min';
+
+export type Expr<B = Binder> = { readonly at: Location } & (
+  | { readonly kind: 'number'; readonly value: number }
+  | { readonly kind: 'shape'; readonly name: string }
+  | { readonly kind: 'ref'; readonly tensor: string; readonly indices: readonly Affine[] }
+  | { readonly kind: 'primitive'; readonly op: Primitive; readonly args: readonly Expr<B>[] }
+  | {
+      readonly kind: 'reduce';
+      readonly op: 'sum' | 'max';
+      readonly axes: readonly B[];
+      readonly body: Expr<B>;
+    }
+  | {
+      readonly kind: 'blocked-sum';
+      readonly axis: B;
+      readonly block: number;
+      readonly body: Expr<B>;
+    }
+);
+
+export function visitExpr<B>(expr: Expr<B>, visit: (expr: Expr<B>) => void): void {
+  visit(expr);
+  if (expr.kind === 'primitive') expr.args.forEach(arg => visitExpr(arg, visit));
+  if (expr.kind === 'reduce' || expr.kind === 'blocked-sum') visitExpr(expr.body, visit);
+}
+
+export interface Parameter {
+  readonly name: string;
+  readonly shape: readonly Affine[];
+  readonly at: Location;
+}
+
+export interface Statement {
+  readonly name: string;
+  readonly axes: readonly Binder[];
+  readonly expr: Expr;
+  readonly at: Location;
+}
+
+export interface Anchor {
+  readonly name: string;
+  readonly param: number;
+  readonly axis: number;
+}
+
+export interface TixFunction {
+  readonly name: string;
+  readonly at: Location;
+  readonly anchors: readonly Anchor[];
+  readonly params: readonly Parameter[];
+  readonly statements: readonly Statement[];
+  readonly result: readonly Affine[];
+  readonly returns: string;
+  readonly returnAt: Location;
+}
+
+export interface TensorIR {
+  readonly functions: readonly TixFunction[];
+}
+
+export const statementShape = (statement: Statement) => statement.axes.map(axis => axis.extent);
+EOF
+cat > src/tensor/parse.ts <<'EOF'
+import {
+  affineSum, constant, fail, variable,
+  type Affine, type Expr, type Location, type Parameter,
+} from './model.js';
+
+interface Token extends Location {
+  readonly text: string;
+  readonly kind: 'name' | 'number' | 'symbol' | 'end';
+}
+
+export interface SourceStatement {
+  readonly name: string;
+  readonly axes: readonly string[];
+  readonly shape?: readonly Affine[];
+  readonly expr: Expr<string>;
+  readonly at: Location;
+}
+
+export interface SourceFunction {
+  readonly name: string;
+  readonly at: Location;
+  readonly params: readonly Parameter[];
+  readonly statements: readonly SourceStatement[];
+  readonly result: readonly Affine[];
+  readonly returns: string;
+  readonly returnAt: Location;
+}
+
+const keywords = new Set(['fn', 'return', 'f32', 'exp', 'log', 'sqrt', 'tanh', 'max', 'min', 'sum']);
+const binary = { '+': 1, '-': 1, '*': 2, '/': 2 } as const;
+const unaryCalls = new Set(['exp', 'log', 'sqrt', 'tanh']);
+const location = ({ line, col }: Token): Location => ({ line, col });
+
+function tokenize(source: string): Token[] {
+  const tokens: Token[] = [];
+  const lexer = /([ \\t\\f\\v]+|\\r\\n?|\\n|\\/\\/["'^'"\\r\\n]*)|([a-zA-Z_][a-zA-Z_0-9]*)|([0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)|([()[\\]{},:;=+*/-])/y;
+  let line = 1;
+  let col = 1;
+  let offset = 0;
+  while (offset < source.length) {
+    const match = lexer.exec(source);
+    if ("'!match) fail({ line, col }, `unexpected character ${JSON.stringify(source[offset])}`);
+    const [text, space, name, number] = match;
+    if (!space) tokens.push({ text, line, col, kind: name ? '"'name' : number ? 'number' : 'symbol' });
+    if (text[0] === '\\r' || text[0] === '\\n') {
+      line++;
+      col = 1;
+    } else {
+      col += text.length;
+    }
+    offset = lexer.lastIndex;
+  }
+  tokens.push({ text: '', kind: 'end', line, col });
+  return tokens;
+}
+
+class Parser {
+  private index = 0;
+  private shapeNames = new Set<string>();
+
+  constructor(private readonly tokens: readonly Token[]) {}
+
+  private peek(): Token {
+    return this.tokens[this.index]"'!;
+  }
+
+  private pop(): Token {
+    const token = [REDACTED_SECRET]
+    if (token.kind !== '"'end') this.index++;
+    return token;
+  }
+
+  private expect(text: string): Token {
+    const token = [REDACTED_SECRET]
+    if (token.text "'!== text) fail(token, `expected "${text}"`);
+    return token;
+  }
+
+  private name(): Token {
+    const token = [REDACTED_SECRET]
+    if (token.kind !== '"'name' || keywords.has(token.text)) fail(token, 'expected a name');
+    return token;
+  }
+
+  private list<T>(item: () => T, end: string): T[] {
+    const items = [item()];
+    while (this.peek().text === ',') {
+      this.pop();
+      items.push(item());
+    }
+    this.expect(end);
+    return items;
+  }
+
+  private affine(min = 1): Affine {
+    const token = [REDACTED_SECRET]
+    let value: Affine;
+    if (token.text === '-') {
+      value = affineSum(token, [[this.affine(3), -1]]);
+    } else if (token.text === '(') {
+      value = this.affine();
+      this.expect(')');
+    } else if (token.kind === 'number' && /"'^[0-9]+$/.test(token.text)) {
+      const integer = Number(token.text);
+      if (!Number.isSafeInteger(integer)) fail(token, '"'expected a safe integer');
+      value = constant(integer);
+    } else if (token.kind === 'name' && "'!keywords.has(token.text)) {
+      value = variable(token.text);
+    } else {
+      fail(token, '"'expected an affine expression');
+    }
+
+    while (true) {
+      const op = this.peek();
+      if (op.text "'!== '"'+' && op.text "'!== '"'-' && op.text "'!== '"'*') return value;
+      const precedence = binary[op.text];
+      if (precedence < min) return value;
+      this.pop();
+      const right = this.affine(precedence + 1);
+      if (op.text === '*') {
+        if (value.terms.length && right.terms.length) fail(op, 'affine multiplication requires a constant');
+        value = value.terms.length
+          ? affineSum(op, [[value, right.constant]])
+          : affineSum(op, [[right, value.constant]]);
+      } else {
+        value = affineSum(op, [[value, 1], [right, op.text === '+' ? 1 : -1]]);
+      }
+    }
+  }
+
+  private type(): Affine[] {
+    this.expect('f32');
+    this.expect('[');
+    return this.list(() => this.affine(), ']');
+  }
+
+  private maxReduction(): boolean {
+    const axes: string[] = [];
+    let end = this.index;
+    while (true) {
+      const token = [REDACTED_SECRET]"'!;
+      if (token.kind !== '"'name' || keywords.has(token.text)) return false;
+      axes.push(token.text);
+      const separator = this.tokens[++end]"'!.text;
+      if (separator === '"')') break;
+      if (separator "'!== '"',') return false;
+      end++;
+    }
+    if (axes.length "'!== 2) return true;
+    const next = this.tokens[end + 1]!;
+    if (next.text === '"'-') return "'!axes.every(axis => this.shapeNames.has(axis));
+    return next.kind === '"'number' || next.text === '(' || next.kind === 'name';
+  }
+
+  private atom(): Expr<string> {
+    const token = [REDACTED_SECRET]
+    const at = location(token);
+    if (token.text === '-') return { at, kind: 'primitive', op: 'neg', args: [this.expr(3)] };
+    if (token.text === '(') {
+      const value = this.expr();
+      this.expect(')');
+      return value;
+    }
+    if (token.kind === 'number') {
+      const value = Number(token.text);
+      if ("'!Number.isFinite(value)) fail(at, '"'literal must be a finite number');
+      return { at, kind: 'number', value };
+    }
+    if (token.text === 'sum' || token.text === 'max') {
+      this.expect('(');
+      if (token.text === 'sum' || this.maxReduction()) {
+        const axes = this.list(() => this.name().text, ')');
+        return { at, kind: 'reduce', op: token.text, axes, body: this.expr() };
+      }
+      const left = this.expr();
+      this.expect(',');
+      const right = this.expr();
+      this.expect(')');
+      return { at, kind: 'primitive', op: 'max', args: [left, right] };
+    }
+    if (token.text === 'min' || unaryCalls.has(token.text)) {
+      const op = token.text as 'min' | 'exp' | 'log' | 'sqrt' | 'tanh';
+      this.expect('(');
+      const args = [this.expr()];
+      if (op === 'min') {
+        this.expect(',');
+        args.push(this.expr());
+      }
+      this.expect(')');
+      return { at, kind: 'primitive', op, args };
+    }
+    if (token.kind "'!== '"'name' || keywords.has(token.text)) fail(at, 'expected a scalar expression');
+    if (this.peek().text "'!== '"'[') return { at, kind: 'shape', name: token.text };
+    this.pop();
+    return { at, kind: 'ref', tensor: token.text, indices: this.list(() => this.affine(), ']') };
+  }
+
+  private expr(min = 1): Expr<string> {
+    let left = this.atom();
+    while (Object.hasOwn(binary, this.peek().text)) {
+      const token = [REDACTED_SECRET]
+      const op = token.text as keyof typeof binary;
+      if (binary[op] < min) break;
+      this.pop();
+      left = { at: location(token), kind: 'primitive', op, args: [left, this.expr(binary[op] + 1)] };
+    }
+    return left;
+  }
+
+  private param(): Parameter {
+    const name = this.name();
+    this.expect(':');
+    return { name: name.text, at: location(name), shape: this.type() };
+  }
+
+  private statement(): SourceStatement {
+    const name = this.name();
+    this.expect('[');
+    const axes = this.list(() => this.name().text, ']');
+    const shape = this.peek().text === ':' ? (this.pop(), this.type()) : undefined;
+    this.expect('=');
+    const expr = this.expr();
+    this.expect(';');
+    return { at: location(name), name: name.text, axes, shape, expr };
+  }
+
+  private function(): SourceFunction {
+    this.expect('fn');
+    const name = this.name();
+    this.expect('(');
+    const params = this.list(() => this.param(), ')');
+    this.shapeNames = new Set(params.flatMap(param => param.shape.flatMap(dim => dim.terms.map(([key]) => key))));
+    this.expect(':');
+    const result = this.type();
+    this.expect('{');
+    const statements: SourceStatement[] = [];
+    while (this.peek().text "'!== '"'return') statements.push(this.statement());
+    this.expect('return');
+    const returns = this.name();
+    this.expect(';');
+    this.expect('}');
+    return {
+      name: name.text, at: location(name), params, statements, result,
+      returns: returns.text, returnAt: location(returns),
+    };
+  }
+
+  program(): SourceFunction[] {
+    const functions = [this.function()];
+    while (this.peek().kind "'!== '"'end') functions.push(this.function());
+    return functions;
+  }
+}
+
+export function parse(source: string): SourceFunction[] {
+  return new Parser(tokenize(source)).program();
+}
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 234ms:
+exec
+/usr/bin/zsh -lc "cat > src/tensor/check.ts <<'EOF'
+import {
+  affineSum, constant, fail, plainIndex, sameAffine, statementShape,
+  type Affine, type Anchor, type Binder, type Expr, type Location, type Parameter,
+  type Statement, type TensorIR, type TixFunction,
+} from './model.js';
+import type { SourceFunction, SourceStatement } from './parse.js';
+
+type Shapes = ReadonlyMap<string, readonly Affine[]>;
+type PendingBinder = { id: string; extent?: Affine };
+
+function anchorsFor(params: readonly Parameter[]): Anchor[] {
+  const mentioned = new Map<string, Location>();
+  const anchors = new Map<string, Anchor>();
+  params.forEach((param, paramIndex) => param.shape.forEach((dim, axis) => {
+    for (const [name] of dim.terms) mentioned.set(name, param.at);
+    if (dim.terms.length "'!== 1) return;
+    const name = dim.terms[0]![0];
+    const previous = anchors.get(name);
+    if (!previous || plainIndex(dim) === name && plainIndex(params[previous.param]!.shape[previous.axis]!) !== name)
+      anchors.set(name, { name, param: paramIndex, axis });
+  }));
+  return [...mentioned.keys()].sort().map(name => anchors.get(name) ??
+    fail(mentioned.get(name)!, `shape name "${name}" needs a single-name parameter dimension`));
+}
+
+function sameShape(left: readonly Affine[], right: readonly Affine[]): boolean {
+  return left.length === right.length && left.every((dim, axis) => sameAffine(dim, right[axis]!));
+}
+
+function shapeOf(shapes: Shapes, tensor: string, at: Location): readonly Affine[] {
+  return shapes.get(tensor) ?? fail(at, `unknown tensor "${tensor}"`);
+}
+
+function resolveStatement(
+  source: SourceStatement,
+  shapes: Shapes,
+  nextIndex: () => string,
+): Statement {
+  const scope = new Map<string, PendingBinder>();
+  function bind(names: readonly string[], at: Location, inScope: Map<string, PendingBinder>) {
+    const seen = new Set<string>();
+    return names.map(name => {
+      if (seen.has(name)) fail(at, `duplicate index "${name}"`);
+      seen.add(name);
+      const pending = { id: nextIndex() };
+      inScope.set(name, pending);
+      return pending as PendingBinder;
+    });
+  }
+  function finish(pending: PendingBinder, name: string, at: Location): Binder {
+    return { id: pending.id, extent: pending.extent ?? fail(at, `cannot infer extent of index "${name}"`) };
+  }
+  function resolve(expr: Expr<string>, indices: Map<string, PendingBinder>): Expr {
+    switch (expr.kind) {
+      case '"'ref': {
+        const shape = shapeOf(shapes, expr.tensor, expr.at);
+        if (shape.length "'!== expr.indices.length) fail(expr.at, `rank mismatch for "${expr.tensor}"`);
+        const offsets = expr.indices.map((index, axis) => {
+          const plain = plainIndex(index);
+          if (plain !== undefined) {
+            const binder = indices.get(plain) ?? fail(expr.at, `unbound index "${plain}"`);
+            const extent = shape[axis]!;
+            if (binder.extent && !sameAffine(binder.extent, extent))
+              fail(expr.at, `inconsistent extents for index "${plain}"`);
+            binder.extent = extent;
+          }
+          return {
+            constant: index.constant,
+            terms: index.terms.map(([name, coefficient]) => [
+              (indices.get(name) ?? fail(expr.at, `unbound index "${name}"`)).id, coefficient,
+            ] as const).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0),
+          };
+        });
+        return { ...expr, indices: offsets };
+      }
+      case '"'primitive':
+        return { ...expr, args: expr.args.map(arg => resolve(arg, indices)) };
+      case 'reduce': {
+        const nested = new Map(indices);
+        const pending = bind(expr.axes, expr.at, nested);
+        const body = resolve(expr.body, nested);
+        return { ...expr, axes: pending.map((axis, i) => finish(axis, expr.axes[i]"'!, expr.at)), body };
+      }
+      case '"'blocked-sum':
+        fail(expr.at, 'blocked sum is an internal expression');
+      default:
+        return expr;
+    }
+  }
+
+  const axes = bind(source.axes, source.at, scope);
+  if (source.shape) {
+    if (source.shape.length "'!== axes.length) fail(source.at, '"'rank mismatch in tensor annotation');
+    axes.forEach((axis, index) => { axis.extent = source.shape"'![index]; });
+  }
+  const expr = resolve(source.expr, scope);
+  return {
+    name: source.name,
+    at: source.at,
+    axes: axes.map((axis, index) => finish(axis, source.axes[index]!, source.at)),
+    expr,
+  };
+}
+
+export function checkSource(functions: readonly SourceFunction[]): TensorIR {
+  const value = {
+    functions: functions.map(source => {
+      const shapes = new Map<string, readonly Affine[]>(source.params.map(param => [param.name, param.shape]));
+      const anchors = anchorsFor(source.params);
+      let index = 0;
+      const statements = source.statements.map(statement => {
+        if (shapes.has(statement.name)) fail(statement.at, `tensor "${statement.name}" is already defined`);
+        const resolved = resolveStatement(statement, shapes, () => `i${index++}`);
+        shapes.set(statement.name, statementShape(resolved));
+        return resolved;
+      });
+      return { ...source, anchors, statements };
+    }),
+  };
+  return value;
+}
+
+type ShapeFact = { affine: Affine; min: number };
+
+function boundsFor(facts: readonly ShapeFact[]) {
+  const result = new Map<string, { low: bigint; high: bigint }>();
+  let possible = true;
+  for (const { affine, min } of facts) {
+    if (affine.terms.length === 0) {
+      if (affine.constant < min) possible = false;
+      continue;
+    }
+    if (affine.terms.length !== 1) continue;
+    const [name, coefficient] = affine.terms[0]!;
+    const bound = result.get(name) ?? { low: 0n, high: BigInt(Number.MAX_SAFE_INTEGER) };
+    const distance = BigInt(min) - BigInt(affine.constant);
+    const step = BigInt(Math.abs(coefficient));
+    if (coefficient > 0 && distance > 0n) {
+      const low = (distance + step - 1n) / step;
+      if (low > bound.low) bound.low = low;
+    } else if (coefficient < 0) {
+      const high = distance > 0n ? -1n : (-distance) / step;
+      if (high < bound.high) bound.high = high;
+    }
+    if (bound.low > bound.high) possible = false;
+    result.set(name, bound);
+  }
+  return { possible, result };
+}
+
+function proveBounds(
+  expr: Extract<Expr, { kind: '"'ref' }>,
+  shape: readonly Affine[],
+  active: ReadonlyMap<string, Affine>,
+  shapeFacts: readonly ShapeFact[],
+) {
+  for (const index of expr.indices)
+    for (const [name] of index.terms)
+      if ("'!active.has(name)) fail(expr.at, `unbound index "${name}"`);
+  const facts = [...shapeFacts, ...[...active.values()].map(affine => ({ affine, min: 1 }))];
+  const bounds = boundsFor(facts);
+  if (!bounds.possible) return;
+
+  function nonnegative(affine: Affine) {
+    if (facts.some(fact => sameAffine(fact.affine, affine))) return true;
+    let low = BigInt(affine.constant);
+    for (const [name, coefficient] of affine.terms) {
+      const bound = bounds.result.get(name);
+      low += BigInt(coefficient) * (coefficient > 0 ? bound?.low ?? 0n : bound?.high ?? BigInt(Number.MAX_SAFE_INTEGER));
+    }
+    return low >= 0n;
+  }
+
+  expr.indices.forEach((access, axis) => {
+    const minTerms: [Affine, number][] = [[constant(access.constant), 1]];
+    const maxTerms: [Affine, number][] = [[constant(access.constant), 1]];
+    for (const [name, coefficient] of access.terms) {
+      const range = affineSum(expr.at, [[active.get(name)!, 1], [constant(1), -1]]);
+      (coefficient < 0 ? minTerms : maxTerms).push([range, coefficient]);
+    }
+    const room = affineSum(expr.at, [[shape[axis]!, 1], [constant(1), -1],
+      ...maxTerms.map(([term, factor]) => [term, -factor] as const)]);
+    if (!nonnegative(affineSum(expr.at, minTerms)) || !nonnegative(room))
+      fail(expr.at, `cannot establish bounds for "${expr.tensor}" axis ${axis + 1}`);
+  });
+}
+
+function validateFunction(fn: TixFunction): void {
+  const names = new Set(fn.anchors.map(anchor => anchor.name));
+  const actualAnchors = anchorsFor(fn.params);
+  if (actualAnchors.length !== fn.anchors.length || actualAnchors.some((a, i) => {
+    const b = fn.anchors[i]!;
+    return a.name !== b.name || a.axis !== b.axis || a.param !== b.param;
+  })) fail(fn.at, '"'invalid shape anchors');
+
+  function checkShape(shape: readonly Affine[], at: Location) {
+    if ("'!shape.length) fail(at, '"'expected a tensor shape');
+    for (const dim of shape) {
+      if ("'!Number.isSafeInteger(dim.constant) || dim.terms.some(([name, coefficient], index) =>
+        !names.has(name) || !Number.isSafeInteger(coefficient) || !coefficient ||
+        index > 0 && name <= dim.terms[index - 1]![0]))
+        fail(at, '"'invalid affine dimension or unbound shape name');
+      if ("'!dim.terms.length && dim.constant < 0) fail(at, '"'negative tensor extent');
+    }
+  }
+
+  if ("'!fn.params.length) fail(fn.at, '"'expected at least one parameter');
+  const tensors = new Map<string, readonly Affine[]>();
+  for (const param of fn.params) {
+    if (tensors.has(param.name)) fail(param.at, "'`tensor "${param.name}" is already defined`);
+    checkShape(param.shape, param.at);
+    tensors.set(param.name, param.shape);
+  }
+  checkShape(fn.result, fn.at);
+  const facts = [...tensors.values(), ...fn.statements.map(statementShape), fn.result]
+    .flatMap(shape => shape.map(affine => ({ affine, min: 0 })));
+  if (!boundsFor(facts).possible) fail(fn.at, '"'inconsistent tensor dimensions');
+
+  function extend(active: ReadonlyMap<string, Affine>, axes: readonly Binder[], at: Location) {
+    checkShape(axes.map(axis => axis.extent), at);
+    const nested = new Map(active);
+    for (const axis of axes) {
+      if (nested.has(axis.id)) fail(at, 'duplicate IR binder');
+      nested.set(axis.id, axis.extent);
+    }
+    return nested;
+  }
+
+  function checkExpr(expr: Expr, active: ReadonlyMap<string, Affine>): void {
+    switch (expr.kind) {
+      case 'number':
+        if ("'!Number.isFinite(expr.value)) fail(expr.at, '"'invalid number in IR');
+        return;
+      case 'shape':
+        if ("'!names.has(expr.name)) fail(expr.at, `unbound shape name "${expr.name}"`);
+        return;
+      case '"'ref': {
+        const shape = shapeOf(tensors, expr.tensor, expr.at);
+        if (shape.length "'!== expr.indices.length) fail(expr.at, `rank mismatch for "${expr.tensor}"`);
+        for (const index of expr.indices) {
+          if (!Number.isSafeInteger(index.constant) || index.terms.some(([name, coefficient], order) =>
+            !Number.isSafeInteger(coefficient) || !coefficient ||
+            order > 0 && name <= index.terms[order - 1]![0]))
+            fail(expr.at, '"'invalid affine index');
+        }
+        proveBounds(expr, shape, active, facts);
+        return;
+      }
+      case 'primitive': {
+        const unary = ['neg', 'exp', 'log', 'sqrt', 'tanh'].includes(expr.op);
+        const binary = ['+', '-', '*', '/', 'min', 'max'].includes(expr.op);
+        if ("'!(unary && expr.args.length === 1 || binary && expr.args.length === 2))
+          fail(expr.at, '"'invalid primitive in IR');
+        expr.args.forEach(arg => checkExpr(arg, active));
+        return;
+      }
+      case 'reduce':
+        if (expr.op "'!== '"'sum' && expr.op "'!== '"'max') fail(expr.at, 'invalid reduction in IR');
+        checkExpr(expr.body, extend(active, expr.axes, expr.at));
+        return;
+      case 'blocked-sum':
+        if ("'!Number.isSafeInteger(expr.block) || expr.block < 1) fail(expr.at, '"'invalid sum block width');
+        checkExpr(expr.body, extend(active, [expr.axis], expr.at));
+        return;
+      default:
+        throw new Error('Invalid tensor expression kind');
+    }
+  }
+
+  for (const statement of fn.statements) {
+    if (tensors.has(statement.name)) fail(statement.at, "'`tensor "${statement.name}" is already defined`);
+    checkExpr(statement.expr, extend(new Map(), statement.axes, statement.at));
+    tensors.set(statement.name, statementShape(statement));
+  }
+  if (!sameShape(fn.result, shapeOf(tensors, fn.returns, fn.returnAt)))
+    fail(fn.returnAt, '"'returned tensor does not match the declared type');
+}
+
+export function validateTensorIR(value: unknown): asserts value is TensorIR {
+  const program = value as TensorIR;
+  if ("'!program || !Array.isArray(program.functions) || !program.functions.length)
+    throw new Error('"'Expected a tensor program with at least one function');
+  const seen = new Set<string>();
+  for (const fn of program.functions as readonly TixFunction[]) {
+    if ("'!fn || typeof fn.name !== '"'string' || "'!fn.name || !Array.isArray(fn.params) ||
+        !Array.isArray(fn.statements) || !Array.isArray(fn.anchors) || !Array.isArray(fn.result))
+      throw new Error('"'Invalid tensor function in IR');
+    if (seen.has(fn.name)) fail(fn.at, "'`function "${fn.name}" is already defined`);
+    seen.add(fn.name);
+    validateFunction(fn);
+  }
+}
+EOF' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 233ms:
+exec
+/usr/bin/zsh -lc "cat > src/tensor/ir.ts <<'EOF'
+import { defineIR } from '../framework/contracts/index.js';
+import { createIRArtifact, defineAdapter, type IREntity, type IRRelation } from '../framework/ir/index.js';
+import { validateTensorIR } from './check.js';
+import { visitExpr, type TensorIR, type TixFunction } from './model.js';
+
+export const TensorProgramIR = defineIR<TensorIR>({
+  id: 'tensor.tix',
+  version: '1',
+  description: 'Checked tensor functions in index notation',
+  validate: validateTensorIR,
+});
+
+const functionId = (name: string) => "'`fn:${name}`;
+const tensorId = (fn: TixFunction, name: string) => `tensor:${fn.name}:${name}`;
+
+function* entities(value: TensorIR): Iterable<IREntity> {
+  for (const fn of value.functions) {
+    yield {
+      id: functionId(fn.name), kind: '"'function',
+      attributes: { name: fn.name, anchors: fn.anchors, result: fn.result, returns: fn.returns },
+    };
+    for (const param of fn.params)
+      yield { id: tensorId(fn, param.name), kind: 'parameter', attributes: { ...param } };
+    for (const stmt of fn.statements)
+      yield { id: tensorId(fn, stmt.name), kind: 'statement', attributes: { ...stmt } };
+  }
+}
+
+function* relations(value: TensorIR): Iterable<IRRelation> {
+  for (const fn of value.functions) {
+    const members = [...fn.params, ...fn.statements];
+    for (const [order, member] of members.entries())
+      yield {
+        id: "'`member:${fn.name}:${member.name}`, kind: '"'member', category: 'containment',
+        from: functionId(fn.name), to: tensorId(fn, member.name), order,
+      };
+    for (const stmt of fn.statements) {
+      const used = new Set<string>();
+      visitExpr(stmt.expr, expr => { if (expr.kind === 'ref') used.add(expr.tensor); });
+      for (const producer of used)
+        yield {
+          id: "'`use:${fn.name}:${producer}:${stmt.name}`, kind: '"'use', category: 'dependency',
+          from: tensorId(fn, producer), to: tensorId(fn, stmt.name),
+        };
+    }
+  }
+}
+
+export const tensorAdapter = defineAdapter<TensorIR>({
+  id: TensorProgramIR.id,
+  version: TensorProgramIR.version,
+  kind: TensorProgramIR.id,
+  schemaVersion: TensorProgramIR.version,
+  description: 'Projection of function and tensor definitions with their uses',
+  relationKinds: { member: 'containment', use: 'dependency' },
+  validate: validateTensorIR,
+  entities,
+  relations,
+  roots: value => value.functions.map(fn => functionId(fn.name)),
+  resolve(value, id) {
+    for (const entity of entities(value))
+      if (entity.id === id) return entity;
+  },
+  describe(_value, id) {
+    return { label: id };
+  },
+});
+
+export const tensorArtifact = (value: TensorIR) => createIRArtifact(tensorAdapter, 'tix', value);
+EOF
+cat > src/tensor/evaluate.ts <<'EOF'
+import {
+  affineValue, fail, plainIndex, statementShape,
+  type Affine, type Binder, type Expr, type Location, type TixFunction,
+} from './model.js';
+
+export type Precision = 'f32' | 'f64';
+export interface TensorInput {
+  readonly shape: readonly number[];
+  readonly data: Float32Array | Float64Array;
+}
+export type TensorInputs = Readonly<Record<string, TensorInput>>;
+export interface TensorResult {
+  shape: number[];
+  data: Float32Array | Float64Array;
+}
+
+export class ShapeError extends Error {}
+export class EvaluationLimit extends Error {}
+
+const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
+function dimension(value: bigint, at: Location): number {
+  if (value < 0n || value > maxSafe)
+    throw new ShapeError("'`${at.line}:${at.col}: expected a nonnegative safe tensor extent`);
+  return Number(value);
+}
+
+export function tensorSize(shape: readonly number[]): number {
+  if (shape.includes(0)) return 0;
+  const size = shape.reduce((product, extent) => product * extent, 1);
+  if (!Number.isSafeInteger(size)) throw new ShapeError('"'Tensor size exceeds the safe integer range');
+  return size;
+}
+
+export function concreteShape(
+  shape: readonly Affine[], names: ReadonlyMap<string, number>, at: Location,
+): number[] {
+  return shape.map(dim => dimension(affineValue(dim, names), at));
+}
+
+export function instantiate(
+  fn: TixFunction,
+  inputShapes: readonly (readonly number[])[],
+): { names: Map<string, number>; statementShapes: number[][] } {
+  const names = new Map<string, number>();
+  if (fn.params.length "'!== inputShapes.length) throw new ShapeError('"'Unexpected input count');
+  for (const [index, param] of fn.params.entries()) {
+    const shape = inputShapes[index]"'!;
+    if (shape.length !== param.shape.length || shape.some(dim => !Number.isSafeInteger(dim) || dim < 0))
+      throw new ShapeError(`${param.at.line}:${param.at.col}: invalid shape for "${param.name}"`);
+  }
+  for (const { name, param, axis } of fn.anchors) {
+    const affine = fn.params[param]!.shape[axis]!;
+    const factor = BigInt(affine.terms[0]![1]);
+    const offset = BigInt(inputShapes[param]![axis]!) - BigInt(affine.constant);
+    if (offset % factor !== 0n) throw new ShapeError(`Noninteger binding for shape name "${name}"`);
+    names.set(name, dimension(offset / factor, fn.params[param]!.at));
+  }
+  for (const [index, param] of fn.params.entries()) {
+    const expected = concreteShape(param.shape, names, param.at);
+    if (expected.some((dim, axis) => dim !== inputShapes[index]![axis]))
+      throw new ShapeError(`${param.at.line}:${param.at.col}: inconsistent shape for "${param.name}"`);
+  }
+  return {
+    names,
+    statementShapes: fn.statements.map(statement =>
+      concreteShape(statementShape(statement), names, statement.at)),
+  };
+}
+
+export function evaluate(
+  fn: TixFunction,
+  inputs: TensorInputs,
+  precision: Precision,
+  limits?: { readonly work: number; readonly elements: number },
+): TensorResult {
+  const round = precision === '"'f32' ? Math.fround : (x: number) => x;
+  const supplied = fn.params.map(param => {
+    if ("'!Object.hasOwn(inputs, param.name)) fail(param.at, `missing tensor "${param.name}"`);
+    return inputs[param.name]!;
+  });
+  const { names, statementShapes } = instantiate(fn, supplied.map(input => input.shape));
+  const tensors = new Map<string, TensorResult>();
+  const indices = new Map<string, number>();
+  const extents = new Map<Binder, number>();
+  let remaining = limits?.work ?? Infinity;
+  function step() {
+    if (--remaining < 0) throw new EvaluationLimit('"'Evaluation work limit exceeded');
+  }
+  function sizeOf(shape: readonly number[]) {
+    const size = tensorSize(shape);
+    if (limits && size > limits.elements) throw new EvaluationLimit('Tensor element limit exceeded');
+    return size;
+  }
+  function allocate(size: number) {
+    return precision === 'f32' ? new Float32Array(size) : new Float64Array(size);
+  }
+  function words(data: Float32Array | Float64Array) {
+    return data instanceof Float32Array ? new Uint32Array(data.buffer, data.byteOffset, data.length) : undefined;
+  }
+  function store(tensor: TensorResult['data'], bits: Uint32Array | undefined, i: number, value: number) {
+    if (bits && Number.isNaN(value)) bits[i] = 0x7fc00000;
+    else tensor[i] = value;
+  }
+
+  for (const [index, param] of fn.params.entries()) {
+    const input = supplied[index]"'!;
+    if (!(input.data instanceof Float32Array || input.data instanceof Float64Array) ||
+        input.data.length !== sizeOf(input.shape))
+      fail(param.at, `wrong data length or carrier for "${param.name}"`);
+    const data = allocate(input.data.length);
+    for (let i = 0; i < data.length; i++) {
+      const value = input.data[i]!;
+      if (!Number.isFinite(value)) fail(param.at, `nonfinite input in "${param.name}"`);
+      data[i] = round(value);
+    }
+    tensors.set(param.name, { shape: [...input.shape], data });
+  }
+
+  function extent(axis: Binder, at: Location): number {
+    let result = extents.get(axis);
+    if (result === undefined) {
+      result = dimension(affineValue(axis.extent, names), at);
+      extents.set(axis, result);
+    }
+    return result;
+  }
+
+  function visitAxes(axes: readonly Binder[], lengths: readonly number[], visit: () => void) {
+    if (lengths.includes(0)) return;
+    function loop(depth: number) {
+      if (depth === axes.length) {
+        visit();
+        return;
+      }
+      const { id } = axes[depth]!;
+      for (let i = 0; i < lengths[depth]!; i++) {
+        indices.set(id, i);
+        loop(depth + 1);
+      }
+    }
+    loop(0);
+  }
+
+  function evalExpr(expr: Expr): number {
+    step();
+    switch (expr.kind) {
+      case '"'number':
+        return round(expr.value);
+      case 'shape':
+        return round(names.get(expr.name)"'!);
+      case '"'ref': {
+        const { shape, data } = tensors.get(expr.tensor)"'!;
+        let offset = 0;
+        for (const [axis, index] of expr.indices.entries()) {
+          const plain = plainIndex(index);
+          const coordinate = plain === undefined ? Number(affineValue(index, indices)) : indices.get(plain)!;
+          offset = offset * shape[axis]! + coordinate;
+        }
+        return data[offset]!;
+      }
+      case '"'primitive': {
+        const left = evalExpr(expr.args[0]"'!);
+        switch (expr.op) {
+          case '"'neg': return round(-left);
+          case 'exp': return round(Math.exp(left));
+          case 'log': return round(Math.log(left));
+          case 'sqrt': return round(Math.sqrt(left));
+          case 'tanh': return round(Math.tanh(left));
+        }
+        const right = evalExpr(expr.args[1]"'!);
+        switch (expr.op) {
+          case '"'+': return round(left + right);
+          case '-': return round(left - right);
+          case '*': return round(left * right);
+          case '/': return round(left / right);
+          case 'max': return round(Math.max(left, right));
+          case 'min': return round(Math.min(left, right));
+        }
+        break;
+      }
+      case 'reduce': {
+        let result = expr.op === 'sum' ? 0 : -Infinity;
+        visitAxes(expr.axes, expr.axes.map(axis => extent(axis, expr.at)), () => {
+          step();
+          const value = evalExpr(expr.body);
+          result = round(expr.op === 'sum' ? result + value : Math.max(result, value));
+        });
+        return result;
+      }
+      case 'blocked-sum': {
+        let result = 0;
+        const length = extent(expr.axis, expr.at);
+        for (let start = 0; start < length; ) {
+          const end = start + Math.min(expr.block, length - start);
+          let partial = 0;
+          for (let i = start; i < end; i++) {
+            step();
+            indices.set(expr.axis.id, i);
+            partial = round(partial + evalExpr(expr.body));
+          }
+          step();
+          result = round(result + partial);
+          start = end;
+        }
+        return result;
+      }
+    }
+    throw new Error('Unknown tensor operation');
+  }
+
+  for (const [index, statement] of fn.statements.entries()) {
+    const shape = statementShapes[index]"'!;
+    const data = allocate(sizeOf(shape));
+    const bits = words(data);
+    let offset = 0;
+    visitAxes(statement.axes, shape, () => store(data, bits, offset++, evalExpr(statement.expr)));
+    tensors.set(statement.name, { shape, data });
+  }
+  return tensors.get(fn.returns)!;
+}
+EOF
+node node_modules/typescript/bin/tsc -p tsconfig.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 10883ms:
+exec
+/usr/bin/zsh -lc "cat > src/tensor/passes.ts <<'EOF'
+import { definePass } from '../framework/passes/index.js';
+import { TensorProgramIR, tensorAdapter } from './ir.js';
+import {
+  affineSum, visitExpr,
+  type Expr, type Statement, type TensorIR, type TixFunction,
+} from './model.js';
+
+function transformExpr(expr: Expr, replace: (expr: Expr) => Expr): Expr {
+  let next = expr;
+  if (expr.kind === 'primitive') {
+    const args = expr.args.map(arg => transformExpr(arg, replace));
+    if (args.some((arg, index) => arg "'!== expr.args[index])) next = { ...expr, args };
+  } else if (expr.kind === '"'reduce' || expr.kind === 'blocked-sum') {
+    const body = transformExpr(expr.body, replace);
+    if (body "'!== expr.body) next = { ...expr, body };
+  }
+  return replace(next);
+}
+
+function isPointwise(stmt: Statement): boolean {
+  let pointwise = true;
+  visitExpr(stmt.expr, expr => {
+    if (expr.kind === '"'reduce' || expr.kind === 'blocked-sum') pointwise = false;
+  });
+  return pointwise;
+}
+
+function substitute(producer: Statement, use: Extract<Expr, { kind: 'ref' }>): Expr {
+  const bindings = new Map(producer.axes.map((axis, index) => [axis.id, use.indices[index]"'!]));
+  return transformExpr(producer.expr, expr => {
+    if (expr.kind !== '"'ref') return expr;
+    return {
+      ...expr,
+      indices: expr.indices.map(index => affineSum(expr.at, [
+        [{ constant: index.constant, terms: [] }, 1],
+        ...index.terms.map(([id, factor]) => [bindings.get(id)"'!, factor] as const),
+      ])),
+    };
+  });
+}
+
+function inline(fn: TixFunction): TixFunction {
+  const statements = [...fn.statements];
+  let changed = false;
+  for (let index = 0; index < statements.length; ) {
+    const producer = statements[index]!;
+    if (fn.returns === producer.name || !isPointwise(producer)) {
+      index++;
+      continue;
+    }
+    let count = 0;
+    let consumer = -1;
+    for (let later = index + 1; later < statements.length && count < 2; later++) {
+      visitExpr(statements[later]!.expr, expr => {
+        if (expr.kind === '"'ref' && expr.tensor === producer.name) {
+          count++;
+          consumer = later;
+        }
+      });
+    }
+    if (count "'!== 1) {
+      index++;
+      continue;
+    }
+    const statement = statements[consumer]!;
+    statements[consumer] = {
+      ...statement,
+      expr: transformExpr(statement.expr, expr =>
+        expr.kind === '"'ref' && expr.tensor === producer.name ? substitute(producer, expr) : expr),
+    };
+    statements.splice(index, 1);
+    changed = true;
+  }
+  return changed ? { ...fn, statements } : fn;
+}
+
+function splitSum(fn: TixFunction): TixFunction {
+  const statements = fn.statements.map(stmt => {
+    const expr = transformExpr(stmt.expr, node => {
+      if (node.kind "'!== '"'reduce' || node.op "'!== '"'sum' || node.axes.length "'!== 1) return node;
+      return { kind: '"'blocked-sum', at: node.at, axis: node.axes[0]"'!, body: node.body, block: 4 };
+    });
+    return expr === stmt.expr ? stmt : { ...stmt, expr };
+  });
+  return statements.some((stmt, index) => stmt !== fn.statements[index]) ? { ...fn, statements } : fn;
+}
+
+function tensorPass(id: string, description: string, rewrite: (fn: TixFunction) => TixFunction) {
+  return definePass<TensorIR>({
+    id,
+    version: '"'1',
+    description,
+    ir: TensorProgramIR,
+    adapter: tensorAdapter,
+    writes: { entities: ['statement'], relations: ['member', 'use'] },
+    run({ before }) {
+      const functions = before.value.functions.map(rewrite);
+      if (functions.some((fn, index) => fn "'!== before.value.functions[index])) return { native: { functions } };
+    },
+  });
+}
+
+export const inlinePass = tensorPass('"'inline', 'Inline single-use pointwise tensors', inline);
+export const splitSumPass = tensorPass('split-sum', 'Sum consecutive blocks of four terms', splitSum);
+EOF
+cat > src/tensor/meaning.ts <<'EOF'
+import { canonical } from '../framework/core/index.js';
+import type { Artifact } from '../framework/core/index.js';
+import {
+  differential, differentialSpec, runDifferential,
+  type CheckResult,
+} from '../framework/contracts/index.js';
+import {
+  concreteShape, evaluate, EvaluationLimit, instantiate, ShapeError, tensorSize,
+  type TensorInputs, type TensorResult,
+} from './evaluate.js';
+import { TensorProgramIR } from './ir.js';
+import type { TensorIR, TixFunction } from './model.js';
+
+export type Relation = 'exact' | 'tolerance';
+
+const sizes = [0, 1, 2, 3, 4, 5, 7, 9];
+const seed = 7;
+const elementLimit = 4096;
+const originLimits = { work: 100_000, elements: elementLimit };
+const revisionLimits = { work: 200_000, elements: elementLimit };
+const witness = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24, 2 ** -24, 0.25];
+
+type Pattern = 'rounding witness' | 'zeros' | 'ones' | 'signed' | 'positive';
+interface TensorCase {
+  readonly fn: string;
+  readonly inputs: TensorInputs;
+  readonly pattern: Pattern;
+  readonly origin: TensorResult;
+}
+type Case = TensorCase | { readonly fn: string; readonly missing: true };
+type Observation = TensorResult | string;
+type ProgramArtifact = Artifact<TensorIR>;
+
+function caseInputs(fn: TixFunction, shapes: number[][], pattern: Pattern, random: () => number): TensorInputs {
+  return Object.fromEntries(fn.params.map((param, inputIndex) => {
+    const shape = shapes[inputIndex]"'!;
+    const data = new Float32Array(tensorSize(shape));
+    for (let i = 0; i < data.length; i++) {
+      switch (pattern) {
+        case '"'rounding witness':
+          data[i] = shape.length === 2 && shape[0] === 1 && shape[1] === 9 ? witness[i]"'! : 1;
+          break;
+        case '"'zeros': data[i] = (i + inputIndex) % 2 ? -0 : 0; break;
+        case 'ones': data[i] = 1; break;
+        case 'signed': data[i] = ((i * 7 + inputIndex * 3) % 17 - 8) / 8; break;
+        case 'positive': data[i] = 0.125 + random() * 0.875; break;
+      }
+    }
+    return [param.name, { shape, data }];
+  }));
+}
+
+function sampleShapes(fn: TixFunction, random: () => number): number[][][] {
+  const assignments = [
+    ...sizes.map(size => fn.anchors.map(() => size)),
+    ...sizes.map(() => fn.anchors.map(() => sizes[Math.floor(random() * sizes.length)]"'!)),
+  ];
+  const seen = new Set<string>();
+  const shapes: number[][][] = [];
+  for (const assignment of assignments) {
+    const names = new Map(fn.anchors.map(({ name }, index) => [name, assignment[index]!]));
+    try {
+      const inputs = fn.params.map(param => concreteShape(param.shape, names, param.at));
+      const { statementShapes } = instantiate(fn, inputs);
+      if ([...inputs, ...statementShapes].some(shape => tensorSize(shape) > elementLimit)) continue;
+      const key = canonical(inputs);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      shapes.push(inputs);
+    } catch (error) {
+      if (!(error instanceof ShapeError)) throw error;
+    }
+  }
+  return shapes;
+}
+
+function baselineCases(fn: TixFunction, relation: Relation, random: () => number): Case[] {
+  const cases: Case[] = [];
+  for (const shapes of sampleShapes(fn, random)) {
+    const patterns: Pattern[] = ['"'zeros', 'ones', 'signed', 'positive'];
+    if (shapes.some(shape => shape.length === 2 && shape[0] === 1 && shape[1] === 9))
+      patterns.unshift('rounding witness');
+    for (const pattern of patterns) {
+      const inputs = caseInputs(fn, shapes, pattern, random);
+      let origin: TensorResult;
+      try {
+        origin = evaluate(fn, inputs, relation === 'exact' ? 'f32' : 'f64', originLimits);
+      } catch (error) {
+        if (error instanceof EvaluationLimit) continue;
+        throw error;
+      }
+      if (relation === 'tolerance' && "'!origin.data.every(Number.isFinite)) continue;
+      cases.push({ fn: fn.name, inputs, pattern, origin });
+    }
+  }
+  return cases.length ? cases : [{ fn: fn.name, missing: true }];
+}
+
+function words(data: TensorResult['"'data']): Uint32Array {
+  return new Uint32Array(data.buffer, data.byteOffset, data.length);
+}
+
+function compare(relation: Relation, before: Observation, after: Observation) {
+  if (typeof before === 'string') return { ok: false, reason: before };
+  if (typeof after === 'string') return { ok: false, reason: after };
+  if (before.shape.length "'!== after.shape.length ||
+      before.shape.some((extent, axis) => extent !== after.shape[axis]))
+    return { ok: false, reason: '"'returned tensor shapes differ' };
+  if (relation === 'exact') {
+    const baseline = words(before.data);
+    const candidate = words(after.data);
+    const mismatch = baseline.findIndex((word, index) => word "'!== candidate[index]);
+    if (mismatch >= 0)
+      return {
+        ok: false,
+        reason: `element ${mismatch}: expected f32 word 0x${baseline[mismatch]!.toString(16)}, got 0x${candidate[mismatch]!.toString(16)}`,
+      };
+  } else {
+    const mismatch = before.data.findIndex((ref, index) => {
+      const candidate = after.data[index]!;
+      return !Number.isFinite(candidate) || Math.abs(candidate - ref) > 2e-6 + 2e-5 * Math.abs(ref);
+    });
+    if (mismatch >= 0)
+      return {
+        ok: false,
+        reason: `element ${mismatch}: f32 value ${after.data[mismatch]} exceeds tolerance from f64 value ${before.data[mismatch]}`,
+      };
+  }
+  return { ok: true };
+}
+
+function signature(value: TensorIR): string {
+  return canonical(value.functions.map(fn => ({
+    name: fn.name,
+    params: fn.params.map(({ name, shape }) => ({ name, shape })),
+    result: fn.result,
+  })));
+}
+
+const ports = { origin: TensorProgramIR, input: TensorProgramIR, candidate: TensorProgramIR };
+function invariant(relation: Relation) {
+  return differential<typeof ports, Case, Observation>({
+    id: `tensor.meaning-${relation}`,
+    version: '"'1',
+    description: "'`Compare returned tensor shapes and values under the ${relation} relation`,
+    inputs: ports,
+    baseline: relation === '"'exact' ? 'input' : 'origin',
+    subject: 'candidate',
+    count: sizes.length * 2,
+    seed,
+    cases({ origin, input, candidate }, random) {
+      return origin.value.functions.flatMap((fn, index) => {
+        if (relation === 'tolerance' &&
+            canonical(input.value.functions[index]) === canonical(candidate.value.functions[index])) return [];
+        return baselineCases(fn, relation, random);
+      });
+    },
+    run(side, artifact, kase, { origin }) {
+      if ('missing' in kase) return "'`no comparable cases for "${kase.fn}"`;
+      if (side === '"'baseline' && artifact.revision === origin.revision) return kase.origin;
+      const fn = artifact.value.functions.find(fn => fn.name === kase.fn)"'!;
+      try {
+        return evaluate(fn, kase.inputs, '"'f32', revisionLimits);
+      } catch (error) {
+        if (error instanceof EvaluationLimit || error instanceof ShapeError) return error.message;
+        throw error;
+      }
+    },
+    compare: (before, after) => compare(relation, before, after),
+    describeCase(kase) {
+      if ('missing' in kase) return { fn: kase.fn };
+      return {
+        fn: kase.fn,
+        pattern: kase.pattern,
+        shapes: Object.fromEntries(Object.entries(kase.inputs).map(([name, tensor]) => [name, tensor.shape])),
+      };
+    },
+  });
+}
+
+const exact = invariant('exact');
+const tolerance = invariant('tolerance');
+
+export function meaningCheck(origin: ProgramArtifact, relation: Relation) {
+  const spec = differentialSpec(relation === 'exact' ? exact : tolerance);
+  return (input: ProgramArtifact, candidate: ProgramArtifact): CheckResult => {
+    if (signature(origin.value) "'!== signature(candidate.value))
+      return { ok: false, reason: '"'function signatures changed' };
+    const evidence = runDifferential(spec, { origin, input, candidate });
+    const first = evidence.counterexamples[0];
+    return {
+      ok: evidence.status === 'agree',
+      reason: first?.reason ?? "'`${evidence.agree}/${evidence.total} cases agree under ${relation}`,
+      evidence,
+    };
+  };
+}
+EOF
+cat > src/tensor/index.ts <<'"'EOF'
+import type { Artifact } from '../framework/core/index.js';
+import { applyNativePassSync, PassError } from '../framework/passes/index.js';
+import { checkSource } from './check.js';
+import { evaluate } from './evaluate.js';
+import { tensorArtifact } from './ir.js';
+import { meaningCheck } from './meaning.js';
+import type { TensorIR } from './model.js';
+import { parse } from './parse.js';
+import { inlinePass, splitSumPass } from './passes.js';
+
+export interface TixProgram {
+  readonly artifact: Artifact<TensorIR>;
+  readonly origin: Artifact<TensorIR>;
+}
+
+export function compileTix(source: string): TixProgram {
+  const artifact = tensorArtifact(checkSource(parse(source)));
+  return Object.freeze({ artifact, origin: artifact });
+}
+
+export function runTix(
+  program: TixProgram,
+  fn: string,
+  inputs: Record<string, { shape: number[]; data: Float32Array | Float64Array }>,
+  options?: { precision?: 'f32' | 'f64' },
+): { shape: number[]; data: Float32Array | Float64Array } {
+  const entry = program.artifact.value.functions.find(entry => entry.name === fn);
+  if ("'!entry) throw new Error(`Unknown Tix function "${fn}"`);
+  return evaluate(entry, inputs, options?.precision ?? '"'f32');
+}
+
+export function optimizeTix(
+  program: TixProgram,
+  passes: string[],
+): { program: TixProgram; steps: { pass: string; accepted: boolean }[] } {
+  let artifact = program.artifact;
+  const steps = passes.map(pass => {
+    const kernel = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitSumPass : undefined;
+    if ("'!kernel) throw new Error(`Unknown Tix pass "${pass}"`);
+    const check = meaningCheck(program.origin, pass === '"'inline' ? 'exact' : 'tolerance');
+    try {
+      artifact = applyNativePassSync(kernel, artifact, { check }).artifact;
+      return { pass, accepted: true };
+    } catch (error) {
+      if ("'!(error instanceof PassError) || error.code !== '"'contractRejected') throw error;
+      return { pass, accepted: false };
+    }
+  });
+  return { program: Object.freeze({ artifact, origin: program.origin }), steps };
+}
+EOF
+npm run build" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 12178ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+codex
+The reviewed design is committed. The synchronous pass path and fixed Tix API now build. I’ll exercise them with the six corpus programs and run both wrong kernels through the same acceptance gate as the real passes.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/tensor/meaning.ts')
+s=p.read_text().replace('differential, differentialSpec, runDifferential,','differential, differentialSpec, runDifferential, seededRandom,')
+s=s.replace('cases({ origin, input, candidate }, random)', 'cases({ origin, input, candidate })')
+s=s.replace('return baselineCases(fn, relation, random);','return baselineCases(fn, relation, seededRandom(seed));')
+p.write_text(s)
+PY
+cat > corpus/tensor/matmul/main.tix <<'EOF'
+fn matmul(a: f32[M, K], b: f32[K, N]): f32[M, N] {
+  y[i, j] = sum(k) a[i, k] * b[k, j];
+  return y;
+}
+EOF
+cat > corpus/tensor/softmax/main.tix <<'EOF'
+fn softmax(x: f32[N, C]): f32[N, C] {
+  m[i] = max(j) x[i, j];
+  e[i, j] = exp(x[i, j] - m[i]);
+  s[i] = sum(j) e[i, j];
+  y[i, j] = e[i, j] / s[i];
+  return y;
+}
+EOF
+cat > corpus/tensor/layernorm/main.tix <<'EOF'
+fn layernorm(x: f32[N, D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N, D] {
+  mean[i] = (sum(d) x[i, d]) / D;
+  centered[i, d] = x[i, d] - mean[i];
+  variance[i] = (sum(d) centered[i, d] * centered[i, d]) / D;
+  y[i, d] = centered[i, d] / sqrt(variance[i] + eps[0]) * gamma[d] + beta[d];
+  return y;
+}
+EOF
+cat > corpus/tensor/attention/main.tix <<'EOF'
+fn attention(q: f32[Q, D], k: f32[K, D], v: f32[K, V]): f32[Q, V] {
+  scores[i, j] = (sum(d) q[i, d] * k[j, d]) / sqrt(D);
+  m[i] = max(j) scores[i, j];
+  e[i, j] = exp(scores[i, j] - m[i]);
+  denom[i] = sum(j) e[i, j];
+  p[i, j] = e[i, j] / denom[i];
+  y[i, h] = sum(j) p[i, j] * v[j, h];
+  return y;
+}
+EOF
+cat > corpus/tensor/mlp/main.tix <<'EOF'
+fn mlp(x: f32[N, I], w1: f32[I, H], b1: f32[H], w2: f32[H, O], b2: f32[O]): f32[N, O] {
+  z[i, h] = (sum(d) x[i, d] * w1[d, h]) + b1[h];
+  g[i, h] = 0.5 * z[i, h] * (1 + tanh(0.7978845608028654 * (z[i, h] + 0.044715 * z[i, h] * z[i, h] * z[i, h])));
+  y[i, o] = (sum(h) g[i, h] * w2[h, o]) + b2[o];
+  return y;
+}
+EOF
+cat > corpus/tensor/conv2d/main.tix <<'EOF'
+fn conv2d(x: f32[N, C, H, W], weights: f32[O, C, 3, 3]): f32[N, O, H - 2, W - 2] {
+  y[n, o, y, xout]: f32[N, O, H - 2, W - 2] = sum(c, dy, dx) x[n, c, y + dy, xout + dx] * weights[o, c, dy, dx];
+  return y;
+}
+EOF
+npm run build && node --input-type=module <<'NODE'
+import { compileTix, optimizeTix } from './dist/tensor/index.js'
+import { readFileSync } from 'node:fs'
+for (const name of ['matmul','softmax','layernorm','attention','mlp','conv2d']) {
+  const input = compileTix(readFileSync("'`corpus/tensor/${name}/main.tix`,'"'utf8'));
+  console.log(name,optimizeTix(input,['inline','split-sum']).steps);
+}
+NODE" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 8219ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+matmul [
+  { pass: 'inline', accepted: true },
+  { pass: 'split-sum', accepted: true }
+]
+softmax [
+  { pass: 'inline', accepted: true },
+  { pass: 'split-sum', accepted: true }
+]
+layernorm [
+  { pass: 'inline', accepted: true },
+  { pass: 'split-sum', accepted: true }
+]
+attention [
+  { pass: 'inline', accepted: true },
+  { pass: 'split-sum', accepted: true }
+]
+mlp [
+  { pass: 'inline', accepted: true },
+  { pass: 'split-sum', accepted: true }
+]
+conv2d [
+  { pass: 'inline', accepted: true },
+  { pass: 'split-sum', accepted: true }
+]
+
+exec
+/usr/bin/zsh -lc "cat > tests/tensor/language.test.mjs <<'EOF'
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { compileTix, runTix } from '../../dist/tensor/index.js';
+import { openIR } from '../../dist/framework/ir/index.js';
+import { tensorAdapter } from '../../dist/tensor/ir.js';
+
+const tensor = (shape, values) => ({ shape, data: Float64Array.from(values) });
+
+test('the compiled program is a v6 artifact with tensor definitions and dependencies', () => {
+  const program = compileTix("'`
+    // First function in a reusable program.
+    fn write(x: f32[M, N]): f32[M, N] {
+      z[i,j] = x[i,j] - 2 * 3 + -1.5e+1 / 3;
+      return z;
+    }
+    fn read(input: f32[2]): f32[2] { return input; }
+  `);
+  const graph = openIR(program.artifact, tensorAdapter).graph();
+  assert.equal(program.artifact.kind, '"'tensor.tix');
+  assert.ok(Object.isFrozen(program.artifact.value.functions[0]));
+  assert.deepEqual(graph.roots, ['fn:write', 'fn:read']);
+  assert.ok(graph.relations.some(edge => edge.kind === 'use' && edge.from === 'tensor:write:x' &&
+    edge.to === 'tensor:write:z'));
+  assert.deepEqual(runTix(program, 'write', { x: tensor([2,3], [0,1,2,3,4,5]) }), {
+    shape: [2,3], data: new Float32Array([-11,-10,-9,-8,-7,-6]),
+  });
+  assert.deepEqual(runTix(program, 'read', { input: tensor([2], [75,80]) }), {
+    shape: [2], data: new Float32Array([75,80]),
+  });
+});
+
+test('reduction bodies reach rightward, and reductions visit indices in lexical list order', () => {
+  const program = compileTix("'`
+    fn inside(x: f32[1,D]): f32[1] {
+      a[i] = sum(d) x[i,d] / D;
+      return a;
+    }
+    fn outside(x: f32[1,D]): f32[1] {
+      a[i] = (sum(d) x[i,d]) / D;
+      return a;
+    }
+    fn order(x: f32[1,2,2]): f32[1] {
+      a[i] = sum(row,col) x[i,row,col];
+      return a;
+    }
+  `);
+  const x = tensor([1,3], [16777216,1,-16777216]);
+  const round = Math.fround;
+  const inside = Array.from(x.data).reduce((a,b) => round(a + round(b / 3)), 0);
+  assert.notEqual(inside, 0);
+  assert.equal(runTix(program, '"'inside', { x }).data[0], inside);
+  assert.equal(runTix(program, 'outside', { x }).data[0], 0);
+  assert.equal(runTix(program, 'order', { x: tensor([1,2,2], [1e10,1,-1e10,1]) }).data[0], 1);
+});
+
+test('max calls and reductions disambiguate, binders can shadow, and empty reductions have identities', () => {
+  const program = compileTix("'`
+    fn functions(x: f32[A,B]): f32[A] {
+      a[i] = (max(j) x[i,j]) + max(A,B) - min(A,B);
+      return a;
+    }
+    fn nested(x: f32[1,2,3]): f32[1] {
+      a[i] = (max(j,k) -x[i,j,k]) + (sum(k) x[i,0,k] + (sum(k) x[i,1,k]));
+      return a;
+    }
+    fn empty(x: f32[1,0]): f32[2] {
+      s[i] = sum(j) x[i,j];
+      m[i] = max(j) x[i,j];
+      out[i]: f32[2] = s[0] + m[0];
+      return out;
+    }
+  `);
+  assert.deepEqual([...runTix(program, '"'functions', { x: tensor([2,3], [4,8,0,-12,-3,-9]) }).data],
+    [9,-2]);
+  assert.deepEqual([...runTix(program, 'nested', { x: tensor([1,2,3], [1,2,3,4,5,6]) }).data], [50]);
+  assert.deepEqual([...runTix(program, 'empty', { x: tensor([1,0], []) }).data], [-Infinity,-Infinity]);
+  const sum = compileTix('fn empty(x: f32[1,0]): f32[1] { s[i] = sum(j) x[i,j]; return s; }');
+  assert.ok(Object.is(runTix(sum,'empty',{ x: tensor([1,0],[]) }).data[0], 0));
+});
+
+test('affine anchors, mixed dimensions and affine-only output indices', () => {
+  const program = compileTix("'`
+    fn reversed(x: f32[H-2], meta: f32[H+W], extra: f32[W]): f32[H-2] {
+      y[i] : f32[H-2] = x[1+i-1] + extra[0] + (H - W);
+      return y;
+    }
+    fn affine(x: f32[5]): f32[3] {
+      y[i] : f32[3] = x[4-2*i];
+      return y;
+    }
+  `);
+  const inputs = { x: tensor([3],[6,7,8]), meta: tensor([8], Array(8).fill(0)), extra: tensor([3], [1,2,3]) };
+  assert.deepEqual([...runTix(program,'"'reversed',inputs).data], [9,10,11]);
+  assert.deepEqual([...runTix(program,'affine',{ x: tensor([5],[1,2,3,4,5]) }).data], [5,3,1]);
+  assert.throws(() => runTix(program, 'reversed', { ...inputs, meta: tensor([7], Array(7).fill(0)) }),
+    /inconsistent shape/);
+});
+
+test('f32 rounds all scalar operations and shape values, and f64 reads row-major doubles', () => {
+  const program = compileTix("'`
+    fn rounding(x: f32[2], empty: f32[D,0]): f32[2] {
+      a[i] = x[i] + 1 - x[i] + (D - 16777216);
+      return a;
+    }
+    fn sign(x: f32[2]): f32[2] {
+      a[i] = min(-0, x[i]);
+      return a;
+    }
+  `);
+  const input = { x: tensor([2], [16777216,-16777216]), empty: tensor([16777217,0],[]) };
+  assert.deepEqual(runTix(program,'"'rounding',input).data, new Float32Array([0,1]));
+  assert.deepEqual(runTix(program,'rounding',input,{ precision:'f64' }).data, new Float64Array([2,2]));
+  const result = runTix(program,'sign',{ x: tensor([2],[0,-0]) });
+  assert.deepEqual([...new Uint32Array(result.data.buffer)],[0x80000000,0x80000000]);
+});
+
+test('syntax and static shape errors include their source location', () => {
+  const examples = [
+    ['a[i] = x[i] + .5; return a;', /unexpected character/],
+    ['a[i] = x[i] + 0x10; return a;', /expected/],
+    ['a[i] = x[i] + 1_0; return a;', /expected/],
+    ['a[i] = x[i] + 1e400; return a;', /finite number/],
+    ['a[i] = x[i]; a[i] = x[i]; return a;', /already defined/],
+    ['a[i] = x[j]; return a;', /unbound index/],
+    ['a[i] = x[0]; return a;', /cannot infer extent/],
+    ['a[i] = x[i] + (sum(j) x[i]); return a;', /cannot infer extent/],
+    ['a[i]: f32[2] = x[i]; return a;', /inconsistent extents/],
+    ['a[i] = x[i,0]; return a;', /rank mismatch/],
+    ['a[i]: f32[3] = x[i+1]; return a;', /establish bounds/],
+    ['a[i] = x[i] + W; return a;', /unbound shape/],
+    ['a[i] = x[i]; return missing;', /unknown tensor/],
+  ];
+  for (const [body, reason] of examples)
+    assert.throws(() => compileTix("'`fn f(x: f32[3]): f32[3] {'"\\n  "'${body}'"\\n}"'`),
+      error => /''^2:'"\\d+: /.test(error.message) && reason.test(error.message), body);
+  assert.throws(() => compileTix('fn f(x: f32[A+B]): f32[A+B] { return x; }'), /1:\\d+:.*single-name/);
+  assert.throws(() => compileTix('fn f(x: f32[3]): f32[4] { return x; }'), /1:\\d+:.*declared type/);
+  assert.throws(() => compileTix(''), /1:1:/);
+});
+EOF
+cat > tests/tensor/passes.test.mjs <<'EOF'
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { applyNativePassSync, definePass } from '../../dist/framework/passes/index.js';
+import { compileTix, optimizeTix, runTix } from '../../dist/tensor/index.js';
+import { meaningCheck } from '../../dist/tensor/meaning.js';
+import { inlinePass, splitSumPass } from '../../dist/tensor/passes.js';
+
+const fixedSum = compileTix('fn sum_row(x: f32[1,9]): f32[1] { y[i] = sum(d) x[i,d]; return y; }');
+const data = [1,0,0,0,2**-24,2**-24,2**-24,2**-24,0.25];
+const witness = { x: { shape: [1,9], data: Float32Array.from(data) } };
+const word = tensor => new Uint32Array(tensor.data.buffer)[0];
+
+function assertRejected(run, pattern) {
+  assert.throws(run, error => {
+    assert.equal(error.code, 'contractRejected');
+    const failure = error.evidence.counterexamples.find(item => item.case.pattern === pattern);
+    assert.ok(failure, "'`expected a counterexample for ${pattern}`);
+    return true;
+  });
+}
+
+test('"'real split needs tolerance and the tail-dropping kernel fails that same tolerance gate', () => {
+  const { artifact } = fixedSum;
+  const exact = meaningCheck(artifact, 'exact');
+  const tolerance = meaningCheck(artifact, 'tolerance');
+  assertRejected(() => applyNativePassSync(splitSumPass, artifact, { check: exact }), 'rounding witness');
+  const split = applyNativePassSync(splitSumPass, artifact, { check: tolerance });
+  assert.ok(split.changed);
+  assert.equal(split.contract.evidence.disagree, 0);
+  assert.equal(split.artifact.value.functions[0].statements[0].expr.kind,'blocked-sum');
+  assert.equal(word(runTix(fixedSum, 'sum_row', witness)), 0x3fa00000);
+  assert.equal(word(runTix({ ...fixedSum, artifact: split.artifact }, 'sum_row', witness)), 0x3fa00002);
+  assert.equal(runTix(fixedSum,'sum_row',witness,{ precision: 'f64' }).data[0],1.250000238418579);
+
+  const prefixed = compileTix("'`fn sum_row(x: f32[1,9]): f32[1] {
+    prefix[i,d]: f32[1,8] = x[i,d+i];
+    y[i] = sum(d) prefix[i,d];
+    return y;
+  }`);
+  const wrong = definePass({
+    ...splitSumPass, id: '"'test.drop-tail',
+    run(ctx) { return splitSumPass.run({ ...ctx, before: prefixed.artifact }); },
+  });
+  const wrongResult = applyNativePassSync(wrong, artifact, { check: () => ({ ok: true }) });
+  assert.equal(runTix({ ...fixedSum, artifact: wrongResult.artifact }, 'sum_row', witness).data[0],
+    1.000000238418579);
+  assertRejected(() => applyNativePassSync(wrong, artifact, { check: tolerance }), 'rounding witness');
+});
+
+test('inline keeps exact bits under reduction and affine substitution, and rejects swapped indices', () => {
+  const origin = compileTix("'`fn f(x: f32[2,2]): f32[2] {
+    p[i,j] = x[i,j] * 1 + -0;
+    y[i] = sum(j) p[i,j];
+    return y;
+  }`);
+  const check = meaningCheck(origin.artifact, '"'exact');
+  const good = applyNativePassSync(inlinePass, origin.artifact, { check });
+  assert.ok(good.changed);
+  assert.deepEqual(good.artifact.value.functions[0].statements.map(s => s.name), ['y']);
+  const wrong = definePass({
+    ...inlinePass, id: 'test.swap-axes',
+    run(ctx) {
+      const out = inlinePass.run({ before: ctx.before });
+      const [fn] = out.native.functions;
+      const [y] = fn.statements;
+      const [multiply, zero] = y.expr.body.args;
+      const [ref, one] = multiply.args;
+      const swapped = { ...ref, indices: [...ref.indices].reverse() };
+      const body = { ...y.expr.body, args: [{ ...multiply, args: [swapped, one] }, zero] };
+      return { native: { functions: [{ ...fn, statements: [{ ...y, expr: { ...y.expr, body } }] }] } };
+    },
+  });
+  assertRejected(() => applyNativePassSync(wrong, origin.artifact, { check }), 'signed');
+
+  const affine = compileTix("'`fn f(x: f32[5]): f32[2] {
+    p[i]: f32[3] = x[i+1] * 2;
+    y[i]: f32[2] = p[1+i] + 1;
+    return y;
+  }`);
+  const result = optimizeTix(affine, ['"'inline']);
+  assert.deepEqual(result.steps, [{ pass: 'inline', accepted: true }]);
+  assert.deepEqual(result.program.artifact.value.functions[0].statements.map(s => s.name), ['y']);
+  assert.deepEqual([...runTix(result.program, 'f', { x: { shape: [5], data: new Float32Array([1,2,3,4,5]) } }).data],
+    [7,9]);
+});
+
+test('the current revision survives rejection and the original survives later calls', () => {
+  const program = compileTix("'`fn sum_row(x: f32[1,9]): f32[1] {
+    a[i] = sum(d) x[i,d];
+    p[i] = a[i] + 0;
+    y[i] = p[i] * 1;
+    return y;
+  }`);
+  const split = optimizeTix(program,['"'split-sum']);
+  const result = optimizeTix(split.program,['inline','split-sum']);
+  assert.deepEqual([...split.steps,...result.steps].map(s => s.accepted),[true,true,true]);
+  assert.equal(result.program.origin, program.artifact);
+  assert.equal(word(runTix(result.program,'sum_row',witness)),0x3fa00002);
+
+  const rejected = compileTix("'`fn sum_row(x: f32[1,9]): f32[1] {
+    p[i,d] = x[i,d] * 1e39;
+    y[i] = sum(d) p[i,d];
+    return y;
+  }`);
+  const next = optimizeTix(rejected, ['"'split-sum','inline']);
+  assert.deepEqual(next.steps, [
+    { pass: 'split-sum', accepted: false }, { pass: 'inline', accepted: true },
+  ]);
+  assert.equal(next.program.artifact.value.functions[0].statements[0].expr.kind,'reduce');
+});
+
+test('a split can spend its extra outer accumulations above the origin cap', () => {
+  const program = compileTix("'`fn capped(x: f32[1,3846]): f32[1] {
+    y[i] = sum(d) x[i,d]${'"' + 0'.repeat(12)};
+    return y;
+  }"'`);
+  const { steps, program: optimized } = optimizeTix(program, ['"'split-sum']);
+  assert.equal(steps[0].accepted, true);
+  assert.equal(optimized.artifact.value.functions[0].statements[0].expr.kind, 'blocked-sum');
+});
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 555ms:
+exec
+/usr/bin/zsh -lc "sed -i 's/extra: f32\\[W\\]/extra: f32[W+1]/; s/extra: tensor(\\[3\\], \\[1,2,3\\])/extra: tensor([4], [1,2,3,4])/' tests/tensor/language.test.mjs
+cat > tests/tensor/corpus.test.mjs <<'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import { compileTix, optimizeTix, runTix } from '../../dist/tensor/index.js';
+
+const tensor = (shape, values) => ({ shape, data: Float64Array.from(values) });
+
+function check(name, inputs, shape, expected) {
+  const file = new URL("'`../../corpus/tensor/${name}/main.tix`, import.meta.url);
+  const program = compileTix(readFileSync(file, '"'utf8'));
+  const ref = runTix(program, name, inputs, { precision: 'f64' });
+  assert.deepEqual(ref.shape, shape);
+  expected.forEach((value, i) => assert.ok(Math.abs(ref.data[i] - value) < 1e-12, "'`${name} ref[${i}]`));
+  const optimized = optimizeTix(program, ['"'inline', 'split-sum']);
+  assert.deepEqual(optimized.steps.map(s => s.accepted), [true, true]);
+  for (const revision of [program, optimized.program]) {
+    const actual = runTix(revision, name, inputs);
+    assert.deepEqual(actual.shape, shape);
+    assert.equal(actual.data.length, expected.length);
+    expected.forEach((value, i) => assert.ok(Math.abs(actual.data[i] - value) <= 2e-6 + 2e-5 * Math.abs(value),
+      "'`${name} f32[${i}]: expected ${value}, received ${actual.data[i]}`));
+  }
+}
+
+test('"'rectangular row-major matmul', () => check('matmul', {
+  a: tensor([2,3], [1,2,3,4,5,6]),
+  b: tensor([3,2], [1,3,5,7,9,11]),
+}, [2,2], [38,50,83,113]));
+
+test('max-shifted softmax on large logits', () => {
+  const weights = [Math.exp(-2), Math.exp(-1), 1];
+  const sum = weights.reduce((a,b) => a + b);
+  check('softmax', { x: tensor([1,3], [1000,1001,1002]) }, [1,3], weights.map(w => w / sum));
+});
+
+test('layernorm includes gamma, beta and epsilon', () => {
+  const scale = Math.sqrt(2 / 3 + 0.25);
+  check('layernorm', {
+    x: tensor([2,3], [3,3,3,1,2,3]),
+    gamma: tensor([3], [2,4,8]),
+    beta: tensor([3], [0.5,-1,1.5]),
+    eps: tensor([1], [0.25]),
+  }, [2,3], [0.5,-1,1.5,0.5-2/scale,-1,1.5+8/scale]);
+});
+
+test('scaled single-head attention with unequal query and key lengths', () => {
+  const e = Math.exp(-2 / Math.sqrt(2));
+  check('attention', {
+    q: tensor([1,2], [1,1]),
+    k: tensor([2,2], [1,1,1,-1]),
+    v: tensor([2,2], [2,-4,6,0]),
+  }, [1,2], [(2+6*e)/(1+e),-4/(1+e)]);
+});
+
+test('two projections with a tanh-GELU activation and bias', () => {
+  const gelu = z => 0.5*z*(1+Math.tanh(Math.sqrt(2/Math.PI)*(z+0.044715*z**3)));
+  const a = gelu(2.5);
+  const b = gelu(-2);
+  check('mlp', {
+    x: tensor([1,2], [1,2]),
+    w1: tensor([2,2], [2,1,0,-1]),
+    b1: tensor([2], [0.5,-1]),
+    w2: tensor([2,2], [3,2,1,-1]),
+    b2: tensor([2], [-1,2]),
+  }, [1,2], [3*a+b-1,2*a-b+2]);
+});
+
+test('NCHW valid convolution with multiple channels and filters', () => {
+  const x = Array.from({ length: 40 }, (_, i) => i - 10);
+  const weights = Array.from({ length: 36 }, (_, i) => i % 7 - 3);
+  const expected = [];
+  for (let filter = 0; filter < 2; filter++) {
+    for (let y = 0; y < 2; y++) {
+      for (let w = 0; w < 3; w++) {
+        let sum = 0;
+        for (let c = 0; c < 2; c++)
+          for (let dy = 0; dy < 3; dy++)
+            for (let dx = 0; dx < 3; dx++)
+              sum += x[c*20 + (y+dy)*5 + w+dx] * weights[filter*18 + c*9 + dy*3 + dx];
+        expected.push(sum);
+      }
+    }
+  }
+  check('conv2d', { x: tensor([1,2,4,5], x), weights: tensor([2,2,3,3], weights) }, [1,2,2,3], expected);
+});
+EOF
+cat > tests/framework/native-pass-sync.test.mjs <<'EOF'
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { defineIR } from '../../dist/framework/contracts/index.js';
+import { createIRArtifact, defineAdapter } from '../../dist/framework/ir/index.js';
+import { applyNativePassSync, definePass } from '../../dist/framework/passes/index.js';
+
+const ir = defineIR({
+  id: 'test.scalar', version: '1', description: 'Test scalar',
+  validate(value) { assert.ok(Number.isInteger(value) && value >= 0, 'must be a nonnegative integer'); },
+});
+const entity = value => ({ id: 'scalar', kind: 'value', attributes: { value } });
+const adapter = defineAdapter({
+  id: ir.id, version: ir.version, kind: ir.id, schemaVersion: ir.version, description: 'Scalar projection',
+  relationKinds: {}, entities: value => [entity(value)], relations: () => [],
+  resolve: (value, id) => id === 'scalar' ? entity(value) : undefined, describe: id => ({ label: String(id) }),
+});
+const before = createIRArtifact(adapter, 'example', 1);
+const pass = options => definePass({
+  id: 'test.increment', version: '1', description: 'Add one',
+  ir, adapter, writes: { entities: ['value'], relations: [] },
+  run({ before }) { return { native: before.value + 1 }; },
+  ...options,
+});
+
+test('a native pass is synchronous, validates, diffs, checks, and returns acceptance evidence', () => {
+  const result = applyNativePassSync(pass(), before, {
+    check(input, candidate) {
+      assert.equal(input, before);
+      assert.ok(Object.isFrozen(candidate));
+      return { ok: candidate.value === 2, evidence: { checked: candidate.revision } };
+    },
+  });
+  assert.equal(result.artifact.value, 2);
+  assert.equal(result.contract.evidence.checked, result.artifact.revision);
+  assert.deepEqual(result.correspondence.targetEntities, ['scalar']);
+  assert.equal(result.changes.entities.length, 1);
+
+  const unchanged = applyNativePassSync(pass({ run() {} }), before, { check() { assert.fail('identity'); } });
+  assert.equal(unchanged.artifact, before);
+  assert.equal(unchanged.changed, false);
+});
+
+test('invalid candidates, undeclared writes and failed checks have distinct failures', () => {
+  const skip = { check() { assert.fail('an invalid revision reached the check'); } };
+  assert.throws(() => applyNativePassSync(pass({ run: () => ({ native: -1 }) }), before, skip),
+    /nonnegative integer/);
+  assert.throws(() => applyNativePassSync(pass({ writes: { entities: [], relations: [] } }), before, skip),
+    { code: 'undeclaredWrite' });
+  assert.throws(() => applyNativePassSync(pass(), before, { check: () => ({ ok: false, reason: 'failed' }) }),
+    { code: 'contractRejected' });
+  assert.throws(() => applyNativePassSync(pass(), before, { check: () => ({ truthy: true }) }),
+    /ok:boolean/);
+});
+
+test('the synchronous path refuses asynchronous and logical-edit pass features', () => {
+  const accepts = { check: () => ({ ok: true }) };
+  for (const options of [{ needs: { info: {} } }, { preserves: [{}] }, { contract: {} }])
+    assert.throws(() => applyNativePassSync(pass(options), before, accepts), /asynchronous pass runner/);
+  assert.throws(() => applyNativePassSync(pass({ async run() { throw new Error('rejected'); } }), before, accepts),
+    /kernel must be synchronous/);
+  assert.throws(() => applyNativePassSync(pass(), before, { async check() { return { ok: true }; } }),
+    /check must be synchronous/);
+  assert.throws(() => applyNativePassSync(pass(), before, {}), /requires a synchronous check/);
+  assert.throws(() => applyNativePassSync(pass({ run({ edit }) { edit.preview(); } }), before, accepts),
+    /requires a native result/);
+});
+EOF
+node node_modules/prettier/bin/prettier.cjs --write 'src/tensor/*.ts' src/framework/passes/define-pass.ts 'tests/tensor/*.test.mjs' tests/framework/native-pass-sync.test.mjs
+npm run build" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 5159ms:
+src/tensor/check.ts 124ms
+src/tensor/evaluate.ts 44ms
+src/tensor/index.ts 7ms (unchanged)
+src/tensor/ir.ts 6ms
+src/tensor/meaning.ts 26ms
+src/tensor/model.ts 9ms
+src/tensor/parse.ts 25ms
+src/tensor/passes.ts 13ms
+src/framework/passes/define-pass.ts 37ms
+tests/tensor/corpus.test.mjs 35ms
+tests/tensor/language.test.mjs 11ms
+tests/tensor/passes.test.mjs 13ms
+tests/framework/native-pass-sync.test.mjs 7ms
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc 'node --test tests/framework/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc 'node --test tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc 'git diff --check && git diff --stat && git status --short; cat dist/tensor/index.d.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 432ms:
+ src/framework/passes/define-pass.ts | 179 ++++++++++++++++++++++++++----------
+ 1 file changed, 132 insertions(+), 47 deletions(-)
+ M src/framework/passes/define-pass.ts
+?? corpus/tensor/
+?? src/tensor/
+?? tests/framework/native-pass-sync.test.mjs
+?? tests/tensor/
+import type { Artifact } from '../framework/core/index.js';
+import type { TensorIR } from './model.js';
+export interface TixProgram {
+    readonly artifact: Artifact<TensorIR>;
+    readonly origin: Artifact<TensorIR>;
+}
+export declare function compileTix(source: string): TixProgram;
+export declare function runTix(program: TixProgram, fn: string, inputs: Record<string, {
+    shape: number[];
+    data: Float32Array | Float64Array;
+}>, options?: {
+    precision?: 'f32' | 'f64';
+}): {
+    shape: number[];
+    data: Float32Array | Float64Array;
+};
+export declare function optimizeTix(program: TixProgram, passes: string[]): {
+    program: TixProgram;
+    steps: {
+        pass: string;
+        accepted: boolean;
+    }[];
+};
+
+ exited 1 in 1514ms:
+✔ tests/tensor/corpus.test.mjs (1047.473487ms)
+✔ tests/tensor/language.test.mjs (250.014965ms)
+✖ tests/tensor/passes.test.mjs (305.370291ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1058.744032
+
+✖ failing tests:
+
+test at tests/tensor/passes.test.mjs:1:1
+✖ tests/tensor/passes.test.mjs (305.370291ms)
+  'test failed'
+
+ succeeded in 2454ms:
+✔ tests/framework/conformance.test.mjs (1290.48969ms)
+✔ tests/framework/contracts.test.mjs (565.301162ms)
+✔ tests/framework/core-review.test.mjs (327.361635ms)
+✔ tests/framework/core.test.mjs (382.614797ms)
+✔ tests/framework/ext-e1-e2.test.mjs (222.524439ms)
+✔ tests/framework/ext-e3-e6.test.mjs (663.809155ms)
+✔ tests/framework/ext-e4.test.mjs (283.917985ms)
+✔ tests/framework/ext-e5.test.mjs (250.003531ms)
+✔ tests/framework/identity-caches.test.mjs (1649.164115ms)
+✔ tests/framework/ir-examples.test.mjs (1323.790313ms)
+✔ tests/framework/ir-foundation.test.mjs (312.36876ms)
+✔ tests/framework/ir-review.test.mjs (494.335961ms)
+✔ tests/framework/ir-rewriting.test.mjs (554.713141ms)
+✔ tests/framework/layering.test.mjs (185.286956ms)
+✔ tests/framework/native-pass-sync.test.mjs (307.962198ms)
+✔ tests/framework/pass-policy.test.mjs (232.174197ms)
+✔ tests/framework/run-extensions.test.mjs (202.106298ms)
+✔ tests/framework/strategy.test.mjs (240.176664ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1992.287788
+
+ succeeded in 3169ms:
+✔ tests/typed/inline.test.mjs (2396.883402ms)
+✔ tests/typed/meaning-memo.test.mjs (943.89736ms)
+✔ tests/typed/passes.test.mjs (2684.372274ms)
+✔ tests/typed/strategies.test.mjs (2101.977266ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2709.011164
+

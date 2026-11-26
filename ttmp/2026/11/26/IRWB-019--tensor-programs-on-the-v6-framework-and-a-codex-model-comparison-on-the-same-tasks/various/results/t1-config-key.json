@@ -170,5 +170,37 @@
   "round": "t1-v2-pi-sh",
   "harness": "pi",
   "policy": "v2"
+ },
+ "IRWB-020-V": {
+  "config": "v3-sm",
+  "model": "gpt-6.2-sol",
+  "effort": "medium",
+  "round": "t1-v3-sm",
+  "harness": "codex",
+  "policy": "v3"
+ },
+ "IRWB-020-X": {
+  "config": "v3-sh",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "round": "t1-v3-sh",
+  "harness": "codex",
+  "policy": "v3"
+ },
+ "IRWB-020-U": {
+  "config": "v3-pi-sm",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "medium",
+  "round": "t1-v3-pi-sm",
+  "harness": "pi",
+  "policy": "v3"
+ },
+ "IRWB-020-W": {
+  "config": "v3-pi-sh",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "high",
+  "round": "t1-v3-pi-sh",
+  "harness": "pi",
+  "policy": "v3"
  }
 }

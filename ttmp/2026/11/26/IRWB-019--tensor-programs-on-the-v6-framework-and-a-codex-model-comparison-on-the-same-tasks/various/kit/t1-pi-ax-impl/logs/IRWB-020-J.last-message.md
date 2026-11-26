@@ -1,0 +1,18 @@
+**IRWB-020-J is implemented and checked.** `src/tensor/` contains the Tix parser and checker, v6 index-graph IR, f32 and f64 evaluators, and checked `inline` and `split-sum` passes. The build exports exactly `compileTix`, `runTix`, and `optimizeTix` from `dist/tensor/index.js`. All six requested programs are in `corpus/tensor/`, with tests in `tests/tensor/`.
+
+The seven-term witness produced `0x3f800000` before splitting and `0x3f800002` afterward. The exact relation rejected the rewrite; the f64 tolerance relation accepted it. The contract also rejected deliberately wrong variants of both passes.
+
+**Framework changes — two files only:**
+- `src/framework/passes/sampled-sync.ts`: added synchronous application of edit-based passes with sampled postconditions, as required by `optimizeTix`. It reuses v6 edit preparation, write checks, and differential evidence.
+- `src/framework/passes/index.ts`: exported the new runner. The existing asynchronous runner is unchanged.
+
+| Check | Result |
+|---|---:|
+| `npm run build` | Passed |
+| `node --test tests/tensor/*.test.mjs` | 19/19 passed |
+| `node --test tests/framework/*.test.mjs` | 227/227 passed |
+| `node --test tests/typed/{passes,strategies,evaluate-analyses,meaning-memo}.test.mjs` | 24/24 passed |
+
+All review changes were adopted. The only design deviation is that source locations retain the diagnostic start `line:col`, not an end offset. The [ticket](ttmp/2026/11/26/IRWB-020-J--tix-stage-1-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md) is closed; the [design](ttmp/2026/11/26/IRWB-020-J--tix-stage-1-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-design-tix-programs-and-checked-tensor-passes.md) records the framework changes and their reasons.
+
+**Commits:** `1e73abc` initial design · `7f77e8c` review revision · `b51b4eb` framework runner · `a1ba478` Tix implementation and corpus · `c03f209` verification. Working tree clean; nothing pushed.
