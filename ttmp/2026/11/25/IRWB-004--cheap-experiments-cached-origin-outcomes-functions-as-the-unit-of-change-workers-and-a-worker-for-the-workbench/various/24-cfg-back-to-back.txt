@@ -1,0 +1,4 @@
+base load 13.36 51177 4aea7e81dd04 [{"total":13280,"agree":13258,"disagree":0,"inconclusive":22}]
+new load 10.50 13565 4aea7e81dd04 [{"total":13280,"agree":13258,"disagree":0,"inconclusive":22}]
+base load 9.89 40736 4aea7e81dd04 [{"total":13280,"agree":13258,"disagree":0,"inconclusive":22}]
+new load 8.46 13555 4aea7e81dd04 [{"total":13280,"agree":13258,"disagree":0,"inconclusive":22}]

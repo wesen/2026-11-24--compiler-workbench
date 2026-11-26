@@ -13,6 +13,7 @@
  * Relation ids are position-based (`operand:v:f.3:0`), so redirecting an edge keeps its identity (v6 §9.2).
  */
 import { defineIR } from '../framework/contracts/definitions.js';
+import { immutable, isCanonical } from '../framework/core/data.js';
 import { defineAdapter } from '../framework/ir/adapters.js';
 import type { IREntity, IRGraph, IRRelation } from '../framework/ir/types.js';
 import {
@@ -320,68 +321,90 @@ const localId = (fnId: string, i: number) => `local:${fnId.slice(3)}/${i}`;
 const omit = (o: Record<string, unknown>, keys: readonly string[]) =>
   Object.fromEntries(Object.entries(o).filter(([k, x]) => !keys.includes(k) && x !== undefined));
 
+/**
+ * IRWB-004: the entities and the relations each frozen record projects to, built once per record and frozen, so the
+ * projection of a revision that shares most records with the previous one shares most entities and relations too
+ * (and `diff` sees them as the same objects). A record that is not frozen is projected afresh every time.
+ */
+const RECORD_ENTITIES = new WeakMap<object, readonly IREntity[]>();
+const RECORD_RELATIONS = new WeakMap<object, readonly IRRelation[]>();
+function perRecord<X>(cache: WeakMap<object, readonly X[]>, rec: object, make: () => X[]): readonly X[] {
+  if (!isCanonical(rec)) return make();
+  let xs = cache.get(rec);
+  if (!xs) cache.set(rec, (xs = immutable(make())));
+  return xs;
+}
+const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+function fnEntities(f: FnRec & { blocks: readonly string[] }): IREntity[] {
+  return [
+    entity(f.id, 'fn', omit(f as unknown as Record<string, unknown>, ['id', 'kind', 'locals', 'blocks'])),
+    ...f.locals.map(l => entity(localId(f.id, l.index), 'local', { ...l, fn: f.id })),
+  ];
+}
+const blockEntity = (b: BlockRec) => [entity(b.id, 'block', omit(b as never, ['id', 'kind', 'stmts', 'succ']))];
+const stmtEntity = (s: StmtRec) => [
+  entity(s.id, `stmt.${s.op}`, omit(s as never, ['id', 'kind', 'op', 'local', ...USE_FIELDS, ...JUMP_FIELDS])),
+];
+const valueEntity = (x: ValueRec) => [
+  entity(x.id, `value.${x.op}`, omit(x as never, ['id', 'kind', 'op', 'args', ...(x.op === 'get' ? ['imm'] : [])])),
+];
+const opEntity = (o: OpRec) => [entity(o.id, 'op', omit(o as never, ['id', 'kind']))];
+
 export function blocksEntities(v: TypedBlocks): IREntity[] {
   const out: IREntity[] = [];
-  for (const f of Object.values(v.fns)) {
+  // generated in the order of the id prefixes (bb:, fn:/local:, op:, s:, v:), so the final sort has little to do
+  for (const b of Object.values(v.blocks)) out.push(...perRecord(RECORD_ENTITIES, b, () => blockEntity(b)));
+  for (const f of Object.values(v.fns)) out.push(...perRecord(RECORD_ENTITIES, f, () => fnEntities(f)));
+  for (const o of Object.values(v.ops)) out.push(...perRecord(RECORD_ENTITIES, o, () => opEntity(o)));
+  for (const s of Object.values(v.stmts)) out.push(...perRecord(RECORD_ENTITIES, s, () => stmtEntity(s)));
+  for (const x of Object.values(v.values)) out.push(...perRecord(RECORD_ENTITIES, x, () => valueEntity(x)));
+  return out.sort(byId);
+}
+
+function fnRelations(f: FnRec & { blocks: readonly string[] }): IRRelation[] {
+  const out: IRRelation[] = [];
+  f.locals.forEach(l =>
     out.push(
-      entity(f.id, 'fn', omit(f as unknown as Record<string, unknown>, ['id', 'kind', 'locals', 'blocks'])),
-    );
-    f.locals.forEach(l => out.push(entity(localId(f.id, l.index), 'local', { ...l, fn: f.id })));
-  }
-  for (const b of Object.values(v.blocks))
-    out.push(entity(b.id, 'block', omit(b as never, ['id', 'kind', 'stmts', 'succ'])));
-  for (const s of Object.values(v.stmts))
-    out.push(
-      entity(
-        s.id,
-        `stmt.${s.op}`,
-        omit(s as never, ['id', 'kind', 'op', 'local', ...USE_FIELDS, ...JUMP_FIELDS]),
-      ),
-    );
-  for (const x of Object.values(v.values))
-    out.push(
-      entity(
-        x.id,
-        `value.${x.op}`,
-        omit(x as never, ['id', 'kind', 'op', 'args', ...(x.op === 'get' ? ['imm'] : [])]),
-      ),
-    );
-  for (const o of Object.values(v.ops)) out.push(entity(o.id, 'op', omit(o as never, ['id', 'kind'])));
-  return out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      rel(`declares:${f.id}:${l.index}`, 'declares', 'containment', f.id, localId(f.id, l.index), l.index),
+    ),
+  );
+  f.blocks.forEach((b, i) => out.push(rel(`contains:${f.id}:${i}`, 'contains', 'containment', f.id, b, i)));
+  return out;
+}
+function blockRelations(b: BlockRec): IRRelation[] {
+  const out: IRRelation[] = [];
+  b.stmts.forEach((s, i) => out.push(rel(`contains:${b.id}:${i}`, 'contains', 'containment', b.id, s, i)));
+  b.succ.forEach((t, i) => out.push(rel(`succ:${b.id}:${i}`, 'succ', 'control', b.id, t, i)));
+  return out;
+}
+function stmtRelations(s: StmtRec): IRRelation[] {
+  const out: IRRelation[] = [];
+  USE_FIELDS.forEach((k, i) => {
+    if (s[k] !== undefined) out.push(rel(`uses:${s.id}:${k}`, 'uses', 'dependency', s.id, s[k]!, i, { field: k }));
+  });
+  JUMP_FIELDS.forEach((k, i) => {
+    if (s[k] !== undefined) out.push(rel(`jump:${s.id}:${k}`, 'jump', 'control', s.id, s[k]!, i, { field: k }));
+  });
+  if (s.op === 'set') out.push(rel(`writes:${s.id}`, 'writes', 'binding', s.id, localId(s.fn, s.local!)));
+  return out;
+}
+function valueRelations(x: ValueRec): IRRelation[] {
+  const out: IRRelation[] = [];
+  x.args.forEach((a, i) => out.push(rel(`operand:${x.id}:${i}`, 'operand', 'dependency', x.id, a, i)));
+  if (x.op === 'get') out.push(rel(`reads:${x.id}`, 'reads', 'dependency', x.id, localId(x.fn, x.imm as number)));
+  return out;
 }
 
 export function blocksRelations(v: TypedBlocks): IRRelation[] {
   const out: IRRelation[] = [];
-  for (const f of Object.values(v.fns)) {
-    f.locals.forEach(l =>
-      out.push(
-        rel(`declares:${f.id}:${l.index}`, 'declares', 'containment', f.id, localId(f.id, l.index), l.index),
-      ),
-    );
-    f.blocks.forEach((b, i) => out.push(rel(`contains:${f.id}:${i}`, 'contains', 'containment', f.id, b, i)));
-  }
-  for (const o of Object.values(v.ops)) out.push(rel(`emits:${o.id}`, 'emits', 'containment', o.fn, o.id));
-  for (const b of Object.values(v.blocks)) {
-    b.stmts.forEach((s, i) => out.push(rel(`contains:${b.id}:${i}`, 'contains', 'containment', b.id, s, i)));
-    b.succ.forEach((t, i) => out.push(rel(`succ:${b.id}:${i}`, 'succ', 'control', b.id, t, i)));
-  }
-  for (const s of Object.values(v.stmts)) {
-    USE_FIELDS.forEach((k, i) => {
-      if (s[k] !== undefined)
-        out.push(rel(`uses:${s.id}:${k}`, 'uses', 'dependency', s.id, s[k]!, i, { field: k }));
-    });
-    JUMP_FIELDS.forEach((k, i) => {
-      if (s[k] !== undefined)
-        out.push(rel(`jump:${s.id}:${k}`, 'jump', 'control', s.id, s[k]!, i, { field: k }));
-    });
-    if (s.op === 'set') out.push(rel(`writes:${s.id}`, 'writes', 'binding', s.id, localId(s.fn, s.local!)));
-  }
-  for (const x of Object.values(v.values)) {
-    x.args.forEach((a, i) => out.push(rel(`operand:${x.id}:${i}`, 'operand', 'dependency', x.id, a, i)));
-    if (x.op === 'get')
-      out.push(rel(`reads:${x.id}`, 'reads', 'dependency', x.id, localId(x.fn, x.imm as number)));
-  }
-  return out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  for (const f of Object.values(v.fns)) out.push(...perRecord(RECORD_RELATIONS, f, () => fnRelations(f)));
+  for (const o of Object.values(v.ops))
+    out.push(...perRecord(RECORD_RELATIONS, o, () => [rel(`emits:${o.id}`, 'emits', 'containment', o.fn, o.id)]));
+  for (const b of Object.values(v.blocks)) out.push(...perRecord(RECORD_RELATIONS, b, () => blockRelations(b)));
+  for (const s of Object.values(v.stmts)) out.push(...perRecord(RECORD_RELATIONS, s, () => stmtRelations(s)));
+  for (const x of Object.values(v.values)) out.push(...perRecord(RECORD_RELATIONS, x, () => valueRelations(x)));
+  return out.sort(byId);
 }
 
 /** Logical graph -> native tables. Counters advance past any id an edit inserted, so later fresh ids stay unique. */
@@ -495,11 +518,29 @@ function entityIndex(v: TypedBlocks): Map<string, IREntity> {
 }
 
 const storeCache = new WeakMap<object, Store>();
-/** A read-only working store for a native value (cached per immutable value) for printing and queries. */
+/**
+ * A read-only working store for a native value (cached per immutable value) for printing and queries. IRWB-004: for
+ * a frozen value it shares the frozen records instead of copying them (`Store.view`).
+ */
 export function storeOf(v: TypedBlocks): Store {
   let st = storeCache.get(v);
-  if (!st) storeCache.set(v, (st = Store.from(v)));
+  if (!st) storeCache.set(v, (st = isCanonical(v) ? Store.view(v) : Store.from(v)));
   return st;
+}
+
+/**
+ * IRWB-004: the ids of the projection's entities (functions, locals, blocks, statements, values, operations), from
+ * the tables, without building the entities: the same set as `blocksEntities(v).map(e => e.id)`.
+ */
+export function entityIdSet(v: TypedBlocks): Set<string> {
+  const out = new Set<string>();
+  for (const f of Object.values(v.fns)) {
+    out.add(f.id);
+    for (const l of f.locals) out.add(localId(f.id, l.index));
+  }
+  for (const t of [v.blocks, v.stmts, v.values, v.ops] as const)
+    for (const r of Object.values(t) as { id: string }[]) out.add(r.id);
+  return out;
 }
 
 export const blocksAdapter = defineAdapter<TypedBlocks>({

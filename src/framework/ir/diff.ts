@@ -38,7 +38,7 @@ export function diffGraphs(
         kind: 'removed',
         before: old,
       });
-    else if (canonical(old) !== canonical(current))
+    else if (old !== current && canonical(old) !== canonical(current))
       entities.push({
         entity: id,
         kind: 'updated',
@@ -61,7 +61,7 @@ export function diffGraphs(
         kind: 'removed',
         before: old,
       });
-    else if (canonical(old) !== canonical(current))
+    else if (old !== current && canonical(old) !== canonical(current))
       relations.push({
         relation: id,
         kind: 'updated',
@@ -69,7 +69,7 @@ export function diffGraphs(
         after: current,
       });
   }
-  const rootsChanged = canonical(before.roots) !== canonical(after.roots);
+  const rootsChanged = before.roots !== after.roots && canonical(before.roots) !== canonical(after.roots);
   return immutable({
     from,
     to,

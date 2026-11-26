@@ -1,4 +1,12 @@
-import { canonical, fingerprint, immutable, isCanonical, sameCanonical } from '../core/data.js';
+import {
+  canonical,
+  fingerprint,
+  immutable,
+  isCanonical,
+  revisionOf,
+  sameCanonical,
+  validateOnce,
+} from '../core/data.js';
 import type { Artifact } from '../core/types.js';
 import type { AdapterDescriptor, Capability, IRAdapter, IREntity, IRGraph, IRRelation } from './types.js';
 import { compareText, IRError, requireRecord, requireText, synchronous, syncFunction } from './common.js';
@@ -121,18 +129,15 @@ export function createIRArtifact<T>(definition: IRAdapter<T>, id: string, value:
   const adapter = defineAdapter(definition);
   requireText(id, 'Artifact ID');
   const snapshot = immutable(value);
-  if (adapter.validate) synchronous(adapter.validate(snapshot), 'Adapter validation');
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot, r => synchronous(r, 'Adapter validation'), adapter);
   const artifact = immutable({
     id,
     kind: adapter.kind,
     schemaVersion: adapter.schemaVersion,
     value: snapshot,
     contentHash: fingerprint(snapshot),
-    revision: fingerprint({
-      kind: adapter.kind,
-      schemaVersion: adapter.schemaVersion,
-      value: snapshot,
-    }),
+    revision: revisionOf(adapter.kind, adapter.schemaVersion, snapshot),
   });
   project(adapter, artifact.value);
   VERIFIED.add(artifact);
@@ -147,16 +152,12 @@ export function validateIRArtifact<T>(definition: IRAdapter<T>, artifact: Artifa
   if (
     !VERIFIED.has(snapshot) &&
     (snapshot.contentHash !== fingerprint(snapshot.value) ||
-      snapshot.revision !==
-        fingerprint({
-          kind: snapshot.kind,
-          schemaVersion: snapshot.schemaVersion,
-          value: snapshot.value,
-        }))
+      snapshot.revision !== revisionOf(snapshot.kind, snapshot.schemaVersion, snapshot.value))
   )
     throw new IRError('ir.revision', 'Artifact content/revision hash does not match its value');
   VERIFIED.add(snapshot);
-  if (adapter.validate) synchronous(adapter.validate(snapshot.value), 'Adapter validation');
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot.value, r => synchronous(r, 'Adapter validation'), adapter);
   return snapshot;
 }
 export function validateEntity(entity: IREntity): IREntity {
@@ -168,6 +169,14 @@ export function validateEntity(entity: IREntity): IREntity {
     throw new IRError('ir.entity', 'Entity projection permits only id, kind and attributes');
   return e;
 }
+/**
+ * IRWB-004: frozen entities `validateEntity` accepted, and, per captured adapter, frozen relations whose own fields
+ * were checked against its relation kinds. Both checks are functions of the frozen object (and the frozen adapter),
+ * so a projection that shares most of them with the previous revision checks only the new ones. What depends on the
+ * whole graph (dangling ends, duplicate ids, roots) is checked every time.
+ */
+const VALID_ENTITIES = new WeakSet<object>();
+const VALID_RELATIONS = new WeakMap<object, WeakSet<object>>();
 export function validateGraph(adapter: IRAdapter<any>, input: IRGraph): IRGraph {
   const graph = immutable(input);
   if (!Array.isArray(graph.entities) || !Array.isArray(graph.relations) || !Array.isArray(graph.roots))
@@ -175,25 +184,36 @@ export function validateGraph(adapter: IRAdapter<any>, input: IRGraph): IRGraph 
   const entities = new Set<string>(),
     relations = new Set<string>();
   for (const e of graph.entities) {
-    validateEntity(e);
+    if (!VALID_ENTITIES.has(e)) {
+      validateEntity(e);
+      VALID_ENTITIES.add(e); // `graph` is canonical, so `e` is frozen
+    }
     if (entities.has(e.id)) throw new IRError('ir.entity', `Duplicate entity ${e.id}`);
     entities.add(e.id);
   }
+  let shaped = captured.has(adapter) ? VALID_RELATIONS.get(adapter) : undefined;
+  if (!shaped && captured.has(adapter)) VALID_RELATIONS.set(adapter, (shaped = new WeakSet()));
   for (const r of graph.relations) {
-    requireText(r.id, 'Relation ID');
-    requireText(r.kind, 'Relation kind');
-    if (!Object.hasOwn(adapter.relationKinds, r.kind) || adapter.relationKinds[r.kind] !== r.category)
-      throw new IRError('ir.relation', `Undeclared or mistyped relation ${r.kind}`);
+    const known = !!shaped?.has(r);
+    if (!known) {
+      requireText(r.id, 'Relation ID');
+      requireText(r.kind, 'Relation kind');
+      if (!Object.hasOwn(adapter.relationKinds, r.kind) || adapter.relationKinds[r.kind] !== r.category)
+        throw new IRError('ir.relation', `Undeclared or mistyped relation ${r.kind}`);
+    }
     if (!entities.has(r.from) || !entities.has(r.to))
       throw new IRError('ir.relation', `Dangling relation ${r.id}: ${r.from} -> ${r.to}`);
     if (relations.has(r.id)) throw new IRError('ir.relation', `Duplicate relation ${r.id}`);
-    if (r.order !== undefined && (!Number.isSafeInteger(r.order) || r.order < 0))
-      throw new IRError('ir.relation', `Invalid order on ${r.id}`);
-    if (r.attributes !== undefined) requireRecord(r.attributes, 'Relation attributes');
-    if (
-      Object.keys(r).some(k => !['id', 'kind', 'category', 'from', 'to', 'order', 'attributes'].includes(k))
-    )
-      throw new IRError('ir.relation', `Unknown relation field on ${r.id}`);
+    if (!known) {
+      if (r.order !== undefined && (!Number.isSafeInteger(r.order) || r.order < 0))
+        throw new IRError('ir.relation', `Invalid order on ${r.id}`);
+      if (r.attributes !== undefined) requireRecord(r.attributes, 'Relation attributes');
+      if (
+        Object.keys(r).some(k => !['id', 'kind', 'category', 'from', 'to', 'order', 'attributes'].includes(k))
+      )
+        throw new IRError('ir.relation', `Unknown relation field on ${r.id}`);
+      shaped?.add(r);
+    }
     relations.add(r.id);
   }
   if (new Set(graph.roots).size !== graph.roots.length || graph.roots.some(r => !entities.has(r)))

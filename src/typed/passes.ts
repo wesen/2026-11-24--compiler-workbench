@@ -31,7 +31,7 @@ import {
   type ReachView,
 } from './analyses.js';
 import { F32_OPERANDS, F32_RESULT } from './f32.js';
-import { BlocksIR, blocksAdapter, blocksEntities } from './ir.js';
+import { BlocksIR, blocksAdapter, blocksEntities, entityIdSet } from './ir.js';
 import { hash, meaningKept, type MeaningParams } from './evaluate.js';
 import { tableBody } from './rules/compile.js';
 import { FOLD_RULES } from './rules/fold.js';
@@ -119,8 +119,8 @@ export function revisionCorrespondence(
   after: TypedBlocks,
   edits: readonly Edit[],
 ): CorrespondenceEntry[] {
-  const src = new Set(blocksEntities(before).map(e => e.id)),
-    dst = new Set(blocksEntities(after).map(e => e.id));
+  const src = entityIdSet(before),
+    dst = entityIdSet(after);
   const groups = new Map<
     string,
     { to: Set<string>; because: Set<string>; notes: string[]; relation: string }

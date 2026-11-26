@@ -1,4 +1,12 @@
-import { canonical, deepFreeze, fingerprint, immutable } from '../core/data.js';
+import {
+  canonical,
+  deepFreeze,
+  fingerprint,
+  immutable,
+  isCanonical,
+  revisionOf,
+  validateOnce,
+} from '../core/data.js';
 import type { Artifact } from '../core/types.js';
 import type {
   AnalysisDefinition,
@@ -280,18 +288,12 @@ export function validateArtifact<T>(ir: IRType<T>, value: unknown): asserts valu
   const a = value as Artifact<T>;
   if (a.kind !== ir.id || a.schemaVersion !== ir.version || !nonempty(a.id))
     throw new Error(`Expected ${ir.id}@${ir.version} artifact`);
-  ir.validate(a.value);
-  if (
-    a.contentHash !== fingerprint(a.value) ||
-    a.revision !==
-      fingerprint({
-        kind: a.kind,
-        schemaVersion: a.schemaVersion,
-        value: a.value,
-      })
-  )
+  // IRWB-004: a frozen value the validator accepted is not validated again; the revision is computed once per value;
+  // and an artifact `immutable` built is encodable by construction (it passed the same checks as `canonical`)
+  validateOnce(ir.validate, a.value, undefined, ir);
+  if (a.contentHash !== fingerprint(a.value) || a.revision !== revisionOf(a.kind, a.schemaVersion, a.value))
     throw new Error('Artifact content/revision hash does not match its immutable value');
-  canonical(a);
+  if (!isCanonical(a)) canonical(a);
 }
 export const Check: ValueType<CheckResult> = defineType<CheckResult>({
   id: 'contract.check-result',

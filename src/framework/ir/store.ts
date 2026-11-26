@@ -1,7 +1,9 @@
-import { canonical, fingerprint, immutable } from '../core/data.js';
+import { canonical, fingerprint, immutable, revisionOf } from '../core/data.js';
 import type { Artifact } from '../core/types.js';
 import type { EditAcceptance, RevisionRef } from './types.js';
 import { IRError, requireText, syncFunction, synchronous } from './common.js';
+/** `canonical(a) === canonical(b)`; the same object needs no encoding (IRWB-004). */
+const sameText = (a: unknown, b: unknown) => a === b || canonical(a) === canonical(b);
 const publications = new WeakMap<
   IRStore,
   (base: Artifact, next: Artifact, acceptance: EditAcceptance | undefined, generation: number) => Artifact
@@ -27,12 +29,7 @@ export class IRStore {
     requireText(a.schemaVersion, 'Artifact schema version');
     if (
       a.contentHash !== fingerprint(a.value) ||
-      a.revision !==
-        fingerprint({
-          kind: a.kind,
-          schemaVersion: a.schemaVersion,
-          value: a.value,
-        })
+      a.revision !== revisionOf(a.kind, a.schemaVersion, a.value)
     )
       throw new IRError('ir.revision', 'Cannot retain a forged artifact revision');
     return a;
@@ -48,7 +45,7 @@ export class IRStore {
       }),
       previous = this.#revisions.get(key);
     if (previous) {
-      if (canonical(previous) !== canonical(a))
+      if (!sameText(previous, a))
         throw new IRError('ir.revision', 'Conflicting artifact at the same revision');
       return previous as Artifact<T>;
     }
@@ -92,12 +89,13 @@ export class IRStore {
     if (generation !== undefined && this.#generations.get(base.id) !== generation)
       throw new IRError('ir.stale-edit', `Stale edit: ${base.id} was committed after this edit began`);
     if (
-      canonical(
+      !sameText(
         this.get({
           artifact: base.id,
           revision: base.revision,
         }),
-      ) !== canonical(base)
+        base,
+      )
     )
       throw new IRError('ir.revision', 'Edit base does not match the retained artifact');
   }

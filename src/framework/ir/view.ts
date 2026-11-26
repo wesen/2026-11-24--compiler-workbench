@@ -41,7 +41,7 @@ class View<T> implements IRView<T> {
       artifact: this.artifact.id,
       revision: this.artifact.revision,
     });
-    if (canonical(retained) !== canonical(this.artifact))
+    if (retained !== this.artifact && canonical(retained) !== canonical(this.artifact))
       throw new IRError('ir.revision', 'View artifact differs from its retained revision');
     this.#store = store;
     this.#graph = graph ?? project(this.adapter, this.artifact.value);

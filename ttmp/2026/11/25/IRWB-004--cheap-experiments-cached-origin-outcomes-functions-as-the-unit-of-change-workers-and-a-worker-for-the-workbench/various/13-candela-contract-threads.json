@@ -1,0 +1,118 @@
+{
+ "load": "12.55",
+ "runs": [
+  {
+   "label": "local, no reuse",
+   "ms": 46661,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true
+  },
+  {
+   "label": "1 threads, no reuse, cold workers",
+   "ms": 23489,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true
+  },
+  {
+   "label": "1 threads, no reuse, warm workers",
+   "ms": 17852,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true,
+   "busyMs": [
+    29660
+   ]
+  },
+  {
+   "label": "2 threads, no reuse, cold workers",
+   "ms": 17032,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true
+  },
+  {
+   "label": "2 threads, no reuse, warm workers",
+   "ms": 10629,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true,
+   "busyMs": [
+    17983,
+    17948
+   ]
+  },
+  {
+   "label": "4 threads, no reuse, cold workers",
+   "ms": 16889,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true
+  },
+  {
+   "label": "4 threads, no reuse, warm workers",
+   "ms": 8347,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true,
+   "busyMs": [
+    14812,
+    15937,
+    15464,
+    15008
+   ]
+  },
+  {
+   "label": "local, reuse, cold",
+   "ms": 41214,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true
+  },
+  {
+   "label": "local, reuse, warm (same candidate)",
+   "ms": 50,
+   "counts": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "same": true
+  }
+ ],
+ "loadAfter": "15.31"
+}

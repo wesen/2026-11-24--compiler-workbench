@@ -227,14 +227,28 @@ export async function applyPass<S, N extends Needs, P>(
     correspondence = makeCorrespondence(
       { artifact: before.id, revision: before.revision },
       { artifact: after.id, revision: after.revision },
-      view.entities().map(r => r.entity),
-      afterView.entities().map(r => r.entity),
+      // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+      view.graph().entities.map(e => e.id),
+      afterView.graph().entities.map(e => e.id),
       produced.correspondence ?? [],
     );
     edits = produced.edits ?? changes.entities.length;
     report = produced.report;
   } else {
     if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
+    if (edit.operationCount === 0) {
+      // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
+      // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
+      edit.rollback('no operations');
+      return {
+        pass: { id: pass.id, version: pass.version },
+        changed: false,
+        before,
+        artifact: before,
+        edits: 0,
+        preserved: [],
+      };
+    }
     const prepared = edit.prepare();
     after = prepared.artifact;
     changes = prepared.changes;
