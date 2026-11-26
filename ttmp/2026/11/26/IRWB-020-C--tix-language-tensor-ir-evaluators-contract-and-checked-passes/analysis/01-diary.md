@@ -10,7 +10,15 @@ Topics:
 DocType: analysis
 Intent: short-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/index.ts
+      Note: Fixed synchronous API
+    - Path: repo://src/tensor/meaning.ts
+      Note: Case sampling and numerical relations
+    - Path: repo://tests/framework/native-pass-sync.test.mjs
+      Note: Framework native-pass checks
+    - Path: repo://tests/tensor/passes.test.mjs
+      Note: Numeric and mutation witnesses
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T12:39:58.974572318-05:00
@@ -159,8 +167,42 @@ matching the incoming revision exactly on the same origin-derived cases.
 
 ### Prompt context
 
-The user supplied the review, then requested a design-only revision commit followed by
-implementation, scoped test runs, and implementation commits in this session.
+The user supplied the review below. The implementation request follows the design revision.
+
+~~~~text
+A reviewer has read your design for IRWB-020-C. The review:
+
+# Review of your design
+
+## Must change
+
+1. **Wrong `split-sum` variant.** "Mutate the block result to drop the final partial block in the test candidate. In the fixed-shape fixture, make a valid eight-column prefix with `prefix[i,d]: f32[1,8] = x[i,d+i];` and block the sum over that prefix." What the prefix fixture shows, and its expected verdict, are never stated. Define the wrong variant as a pass kernel run through the sync gate on the contract's cases.
+2. **Budget.** "Fail the check if a candidate exhausts that budget on a selected case". The budget is measured "per origin case", and `split-sum` adds outer accumulation visits. A correct candidate near the cap is therefore rejected. Say how the candidate's budget is set.
+3. **`NUMBER` is undefined.** "Numeric expressions accept finite JS numeric literals" admits `0x10`, `1_0` and `.5`. Give the token grammar.
+4. **Case selection.** "plus seeded mixed assignments from those sizes and targeted shapes with a full block and a tail" fixes neither how many assignments there are nor how they are chosen.
+
+## Cut
+
+1. Inline's second check, "Check the result against the original as well … tolerance for functions where an earlier split was accepted", and "Store the set of functions that entered tolerance mode". Exact agreement with the input on the same origin-derived cases implies both.
+2. "Bind shape names … by solving the affine signature equations … rational elimination" and "Record constraints that depend on concrete sizes and check them when the call binds". These add a solver and a call-time error contract.
+
+## Framework changes
+
+- **`applyNativePassSync` with shared native-candidate preparation:** needed, because the fixed API is synchronous, and correctly placed. As specified it is not minimal: "receives a pass ID, version, IR definition, adapter, write declarations, kernel and mandatory check" duplicates `definePass`. Take a `Pass` and refuse `needs` and `preserves`.
+- No missed change.
+
+## Keep
+
+Keep the rule that tolerance cases are chosen "with entirely finite reference outputs independently of the candidate". Keep the 0.25-tail witness (`0x3fa00000` against `0x3fa00002`, verified), which catches both the reassociation and a dropped tail.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-020-C:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+~~~~
+
+The design revision is commit `4cedbf8`.
 
 ### What changed and why
 
@@ -179,3 +221,59 @@ implementation, scoped test runs, and implementation commits in this session.
 
 `docmgr doctor` checks the revised ticket. No implementation tests belong to this
 checkpoint.
+
+## Step 3 — Implement the checked tensor pipeline
+
+Tix now compiles to a `tensor.tix@1` artifact with a projection for functions,
+parameters, statements and their dependencies. Both evaluators use the same index
+enumeration and scalar tree traversal. The optimizer applies the native kernels
+through the framework and advances its artifact only after a changed revision passes
+the configured comparison.
+
+### Prompt context
+
+See step 2 for the reviewed implementation request. The public API remains the
+synchronous `compileTix`, `runTix` and `optimizeTix` from the original brief.
+
+### What changed and why
+
+- `src/framework/passes/define-pass.ts` adds `applyNativePassSync` over `definePass`.
+  It reuses artifact creation, projection diff, entity correspondence and declared-write
+  checking with the existing asynchronous path. Its required check returns a synchronous
+  `CheckResult`. A projection-only adapter works.
+- `src/tensor/` provides the lexer, parser, static shape and bounds checks, v6 artifact,
+  evaluators, sampled relations and the two checked kernels. The exact gate compares
+  raw f32 words against the immediate revision. The tolerance gate uses finite outcomes
+  from the original f64 evaluator on the same sampled call domain.
+- `corpus/tensor/` holds matmul, softmax, layernorm, attention, MLP and convolution.
+  `tests/tensor/` covers the fixed API, language, arithmetic, sample coverage and pass
+  witnesses. `tests/framework/native-pass-sync.test.mjs` covers the new entry point.
+
+### What worked
+
+- `npm run build` succeeded, and `dist/tensor/index.d.ts` has the fixed signatures.
+- `node --test tests/tensor/*.test.mjs` passed all three files.
+  `node --test --test-isolation=none tests/tensor/*.test.mjs` passed all 17 individual tests.
+- `node --test tests/framework/*.test.mjs` passed all 18 files.
+- `node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs` passed all four files.
+- Prettier passed on the changed source and tests. `git diff --check` passed.
+- The real split fails exact and passes tolerance on the specified witness. The tolerance
+  gate rejects the wrong tail-dropping kernel with the same cases, and the exact gate
+  rejects the wrong inline kernel's swapped axes. The 3,846-term budget regression
+  shows a split can use its extra outer accumulations above the origin's work cap.
+
+### What did not work
+
+The first tensor run failed in `tests/tensor/passes.test.mjs`. The command
+`node --test --test-isolation=none tests/tensor/passes.test.mjs` exposed
+`[badResult] Pass test.drop-tail requires a native result on the synchronous path`.
+Spreading the pass context in the mutant invoked the unavailable logical-edit getter.
+The mutant now supplies only the artifact its delegated native kernel needs. The rerun
+exercised the expected contract rejection.
+
+### Review checkpoint
+
+The implementation follows the revised design. Read `src/tensor/index.ts` for the
+public API, `src/tensor/meaning.ts` for selection and comparison, and
+`tests/tensor/passes.test.mjs` for both real and wrong pass decisions. The framework
+change is limited to `src/framework/passes/define-pass.ts` and its new focused test.

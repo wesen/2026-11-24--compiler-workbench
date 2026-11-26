@@ -1,0 +1,4 @@
+fn conv2d(x: f32[N, C, H, W], weights: f32[O, C, 3, 3]): f32[N, O, H - 2, W - 2] {
+  y[n, o, y, xout]: f32[N, O, H - 2, W - 2] = sum(c, dy, dx) x[n, c, y + dy, xout + dx] * weights[o, c, dy, dx];
+  return y;
+}
