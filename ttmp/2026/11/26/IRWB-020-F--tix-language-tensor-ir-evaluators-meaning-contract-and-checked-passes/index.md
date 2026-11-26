@@ -29,6 +29,7 @@ and their rationale are the primary result. Stage 1 is implemented and validated
 
 - [Stage 1 design and framework change ledger](./design-doc/01-stage-1-design-tix-and-checked-tensor-passes.md)
 - [Diary](./reference/01-diary.md)
+- [Final report and independent evaluation](./reference/02-report.md)
 
 ## Topics
 

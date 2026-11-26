@@ -282,3 +282,70 @@ mutants run through the same artifact checks and gate.
 Start with `src/tensor/index.ts` for exports and `tests/tensor/passes.test.mjs` for contract evidence. The
 [design ledger](../design-doc/01-stage-1-design-tix-and-checked-tensor-passes.md#framework-change-ledger)
 records the only framework change. CUDA lowering and the later optimization stages remain out of scope.
+
+## Step 5: Triage the independent evaluation and write the final report
+
+I checked the supplied results against the evaluated revision and distinguished reported failures from
+intentional negative tests. The independent evaluation listed no failures or rejections, so there is no
+code defect to attribute or external failing case to reproduce. I reran the build and tensor tests locally
+and used the existing negative cases to confirm just what the two relations accept and reject.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+~~~~markdown
+Stage 1 of IRWB-020-F has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `6e5fee7`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-F:`). Final message: the report's path, the commit hash, and one line per failure cause.
+~~~~
+
+**Assistant interpretation:** Publish a compiler-facing report without changing any evaluated code. Attribute
+only actual failures; do not infer a rejection from the presence of a negative test.
+
+### Evidence and diagnosis
+
+- The supplied counts are internally consistent: 25/25 acceptance tests, 180/180 comparisons in each
+  precision, and 60/60 acceptances for each optimization. No result appears wrong. Acceptance can
+  include a no-op (`src/tensor/passes.ts:133`–`:136`, `src/framework/passes/define-pass.ts:254`–`:264`);
+  the supplied counts do not tell us how often the rewrites changed the IR.
+- For contrast, the intentional exact rejection at `tests/tensor/passes.test.mjs:13` comes from
+  `src/tensor/evaluate.ts:192` grouping the two half-ulp terms; `src/tensor/meaning.ts:164` detects
+  `0x3f800001` vs `0x3f800000`. The public `split-sum` selects tolerance instead.
+- The two intentional mutation rejections are also local only. The inline mutant drops the index
+  offset at `tests/tensor/passes.test.mjs:51`; the changed f32 word fails `src/tensor/meaning.ts:164`.
+  The split mutant changes extent five to four at `tests/tensor/passes.test.mjs:70`; the missing
+  term fails `src/tensor/meaning.ts:156`. Both reach semantic rejection at
+  `src/framework/passes/define-pass.ts:275`–`:279`, not a structural failure.
+- Other intentional local rejections exercise nonfinite output (`src/tensor/meaning.ts:156`), error
+  drift against the original f64 baseline (`src/tensor/meaning.ts:196` and `:156`), and an empty
+  sampled shape set (`src/tensor/meaning.ts:130` and `:143`–`:144`). None is part of the supplied
+  independent failure tally.
+
+### Validation and review
+
+- `npm run build && node --test tests/tensor/*.test.mjs` on `6e5fee7`, Node `v24.18.0`: build passed,
+  23 tests passed, zero failed. No failures to reproduce; no new script needed. The independent
+  evaluation is cited as supplied, not as a local rerun.
+- `git diff --quiet 6e5fee7 -- src tests corpus` returned zero. This checkpoint changes only ticket
+  documentation. Start with [the final report](02-report.md) and its verification section.
