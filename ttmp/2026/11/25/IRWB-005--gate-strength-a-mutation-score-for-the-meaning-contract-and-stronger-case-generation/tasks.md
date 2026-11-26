@@ -9,5 +9,5 @@
 - [ ] D2b: kill rate gained and time cost of the strong generator (vs default at equal case count) <!-- t:qfc1 -->
 - [ ] D2a: f32 fixture and a bounded Candela subset of cheap functions (exact caller-set shortcut) <!-- t:lr6s -->
 - [ ] C5 (optional): typed.ranges facts checked against executions <!-- t:jv4p -->
-- [ ] Frozen default: re-run 01-freeze-baseline.sh into various/final and diff <!-- t:3l51 -->
+- [x] Frozen default: re-run 01-freeze-baseline.sh into various/final and diff <!-- t:3l51 -->
 - [ ] Vault report: deep dive, figures irwb005-*, checked against the diary <!-- t:aoc0 -->

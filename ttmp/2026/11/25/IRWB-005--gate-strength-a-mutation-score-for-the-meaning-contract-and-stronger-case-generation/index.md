@@ -9,7 +9,19 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/cases-strong.ts
+      Note: contract version 2 (D2b)
+    - Path: repo://src/typed/facts-check.ts
+      Note: C5 range facts against executions
+    - Path: repo://src/typed/mutate.ts
+      Note: mutation operators and the mutant pass (D2a)
+    - Path: repo://tools/mutation-classify.mjs
+      Note: equivalent-mutant classification cascade
+    - Path: repo://tools/mutation-score-candela.mjs
+      Note: Candela subset on sub-programs with an overlay store
+    - Path: repo://ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/log/01-gate-strength-diary.md
+      Note: investigation diary
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-25T23:07:55.009760973-05:00

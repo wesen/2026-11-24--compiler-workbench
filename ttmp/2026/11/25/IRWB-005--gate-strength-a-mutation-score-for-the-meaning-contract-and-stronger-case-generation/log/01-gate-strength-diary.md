@@ -496,3 +496,94 @@ The corpus is integer only, so the `f32` operator has no site there. The f32 fix
 
 ### Technical details
 - Site variants: `f32 ulp` 6, `f32 sign` 6, `fsub` 3, `fdiv` 2, `fceil` 2, `ffloor` 2, one each of `fadd fle fmax fmin fmul fne feq flt f2u f2i u2f i2f`.
+
+## Step 11: The frozen default, re-recorded and compared
+
+All source changes of the milestone are in (`src/typed/{mutate,cases-strong,facts-check}.ts` new, `src/typed/evaluate.ts` +9/−2 lines, `src/framework/**` untouched), so the frozen outputs were re-recorded at 690e2a1 and compared with the baseline recorded at 420d8e1 in Step 1. Everything the brief lists is identical. `npm test` has 11 more tests (the nine of `mutate.test.mjs` and the two of `facts-check.test.mjs`); the 325 original tests have the same names and the same results.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Record a baseline and diff at the end."
+**Inferred user intent:** Proof that the default contract's behaviour did not move.
+**Commit (code):** 96ff6aa — "IRWB-005: frozen outputs re-recorded at 690e2a1 and diffed against 420d8e1: ..."
+
+### What I did
+- `bash scripts/01-freeze-baseline.sh various/final` (build, `npm run test:only`, `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs`, `node tools/parity.mjs`, IRWB-001 `scripts/08-corpus-revisions.mjs`).
+- `scripts/18-freeze-diff.sh various/baseline various/final > various/18-freeze-diff.txt` (01's header names a `02-freeze-diff.sh`; 02 had become the site census, so the comparison is script 18). It ignores `real/user/sys` lines and per-test durations.
+- `grep -rln "mutate.js\|cases-strong.js\|facts-check.js" src tools`: only the three new tools import the new modules.
+
+### Why
+- The brief's hard constraint: generator, count, seed, verdicts, key and every decision frozen.
+
+### What worked
+- npm test: baseline `tests 325 pass 322 fail 0 skipped 3`, final `tests 336 pass 333 fail 0 skipped 3`; name diff: only the 11 added tests.
+- IRWB_FULL suites: 21/21 both, identical names.
+- `tools/parity.mjs`: identical. Corpus revision fingerprints (44 projects, every revision hash and head): identical.
+- The pinned version test (`meaningKept({})` = `1+82965c92`, blend 40 = `1+2686cc23`, blend 100 = `1+c4dbecf4`) passes, so the contract key is unchanged.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- Candela's decisions were not re-run end to end (`tools/candela-o2.mjs` is a 30-minute, Candela-scale process, and the Candela mutation run occupies the one Candela slot). The argument that they are unchanged is structural: no existing module imports the new ones; the one change on the default path is `if (observe) observe(...)` with `observe` undefined in every default call; and the Candela tool re-checked r0 + bcm against r0 under the default rules with the same counts as before the change (13,258 agree, 0 disagree, 22 inconclusive, Steps 7 and 14).
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `various/18-freeze-diff.txt`.
+
+### Technical details
+- Baseline commit 420d8e11988fa12a80bc7b84019ec27ebac0f625; final 690e2a1fb264b0a96fba259577ce7d4fb203e530.
+
+## Step 12: The held-out base: mutants of r0
+
+The corpus measurement of Step 8 mutates each project's pipeline head. To see whether its conclusions depend on that choice, the same harness mutated every project's r0 instead (the source as lifted, before any pass). The numbers are close: 1,231 mutants over 43 projects, 221 equivalent, the default gate accepts 38 wrong ones (96.2 % upper bound, against 95.8 %), version 2 accepts 1 (99.9 %, against 99.8 %). Divergence again dominates: 33 of the 38 diverge, 30 of them loop increments. The site mix differs where O2 changes the code's shape: at r0 bounds checks are still `caddr` expressions, so `hoist-trap` has 2 sites instead of 21 and `drop-check`/`check-range` 43/42 instead of 31/30, and `strength.meter`'s `Math.min(…, 1000)` has not yet become the branch whose constant survived version 2 on the head.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Robustness of the kill rate to the choice of base (guide §10's held-out run).
+**Inferred user intent:** A number that does not depend on an arbitrary choice.
+**Commit (code):** 690e2a1 (harness as run); results committed with this step.
+
+### What I did
+- `node --max-old-space-size=8192 tools/mutation-score.mjs --base origin --gates default,check100,strong,strong-cases,default+div --json various/07-corpus-origin.json --jsonl various/07-corpus-origin.jsonl` → `various/07-corpus-origin.txt`; 38 min 59 s wall (1,917 s user; the machine was at load 10–15 throughout).
+- `node scripts/17-report-tables.mjs various/07-corpus-origin.jsonl`.
+
+### Why
+- The head is where late passes act, but it is also the code O2 has already simplified; r0 has more and different sites.
+
+### What worked
+- Totals (mutants, killed, survived-wrong, equivalent, lower..upper): default 1231 972 38 221 83.1 %..96.2 %; check100 975 35, 96.5 %; strong 1009 1, 99.9 %; strong-cases 975 35, 96.5 %; default+div 1005 5, 99.5 %.
+- Equivalent under default: 31 proved exhaustively, 30 spec (unconstrained witness), 160 presumed. Survived-wrong by method: sample-diverges 24, exhaustive-diverges 9, sample 4, exhaustive 1.
+- The five non-divergent survivors of default: `bounds-lab.pairs` check on `b` admitting `len(b)` (also the one survivor of version 2, witness `len(a) = len(b) + 1`), `branches.sign` `x < 0` → `x < −1` and `x > 0` → `x > 1`, `branches.grade` `80` → `79`, `fixed-point.qmul` `+128` → `+129`.
+- The three non-increment divergent ones: `div-magic.digitsum` `v > 0` → `v >= 0` and `0` → `−1` (the loop `while (v > 0) v = v / 10` never ends once `v` reaches 0; witness `v = −100000`, baseline 34 steps), `my-analysis.f` `b = 0` → `b = −1` (`a = a + b + 1` no longer grows when `flag`; witness `[29, 1]`).
+- 16 of 43 projects at 100 % under default.
+- Gate time (ms, 1,231 mutants): default 136,340; check100 105,351; strong 449,417; strong-cases 73,776; default+div 235,594 (doubled against Step 8 by the machine's load; the ratios are similar).
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The kill rate is a property of the gate rather than of the base: the two bases agree within half a point, and the same two mechanisms (divergence; single boundary values) account for nearly all survivors in both.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The r0 run was classified with the same cascade but not deep-searched (Step 13 deep-searches the head's presumed mutants only).
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `various/07-corpus-origin.{txt,json,jsonl}`.
+
+### Technical details
+- Per operator at r0 (default; mutants, killed, wrong, equivalent): swap 226 219 0 7; const 542 470 36 36; cmp-flip 119 119 0 0; cmp-weaken 162 61 1 100; drop-check 43 4 0 39; check-range 42 3 1 38; shift 87 87 0 0; hoist-trap 2 1 0 1; drop-store 8 8 0 0.
