@@ -18,8 +18,9 @@
 //   node --max-old-space-size=12288 tools/mutation-score-candela.mjs [--count 30] [--bcm 6] [--max-steps 2000]
 //        [--functions a,b] [--gates default,check100,strong,strong-cases,default+div] [--sample 400]
 //        [--caller-sample 100] [--fn-budget 900 (s per function; later sites are counted as skipped)]
+//        [--skip-done previous.jsonl (same selection, without functions that run finished)]
 //        [--no-classify] [--json out.json] [--jsonl out.jsonl (appended per function)]
-import { appendFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { installVendor } from './node-vendor.mjs';
 import { candelaInputs, candelaSource, MAX_SOURCE } from './candela.mjs';
 
@@ -129,6 +130,14 @@ if (!chosen) {
   chosen = [...new Set([...even, ...byBcm])];
 }
 console.error(`cheap functions: ${cheap.length}; chosen: ${chosen.length}: ${chosen.join(', ')}`);
+// --skip-done run.jsonl: the same selection, without the functions a previous (cut-off) run finished
+const doneFile = flag('--skip-done', null);
+if (doneFile) {
+  const done = new Set(readFileSync(doneFile, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l).fn));
+  chosen = chosen.filter(f => !done.has(f));
+  console.error(`skipping ${done.size} functions finished in ${doneFile}; left: ${chosen.join(', ')}`);
+}
+gateCases.clear(); // the base check's cases are not needed again
 
 const records = [], baseVerdicts = {}, crossCheck = { compared: 0, differ: 0 };
 const callerSample = +flag('--caller-sample', 100), fnBudget = 1000 * +flag('--fn-budget', 900);
@@ -195,11 +204,15 @@ for (const f of chosen) {
     times.classify += performance.now() - tb;
     records.push(rec);
   }
-  perFn[f] = { affected: A.length, sites: sites.length, judged: sites.length - skipped, skipped, ms: Object.fromEntries(Object.entries(times).map(([k, v]) => [k, Math.round(v)])) };
+  // memory: what the process holds after the function (before releasing its cases), and the peak so far
+  const mu = process.memoryUsage(), mb = x => Math.round(x / 2 ** 20);
+  const mem = { rssMB: mb(mu.rss), heapMB: mb(mu.heapUsed), peakRssMB: Math.round(process.resourceUsage().maxRSS / 1024) };
+  perFn[f] = { affected: A.length, sites: sites.length, judged: sites.length - skipped, skipped, ms: Object.fromEntries(Object.entries(times).map(([k, v]) => [k, Math.round(v)])), mem };
+  gateCases.clear(); // release this function's gate cases and r0 runs before the next function
   if (jsonl) appendFileSync(jsonl, records.filter(r => r.fn === f).map(r => JSON.stringify(r)).join('\n') + (records.some(r => r.fn === f) ? '\n' : ''));
   const mine = records.filter(r => r.fn === f && r.gates.default);
   const strongKilled = records.filter(r => r.fn === f && r.gates.strong?.verdict === 'killed').length;
-  console.error(`${f.padEnd(22)} |A| ${String(A.length).padStart(3)} sites ${String(sites.length).padStart(3)} default killed ${mine.filter(r => r.gates.default.verdict.startsWith('killed')).length}/${mine.length} strong ${strongKilled} skipped ${skipped}  ${JSON.stringify(perFn[f].ms)}  cross-check ${JSON.stringify(crossCheck)}  ${Math.round(performance.now() - t0)} ms`);
+  console.error(`${f.padEnd(22)} |A| ${String(A.length).padStart(3)} sites ${String(sites.length).padStart(3)} default killed ${mine.filter(r => r.gates.default.verdict.startsWith('killed')).length}/${mine.length} strong ${strongKilled} skipped ${skipped}  ${JSON.stringify(perFn[f].ms)} ${JSON.stringify(perFn[f].mem)}  cross-check ${JSON.stringify(crossCheck)}  ${Math.round(performance.now() - t0)} ms`);
 }
 console.error(`framework gate vs replicated gate (functions nothing calls): ${JSON.stringify(crossCheck)}`);
 const summary = C.summarize(records, gateNames, { subject: 'candela', base: 'r0+bcm', chosen, cheap: cheap.length, maxSteps, sample, baseCheck, baseVerdicts, crossCheck, perFn, ms: Math.round(performance.now() - t0) });
