@@ -6,9 +6,10 @@ import {
   type CheckResult,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
-import { evaluate, OutsideSample, size, type Inputs, type BufferValue } from './evaluate.js';
+import { evaluate, OutsideSample, type Inputs, type BufferValue } from './evaluate.js';
+import { sampleInputs, type SampleStream } from './samples.js';
 import { TixIR } from './ir.js';
-import { plain, value, type Fn, type Module } from './model.js';
+import { plain, type Fn, type Module } from './model.js';
 
 type Relation = 'exact' | 'tolerance';
 interface Sample {
@@ -18,8 +19,7 @@ interface Sample {
   inputs: Inputs;
   reference: BufferValue;
 }
-const seed = 20,
-  half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
+const seed = 20;
 function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
@@ -32,26 +32,11 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
     if (seen.has(key)) continue;
     seen.add(key);
     const dims = new Map(symbols.map((s, i) => [s, shapeValues[i]]));
-    const shapes = fn.params.map(p => p.shape.map(d => value(d, dims)));
-    if (shapes.some(s => s.some(x => x < 0) || size(s) > 4096)) continue;
-    for (const stream of ['signed', 'positive', 'half-ulp', ...(relation === 'exact' ? ['zero'] : [])]) {
-      const inputs: Inputs = Object.create(null);
-      fn.params.forEach((p, j) => {
-        const shape = shapes[j];
-        const data = Float32Array.from({ length: size(shape) }, (_, i) => {
-          switch (stream) {
-            case 'signed':
-              return 2 * random() - 1;
-            case 'positive':
-              return 0.25 + 0.75 * random();
-            case 'zero':
-              return i % 2 ? -0 : 0;
-            default:
-              return half[i % half.length];
-          }
-        });
-        inputs[p.name] = { shape, data };
-      });
+    const streams: SampleStream[] = ['signed', 'positive', 'half-ulp'];
+    if (relation === 'exact') streams.push('zero');
+    for (const stream of streams) {
+      const inputs = sampleInputs(fn, dims, stream, random);
+      if (!inputs) break;
       try {
         const ref = evaluate(fn, inputs, relation === 'exact' ? 'f32' : 'f64', true);
         if (relation === 'tolerance' && !ref.data.every(Number.isFinite)) continue;

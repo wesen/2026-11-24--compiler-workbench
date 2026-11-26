@@ -180,3 +180,25 @@ Now do the following in this session:
 ### Next
 
 Implement the revised backend and opt-in transport, then validate both the fixed API and timed corpus runner. No review items were declined.
+
+## Step 3: Implement the CUDA translation unit and checked pass
+
+The emitter now generates one CUDA kernel per current statement, preserving separate reduction accumulators and using wide integer indices. The generated host drives a versioned binary bundle, preloads kernels and records events. `src/tensor/index.ts` exposes the three fixed APIs. `cuda-contract.ts` uses a distinct `tensor.cuda-source` artifact and delegates one batch to the remote runner; its case list retains local f64 and needed f32 references.
+
+### What I did and why
+
+- Kept source emission and the CUDA harness in `src/tensor/cuda-source.ts`, binary framing and async subprocess execution in `cuda-run.ts`, and pass policy/comparison in `cuda-contract.ts`. Extracted the deterministic input streams to `samples.ts` so stage 1 and stage 2 can share generators without changing stage-1 cases.
+- Added `--standalone` to `tools/cuda-remote.mjs`: unique invocation directories, a compiler-version/source executable key, per-key `flock`, atomic executable publication, fetch error propagation and cleanup. The normal directory cache is still available.
+- Added offline codec, source and fake-transport tests and a separate real-GPU file. The benchmark script uses the same emitter and runner as the API but requests the `--timed` same-process warm-up and three repeats.
+
+### What worked
+
+`npm run build` passed. A public-API smoke test on `[[3,4]]` returned `[7]` and a positive kernel interval; the sampled check accepted the sum function. The four offline test files passed (19 tests). The aggregate test run and corpus measurement continued from this checkpoint.
+
+### What didn't work
+
+An initial build of the candidate files reported `TS2345` (`Buffer<ArrayBufferLike>` was not assignable to inferred `Buffer<ArrayBuffer>`) and `TS2304` (`Cannot find name 'EOF'`) in `cuda-run.ts`. I typed the write chunks as `Buffer[]` and removed the stray marker. The independent contract build exposed `TS2339` (uncast scalar validator input and mixed port types in `subjectKey`) and `TS2322` (a widened target literal for the artifact); fixing the validator, using typed named ports and specifying the output type made the build pass.
+
+### Review focus
+
+Review `cuda-source.ts` for loop-local declarations and timing placement, `cuda-contract.ts` for sample ownership and rejection evidence, and `tools/cuda-remote.mjs` for compiler cache vs. invocation lifetime. No `src/framework/` edits were needed.
