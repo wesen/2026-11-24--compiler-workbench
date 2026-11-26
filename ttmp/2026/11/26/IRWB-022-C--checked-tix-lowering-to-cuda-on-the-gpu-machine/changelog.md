@@ -1,0 +1,13 @@
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+
+## 2026-11-26
+
+Design ready for review: probed GB10 math and framework async reuse; proposed direct emission and a sampled f64 tolerance. No backend code changed.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sx-irwb-022-c/ttmp/2026/11/26/IRWB-022-C--checked-tix-lowering-to-cuda-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md — Design and change ledgers
