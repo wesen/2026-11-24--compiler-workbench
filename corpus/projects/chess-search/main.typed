@@ -1,0 +1,7 @@
+function chessSearch(board: buffer, state: SearchState, depth: i32, budget: i32, advanced: bool): i32 {
+    chessStartSearch(board, state, depth, budget, advanced);
+    while (state.running) {
+        chessSearchStep(board, state);
+    }
+    return state.bestMove;
+}
