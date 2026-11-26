@@ -82,3 +82,19 @@ Related seven repository files to the design, added the design and diary links t
 After the diary was added, `docmgr doctor --ticket IRWB-016 --stale-after 30` reported `invalid_frontmatter` with `frontmatter delimiters '---' not found` for this file. Added frontmatter using the existing `reference` document type and reran the checks. The example JSON parsed, and all design and index links resolved.
 
 The next doctor run flagged `missing_numeric_prefix`, so renamed the diary to `01-diary.md` and updated the index link. The initial `git add` failed with `index.lock: Read-only file system` in the linked Git worktree metadata. The commit uses scoped access to update that metadata.
+
+## Step 4 — Simplify the design after self-review
+
+Reread the design against the minimum needed to exercise each optimization. Kept multiple FFT sizes, the callable butterfly, two independently configured feedback loops, the raw exact checks and the independent float64 oracles. Reduced the bank to two sections and one output prefix, moved shape requirements to the host, and reduced root setup to one half-angle rule. Consolidated the replay and removed extra fixtures, metric and backend variants whose coverage overlaps the remaining checks.
+
+### Prompt context
+
+User request, verbatim
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-016: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+
+### Evidence and decisions
+
+Checked the revised layout and API choices against the current worktree. The single normalized peak bound also bounds RMS error because the peak is at least the RMS of the error vector. The tighter peak score and revised twiddle computation still need r0 calibration during implementation. The end of the design records each cut and its rationale.
+
+Ticket doctor and frontmatter validation passed. Checked the embedded JSON against the stated layouts, verified the FFT step estimate arithmetic and resolved all design links inside this worktree. The scoped diff passed `git diff --check`.

@@ -33,81 +33,68 @@ WhenToUse: When building or measuring the f32 DSP optimization playground.
 
 # f32 DSP corpus project
 
-Add one project, `corpus/projects/f32-dsp/`, with two independently callable workloads. The FFT converts a short complex block to its spectrum. The biquad bank runs three second-order filters in parallel on the same real block. Keeping the calls independent gives each kernel its own inputs, oracle and instruction count. The baseline should read like ordinary DSP code with a butterfly helper, straightforward loops and a written-out difference equation. The compiler can then remove call and loop overhead, reuse registers and specialize on configuration data. The same source can also show where single-rounding and reassociation first change the output bits.
+Add one Typed project, `corpus/projects/f32-dsp/`, with a radix-2 FFT and a bank of two parallel biquads. Measure the kernels separately. Keep the FFT's butterfly helper and the bank's explicit state updates so the baseline gives the compiler calls, loops, copies and f32 expression trees to work on. The FFT size and filter coefficients come from input buffers so the same source can run with dynamic data or with those bytes bound for specialization.
 
-## Entry points and memory
+## Typed interface
 
-Use `buffer` parameters. A buffer has a 32-bit length in u16 cells, followed by the cells. The built-in `getF32(i)` and `setF32(i, x)` read and write one binary32 value at byte offset `4 + 4*i`, checking cell `2*i + 1`. Pack each f32 as the low u16 followed by the high u16. Use `charCodeAt(0)` for the FFT's integer configuration cell. All lengths in the table are values of Typed's `.length`.
+A `buffer` has a 32-bit length in u16 cells. Pack each f32 as low u16 then high u16. Typed's `getF32(i)` and `setF32(i,x)` access a word at byte offset `4 + 4*i` and check cell `2*i+1`. These operations, buffer arguments and `Math.sqrt` are used in the [Candela kernel](../../../../../../corpus/candela-gallery/kernel.typed) and lower to checked addresses and f32 operations in [lift.ts](../../../../../../src/typed/lift.ts).
 
-| Function | Buffers and valid lengths | Writes and return |
+| Function | Valid inputs | Observable result |
 | --- | --- | --- |
-| `fft(work: buffer, config: buffer): i32` | `work` is 128 cells, enough for 32 interleaved complex samples. `config` is one cell containing `log2N` in 3–5. | Replace the first `N = 1 << log2N` complex samples in place. Return `N`. Preserve the work tail and config. |
-| `biquadBank(signal: buffer, coeff: buffer, out: buffer): i32` | `signal` has an even length from 0 to 64 cells, so `T = signal.length / 2` is 0–32. `coeff` is 30 cells for 15 f32 coefficients. `out` is 192 cells for 96 f32 values. | Write `T` samples per section at f32 indices `32*section + t`. Return `T`. Preserve signal, coeff and the unused tail of each section. |
-| `butterfly(work: buffer, left: i32, right: i32, wr: f32, wi: f32): i32` | `work` has the same complex layout. The helper's caller provides two distinct, in-range complex indices and a complex twiddle. | Write both complex results. Return 0. |
+| `fft(work: buffer, config: buffer): i32` | `work` has 64 f32s. `config.charCodeAt(0)` is `log2N` in 3–5, stored in a one-cell buffer. | Return `N = 1 << log2N` and replace the first `2*N` f32s. Complex sample or bin `i` occupies f32 indices `2*i` and `2*i+1`, real first. |
+| `biquadBank(signal: buffer, coeff: buffer, out: buffer): i32` | `signal` has `T = signal.length / 2` f32s for `T` in 0–32. `coeff` has 10 f32s and `out` has 64. | Return `T` and write the prefix of `2*T` f32s, one contiguous block of `T` per section. |
+| `butterfly(work: buffer, left: i32, right: i32, wr: f32, wi: f32): i32` | Same work layout, distinct complex indices in 0–31 and an f32 twiddle. | Replace the two complex values and return 0. |
 
-The host supplies disjoint allocations for distinct buffer parameters. Both public kernels check the lengths before accessing any elements. The FFT checks the exponent before shifting. On an invalid length or exponent they return `-1` and leave all guest bytes alone. A zero-length signal returns 0 with no writes. A standalone butterfly call has the index precondition in the table and the built-in checked accesses. Keep the coefficient range and non-aliasing requirements in the host fixtures.
+The host provides buffers of the stated shapes and disjoint allocations for distinct parameters. All bytes outside each function's output region are preserved, including headers, read-only inputs and any unused output tail. For an empty signal the bank returns 0 and writes no output.
 
-Use ordinary f32 expressions, annotated f32 locals where helpful, and `0.0`, `1.0` and `0.5` for float literals. Typed supports buffer loads and stores in the vendored front end's `floatAddress` and `bufferWrite`, used in [Candela's glue](../../../../../../corpus/candela-gallery/glue.typed) and [kernel](../../../../../../corpus/candela-gallery/kernel.typed). The kernel also demonstrates `Math.sqrt` and buffer arguments to helpers. The [lifter](../../../../../../src/typed/lift.ts) lowers f32 loads and stores and maps the arithmetic and square root to f32 IR ops. The two kernels only need scalar locals, loops and checked buffers. Their work space is the caller's memory and their call depth is bounded by the butterfly call.
+## Iterative FFT
 
-## FFT
+Compute the forward unnormalized transform in natural bin order. Reverse the low `log2N` bits of each sample index with a shift-and-OR loop, then swap the corresponding complex values if the original index is smaller than its reversal. Load both samples before storing either one.
 
-Compute the forward, unnormalized, radix-2 decimation-in-time transform, with natural bin order and negative imaginary phase. A complex sample at index `i` has real and imaginary components at f32 indices `2*i` and `2*i+1`. First reverse the low `log2N` bits of each index with an ordinary shift-and-OR loop. Swap the two complex samples when `i < reverse(i)`, loading both samples before storing.
-
-In each stage of span `m`, form the root `exp(-2πi/m)`. Start with `(-1.0, 0.0)` for span 2 and `(0.0, -1.0)` for span 4. For each later span, halve the previous angle by computing `newC = Math.sqrt((1.0 + c) * 0.5)` and `newS = s / (2.0 * newC)`, then replacing `(c,s)`. This uses the sine double-angle identity and keeps the denominator nonzero. All operations, including root setup and recurrence, round in f32.
+Use decimation in time with a stage root `(c,s)` and a twiddle `(wr,wi)`. Initialize `(c,s)` to `(-1.0,0.0)` for span 2. For each later stage take the half angle using the preceding `c`. Calculate both new components before assigning either one. All operations below use f32 for the complex arithmetic.
 
 ```text
 for m = 2; m <= N; m = m * 2:
-    (c, s) = root for this stage, as specified above
+    if m > 2:
+        newC = Math.sqrt((1.0 + c) * 0.5)
+        newS = -Math.sqrt((1.0 - c) * 0.5)
+        (c, s) = (newC, newS)
     (wr, wi) = (1.0, 0.0)
     for j = 0; j < m / 2; j = j + 1:
         for left = j; left < N; left = left + m:
-            right = left + m / 2
-            butterfly(work, left, right, wr, wi)
+            butterfly(work, left, left + m / 2, wr, wi)
         nextR = wr*c - wi*s
         nextI = wr*s + wi*c
         (wr, wi) = (nextR, nextI)
 ```
 
-The butterfly loads `(ur,ui)` at `left` and `(vr,vi)` at `right`. Compute `tr = wr*vr - wi*vi` and `ti = wr*vi + wi*vr`, then store `(ur+tr,ui+ti)` to the left and `(ur-tr,ui-ti)` to the right. Load both operands before any stores. Call the helper at statement root, for example `const done = butterfly(...)` with the result unused, so it is an inlining candidate. Each stage computes a twiddle once per column and shares it among groups. Fixing the size cell lets partial evaluation resolve the stage and column loops and precompute the twiddles. For exact folding, reproduce the f32 recurrence and preserve its bits, including signed zero. Recalculating a twiddle by taking a float64 sine and cosine and rounding once may produce different bits.
+The butterfly loads `(ur,ui)` at the left and `(vr,vi)` at the right. Compute `tr = wr*vr - wi*vi` and `ti = wr*vi + wi*vr`, then store `(ur+tr,ui+ti)` and `(ur-tr,ui-ti)`. Call the helper at statement root, for example as `const done = butterfly(...)`, for inlining. With a fixed size, staging the loops can fold the twiddles. Exact specialization must reproduce the baseline's f32 operation order and rounding, including signed zero.
 
-## Biquad bank
+## Parallel biquads
 
-The sections are parallel, each with zero initial state per call and the same input. Each row in `coeff` contains `[b0,b1,b2,a1,a2]` for a monic denominator `1 + a1*z^-1 + a2*z^-2`. Run one section at a time. Read its five coefficients before its sample loop, keep `x1,x2,y1,y2` as the previous two inputs and outputs, and use the direct form I equation in this order:
+Each section reads one coefficient row `[b0,b1,b2,a1,a2]` at f32 offset `5*section` before its sample loop and processes the same signal from zero initial state. Use scalar f32 locals for the coefficients and the delay state. Keep the direct form I evaluation order explicit:
 
 ```text
 y = ((((b0*x + b1*x1) + b2*x2) - a1*y1) - a2*y2)
-out.setF32(section*32 + t, y)
+out.setF32(section*T + t, y)
 x2 = x1
 x1 = x
 y2 = y1
 y1 = y
 ```
 
-Make each state local f32 and initialize it to `0.0`. The feedback uses the just-computed f32 output on the next sample. The copy assignments make the state progression readable and give copy coalescing and SSA a real loop-carried example. Generated banks use coefficients in `[-0.25,0.25]`, so `|a1|+|a2| <= 0.5`. With bounded input and zero initial state this gives a convergent feedback bound. A fixed bank for replay and specialization uses these rows, in order:
+Initialize `x1,x2,y1,y2` to `0.0` for each section. Generated coefficients satisfy `|a1|+|a2| <= 0.5`, giving a bounded feedback response for the generated signal. The two sections exercise runtime coefficient selection and distinct output blocks.
 
-```text
-[0.25,  0.125,  0.0625, -0.25,  0.125]
-[0.125, 0,     -0.125,   0.25, -0.125]
-[0.25, -0.25,   0.125,  -0.125, 0.25]
-```
+## Project files and cases
 
-## Corpus files and generated cases
-
-Put the three functions in `main.typed`. Put the layout, two run examples and the exact versus tolerance contract in `notes.md`. Use `scripts/explore.js` for workbench inspection, showing a small FFT or a short biquad block and the hot lines before and after `speed`. Put the full numerical reference, case replay and measurement in an executable Node script under `scripts/`, with the main entry documented in `notes.md`. The Node script works over the raw run objects. The workbench's `p.exec()` truncates displayed buffer cells, so its preview alone would miss part of the FFT or filter output. Node discovers the new directory through [tools/corpus.mjs](../../../../../../tools/corpus.mjs). During implementation, check for corpus-wide assertions whose expected totals include the newly discovered project, such as the full comparison in [rules.test.mjs](../../../../../../tests/typed/rules.test.mjs).
-
-Start with this `project.json`. Update `focus` to the actual butterfly product line in the joined source when writing `main.typed`.
+Put the functions in `main.typed`, buffer packing and replay instructions in `notes.md`, and the raw replay, independent oracle and measurement in one Node script, `scripts/check.mjs`. The project directory is discovered by [tools/corpus.mjs](../../../../../../tools/corpus.mjs). Check corpus-wide tests for expected totals that count projects. Use [corpus/reference.md](../../../../../../corpus/reference.md) for the metadata and input format.
 
 ```json
 {
   "title": "f32 DSP",
   "group": "Programs",
-  "about": "A short complex FFT and a parallel biquad bank in f32.",
-  "sources": ["main.typed"],
   "pipeline": "speed",
   "focus": 1,
-  "scripts": {
-    "explore": { "about": "Inspect a DSP block and its hot instructions.", "fresh": true }
-  },
   "inputs": {
     "fft": {
       "work": { "floats": [64, 64], "range": [-1, 1] },
@@ -115,8 +102,8 @@ Start with this `project.json`. Update `focus` to the actual butterfly product l
     },
     "biquadBank": {
       "signal": { "floats": [0, 32], "range": [-1, 1] },
-      "coeff": { "floats": [15, 15], "range": [-0.25, 0.25] },
-      "out": { "buffer": [192, 192], "cell": [42405, 42405] }
+      "coeff": { "floats": [10, 10], "range": [-0.25, 0.25] },
+      "out": { "buffer": [128, 128], "cell": [42405, 42405] }
     },
     "butterfly": {
       "work": { "floats": [64, 64], "range": [-1, 1] },
@@ -129,72 +116,47 @@ Start with this `project.json`. Update `focus` to the actual butterfly product l
 }
 ```
 
-`casesFrom` generates each parameter separately. Fixed work capacity makes every combination of generated size and work buffer valid. All functions get specs because the ordinary project checks include the helper. A `floats` length counts f32 elements and a `buffer` length counts u16 cells. The explicit float ranges keep nonfinite values out of the numerical domain. The sentinel in `out` makes omitted stores and overruns visible. Replay a fixed config as `{ "cells": [5] }` and a fixed coefficient bank as `{ "cells": [low0, high0, ...] }` with the placeholders replaced by packed words. Use the same signal and work cases for general and specialized images. See [the API reference](../../../../../../corpus/reference.md) and the [actual input generator](../../../../../../src/typed/evaluate.ts).
+Set `focus` to the butterfly product line once the source exists. The default checker includes the helper. Its spec guarantees distinct indices, and internal calls exercise the other index pairs. Because argument specs generate independently, the work and output buffers reserve maximum capacity. The output sentinel makes missing stores and tail writes visible. For specialization, use `{ "cells": [5] }` for a 32-point FFT and freeze one generated bank's coefficient cells. Reuse those bytes for the general and specialized runs, with fresh variable signals.
 
-## Exact and numerical checks
+## Correctness
 
-Generate each case once and use a fresh copy of its argument memory for every run. Decode input from the original bytes with a little-endian `DataView`; use `Case.items` to locate buffers. Compare return values and status exactly. For successful exact calls, compare the raw guest memory byte for byte against r0, including the output f32 bit patterns, buffer headers and unused bytes. This detects signed-zero and NaN payload differences. Run every changed exact pass through the normal r0-based `meaningKept` gate, and replay fixed cases outside the default generator as well. Separately require valid cases to succeed, since the generic comparator can agree on two traps. Invalid public inputs must produce the specified `-1` and unchanged memory.
+Generate the inputs once with [casesFrom](../../../../../../src/typed/evaluate.ts) and start each engine from the same original bytes. Use `Case.items` and a little-endian `DataView` to decode raw memory. The workbench preview clips buffer contents.
 
-Use the reference compiler's stock RV32 image as the second exact oracle. Follow [tools/reference-check.mjs](../../../../../../tools/reference-check.mjs) for same-case evaluator/image comparison. Use `referenceCompile` and `referenceRun`, or pass `ref.signatures` to `imageFromCode` as in the [f32 backend tests](../../../../../../tests/typed/f32-backend.test.mjs), because the standalone butterfly uses float argument registers. Compare r0 evaluator, reference RV32, and workbench RV32 at each measured exact revision on the same bytes. Record the first differing result or byte, whether there was a trap or an ABI fault, and the case seed and index.
+- **Exact.** Leave the per-pass `meaningKept` gate on. For each measured exact revision, replay the generated and fixed cases against r0 and the stock reference RV32 image, using `referenceCompile` and `referenceRun` from [reference.ts](../../../../../../src/typed/reference.ts). Require successful termination, equal integer returns and byte identity over the entire guest memory, including signed zeros and NaN payloads. The standalone butterfly uses the reference signature to place its f32 arguments. See [reference-check.mjs](../../../../../../tools/reference-check.mjs) for the same-case comparison pattern.
+- **Float64 oracle.** Decode the original f32 inputs and coefficients and compute in JavaScript `Number`. For the FFT, independently compute every bin by summing `(xr + i*xi) * (cos(2πkt/N) - i*sin(2πkt/N))` over input index `t` for bin `k`. For each bank section use transposed direct form II with `z1 = z2 = 0`. At each sample compute `y = b0*x + z1`, then `nextZ1 = b1*x - a1*y + z2` and `nextZ2 = b2*x - a2*y` before updating the state.
+- **Tolerance.** Require finite outputs, the expected integer return and byte identity outside the active output. For each FFT's interleaved vector and each biquad section's output vector, compute `20*log10(max(abs(got-ref))/max(rms(ref),1e-3))`. Start with a bound of −100 dB per vector. Here `rms(ref)` is the square root of the mean squared reference values. Zero error gives −∞ dB. For empty vectors check the return and untouched bytes. Validate the proposed bound against r0 first. Diagnose any baseline miss before revising the budget. Compare each tolerance candidate and its final RV32 image directly with the same float64 reference. Use a genuine single-rounding FMA when measuring contraction.
 
-In addition, compute an independent float64 result in JavaScript using the decoded binary32 inputs and coefficients. Keep all arithmetic in JS `Number` through the comparison.
-
-- **FFT** computes a direct DFT in O(N²). For each bin `k`, sum `(xr + i*xi) * (cos(2πkt/N) - i*sin(2πkt/N))` over input indices `t`. Check the real and imaginary parts of every bin. This catches ordering, phase, normalization and in-place overwrite errors independently of bit reversal or the f32 twiddle generator.
-- **Biquads** use transposed direct form II in float64 with `z1 = z2 = 0` for each section. For each sample compute `y = b0*x + z1`, then `nextZ1 = b1*x - a1*y + z2` and `nextZ2 = b2*x - a2*y`. Commit the new state after both calculations and compare every `y` at the section's output index.
-- **Standalone butterfly** can use a fixed-case direct complex multiply and complex sum/difference in JS for layout tests. The tolerance measurements are for the two public kernels. Every butterfly they call is observed through their output.
-
-For finite-domain cases, form one real vector per FFT (the `2*N` interleaved components) and one vector per biquad section (the `T` samples). For each vector set `e = got - ref`. Use these starting acceptance budgets, checked independently for each vector:
-
-```text
-rmsDb  = 20*log10(rms(e)  / max(rms(ref), 1e-3)) <= -100 dB
-peakDb = 20*log10(peak(e) / max(peak(ref), 1.0))  <=  -90 dB
-```
-
-`rms(v) = sqrt(sum(v[i]^2)/v.length)` and `peak(v) = max(abs(v[i]))`. Zero error is negative infinity dB. An empty vector has no numerical score and must produce no writes. The floors give defined error limits near silence. The peak limit catches a single bad bin or sample that a block average could hide. Require finite reference and candidate outputs, the expected integer return, no traps, faults or limits, and byte identity with r0 outside the active output regions. Report the worst dB scores and the corresponding case, section and index. Measure r0 against these proposed budgets first. If r0 misses, diagnose the formula, indexing and twiddle rounding before revisiting and documenting a budget.
-
-For a future tolerance pipeline, compare every tolerance candidate and its final RV32 image directly against the same float64 oracle. An exact pass after a tolerance edit can check against that accepted revision for bit preservation and still run the end-to-end numerical check. Keep the tolerance result and its policy with the image. Use actual single-rounding emulator FMA for the FMA experiment when the backend can emit it. The existing backend option `fuse` fuses comparisons into branches.
+Outside the generated cases, replay a shifted impulse and a complex bin-centered tone at each FFT size to expose bin order, phase and scaling. For the bank replay an empty block and a 32-sample impulse through distinct coefficient rows. Put signed zeros, subnormals, infinities and a non-canonical NaN into raw-word exact-only cases for both kernels. One additional finite bank case distinguishes exact and tolerant modes. Set `x[0] = 1`, `x[1] = 1 - 2^-23`, `b0 = (1 + 2^-23)/8`, `b1 = -1/8` and the other coefficients in section 0 to zero. At sample 1, separately rounding `b0*x` gives a sum of zero. Fusing that product with `b1*x1` gives `-2^-49`, a bit difference within the numerical budget.
 
 ## Step budget
 
-The checker counts executed lifted statements, including helper bodies, with a limit of 20,000 per case. Use the bounds below as planning estimates. Inspect the actual lifted listing and count the maximum case at r0 and after each changed pass, since buffer addressing and loop lowering can introduce statements.
+At N = 32 the FFT executes at most 160 bit-reversal iterations, 32 outer reversal iterations, 80 butterflies and 31 twiddle updates across five stages. Allowing 10, 25, 50 and 20 lifted statements respectively, plus 250 for stage setup, puts the estimate under 7,300 statements. The bank runs at most 64 sample iterations. Allowing 30 statements each plus 200 for section setup gives about 2,100. These are estimates for a 20,000-statement limit. Measure the maximum-size cases at r0 and after each changed pass, counting the butterfly calls, and keep the worst observed case under 10,000 with zero inconclusive cases.
 
-| Work at the maximum size | Count | Allowance for planning |
-| --- | ---: | ---: |
-| FFT bit reversal outer iterations and potential swaps | 32 | 25 statements per outer iteration |
-| FFT reversal bit iterations | 160 | 10 each |
-| FFT butterfly calls, including caller control and callee loads/stores | 80 | 42 each |
-| FFT twiddle updates | 31 | 18 each |
-| FFT stage setup, guards and exit | 5 stages | 225 total |
-| Biquad sample iterations | 96 | 25 each |
-| Biquad section setup, guards and exit | 3 sections | 175 total |
+## Experiments and implementation order
 
-The estimates are roughly 6,550 statements for a 32-point FFT and 2,575 for a 32-sample bank. Verify that the worst measured case stays under 10,000 for headroom and that all generated checks decide. Test FFT size 32 explicitly, using values that distinguish the permuted positions, and test the 32-sample bank. Use evaluator counts for this check and RV32 instruction counts for speed. A limit hit is inconclusive in the framework and fails the corpus sizing check.
-
-## Optimization experiments and measurements
-
-| Work item | What to inspect in this project |
+| Work | Experiment |
 | --- | --- |
-| IRWB-003 | Compare `speed` with O2 on the butterfly call, rotated loops, samples' state copies and repeated f32 constants. Test `chains`, `coalesce` and `homes` as backend switches. |
-| IRWB-006 and IRWB-008 | Follow the SSA definitions of phase and sample state. Track exact constant folds and guarded rewrite provenance. Check the result bytes on generated and edge cases. Treat sampled checks and independently demonstrated exact rules as distinct forms of evidence. |
-| IRWB-007 | Specialize `fft` on config length and cell value and `biquadBank` on coefficient length and 15 exact words. Test whether staging removes config loads and twiddle calculations, and whether section specialization removes coefficient loads. Keep signal values dynamic. |
-| IRWB-010 | Start search in the pure butterfly products and the biquad sum windows, with loads and stores at their boundaries. Inspect rule evidence and the selected RV32 cost. Test exact f32 identities with their guards and exercise cancellation and special values to find invalid rewrites. |
-| IRWB-011 | Try reassociation and multiply-add contraction one site or rule family at a time. Count changed output words on the exact replay and report independent dB scores, including the last biquad samples where feedback has had time to propagate. |
+| IRWB-003 | Measure butterfly inlining and loop rotation in `speed`. Compare it with the backend's `chains`, `coalesce` and `homes` enabled together to expose the cost of branches, state copies and f32 constant materialization. |
+| IRWB-006 and IRWB-008 | Trace SSA definitions of the twiddle and filter state. Inspect evidence for exact constant folds and guarded rules. The sampled agreement gate and rule evidence answer different questions. |
+| IRWB-007 | Bind the config or coefficient buffer header and bytes per entry. Require the bound region to be read-only and disjoint from writable data. Check within that binding against r0 and measure removed loads and twiddle work. Fixed generator cells supply test cases. Memory proof and staging require compiler support beyond current scalar bindings. |
+| IRWB-010 | Use the butterfly products and biquad sum for rule discovery, equality saturation or RV32 window search. Keep loads and stores outside the first search windows and use the exact edge cases to test candidate identities. |
+| IRWB-011 | Compare reassociation and multiply-add contraction. Record changed output words, worst numerical error and executed instructions. |
 
-Memory specialization follows IRWB-007's proposed per-entry promise. Freeze the headers and contents of `config` or `coeff`, require disjoint writable data and show that no store can change the frozen region. Check specialized revisions on fresh cases within that binding against the original r0 with the same frozen bytes. Report any specialization guard and fallback cost if testing a guarded version. The current `specialize.ts` binds scalar parameters or integer record fields. Changing a generator spec to fixed cells supplies test data and does not itself establish memory facts for a pass. Budget code growth when staging loop iterations. Record which loads, stage computations and branches were removed and the corresponding fact or edit evidence.
+1. Add the files and lift `main.typed` through `Program.fromProject`. Confirm checked f32 accesses, the statement-root butterfly call and the bank state updates. Check the output spans and tails with the fixed cases.
+2. Implement the replay and oracle, record r0's numerical error and verify the step headroom. Run O0, O2 and `speed` on the same cases with default backend options, plus the separate stock reference image. Require exact agreement with zero unexpected traps, faults or limits. Pin the seed or fixture bytes and record each revision, options, instructions per call by N or T, and image bytes.
+3. Compare the extra speed backend options, then add specialization and tolerance runs when supported. Report the worst dB error with its case and component and compare general and specialized images on the same restricted cases.
 
-Measure O0, O2 and `speed` with identical backend options first. Then compare the `speed` image with each of `chains`, `coalesce` and `homes` enabled individually and together. Include the stock reference image, general versus specialized images on identical restricted cases, and any tolerance image that passes the numerical gate. Report instructions per FFT at each N and per bank block at T = 0, 1, 8, 16 and 32. For T > 0 also report instructions per sample per section. Report median and max for generated cases, image bytes, spill slots or spill instructions, and hot lines where counts move. Keep fixture bytes or a seed plus case spec and record the revision and backend options. A later hand-optimized ceiling can live in a separate project with fixed f32 twiddles and coefficient rows, identical output packing and the same oracle for the applicable contract.
+## Cuts from self-review
 
-## Implementation order and acceptance
-
-1. Add the corpus files and smoke-check the actual frontend through `Program.fromProject`. Confirm that the butterfly call, f32 operations, checked addresses and stores appear in the IR. Verify the no-write error paths and packed buffer layout.
-2. Build the Node reference and raw replay. For FFT use silence, DC, impulses at index zero and a nonzero index, and a complex bin-centered tone at every size. For the bank use silence, impulse, step, alternating signs and a fixture that distinguishes the sections. Sweep T = 0, 1, 8, 16 and 32 with sentinel tails. Require r0 to match both the analytical fixtures and the float64 budgets. Include wrong-size buffers, an invalid exponent and an odd signal length for the error paths.
-3. On top of generated cases, replay signed zero, subnormal, infinities and a non-canonical NaN as raw words in exact-only cases. Include a finite FMA witness in section 0 using `x[0] = 1`, `x[1] = 1 - 2^-23`, `b0 = (1 + 2^-23)/8`, `b1 = -1/8` and the other coefficients zero. At sample 1 the first separate multiply/add gives zero, while contracting `b0*x + b1*x1` gives `-2^-49`. Check that a candidate making this contraction changes the bits and stays within the numerical budget for that fixture. Preserve the witness in the fixed replay, since uniform cases may miss it.
-4. Require zero unexpected traps, faults or inconclusive cases for r0, O2 and `speed`. Check exact agreement with both RV32 images and capture the evaluator step maxima. Record the initial instruction counts and size measurements.
-5. Add specialization and tolerance measurements as the relevant compiler support becomes available. Use the replay and the same workload sizes to judge those changes, so a new optimization can be compared with the initial measurements without changing the signal or the checker.
-
-## Repository references
-
-- [Corpus input and inspection API](../../../../../../corpus/reference.md), [histogram project](../../../../../../corpus/projects/histogram/project.json), and [Candela's Typed math](../../../../../../corpus/candela-gallery/math.typed).
-- [Exact case generation and agreement](../../../../../../src/typed/evaluate.ts), [binary32 operation semantics](../../../../../../src/typed/f32.ts), [pipeline definitions](../../../../../../src/typed/passes.ts), and [reference execution](../../../../../../src/typed/reference.ts).
-- [IRWB-003](../../../25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/index.md) and [IRWB-006](../../../25/IRWB-006--rewrite-rules-as-verified-data-and-a-single-assignment-view-of-typed-blocks/index.md).
-- [IRWB-007](../../IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory/index.md), [IRWB-008](../../IRWB-008--exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-as-the-standard-for-new-pipelines/index.md), [IRWB-010](../../IRWB-010--sketch-rewrite-search-on-ssa-and-verified-rules-rule-discovery-equality-saturation-a-window-superoptimizer/index.md), and [IRWB-011](../../IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/index.md). The IRWB-007 guide was consulted at `69ae7a0` and the IRWB-010 and IRWB-011 guides at `d0e6415`.
+- Removed the third biquad because two sections already exercise distinct coefficient rows and output blocks.
+- Packed each section at stride `T` so each call has one contiguous output prefix and one sentinel tail.
+- Replaced invalid-input returns and their tests with host shape preconditions because this corpus measures valid DSP calls.
+- Replaced the special span-4 branch and sine division with one half-angle update for all stages after span 2.
+- Reused a generated coefficient bank for specialization because an extra hand-picked table adds no coverage to the paired speed comparison.
+- Removed the workbench exploration script and redundant metadata because one raw Node replay covers the measurements.
+- Dropped the standalone butterfly oracle and alternate reference-run route because the two kernel oracles and signature-aware exact replay cover the helper.
+- Replaced the RMS and peak gates with one peak-error bound scaled by reference RMS, which also bounds RMS error.
+- Trimmed overlapping fixtures and sampling schedules because generated cases plus targeted endpoints, spectral fixtures and the FMA witness cover the relevant failures.
+- Condensed the step worksheet into a sizing estimate and measured headroom check because lifted counts determine acceptance.
+- Dropped guarded specialization, the hand-tuned sibling project and exhaustive backend ablations because paired images already measure the proposed changes.
+- Removed the repeated reference section and duplicate reporting requirements because implementation links and result fields live next to the steps that use them.
