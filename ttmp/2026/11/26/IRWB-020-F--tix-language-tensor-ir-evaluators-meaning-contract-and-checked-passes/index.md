@@ -1,7 +1,7 @@
 ---
 Title: Tix language, tensor IR, evaluators, meaning contract and checked passes
 Ticket: IRWB-020-F
-Status: review
+Status: complete
 Topics:
     - compiler
     - ir
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T12:52:17.432655533-05:00
+LastUpdated: 2026-11-26T14:05:58.842063565-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -23,7 +23,7 @@ WhenToUse: ""
 
 Introduce Tix as the second domain on the v6 framework: source and shape checking, tensor IR, f32/f64
 interpreters, sampled meaning contracts, and checked `inline` and `split-sum` passes. The framework changes
-and their rationale are the primary result. Design is ready for review; implementation has not started.
+and their rationale are the primary result. Stage 1 is implemented and validated; see the diary for test results.
 
 ## Key Links
 

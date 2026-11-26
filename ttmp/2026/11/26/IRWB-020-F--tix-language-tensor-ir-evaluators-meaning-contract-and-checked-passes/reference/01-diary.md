@@ -224,3 +224,61 @@ Now do the following in this session:
   postinstall was not covered by `allowScripts`; TypeScript did not require it.
 - Review the sample order and caps in **Meaning contract** and the narrowed **Framework change ledger**.
   Next: implement and test the frontend/evaluators, then the native runner and checked rewrites.
+
+## Step 3: Implement the Tix frontend, IR, and interpreter
+
+`compileTix` now produces an immutable v6 artifact, and the two precisions share a shape planner and
+row-major evaluator. The parser infers index extents before creating the artifact; its validator independently
+checks the tree and projects stable IDs, ordered containment, reads, and binding edges.
+
+### Changes and rationale
+
+- `src/tensor/parse.ts` parses greedy reductions and locates source errors. `affine.ts` normalizes affine
+  terms and binds coupled dimensions with exact integer elimination. `ir.ts` defines native validation and
+  the v6 read-only adapter. `evaluate.ts` plans access bounds and implements ordered reduction and rounding.
+- Reused the r0 shape planner at runtime so an inlined-away materialization does not enlarge the input domain.
+- Kept signed zero and canonical NaN in f32 buffers, outside the finite-JSON artifact format.
+
+### Evidence and fixes
+
+- `npm run build` initially reported TS2339, TS7006 and TS2345 in `src/tensor/ir.ts`: the exhaustive
+  expression switch narrowed to `never`, and the parameter/definition array erased the subtype. The
+  projection now traverses parameters and definitions separately. The build passed.
+- `node --test tests/tensor/*.test.mjs` first failed on two test assertions: the anchored regexp matched
+  `Error: ...` rather than the `.message` property, and `[1,1,5]` gave the same f32 answer for both division
+  orders (`2.3333332538604736`). The `[1,1,3]` probe gave `1.6666667461395264` vs `1.6666666269302368`.
+  The next run found a wrong expected scalar (`-3.75` vs `-3.25`); corrected the hand calculation.
+- Review `tests/tensor/tix.test.mjs` for the source/shape boundary and independent f32, f64 and layout checks.
+
+## Step 4: Gate native rewrites and qualify Stage 1
+
+The sync path shares preparation and write auditing with async `applyPass`, but has no edit or analysis
+transaction. Tix passes a domain-owned differential verdict into that entry point. Both rewrites and their
+mutants run through the same artifact checks and gate.
+
+### Changes and rationale
+
+- Framework commit `a021809` — `IRWB-020-F: Add a synchronous checked native pass entry point`.
+  Only `src/framework/passes/define-pass.ts` changed. New framework tests cover read-only adapters,
+  tampered/invalid artifacts, undeclared writes, valid/rejected gate evidence and unsupported async features.
+- `src/tensor/meaning.ts` selects cases in the revised order. Inline compares against the predecessor and
+  split-sum compares against r0's f64, including across separate optimization calls. `passes.ts` keeps stable
+  IDs when moving the producer's tree; no clone IDs are needed. The tail mutant changes the loop extent in
+  the test artifact, not in the production IR schema.
+- Added independent goldens for all six `corpus/tensor/*/main.tix` fixtures. A near-cap test confirms a correct
+  split can cross the r0 cost cap and still fit its own cap.
+
+### Validation
+
+- `npm run build` — passed.
+- `node --test tests/tensor/*.test.mjs` — 23 passed, including exact rejection of `0x3f800001` vs `0x3f800000`,
+  tolerance acceptance, semantic rejection of both shape-valid mutants and rejection of cumulative drift.
+- `node --test tests/framework/*.test.mjs` — 228 passed.
+- `node --test tests/typed/{passes,inline,meaning-memo}.test.mjs` — 18 passed under the default test settings.
+- No full suite run; no EPERM encountered. The verdicts remain sampled, not proofs.
+
+### Review entry points
+
+Start with `src/tensor/index.ts` for exports and `tests/tensor/passes.test.mjs` for contract evidence. The
+[design ledger](../design-doc/01-stage-1-design-tix-and-checked-tensor-passes.md#framework-change-ledger)
+records the only framework change. CUDA lowering and the later optimization stages remain out of scope.

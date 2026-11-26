@@ -142,8 +142,8 @@ Try uniforms first, then nonuniforms (stop after eight valid nonuniforms or 256 
 Deduplicate assignments before counting proposals. Keep the first four valid uniforms and four valid
 nonuniforms, then backfill up to eight total from remaining uniforms followed by remaining nonuniforms.
 A proposal is valid if the r0 shape planner accepts it, every tensor has at most 16,384 elements, and the
-r0 cost is at most 250,000 steps. Count a cell store, scalar-tree node evaluation, loop iteration and
-accumulation as one step each; compute cost from the bound loop sizes before evaluation. For any retained
+r0 cost is at most 250,000 steps. Count a cell store, scalar-tree node evaluation, complete reduction
+index tuple, and accumulation as one step each; compute cost from the bound loop sizes before evaluation. For any retained
 case, give both the predecessor (when used for exact checking) and candidate 500,000 steps, independently
 of r0's cost. Even at the r0 cap, blocking adds at most one outer iteration and accumulation per input
 term, which is less than the existing per-term cost. More expensive compositions can still be rejected.
@@ -180,8 +180,8 @@ are part of the fixed API; test mutants use the same framework runner without re
 - **`inline`:** Find a reduction-free producer with one syntactic read, counting the return as a use and
   never deleting a returned tensor. Replace the read with the producer expression at the read's coordinates,
   composing each affine load with the mapping from producer LHS binders to consumer access expressions.
-  Preserve operand order, all existing rounding points and lexical bindings. Remove the producer and emit
-  correspondence to the cloned nodes. Materialization itself is not an additional numerical operation when
+  Preserve operand order, all existing rounding points and lexical bindings. Remove the producer and map
+  the replaced read to the moved tree's root. The moved nodes retain their IDs. Materialization itself is not an additional numerical operation when
   a producer cell already has the evaluation precision. Start with single-use producers, not general fusion
   or duplication. Mutation test: for `t[i] = x[i] + 1; y[i]: f32[N-1] = t[i+1] * 2;` replace `i+1` with `i`
   during substitution. The mutation is well-formed and differs on a ramp; the contract must reject it.
@@ -201,7 +201,7 @@ are part of the fixed API; test mutants use the same framework runner without re
   retention of the last accepted revision on rejection. A Node 24 arithmetic probe confirmed these bits;
   the integration and mutant tests are implementation work.
 
-## Framework change ledger (proposed)
+## Framework change ledger
 
 | Area | Proposed change and reason | What stays unchanged |
 | --- | --- | --- |
