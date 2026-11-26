@@ -180,3 +180,56 @@ At front-end checkpoint `e0e2556`, the read-only adapter fit the native-result p
 Wired both passes through the native gate from `adb8fab`. The nine-lane case distinguishes sequential f32 (1.25) from blocked f32 (1.2500001192092896); the latter agrees with origin f64. The same gate rejects a truncated final block and a transposed inline substitution. The six corpus programs also have independent numerical oracles.
 
 `node --check tests/tensor/corpus.test.mjs` initially found `SyntaxError: Unexpected token ')'` in the conv2d oracle; removed the extra closing parenthesis. Final `npm run build` succeeded; `node --test tests/tensor/*.test.mjs` passed 17/17. The built index exports exactly compileTix, optimizeTix and runTix. See Step 4 for framework and Typed checks. Ticket doctor passed; no full-suite run. Remaining limitation: the deterministic finite test domain is evidence, not proof for all shapes or data.
+
+## Step 6: Replay the independent evaluation's only rejection
+
+On the evaluated implementation (`a0277f9`), program 39 fails the declared lane-wise accuracy requirement. The same comparison fails without applying any pass. This distinction is not visible in the public acceptance bit; the ticket replay calls the existing gate and inspects the counterexample it rejects.
+
+### User prompt (verbatim)
+
+````text
+Stage 1 of IRWB-020-E has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `a0277f9`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 59/60, and every accepted result computes the same function (f64 run within 1e-9).
+- **`split-sum` was rejected on 1 program(s):** 39. Every program is valid and the pass is correct on each, and plain f32 evaluation of these programs stays within 3.7e-7 of f64 (relative to max(1, |r|)) on the evaluation's inputs. So each rejection is a false rejection unless your contract found a real violation. Source:
+
+```
+fn g(x: f32[N, C], u: f32[N], v: f32[C]): f32[C] {
+  t0[i0] = (sum(r1, r2) -(v[i0] / (v[i0] * v[i0] + 1)) * u[r1] - u[r2]);
+  t1[i3, i4] = (sqrt(v[i4] * v[i4] + 0.5) - (sum(r5) v[i4] + v[r5])) / C - u[i3];
+  t2[i6] = u[i6] - -u[i6];
+  t3[i7] = (sum(r8) (sum(r9) C - v[r9]) + (t0[i7] - x[r8, i7]));
+  return t3;
+}
+```
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-E:`). Final message: the report's path, the commit hash, and one line per failure cause.
+````
+
+### Diagnosis and evidence
+
+- Ran `node ttmp/2026/11/26/IRWB-020-E--*/scripts/01-replay-39.mjs`. One disagreement out of 20, seed 20, `(C,N)=(4,5)`, coordinate pattern, lane 0. Public optimization retained the original. Running `verify('tolerance', origin, origin, origin)` produced the identical counterexample.
+- `src/tensor/passes.ts:34` leaves `t0`'s two-axis sum intact. `src/tensor/evaluate.ts:105` rounds its ordinary sum updates. Returning `t0` in an inspection copy measured −14.226834297180176 (f32) vs −14.226831896551728 (f64). The outer sum reuses this five times while cancelling against 14.421875. Dead statements `t1` and `t2` do not contribute to `t3`.
+- `src/tensor/contract.ts:84–85` compares absolute error to `2e-6 + 2e-5*abs(reference)`; `src/tensor/index.ts:41` selects tolerance for split. Exact diagnostic: `lane 0: |-0.19665948275863876 - -0.1966714859008789| = 0.000012003142240146758, bound 0.000005933189655172776`. Original and split f32 returned identical values on the failing lane. A true counterexample to the output-accuracy relation on our samples, not to rewrite correctness. No other independent failures were reported.
+
+### Review and follow-up
+
+Read [the report](02-report.md), then run the replay above. The independent cross-check and the local replay use different inputs. A rejection diagnostic should report origin f32 as well as candidate f32 and reference f64 to avoid misattribution. No evaluated source, test or corpus file was changed.
