@@ -24,6 +24,12 @@ export interface BackendOptions {
   readonly hints: boolean;
   /** Block order: `'source'` (the only layout so far). */
   readonly layout: 'source';
+  /** IRWB-003: emit blocks in chains by estimated frequency, so hot edges fall through (off unless given). */
+  readonly chains?: boolean;
+  /** IRWB-003: coalesce copies whose two sides never hold different values at once (off unless given). */
+  readonly coalesce?: boolean;
+  /** IRWB-003: build constants once per function into a register, where the estimate says it pays. */
+  readonly homes?: boolean;
 }
 
 export const backendDefaults: BackendOptions = Object.freeze({
@@ -36,6 +42,17 @@ export const backendDefaults: BackendOptions = Object.freeze({
   spill: 'furthest',
   hints: true,
   layout: 'source',
+});
+
+/**
+ * Options added after the book's (IRWB-003), with their defaults. They are not in `backendDefaults`: an image
+ * records its options, so a new key there would change the revision of every image. An image holds an extra only
+ * when it differs from its default, so images compiled with the defaults are unchanged.
+ */
+export const backendExtras: Readonly<{ chains: boolean; coalesce: boolean; homes: boolean }> = Object.freeze({
+  chains: false,
+  coalesce: false,
+  homes: false,
 });
 
 export const backendOptionsAbout: Readonly<Record<keyof BackendOptions, string>> = Object.freeze({
@@ -51,15 +68,24 @@ export const backendOptionsAbout: Readonly<Record<keyof BackendOptions, string>>
     "'furthest' spills whichever interval ends last (the classic heuristic); 'current' spills the interval that found no register",
   hints: 'let parameters prefer their a-register and returned values a0, so copies disappear',
   layout: 'block order: source',
+  chains:
+    'emit blocks in chains by estimated frequency, so hot edges fall through (a rotated loop ends in one branch)',
+  coalesce:
+    'coalesce copies whose two sides never hold different values at once, where the estimate says it pays',
+  homes: 'build each constant once per function into a register, where the estimate says it pays',
 });
 
 export type BackendOptionsInput = Partial<BackendOptions> | Readonly<Record<string, unknown>>;
 
 const BOOLEANS = ['fuse', 'immediates', 'divmagic', 'useRanges', 'hints'] as const;
+const EXTRA_BOOLEANS = ['chains', 'coalesce', 'homes'] as const;
 
-/** Defaults merged with `opts`, or a `BackendError` naming the first bad option (`unknownOption`, `badArgument`). */
+/**
+ * Defaults merged with `opts`, or a `BackendError` naming the first bad option (`unknownOption`, `badArgument`).
+ * An extra (`backendExtras`) appears in the result only when it differs from its default.
+ */
 export function checkBackendOptions(opts: BackendOptionsInput = {}): BackendOptions {
-  const names = Object.keys(backendDefaults);
+  const names = [...Object.keys(backendDefaults), ...Object.keys(backendExtras)];
   for (const k of Object.keys(opts))
     if (!names.includes(k)) {
       const near = didYouMean(k, names);
@@ -69,7 +95,14 @@ export function checkBackendOptions(opts: BackendOptionsInput = {}): BackendOpti
         `options: ${names.join(', ')}`,
       );
     }
-  const o = { ...backendDefaults, ...opts } as BackendOptions;
+  const merged = { ...backendDefaults, ...opts } as Record<string, unknown>;
+  for (const k of EXTRA_BOOLEANS) {
+    if (merged[k] === undefined) continue;
+    if (typeof merged[k] !== 'boolean')
+      fail('badArgument', `${k} is true or false, not ${String(merged[k])}`);
+    if (merged[k] === backendExtras[k]) delete merged[k];
+  }
+  const o = merged as unknown as BackendOptions;
   if (o.registers !== 'all' && !(+o.registers >= 1))
     fail('badArgument', `registers is 'all' or a number from 1, not ${String(o.registers)}`);
   if (!['caller', 'callee'].includes(o.order))
@@ -86,6 +119,8 @@ export function checkBackendOptions(opts: BackendOptionsInput = {}): BackendOpti
 /** The options of `o` that differ from the defaults (how images are labelled in diffs and listings). */
 export function diffOptions(o: BackendOptions): Partial<BackendOptions> {
   return Object.fromEntries(
-    Object.entries(o).filter(([k, v]) => backendDefaults[k as keyof BackendOptions] !== v),
+    Object.entries(o).filter(
+      ([k, v]) => ({ ...backendExtras, ...backendDefaults })[k as keyof BackendOptions] !== v,
+    ),
   ) as Partial<BackendOptions>;
 }

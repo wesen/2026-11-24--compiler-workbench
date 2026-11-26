@@ -147,3 +147,243 @@ This step wrote the intern guide as `design-doc/01-intern-guide-…md` (docmgr d
 
 ### Technical details
 - Guide: ~700 lines; ToC depth 2 in the PDF.
+
+## Step 3: Options plumbing that leaves every default image as it was
+
+This step added the three new backend options without touching `backendDefaults`. An image records its options, and its validator requires exactly the keys of `backendDefaults`, so the new booleans live in a second table and appear in an image only when they differ from their defaults; `layout` got its second value. The corpus revisions are identical after the change.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** New behaviour behind default-off options; the frozen images must not change.
+**Inferred user intent:** The book's numbers stay reproducible while the new options are measured.
+**Commit (code):** the commit of Step 6.
+
+### What I did
+- `src/typed/backend/options.ts`: `BackendOptions.layout: 'source' | 'loops'`, optional `coalesce` and `homes`; `backendExtras = { coalesce: false, homes: false }`; `checkBackendOptions` accepts both tables' names, validates the extras as booleans, and deletes an extra that equals its default; `layout` accepts `'loops'`; `diffOptions` compares against both tables.
+- `src/typed/backend/image.ts`: the validator allows the extras' keys.
+- `src/typed/backend/index.ts`: exports `backendExtras`.
+- `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs | diff - various/01-baseline-corpus-revisions.txt`.
+
+### Why
+- Adding `coalesce: false` to `backendDefaults` would put the key into every image's `options`, change every image revision, and break the freeze (`compile.ts:409`, `image.ts:171–172`).
+
+### What worked
+- `npx tsc` clean; the diff printed nothing (`IDENTICAL`).
+
+### What didn't work
+- Applying the edits with a Node script fed by a heredoc, in the same command as a `git diff`, was refused by the worktree guard ("this command is too complex to verify that it stays inside the worktree"). I made the edits with the Edit tool.
+
+### What I learned
+- The validator's "exactly these keys" rule makes an option set part of an image's identity; the extras keep that property for options that are on.
+
+### What was tricky to build
+- `checkBackendOptions` returns a frozen object that is also stored in the image; deleting extras at their default before freezing keeps the object identical to the old one, key for key.
+
+### What warrants a second pair of eyes
+- `diffOptions` now merges both tables per entry; it is used for labels only.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `src/typed/backend/options.ts` (`backendExtras`, `checkBackendOptions`); the test `IRWB-003 options` in `tests/typed/speed.test.mjs`.
+
+### Technical details
+- An image compiled with `{ coalesce: false }` has the same revision as one compiled with `{}` (asserted in the test).
+
+## Step 4: Block frequencies and the layout; the first corpus measurement makes strings slower
+
+This step built `src/typed/backend/frequency.ts` (branch probabilities from strongly connected components, frequencies by sweeps, the cost estimate) and `src/typed/backend/layout.ts` (chains by weight), hooked the layout into `select`, and wrote `scripts/05-corpus-options.mjs`, which checks a pipeline and options on the whole corpus against r0. The layout alone, without rotation, made 18 projects faster and 6 slower, `strings` by 7%. The cause was the tie-break; Step 5 fixes it and decides the layout per function by the estimate.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** G1's block layout, as the guide's §11–12 design it.
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit of Step 6.
+
+### What I did
+- `frequency.ts`: `targetsOf`; Tarjan's SCCs, iterative; `blockFrequencies(st, f)` (a target ending in `trap` gets 0; stay 0.88 against leave 0.12; enter 0.88; otherwise 0.5; Gauss-Seidel sweeps in reverse postorder, at most 200, tolerance 1e-9, cap 1e9); `estimateCost(code, fr)`.
+- `layout.ts`: `layoutBlocks(st, f, fr)`.
+- `select.ts`: `order` from `layoutBlocks` under `layout: 'loops'`; `const b = st.get(bid)` in place of `f.blocks[k]` (the same object in source order); a `j succ[0]` for a block without a terminator whose successor is not next, under `'loops'` only.
+- `scripts/05-corpus-options.mjs`: per project, the head after a pipeline, lowered with the options, run against the evaluator of **r0** on 100 cases per function, so that the passes and the backend are checked in one comparison; instructions summed over the decided cases; `--base` for a second pipeline with default options.
+- `node scripts/05-corpus-options.mjs --pipeline O2 --options '{"layout":"loops"}' --base O2 --json various/08-corpus-o2-layout-loops.json` (29 s).
+
+### Why
+- The layout is what turns rotation into fewer instructions; measuring it alone first separates its effect from rotation's.
+
+### What worked
+- Revisions under the default options: identical.
+- `{"instructions":901925,"bytes":5164,"agree":6986,"decided":6986,"inconclusive":14,"disagree":0,"base":{"instructions":910718,"bytes":5160},"faster":18,"slower":["calls +158","div-checks +196","div-magic +8","histogram +519","ramp +47","strings +7670"]}`.
+- Collatz's benchmark fell from 1,590 to 1,370 with the layout alone.
+
+### What didn't work
+- `strings` +7,670 instructions. Its `||` chains are 50/50 branches for the heuristic, and ties were broken by the IR position of the target. That picked the rare `t5 = 1` block as the fall-through of each test and left the common path (`t5 = (c == 101)`) ending in a `jal` (both codes printed by `scripts/06-variant-probe.mjs strings --options '{"layout":"loops"}' --code`).
+
+### What I learned
+- With no profile, a tie in the static weights carries no information, and the IR's own order is the better default: the lifter puts the evaluation of the next operand of `||` right after its test.
+
+### What was tricky to build
+- The iterative Tarjan: the parent's low-link is updated after the child is popped, from the child's final low-link.
+
+### What warrants a second pair of eyes
+- The layout's comparator treats weights within a relative 1e-9 as equal. Such a comparator is not transitive, but it is deterministic for a given input.
+
+### What should be done in the future
+- Done in Step 5: ties prefer the IR's fall-through, and the layout is chosen per function by the estimate.
+
+### Code review instructions
+- `src/typed/backend/frequency.ts`, `src/typed/backend/layout.ts`; the `order` lines in `select.ts`.
+
+### Technical details
+- Output: `various/08-corpus-o2-layout-loops.json`.
+
+## Step 5: Coalescing, constant homes, and the choice per function by the estimate
+
+This step built copy coalescing (`src/typed/backend/coalesce.ts`) and constant homes (two hooks in `select`), and a chooser (`src/typed/backend/variants.ts`) that compiles a function plainly and then with each requested option on top of the best so far, keeping a variant only when its estimated cost is lower. The layout's ties now prefer the IR's own fall-through. Under the default options the backend still compiles each function once, exactly as before. On the benchmarks each option alone and all three together agree with the evaluator; coalescing alone takes Blend from 451 to 411 and sort from 2,022 to 1,887.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** H2 (coalescing) and f32 constants in registers, "when registers allow".
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit of Step 6.
+
+### What I did
+- `coalesce.ts`: liveness per machine block, then per instruction; interference edges between virtual registers of one class (a definition interferes with everything live after it, except the source of a copy); candidates are virtual-to-virtual `mv` copies, hottest block first; union-find with member lists and the lower register as representative; renaming; copies that became `r <- r` dropped; hints and `localReg` renamed.
+- `select.ts`: `SelectContext.homes` (keys `f:<bits>`, `x:<value>`) and `onConst(key, block, value)`; one register per home, defined after the entry's parameter copies and zeroing (`li`, and `fmv.w.x` for f32, with `why: 'constant home'`); `val(const)` returns the home, or for an f32 copies it into the target; for i32 only when no target is given and no immediate form applied.
+- `variants.ts`: `chooseVariant(st, f, o, compile)`: plain (source layout), then `'loops'`, then `coalesce`, then `homes` (a recording selection first; the keys whose block frequencies add up to more than 1). A variant is kept if its estimate is lower by more than 1e-9.
+- `compile.ts`: `compileFunction` builds one `once(opts, hooks)` closure; with the defaults it calls it once, otherwise `chooseVariant`; `FnCompilation.choice`; `variantChoices(blocks, options)` exported for scripts and tests.
+- `layout.ts`: among equal weights, the edge to the IR's next block first.
+- `scripts/06-variant-probe.mjs`: per function the choice, the estimates, the frequencies, the order, and the code.
+
+### Why
+- Linear scan with whole intervals can lose when two intervals merge or a home lives across calls; comparing finished code per function makes every option a non-loss by the estimate.
+- The tie-break restores the IR's order where the estimate has no preference (Step 4).
+
+### What worked
+- Benchmarks after O2 (`scripts/01-benchmark-probe.mjs --options …`), every result `same`:
+
+  | options | blend | checksum | sort | collatz | value-numbering |
+  |---|---:|---:|---:|---:|---:|
+  | none | 451 | 366 | 2022 | 1590 | 570 |
+  | layout loops | 450 | 366 | 1977 | 1480 | 569 |
+  | coalesce | 411 | 326 | 1887 | 1590 | 570 |
+  | homes | 451 | 366 | 2022 | 1329 | 492 |
+  | all three | 410 | 326 | 1842 | 1219 | 491 |
+
+- Revisions under the default options: identical.
+
+### What didn't work
+- Collatz under `'loops'` went from 1,370 (Step 4) to 1,480. The probe shows why: the estimate chose `'loops'` (100.2 against 106.5 for the source order), but the heuristic rates `x > 1` 50/50, so the chains make the rare `t3 = 0` block the guard's fall-through. Step 4's 1,370 came from a tie that happened to favour the hot side. Both orders are correct; the static probabilities are the limit.
+
+### What I learned
+- Collatz's real exit test is `if !(t3)`, one block after its header, because the `&&` is lifted through a temporary assigned in two blocks. Jump threading over the constant `t3 = 0` would make the header an exit test; it is not part of this milestone's design.
+
+### What was tricky to build
+- A home must not be written by anything but its definition. The selector never writes a register that `val` returned (it already returns locals' registers directly), so returning a home is safe.
+- The recording selection for homes runs with the layout and coalescing already chosen, so the counted uses are those of the final code.
+
+### What warrants a second pair of eyes
+- `coalesce.ts` treats only `rs1` and `rs2` as uses and `rd` as the definition (`usesOf` and `defsOf` of `regalloc.ts`); an instruction that read `rd` implicitly would break that, and the selector emits none.
+
+### What should be done in the future
+- Measure on Candela (f32 constants, licm and lvn copies), which the options were designed for.
+
+### Code review instructions
+- `src/typed/backend/{coalesce,variants}.ts`; `select.ts` (`homeReg`, `onConst`); `compile.ts` (`compileFunction`).
+
+### Technical details
+- `variantChoices(blocks, options)` returns `{ layout, coalesce, homes, cost: { plain, chosen } }` per function, or `null` under the defaults.
+
+## Step 6: The rotate pass, the tests, and the corpus under O2+, rotate, cfg with every option
+
+This step wrote `rotate` (`src/typed/rotate.ts`), registered it, wrote `tests/typed/speed.test.mjs`, and measured the corpus. Blend reaches 370 and Checksum 286, against the reference compiler's 383 and 292. Over the whole corpus, with O2+, `rotate` and `cfg` and all three options, instructions fall by 15.7% against O2, no project is slower, and every decided case agrees with r0.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** G1 loop rotation (the guide's §10).
+**Inferred user intent:** See Step 1.
+**Commit (code):** this step's commit.
+
+### What I did
+- `src/typed/rotate.ts`: `rotateSpec`, a `TypedPassSpec` (needs `loops`; writes `stmts`, `values`, `cfg`). A header that is only a `br_if` whose condition has no `call` or `result` is copied, with fresh value ids, origin from the header's test and `because: [loop id, header]`, into every block that ends in `br header`.
+- `src/typed/passes.ts`: `import { rotateSpec } from './rotate.js'`; `export const rotate = typedPass(rotateSpec)`; `rotate` in `PASSES`.
+- `tests/typed/speed.test.mjs`, 8 tests: the options; frequencies and layout on rotated Blend (`bb.3` = 0.88/0.12, the order, `blt t1, a1, bb.3`, no `jal zero`, 410); coalescing (one copy fewer, 370); homes on Collatz (`x:1`, `x:2`, `x:3`, 1,329); rotate on Blend (header gone, two copies, `why` to `s:blend.4` and line 4, `whyChain` relation `rotate`); rotate on Collatz (two-entry loop: the `loops` fact is empty, `strength` still runs, the image agrees); the benchmarks under everything; a corpus-wide test under `IRWB_FULL=1`.
+- `tests/workbench/strategies.test.mjs`: 13 → 14 passes, and `rotate`'s source is `src/typed/rotate.ts`.
+- `scripts/05-corpus-options.mjs --pipeline '[…O2+…, "rotate", "cfg"]' --options '{"layout":"loops","coalesce":true,"homes":true}' --base O2 --json various/09-corpus-o2plus-rotate-all-options.json`.
+
+### Why
+- `rotate.ts` exports a spec instead of calling `typedPass` itself: `passes.ts` imports it to register it, and `typedPass` reads `ENTITY_WRITES`, a `const` of `passes.ts` that is still uninitialized while `rotate.ts` loads inside that import.
+
+### What worked
+- `node --test tests/typed/speed.test.mjs`: 8 of 8; with `IRWB_FULL=1`: 8 of 8, the corpus test 28.7 s.
+- Corpus: `{"instructions":767343,"bytes":4976,"agree":6986,"decided":6986,"inconclusive":14,"disagree":0,"rejected":[],"base":{"instructions":910718,"bytes":5160},"faster":36,"slower":[]}`.
+- Benchmarks (probe), O2+ then rotate and cfg: Blend 410 with the layout alone, 370 with all three options; Checksum 286; sort 1,959 with the layout alone.
+- `p.apply('rotate')` on Blend after O2+: `{"edits":3,"kinds":{"replaceStmt":2,"unreachable":1},"check":"40/40"}`.
+
+### What didn't work
+- The first `rotate.ts` called `typedPass` at load time and imported a helper module that did not exist; I rewrote it before the first build, as described under Why.
+- `01-benchmark-probe.mjs --pipeline '[…]'` failed with `[unknownPipeline] no pipeline "[…]"` (the list was passed as a name); scripts 01, 05 and 06 now parse a JSON list.
+
+### What I learned
+- After rotating Collatz's non-exit header, `p.fact('loops')` is `[]`, and `strength`, which needs the interval analysis, still runs: the solver's widening at retreating edges covers the irreducible cycle.
+
+### What was tricky to build
+- `tx.replaceStmt` takes `from` from its options when one is given, so the copy's origin names the header's test (`s:blend.4`) rather than the replaced `br`; that is what lets `why` reach the loop test's source line.
+
+### What warrants a second pair of eyes
+- A replaced `br` gets no correspondence entry of its own, as with `cfg`'s `replaceStmt`; `makeCorrespondence` completes it as removed.
+
+### What should be done in the future
+- The inline pass and O3; then Candela.
+
+### Code review instructions
+- `src/typed/rotate.ts`; `node --test tests/typed/speed.test.mjs`; `IRWB_FULL=1 node --test tests/typed/speed.test.mjs`.
+
+### Technical details
+- A header shared by several back edges is processed once (`done`).
+
+## Step 7: A frozen test pins `layout: 'source'`; the block order becomes its own option, `chains`
+
+The full suite failed once after Step 6, in a frozen test: `tests/typed/backend.test.mjs:294` asserts that `{ layout: 'loops' }` is refused. Extending `layout` with a second value, as the guide designed, would have meant editing a test the freeze protects. I left `layout` exactly as it was and made the frequency-based block order a third extra option, `chains`. After the rename the full suite passes and the corpus revisions are identical. Steps 4–6 above say `layout: 'loops'`; they describe what was built at the time, and the measurements in them are unchanged by the rename.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** `npm test` must stay green and identical; prefer not to edit frozen tests.
+**Inferred user intent:** The book's behaviour, including which options the backend refuses, stays as it was.
+**Commit (code):** this step's commit.
+
+### What I did
+- `npm test` → `✖ P2.4: options are validated with the prototype's codes`; the test's line 294 is `refuse({ layout: 'loops' }, 'badArgument', /layout is 'source'/)`.
+- `options.ts`: `layout` back to `'source'` only, with its old message; `backendExtras = { chains: false, coalesce: false, homes: false }`; `chains` validated like the other extras.
+- `select.ts` (`const loops = o.chains === true`), `variants.ts` (`chains` in place of the layout value; `VariantChoice.chains`), `compile.ts` (`if (!o.chains && !o.coalesce && !o.homes) return once(o, {})`).
+- `tests/typed/speed.test.mjs`: `chains: true` everywhere; `{ layout: 'loops' }` is now asserted to be refused.
+- `npm test`; `scripts/08 | diff - various/01-…`.
+
+### Why
+- A new option that defaults off changes nothing a frozen test observes; a new value of an existing option changes what that option accepts.
+
+### What worked
+- `npm test`: `tests 333`, `pass 330`, `fail 0`, `skipped 3`.
+- `REVISIONS-IDENTICAL`.
+- `node --test tests/typed/speed.test.mjs tests/typed/backend.test.mjs`: 22 of 22.
+
+### What didn't work
+- See above: the first full run after Step 6: `ℹ tests 333 ℹ pass 329 ℹ fail 1`.
+
+### What I learned
+- The frozen surface includes refusals, not only numbers.
+
+### What was tricky to build
+- Nothing beyond the rename.
+
+### What warrants a second pair of eyes
+- The guide (§12, §16.1) still names the option `layout: 'loops'`; its outcomes section records the rename.
+
+### What should be done in the future
+- The guide's outcomes section: list this departure.
+
+### Code review instructions
+- `git diff 420d8e1 -- src/typed/backend/options.ts`: `layout` is unchanged.
+
+### Technical details
+- Option names in a refusal's fix line now read `registers, fuse, immediates, divmagic, useRanges, order, spill, hints, layout, chains, coalesce, homes`; the frozen test matches only their start (`/fix: options: registers, fuse/`).

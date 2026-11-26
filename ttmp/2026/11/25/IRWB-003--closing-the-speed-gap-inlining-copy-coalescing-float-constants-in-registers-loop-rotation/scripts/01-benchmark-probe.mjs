@@ -13,7 +13,8 @@ const B = await import(root + 'dist/typed/backend/index.js');
 const { writeFileSync } = await import('node:fs');
 
 const arg = (k, d) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d);
-const pipeline = arg('--pipeline', 'O2');
+const pipeArg = arg('--pipeline', 'O2');
+const pipeline = pipeArg.startsWith('[') ? JSON.parse(pipeArg) : pipeArg;
 const options = JSON.parse(arg('--options', '{}'));
 const show = arg('--show', '').split(',').filter(Boolean);
 const cells = n => ({ cells: Array.from({ length: n }, (_, i) => (i * 37) % 256) });

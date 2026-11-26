@@ -27,7 +27,7 @@ import { blocksEntities } from '../ir.js';
 import type { TypedBlocks } from '../model.js';
 import { fail } from './errors.js';
 import { decode } from './encode.js';
-import { backendDefaults, type BackendOptions } from './options.js';
+import { backendDefaults, backendExtras, type BackendOptions } from './options.js';
 
 export interface ImageInsn {
   readonly id: string;
@@ -169,7 +169,8 @@ export function validateImage(value: unknown): asserts value is Rv32Image {
   if (v.options !== null) {
     need(v.options && typeof v.options === 'object', 'options is null or the backend options');
     for (const k of Object.keys(backendDefaults)) need(k in v.options, `options.${k} missing`);
-    for (const k of Object.keys(v.options)) need(k in backendDefaults, `unknown option ${k}`);
+    for (const k of Object.keys(v.options))
+      need(k in backendDefaults || k in backendExtras, `unknown option ${k}`);
   }
   need(Number.isInteger(v.bytes) && v.bytes >= 0 && v.bytes % 4 === 0, 'bytes is a multiple of 4');
   need(typeof v.code === 'string', 'code is a base64 string');

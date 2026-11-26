@@ -45,6 +45,7 @@ import {
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { binop } from './evaluate.js';
+import { rotateSpec } from './rotate.js';
 
 type AnalysisName = keyof typeof ANALYSES;
 interface FactViews {
@@ -1113,6 +1114,9 @@ export const subst = typedPass({
   },
 });
 
+/** IRWB-003: loop rotation by header duplication (src/typed/rotate.ts). */
+export const rotate = typedPass(rotateSpec);
+
 export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   fold,
   simplify,
@@ -1127,6 +1131,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   subst,
   bcm,
   dfe,
+  rotate,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */

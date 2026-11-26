@@ -45,6 +45,8 @@ import {
 import { checkBackendOptions, type BackendOptions, type BackendOptionsInput } from './options.js';
 import { allocate, type Allocation } from './regalloc.js';
 import { select, type Selection } from './select.js';
+import { coalesceCopies } from './coalesce.js';
+import { chooseVariant, type VariantChoice, type VariantHooks } from './variants.js';
 
 export interface Finished {
   /** Physical code with labels, frame, spill code and the exit sequence. */
@@ -283,6 +285,8 @@ export interface FnCompilation {
   readonly alloc: Allocation;
   readonly fin: Finished;
   readonly leaf: boolean;
+  /** With an IRWB-003 option: which variant the estimate chose (variants.ts). */
+  readonly choice?: VariantChoice;
 }
 
 function compileFunction(
@@ -292,17 +296,26 @@ function compileFunction(
   liveness: DataflowResult,
   ranges: DataflowResult | null,
 ): FnCompilation {
-  const sel = select({
-    st,
-    f,
-    o,
-    live: liveView(liveness, st, f.name),
-    ranges: ranges ? rangeView(ranges, st, f.name) : null,
-  });
-  const leaf = !sel.code.some(m => m.op === 'call');
-  const alloc = allocate(sel.code, sel.hints, o, leaf, sel.fregs);
-  const fin = finish(f, sel.code, alloc, leaf, sel);
-  return { f, sel, alloc, fin, leaf };
+  const once = (opts: BackendOptions, hooks: VariantHooks): FnCompilation => {
+    let sel = select({
+      st,
+      f,
+      o: opts,
+      live: liveView(liveness, st, f.name),
+      ranges: ranges ? rangeView(ranges, st, f.name) : null,
+      homes: hooks.homes,
+      onConst: hooks.onConst,
+    });
+    if (hooks.coalesce) sel = coalesceCopies(sel, hooks.coalesce).sel;
+    const leaf = !sel.code.some(m => m.op === 'call');
+    const alloc = allocate(sel.code, sel.hints, opts, leaf, sel.fregs);
+    const fin = finish(f, sel.code, alloc, leaf, sel);
+    return { f, sel, alloc, fin, leaf };
+  };
+  // the default backend compiles once, as before IRWB-003; its options choose per function by the estimate
+  if (!o.chains && !o.coalesce && !o.homes) return once(o, {});
+  const { best, choice } = chooseVariant(st, f, o, once);
+  return { ...best, choice };
 }
 
 /** A function's signature by type class (i32 or f32), as an image records it. */
@@ -437,6 +450,20 @@ export function lowerToImage(
     compileImage(blocks, options, opts),
   );
   return { image, correspondence: imageCorrespondence(blocks, image) };
+}
+
+/** IRWB-003: per function, which variant the estimate chose under these options (none for the defaults). */
+export function variantChoices(
+  blocks: Artifact<TypedBlocks>,
+  options: BackendOptionsInput = {},
+  facts: BackendFacts = {},
+): Record<string, VariantChoice | null> {
+  const o = checkBackendOptions(options),
+    st = storeOf(blocks.value);
+  const { liveness, ranges } = factsFor(blocks, o, facts);
+  return Object.fromEntries(
+    [...st.fns.values()].map(f => [f.name, compileFunction(st, f, o, liveness, ranges).choice ?? null]),
+  );
 }
 
 export interface MachineStages {

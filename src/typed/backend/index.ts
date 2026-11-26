@@ -7,6 +7,7 @@ export { BackendError, didYouMean, type BackendErrorCode } from './errors.js';
 export { REGS, decode, divisionMagic, encodeOne, instruction, type Decoded, type MInsn } from './encode.js';
 export {
   backendDefaults,
+  backendExtras,
   backendOptionsAbout,
   checkBackendOptions,
   diffOptions,
@@ -18,6 +19,7 @@ export { allocate, intervals, machineBlocks, type Allocation, type Interval } fr
 export {
   compileImage,
   relaxBranches,
+  variantChoices,
   finish,
   lowerToImage,
   machineCode,

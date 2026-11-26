@@ -32,9 +32,11 @@
 import { MAX, MIN, type LiveView, type RangeView } from '../analyses.js';
 import { argumentLocations, resultLocations, stackWords, type Location } from '../ilp32f.js';
 import { COMPARE } from '../listing.js';
-import { typeClass, type StmtRec, type Store, type ValueRec, type WorkFn } from '../model.js';
+import { typeClass, type BlockRec, type StmtRec, type Store, type ValueRec, type WorkFn } from '../model.js';
 import type { BackendOptions } from './options.js';
 import { fail } from './errors.js';
+import { blockFrequencies } from './frequency.js';
+import { layoutBlocks } from './layout.js';
 import {
   A0,
   FA0,
@@ -76,6 +78,13 @@ export interface SelectContext {
   readonly live: LiveView;
   /** Ranges of the function, when `useRanges` is on (to drop division checks). */
   readonly ranges: RangeView | null;
+  /**
+   * IRWB-003 constant homes: keys (`f:<bits>` for an f32 constant, `x:<value>` for an i32 one) built once after
+   * the entry into a register of their own, which every use then reads (homes.ts chooses them).
+   */
+  readonly homes?: ReadonlySet<string>;
+  /** IRWB-003: told of every constant built into a fresh register: its key, the block and the value id. */
+  readonly onConst?: (key: string, block: string, value: string) => void;
 }
 
 type Fields = Omit<MInsn, 'op' | 'covers'>;
@@ -124,11 +133,12 @@ const F_COMPARE: Readonly<Record<string, readonly [string, boolean]>> = {
   fge: ['fle.s', true],
 };
 const F_ROUND: Readonly<Record<string, number>> = { ffloor: RDN, fceil: RUP, ftrunc: RTZ };
+const TERMINATES = new Set(['br', 'br_if', 'return', 'trap']);
 
 /** The physical register of an ilp32f register location (x10.. or f10.. = 32 + 10..). */
 const physOf = (l: Location): number => (l.cls === 'f' ? 32 + l.reg : l.cls === 'x' ? l.reg : -1);
 
-export function select({ st, f, o, live, ranges }: SelectContext): Selection {
+export function select({ st, f, o, live, ranges, homes, onConst }: SelectContext): Selection {
   const code: MInsn[] = [];
   let nv = 64,
     stmt: string | null = null;
@@ -140,6 +150,10 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
     return r;
   };
   const localReg = f.locals.map(l => (typeClass(l.type) === 'f32' ? freshF() : fresh()));
+  // IRWB-003: one register per constant home, defined after the entry's parameter copies
+  const homeReg = new Map<string, number>(
+    [...(homes ?? [])].sort().map(k => [k, k.startsWith('f:') ? freshF() : fresh()] as const),
+  );
   const hints = new Map<number, number>();
   const emit = (op: string, fields: Fields = {}, value?: string): void => {
     code.push({ op, ...fields, covers: [value, stmt].filter((x): x is string => !!x) });
@@ -502,8 +516,15 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
       case 'const': {
         if (v.type === 'f32') {
           // its bits into an x register, then fmv.w.x (+0 from x0)
-          const bits = (v.imm as number) | 0,
-            rd = want ?? freshF();
+          const bits = (v.imm as number) | 0;
+          onConst?.(`f:${bits}`, block, id);
+          const home = homeReg.get(`f:${bits}`);
+          if (home !== undefined) {
+            if (want === undefined) return home;
+            move(want, home, id);
+            return want;
+          }
+          const rd = want ?? freshF();
           if (bits === 0) emit('fmv.w.x', { rd, rs1: ZERO }, id);
           else {
             const t = fresh();
@@ -513,6 +534,12 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
           return rd;
         }
         if (v.imm === 0 && want === undefined && o.immediates) return ZERO;
+        if (want === undefined) {
+          // an i32 constant built into a fresh register (no immediate form applied): a candidate home
+          onConst?.(`x:${(v.imm as number) | 0}`, block, id);
+          const home = homeReg.get(`x:${(v.imm as number) | 0}`);
+          if (home !== undefined) return home;
+        }
         const rd = out();
         li(rd, v.imm as number, id);
         return rd;
@@ -733,9 +760,21 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
         ...(classOf(localReg[l]) === 'f' ? {} : { imm: 0 }),
         zero: l,
       });
-  const order = f.blocks.map(b => b.id);
+  for (const [k, r] of homeReg) {
+    const c = +k.slice(2) | 0;
+    if (k.startsWith('x:')) li(r, c, f.id);
+    else if (c === 0) emit('fmv.w.x', { rd: r, rs1: ZERO, why: 'constant home' }, f.id);
+    else {
+      const t = fresh();
+      li(t, c, f.id);
+      emit('fmv.w.x', { rd: r, rs1: t, why: 'constant home' }, f.id);
+    }
+  }
+  // IRWB-003: `chains` orders the blocks by estimated frequency (layout.ts); otherwise the IR's order
+  const loops = o.chains === true;
+  const order = loops ? layoutBlocks(st, f, blockFrequencies(st, f)) : f.blocks.map(b => b.id);
   order.forEach((bid, k) => {
-    const b = f.blocks[k],
+    const b = st.get(bid) as BlockRec,
       next = order[k + 1] ?? null;
     block = bid;
     emit('label', { name: bid, block: bid });
@@ -810,6 +849,10 @@ export function select({ st, f, o, live, ranges }: SelectContext): Selection {
       }
     }
     stmt = null;
+    // a block without a terminator falls through to succ[0], which another layout may have moved away
+    const last = b.stmts.length ? (st.get(b.stmts.at(-1)!) as StmtRec) : null;
+    if (loops && b.succ[0] && b.succ[0] !== next && !(last && TERMINATES.has(last.op)))
+      emit('j', { target: b.succ[0] });
   });
   return { code, localReg, hints, vregs: nv - 64, fregs, outgoing, arrays };
 }
