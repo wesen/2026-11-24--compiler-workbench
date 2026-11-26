@@ -1,0 +1,21 @@
+scene table candela_gallery_scenes.c sha256 a0039225a2afa28a…: 18 scenes
+id    size     rows U  O  LI BV SD  words  obj  lit  BVH nodes/leaves/maxleaf/depth  linear  types
+B-01  160x160      41  12  6  2   1    248    2    0        1/1/2/1                   0  sphere:1 plane:1
+R-01  160x160      41  48  6 14   1    440    8    1        7/4/2/3                   0  rect:6 box:2
+L-03  160x160      41  18  6  2   1    272    3    0        1/1/2/1                   1  box:1 sphere:1 plane:1
+G-01  160x160      41  66  6 14   1    512   11    0        7/4/3/3                   0  sphere:1 sdf6:1 box:1 sdf7:1 cylinder:1 sdf8:1 plane:1 disc:1 sdf9:1 rect:1 sdf10:1
+E-02  160x160      41  24  6  6   1    312    4    0        3/2/2/2                   0  sphere:1 plane:1 sdf9:1 sdf7:1
+W-02  160x160      41  90  6 26   1    656   15    1       13/7/3/4                   0  cylinder:7 sphere:5 rect:1 plane:1 box:1
+F-01  160x160      41  18  6  2   1    272    3    0        1/1/3/1                   0  sphere:2 plane:1
+V-02  160x160      41  30  6  6   9    368    5    1        3/2/3/2                   0  box:3 rect:1 plane:1
+G-02  160x160      41  24  6  6   1    312    4    0        3/2/2/2                   0  sdf11:3 plane:1
+X-04  80x80        41  12  6  2   1    248    2    0        1/1/2/1                   0  sdf11:1 plane:1
+S-02  80x80        42  30 12  6   1    364    5    2        3/2/3/2                   0  sphere:2 sdf11:1 cylinder:1 plane:1
+R-05  80x80        42 144 12 30   1    916   24    2       15/8/3/4                   0  sdf7:19 sphere:3 sdf11:1 plane:1
+V-03  80x80        41  12  6  2   3    256    2    0        1/1/2/1                   0  plane:1 box:1
+V-04  80x80        41  12  6  2   3    256    2    0        1/1/1/1                   1  box:1 plane:1
+R-08  80x80        41  24  6  6   1    312    4    0        3/2/2/2                   0  sdf11:3 sdf12:1
+X-03  80x80        41  18  6  2   3    280    3    0        1/1/3/1                   0  sdf11:1 sphere:1 box:1
+R-04  80x80        41  12  6  2   1    248    2    0        1/1/1/1                   1  sdf12:1 plane:1
+G-03  80x80        41   6  6  2   1    224    1    0        1/1/1/1                   0  sdf12:1
+words in all scenes: 6496 (25984 bytes); largest 916, smallest 224

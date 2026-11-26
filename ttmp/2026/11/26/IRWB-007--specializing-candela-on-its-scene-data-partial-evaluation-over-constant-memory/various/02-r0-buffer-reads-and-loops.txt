@@ -1,0 +1,39 @@
+Candela r0: 332 functions (177 scene sections), lifted in 502 ms
+checked addresses: 559; by K buffer (constant position / variable position / functions):
+  etab   256    4    2
+  bO       0    4    1
+  bU     174    0   31
+  bS       0   79    7
+  bB       0    8    1
+  bL       0    4    1
+  sky      0    6    2
+  ?       12   12    2
+functions that index a scene buffer (U, O, LI, BV, SD) directly: 35; that reach one through calls: 64
+  bU    read by 31: cameraRay envL fogSeg hdriL hdriPdf hdriSample hdriTexel hdriUV mRow nLightChoices neeAt poseQ poseT renderPixel s10_mat_3 s10_mat_4 s11_mat_5 s11_mat_6 s17_mat_0 s1_mat_3 s4_customKernel s5_mat_6 s7_mat_0 s8_sdf_0 shadowTr skyL_wgsl studioL sunL traceAOV traceAll tracePath
+  bO    read by 1: oRow
+  bL    read by 1: lRow
+  bB    read by 1: traceAll
+  bS    read by 7: finishHit hdriSample hdriTexel hitMesh mRow poseQ poseT
+  etab  read by 2: cdlInit ggxE
+  sky   read by 2: skyBuild skyTexel
+stores reachable from each entry (what it writes: by whom):
+  cdlLayout: buf:? (1: cdlLayout)
+  cdlInit: buf:etab (1: cdlInit)
+  cdlSky: buf:sky (1: skyBuild)
+  cdlRenderSpan: buf:? (1: cdlRenderSpan); K.rngS (2: renderPixel rnd); K.gTime (1: renderPixel); K.gLam (1: renderPixel); K.gTau (1: renderPixel); frame (2: hitMesh traceAll); K.gTri (1: hitMesh); K.gBary__x (1: hitMesh); K.gBary__y (1: hitMesh)
+natural loops: 19; parameter bound 4, constant or frame-array bound 7, scene-data bound 8
+  constant or frame-array bound voronoi3@bb:voronoi3.1  exits 1  
+  constant or frame-array bound voronoi3@bb:voronoi3.4  exits 1  
+  constant or frame-array bound voronoi3@bb:voronoi3.7  exits 1  
+  constant or frame-array bound hitMesh@bb:hitMesh.1  exits 5  
+  scene-data bound              hitMesh@bb:hitMesh.19  exits 1  buf:bS frame param:pr__x ptr:bS
+  scene-data bound              traceAll@bb:traceAll.1  exits 1  buf:bU ptr:bU
+  constant or frame-array bound traceAll@bb:traceAll.18  exits 5  
+  scene-data bound              traceAll@bb:traceAll.36  exits 1  buf:bB frame ptr:bB
+  scene-data bound              shadowTr@bb:shadowTr.4  exits 1  buf:bU ptr:bU
+  scene-data bound              tracePath@bb:tracePath.26  exits 3  buf:bU call:atan2f call:densityOf call:logf call:q_exp call:rnd call:tanf param:q_k param:rd0__x param:rd0__y param:rd0__z param:ro0__x param:ro0__y param:ro0__z ptr:bU result
+  scene-data bound              tracePath@bb:tracePath.62  exits 1  buf:bU ptr:bU
+  scene-data bound              tracePath@bb:tracePath.4  exits 7  buf:bU call:maxc call:rnd param:q_k ptr:bU result
+  scene-data bound              renderPixel@bb:renderPixel.4  exits 2  buf:bU ptr:bU
+  constant or frame-array bound skyBuild@bb:skyBuild.1  exits 1  
+  constant or frame-array bound skyBuild@bb:skyBuild.4  exits 1  

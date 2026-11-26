@@ -1,0 +1,1030 @@
+{
+ "summary": {
+  "liftMs": 502,
+  "functions": 332,
+  "sceneSections": 177,
+  "kFieldOffsets": {
+   "bU": 0,
+   "bO": 4,
+   "bL": 8,
+   "bB": 12,
+   "bS": 16,
+   "etab": 20,
+   "sky": 24,
+   "scene": 28,
+   "spectral": 32,
+   "skyOn": 36,
+   "rngS": 40,
+   "gTime": 44,
+   "gLam": 48,
+   "gTau": 52,
+   "gTri": 56,
+   "gBary__x": 60,
+   "gBary__y": 64
+  },
+  "caddrTotal": 559,
+  "caddrByBuffer": {
+   "etab": {
+    "constant": 256,
+    "variable": 4,
+    "fns": 2
+   },
+   "bO": {
+    "constant": 0,
+    "variable": 4,
+    "fns": 1
+   },
+   "bU": {
+    "constant": 174,
+    "variable": 0,
+    "fns": 31
+   },
+   "bS": {
+    "constant": 0,
+    "variable": 79,
+    "fns": 7
+   },
+   "bB": {
+    "constant": 0,
+    "variable": 8,
+    "fns": 1
+   },
+   "bL": {
+    "constant": 0,
+    "variable": 4,
+    "fns": 1
+   },
+   "sky": {
+    "constant": 0,
+    "variable": 6,
+    "fns": 2
+   },
+   "?": {
+    "constant": 12,
+    "variable": 12,
+    "fns": 2
+   }
+  },
+  "functionsReadingSceneBuffers": 35,
+  "functionsReachingSceneBuffers": 64,
+  "readersByBuffer": {
+   "bU": [
+    "cameraRay",
+    "envL",
+    "fogSeg",
+    "hdriL",
+    "hdriPdf",
+    "hdriSample",
+    "hdriTexel",
+    "hdriUV",
+    "mRow",
+    "nLightChoices",
+    "neeAt",
+    "poseQ",
+    "poseT",
+    "renderPixel",
+    "s10_mat_3",
+    "s10_mat_4",
+    "s11_mat_5",
+    "s11_mat_6",
+    "s17_mat_0",
+    "s1_mat_3",
+    "s4_customKernel",
+    "s5_mat_6",
+    "s7_mat_0",
+    "s8_sdf_0",
+    "shadowTr",
+    "skyL_wgsl",
+    "studioL",
+    "sunL",
+    "traceAOV",
+    "traceAll",
+    "tracePath"
+   ],
+   "bO": [
+    "oRow"
+   ],
+   "bL": [
+    "lRow"
+   ],
+   "bB": [
+    "traceAll"
+   ],
+   "bS": [
+    "finishHit",
+    "hdriSample",
+    "hdriTexel",
+    "hitMesh",
+    "mRow",
+    "poseQ",
+    "poseT"
+   ],
+   "etab": [
+    "cdlInit",
+    "ggxE"
+   ],
+   "sky": [
+    "skyBuild",
+    "skyTexel"
+   ]
+  },
+  "entryWrites": {
+   "cdlLayout": {
+    "buf:?": [
+     "cdlLayout"
+    ]
+   },
+   "cdlInit": {
+    "buf:etab": [
+     "cdlInit"
+    ]
+   },
+   "cdlSky": {
+    "buf:sky": [
+     "skyBuild"
+    ]
+   },
+   "cdlRenderSpan": {
+    "buf:?": [
+     "cdlRenderSpan"
+    ],
+    "K.rngS": [
+     "renderPixel",
+     "rnd"
+    ],
+    "K.gTime": [
+     "renderPixel"
+    ],
+    "K.gLam": [
+     "renderPixel"
+    ],
+    "K.gTau": [
+     "renderPixel"
+    ],
+    "frame": [
+     "hitMesh",
+     "traceAll"
+    ],
+    "K.gTri": [
+     "hitMesh"
+    ],
+    "K.gBary__x": [
+     "hitMesh"
+    ],
+    "K.gBary__y": [
+     "hitMesh"
+    ]
+   }
+  },
+  "loops": 19,
+  "loopsByKind": {
+   "parameter bound": 4,
+   "constant or frame-array bound": 7,
+   "scene-data bound": 8
+  }
+ },
+ "perFn": {
+  "rnd": {
+   "kFields": [
+    "rngS"
+   ],
+   "caddr": {},
+   "stmts": 5
+  },
+  "spec": {
+   "kFields": [
+    "gLam",
+    "spectral"
+   ],
+   "caddr": {},
+   "stmts": 10
+  },
+  "ggxE": {
+   "kFields": [
+    "etab"
+   ],
+   "caddr": {
+    "etab": {
+     "constant": 0,
+     "variable": 4
+    }
+   },
+   "stmts": 34
+  },
+  "oRow": {
+   "kFields": [
+    "bO"
+   ],
+   "caddr": {
+    "bO": {
+     "constant": 0,
+     "variable": 4
+    }
+   },
+   "stmts": 7
+  },
+  "poseQ": {
+   "kFields": [
+    "bS",
+    "bU",
+    "gTau"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 1,
+     "variable": 0
+    },
+    "bS": {
+     "constant": 0,
+     "variable": 8
+    }
+   },
+   "stmts": 57
+  },
+  "poseT": {
+   "kFields": [
+    "bS",
+    "bU",
+    "gTau"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 1,
+     "variable": 0
+    },
+    "bS": {
+     "constant": 0,
+     "variable": 8
+    }
+   },
+   "stmts": 45
+  },
+  "hitMesh": {
+   "kFields": [
+    "bS"
+   ],
+   "caddr": {
+    "bS": {
+     "constant": 0,
+     "variable": 18
+    }
+   },
+   "stmts": 148
+  },
+  "finishHit": {
+   "kFields": [
+    "bS",
+    "gBary__x",
+    "gBary__y",
+    "gTri"
+   ],
+   "caddr": {
+    "bS": {
+     "constant": 0,
+     "variable": 32
+    }
+   },
+   "stmts": 362
+  },
+  "traceAll": {
+   "kFields": [
+    "bB",
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 4,
+     "variable": 0
+    },
+    "bB": {
+     "constant": 0,
+     "variable": 8
+    }
+   },
+   "stmts": 135
+  },
+  "filmR": {
+   "kFields": [
+    "gLam",
+    "spectral"
+   ],
+   "caddr": {},
+   "stmts": 10
+  },
+  "lRow": {
+   "kFields": [
+    "bL"
+   ],
+   "caddr": {
+    "bL": {
+     "constant": 0,
+     "variable": 4
+    }
+   },
+   "stmts": 7
+  },
+  "lightSpec": {
+   "kFields": [
+    "gLam",
+    "spectral"
+   ],
+   "caddr": {},
+   "stmts": 22
+  },
+  "skyL_wgsl": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 27,
+     "variable": 0
+    }
+   },
+   "stmts": 88
+  },
+  "studioL": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 1,
+     "variable": 0
+    }
+   },
+   "stmts": 36
+  },
+  "hdriTexel": {
+   "kFields": [
+    "bS",
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    },
+    "bS": {
+     "constant": 0,
+     "variable": 4
+    }
+   },
+   "stmts": 29
+  },
+  "hdriUV": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 1,
+     "variable": 0
+    }
+   },
+   "stmts": 9
+  },
+  "hdriL": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 2,
+     "variable": 0
+    }
+   },
+   "stmts": 45
+  },
+  "hdriPdf": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 2,
+     "variable": 0
+    }
+   },
+   "stmts": 21
+  },
+  "hdriSample": {
+   "kFields": [
+    "bS",
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 4,
+     "variable": 0
+    },
+    "bS": {
+     "constant": 0,
+     "variable": 5
+    }
+   },
+   "stmts": 54
+  },
+  "envL": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 13,
+     "variable": 0
+    }
+   },
+   "stmts": 88
+  },
+  "sunL": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 8,
+     "variable": 0
+    }
+   },
+   "stmts": 27
+  },
+  "nLightChoices": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 19
+  },
+  "mRow": {
+   "kFields": [
+    "bS",
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 1,
+     "variable": 0
+    },
+    "bS": {
+     "constant": 0,
+     "variable": 4
+    }
+   },
+   "stmts": 9
+  },
+  "fogSeg": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 4,
+     "variable": 0
+    }
+   },
+   "stmts": 22
+  },
+  "shadowTr": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 6,
+     "variable": 0
+    }
+   },
+   "stmts": 96
+  },
+  "metalAt": {
+   "kFields": [
+    "gLam",
+    "spectral"
+   ],
+   "caddr": {},
+   "stmts": 14
+  },
+  "neeAt": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 10,
+     "variable": 0
+    }
+   },
+   "stmts": 252
+  },
+  "tracePath": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 21,
+     "variable": 0
+    }
+   },
+   "stmts": 934
+  },
+  "traceAOV": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 1,
+     "variable": 0
+    }
+   },
+   "stmts": 132
+  },
+  "cameraRay": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 18,
+     "variable": 0
+    }
+   },
+   "stmts": 126
+  },
+  "renderPixel": {
+   "kFields": [
+    "bU",
+    "gLam",
+    "spectral"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 11,
+     "variable": 0
+    }
+   },
+   "stmts": 220
+  },
+  "skyTexel": {
+   "kFields": [
+    "sky"
+   ],
+   "caddr": {
+    "sky": {
+     "constant": 0,
+     "variable": 3
+    }
+   },
+   "stmts": 6
+  },
+  "skyL": {
+   "kFields": [
+    "skyOn"
+   ],
+   "caddr": {},
+   "stmts": 62
+  },
+  "skyBuild": {
+   "kFields": [
+    "sky"
+   ],
+   "caddr": {
+    "sky": {
+     "constant": 0,
+     "variable": 3
+    }
+   },
+   "stmts": 29
+  },
+  "evalMaterial": {
+   "kFields": [
+    "scene"
+   ],
+   "caddr": {},
+   "stmts": 54
+  },
+  "sdUser": {
+   "kFields": [
+    "scene"
+   ],
+   "caddr": {},
+   "stmts": 54
+  },
+  "heightAt": {
+   "kFields": [
+    "scene"
+   ],
+   "caddr": {},
+   "stmts": 54
+  },
+  "densityOf": {
+   "kFields": [
+    "scene"
+   ],
+   "caddr": {},
+   "stmts": 54
+  },
+  "customKernel": {
+   "kFields": [
+    "scene"
+   ],
+   "caddr": {},
+   "stmts": 54
+  },
+  "s1_mat_3": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 42
+  },
+  "s4_customKernel": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 100
+  },
+  "s5_mat_6": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 42
+  },
+  "s7_mat_0": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 42
+  },
+  "s8_sdf_0": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 6,
+     "variable": 0
+    }
+   },
+   "stmts": 43
+  },
+  "s10_mat_0": {
+   "kFields": [
+    "gLam"
+   ],
+   "caddr": {},
+   "stmts": 55
+  },
+  "s10_mat_3": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 42
+  },
+  "s10_mat_4": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 42
+  },
+  "s11_mat_1": {
+   "kFields": [
+    "gLam"
+   ],
+   "caddr": {},
+   "stmts": 55
+  },
+  "s11_mat_5": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 42
+  },
+  "s11_mat_6": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 3,
+     "variable": 0
+    }
+   },
+   "stmts": 42
+  },
+  "s17_mat_0": {
+   "kFields": [
+    "bU"
+   ],
+   "caddr": {
+    "bU": {
+     "constant": 2,
+     "variable": 0
+    }
+   },
+   "stmts": 82
+  },
+  "cdlLayout": {
+   "kFields": [],
+   "caddr": {
+    "?": {
+     "constant": 12,
+     "variable": 0
+    }
+   },
+   "stmts": 28
+  },
+  "cdlInit": {
+   "kFields": [
+    "etab"
+   ],
+   "caddr": {
+    "etab": {
+     "constant": 256,
+     "variable": 0
+    }
+   },
+   "stmts": 514
+  },
+  "cdlRenderSpan": {
+   "kFields": [],
+   "caddr": {
+    "?": {
+     "constant": 0,
+     "variable": 12
+    }
+   },
+   "stmts": 45
+  }
+ },
+ "loops": [
+  {
+   "fn": "fbm3",
+   "head": "bb:fbm3.1",
+   "blocks": 8,
+   "exits": 1,
+   "kind": "parameter bound",
+   "sources": [
+    "param:oct"
+   ]
+  },
+  {
+   "fn": "voronoi3",
+   "head": "bb:voronoi3.1",
+   "blocks": 14,
+   "exits": 1,
+   "kind": "constant or frame-array bound",
+   "sources": []
+  },
+  {
+   "fn": "voronoi3",
+   "head": "bb:voronoi3.4",
+   "blocks": 11,
+   "exits": 1,
+   "kind": "constant or frame-array bound",
+   "sources": []
+  },
+  {
+   "fn": "voronoi3",
+   "head": "bb:voronoi3.7",
+   "blocks": 8,
+   "exits": 1,
+   "kind": "constant or frame-array bound",
+   "sources": []
+  },
+  {
+   "fn": "hitMesh",
+   "head": "bb:hitMesh.1",
+   "blocks": 45,
+   "exits": 5,
+   "kind": "constant or frame-array bound",
+   "sources": []
+  },
+  {
+   "fn": "hitMesh",
+   "head": "bb:hitMesh.19",
+   "blocks": 24,
+   "exits": 1,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bS",
+    "frame",
+    "param:pr__x",
+    "ptr:bS"
+   ]
+  },
+  {
+   "fn": "hitObj",
+   "head": "bb:hitObj.146",
+   "blocks": 12,
+   "exits": 3,
+   "kind": "parameter bound",
+   "sources": [
+    "call:sdLocal",
+    "param:i",
+    "param:q_k",
+    "result"
+   ]
+  },
+  {
+   "fn": "traceAll",
+   "head": "bb:traceAll.1",
+   "blocks": 12,
+   "exits": 1,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bU",
+    "ptr:bU"
+   ]
+  },
+  {
+   "fn": "traceAll",
+   "head": "bb:traceAll.18",
+   "blocks": 33,
+   "exits": 5,
+   "kind": "constant or frame-array bound",
+   "sources": []
+  },
+  {
+   "fn": "traceAll",
+   "head": "bb:traceAll.36",
+   "blocks": 12,
+   "exits": 1,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bB",
+    "frame",
+    "ptr:bB"
+   ]
+  },
+  {
+   "fn": "shadowTr",
+   "head": "bb:shadowTr.4",
+   "blocks": 18,
+   "exits": 1,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bU",
+    "ptr:bU"
+   ]
+  },
+  {
+   "fn": "shadowTr",
+   "head": "bb:shadowTr.16",
+   "blocks": 6,
+   "exits": 3,
+   "kind": "parameter bound",
+   "sources": [
+    "call:densityOf",
+    "call:logf",
+    "call:rnd",
+    "param:d__x",
+    "param:d__y",
+    "param:d__z",
+    "param:dist",
+    "param:o__x",
+    "param:o__y",
+    "param:o__z",
+    "param:q_k",
+    "result"
+   ]
+  },
+  {
+   "fn": "tracePath",
+   "head": "bb:tracePath.26",
+   "blocks": 6,
+   "exits": 3,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bU",
+    "call:atan2f",
+    "call:densityOf",
+    "call:logf",
+    "call:q_exp",
+    "call:rnd",
+    "call:tanf",
+    "param:q_k",
+    "param:rd0__x",
+    "param:rd0__y",
+    "param:rd0__z",
+    "param:ro0__x",
+    "param:ro0__y",
+    "param:ro0__z",
+    "ptr:bU",
+    "result"
+   ]
+  },
+  {
+   "fn": "tracePath",
+   "head": "bb:tracePath.62",
+   "blocks": 6,
+   "exits": 1,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bU",
+    "ptr:bU"
+   ]
+  },
+  {
+   "fn": "tracePath",
+   "head": "bb:tracePath.4",
+   "blocks": 211,
+   "exits": 7,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bU",
+    "call:maxc",
+    "call:rnd",
+    "param:q_k",
+    "ptr:bU",
+    "result"
+   ]
+  },
+  {
+   "fn": "renderPixel",
+   "head": "bb:renderPixel.4",
+   "blocks": 31,
+   "exits": 2,
+   "kind": "scene-data bound",
+   "sources": [
+    "buf:bU",
+    "ptr:bU"
+   ]
+  },
+  {
+   "fn": "skyBuild",
+   "head": "bb:skyBuild.1",
+   "blocks": 5,
+   "exits": 1,
+   "kind": "constant or frame-array bound",
+   "sources": []
+  },
+  {
+   "fn": "skyBuild",
+   "head": "bb:skyBuild.4",
+   "blocks": 2,
+   "exits": 1,
+   "kind": "constant or frame-array bound",
+   "sources": []
+  },
+  {
+   "fn": "cdlRenderSpan",
+   "head": "bb:cdlRenderSpan.1",
+   "blocks": 2,
+   "exits": 1,
+   "kind": "parameter bound",
+   "sources": [
+    "param:x0",
+    "param:x1"
+   ]
+  }
+ ]
+}
