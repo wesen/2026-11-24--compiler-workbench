@@ -25,6 +25,7 @@ Implemented a statement-per-kernel lowering and remote f64 tolerance check on th
 
 ## Key Links
 
+- [Final report: checking a tensor lowering on the GPU that runs it](reference/02-report.md)
 - [Design and proposed framework/tool change ledgers](design-doc/01-lowering-tix-statements-to-cuda-with-a-batched-gpu-meaning-check.md)
 - [Diary, probe commands and observed results](reference/01-implementation-diary.md)
 
