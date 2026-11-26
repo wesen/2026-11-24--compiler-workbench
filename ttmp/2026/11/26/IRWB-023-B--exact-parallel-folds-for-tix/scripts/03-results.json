@@ -1,0 +1,60 @@
+{
+  "termCount": 65,
+  "counts": {
+    "strict": {
+      "accepted": 8444,
+      "wrong": 0
+    },
+    "directional": {
+      "accepted": 3256,
+      "wrong": 0
+    },
+    "noParity": {
+      "accepted": 25420,
+      "wrong": 7680
+    },
+    "includeLower": {
+      "accepted": 16156,
+      "wrong": 644
+    },
+    "endOnly": {
+      "accepted": 21856,
+      "wrong": 2180
+    }
+  },
+  "witnesses": {
+    "noParity": {
+      "sign": -1,
+      "anchor": 36,
+      "entry": 40,
+      "a": 0,
+      "b": -2,
+      "mid": 36,
+      "end": 40,
+      "expected": -40,
+      "got": -44
+    },
+    "endOnly": {
+      "sign": -1,
+      "anchor": 36,
+      "entry": 44,
+      "a": 6,
+      "b": -6,
+      "mid": 30,
+      "end": 36,
+      "expected": -48,
+      "got": -44
+    },
+    "includeLower": {
+      "sign": -1,
+      "anchor": 40,
+      "entry": 32,
+      "a": 0,
+      "b": 2,
+      "mid": 40,
+      "end": 40,
+      "expected": -30,
+      "got": -32
+    }
+  }
+}

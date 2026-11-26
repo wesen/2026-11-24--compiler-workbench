@@ -99,3 +99,19 @@ Used docmgr's help, ticket creation and document creation in this worktree. Ran 
 ### Outcomes, failures and review
 
 Build exit 0, Node 24.18.0, evaluator result 1; NVIDIA GB10 sm_121 reported `tie 3f800000`. No execution failures in these probes. A novelty search turned up Kapre and DeHon's 2007 sequential-equivalent parallel accumulation. I dropped the broad priority claim and chose to test a sufficient local certificate. The difficult point to review is translation at exponent boundaries and half-way ties. The next steps are to break that certificate in miniature and to time its actual cost on the board. The design links the paper, the CUDA source is small enough to inspect in full.
+
+## Step 2. Try to break translation and measure an exact control
+
+I implemented two adjacent predicted paths and compared *every chunk boundary* with a separately executed sequential fold. For 54 chosen rows I also called the public evaluator. Then I replaced the materialized GPU stages by a cooperative row block and compared the exact owner, chunk transfer, and conventional tree on the same inputs. The simplest strict schedule delivered most of the available benefit.
+
+**Prompt context.** See Step 1. Previous checkpoint `090faaa`. The goal was to isolate changing the sum from changing the memory schedule.
+
+**Actions and evidence.** Ran `01-transfers.mjs` and `03-miniature.mjs` locally after the build. Ran `02-benchmark.mjs 4096 1024 2 11` and `02-benchmark.mjs 127 997 80 11` through the locked runner. Reports live beside each script. The harness extracts actual generated kernels and interleaves variants after warmup. Captured original source hash in each remote receipt.
+
+**What worked.** All exact GPU outputs matched the generated outputs, including the odd-width tail. Removing the parity, interior or full-path guard independently produced a concrete wrong answer in the four-bit model. Full-size owner and translated softmax both took about 0.36 ms, versus about 0.74 ms for Stage 2.
+
+**What failed.** The prediction-only approach frequently returned wrong chunk ends. With width 32 it missed 3,374 endpoints out of 4,138 for the narrow exponential stream. Translation slowed the short-row workload relative to the owner. No tool failures in these runs.
+
+**What was tricky.** The predecessor below an exact power of two is closer than the successor above. Repeating the calculation after shifting by an even number of ULPs can land in that asymmetry. Excluding the low boundary fixes it. Nonnegative terms also permit a directional proof because every exact pre-round sum stays above the start.
+
+**Review and follow-up.** Compare the three mutations and their signed witnesses in `03-results.json`; inspect the clamps in `relocate`. The tree is numerically wrong but hardly faster at the large shape. Next isolate the exponential cost and try a target-specific exact fast path.
