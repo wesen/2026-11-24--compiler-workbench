@@ -35,7 +35,7 @@ WhenToUse: ""
 
 How often does the meaning contract (`typed.meaning-kept@1`, 40 cases per function, seed 7) reject a wrong pass? Measured with mutants planted by an ordinary pass (`src/typed/mutate.ts`, ten operators) and judged through `Program.apply`, with every surviving mutant classified as wrong or equivalent (`tools/mutation-classify.mjs`). A stronger, opt-in contract version 2 (`src/typed/cases-strong.ts`: boundary cases, records at their offsets, a divergence rule) is measured against it. The default contract is frozen and verified identical (`various/18-freeze-diff.txt`).
 
-Results so far: corpus head 1,144 mutants, default 95.8 % of non-equivalent mutants killed, version 2 99.8 %; r0 base 96.2 % / 99.9 %; f32 fixture 96.7 % / 100 %. Intern guide: `design-doc/01-…`; diary: `log/01-gate-strength-diary.md`.
+Results: corpus head 1,144 mutants, 192 equivalent; default gate kills 909 of 952 non-equivalent (95.5 %, 43 wrong accepted, 33 of them divergent), version 2 99.5 % (5 accepted); r0 base (before the deep search) 96.2 % / 99.9 %; f32 fixture 96.7 % / 100 %; Candela subset (18 functions, 3,931 mutants) default 96.8 % (114 accepted, nearly all float mutants in region-limited code), 100 cases 98.1 %, version 2 97.2 %. C5: 0 range-fact violations in 149 M claim checks. Intern guide: `design-doc/01-…`; diary: `log/01-gate-strength-diary.md` (steps 1–21); figures and tables: `scripts/14-figures.py`, `various/17-report-tables-deep.md`, `various/13-candela-summary.txt`.
 
 ## Key Links
 

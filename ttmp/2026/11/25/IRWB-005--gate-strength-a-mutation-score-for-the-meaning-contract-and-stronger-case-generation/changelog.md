@@ -48,3 +48,11 @@ Candela subset complete under the 14G cap (18 functions, 3,931 mutants); classif
 
 - tools/mutation-classify.mjs — unconstrained witness of an unspecified function is a specified witness
 - ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/scripts/22-candela-summary.mjs — Candela summary with the two reclassification rules
+
+## 2026-11-26
+
+Deep search complete (3 witnesses, exactly the 3 inspection argued wrong); corpus final 95.5% default / 99.5% v2; Candela follow-up (400 random cases beat v2 on region-limited SDF code); final gates at a54d5dc identical to the baseline; vault report written
+
+### Related Files
+
+- ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/various/18-freeze-diff-end.txt — final freeze diff

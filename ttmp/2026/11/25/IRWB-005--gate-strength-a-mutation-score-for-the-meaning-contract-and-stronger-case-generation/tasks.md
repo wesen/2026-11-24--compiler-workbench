@@ -10,4 +10,4 @@
 - [x] D2a: f32 fixture and a bounded Candela subset of cheap functions (exact caller-set shortcut) <!-- t:lr6s -->
 - [x] C5 (optional): typed.ranges facts checked against executions <!-- t:jv4p -->
 - [x] Frozen default: re-run 01-freeze-baseline.sh into various/final and diff <!-- t:3l51 -->
-- [ ] Vault report: deep dive, figures irwb005-*, checked against the diary <!-- t:aoc0 -->
+- [x] Vault report: deep dive, figures irwb005-*, checked against the diary <!-- t:aoc0 -->

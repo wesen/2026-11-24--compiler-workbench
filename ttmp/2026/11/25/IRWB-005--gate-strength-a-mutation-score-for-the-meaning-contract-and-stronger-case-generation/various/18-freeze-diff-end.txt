@@ -1,0 +1,56 @@
+baseline 420d8e11988fa12a80bc7b84019ec27ebac0f625
+final    a54d5dc0e51490b4b5d570c82adf6e8ef3e2e08a
+== npm-test: summary
+ℹ tests 325 ℹ pass 322 ℹ fail 0 ℹ skipped 3 
+ℹ tests 362 ℹ pass 359 ℹ fail 0 ℹ skipped 3 
+== npm-test: tests removed (<) or added (>)
+0a1,6
+> ✔ A1: Blend at r0: phis at the loop head, names mapped back to statements and values
+> ✔ A1: every O2 revision of a few projects agrees too (the full run is scripts/05-ssa-check-corpus.mjs)
+> ✔ A1: on every corpus function at r0, SSA def-use agrees with reaching definitions
+> ✔ A1: the check sees a wrong name, and a loop whose header is the entry block gets entry phis
+> ✔ A2: O2-sccp is O2 with sccp for constprop, accepted by the meaning contract; O2 itself is unchanged
+> ✔ A2: sccp finds the constant behind a decided branch, which constprop cannot see
+36a43,50
+> ✔ B1: the comparison sees a one-rule difference (a rule with another note changes the revision)
+> ✔ B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework
+> ✔ B1: the tables give the hand-written passes' revisions, edits and correspondences (subset)
+> ✔ B2: binopW at 32 bits is the evaluator's binop (boundary values crossed, every i32 operator)
+> ✔ B2: deliberately unsound rules are rejected, each with a counterexample or a structural reason
+> ✔ B2: every table rule has recorded evidence for its current version, and it says sound
+> ✔ B2: the fast methods, re-run, agree with the recorded evidence
+> ✔ B2: x + (-0) -> x passes the meaning check's f32 edge values and is refuted by NaN payloads
+129a144,165
+> ✔ IRWB-004 A1: a pass whose edit records nothing returns its input, unchanged
+> ✔ IRWB-004 A2: revisionOf equals fingerprint of { kind, schemaVersion, value }, canonical or not
+> ✔ IRWB-004 A3: validateOnce validates a canonical value once per validator, and a failed one again
+> ✔ IRWB-004 A6: sha256, the portable streaming SHA-256 and pieces equal the original implementation
+> ✔ IRWB-004 D1: reuse gives the evidence of evaluating every case, agreeing and disagreeing
+> ✔ IRWB-004 F1: a closure key covers the callees and the frame-array flag, and nothing else
+> ✔ IRWB-004 F1: a pass that changes some functions keeps the other functions' parts, by identity
+> ✔ IRWB-004 F4: a decide hook gets exactly the cases nobody decided, and the evidence is assembled in case order
+> ✔ IRWB-004 F4: small jobs stay on the calling thread
+> ✔ IRWB-004 F4: workers decide the same verdicts as the calling thread
+> ✔ IRWB-005: a float rewrite wrong only on NaN payloads (x + -0 -> x) passes version 1 and fails version 2
+> ✔ IRWB-005: a mutant is judged by Program.apply as a pass is, and checkInvariant gives the same verdict
+> ✔ IRWB-005 C5: observing a run changes nothing in it
+> ✔ IRWB-005 C5: the range facts of Blend hold at every revision of O2, and a narrowed fact is reported
+> ✔ IRWB-005: every mutant of Blend and of the f32 fixture is a valid, changed revision
+> ✔ IRWB-005: finite domains and the functions a mutation can reach
+> ✔ IRWB-005: records are laid out at their offsets in version 2 (version 1 writes them in key order)
+> ✔ IRWB-005: sites are enumerated deterministically and cover the operators Blend has
+> ✔ IRWB-005: strong cases extend the default cases and reach the boundaries
+> ✔ IRWB-005: the default contract is unchanged (pinned versions)
+> ✔ IRWB-005: the divergence rule of version 2 rejects a loop made infinite that version 1 accepts
+> ✔ IRWB-005: the strong contract accepts every O2 revision of Blend and rejects div-to-shift
+325a362
+> ✔ workbench: the rules listing fits 72 columns and shows every rule with its evidence
+== irwb-full: summary
+ℹ tests 21 ℹ pass 21 ℹ fail 0 ℹ skipped 0 
+ℹ tests 21 ℹ pass 21 ℹ fail 0 ℹ skipped 0 
+== irwb-full: tests removed (<) or added (>)
+(identical test names and results)
+== parity
+(identical)
+== corpus-revisions
+(identical)
