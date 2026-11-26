@@ -32,6 +32,7 @@ import type {
 import type {
   AnalysisDefinition,
   AnalysisRecord,
+  CheckResult,
   Correspondence,
   IRType,
   Ports,
@@ -61,7 +62,10 @@ export interface PassRunContext<S, N extends Needs, P> {
   readonly facts: FactValues<N>;
   readonly records: { readonly [K in keyof N]: AnalysisRecord<unknown> };
   readonly params: P;
-  /** A v6 edit on the logical projection; used when `run` returns nothing. */
+  /**
+   * A v6 edit on the logical projection; used when `run` returns nothing. IRWB-020: opened when first read, so a
+   * pass that returns a native value needs no Rewritable adapter.
+   */
   readonly edit: IREdit<S>;
 }
 
@@ -187,39 +191,44 @@ export function semanticCorrespondence(
   };
 }
 
-export async function applyPass<S, N extends Needs, P>(
-  pass: Pass<S, N, P>,
+/** What a pass produced, settled into the next revision (or `undefined` when nothing changed). */
+interface Settled<S> {
+  readonly after: Artifact<S>;
+  readonly changes: ChangeSet;
+  readonly correspondence: EntityCorrespondence;
+  readonly edits: number;
+  readonly report?: unknown;
+}
+
+/**
+ * IRWB-020: the edit a pass may ask for, opened on first use. `beginEdit` requires a Rewritable adapter (one with
+ * `rebuild`); a pass that returns a native value never asks, so its domain needs no `rebuild`.
+ */
+function lazyEdit<S>(view: IRView<S>): {
+  readonly get: () => IREdit<S>;
+  readonly opened: () => IREdit<S> | undefined;
+} {
+  let edit: IREdit<S> | undefined;
+  return { get: () => (edit ??= view.beginEdit()), opened: () => edit };
+}
+
+/**
+ * The synchronous part of applying a pass, shared by `applyPass` and `applyPassSync`: turn what `run` returned (a
+ * native value, or operations on the edit) into the output artifact, the change set and the correspondence, and
+ * enforce the declared writes. Returns `undefined` when the pass changed nothing.
+ */
+function settle<S>(
+  pass: Pass<S, any, any>,
   before: Artifact<S>,
-  options: ApplyOptions<P>,
-): Promise<PassResult<S>> {
-  const { manager } = options;
-  const view = openIR(before, pass.adapter, options.store);
-  const facts: Record<string, unknown> = {},
-    records: Record<string, AnalysisRecord<unknown>> = {};
-  for (const [name, def] of Object.entries(pass.needs ?? {})) {
-    const record = await manager.analyse(def, before);
-    records[name] = record;
-    facts[name] = record.value;
-  }
-  const edit = view.beginEdit();
-  let produced: void | NativeResult<S>;
-  try {
-    produced = await pass.run({
-      before,
-      view,
-      facts: facts as FactValues<N>,
-      records: records as PassRunContext<S, N, P>['records'],
-      params: options.params as P,
-      edit,
-    });
-  } catch (e) {
-    if (edit.state === 'open') edit.rollback('pass threw');
-    throw e;
-  }
+  view: IRView<S>,
+  produced: void | NativeResult<S>,
+  edit: IREdit<S> | undefined,
+  options: { readonly store?: IRStore; readonly outputId?: string },
+): Settled<S> | undefined {
   let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
   let report: unknown;
   if (produced && typeof produced === 'object' && 'native' in produced) {
-    if (edit.state === 'open') edit.rollback('native result');
+    if (edit?.state === 'open') edit.rollback('native result');
     const id = options.outputId ?? before.id;
     after = createIRArtifact(pass.adapter, id, produced.native);
     const afterView = openIR(after, pass.adapter, options.store);
@@ -235,19 +244,13 @@ export async function applyPass<S, N extends Needs, P>(
     edits = produced.edits ?? changes.entities.length;
     report = produced.report;
   } else {
+    if (!edit) return undefined; // the pass returned nothing and never asked for the edit
     if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
     if (edit.operationCount === 0) {
       // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
       // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
       edit.rollback('no operations');
-      return {
-        pass: { id: pass.id, version: pass.version },
-        changed: false,
-        before,
-        artifact: before,
-        edits: 0,
-        preserved: [],
-      };
+      return undefined;
     }
     const prepared = edit.prepare();
     after = prepared.artifact;
@@ -257,20 +260,137 @@ export async function applyPass<S, N extends Needs, P>(
     edit.rollback('applyPass publishes revisions itself');
   }
   if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
-    return {
-      pass: { id: pass.id, version: pass.version },
-      changed: false,
-      before,
-      artifact: before,
-      edits: 0,
-      preserved: [],
-    };
+    return undefined;
 
   const undeclared = undeclaredWrites(pass.writes, changes);
   if (undeclared.length)
     throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
       undeclared: undeclared.slice(0, 20),
     });
+  return { after, changes, correspondence, edits, report };
+}
+
+const unchanged = <S>(pass: Pass<S, any, any>, before: Artifact<S>): PassResult<S> => ({
+  pass: { id: pass.id, version: pass.version },
+  changed: false,
+  before,
+  artifact: before,
+  edits: 0,
+  preserved: [],
+});
+
+export interface ApplySyncOptions<S, P> {
+  readonly params?: P;
+  /** Artifact id of the output (default: the input's). */
+  readonly outputId?: string;
+  /** The gate: decides, without a Promise, whether the output is accepted. A step without it would be unchecked. */
+  readonly check: (io: {
+    readonly input: Artifact<S>;
+    readonly output: Artifact<S>;
+    readonly correspondence: EntityCorrespondence;
+  }) => CheckResult;
+}
+
+/**
+ * IRWB-020: apply a pass and gate it without a Promise, for a host whose API is synchronous. `applyPass` is async
+ * because the analysis manager is, even when the pass and its check are not. The domain is a pass with no `needs`
+ * and no `preserves` whose `run` returns synchronously (a native result, or nothing). The diff, the correspondence
+ * and the `writes` enforcement are `applyPass`'s; the gate is `check` instead of a contract in a manager, so no
+ * manager record is written. A rejected check throws `PassError('contractRejected')`, as in `applyPass`.
+ */
+export function applyPassSync<S, P = unknown>(
+  pass: Pass<S, {}, P>,
+  before: Artifact<S>,
+  options: ApplySyncOptions<S, P>,
+): PassResult<S> {
+  if (typeof options?.check !== 'function') throw new Error(`applyPassSync(${pass.id}) needs a check`);
+  if (Object.keys(pass.needs ?? {}).length || (pass.preserves ?? []).length)
+    throw new PassError('badResult', `Pass ${pass.id} declares needs or preserves; apply it with applyPass`);
+  const view = openIR(before, pass.adapter);
+  const edit = lazyEdit(view);
+  let produced: void | NativeResult<S> | Promise<void | NativeResult<S>>;
+  try {
+    produced = pass.run({
+      before,
+      view,
+      facts: {} as FactValues<{}>,
+      records: {} as PassRunContext<S, {}, P>['records'],
+      params: options.params as P,
+      get edit() {
+        return edit.get();
+      },
+    });
+  } catch (e) {
+    if (edit.opened()?.state === 'open') edit.opened()!.rollback('pass threw');
+    throw e;
+  }
+  if (produced && typeof (produced as PromiseLike<unknown>).then === 'function') {
+    if (edit.opened()?.state === 'open') edit.opened()!.rollback('asynchronous pass');
+    throw new PassError('badResult', `Pass ${pass.id} ran asynchronously; apply it with applyPass`);
+  }
+  const settled = settle(pass, before, view, produced as void | NativeResult<S>, edit.opened(), {
+    outputId: options.outputId,
+  });
+  if (!settled) return unchanged(pass, before);
+  const verdict = options.check({
+    input: before,
+    output: settled.after,
+    correspondence: settled.correspondence,
+  });
+  if (!verdict || verdict.ok !== true)
+    throw new PassError(
+      'contractRejected',
+      `Pass ${pass.id} output rejected: ${verdict?.reason ?? 'the check did not accept it'}`,
+      { check: verdict },
+    );
+  return {
+    pass: { id: pass.id, version: pass.version },
+    changed: true,
+    before,
+    artifact: settled.after,
+    changes: settled.changes,
+    correspondence: settled.correspondence,
+    edits: settled.edits,
+    preserved: [],
+    contract: verdict,
+    report: settled.report,
+  };
+}
+
+export async function applyPass<S, N extends Needs, P>(
+  pass: Pass<S, N, P>,
+  before: Artifact<S>,
+  options: ApplyOptions<P>,
+): Promise<PassResult<S>> {
+  const { manager } = options;
+  const view = openIR(before, pass.adapter, options.store);
+  const facts: Record<string, unknown> = {},
+    records: Record<string, AnalysisRecord<unknown>> = {};
+  for (const [name, def] of Object.entries(pass.needs ?? {})) {
+    const record = await manager.analyse(def, before);
+    records[name] = record;
+    facts[name] = record.value;
+  }
+  const edit = lazyEdit(view);
+  let produced: void | NativeResult<S>;
+  try {
+    produced = await pass.run({
+      before,
+      view,
+      facts: facts as FactValues<N>,
+      records: records as PassRunContext<S, N, P>['records'],
+      params: options.params as P,
+      get edit() {
+        return edit.get();
+      },
+    });
+  } catch (e) {
+    if (edit.opened()?.state === 'open') edit.opened()!.rollback('pass threw');
+    throw e;
+  }
+  const settled = settle(pass, before, view, produced, edit.opened(), options);
+  if (!settled) return unchanged(pass, before);
+  const { after, changes, correspondence, edits, report } = settled;
 
   let contract: unknown;
   const gate = options.contract ?? pass.contract;
@@ -281,9 +401,7 @@ export async function applyPass<S, N extends Needs, P>(
         { output: after } as never,
         gate,
         gate.correspondence.length
-          ? gate.correspondence.map(req =>
-              semanticCorrespondence(correspondence, req.id, req.relation),
-            )
+          ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
           : [semanticCorrespondence(correspondence)],
       );
       contract = prepared;
@@ -301,12 +419,7 @@ export async function applyPass<S, N extends Needs, P>(
       await manager.analyse(def, before);
     }
     try {
-      const record = await manager.preserve(
-        def,
-        before,
-        after,
-        semanticCorrespondence(correspondence),
-      );
+      const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
       preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
     } catch {
       const old = await manager.analyse(def, before),
