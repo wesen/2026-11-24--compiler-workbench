@@ -1,0 +1,4 @@
+ingest 300 ms, 332 functions
+r0 on 40 cases per function: 2331 ms
+{"functions":332,"cheap":322,"closed":20,"maxSteps":2000,"limitedFns":[["fbm3",7],["renderPixel",1],["skyBuild",40],["cdlSky",40],["cdlRenderSpan",13]]}
+node --max-old-space-size=12288 $T/scripts/05-candela-cheap-census.mjs  2000  5.77s user 0.21s system 123% cpu 4.829 total

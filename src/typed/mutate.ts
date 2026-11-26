@@ -21,7 +21,7 @@ import { hasEffect, isPure, readsOf, type LiveView } from './analyses.js';
 import { agrees, evaluate, Memory, type Case, type FunctionInputs, type RunResult } from './evaluate.js';
 import { F32_RESULT } from './f32.js';
 import { show, showStmt } from './listing.js';
-import type { BlockRec, StmtRec, Store, ValueOp, ValueRec, WorkFn } from './model.js';
+import type { BlockRec, StmtRec, Store, TypedBlocks, ValueOp, ValueRec, WorkFn } from './model.js';
 import { typedPass, type TypedPass } from './passes.js';
 import { TxError, type Tx } from './tx.js';
 
@@ -605,6 +605,10 @@ export function compareOn(
   for (let i = 0; i < cases.length; i++) {
     const c = cases[i];
     const a: RunResult = opts.baselineRuns?.[i] ?? evaluate(baseline, c.fn, c.args, c.memory, { limit });
+    if (a.limit) {
+      inconclusive++; // no verdict whatever the subject does
+      continue;
+    }
     const b: RunResult = evaluate(subject, c.fn, c.args, c.memory, { limit });
     if (a.limit || b.limit) {
       inconclusive++;
@@ -633,4 +637,36 @@ export function compareOn(
     }
   }
   return { total: cases.length, agree, disagree, inconclusive, diverge, ...(witness ? { witness } : {}) };
+}
+
+/** `fns` and every function they call, transitively, in program order. */
+export function closure(st: Store, fns: readonly string[]): string[] {
+  const graph = callGraph(st),
+    out = new Set(fns),
+    todo = [...fns];
+  while (todo.length)
+    for (const c of graph.get(todo.pop()!) ?? []) if (!out.has(c)) (out.add(c), todo.push(c));
+  return [...st.fns.keys()].filter(g => out.has(g));
+}
+
+/**
+ * The program restricted to `fns`, which must be closed under calls (see `closure`): the same records, filtered by
+ * function. Evaluating a function of `fns` on it gives exactly the run on the whole program, so a large program's
+ * mutants can be judged on the sub-program that contains the mutated function, the functions reaching it, and
+ * everything they call.
+ */
+export function subProgram(v: TypedBlocks, fns: readonly string[]): TypedBlocks {
+  const keep = new Set(fns),
+    ids = new Set(fns.map(n => v.fns[n].id));
+  const pick = <T extends { fn: string }>(table: Readonly<Record<string, T>>): Record<string, T> =>
+    Object.fromEntries(Object.entries(table).filter(([, e]) => ids.has(e.fn)));
+  return {
+    ...v,
+    fnOrder: v.fnOrder.filter(n => keep.has(n)),
+    fns: Object.fromEntries(Object.entries(v.fns).filter(([n]) => keep.has(n))),
+    blocks: pick(v.blocks),
+    stmts: pick(v.stmts),
+    values: pick(v.values),
+    ops: pick(v.ops),
+  };
 }

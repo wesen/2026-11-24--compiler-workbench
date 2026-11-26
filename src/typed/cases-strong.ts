@@ -111,7 +111,7 @@ function f32Pool(spec: any): number[] {
 type Entry = (mem: Memory, name: string) => number;
 
 interface Tables {
-  readonly records: Record<string, Record<string, { type: string }>>;
+  readonly records: Record<string, Record<string, { type: string; offset?: number }>>;
   readonly enums: Record<string, Record<string, number>>;
 }
 
@@ -164,7 +164,8 @@ function pool(spec: any, type: string, t: Tables, consts: readonly number[]): En
   }
   if (spec && spec.bool) return [value(0), value(1)];
   if (spec && spec.record) {
-    const layout = t.records[type] ?? {};
+    // fields in the order of their offsets: Memory.record writes word i at offset 4i
+    const layout = byOffset(t.records[type] ?? {});
     const fields = Object.entries(layout).map(([field, f]) =>
       pool(spec.record[field] ?? [-50, 50], f.type, t, consts),
     );
@@ -194,6 +195,33 @@ export function poolSizes(st: Store, fname: string, inputs: FunctionInputs = {})
     t = tables(st),
     consts = constantsOf(st, f);
   return f.params.map((type, i) => pool(inputs[f.locals[i].name], type, t, consts).length);
+}
+
+/**
+ * A record type's fields in the order of their offsets. The front end's tables keep declaration order, but the
+ * tables of a frozen artifact are key-sorted.
+ */
+const byOffset = <F extends { offset?: number }>(fields: Readonly<Record<string, F>>): Record<string, F> =>
+  Object.fromEntries(Object.entries(fields).sort((a, b) => (a[1].offset ?? 0) - (b[1].offset ?? 0)));
+
+/**
+ * A view of `st` whose record tables list fields in offset order. The default generator (`makeValue`) writes a
+ * record's words in the order of its table's keys; on a store made from an artifact those keys are sorted, so a
+ * record whose fields are not declared alphabetically (Candela's `K`) gets its words at the wrong offsets. Generating
+ * from this view gives each word its declared offset. On the corpus, whose two record types are `{ x, y }`, the
+ * cases are identical.
+ */
+export function offsetOrdered(st: Store): Store {
+  const records = st.frontEnd.records as Tables['records'] | null;
+  if (!records) return st;
+  const view = Object.create(st) as Store;
+  Object.defineProperty(view, 'frontEnd', {
+    value: {
+      ...st.frontEnd,
+      records: Object.fromEntries(Object.entries(records).map(([k, f]) => [k, byOffset(f)])),
+    },
+  });
+  return view;
 }
 
 const tables = (st: Store): Tables => ({
@@ -288,6 +316,8 @@ export interface StrongParams extends MeaningParams {
    * within the limit, the case is a disagreement ("diverges"). When the origin hits the limit the case stays no verdict.
    */
   readonly divergence?: number;
+  /** Record layout of the default part of the cases (see `offsetOrdered`): 'offset' (default) or 'keys' (version 1's). */
+  readonly layout?: 'offset' | 'keys';
 }
 
 /** A candidate's run that did not finish within `divergence` times the limit. */
@@ -299,17 +329,25 @@ interface Diverged extends RunResult {
 export function strongCasesFrom(
   st: Store,
   fname: string,
-  opts: { count?: number; extra?: number; seed?: number; inputs?: FunctionInputs; coverage?: boolean } = {},
+  opts: {
+    count?: number;
+    extra?: number;
+    seed?: number;
+    inputs?: FunctionInputs;
+    coverage?: boolean;
+    layout?: 'offset' | 'keys';
+  } = {},
 ): Case[] {
   const count = opts.count ?? 40,
     extra = opts.extra ?? count,
     seed = opts.seed ?? 7,
     inputs = opts.inputs ?? {},
-    coverage = !!opts.coverage;
+    coverage = !!opts.coverage,
+    gst = opts.layout === 'keys' ? st : offsetOrdered(st);
   return [
-    ...casesFrom(st, fname, { count, seed, inputs }),
+    ...casesFrom(gst, fname, { count, seed, inputs }),
     ...(coverage
-      ? coverageCases(st, fname, inputs, extra, seed, count)
+      ? coverageCases(gst, fname, inputs, extra, seed, count)
       : boundaryCases(st, fname, { inputs, extra, offset: count })),
   ];
 }
@@ -338,6 +376,7 @@ export function meaningKeptStrong(
     limit = params.limit ?? 2e4,
     coverage = !!params.coverage,
     divergence = params.divergence ?? 10,
+    layout = params.layout ?? 'offset',
     roots = params.roots ? [...params.roots].sort() : null;
   const key = canonicalJson({
     generator: 'strong-1',
@@ -345,6 +384,7 @@ export function meaningKeptStrong(
     extra,
     coverage,
     divergence,
+    layout,
     seed,
     inputs,
     limit,
@@ -369,7 +409,7 @@ export function meaningKeptStrong(
         if (!cases) {
           const st = storeOf(art.value);
           cases = (roots ?? [...st.fns.keys()]).flatMap(fn =>
-            strongCasesFrom(st, fn, { count, extra, seed, inputs: inputs[fn] ?? {}, coverage }),
+            strongCasesFrom(st, fn, { count, extra, seed, inputs: inputs[fn] ?? {}, coverage, layout }),
           );
           if (caseCache.size > 64) caseCache.clear();
           caseCache.set(ck, cases);

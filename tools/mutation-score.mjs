@@ -17,10 +17,11 @@ const { Program } = await import('../dist/typed/program.js');
 const { projectSource } = await import('../dist/typed/project.js');
 const { storeOf } = await import('../dist/typed/ir.js');
 const { ANALYSES, liveView } = await import('../dist/typed/analyses.js');
-const { casesFrom, evaluate, agrees, meaningKept } = await import('../dist/typed/evaluate.js');
+const { meaningKept } = await import('../dist/typed/evaluate.js');
+const C = await import('./mutation-classify.mjs');
 const { applyPass } = await import('../dist/framework/passes/index.js');
 const M = await import('../dist/typed/mutate.js');
-const { referenceCompile, referenceRun } = await import('../dist/typed/reference.js');
+const { referenceCompile } = await import('../dist/typed/reference.js');
 let strongModule = null;
 try {
   strongModule = await import('../dist/typed/cases-strong.js');
@@ -34,7 +35,6 @@ const operators = list('--operators', M.MUTATION_OPERATORS);
 const gateNames = list('--gates', ['default', 'default80', 'check100', ...(strongModule ? ['strong', 'strong-cases', 'default+div'] : [])]);
 const classifyOn = !args.includes('--no-classify');
 const budget = +flag('--budget', 300000), sample = +flag('--sample', 4000), maxSites = +flag('--max-sites', Infinity);
-const LIMIT = 2e5, REF_CASES = 400;
 
 /** The extra gates: invariant definitions judged on { origin, candidate } with checkInvariant. */
 const GATES = {
@@ -61,86 +61,6 @@ async function subjects() {
   return out;
 }
 
-/**
- * The per-function material classification needs, computed once per subject: the finite specified domain (or null),
- * a large specified sample (with boundary cases when the strong module is built), an unconstrained sample, r0's runs
- * on each, and the reference image's runs on the first REF_CASES sample cases. r0 is the same for every mutant.
- */
-function packFor(ctx, g) {
-  let pack = ctx.packs.get(g);
-  if (pack) return pack;
-  const { r0st, inputs } = ctx, spec = inputs[g] ?? {};
-  const run = cs => cs.map(c => evaluate(r0st, c.fn, c.args, c.memory, { limit: LIMIT }));
-  const domain = M.finiteDomain(r0st, g, spec, budget);
-  const sampleCases = [
-    ...casesFrom(r0st, g, { count: sample, seed: 101, inputs: spec }),
-    ...(strongModule ? strongModule.boundaryCases(r0st, g, { inputs: spec, extra: 200 }) : []),
-  ];
-  const free = casesFrom(r0st, g, { count: sample, seed: 102, inputs: {} });
-  pack = { domain, domainRuns: domain && run(domain), sample: sampleCases, sampleRuns: run(sampleCases), free, freeRuns: run(free) };
-  if (ctx.reference)
-    pack.ref = sampleCases.slice(0, REF_CASES).map(k => {
-      try { return referenceRun(ctx.reference, k.fn, k.args, k.memory); } catch (e) { return null; }
-    });
-  ctx.packs.set(g, pack);
-  return pack;
-}
-
-/** Compare the mutant with r0 on the cases of every function in A, stopping at the first witness. */
-function over(ctx, A, mst, part) {
-  const tot = { total: 0, agree: 0, disagree: 0, inconclusive: 0, diverge: 0 };
-  for (const g of A) {
-    const pk = packFor(ctx, g);
-    const c = M.compareOn(ctx.r0st, mst, pk[part], { limit: LIMIT, stopAtWitness: true, baselineRuns: pk[part + 'Runs'] });
-    for (const k of Object.keys(tot)) tot[k] += c[k];
-    if (c.witness) return { ...tot, witness: c.witness };
-  }
-  return tot;
-}
-
-/** Classify a mutant some gate accepted (guide section 12). */
-function classify(ctx, mutant, site) {
-  const mst = storeOf(mutant.value);
-  const A = M.affected(ctx.basest, site.fn);
-  const out = { affected: A.length };
-  // 1. exhaustive, when every function in A has a finite specified domain and their total is within the budget
-  const domains = A.map(g => packFor(ctx, g).domain);
-  const proved = domains.every(Boolean) && domains.reduce((n, d) => n + d.length, 0) <= budget;
-  if (proved) {
-    const c = over(ctx, A, mst, 'domain');
-    out.exhaustive = { inputs: c.total, inconclusive: c.inconclusive };
-    if (c.witness) return { ...out, class: 'survived-wrong', method: c.disagree ? 'exhaustive' : 'exhaustive-diverges', witness: c.witness };
-  } else {
-    // 2. a large specified sample (seed 101, plus boundary cases)
-    const c = over(ctx, A, mst, 'sample');
-    out.sample = { cases: c.total, inconclusive: c.inconclusive };
-    if (c.witness) return { ...out, class: 'survived-wrong', method: c.disagree ? 'sample' : 'sample-diverges', witness: c.witness };
-  }
-  // 4. the reference image as a second oracle: it must agree with the mutant wherever r0 does
-  if (ctx.reference) {
-    let checked = 0, disagree = 0, refVsR0 = 0;
-    for (const g of A) {
-      const pk = packFor(ctx, g);
-      pk.ref.forEach((ref, i) => {
-        if (!ref || ref.limit) return;
-        const k = pk.sample[i], a = pk.sampleRuns[i];
-        if (a.limit) return;
-        const b = evaluate(mst, k.fn, k.args, k.memory, { limit: LIMIT });
-        if (b.limit) return;
-        checked++;
-        if (!agrees(ref, b)) disagree++;
-        if (!agrees(ref, a)) refVsR0++;
-      });
-    }
-    out.reference = { checked, disagree, refVsR0 };
-  }
-  // 3. an unconstrained sample (seed 102, no specification): does the mutant differ outside the specification?
-  const u = over(ctx, A, mst, 'free');
-  out.unconstrained = { cases: u.total, differs: !!u.witness, ...(u.witness ? { witness: u.witness } : {}) };
-  if (proved) return { ...out, class: 'equivalent-spec-proved', method: 'exhaustive' };
-  return { ...out, class: u.witness ? 'equivalent-spec' : 'equivalent-presumed', method: 'sample+unconstrained' };
-}
-
 const records = [];
 const baseVerdicts = {};
 const t0 = performance.now();
@@ -163,7 +83,7 @@ for (const s of await subjects()) {
     baseVerdicts[s.id][g] = ev.ok ? 'accepts' : `REJECTS: ${ev.reason} ${JSON.stringify(ev.evidence?.counterexamples?.[0] ?? null)}`;
     if (ev.ok) gates[g] = GATES[g](inputs);
   }
-  const ctx = { r0st, basest, inputs, reference, packs: new Map() };
+  const classify = C.classifier({ r0st, basest, inputs, reference, budget, sample });
   for (const site of sites) {
     const rec = { subject: s.id, base, baseRev: `r${baseRev}`, fn: site.fn, operator: site.operator, variant: site.variant, target: site.target, stmt: site.stmt, text: site.text, gates: {} };
     let mutant;
@@ -194,7 +114,7 @@ for (const s of await subjects()) {
       const e = ev.evidence;
       rec.gates[g] = { verdict: ev.ok ? 'survived' : e.status === 'inconclusive' ? 'killed-inconclusive' : 'killed', agree: e.agree, disagree: e.disagree, inconclusive: e.inconclusive, ms: +(performance.now() - t).toFixed(2) };
     }
-    if (classifyOn && !rec.invalid && Object.values(rec.gates).some(g => g.verdict === 'survived')) Object.assign(rec, { classification: classify(ctx, mutant, site) });
+    if (classifyOn && !rec.invalid && Object.values(rec.gates).some(g => g.verdict === 'survived')) Object.assign(rec, { classification: classify(mutant, site) });
     records.push(rec);
   }
   const mine = records.filter(r => r.subject === s.id);
@@ -203,38 +123,8 @@ for (const s of await subjects()) {
 }
 
 // ---------- aggregation ----------
-const CLASSES = ['killed', 'killed-inconclusive', 'survived-wrong', 'equivalent-spec-proved', 'equivalent-spec', 'equivalent-presumed', 'invalid'];
-function classOf(r, g) {
-  if (r.invalid) return 'invalid';
-  const v = r.gates[g]?.verdict;
-  if (!v) return null;
-  if (v === 'killed' || v === 'killed-inconclusive') return v;
-  if (v === 'error') return 'invalid';
-  return r.classification?.class ?? 'unclassified';
-}
-function tally(rs, g) {
-  const t = Object.fromEntries([...CLASSES, 'unclassified'].map(c => [c, 0]));
-  for (const r of rs) { const c = classOf(r, g); if (c) t[c]++; }
-  const killed = t.killed + t['killed-inconclusive'];
-  const upperDen = killed + t['survived-wrong'] + t.unclassified, lowerDen = upperDen + t['equivalent-presumed'];
-  return { ...t, mutants: rs.length, upper: upperDen ? killed / upperDen : null, lower: lowerDen ? killed / lowerDen : null };
-}
-const groupBy = (rs, key) => rs.reduce((m, r) => ((m[key(r)] ??= []).push(r), m), {});
-const summary = { base, gates: gateNames, budget, sample, ms: Math.round(performance.now() - t0), baseVerdicts, total: {}, bySubject: {}, byOperator: {}, byFunction: {} };
-for (const g of gateNames) {
-  summary.total[g] = tally(records, g);
-  summary.bySubject[g] = Object.fromEntries(Object.entries(groupBy(records, r => r.subject)).map(([k, v]) => [k, tally(v, g)]));
-  summary.byOperator[g] = Object.fromEntries(Object.entries(groupBy(records, r => r.operator)).map(([k, v]) => [k, tally(v, g)]));
-  summary.byFunction[g] = Object.fromEntries(Object.entries(groupBy(records, r => `${r.subject}.${r.fn}`)).map(([k, v]) => [k, tally(v, g)]));
-}
-summary.gateMs = Object.fromEntries(gateNames.map(g => [g, +records.reduce((n, r) => n + (r.gates[g]?.ms ?? 0), 0).toFixed(1)]));
-const pct = x => (x === null ? '   -  ' : (100 * x).toFixed(1).padStart(5) + '%');
-const line = (name, t) => `${name.padEnd(18)} ${String(t.mutants).padStart(5)} ${String(t.killed + t['killed-inconclusive']).padStart(5)} ${String(t['survived-wrong']).padStart(4)} ${String(t['equivalent-spec-proved'] + t['equivalent-spec'] + t['equivalent-presumed']).padStart(4)} ${pct(t.lower)} ${pct(t.upper)}`;
-for (const g of gateNames) {
-  console.log(`\ngate ${g}: mutants, killed, survived-wrong, equivalent, kill rate lower..upper`);
-  for (const [k, t] of Object.entries(summary.byOperator[g])) console.log(line(k, t));
-  console.log(line('TOTAL', summary.total[g]));
-}
-console.log(`\ngate time (ms): ${JSON.stringify(summary.gateMs)}  total ${summary.ms} ms`);
+const summary = C.summarize(records, gateNames, { base, budget, sample, ms: Math.round(performance.now() - t0), baseVerdicts });
+C.printTables(summary);
+console.log(`total ${summary.ms} ms`);
 if (flag('--json', null)) writeFileSync(flag('--json'), JSON.stringify(summary, null, 1));
 if (flag('--jsonl', null)) writeFileSync(flag('--jsonl'), records.map(r => JSON.stringify(r)).join('\n') + '\n');

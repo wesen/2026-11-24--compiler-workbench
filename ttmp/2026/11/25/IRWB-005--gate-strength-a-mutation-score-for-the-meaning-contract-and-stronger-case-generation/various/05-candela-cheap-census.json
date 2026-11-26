@@ -1,0 +1,2658 @@
+{
+ "pow2i": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 41,
+  "closed": false
+ },
+ "ldexpf": {
+  "mean": 7,
+  "max": 8,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 40,
+  "closed": false
+ },
+ "fract": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "mix": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "clamp": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 2,
+  "closed": true
+ },
+ "saturate": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "step": {
+  "mean": 2,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 1,
+  "closed": true
+ },
+ "sign": {
+  "mean": 3,
+  "max": 5,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 1,
+  "closed": true
+ },
+ "smoothstep": {
+  "mean": 4,
+  "max": 4,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "sinCosReduced": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 7,
+  "closed": false
+ },
+ "sinf": {
+  "mean": 22,
+  "max": 28,
+  "limited": 0,
+  "blocks": 16,
+  "affected": 5,
+  "closed": false
+ },
+ "cosf": {
+  "mean": 23,
+  "max": 31,
+  "limited": 0,
+  "blocks": 19,
+  "affected": 5,
+  "closed": false
+ },
+ "tanf": {
+  "mean": 48,
+  "max": 61,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "expf": {
+  "mean": 14,
+  "max": 18,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 1,
+  "closed": true
+ },
+ "exp2f": {
+  "mean": 15,
+  "max": 19,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 38,
+  "closed": false
+ },
+ "logTail": {
+  "mean": 2,
+  "max": 2,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 40,
+  "closed": false
+ },
+ "logExponent": {
+  "mean": 9,
+  "max": 11,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 40,
+  "closed": false
+ },
+ "logFraction": {
+  "mean": 7,
+  "max": 8,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 40,
+  "closed": false
+ },
+ "logf": {
+  "mean": 15,
+  "max": 29,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 6,
+  "closed": false
+ },
+ "log2f": {
+  "mean": 16,
+  "max": 30,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 38,
+  "closed": false
+ },
+ "powf": {
+  "mean": 34,
+  "max": 55,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 37,
+  "closed": false
+ },
+ "atanPositive": {
+  "mean": 8,
+  "max": 10,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 16,
+  "closed": false
+ },
+ "atanf": {
+  "mean": 13,
+  "max": 15,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 1,
+  "closed": true
+ },
+ "atan2f": {
+  "mean": 37,
+  "max": 41,
+  "limited": 0,
+  "blocks": 31,
+  "affected": 14,
+  "closed": false
+ },
+ "asinPositive": {
+  "mean": 4,
+  "max": 5,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 20,
+  "closed": false
+ },
+ "asinf": {
+  "mean": 6,
+  "max": 10,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 1,
+  "closed": true
+ },
+ "acosf": {
+  "mean": 7,
+  "max": 11,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 18,
+  "closed": false
+ },
+ "q_floor": {
+  "mean": 8,
+  "max": 9,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 105,
+  "closed": false
+ },
+ "q_fract": {
+  "mean": 10,
+  "max": 11,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 49,
+  "closed": false
+ },
+ "q_sin": {
+  "mean": 17,
+  "max": 19,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 61,
+  "closed": false
+ },
+ "q_cos": {
+  "mean": 19,
+  "max": 21,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 48,
+  "closed": false
+ },
+ "q_exp": {
+  "mean": 18,
+  "max": 21,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 18,
+  "closed": false
+ },
+ "q_sign": {
+  "mean": 3,
+  "max": 5,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 9,
+  "closed": false
+ },
+ "q_step": {
+  "mean": 2,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 14,
+  "closed": false
+ },
+ "q_smoothstep": {
+  "mean": 2,
+  "max": 2,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 40,
+  "closed": false
+ },
+ "q_absi": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 1,
+  "closed": true
+ },
+ "pcgH": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 10,
+  "closed": false
+ },
+ "rnd": {
+  "mean": 8,
+  "max": 8,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "rnd2": {
+  "mean": 23,
+  "max": 23,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "fmodp": {
+  "mean": 10,
+  "max": 11,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 12,
+  "closed": false
+ },
+ "fmodp2": {
+  "mean": 19,
+  "max": 21,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "fmodp3": {
+  "mean": 28,
+  "max": 31,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 18,
+  "closed": false
+ },
+ "fmodp4": {
+  "mean": 37,
+  "max": 41,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "safeNorm": {
+  "mean": 12,
+  "max": 12,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 39,
+  "closed": false
+ },
+ "safeNorm2": {
+  "mean": 10,
+  "max": 10,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 1,
+  "closed": true
+ },
+ "safeNorm4": {
+  "mean": 14,
+  "max": 14,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 18,
+  "closed": false
+ },
+ "maxc": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 6,
+  "closed": false
+ },
+ "safeInv": {
+  "mean": 15,
+  "max": 15,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 14,
+  "closed": false
+ },
+ "lum": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 19,
+  "closed": false
+ },
+ "sq": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 51,
+  "closed": false
+ },
+ "gnoise": {
+  "mean": 22,
+  "max": 22,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 46,
+  "closed": false
+ },
+ "noise3": {
+  "mean": 265,
+  "max": 269,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 45,
+  "closed": false
+ },
+ "fbm3": {
+  "mean": 6629,
+  "max": 20001,
+  "limited": 7,
+  "blocks": 10,
+  "affected": 40,
+  "closed": false
+ },
+ "voronoi3": {
+  "mean": 1127,
+  "max": 1139,
+  "limited": 0,
+  "blocks": 16,
+  "affected": 1,
+  "closed": true
+ },
+ "voronoiVec3": {
+  "mean": 47,
+  "max": 49,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "frameOf": {
+  "mean": 26,
+  "max": 26,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 10,
+  "closed": false
+ },
+ "frameT": {
+  "mean": 26,
+  "max": 26,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 4,
+  "closed": false
+ },
+ "toLocal": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 5,
+  "closed": false
+ },
+ "toWorld": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "cosHemi": {
+  "mean": 42,
+  "max": 45,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "uniformCone": {
+  "mean": 43,
+  "max": 46,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 5,
+  "closed": false
+ },
+ "uniformConeOm": {
+  "mean": 43,
+  "max": 46,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "oneMinusCosFromSin2": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "misW": {
+  "mean": 3,
+  "max": 4,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 5,
+  "closed": false
+ },
+ "spBasis": {
+  "mean": 9,
+  "max": 9,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 13,
+  "closed": false
+ },
+ "spec": {
+  "mean": 10,
+  "max": 17,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 12,
+  "closed": false
+ },
+ "gfit": {
+  "mean": 22,
+  "max": 28,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 4,
+  "closed": false
+ },
+ "cmfXYZ": {
+  "mean": 98,
+  "max": 183,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 3,
+  "closed": false
+ },
+ "xyz2rgb": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "planckRel": {
+  "mean": 15,
+  "max": 24,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "sellmeier": {
+  "mean": 4,
+  "max": 4,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 14,
+  "closed": false
+ },
+ "ggxE": {
+  "mean": 48,
+  "max": 48,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 8,
+  "closed": false
+ },
+ "noHit": {
+  "mean": 47,
+  "max": 47,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "lobeNone": {
+  "mean": 53,
+  "max": 53,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 94,
+  "closed": false
+ },
+ "hitAABB": {
+  "mean": 15,
+  "max": 15,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 13,
+  "closed": false
+ },
+ "oRow": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 18,
+  "closed": false
+ },
+ "qrot": {
+  "mean": 8,
+  "max": 8,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "poseQ": {
+  "mean": 56,
+  "max": 69,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 17,
+  "closed": false
+ },
+ "poseT": {
+  "mean": 43,
+  "max": 48,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 15,
+  "closed": false
+ },
+ "mBase": {
+  "mean": 9,
+  "max": 13,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "xfP": {
+  "mean": 38,
+  "max": 199,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 13,
+  "closed": false
+ },
+ "xfD": {
+  "mean": 38,
+  "max": 199,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 12,
+  "closed": false
+ },
+ "xfN": {
+  "mean": 30,
+  "max": 156,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 10,
+  "closed": false
+ },
+ "tangentWorld": {
+  "mean": 43,
+  "max": 223,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 1,
+  "closed": true
+ },
+ "hitMesh": {
+  "mean": 63,
+  "max": 79,
+  "limited": 0,
+  "blocks": 54,
+  "affected": 12,
+  "closed": false
+ },
+ "sdBox": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 15,
+  "closed": false
+ },
+ "sdLocal": {
+  "mean": 52,
+  "max": 1164,
+  "limited": 0,
+  "blocks": 28,
+  "affected": 14,
+  "closed": false
+ },
+ "sdNormal": {
+  "mean": 244,
+  "max": 4691,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "hitObj": {
+  "mean": 72,
+  "max": 475,
+  "limited": 0,
+  "blocks": 145,
+  "affected": 11,
+  "closed": false
+ },
+ "finishHit": {
+  "mean": 147,
+  "max": 533,
+  "limited": 0,
+  "blocks": 67,
+  "affected": 8,
+  "closed": false
+ },
+ "traceAll": {
+  "mean": 265,
+  "max": 1233,
+  "limited": 0,
+  "blocks": 55,
+  "affected": 10,
+  "closed": false
+ },
+ "traceScene": {
+  "mean": 350,
+  "max": 1254,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 7,
+  "closed": false
+ },
+ "occluded": {
+  "mean": 188,
+  "max": 788,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "ggxD": {
+  "mean": 4,
+  "max": 4,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "ggxLambda": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "sampleVNDF": {
+  "mean": 94,
+  "max": 97,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 5,
+  "closed": false
+ },
+ "fresnelDielectric": {
+  "mean": 11,
+  "max": 13,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 79,
+  "closed": false
+ },
+ "fresnelConductor": {
+  "mean": 38,
+  "max": 38,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "schlick3": {
+  "mean": 4,
+  "max": 4,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "airy1": {
+  "mean": 31,
+  "max": 39,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 12,
+  "closed": false
+ },
+ "filmR": {
+  "mean": 65,
+  "max": 122,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "f0ToN": {
+  "mean": 4,
+  "max": 4,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "condF": {
+  "mean": 48,
+  "max": 135,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 8,
+  "closed": false
+ },
+ "msComp": {
+  "mean": 69,
+  "max": 195,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 7,
+  "closed": false
+ },
+ "bsNone": {
+  "mean": 21,
+  "max": 21,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 5,
+  "closed": false
+ },
+ "isDeltaLobe": {
+  "mean": 13,
+  "max": 13,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 4,
+  "closed": false
+ },
+ "dielTrans": {
+  "mean": 14,
+  "max": 14,
+  "limited": 0,
+  "blocks": 31,
+  "affected": 8,
+  "closed": false
+ },
+ "evalLobe": {
+  "mean": 14,
+  "max": 68,
+  "limited": 0,
+  "blocks": 37,
+  "affected": 6,
+  "closed": false
+ },
+ "pdfLobe": {
+  "mean": 14,
+  "max": 58,
+  "limited": 0,
+  "blocks": 34,
+  "affected": 6,
+  "closed": false
+ },
+ "sampleLobe": {
+  "mean": 59,
+  "max": 297,
+  "limited": 0,
+  "blocks": 103,
+  "affected": 4,
+  "closed": false
+ },
+ "lRow": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "lsNone": {
+  "mean": 21,
+  "max": 21,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 6,
+  "closed": false
+ },
+ "lightSpec": {
+  "mean": 10,
+  "max": 56,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 6,
+  "closed": false
+ },
+ "sampleSphereDir": {
+  "mean": 106,
+  "max": 118,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 6,
+  "closed": false
+ },
+ "sampleLight": {
+  "mean": 91,
+  "max": 307,
+  "limited": 0,
+  "blocks": 31,
+  "affected": 5,
+  "closed": false
+ },
+ "lightPdfAt": {
+  "mean": 18,
+  "max": 50,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 4,
+  "closed": false
+ },
+ "perez": {
+  "mean": 97,
+  "max": 109,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "skyL_wgsl": {
+  "mean": 445,
+  "max": 468,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 10,
+  "closed": false
+ },
+ "studioL": {
+  "mean": 158,
+  "max": 160,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "envRot": {
+  "mean": 79,
+  "max": 83,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "hdriTexel": {
+  "mean": 20,
+  "max": 25,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 9,
+  "closed": false
+ },
+ "hdriUV": {
+  "mean": 138,
+  "max": 144,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 9,
+  "closed": false
+ },
+ "hdriL": {
+  "mean": 263,
+  "max": 307,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "hdriPdf": {
+  "mean": 186,
+  "max": 225,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 4,
+  "closed": false
+ },
+ "hdriSample": {
+  "mean": 114,
+  "max": 211,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 5,
+  "closed": false
+ },
+ "envL": {
+  "mean": 75,
+  "max": 203,
+  "limited": 0,
+  "blocks": 22,
+  "affected": 6,
+  "closed": false
+ },
+ "sunL": {
+  "mean": 29,
+  "max": 41,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 4,
+  "closed": false
+ },
+ "nLightChoices": {
+  "mean": 15,
+  "max": 15,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 5,
+  "closed": false
+ },
+ "mRow": {
+  "mean": 9,
+  "max": 9,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 6,
+  "closed": false
+ },
+ "hgPhase": {
+  "mean": 2,
+  "max": 2,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 5,
+  "closed": false
+ },
+ "sampleHG": {
+  "mean": 84,
+  "max": 88,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 4,
+  "closed": false
+ },
+ "fogSeg": {
+  "mean": 21,
+  "max": 21,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 6,
+  "closed": false
+ },
+ "shadowTr": {
+  "mean": 223,
+  "max": 349,
+  "limited": 0,
+  "blocks": 23,
+  "affected": 5,
+  "closed": false
+ },
+ "metalAt": {
+  "mean": 7,
+  "max": 10,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 17,
+  "closed": false
+ },
+ "hitAlbedo": {
+  "mean": 141,
+  "max": 160,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 5,
+  "closed": false
+ },
+ "hitEmission": {
+  "mean": 132,
+  "max": 151,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "neeAt": {
+  "mean": 358,
+  "max": 1502,
+  "limited": 0,
+  "blocks": 61,
+  "affected": 4,
+  "closed": false
+ },
+ "tracePath": {
+  "mean": 1583,
+  "max": 4726,
+  "limited": 0,
+  "blocks": 252,
+  "affected": 3,
+  "closed": false
+ },
+ "traceAOV": {
+  "mean": 441,
+  "max": 1561,
+  "limited": 0,
+  "blocks": 34,
+  "affected": 3,
+  "closed": false
+ },
+ "cameraRay": {
+  "mean": 267,
+  "max": 326,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 3,
+  "closed": false
+ },
+ "renderPixel": {
+  "mean": 3470,
+  "max": 20001,
+  "limited": 1,
+  "blocks": 40,
+  "affected": 2,
+  "closed": false
+ },
+ "hash3": {
+  "mean": 17,
+  "max": 17,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 49,
+  "closed": false
+ },
+ "hash13": {
+  "mean": 16,
+  "max": 16,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "skyTexel": {
+  "mean": 6,
+  "max": 6,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "skyL": {
+  "mean": 289,
+  "max": 471,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 7,
+  "closed": false
+ },
+ "skyBuild": {
+  "mean": 20001,
+  "max": 20001,
+  "limited": 40,
+  "blocks": 7,
+  "affected": 2,
+  "closed": false
+ },
+ "evalMaterial": {
+  "mean": 103,
+  "max": 127,
+  "limited": 0,
+  "blocks": 35,
+  "affected": 9,
+  "closed": false
+ },
+ "sdUser": {
+  "mean": 9,
+  "max": 14,
+  "limited": 0,
+  "blocks": 35,
+  "affected": 15,
+  "closed": false
+ },
+ "heightAt": {
+  "mean": 8,
+  "max": 11,
+  "limited": 0,
+  "blocks": 35,
+  "affected": 15,
+  "closed": false
+ },
+ "densityOf": {
+  "mean": 9,
+  "max": 15,
+  "limited": 0,
+  "blocks": 35,
+  "affected": 6,
+  "closed": false
+ },
+ "customKernel": {
+  "mean": 20,
+  "max": 493,
+  "limited": 0,
+  "blocks": 35,
+  "affected": 3,
+  "closed": false
+ },
+ "s0_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s0_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s0_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s0_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s0_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s0_evalMaterial": {
+  "mean": 93,
+  "max": 120,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 10,
+  "closed": false
+ },
+ "s0_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s1_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s1_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s1_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s1_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s1_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s1_mat_2": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s1_mat_3": {
+  "mean": 95,
+  "max": 95,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s1_evalMaterial": {
+  "mean": 97,
+  "max": 120,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 10,
+  "closed": false
+ },
+ "s1_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s2_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s2_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s2_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s2_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s2_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s2_mat_2": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s2_evalMaterial": {
+  "mean": 95,
+  "max": 120,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 10,
+  "closed": false
+ },
+ "s2_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s3_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s3_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s3_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s3_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s3_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s3_mat_2": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s3_mat_3": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s3_mat_4": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s3_mat_5": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s3_mat_6": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s3_evalMaterial": {
+  "mean": 103,
+  "max": 128,
+  "limited": 0,
+  "blocks": 22,
+  "affected": 10,
+  "closed": false
+ },
+ "s3_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s4_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s4_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s4_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s4_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s4_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s4_mat_2": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s4_mat_3": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s4_evalMaterial": {
+  "mean": 97,
+  "max": 120,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 10,
+  "closed": false
+ },
+ "s4_customKernel": {
+  "mean": 785,
+  "max": 2796,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 4,
+  "closed": false
+ },
+ "s5_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s5_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s5_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s5_mat_0": {
+  "mean": 1605,
+  "max": 1729,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_1": {
+  "mean": 218,
+  "max": 292,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_2": {
+  "mean": 137,
+  "max": 296,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_3": {
+  "mean": 137,
+  "max": 296,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_4": {
+  "mean": 137,
+  "max": 296,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_5": {
+  "mean": 124,
+  "max": 131,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_6": {
+  "mean": 95,
+  "max": 95,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_7": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_mat_8": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s5_evalMaterial": {
+  "mean": 142,
+  "max": 1507,
+  "limited": 0,
+  "blocks": 28,
+  "affected": 10,
+  "closed": false
+ },
+ "s5_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s6_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s6_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s6_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s6_mat_0": {
+  "mean": 137,
+  "max": 140,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s6_mat_1": {
+  "mean": 130,
+  "max": 132,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s6_mat_2": {
+  "mean": 158,
+  "max": 162,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s6_evalMaterial": {
+  "mean": 95,
+  "max": 141,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 10,
+  "closed": false
+ },
+ "s6_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s7_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s7_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s7_dens_0": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "s7_dens_1": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "s7_dens_2": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "s7_densityOf": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 7,
+  "closed": false
+ },
+ "s7_mat_0": {
+  "mean": 95,
+  "max": 95,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s7_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s7_mat_2": {
+  "mean": 86,
+  "max": 86,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s7_mat_3": {
+  "mean": 86,
+  "max": 86,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s7_mat_4": {
+  "mean": 86,
+  "max": 86,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s7_evalMaterial": {
+  "mean": 98,
+  "max": 98,
+  "limited": 0,
+  "blocks": 16,
+  "affected": 10,
+  "closed": false
+ },
+ "s7_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s8_sdf_0": {
+  "mean": 43,
+  "max": 43,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s8_sdf_1": {
+  "mean": 72,
+  "max": 74,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s8_sdf_2": {
+  "mean": 140,
+  "max": 147,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s8_sdUser": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 16,
+  "closed": false
+ },
+ "s8_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s8_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s8_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s8_mat_1": {
+  "mean": 124,
+  "max": 131,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s8_mat_2": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s8_mat_3": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s8_evalMaterial": {
+  "mean": 97,
+  "max": 120,
+  "limited": 0,
+  "blocks": 13,
+  "affected": 10,
+  "closed": false
+ },
+ "s8_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s9_sdf_0": {
+  "mean": 208,
+  "max": 214,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s9_sdUser": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 16,
+  "closed": false
+ },
+ "s9_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s9_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s9_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s9_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s9_evalMaterial": {
+  "mean": 93,
+  "max": 120,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 10,
+  "closed": false
+ },
+ "s9_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s10_sdf_0": {
+  "mean": 15,
+  "max": 15,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s10_sdUser": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 16,
+  "closed": false
+ },
+ "s10_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s10_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s10_mat_0": {
+  "mean": 110,
+  "max": 110,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s10_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s10_mat_2": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s10_mat_3": {
+  "mean": 95,
+  "max": 95,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s10_mat_4": {
+  "mean": 95,
+  "max": 95,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s10_evalMaterial": {
+  "mean": 99,
+  "max": 113,
+  "limited": 0,
+  "blocks": 16,
+  "affected": 10,
+  "closed": false
+ },
+ "s10_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s11_sdf_0": {
+  "mean": 15,
+  "max": 15,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s11_sdUser": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 16,
+  "closed": false
+ },
+ "s11_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s11_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s11_mat_0": {
+  "mean": 124,
+  "max": 131,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s11_mat_1": {
+  "mean": 110,
+  "max": 110,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s11_mat_2": {
+  "mean": 218,
+  "max": 292,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 11,
+  "closed": false
+ },
+ "s11_mat_3": {
+  "mean": 124,
+  "max": 131,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s11_mat_4": {
+  "mean": 102,
+  "max": 103,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s11_mat_5": {
+  "mean": 95,
+  "max": 95,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s11_mat_6": {
+  "mean": 95,
+  "max": 95,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s11_evalMaterial": {
+  "mean": 103,
+  "max": 134,
+  "limited": 0,
+  "blocks": 22,
+  "affected": 10,
+  "closed": false
+ },
+ "s11_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s12_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s12_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s12_dens_0": {
+  "mean": 1442,
+  "max": 1463,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "s12_densityOf": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 7,
+  "closed": false
+ },
+ "s12_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s12_mat_1": {
+  "mean": 86,
+  "max": 86,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s12_evalMaterial": {
+  "mean": 93,
+  "max": 120,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 10,
+  "closed": false
+ },
+ "s12_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s13_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s13_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s13_dens_0": {
+  "mean": 1449,
+  "max": 1469,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 8,
+  "closed": false
+ },
+ "s13_densityOf": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 7,
+  "closed": false
+ },
+ "s13_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s13_mat_1": {
+  "mean": 86,
+  "max": 86,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s13_evalMaterial": {
+  "mean": 93,
+  "max": 120,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 10,
+  "closed": false
+ },
+ "s13_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s14_sdf_0": {
+  "mean": 1140,
+  "max": 1155,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s14_sdf_1": {
+  "mean": 1140,
+  "max": 1155,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s14_sdf_2": {
+  "mean": 1140,
+  "max": 1155,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s14_sdUser": {
+  "mean": 7,
+  "max": 7,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 16,
+  "closed": false
+ },
+ "s14_hf_0": {
+  "mean": 65,
+  "max": 67,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s14_heightAt": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 16,
+  "closed": false
+ },
+ "s14_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s14_mat_0": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s14_mat_1": {
+  "mean": 1539,
+  "max": 1560,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s14_evalMaterial": {
+  "mean": 93,
+  "max": 120,
+  "limited": 0,
+  "blocks": 7,
+  "affected": 10,
+  "closed": false
+ },
+ "s14_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s15_sdf_0": {
+  "mean": 1736,
+  "max": 1752,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s15_sdUser": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 16,
+  "closed": false
+ },
+ "s15_heightAt": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s15_dens_0": {
+  "mean": 55,
+  "max": 65,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 8,
+  "closed": false
+ },
+ "s15_densityOf": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 7,
+  "closed": false
+ },
+ "s15_mat_0": {
+  "mean": 137,
+  "max": 139,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s15_mat_1": {
+  "mean": 115,
+  "max": 117,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s15_mat_2": {
+  "mean": 86,
+  "max": 86,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 11,
+  "closed": false
+ },
+ "s15_evalMaterial": {
+  "mean": 95,
+  "max": 142,
+  "limited": 0,
+  "blocks": 10,
+  "affected": 10,
+  "closed": false
+ },
+ "s15_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s16_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s16_hf_0": {
+  "mean": 939,
+  "max": 954,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s16_heightAt": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 16,
+  "closed": false
+ },
+ "s16_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s16_bumpH_1": {
+  "mean": 295,
+  "max": 301,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 13,
+  "closed": false
+ },
+ "s16_bumpN_1": {
+  "mean": 1793,
+  "max": 1829,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 12,
+  "closed": false
+ },
+ "s16_mat_0": {
+  "mean": 2244,
+  "max": 2284,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s16_evalMaterial": {
+  "mean": 142,
+  "max": 2185,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 10,
+  "closed": false
+ },
+ "s16_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "s17_sdUser": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 16,
+  "closed": false
+ },
+ "s17_hf_0": {
+  "mean": 1483,
+  "max": 1503,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 17,
+  "closed": false
+ },
+ "s17_heightAt": {
+  "mean": 3,
+  "max": 3,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 16,
+  "closed": false
+ },
+ "s17_densityOf": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 7,
+  "closed": false
+ },
+ "s17_mat_0": {
+  "mean": 141,
+  "max": 143,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 11,
+  "closed": false
+ },
+ "s17_evalMaterial": {
+  "mean": 91,
+  "max": 146,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 10,
+  "closed": false
+ },
+ "s17_customKernel": {
+  "mean": 1,
+  "max": 1,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 4,
+  "closed": false
+ },
+ "cdlLayout": {
+  "mean": 27,
+  "max": 27,
+  "limited": 0,
+  "blocks": 4,
+  "affected": 1,
+  "closed": true
+ },
+ "cdlInit": {
+  "mean": 514,
+  "max": 514,
+  "limited": 0,
+  "blocks": 1,
+  "affected": 1,
+  "closed": true
+ },
+ "cdlSky": {
+  "mean": 20001,
+  "max": 20001,
+  "limited": 40,
+  "blocks": 1,
+  "affected": 1,
+  "closed": false
+ },
+ "cdlRenderSpan": {
+  "mean": 7899,
+  "max": 20001,
+  "limited": 13,
+  "blocks": 4,
+  "affected": 1,
+  "closed": false
+ }
+}

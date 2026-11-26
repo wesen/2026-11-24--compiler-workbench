@@ -170,3 +170,19 @@ test('IRWB-005: the strong contract accepts every O2 revision of Blend and rejec
     /contractRejected/,
   );
 });
+
+test('IRWB-005: records are laid out at their offsets in version 2 (version 1 writes them in key order)', async () => {
+  // a record declared out of alphabetical order: the artifact's tables are key-sorted
+  const src = 'record R { z: i32; a: i32; }\nfunction pick(r: R): i32 { return r.z; }\n';
+  const p = new Program('layout', src, { inputs: { pick: { r: { record: { z: [5, 5], a: [-9, -9] } } } } });
+  const st = storeOf(p.origin.value);
+  assert.deepEqual(Object.keys(st.frontEnd.records.R), ['a', 'z'], 'key-sorted in the artifact');
+  const { evaluate } = await import('../../dist/typed/evaluate.js');
+  const v1 = casesFrom(st, 'pick', { count: 4, seed: 7, inputs: p.inputs.pick });
+  const v2 = S.strongCasesFrom(st, 'pick', { count: 4, extra: 4, seed: 7, inputs: p.inputs.pick });
+  // version 1: z's word lands at a's offset, so the function reads the -9 specified for a, not the 5 for z
+  assert.deepEqual(v1.map(c => evaluate(st, 'pick', c.args, c.memory).result), [-9, -9, -9, -9]);
+  assert.deepEqual(v2.map(c => evaluate(st, 'pick', c.args, c.memory).result), [5, 5, 5, 5, 5, 5, 5, 5]);
+  const keys = S.strongCasesFrom(st, 'pick', { count: 4, extra: 0, layout: 'keys', inputs: p.inputs.pick });
+  assert.deepEqual(keys.map(c => [...c.memory]), v1.map(c => [...c.memory]));
+});

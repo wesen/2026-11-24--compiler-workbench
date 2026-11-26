@@ -176,3 +176,185 @@ The second pass found one factual error, which I checked against the code before
 
 ### Technical details
 - Classification parameters chosen: exhaustive budget 300,000 inputs over A; large sample 4,000 cases per function; step limit 2e5 for classification; divergence = mutant at 2e5 where r0 finished within 2e4.
+
+## Step 4: Ten operators, the mutant pass, and the harness's first run
+
+This step implements guide sections 10–13: `src/typed/mutate.ts` (operators, site enumeration, `mutantPass`, `affected`, `finiteDomain`, `compareOn`) and `tools/mutation-score.mjs` (base per project, the default gate through `Program.apply`, further gates through `checkInvariant`, classification, aggregation). The first smoke run on three projects (blend, licm-traps, sort) produced 122 mutants, none invalid, and the first real finding: the only two mutants that survive while being wrong both *diverge*. `i = i + 1` became `i = i + 0`; the loop never ends on most inputs; the gate counts those cases as no verdict and the terminating ones (n = 0) agree.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Implement D2a as designed.
+**Inferred user intent:** Measured kill rates with honest equivalence accounting.
+**Commit (code):** c44a839 — "IRWB-005: mutation operators and the mutant pass (src/typed/mutate.ts), strong cases and contract version 2 with a divergence rule (src/typed/cases-strong.ts), tools/mutation-score.mjs, tests"
+
+### What I did
+- `src/typed/mutate.ts`: `MutationSite { operator, fn, target, variant, stmt, text }`; `mutationSites(st, { fns, operators, live })` walks functions, blocks, statements, the statement's value fields in the evaluator's order (store: addr, value; else value, cond) and value trees in pre-order; statement operators (`drop-check` branch form, `check-range` branch form, `drop-store`, `hoist-trap`) per statement. `applyMutation` edits through the `Tx` (`rewrite` for value operators, `replaceStmt`, `remove`, `move` for statement operators). `mutantPass = typedPass({ name: 'mutant', writes: ['values','stmts','locals','cfg'], preserves: [] })`.
+- `tools/mutation-score.mjs`: per subject: pipeline → base; liveness of the base for `hoist-trap`; sites; every extra gate run on the base first; per site: build the mutant with `applyPass(mutantPass, base, { manager })` (no contract), judge default with `p.apply(mutantPass, { params: { site } })` + `p.undo()`, other gates with `checkInvariant`; classify mutants some gate accepted.
+- Smoke: `node tools/mutation-score.mjs --projects blend,licm-traps,sort --jsonl <scratch>/smoke.jsonl`.
+
+### Why
+- One pass with the site as a parameter keeps the gate path identical to a real pass's (`Program.apply` → `applyPass` → `optimizationContract`).
+
+### What worked
+- 122 mutants, 0 invalid, default gate: 91 killed (incl. killed-inconclusive), 2 survived-wrong, 29 equivalent; kill rate 77.1 % (lower) .. 97.8 % (upper). Per operator: cmp-flip 12/12, swap 25/25, shift 14/14, drop-store 2/2 killed; drop-check 7, check-range 7, hoist-trap 4 all equivalent (the checks of blend and sort can never fire on their specified inputs, or ever).
+- Survivors and their classes: `licm-traps ratio const -1 "1"` survived-wrong (exhaustive-diverges: `args [1,-50,-3]`, "diverges: limit 200000, baseline 9 steps"); `sort const -1 "1"` survived-wrong (sample-diverges, baseline 394 steps); `blend cmp-weaken geu (i >= n)` equivalent-spec (unconstrained witness `n = -2051156667`); `blend drop-check` and `check-range` equivalent-spec; `blend hoist-trap` (the `s = s + load16[...]` moved above the check) equivalent-presumed; `licm-traps cmp-weaken geu (i >= n)` equivalent-spec-proved (exhaustive over 4,242 inputs).
+- Gate time 14 s of 228 s total.
+
+### What didn't work
+- Classification was the cost: 228 s for 122 mutants, because each survivor re-evaluated r0 on 8,000+ cases.
+
+### What I learned
+- Divergence is the gate's blind spot that no amount of sampling fixes: step-limited cases are no verdict by rule, so a mutant is accepted as long as one case terminates and all terminating cases agree.
+- Blend's `t7 >=u len` → `t7 >= len` is equivalent on every input, not only the specified ones: `t7 = i` and `i` runs from 0 upwards below `n`, so it is never negative.
+
+### What was tricky to build
+- `hoist-trap` legality (guide §11): the moved statement must not read what earlier statements of its block write, must not write what they read, must not move past a store when it reads memory, its local must be dead at the predecessor's other successor, and the predecessor's branch condition must not read it. With these, the only possible difference is a trap on the other path, which agrees with r0's trap whenever r0 traps there too.
+
+### What warrants a second pair of eyes
+- `check-range` on `caddr` (`caddr(r, p − d) + 2d` with `d = (p ≠ 0)`, p copied, p pure). It is exercised by the f32 fixture and Candela only.
+
+### What should be done in the future
+- Cache r0's runs per function (Step 5).
+
+### Code review instructions
+- `src/typed/mutate.ts` (`mutationSites`, `hoistable`, `applyMutation`); `tools/mutation-score.mjs` (`classify`).
+
+### Technical details
+- Record per mutant: `{ subject, base, baseRev, fn, operator, variant, target, stmt, text, mutantRev, gates: { <gate>: { verdict, agree, disagree, inconclusive, ms } }, classification }`.
+
+## Step 5: Caching r0's runs, the strong generator, and a gate that kills less with more cases
+
+Two changes and one surprise. r0 is the same for every mutant of a subject, so its runs on the classification cases (and the reference image's runs) are now computed once per function (`packFor`), and `compareOn` accepts precomputed baseline runs; the same smoke run fell from 228 s to 109 s with identical classes. Then I wrote `src/typed/cases-strong.ts` (pools from specification boundaries, type special values and program constants; `strongCasesFrom` = default cases + `extra` boundary cases; `meaningKeptStrong` as `typed.meaning-kept@2+<hash>`), and the strong gate killed one mutant *fewer* than the default although its cases are a superset.
+
+The mutant is Blend's `i = i + 1` → `i = i + 0`. Default: all 40 cases have `n > 0`, all hit the limit, "no decided case among 40 (all inconclusive)", rejected. Strong: two boundary cases have `n = 0`, terminate and agree: `agree 2, disagree 0, inconclusive 78`, accepted. Under version 1's rules, more cases can turn a rejection into an acceptance. I added a divergence rule to version 2 (default factor 10; `divergence: 0` turns it off): when the candidate hits the limit it is re-run at 10× the limit, and if it still has not finished while the origin did, the case disagrees.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** D2b: a stronger generator as a new contract version; measure it against the mutants.
+**Inferred user intent:** A stronger gate whose gain is measured, with the default untouched.
+**Commit (code):** c44a839 (same commit as Step 4).
+
+### What I did
+- `mutate.ts` `compareOn(..., { baselineRuns })`; tool `packFor(ctx, g)` (domain, sample 4,000 seed 101 + 200 boundary cases, unconstrained 4,000 seed 102, r0 runs of each, reference runs of the first 400) and `over(ctx, A, mst, part)`.
+- `cases-strong.ts`: `F32_EXTRA` (13 patterns), `constantsOf`, `i32Pool(lo, hi, consts)`, `f32Pool`, `pool(spec, type, …)` (buffers: lengths a, b, a+1, b−1 and constants in range × 5–6 cell patterns), `boundaryCases` (case j: param i takes `pool_i[(j + 3i) mod |pool_i|]`), `coverageCases` (greedy statement coverage over 4·extra boundary + 4·extra random candidates), `strongCasesFrom`, `meaningKeptStrong`, `strongOptimizationContract`; cases cached per origin revision and key.
+- Divergence rule in `meaningKeptStrong.run` for the subject side; `compare` reports `got no result within 10x the step limit`.
+- Gates in the tool: `strong` (40 + 40, divergence 10), `strong-cases` (40 + 40, divergence 0), `default+div` (40 + 0, divergence 10), `strong-cov` (coverage-chosen extra cases).
+
+### Why
+- Appending keeps the comparison honest ("strong kills everything default kills" when divergence is not involved) and makes the cost (count + extra)/count.
+- The divergence rule is a verdict change, so it can only live in version 2; the ablation gates separate its effect from the cases'.
+
+### What worked
+- Sanity on blend, licm-traps, records, strings, histogram: the strong generator's first 40 cases equal `casesFrom`'s byte for byte; pool sizes e.g. blend `[6,16,27,27]`, licm-traps `[6,21,7]`.
+- Versions: default `meaningKept({})` = `1+82965c92`, blend's gate `1+2686cc23`, strong default `2+f4977f5f` (before the divergence key was added).
+- Second smoke run: 109 s (was 228 s); reference image checked on 11,600 (case, mutant) pairs: 0 disagreements with the mutant where r0 agreed, 0 with r0.
+
+### What didn't work
+- `strongCasesFrom` with destructured defaults `{ count = 40, extra = count, ... }` failed to compile: `TS7022: 'count' implicitly has type 'any' because it ... is referenced directly or indirectly in its own initializer`. Rewrote with an explicit options type.
+- Appending the diary with one long shell heredoc was refused by the worktree isolation check; appended with the editor instead.
+
+### What I learned
+- The "no decided case" rule of `runDifferential` (differential.ts:140) makes the gate's verdict non-monotone in its cases.
+
+### What was tricky to build
+- The divergence rule had to fit `runDifferential`, which asks `inconclusive(outcome)` per side before comparing. The subject's `run` does the re-run itself and returns a non-limit result marked `diverged`; if the origin hit the limit, `inconclusive(baseline)` still skips the case, so a slow origin never causes a disagreement.
+
+### What warrants a second pair of eyes
+- Whether a correct pass could ever need more than 10× the step limit where the origin needed at most 1×: if so, version 2 would reject it. To be confirmed by running the corpus pipelines under version 2.
+
+### What should be done in the future
+- Run every corpus pipeline under version 2 (cost measurement and the check above).
+
+### Code review instructions
+- `src/typed/cases-strong.ts` (`pool`, `boundaryCases`, `meaningKeptStrong`).
+
+### Technical details
+- Key of version 2: `canonicalJson({ generator: 'strong-1', count, extra, coverage, divergence, seed, inputs, limit, roots? })`, version `2+hash(key)`.
+
+## Step 6: Tests for the harness and the generator
+
+Eight tests in `tests/typed/mutate.test.mjs`, all passing in 9.2 s. They pin the default contract's version strings (so any change to its key fails), check that site enumeration is deterministic and that every mutant of Blend and of the f32 fixture is a valid, changed revision, check that `Program.apply` and `checkInvariant` give the same verdict on every Blend mutant, and check the divergence rule, finite domains, the caller set, the strong cases' prefix property and boundary coverage, and that the strong contract accepts Blend's O2 passes and rejects `div-to-shift`.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Acceptance item "tests for the harness and the generator".
+**Inferred user intent:** The harness's claims are themselves tested.
+**Commit (code):** c44a839.
+
+### What I did
+- `node --test tests/typed/mutate.test.mjs` → tests 8, pass 8, fail 0, 9,186 ms.
+- `npx prettier --write src/typed/mutate.ts src/typed/cases-strong.ts` (the check had warned on both).
+
+### Why
+- The pinned versions are the cheapest guard of the frozen key: `1+82965c92` (no inputs), `1+2686cc23` (blend, 40), `1+c4dbecf4` (blend, 100).
+
+### What worked
+- All eight; `Program.apply` ≡ `checkInvariant` on all Blend sites; the guide's example (`drop-check` accepted with `check: '40/40'`, `i >= n` → `i > n` rejected) holds.
+
+### What didn't work
+- My first draft of two tests had a meaningless assertion and an `await` inside a non-async `find` callback; rewritten before the first run.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- Finding the loop increment of licm-traps robustly: by the statement text `i = (i + 1)` of the site's statement.
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- The tests are under `tests/typed/`, so `npm test` picks them up.
+
+### Code review instructions
+- `node --test tests/typed/mutate.test.mjs`.
+
+### Technical details
+- Pinned: `meaningKept({}).version === '1+82965c92'`, blend 40 cases `1+2686cc23`, blend 100 cases `1+c4dbecf4`.
+
+## Step 7: Candela's gate cases do not follow its input specification (records laid out in key order)
+
+The Candela tool's first run checked its base (r0 + bcm) against r0 on every function's 40 gate cases and reported 22 inconclusive cases. My census script 05 had counted 101 step-limit hits on "the same" cases. Chasing the difference found a defect in the frozen default generator. It writes a record's words positionally, in the order of the record table's keys, ignoring each field's declared `offset` (`makeValue`, evaluate.ts:163–168; `Memory.record`, :89). The front end's tables list fields in declaration order, which is offset order. A frozen artifact's tables are key-sorted (`immutable` sorts keys), and the gate generates its cases from the artifact (`casesFrom(storeOf(origin.value), …)` in `meaningKept`, evaluate.ts:586). For Candela's `K` record, declared `bU bO bL bB bS etab sky scene spectral …`, the artifact's order is `bB bL bO bS bU etab gBary__x gBary__y …`, so the word at offset 28, the scene index, receives the bits of the f32 `gBary__y`.
+
+Measured: `casesFrom` on the artifact store and on the ingest store differ for 168 of Candela's 332 functions (every function with a `K` parameter) and agree for the other 164. In the first three gate cases of `rnd(K)`, `scene@28` is 6, 9, 13 from the ingest store and 1054236423, 1063981055, 1051074687 from the artifact store. The corpus is unaffected: its two record types (`Point` in match-enum and records) are `{ x, y }`, whose key order is their offset order. The default is frozen, so I did not change it. Version 2 corrects it instead (`offsetOrdered`, `layout: 'offset'`).
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Explain an unexplained number before relying on either.
+**Inferred user intent:** Candela measurements that mean what they claim.
+**Commit (code):** pending (next commit).
+
+### What I did
+- `scripts/06-candela-limit-discrepancy.mjs` (written; superseded by the direct check below before it ran).
+- Compared `st.frontEnd.records.K` of the ingest store and of `st.toNative()`: same 17 fields, same `{ type, offset }`; then key order: different.
+- Read word 28 of `K` in the first three `rnd` cases from both stores (numbers above).
+- Corpus: listed every record type of every project with declared, offset and sorted orders: 2 types, all `x,y`, SAME.
+- `cases-strong.ts`: `byOffset(fields)`; record pools now lay fields out in offset order; `offsetOrdered(st)` is a view of the store (`Object.create(st)` with a `frontEnd` whose record tables are offset-ordered) from which `casesFrom` generates correctly laid out records; `strongCasesFrom(..., { layout: 'offset' | 'keys' })`, default `'offset'`; `meaningKeptStrong` key includes `layout`.
+- Check: `strongCasesFrom(artifactStore, f, { count: 40, extra: 0 })` equals `casesFrom(ingestStore, f, …)` for 332 of 332 functions; `casesFrom(artifactStore)` vs `casesFrom(ingestStore)`: 164 same, 168 different.
+
+### Why
+- The default contract is frozen (brief), so the correction can only be offered in version 2 and reported as a finding.
+
+### What worked
+- The correction reproduces the intended cases exactly on all 332 functions.
+
+### What didn't work
+- My census (script 05) generated cases from the ingest store, so its step-limit counts (`fbm3` 7, `renderPixel` 1, `skyBuild` 40, `cdlSky` 40, `cdlRenderSpan` 13: 101) describe the *specified* inputs, not the gate's. The gate's own cases on r0 + bcm: 22 inconclusive of 13,280.
+
+### What I learned
+- Every Candela number produced through `meaningKept` (the O2 checks of IRWB-001, `tools/candela-o2.mjs`) was measured on cases whose `K` fields do not follow `kSpec`: scene, spectral, skyOn, rngS and the per-hit fields are scrambled. Agreement between two runs on such cases still means the runs agree, so the IRWB-001 results stay true as stated, but the cases are not the ones the specification describes. `tools/candela-oracle.mjs` generates from the ingest store and is not affected.
+
+### What was tricky to build
+- `offsetOrdered` must not copy the store (235,000 records). A prototype-chained view that shadows only `frontEnd` works because `casesFrom` reads only `st.fn(name)` and `st.frontEnd`.
+
+### What warrants a second pair of eyes
+- Whether the default should be fixed in a future version 1.x: it would change Candela's gate decisions (none of the corpus's).
+
+### What should be done in the future
+- Report it with the recommendation: sort a record's fields by `offset` in `makeValue` (one line) in a new contract version.
+
+### Code review instructions
+- `src/typed/cases-strong.ts` (`byOffset`, `offsetOrdered`, `strongCasesFrom` `layout`).
+
+### Technical details
+- Key order of `K` in the artifact: `bB bL bO bS bU etab gBary__x gBary__y gLam gTau gTime gTri rngS scene sky skyOn spectral`.
