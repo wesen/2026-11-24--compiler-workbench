@@ -27,6 +27,7 @@ Stage 1 adds Tix indexed tensor programs as a second domain on the v6 framework.
 ## Key Links
 
 - [Stage 1 design](./design-doc/01-tix-stage-1-design.md)
+- [Publication report](./reference/02-report.md)
 - [Diary](./reference/01-diary.md)
 
 ## Status

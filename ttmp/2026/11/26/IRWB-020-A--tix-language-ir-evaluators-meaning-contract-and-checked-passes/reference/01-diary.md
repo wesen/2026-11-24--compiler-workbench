@@ -233,3 +233,59 @@ Built the parser, checker, native artifact and evaluator under `src/tensor/`. Th
 A singleton index can make a source access valid even when composing two valid affine subscripts would overflow the IR's coefficient representation. The inliner skips that substitution and continues with other producers. The design and a regression test record this case.
 
 Start at `src/tensor/index.ts` for the API, `src/tensor/meaning.ts` for the checked domain, and `tests/tensor/passes.test.mjs` for the negative witnesses. The framework diff is confined to `src/framework/passes/define-pass.ts`. [Stage 1 design](../design-doc/01-tix-stage-1-design.md)
+
+
+## Step 5. Record the independent evaluation and finish the report
+
+The independent evaluation covered revision `d25be76`. Its supplied results contain zero failures and zero rejections, so there is no independent failing case to diagnose or reproduce. I reran the local semantic checks and kept their intentional rejections distinct from the independent counts.
+
+### Prompt context
+
+<details>
+<summary>Independent evaluation and report request, verbatim</summary>
+
+~~~~text
+Stage 1 of IRWB-020-A has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `d25be76`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-A:`). Final message: the report's path, the commit hash, and one line per failure cause.
+~~~~
+
+</details>
+
+### Independent findings
+
+- Fixed-core and API suite passed 25/25.
+- Both evaluator cross-checks agreed in 180/180 cases, with f32 bits equal and f64 within the stated scaled threshold.
+- Both optimization runs accepted 60/60 steps. The inline results preserved the original bits. The split results matched the f64 comparison within the reported threshold.
+- The counts agree with the local checks. They are evaluator-reported aggregates. `src/framework/passes/define-pass.ts:257` and `src/tensor/index.ts:46` account for why an accepted step can include a no-op. There is no count of changed revisions in the supplied result.
+
+### Local verification and expected rejections
+
+- On `d25be76`, `npm run build` and `node --test --test-isolation=none tests/tensor/*.test.mjs` passed, including all 21 tensor subtests. The framework glob passed all 18 files. The Typed pass, memoization, and strategy files all passed using the commands in Step 4.
+- The half-ULP test's expected exact rejection comes from the sequential accumulation in `src/tensor/evaluate.ts:145` and the block accumulator in `src/tensor/evaluate.ts:158`. The exact comparison at `src/tensor/meaning.ts:136` detects the one-bit difference.
+- The wrong inline reverses the correct substitution's indices at `tests/tensor/passes.test.mjs:65`. Alternating signs expose the changed element through `src/tensor/meaning.ts:136`. The wrong split shortens the extent to four at `tests/tensor/passes.test.mjs:94`. Six generated ones then yield 4 against the reference 6 and fail the tolerance comparison at `src/tensor/meaning.ts:146`.
+- A direct Node probe of the existing cancellation fixture at `tests/tensor/passes.test.mjs:155` returned the first generated counterexample as alternating signs with seed 7 and shape `[6]`. The f64 reference was 6, and the f32 candidate was 0. Rounding the binary operation before summation at `src/tensor/evaluate.ts:130` loses the unit terms. The comparison at `src/tensor/meaning.ts:146` correctly refused the resulting error of 6.
+
+- The report has 2748 prose words and 46 checked relative links. Mermaid 11.17.2 parsed and rendered the flowchart in headless Chrome with all nine nodes.
+
+The [publication report](./02-report.md) includes the language, IR, evaluators, acceptance contract, framework change, evaluation results, and retrospective. This checkpoint contains ticket documentation.
