@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: Chronological design and validation record for IRWB-012.
-LastUpdated: 2026-11-26T10:35:17.128370637-05:00
+LastUpdated: 2026-11-26T10:59:54-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -76,3 +76,22 @@ The Fibonacci and checksum fixtures exercise different dispatch paths through on
 I related seven files with `docmgr doc relate` and updated the design task and changelog. The first diary write raised `FileNotFoundError` because the generated ticket had no `log/` directory. I created the directory. Doctor then reported `frontmatter delimiters '---' not found` for the diary. I added frontmatter using the existing `reference` document type.
 
 The documentation checks cover the project JSON, both bytecode listings and cell arrays, branch targets, sizing arithmetic, and links. `docmgr doctor --ticket IRWB-012 --stale-after 30` passed. Evaluator and emulator measurements belong to the implementation described in the design.
+
+## Step 4 — Simplify the design
+
+I reviewed the design at `4038fb8` and traced the checks for dynamic frame-array and text accesses in the frontend and lifter. The output buffer and guest status codes were only carrying information about malformed bytecode. A direct i32 result and the existing Typed traps preserve the observable behavior the optimization needs. Fuel exhaustion and unknown opcodes now return zero.
+
+### Prompt context
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-012: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+
+### Review decisions
+
+- Kept both workloads because Fibonacci stresses local and stack traffic and the checksum adds a changing buffer length, indexed data loads, and multiplication.
+- Removed redundant bytecode initialization and recomputed branch targets and dynamic instruction counts. The largest generated runs now take 159 guest instructions for Fibonacci and 174 for checksum.
+- Kept the JS and reference compiler oracles, the checked `speed` pipeline with both case specifications, and per-case instructions for general and specialized images. The code binding remains a prerequisite for the specialized comparison.
+- Collected the cuts and reasons at the end of the design. Review the shorter ABI, fixture listings, and correctness plan together. The runtime budget remains an estimate until the interpreter is implemented.
+
+### Validation
+
+A static check walked both listings and confirmed the branch targets, stack depths, and guest count formulas. It also checked the sizing and golden arithmetic, file links, and ten cut entries. `docmgr doctor --ticket IRWB-012 --stale-after 30` and `git diff --check` passed.
