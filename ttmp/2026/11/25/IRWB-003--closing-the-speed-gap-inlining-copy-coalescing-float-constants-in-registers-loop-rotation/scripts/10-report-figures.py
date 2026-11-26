@@ -125,13 +125,15 @@ ax.grid(axis="y", color=GRID, linewidth=0.6)
 ax.set_axisbelow(True)
 save(fig, "irwb003-corpus-projects.png")
 
-# 4. Candela per scene, instructions per pixel
+# 4. Candela per scene, instructions per pixel. O2+ on the scene program, when the run did not measure it: B-01 from
+# various/11a-candela-scenes-speed-first-run.log (this build), R-01 from IRWB-001 various/experiments/08-candela-per-scene-o2.json
+O2PLUS = {"B-01": 10435, "R-01": 22850.9}
 path = os.path.join(VAR, "11-candela-scenes-speed.json")
 if os.path.exists(path) and os.path.getsize(path) > 0:
     sc = load("11-candela-scenes-speed.json")
     labels = [
         ("reference kernel", lambda r: r["referenceKernel"], C_REF),
-        ("O2+, default options", lambda r: r["o2plus"]["perPixel"], C_BOOK),
+        ("O2+, default options", lambda r: r["o2plus"]["perPixel"] if "o2plus" in r else O2PLUS[r["scene"]], C_BOOK),
         ("speed, default options", lambda r: r["speed"]["defaults"]["perPixel"], C_PASSES),
         ("speed, chains + coalesce + homes", lambda r: r["speed"]["options"]["perPixel"], C_ALL),
     ]

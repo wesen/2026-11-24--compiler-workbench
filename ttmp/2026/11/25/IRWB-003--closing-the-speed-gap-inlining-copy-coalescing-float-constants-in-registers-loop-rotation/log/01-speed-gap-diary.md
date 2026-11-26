@@ -594,3 +594,100 @@ This step ran the per-scene measurement (`scripts/08-candela-scene-speed.mjs`, I
 
 ### Technical details
 - See Step 12 for the results of the restarted run.
+
+## Step 12: Merging the integration branch (IRWB-004 and IRWB-006), and the gates on the result
+
+The coordinator merged IRWB-004 (cheap experiments) and IRWB-006 (rules as data, SSA) into `irwb-001/import-v6-prototype` and asked me to merge its head, `1f45c94`, into this branch before the final gates. The merge had one conflict, in the import lines of `passes.ts`. On the merged tree every gate passes: `npm test` (365 tests, 0 failures), the 44 corpus revision lines and the parity line identical to the baseline, the IRWB_FULL passes and backend suites identical, and IRWB-006's rule comparison, extended to the `speed` pipeline, finds no difference in 792 compared steps.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator (verbatim, abridged to the instructions): "Please merge that branch into yours at a convenient point before your final gates, and re-run your gates on the result. […] After merging, also run `IRWB_FULL=1 node --test tests/typed/rules.test.mjs`. […] `storeOf()` returns frozen records. […] A whole-program pass like `inline` should follow `dfe`'s pattern. […] include the merge in your diary." Correction: "the integration head that contains both merges is `1f45c94`".
+**Assistant interpretation:** Merge `1f45c94` into this branch, check that my code does not write to `storeOf` records, re-run the gates.
+**Inferred user intent:** The coordinator can merge this branch without surprises.
+**Commit (code):** a63d262 (merge), 292845a (rules comparison on `speed`, gate outputs).
+
+### What I did
+- Stopped the second per-scene run first (`kill 3999532`; log kept as `various/11b-candela-scenes-speed-second-run.log`): its last line was the final `cfg` (497,228 ms for a pass that changed nothing), it had then written nothing for 11 minutes, and the merged build was to be measured anyway, being about 3.5 times faster on Candela. Committed (47c521b).
+- `git merge --no-edit 1f45c94` → `CONFLICT (content): Merge conflict in src/typed/passes.ts`. IRWB-006 had removed `import { binop } from './evaluate.js'` (fold moved to `src/typed/rules/`); I kept my two imports (`rotateSpec`, `makeInline`) and dropped `binop` (no remaining use). `npx tsc` clean.
+- Checked the IRWB-004 behaviour changes against my code: `inline` copies with `Store.from` for both the source and the working store, as `dfe` does; the backend (`select`, `coalesce`, `layout`, `frequency`, `variants`) only reads the store; my tests and scripts only read `storeOf` records. None of my code calls `meaningKept(...).check()` directly.
+- Gates: `npm test > various/18-merged-npm-test.txt`; `scripts/08 > various/19-…` and `diff` with `various/01-…`; `tools/parity.mjs > various/20-…` and `diff` with `various/03-…`; `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs > various/21-…`, diffed with `various/04-…` without times; `IRWB_FULL=1 node --test tests/typed/rules.test.mjs tests/typed/speed.test.mjs tests/typed/inline.test.mjs > various/22-…`.
+- `tests/typed/rules.test.mjs`: its comparison runs over `['O1', 'O2', 'O2+', 'loops', 'checks']`, so it did not cover `speed` as the coordinator expected; I added `'speed'` to the list and changed the expected number of compared steps from 616 to 792 (4 `simplify`/`fold` steps × 44 projects more). `various/23-merged-irwb-full-rules.txt`.
+
+### Why
+- The `speed` pipeline runs `simplify` and `fold` on inlined code, which none of IRWB-006's pipelines produce; comparing the rule tables with the hand-written passes there is the coverage the coordinator asked for.
+
+### What worked
+- `npm test`: `tests 365`, `pass 362`, `fail 0`, `skipped 3`.
+- `REVISIONS-IDENTICAL`, `PARITY-IDENTICAL`; IRWB_FULL passes/backend: `diff-exit=0`, 21 of 21.
+- IRWB_FULL `speed.test.mjs` and `inline.test.mjs`: 15 of 15, the corpus tests included.
+- IRWB_FULL `rules.test.mjs` with `speed`: 9 of 9; `differ` empty.
+
+### What didn't work
+- The first IRWB_FULL run of `rules.test.mjs` after adding `speed`: `✖ B1: … AssertionError: 792 !== 616` — the comparison itself found no difference; only the pinned count of compared steps changed.
+
+### What I learned
+- After the merge, Candela runs are expected to be about 3.5 times faster (IRWB-004); the per-scene and general measurements are therefore run on the merged build.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- `tests/typed/rules.test.mjs` belongs to IRWB-006; my edit adds a pipeline and updates one count.
+
+### What should be done in the future
+- The coordinator may register IRWB-006's `sccp` and `O2-sccp` next to `speed`.
+
+### Code review instructions
+- `git show a63d262 -- src/typed/passes.ts`; `git show 292845a -- tests/typed/rules.test.mjs`.
+
+### Technical details
+- Merge base 420d8e1; the integration head 1f45c94 (`IRWB-004: merge cheap experiments (subagent)`).
+
+## Step 13: Candela per scene on the merged build — B-01 finished, then the machine stopped responding
+
+This step re-ran the per-scene measurement on the merged build (Step 12). B-01 finished: under `speed` with `dfe` after each `inline` and the three backend options, it executes 8,267.7 instructions per pixel against 8,501 for the reference compiler's `kernel` image, with every output float bit-identical to the reference frame. R-01 had not written a line when the machine stopped responding. The coordinator reported the facts below; this entry records them and what I measured, and attributes no cause.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator (verbatim, abridged to the facts and instructions): "The machine stopped responding. The previous boot's system log ends abruptly at 2026-11-26 01:39:07, with no shutdown and no OOM-killer entry, and the machine was rebooted at 09:14. Your process stopped with it; your transcript and worktree are intact. The cause is not confirmed. At the time, your per-scene speed run and IRWB-005's Candela mutation run were both running. […] New mandatory rule. Run every Candela-scale node process under a memory cap […] `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 node --max-old-space-size=10240 <script> ...` […] Add a diary step for the failure, with the facts above. Do not attribute a cause that is not measured."
+**Assistant interpretation:** Record the failure factually; keep the cut-off log; re-run what did not finish under the memory cap.
+**Inferred user intent:** No more machine-wide failures from one process; no unmeasured claims.
+**Commit (code):** the commit after this step.
+
+### What I did
+- 01:18: `/usr/bin/time -v node --max-old-space-size=12288 scripts/08-candela-scene-speed.mjs B-01 R-01 --dfe-after-inline --save-head …/head-{scene}.json > various/11-… 2> various/11-….log` (no memory cap; the cap rule did not exist yet).
+- A second background command waited for that process (PID 4100977) to exit and would then have started `tools/candela-o2.mjs --pipeline speed --save … --json` on the general program; it never started (no `various/24-*` file exists).
+- After the reboot: the log `various/11-candela-scenes-speed.log` (31 lines, last written 01:29) ends with B-01's complete result row (it parses as JSON); R-01 wrote nothing. `various/11-candela-scenes-speed.json` is empty (0 bytes; the script writes it only at the end). The scratchpad, which held the saved head files, was cleared by the reboot.
+- Kept the log as `various/11c-candela-scenes-speed-B01-cut-off.log`, labelled cut off; removed the empty JSON.
+
+### Why
+- The B-01 row is complete and valid evidence; the R-01 and general measurements are re-run under the cap (Step 14).
+
+### What worked
+- B-01 on the merged build (log, last line):
+  - pipeline 139.9 s (the same pipeline took far longer before the merge: one `inline` 46 s then, 8.8 s now); 135 → 44 functions, 5,317 → 8,390 statements;
+  - every changed application accepted by the entry-only contract: 18 applications with `146/146`;
+  - check against the scene program, 20 cases per surviving function: `{"agree":879,"disagree":0,"inconclusive":1}`;
+  - default options: 102,040 bytes, 8,749.1 instructions per pixel, 0 differing floats;
+  - chains + coalesce + homes: 94,828 bytes, **8,267.7** instructions per pixel, 0 differing floats;
+  - the estimate's choices: of 44 functions, `chains` 16, `coalesce` 33, homes 26 (128 constants);
+  - phases: lowering 14.4 s (defaults) and 44.2 s (options), rendering 184 s and 209 s, `variantChoices` 24.8 s.
+
+### What didn't work
+- The run did not finish: the machine stopped responding (facts in Prompt Context). What I had measured of my own process before: RSS 7,561,992 KB at 14 min 57 s of the run (during R-01), and 7,735,912 KB maximum for the pre-merge run (Step 11, `/usr/bin/time`); `free -g` at 01:08 showed 20 GB available of 62. I have no measurement from 01:29 to 01:39.
+
+### What I learned
+- The per-scene process holds about 7.5 GB, within a 10 GB heap; under the cap it has room, and if it does not, it exits with 137 instead of affecting the machine.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The R-01 and general measurements reported later come from runs after the reboot, under the memory cap.
+
+### What should be done in the future
+- Every Candela-scale run under `systemd-run --user --scope -p MemoryMax=14G -p MemorySwapMax=0` with `--max-old-space-size=10240`.
+
+### Code review instructions
+- `various/11c-candela-scenes-speed-B01-cut-off.log`.
+
+### Technical details
+- B-01's O2+ row on this build (Step 11): 10,435 per pixel, 74,044 bytes, 0 differing floats.
