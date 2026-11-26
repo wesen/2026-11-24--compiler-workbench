@@ -116,3 +116,7 @@ As built, record every deviation/file/reason and its test here. At review time t
 | conv2d | N=8 C=16 H=W=64 O=32; 3×3 kernel, valid output |
 
 Deliver in order: emitter and codec; isolated tool and remote runner; asynchronous pass, evidence/rejection tests; reproducible timing harness in the ticket and measured results. Stop here for review. No changes to Typed, whole-suite run, general CUDA IR, or later-stage GPU optimizations.
+
+## As built
+
+The framework ledger is unchanged: **zero framework files changed**. `tools/cuda-remote.mjs` implements the reviewed private directory, build lock, atomic installation, full-input/toolchain key and compiler metadata in `79c782b`. The emitter passes one small struct of all function shape bindings rather than pruning shape parameters per statement; read pointers are selected per kernel. Every nonempty case takes a warm-up, including ordinary API runs, to exclude startup from `gpuMs`. Device loads include bounds checks. Extra zero-axis probes cannot make an otherwise non-comparable function pass solely via an empty output. The same emit/run path serves both checked and unchecked calls. No identity-probe process, new IR, wider tolerance, or framework extension was necessary. See [measurements and validation](../reference/02-gb10-corpus-measurements-and-validation.md).

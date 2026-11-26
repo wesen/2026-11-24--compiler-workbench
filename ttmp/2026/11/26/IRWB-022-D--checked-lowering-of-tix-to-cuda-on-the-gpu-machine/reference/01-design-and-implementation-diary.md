@@ -198,3 +198,9 @@ At runner checkpoint `79c782b`, I reused stage-1 case/reference construction and
 `node --test tests/tensor/cuda.test.mjs`: 5/5 once the build finished. A premature run against the previous dist reported `Should not delegate` in the synthetic-empty case. The fix in source prevents a newly added empty shape from standing in for missing finite evidence.
 
 First `node --test tests/tensor/cuda-gpu.test.mjs`: 10/11. Node typed-array deep equality reported `Values have same structure but are not reference-equal` on `[NaN,-0,-0,-1]` from both engines: it compared NaN payloads. The relation has no NaN-payload requirement. Changed that test to compare scalar values (still distinguishes zero sign). No arithmetic change. The full tensor-only regression will verify this. No framework source or corpus programs changed.
+
+## Step 5: Measure the full workloads and finish validation
+
+Implementation `243da40` passed `npm run build` and `node --test tests/tensor/*.test.mjs` (32/32, 11 live GPU). The already-running suite had loaded the old NaN test before its fix; the final run started fresh after the locked measurements. A post-build import confirmed all six expected public function exports. No framework or Typed tests required, no full suite.
+
+Ran `03-measure.mjs` separately in cpu/gpu/compare modes. The longest interpreter call, MLP, took over 35 minutes on the shared host. Results are measured, not extrapolated. Every full-size output was finite and the largest absolute difference vs local f32 was 5.96e-8. `04-error-budget.mjs` observed the same small input batches as the lowering checker independently of replay: conv2d used the most of the origin f64 allowance (0.246678). See the measurement report for all values, provenance and reproduction. Only the reports and scripts are committed, not tensor buffers.

@@ -21,7 +21,7 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 2 checks a direct CUDA lowering of Tix against the stage-1 meaning on the remote GB10. The design and numerical probe are ready for review. Backend implementation and corpus timings await that review.
+Stage 2 checks a direct CUDA lowering of Tix against the stage-1 meaning on the remote GB10. The reviewed lowering is implemented and checked on the live device. All six full-size measurements and the tensor regression results are in the [measurement report](reference/02-gb10-corpus-measurements-and-validation.md).
 
 ## Key Links
 
