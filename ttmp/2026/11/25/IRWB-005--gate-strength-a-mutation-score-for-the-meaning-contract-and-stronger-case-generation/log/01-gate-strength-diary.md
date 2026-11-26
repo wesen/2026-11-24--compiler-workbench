@@ -721,3 +721,46 @@ The coordinator asked for a merge of `irwb-001/import-v6-prototype` at 1f45c94, 
 
 ### Technical details
 - Merge commit f6a1fa8 has parents 83a4f71 (this branch) and 1f45c94 (the integration head).
+
+## Step 16: A sample of the corpus measurement on the merged code
+
+Nine projects re-measured on the merged branch (blend, bounds-lab, branches, div-magic, fixed-point, licm-traps, sort, strength, strings: 396 mutants, six gate configurations, classification). Compared mutant by mutant with the pre-merge run of Step 8: 396 of 396 identical, in every gate's verdict and in the class. The default gate (through `Program.apply`, which now replays r0's outcomes from IRWB-004's memo) took 10.4 s for these 396 mutants against 27.8 s before the merge, on a machine under similar load.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1; coordinator request summarized in Step 15.
+**Assistant interpretation:** "Re-run your gates and a sample of your mutation measurements on the result."
+**Inferred user intent:** Evidence that the merge leaves the measurements valid.
+**Commit (code):** 2948ae8 (code as run); results committed with this step.
+
+### What I did
+- `node --max-old-space-size=8192 tools/mutation-score.mjs --projects blend,bounds-lab,branches,div-magic,fixed-point,licm-traps,sort,strength,strings --gates default,default80,check100,strong,strong-cases,default+div --json various/21-merged-sample.json --jsonl various/21-merged-sample.jsonl` → `various/21-merged-sample.txt`; 5 min 24 s.
+- `scripts/20-compare-runs.mjs various/04-corpus-final.jsonl various/21-merged-sample.jsonl` → `various/21-merged-sample-compare.txt` (matches mutants by subject, function, operator, variant, target and text).
+
+### Why
+- The sample covers every operator, both divergence and value survivors, and both survivors of version 2.
+
+### What worked
+- `subjects 9, mutants after 396, matched 396, identical 396, different 0, only before 0, only after 0`.
+- Totals on the sample (mutants, killed, wrong, equivalent, lower..upper): default 396 307 18 71 81.4 %..94.5 %; default80 310 15, 95.4 %; check100 311 14, 95.7 %; strong 323 2, 99.4 %; strong-cases 311 14, 95.7 %; default+div 318 7, 97.8 %.
+- Gate time on these 396 mutants (ms), before → after the merge: default 27,791 → 10,351; default80 14,074 → 8,277; check100 15,817 → 10,786; strong 56,315 → 69,492; strong-cases 11,405 → 12,151; default+div 30,197 → 35,576.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Version 1 configurations got faster with the memo (r0's cases and outcomes are kept per origin revision), version 2 did not: it has no `baselineKey`, so it still runs r0 on every case.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- Times are from a shared machine (load 8–12); only the large default speedup is clearly above the noise.
+
+### What should be done in the future
+- Give version 2 a `baselineKey` to share r0's outcomes in the harness.
+
+### Code review instructions
+- `various/21-merged-sample-compare.txt`.
+
+### Technical details
+- The pre-merge run measured `strong` before the Step 9 fix of wasted re-runs; the post-merge run after it.

@@ -1,0 +1,85 @@
+blend            r6 sites 24  default killed 19/24  26870 ms
+bounds-lab       r4 sites 80  default killed 61/80  88787 ms
+branches         r3 sites 43  default killed 37/43  89779 ms
+div-magic        r2 sites 26  default killed 23/26  114697 ms
+fixed-point      r4 sites 23  default killed 16/23  116729 ms
+licm-traps       r1 sites 11  default killed 9/11  134009 ms
+sort             r2 sites 87  default killed 63/87  282394 ms
+strength         r7 sites 33  default killed 25/33  295766 ms
+strings          r4 sites 69  default killed 54/69  323363 ms
+
+gate default: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+const                168   136   15   17  85.0%  90.1%
+cmp-flip              39    39    0    0 100.0% 100.0%
+cmp-weaken            53    21    2   30  47.7%  91.3%
+swap                  69    69    0    0 100.0% 100.0%
+drop-check            10     2    0    8  22.2% 100.0%
+check-range           10     1    1    8  11.1%  50.0%
+shift                 38    37    0    1  97.4% 100.0%
+hoist-trap             7     0    0    7   0.0%    -  
+drop-store             2     2    0    0 100.0% 100.0%
+TOTAL                396   307   18   71  81.4%  94.5%
+
+gate default80: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+const                168   137   14   17  85.6%  90.7%
+cmp-flip              39    39    0    0 100.0% 100.0%
+cmp-weaken            53    22    1   30  50.0%  95.7%
+swap                  69    69    0    0 100.0% 100.0%
+drop-check            10     2    0    8  22.2% 100.0%
+check-range           10     2    0    8  22.2% 100.0%
+shift                 38    37    0    1  97.4% 100.0%
+hoist-trap             7     0    0    7   0.0%    -  
+drop-store             2     2    0    0 100.0% 100.0%
+TOTAL                396   310   15   71  82.2%  95.4%
+
+gate check100: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+const                168   138   13   17  86.3%  91.4%
+cmp-flip              39    39    0    0 100.0% 100.0%
+cmp-weaken            53    22    1   30  50.0%  95.7%
+swap                  69    69    0    0 100.0% 100.0%
+drop-check            10     2    0    8  22.2% 100.0%
+check-range           10     2    0    8  22.2% 100.0%
+shift                 38    37    0    1  97.4% 100.0%
+hoist-trap             7     0    0    7   0.0%    -  
+drop-store             2     2    0    0 100.0% 100.0%
+TOTAL                396   311   14   71  82.5%  95.7%
+
+gate strong: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+const                168   150    1   17  93.8%  99.3%
+cmp-flip              39    39    0    0 100.0% 100.0%
+cmp-weaken            53    23    0   30  52.3% 100.0%
+swap                  69    69    0    0 100.0% 100.0%
+drop-check            10     2    0    8  22.2% 100.0%
+check-range           10     1    1    8  11.1%  50.0%
+shift                 38    37    0    1  97.4% 100.0%
+hoist-trap             7     0    0    7   0.0%    -  
+drop-store             2     2    0    0 100.0% 100.0%
+TOTAL                396   323    2   71  85.7%  99.4%
+
+gate strong-cases: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+const                168   139   12   17  86.9%  92.1%
+cmp-flip              39    39    0    0 100.0% 100.0%
+cmp-weaken            53    22    1   30  50.0%  95.7%
+swap                  69    69    0    0 100.0% 100.0%
+drop-check            10     2    0    8  22.2% 100.0%
+check-range           10     1    1    8  11.1%  50.0%
+shift                 38    37    0    1  97.4% 100.0%
+hoist-trap             7     0    0    7   0.0%    -  
+drop-store             2     2    0    0 100.0% 100.0%
+TOTAL                396   311   14   71  82.5%  95.7%
+
+gate default+div: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+const                168   146    5   17  91.3%  96.7%
+cmp-flip              39    39    0    0 100.0% 100.0%
+cmp-weaken            53    22    1   30  50.0%  95.7%
+swap                  69    69    0    0 100.0% 100.0%
+drop-check            10     2    0    8  22.2% 100.0%
+check-range           10     1    1    8  11.1%  50.0%
+shift                 38    37    0    1  97.4% 100.0%
+hoist-trap             7     0    0    7   0.0%    -  
+drop-store             2     2    0    0 100.0% 100.0%
+TOTAL                396   318    7   71  84.4%  97.8%
+
+gate time (ms): {"default":10350.7,"default80":8277.3,"check100":10785.8,"strong":69492.3,"strong-cases":12151.2,"default+div":35575.9}
+total 323363 ms
+node --max-old-space-size=8192 tools/mutation-score.mjs --projects  --gates    310.06s user 1.35s system 96% cpu 5:23.95 total
