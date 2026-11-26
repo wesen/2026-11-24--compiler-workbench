@@ -4,7 +4,10 @@ import { applyNativePassSync, PassError } from '../framework/passes/index.js';
 import { meaningGate } from './contract.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
-import type { Module } from './model.js';
+import { selectFunction, type Module } from './model.js';
+import { checkCudaLowering } from './cuda-contract.js';
+import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+import { emitCuda } from './cuda-source.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -22,9 +25,7 @@ export function runTix(
   inputs: Inputs,
   options?: { precision?: Precision },
 ): BufferValue {
-  const f = program.current.value.functions.find(f => f.name === fn);
-  if (!f) throw Error('Unknown function ' + fn);
-  return evaluate(f, inputs, options?.precision ?? 'f32');
+  return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');
 }
 export function optimizeTix(program: TixProgram, passes: string[]) {
   const { origin } = program;
@@ -45,4 +46,26 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     }
   });
   return { program: { origin, current }, steps };
+}
+
+export function cudaSource(program: TixProgram, fn: string): string {
+  return emitCuda(selectFunction(program.current.value, fn));
+}
+
+export async function runTixCuda(
+  program: TixProgram,
+  fn: string,
+  inputs: CudaInputs,
+  options?: { host?: string },
+): Promise<CudaResult> {
+  const f = selectFunction(program.current.value, fn);
+  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+  return result;
+}
+
+export function checkLowering(
+  program: TixProgram,
+  fn: string,
+): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
+  return checkCudaLowering(program.current, fn);
 }

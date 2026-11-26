@@ -72,3 +72,9 @@ export function visit(e: Expr, f: (e: Expr) => void) {
   if (e.kind === 'op') e.args.forEach(x => visit(x, f));
   if (e.kind === 'reduce') visit(e.body, f);
 }
+
+export function selectFunction(module: Module, name: string): Fn {
+  const fn = module.functions.find(f => f.name === name);
+  if (!fn) throw Error('Unknown function ' + name);
+  return fn;
+}
