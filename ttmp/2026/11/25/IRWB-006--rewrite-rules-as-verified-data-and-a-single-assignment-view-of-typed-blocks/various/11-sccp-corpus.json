@@ -1,0 +1,1944 @@
+{
+ "sums": {
+  "constprop": 28,
+  "sccp": 31,
+  "onlyConstprop": 0,
+  "onlySccp": 3,
+  "ms": {
+   "constprop": 1231,
+   "sccp": 1272
+  }
+ },
+ "totals": {
+  "O2": {
+   "statements": 709,
+   "bytes": 5160,
+   "instructions": 278296,
+   "limited": 1,
+   "rejected": 0
+  },
+  "O2-sccp": {
+   "statements": 708,
+   "bytes": 5148,
+   "instructions": 278266,
+   "limited": 1,
+   "rejected": 0
+  },
+  "O2+": {
+   "statements": 695,
+   "bytes": 5104,
+   "instructions": 276656,
+   "limited": 1,
+   "rejected": 0
+  },
+  "O2x2": {
+   "statements": 693,
+   "bytes": 5092,
+   "instructions": 276626,
+   "limited": 1,
+   "rejected": 0
+  }
+ },
+ "better": [
+  "constants"
+ ],
+ "worse": [],
+ "fewerStmts": [
+  "constants"
+ ],
+ "ms": 116170,
+ "rows": [
+  {
+   "id": "across-calls",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 8,
+    "blocks": 2,
+    "bytes": 192,
+    "instructions": 640,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 8,
+    "blocks": 2,
+    "bytes": 192,
+    "instructions": 640,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 7,
+    "blocks": 2,
+    "bytes": 188,
+    "instructions": 630,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2x2": {
+    "statements": 6,
+    "blocks": 2,
+    "bytes": 188,
+    "instructions": 630,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   }
+  },
+  {
+   "id": "algebra",
+   "constprop": 1,
+   "sccp": 1,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 8,
+    "instructions": 20,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2-sccp": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 8,
+    "instructions": 20,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2+": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 8,
+    "instructions": 20,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2x2": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 8,
+    "instructions": 20,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   }
+  },
+  {
+   "id": "blend",
+   "constprop": 1,
+   "sccp": 1,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 1925,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2-sccp": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 1925,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2+": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 1925,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2x2": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 1925,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   }
+  },
+  {
+   "id": "bounds-lab",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 46,
+    "blocks": 22,
+    "bytes": 280,
+    "instructions": 5333,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 46,
+    "blocks": 22,
+    "bytes": 280,
+    "instructions": 5333,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 43,
+    "blocks": 22,
+    "bytes": 268,
+    "instructions": 5038,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 43,
+    "blocks": 22,
+    "bytes": 268,
+    "instructions": 5038,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   }
+  },
+  {
+   "id": "bounds-offset",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 100,
+    "instructions": 1364,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 100,
+    "instructions": 1364,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 100,
+    "instructions": 1364,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 100,
+    "instructions": 1364,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "bounds-param",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 60,
+    "instructions": 502,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 60,
+    "instructions": 502,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 60,
+    "instructions": 502,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 60,
+    "instructions": 502,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "bounds-two",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 13,
+    "blocks": 6,
+    "bytes": 84,
+    "instructions": 810,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 13,
+    "blocks": 6,
+    "bytes": 84,
+    "instructions": 810,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 80,
+    "instructions": 760,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 80,
+    "instructions": 760,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   }
+  },
+  {
+   "id": "branches",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 17,
+    "blocks": 13,
+    "bytes": 104,
+    "instructions": 139,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2-sccp": {
+    "statements": 17,
+    "blocks": 13,
+    "bytes": 104,
+    "instructions": 139,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2+": {
+    "statements": 17,
+    "blocks": 13,
+    "bytes": 104,
+    "instructions": 139,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2x2": {
+    "statements": 17,
+    "blocks": 13,
+    "bytes": 104,
+    "instructions": 139,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   }
+  },
+  {
+   "id": "call-chain",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 7,
+    "blocks": 3,
+    "bytes": 172,
+    "instructions": 1050,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2-sccp": {
+    "statements": 7,
+    "blocks": 3,
+    "bytes": 172,
+    "instructions": 1050,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2+": {
+    "statements": 7,
+    "blocks": 3,
+    "bytes": 172,
+    "instructions": 1050,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2x2": {
+    "statements": 7,
+    "blocks": 3,
+    "bytes": 172,
+    "instructions": 1050,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   }
+  },
+  {
+   "id": "calls",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 21,
+    "blocks": 9,
+    "bytes": 212,
+    "instructions": 651,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2-sccp": {
+    "statements": 21,
+    "blocks": 9,
+    "bytes": 212,
+    "instructions": 651,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2+": {
+    "statements": 21,
+    "blocks": 9,
+    "bytes": 212,
+    "instructions": 651,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2x2": {
+    "statements": 21,
+    "blocks": 9,
+    "bytes": 212,
+    "instructions": 651,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   }
+  },
+  {
+   "id": "checksum",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 52,
+    "instructions": 1410,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 52,
+    "instructions": 1410,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 8,
+    "blocks": 4,
+    "bytes": 48,
+    "instructions": 1260,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 8,
+    "blocks": 4,
+    "bytes": 48,
+    "instructions": 1260,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   }
+  },
+  {
+   "id": "collatz",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 88,
+    "instructions": 7461,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2-sccp": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 88,
+    "instructions": 7461,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2+": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 88,
+    "instructions": 7461,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2x2": {
+    "statements": 17,
+    "blocks": 10,
+    "bytes": 88,
+    "instructions": 7461,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   }
+  },
+  {
+   "id": "constants",
+   "constprop": 3,
+   "sccp": 6,
+   "onlyConstprop": [],
+   "onlySccp": 3,
+   "O2": {
+    "statements": 2,
+    "blocks": 1,
+    "bytes": 28,
+    "instructions": 70,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2-sccp": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 16,
+    "instructions": 40,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2+": {
+    "statements": 2,
+    "blocks": 1,
+    "bytes": 28,
+    "instructions": 70,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 16,
+    "instructions": 40,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 9
+   }
+  },
+  {
+   "id": "dead-code",
+   "constprop": 1,
+   "sccp": 1,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   },
+   "O2-sccp": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   },
+   "O2+": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   },
+   "O2x2": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   }
+  },
+  {
+   "id": "diagnostics",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 1,
+    "blocks": 1,
+    "bytes": 12,
+    "instructions": 30,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "distinct",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 5,
+    "blocks": 2,
+    "bytes": 112,
+    "instructions": 340,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2-sccp": {
+    "statements": 5,
+    "blocks": 2,
+    "bytes": 112,
+    "instructions": 340,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2+": {
+    "statements": 5,
+    "blocks": 2,
+    "bytes": 112,
+    "instructions": 340,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2x2": {
+    "statements": 5,
+    "blocks": 2,
+    "bytes": 112,
+    "instructions": 340,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   }
+  },
+  {
+   "id": "div-checks",
+   "constprop": 4,
+   "sccp": 4,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 88,
+    "instructions": 162,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 88,
+    "instructions": 162,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 88,
+    "instructions": 162,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 88,
+    "instructions": 162,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "div-magic",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 16,
+    "blocks": 8,
+    "bytes": 136,
+    "instructions": 769,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 16,
+    "blocks": 8,
+    "bytes": 136,
+    "instructions": 769,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 16,
+    "blocks": 8,
+    "bytes": 136,
+    "instructions": 769,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 16,
+    "blocks": 8,
+    "bytes": 136,
+    "instructions": 769,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "early-exit",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 60,
+    "instructions": 631,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2-sccp": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 60,
+    "instructions": 631,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2+": {
+    "statements": 10,
+    "blocks": 6,
+    "bytes": 56,
+    "instructions": 566,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2x2": {
+    "statements": 10,
+    "blocks": 6,
+    "bytes": 56,
+    "instructions": 566,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   }
+  },
+  {
+   "id": "first-steps",
+   "constprop": 1,
+   "sccp": 1,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 4,
+    "blocks": 2,
+    "bytes": 64,
+    "instructions": 220,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 4,
+    "blocks": 2,
+    "bytes": 64,
+    "instructions": 220,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 4,
+    "blocks": 2,
+    "bytes": 64,
+    "instructions": 220,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2x2": {
+    "statements": 4,
+    "blocks": 2,
+    "bytes": 64,
+    "instructions": 220,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   }
+  },
+  {
+   "id": "fixed-point",
+   "constprop": 4,
+   "sccp": 4,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 128,
+    "instructions": 411,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 128,
+    "instructions": 411,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 128,
+    "instructions": 411,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2x2": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 128,
+    "instructions": 411,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   }
+  },
+  {
+   "id": "fragments",
+   "constprop": 1,
+   "sccp": 1,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2-sccp": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2+": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2x2": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   }
+  },
+  {
+   "id": "gcd",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 36,
+    "instructions": 324,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2-sccp": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 36,
+    "instructions": 324,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2+": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 36,
+    "instructions": 324,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2x2": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 36,
+    "instructions": 324,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   }
+  },
+  {
+   "id": "heat-lab",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 8832,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 8832,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 8832,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 8832,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "histogram",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 28,
+    "blocks": 13,
+    "bytes": 176,
+    "instructions": 2292,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 28,
+    "blocks": 13,
+    "bytes": 176,
+    "instructions": 2292,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 27,
+    "blocks": 13,
+    "bytes": 172,
+    "instructions": 2230,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 27,
+    "blocks": 13,
+    "bytes": 172,
+    "instructions": 2230,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   }
+  },
+  {
+   "id": "licm-nested",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 16,
+    "blocks": 7,
+    "bytes": 68,
+    "instructions": 1678,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 16,
+    "blocks": 7,
+    "bytes": 68,
+    "instructions": 1678,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 16,
+    "blocks": 7,
+    "bytes": 68,
+    "instructions": 1678,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 16,
+    "blocks": 7,
+    "bytes": 68,
+    "instructions": 1678,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "licm-traps",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 8,
+    "blocks": 4,
+    "bytes": 68,
+    "instructions": 153,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2-sccp": {
+    "statements": 8,
+    "blocks": 4,
+    "bytes": 68,
+    "instructions": 153,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2+": {
+    "statements": 8,
+    "blocks": 4,
+    "bytes": 68,
+    "instructions": 153,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   },
+   "O2x2": {
+    "statements": 8,
+    "blocks": 4,
+    "bytes": 68,
+    "instructions": 153,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 1
+   }
+  },
+  {
+   "id": "match-enum",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 29,
+    "blocks": 15,
+    "bytes": 156,
+    "instructions": 251,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 29,
+    "blocks": 15,
+    "bytes": 156,
+    "instructions": 251,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 29,
+    "blocks": 15,
+    "bytes": 156,
+    "instructions": 251,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 29,
+    "blocks": 15,
+    "bytes": 156,
+    "instructions": 251,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "my-analysis",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 52,
+    "instructions": 200975,
+    "limited": 1,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 52,
+    "instructions": 200975,
+    "limited": 1,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 52,
+    "instructions": 200975,
+    "limited": 1,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2x2": {
+    "statements": 11,
+    "blocks": 6,
+    "bytes": 52,
+    "instructions": 200975,
+    "limited": 1,
+    "rejected": 0,
+    "revs": 6
+   }
+  },
+  {
+   "id": "my-first-pass",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 2,
+    "blocks": 1,
+    "bytes": 20,
+    "instructions": 50,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2-sccp": {
+    "statements": 2,
+    "blocks": 1,
+    "bytes": 20,
+    "instructions": 50,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2+": {
+    "statements": 2,
+    "blocks": 1,
+    "bytes": 20,
+    "instructions": 50,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2x2": {
+    "statements": 2,
+    "blocks": 1,
+    "bytes": 20,
+    "instructions": 50,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   }
+  },
+  {
+   "id": "nested-loops",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 14,
+    "blocks": 7,
+    "bytes": 60,
+    "instructions": 2342,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 14,
+    "blocks": 7,
+    "bytes": 60,
+    "instructions": 2342,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 14,
+    "blocks": 7,
+    "bytes": 60,
+    "instructions": 2342,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 14,
+    "blocks": 7,
+    "bytes": 60,
+    "instructions": 2342,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "orders",
+   "constprop": 5,
+   "sccp": 5,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 18,
+    "blocks": 7,
+    "bytes": 136,
+    "instructions": 1204,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 10
+   },
+   "O2-sccp": {
+    "statements": 18,
+    "blocks": 7,
+    "bytes": 136,
+    "instructions": 1204,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 10
+   },
+   "O2+": {
+    "statements": 18,
+    "blocks": 7,
+    "bytes": 136,
+    "instructions": 1204,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 10
+   },
+   "O2x2": {
+    "statements": 18,
+    "blocks": 7,
+    "bytes": 136,
+    "instructions": 1204,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 10
+   }
+  },
+  {
+   "id": "params-demo",
+   "constprop": 1,
+   "sccp": 1,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2-sccp": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2+": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2x2": {
+    "statements": 12,
+    "blocks": 6,
+    "bytes": 88,
+    "instructions": 2299,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   }
+  },
+  {
+   "id": "pressure",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 10,
+    "blocks": 1,
+    "bytes": 96,
+    "instructions": 240,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2-sccp": {
+    "statements": 10,
+    "blocks": 1,
+    "bytes": 96,
+    "instructions": 240,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2+": {
+    "statements": 10,
+    "blocks": 1,
+    "bytes": 96,
+    "instructions": 240,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2x2": {
+    "statements": 10,
+    "blocks": 1,
+    "bytes": 96,
+    "instructions": 240,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   }
+  },
+  {
+   "id": "ramp",
+   "constprop": 2,
+   "sccp": 2,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 17,
+    "blocks": 7,
+    "bytes": 80,
+    "instructions": 1040,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2-sccp": {
+    "statements": 17,
+    "blocks": 7,
+    "bytes": 80,
+    "instructions": 1040,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2+": {
+    "statements": 16,
+    "blocks": 7,
+    "bytes": 76,
+    "instructions": 970,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   },
+   "O2x2": {
+    "statements": 16,
+    "blocks": 7,
+    "bytes": 76,
+    "instructions": 970,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   }
+  },
+  {
+   "id": "records",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 20,
+    "blocks": 8,
+    "bytes": 112,
+    "instructions": 260,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2-sccp": {
+    "statements": 20,
+    "blocks": 8,
+    "bytes": 112,
+    "instructions": 260,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2+": {
+    "statements": 20,
+    "blocks": 8,
+    "bytes": 112,
+    "instructions": 260,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   },
+   "O2x2": {
+    "statements": 20,
+    "blocks": 8,
+    "bytes": 112,
+    "instructions": 260,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 0
+   }
+  },
+  {
+   "id": "regalloc-lab",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 30,
+    "blocks": 8,
+    "bytes": 348,
+    "instructions": 2614,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2-sccp": {
+    "statements": 30,
+    "blocks": 8,
+    "bytes": 348,
+    "instructions": 2614,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2+": {
+    "statements": 30,
+    "blocks": 8,
+    "bytes": 348,
+    "instructions": 2614,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   },
+   "O2x2": {
+    "statements": 30,
+    "blocks": 8,
+    "bytes": 348,
+    "instructions": 2614,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 3
+   }
+  },
+  {
+   "id": "sort",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 5043,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 5043,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 5043,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 41,
+    "blocks": 22,
+    "bytes": 240,
+    "instructions": 5043,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "start-here",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 42,
+    "blocks": 20,
+    "bytes": 312,
+    "instructions": 3871,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2-sccp": {
+    "statements": 42,
+    "blocks": 20,
+    "bytes": 312,
+    "instructions": 3871,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2+": {
+    "statements": 41,
+    "blocks": 20,
+    "bytes": 308,
+    "instructions": 3750,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   },
+   "O2x2": {
+    "statements": 41,
+    "blocks": 20,
+    "bytes": 308,
+    "instructions": 3750,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 6
+   }
+  },
+  {
+   "id": "strength",
+   "constprop": 2,
+   "sccp": 2,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 16,
+    "blocks": 8,
+    "bytes": 116,
+    "instructions": 1938,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   },
+   "O2-sccp": {
+    "statements": 16,
+    "blocks": 8,
+    "bytes": 116,
+    "instructions": 1938,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 7
+   },
+   "O2+": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 112,
+    "instructions": 1802,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 8
+   },
+   "O2x2": {
+    "statements": 15,
+    "blocks": 8,
+    "bytes": 112,
+    "instructions": 1802,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 8
+   }
+  },
+  {
+   "id": "strings",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 49,
+    "blocks": 27,
+    "bytes": 228,
+    "instructions": 10833,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 49,
+    "blocks": 27,
+    "bytes": 228,
+    "instructions": 10833,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 47,
+    "blocks": 27,
+    "bytes": 220,
+    "instructions": 10302,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 47,
+    "blocks": 27,
+    "bytes": 220,
+    "instructions": 10302,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   }
+  },
+  {
+   "id": "ui-gallery",
+   "constprop": 2,
+   "sccp": 2,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 16,
+    "blocks": 9,
+    "bytes": 176,
+    "instructions": 1058,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2-sccp": {
+    "statements": 16,
+    "blocks": 9,
+    "bytes": 176,
+    "instructions": 1058,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2+": {
+    "statements": 16,
+    "blocks": 9,
+    "bytes": 176,
+    "instructions": 1058,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 16,
+    "blocks": 9,
+    "bytes": 176,
+    "instructions": 1058,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   }
+  },
+  {
+   "id": "value-numbering",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 92,
+    "instructions": 3082,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2-sccp": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 92,
+    "instructions": 3082,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2+": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 92,
+    "instructions": 3082,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   },
+   "O2x2": {
+    "statements": 9,
+    "blocks": 4,
+    "bytes": 92,
+    "instructions": 3082,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 2
+   }
+  },
+  {
+   "id": "wrong-shift",
+   "constprop": 0,
+   "sccp": 0,
+   "onlyConstprop": [],
+   "onlySccp": 0,
+   "O2": {
+    "statements": 10,
+    "blocks": 5,
+    "bytes": 92,
+    "instructions": 1650,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2-sccp": {
+    "statements": 10,
+    "blocks": 5,
+    "bytes": 92,
+    "instructions": 1650,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 4
+   },
+   "O2+": {
+    "statements": 9,
+    "blocks": 5,
+    "bytes": 88,
+    "instructions": 1500,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   },
+   "O2x2": {
+    "statements": 9,
+    "blocks": 5,
+    "bytes": 88,
+    "instructions": 1500,
+    "limited": 0,
+    "rejected": 0,
+    "revs": 5
+   }
+  }
+ ]
+}

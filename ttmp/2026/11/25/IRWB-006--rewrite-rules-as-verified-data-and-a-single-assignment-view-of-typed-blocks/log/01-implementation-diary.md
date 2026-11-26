@@ -130,7 +130,7 @@ The guide (`design-doc/01-intern-guide-…md`, 867 lines after revision) has fiv
 **User prompt (verbatim):** see Step 1.
 **Assistant interpretation:** Deliver the intern guide before implementing, stored in the ticket and uploaded.
 **Inferred user intent:** A document a new intern can learn the milestone from and implement against.
-**Commit (code):** see the commit after this step ("IRWB-006: intern guide, diary steps 1–3, baseline").
+**Commit (code):** ab96bd4 — "IRWB-006: intern guide (rules as verified data, SSA view), diary steps 1-3, corpus revision baseline"
 
 ### What I did
 - Wrote the guide with the design decisions of Step 2, every existing API with its line number at `420d8e1`, proposed APIs marked **Proposed**, ASCII diagrams (CFG and dominator tree of Blend, module dependencies), pseudocode for `Tx.rewrite`, the rule compiler, frontier computation, phi placement, renaming, the SSA/reaching check and SCCP.
@@ -237,7 +237,7 @@ The corpus check of Step 4 is strong but small; Candela is 332 functions with f3
 **User prompt (verbatim):** see Step 1.
 **Assistant interpretation:** "Switch simplify to the table only if every revision is identical" (corpus r0→O2 and Candela O2).
 **Inferred user intent:** No behaviour change from turning code into data.
-**Commit (code):** see the commit after this step ("IRWB-006 B1: simplify and fold use the rule tables …").
+**Commit (code):** 711a9a2 — "IRWB-006 B1: simplify and fold use the rule tables (corpus and Candela O2 identical; gates green, revisions = baseline); B2 semantics, verifier and candidate rules"
 
 ### What I did
 - `scripts/02-rules-equivalence-candela.mjs`: ingest Candela from the tape, then O2 pass by pass with `applyPass` and a single `AnalysisManager`, without the per-pass meaning checks (they do not change a pass's output, and O2 on Candela has no rejected pass); at `fold` and `simplify` steps also apply `tablePass(name, firings)` and `R.*Handwritten` to the same input and compare.
@@ -286,3 +286,197 @@ The corpus check of Step 4 is strong but small; Candela is 332 functions with f3
 
 ### Technical details
 - `various/04-rules-equivalence-candela.json` has every step with revision prefix, edits and timings; `various/04-…log` the progress lines.
+- Gates after the switch (`various/07-gates-after-switch/summary.txt`, status 0): the test files 325 tests, 322 pass, 0 fail, 3 skipped (the three environment-gated Candela tests: `IRWB_CANDELA=1` twice, `IRWB_FULL=1` once); `IRWB_FULL=1` passes + backend 21 of 21; parity `{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}`; corpus revisions identical (44 lines). The switch is commit 711a9a2.
+
+## Step 6: The rule verifier: semantics at any width, eight methods, candidate rules
+
+B2 needs the meaning of a rule's two sides independent of any program, and methods whose strength can be stated. This step adds `src/typed/rules/semantics.ts` (the i32 operators at any width, the f32 operators on bits, rule sides compiled to closures over a slot array), `src/typed/rules/verify.ts` (`verifyRule` with structural, by-construction, symbolic-linear, bitwise-w1, exhaustive-w8, random-32, f32-special and exhaustive-32 methods) and `src/typed/rules/candidates.ts` (seven deliberately unsound rules and two sound f32 rules). In fast mode every table rule verifies as sound and every unsound candidate is rejected; one exhaustive 2³² check takes 50 s.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Each rule carries evidence that it is sound for every input of its declared types; methods at reduced width (with a transfer argument), symbolic for linear rules, random plus boundary at 32 bits, special care for f32; unsound candidates rejected in a test.
+**Inferred user intent:** Rules that are trusted because they were checked once, with the strength of each check stated honestly.
+**Commit (code):** 711a9a2 (semantics, verifier, candidates; committed with the switch).
+
+### What I did
+- `BIN`: one function per i32 operator `(a, b, w)`, wrapping to w bits, masking shift counts with `w - 1`, trapping division at `-2^(w-1) / -1`; `binopW` looks it up. `TRAP = 2^32` keeps outcomes numeric. `compileSide` builds closures; a template constant `{ eval }` uses `evalOp` (fold's own function) at 32 bits and `opW` below, so a fold rule's two sides are computed by two implementations.
+- `verifyRule`: structural first (dropped, duplicated or reordered variables need `pure`; types from `VALUE_SIGNATURES`), then by-construction for fold rules (the replacement is the evaluator's value of the matched operator; the guard must exclude every trapping input, checked exhaustively at 8 bits and on crossed boundary values at 32), symbolic-linear (normal forms `c₀ + Σ cᵢ·xᵢ` over ℤ/2³² with `Math.imul`, once per guard instance), bitwise-w1, exhaustive-w8 for width-generic rules, random-32 or f32-special (boundary or special values crossed, then N random assignments), and exhaustive-32 for small domains always and for one full 32-bit variable on request. A counterexample from any method rejects the rule; the strength is the strongest passed method (`argumentFor` supplies the order-law argument for rules built only of comparisons and `eqz`).
+- Scratch run of every rule with `{ random: 1e4 }` (fast mode), then `div-one` with `exhaustive32: true`.
+
+### Why
+- Closures over slots instead of a tree interpreter: an exhaustive 2³² loop must cost a few nanoseconds per input.
+- Evaluating fold's replacement with `evalOp` rather than `BIN` turns an otherwise tautological check into a comparison of `BIN` (written for the verifier) with `binop` (the evaluator's).
+
+### What worked
+- Fast mode: all 27 `simplify` rules sound: 11 `proof` by symbolic-linear (one instance each, except 31 for `mul-pow2` and for `pow2-mul`), 4 `proof` by bitwise-w1, 8 `reduced-width+argument` (65,536 cases at 8 bits each), `not-not` `exhaustive` (domain {0, 1}), and `div-one`, `shr-zero`, `shru-zero` `sampled` until exhaustive-32 runs. All 40 `fold` rules `by-construction` (67,840 guard checks each for the binary i32 operators).
+- Unsound candidates, all rejected: `div-pow2-shr` at 8 bits `{x: -127, k: 2}` (lhs −63, rhs −64); `mul-zero-impure` structurally ("x is dropped (1 on the left, 0 on the right) without pure(x)"); `fadd-pos-zero` `{x: -0}` (lhs +0); `fsub-self` `{x: +∞}` (lhs canonical NaN); `not-flt` `{a: 0, b: NaN}`; `fadd-neg-zero` `{x: 0x7fc00001}` (lhs 0x7fc00000).
+- `div-one` with `exhaustive32: true`: 4,294,967,296 inputs in 50,213 ms, sound, strength `exhaustive`.
+
+### What didn't work
+- `fmul-pos-zero` was first rejected *structurally* (it drops `x` without `pure`), which hid the value counterexample it exists to show. Gave it `pure(x)`; the structural case is `mul-zero-impure`'s job.
+- A `python3` heredoc that rewrote `semantics.ts` was refused by the worktree isolation check; the same changes were made with the editor tool.
+
+### What I learned
+- The guide predicted `x = −1, j = 1` as the counterexample of `div-pow2-shr`; the verifier reports the first one in its enumeration order at 8 bits, `x = −127, k = 2`. Both are counterexamples; the test checks the property (negative `x`, sides differ), not a particular value.
+- The meaning check's `F32_EDGES` has only the canonical NaN, so on those values `x + (−0) → x` holds; only NaNs with other payloads refute it.
+
+### What was tricky to build
+- Keeping one implementation of the width-generic operators: a first version had `binopW` as a `switch` and the closures calling it; the table `BIN` serves both, so the 32-bit equality test with `binop` covers what the exhaustive loops use.
+
+### What warrants a second pair of eyes
+- `structuralProblem`'s order rule compares the first-occurrence order of impure variables only; a rule that reorders two pure variables passes, which is intended.
+- Strength `by-construction` is relative to the evaluator; each fold record's detail says so.
+
+### What should be done in the future
+- Record the evidence with 10⁶ random assignments and exhaustive 2³² runs (`scripts/04-verify-rules.mjs`), then the tests.
+
+### Code review instructions
+- `src/typed/rules/verify.ts` (`verifyRule`, `structuralProblem`, `lin`), `src/typed/rules/semantics.ts` (`BIN`, `compileSide`).
+
+### Technical details
+- Boundary i32 values (`boundaryI32`): 48 values (0, ±1, ±2, ±3, the extremes and their neighbours, 2^j and neighbours for j = 2, 5, …, 29, alternating bit patterns, byte and half-word edges). f32 specials (`F32_SPECIALS`): 25 bit patterns including 0x7fc00001, 0x7f800001 (signalling), 0x7fffffff, 0xffc00000 and 0xff800001.
+
+## Step 7: The SSA view, validated on the corpus and on Candela r0; a name collision found on Candela
+
+`src/typed/ssa.ts` implements the guide's Part 4: dominance frontiers from `dominatorsOf` with a virtual entry, minimal phi placement, renaming over the dominator tree with an iterative walk, the mapping back (names → set statements and value trees, entry definitions, phis; gets → names; sets → names), `ssaAnalysis` (`typed.ssa`, not in `ANALYSES`), `ssaView`, `deadPhis` and `checkSsa`. On the corpus it agrees with reaching definitions everywhere. On Candela the first run found 5 mismatches and 10 violations, all in one function, caused by two locals with the same name; after the fix Candela r0 agrees everywhere.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** A1: dominator tree, frontiers, phis, renaming, a mapping back, validation against reaching definitions on every corpus function and Candela r0.
+**Inferred user intent:** A sparse representation that is trustworthy because it is checked against the analysis it replaces.
+**Commit (code):** see Step 9.
+
+### What I did
+- `scripts/05-ssa-check-corpus.mjs`: every project, O2, every revision (r0 included): `typed.reaching`, `typed.ssa` and `typed.liveness` through a fresh `AnalysisManager`, then `checkSsa` and `deadPhis` for every function. The first run iterated `p.revisionList()`, which has hashes and no artifacts, and checked nothing (`"revisions": 0`); fixed to `p.revisions`.
+- `scripts/06-ssa-check-candela.mjs`: Candela r0 (tape); `typed.reaching` and `typed.ssa` each computed three times through fresh managers (timings); `checkSsa` on all 332 functions.
+- Fix in `ssaOf`: a local whose name another local of the function shares is named `<name>#<index>.<n>`.
+
+### Why
+- Validating at every O2 revision, not only at r0, exercises the shapes passes produce (merged blocks, hoisted `inv` locals, value-numbering `vn` locals).
+
+### What worked
+- Corpus (`various/09-ssa-check-corpus.json`): at r0, 70 functions, 794 gets, 1,033 (definition, use) pairs, 1,004 names, 228 phis of which 115 dead, 0 mismatches, 0 violations. Over all 194 revisions: 306 function instances, 3,329 gets, 4,392 pairs, 996 phis (509 dead), 0 unreachable blocks, 0 mismatches, 0 violations. Time over all revisions: `typed.ssa` 556 ms, `typed.reaching` 667 ms.
+- Candela r0 after the fix (`various/10-ssa-check-candela.json`): 332 functions, 2,409 blocks, 14,598 gets, 16,800 pairs, 23,850 names, 4,245 phis (2,840 dead, 67 %; at most 1,877 in one function), 0 unreachable blocks, 0 entry loops, 0 mismatches, 0 violations. `typed.reaching` 5,341 / 3,287 / 3,040 ms; `typed.ssa` 1,270 / 1,162 / 1,210 ms; the check 879 ms. Fact sizes as JSON: reaching 10,718,740 bytes, ssa 3,400,010 bytes (3,399,774 before the fix).
+
+### What didn't work
+- First Candela run (kept as `various/10a-ssa-check-candela-before-name-fix.json`): `"mismatches": 5, "violations": 10`, all in `asinPositive`, for example
+  ```text
+  "v:asinPositive.58 reads local 4 but its name z.1 is of local 1"
+  "z.1 (bb:asinPositive.1) does not dominate its use in bb:asinPositive.4"
+  mismatch at s:asinPositive.8: reaching [s:asinPositive.7], ssa [s:asinPositive.1]
+  ```
+  Locals 1 and 4 are both named `z`; `fresh` produced `z.1` for both, and the second definition overwrote the first in `names`. The corpus scan of Step 3 had found no duplicate names (400 locals), so the assumption "names are unique within a function" held there and not on Candela. After the fix the name count rose from 23,848 to 23,850.
+
+### What I learned
+- Two thirds of minimal SSA's phis on Candela are dead (2,840 of 4,245); a consumer that iterates over phis would profit from pruning by liveness.
+- Neither the corpus nor Candela has an unreachable block or a loop at the entry, so the virtual-entry phi path is exercised only by the synthetic test (Step 9).
+
+### What was tricky to build
+- The renaming walk must fill a successor's phi arguments before descending into dominator-tree children, and must pop exactly what the block pushed; the iterative version pushes an exit frame carrying the pushed locals, then the children in reverse order.
+
+### What warrants a second pair of eyes
+- `checkSsa` compares sets of definition ids; phi arguments are keyed by predecessor, so an argument order is not a property it can get wrong.
+
+### What should be done in the future
+- A pruned variant (phis only where the local is live in) if a consumer needs it.
+
+### Code review instructions
+- `src/typed/ssa.ts` (`ssaOf`, `checkSsa`); re-run `node ttmp/2026/11/25/IRWB-006--*/scripts/05-ssa-check-corpus.mjs` (36 s) and `node --max-old-space-size=12288 …/06-ssa-check-candela.mjs` (28 s).
+
+### Technical details
+- The timings were taken while another script of this milestone (the evidence run) used one core; they are wall-clock times of single runs, not benchmarks.
+
+## Step 8: SCCP on the SSA view, measured against constprop
+
+`src/typed/sccp.ts` is the first consumer of the SSA view: Wegman–Zadeck SCCP (a lattice value per name, executable edges), a pass `sccp` that replaces constant reads like `constprop` does, and a pipeline `O2-sccp` (O2 with each `constprop` replaced by `sccp`), run through `Program.apply` by `runPasses`, outside `PASSES` and `PIPELINES`. On the guide's example it finds `y = 7` where `constprop` finds only `x`. On the corpus its reads are a strict superset of `constprop`'s, and `O2-sccp` brings `constants` from 70 to 40 instructions, the O2-applied-twice result, with no project slower.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** At least one consumer of the SSA view, e.g. an SCCP prototype measured against constprop, in a new pipeline, not O2.
+**Inferred user intent:** Evidence that the view pays for itself.
+**Commit (code):** see Step 9.
+
+### What I did
+- Scratch run on `function f(n) { let x = 1; let y = 0; if (x === 1) { y = 7; } else { y = 9; } return y + n; }`. A first version with `==` failed in the front end: `LiftError: expected bool, got i32` (Typed wants `===`).
+- `scripts/07-sccp-corpus.mjs`: (1) per project, the O2 revision just before the first `constprop` (after `cfg, fold, simplify`), then `constprop` and `sccp` on it under the meaning contract; the reads each made constant are the `from` of the constants it created. (2) Whole pipelines `O2`, `O2-sccp`, `O2+` and O2 twice, each pass under the contract, then `measure` (statements, image bytes, emulator instructions over 10 seeded cases per function).
+
+### Why
+- Comparing at the same input separates "finds more constants" from "the pipeline happens to end differently".
+
+### What worked
+- Example: `constprop` gives `if (1 == 1) …` only; `sccp` also gives `return (7 + n)`, whose constant has origin `{"because":["fact:sccp(f)@r0","s:f.3"],"from":"v:f.7","via":"sccp"}`.
+- Corpus (`various/11-sccp-corpus.json`, 116 s): reads made constant at the same input: `constprop` 28, `sccp` 31; only-`constprop` 0, only-`sccp` 3 (all in `constants`, 3 against 6). Pass time summed over the 44 projects: `constprop` 1,231 ms, `sccp` 1,272 ms.
+- Pipelines, totals over 44 projects (instructions summed over 10 cases per function; one case hits the step limit in every pipeline and is charged 200,000):
+
+  | pipeline | statements | bytes | instructions | rejected |
+  |---|---:|---:|---:|---:|
+  | O2 | 709 | 5,160 | 278,296 | 0 |
+  | O2-sccp | 708 | 5,148 | 278,266 | 0 |
+  | O2+ | 695 | 5,104 | 276,656 | 0 |
+  | O2 twice | 693 | 5,092 | 276,626 | 0 |
+
+  `constants`: O2 70, O2-sccp 40, O2+ 70, O2 twice 40. Better under O2-sccp: `constants` only; worse: none.
+
+### What didn't work
+- Nothing beyond the `==` of the scratch example.
+
+### What I learned
+- On this corpus SCCP's advantage is concentrated in one project: the other projects' constants are already found by `constprop`, and `O2+`'s extra `subst` matters more for instructions. The two are independent; `O2-sccp` followed by `subst` is the obvious next combination.
+
+### What was tricky to build
+- `because`: a constant must cite what justifies it, which is the `set` statements reached through phi arguments on *executable* edges only (the dead arm's `y = 9` is not cited), plus the fact reference.
+
+### What warrants a second pair of eyes
+- `sccpOf` evaluates only the operators `fold` folds and treats every other operator (loads, calls, `caddr`, floor, ceil, trunc, conversions to integers) as ⊥, so it never claims a constant `fold` could not produce.
+
+### What should be done in the future
+- `O2-sccp` followed by `subst`, and SCCP on Candela (not run: the brief limits Candela to the equivalence and SSA checks).
+
+### Code review instructions
+- `src/typed/sccp.ts` (`sccpOf`, `contributing`, `sccp`); `node ttmp/2026/11/25/IRWB-006--*/scripts/07-sccp-corpus.mjs` (about 2 min).
+
+### Technical details
+- `measure` is `src/typed/strategies.ts:66`; `my-analysis` contributes the one case at the step limit.
+
+## Step 9: The framework's pattern language cross-checked against the compiled matcher
+
+The guide's decision (Step 2) was to apply rules through `Tx.rewrite` and only convert patterns to the framework's `NodePattern`, for search and display. This step measures the second half: whether the framework's `searchPattern` sees the same matches as the compiled matcher for every rule of both tables, and what it costs. Every exact pattern agrees; the one pattern with a structural repeat matches far more in the framework, which is the expected difference between `sameAs` and structural equality.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** The brief says the framework's rule engine may be used as is; evaluate it and record why it is or is not used.
+**Inferred user intent:** No parallel rule machinery without a measured reason.
+**Commit (code):** see Step 10.
+
+### What I did
+- `scripts/08-framework-pattern-crosscheck.mjs`: for every corpus project, r0 and O2's revision after `cfg, fold` (71 distinct revisions; some projects' `cfg, fold` change nothing), `openIR(art, blocksAdapter)`, then for each of the 67 rules `searchPattern(view, toNodePattern(rule).pattern, { maxSteps: 1e7, maxMatches: 1e6 })`, counting distinct match roots, and `matchPat(rule.lhs, …)` over every value (no guards on either side). Timed both.
+- `node …/scripts/08-framework-pattern-crosscheck.mjs --json …/various/12-framework-pattern-crosscheck.json` (51.7 s wall clock).
+
+### Why
+- The conversion `toNodePattern` is what makes the rule tables searchable in the framework's terms (and in the workbench's pattern tools); a silent disagreement would make that search misleading.
+
+### What worked
+- `"revisions": 71, "rules": 67, "differ": []`: every exact pattern has the same match count in both. 13 rules have matches; the exact ones total 141 (e.g. `not-lt` 58, `mul-pow2` 48, `pow2-mul` 11, `fold-mul` 8, `fold-sub` 5).
+- `"superset": [{"rule": "sub-self", "framework": 74, "compiled": 1}]`: the converted `sub(x, x')` binds `x'` as a capture without the structural-equality condition (the framework's `sameAs` would demand the *same entity*, which never occurs in a tree with one user per value), so it matches every `sub` of two subtrees; the compiled `same` matches one. `toNodePattern` reports this pattern as `exact: false`.
+- Cost: framework 47,425 ms, compiled matcher 641 ms, for the same 71 × 67 searches.
+
+### What didn't work
+- Nothing failed.
+
+### What I learned
+- The framework's search costs about 74 times the compiled matcher here. From the code (not profiled), the likely reasons are that it starts from every entity of the projected graph (blocks, statements, locals, functions as well as values) and records evidence per match. That is the right trade for interactive search and the wrong one for a pass that runs on every revision.
+
+### What was tricky to build
+- Counting distinct roots: the script counts `new Set(roots)`, so a root reported more than once counts once.
+
+### What warrants a second pair of eyes
+- The cross-check ignores guards on both sides; it compares pattern shape only, which is what the conversion claims to preserve.
+
+### What should be done in the future
+- If the workbench gains a "where does this rule apply" view, it can use `searchPattern` with the converted pattern and filter by the rule's guards; for `sub-self`, a predicate condition for structural equality would make the conversion exact.
+
+### Code review instructions
+- `src/typed/rules/form.ts` (`toNodePattern`); `scripts/08-framework-pattern-crosscheck.mjs`.
+
+### Technical details
+- Decision recorded (task qkls): rules are applied by the compiled visitor; the framework's engine is not used for application, for three reasons — its edits do not allocate through `Tx` (no Typed origins, ids outside the counters), it publishes one artifact per application, and its repeat semantics differ (this step, measured).
