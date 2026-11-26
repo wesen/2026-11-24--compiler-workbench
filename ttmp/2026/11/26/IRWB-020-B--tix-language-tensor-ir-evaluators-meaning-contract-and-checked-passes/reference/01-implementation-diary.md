@@ -196,3 +196,39 @@ Now do the following in this session:
 3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
 4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
 ~~~~
+
+## Step 6. Account for the independent evaluation
+
+Revision `343f7a8` passed 25/25 hidden tests. All 180 f32 comparisons matched bit for bit and all 180 f64 comparisons met the evaluator’s tolerance. Both optimizers were accepted on all 60 programs. Every reported post-pass comparison met its criterion. **Diagnosis:** the independent results contain zero failures and zero rejections, hence no failing source line or reproducer. I found no inconsistency in the supplied results.
+
+For interpreting those counts, `src/framework/passes/define-pass.ts:248` returns an unchanged revision immediately, `src/tensor/index.ts:41` reports a successful return as accepted, and `src/tensor/index.ts:43` turns a semantic rejection into an unaccepted step. The independent totals alone do not count rewrites. The expected local exact rejection of a genuine blocked sum and the deliberate mutant rejections are separate experiments.
+
+I checked the report against the worktree and reran `node --test --test-isolation=none tests/tensor/*.test.mjs` using the built distribution. All 16 local tests passed. The independent results are attributed to their evaluator. The publication copy is [Tix and the cost of changing a reduction order](02-report.md).
+
+### Prompt context
+
+~~~~text
+Stage 1 of IRWB-020-B has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `343f7a8`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-B:`). Final message: the report's path, the commit hash, and one line per failure cause.
+~~~~
