@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "650d3ef2e8900f91f99d542e3d5ca170b90e681bebddf402855a927bb1cdca2e",
+  "request": {
+    "ticket": "IRWB-021-D",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the research design and diary."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-c35e3e64a93fbe3b68cfd4c39495e76c",
+    "state": "committed",
+    "created_at": "2026-11-26T17:44:03.622901015Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "3418849d22877aaedaae06073bc49f5193f30cb92cb2516f95d77e1166e0c443",
+      "index.md": "f7ea60b1555936384acba7393a6e7f83f2b85221402d60e88786dc55c090a187"
+    },
+    "after": {
+      "changelog.md": "f7a6bf621af2fb78f53033b8c0e6b8838fd8255135bba2d3872a64f4f23e7434",
+      "index.md": "d69fed80cdd58696e3997046feeff884b122a3e6fa53aaa69d94aeb11b025dcd"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "3418849d22877aaedaae06073bc49f5193f30cb92cb2516f95d77e1166e0c443",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKU3BlY2lmaWVkIHRoZSBmaXZlIGNoZWNrZWQgcmV3cml0ZXMsIHRoZSBzdHJ1Y3R1cmVkIGZvbGQgYW5kIGYzMiBhY2NlcHRhbmNlLCBhbmQgdGhlIEdCMTAgZXhwZXJpbWVudCB3aXRoIHJlZnV0YXRpb24gY3JpdGVyaWEuCgojIyMgUmVsYXRlZCBGaWxlcwoKLSBbMDEtZGVyaXZpbmctc3RyZWFtaW5nLWF0dGVudGlvbi1ieS1jaGVja2VkLXJld3JpdGVzLm1kXSguL2Rlc2lnbi1kb2MvMDEtZGVyaXZpbmctc3RyZWFtaW5nLWF0dGVudGlvbi1ieS1jaGVja2VkLXJld3JpdGVzLm1kKSDigJQgUmVzZWFyY2ggZGVzaWduCi0gWzAxLXJlc2VhcmNoLWRpYXJ5Lm1kXSguL3JlZmVyZW5jZS8wMS1yZXNlYXJjaC1kaWFyeS5tZCkg4oCUIEludmVzdGlnYXRpb24gYW5kIHByb2JlIGV2aWRlbmNlCgojIyAyMDI2LTExLTI2CgpDb21wbGV0ZWQgdGhlIHJlc2VhcmNoIGRlc2lnbiBhbmQgZGlhcnkuCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "f7ea60b1555936384acba7393a6e7f83f2b85221402d60e88786dc55c090a187",
+      "after": "LS0tClRpdGxlOiBEZXJpdmluZyBzdHJlYW1pbmcgYXR0ZW50aW9uIGJ5IGNoZWNrZWQgcmV3cml0ZXMKVGlja2V0OiBJUldCLTAyMS1EClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBpcgogICAgLSB2ZXJpZmljYXRpb24KICAgIC0gcmVzZWFyY2gKRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogIiIKTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjZUMTI6NDQ6MDMuNjIyODU0Njg2LTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIERlcml2aW5nIHN0cmVhbWluZyBhdHRlbnRpb24gYnkgY2hlY2tlZCByZXdyaXRlcwoKIyMgT3ZlcnZpZXcKCkRlc2lnbiBhIGNoZWNrZWQgZGVyaXZhdGlvbiBmcm9tIHBsYWluIFRpeCBhdHRlbnRpb24gdG8gYSB0aWxlZCBzdHJlYW1pbmcgZm9sZC4gVGhlIGRlc2lnbiBzcGVjaWZpZXMgdGhlIHJlYWwgaWRlbnRpdGllcywgZjMyIGNvbnRyYWN0LCBhbmQgR0IxMCBleHBlcmltZW50LiBUaGUgZGVsaXZlcmFibGUgaXMgdGhlIHJlc2VhcmNoIGRlc2lnbi4KCi0gW1Jlc2VhcmNoIGRlc2lnbl0oLi9kZXNpZ24tZG9jLzAxLWRlcml2aW5nLXN0cmVhbWluZy1hdHRlbnRpb24tYnktY2hlY2tlZC1yZXdyaXRlcy5tZCkKLSBbUmVzZWFyY2ggZGlhcnldKC4vcmVmZXJlbmNlLzAxLXJlc2VhcmNoLWRpYXJ5Lm1kKQotIFtUYXNrc10oLi90YXNrcy5tZCkKLSBbQ2hhbmdlbG9nXSguL2NoYW5nZWxvZy5tZCkK"
+    }
+  ]
+}
