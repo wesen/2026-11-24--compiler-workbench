@@ -233,3 +233,44 @@ Contraction saves 1.62 % to 4.17 % of executed instructions. In six of eight sce
 ### Technical details
 - Exact instructions per pixel (pass 0, this compiler's r0 image): B-01 11,300; R-01 25,308; L-03 8,307; G-01 19,293; V-02 33,054; S-02 36,038; V-04 108,839; X-03 367,086.
 - JSON numbers: an infinite PSNR is serialized as `null` (identical display).
+
+## Step 4: Second reading, revisions, and the upload
+
+This step reread the guide whole as its reader, recorded the problems before revising, fixed them, and uploaded it. The guide is 534 lines in six parts, with section 11 written from Step 3.
+
+### Prompt Context
+**User prompt (verbatim):** see IRWB-010's diary, Step 1.
+**Assistant interpretation:** A second pass as the reader, then the upload with the given name and directory, verified by a listing.
+**Inferred user intent:** The idea preserved in a form someone else can start from.
+**Commit (code):** d0e6415 (second pass, tasks, relations), d502f9a (section 11, Step 3); this step's diary entry is in the next commit.
+
+### What I did
+- Notes from the reading, before revising:
+  1. The budget formula compared a paired PSNR with the PSNR of two *independent* means without the factor √2 between them. It is now `PSNR_noise(n) + 20 log10(1/f) + 3.01 dB`, which is 23 dB at f = 0.1.
+  2. Section 16's arithmetic: a bias at 1 % of one pass's noise is 8 % of the noise at 64 passes (the draft said "far below"), and at 10 % it is 80 %. Corrected.
+  3. Three cross-references said "section 9" for the noise floor, which is section 10.
+  4. Section 10 claimed the reference image is bit-identical with the evaluator, citing one IRWB-001 step. It now cites steps 17 and 26 and this ticket's own harness check.
+  5. V-02's and S-02's spread was "three times the others'"; it is now the measured ranges.
+  6. After Step 3, the RMS budget rejects contraction on S-02 while the independent test does not. Sections 14 and 15 now bound the bias by the signed mean and send diverged pixels to the independent test. A risk row and open question 8 were added. The summary box, section 19's status column and E2's predicted saving now use the measured figures.
+- `docmgr`:
+  - tasks E0 and E0b (checked), E1–E5, and the guide task (checked);
+  - seven files related to the guide, and the guide and diary related to the index;
+  - WhatFor and WhenToUse; the index overview and summary; the changelog;
+  - `docmgr doctor --ticket IRWB-011` → "All checks passed".
+- Upload: `remarquee upload bundle …/design-doc/01-sketch-guide-image-level-contracts-for-float-freedom.md --name "IRWB-011 Sketch: Image-Level Contracts for Float Freedom" --remote-dir "/ai/2026/11/26/IRWB-011" --toc-depth 2 --non-interactive` → `OK: uploaded IRWB-011 Sketch: Image-Level Contracts for Float Freedom.pdf -> /ai/2026/11/26/IRWB-011`. `remarquee cloud ls /ai/2026/11/26/IRWB-011 --long --non-interactive` → `[f]	IRWB-011 Sketch: Image-Level Contracts for Float Freedom`.
+
+### What worked
+- The upload and the listing above.
+
+### What didn't work
+- A shell heredoc appending this step was again refused by the worktree isolation check ("too complex to verify that it stays inside the worktree"). I appended it with the editor.
+
+### What I learned
+- The measurement corrected the design. Without the S-02 run, the draft's paired test would have rejected a transformation that the independent test accepts.
+
+### What warrants a second pair of eyes
+- An author's second reading is not an independent review.
+- The proposed separation of bias and divergence (section 15) is untested: no script yet computes the signed mean with its standard error.
+
+### What should be done in the future
+- Experiments E1–E5 (tasks). The vault report is deferred to the implementation milestone.

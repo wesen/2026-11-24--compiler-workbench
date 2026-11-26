@@ -8,4 +8,4 @@
 - [ ] E3: power of the independent test: injected bias (light intensity x (1+eps)), minimum detectable effect at 64 passes <!-- t:p8rn -->
 - [ ] E4: mutation score of the frame contract on IRWB-005's float mutants (ulp mutants accepted, operator swaps killed) <!-- t:7k8n -->
 - [ ] E5: device timing of the reciprocal variant (user-run, with IRWB-001 task xzzl) <!-- t:eog2 -->
-- [ ] Sketch guide written, second pass, uploaded to reMarkable (/ai/2026/11/26/IRWB-011) <!-- t:a6ns -->
+- [x] Sketch guide written, second pass, uploaded to reMarkable (/ai/2026/11/26/IRWB-011) <!-- t:a6ns -->
