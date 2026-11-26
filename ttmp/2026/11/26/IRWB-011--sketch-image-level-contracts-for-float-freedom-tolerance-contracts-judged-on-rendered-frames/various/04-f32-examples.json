@@ -1,0 +1,47 @@
+{
+ "reassociation": {
+  "a": "1 (0x3f800000)",
+  "b": "16777216 (0x4b800000)",
+  "c": "-16777216 (0xcb800000)",
+  "left": "0 (0x00000000)",
+  "right": "1 (0x3f800000)"
+ },
+ "constantReassociation": {
+  "c1": "0.1 (0x3dcccccd)",
+  "c2": "0.2 (0x3e4ccccd)",
+  "c1PlusC2": "0.3 (0x3e99999a)",
+  "inputs": 256,
+  "differ": 83,
+  "maxUlp": 1,
+  "first": {
+   "x": "0.703125 (0x3f340000)",
+   "left": "1.0031251 (0x3f806667)",
+   "right": "1.003125 (0x3f806666)"
+  }
+ },
+ "contraction": {
+  "a": "1.0002441 (0x3f800800)",
+  "b": "1.0002441 (0x3f800800)",
+  "c": "-1.0004883 (0xbf801000)",
+  "productExact": 1.0004883408546448,
+  "twoRoundings": "0 (0x00000000)",
+  "oneRounding": "5.9604645e-8 (0x33800000)",
+  "sumExactInDouble": true
+ },
+ "reciprocal": {
+  "third": "0.33333334 (0x3eaaaaab)",
+  "inputs": 1000,
+  "differ": 332,
+  "maxUlp": 1,
+  "first": {
+   "x": "5 (0x40a00000)",
+   "quotient": "1.6666666 (0x3fd55555)",
+   "product": "1.6666667 (0x3fd55556)"
+  }
+ },
+ "overflow": {
+  "x": "3e+38 (0x7f61b1e6)",
+  "twoRoundings": "inf (0x7f800000)",
+  "oneRoundingExact": "3e+38 (0x7f61b1e6)"
+ }
+}
