@@ -1,7 +1,7 @@
 ---
 Title: 'Stage 1 design: Tix language, IR, evaluators, contract, inline and split-sum'
 Ticket: IRWB-020-N
-Status: active
+Status: complete
 Topics:
     - tensor
     - compiler
@@ -12,23 +12,29 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: src/framework/passes/define-pass.ts
-      Note: applyPass; both proposed framework changes land here
+    - Path: repo://src/tensor/contract.ts
+      Note: exact and tolerance relations
+    - Path: repo://src/tensor/passes.ts
+      Note: inline, split-sum and wrong variants
+    - Path: repo://tests/framework/pass-native-sync.test.mjs
+      Note: F1/F2 tests
     - Path: src/framework/contracts/differential.ts
       Note: differential(), runDifferential, differentialSpec; the meaning contract is built on these unchanged
     - Path: src/framework/ir/adapters.ts
       Note: defineAdapter/createIRArtifact; the Tix IR projection
-    - Path: src/typed/passes.ts
-      Note: optimizationContract, the pattern the tensor contract follows
+    - Path: src/framework/passes/define-pass.ts
+      Note: applyPass; both proposed framework changes land here
     - Path: src/typed/evaluate.ts
       Note: meaningKept, the differential invariant the tensor relations mirror
+    - Path: src/typed/passes.ts
+      Note: optimizationContract, the pattern the tensor contract follows
     - Path: ttmp/2026/11/26/IRWB-020-N--tix-an-index-notation-tensor-language-its-ir-f32-and-f64-evaluators-a-meaning-contract-and-two-checked-passes/scripts/01-probe-framework-fit.mjs
       Note: probe that found both framework frictions
 ExternalSources: []
-Summary: "Design for stage 1 of the tensor domain: Tix syntax and checks, a statement-level IR as a v6 artifact, f32/f64 evaluators, exact and tolerance meaning relations, the inline and split-sum passes, a six-program corpus, and two small framework changes."
+Summary: 'Design for stage 1 of the tensor domain: Tix syntax and checks, a statement-level IR as a v6 artifact, f32/f64 evaluators, exact and tolerance meaning relations, the inline and split-sum passes, a six-program corpus, and two small framework changes.'
 LastUpdated: 2026-11-26T13:30:00-05:00
-WhatFor: "Review before implementation of IRWB-020-N"
-WhenToUse: "Reading or reviewing the tensor domain's stage 1"
+WhatFor: Review before implementation of IRWB-020-N
+WhenToUse: Reading or reviewing the tensor domain's stage 1
 ---
 
 # Stage 1 design: Tix language, IR, evaluators, contract, inline and split-sum
@@ -464,3 +470,25 @@ The tests go where the risk is:
 - An async `optimizeTix` variant that records facts in an `AnalysisManager`.
 - Fusion, tiling, attention rewrites and CUDA lowering (stages 2 and later).
 - Splitting multi-index sums (conv2d).
+
+## 13. As built: deviations from revision 2
+
+Stage 1 was implemented as designed, with these differences:
+
+1. **`applyPassSync` also accepts differential invariants that have `decide`.** It decides them locally with
+   `runDifferential`. That function produces the same verdicts as the invariant's own check, so nothing is
+   gained by refusing them.
+2. **The guard bounds rule is more general than §4 states.**
+   - A reference may contain any integer multiple of a guarded form, plus other terms.
+   - The guarded form must have positive coefficients, so that its minimum is its constant.
+3. **`max(...)` is a call or a reduction depending on the names in the parentheses.** If every name in them is a
+   shape name of the function, it is a call. Otherwise it is a reduction. §3 did not specify this.
+4. **`return` must name a statement tensor.** Returning a parameter is a check error.
+5. **`split-sum-wrong` takes `ceil((E − 3)/4)` blocks.** That equals `floor(E/4)` for integer `E`, and it can be
+   expressed with the existing `Extent` form.
+6. **What `optimizeTix` counts as a rejection.** It treats `PassError` and `TixIRError` (an invalid pass output)
+   as `accepted: false`. Any other error propagates, because it is a bug.
+7. **More is exported than the fixed API.** `dist/tensor/index.js` also exports the contracts, the passes (the
+   wrong variants included), `TAU`, `tensorCases`, `maxScaledError` and the error classes. Tests use them.
+8. **How inline builds its correspondence.** It tracks, for each output expression, the set of input
+   expressions it came from. That way a chain of inlinings still maps input ids to output ids.
