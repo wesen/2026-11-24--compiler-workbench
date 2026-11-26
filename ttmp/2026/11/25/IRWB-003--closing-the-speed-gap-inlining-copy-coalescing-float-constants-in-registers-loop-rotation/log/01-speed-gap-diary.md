@@ -554,7 +554,7 @@ This step measured what each backend option buys on top of the `speed` pipeline,
 
 ## Step 11: Candela per scene, first attempt: the frozen O2+ reproduces; inlining without dfe doubles the program
 
-This step ran the per-scene measurement (`scripts/08-candela-scene-speed.mjs`, IRWB-001's script 13 extended) on B-01 and R-01 with `--base`. The O2+ row for B-01 reproduced IRWB-001's numbers exactly, but the `speed` pipeline would have carried the originals of every inlined callee through all of O2+: one `inline` took the scene program from 4,786 to 11,979 statements. I stopped the run after 25 minutes and restarted it with `dfe` after each `inline`, which is what a program with entries allows.
+This step ran the per-scene measurement (`scripts/08-candela-scene-speed.mjs`, IRWB-001's script 13 extended) on B-01 and R-01 with `--base`. The O2+ row for B-01 reproduced IRWB-001's numbers exactly, but the `speed` pipeline would have carried the originals of every inlined callee through all of O2+: one `inline` took the scene program from 5,317 to 11,979 statements (corrected in Step 14: 4,786 is the size after O2+, not the input of `speed`). I stopped the run after 25 minutes and restarted it with `dfe` after each `inline`, which is what a program with entries allows.
 
 ### Prompt Context
 **User prompt (verbatim):** see Step 1.
@@ -575,7 +575,7 @@ This step ran the per-scene measurement (`scripts/08-candela-scene-speed.mjs`, I
 - B-01 `inline` (first application): `{"changed":true,"check":"146/146","ms":62348,"stmts":11979}`.
 
 ### What didn't work
-- Running the pipeline as written on an entry-only program: 4,786 → 11,979 statements after one `inline`, with 19 passes still to go. `/usr/bin/time`: `Command terminated by signal 15`, `Elapsed 25:14.48`, `Maximum resident set size 7735912` KB.
+- Running the pipeline as written on an entry-only program: 5,317 → 11,979 statements after one `inline`, with 19 passes still to go. `/usr/bin/time`: `Command terminated by signal 15`, `Elapsed 25:14.48`, `Maximum resident set size 7735912` KB.
 
 ### What I learned
 - The `speed` pipeline is written for programs without entries, where nothing can be removed. A program with entries should interleave `dfe`.
@@ -691,3 +691,55 @@ This step re-ran the per-scene measurement on the merged build (Step 12). B-01 f
 
 ### Technical details
 - B-01's O2+ row on this build (Step 11): 10,435 per pixel, 74,044 bytes, 0 differing floats.
+
+## Step 14: R-01 under the memory cap; the per-scene results
+
+This step re-ran R-01, the scene that had not finished, under the coordinator's memory cap, and combined it with B-01's row from the cut-off log. R-01 under `speed` with the three options executes 18,186.7 instructions per pixel, 20.4% fewer than O2+ and 16.2% more than the reference compiler's `kernel` image; its frame is bit-identical to the reference's. The run held at most 7.05 GB and exited normally.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 and Step 13 (the coordinator's resume note).
+**Assistant interpretation:** Re-run what did not finish, under `systemd-run --user --scope -p MemoryMax=14G -p MemorySwapMax=0` with `--max-old-space-size=10240`.
+**Inferred user intent:** See Step 13.
+**Commit (code):** the commit after this step.
+
+### What I did
+- `npx tsc` (dist unchanged since the merge build); tested the launcher with a one-line node program (`capped ok`, exit 0).
+- `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 /usr/bin/time -v node --max-old-space-size=10240 scripts/08-candela-scene-speed.mjs R-01 --dfe-after-inline > various/11-candela-scene-R01-speed.json 2> various/11-candela-scene-R01-speed.log`.
+- `various/11-candela-scenes-speed.json` = `[B-01's row (last line of various/11c-…-cut-off.log), R-01's row (various/11-candela-scene-R01-speed.json)]`, written by a two-line `node -e`; `scripts/10-report-figures.py` takes O2+ from it when present, else B-01's from `various/11a-…` (this build) and R-01's from IRWB-001's `08-candela-per-scene-o2.json`. Figure `various/figures/irwb003-candela-scenes.png`.
+- Corrected a number in Step 11: the input of `speed` on B-01 has 5,317 statements, not 4,786 (that is O2+'s output).
+
+### Why
+- B-01's row in the cut-off log is complete; re-running it would measure the same thing.
+
+### What worked
+- `Exit status: 0`, `Elapsed 8:49.03`, `Maximum resident set size 7054772` KB.
+- R-01: pipeline 103.8 s; 137 → 44 functions, 5,400 → 8,471 statements; 18 changed applications, each `146/146`; check `{"agree":879,"disagree":0,"inconclusive":1}`; default options 102,864 bytes, 19,314.3 per pixel, 0 differing floats; the three options 95,376 bytes, **18,186.7** per pixel, 0 differing floats; choices `chains` 16, `coalesce` 33, homes 26 (127 constants) of 44.
+- Per scene, instructions per pixel:
+
+  | | B-01 | R-01 |
+  |---|---:|---:|
+  | reference `kernel` | 8,501 | 15,655.9 |
+  | O2+ | 10,435 | 22,850.9 |
+  | speed, defaults | 8,749.1 | 19,314.3 |
+  | speed + the three options | 8,267.7 | 18,186.7 |
+
+### What didn't work
+- The first figure had its legend cut at both sides; two columns now.
+
+### What I learned
+- The same reduction, about 20% of O2+'s cost on both scenes, leaves R-01 above `kernel` and B-01 below it, because R-01 started 46% above `kernel` and B-01 23%. Where R-01's remaining 16% goes has not been measured.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- R-01's O2+ number is IRWB-001's (same frozen pipeline; B-01's was re-measured on this build and matched IRWB-001's exactly).
+
+### What should be done in the future
+- The other 16 scenes (not run: time).
+
+### Code review instructions
+- `various/11-candela-scenes-speed.json`, `various/11-candela-scene-R01-speed.log`.
+
+### Technical details
+- The general program's measurement follows in Step 15.

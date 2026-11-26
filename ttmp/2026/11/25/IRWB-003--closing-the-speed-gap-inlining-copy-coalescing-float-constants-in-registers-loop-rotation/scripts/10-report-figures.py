@@ -155,9 +155,9 @@ if os.path.exists(path) and os.path.getsize(path) > 0:
         [plt.Rectangle((0, 0), 1, 1, color=c) for _, _, c in labels],
         [n for n, _, _ in labels],
         loc="lower center",
-        ncol=4,
+        ncol=2,
         frameon=False,
         bbox_to_anchor=(0.5, -0.02),
     )
 
-    save(fig, "irwb003-candela-scenes.png", 0.12)
+    save(fig, "irwb003-candela-scenes.png", 0.2)
