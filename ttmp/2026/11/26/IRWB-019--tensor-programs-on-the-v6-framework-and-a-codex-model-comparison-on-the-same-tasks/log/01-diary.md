@@ -376,3 +376,58 @@ The judge (Claude subagent, 171K tokens) scored the four v1 and four v2 Sol desi
   - a bound derived from the computation (P's running error bound) accepts every correct `split-sum`;
   - fixed bounds reject some (K 5/60, E 1/60);
   - the review asked designs without a justified bound to justify it, and v2/v3 add "justify every numeric threshold by an error argument or a measurement".
+
+## Step 16: all fourteen implementations evaluated; the T2 base; the report turn
+
+All fourteen implementations are in. `scripts/14-impl-summary.mjs` gives the table below (`results/impl-summary-t1.json`).
+- **Turn-2 cost:** wall minutes, commands (Codex `CommandExecution` events; Pi `bash` calls; Claude tool uses) and generated output tokens.
+- **Minutes are not comparable across cells:** fourteen agents shared 8 cores.
+
+| item | cell | suite | variant | xcF32 | inline | split | srcLines | testLines | tests | framework | minutes | commands | outputTokens |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| IRWB-020-P | claude/fable/medium | 22/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1717 | 621 | 33 | +168/-55 | 15.4 | 27 | - |
+| IRWB-020-N | claude/opus/medium | 22/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1674 | 260 | 20 | +193/-36 | 16 | 52 | - |
+| IRWB-020-D | codex/astra/high | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 972 | 343 | 19 | +86/-28 | 63.3 | 87 | 30585 |
+| IRWB-020-B | codex/astra/medium | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 917 | 212 | 11 | +85/-27 | 9.8 | 42 | 21563 |
+| IRWB-020-I | codex/astra/xhigh | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1086 | 338 | 14 | +140/-71 | 62.9 | 66 | 32774 |
+| IRWB-020-A | codex/sol/high | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1336 | 374 | 21 | +102/-34 | 67.8 | 45 | 46309 |
+| IRWB-020-C | codex/sol/medium | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1380 | 414 | 17 | +132/-47 | 62.5 | 31 | 38880 |
+| IRWB-020-L | codex/sol/xhigh | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1278 | 550 | 23 | +112/-45 | 64.7 | 39 | 43876 |
+| IRWB-020-H | pi/astra/high | 25/25 | 25/25 | 180/180 | 60/60 | 59/60 | 1004 | 282 | 15 | +32/-19 | 56 | 23 | 24512 |
+| IRWB-020-E | pi/astra/medium | 25/25 | 25/25 | 180/180 | 60/60 | 59/60 | 805 | 275 | 12 | +85/-26 | 9.9 | 17 | 19613 |
+| IRWB-020-J | pi/astra/xhigh | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1067 | 288 | 19 | +118/-0 | 13.4 | 19 | 25215 |
+| IRWB-020-G | pi/sol/high | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1279 | 451 | 17 | +123/-37 | 58.5 | 22 | 44488 |
+| IRWB-020-F | pi/sol/medium | 25/25 | 25/25 | 180/180 | 60/60 | 60/60 | 1300 | 334 | 18 | +105/-29 | 56.1 | 20 | 37985 |
+| IRWB-020-K | pi/sol/xhigh | 25/25 | 25/25 | 180/180 | 60/60 | 55/60 | 1317 | 465 | 21 | +177/-81 | 57.6 | 17 | 42416 |
+
+- **Correctness is uniform.**
+  - Every implementation agrees bit for bit with the tree-walking reference on all 180 random cases, and with f64 on all 180.
+  - Every `inline` result is bit-identical.
+  - Every accepted `split-sum` computes the same function.
+  - Twelve pass the frozen suite 25/25. The two Claude cells pass 22/25, failing only on name reuse, and pass the variant 25/25.
+- **What separates them:**
+  - false rejections of a correct `split-sum`: K 5/60 (fixed abs+rel bound), E 1/60 and H 1/60 (both program 39, both Pi Astra);
+  - the name-reuse rule (N, P);
+  - size and cost.
+- **Size follows the model more than the harness:** Astra writes 805–1,086 lines of `src/tensor`, Sol 1,278–1,380, Claude 1,674–1,717. Framework diffs range from +32/−19 (H) to +193/−36 (N).
+- **No implementation changed files outside the allowed scope.**
+
+### The T2 base: IRWB-020-B (Codex, Astra, medium)
+The criteria, in order:
+1. every objective check passes;
+2. the smallest framework change;
+3. the smallest source.
+
+Nine cells meet (1): A, B, C, D, F, G, I, J, L. B and D tie on (2), at +85/−27 and +86/−28; B wins on (3) with 917 lines against 972.
+- B's design (K in the t1 judge pack) was one of the two in which the reviewer found no must-change item. The judge gave it fitness 8 and over-engineering 2.
+- **I read B's framework diff.** It adds `applyNativePassSync(pass, before, gate, params)` with a caller-supplied synchronous gate. It moves the native-result steps into `prepareNative` and `enforceWrites`, which `applyPass` now shares. It refuses passes with `needs`, `preserves` or their own contract.
+- **It does not make `applyPass`'s edit lazy.** The async path still throws for an adapter without `rebuild`. That is the minimum the fixed API needs; the gap stays listed in the backlog.
+- B is merged after its report turn.
+
+### The report turn (turn 3, `prompts/t1/turn3.md`)
+- Each implementer receives its own evaluation results (`results/turn3-results/<item>.md`, written by `scripts/15-turn3-results.mjs`), with the source of up to two programs it falsely rejected. It must not change code.
+- It must diagnose each failure with `file:line`, then write `reference/02-report.md` (2,000–3,500 words) covering the design, the checks and the results, including failures.
+- The turn measures something new: whether each configuration reports its own failures faithfully, and whether it disputes the name-reuse result or accepts it.
+- The worst-case conditioning quoted in each text is computed per agent: 3.7e-7 for program 39, 1.6e-7 for K's five.
+- **Dispatch:** the twelve Codex and Pi cells by `10-dispatch-turn.sh` (which now accepts per-item `<RESULTS>` files); N and P by SendMessage.
+- **The suite and the cross-check** are committed after the report turn, so that the reports are written without them.

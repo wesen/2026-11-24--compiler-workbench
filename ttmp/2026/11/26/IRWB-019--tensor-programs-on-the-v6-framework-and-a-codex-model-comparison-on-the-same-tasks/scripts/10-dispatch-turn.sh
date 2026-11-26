@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Resume every agent of a task for its next turn, each with its own prompt: <template> with <ID> replaced by the
-# item and <REVIEW> by that item's review (reviews/<doc>.md, mapped through results/blind-key-<task>.json).
+# item and <REVIEW> (or <RESULTS>) by that item's text: <reviews-dir>/<item>.md if it exists, else its review
+# (reviews/<doc>.md, mapped through results/blind-key-<task>.json).
 # Usage: 10-dispatch-turn.sh <task> <turn-name> <template> [<reviews-dir>] [--only ITEM,ITEM] [--network]
 #   Codex cells: 02-resume-codex-round.sh <round>-<turn> <round> (developer_instructions as in turn 1).
 #   Pi cells: 13-resume-pi-round.sh. Claude subagent cells: the prompt is written to
@@ -25,8 +26,13 @@ const t = fs.readFileSync(tpl, "utf8");
 for (const [item, c] of Object.entries(key)) {
   if (only && !only.split(",").includes(item)) continue;
   let review = "";
-  if (reviews) { const b = blind.find(x => x.item === item); review = b ? fs.readFileSync(`${reviews}/${b.name}`, "utf8").trim() : ""; if (!review) { console.error(`no review for ${item}`); continue; } }
-  fs.writeFileSync(`${P}/${item}.md`, t.replaceAll("<ID>", item).replace("<REVIEW>", review));
+  if (reviews) {
+    // a per-item file (<item>.md) is used as it is; otherwise the blind key maps the item to its review (doc-X.md)
+    if (fs.existsSync(`${reviews}/${item}.md`)) review = fs.readFileSync(`${reviews}/${item}.md`, "utf8").trim();
+    else { const b = blind.find(x => x.item === item); review = b ? fs.readFileSync(`${reviews}/${b.name}`, "utf8").trim() : ""; }
+    if (!review) { console.error(`no review or results for ${item}`); continue; }
+  }
+  fs.writeFileSync(`${P}/${item}.md`, t.replaceAll("<ID>", item).replace("<REVIEW>", review).replace("<RESULTS>", review));
   console.log(item, c.round, c.model, c.effort, c.harness);
 }' "$T" "$task" "$tpl" "$reviews" "$P" "$only" > "$P/dispatch.txt"
 while read item round model effort harness; do
