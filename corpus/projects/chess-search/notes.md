@@ -1,4 +1,4 @@
-# Chess search
+At r0, inspect the [search step](focus:fn:chessSearchStep), [ray directions](focus:bb:chessAttacked.16), and [ray traversal](focus:bb:chessAttacked.19) in the [IR view](view:ir).
 
 Ported from `apps/typed/chess/` in ds-js-os at revision
 `b19062b29fe4fb6b02863e92510501dc5c4bc9b3`. The board is a caller-supplied
