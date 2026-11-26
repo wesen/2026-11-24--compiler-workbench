@@ -178,3 +178,7 @@ Start with [the design](../design-doc/01-lowering-tix-statements-to-cuda-with-a-
 ### Technical details
 
 No production source, existing tool, tests or corpus files changed at this checkpoint. The design gives the supported input domain, marshalling, expression/loop mapping, cache keys, case/evidence protocol, failure tests and scoped benchmark plan.
+
+## Step 2: Review revision
+
+Accepted both timing corrections and the proposed cut: preload functions before normal timing, emit `--benchmark` in the same main, and reuse process-local verdicts without remote identity queries. Runtime arguments change execution but not compilation. Keep per-job directories for concurrent identical inputs. The reviewer measured 0.115 vs 0.004 ms before/after preload on GB10. Base design: `35e01c4`. Next: implement and check the reviewed stage.
