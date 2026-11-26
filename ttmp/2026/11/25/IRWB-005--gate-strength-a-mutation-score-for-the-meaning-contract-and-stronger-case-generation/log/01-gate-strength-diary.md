@@ -808,3 +808,49 @@ From now on every Candela-scale process runs under a memory cap (coordinator's r
 
 ### Technical details
 - Functions complete in part 1 (sites judged / sites): acosf 60/60, exp2f 47/47, hdriPdf 47/47, lum 11/11, q_absi 9/9, s10_mat_1 116/116, s12_heightAt 2/2, s15_customKernel 6/6, s17_sdUser 2/2, s3_mat_1 116/116, s5_mat_4 182/332 (150 skipped by the 600 s budget), s7_mat_2 4/4, s9_sdf_0 140/224 (84 skipped), skyL_wgsl 351/351.
+
+## Step 18: Candela, completed under the memory cap
+
+The four functions the failure cut off were run under the cap, with the same selection, and the two parts together are the Candela measurement: 18 functions (14 cheap ones spread by name, 4 that bcm changed), 3,931 mutants judged (1,395 sites skipped by the per-function budget, all in `s5_mat_4`, `s9_sdf_0` and `cdlInit`), none invalid. The default gate kills 97.6 % of the non-equivalent ones (upper bound; 88.0 % lower), accepting 85 wrong mutants. Unlike the corpus, nearly all of them are float mutants (83 of 85) in shading and distance-field code, and none diverges. More random cases help more than boundary cases here: 100 default cases accept 49, version 2 accepts 71. The replicated gate agreed with the framework's own `meaningKept` on all 2,289 mutants where they could be compared. The process peaked at 9.97 GB resident, under the 14 GB cap.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1; coordinator's resume message summarized in Step 17.
+**Assistant interpretation:** Resume Candela under the cap, skipping finished functions; record memory per function.
+**Inferred user intent:** The Candela subset completed safely.
+**Commit (code):** cb159f8 (`--skip-done`, memory per function), 1d09e9c (live heap after a full GC, usage under the cap); results committed with this step.
+
+### What I did
+- `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 node --max-old-space-size=10240 tools/mutation-score-candela.mjs --count 14 --bcm 4 --fn-budget 600 --gates default,check100,strong,default+div --skip-done various/13-candela-part1-cut-off.jsonl --json various/13-candela-part2.json --jsonl various/13-candela-part2.jsonl` → `various/13-candela-part2.txt`; exit 0, 15 min 28 s. The selection printed is the same 18 functions as part 1; 14 skipped, 4 run (`cameraRay`, `cdlInit`, `cdlLayout`, `envL`).
+- `scripts/22-candela-summary.mjs various/13-candela.json various/13-candela-part1-cut-off.jsonl various/13-candela-part2.jsonl` → `various/13-candela-summary.txt`.
+
+### Why
+- The functions bcm changed are where a real pass acted on Candela; `cdlInit` and `cdlLayout` are called by nothing, so they also exercise the cross-check with the framework's gate.
+
+### What worked
+- Totals (mutants 3,931; killed, wrong accepted, equivalent, lower..upper): default 3,429 85 417 88.0 %..97.6 %; check100 3,477 49 405 89.1 %..98.6 %; strong 3,443 71 417 88.4 %..98.0 %; default+div 3,430 84 417 88.0 %..97.6 %.
+- Per operator (default, upper): f32 830 killed / 83 wrong / 308 equivalent (90.9 %); const 99.9 %; swap 99.8 %; shift, drop-store (178), cmp-flip, cmp-weaken 100 %; drop-check 10 and check-range 10 all equivalent (Candela's checked text addresses after bcm never fail on the cases).
+- Wrong accepted by default, per function: s9_sdf_0 52, s5_mat_4 10, skyL_wgsl 7, s10_mat_1 5, s3_mat_1 5, envL 2, acosf, hdriPdf, q_absi, cameraRay 1 each. By variant: `f32 sign` 22, `fdiv` 15, `ulp` 14, `fmax` 6, `fmin` 6, `fsub` 6, `fadd` 6, `fmul` 3, `fle` 3, `f2u` 1, `fge` 1, `const −1` 1, `swap` 1.
+- Classes (default): survived-wrong 85 (all by the sample), equivalent-spec 35, equivalent-presumed 382.
+- Cross-check on functions nothing calls: q_absi 9 (part 1), cdlInit 2,171 and cdlLayout 109 (part 2), 2,289 mutants, 0 differences between the replicated and the framework gate.
+- Memory per function (after the function, before releasing its cases; process-wide): cameraRay rss 1,595 MB (heap 1,129), cdlInit 9,789 (9,241), cdlLayout 9,841 (9,317), envL 2,696 (2,204); peak 9,972 MB. The 9 GB after cdlInit was not retained: at 09:43 the resident size had fallen to 2,075 MB without any release by the tool, so it was uncollected garbage of 2,171 mutant revisions, which V8 keeps until it nears the 10 GB old-space limit. The tool now runs a full collection before measuring when started with `--expose-gc`.
+
+### What didn't work
+- `cdlInit` has 3,332 sites (one block of 514 statements); 1,161 were left unjudged by the 600 s budget, most of the time going into building revisions (533 s for 2,171 mutants).
+
+### What I learned
+- Candela's gate weakness is not divergence and not boundaries: it is the region of the input space. A distance function's terms or a material's lobe matter only for points near a surface or for parameters in a narrow range, and 40 random points mostly miss them; the classifier's 400 + 200 + 400 cases hit them. 12 mutants of the material functions are killed by `check100` alone, with cases whose `K` record is laid out in key order (outside the specification, Step 7), and are equivalent on the specified cases.
+
+### What was tricky to build
+- Resuming with the same selection: `--skip-done` recomputes the selection and removes the finished functions, rather than naming the rest by hand.
+
+### What warrants a second pair of eyes
+- Part 1 ran on the pre-merge build, part 2 on the merged one; the corpus sample of Step 16 is the evidence that the merge changes no verdict.
+
+### What should be done in the future
+- A follow-up on `s9_sdf_0` and `s10_mat_1` with a coverage-chosen and a 400-case gate (Step 20).
+
+### Code review instructions
+- `various/13-candela-summary.txt`, `various/13-candela.json`.
+
+### Technical details
+- Gate time over 3,931 mutants (ms): default 185,004; check100 553,646; strong 412,458; default+div 222,864.

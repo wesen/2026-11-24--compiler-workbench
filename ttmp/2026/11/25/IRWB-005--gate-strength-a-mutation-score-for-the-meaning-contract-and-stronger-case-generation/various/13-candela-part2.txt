@@ -1,0 +1,62 @@
+ingest + bcm 7725 ms; bcm changed 35 functions
+base (r0 + bcm) vs r0, 40 gate cases per function: {"agree":13258,"disagree":0,"inconclusive":22}
+cheap functions: 325; chosen: 18: acosf, exp2f, hdriPdf, lum, q_absi, s10_mat_1, s12_heightAt, s15_customKernel, s17_sdUser, s3_mat_1, s5_mat_4, s7_mat_2, s9_sdf_0, skyL_wgsl, cameraRay, cdlInit, cdlLayout, envL
+skipping 14 functions finished in ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/various/13-candela-part1-cut-off.jsonl; left: cameraRay, cdlInit, cdlLayout, envL
+cameraRay              |A|   3 sites 314 default killed 278/314 strong 279 skipped 0  {"build":17930,"judge":20391,"classify":11545} {"rssMB":1595,"heapMB":1129,"peakRssMB":1595}  cross-check {"compared":0,"differ":0}  62398 ms
+cdlInit                |A|   1 sites 3332 default killed 2166/2171 strong 2166 skipped 1161  {"build":532811,"judge":65277,"classify":1301} {"rssMB":9789,"heapMB":9241,"peakRssMB":9917}  cross-check {"compared":2171,"differ":0}  662563 ms
+cdlLayout              |A|   1 sites 109 default killed 99/109 strong 99 skipped 0  {"build":1146,"judge":219,"classify":351} {"rssMB":9841,"heapMB":9317,"peakRssMB":9917}  cross-check {"compared":2280,"differ":0}  664519 ms
+envL                   |A|   6 sites 244 default killed 154/244 strong 155 skipped 0  {"build":57930,"judge":136341,"classify":63844} {"rssMB":2696,"heapMB":2204,"peakRssMB":9972}  cross-check {"compared":2280,"differ":0}  927276 ms
+framework gate vs replicated gate (functions nothing calls): {"compared":2280,"differ":0}
+
+gate default: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 418   411    0    7  98.3% 100.0%
+shift                800   788    0   12  98.5% 100.0%
+const                884   861    0   23  97.8% 100.0%
+drop-check             8     0    0    8   0.0%    -  
+check-range            8     0    0    8   0.0%    -  
+f32                  532   453    3   76  85.2%  99.3%
+drop-store           178   178    0    0 100.0% 100.0%
+cmp-flip               8     6    0    2  75.0% 100.0%
+cmp-weaken             2     0    0    2   0.0%    -  
+TOTAL               2838  2697    3  138  95.3%  99.9%
+
+gate check100: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 418   411    0    7  98.3% 100.0%
+shift                800   788    0   12  98.5% 100.0%
+const                884   861    0   23  97.8% 100.0%
+drop-check             8     0    0    8   0.0%    -  
+check-range            8     0    0    8   0.0%    -  
+f32                  532   455    1   76  85.5%  99.8%
+drop-store           178   178    0    0 100.0% 100.0%
+cmp-flip               8     6    0    2  75.0% 100.0%
+cmp-weaken             2     0    0    2   0.0%    -  
+TOTAL               2838  2699    1  138  95.4% 100.0%
+
+gate strong: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 418   411    0    7  98.3% 100.0%
+shift                800   788    0   12  98.5% 100.0%
+const                884   861    0   23  97.8% 100.0%
+drop-check             8     0    0    8   0.0%    -  
+check-range            8     0    0    8   0.0%    -  
+f32                  532   455    1   76  85.5%  99.8%
+drop-store           178   178    0    0 100.0% 100.0%
+cmp-flip               8     6    0    2  75.0% 100.0%
+cmp-weaken             2     0    0    2   0.0%    -  
+TOTAL               2838  2699    1  138  95.4% 100.0%
+
+gate default+div: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 418   411    0    7  98.3% 100.0%
+shift                800   788    0   12  98.5% 100.0%
+const                884   861    0   23  97.8% 100.0%
+drop-check             8     0    0    8   0.0%    -  
+check-range            8     0    0    8   0.0%    -  
+f32                  532   454    2   76  85.3%  99.6%
+drop-store           178   178    0    0 100.0% 100.0%
+cmp-flip               8     6    0    2  75.0% 100.0%
+cmp-weaken             2     0    0    2   0.0%    -  
+TOTAL               2838  2698    2  138  95.3%  99.9%
+
+gate time (ms): {"default":35234.2,"check100":62159.2,"strong":37542.5,"default+div":26070.2}
+total 927276 ms
+systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 node    1029.64s user 17.51s system 112% cpu 15:27.76 total
+exit 0
