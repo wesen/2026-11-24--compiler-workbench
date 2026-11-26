@@ -23,6 +23,7 @@ WhenToUse: Start here to find the proposed framework delta, verification plan an
 index language with checked `inline` and `split-sum` rewrites and six tensor corpus examples. The finding to
 review first is the gap between the synchronous optimizer API and the framework's asynchronous pass runner.
 
+- [Final report: Tix and the independent evaluation](reference/02-report.md)
 - [Design and framework delta ledger](design-doc/01-design-tix-programs-and-checked-tensor-passes.md)
 - [Diary, original request and reproduction of the numerical witness](reference/01-implementation-diary.md)
 - [Tasks](tasks.md) · [Changelog](changelog.md)

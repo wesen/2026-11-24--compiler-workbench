@@ -220,3 +220,47 @@ The domain commit `a1ba478` is now covered by independent corpus oracles in both
 Kept construction and rebuild on the same relation sort order. Snapshotted sync gate inputs and rejected promise-valued observations before comparison. No changes outside the documented framework helper and export. The implementation retains diagnostic start locations rather than end offsets.
 
 Node v24.18.0 final gate: `npm run build` passed; importing `dist/tensor/index.js` yielded only compileTix, optimizeTix and runTix. `node --test tests/tensor/*.test.mjs`: 19/19. `node --test tests/framework/*.test.mjs`: 227/227. `node --test tests/typed/{passes,strategies,evaluate-analyses,meaning-memo}.test.mjs`: 24/24. No skips, escalation or full-suite run. Review the framework ledger and `tests/tensor/passes.test.mjs` first. The contract is sampled evidence within the documented domain, not a proof.
+
+## Step 6: Diagnose the independent results and publish the report
+
+The independent evaluator reported **no failures, mismatches or pass rejections** at `c03f209`. There is no failing case to reproduce, no failure cause to attribute to a file or line, and no reason from the supplied results to dispute a verdict. This checkpoint adds documentation only.
+
+### Prompt context
+
+**User prompt (verbatim):**
+
+```text
+Stage 1 of IRWB-020-J has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `c03f209`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-J:`). Final message: the report's path, the commit hash, and one line per failure cause.
+```
+
+### Evidence and interpretation
+
+I checked the evaluator and acceptance paths in the evaluated tree and separated the supplied independent results from Step 5's local checks. `src/framework/passes/sampled-sync.ts:101` rejects a sampled verdict other than `agree`; `src/tensor/index.ts:35–39` records success or catches that rejection. Acceptance applies to unchanged candidates too. The evaluator's 60/60 counts do not establish that all 60 graphs changed.
+
+The deliberate exact rejection at `tests/tensor/passes.test.mjs:27` is a local negative control, not a discrepancy in the independent results. The same is true of the rejected wrong accumulator and wrong index order at `tests/tensor/passes.test.mjs:54` and `:70`. `src/tensor/contract.ts:93` selects a different baseline for each relation; `:127` is the internal tolerance, not the independent evaluation's f64 threshold.
+
+### Review and handoff
+
+The [report](02-report.md) gives the independent evaluator's counts with their denominators and the case for the two framework file changes. No hidden tests were rerun and no reproduction script was needed. `git diff --exit-code c03f209 -- src tests corpus` returned 0. The evidence supports a sampled correctness claim; it supplies neither a speedup measurement nor proof for untested inputs.

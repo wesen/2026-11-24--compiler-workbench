@@ -19,3 +19,7 @@ Implemented and checked stage 1 after review. Both deliberately wrong rewrites r
 ## 2026-11-26
 
 Ticket closed
+
+## 2026-11-26
+
+Published the stage-1 report and recorded the independent results for c03f209; no evaluated code changed.
