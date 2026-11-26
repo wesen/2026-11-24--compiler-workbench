@@ -162,3 +162,40 @@ I adopted all three scope cuts. Untimed runs retain their documented lock behavi
 use the existing cache without coalescing in-flight checks, and the full-size benchmark compares timings
 without requiring a second reference precision. The Stage 1 revision and replayable GB10 arithmetic probe
 remain the starting evidence. See the design for the revised implementation boundary.
+
+## Step 3 — Implement and exercise the CUDA path
+
+The tensor entry point now exports the three fixed CUDA APIs. The emitter walks the current function,
+uses one device kernel per statement and keeps the loop tree for nested, multi-axis and split reductions.
+The generated host harness preloads active kernels with `cudaFuncGetAttributes`, submits work to one stream
+and reads binary f32 results without losing signed zeros. The Stage 1 case generator is shared by the
+CUDA contract without changing the synchronous optimizer's case order or RNG streams.
+
+The checked lowering uses the existing v6 transformation and differential APIs. Each cache miss delegates
+one batch. The optional standalone-source cache in the remote tool separates nvcc identity from runtime
+data, serializes competing builds and uses a private run directory per invocation. Only the measurement
+caller takes the GPU lock.
+
+### Validation
+
+- Installed the repository's declared dependencies with `npm ci --no-audit --no-fund`. The Node 24
+  little-endian word probe preserved the sign of zero and `npm run build` passed.
+- `node --test tests/tensor/*.test.mjs` passed all 31 tests in the first run. The six corpus contracts
+  agreed on GB10. The changed-read mutant failed its real remote-backed postcondition. Ordered and split
+  reductions produced their expected distinct result words.
+- The two additional remote transport cases passed when run by name. Distinct payloads sent concurrently
+  with the same source compiled once and returned separate outputs. An executable that removed its output
+  directory produced a fetch-phase failure.
+- The targeted Prettier check and `git diff --check` passed. A complete tensor rerun including the new
+  transport cases precedes the retained GPU timing run so this ticket's untimed checks cannot overlap it.
+  No framework source changed.
+- The first full-size interpreter matmul run took 177,804 ms on the shared machine. I kept that completed
+  trial and switched the benchmark to one CPU trial per workload instead of the design's three, which
+  would repeat several very long runs. The GPU benchmark retains one warmup and five event measurements.
+
+### Review and resume
+
+Review the [design](../design-doc/01-checked-tix-to-cuda-lowering.md) alongside
+`src/tensor/cuda-source.ts`, `src/tensor/cuda-contract.ts` and `tools/cuda-remote.mjs`.
+The [benchmark driver](../scripts/03-benchmark.mjs) runs from the worktree root after the build.
+The remaining deliverables at this checkpoint are the final test result and the timing table.

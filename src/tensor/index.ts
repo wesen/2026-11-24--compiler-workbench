@@ -2,6 +2,9 @@ import type { Artifact } from '../framework/core/types.js';
 import { createIRArtifact } from '../framework/ir/index.js';
 import { applyNativePassSync, PassError } from '../framework/passes/index.js';
 import { meaningGate } from './contract.js';
+import { tixFunction, verifyCudaLowering } from './cuda-contract.js';
+import { executeCuda, type CudaInputs } from './cuda-run.js';
+import { emitCuda } from './cuda-source.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
 import type { Module } from './model.js';
@@ -45,4 +48,26 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     }
   });
   return { program: { origin, current }, steps };
+}
+
+export function cudaSource(program: TixProgram, fn: string): string {
+  return emitCuda(tixFunction(program.current.value, fn));
+}
+
+export async function runTixCuda(
+  program: TixProgram,
+  fn: string,
+  inputs: CudaInputs,
+  options?: { host?: string },
+): Promise<{ shape: number[]; data: Float32Array; gpuMs: number }> {
+  const f = tixFunction(program.current.value, fn);
+  const [{ shape, data, trials }] = await executeCuda(emitCuda(f), f, [{ id: 0, inputs }], options);
+  return { shape, data, gpuMs: trials[0] };
+}
+
+export function checkLowering(
+  program: TixProgram,
+  fn: string,
+): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
+  return verifyCudaLowering(program.current, fn);
 }

@@ -16,3 +16,7 @@ Drafted the checked CUDA lowering and recorded the GB10 numeric and framework pr
 ## 2026-11-26
 
 Incorporated design review, including explicit tolerance rules and CUDA kernel preloading before events
+
+## 2026-11-26
+
+Implemented and checked direct CUDA emission, batched v6 verification and isolated remote builds

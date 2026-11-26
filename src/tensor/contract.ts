@@ -20,13 +20,17 @@ interface Sample {
 }
 const seed = 20,
   half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
-function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
+export function* sampleInputs(
+  fn: Fn,
+  random: () => number,
+  assignments: readonly (number | 'mixed')[],
+  signedZero: boolean,
+) {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
   ].sort();
-  const seen = new Set<string>(),
-    out: Sample[] = [];
-  for (const n of [1, 3, 4, 7, 'mixed'] as const) {
+  const seen = new Set<string>();
+  for (const n of assignments) {
     const shapeValues = symbols.map((_, i) => (n === 'mixed' ? [3, 5, 7][i % 3] : n));
     const key = JSON.stringify(shapeValues);
     if (seen.has(key)) continue;
@@ -34,8 +38,8 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
     const dims = new Map(symbols.map((s, i) => [s, shapeValues[i]]));
     const shapes = fn.params.map(p => p.shape.map(d => value(d, dims)));
     if (shapes.some(s => s.some(x => x < 0) || size(s) > 4096)) continue;
-    for (const stream of ['signed', 'positive', 'half-ulp', ...(relation === 'exact' ? ['zero'] : [])]) {
-      const inputs: Inputs = Object.create(null);
+    for (const stream of ['signed', 'positive', 'half-ulp', ...(signedZero ? ['zero'] : [])]) {
+      const inputs: Record<string, { shape: number[]; data: Float32Array }> = Object.create(null);
       fn.params.forEach((p, j) => {
         const shape = shapes[j];
         const data = Float32Array.from({ length: size(shape) }, (_, i) => {
@@ -52,19 +56,23 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
         });
         inputs[p.name] = { shape, data };
       });
-      try {
-        const ref = evaluate(fn, inputs, relation === 'exact' ? 'f32' : 'f64', true);
-        if (relation === 'tolerance' && !ref.data.every(Number.isFinite)) continue;
-        out.push({
-          fn: fn.name,
-          shapeValues,
-          stream,
-          inputs,
-          reference: fn === baseline ? ref : evaluate(baseline, inputs, 'f32'),
-        });
-      } catch (error) {
-        if (!(error instanceof OutsideSample)) throw error;
-      }
+      yield { shapeValues, stream, inputs };
+    }
+  }
+}
+function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
+  const out: Sample[] = [];
+  for (const sample of sampleInputs(fn, random, [1, 3, 4, 7, 'mixed'], relation === 'exact')) {
+    try {
+      const ref = evaluate(fn, sample.inputs, relation === 'exact' ? 'f32' : 'f64', true);
+      if (relation === 'tolerance' && !ref.data.every(Number.isFinite)) continue;
+      out.push({
+        ...sample,
+        fn: fn.name,
+        reference: fn === baseline ? ref : evaluate(baseline, sample.inputs, 'f32'),
+      });
+    } catch (error) {
+      if (!(error instanceof OutsideSample)) throw error;
     }
   }
   return out;
