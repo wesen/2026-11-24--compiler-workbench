@@ -12,7 +12,7 @@ const out = 'dist/site-test';
 test('build:site writes the page, the bundle, the styles and the checked vendor scripts', () => {
   rmSync(join(root, out), { recursive: true, force: true });
   const log = execFileSync(process.execPath, [join(root, 'tools/build-site.mjs'), out], { cwd: root }).toString();
-  assert.match(log, /44 projects, 17 chapters/);
+  assert.match(log, /50 projects, 17 chapters/);
   for (const f of ['index.html', 'app.js', 'app.css', 'vendor/tape.js', 'vendor/typed-wasm.js', 'vendor/rv32-interp.js'])
     assert.ok(existsSync(join(root, out, f)), f);
   const html = readFileSync(join(root, out, 'index.html'), 'utf8');

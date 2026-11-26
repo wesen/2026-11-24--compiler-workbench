@@ -58,7 +58,7 @@ test('A1: on every corpus function at r0, SSA def-use agrees with reaching defin
       gets += c.gets;
     }
   }
-  assert.deepEqual([fns, gets], [70, 794]);
+  assert.deepEqual([fns, gets], [135, 3322]);
 });
 
 test('A1: the check sees a wrong name, and a loop whose header is the entry block gets entry phis', async () => {

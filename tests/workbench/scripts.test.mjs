@@ -13,7 +13,7 @@ test('project scripts run unchanged through the wb layer', { timeout: 600000 }, 
   const all = [];
   for (const x of wb.projects.list())
     for (const s of wb.projects.get(x.id).scripts()) all.push(`${x.id}/${s.name}`);
-  assert.equal(all.length, 46);
+  assert.equal(all.length, 52);
   const run = process.env.IRWB_FULL ? all : [...SAMPLE, ...Object.keys(EXPECTED)];
   const failed = {};
   for (const name of run) {

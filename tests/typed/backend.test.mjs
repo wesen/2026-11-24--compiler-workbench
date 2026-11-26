@@ -35,7 +35,7 @@ const projects = readdirSync('corpus/projects').filter(id =>
 );
 const load = id => {
   const { meta, source } = project(id);
-  const r0 = createIRArtifact(blocksAdapter, id, ingest(id, source).toNative());
+  const r0 = createIRArtifact(blocksAdapter, id, ingest(id, source, meta.ingest ?? {}).toNative());
   return { meta, source, r0, st: storeOf(r0.value) };
 };
 const cells = n => ({ cells: Array.from({ length: n }, (_, i) => (i * 37) % 256) });
@@ -188,10 +188,10 @@ test('P2.4: rv32.image-agrees holds for every function of every corpus project a
     decided += ev.evidence.agree;
     inconclusive += ev.evidence.inconclusive;
   }
-  assert.equal(projects.length, 44);
-  assert.equal(fns, 70);
+  assert.equal(projects.length, 50);
+  assert.equal(fns, 135);
   // 40 cases per function; my-analysis has four cases whose loops hit the step limit
-  assert.equal(decided + inconclusive, 70 * 40);
+  assert.equal(decided + inconclusive, 135 * 40);
   assert.ok(inconclusive <= 4, `${inconclusive} inconclusive`);
 });
 
@@ -538,8 +538,9 @@ test("P2.6: the book's table against the reference compiler, and 5160 bytes agai
   assert.deepEqual({ ours, theirs }, { ours: 5160, theirs: 7628 });
 });
 
-// Chapter 13: "our evaluator at r0 agrees with the reference compiler's images on all 6986 decided cases".
-test('P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit)', async () => {
+// Chapter 13: "our evaluator at r0 agrees with the reference compiler's images on all 6986 decided cases" (44 projects;
+// 8286 with the six IRWB-012..017 projects).
+test('P2.6: the evaluator at r0 agrees with the reference images on 8286 decided cases (14 at the step limit)', async () => {
   const { Program } = await import('../../dist/typed/program.js');
   const { projectSource } = await import('../../dist/typed/project.js');
   const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
@@ -547,10 +548,11 @@ test('P2.6: the evaluator at r0 agrees with the reference images on 6986 decided
   for (const id of projectIds()) {
     const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
     const r = globalThis.typedRv32.compile(ps.source, [], undefined);
-    const image = B.imageFromCode(id, r.image, r.entries);
+    // signatures: entries with f32 scalars are called by ilp32f (fa registers), as the reference compiled them
+    const image = B.imageFromCode(id, r.image, r.entries, r.signatures);
     for (const f of p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) }).fns) {
       fns++; agree += f.agree; decided += f.total; inconclusive += f.inconclusive;
     }
   }
-  assert.deepEqual({ fns, decided, agree, inconclusive }, { fns: 70, decided: 6986, agree: 6986, inconclusive: 14 });
+  assert.deepEqual({ fns, decided, agree, inconclusive }, { fns: 83, decided: 8286, agree: 8286, inconclusive: 14 });
 });

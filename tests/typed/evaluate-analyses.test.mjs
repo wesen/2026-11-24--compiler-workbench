@@ -11,6 +11,8 @@ const { createIRArtifact } = await import('../../dist/framework/ir/index.js');
 const { AnalysisManager } = await import('../../dist/framework/contracts/index.js');
 const E = await import('../../dist/typed/evaluate.js');
 const A = await import('../../dist/typed/analyses.js');
+const { projectSource, ingestProject } = await import('../../dist/typed/project.js');
+const { projectFiles } = await import('../../tools/corpus.mjs');
 
 const load = id => {
   const project = JSON.parse(readFileSync(`corpus/projects/${id}/project.json`, 'utf8'));
@@ -76,7 +78,8 @@ test('P2.3: every corpus function gets every fact', async () => {
   let fns = 0;
   for (const id of readdirSync('corpus/projects')) {
     if (!existsSync(`corpus/projects/${id}/main.typed`)) continue;
-    const { r0, st } = load(id);
+    // every source file, ingested as project.json says (frame arrays need the tape)
+    const r0 = ingestProject(projectSource(id, projectFiles(id))), st = storeOf(r0.value);
     for (const def of Object.values(A.ANALYSES)) await m.analyse(def, r0);
     fns += st.fns.size;
   }
