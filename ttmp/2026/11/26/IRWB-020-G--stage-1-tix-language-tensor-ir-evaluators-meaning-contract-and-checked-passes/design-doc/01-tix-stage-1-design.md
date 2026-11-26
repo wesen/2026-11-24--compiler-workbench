@@ -18,8 +18,14 @@ RelatedFiles:
       Note: v6 artifact validation and logical projection
     - Path: repo://src/framework/passes/define-pass.ts
       Note: Existing async pass runner and shared candidate checks
+    - Path: repo://src/tensor/index.ts
+      Note: Tix public API
+    - Path: repo://src/tensor/meaning.ts
+      Note: Sample domain and exact or f64-reference relation
     - Path: repo://src/typed/project.ts
       Note: Typed pipeline and original-baseline precedent
+    - Path: repo://tests/tensor/optimize.test.mjs
+      Note: Meaning gate witness and wrong rewrite controls
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T12:48:01.20987567-05:00
@@ -125,7 +131,11 @@ independent fixtures will check that logic and both arithmetic policies.
 | `split-sum` | Replace each ordinary single-index `sum` in the input snapshot with `blockedSum(index, extent, blockSize: 4, body)`. In order, add partial sums over slices `[b, min(b + 4, extent))`, for `b = 0, 4, …`. Each partial and the outer sum starts at `+0` and rounds every add. The body sees the original absolute index. No padding, no rewriting `max`, multi-index `sum`, or already blocked nodes. | Candidate f32 versus original f64, within tolerance. |
 
 Composing subscripts instead of renaming indices covers slices and diagonals without moving any scalar
-arithmetic. Resolved IDs prevent capture under reductions. A separate `blockedSum` is smaller than adding
+arithmetic. Resolved IDs prevent capture under reductions. Implementation finding: combining two individually
+valid affine accesses can require a stronger bounds proof than the compile-time checker has. If the composed
+form exceeds safe-integer arithmetic or cannot be revalidated, leave that producer in place and consider the
+other producers. This is narrower than the reviewed general substitution rule, but avoids a general solver,
+new runtime bounds checks, or failing the entire pass. A separate `blockedSum` is smaller than adding
 non-affine bounds and index remapping to the general reduction IR; its two ordered loops and tail are explicit
 and executable. Both passes use `definePass`, declare actual entity/relation writes, and use the sampled gate as a
 postcondition. Neither claims framework analysis preservation. No-match is an accepted identity. A rejected
@@ -183,7 +193,7 @@ same pass gate for test cross-checks; they are not additional public pipeline na
    tolerance through the pass runner. In both negative controls assert the meaning gate, not a validator or
    write declaration, caused rejection, and that the next pass sees the last accepted revision.
 
-## Framework changes proposed (complete inventory)
+## Framework changes implemented (complete inventory)
 
 The existing `applyPass` always awaits, even for a native result. `AnalysisManager` also awaits every contract
 condition. Typed's async `runPipeline` can use these interfaces; the fixed Tix `optimizeTix` cannot. `differential`
@@ -194,12 +204,14 @@ caller. Finite JSON already suffices for symbolic IR and bit evidence. Neither n
 |---|---|
 | `src/framework/passes/define-pass.ts` (already re-exported by `passes/index.ts`) | Add `applyPassSync` for a synchronous native-result pass or identity. Share artifact construction, projection/diff, correspondence, write validation and no-op detection with `applyPass`. Require a host callback returning synchronous `CheckResult` on a changed candidate. Return immutable check evidence or reject under `contractRejected`. Refuse managed `contract`, `needs`, `preserves`, graph edits and async results rather than silently skipping them. |
 
-The domain runs the existing differential checker and supplies its verdict; no new manager or helper in
+The synchronous entry does not open a logical edit, so a native-only adapter needs no `rebuild` callback.
+The existing async entry still opens an edit and was not broadened. The tensor domain runs the existing
+differential checker and supplies its verdict; no new manager or helper in
 `contracts/`. A tensor-only runner would bypass framework write checks; a synchronous port of the manager
 would add transaction machinery this task does not need. No changes to `core`, `ir`, `contracts`, `dataflow`,
 `strategy`, or differential sampling. The strategy scheduler is not needed for a synchronous pass list.
 
-## Implementation and validation after review
+## Implementation and validation
 
 1. Add `src/tensor` front end, native IR/adapter, and evaluator. Test greedy reduction placement, `max` forms,
    multi-index/nested lexical order, source locations for invalid programs, affine shapes/bounds, mismatched call

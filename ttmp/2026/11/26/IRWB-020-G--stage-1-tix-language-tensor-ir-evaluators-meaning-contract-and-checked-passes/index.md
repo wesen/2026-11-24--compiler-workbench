@@ -1,7 +1,7 @@
 ---
 Title: 'Stage 1: Tix language, tensor IR, evaluators, meaning contract and checked passes'
 Ticket: IRWB-020-G
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T13:51:18.101935276-05:00
+LastUpdated: 2026-11-26T14:46:50.22962487-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -23,7 +23,8 @@ WhenToUse: ""
 
 Introduce Tix as IR Workbench's second domain: check and evaluate index-notation tensor programs,
 represent them as v6 artifacts, and use two passes to test exact and approximate meaning contracts.
-The design is ready for review; implementation is pending that review.
+Stage 1 is implemented and checked. The design records the framework change and the static bounds
+limitation found during implementation. CUDA work remains out of scope.
 
 ## Key Links
 

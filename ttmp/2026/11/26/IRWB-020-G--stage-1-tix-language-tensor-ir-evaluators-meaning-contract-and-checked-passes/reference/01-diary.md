@@ -269,3 +269,46 @@ slice (`[4, 6]`), collapsed a chain from three statements to one, and split the 
 Review `prepareNative`, `checkWrites`, and `applyPassSync` in that order. Do not require a rebuild just to
 inspect a replacement's logical projection. This finding is specific to the new entry point; the async
 runner's edit capability and contract manager were not changed.
+
+## Step 4: Tix language, evaluator, corpus and meaning checks
+
+The public API now compiles, evaluates and optimizes a Tix artifact. All six corpus programs were checked
+against independent outputs. The split-sum witness changes an exact f32 word, and the tolerant gate approves
+it against original f64. Both deliberate mutations produce sampled counterexamples and retain the last
+accepted artifact.
+
+### Prompt Context
+
+See Steps 1 and 2. Framework implementation and regressions are in `5e8fbd5`.
+
+### What I did and why
+
+- Built the parser, lexical extent checker, native adapter and dual evaluator under `src/tensor/`. Kept f32
+  rounding in scalar operations and ordered accumulations; typed arrays never enter the artifact payload.
+- Implemented affine inline, blocked sums, and their shared sampled gate. The origin weak map keeps
+  tolerance pinned across calls. Tested this with two `6e-6` offsets: each would pass alone against zero,
+  but the second must fail because the original budget is `8e-6`.
+- Added corpus fixtures and exact/tolerance cases in `tests/tensor/`. In the pass test for a missing function
+  sample, one function agrees but another is over the tensor budget, so the candidate is rejected.
+
+### What didn't work
+
+- During implementation, `npm run build` first reported `TS2345`/`TS2322` for a pending extent typed as
+  `Affine | undefined`; converted pending binders to resolved binders explicitly. `TS2556` on a spread into
+  `Math[e.fn]` led to direct unary/binary calls.
+- The first `node --test --test-reporter=dot tests/tensor/*.test.mjs tests/framework/sync-pass.test.mjs`
+  run had two fixture mismatches. The plain shape anchor made the wrong affine axis an `inconsistent input
+  shape for 'x'` rather than `invalid binding`; tested both with separate calls. The reported counterexamples
+  are capped at five, so the variable-shape mutant did not show the five-element tail in its receipt. Used a
+  fixed length-five fixture for that negative control.
+- A Node module probe on the `N-M`, `M-K`, `K-L` chain with all names anchored compiled, but flattening
+  the two loads failed with `1:102: cannot prove affine subscript 1 in bounds of 'x'`. The pass now leaves an
+  individual producer alone if revalidating the composition hits an affine bounds or safe-integer limit.
+  This limitation and its rationale are explicit in the design and covered by a regression.
+
+### Evidence and review instructions
+
+`npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed 32 tests. The framework and Typed
+commands and results are in Step 3; no further framework changes. Start at `src/tensor/index.ts` for the public
+API, `meaning.ts` for the sampling and thresholds, and `tests/tensor/optimize.test.mjs` for gate evidence. No
+CUDA work was attempted and `npm test` was not run.

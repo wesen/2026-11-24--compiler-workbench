@@ -1,0 +1,10 @@
+// Scaled dot-product attention with one head and distinct query and key lengths.
+fn attention(q: f32[Q, D], k: f32[K, D], v: f32[K, V]): f32[Q, V] {
+  score[i, j] = (sum(d) q[i, d] * k[j, d]) / sqrt(D);
+  peak[i] = max(j) score[i, j];
+  weight[i, j] = exp(score[i, j] - peak[i]);
+  mass[i] = sum(j) weight[i, j];
+  prob[i, j] = weight[i, j] / mass[i];
+  y[i, w] = sum(j) prob[i, j] * v[j, w];
+  return y;
+}

@@ -15,3 +15,7 @@ Prepared the design for review: specified tensor shape checking, arithmetic, mea
 ## 2026-11-26
 
 Revised the design after review: affine inline, stable origin, fixed case selection and epsilon, minimal sync pass gate.
+
+## 2026-11-26
+
+Implemented Tix Stage 1, six corpus programs and checked rewrites. Verified tensor, framework and affected Typed tests; documented the conservative affine inline limit.

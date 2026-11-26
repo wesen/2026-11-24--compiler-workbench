@@ -1,0 +1,5 @@
+// NCHW, OIHW filters, unit stride and no padding.
+fn conv2d(x: f32[N, C, H, W], w: f32[O, C, KH, KW]): f32[N, O, H - KH + 1, W - KW + 1] {
+  out[n, o, y, x0]: f32[N, O, H - KH + 1, W - KW + 1] = sum(c, dy, dx) x[n, c, y + dy, x0 + dx] * w[o, c, dy, dx];
+  return out;
+}
