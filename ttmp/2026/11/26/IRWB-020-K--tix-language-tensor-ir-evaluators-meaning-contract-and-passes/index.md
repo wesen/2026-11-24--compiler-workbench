@@ -26,8 +26,9 @@ Stage 1 tests the IR Workbench framework on tensor programs: Tix source checking
 
 ## Key Links
 
+- [Tix stage 1 report](./reference/02-report.md), including the independent evaluation and rejection diagnosis
 - [Tix stage 1 design](./design-doc/01-tix-stage-1-design.md), including the framework change ledger
-- [Diary](./reference/01-diary.md), including the original request and arithmetic probe
+- [Diary](./reference/01-diary.md), including the original request and replay evidence
 
 ## Status
 
