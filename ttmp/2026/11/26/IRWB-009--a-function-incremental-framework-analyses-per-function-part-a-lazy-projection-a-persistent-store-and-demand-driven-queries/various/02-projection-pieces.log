@@ -1,0 +1,3 @@
+cold {"validateBlocks":240.9,"entities":826.4,"relations":1220.4,"sortEntitiesAlone":9.1,"sortRelationsAlone":29.9,"validateGraph":607.5,"resolveCheck":222.7,"counts":{"entities":103618,"relations":132054}}
+warm {"validateBlocks":124.2,"entities":80.8,"relations":100.4,"sortEntitiesAlone":7.2,"sortRelationsAlone":23.6,"validateGraph":325.3,"resolveCheck":216.8,"counts":{"entities":103618,"relations":132054}}
+wall 27.06 s, maxrss 1573664 kB

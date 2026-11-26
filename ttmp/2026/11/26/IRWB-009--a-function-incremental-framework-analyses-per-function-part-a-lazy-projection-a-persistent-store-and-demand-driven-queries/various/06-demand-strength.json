@@ -1,0 +1,18 @@
+{
+ "node": "v24.18.0",
+ "r0": "cd36346ea7c4f175d7db025afe953e89f078902ef1ee44beaf15a7906b140456",
+ "functions": 332,
+ "divOrRem": 6,
+ "candidateFunctions": 1,
+ "candidates": [
+  [
+   "finishHit",
+   2
+  ]
+ ],
+ "solveAndFreezeCandidatesMs": 76.4,
+ "solveAndFreezeAllMs": 3292,
+ "viewsCandidatesMs": 15.4,
+ "viewsAllMs": 264.2,
+ "rssMB": 805
+}

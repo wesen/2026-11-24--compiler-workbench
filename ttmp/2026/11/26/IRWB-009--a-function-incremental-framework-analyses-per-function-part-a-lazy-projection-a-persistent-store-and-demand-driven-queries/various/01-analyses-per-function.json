@@ -1,0 +1,391 @@
+{
+ "node": "v24.18.0",
+ "openMs": 5821.91,
+ "r0": "cd36346ea7c4f175d7db025afe953e89f078902ef1ee44beaf15a7906b140456",
+ "callGraph": {
+  "functions": 332,
+  "callValues": 918,
+  "callEdges": 668,
+  "leaves": 122,
+  "uncalled": 21,
+  "recursiveSccs": [],
+  "closureSize": {
+   "n": 332,
+   "min": 1,
+   "median": 3,
+   "p90": 13,
+   "max": 310,
+   "mean": 12.21,
+   "sum": 4053
+  },
+  "transitiveCallers": {
+   "n": 332,
+   "min": 0,
+   "median": 10,
+   "p90": 16,
+   "max": 104,
+   "mean": 11.21,
+   "sum": 3721
+  },
+  "mostCalledUpward": [
+   [
+    "q_floor",
+    104
+   ],
+   [
+    "lobeNone",
+    93
+   ],
+   [
+    "fresnelDielectric",
+    78
+   ],
+   [
+    "q_sin",
+    60
+   ],
+   [
+    "sq",
+    50
+   ],
+   [
+    "q_fract",
+    48
+   ],
+   [
+    "hash3",
+    48
+   ],
+   [
+    "q_cos",
+    47
+   ]
+  ],
+  "largestClosures": [
+   [
+    "cdlRenderSpan",
+    310
+   ],
+   [
+    "renderPixel",
+    309
+   ],
+   [
+    "tracePath",
+    284
+   ],
+   [
+    "traceAOV",
+    214
+   ],
+   [
+    "customKernel",
+    211
+   ]
+  ]
+ },
+ "analyses": {
+  "ranges": {
+   "regionsMs": 69.44,
+   "solveSumMs": 1055.6,
+   "encodeSumMs": 120.9,
+   "freezeWholeMs": 1213.56,
+   "freezeRegionsMs": 1429.96,
+   "textMs": 615.22,
+   "solveMs": {
+    "n": 332,
+    "min": 0,
+    "median": 0.16,
+    "p90": 1.46,
+    "max": 700.81,
+    "mean": 3.18,
+    "sum": 1055.57
+   },
+   "chars": {
+    "n": 332,
+    "min": 97,
+    "median": 1613,
+    "p90": 24279,
+    "max": 6453309,
+    "mean": 35401.16,
+    "sum": 11753185
+   },
+   "blocks": {
+    "n": 332,
+    "min": 1,
+    "median": 4,
+    "p90": 13,
+    "max": 252,
+    "mean": 7.26,
+    "sum": 2409
+   },
+   "top": [
+    [
+     "tracePath",
+     252,
+     700.81,
+     6453309
+    ],
+    [
+     "hitObj",
+     145,
+     73.7,
+     643013
+    ],
+    [
+     "finishHit",
+     67,
+     27,
+     521544
+    ],
+    [
+     "sampleLobe",
+     103,
+     23.7,
+     559556
+    ],
+    [
+     "hitMesh",
+     54,
+     19.33,
+     265177
+    ],
+    [
+     "renderPixel",
+     40,
+     18.01,
+     202741
+    ],
+    [
+     "traceAll",
+     55,
+     14.81,
+     191995
+    ],
+    [
+     "cdlInit",
+     1,
+     14.19,
+     7034
+    ]
+   ],
+   "managerAnalyseMs": 2879.61,
+   "managerCachedMs": 0.41
+  },
+  "reaching": {
+   "regionsMs": 3.25,
+   "solveSumMs": 971.3,
+   "encodeSumMs": 134.5,
+   "freezeWholeMs": 265.88,
+   "freezeRegionsMs": 213.83,
+   "textMs": 228.68,
+   "solveMs": {
+    "n": 332,
+    "min": 0,
+    "median": 0.12,
+    "p90": 2.43,
+    "max": 520.11,
+    "mean": 2.93,
+    "sum": 971.2900000000001
+   },
+   "chars": {
+    "n": 332,
+    "min": 97,
+    "median": 993,
+    "p90": 13846,
+    "max": 6913986,
+    "mean": 32272.15,
+    "sum": 10714353
+   },
+   "blocks": {
+    "n": 332,
+    "min": 1,
+    "median": 4,
+    "p90": 13,
+    "max": 252,
+    "mean": 7.26,
+    "sum": 2409
+   },
+   "top": [
+    [
+     "tracePath",
+     252,
+     520.11,
+     6913986
+    ],
+    [
+     "cdlInit",
+     1,
+     48.91,
+     6885
+    ],
+    [
+     "poseQ",
+     13,
+     39.59,
+     13171
+    ],
+    [
+     "hitObj",
+     145,
+     29.76,
+     479226
+    ],
+    [
+     "finishHit",
+     67,
+     20.32,
+     371647
+    ],
+    [
+     "renderPixel",
+     40,
+     20.2,
+     204883
+    ],
+    [
+     "sampleLobe",
+     103,
+     19.78,
+     461574
+    ],
+    [
+     "sampleLight",
+     31,
+     19.49,
+     83581
+    ]
+   ],
+   "managerAnalyseMs": 1497.95,
+   "managerCachedMs": 0.16
+  },
+  "liveness": {
+   "regionsMs": 3.23,
+   "solveSumMs": 63.1,
+   "encodeSumMs": 63.8,
+   "freezeWholeMs": 39.63,
+   "freezeRegionsMs": 21.39,
+   "textMs": 7.74,
+   "solveMs": {
+    "n": 332,
+    "min": 0,
+    "median": 0.07,
+    "p90": 0.28,
+    "max": 13.7,
+    "mean": 0.19,
+    "sum": 63.09
+   },
+   "chars": {
+    "n": 332,
+    "min": 84,
+    "median": 204,
+    "p90": 1201,
+    "max": 108484,
+    "mean": 990.88,
+    "sum": 328971
+   },
+   "blocks": {
+    "n": 332,
+    "min": 1,
+    "median": 4,
+    "p90": 13,
+    "max": 252,
+    "mean": 7.26,
+    "sum": 2409
+   },
+   "top": [
+    [
+     "tracePath",
+     252,
+     13.7,
+     108484
+    ],
+    [
+     "cdlInit",
+     1,
+     2.26,
+     94
+    ],
+    [
+     "hitObj",
+     145,
+     2.13,
+     11966
+    ],
+    [
+     "finishHit",
+     67,
+     1.89,
+     12566
+    ],
+    [
+     "sampleLobe",
+     103,
+     1.89,
+     16714
+    ],
+    [
+     "renderPixel",
+     40,
+     1.7,
+     7001
+    ],
+    [
+     "hitMesh",
+     54,
+     1.63,
+     7880
+    ],
+    [
+     "neeAt",
+     61,
+     1.23,
+     12778
+    ]
+   ],
+   "managerAnalyseMs": 129.77,
+   "managerCachedMs": 0.16
+  }
+ },
+ "cfgPassNoContractMs": 6841.7,
+ "r1": "4aea7e81dd046901b550627db94bd36074be8797e59d9a75323c68e03472b1a3",
+ "cfgTouched": 110,
+ "independence": {
+  "functions": 332,
+  "partsSameObject": 222,
+  "ranges": {
+   "unchangedPart": {
+    "equal": 222,
+    "different": 0
+   },
+   "changedPart": {
+    "equal": 0,
+    "different": 110
+   },
+   "solveSumMs": 869.1
+  },
+  "reaching": {
+   "unchangedPart": {
+    "equal": 222,
+    "different": 0
+   },
+   "changedPart": {
+    "equal": 0,
+    "different": 110
+   },
+   "solveSumMs": 818.2
+  },
+  "liveness": {
+   "unchangedPart": {
+    "equal": 222,
+    "different": 0
+   },
+   "changedPart": {
+    "equal": 0,
+    "different": 110
+   },
+   "solveSumMs": 51.8
+  }
+ },
+ "rssMB": 1658
+}
