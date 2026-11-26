@@ -1,0 +1,101 @@
+function regexMatch(pattern: buffer, text: buffer): i32 {
+    const RANGE: i32 = 1;
+    const SPLIT: i32 = 2;
+    const ACCEPT: i32 = 3;
+    const nfa = new Int32Array(45);
+
+    // Each state occupies five words: kind, low, high, out, out2.
+    let p = 0;
+    let s = 0;
+    while (p < pattern.length) {
+        let low = pattern.charCodeAt(p);
+        let high = low;
+        if (low === 91) {
+            low = pattern.charCodeAt(p + 1);
+            high = pattern.charCodeAt(p + 3);
+            p = p + 5;
+        } else {
+            p = p + 1;
+        }
+
+        let out = s + 1;
+        if (p < pattern.length && pattern.charCodeAt(p) === 42) {
+            const split = 5 * s;
+            nfa[split] = SPLIT;
+            nfa[split + 3] = s + 1;
+            nfa[split + 4] = s + 2;
+            out = s;
+            s = s + 1;
+            p = p + 1;
+        }
+
+        const range = 5 * s;
+        nfa[range] = RANGE;
+        nfa[range + 1] = low;
+        nfa[range + 2] = high;
+        nfa[range + 3] = out;
+        s = s + 1;
+    }
+
+    const accept = s;
+    nfa[5 * accept] = ACCEPT;
+    const stateCount = accept + 1;
+    const current = new Int32Array(9);
+    const next = new Int32Array(9);
+    const queue = new Int32Array(9);
+    current[0] = 1;
+
+    let i = 0;
+    while (true) {
+        // Mark successors before enqueueing so each state enters the queue once.
+        let head = 0;
+        let tail = 0;
+        for (let state = 0; state < stateCount; state = state + 1) {
+            if (current[state] === 1) {
+                queue[tail] = state;
+                tail = tail + 1;
+            }
+        }
+        while (head < tail) {
+            const row = 5 * queue[head];
+            head = head + 1;
+            if (nfa[row] === SPLIT) {
+                const first = nfa[row + 3];
+                const second = nfa[row + 4];
+                if (current[first] === 0) {
+                    current[first] = 1;
+                    queue[tail] = first;
+                    tail = tail + 1;
+                }
+                if (current[second] === 0) {
+                    current[second] = 1;
+                    queue[tail] = second;
+                    tail = tail + 1;
+                }
+            }
+        }
+
+        if (i === text.length) {
+            break;
+        }
+        const code = text.charCodeAt(i);
+        for (let state = 0; state < stateCount; state = state + 1) {
+            const row = 5 * state;
+            if (current[state] === 1 && nfa[row] === RANGE) {
+                if (inRange(code, nfa[row + 1], nfa[row + 2])) {
+                    next[nfa[row + 3]] = 1;
+                }
+            }
+        }
+        for (let state = 0; state < stateCount; state = state + 1) {
+            current[state] = next[state];
+            next[state] = 0;
+        }
+        i = i + 1;
+    }
+    return current[accept];
+}
+
+function inRange(code: i32, low: i32, high: i32): bool {
+    return code >= low && code <= high;
+}

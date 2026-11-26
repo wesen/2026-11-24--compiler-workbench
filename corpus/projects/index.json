@@ -40,6 +40,7 @@
     "ui-gallery",
     "sort",
     "histogram",
+    "regex-nfa",
     "gcd",
     "fixed-point",
     "collatz",

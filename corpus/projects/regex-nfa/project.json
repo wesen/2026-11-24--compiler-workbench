@@ -1,0 +1,20 @@
+{
+  "title": "Thompson regex matcher",
+  "about": [
+    "Compile a small pattern into a Thompson NFA in frame arrays.",
+    "Follow epsilon edges and call a range helper inside the text loop."
+  ],
+  "group": "Programs",
+  "sources": ["main.typed"],
+  "pipeline": "speed",
+  "ingest": { "tape": true },
+  "entries": ["regexMatch"],
+  "inputs": {
+    "regexMatch": {
+      "pattern": { "string": "[a-c]*[b-d]*a*d" },
+      "text": { "buffer": [0, 8], "cell": [97, 100] }
+    }
+  },
+  "focus": 85,
+  "scripts": { "explore": { "fresh": true } }
+}
