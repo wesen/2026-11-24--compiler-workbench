@@ -368,7 +368,7 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F15: the base's tolerance is a fixed bound** _(ready, M; before or with T2)_.
   - _Known:_ B checks |c − r| ≤ 2e-6 + 2e-5·|r| against the origin's f64 on its own sampled cases, "without a worst-case error derivation" (its report). The same rule falsely rejected correct passes in K. E and H rejected on ill-conditioned sampled cases where the origin itself fails the bound. Two designs handle this: P's running first-order error bound accepted every correct pass, and N's "inconclusive when the origin fails".
   - _Needed:_ a bound derived from the computation, or the inconclusive rule; treat identical non-finite values as agreeing.
-- **F16: unspecified rules in the Tix core** _(ready, S; brief)_.
+- **F16: unspecified rules in the Tix core** _(done: stated in the T2 brief)_.
   - _Known:_ fourteen implementations divided on whether an index may share a tensor's name (the Claude cells said no). The brief is also silent on shadowing (`sum(j) a[i, j] + sum(j) b[i, j]` parses as a nested reduction rebinding `j`) and on zero-size extents.
   - _Needed:_ state all three in the T2 brief's fixed core, and test them. _(Done in the T2 brief; all twelve T2 implementations implement them.)_
 - **F17: the lowering's relation should be exact for an exact emitter** _(ready, S; before or with T3)_.
