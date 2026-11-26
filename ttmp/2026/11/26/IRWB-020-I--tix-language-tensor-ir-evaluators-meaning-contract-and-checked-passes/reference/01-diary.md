@@ -1,7 +1,7 @@
 ---
 Title: Diary
 Ticket: IRWB-020-I
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: Design decisions, probes, review and implementation checkpoints.
-LastUpdated: 2026-11-26T12:54:58.433680755-05:00
+LastUpdated: 2026-11-26T14:50:38.372212719-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -204,3 +204,19 @@ The scanner and precedence parser resolve tensor reads and lexical index binders
 The built index exports exactly `compileTix`, `optimizeTix` and `runTix`. The origin determines the per-function case list for both contracts. A changed inline compares to its input at f32. A changed split compares to the f64 origin. The same driver accepted both pass orders in the smoke probe.
 
 `node tests/tensor/passes.test.mjs` passed five tests. The eight-term reduction produced the two predicted adjacent f32 words. A changed candidate omitting the ninth term failed tolerance with reference 9 and candidate 8. An inline losing negation failed in the second function, and the following honest pass used the last accepted artifact. The preceding parser/evaluator checkpoint is `d73d247`.
+
+## Step 6 — Execute the six corpus oracles and regress the shared runner
+
+Each corpus program passed an independent numerical check in f32 and f64, before and after the checked pass sequence. The convolution oracle uses sparse, asymmetric taps across two batches and channels. The attention fixture has one uniform row and one row whose weights depend on the scale. These cases distinguish axis, offset and normalization errors from floating-point noise.
+
+Reviewing the native validator exposed a missing unary operand that an expression traversal could treat as a leaf. The validator now checks it explicitly, with a regression on an edited native value. Additional relation tests distinguish zero signs, reject nonfinite tolerance observations and check accumulated error against the fixed origin. Nested blocked sums were checked at zero, partial and complete block sizes. The honest and deliberately wrong pass kernels in the preceding checkpoint are exercised through the same acceptance path (commit `c6032fa`).
+
+| Command | Result |
+| --- | --- |
+| `npm run build` | Passed on Node 24.18.0. The built index exports the three required functions. |
+| `node --test tests/tensor/*.test.mjs` | All 3 files passed, covering 19 tests, including 6 independent corpus oracles. |
+| `node --test tests/framework/*.test.mjs` | All 18 framework files passed. |
+| `node --test --test-concurrency=2 tests/typed/{passes,inline,strategies,audit,ssa,parallel,f32,mutate,meaning-memo,rules}.test.mjs` | All 10 targeted Typed files passed. The concurrency limit kept the shared-machine run small. |
+| Prettier check of changed TypeScript and test files, `git diff --check` | Passed. |
+
+Stage 1 follows the revised design. The meaning verdict is sampled over the specified shape/value schedule. A changed pass needs a valid, nonempty observation for every function. GPU work remains in the later stages.

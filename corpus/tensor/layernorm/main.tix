@@ -1,0 +1,7 @@
+fn layernorm(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {
+  mean[i] = (sum(d) x[i,d]) / D;
+  centered[i,d] = x[i,d] - mean[i];
+  variance[i] = (sum(d) centered[i,d] * centered[i,d]) / D;
+  y[i,d] = centered[i,d] / sqrt(variance[i] + eps[0]) * gamma[d] + beta[d];
+  return y;
+}

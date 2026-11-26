@@ -1,7 +1,7 @@
 ---
 Title: Tix semantics, tensor IR and checked rewrites
 Ticket: IRWB-020-I
-Status: review
+Status: complete
 Topics:
     - compiler
     - ir
@@ -20,7 +20,7 @@ RelatedFiles:
       Note: Fixed origin and per-step acceptance in the Typed pipeline
 ExternalSources: []
 Summary: Stage 1 design incorporating the accepted review.
-LastUpdated: 2026-11-26T12:54:43.972852439-05:00
+LastUpdated: 2026-11-26T14:50:37.787780231-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -98,7 +98,7 @@ The inner binder still denotes the global index. The clamped bound includes the 
 
 For `y[i] = sum(k) x[i,k]`, give one row the eight-element motif above. The measured serial f32 result is `0x3f800000` (1). The blocked result is `0x3f800001` (1 + 2⁻²³), exactly the f64 reference. The *same changed candidate* must fail exact and pass tolerance. A wrong split using only full blocks returns 8 on nine ones. The reference is 9 and the permitted error is 0.0001. Test that it fails tolerance. Assert the structural rewrite and the returned program's execution alongside the verdict so an identity kernel cannot pass as an optimization.
 
-## Corpus and verification after review
+## Corpus and verification
 
 Each row is a `corpus/tensor/<name>/main.tix` fixture. Execute both precisions against a small independent oracle, then check the optimized outputs under the selected relation.
 
@@ -113,7 +113,11 @@ Each row is a `corpus/tensor/<name>/main.tix` fixture. Execute both precisions a
 
 Use Node tests in `tests/tensor/` importing the built API. Cover token positions after comments, reduction precedence, two meanings of max, normalized shape equality, inferred/annotated extents, affine-only reduction errors, single assignment, and affine shape binding. Use hand-derived results for row-major reads, empty folds, multi-axis order, signed zero and per-operation rounding (`4097*4097 - 16785408` gives 0 in f32 and 1 in f64). Exercise both orders of passes, repeated optimize calls, rejection followed by another pass, the two mutants, and a second callable function so one agreeing function cannot authorize a bad program.
 
-The framework test should exercise a tiny native pass with an adapter without `rebuild`, compare sync/async structural results on the same revision, and cover verifier rejection and an undeclared write. The existing framework edit-style tests cover the other editor path. Run `npm run build`, `node --test tests/tensor/*.test.mjs`, `node --test tests/framework/*.test.mjs`, and Typed's `passes`, `inline`, `strategies` and `audit` tests for the shared runner. Use escalation if the sandbox denies a test's child Node process. During implementation, update the ledger with each actual framework file, reason and exercising test.
+The framework test should exercise a tiny native pass with an adapter without `rebuild`, compare sync/async structural results on the same revision, and cover verifier rejection and an undeclared write. The existing framework edit-style tests cover the other editor path. Run `npm run build`, `node --test tests/tensor/*.test.mjs`, `node --test tests/framework/*.test.mjs`, and Typed's `passes`, `inline`, `strategies` and `audit` tests for the shared runner. Use escalation if the sandbox denies a test's child Node process. The ledger above records the shared change and its regression test.
+
+## Implementation result
+
+The built API and all six fixtures implement the revised design. The eight-term motif rejects the changed split under exact comparison and accepts it under the tolerance relation. Both deliberately wrong kernels fail their required contracts. The final commands and results are in the [diary](../reference/01-diary.md).
 
 ## Later
 

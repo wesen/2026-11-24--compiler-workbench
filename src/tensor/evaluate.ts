@@ -22,7 +22,7 @@ export function evaluate(fn: TensorFn, inputs: Inputs, precision: Precision): Te
     tensors.set(p.name, { shape: [...input.shape], data: new BufferType(input.data) });
   }
   const extent = (r: Range) => valueOf(r.extent, shapes);
-  // Bind invariant strides and extents once per expression, before entering its loops.
+  // Bind input tensors and extents once per expression, before entering its loops.
   function scalar(e: Expr): () => number {
     switch (e.kind) {
       case 'literal': {

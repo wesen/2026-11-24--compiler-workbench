@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "25e95bd6ec5732756f4d5d71a5fc3496c97ba89cf442b7c76a49b52acd0ec5f1",
+  "request": {
+    "ticket": "IRWB-020-I",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed stage 1 and verified the two framework changes against the tensor, framework and affected Typed tests."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-6400e4b3b35957d41a3322b6bfe854fb",
+    "state": "committed",
+    "created_at": "2026-11-26T19:50:39.555182931Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "5d5bd1a557d5a0df31da378d273e1314e15cefa37a64f6660475e5ff7d2c1260",
+      "index.md": "bf73a4e6851dc0ba18c0b3f31d3e0a71c95cda76788169e8d9f8ab49887a1db6"
+    },
+    "after": {
+      "changelog.md": "c54c79e07918513135b7685da4a3c18523537b17ea1cd66600d9bd917f381ae9",
+      "index.md": "ef0f9091690d7e3e1e1db38a7004f7df5747104d12d962f7fa0772df601fdca5"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "5d5bd1a557d5a0df31da378d273e1314e15cefa37a64f6660475e5ff7d2c1260",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKU3VibWl0dGVkIHRoZSBzdGFnZSAxIGRlc2lnbiBmb3IgcmV2aWV3IHdpdGggdHdvIG1lYXN1cmVkIHBhc3MtcnVubmVyIGZpbmRpbmdzIGFuZCBhbiBleGFjdC12ZXJzdXMtdG9sZXJhbmNlIHJlZHVjdGlvbiB3aXRuZXNzLgoKIyMgMjAyNi0xMS0yNgoKQ29tcGxldGVkIHN0YWdlIDEgYW5kIHZlcmlmaWVkIHRoZSB0d28gZnJhbWV3b3JrIGNoYW5nZXMgYWdhaW5zdCB0aGUgdGVuc29yLCBmcmFtZXdvcmsgYW5kIGFmZmVjdGVkIFR5cGVkIHRlc3RzLgo="
+    },
+    {
+      "path": "index.md",
+      "before": "bf73a4e6851dc0ba18c0b3f31d3e0a71c95cda76788169e8d9f8ab49887a1db6",
+      "after": "LS0tClRpdGxlOiBUaXggbGFuZ3VhZ2UsIHRlbnNvciBJUiwgZXZhbHVhdG9ycywgbWVhbmluZyBjb250cmFjdCBhbmQgY2hlY2tlZCBwYXNzZXMKVGlja2V0OiBJUldCLTAyMC1JClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBpcgogICAgLSB2ZXJpZmljYXRpb24KRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogQ29tcGxldGVkIFRpeCB0ZW5zb3IgZG9tYWluLCBudW1lcmljYWwgbWVhbmluZyBjb250cmFjdHMsIHR3byBjaGVja2VkIHBhc3NlcyBhbmQgc2l4IHZlcmlmaWVkIGNvcnB1cyBwcm9ncmFtcy4KTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjZUMTQ6NTA6MzkuNTU1MTI5MDE0LTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIFRpeCBsYW5ndWFnZSwgdGVuc29yIElSLCBldmFsdWF0b3JzLCBtZWFuaW5nIGNvbnRyYWN0IGFuZCBjaGVja2VkIHBhc3NlcwoKU3RhZ2UgMSBpbXBsZW1lbnRzIFRpeCBhcyB0aGUgc2Vjb25kIGNvbXBpbGVyIGRvbWFpbi4gU2l4IGNvcnB1cyBwcm9ncmFtcyBleGVyY2lzZSBmMzIvZjY0IGV4ZWN1dGlvbiBhbmQgY2hlY2tlZCByZXdyaXRlcy4gVGhlIGZyYW1ld29yayBjaGFuZ2UgaXMgY29uZmluZWQgdG8gdGhlIHNoYXJlZCBwYXNzIHJ1bm5lci4gVGhlIGRlc2lnbiBjb250YWlucyB0aGUgY2hhbmdlIGxlZGdlciwgYW5kIHRoZSBkaWFyeSByZWNvcmRzIHRoZSByZWdyZXNzaW9uIHJlc3VsdHMuCgotIFtEZXNpZ24gYW5kIGZyYW1ld29yayBjaGFuZ2UgbGVkZ2VyXShkZXNpZ24tZG9jLzAxLXRpeC1zZW1hbnRpY3MtdGVuc29yLWlyLWFuZC1jaGVja2VkLXJld3JpdGVzLm1kKQotIFtEaWFyeSBhbmQgcHJvYmUgcmVzdWx0c10ocmVmZXJlbmNlLzAxLWRpYXJ5Lm1kKQotIFtUYXNrc10odGFza3MubWQpCi0gW0NoYW5nZWxvZ10oY2hhbmdlbG9nLm1kKQo="
+    }
+  ]
+}

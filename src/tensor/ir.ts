@@ -9,6 +9,7 @@ import {
   singleName,
   walk,
   numericLiteral,
+  identifier,
   type Affine,
   type Expr,
   type Range,
@@ -17,6 +18,8 @@ import {
 } from './model.js';
 
 type Diagnose = (node: object, why: string) => never;
+const isName = (s: unknown) => typeof s === 'string' && identifier.test(s);
+const isBinder = (s: unknown) => typeof s === 'string' && s.length > 0;
 const invalid: Diagnose = (_node, why) => {
   throw new Error(why);
 };
@@ -41,7 +44,16 @@ export function checkModule(m: TensorModule, fail: Diagnose = invalid): void {
     const symbols = new Set(fn.symbols),
       tensors = new Map<string, Affine[]>(),
       anchors = new Set<string>();
-    if (!fn.name || names.has(fn.name) || symbols.size !== fn.symbols.length || !fn.params.length)
+    if (
+      !isName(fn.name) ||
+      names.has(fn.name) ||
+      !Array.isArray(fn.symbols) ||
+      !fn.symbols.every(isName) ||
+      symbols.size !== fn.symbols.length ||
+      !Array.isArray(fn.params) ||
+      !fn.params.length ||
+      !Array.isArray(fn.definitions)
+    )
       fail(fn, 'invalid function signature');
     names.add(fn.name);
     const checkForm = (a: Affine, known: ReadonlySet<string> | ReadonlyMap<string, unknown>) => {
@@ -59,7 +71,8 @@ export function checkModule(m: TensorModule, fail: Diagnose = invalid): void {
       if (a.constant < 0 && a.terms.every(([, c]) => c <= 0)) fail(a, 'negative dimension');
     };
     const bind = (name: string, shape: Affine[]) => {
-      if (!name || tensors.has(name) || !shape.length) fail(fn, `invalid tensor definition ${name}`);
+      if (!isName(name) || tensors.has(name) || !Array.isArray(shape) || !shape.length)
+        fail(fn, `invalid tensor definition ${name}`);
       shape.forEach(dimension);
       tensors.set(name, shape);
     };
@@ -74,7 +87,7 @@ export function checkModule(m: TensorModule, fail: Diagnose = invalid): void {
     function expression(e: Expr, scope: Map<string, Axis | Range>) {
       switch (e.kind) {
         case 'literal':
-          if (!numericLiteral.test(e.text)) fail(e, 'invalid number');
+          if (typeof e.text !== 'string' || !numericLiteral.test(e.text)) fail(e, 'invalid number');
           break;
         case 'shape':
           if (!symbols.has(e.name)) fail(e, 'unbound shape');
@@ -102,7 +115,7 @@ export function checkModule(m: TensorModule, fail: Diagnose = invalid): void {
           const inner = new Map(scope);
           for (const r of e.axes) {
             dimension(r.extent);
-            if (!r.id || inner.has(r.id)) fail(e, 'duplicate reduction binder');
+            if (!isBinder(r.id) || inner.has(r.id)) fail(e, 'duplicate reduction binder');
             if (r.kind !== 'full') {
               if (!['blocks', 'within'].includes(r.kind) || !Number.isSafeInteger(r.size) || r.size < 1)
                 fail(e, 'invalid block range');
@@ -131,6 +144,7 @@ export function checkModule(m: TensorModule, fail: Diagnose = invalid): void {
         case 'sqrt':
         case 'tanh':
         case 'neg':
+          if (!e.arg) fail(e, 'missing scalar operand');
           break;
         default:
           fail(e, 'invalid tensor expression');
@@ -141,6 +155,7 @@ export function checkModule(m: TensorModule, fail: Diagnose = invalid): void {
       const scope = new Map(d.axes.map(a => [a.id, a]));
       if (
         scope.size !== d.axes.length ||
+        d.axes.some(a => !isBinder(a.id)) ||
         !equalShape(
           d.axes.map(a => a.extent),
           d.shape,

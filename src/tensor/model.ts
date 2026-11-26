@@ -1,3 +1,4 @@
+export const identifier = /^[A-Za-z_][A-Za-z_0-9]*$/;
 export const numericLiteral = /^(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/;
 
 /** Normalized integer affine forms, shared by shapes and indexed reads. */

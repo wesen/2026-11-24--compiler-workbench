@@ -1,0 +1,7 @@
+fn mlp(x: f32[N,I], w1: f32[I,H], b1: f32[H], w2: f32[H,O], b2: f32[O]): f32[N,O] {
+  h[n,j] = (sum(i) x[n,i] * w1[i,j]) + b1[j];
+  // tanh-GELU with sqrt(2/pi) rounded at the evaluating precision
+  g[n,j] = 0.5 * h[n,j] * (1 + tanh(0.7978845608028654 * (h[n,j] + 0.044715 * h[n,j] * h[n,j] * h[n,j])));
+  y[n,o] = (sum(j) g[n,j] * w2[j,o]) + b2[o];
+  return y;
+}

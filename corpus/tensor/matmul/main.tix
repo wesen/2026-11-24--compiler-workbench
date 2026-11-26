@@ -1,0 +1,4 @@
+fn matmul(a: f32[M,K], b: f32[K,N]): f32[M,N] {
+  c[i,j] = sum(k) a[i,k] * b[k,j];
+  return c;
+}

@@ -1,6 +1,7 @@
 import {
   addScaled,
   numericLiteral,
+  identifier,
   constant,
   equalForm,
   equalShape,
@@ -22,7 +23,6 @@ interface Token {
   line: number;
   col: number;
 }
-const identifier = /^[A-Za-z_][A-Za-z_0-9]*$/;
 function error(t: Token, message: string): never {
   throw new Error(`${t.line}:${t.col}: ${message}`);
 }

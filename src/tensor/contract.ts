@@ -57,9 +57,10 @@ export function samples(origin: TensorModule, random: () => number): Sample[] {
   for (const f of origin.functions) {
     const start = cases.length,
       seen = new Set<string>();
-    for (const size of [1, 8, 9, 0]) {
-      const bindings = new Map(f.symbols.map((s, i) => [s, size || [3, 5, 9][i % 3]]));
-      const dims = [...bindings.values()];
+    const assignments = [1, 8, 9].map(size => f.symbols.map(() => size));
+    assignments.push(f.symbols.map((_, i) => [3, 5, 9][i % 3]));
+    for (const dims of assignments) {
+      const bindings = new Map(f.symbols.map((s, i) => [s, dims[i]]));
       if (seen.has(dims.join(',')) || !legal(f, bindings)) continue;
       seen.add(dims.join(','));
       for (const [pattern, fill] of patterns.entries()) {
@@ -141,5 +142,9 @@ export function checkMeaning(
   candidate: Artifact<TensorModule>,
 ): CheckResult {
   const evidence = runDifferential(differentialSpec(invariants[relation]), { origin, before, candidate });
-  return { ok: evidence.status === 'agree', evidence, reason: evidence.counterexamples[0]?.reason };
+  return {
+    ok: evidence.status === 'agree',
+    evidence,
+    reason: evidence.counterexamples[0]?.reason ?? `${evidence.agree} cases agree`,
+  };
 }
