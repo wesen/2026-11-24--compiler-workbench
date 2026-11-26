@@ -4,84 +4,96 @@
   "model": "gpt-6.2-sol",
   "effort": "medium",
   "round": "t1-sm",
-  "harness": "codex"
+  "harness": "codex",
+  "policy": "v1"
  },
  "IRWB-020-A": {
   "config": "sh",
   "model": "gpt-6.2-sol",
   "effort": "high",
   "round": "t1-sh",
-  "harness": "codex"
+  "harness": "codex",
+  "policy": "v1"
  },
  "IRWB-020-B": {
   "config": "am",
   "model": "gpt-6.2-astra",
   "effort": "medium",
   "round": "t1-am",
-  "harness": "codex"
+  "harness": "codex",
+  "policy": "v1"
  },
  "IRWB-020-D": {
   "config": "ah",
   "model": "gpt-6.2-astra",
   "effort": "high",
   "round": "t1-ah",
-  "harness": "codex"
+  "harness": "codex",
+  "policy": "v1"
  },
  "IRWB-020-F": {
   "config": "pi-sm",
   "model": "openai-codex/gpt-6.2-sol",
   "effort": "medium",
   "round": "t1-pi-sm",
-  "harness": "pi"
+  "harness": "pi",
+  "policy": "v1"
  },
  "IRWB-020-G": {
   "config": "pi-sh",
   "model": "openai-codex/gpt-6.2-sol",
   "effort": "high",
   "round": "t1-pi-sh",
-  "harness": "pi"
+  "harness": "pi",
+  "policy": "v1"
  },
  "IRWB-020-E": {
   "config": "pi-am",
   "model": "openai-codex/gpt-6.2-astra",
   "effort": "medium",
   "round": "t1-pi-am",
-  "harness": "pi"
+  "harness": "pi",
+  "policy": "v1"
  },
  "IRWB-020-H": {
   "config": "pi-ah",
   "model": "openai-codex/gpt-6.2-astra",
   "effort": "high",
   "round": "t1-pi-ah",
-  "harness": "pi"
+  "harness": "pi",
+  "policy": "v1"
  },
  "IRWB-020-L": {
   "config": "sx",
   "model": "gpt-6.2-sol",
   "effort": "xhigh",
   "round": "t1-sx",
-  "harness": "codex"
+  "harness": "codex",
+  "policy": "v1"
  },
  "IRWB-020-I": {
   "config": "ax",
   "model": "gpt-6.2-astra",
   "effort": "xhigh",
   "round": "t1-ax",
-  "harness": "codex"
+  "harness": "codex",
+  "policy": "v1"
  },
  "IRWB-020-K": {
   "config": "pi-sx",
   "model": "openai-codex/gpt-6.2-sol",
   "effort": "xhigh",
   "round": "t1-pi-sx",
-  "harness": "pi"
+  "harness": "pi",
+  "policy": "v1"
  },
  "IRWB-020-J": {
   "config": "pi-ax",
   "model": "openai-codex/gpt-6.2-astra",
   "effort": "xhigh",
   "round": "t1-pi-ax",
-  "harness": "pi"
+  "harness": "pi",
+  "policy": "v1"
  },
  "IRWB-020-N": {
   "config": "op-m",
@@ -91,7 +103,8 @@
   "harness": "claude-code-subagent",
   "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-op-m-irwb-020-n",
   "branch": "t1-op-m/irwb-020-n",
-  "agent": "ac48a599de46c71b5"
+  "agent": "ac48a599de46c71b5",
+  "policy": "v1"
  },
  "IRWB-020-M": {
   "config": "op-x",
@@ -101,7 +114,8 @@
   "harness": "claude-code-subagent",
   "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-op-x-irwb-020-m",
   "branch": "t1-op-x/irwb-020-m",
-  "agent": "ad6d05083c399fd43"
+  "agent": "ad6d05083c399fd43",
+  "policy": "v1"
  },
  "IRWB-020-P": {
   "config": "fa-m",
@@ -111,7 +125,8 @@
   "harness": "claude-code-subagent",
   "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-fa-m-irwb-020-p",
   "branch": "t1-fa-m/irwb-020-p",
-  "agent": "a8303364f84f005e4"
+  "agent": "a8303364f84f005e4",
+  "policy": "v1"
  },
  "IRWB-020-O": {
   "config": "fa-x",
@@ -121,6 +136,39 @@
   "harness": "claude-code-subagent",
   "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-fa-x-irwb-020-o",
   "branch": "t1-fa-x/irwb-020-o",
-  "agent": "a270a2c2b9a213455"
+  "agent": "a270a2c2b9a213455",
+  "policy": "v1"
+ },
+ "IRWB-020-T": {
+  "config": "v2-sm",
+  "model": "gpt-6.2-sol",
+  "effort": "medium",
+  "round": "t1-v2-sm",
+  "harness": "codex",
+  "policy": "v2"
+ },
+ "IRWB-020-R": {
+  "config": "v2-sh",
+  "model": "gpt-6.2-sol",
+  "effort": "high",
+  "round": "t1-v2-sh",
+  "harness": "codex",
+  "policy": "v2"
+ },
+ "IRWB-020-Q": {
+  "config": "v2-pi-sm",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "medium",
+  "round": "t1-v2-pi-sm",
+  "harness": "pi",
+  "policy": "v2"
+ },
+ "IRWB-020-S": {
+  "config": "v2-pi-sh",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "high",
+  "round": "t1-v2-pi-sh",
+  "harness": "pi",
+  "policy": "v2"
  }
 }
