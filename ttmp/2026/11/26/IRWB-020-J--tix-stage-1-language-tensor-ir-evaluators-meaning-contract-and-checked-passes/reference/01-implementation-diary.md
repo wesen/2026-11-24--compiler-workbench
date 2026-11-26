@@ -166,3 +166,7 @@ the error budget is useful on small nonsymmetric cases. The corpus is not yet ev
 Review the design ledger, the policy table, the concrete split witness and negative controls. After the
 review reply, record decisions before coding. The build, six corpus runs, tensor tests, full framework and
 affected Typed tests are deferred to implementation. `docmgr doctor --ticket IRWB-020-J --stale-after 30` reported “All checks passed” for the design ticket.
+
+## Step 2: Apply review before implementing
+
+Accepted all review items. Positive profiles now depend on the declared singleton type, not a parameter name. Origin admission and candidate work bounds are separate. Bitwise equality on the same calls is transitive, so inline needs no history flag. Dropped equation solving and error measurement. No new framework capability beyond the reviewed sync gate. Review the sample-domain and composition sections first. `npm ci --offline --no-audit --no-fund` installed six packages. Next: build and exercise the reviewed design.

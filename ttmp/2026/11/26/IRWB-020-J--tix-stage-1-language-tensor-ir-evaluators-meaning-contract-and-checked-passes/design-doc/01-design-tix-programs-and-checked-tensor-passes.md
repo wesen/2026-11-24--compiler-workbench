@@ -63,7 +63,7 @@ this list, with the missing capability and the test that required it, here befor
 ## Language boundary and checks
 
 `src/tensor/index.ts` will export exactly the requested synchronous call shapes. `compileTix(source)` returns
-an opaque `TixProgram` holding `{origin, current, approximate}` (two references to the same artifact at r0).
+an opaque `TixProgram` holding `{origin, current}` (two references to the same artifact at r0).
 `runTix(program, fn, inputs, {precision}?)` interprets `current`; default `f32`. `optimizeTix(program, passes)`
 returns `{program, steps:[{pass, accepted}, …]}`. The supported pass names are `inline` and `split-sum`.
 Multiple independent named functions are allowed; there are no user-function calls. No implicit broadcast,
@@ -93,20 +93,15 @@ scalar tensor type, mutable tensors or implicit Einstein summation.
   binder according to its coefficient to get the affine min/max of each subscript; check `0 <= min` and
   `max < axisExtent`. E.g. `[H-2]` output with `dy` ranging over `[0,3)` gives maximum `(H-3)+2 = H-1`.
   Check these inequalities symbolically under nonnegative shape symbols, legal declared extents, and nonempty
-  bounds of the enclosing loops. Constant folding/coefficient comparison first; linear implication (eliminate
-  shape variables from constraints plus the negated bound) for dependent dimensions. Be conservative if a
+  bounds of the enclosing loops. Use normalized coefficient comparison only. Be conservative if a
   bound can't be justified: report the access, not an eventual undefined array read. Do not add inequality or
   range syntax. Test the last valid window and a one-too-long annotation.
 * **Static vs call-time.** A valid call supplies exactly the parameters, finite entries, nonnegative integer
   extents (zero is meaningful), row-major buffer lengths equal to the products, and one consistent nonnegative
   integral binding of all shape names. Derived dimensions and address products must be representable as safe
-  integers and the tensors allocatable. At compile time form the matrix of input dimensions' linear parts;
-  it must have sufficient rank to determine the shape names. At call time solve `A·s = actual - constant` and
-  recheck *all* axes, integer solutions and derived extents. Exact integer/rational arithmetic in shape checks,
-  not floating-point least squares; a direct named axis is the common trivial pivot. This supports e.g. an
-  input dimension `N+1` without requiring an extra `f32[N]` parameter. Conflicting symbolic uses, impossible
-  constant dimensions and underdetermined signatures are source errors; concrete buffer/shape mismatches
-  can't be diagnosed from source and are checked on entry. No general integer programming interface.
+  integers and the tensors allocatable. Bind a shape symbol from a plain named input axis; require such an axis
+  for every symbol at compile time. Other axes may refer to these names in affine expressions. No simultaneous
+  equation solver or diagnostic contract for invalid host calls.
 
 ## The v6 artifact and execution
 
@@ -158,11 +153,14 @@ calls for both sides. Generate from the origin signature only. Version the follo
 * Try shape assignments all symbols `1`, `4`, `5`, `7` and rotations of `(3,5,7)` across signature symbols in
   declaration order; literal dimensions remain fixed. Keep distinct legal nonempty test shapes. This covers
   asymmetric dimensions, full blocks, short blocks and tails. Test zero extents separately in evaluator tests.
-  Cap samples at 32K elements per tensor and 2M scalar evaluation steps per call; record a failed check if
-  there is no admissible sample for a function or a required execution cannot finish. No vacuous successes.
+  Admit shapes using the origin only: at most 32K cells per tensor and a structural bound of 2M scalar/loop
+  steps per call. For each admitted shape the candidate gets its *own* graph-derived work bound, not the
+  origin's admission cap. All loops are finite and value-independent; include block starts and clipped inner
+  domains in the bound. No shape for even one function fails the check.
 * For each retained shape use all ones; a bounded row-major ramp `((offset + parameterOrdinal) % 17 - 8)/8`; a repeating
   last-axis pattern `[1,0,0,0,2^-24,2^-24,2^-24]`; and seeded mixed-sign f32 samples in `[-1,1)` from
-  framework `seededRandom(7)`. For the corpus epsilon parameter `eps: f32[1]`, supply positive `2^-10`.
+  framework `seededRandom(7)`. Every parameter whose declared type normalizes to `f32[1]` gets positive values
+  `2^-10 + abs(profileValue)` regardless of name. Symbolic axes instantiated at 1 do not trigger this rule.
   These are concrete finite `Float32Array` inputs, identical for f32 and f64 runs. Never reuse a verdict across
   different relations or invent a shape from the candidate. Start without memo keys or parallel workers.
 * **Observation:** callable signature, returned rank, exact extents, length, and every row-major output cell;
@@ -176,8 +174,7 @@ calls for both sides. Generate from the origin signature only. Version the follo
   about `7 * 2^-24` times the sum of term magnitudes. Products, multiple reductions and nonlinear functions
   can amplify this. The absolute floor allows small errors near cancellation where relative-only tests fail;
   the relative term scales with larger outputs. This is a proposed engineering budget for *bounded samples*,
-  not an ulp theorem or a license to accept all reassociations. Measure max error on the six programs, record
-  any false rejection; don't widen the gate to pass a mutant. A norm/mean could hide one wrong cell.
+  not an ulp theorem or a license to accept all reassociations. Don't widen the gate to pass a mutant. A norm/mean could hide one wrong cell.
 * `describeCase` emits finite replay metadata (function, shape assignment, profile/seed and case ordinal);
   mismatch reason includes first offset, f32 words or f64 reference, observed value and allowed error. Keep raw
   buffers and nonfinite numbers out of v6 evidence; encode exceptional observations as text. Tests inspect the
@@ -185,15 +182,9 @@ calls for both sides. Generate from the origin signature only. Version the follo
 
 ### Policy when passes compose
 
-| Step | Local guarantee | Check rooted at the original program |
-| --- | --- | --- |
-| `inline` in an exact history | `exact(input, output)` | `exact(origin, output)` (once if `input == origin`) |
-| `split-sum` | Restricted structural rewrite below | `tolerance(origin, output)`; mark history approximate on an accepted change |
-| `inline` after an accepted split | Still `exact(input, output)` | Also `tolerance(origin, output)` |
-
-Simply comparing adjacent revisions allows tolerance drift. Requiring bit identity to r0 *after* accepting
-roundoff would reject a subsequent correct inline. Keep r0 and the accepted-history flag even across separate
-`optimizeTix` calls. Apply listed names in order; on a meaning rejection append `{pass,accepted:false}`, keep
+`inline` checks exact agreement with its input. On the same origin-derived calls this preserves any already
+established origin relation, including after a split. `split-sum` always compares to origin f64 so tolerance
+cannot drift. Keep r0 across separate `optimizeTix` calls; no history flag or redundant check. Apply listed names in order; on a meaning rejection append `{pass,accepted:false}`, keep
 the prior program and continue. An identity that passes the check is accepted with no revision change.
 Structural/host bugs are not evidence of a numerical mismatch.
 
@@ -252,7 +243,7 @@ a shared traversal bug can make two precisions or two unchanged programs agree.
    and inability to skip an unsupported guarantee. Add tensor contract/pass tests for the acceptance matrix,
    replayable counterexamples, tail boundaries 1/4/5/7, multi-use nonmatch, affine/permuted inline under a
    reduction, nonfinite handling, no sample for one function, no-op, refusal to publish and mixed pass order.
-4. `npm run build`; `node --test tests/tensor/`; `node --test tests/framework/`;
+4. `npm run build`; `node --test tests/tensor/*.test.mjs`; `node --test tests/framework/*.test.mjs`;
    `node --test tests/typed/{passes,strategies,evaluate-analyses,meaning-memo}.test.mjs` (expand if shared
    code touched). If a spawning test hits sandbox EPERM, request escalation for that command. Log results and
    actual framework paths/reasons here and in the diary. No changes to Typed, existing corpus or tools.
