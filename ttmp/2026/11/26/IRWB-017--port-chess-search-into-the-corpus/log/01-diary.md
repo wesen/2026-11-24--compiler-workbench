@@ -60,3 +60,13 @@ Specified the unchanged board and frame layout, a search wrapper with input-buff
 ## Step 4 · Validate the ticket
 
 Checked the index and design frontmatter and resolved their relative Markdown links. The first `docmgr doctor --ticket IRWB-017 --stale-after 30` reported `invalid_frontmatter` for the diary because the frontmatter delimiters were missing. Added the ticket metadata and reran the check. The commit is scoped to the ticket.
+
+## Step 5 · Simplify the port after self-review
+
+Read the design and the current worktree's program loader, case builder, pass evidence, and corpus runners. The biggest removable cost was a second search interface. The revised design puts three options into the existing start call and drives search with the existing slice call. The compact pass cases still exercise real helper paths because both stock project loaders check all functions. A few shared snapshots cover those calls without new entry-point plumbing or a separate generator.
+
+Consolidated the test and measurement path into one Node harness. The independent oracle still covers special moves, terminal positions, perft, and tactical search. The prior measurement remains evidence for selecting compact cases. This review used the recorded probe and current worktree files for design evidence. The port and its thresholds remain to be verified during implementation.
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-017: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+
+Validated the revised design and diary frontmatter with docmgr, resolved the design's file links, checked that the eight cuts close the document, and ran `git diff --check`. The changes are limited to the ticket's design, diary, and changelog.
