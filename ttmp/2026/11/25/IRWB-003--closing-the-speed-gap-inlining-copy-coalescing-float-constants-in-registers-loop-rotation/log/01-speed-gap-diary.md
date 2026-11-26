@@ -494,3 +494,60 @@ This step added the pipeline, the presets and the RV32 options row, and measured
 
 ### Technical details
 - Outputs: `various/10-corpus-o3-all-options.json`.
+
+## Step 10: The option ablation on the corpus, the browser check, and the frozen checks
+
+This step measured what each backend option buys on top of the `speed` pipeline, checked the RV32 options row in a browser, and ran the frozen checks against the baselines of Step 1. Each option alone saves 3.9–4.8% of the corpus's instructions on top of the pipeline, all three together 13.6%, and no project is slower under any of them. Parity and the full-corpus suites are identical to the baseline.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Measurements for the report; "everything frozen identical (diff revisions)".
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit after Step 11.
+
+### What I did
+- `scripts/05-corpus-options.mjs --pipeline speed --options <o> --base O2 --json various/13-corpus-speed-<o>.json` for `{}`, `{"chains":true}`, `{"coalesce":true}`, `{"homes":true}`.
+- `scripts/01-benchmark-probe.mjs --pipeline speed [--options …] --json various/12-benchmarks-speed-{defaults,all-options}.json`.
+- `node tools/serve-site.mjs dist/site 8771`; in a browser (Playwright): the Pipeline view lists `speed`; Next pass offers `apply rotate` and `apply inline`; RV32 → Backend options shows the row "Speed, chosen per function by the estimate"; toggling the three options changes the button to "Backend options 3 changed" and the code line to `p.compile({"chains":true,"coalesce":true,"homes":true})`, with no refusal. Screenshot `various/14-rv32-options-row.png`. Server stopped by PID.
+- `node tools/parity.mjs > various/15-final-parity.txt`; `diff various/03-baseline-parity.txt various/15-final-parity.txt`.
+- `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs > various/16-final-irwb-full.txt`, diffed against `various/04-…` with the per-test times removed.
+- `scripts/10-report-figures.py` (matplotlib) → `various/figures/irwb003-{benchmarks,corpus-ablation,corpus-projects}.png`.
+
+### Why
+- The ablation separates the passes' effect (default options) from each option's.
+
+### What worked
+- Corpus totals (instructions over 6,986 decided cases; O2 910,718):
+
+  | pipeline, options | instructions | vs O2 | bytes |
+  |---|---:|---:|---:|
+  | speed, defaults | 843,371 | −7.4% | 4,812 |
+  | speed + chains | 803,917 | −11.7% | 4,640 |
+  | speed + coalesce | 810,170 | −11.0% | 4,588 |
+  | speed + homes | 802,506 | −11.9% | 4,764 |
+  | speed + all three | 728,450 | −20.0% | 4,356 |
+
+  Every run: `agree 6986`, `disagree 0`, `slower []`.
+- `PARITY-IDENTICAL`; `IRWB-FULL-IDENTICAL-EXCEPT-TIMES` (21 of 21).
+
+### What didn't work
+- `browser_take_screenshot` into the scratchpad: `File access denied … outside allowed roots`; saved into the ticket's `various/` instead.
+- `10-report-figures.py` first run: `TypeError: string indices must be integers` — script 05's JSON has `base: "O2"` and the base totals under `total.base`.
+
+### What I learned
+- The three options overlap little: against `speed` with the default options (843,371), chains alone saves 4.7%, coalesce 3.9%, homes 4.8% (sum 13.5%), and all three together 13.6%.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The Playwright snapshot of the first navigation was written by the tool into the main checkout's `.playwright-mcp/` (outside this worktree); I left it there.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `various/13-*.json`, `various/15-final-parity.txt`, `various/16-final-irwb-full.txt`.
+
+### Technical details
+- Parity line: `{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}`.

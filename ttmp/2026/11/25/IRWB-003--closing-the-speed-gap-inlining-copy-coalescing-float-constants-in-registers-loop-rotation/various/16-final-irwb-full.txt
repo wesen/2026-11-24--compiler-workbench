@@ -1,0 +1,29 @@
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (206.356746ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (2126.876046ms)
+✔ P2.4: the book's other r0 numbers reproduce (655.107115ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (3343.658781ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (703.260943ms)
+✔ P2.4: encoders and the disassembler round-trip (384.722889ms)
+✔ P2.4: options are validated with the prototype's codes (103.5155ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (16.028736ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (107.572207ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (127.696493ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (129.956462ms)
+✔ P2.4: heat, diffs, machine stages and image status (140.79602ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (57847.703371ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit) (3208.539785ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (1191.173846ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (1647.591121ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (96.626857ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (264.583748ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (25.614839ms)
+✔ P2.6: corpus parity (all projects) (45212.916434ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (2038.562914ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69533.787746

@@ -307,6 +307,8 @@ The table below maps each measured cause to the change that addresses it.
 
 # Part 3: Design
 
+> **After implementation.** Part 3 is the design as written before the code. Section 22 at the end records what was built, the measured results, and where the implementation departs from this design: the layout became its own option `chains` (not `layout: 'loops'`), the pipeline is named `speed` (not `O3`), and the layout is chosen per function by the estimate like the other options.
+
 The milestone has five pieces: two passes on `typed.blocks` (`rotate` and `inline`) and three backend options (`layout: 'loops'`, `coalesce` and `homes`). Each can be turned on alone, measured alone and reviewed alone. The three backend options share one notion of where a function spends its time, the block frequencies of section 11, which the layout uses to order blocks and which the other two use to decide whether they pay.
 
 ## 10. Loop rotation as header duplication (`rotate`, proposed)
@@ -728,3 +730,59 @@ node ttmp/2026/11/25/IRWB-003--…/scripts/01-benchmark-probe.mjs --pipeline O3 
 node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs | diff - \
      ttmp/2026/11/25/IRWB-003--…/various/01-baseline-corpus-revisions.txt
 ```
+
+## 22. Outcomes (after implementation)
+
+This section was added after the milestone was implemented. It records what was built, where it departs from Parts 3 and 4, and what was measured. The diary (`log/01-speed-gap-diary.md`) has the commands and outputs behind every number.
+
+### 22.1 What was built
+
+| file | contents |
+|---|---|
+| `src/typed/rotate.ts` | `rotateSpec`, wrapped by `typedPass` in `passes.ts` as `rotate` |
+| `src/typed/inline.ts` | `makeInline(correspond)`: the `inline` pass, a `definePass` like `dfe`; `passes.ts` calls it with `revisionCorrespondence` |
+| `src/typed/backend/frequency.ts` | `blockFrequencies(st, f)`, `estimateCost(code, fr)` |
+| `src/typed/backend/layout.ts` | `layoutBlocks(st, f, fr)`: chains by edge weight, ties to the IR's fall-through |
+| `src/typed/backend/coalesce.ts` | `coalesceCopies(selection, fr)`: interference, union-find, renaming |
+| `src/typed/backend/variants.ts` | `chooseVariant`: plain, then each requested option on top of the best, kept if the estimate is lower |
+| `src/typed/backend/select.ts` | the block order under `chains`; `homes` and `onConst` hooks for constant homes |
+| `src/typed/backend/compile.ts` | `compileFunction` compiles once under the defaults, else through `chooseVariant`; `variantChoices` |
+| `tests/typed/speed.test.mjs`, `tests/typed/inline.test.mjs` | 8 + 7 tests (two run the whole corpus under `IRWB_FULL=1`) |
+
+### 22.2 Departures from the design
+
+- **`chains` instead of `layout: 'loops'`.** A frozen test (`tests/typed/backend.test.mjs:294`) asserts that `{ layout: 'loops' }` is refused. `layout` is unchanged; the frequency-based order is a third extra option, `backendExtras = { chains, coalesce, homes }`.
+- **`speed` instead of `O3`.** A frozen test (`tests/workbench/strategies.test.mjs:74`) uses `O3` as its example of an unknown pipeline. The pipeline is `PIPELINES.speed`, with the passes of §16.2; the presets are `speed` and `fastest-all`.
+- **The layout is chosen by the estimate too.** §11.3 said the layout is not decided by the estimate. Measured alone (Step 4 of the diary), it made six corpus projects slower, `strings` by 7%; with ties sent to the IR's fall-through and the layout kept per function only where the estimate prefers it, no project is slower.
+- **No `homes.ts`.** Choosing homes needs only a recording selection and a filter; it lives in `variants.ts`, with two hooks in `select`.
+- **Two enumeration assertions changed** in `tests/workbench/strategies.test.mjs`: 15 passes, and `speed` in the pipeline list.
+- **The zeroing rule never fires on lifted code.** Typed initializes every local, so no non-parameter local is live at a lifted function's entry. The test removes an initialization first (§19's zeroing test).
+
+### 22.3 Measurements
+
+Benchmarks (instructions; every result agrees with the evaluator):
+
+| benchmark | O2 (book) | speed, defaults | speed + chains + coalesce + homes | reference |
+|---|---:|---:|---:|---:|
+| Blend | 451 | 450 | 370 | 383 |
+| Checksum | 366 | 325 | 286 | 292 |
+| insertion sort | 2,022 | 1,985 | 1,824 | 1,533 |
+| Collatz | 1,590 | 1,480 | 1,218 | 1,486 |
+| value numbering | 570 | 569 | 451 | 695 |
+
+The predictions of §8 (Blend 371, Checksum 286) were within one instruction.
+
+Corpus (44 projects, 6,986 decided cases, each agreeing with r0; no project slower than O2 in any row):
+
+| pipeline, options | instructions | vs O2 | bytes |
+|---|---:|---:|---:|
+| O2 | 910,718 | | 5,160 |
+| speed | 843,371 | −7.4% | 4,812 |
+| speed + chains | 803,917 | −11.7% | 4,640 |
+| speed + coalesce | 810,170 | −11.0% | 4,588 |
+| speed + homes | 802,506 | −11.9% | 4,764 |
+| speed + all three | 728,450 | −20.0% | 4,356 |
+
+Candela: see §22.4.
+
+Frozen checks: `scripts/08` of IRWB-001 prints the same 44 lines; `tools/parity.mjs` is identical; the `IRWB_FULL` suites are identical except for times; `npm test` passes with 15 more tests.
