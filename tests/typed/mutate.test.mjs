@@ -186,3 +186,42 @@ test('IRWB-005: records are laid out at their offsets in version 2 (version 1 wr
   const keys = S.strongCasesFrom(st, 'pick', { count: 4, extra: 0, layout: 'keys', inputs: p.inputs.pick });
   assert.deepEqual(keys.map(c => [...c.memory]), v1.map(c => [...c.memory]));
 });
+
+test('IRWB-005: a float rewrite wrong only on NaN payloads (x + -0 -> x) passes version 1 and fails version 2', async () => {
+  // IRWB-006's unsound rule: every f32 operation returns the canonical NaN, so x + (-0) canonicalizes a NaN argument
+  // while x keeps its payload; F32_EDGES holds only the canonical NaN, version 2's pool also a negative and a
+  // signalling NaN. On a computed operand (x * k) the rewrite is equivalent: a computed NaN is canonical.
+  const { typedPass } = await import('../../dist/typed/passes.js');
+  const { evaluate } = await import('../../dist/typed/evaluate.js');
+  const src =
+    'function addNegZero(x: f32): f32 { return x + (-0.0); }\nfunction scaled(x: f32, k: f32): f32 { return (x * k) + (-0.0); }\n';
+  const drop = fname =>
+    typedPass({
+      name: 'fadd-neg-zero',
+      about: 'x + (-0) -> x',
+      writes: ['values'],
+      preserves: [],
+      body({ st, f, tx }) {
+        if (f.name !== fname) return;
+        tx.rewrite(h => {
+          const v = st.get(h.id);
+          const c = v.op === 'fadd' ? st.get(v.args[1]) : null;
+          if (c && c.op === 'const' && c.imm === -0x80000000) return v.args[0];
+        });
+      },
+    });
+  const v2 = S.meaningKeptStrong({ inputs: {}, count: 40, extra: 40, seed: 7 });
+  const verdicts = {};
+  for (const fname of ['addNegZero', 'scaled']) {
+    const p = new Program('nan-payload', src, {});
+    const step = await p.apply(drop(fname)); // version 1: throws if it rejects
+    assert.equal(step.changed, true);
+    const ev = await p.manager.checkInvariant(v2, { origin: p.origin, candidate: p.head });
+    verdicts[fname] = ev.ok;
+    const args = fname === 'scaled' ? [0x7fc00001, 0x3f800000] : [0x7fc00001];
+    const [a, b] = [p.origin, p.head].map(art => evaluate(storeOf(art.value), fname, args, new Uint8Array(1024)).result);
+    assert.equal(a, 0x7fc00000);
+    assert.equal(b, fname === 'scaled' ? 0x7fc00000 : 0x7fc00001);
+  }
+  assert.deepEqual(verdicts, { addNegZero: false, scaled: true });
+});

@@ -630,3 +630,47 @@ The corpus measurement of Step 8 mutates each project's pipeline head. To see wh
 
 ### Technical details
 - Largest projects by checks: heat-lab 30,581,254 (665 claims), sort 26,846,130 (665), strings 16,855,954 (1,556), nested-loops 10,601,333, licm-nested 9,736,571.
+
+## Step 14: A float class reported by IRWB-006: rewrites wrong only on NaN payloads
+
+The coordinator relayed a finding from IRWB-006: `F32_EDGES` contains only the canonical NaN, and the unsound rule `x + (−0) → x` passes on those values; it is refuted by x = 0x7fc00001, because the evaluator's `fadd` returns the canonical NaN while `x` keeps its payload. I measured this class against both contract versions. Version 1 accepts the rewrite (`80/80`); version 2 rejects it (`2/160 sampled cases disagree`), because its f32 pool already contains two non-canonical NaNs, the negative quiet NaN 0xffc00000 and the signalling NaN 0x7fa00000 (`F32_EXTRA`, Step 5). On a computed operand, `(x * k) + (−0) → x * k`, the rewrite is equivalent on every input, since every NaN the evaluator computes is canonical; both versions accept it, correctly. The default stays unchanged; the recommendation goes into the report.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator message (relayed finding from IRWB-006, summarized): `F32_EDGES` has only the canonical NaN; `x + (−0) → x` passes on it and fails at 0x7fc00001; treat it as a surviving-mutant class and a candidate for the stronger generator; keep the default unchanged; measure and recommend.
+**Assistant interpretation:** Measure the class under both versions, add a test, and recommend.
+**Inferred user intent:** The gate's float blind spot is quantified, and the fix is proposed rather than applied.
+**Commit (code):** see the commit after this step ("NaN-payload class").
+
+### What I did
+- `git show irwb-001/import-v6-prototype:tests/typed/rules.test.mjs` (read only): IRWB-006's `fadd-neg-zero` candidate and its counterexample `x & 0x7fffffff = 0x7fc00001`.
+- `scripts/19-nan-payload.mjs`: two functions, `addNegZero(x) = x + (−0)` and `scaled(x, k) = (x * k) + (−0)`; the rewrite as a `typedPass` (`fadd(a, const 0x80000000)` → `a`); judged by `Program.apply` and by `checkInvariant(meaningKeptStrong({ count: 40, extra: 40 }))`; both revisions run on five NaN encodings. Output `various/19-nan-payload.txt`.
+- Test: `tests/typed/mutate.test.mjs`, "a float rewrite wrong only on NaN payloads (x + -0 -> x) passes version 1 and fails version 2"; 10 of 10 pass.
+
+### Why
+- The f32 operator of the harness swaps operators and moves constants; it never produces this rewrite, so the fixture's 100 % says nothing about payloads.
+
+### What worked
+- `addNegZero`: version 1 accepted (`80/80`), version 2 rejected (`2/160 sampled cases disagree`). Non-canonical NaN arguments among the cases: version 1 0, version 2 2. On 0x7fc00001, 0xffc00000, 0x7fa00000 and 0x7f800001 r0 returns 0x7fc00000 and the rewrite returns the argument.
+- `scaled`: both accept; the rewrite agrees with r0 on all five encodings.
+- `F32_EDGES` NaNs: 0x7fc00000 only. `F32_EXTRA` NaNs: 0xffc00000, 0x7fa00000.
+
+### What didn't work
+- My first version of the test was appended with a shell heredoc; the worktree isolation check refused the compound command. Added with the editor instead.
+
+### What I learned
+- Non-canonical NaNs only enter a program through its inputs, its memory or constant bit patterns: every NaN the evaluator computes is canonical. So the class matters exactly where a rewrite removes an operation applied to an input or a loaded value.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- Version 2's pool covers the class only for unspecified f32 parameters. A parameter specified as a range (`[lo, hi]`) gets no NaN at all, by design; there the rewrite is equivalent under the specification.
+
+### What should be done in the future
+- Recommendation for a future version 1.x: add a non-canonical quiet NaN (0x7fc00001), a negative quiet NaN (0xffc00000) and a signalling NaN (0x7fa00000) to `F32_EDGES`. That changes the cases of every function with an unspecified f32 parameter, and so the version string.
+
+### Code review instructions
+- `scripts/19-nan-payload.mjs`, the new test at the end of `tests/typed/mutate.test.mjs`.
+
+### Technical details
+- Version 1's check counts both functions' 40 cases (80); version 2's, 80 per function (160).
