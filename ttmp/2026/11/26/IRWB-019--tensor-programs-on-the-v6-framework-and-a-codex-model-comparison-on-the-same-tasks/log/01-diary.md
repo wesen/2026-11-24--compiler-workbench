@@ -168,3 +168,32 @@ The user asked: "ok, add xhigh to the matrix". There are four new cells per task
     - checked application is async-only, while `optimizeTix` is synchronous, hence an `applyPassSync`.
   - Fable also measured that a fixed relative tolerance does not separate correct from wrong programs: correct programs reach 9.9e-3, wrong ones go down to 1.6e-6. It proposes a running first-order error bound instead.
 - **Claude usage** is logged per turn in `various/results/claude-usage.json`.
+
+## Step 6: research round r1 scored: a ceiling
+
+A blind judge (Claude subagent, 202K tokens) scored the twelve r1 designs with `scripts/04-judge-rubric-r1.md`. It verified the mathematics rule by rule, re-ran every numeric example the documents quote, and checked its own quotes. I re-verified the quotes independently: 86 of 86. The kit's `07-verify-quotes.mjs` found 0 of 0, because it expects the t-rubric's quote layout; the check was done inline instead.
+
+| cell | doc | words | M5 | M6 | M7 | over-eng. | overall | errors |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| Codex Astra medium | E | 2,555 | 5 | 5 | 4 | 2 | 8 | 0 |
+| Codex Astra high | J | 3,551 | 5 | 5 | 5 | 3 | 9 | 0 |
+| Codex Astra xhigh | D | 3,587 | 5 | 5 | 5 | 4 | 9 | 0 |
+| Codex Sol medium | H | 2,706 | 3 | 4 | 3 | 2 | 7 | 1 minor |
+| Codex Sol high | C | 3,107 | 5 | 4 | 4 | 2 | 8 | 0 |
+| Codex Sol xhigh | I | 3,067 | 5 | 4 | 4 | 2 | 8 | 0 |
+| Pi Astra medium | G | 1,992 | 5 | 5 | 4 | 1 | 8 | 0 |
+| Pi Astra high | B | 2,898 | 5 | 5 | 5 | 3 | 9 | 0 |
+| Pi Astra xhigh | K | 4,112 | 5 | 5 | 5 | 4 | 9 | 0 |
+| Pi Sol medium | L | 3,120 | 5 | 5 | 4 | 3 | 8 | 0 |
+| Pi Sol high | A | 3,313 | 5 | 5 | 5 | 3 | 9 | 0 |
+| Pi Sol xhigh | F | 3,874 | 5 | 5 | 5 | 3 | 9 | 0 |
+
+- **M1 to M4 are 5 for all twelve.** No design got the core identity wrong. All handle the empty prefix with a tag rather than −∞, apply both rescale factors, and prove associativity on reachable summaries. The question has a well-known answer, so it saturates the rubric.
+- **The differences are small, and each cell has one run:**
+  - Pi 8.67 against Codex 8.17;
+  - Astra 8.67 against Sol 8.17;
+  - medium 7.75 against 8.75 for both high and xhigh.
+- **Length and over-engineering rise with effort:** 2,593 → 3,217 → 3,660 words and 2.00 → 2.75 → 3.25.
+- **The lowest cell is Codex Sol medium** (7, one minor error: it claims to reach softmax-then-contraction without an inlining rule).
+- **The judge's strongest idea:** split the merge into two lemmas (rebase each block sum at its own maximum, then fold the pairs). Docs D, F, J and K do this, and K abstracts it to a scale-transport law, r(u,u) = 1 and r(u,v)·r(v,h) = r(u,h).
+- **Methodology lesson:** a design-only research question with a known answer cannot separate configurations. A harder round needs an open question, or scoring by implementation. T5 (implement the derivation and measure GPU time) is the objective version of this one.

@@ -1,0 +1,477 @@
+[
+  {
+    "doc": "doc-A.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 5
+    },
+    "errors": [],
+    "over_engineering": 3,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "For disjoint groups `A,B`, `h = m(A∪B)` and `exp(a_j-h) = exp(a_j-mA) exp(mA-h)` on `A` (likewise on `B`)."
+      ],
+      "M2": [
+        "turns each inner fold into a max and the paired weighted sums in that block. The outer combine remains intact."
+      ],
+      "M3": [
+        "`tree` denotes a deterministic parenthesization with the indices as leaves exactly once in increasing order"
+      ],
+      "M4": [
+        "The reference is the *original* Tix AST evaluated in f64 with the original grouping and lexicographic orders, without `fround`"
+      ],
+      "M5": [
+        "For plain `log(sum(j) exp(a_j))`, first introducing the stabilizing shift would need another rule; it does not match this set as written."
+      ],
+      "M6": [
+        "the median GPU latency ratios satisfy **unfused/derived ≥ 1.2** and **derived/hand-streamed ≤ 1.25**"
+      ],
+      "M7": [
+        "reassociation is authorized only for certified combines, not on the strength of a user's `associative` annotation"
+      ]
+    },
+    "notes": "Five correct rules (divisor, centered fold lift, partition, tile expansion, producer sinking) with a tagged Empty state and an explicit tree; every step has an exact certificate plus the fixed-origin gate, and the footprint-versus-traffic analysis is right. Its absolute tolerance of 2e-3 is looser than the others' but is fixed before any run; the framework-fit paragraph and bootstrap protocol add some bulk."
+  },
+  {
+    "doc": "doc-B.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 5
+    },
+    "errors": [],
+    "over_engineering": 3,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "exp(a_j-h) = exp(c_T-h) * exp(a_j-c_T)"
+      ],
+      "M2": [
+        "Use **R4 in reverse** inside each block to compute `S(tile)` by its R3 expansion rather than a serial merge per score."
+      ],
+      "M3": [
+        "Operational f32 meaning is evaluation of the *recorded* tree (default increasing left fold)."
+      ],
+      "M4": [
+        "Never chain tolerance comparisons: closeness is not transitive."
+      ],
+      "M5": [
+        "A contraction with `tanh(b/L)` also fails: changing the maximum/denominator no longer rescales the payload sum by a common factor."
+      ],
+      "M6": [
+        "Predeclare success on **each** primary shape: median derived time ≤ `0.8 ×` unfused and ≤ `1.25 ×` hand-streaming"
+      ],
+      "M7": [
+        "Permit reverse R4 only under a scheduled tile; this prevents an expand/fold cycle."
+      ]
+    },
+    "notes": "A correct and complete chain (substitute, extract divisor, pack, lift to fold, partition plus reverse expansion), with an f32-exact/tolerance split per rule and good negative controls. Restricting reverse R4 to scheduled tiles to stop rewrite cycling is a real compiler insight."
+  },
+  {
+    "doc": "doc-C.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 4,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "For disjoint segments `A` and `B`, the identity `exp(a(j) - p) = exp(a(j) - M_A) * exp(M_A - p)` holds for each `j ∈ A`, and likewise for `B`."
+      ],
+      "M2": [
+        "Apply R4 with `B = 32`, including a short final block. Apply R5 to the inner fold."
+      ],
+      "M3": [
+        "For f32 evaluation, visit indices in increasing order, evaluate each body, and apply `acc = combine(acc, body(i))` starting from the identity."
+      ],
+      "M4": [
+        "Compare with the original at every step because tolerance is not transitive."
+      ],
+      "M5": [
+        "Unshifted `log(sum(j) exp(a(j)))` likewise has no matched center."
+      ],
+      "M6": [
+        "In separate runs, count bytes at the device-memory interface over the same kernel sequence, recording the actual counter definition, alongside global temporary allocation and any detected spill traffic."
+      ],
+      "M7": [
+        "Derive attention as a fold over key blocks. Each block contributes its maximum score and two sums measured relative to that maximum."
+      ]
+    },
+    "notes": "A clean, correct six-rule derivation; its numeric negative control (N=33, D=1: 0.8124 vs 0.9697) is verified and well chosen. M6: the byte measurement has no cache-state protocol, so warm-cache repetitions could hide traffic. M7: beyond the control and the signed-zero remark, the rule set is the standard summary lemma."
+  },
+  {
+    "doc": "doc-D.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 5
+    },
+    "errors": [],
+    "over_engineering": 4,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "For a nonempty block with `m_C = max_{j∈C} t_j` and common `c ≥ m_C`, replace `H_C(c)` by `exp(m_C-c) H_C(m_C)`."
+      ],
+      "M2": [
+        "**R5** on the block body gives `h_b=H_{C_b}(m_b)` and `(l,u)=Σ_b exp(m_b-M) h_b`."
+      ],
+      "M3": [
+        "Associativity **over the reals** authorizes a proposed regrouping under R4. It grants no implicit parallel f32 reduction, atomic-update order, contraction to FMA, or choice of tree."
+      ],
+      "M4": [
+        "With ten equal scores and all values one, the original f32 result is `1.0000001192092896` and the hoisted form gives `1`."
+      ],
+      "M5": [
+        "At the local maximum `t=m_b`, `tanh(t-m_b)=0`. If a later block raises `M`, then `tanh(t-M)` is nonzero there. No scalar rescaling can recover that term."
+      ],
+      "M6": [
+        "Increase the eviction buffer until cold-copy read and write counts stabilize near the copy payload in each direction."
+      ],
+      "M7": [
+        "the maximum of the block maxima proves R5's `c ≥ m_C` guard by containment"
+      ]
+    },
+    "notes": "It splits the derivation into partition (exact for max), change of center per block, and fold synthesis, so each lemma is tiny; all its numeric examples (1.0000001192, the 0.75/1/0.5 mutants) check out. The counter-calibration protocol and the framework test probe are more than the question needs."
+  },
+  {
+    "doc": "doc-E.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "For each j in A, exp(S(j)−m) = exp(S(j)−mA) exp(mA−m); distribute the common factor and repeat for B. Thus merge returns exactly H(A∪B)."
+      ],
+      "M2": [
+        "Reading the resulting expression as a schedule gives the following kernel body."
+      ],
+      "M3": [
+        "A plan is an ordered binary tree over the increasing indices of J, each present once."
+      ],
+      "M4": [
+        "For rules 1 and 3 also require immediate predecessor and successor to agree bitwise in the core f32 evaluator, preserving zero signs. For 2, 4 and 5 require the exact real certificate plus the original-reference tolerance gate."
+      ],
+      "M5": [
+        "The outer tanh prevents extraction of a common exp(mA−m). The local union lemma does not match."
+      ],
+      "M6": [
+        "Using geometric means of per-shape median ratios, require derived/unfused time ≤ 0.80, derived/handwritten time ≤ 1.25 and derived/unfused measured DRAM bytes < 1."
+      ],
+      "M7": [
+        "The block-local sequential fold is deliberately explicit so that the first target has a reproducible f32 meaning."
+      ]
+    },
+    "notes": "Correct five-rule derivation to a streaming form. There is no tile-summary rule, so the derived kernel still merges singleton by singleton inside each block (a rescale per key), and the hand-kernel ratio partly measures that missing rule. M7: beyond this the content is the standard summary lemma."
+  },
+  {
+    "doc": "doc-F.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 5
+    },
+    "errors": [],
+    "over_engineering": 3,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "Per leaf `a_j-M = (a_j-m_T) + (m_T-M)`, so its weight factors by `exp(u+v)=exp(u)*exp(v)`."
+      ],
+      "M2": [
+        "On the first tile the running summary is the tile summary; thereafter it sets `m'=max(m,m_t)`"
+      ],
+      "M3": [
+        "In particular a real monoid certificate is **not** an f32 associativity flag."
+      ],
+      "M4": [
+        "The exact check for R2, R3-max and R6 also establishes f32 equality to their immediate predecessor under the specified evaluator"
+      ],
+      "M5": [
+        "R1 and the scalar change of anchor cannot move a shared scale through `tanh` or supply cross-key order statistics."
+      ],
+      "M6": [
+        "it moves at most half the off-chip bytes of the materialized lowering, takes at most `1/1.5` of the materialized lowering's median time, and takes at most `1.25×` the median time of the hand-written streaming comparator."
+      ],
+      "M7": [
+        "Replace inner `P_T(M)` by `exp(m_T-M) * P_T(m_T)`; keep the outer addition and `M = max_t m_T` for now."
+      ]
+    },
+    "notes": "Partition, anchor change and fold synthesis are shown in a stage table that leaves nothing implicit; it correctly notes that both new exponents are nonpositive. The checks and the two-stage GPU experiment are sound."
+  },
+  {
+    "doc": "doc-G.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 1,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "The union maximum is `h`; for every `j` in `A`, `exp(a_j-h)=exp(a_j-mA)*exp(mA-h)` and likewise for `B`."
+      ],
+      "M2": [
+        "replace `S(J)` by `fold(b,Empty,S(I_b),merge; left)`"
+      ],
+      "M3": [
+        "In f32 **the tree is semantics**"
+      ],
+      "M4": [
+        "For R1 and R3 require exact adjacent f32 agreement (including zero sign) in addition to the structural proof; for R2, R4, R5 require the local real certificate and the sampled tolerance gate."
+      ],
+      "M5": [
+        "The unstable spelling `log(sum exp(a))` needs a separate stabilization rule."
+      ],
+      "M6": [
+        "at `(4096,64)` derived median time <=80% of unfused and <=125% of hand-written, and derived DRAM bytes <=75% of unfused."
+      ],
+      "M7": [
+        "Replace `S(A ++ B)` by `merge(S(A),S(B))` for an ordered disjoint contiguous cover"
+      ]
+    },
+    "notes": "The most compact design, and complete: a direct split rule S(A++B) -> merge(S(A),S(B)) reaches the tile form without a lift-then-expand detour. M7: the content otherwise stays close to the standard online-softmax lemma."
+  },
+  {
+    "doc": "doc-H.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 3,
+      "M6": 4,
+      "M7": 3
+    },
+    "errors": [
+      {
+        "quote": "Reached when the weights share exactly the maximum and normalization and only the contraction is observed.",
+        "problem": "Rule 1 only matches `sum(j) (W_j * P_j[x] / L)`, and the rule set has no general producer-inlining rule (Rule 5 only sinks the score into a tile). A softmax tensor y = e/s consumed as sum(j) y[i,j]*b[j,x] has the form (W/L)*P after inlining and is matched by none of the five rules. The claim needs an inlining rule and a product form of Rule 1.",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 2,
+    "overall": 7,
+    "quotes": {
+      "M1": [
+        "Each term expressed at `m_a` becomes a term expressed at `m` by multiplication by `exp(m_a-m)`, since `exp(S_j-m_a) * exp(m_a-m) = exp(S_j-m)`."
+      ],
+      "M2": [
+        "Replace the singleton fold with `fold(t, empty, blockSummary(J_t), rebase)`."
+      ],
+      "M3": [
+        "A rule that changes the grouping must verify the particular real identity and pass the f32 gate."
+      ],
+      "M4": [
+        "Every step uses the full original-reference check, including the steps that preserve the predecessor bitwise."
+      ],
+      "M5": [
+        "Reached when the weights share exactly the maximum and normalization and only the contraction is observed.",
+        "Match `sum(j) (W_j * P_j[x] / L)` and replace it with `(sum(j) W_j * P_j[x]) / L`"
+      ],
+      "M6": [
+        "collect hardware-counter traffic in separate profiling runs"
+      ],
+      "M7": [
+        "A directed sequence of five rules suffices over the reals. It exposes a normalized weighted sum, replaces the full-row softmax with a summary of each prefix, partitions the prefix computation into tiles, and sinks the score producer into each tile."
+      ]
+    },
+    "notes": "The rules and derivation are correct and its f32 example is verified (0.69666672 vs 0.69666666). But it claims softmax-then-contraction is reached, which its rules do not support, and the generality table never covers unstable log-sum-exp. The byte measurement has no cache protocol and no tile parity with the hand kernel, and there is little beyond the standard construction."
+  },
+  {
+    "doc": "doc-I.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 4,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "For each j in A, exp(a_j − m) = exp(m_A − m)·exp(a_j − m_A)."
+      ],
+      "M2": [
+        "Replace the singleton fold by **fold(b, empty, blockSummary(b), merge)** in increasing b."
+      ],
+      "M3": [
+        "In the notation below, **fold(j, init, emit, step)** evaluates **init** once, visits j in ascending order, and replaces its state by **step(state, emit(j))** at each visit."
+      ],
+      "M4": [
+        "Each f32 accumulator starts at the same +0 and gets the same rounded summand and rounded addition in the same order as before."
+      ],
+      "M5": [
+        "The finite-score and nonempty-row premises fail."
+      ],
+      "M6": [
+        "Measure DRAM read plus write bytes in separate profiler runs, summing all launches per invocation."
+      ],
+      "M7": [
+        "Four rewrites turn the given Tix program into a fold over key tiles."
+      ]
+    },
+    "notes": "A correct four-rule derivation: R3 folds producer inlining into the summary lift, which keeps the chain short but makes that one step heavier. M6: byte counts have no cache-state protocol. M7: the rule set is standard, though the -inf mask and E=x,V=x raw-moment remarks are specific."
+  },
+  {
+    "doc": "doc-J.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 5
+    },
+    "errors": [],
+    "over_engineering": 3,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "For each term, `a(j)-M = (a(j)-m_b)+(m_b-M)`."
+      ],
+      "M2": [
+        "Replace it with the ordered fold of these pairs using the merge below."
+      ],
+      "M3": [
+        "No user-supplied associativity assertion changes execution order. Selecting a different tree or tile size changes the candidate, with its own checks."
+      ],
+      "M4": [
+        "For three equal scores and values [1,1,3], Node 24 gives 1.6666667461395264 before this rule and 1.6666666269302368 after it."
+      ],
+      "M5": [
+        "R5 lacks a shift-independent scalar factor, or the proposed `p(j)` changes when rebased."
+      ],
+      "M6": [
+        "take at most **80% of unfused time** and at most **125% of hand-written streaming time**, and move fewer measured DRAM bytes than the unfused program"
+      ],
+      "M7": [
+        "The quantity that composes is the pair of sums *expressed at a common score maximum*."
+      ]
+    },
+    "notes": "Six small rules (inline, divisor, zip, partition, rebase, fold), each with its local lemma; the two-block trace and the f32 hoisting example both verify. Its checking plan (normalized error, held-out seeds, mutants) is sound."
+  },
+  {
+    "doc": "doc-K.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 5
+    },
+    "errors": [],
+    "over_engineering": 4,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "Instantiate `t_j-a=(t_j-c)+(c-a)` and `exp(u+v)=exp(u)exp(v)`, then distribute the constant through the finite sum."
+      ],
+      "M2": [
+        "After any nonempty prefix `K` of keys (whole blocks), the real state is `m=max_K t`, `l=Σ_K exp(t_j-m)`, `u=Σ_K exp(t_j-m) V_j`."
+      ],
+      "M3": [
+        "A tree annotation can instead prescribe a binary tree on the ordered leaves"
+      ],
+      "M4": [
+        "For R1, R3 and R7 also compare predecessor/candidate f32 bits on the cases; for R4 distinguish the max-only edit from regrouping a sum. Do not demand local bit equality of R2, R5 or R6."
+      ],
+      "M5": [
+        "This does not match arbitrary unstable `log(Σ exp(t))` by magic."
+      ],
+      "M6": [
+        "the geometric mean of per-shape derived/unfused **time** ratios will be ≤0.80, derived/hand time ratios ≤1.25, and derived/unfused **DRAM byte** ratios ≤0.75."
+      ],
+      "M7": [
+        "The mechanical law is transport of scale: `r(u,u)=1`, `r(u,v)r(v,h)=r(u,h)`."
+      ]
+    },
+    "notes": "The most thorough design: it abstracts the merge into a scale-transport law, adds an explicit scheduling rule (R7), and includes an R5/R6 ablation. The math and the mutant example (1/3 vs 2/3) check out. The scheduling rule, midpoint trees and bootstrap/cache-cycling protocol go beyond what the question needs."
+  },
+  {
+    "doc": "doc-L.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 3,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "For a partition into `A` and `C`, `m=max(m_A,m_C)` and `exp(a_j-m)=exp(a_j-m_A)*exp(m_A-m)` for each `j` in `A`, and likewise for `C`."
+      ],
+      "M2": [
+        "After `R1(score) → R1(output) → R2 → R3 → R4 → R5 → R6`, the IR denotes this row program:"
+      ],
+      "M3": [
+        "Only a checked real summary law allows regrouping; a user-supplied combine is not presumed associative."
+      ],
+      "M4": [
+        "Recheck the original relation at every step: a tolerance is not transitive"
+      ],
+      "M5": [
+        "If written with a separate `y_j=e_j/L` and `Σ(y_j*w_j)`, this minimal catalog does not match"
+      ],
+      "M6": [
+        "it uses at most half the device DRAM bytes and half the median GPU time of the unfused lowering, and takes at most `1.25×` the median GPU time of a hand-written streaming f32 kernel."
+      ],
+      "M7": [
+        "First transform the score into `(Σ_d q[i,d]*k[j,d]) / sqrt(D)` (`D>0`)."
+      ]
+    },
+    "notes": "A correct and complete seven-step trace that is honest about where its catalog stops (an explicit y=e/L is not matched). M7: it adds an unnecessary f32 change by hoisting /sqrt(D) out of the score sum, which other designs deliberately avoid; otherwise it uses the standard lift/partition/expand rule set."
+  }
+]
