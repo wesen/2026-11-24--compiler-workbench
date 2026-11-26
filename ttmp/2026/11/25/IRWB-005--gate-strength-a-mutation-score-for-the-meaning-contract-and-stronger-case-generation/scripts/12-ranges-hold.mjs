@@ -15,7 +15,7 @@ const { casesFrom } = await import(root + 'dist/typed/evaluate.js');
 const F = await import(root + 'dist/typed/facts-check.js');
 const S = await import(root + 'dist/typed/cases-strong.js');
 
-const out = { revisions: 0, runs: 0, checked: 0, claims: 0, violations: [], seeded: { sites: 0, detected: 0, lo: { sites: 0, detected: 0 }, hi: { sites: 0, detected: 0 } }, perProject: {} };
+const out = { revisions: 0, runs: 0, checked: 0, claims: 0, violations: [], seeded: { sites: 0, detected: 0, lo: { sites: 0, detected: 0 }, hi: { sites: 0, detected: 0 }, missed: [] }, perProject: {} };
 const t0 = performance.now();
 for (const id of projectIds()) {
   const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
@@ -40,15 +40,21 @@ for (const id of projectIds()) {
     row.violated += r.violated;
     for (const v of r.violations) out.violations.push({ project: id, rev, ...v });
     if (rev === 0) {
-      // seeded wrong facts at r0
-      for (const site of F.rangeSites(facts))
+      // seeded wrong facts at r0: one block-entry interval narrowed by one, checked at the block's first statement
+      // on the same cases (only that claim, stopping at the first violation)
+      for (const site of F.rangeSites(facts)) {
+        const first = st.get(site[1])?.stmts?.[0];
+        if (!first) continue;
+        const mine = cases.filter(c => c.fn === site[0]);
         for (const end of ['lo', 'hi']) {
           const wrong = F.perturbRanges(facts, site, end);
-          const w = F.rangesHold(st, wrong, cases.filter(c => c.fn === site[0]), { maxViolations: 1 });
+          const w = F.rangesHold(st, wrong, mine, { maxViolations: 1, only: { stmt: first, local: +site[2] }, stopAtFirst: true });
           out.seeded.sites++;
           out.seeded[end].sites++;
           if (w.violated) (out.seeded.detected++, out.seeded[end].detected++);
+          else if (out.seeded.missed.length < 40) out.seeded.missed.push({ project: id, fn: site[0], block: site[1], local: st.fn(site[0]).locals[+site[2]]?.name, range: [site[3], site[4]], end });
         }
+      }
     }
   }
   out.perProject[id] = row;

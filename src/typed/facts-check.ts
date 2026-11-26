@@ -40,7 +40,14 @@ export function rangesHold(
   st: Store,
   result: DataflowResult,
   cases: readonly Case[],
-  opts: { limit?: number; maxViolations?: number } = {},
+  opts: {
+    limit?: number;
+    maxViolations?: number;
+    /** Check only this claim (a statement and a local's index), e.g. a deliberately narrowed one. */
+    only?: { stmt: string; local: number };
+    /** Stop after the first case with a violation. */
+    stopAtFirst?: boolean;
+  } = {},
 ): RangesHoldResult {
   const views = new Map<string, RangeView>();
   const view = (fn: string) => {
@@ -63,14 +70,17 @@ export function rangesHold(
     bad = new Set<string>();
   let checked = 0,
     runs = 0;
-  const max = opts.maxViolations ?? 20;
+  const max = opts.maxViolations ?? 20,
+    only = opts.only;
   for (const c of cases) {
+    if (opts.stopAtFirst && bad.size) break;
     runs++;
     evaluate(st, c.fn, c.args, c.memory, {
       limit: opts.limit ?? 2e4,
       observe(fn, sid, L) {
+        if (only && sid !== only.stmt) return;
         const v = view(fn);
-        for (const l of intsOf(fn)) {
+        for (const l of only ? [only.local] : intsOf(fn)) {
           const [lo, hi] = v.at(sid, l);
           if (lo === MIN && hi === MAX) continue;
           checked++;
@@ -98,6 +108,7 @@ export function rangesHold(
 
 /**
  * The finite intervals of a ranges result at block entries, as perturbation sites: [function, block, local, lo, hi].
+ * The claim a perturbation changes is checked at the block's first statement (`rangesHold(..., { only })`).
  */
 export function rangeSites(result: DataflowResult): [string, string, string, number, number][] {
   const out: [string, string, string, number, number][] = [];
