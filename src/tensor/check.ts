@@ -1,4 +1,10 @@
-import { createIRArtifact, type IRGraph, type IREntity, type IRRelation } from '../framework/ir/index.js';
+import {
+  compareRelations,
+  createIRArtifact,
+  type IRGraph,
+  type IREntity,
+  type IRRelation,
+} from '../framework/ir/index.js';
 import { equal, plain, variable, subst, type Aff } from './affine.js';
 import { adapter, kinds, sameDims, type Edge } from './ir.js';
 import { parse, fail, type Expr, type Token, type Subscript } from './parse.js';
@@ -104,7 +110,7 @@ export function compile(source: string) {
   }
   const graph: IRGraph = {
     entities: entities.sort((a, b) => (a.id < b.id ? -1 : 1)),
-    relations: relations.sort((a, b) => (a.id < b.id ? -1 : 1)),
+    relations: relations.sort(compareRelations),
     roots: roots.sort(),
   };
   try {

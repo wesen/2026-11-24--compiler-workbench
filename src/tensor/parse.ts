@@ -158,7 +158,7 @@ export function parse(source: string): Fn[] {
         return { ...t, op: `reduce.${t.text}`, binders, args: [expr()] };
       }
     }
-    const args = list(')', expr0);
+    const args = list(')', () => expr());
     const arity = ['max', 'min'].includes(t.text)
       ? 2
       : ['exp', 'log', 'sqrt', 'tanh'].includes(t.text)
@@ -176,9 +176,6 @@ export function parse(source: string): Fn[] {
       i++;
       x = { ...t, op: t.text, args: [x, expr(p + 1)] };
     }
-  }
-  function expr0() {
-    return expr();
   }
   const fns: Fn[] = [];
   do {

@@ -46,7 +46,8 @@ export function applySampledPassSync<S, P>(
     gate.inputs.input?.category !== 'ir'
   )
     return unsupported('expected input and output IR ports');
-  const inputs = { ...options.contractInputs, input: before } as Record<string, Artifact>;
+  before = immutable(before);
+  const inputs = immutable({ ...options.contractInputs, input: before }) as Record<string, Artifact>;
   if (
     Object.hasOwn(options.contractInputs ?? {}, 'input') ||
     Object.keys(inputs).length !== Object.keys(gate.inputs).length
@@ -61,7 +62,17 @@ export function applySampledPassSync<S, P>(
     if (!('invariant' in c) || c.invariant.effects.length) return unsupported('non-differential guarantee');
     const spec = differentialSpec(c.invariant as DifferentialInvariant<Ports>);
     if (spec.decide) return unsupported('asynchronous case delegation');
-    return { spec, bindings: c.bindings };
+    for (const callback of Object.values(spec))
+      if (typeof callback === 'function') syncFunction(callback, 'Sampled invariant callback');
+    // Outcome is unconstrained in DifferentialSpec. A plain function returning a promise
+    // must not let a comparator mistake two unresolved observations for equal values.
+    return {
+      spec: {
+        ...spec,
+        run: (...args: Parameters<typeof spec.run>) => synchronous(spec.run(...args), 'Sample outcome'),
+      },
+      bindings: c.bindings,
+    };
   });
   syncFunction(pass.run, 'Sampled pass body');
   const view = openIR(before, pass.adapter),

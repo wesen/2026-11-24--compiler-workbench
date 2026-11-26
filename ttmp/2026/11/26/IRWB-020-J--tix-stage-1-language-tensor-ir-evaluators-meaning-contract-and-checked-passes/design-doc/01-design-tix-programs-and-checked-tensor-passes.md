@@ -16,8 +16,12 @@ RelatedFiles:
       Note: Draft preparation without publishing a revision
     - Path: repo://src/framework/passes/define-pass.ts
       Note: Async pass application, write checking and contract boundary to compare against
+    - Path: repo://src/framework/passes/sampled-sync.ts
+      Note: Implemented synchronous sampled guarantee checks on prepared edits
     - Path: repo://src/typed/project.ts
       Note: Origin-anchored acceptance precedent
+    - Path: repo://tests/tensor/passes.test.mjs
+      Note: Witness, mutations, composition and budget evidence
 ExternalSources: []
 Summary: A scoped index IR, its numerical semantics, and a synchronous sampled gate for two v6 passes.
 LastUpdated: 2026-11-26T12:55:15.097053166-05:00
@@ -27,7 +31,7 @@ WhenToUse: Review the framework delta first; use the witness and acceptance matr
 
 # Tix programs and checked tensor passes
 
-**Proposal, not implementation.** Compile the fixed Tix grammar to one immutable v6 artifact per program.
+**Reviewed design, now implemented.** Compile the fixed Tix grammar to one immutable v6 artifact per program.
 Keep iteration domains and scalar evaluation order explicit. Make the unit of acceptance a *whole program
 revision*, not a successful pattern match. The question for review is whether the framework needs anything
 beyond a synchronous way to apply a pure pass with a sampled postcondition.
@@ -59,6 +63,14 @@ runner would hide a real framework mismatch. Blocking on a worker/subprocess to 
 serialization and another failure boundary to a small in-process check. A general synchronous `AnalysisManager`
 would promise much more than either tensor pass uses. **No other framework edits planned**; record any change to
 this list, with the missing capability and the test that required it, here before landing it.
+
+**Landed ledger:** `src/framework/passes/sampled-sync.ts` is the new synchronous entry point. It snapshots
+input artifacts and checks both async declarations and thenable pass bodies/outcomes so a promise cannot be
+compared as a scalar observation. `src/framework/passes/index.ts` exports it for domain callers. These are
+the only changed framework files. `tests/framework/sampled-sync.test.mjs` covers parity with the existing
+async manager, negative postconditions, writes, unsupported clauses and thenables. The six corpus tests and
+mutants use this runner via the domain code. Implementation detail: token locations retain the diagnostic
+start `line:col`, not an end offset. No change to the fixed API or numerical relations.
 
 ## Language boundary and checks
 
@@ -248,8 +260,7 @@ a shared traversal bug can make two precisions or two unchanged programs agree.
    code touched). If a spawning test hits sandbox EPERM, request escalation for that command. Log results and
    actual framework paths/reasons here and in the diary. No changes to Typed, existing corpus or tools.
 
-**Review requests:** Is the restricted sync gate small enough to belong in `passes/`? Is the proposed
-finite comparison domain/tolerance sufficiently discriminating? Confirm the affine-only reduction error
-(no declared reduction-axis slot), zero extent handling and the local-exact/global-tolerant composition rule.
+**Review outcome:** accepted the requested cuts, type-based singleton positivity and independent candidate
+work bound. See the [diary](../reference/01-implementation-diary.md) for checks on the resulting code.
 
 **Later (not designed here):** CUDA lowering/device execution; fusion; contraction tiling; attention rewrites.

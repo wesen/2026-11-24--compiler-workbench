@@ -14,7 +14,7 @@ import {
   evaluateExpression,
 } from '../../dist/labs/expressions.js';
 const input = createArtifact(ir, 'expr', exampleExpression());
-function contract(compare) {
+function contract(compare, overrides = {}) {
   const invariant = differential({
     id: 'fixture.eq',
     version: '1',
@@ -26,6 +26,7 @@ function contract(compare) {
     cases: () => [{ x: 1, y: 3 }],
     run: (_, a, k) => evaluateExpression(a.value, k),
     compare,
+    ...overrides,
   });
   return defineTransformation({
     id: 'fixture.transform',
@@ -72,6 +73,13 @@ test('sync gate rejects undeclared writes, a negative verdict even on identity, 
   assert.throws(
     () => applySampledPassSync({ ...pass, run() {} }, input, { contract: contract(() => false) }),
     /contractRejected/,
+  );
+  assert.throws(
+    () =>
+      applySampledPassSync(pass, input, {
+        contract: contract(() => true, { run: () => Promise.resolve(1) }),
+      }),
+    /synchronous/,
   );
   for (const override of [
     { requires: pass.contract.ensures },
