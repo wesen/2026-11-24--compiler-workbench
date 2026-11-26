@@ -27,6 +27,7 @@ Design a compact Typed stack machine that runs seeded Fibonacci and a rolling ch
 
 - [VM design](design-doc/01-a-stack-machine-bytecode-vm-for-specialization.md)
 - [Design diary](log/01-design-diary.md)
+- [Implementation diary](log/02-implementation-diary.md)
 
 ## Status
 
