@@ -111,3 +111,27 @@ A detached tmux server created in a short-lived invocation was gone on the next 
 ### Review and next experiment
 
 Start with the generated-kernel signature probe and the paired `01-row-bench.mjs` harness. The first three CUDA variants preserve distinct rounding points and compare output words individually. Audit barriers, domain exceptions and what a GPU sample establishes before drawing a performance conclusion.
+
+## Step 2 — Complete paired residency and schedule-certificate experiments
+
+The first correct paired runs made the serial memory paths visible. Softmax's shared maximum and layernorm's staged mean mattered much more than kernel count alone. The initial integer benchmark also found an expensive guard miss, a counterexample to treating the fallback as a free clause.
+
+### Prompt context
+
+See Step 1. The first research checkpoint is `f1d92a6`, `IRWB-023-A: establish exact scheduling research and paired GPU probes`.
+
+### What I did
+
+- Ran `01-row-bench.mjs` through a tmux session held by `tmux wait-for`. Saved the corrected 21-event records under `scripts/results/`. The three best paired medians were 0.389248 ms (softmax), 0.171328 ms (layernorm) and 0.770176 ms (attention) against 0.746688, 0.439968 and 1.047776 ms.
+- Ran `02-schedule-certificate.mjs` on Node 24.18.0. Bound the prototype to `defineIR`, `defineInvariant` and `AnalysisManager.verifyTransformation`, observed successful checks as `checked`, and rejected all 16 mutations. Demonstrated two distinctions between f64 tolerance and f32 identity and a shape-sensitive mutation invisible to small samples. This also probes that the needed framework extension points already execute in this worktree.
+- Ran `03-mma-smoke/main.cu` untimed. GB10 returned all 256 signed products as −96. Ran `04-integer-bench.mjs` through the timed lock. The 512³ checked grid hit ran in 0.069984 ms versus 0.207040 ms stage 2, and the miss ran in 0.484224 ms versus 0.209024 ms. Every comparison was exact, including rectangular and bound-saturating inputs. Recorded the timing samples.
+
+### What did not work
+
+- `git add` under default sandbox permissions reported `Unable to create .../index.lock: Read-only file system`. The authorized escalation granted access. The initial staged whitespace check flagged a space-only line in the quoted prompt. I removed its trailing formatting whitespace and staged again.
+- The first paired run printed valid softmax and layernorm results (0.751808→0.387136 ms and 0.427328→0.170240 ms). Attention failed with `Error: undefined` because the wrapper dropped nonzero-exit runner stdout. The diagnostic after preserving runner JSON was exit 134 and `Fatal glibc error: malloc.c:2599 (sysmalloc): assertion failed`. `DeviceBuffer::download` copied Q×K words into a Q×V host vector. The fix allocates Q×V output buffers and checks destination size before download. The replay passed all full, tail and extreme cases.
+- The initial 512³ specialization miss was 2.32× slower than stage 2. The different lane mapping made the fallback benchmark a real implementation problem. The next experiment needs both a stronger exact FP32 baseline and a sane miss path.
+
+### Review and next experiment
+
+Replay the local certificate before running CUDA. Review the experimental artifacts separately for verifier scope and CUDA correctness. Use the integer miss result to choose a second baseline and a guard implementation with per-block failure reduction. Check eligibility off the synthetic grid and quantify the speculative sum alternative before making the final ranking.

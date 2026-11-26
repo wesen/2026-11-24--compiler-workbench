@@ -106,6 +106,8 @@ static constexpr unsigned blocks(U count) { return (count + 255) / 256; }
 
 static void measure(const char* label, size_t count, const std::vector<Launch>& launches,
                     const std::vector<DeviceBuffer*>& buffers, bool timed) {
+  for (const auto* buffer : buffers)
+    if (buffer->size != count) throw std::runtime_error("benchmark output size differs");
   for (const auto& launch : launches) launch();
   check(cudaGetLastError());
   check(cudaDeviceSynchronize());
@@ -175,9 +177,9 @@ static std::vector<float> data(U n, unsigned seed, bool edges) {
 static void run(int rows, int cols, const char* label, bool edges, bool timed) {
   const U cells = static_cast<U>(rows) * cols;
   DeviceBuffer x(cells), t1(rows), t2(cells), t3(rows);
-  DeviceBuffer expected(cells), fused(cells), variant(cells);
   x.upload(data(cells, 20, edges).data());
 #if defined(CASE_SOFTMAX)
+  DeviceBuffer expected(cells), fused(cells), variant(cells);
   Launch baseline = [&] {
     k0<<<blocks(rows), 256>>>(rows, cols, x.ptr, t1.ptr, rows);
     k1<<<blocks(cells), 256>>>(rows, cols, x.ptr, t1.ptr, t2.ptr, cells);
@@ -188,6 +190,7 @@ static void run(int rows, int cols, const char* label, bool edges, bool timed) {
   Launch parallel = [&] { resident<true><<<rows, BLOCK, 4 * cols>>>(x.ptr, variant.ptr, cols); };
   measure(label, cells, {baseline, alternate, parallel}, {&expected, &fused, &variant}, timed);
 #elif defined(CASE_LAYERNORM)
+  DeviceBuffer expected(cells), fused(cells), variant(cells);
   DeviceBuffer gamma(cols), beta(cols), eps(1);
   gamma.upload(data(cols, 21, edges).data());
   beta.upload(data(cols, 22, edges).data());
@@ -206,6 +209,7 @@ static void run(int rows, int cols, const char* label, bool edges, bool timed) {
   const int d = timed ? 64 : 19;
   const int v = timed ? 64 : 11;
   const U outputs = static_cast<U>(rows) * v;
+  DeviceBuffer expected(outputs), fused(outputs);
   DeviceBuffer q(static_cast<U>(rows) * d), k(static_cast<U>(cols) * d), values(static_cast<U>(cols) * v);
   DeviceBuffer weights(cells), probs(cells);
   q.upload(data(q.size, 20, edges).data());
