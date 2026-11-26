@@ -22,7 +22,7 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 1 tests the IR Workbench framework on tensor programs: Tix source checking, a v6 IR, f32 and f64 evaluators, a sampled meaning contract, and the checked `inline` and `split-sum` passes. The design is ready for review; implementation awaits that review.
+Stage 1 tests the IR Workbench framework on tensor programs: Tix source checking, a v6 IR, f32 and f64 evaluators, a sampled meaning contract, and the checked `inline` and `split-sum` passes. The design reflects the in-session review. See the diary and tasks for implementation progress.
 
 ## Key Links
 
