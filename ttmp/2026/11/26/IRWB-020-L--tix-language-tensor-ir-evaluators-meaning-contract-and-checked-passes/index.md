@@ -1,7 +1,7 @@
 ---
 Title: Tix language, tensor IR, evaluators, meaning contract and checked passes
 Ticket: IRWB-020-L
-Status: review
+Status: complete
 Topics:
     - compiler
     - ir
@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T13:01:23.75047371-05:00
+LastUpdated: 2026-11-26T14:52:15.571941128-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -27,4 +27,4 @@ IRWB-020-L takes the IR Workbench framework through a second domain. Stage 1 cov
 - [Tasks](tasks.md)
 - [Changelog](changelog.md)
 
-The design is ready for review. Implementation follows the review.
+The reviewed Stage 1 implementation exports the synchronous Tix API from `dist/tensor/index.js` after the build. The six corpus programs live under `corpus/tensor/`. The diary records the generated-case contract checks and the framework and Typed regressions.

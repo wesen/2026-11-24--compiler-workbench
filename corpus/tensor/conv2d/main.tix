@@ -1,0 +1,4 @@
+fn conv2d(x: f32[N, IC, H, W], w: f32[OC, IC, 3, 3]): f32[N, OC, H - 2, W - 2] {
+  y[n, o, y, x]: f32[N, OC, H - 2, W - 2] = sum(c, dy, dx) x[n, c, y + dy, x + dx] * w[o, c, dy, dx];
+  return y;
+}

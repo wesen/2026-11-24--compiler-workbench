@@ -1,7 +1,7 @@
 ---
 Title: Stage 1 design for Tix tensor programs
 Ticket: IRWB-020-L
-Status: review
+Status: complete
 Topics:
     - compiler
     - ir
@@ -17,6 +17,8 @@ RelatedFiles:
       Note: Versioned artifact capture and projection validation
     - Path: repo://src/framework/passes/define-pass.ts
       Note: Native pass runner and eager edit
+    - Path: repo://src/tensor/index.ts
+      Note: Public Tix API and persistent origin artifact
     - Path: repo://src/typed/evaluate.ts
       Note: Typed differential gate
     - Path: repo://src/typed/passes.ts
@@ -25,7 +27,7 @@ RelatedFiles:
       Note: Origin-based checked pipeline
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T13:01:11.309826639-05:00
+LastUpdated: 2026-11-26T14:52:15.766533617-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -42,7 +44,7 @@ A small token lexer and precedence parser handle comments, source locations, sca
 
 Normalize each dimension and coordinate to a constant plus a sorted map of integer coefficients. Infer a binder's extent from bare index references and require agreement on the normalized shape expression across all such uses. Check statement annotations and the return type the same way. A result binder without a bare use needs its statement's declared dimension. A reduction binder has no annotation fallback. Require a single-symbol input axis for each shape name. A bare axis is the common case. Also invert a single-symbol affine axis such as `2*N+1` exactly, then check the remaining axes from those bindings. This keeps affine inputs that bind one name directly and leaves coupled-only binding outside the supported source domain. Emit source errors with one-based `line:col` at the conflicting or unresolved use, declaration or return.
 
-A call uses finite values in row-major `Float32Array` or `Float64Array` storage with matching element counts. Shapes have nonnegative safe integer extents, including zero, and the input equations have a consistent, nonnegative integral solution for the shape names. Concrete tensor extents must fit the same range. Check each affine access at compile time using symbolic minimum and maximum over rectangular binder ranges, taking the coefficient's sign into account. For example, `y+dy` with extents `H-2` and `3` ranges from zero to `H-1` when the region runs. Use normalized affine differences and lower bounds from nonnegative input and iteration extents to prove access bounds. Statically empty enclosing regions need no access proof. An unproved access is a source check error. This uses simple sufficient bounds without a general inequality solver or call-time access checks. The concrete call domain includes only bindings with valid extents.
+A call uses finite values in row-major `Float32Array` or `Float64Array` storage with matching element counts. Shapes have nonnegative safe integer extents, including zero, and the input equations have a consistent, nonnegative integral solution for the shape names. Concrete tensor extents must fit the same range and materialized tensors must fit typed-array storage. Check each affine access at compile time using symbolic minimum and maximum over rectangular binder ranges, taking the coefficient's sign into account. For example, `y+dy` with extents `H-2` and `3` ranges from zero to `H-1` when the region runs. Use normalized affine differences and lower bounds from nonnegative input and iteration extents to prove access bounds. Statically empty enclosing regions need no access proof. An unproved access is a source check error. This uses simple sufficient bounds without a general inequality solver or call-time access checks. The concrete call domain includes only bindings with valid extents.
 
 ## Tensor IR and evaluation
 
@@ -57,7 +59,7 @@ Bind concrete shapes once and evaluate statements in order into row-major typed 
 The contract is a versioned v6 `DifferentialSpec`, executed by `runDifferential`. Check every public function. Generate one deterministic suite from the preserved source artifact and reuse it for every pass in that call.
 
 - Try uniform shape-name assignments from `0, 1, 3, 4, 5, 7, 8, 9` and an asymmetric assignment cycling through `2, 3, 5` in source order. Constant signatures contribute their concrete shape once. Filter and deduplicate concrete calls using the origin's shape checks. The sample budget caps each tensor at 4,096 elements and origin scalar work at 100,000 expression visits per call, counted from the concrete loop extents. A function without a usable case prevents acceptance of a changed revision.
-- For each shape, use all ones, mixed-sign multiples of `1/16` in `[-1, 1]` from the framework generator with seed 7, and sparse values including signed zero and small positive terms. For the sparse rounding case, cycle the flat sequence `[1, 0, 0, 0, 2^-25, 2^-25, 2^-25, 2^-25]`. These inputs are exactly representable in f32, isolating evaluation error from input conversion. A seed and function, shape and pattern identify a case.
+- For each shape, use all ones, mixed-sign multiples of `1/16` in `[-1, 1]` from the framework generator with seed 7, and sparse values including signed zero and small positive terms. For the sparse rounding case, cycle the flat sequence `[1, -0, 0, 0, 2^-25, 2^-25, 2^-25, 2^-25]`. These inputs are exactly representable in f32, isolating evaluation error from input conversion. A seed and function, shape and pattern identify a case.
 - Observe the returned shape and each row-major result element. Exact comparison uses the f32 words, including the sign bit of zero. Tolerance compares candidate f32 to the origin's f64 on each element. For finite reference `r` and finite candidate `c`, accept when `abs(c-r) <= 1e-5 + 2e-5 * abs(r)`. Match nonfinite references by NaN or signed infinity. A case the origin can run and the candidate cannot run disagrees. Record the first failing coordinate and words or values, with exceptional numbers formatted as strings.
 
 An exact comparison would prohibit reassociation. A relative-only tolerance is too strict for cancellation near zero, while a single absolute bound scales poorly for contractions. At f32 unit roundoff `2^-24`, a sum of nine already-rounded terms of absolute value at most one has a standard rounding bound below `5e-6`. For four-element blocks the longest addition path for nine terms is at most seven updates. The absolute term leaves headroom near zero and the relative term allows scaling through the corpus. This is a sampled acceptance envelope for whole outputs, with no error theorem for arbitrary composition or conditioning. A valid reassociation can still miss the envelope.
@@ -66,7 +68,7 @@ The pipeline retains the previous accepted artifact on rejection and continues i
 
 ## Passes
 
-- **inline** finds a reduction-free statement with exactly one static read occurrence in a later statement. A return is a use, and a returned producer stays materialized. Substitute the producer's result binders with the consumer read's affine coordinates and compose affine reads in the body. Preserve expression order and the consumer's resolved extents. Remove the producer and update dependencies. Use stable binder IDs to preserve scope if the consumer read is inside a reduction. Repeat for newly exposed single uses so a chain can collapse in one invocation. Text substitution looks simpler but cannot reliably preserve binder identity or affine coordinates. Use the exact gate.
+- **inline** finds a reduction-free statement with exactly one static read occurrence in a later statement. A return is a use, and a returned producer stays materialized. Substitute the producer's result binders with the consumer read's affine coordinates and compose affine reads in the body. Preserve expression order and the consumer's resolved extents. Remove the producer and update dependencies. Use stable binder IDs to preserve scope if the consumer read is inside a reduction. Recheck composed affine bounds and retain the producer when the checker cannot prove the composed read. Repeat for newly exposed single uses so a chain can collapse in one invocation. Text substitution looks simpler but cannot reliably preserve binder identity or affine coordinates. Use the exact gate.
 - **split-sum** rewrites each flat single-binder sum that can span several blocks into a blocked sum with block size four. Start an inner f32 accumulator at zero for each consecutive block, reduce its elements in order, then add that partial to a zero-initialized outer accumulator. The final block ends at the original extent. Empty domains produce zero. Maxima and sums with multiple binders keep their existing order. A materialized partial tensor would add temporary storage and require a new shape operation for ceiling division. The explicit reduction node needs only the original bound. Use the tolerance gate.
 
 ## Framework changes proposed

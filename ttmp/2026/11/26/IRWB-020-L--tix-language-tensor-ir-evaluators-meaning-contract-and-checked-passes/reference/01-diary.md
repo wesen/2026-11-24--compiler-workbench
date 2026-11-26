@@ -206,3 +206,16 @@ The new framework entry point takes the existing `definePass` object and reuses 
 - `npm run build` passed. `node --test tests/framework/native-pass-sync.test.mjs tests/framework/ext-e3-e6.test.mjs` passed both files. The new tests cover a read-only adapter, change and correspondence evidence, undeclared writes, rejected evidence and misuse of the synchronous API.
 - `node --test tests/framework/*.test.mjs` passed all 18 files. `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` passed both existing Typed files, including native, edit and strategy call paths.
 - The tensor implementation initially failed `npm run build` with `src/tensor/ir.ts(141,41): error TS7006: Parameter 'binder' implicitly has an 'any' type.` The `Array.isArray` check had widened the item type when iterating the readonly statements. I retained the explicitly typed statement list and the build passed.
+
+## Step 4 — Implement and verify the tensor domain
+
+`src/tensor/` now compiles Tix to immutable v6 artifacts, evaluates f32 and f64, and applies `inline` and `split-sum` through the checked native runner. The program keeps the flat source artifact for all later tolerance checks. Each optimization call generates a single suite from it. All six programs in `corpus/tensor/` compile and run in both precisions.
+
+### Decisions and evidence
+
+- Framework checkpoint `6ba6c1a` contains the sole framework source change and its new test file. Its first local commit request met the diagnostic “The automatic permission approval review did not finish before its deadline.” The authorized retry succeeded.
+- The production split kernel is rejected by the exact comparison on the sparse case and accepted by tolerance against the flat f64 reference. The test-only `definePass` kernels execute through `applyNativePassSync` on the generated suite. The wrong inline flips addition to subtraction. The wrong split drops the final three elements of a length-seven sum and is rejected with an expected value of seven and an observed value of four.
+- A cross-call test uses a second, f64-sensitive input with four `2^-54` terms. The blocked f64 evaluation differs from the flat f64 evaluation. The original artifact is still retained after both pass orders and after a second call.
+- A targeted `node --input-type=module` probe using the `proof` fixture in `tests/tensor/passes.test.mjs` exposed a valid original program for which a composed affine read failed with `3:21: Cannot prove index 1 of 'x' is in bounds`. Inline now retains that producer when the conservative proof cannot establish the composed access. Only the explicit bounds-proof failure is treated as inapplicability. The regression checks the normal public optimization entry and evaluation.
+- `npm run build` and `node --test tests/tensor/*.test.mjs` passed. The three tensor files exercise 23 tests, including independent corpus references, rounding, affine diagnostics, both wrong kernels, rejection and continuation, and source reference lifetime. `node --test tests/framework/*.test.mjs` passed 18 files, and `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` passed both files.
+- Prettier checked the added TypeScript and tests and the changed framework pass file. Ticket validation and staged whitespace checks are part of the implementation checkpoint.
