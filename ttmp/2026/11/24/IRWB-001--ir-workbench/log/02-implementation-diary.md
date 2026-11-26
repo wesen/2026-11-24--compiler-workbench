@@ -1560,3 +1560,45 @@ The user asked for a ticket per research direction from my recommendation, each 
 ### Why
 - **The guides also carry the research framing** I gave the user: hypotheses, related work, what would falsify each idea. Examples are the first Futamura projection for IRWB-007, Alive2 and proof-producing e-graphs for IRWB-008 and IRWB-010, salsa-style early cutoff for IRWB-009, and calibrated miss probabilities as future work in IRWB-008.
 - **No Candela-scale runs beyond small grounding measurements**, under the memory cap from Step 32. IRWB-003 and IRWB-005 are still running theirs.
+
+## Step 34: IRWB-005 merged (gate strength); report 7 pushed; a generator defect that weakens earlier Candela checks
+
+The gate-strength agent finished, and the default contract is unchanged.
+- **Corpus:** of 1,144 mutants, 192 are equivalent or presumed equivalent. The default gate kills 909 of the other 952: 83.1%..95.5%. Of the 43 it accepts, 33 diverge where the original terminates.
+- **Version 2** (boundary cases, records by offset, a divergence rule; opt-in) accepts 5, at about twice the cost.
+- **Candela subset:** 3,931 mutants, killed 87.4%..96.8%. The survivors are float code that matters only in small regions of the input space; there, more random cases help more than boundary cases.
+
+I merged the branch, ran every gate, corrected the report's summary and pushed it.
+
+### Prompt Context
+**User prompts (verbatim):** see Step 29. Later, on reports: "when a milestone is done, write a detailed project report …"; "(ask the agent to do so i guess, because they have the full context or so)"; "oh , yeah for 007-011 report only after implementing"; "you should write a combined one as well, when done".
+
+### What I did
+- **Scope.** Outside its ticket the branch touches new files (`src/typed/{mutate,cases-strong,facts-check}.ts`, `tools/mutation-*.mjs`, two tests) and adds the `observe` hook to `src/typed/evaluate.ts`.
+- **Merge.** `git merge --no-ff --no-commit`: automatic, no conflicts. Gates:
+  - `tsc`: clean;
+  - tests: 362, 359 pass, 3 skipped;
+  - `IRWB_FULL`: 21/21;
+  - rules and SSA: 15/15;
+  - parity: 6,986/6,986;
+  - `build:site`: ok.
+
+  Merge commit `d25f9f9`.
+- **The revision baseline was gone.** `scratchpad/revs-new.txt` had been deleted with the reboot (the scratchpad is cleared). I compared instead with the committed baselines: IRWB-006's `various/01-baseline-corpus-revisions.txt` and IRWB-004's `various/01-corpus-revisions-baseline.txt` are IDENTICAL, as are IRWB-005's `various/baseline/corpus-revisions.txt` project lines (that file has 4 extra lines). I recreated the scratchpad baseline from the merged output.
+- Sent the IRWB-008 guide agent the final numbers (95.5%, not the 95.8% of the earlier commit messages) and the five undecided recommendations.
+- **Report 7:**
+  - the alias becomes "report 7";
+  - the summary now gives both ends of the interval for the corpus (83.1%..95.5%) and for Candela (87.4%..96.8%, with the lower end the safer figure, as the agent's own report says); it had given only the upper ends;
+  - added a Related notes section linking reports 4, 5 and 6.
+
+  Vault commit `22b8602`, pushed, with the report and four `irwb005-*` figures only. `remarquee cloud ls /ai/2026/11/25/IRWB-005` lists the guide.
+
+### What I learned
+- **A defect in the frozen default generator weakens my own earlier Candela checks.** `makeValue` writes a record's words in the key order of the record's field table, not by offset. Cases are generated from the origin artifact, whose keys are sorted, so Candela's `K` is laid out in alphabetical field order: the word at offset 28, `K.scene`, receives the random bits of `gBary__y`. This affects 168 of 332 functions; the corpus is unaffected.
+- **What that means for Steps 18–28:** every check through `meaningKept` on Candela, including the entry-only contract of the per-scene kernels, ran on `K` values no real call produces. Even the scene assumption `oneOf: [v]` was written to the wrong offset.
+  - Agreement on those cases is still agreement, so nothing accepted becomes wrong.
+  - The evidence that ties a per-scene program to real scenes is the frame comparison, which runs the real host protocol and is unaffected (Steps 19, 25, 26, 27).
+- **The fix is one line** (sort the field table by offset). It changes no corpus decision, but it changes the default contract's key, so it is the user's decision. The agent lists it first among five recommendations.
+
+### What warrants a second pair of eyes
+- **Earlier reports state per-scene checks as "accepted by the entry-only contract".** That is literally true but weaker than it reads. Report 7 §12.3 now records the defect, and report 4 is linked from it.
