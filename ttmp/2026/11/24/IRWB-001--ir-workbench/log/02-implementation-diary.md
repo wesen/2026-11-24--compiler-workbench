@@ -1602,3 +1602,19 @@ I merged the branch, ran every gate, corrected the report's summary and pushed i
 
 ### What warrants a second pair of eyes
 - **Earlier reports state per-scene checks as "accepted by the entry-only contract".** That is literally true but weaker than it reads. Report 7 §12.3 now records the defect, and report 4 is linked from it.
+
+## Step 35: IRWB-009 guide merged (function-incremental framework)
+
+The first of the four research-guide agents finished. Its guide is about 1,000 lines. It is uploaded to `/ai/2026/11/26/IRWB-009`, which the agent verified with `remarquee cloud ls`. No vault report was written, as the user asked; that comes after implementation.
+
+### What I did
+- Checked the branch's scope: ticket files only (0 paths outside `ttmp/2026/11/26/IRWB-009…`; 23 files).
+- Merged it as `06fc699`, a ticket-only merge, so no gates were needed.
+
+### What I learned (the agent's measurements, `various/01`–`06`)
+- **The analyses split exactly by function.** After `cfg`, 222 of 222 unchanged parts give equal results for all three dataflow analyses, and none of the six analyses crosses a call. `tracePath` takes 701 of 1,056 ms of the range solve; the median function takes 0.16 ms.
+- **Building and checking the projection is the cold cost, not sorting it.** `createIRArtifact` takes 6.4 s with every record new and 1.0 s with every record shared. Sorting the 132,054 relations takes 24–30 ms.
+- **Correspondence dominates small passes.** The last `cfg` of O2 changes 2 functions and 4 records but takes 6.3–8.4 s, mostly in `makeCorrespondence` (93,138 entries).
+- **Source positions defeat per-function reuse.** A comment edit changes 154 parts, because front-end ops store absolute source positions. A code hash without ops and positions changes 0.
+- **The memo is keyed on the whole origin.** Any source edit recomputes all 13,280 baseline outcomes.
+- **Facts on demand:** `strength` needs the range facts of 1 function out of 332: 76 ms against 3,292 ms to solve all of them.
