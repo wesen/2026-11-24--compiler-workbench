@@ -219,3 +219,40 @@ The fractions above round upward. The corpus test regenerates the ramp from the 
 | `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` | Both files passed |
 
 The reviewed design is e96f096, the framework checkpoint is 0ae3433, and the initial domain and corpus implementation is 5358570. The regression checkpoint contains the final parser and invariant refinements. There are no deviations from the revised design.
+
+## Step 6 — Independent evaluation and final report
+
+The independent evaluator assessed revision `216faa0`. Its 25 hidden tests all passed. On 60 programs with three inputs each, all 180 f32 comparisons matched bit for bit and all 180 f64 comparisons met the reported bound. Each pass was accepted on 60 of 60 programs. Every accepted inline preserved bits and every accepted split-sum met the external f64 comparison. **Failure causes: none.** There were zero independent failures, mismatches or rejections to localize or reproduce.
+
+I checked how the independent acceptance counts relate to the local measurements. At `src/framework/passes/define-pass.ts:251` and `src/framework/passes/define-pass.ts:255`, an identity returns without invoking the gate. A changed revision reaches the synchronous check at `src/framework/passes/define-pass.ts:257`. The tensor optimizer records a semantic rejection at `src/tensor/optimize.ts:19`. The deliberately dropped tail at `tests/tensor/passes.test.mjs:43` and the reversed indices at `tests/tensor/passes.test.mjs:64` are local negative controls. They account for no failure in the independent evaluation.
+
+Using the built API, I compiled each of the six corpus sources, applied inline and then split-sum, and compared the current revisions before and after each call. Inline changed attention and the MLP. Split-sum changed every program except conv2d. This yielded seven changed revisions among twelve accepted steps. The independent evaluation supplied acceptance counts but no changed-revision count. A local rerun of `node --test --test-isolation=none tests/tensor/*.test.mjs` passed all 29 tests. The [final report](./02-report.md) attributes the external results to the independent evaluator and uses the corpus replay only for the local coverage result.
+
+<details>
+<summary>Reporting request (verbatim)</summary>
+
+Stage 1 of IRWB-020-D has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `216faa0`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-D:`). Final message: the report's path, the commit hash, and one line per failure cause.
+
+</details>
