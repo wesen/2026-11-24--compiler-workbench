@@ -2,3 +2,16 @@
 .git/
 _templates/
 _guidelines/
+
+# Raw agent-run material (prompts, run logs, transcript extracts): inputs and outputs of agent runs, not docmgr documents
+codex-playground
+*.last-message.md
+system-prompt.md
+skills-catalogue.md
+agents-md.md
+multi-agent.md
+messages.md
+00-common*.md
+round3-self-review.md
+IRWB-01[2-7].md
+*judge-rubric*.md
