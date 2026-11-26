@@ -17,9 +17,9 @@ Keep it current: update an entry when a round finishes, move items between statu
 
 | ID | Item | Status | Size |
 |---|---|---|---|
-| T1 | Tix front end, IR, evaluators, contract, two passes | running | M |
-| R1 | research: derive streaming attention by checked rewrites | running | M |
-| T2 | CUDA lowering, one kernel per statement, run on the GB10 | ready after T1 | M |
+| T1 | Tix front end, IR, evaluators, contract, two passes | done (IRWB-020-B merged, `98b04da`) | M |
+| R1 | research: derive streaming attention by checked rewrites | done (design only; a ceiling) | M |
+| T2 | CUDA lowering, one kernel per statement, run on the GB10 | ready | M |
 | T3 | checked fusion | idea | M |
 | T4 | tolerance calibration with mutants | idea | M |
 | T5 | implement the streaming-attention derivation | idea | L |
@@ -34,7 +34,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | A1 | e-graph over value trees with verified rules | decision | L |
 | C1 | calibrated gate | prep | M |
 | E1 | incremental checking per function | prep | L |
-| F1–F12 | framework and workbench fixes found by agents | mostly ready | S each |
+| F1–F16 | framework and workbench fixes found by agents | mostly ready | S each |
 | M1–M5 | agent methodology | running / ready | — |
 
 ---
@@ -50,25 +50,25 @@ Shared facts:
 - **The language,** Tix, fixed in the T1 brief: five constructs (shaped parameters, pointwise expressions, `sum` and `max` over named indices, single assignment, affine indices). Its f32 meaning is exact: every operation is rounded, and reductions accumulate in lexicographic index order.
 - **The structure Tix exposes:** `torch.export` of a transformer block gives 40 Core ATen nodes, 26 of which are `view`, `permute` or `expand`. In Tix these are index renamings and do not appear.
 
-### T1: Tix front end, IR as a v6 artifact, evaluators, contract, `inline` and `split-sum` *(running: IRWB-020)*
-- **What we know:**
-  - Twelve configurations are designing it on the same brief: Codex or Pi, Sol or Astra, medium, high or xhigh.
-  - The four Codex medium and high designs took 5–8 minutes each and run to 2,600–2,900 words. The four Pi designs are done; the xhigh ones are running.
-  - A hidden acceptance suite exists outside the repository. It checks bit-exact f32 and f64 on six programs, the precedence rules, the order of accumulation, four compile errors, and both passes.
-- **What we don't know:**
-  - Which IR form the framework accommodates without changes.
-  - What the contract with a tolerance relation needs from `src/framework/contracts` (the domain × observation × relation idea of report 10).
-  - Whether design scores predict hidden-suite results.
-  - How the configurations differ.
-- **Approach:** blind judge and blind review of all twelve designs; each author revises and implements; hidden acceptance; the best implementation is merged as the base for T2.
-- **Measure:** the hidden suite; the list and size of framework changes; blind design scores.
-- **Depends on:** nothing.
+### T1: Tix front end, IR as a v6 artifact, evaluators, contract, `inline` and `split-sum` *(done: IRWB-020)*
+- **Result:** fourteen independent implementations (twelve Codex and Pi cells, two Claude cells), all correct.
+  - All agree bit for bit with an independent tree-walking reference on 180 random cases, and with f64.
+  - Every `inline` result is bit-identical, and every accepted `split-sum` is correct.
+  - Twelve pass the frozen hidden suite 25/25. The two Claude cells pass 22/25: they forbid an index named like a tensor, a rule the brief leaves open. They pass 25/25 on the variant that renames that index.
+- **Merged:** IRWB-020-B (Codex, Astra, medium) at `98b04da`, chosen by: every check passes, then the smallest framework change (+85/−27), then the smallest source (917 lines). Full suite after the merge: 411 pass, 0 fail, 3 skipped. Its report is vault report 12.
+- **What separates the implementations is the tolerance.** Some reject a correct `split-sum` on random programs where it applies: K 5/32, E 1/32, H 1/32. There are two causes:
+  - a fixed abs+rel bound compared against the origin's f64, with no allowance for the origin's own f32 error on ill-conditioned sampled cases (E, H);
+  - zero-size sampled extents producing matching infinities that the gate treats as a mismatch (K).
+  
+  The merged base uses the same fixed bound (2e-6 + 2e-5·|r|) and accepted everything only because its sampled domain avoided those cases. See F15.
+- **Framework changes:** every implementation adds a synchronous checked application for native-result passes (B: `applyNativePassSync` in `passes/define-pass.ts`). Only four of fourteen also made `applyPass`'s edit lazy (F13). The differential contract needed no change.
+- **Material:** IRWB-019 diary steps 8–18, `various/hidden-t1/`, `various/results/`; report 11 §5–§7.
 
-### R1: deriving streaming attention by checked rewrites *(running: IRWB-021, design only)*
+### R1: deriving streaming attention by checked rewrites *(done: IRWB-021, design only)*
 - **What we know:**
   - Plain attention in Tix materializes N×N scores. The streaming form (FlashAttention) keeps a running maximum, normalizer and output per row, rescaled when the maximum grows, and moves O(N·D) bytes instead of O(N²).
   - Tix's `sum` and `max` have scalar state. The streaming form needs a reduction whose state is a tuple, combined associatively.
-  - The same twelve configurations are designing it.
+  - **Result:** all twelve configurations derived it correctly. The first four rubric criteria scored 5/5 for every design, so the question measured recall, not design (report 11 §4). The best designs split the merge into two lemmas, rebase-then-fold, and one abstracts a scale-transport law. The objective version is T5.
 - **What we don't know:**
   - Whether the derivation can be a sequence of local, mechanically checkable rules.
   - What their side conditions are (the empty prefix, −∞, the rescaling factor).
@@ -78,8 +78,10 @@ Shared facts:
 - **Measure:** the rubric (mathematical correctness, derivation completeness, the new construct, checking, generality, experiment, insight).
 - **Depends on:** nothing.
 
-### T2: lowering to CUDA, one kernel per statement, run on the GB10 *(ready after T1)*
+### T2: lowering to CUDA, one kernel per statement, run on the GB10 *(ready; base `98b04da`)*
 - **What we know:** the remote path works end to end, with a 0.5 s compile, cached reruns, correct outputs and the lock. Context start-up dominates a small run (about 370 ms, against 1.3 ms of kernel time).
+- **What we know (from T1):** the base's tolerance is a fixed bound chosen without an error argument (F15). The host is `manuel@bling` over Tailscale. Codex agents need `--network` so that their `ssh` runs inside the sandbox; without it they escalate, and the approval sidecar grants it.
+- **A sharper question:** CUDA's `+ − * /` and `sqrt` are correctly rounded in IEEE mode. With contraction off (`-fmad=false`) and the transcendentals computed in double, a one-thread-per-element backend could be bit-exact with the f32 meaning, and its lowering could be checked under the *exact* relation. Is that true on the GB10, and what does it cost?
 - **What we don't know:**
   - How a contract should consume an expensive, remote, asynchronous engine: caching evidence by content hash, batching cases into one launch.
   - What tolerance GPU math (`expf`, fused multiply-add contraction, a different reduction order) needs against the f64 reference.
@@ -250,6 +252,18 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
   - *Needed:* per-project limits, or a case budget that accounts for cost.
 
 ---
+- **F13: `applyPass` opens its edit eagerly** *(ready, S)*.
+  - *Known:* `beginEdit()` runs for every pass and throws `ir.capability` for an adapter without `rebuild`, even when the pass returns a native value. All sixteen T1 designs found it, but only four implementations fixed it; the merged base (B) did not, because its synchronous path avoids it.
+  - *Needed:* open the edit on the first read of `ctx.edit` (I, K, N and P show the change).
+- **F14: `optimizeTix` steps carry no reason and no "changed" flag** *(ready, S)*.
+  - *Known:* an unchanged pass reports `accepted: true`, so acceptance counts overstate coverage (`split-sum` applies to 32 of the 60 cross-check programs, `inline` to 15). Rejection reasons exist inside the contracts but are not returned.
+  - *Needed:* `{pass, accepted, changed, reason?}` in each step.
+- **F15: the base's tolerance is a fixed bound** *(ready, M; before or with T2)*.
+  - *Known:* B checks |c − r| ≤ 2e-6 + 2e-5·|r| against the origin's f64 on its own sampled cases, "without a worst-case error derivation" (its report). The same rule falsely rejected correct passes in K. E and H rejected on ill-conditioned sampled cases where the origin itself fails the bound. Two designs handle this: P's running first-order error bound accepted every correct pass, and N's "inconclusive when the origin fails".
+  - *Needed:* a bound derived from the computation, or the inconclusive rule; treat identical non-finite values as agreeing.
+- **F16: unspecified rules in the Tix core** *(ready, S; brief)*.
+  - *Known:* fourteen implementations divided on whether an index may share a tensor's name (the Claude cells said no). The brief is also silent on shadowing (`sum(j) a[i, j] + sum(j) b[i, j]` parses as a nested reduction rebinding `j`) and on zero-size extents.
+  - *Needed:* state all three in the T2 brief's fixed core, and test them.
 
 ## 4. Agent methodology
 
@@ -258,11 +272,16 @@ The experiments around the work. The playbooks are in the go-go-parc vault under
 - **M1: the harness × model × effort matrix** *(running)*.
   - *Known:* Codex or Pi × Sol or Astra × medium, high or xhigh, 12 cells, on T1 and R1.
   - Pi's own system-prompt text is about 2.3K characters, against Codex's 27.7K. Pi lacks the coding and writing rules that report 10 tied to over-engineering.
-  - In Codex, Astra read no skill file in three of four cells, and Sol read them in all four.
-  - *Unknown:* everything the round will measure.
+  - *Result (T1):*
+    - designs: Codex over-engineered less than Pi at the same policy (excess 6.3 against 12.0), and Sol was weaker than Astra in both harnesses;
+    - implementations: all correct; size follows the model (Astra 805–1,086 lines, Sol 1,278–1,380, Claude about 1,700).
+  - The earlier "Astra reads no skill file" note was an extractor artifact: Astra batches commands, and all twelve Codex cells read docmgr and diary.
 - **M2: repeat the cells that differ most** *(idea)*. One run per cell is suggestive, not conclusive.
 - **M3: the effect of the review loop** *(running from T1)*.
   - *Unknown:* which review content changes designs and implementations, and whether it does so the same way for every configuration.
-- **M4: Claude models in the same matrix** *(idea)*.
+- **M4: Claude models in the same matrix** *(ran on T1: Opus and Fable, medium and xhigh designs; medium implementations)*. About 2.97M subagent tokens in all for IRWB-019's Claude cells, judges and reviewer.
+- **M6: policy wording for Sol** *(ran on T1: v1, v2, v3)*.
+  - *Known:* v3 cuts excess by 1–2 items per cell and over-engineering by about one rubric point, at a fitness cost of 0.5 on average; v2's narrowing rule overrode the brief.
+  - *Unknown:* whether v3 should replace v1 in `~/.codex/config.toml` (the user's call), and whether its effect holds over repeated runs (M2).
 - **M5: tell designers what is already checked** *(ready)*.
   - *Known:* in IRWB-018, half of each project's test matrix repeated corpus-wide checks, because the designs prescribed it and nothing said what was covered.
