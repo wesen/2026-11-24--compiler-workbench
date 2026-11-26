@@ -27,6 +27,7 @@ Stage 2 lowers each Tix statement to a CUDA kernel and checks the selected funct
 ## Key Links
 
 - [Checked CUDA lowering for Tix](design-doc/01-checked-cuda-lowering-for-tix.md)
+- [Final report and independent evaluation](reference/02-report.md)
 - [CUDA verification and corpus timings](reference/02-cuda-verification-and-corpus-timings.md)
 - [Implementation diary](reference/01-implementation-diary.md)
 - [GB10 probe observations](scripts/01-gb10-probe/observed.json)

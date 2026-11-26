@@ -1,0 +1,151 @@
+{
+  "node": "v24.18.0",
+  "seed": 20,
+  "scales": [
+    0.125,
+    0.25,
+    0.5,
+    1,
+    1.5,
+    2,
+    3,
+    4
+  ],
+  "targets": {
+    "softmax": {
+      "op": "exp",
+      "dims": {
+        "N": 4,
+        "C": 19
+      }
+    },
+    "attention": {
+      "op": "exp",
+      "dims": {
+        "Q": 9,
+        "K": 7,
+        "D": 5,
+        "V": 8
+      }
+    },
+    "mlp": {
+      "op": "tanh",
+      "dims": {
+        "N": 4,
+        "D": 7,
+        "H": 11,
+        "O": 6
+      }
+    }
+  },
+  "remote": {
+    "host": "manuel@bling",
+    "hash": "e4899cdcadd9970a",
+    "compiled": true,
+    "compileMs": 2197,
+    "runMs": 316,
+    "exit": 0,
+    "stdout": "",
+    "stderr": "",
+    "outputs": [
+      "attention_optimized_double.bin",
+      "attention_optimized_float.bin",
+      "attention_original_double.bin",
+      "attention_original_float.bin",
+      "mlp_optimized_double.bin",
+      "mlp_optimized_float.bin",
+      "mlp_original_double.bin",
+      "mlp_original_float.bin",
+      "softmax_optimized_double.bin",
+      "softmax_optimized_float.bin",
+      "softmax_original_double.bin",
+      "softmax_original_float.bin"
+    ]
+  },
+  "rows": [
+    {
+      "name": "softmax",
+      "stage": "original",
+      "op": "exp",
+      "comparedElements": 608,
+      "float": {
+        "differences": 209,
+        "maxAbs": 2.9802322387695312e-8
+      },
+      "double": {
+        "differences": 0,
+        "maxAbs": 0
+      }
+    },
+    {
+      "name": "softmax",
+      "stage": "optimized",
+      "op": "exp",
+      "comparedElements": 608,
+      "float": {
+        "differences": 262,
+        "maxAbs": 2.9802322387695312e-8
+      },
+      "double": {
+        "differences": 0,
+        "maxAbs": 0
+      }
+    },
+    {
+      "name": "attention",
+      "stage": "original",
+      "op": "exp",
+      "comparedElements": 576,
+      "float": {
+        "differences": 197,
+        "maxAbs": 4.76837158203125e-7
+      },
+      "double": {
+        "differences": 0,
+        "maxAbs": 0
+      }
+    },
+    {
+      "name": "attention",
+      "stage": "optimized",
+      "op": "exp",
+      "comparedElements": 576,
+      "float": {
+        "differences": 204,
+        "maxAbs": 4.76837158203125e-7
+      },
+      "double": {
+        "differences": 0,
+        "maxAbs": 0
+      }
+    },
+    {
+      "name": "mlp",
+      "stage": "original",
+      "op": "tanh",
+      "comparedElements": 192,
+      "float": {
+        "differences": 23,
+        "maxAbs": 4.76837158203125e-7
+      },
+      "double": {
+        "differences": 0,
+        "maxAbs": 0
+      }
+    },
+    {
+      "name": "mlp",
+      "stage": "optimized",
+      "op": "tanh",
+      "comparedElements": 192,
+      "float": {
+        "differences": 22,
+        "maxAbs": 4.76837158203125e-7
+      },
+      "double": {
+        "differences": 0,
+        "maxAbs": 0
+      }
+    }
+  ]
+}
