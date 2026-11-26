@@ -1,0 +1,5 @@
+- [IRWB-017 ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-017/ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/index.md)
+- [Chess search design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-017/ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/design-doc/01-port-the-typed-chess-engine-into-the-optimization-corpus.md)
+- Commit `7c2d38972f89cb2dadb1c05e3ea7adc75a3e362b`
+
+The design specifies how to port the existing Typed alpha-beta search and perft into one corpus project, with generated cases sized for the 20,000-statement pass limit and a small loader change to scope checks to the two public entries. Probes confirmed that the bounded cases fit and that the depth-three mate fixture agreed across the evaluator and RV32 images. The commit contains only the ticket documentation.

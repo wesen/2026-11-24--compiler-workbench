@@ -1,0 +1,1497 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a2187d-e123-77e0-b8b2-a511d0aab766
+--------
+user
+Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-014: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+codex
+I’ll use the docmgr and diary skills to review the design against the experiment, then revise the guide and record each cut. I’ll work from this worktree and commit only IRWB-014.
+exec
+/usr/bin/zsh -lc 'cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+exec
+/usr/bin/zsh -lc 'cat ttmp/2026/11/26/IRWB-014--*/{index.md,changelog.md,tasks.md,log/*.md}' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+exec
+/usr/bin/zsh -lc 'git status --short --branch && cat ttmp/2026/11/26/IRWB-014--*/design-doc/*.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 2920ms:
+---
+description: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+metadata:
+    title: Docmgr
+    topics:
+        - imported-skill
+    what_for: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+    when_to_use: Use when working with Docmgr.
+name: docmgr
+---
+
+# Docmgr
+
+## Overview
+
+Use `docmgr` to keep documentation organized into ticket workspaces, with consistent metadata and bidirectional links between code/files and docs.
+
+## Quick Start
+
+### Shell safety: never paste unquoted backticks
+
+Bash/zsh treat backticks as command substitution. If you see a path rendered as `` `ttmp/.../doc.md` ``:
+- Prefer removing the backticks: `ttmp/.../doc.md`
+- Or quote the whole argument: ``'`ttmp/.../doc.md`'``
+
+### First-time setup (one-time)
+
+```bash
+docmgr status --summary-only
+docmgr init --seed-vocabulary
+docmgr vocab list
+```
+
+### Create a ticket
+
+```bash
+docmgr ticket create-ticket \
+  --ticket TICKET-ID \
+  --title "Descriptive Title" \
+  --topics topic1,topic2
+```
+
+### Add a document + relate files immediately
+
+```bash
+docmgr doc add --ticket TICKET-ID --doc-type analysis --title "Document Title"
+docmgr doc relate --ticket TICKET-ID \
+  --file-note "/abs/path/to/file.go:Why this file matters"
+```
+
+## Core Conventions (strict)
+
+- Use `docmgr doc relate` (not `docmgr relate`).
+- Do not pass `--doc-type` to `doc relate`; target either `--ticket TICKET-ID` (ticket index) or `--doc PATH` (specific doc).
+- Always format related files as `--file-note "path:reason"` (colon separator, not dash).
+- Prefer absolute paths in `--file-note` for clarity and copy/paste safety.
+- Prefer "subdocument-first" linking: relate most files to the focused subdoc, keep `index.md` as the overview.
+- Keep "RelatedFiles" tight (roughly 3-7 per ticket, not 20+).
+- Store any ad-hoc scripts you create for a ticket in that ticket's `scripts/` directory under `ttmp/.../scripts` so they are tracked. Name scripts with a numerical prefix (`01-...`, `02-...`) to preserve execution order and trace investigation steps.
+- Every active ticket should have a **diary**. On resume, read its latest relevant checkpoint and current files; expand earlier steps when needed rather than automatically rereading the entire history. An explicit detailed-diary request uses investigation mode from the diary skill.
+- Keep one authoritative current-state source per fact. A milestone receipt can own task/history effects while the diary owns reasoning; do not duplicate the same progress paragraph across every projection.
+
+## Milestones and compact resume
+
+A verified binary with `milestone record` can consolidate task/history bookkeeping and `ticket resume` can derive the current checkpoint. Check command availability once for an unfamiliar binary; this repository's implemented contract uses Glazed v1.3.6, including `--with-glaze-output --output json`. Follow installed help if that output API changes. Older binaries require the existing task/changelog workflow; never invoke a proposed API from a design sketch as though installed.
+
+Read [milestone commands and safety](references/milestones.md) when using these operations. A receipt is not proof of the underlying claim and does not replace a requested diary. Retry interrupted operations using the same ID/request; do not bypass conflicts or overwrite human edits.
+
+## Common Workflows
+
+### Get oriented on an existing ticket
+
+```bash
+docmgr ticket list --ticket TICKET-ID
+docmgr doc list --ticket TICKET-ID
+docmgr task list --ticket TICKET-ID
+docmgr vocab list
+```
+
+### Task bookkeeping
+
+```bash
+docmgr task add --ticket TICKET-ID --text "New task"
+docmgr task check --ticket TICKET-ID --id 1,2
+```
+
+### Changelog update (what + why + related files)
+
+```bash
+docmgr changelog update --ticket TICKET-ID \
+  --entry "What changed and why" \
+  --file-note "/abs/path/to/file.go:Reason"
+```
+
+### Search
+
+```bash
+docmgr doc search --query "search term"
+docmgr doc search --query "term" --topics backend --doc-type design-doc
+docmgr doc search --file path/to/file.go
+docmgr doc search --dir path/to/dir/
+```
+
+### Validate / hygiene
+
+```bash
+docmgr doctor --ticket TICKET-ID --stale-after 30
+docmgr validate frontmatter --doc path/to/doc.md --suggest-fixes
+```
+
+## Vocabulary
+
+If a `doctor` warning indicates an unknown topic/doc-type/category, add it to the vocabulary (or ignore if it's intentionally out-of-vocab):
+
+```bash
+docmgr vocab add --category topics --slug my-topic --description "Description"
+```
+
+## Reference
+
+Load `references/docmgr.md` for the full (long-form) docmgr workflow, command reference, and best practices.
+---
+name: diary
+description: Write and maintain chronological implementation diaries with evidence, failures, decisions, commits and review instructions. Use when asked to keep a diary, dev log, ticket work history or debugging record; detailed diary requests use the full investigation format.
+---
+
+# Diary
+
+## Select the entry mode
+
+- **Investigation:** substantive implementation, debugging, design decisions, or an explicit detailed diary request. Use the full [investigation format](references/investigation-entry.md).
+- **Milestone:** routine successful validation, publication or bookkeeping without substantive debugging. Use the compact [milestone format](references/milestone-entry.md).
+- When uncertain, preserve the meaningful failure/decision context rather than compressing it away. Higher-priority instructions and an explicit user format override these defaults.
+
+Each numbered step begins with 1–2 short prose paragraphs explaining intent and outcome. Record failures promptly, including the exact command and relevant diagnostic. Keep historical entries intact; change future entry conventions prospectively.
+
+## Prompt and evidence discipline
+
+Record the actual authored user request verbatim the first time it appears; later steps link to that entry. Do not fabricate a verbatim quote from a summary. Distinguish user-authored instructions from automatically injected runtime metadata; avoid repeating counters or budget notices. If only a summary survives, label it as a summary and link the original source when available.
+
+Use [evidence levels](references/evidence-levels.md): routine success needs command/result/revision, experiments need configuration and measurements, and failures need exact relevant diagnostics. Preserve raw bytes when identity matters, not just to archive decorative successful CLI output.
+
+## Working loop
+
+Implement toward a major feature or integration milestone, then validate its affected behavior at that boundary. Commit boundaries and validation boundaries are not the same: smaller focused commits are useful checkpoints and do not warrant extensive checks, full builds or broad test suites merely because a commit is being made. Prioritize visible feature progress over repeated validation and bookkeeping loops.
+
+At a major boundary, run the relevant validation gate. If it fails, collect the diagnostics, fix the issues together where practical, and rerun the narrow checks needed to verify those fixes rather than restarting the entire validation pipeline after each edit. Run an earlier targeted check only when it resolves a concrete uncertainty or material risk; honor explicit project-required checks. Record which checks passed, failed or were deferred, and never describe an unvalidated checkpoint as qualified.
+
+Update the detailed diary, tasks and changelog at meaningful milestones, preserving failure evidence as it occurs without requiring a full bookkeeping cycle for every small edit. Code and documentation may share a focused commit when that is clearer; two separate commits per small edit are not mandatory. Record the code hash in the subsequent checkpoint when available.
+
+Use `docmgr` for ticket creation, task updates and relations. If a verified local binary provides `milestone record`, it can consolidate task/history updates; it does not author the diary or judge evidence. Follow the docmgr skill's actual API and capability check, not a proposed command from a design sketch.
+
+Keep RelatedFiles focused on primary implementation and evidence files, with absolute `--file-note "path:reason"` arguments. A commit or bounded receipt supplies the full changed-path inventory; do not duplicate every path in metadata. Never hide review-critical files merely to hit an arbitrary count.
+
+## Resume and review
+
+Resume from the latest relevant checkpoint, current request and current files, then expand the necessary earlier investigation. Do not reread an entire long diary automatically. Unchanged instruction hashes are change signals, not proof the model still remembers the text; reload absent instructions and obey higher-priority full-read rules.
+
+The [workflow reference](references/diary.md) points to the canonical formats and evidence rules. No runtime phase loader or automatic policy enforcement is implied by this prose.
+
+ succeeded in 2994ms:
+---
+Title: LZ-style compressor and decompressor corpus program
+Ticket: IRWB-014
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: "Design for a Typed LZ-style corpus benchmark with hash chains, packed tokens and exact round-trip checks."
+LastUpdated: 2026-11-26T10:34:45.63353658-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# LZ-style compressor and decompressor corpus program
+
+## Overview
+
+Design a Typed corpus benchmark that exercises relational bounds proofs,
+loop-carried state and integer rewrites. The guide specifies the wire
+format, test cases, pass budget and RV32 measurements for implementation.
+
+## Key Links
+
+- [Codec design and implementation plan](./design-doc/01-designing-an-lz-style-compressor-and-decompressor-for-the-corpus.md)
+- [Design diary](./log/01-design-diary.md)
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- compiler
+- ir
+- performance
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+
+## 2026-11-26
+
+Specified the Typed codec, token format, independent oracle, generated cases, and checked RV32 measurement plan.
+# Tasks
+
+## TODO
+- [x] Write and validate the corpus program design <!-- t:a4b6 -->
+---
+Title: IRWB-014 design diary
+Ticket: IRWB-014
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: analysis
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: "Chronological notes on researching, drafting and reviewing the codec design."
+LastUpdated: 2026-11-26T10:39:36-05:00
+WhatFor: "Record the design decisions and validation evidence."
+WhenToUse: "Review how the proposal was developed."
+---
+
+# IRWB-014 design diary
+
+## Step 1 — Read the corpus and create the ticket
+
+I read the named corpus examples, Candela's frame-array loops, the
+front end and lifter, and the generated-case and reference-image
+paths. The corpus runs helpers as entries, and the meaning gate
+counts all statements executed by callees against the caller's
+budget. I created IRWB-014 and its design document with docmgr.
+
+### User request (verbatim)
+
+````text
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node). It contains a compiler from Typed — a small statically typed language with TypeScript-like syntax — to 32-bit RISC-V (RV32IMF), built on an IR framework in which every pass is checked. Your task: create a docmgr ticket and write a design document for ONE new corpus program, described below, that will serve as a playground for compiler optimizations. Do not implement the program in this task. Stop after the design document is written and committed.
+
+## Read first
+- `corpus/projects/*/`: each project has `main.typed`, `project.json` (pipeline, input specifications for generated cases, focus), `notes.md`, `scripts/`. Look at several, e.g. `blend`, `checksum`, `sort`, `histogram`, `records`, `match-enum`, `strings`.
+- `corpus/reference.md`: the workbench API, including the input-specification format for generated cases.
+- `corpus/candela-gallery/*.typed`: a large Typed program (records, f32, `new Int32Array(n)` frame arrays, explicit stacks instead of recursion).
+- The language as the corpus uses it: `i32`, `f32`, `bool`, records, `enum` + `match`, `distinct` types, u16 text buffers (`charCodeAt`, `setCharCodeAt`, `.length`), `new Int32Array(n)` fixed-size arrays, `for`/`while`/`loop`/`break`/`continue`. Assume no recursion. Verify any feature you rely on against the front end and lifter in `src/typed/` (e.g. `lift.ts`) and the corpus.
+- How programs are checked: every pass is accepted only if the optimized program agrees with the original (r0) on generated cases (`casesFrom` and `meaningKept` in `src/typed/evaluate.ts`; step limit 2e4 per case for pass checks). The reference compiler's image on the RV32 emulator is a second oracle (`tools/reference-check.mjs`). Instruction counts on the emulator are the speed measure.
+- Optimization work this program should feed, as tickets under `ttmp/`: IRWB-003 (inlining, loop rotation, copy coalescing, constants in registers; the `speed` pipeline), IRWB-006 (rule tables, SSA), IRWB-007 (specialization on constant data, partial evaluation), IRWB-008 (exact checking), IRWB-010 (rule discovery, equality saturation, superoptimization), IRWB-011 (tolerance contracts for floats). Read their design docs only as far as you need.
+
+## Ticket and documents
+- Create the ticket: `docmgr ticket create-ticket --ticket <ID> --title "<title>" --topics compiler,ir,performance` (use only existing vocabulary topics: compiler, ir, performance, verification, research, candela, workbench, typescript; do not edit the vocabulary).
+- Add the design doc: `docmgr doc add --ticket <ID> --doc-type design-doc --title "<title>"`.
+- Use your docmgr and diary skills. Keep a short diary in the ticket's `log/` (a step per significant action). Relate the key files with `docmgr doc relate`.
+- The design document should let a new intern implement the program: the goal and which optimizations it exercises; the Typed program design (functions, data layout, sizes); the independent oracle and how a result is checked against it; input specifications for generated cases; sizing against the step limit; how it becomes a corpus project (files, `project.json`); a test and measurement plan; implementation steps. Use prose, with code or pseudocode where it helps, and file references.
+- How the program should be written: the way ordinary code is written, not pre-optimized, so the compiler has something to find; a hand-optimized version as a separate project can serve as a ceiling; constants worth specializing on (a bytecode, a pattern, a size) live in input buffers so the same program can be measured general and specialized.
+
+## Constraints
+- Write only inside your ticket directory (`ttmp/2026/11/26/<ID>--…/`). Do not modify `src/`, `tests/`, `tools/`, `corpus/`, other tickets or `ttmp/vocabulary.yaml`.
+- Never run code from downloaded archives under `ttmp/**/sources/`.
+- Do not run Candela-scale processes.
+- When done, commit only your ticket directory on the current branch with the message `<ID>: ticket and design doc for <program>`. Do not push.
+- Final message: the design doc's path, the ticket path, the commit hash, and a one-paragraph summary.
+## Your program — ticket IRWB-014: an LZ-style compressor and decompressor
+Hash-chain match finding over a text buffer, literal and match encoding, and a decompressor, in Typed.
+- Why: dense memory accesses and bounds checks, including checks that need relations between indices (`i + len <= n`, back-references) — the kind insertion sort still loses on; byte and bit twiddling for rule discovery; loop-carried dependencies.
+- Oracle: a round trip, `decompress(compress(x)) == x`, which holds on any input, so generated cases are meaningful.
+````
+
+I read the design documents for IRWB-003, IRWB-006 and IRWB-008.
+A search with `rg ... ttmp/2026/11/*/IRWB-$num*/{design-doc,reference}`
+hit zsh's `no matches found` on absent subdirectories. I switched to
+`find` on the ticket directories. IRWB-007, IRWB-010 and IRWB-011
+have index scaffolds on this branch, so I used their stated scope
+and the current specialization implementation.
+
+## Step 2 — Specify the codec and its checks
+
+I chose a 32-cell source bound, a 16-cell match window, and a
+one-cell policy buffer for traversal depth. An escape preserves
+the full u16 alphabet, including values in the token range. A
+cellwise forward copy supports overlap. I derived an amortized
+comparison bound over consumed input and wrote allowances for
+the lifted statement budget.
+
+The oracle combines exact input equality with a host decoder
+and golden streams to catch errors shared by the Typed pair.
+The generators use full-u16 data for encoder escapes, a
+two-symbol alphabet for wrapper matches, and stream prefixes
+for direct decoder calls. The plan uses the actual statement
+limit for pass checks and emulator instructions for speed.
+
+## Step 3 — Relate and review the design
+
+I linked seven source files with `docmgr doc relate` and put
+the guide in the ticket index. The document review passed its JSON example, relative file links,
+token examples and budget arithmetic. The first `docmgr doctor
+--ticket IRWB-014 --stale-after 30` reported `frontmatter delimiters
+'---' not found` for this diary. I added frontmatter using the
+existing analysis document type and reran the check. Codec
+execution and RV32 measurement belong to implementation.
+
+The repeat doctor check passed. Staging with `git add -- <ticket-dir>`
+hit `Unable to create .../index.lock: Read-only file system` in
+the worktree's shared Git metadata. The commit step needs write
+access to that metadata.
+
+ succeeded in 3182ms:
+## codex/irwb-014
+---
+Title: Designing an LZ-style compressor and decompressor for the corpus
+Ticket: IRWB-014
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: design-doc
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: repo://corpus/candela-gallery/kernel.typed
+      Note: Frame arrays and explicit loops in hitMesh.
+    - Path: repo://corpus/projects/sort/notes.md
+      Note: Existing relational bounds-check example.
+    - Path: repo://corpus/reference.md
+      Note: Workbench calls, input specifications and RV32 measurements.
+    - Path: repo://src/typed/evaluate.ts
+      Note: Generated argument memory, statement limits and the pass meaning check.
+    - Path: repo://src/typed/lift.ts
+      Note: Lowering from typed tape to checked addresses, array operations and branches.
+    - Path: repo://tools/reference-check.mjs
+      Note: Reference and workbench images on the RV32 emulator.
+    - Path: repo://vendor/ds-js-os/compiler/typed/typed-wasm.js
+      Note: Front-end support for u16 buffers, i32 operations and checked frame arrays.
+ExternalSources: []
+Summary: Wire format, hash chains, bounds invariants, oracles and measurement plan for a small Typed LZ corpus program.
+LastUpdated: 2026-11-26T10:34:54.799547213-05:00
+WhatFor: Implementing the lz-roundtrip corpus project.
+WhenToUse: Before adding or using the codec as an optimization benchmark.
+---
+
+# Designing an LZ-style compressor and decompressor for the corpus
+
+## Executive summary
+
+Add `corpus/projects/lz-roundtrip`, a Typed program that compresses and
+decompresses up to 32 UTF-16 code units. It uses a bounded hash chain to
+find matches, one-u16 match tokens and forward copies that can overlap
+their source. An input buffer controls the search budget. The harness
+checks exact round trips and token validity, while the workbench compares
+every changed pass with r0 and the reference compiler gives an independent
+RV32 lowering. Use the same workloads to measure RV32 instructions.
+
+## What the optimizer should have to discover
+
+Insertion sort already leaves checks on expressions such as `j - 1`
+even when the loop guard establishes `j > 0`. The codec adds three
+relations that matter in real code. The match loop bounds `i + len` and
+reads at `candidate + len`. The encoder's write cursor grows by up to
+two cells per consumed input unit. The decoder proves a back-reference
+lies in the produced prefix before it copies into the next part of that
+same buffer. The chain cursor itself comes from a load. Read the current
+`bce` implementation in [passes.ts](../../../../../../src/typed/passes.ts)
+alongside [sort's notes](../../../../../../corpus/projects/sort/notes.md)
+to identify what it can prove at each access.
+
+| Work | What to look for |
+| --- | --- |
+| IRWB-003 | Inline the small scalar hash and pack helpers, rotate hot loops when eligible, and measure copy coalescing and constant homes on the same `speed` revision. The inliner currently refuses callees with frame arrays, so do not expect it to inline the compressor into the wrapper. |
+| IRWB-006 | Use the SSA view to follow input and output cursors, best length, and the loaded chain link across loop backedges. Inspect rule-table matches in the hash and token fields. |
+| IRWB-007 | Fix the read-only policy buffer to `[4]` at the host and see what partial evaluation can recover from its length, load, guard and bound on traversal. Keep source data variable. The scalar/record-field binding pass in `src/typed/specialize.ts` does not supply general constant-buffer loads. |
+| IRWB-008 | Track exact evidence for pure integer rewrites and sampled evidence for remaining edits. A rule that rewrites a check or memory access also needs the relevant bounds, effects and alias premises. |
+| IRWB-010 | Extract small integer windows around hash mixing, token pack/unpack and masked fields. Check a discovered identity under explicit input ranges, then measure it in the full codec. |
+| IRWB-011 | Use the codec as an exact integer control. Every code unit, result length and promised memory effect must agree. |
+
+Write the source as a straightforward greedy codec with named locals,
+small helpers and normal loops. Keep Typed's checked accesses in place.
+Let the compiler hoist, reuse and simplify them where it can.
+
+## Program interface and layout
+
+All lengths and cursors count u16 cells. The host passes distinct buffers
+for every parameter of type `buffer`. Treat `src` and `policy` as
+read-only, and take `used` as the length of the stream prefix within
+`packed`. The buffer's `.length` is its capacity and never changes.
+
+| Function | Contract |
+| --- | --- |
+| `lzHash(a: i32, b: i32, c: i32): i32` | Scalar helper. Return `((a * 3) ^ (b * 5) ^ (c * 7)) & 15`. Hash the next three cells. |
+| `packMatch(length: i32, distance: i32): i32` | Scalar helper for a verified length in 3–18 and distance in 1–16. Return the match word below. |
+| `compress(src: buffer, policy: buffer, packed: buffer): i32` | Return the encoded length. Reject with `-1` before any writes if `src.length > 32`, `packed.length < 2 * src.length`, or `policy` is anything other than one cell containing 1–4. |
+| `decompress(packed: buffer, used: i32, dst: buffer): i32` | Return the decoded length. Return `-1` for an invalid stream, including an invalid `used` or output that would exceed `dst.length` or 32 cells. Keep the prefix produced by complete valid tokens before the error. |
+| `roundTrip(src: buffer, policy: buffer, packed: buffer, dst: buffer): i32` | Require `dst.length >= src.length` before calling the codec. Compress, decode the emitted prefix, and compare the decoded length and every cell with `src`. Return the packed length on success, `-1` for input or codec rejection, or `-2` for a decoded length or cell mismatch. |
+
+A successful call overwrites just the written prefix of each output
+buffer. Sentinel-filled tails let callers test that property. Encode
+every possible u16 value, including NUL, isolated surrogates, and
+`0xFFFF`. Host fixtures should use arrays of numeric cells.
+
+The compressor owns two zeroed frame arrays, `new Int32Array(16)` for
+bucket heads and `new Int32Array(32)` for previous links. They take
+192 bytes before alignment, spills and saved registers. Store indices
+plus one, reserving zero as the empty link. The other functions use
+scalar locals and caller buffers.
+
+The Typed front end implements the required operations in
+[vendor/ds-js-os/compiler/typed/typed-wasm.js](../../../../../../vendor/ds-js-os/compiler/typed/typed-wasm.js)
+(`codeUnitAddress`, `bufferWrite`, `arrayDeclaration`, `arrayElement`,
+and the integer operator table). Frame arrays require literal,
+fixed lengths, are zeroed at the declaration, and cannot be passed
+as arguments. Keep chain access in `compress` and pass only scalar
+cells to `lzHash`. The lifter maps checked text addresses to `caddr`,
+u16 access to `load16u` and width-16 stores, and array addresses and
+zeroing to `aaddr` and `zero`. The array index guard arrives as
+branches and a trap. [Candela's `hitMesh`](../../../../../../corpus/candela-gallery/kernel.typed)
+shows frame arrays and dynamic indexed loads in a loop. Sort and
+histogram show mutable text buffers and checked loads and stores.
+
+## Token format
+
+The stream is the first `used` cells of `packed`. No header is needed.
+Unmarked literals and escaped literals can represent the full input
+alphabet, so arbitrary generated u16 text is a valid encoder input.
+
+| Stream cell | Meaning |
+| --- | --- |
+| `0x0000`–`0x7FFF` | Single literal of the same value. |
+| `0xFFFF` | Escape followed by one raw u16 cell in `0x8000`–`0xFFFF`. The payload is data even if it looks like a token. |
+| `0x8000`–`0x80FF` | Match word `0x8000 \| ((length - 3) << 4) \| (distance - 1)`. Decode length as `((word >>> 4) & 15) + 3` and distance as `(word & 15) + 1`. |
+| `0x8100`–`0xFFFE` | Reserved. Reject. |
+
+Two cells per input unit covers the worst expansion. A match costs one
+cell and consumes at least three input cells. Empty input produces an
+empty stream. The format operates on u16 words in memory, so there is
+no byte serialization, bit reservoir or external format dependency.
+Packing the two fields still gives rule discovery useful masks, shifts,
+bitwise ORs and offset arithmetic.
+
+## Compressor
+
+Let `n = src.length`, `i` be the next unencoded position and `w` the
+write cursor. Validate capacities and load the probe budget once. At the
+start of each iteration set the best length and distance to zero.
+
+1. If `i + 2 < n`, hash the triple starting at `i`. Follow its
+   bucket's chain newest first, up to the budget. For each nonzero
+   link, recover `candidate = link - 1` and `distance = i - candidate`.
+   Stop walking the chain once distance exceeds 16 because older
+   positions can only increase it. For each eligible candidate start
+   `len` at zero and compare `src[i + len]` with
+   `src[candidate + len]` while `i + len < n` and `len < 18`.
+   Stop extending on the first mismatch. Replace the best pair only
+   when this length is strictly longer. Continue via `prev[candidate]`.
+2. Emit the best match if its length is at least 3. Otherwise emit
+   `src[i]` using the literal or escape form. Advance `w` accordingly.
+3. Insert consumed positions in increasing order, starting at `i`
+   and ending just before the new `i`. For each such position `p`
+   with `p + 2 < n`, compute its hash, set `prev[p] = head[h]`
+   and set `head[h] = p + 1`. Then advance `i` by the consumed length.
+
+Searching before insertion prevents a zero-distance match. Newest-first
+traversal and strict replacement make ties deterministic. Inserting
+positions inside a match lets the next token refer to them. Collision
+candidates are compared cell by cell. Two equal triples necessarily hash
+together, and collisions affect search effort and compression ratio.
+
+At the start of an iteration every nonzero link refers to an earlier
+position in its bucket, so `0 <= candidate < i <= n` before a link
+load or comparison. When the comparison body runs,
+`candidate + len < i + len < n`. Start each iteration with
+`0 <= w <= 2 * i`. Per-token consumption preserves that invariant
+and keeps all write indices within `2 * n`. Positions inserted into
+`prev` are less than 32, and the hash mask puts every bucket index
+in 0–15. All arithmetic on these indices is safely within i32.
+
+## Decompressor
+
+Validate `0 <= used <= packed.length` and `used <= 64` up front.
+Then maintain a read cursor `r` and a produced length `w`. Read
+a token only when `r < used` and advance `r` past it. For an
+escape, require another cell within `used` and a payload of at least
+`0x8000`. An ordinary or escaped literal needs room for one cell
+within both `dst.length` and 32. For matches, decode both fields and
+validate `distance <= w`, `w + length <= dst.length` and
+`w + length <= 32` before the first store. Reject reserved words.
+Finish when `r == used` and return `w`.
+
+Use an ordinary forward copy, with `w` fixed until the token finishes.
+
+```text
+for k = 0 .. length - 1:
+    cell = dst.charCodeAt(w - distance + k)
+    dst.setCharCodeAt(w + k, cell)
+w = w + length
+```
+
+The lower source index is nonnegative because `distance <= w`. Its
+upper bound at iteration `k` is strictly below `w + k` because
+distance is positive. That cell already belongs to the output,
+including the part produced earlier in this very copy when
+`length > distance`. A snapshot or backward copy would give a
+different answer for overlapping repeats. Validate an entire token
+before any stores for that token so error results have defined memory.
+
+## Independent oracle and coverage
+
+In `scripts/checks.js`, run the Typed encoder and read exactly its
+returned prefix. Decode those cells in an independent JavaScript
+parser that uses numeric ranges, division and remainder on the match
+payload and appends one cell at a time to a plain array. For each
+append in a match it can use `output[output.length - distance]`.
+Give the host decoder the same capacity limit as the Typed decoder.
+Compare the host result and its length to the original input. Feed
+the stream to the Typed decoder in a fresh call with a sentinel-filled
+destination and check the result, every output cell, and the tail.
+Run `roundTrip` as well and check the returned packed length and
+both visible prefixes. Preserve original input and policy cells.
+Host fixtures with predefined streams also test the decoder independently
+of the encoder. No checksum is needed.
+
+The round-trip property follows by induction over tokens. A literal
+reproduces its source unit. For a match the encoder compared the
+original at `i + k` with `i - distance + k`. When the decoder
+produces cell `i + k`, the referenced cell is earlier, so by
+induction it already matches the original. This proof covers every
+input of the bounded API. A mutually consistent encoding mistake
+could still pass a Typed round trip, so keep exact golden tokens
+and check the stream with the host decoder.
+
+| Case | Expected behavior |
+| --- | --- |
+| Empty, one cell, two cells, distinct low cells | Literal-only round trips, including empty output. |
+| `[0x7FFF, 0x8000, 0xD800, 0xFFFF]` | Exact stream `[0x7FFF, 0xFFFF, 0x8000, 0xFFFF, 0xD800, 0xFFFF, 0xFFFF]`. Include 32 high cells with distinct triples to reach the 64-cell output bound. |
+| `ABCABCA` | Exact stream `[65, 66, 67, 0x8012]`. Length 4, distance 3, forward overlap. |
+| 32 copies of `A` | Exact stream `[65, 0x80F0, 0x80A0]`. Exercises the length cap, tie-breaking, insertion of skipped positions and distance-1 copies. |
+| `AAABAAACAAAB` | At index 8, budget 1 emits `0x8003` (length 3, distance 4) followed by literal `B`. Budget 4 emits `0x8017` (length 4, distance 8). Check both decoded outputs. |
+| Window edge and collisions | Decode `[0, 1, ..., 15, 0x800F]` to the 16 literals followed by `[0, 1, 2]`. Test encoder candidates exactly 16 and 17 cells old. Use triples formed from multiples of 16 to put unequal cells in one bucket and force multiple probes. |
+| Invalid streams and capacities | Negative or oversized `used`, reserved word, truncated escape, low escape payload, match at `w = 0`, distance one greater than `w`, overflow of destination and of the 32-cell limit. Test successful writes followed by failure and all sentinel tails. Test short output buffers, source length 33 and empty, oversized or out-of-range policy. |
+
+## Generated cases and project files
+
+Build `main.typed`, `project.json`, `notes.md`,
+`scripts/checks.js` and `scripts/explore.js` in the future project.
+Notes explain the wire format and show where to look in IR for
+`candidate + len` and the decoder's back-reference. Mark explore
+fresh so it can run checked pipelines starting at r0 and focus on
+those source locations. Set `focus` to the actual compressor match
+comparison line after formatting. Add the project near `sort` and
+`histogram` in `corpus/projects/index.json` for UI order. The Node
+corpus tools enumerate directories automatically.
+
+Use the following metadata as the starting point. Every function is
+listed because an ordinary `Program.fromProject` checks helpers as
+direct entries too.
+
+```json
+{
+  "title": "LZ round trip",
+  "about": "Hash chains, packed tokens and overlapping copies.",
+  "group": "Programs",
+  "sources": ["main.typed"],
+  "pipeline": "O2",
+  "chapter": "checks",
+  "scripts": {
+    "checks": { "about": "Check the codec against the wire format." },
+    "explore": { "about": "Trace checks and count RV32 instructions.", "fresh": true }
+  },
+  "inputs": {
+    "lzHash": { "a": [0, 65535], "b": [0, 65535], "c": [0, 65535] },
+    "packMatch": { "length": [3, 18], "distance": [1, 16] },
+    "compress": {
+      "src": { "buffer": [0, 32], "cell": [0, 65535] },
+      "policy": { "buffer": [1, 1], "cell": [1, 4] },
+      "packed": { "buffer": [64, 64], "cell": [43690, 43690] }
+    },
+    "decompress": {
+      "packed": { "cells": [65, 32768, 65535, 55296, 66, 32769] },
+      "used": [0, 7],
+      "dst": { "buffer": [32, 32], "cell": [43690, 43690] }
+    },
+    "roundTrip": {
+      "src": { "buffer": [0, 32], "cell": [65, 66] },
+      "policy": { "buffer": [1, 1], "cell": [1, 4] },
+      "packed": { "buffer": [64, 64], "cell": [43690, 43690] },
+      "dst": { "buffer": [32, 32], "cell": [43690, 43690] }
+    }
+  }
+}
+```
+
+The compressor's full alphabet emphasizes literal and escape handling.
+The wrapper's two-symbol alphabet routinely produces matches and
+collisions. The standalone decoder's fixed stream with a variable
+prefix covers empty, literal, escaped and overlapping output as well
+as two failures (`used = 3` cuts the escape and `used = 7`
+exceeds capacity). Length and content specs are independent in
+`casesFrom`, and the current `oneOf` path coerces its choice to
+i32. Use the fixed-capacity scratch buffers and fixture tables above
+to cover correlated inputs and exact boundaries. The generated
+specs are described in [the corpus API](../../../../../../corpus/reference.md).
+
+## Budget for the 20,000-statement gate
+
+`meaningKept` defaults to 40 cases per function, seed 7, and 20,000
+executed BlocksIR statements per case on each side of the comparison.
+The evaluator shares the counter with callees. Count branches,
+temporaries and array guards as statements, and count the implicit
+check in a `caddr` as part of its containing statement. Use the
+following work bounds to audit the lifted listing before running
+the checks.
+
+| Work in one wrapper call | Bound |
+| --- | --- |
+| Encoder outer iterations and inserted positions | 32 each. |
+| Hash calls | At most 64, one per search and one per insertion. |
+| Candidate visits | At most 128, including a visit that stops at the window boundary. |
+| Cell comparisons in candidate extension | At most 384. For a literal, the best length is at most 2, so each of at most 4 candidates compares at most 3 cells including a mismatch. For a match consuming `L >= 3` cells each candidate compares at most `L + 1 <= 3 * L`. Sum over consumed input. |
+| Encoder stores, decoder input reads, decoder output stores | At most 64 stream stores, 64 stream reads, and 32 output stores. |
+| Wrapper verification | At most 32 cell-pair comparisons. |
+
+As an initial allocation, budget 16 statements per cell comparison,
+24 per candidate entry/exit, 32 per hash plus its lookup/insertion
+bookkeeping, 48 per outer encoder iteration for remaining control
+and writes, 32 per stream read, 24 per decoded output cell, and
+1,000 for fixed setup, guards and final wrapper verification. The
+sum is 16,616 statements using the independent upper bounds. These
+are allowances to check against lifted code, not measurements.
+In implementation, record the maximum at r0 and after changed
+passes for the directed cases and generated matrix. Require zero
+inconclusive cases and use 17,000 as a headroom target. If the
+lifted listing or measured cases exceed the target, reduce the
+default probe cap or input size and update the fixtures and specs
+together before relying on the gate. Keep the gate at 20,000.
+
+## Test and measurement plan
+
+1. Ingest the project and verify exact token vectors, error return
+   values, successful lengths, prefix side effects and sentinel
+   tails with the host harness. Run the directed fixtures and
+   generated workloads on r0. Include exhaustive input strings up
+   to length 8 over a two-cell alphabet as a small directed sweep.
+2. Run checked `O2` and `speed` pipelines from separate r0 copies.
+   Inspect pass evidence for disagreements, traps and step-limit
+   hits. `p.check` compares the return and guest memory and reports
+   agreed traps and inconclusive cases separately. All specified
+   failures return `-1` normally, so an agreed trap is unexpected
+   even for those cases. Check the default seed and replay several
+   fixed seeds, for example 1, 7 and 29. Keep replayable case inputs
+   and report which passes changed the main loops.
+3. After `npm run build`, use `node tools/reference-check.mjs` for
+   the reference image and `node tools/reference-check.mjs --o2`
+   for the workbench O2 image. The tool checks generated cases
+   against the evaluator and identifies disagreements by function. Read its summary
+   and disagreement lines, since the script prints failures rather
+   than asserting them. For the directed fixtures and `speed`
+   images, use the same `runImage` approach as the tool and
+   compare with r0 and the host assertions. Require matching
+   outputs and memory with zero codec-run traps or emulator faults.
+4. Measure instructions with the emulator on identical numeric
+   cell arrays and fresh scratch buffers. Record r0, O2, speed
+   with the same backend options, speed with `chains`, `coalesce`
+   and `homes` (toggles individually and together), and the
+   reference image. Use the literal-heavy, repeated, mixed and
+   collision-heavy fixtures with explicitly recorded policy.
+   Measure `compress`, `decompress` on the resulting fixed stream,
+   and `roundTrip` separately. Report executed instructions,
+   input u16 units, encoded u16 units, image bytes, frame size,
+   spills and hot source lines where available. Keep compiler
+   revision, case values and backend settings with the numbers.
+5. For specialization, first run the general image with policy
+   `[4]`, then a future specialized image with the same policy
+   and the same source cells. An explicit host assumption must
+   cover the buffer length, value and immutable use on the tested
+   paths. Restrict the specialized correctness cases to that
+   assumption and vary the source data. A fixed generator input
+   by itself establishes only the workload. A future hand-tuned
+   ceiling can live in a separate project, preserving token choice,
+   error behavior and scratch side effects on the same inputs so
+   the instruction comparison isolates the implementation.
+
+## Implementation order
+
+1. Implement the decoder and scalar pack helper, plus the host token
+   parser and exact stream fixtures. Get literal, escape, overlap,
+   malformed-prefix and capacity cases passing at r0.
+2. Implement the compressor with local frame arrays. Validate the
+   dictionary order and budget using the collision, window and
+   tie cases. Implement the round-trip entry and run the host and
+   Typed checks on generated text.
+3. Add the metadata, scripted walkthrough and notes, then verify
+   the formatted project is discoverable in the workbench. Use the
+   corpus formatting checks in `tests/typed/format.test.mjs`.
+4. Audit the lifted step budget, run checked pipelines and both
+   RV32 lowerings, then record the instruction baseline and the
+   checks that remain in the hot loops. Establish this baseline
+   before trying constant-buffer specialization or a tuned ceiling.
+
+exec
+/usr/bin/zsh -lc "rg -n 'cases\\(|exec\\(|fromProject' src/typed/program.ts; sed -n '500,540p;550,590p' src/typed/program.ts; sed -n '/"'^## Runs and checks/,/''^## Parameters/p'"' corpus/reference.md | head -90" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+exec
+/usr/bin/zsh -lc "rg -n 'function makeValue|spec\\.buffer|spec\\.cells|function casesFrom|params.limit|function agrees' src/typed/evaluate.ts; rg -n 'arrayBytes|speed:' src/typed/{inline,passes}.ts; cat corpus/projects/{sort,checksum}/{project.json,scripts/explore.js}; cat tools/reference-check.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 1789ms:
+132:  static fromProject(p: ProjectSource): Program {
+519:  cases(fn?: string, opts: { count?: number; seed?: number; inputs?: Record<string, unknown> } = {}) {
+558:  exec(
+681:      const p = Program.fromProject(projectSource(id, files));
+    this.requireOk();
+    const def =
+      ANALYSES[name] ??
+      fail(
+        'unknownAnalysis',
+        `no analysis named "${String(name)}"`,
+        `analyses: ${Object.keys(ANALYSES).join(', ')}`,
+      );
+    const f = this.fname(fn);
+    const record = await this.manager.analyse(def as never, this.head);
+    const value = record.value as { regions?: Record<string, unknown> } & Record<string, unknown>;
+    return {
+      id: `fact:${name}(${f})@r${this.rev}`,
+      rev: `r${this.rev}`,
+      value: value.regions ? value.regions[f] : value[f],
+    };
+  }
+
+  // ---- runs and checks ----
+  cases(fn?: string, opts: { count?: number; seed?: number; inputs?: Record<string, unknown> } = {}) {
+    const f = this.fname(fn);
+    return casesFrom(storeOf(this.head.value), f, {
+      count: opts.count ?? 20,
+      seed: opts.seed ?? 7,
+      inputs: { ...(this.inputs[f] ?? {}), ...(opts.inputs ?? {}) } as never,
+    }).map(c => ({ n: c.n, args: c.args, items: c.items }));
+  }
+  private argSpec(type: string, v: unknown): unknown {
+    const fe =
+      (this.head.value.frontEnd as {
+        records?: Record<string, unknown>;
+        enums?: Record<string, Record<string, number>>;
+      }) ?? {};
+    const enums = fe.enums ?? {},
+      records = fe.records ?? {};
+    if (enums[type] && typeof v === 'string') {
+      if (!(v in enums[type]))
+        fail('badArgument', `${type} has no case "${v}"`, `cases: ${Object.keys(enums[type]).join(', ')}`);
+      return enums[type][v];
+    }
+    if (
+        ),
+      };
+    if (Array.isArray(v)) return { cells: v };
+    if (typeof v === 'string') return { string: v };
+    if (typeof v === 'boolean') return v ? 1 : 0;
+    return v ?? 0;
+  }
+  /** One call on the evaluator: positional args or named; buffers as arrays, strings as text. */
+  exec(
+    fn: string | undefined,
+    args: readonly unknown[] | Record<string, unknown> = [],
+    opts: { limit?: number; counts?: boolean } = {},
+  ) {
+    this.requireOk();
+    const f = this.fname(fn),
+      st = storeOf(this.head.value),
+      F = st.fn(f);
+    const list = Array.isArray(args)
+      ? args
+      : F.params.map((_, i) => (args as Record<string, unknown>)[F.locals[i].name]);
+    const bench: Record<string, unknown> = {};
+    F.params.forEach((t, i) => (bench[F.locals[i].name] = this.argSpec(t, list[i])));
+    const c = benchCase(st, f, bench);
+    const r = evaluate(st, f, c.args, c.memory, { limit: opts.limit ?? 5e6, counts: !!opts.counts });
+    return {
+      kind: 'run',
+      engine: r.engine,
+      fn: f,
+      args: c.args,
+      result: r.result,
+      trap: r.trap,
+      steps: r.steps,
+      unit: r.unit,
+      buffers: c.items
+        .filter(x => x.kind === 'buffer')
+        .map(x => ({ name: x.name, at: x.at, cells: readBuffer(r.bytes, x.at).slice(0, 64) })),
+      ...(opts.counts && r.counts ? { counts: Object.fromEntries(r.counts) } : {}),
+    };
+  }
+  /**
+   * The head against r0 per function (Compiler Workbench's `p.check()`): agree / decided, traps on both sides,
+## Runs and checks
+
+```js
+// the evaluator: { result, trap, steps, buffers }
+p.exec('blend', [[1, 2, 3, 4], 4, 3, 5]);
+// the emulator, on a fresh image
+p.exec('blend', [[1, 2, 3, 4], 4, 3, 5], { engine: 'rv32' });
+p.check(); // head against r0, every function, 100 cases
+p.check({ fn: 'blend', against: 'image', count: 300 });
+// against the reference compiler's image (built-in projects, unedited)
+p.check({ against: 'reference' });
+p.cases('blend', { count: 5, seed: 1 }); // the generated inputs
+```
+
+Arguments: a number for i32 and bool; an array of cells for a buffer;
+text for a string; `{ x: 1, y: 2 }` for a record; a case name for an
+enum. Inputs for generated cases, per parameter: `[lo, hi]`, a number,
+`{ buffer: [minLen, maxLen], cell: [lo, hi] }`, `{ cells: [...] }`, `{
+string: 'text' }`, `{ record: { x: [lo, hi] } }`, `{ oneOf: [...] }`.
+
+A check compares result, trap and memory. A trap must match a trap. A
+case that hits the step limit in either engine is inconclusive, not a
+verdict. A result: `{ status, fns: [{ fn, agree, total, bothTrap,
+inconclusive, counterexamples }] }`.
+
+## The backend and images
+
+```js
+p.pipeline('O2', { checkEach: false }); // on Blend: r1 … r6
+const img = p.compile({
+  registers: 4,
+  fuse: true,
+  immediates: true,
+  divmagic: true,
+  useRanges: true,
+});
+img.id;
+img.bytes;
+img.fns.blend; // { bytes, insns, frame, saved, spills, regs, leaf }
+// offset, instruction, the statement it covers, the line
+img.listing('blend');
+img.insns('blend'); // the same as rows, with ids
+// on the emulator: steps are instructions
+img.run('blend', [[1, 2, 3], 3, 2, 2]);
+// instructions executed per source line, and the hottest
+img.heat('blend', [[1, 2, 3], 3, 2, 2]);
+img.check({ count: 200 });
+// the stages: selected code on virtual registers, intervals, spills
+p.machine('blend');
+p.reference(); // the reference compiler's image size per function
+// an image of an earlier revision; the head is left as it is
+p.compile({ rev: 'r2' });
+// two revisions compiled and compared instruction by instruction
+p.asmDiff('r0', 'r6', { fn: 'blend' });
+// or two option sets at one revision
+p.asmDiff('r6', 'r6', { fn: 'blend', optionsB: { registers: 4 } });
+```
+
+Options: `registers` ('all' or a count), `fuse`, `immediates`,
+`divmagic`, `useRanges` for instruction selection; `order` ('caller':
+try t0–t4 and the a-registers first, or 'callee': s1–s11 first), `spill`
+('furthest': spill whichever interval ends last, or 'current': spill the
+one that found no register) and `hints` (parameters prefer their
+a-register, returned values a0) for register allocation. An asmDiff
+result has both sides' bytes, frame, spills and the instructions run on
+20 generated cases, and rows `{ op: '=' | '-' | '+', a, b, text, covers
+}` with branch targets written as block names, so code that only moved
+compares equal.
+
+Instruction selection tiles value trees; the register allocator is a
+linear scan with callee-saved registers for values that live across
+calls; the encoders, the division magic numbers, the disassembler and
+the emulator are reused from the repo's compiler. An image is an entity
+of its program and records the revision it was made from; its status is
+current, older, or stale.
+
+## Parameters
+
+ succeeded in 1817ms:
+130:function makeValue(
+142:  if (spec && spec.cells) return mem.buffer(spec.cells, name);
+144:  if (spec && spec.buffer) {
+145:    const [a, b] = spec.buffer,
+232:export function casesFrom(
+561:export function agrees(expected: RunResult, got: RunResult): boolean {
+600:    limit = params.limit ?? 2e4,
+608:      description: `${roots ? `the entries ${roots.join(', ')} agree` : 'every function agrees'} with the origin on ${count} generated cases (seed ${seed})`,
+src/typed/passes.ts:1104:  speed: [
+src/typed/inline.ts:128:  if (g.arrayBytes) return 'has a frame array';
+{
+  "title": "Insertion sort",
+  "about": [
+    "Nested loops with loads and stores into one buffer. The checks",
+    "compare the sorted cells."
+  ],
+  "group": "Programs",
+  "pipeline": "O2",
+  "inputs": {
+    "sort": { "work": { "buffer": [0, 12], "cell": [0, 99] } }
+  },
+  "chapter": "checks",
+  "focus": 6,
+  "try": [
+    [
+      "Which bounds checks stay in sort, and which facts would remove",
+      "each?"
+    ],
+    [
+      "Where does sort spend its instructions on a reversed buffer of",
+      "10?"
+    ]
+  ]
+}
+// Insertion sort: the walk-through. Run it on r0 (Scripts view) to see it
+// from the start.
+p.pipeline('O2');
+const run = p.compile().run('sort', [[5, 3, 9, 1, 7, 2]]);
+return {
+  swaps: run.result,
+  cells: run.buffers[0].cells,
+  steps: run.steps,
+  check: p.check().status,
+};
+{
+  "title": "Checksum: a check that goes away",
+  "about": [
+    "A loop to work.length. The loop test proves the index is in",
+    "range, so bounds-check elimination removes the check inside."
+  ],
+  "group": "Start here",
+  "pipeline": "O2",
+  "inputs": { "total": { "work": { "buffer": [0, 40] } } },
+  "chapter": "bounds",
+  "focus": 4,
+  "try": [
+    [
+      "Which three facts does bce combine to remove the check? Show me",
+      "in its source."
+    ],
+    [
+      "Make a variant where the index can be negative and show that",
+      "bce refuses."
+    ]
+  ]
+}
+// Checksum: a check that goes away: the walk-through. Run it on r0 (Scripts
+// view) to see it from the start.
+p.pipeline(['cfg', 'fold', 'simplify', 'constprop', 'dce', 'cfg']);
+const before = p.fn('total')
+  .stmts()
+  .where(s => s.op === 'br_if')
+  .count();
+const r = p.apply('bce');
+log(p.edits(r.rev));
+const after = p.fn('total')
+  .stmts()
+  .where(s => s.op === 'br_if')
+  .count();
+p.apply('cfg');
+return { branches: [before, after], check: p.check().status };
+// The evaluator at r0 against the reference compiler's images (typed-rv32.js, default policy), 100 cases per
+// function, as the book's chapter 13 reports it: node tools/reference-check.mjs [--o2]
+import { installVendor } from './node-vendor.mjs';
+import { projectIds, projectFiles } from './corpus.mjs';
+await installVendor({ reference: true });
+const { Program } = await import('../dist/typed/program.js');
+const { projectSource } = await import('../dist/typed/project.js');
+const B = await import('../dist/typed/backend/index.js');
+const o2 = process.argv.includes('--o2');
+let fns = 0, agree = 0, decided = 0, inconclusive = 0; const bad = [];
+for (const id of projectIds()) {
+  const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+  let image;
+  if (o2) { await p.pipeline('O2'); image = B.lowerToImage(p.head).image; }       // our O2 image vs the evaluator
+  else { const r = globalThis.typedRv32.compile(ps.source, [], undefined); image = B.imageFromCode(id, r.image, r.entries); }
+  const c = p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) });
+  for (const f of c.fns) { fns++; agree += f.agree; decided += f.total; inconclusive += f.inconclusive; if (f.status === 'disagree') bad.push(`${id}.${f.fn}: ${JSON.stringify(f.counterexamples[0])}`); }
+}
+console.log(JSON.stringify({ against: o2 ? 'our O2 images' : 'reference images', functions: fns, decided, agree, inconclusive }));
+if (bad.length) console.log(bad.join('\n'));
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+for dist in range(17, 30):
+    src = list(range(dist)) + [0, 1, 2]
+    hashes = [(3*a "'^ 5*b ''^ 7*c) & 15 for a,b,c in zip(src,src[1:],src[2:])]
+    bucket = [i for i,h in enumerate(hashes[:-1]) if h == hashes[-1]][::-1]
+    print(dist, bucket)
+PY
+rg -n '"'function imageFromCode|function runImage' src/typed/backend/run.ts; sed -n '75,115p' src/typed/backend/run.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 1668ms:
+17 [0]
+18 [0]
+19 [16, 0]
+20 [16, 0]
+21 [20, 16, 0]
+22 [16, 0]
+23 [16, 0]
+24 [16, 0]
+25 [16, 0]
+26 [16, 0]
+27 [16, 0]
+28 [16, 0]
+29 [16, 0]
+74:export function runImage(
+269:export function imageFromCode(
+  image: Rv32Image | Artifact<Rv32Image>,
+  fname: string,
+  args: readonly number[],
+  memBytes: Uint8Array,
+  opts: RunImageOptions = {},
+): ImageRun {
+  const img = valueOf(image);
+  const interp = requireVendor('typedRv32Interp');
+  if (!(fname in img.entries))
+    fail(
+      'unknownFunction',
+      `${img.program}'s image has no entry "${fname}"`,
+      `entries: ${img.fnOrder.join(', ')}`,
+    );
+  const program = { image: codeBytes(img), entries: img.entries, relocations: [], imports: [] };
+  const sig = opts.sig ?? img.fns[fname]?.sig;
+  const base = {
+    kind: 'run' as const,
+    engine: 'rv32' as const,
+    program: img.program,
+    unit: 'instructions' as const,
+  };
+  try {
+    if (sig && needsConvention(sig)) {
+      const placed = placeCall(sig, args, memBytes, { fsPatterns: true });
+      const r = interp.run(program as unknown as Uint8Array, fname, [], placed.bytes, {
+        registers: placed.registers,
+        fregisters: placed.fregisters,
+        limit: opts.limit ?? 2e5,
+        counts: opts.counts !== false,
+      });
+      const bytes = (r.bytes as Uint8Array).slice(0, memBytes.length);
+      if (r.trap)
+        return { ...base, trap: 'ebreak', limit: false, steps: r.steps, counts: r.counts ?? null, bytes };
+      const changed = changedSavedF(placed, r.fregisters);
+      if (changed >= 0)
+        return {
+          ...base,
+          trap: `callee-saved f${changed} (${REGS[32 + changed]}) changed across the call`,
+          fault: true,
+          limit: false,
+
+codex
+The biggest cuts are the Typed round-trip wrapper, the separate pack helper, and the extra match window and length caps. The host can compare the decoded output directly with the input, while the bounded block still gives the compiler nested match search, checked writes, and overlapping back-references to optimize.
+exec
+/usr/bin/zsh -lc 'ticket_dir=(ttmp/2026/11/26/IRWB-014--*/)
+design_doc=("${ticket_dir[1]}"design-doc/*.md)
+python3 - "${design_doc[1]}" <<'"'PY'
+from datetime import datetime
+from pathlib import Path
+import re
+import sys
+p = Path(sys.argv[1])
+front = p.read_text().split('---\\n', 2)[1]
+front = re.sub(r'"'^LastUpdated: .*$'"', 'LastUpdated: ' + datetime.now().astimezone().isoformat(timespec='seconds'), front, flags=re.M)
+p.write_text('---\\n' + front + '---\\n\\n')
+PY
+cat >> \""'${design_doc[1]}" <<'"'EOF'
+# Designing an LZ-style compressor and decompressor for the corpus
+
+Add "'`corpus/projects/lz-roundtrip`, a Typed codec for blocks of up to
+32 UTF-16 code units. The encoder uses a bounded hash chain and emits
+literals or packed matches. The decoder follows back-references with
+overlapping forward copies. The host checks exact round trips and
+measures the two kernels on RV32.
+
+## What the program exercises
+
+The encoder reads `src[i + len]` and `src[candidate + len]`; proving both
+safe requires relating the indices. It also writes up to two stream cells
+per source unit, and uses indices loaded from memory to traverse its
+chain. The decoder'"'s match loop reads a cell it may have written earlier
+in the same loop. These accesses extend the relational bounds problem
+already visible in insertion sort. Keep ordinary loops, named locals and
+Typed's checked accesses. [Sort notes](../../../../../../corpus/projects/sort/notes.md)
+and [the current BCE pass](../../../../../../src/typed/passes.ts).
+
+| Work | Candidate experiment |
+| --- | --- |
+| IRWB-003 | Inline the scalar hash helper, rotate hot loops, and compare the "'`speed` image with and without backend copy coalescing and constant homes. |
+| IRWB-006 | Follow the chain link, best match and cursors across SSA backedges. Inspect rules in the hash and token arithmetic. |
+| IRWB-007 | Fix the read-only policy buffer to `[4]` and keep the source variable. This exposes the length, load and probe bound to constant-buffer specialization. The current scalar and record-field binding pass does not provide it. |
+| IRWB-008 / IRWB-010 | Use hash mixing and field extraction for rule discovery and exact integer rewrites. Bounds-check edits also have to preserve memory effects and traps. |
+| IRWB-011 | Use the codec as an exact integer control for tolerance experiments. |
+
+## Interface and tokens
+
+All lengths count u16 cells. The caller supplies distinct buffers.
+Reads and writes use `charCodeAt` and `setCharCodeAt`. Buffer `.length`
+is its capacity and stays fixed.
+
+| Function | Contract |
+| --- | --- |
+| `lzHash(a: i32, b: i32, c: i32): i32` | Return `((a * 3) ''^ (b * 5) ''^ (c * 7)) & 15`. |
+| `compress(src: buffer, policy: buffer, packed: buffer): i32` | Return the number of stream cells written. Return `-1` before writing if `src.length > 32`, `packed.length < 2 * src.length`, or `policy` is empty. The first policy cell sets the probe budget, capped at 4. Zero selects literal-only encoding. |
+| `decompress(packed: buffer, used: i32, dst: buffer): i32` | Decode exactly the first `used` stream cells and return the number of output cells. Return `-1` for an invalid length, truncated escape, backward distance beyond the produced prefix, or insufficient output space. A failing token leaves only the output from earlier complete tokens. |
+
+Each function writes only its output prefix. The token format handles
+every u16 value. The stream length is passed separately.
+
+| Token | Meaning |
+| --- | --- |
+| `0x0000`–`0x7FFF` | Literal equal to the token. |
+| `0xFFFF` | Literal equal to the next cell, read as raw data. The encoder uses this for literals `>= 0x8000`. |
+| `0x8000`–`0xFFFE` | Match word `0x8000 '"\\| ((length - 3) << 5) \\| (distance - 1)"'`. Decode as `((word & 0x7FFF) >>> 5) + 3` and `(word & 31) + 1`. |
+
+The high tag identifies a match and the low five bits hold the distance
+minus one. The 32-cell source bound keeps encoder matches well away
+from the escape word. A match consumes at least three source cells and
+writes one token. A literal writes at most two cells, so 64 cells suffice
+for any encoded block.
+
+## Encoder
+
+Keep `head = new Int32Array(16)` and `prev = new Int32Array(32)` local
+to `compress`. Both start zeroed and total 192 bytes. A link stores the
+source index plus one, with zero for the end of the chain. The front end
+requires literal frame-array sizes and supports dynamic checked indexing.
+The lifter represents checked text addresses as `caddr`, array addresses
+as `aaddr` and array zeroing as `zero`.
+[Front end](../../../../../../vendor/ds-js-os/compiler/typed/typed-wasm.js),
+[lifter](../../../../../../src/typed/lift.ts) and
+[Candela'"'s frame arrays](../../../../../../corpus/candela-gallery/kernel.typed).
+
+Let "'`i` be the next unencoded position, `n = src.length` and `w` be the
+stream cursor. Read the probe budget once using
+`Math.min(policy.charCodeAt(0), 4)` after validating the buffers.
+
+1. If `i + 2 < n`, hash the three cells at `i`. Follow that bucket
+   newest first for at most the probe budget or until the link is zero.
+   For each `candidate = link - 1`, start `len` at zero. While
+   `i + len < n`, compare source cells at `i + len` and
+   `candidate + len`. Stop at the first mismatch. Keep the longest
+   match, replacing it only when strictly longer so ties favor the
+   nearest candidate. Fetch the next link from `prev[candidate]`.
+2. Emit the match if its length is at least 3. Otherwise emit the
+   literal at `i`. Advance `w` by the number of cells emitted.
+3. Insert every consumed position `p` with `p + 2 < n`, in ascending
+   order. Hash its triple to bucket `h`, then set `prev[p] = head[h]`
+   and `head[h] = p + 1`. Advance `i` by the consumed length.
+
+Searching before insertion gives `0 <= candidate < i`, so
+`candidate + len < i + len < n` whenever the comparison runs. Inserting
+positions inside matches keeps subsequent back-references available.
+At token boundaries `w <= 2 * i`, so the up-front capacity guard
+covers both literal stores. Hash masking and the source bound keep
+both dictionary indices in their arrays.
+
+## Decoder
+
+Check `0 <= used <= packed.length`. Maintain read cursor `r` and
+output cursor `w`, initially zero. Each iteration reads a token at
+`r < used` and advances `r`. For an escape require another cell
+before `used`. For a literal require `w < dst.length` before
+writing and advancing `w`. For a match require `distance <= w` and
+`length <= dst.length - w` before copying.
+
+```text
+for k = 0 .. length - 1:
+    cell = dst.charCodeAt(w - distance + k)
+    dst.setCharCodeAt(w + k, cell)
+w = w + length
+```
+
+The source index is at least zero and strictly less than the
+destination index `w + k`. A forward copy reads the output prefix as
+it grows, so distance 1 can reproduce an entire run. Stop when
+`r == used` and return `w`. The actual buffer capacities bound the
+decoder. Corpus cases allocate 32 output cells.
+
+## Round-trip oracle
+
+Use one `scripts/checks.js` to run `compress`, read its returned
+prefix, pass that prefix to `decompress`, and compare the decoded
+length and every cell with the original host array. For each match,
+the encoder first verified equality between the original cell and an
+earlier one. The decoder reads that earlier cell after producing it,
+which makes the host input an independent expected result for every
+valid input. Use an independent, short JS decoder for successful streams
+as well. Decode the match payload with division and remainder and
+append from `out[out.length - distance]` one cell at a time. Check
+it against the same original to catch mistakes shared by the Typed
+encoder and decoder. The JS decoder needs only the valid-stream
+grammar. Test rejection and unchanged tails directly on the Typed
+functions using sentinel-filled outputs.
+
+| Fixture | Expected check |
+| --- | --- |
+| Empty and `[0x7FFF, 0x8000, 0xFFFF]` | Empty stream, and exact stream `[0x7FFF, 0xFFFF, 0x8000, 0xFFFF, 0xFFFF]`. Use 32 distinct high literals for the 64-cell capacity boundary. |
+| 32 copies of `A` | Stream `[65, 0x8380]` with budget 4. It exercises a 31-cell forward copy from distance 1. |
+| `AAABAAACAAAB` | At index 8 budget 1 emits `0x8003` (length 3, distance 4), then literal `B`. Budget 4 emits `0x8027` (length 4, distance 8). Budget 0 emits literals throughout. |
+| `[0, 1, ..., 28, 0, 1, 2]` | Budget 4 emits the initial 29 literals and token `0x801C` (distance 29). The chain visits the colliding triple at index 16 first. |
+| Decoder rejection | Try an out-of-range `used`, a trailing escape, a match before there is enough history and a match that exceeds the destination by one. Include a valid prefix before an invalid token to check where writes stop. |
+| Encoder rejection | Try a 33-cell source, a buffer shorter than twice the input length, and an empty policy. |
+
+## Corpus files and generated cases
+
+Add `main.typed`, `project.json`, a short `notes.md` pointing to the
+match comparison and copy loop, and `scripts/checks.js`. Set
+`project.json`'"'s "'`focus` to the match comparison line once formatted.
+Add the project near `sort` in `corpus/projects/index.json` for menu
+order. Node corpus tools discover the directory automatically.
+[Corpus API](../../../../../../corpus/reference.md).
+
+Use specs for all three functions because `Program.fromProject`
+checks helpers as entries. Consecutive values 32767 and 32768 give
+a small alphabet with direct literals, escapes and repeats in one
+encoder generator. The decoder generator varies the prefix of a
+fixed mixed stream. Prefix length 3 truncates the escape and 7
+exceeds the stream buffer.
+
+```json
+{
+  "title": "LZ round trip",
+  "group": "Programs",
+  "pipeline": "O2",
+  "inputs": {
+    "lzHash": { "a": [0, 65535], "b": [0, 65535], "c": [0, 65535] },
+    "compress": {
+      "src": { "buffer": [0, 32], "cell": [32767, 32768] },
+      "policy": { "buffer": [1, 1], "cell": [1, 4] },
+      "packed": { "buffer": [64, 64], "cell": [43690, 43690] }
+    },
+    "decompress": {
+      "packed": { "cells": [65, 32768, 65535, 55296, 66, 32769] },
+      "used": [0, 7],
+      "dst": { "buffer": [32, 32], "cell": [43690, 43690] }
+    }
+  }
+}
+```
+
+## Step budget and measurement
+
+The default pass gate compares every changed revision with r0 on 40
+cases per function, seed 7, with 20,000 executed BlocksIR statements per
+case and side, including callees. Separating the codec calls means each
+has its own budget. The encoder can start at most 32 tokens, visit 128
+candidates and hash at most 64 triples. A literal can have up to three
+comparisons per candidate, including the mismatch. For a match consuming
+`L` cells, each candidate can compare at most `L + 1 <= 3 * L` cells.
+Thus all candidates together make at most `4 * 3 * 32 = 384` comparisons.
+The decoder can read at most 64 stream cells and write at most 32
+output cells on the bounded test inputs. Use these counts to audit the
+lifted hot paths and record maximum evaluator steps on both generated
+cases and directed fixtures. Require no step-limit cases at the
+20,000 limit. If the measured margin is small, reduce the block or
+probe bound and update its fixtures before taking baseline numbers.
+[Evaluator and pass gate](../../../../../../src/typed/evaluate.ts).
+
+1. Implement the token decoder and host fixtures first. Then implement
+   the hash-chain encoder, run the host round-trip checks, and add the
+   project metadata and notes. Run the corpus format checks.
+2. Start `O2` and `speed` from separate r0 copies with per-pass checking.
+   Check returns and guest memory. A trap or step-limit hit on a codec
+   case is unexpected, including the rejection fixtures, which return
+   `-1`. Use the directed fixtures on the resulting images too.
+3. After `npm run build`, run `node tools/reference-check.mjs` and its
+   `--o2` mode for generated cases. Inspect the printed summary and
+   disagreements. Reuse its `runImage` path for directed fixtures and
+   the `speed` image. [Reference checker](../../../../../../tools/reference-check.mjs).
+4. Record emulator instructions separately for `compress` and
+   `decompress` using the same literal-heavy, repeated and collision
+   fixtures, policy values and fresh buffers on each image. Feed every
+   decoder the same verified stream. Compare r0, O2, speed, speed
+   with `chains`, `coalesce` and `homes` enabled, and the reference.
+   Keep the case inputs, revision and backend settings with the
+   numbers. Inspect remaining checks and toggle individual backend
+   options when attributing a difference.
+5. For the later specialization experiment compare general and
+   specialized images on identical variable source cases with
+   `policy = [4]`. The specialized gate and runs must honor the
+   explicit constant-buffer assumption. A separately authored
+   hand-tuned project may provide an instruction-count ceiling
+   with the same codec behavior.
+
+## Cuts from self-review
+
+- Removed the Typed round-trip wrapper and its mismatch code. The host already sees both outputs and owns the equality check.
+- Folded the scalar pack helper into the encoder. The hash helper still exercises inlining, and packing still exposes the same kind of integer expressions.
+- Removed the separate window and match-length limits. The bounded block and probe count already bound the search and preserve relational accesses.
+- Simplified the token grammar and decoder guards. One escape plus match fields covers the alphabet, and actual capacities bound safe decoding.
+- Simplified policy validation to a first-cell cap. An input-controlled budget is enough for the specialization experiment.
+- Merged the encoder input generators and trimmed overlapping fixtures. One small alphabet straddles the literal boundary, with directed data for the full-u16 and long-distance cases.
+- Dropped the second walkthrough script and decorative metadata. The oracle script and ordinary corpus tools cover checking and exploration.
+- Dropped the speculative statement-cost table and secondary headroom threshold. Bound the loop work and check the actual gate with evaluator counts.
+- Trimmed the test and reporting matrix. Directed boundaries plus the standard generated checks and per-kernel instruction counts answer the experiment.
+- Consolidated repeated implementation and correctness prose. The codec, corpus setup and measurements each have one task sequence.
+EOF' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 1453ms:
+exec
+/usr/bin/zsh -lc 'ticket_dir=(ttmp/2026/11/26/IRWB-014--*/)
+design_doc=("${ticket_dir[1]}"design-doc/*.md)
+python3 - "${design_doc[1]}" "${ticket_dir[1]}log/01-design-diary.md" <<'"'PY'
+from datetime import datetime
+from pathlib import Path
+import re
+import sys
+design = Path(sys.argv[1])
+text = design.read_text()
+text = text.replace('\"policy\": { \"buffer\": [1, 1], \"cell\": [1, 4] }', '\"policy\": { \"buffer\": [1, 1], \"cell\": [0, 4] }')
+text = text.replace('Budget 0 emits literals throughout. |', 'Budget 0 emits literals throughout. With "'`AAABAAACAAAD`, budget 4 keeps the nearer distance-4 match on a tie. |'"')
+design.write_text(text)
+
+diary = Path(sys.argv[2])
+front, body = diary.read_text().split('---\\n', 2)[1:]
+front = re.sub(r'"'^LastUpdated: .*$'"', 'LastUpdated: ' + datetime.now().astimezone().isoformat(timespec='seconds'), front, flags=re.M)
+diary.write_text('---\\n' + front + '---\\n' + body)
+PY
+cat >> \""'${ticket_dir[1]}log/01-design-diary.md" <<'"'EOF'
+
+## Step 4 — Review the design for simpler experiment boundaries
+
+I reviewed the design from commit "'`43baa4b` using the current
+worktree. The host already sees both output buffers, so it can
+compose the kernels and own the equality check. An alphabet
+straddling the literal escape boundary covers both literal forms
+and repeated matches in the same generated encoder input.
+
+I removed the stand-alone packing helper, the extra match caps and
+the wrapper-specific sizing. The 32-cell block and four-probe
+limit still bound the candidate comparisons. The revised grammar
+uses the destination'"'s actual capacity and an explicit history
+check. I kept the independent decoder for successful streams and
+a directed fixture for each behavior that shapes the hot loops.
+The guide ends with the cuts and their reasons.
+
+### User request (verbatim)
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message "'`IRWB-014: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+EOF
+docmgr changelog update --ticket IRWB-014 --entry '"'Simplified the codec interface, token grammar, and test plan after self-review. The design records each cut and its rationale.'
+rg -n 'Math\\.min\\(' corpus/projects -g '*.typed' | head -10
+git diff --stat && git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 1272ms:
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/changelog.md
+corpus/projects/calls/main.typed:3:    return Math.max(lo, Math.min(v, hi));
+corpus/projects/fixed-point/main.typed:3:    return Math.max(0 - 32768, Math.min(wide >> 8, 32767));
+corpus/projects/start-here/helpers.typed:3:    return Math.max(lo, Math.min(v, hi));
+corpus/projects/strength/main.typed:4:        level = Math.min(level + work.charCodeAt(i), 1000);
+corpus/projects/div-checks/main.typed:5:    const k = Math.max(1, Math.min(people, 10));
+corpus/projects/ramp/main.typed:4:        out.setCharCodeAt(i, Math.min(v, 65535));
+ .../changelog.md                                   |   4 +
+ ...e-compressor-and-decompressor-for-the-corpus.md | 511 ++++++++-------------
+ .../log/01-design-diary.md                         |  22 +-
+ 3 files changed, 218 insertions(+), 319 deletions(-)
+
+exec
+/usr/bin/zsh -lc 'ticket_dir=(ttmp/2026/11/26/IRWB-014--*/)
+design_doc=("${ticket_dir[1]}"design-doc/*.md)
+python3 - "${design_doc[1]}" <<'"'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+p = Path(sys.argv[1])
+text = p.read_text()
+for link in re.findall(r'\\]\\((["'^)]+)'"\\)', text):
+    assert (p.parent / link).is_file(), link
+spec = json.loads(re.search(r'"'```json'"\\n(.*?)\\n"'```'"', text, re.S)[1])
+assert set(spec[\"inputs\"]) == {\"lzHash\", \"compress\", \"decompress\"}
+assert spec[\"inputs\"][\"compress\"][\"src\"][\"cell\"] == [32767, 32768]
+assert spec[\"inputs\"][\"compress\"][\"policy\"][\"cell\"] == [0, 4]
+assert max(spec[\"inputs\"][\"compress\"][\"packed\"][\"buffer\"]) == 2 * 32
+vectors = ((31, 1, 0x8380), (3, 4, 0x8003), (4, 8, 0x8027), (3, 29, 0x801C))
+for length, distance, word in vectors:
+    assert 0x8000 | ((length - 3) << 5) | (distance - 1) == word
+    assert (((word & 0x7fff) >> 5) + 3, (word & 31) + 1) == (length, distance)
+source = list(range(29)) + [0, 1, 2]
+triples = list(zip(source, source[1:], source[2:]))
+hashes = [(3*a "'^ 5*b ''^ 7*c) & 15 for a, b, c in triples]
+assert [i for i, h in enumerate(hashes[:-1]) if h == hashes[-1]] == [0, 16]
+assert triples[0] == triples[29] != triples[16]
+assert 4 * 3 * 32 == 384
+assert sum(ln.startswith('"'- ') for ln in text.split('## Cuts from self-review')[1].splitlines()) == 10
+print('Local links, project specs, token and collision examples, work bound, and cuts passed')
+PY
+docmgr validate frontmatter --doc \""'${design_doc[1]}"
+docmgr validate frontmatter --doc "${ticket_dir[1]}log/01-design-diary.md"
+docmgr doctor --ticket IRWB-014 --stale-after 30
+git diff --check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 1600ms:
+Local links, project specs, token and collision examples, work bound, and cuts passed
+Frontmatter OK: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/design-doc/01-designing-an-lz-style-compressor-and-decompressor-for-the-corpus.md (Ticket=IRWB-014 DocType=design-doc)
+Frontmatter OK: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/log/01-design-diary.md (Ticket=IRWB-014 DocType=analysis)
+## Doctor Report (1 findings)
+
+### IRWB-014
+
+- ✅ All checks passed
+
+
+exec
+/usr/bin/zsh -lc "ticket_dir='ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program'
+cat >> \""'$ticket_dir/log/01-design-diary.md" <<'"'EOF'
+
+## Step 5 — Validate the revised guide
+
+I parsed the metadata example, checked the local links, verified
+the revised golden token fields and long-distance collision, and
+checked the bound of 384 candidate comparisons. Both frontmatter
+checks, "'`docmgr doctor --ticket IRWB-014 --stale-after 30` and
+`git diff --check` passed. The codec and statement timings remain
+work for implementation.
+EOF
+git diff --check && git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 536ms:
+## codex/irwb-014
+ M ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/changelog.md
+ M ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/design-doc/01-designing-an-lz-style-compressor-and-decompressor-for-the-corpus.md
+ M ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/log/01-design-diary.md
+
+exec
+/usr/bin/zsh -lc "ticket_dir='ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program'
+git commit --only -m 'IRWB-014: simplify the design doc after self-review' -- \""'$ticket_dir"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 770ms:
+[codex/irwb-014 2ad5c47] IRWB-014: simplify the design doc after self-review
+ 3 files changed, 227 insertions(+), 319 deletions(-)
+
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -1 --format='%H %s' && git diff-tree --no-commit-id --name-only -r HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014
+ succeeded in 1005ms:
+## codex/irwb-014
+2ad5c47ed485ab5913b624ce6a6f8ffa3c04f712 IRWB-014: simplify the design doc after self-review
+ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/changelog.md
+ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/design-doc/01-designing-an-lz-style-compressor-and-decompressor-for-the-corpus.md
+ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor-corpus-program/log/01-design-diary.md
+
+codex
+Committed as `2ad5c47ed485ab5913b624ce6a6f8ffa3c04f712`. Updated the diary, and `docmgr doctor` passed.
+
+- Moved the round trip and equality check to the host, removing the Typed wrapper and its mismatch code.
+- Moved token packing into the encoder. The hash helper still exercises inlining.
+- Removed the separate match window and length caps. The block size and probe budget bound the search.
+- Simplified the token grammar and decoder guards. Buffer capacities bound decoding.
+- Reduced policy handling to a capped first cell, preserving the specialization input.
+- Merged the generated encoder cases and trimmed overlapping fixtures.
+- Removed the second walkthrough script and optional project metadata.
+- Replaced speculative statement costs and the secondary threshold with loop-work bounds and a plan to measure against the actual gate.
+- Trimmed the test and reporting matrix to directed fixtures, generated checks, and per-kernel RV32 instruction counts.
+- Consolidated repeated implementation and correctness guidance.
+tokens used
+155,015
+Committed as `2ad5c47ed485ab5913b624ce6a6f8ffa3c04f712`. Updated the diary, and `docmgr doctor` passed.
+
+- Moved the round trip and equality check to the host, removing the Typed wrapper and its mismatch code.
+- Moved token packing into the encoder. The hash helper still exercises inlining.
+- Removed the separate match window and length caps. The block size and probe budget bound the search.
+- Simplified the token grammar and decoder guards. Buffer capacities bound decoding.
+- Reduced policy handling to a capped first cell, preserving the specialization input.
+- Merged the generated encoder cases and trimmed overlapping fixtures.
+- Removed the second walkthrough script and optional project metadata.
+- Replaced speculative statement costs and the secondary threshold with loop-work bounds and a plan to measure against the actual gate.
+- Trimmed the test and reporting matrix to directed fixtures, generated checks, and per-kernel RV32 instruction counts.
+- Consolidated repeated implementation and correctness guidance.

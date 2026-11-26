@@ -1,0 +1,5 @@
+- [IRWB-014 ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/index.md)
+- [LZ-style compression design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-014/ttmp/2026/11/26/IRWB-014--lz-style-compressor-and-decompressor/design-doc/01-lz-style-compression-corpus-project.md)
+- Commit `95fd5c2edb2031df6a519a76bf4945fd7f9c8433`
+
+The design specifies a bounded hash-chain compressor, single-byte tokens, and a decoder that copies overlapping back-references. It defines generated inputs, an exact round-trip oracle, and an RV32 instruction-count comparison. Small probes verified the required Typed features and identified where the Node corpus loader needs to forward the tape-ingestion option. The commit contains only ticket documentation. Codec implementation and measurements remain future work.

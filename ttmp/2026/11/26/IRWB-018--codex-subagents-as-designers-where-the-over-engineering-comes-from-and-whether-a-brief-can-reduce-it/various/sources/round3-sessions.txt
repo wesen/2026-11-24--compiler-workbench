@@ -1,0 +1,6 @@
+/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-51-01a2187d-dda7-7162-8452-ebbf50b18771.jsonl
+/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-52-01a2187d-df09-7223-8b93-a0a3451e4480.jsonl
+/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-52-01a2187d-e123-77e0-b8b2-a511d0aab766.jsonl
+/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-53-01a2187d-e3f9-7132-97c7-7c2a3db4b2f0.jsonl
+/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-54-01a2187d-ea46-71a1-8843-536109edda2e.jsonl
+/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-55-01a2187d-ede2-7a50-9da2-9cc4b38371b5.jsonl

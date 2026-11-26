@@ -16,7 +16,9 @@ const docIn = (cwd, rev, id) => git(cwd, 'ls-tree', '-r', '--name-only', rev, 't
 const strip = src => {
   src = src.replace(/^---\n[\s\S]*?\n---\n/, '');
   // Drop a final section whose heading names cuts, simplification or self-review (round 3's appended list).
-  const m = src.match(/\n#{2,3} [^\n]*(cut|simplif|self-review|removed)[^\n]*\n[\s\S]*$/i);
+  // Whole words only ("Executive" contains "cut"), and only the last such heading.
+  const heads = [...src.matchAll(/\n#{2,3} [^\n]*\b(cuts?|simplif\w*|self-review)\b[^\n]*\n/gi)];
+  const m = heads.pop();
   return m ? src.slice(0, m.index) + '\n' : src;
 };
 

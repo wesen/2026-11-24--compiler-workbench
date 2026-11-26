@@ -1,0 +1,1107 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a2187d-ede2-7a50-9da2-9cc4b38371b5
+--------
+user
+Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-017: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+codex
+I’ll reread the design and the worktree’s checker code, then trim anything that doesn’t help establish chess correctness or measure compiler gains. I’ll use the docmgr and diary skills to validate and record the revision.
+exec
+/usr/bin/zsh -lc 'git status --short --branch
+ticket=ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus
+cat "$ticket/design-doc/01-chess-search-corpus-project.md" "$ticket/index.md" "$ticket/changelog.md"
+tail -30 "$ticket/log/01-diary.md"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+exec
+/usr/bin/zsh -lc "sed -n '120,150p;245,270p;594,650p' src/typed/program.ts
+sed -n '90,130p' src/typed/project.ts
+cat tools/reference-check.mjs tools/parity.mjs
+sed -n '127,184p;232,256p' src/typed/evaluate.ts
+rg -n 'const .*limit|limit: 2e[45]|all projects|projectIds\\(' tests/typed/backend.test.mjs tests/typed/inline.test.mjs src/typed/backend/run.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 488ms:
+      });
+    }
+    this.revisions.push({
+      rev: 0,
+      pass: 'ingest',
+      artifact: r0,
+      edits: [],
+      ms: 0,
+      note: 'ingest from the typed front end',
+    });
+  }
+
+  static fromProject(p: ProjectSource): Program {
+    return new Program(p.name, p.source, { inputs: p.meta.inputs, fileMap: p.fileMap, project: p.id });
+  }
+
+  get id(): string {
+    return `prog:${this.name}`;
+  }
+  /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
+  readonly assumptions: Record<string, Record<string, number>> = {};
+  /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
+  get inputs(): ProgramInputs {
+    const base = this.options.inputs ?? {};
+    const out: Record<string, Record<string, unknown>> = Object.fromEntries(
+      Object.entries(base).map(([f, v]) => [f, { ...v }]),
+    );
+    for (const [f, params] of Object.entries(this.assumptions))
+      for (const [k, v] of Object.entries(params)) {
+        const dot = k.indexOf('.');
+        if (dot < 0) {
+    );
+  }
+  /** Apply one pass as one revision; checked against r0 unless `check: false`. Nothing changes on rejection. */
+  async apply(
+    x: string | TypedPass,
+    opts: { params?: Record<string, unknown>; check?: boolean; count?: number; seed?: number } = {},
+  ): Promise<ApplyResult> {
+    this.requireOk();
+    const pass = this.resolvePass(x),
+      t0 = now();
+    const contract =
+      opts.check === false
+        ? undefined
+        : optimizationContract({
+            inputs: this.inputs,
+            count: opts.count ?? 40,
+            seed: opts.seed ?? 7,
+            ...(this.options.entries ? { roots: this.options.entries } : {}),
+          });
+    const r = await applyPass(pass, this.head, {
+      manager: this.manager,
+      params: opts.params,
+      contract,
+      contractInputs: { origin: this.origin },
+    });
+    const ms = +(now() - t0).toFixed(2);
+    opts: {
+      fn?: string;
+      count?: number;
+      seed?: number;
+      against?: (fn: string, c: ReturnType<typeof casesFrom>[number]) => RunResult;
+    } = {},
+  ) {
+    this.requireOk();
+    const head = storeOf(this.head.value),
+      base = storeOf(this.origin.value);
+    const all = this.options.entries ? this.fns().filter(f => this.options.entries!.includes(f)) : this.fns();
+    const rows = (opts.fn ? [this.fname(opts.fn)] : all).map(f => {
+      const cases = casesFrom(head, f, {
+        count: opts.count ?? 100,
+        seed: opts.seed ?? 7,
+        inputs: this.inputs[f] ?? {},
+      });
+      let agree = 0,
+        bothTrap = 0,
+        inconclusive = 0;
+      const counterexamples: unknown[] = [];
+      for (const c of cases) {
+        const expected = opts.against
+          ? evaluate(head, f, c.args, c.memory, { limit: 2e4 })
+          : evaluate(base, f, c.args, c.memory, { limit: 2e4 });
+        const got = opts.against ? opts.against(f, c) : evaluate(head, f, c.args, c.memory, { limit: 2e4 });
+        if (expected.limit || got.limit) {
+          inconclusive++;
+          continue;
+        }
+        if (agrees(expected, got)) {
+          agree++;
+          if (expected.trap) bothTrap++;
+        } else if (counterexamples.length < 5)
+          counterexamples.push({
+            n: c.n,
+            args: c.args,
+            expected: outcome(expected),
+            got: got.fault ? `fault: ${got.trap}` : outcome(got),
+          });
+      }
+      const decided = cases.length - inconclusive;
+      return {
+        fn: f,
+        rev: `r${this.rev}`,
+        agree,
+        total: decided,
+        bothTrap,
+        inconclusive,
+        status: decided === 0 ? 'inconclusive' : agree === decided ? 'agree' : 'disagree',
+        counterexamples,
+      };
+    });
+    return {
+      kind: 'check',
+      program: this.id,
+      rev: `r${this.rev}`,
+ * optimization contract, as Compiler Workbench's `p.pipeline(x)` does with checkEach. A rejected pass leaves the
+ * program as it was and is reported; the pipeline continues.
+ */
+export async function runPipeline(
+  origin: Artifact<TypedBlocks>,
+  pipeline: string | readonly string[],
+  options: {
+    manager: AnalysisManager;
+    inputs?: ProgramInputs;
+    count?: number;
+    seed?: number;
+    /** The step limit of each case of the meaning check (default the check's 2e4 statements). */
+    limit?: number;
+    start?: Artifact<TypedBlocks>;
+  },
+): Promise<{ artifact: Artifact<TypedBlocks>; steps: PipelineStep[] }> {
+  const names = typeof pipeline === 'string' ? PIPELINES[pipeline] : pipeline;
+  if (!names)
+    throw new Error(
+      `unknownPipeline: no pipeline "${pipeline}"; pipelines: ${Object.keys(PIPELINES).join(', ')}`,
+    );
+  const contract = optimizationContract({
+    inputs: options.inputs ?? {},
+    count: options.count ?? 40,
+    seed: options.seed ?? 7,
+    ...(options.limit === undefined ? {} : { limit: options.limit }),
+  });
+  let cur = options.start ?? origin;
+  const steps: PipelineStep[] = [];
+  for (const name of names) {
+    const pass = PASSES[name];
+    if (!pass) throw new Error(`unknownPass: no pass named "${name}"`);
+    try {
+      const r = await applyPass(pass, cur, {
+        manager: options.manager,
+        contract,
+        contractInputs: { origin },
+      });
+      steps.push({
+        pass: name,
+        changed: r.changed,
+// The evaluator at r0 against the reference compiler's images (typed-rv32.js, default policy), 100 cases per
+// function, as the book's chapter 13 reports it: node tools/reference-check.mjs [--o2]
+import { installVendor } from './node-vendor.mjs';
+import { projectIds, projectFiles } from './corpus.mjs';
+await installVendor({ reference: true });
+const { Program } = await import('../dist/typed/program.js');
+const { projectSource } = await import('../dist/typed/project.js');
+const B = await import('../dist/typed/backend/index.js');
+const o2 = process.argv.includes('--o2');
+let fns = 0, agree = 0, decided = 0, inconclusive = 0; const bad = [];
+for (const id of projectIds()) {
+  const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+  let image;
+  if (o2) { await p.pipeline('O2'); image = B.lowerToImage(p.head).image; }       // our O2 image vs the evaluator
+  else { const r = globalThis.typedRv32.compile(ps.source, [], undefined); image = B.imageFromCode(id, r.image, r.entries); }
+  const c = p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) });
+  for (const f of c.fns) { fns++; agree += f.agree; decided += f.total; inconclusive += f.inconclusive; if (f.status === 'disagree') bad.push(`${id}.${f.fn}: ${JSON.stringify(f.counterexamples[0])}`); }
+}
+console.log(JSON.stringify({ against: o2 ? 'our O2 images' : 'reference images', functions: fns, decided, agree, inconclusive }));
+if (bad.length) console.log(bad.join('\n'));
+// Corpus parity: every project's pipeline with checks after each pass, then a 100-case check of the head
+// revision against r0, totalled as Compiler Workbench's book reports them (projects, functions, decided cases).
+// node tools/parity.mjs [--json] [id...]
+import { installVendor } from './node-vendor.mjs';
+import { projectIds, projectFiles } from './corpus.mjs';
+
+await installVendor();
+const { projectSource, ingestProject, runPipeline } = await import('../dist/typed/project.js');
+const { meaningKept } = await import('../dist/typed/evaluate.js');
+const { AnalysisManager } = await import('../dist/framework/contracts/index.js');
+
+const args = process.argv.slice(2), json = args.includes('--json'), only = args.filter(a => !a.startsWith('--'));
+const rows = [];
+let fns = 0, total = 0, agree = 0, inconclusive = 0, failures = 0;
+for (const id of only.length ? only : projectIds()) {
+  const p = projectSource(id, projectFiles(id));
+  const row = { id, pipeline: p.meta.pipeline };
+  try {
+    const r0 = ingestProject(p), manager = new AnalysisManager();
+    const run = await runPipeline(r0, p.meta.pipeline, { manager, inputs: p.meta.inputs });
+    row.revisions = run.steps.filter(s => s.changed).map(s => s.pass);
+    row.rejected = run.steps.filter(s => s.rejected).map(s => s.pass);
+    const final = await manager.checkInvariant(meaningKept({ inputs: p.meta.inputs, count: 100 }), { origin: r0, candidate: run.artifact });
+    const ev = final.evidence;
+    row.fns = Object.keys(r0.value.fns).length;
+    Object.assign(row, { total: ev.total, agree: ev.agree, inconclusive: ev.inconclusive, disagree: ev.disagree });
+    fns += row.fns; total += ev.total; agree += ev.agree; inconclusive += ev.inconclusive;
+    if (ev.disagree || (row.rejected.length && p.meta.pipeline !== 'broken')) failures++;
+  } catch (e) {
+    row.error = String(e.message).slice(0, 200);
+    failures++;
+  }
+  rows.push(row);
+}
+const summary = { projects: rows.length, functions: fns, cases: total, decided: total - inconclusive, agree, inconclusive, failures };
+if (json) console.log(JSON.stringify({ summary, rows }, null, 2));
+else {
+  for (const r of rows) console.log(`${r.id.padEnd(22)} ${r.error ? 'ERROR ' + r.error : `${String(r.revisions.length).padStart(2)} revs  ${r.agree}/${r.total - r.inconclusive} (+${r.inconclusive} limit)${r.rejected.length ? '  rejected: ' + r.rejected.join(',') : ''}`}`);
+  console.log(JSON.stringify(summary));
+}
+  enums: (st.frontEnd.enums as FrontEndTables['enums']) ?? {},
+});
+
+function makeValue(
+  spec: any,
+  type: string,
+  mem: Memory,
+  rnd: () => number,
+  fe: FrontEndTables,
+  name: string,
+): number {
+  const between = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1));
+  if (type === 'f32') return makeF32(spec, rnd);
+  if (typeof spec === 'number') return spec | 0;
+  if (Array.isArray(spec)) return between(spec[0], spec[1]) | 0;
+  if (spec && spec.cells) return mem.buffer(spec.cells, name);
+  if (spec && spec.string !== undefined) return mem.string(spec.string, name);
+  if (spec && spec.buffer) {
+    const [a, b] = spec.buffer,
+      [c0, c1] = spec.cell || [0, 255];
+    const len = between(a, b);
+    return mem.buffer(
+      Array.from({ length: len }, () => between(c0, c1)),
+      name,
+    );
+  }
+  if (spec && spec.floats) {
+    // a buffer of f32s as Typed reads them (getF32(i): UTF-16 units 2i and 2i + 1, the f32 at byte 4 + 4i)
+    const [a, b] = spec.floats,
+      len = between(a, b),
+      cells: number[] = [];
+    for (let i = 0; i < len; i++) {
+      const bits = makeF32(spec.range ?? undefined, rnd);
+      cells.push(bits & 65535, (bits >>> 16) & 65535);
+    }
+    return mem.buffer(cells, name);
+  }
+  if (spec && spec.bool) return rnd() < 0.5 ? 0 : 1;
+  if (spec && spec.record) {
+    const layout = fe.records[type] || {};
+    const words = Object.entries(layout).map(([field, f]) =>
+      makeValue(spec.record[field] ?? [-50, 50], f.type, mem, rnd, fe, name + '.' + field),
+    );
+    return mem.record(words, name);
+  }
+  if (spec && spec.oneOf) return spec.oneOf[Math.floor(rnd() * spec.oneOf.length)] | 0;
+  if (type === 'bool') return rnd() < 0.5 ? 0 : 1;
+  if (type === 'buffer') return makeValue({ buffer: [0, 40] }, type, mem, rnd, fe, name);
+  if (type === 'string') return makeValue({ buffer: [0, 24], cell: [32, 126] }, type, mem, rnd, fe, name);
+  if (fe.records[type]) return makeValue({ record: {} }, type, mem, rnd, fe, name);
+  if (fe.enums[type]) {
+    const vals = Object.values(fe.enums[type]);
+    return vals[Math.floor(rnd() * vals.length)];
+  }
+  const r = rnd(),
+    edges = [0, 1, -1, 2147483647, -2147483648, 65535, 65536];
+  return r < 0.72
+    ? between(-20, 60)
+export function casesFrom(
+  st: Store,
+  fname: string,
+  { count = 50, seed = 7, inputs = {} as FunctionInputs } = {},
+): Case[] {
+  const f = st.fn(fname),
+    fe = tables(st),
+    out: Case[] = [],
+    rnd = rng(seed);
+  // the first quarter of the cases (at most one per edge value) give each unspecified f32 parameter an edge value:
+  // parameter i of case k takes edge (k + i), so every edge meets every parameter and NaN meets ordinary values
+  const edges = f.params.includes('f32') ? Math.min(F32_EDGES.length, Math.floor(count / 4)) : 0;
+  for (let k = 0; k < count; k++) {
+    const mem = new Memory();
+    const args = f.params.map((t, i) =>
+      t === 'f32' && k < edges && inputs[f.locals[i].name] === undefined
+        ? F32_EDGES[(k + i) % F32_EDGES.length]
+        : makeValue(inputs[f.locals[i].name], t, mem, rnd, fe, f.locals[i].name),
+    );
+    out.push({ fn: fname, n: k, args, memory: mem.image(), items: mem.items.slice() });
+  }
+  return out;
+}
+
+/** One concrete call: `{ name: number | {cells} | {buffer} | {string} }`. */
+src/typed/backend/run.ts:151:    const limit = /instruction limit/.test(message),
+src/typed/backend/run.ts:371:  const key = canonical({ count, seed, inputs, limit, imageLimit });
+tests/typed/inline.test.mjs:38:      const e = E.evaluate(st0, fn, k.args, k.memory, { limit: 2e4 }),
+tests/typed/inline.test.mjs:39:        r = B.runImage(image, fn, k.args, k.memory, { limit: 2e5 });
+tests/typed/inline.test.mjs:126:  const p = new Program('limits', SRC, { ingest: { tape: true } });
+tests/typed/inline.test.mjs:200:  for (const id of projectIds()) {
+tests/typed/backend.test.mjs:532:  for (const id of projectIds()) {
+tests/typed/backend.test.mjs:547:  for (const id of projectIds()) {
+tests/typed/backend.test.mjs:551:    for (const f of p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) }).fns) {
+
+ succeeded in 493ms:
+## codex/irwb-017
+---
+Title: Chess search corpus project
+Ticket: IRWB-017
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: design-doc
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: abs:///home/manuel/code/wesen/2026-10-20--ds-js-os/apps/typed/chess/search.typed
+      Note: Explicit-stack alpha-beta and search budgets
+    - Path: abs:///home/manuel/code/wesen/2026-10-20--ds-js-os/bench/host/chess-engine.mjs
+      Note: Host FEN encoding and upstream search assertions
+    - Path: abs:///home/manuel/code/wesen/2026-10-20--ds-js-os/bench/reference/chess/reference-positions.json
+      Note: Independent legal move and perft fixtures
+    - Path: repo://corpus/reference.md
+      Note: Project API and input formats
+    - Path: repo://src/typed/evaluate.ts
+      Note: Generated inputs and the per-pass statement cap
+    - Path: repo://src/typed/lift.ts
+      Note: Default front end and u16 buffer lowering
+    - Path: repo://tools/reference-check.mjs
+      Note: Reference compiler parity runner
+ExternalSources: []
+Summary: Port the existing Typed chess core as a checked corpus project with bounded pass cases and independent chess fixtures.
+LastUpdated: 2026-11-26T10:34:45.107891853-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Chess search corpus project
+
+Add `corpus/projects/chess` by porting the existing Typed engine from `/home/manuel/code/wesen/2026-10-20--ds-js-os` at `b19062b29fe4fb6b02863e92510501dc5c4bc9b3`. A position is an 8×8 board in a u16 buffer. Move generation follows piece-specific branches and walks rays until blocked. Search makes and unmakes moves through an explicit stack, updates alpha and beta at returns, and can stop mid-iteration under a node budget. That mix makes chess a test of control flow, small calls, and mutable memory on RV32IMF.
+
+Use the upstream algorithms and ordinary source expressions, including division and remainder in coordinate decoding, separate helpers, short-circuit guards, and insertion sorting for move ordering. Preserve generator order and the first equal-scoring move. Perft and search share one position and move engine. The port takes `position.typed`, `moves.typed`, and `search.typed` and extracts the search fields from `state.typed`. The UI, painter, event scheduler, and game adjudication stay in the upstream app. The host supplies legal fixture positions, so the guest needs no FEN parser or arbitrary-board validation. Record the upstream commit and file origins in the corpus notes.
+
+## Position, moves, and search
+
+All offsets below are **u16 cells after the buffer's four-byte length header**. Use `charCodeAt`, `setCharCodeAt`, and `.length`. Use a plain reference `record ChessSearchState` with the upstream search fields `running` and `advanced` (bool), and `ply`, `depth`, `maxDepth`, `budget`, `nodes`, `completed`, `bestMove`, and `score` (i32). The host allocates it independently of the board, one 32-bit word per declared field. Initialize every field in generated records and use field names or front-end layout metadata when reading memory. Signed scores in the record are ordinary i32s.
+
+| Region | Upstream layout to retain |
+| --- | --- |
+| Board, cells 0–127 | Each rank has stride 16, with eight playable cells and eight padding cells. a8 is 0 and a1 is 112. Occupied piece code is kind 1–6 (pawn through king, in PNBRQK order) plus 8 for black. Zero is empty. |
+| Position metadata, 128–134 | Side (0 white, 1 black), castling mask (KQkq = 1,2,4,8), en-passant square (128 means absent), white and black king squares, halfmove clock, fullmove number. |
+| Search frames | `160 + 16*ply`. Slots 0–11 are ready, remaining depth, alpha, beta, best, count, cursor, pending move, best move, in-check, mode, and whether a legal move or stand-pat has been seen. Frame scores are biased by 32768. |
+| Search undo | `384 + 10*ply`. Six cells preserve metadata 129–134, then moving piece, captured piece, and capture square. The tenth cell is spare. Side is restored by toggling. |
+| Search moves and priorities | `1024 + 1024*ply`. First 512 cells hold move codes, the following 512 hold sort keys. Move code is `promotion*4096 + fromDense*64 + toDense`. Dense squares are in a8-to-h1 order and promotions 1–4 mean Q/R/B/N. Zero is the no-move sentinel. |
+| Perft scratch | Frames at `160 + 4*ply` hold ready, count, cursor, and pending move. Undo starts at `256 + 10*ply`, and legal move lists at `512 + 512*ply`. Use one operation at a time per board arena. |
+
+The full arena is 12,288 cells (24,580 bytes including the length word). Search limits ordinary depth to six and caps quiescence at `depth + 4`. A capped checked node evaluates its evasions in place, so the deepest possible prepared frame is ply 10 and its priority list ends at cell 12,287. Perft uses depths 0–6 in the upstream routine, occupying at most 3,584 cells, and returns an i32 leaf count. Publish and qualify depths 0–3 for the supplied positions, where counts fit.
+
+- **Position.** Keep square conversion, attacks, and `chessMake`/`chessUnmake`. Attacks test pawns and knights, then scan the eight king and slider directions. Make handles rook relocation, en-passant captures, promotions, rights, clocks, and side changes. Unmake restores every position cell after a temporary move. `chessCopyPosition` copies only cells 0–134.
+- **Moves and perft.** `chessPseudoMoves` scans the 64 playable squares and dispatches by piece. Keep the 512-slot overflow check. `chessLegal` makes a candidate, tests the moving king, and unmakes it. Castling checks the starting and transit squares in generation and the destination in legality filtering. Perft counts legal move sequences to exactly the requested depth, with one leaf at depth zero and zero at positive depths from a terminal position. At the last ply it adds the legal list's length. At earlier plies it pushes a move, descends, and restores before advancing the cursor.
+- **Search.** `chessStartSearch` finds a fallback legal move and initializes a full alpha-beta window at depth one. `chessPrepareNode` checks the budget before counting a node, then generates and optionally orders candidates. `chessSearchStep` attempts or rejects a move, descends with window `[-beta, -alpha]`, or completes the frame. `chessCompleteNode` negates the child score, unmakes the pending move, and updates the parent's best and alpha. A beta cutoff advances the cursor to the end. At the root, publish the completed score and move, then deepen or stop. Keep the upstream material and advanced evaluators, quiescence on captures/promotions, checked evasions, mate-distance scoring, and `chessStopSearch` unwind on budget exhaustion. A suspended slice can have moves on the board and must resume with the same arena and record.
+
+Add one entry in `main.typed`, `chessRunSearch(board: buffer, state: ChessSearchState, options: buffer): i32`. Require a full arena and exactly four option cells, in order **depth, node budget, advanced flag (0/1), slice length (1–64)**. Return -1 before writes for malformed lengths, mode, or slice size. Pass depth and budget through the upstream clamps. Call `chessStartSearch`, then call `chessSearchSlice` until `state.running` is false. Return `state.bestMove` and leave the score, completed depth, and nodes in the record. Terminal roots return zero and record score 0 for stalemate or -30000 for mate. Completed and budget-stopped runs restore the 135 position cells. Scratch and the state record remain observable to the workbench's byte comparison. The host can still call the upstream start/slice pair directly to exercise suspension.
+
+The port can use the default front end. A read-only probe concatenated the four unchanged upstream files in host order and ingested all 53 functions with `Program`, then lowered them and compiled a reference image. The used features are scalar i32/bool operations (including integer `Math.min/max`), calls, buffer reads and writes, reference record fields, and structured loops and branches. The lifter maps the front end's checked access control flow and u16 operations to loads/stores and CFG branches, preserves call order, and represents record fields by word offsets. Preserve the acyclic function graph. Candela shows that frame-local `Int32Array` is available, but this port retains the upstream u16 allocator-free layout, including across calls. [Lifter](../../../../../../src/typed/lift.ts), [integer Math example](../../../../../../corpus/projects/match-enum/main.typed), [Candela explicit stack](../../../../../../corpus/candela-gallery/kernel.typed#L521)
+
+## Oracles and regression cases
+
+Copy the fixture JSON from upstream `bench/reference/chess/reference-positions.json`, labeled `chess 1.11.2`, and preserve its attribution. Read the FEN in the host. Expand ranks from a8 downwards, assign piece codes and king caches, fill all seven metadata cells, and zero padding and unused scratch. Decode each returned move back to UCI including any promotion suffix. Compare the **sorted list** with the reference legal UCI list, compare the check flag separately, and derive mate or stalemate from count zero and that flag. Check every perft depth supplied by the fixture. Also bring over the upstream `bench/host/chess-engine.mjs` Kiwipete fixture. Its FEN is `r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1`.
+
+| Position | Perft 1 | Perft 2 | Perft 3 |
+| --- | ---: | ---: | ---: |
+| Opening | 20 | 400 | 8,902 |
+| Kiwipete | 48 | 2,039 | |
+| Castling both sides / through attack | 26 / 23 | 568 / 271 | |
+| En passant pinned / legal | 6 / 7 | 77 / 27 | |
+| Promotion and underpromotion | 9 | 41 | |
+| Mate in one, white / black | 20 / 20 | 153 / 153 | |
+| Quiet mate in two | 31 | 67 | |
+| Stalemate / checkmate | 0 / 0 | 0 / 0 | |
+| Defended rook | 24 | 380 | |
+
+Keep an exact copy of the 135 input cells and compare it after legal generation, perft, and search completion or cancellation. Test make/unmake as its own round trip for ordinary captures, rook movement during castling, en passant and all promotions. On a perft failure, run a root divide in the host by making each legal move, running perft at depth minus one, and unmaking it with a reserved undo slot beyond the perft scratch. Report UCI and subtree counts.
+
+Port the **assertions** from `bench/host/chess-engine.mjs` into a local Node test using the workbench APIs. Check that the returned move is in the independent legal set. With the same upstream search settings, check mate-in-one membership and +29999, quiet mate in two `d6c7` and +29997 in deepening, and defended rook `d1d5` in material mode but a different legal move in quiescence. Check terminal scores and budget-one fallback (first move in the engine's own legal order, depth completed zero), `nodes <= budget`, and that finishing the same run at slice sizes 1 and 19 yields the same result and search fields. For an exact port check on non-forced positions, record upstream reference tuples (packed move, score, completed depth, nodes) using the pinned source and compare to the port with the same inputs. Those tuples check preservation of the upstream algorithm, while perft, UCI lists, and mate witnesses independently check chess behavior.
+
+Reference compiler parity is an additional compiler check. Use the procedure in `tools/reference-check.mjs` to compile the joined Typed with the vendored reference compiler, wrap its image with `imageFromCode`, and execute the same initialized args and bytes with `runImage`. Compare evaluator r0, checked head, and both RV32 images using `agrees` and verify the fixture assertions on the results. Use `benchCase` for concrete case memory and decode returned bytes with a DataView for the entire 135-cell position, the move list, and the record. `Program.exec` presents only a short buffer preview. [Reference check](../../../../../../tools/reference-check.mjs), [evaluator and comparison](../../../../../../src/typed/evaluate.ts), [emulator runner](../../../../../../src/typed/backend/run.ts)
+
+## Generated inputs and the pass budget
+
+In this checkout both `Program.fromProject` and the direct `runPipeline` path used by `tools/parity.mjs` check every function of a normal corpus project. `Program` has an explicit `entries` constructor option, but project metadata does not wire it through. Supply inputs for every ported signature so the project works with today's loaders and parity tools. In particular, random u16s are invalid for a board, and independently sampled `ply`, `frame`, and move-list contents need not describe a reachable state. `oneOf` in `makeValue` selects a number, so it cannot choose among prebuilt buffers or tuples. Generate one coherent fixture per function in `project.json` and use explicit host cases for the wider position matrix. [Project assembly and direct runner](../../../../../../src/typed/project.ts), [Program loader](../../../../../../src/typed/program.ts), [case generation](../../../../../../src/typed/evaluate.ts)
+
+Derive checked-in JSON from the FEN encoder and a small per-function fixture table. Use `{ "cells": [...] }` for serialized board and option buffers, `{ "record": {...} }` for state, scalar numbers for coupled parameters, and inclusive ranges or numeric `oneOf` for independent ones. For example, `chessRunSearch.options` is `{ "cells": [1, 4, 0, 16] }` and its board is the zero-padded 12,288-cell encoding of `k7/2K5/8/8/8/8/8/8 b - - 0 1`. Black has one legal move, a8a7 (packed 8). The position exercises pushing, evaluating and unwinding a child. For pure helpers, examples are `chessRay.direction: [0, 7]`, `chessFrom.move: [1, 20479]`, and `chessOnBoard.square: [-32, 160]`. Use `{ "buffer": [135, 135], "cell": [0, 0] }` for a blank copy destination or reset target.
+
+| Checked functions | Generated fixture recipe |
+| --- | --- |
+| Pure square, move, direction and score arithmetic | Use numeric ranges in the documented domains. Include boundary and padding squares for `chessOnBoard`, valid 0x88 squares for `chessDense` and `chessMove`, promotion 0–4 for packing, and individual masks 1/2/4/8 for rights helpers. |
+| Board access, attacks, start, copy and evaluation | Use real board cells and matching side/square. Use pinned en passant for an attack-sensitive board, and allow `advanced` 0/1 for the stand-alone evaluator. `chessStartSearch` uses the forced board with depth 1, budget 4, and either mode. |
+| Move generation, insertion, ordering, and legality | Use the promotion board for full pseudo/legal lists. Give low-level emitters their correct starting square/piece/side and an empty list starting at 1024. Use a castle fixture with the correct king/rights for direct `chessCastle`. For make and legality, supply a real packed move, such as e5d6 (1811) from the legal en-passant fixture, with undo starting at 384. For unmake, serialize the resulting board and undo together from a validated make. For order, first legal and tactical filtering, serialize an actual pseudo list and fix the matching count and previous move. |
+| `chessPerft` | Use the forced board with depth `[0, 2]` and 1,536 cells. Exercise promotion and en-passant perft at depth 1 in focused host checks within the same cap. |
+| Search frame helpers and slice entry points | Snapshot the forced board and every state field at known boundaries in the upstream start/step sequence. Use the started root for `chessPrepareNode`, a prepared root for `chessSearchStep`, and a live child with pending move and undo for `chessStopSearch` and `chessCompleteNode`. Use the started root with steps `[1, 8]` for `chessSearchSlice`. For direct frame writes such as `chessInitNode` and `chessAcceptScore`, use the real frame offset and a small signed score range around a known alpha/beta boundary, holding the other preconditions fixed. |
+| `chessRunSearch` | Use the forced board, zeroed state, and options above. Run explicit companion cases for terminal return, malformed options, and a budget-one unwind. |
+
+Use the actual parameter names from the declarations and fail generation if any board, record, list index, or correlated scalar falls back to a default. Reuse host encodings and snapshots when emitting the JSON. Trim scratch for stand-alone helper cases to the highest permitted access for that fixture, respecting the full-arena check at `chessRunSearch`. Replay snapshots in the host and verify preconditions before using them as concrete generated inputs. A fixed board can produce repeated cases across seeds, so report distinct fixtures and completed path coverage alongside the raw case totals.
+
+The pass contract compares each changed revision with r0 via `casesFrom` and `meaningKept`, with a 20,000-statement cap in **each** execution. It compares the result and guest bytes, including scratch, and considers a limit hit inconclusive. Use zero inconclusives, zero unexpected traps, and zero disagreements as acceptance gates. Run a second focused checked pipeline on the same source with an inputs override for `chessRunSearch` using legal en passant and options `[2, 1, 1, 4]`. This covers advanced ordering and budget unwind in addition to the default completed material search. Probe the entire default fixture table at r0 and after each changed pass, including inlining and rotation, using the same check cap. Aim for at most 15,000 r0 statements per fixture to leave room for changed paths and adapter overhead.
+
+The following read-only measurements are from the unchanged upstream source at r0. Each listed perft result matched on both RV32 images. The evaluator counts executed IR statements, including callees.
+
+| Workload | Evaluator statements | Workbench RV32 instructions |
+| --- | ---: | ---: |
+| Forced position, perft 2 | 14,662 | 26,994 |
+| Legal en passant, perft 1 | 9,418 | 17,247 |
+| Promotion, perft 1 | 11,887 | 21,625 |
+| Opening, perft 1 | 20,778 | 40,843 |
+| Opening, perft 2 | 448,155 | 873,194 |
+| Castling both sides, perft 2 | 827,902 | 1,516,174 |
+
+On the forced position, start used 3,422 statements and an eight- or sixteen-step material slice from that snapshot used 9,381 and visited two nodes. The combined 12,803 statements leave room for the proposed adapter. Recheck its completed depth and actual statement count on the port. If another default case exceeds the target, choose a smaller position or reduce the slice width while retaining the intended branch in the default or focused test. Run all larger fixture tests with explicit limits outside the ordinary pass gate. There, use a 2 million statement / 5 million instruction ceiling initially for the depth-2 matrix. Give opening depth 3 and deep searches individually recorded ceilings based on a bounded calibration run and require decisive results. Keep the standard 20,000/200,000 caps on the ordinary generated evaluator/reference parity checks.
+
+## Corpus files and performance experiments
+
+Create `corpus/projects/chess/{main,state,position,moves,search}.typed`. Put the pinned reference fixtures in a local `fixtures/` directory, with a Node test in `tests/typed/chess.test.mjs` reading them by project path. In `notes.md`, describe the arena, engine provenance, sample forced and tactical runs, and how to investigate perft failures. Add `scripts/explore.js` to walk the blocks of `chessSearchStep` and point to the make/check/unmake and cutoff paths. A fresh `scripts/compare.js` should compare checked r0/O2/speed on the compact search fixture and report instruction counts with pass outcomes. Use the Node harness for the full benchmarks and byte-level checks. The project discovery helper finds the directory automatically. Add its ID to `corpus/projects/index.json` to place it with the other complete programs.
+
+Set `project.json` to title “Chess search”, group `Programs`, pipeline `O2`, and sources in the order `state.typed`, `position.typed`, `moves.typed`, `search.typed`, `main.typed`. Include the generated per-function `inputs` map, script descriptions, and a `focus` line at the start of `chessSearchStep` in the joined source. Verify the focus after finalizing the files with the loader's source mapping. The `try` prompts can ask which helper calls survive `speed` and where instructions accumulate on a checked evasion. [Project API](../../../../../../corpus/reference.md), [sort metadata example](../../../../../../corpus/projects/sort/project.json), [corpus discovery](../../../../../../tools/corpus.mjs)
+
+Use fresh programs and identical initial memory, search options, and backend options for r0, checked O2, and checked `speed`. Measure RV32 executed instructions for opening perft 2, castling and en passant perft 2, forced depth 1, and quiet-mate and defended-rook searches. The upstream profiles are material (mode 0, depth 1, budget 1800), quiescence (mode 1, depth 1, budget 1800), and deepening (mode 1, depth 3, budget 1600), all at slice 19, plus budget exhaustion (mode 1, depth 4, budget 1, slice 1). Run the same pinned inputs through the reference image and record its policy. Report counts per fixture, instruction ratio to r0, image bytes, nodes, and completed depth. Capture instruction heat and pass edits for a hot fixture and keep timeout rows out of ratios. Compare equivalent results before attributing any instruction change to the compiler.
+
+| Optimization work | Experiment |
+| --- | --- |
+| IRWB-003, `speed` and the backend | Count survived calls to square conversion, attack/legality helpers, and move encoding. Inspect rotation on the ray and insertion loops, coalescing on search temporaries, and repeated constants such as 32768 and frame strides. Record spills and instruction heat as well as image size. |
+| IRWB-006, rule tables and SSA | Follow the ready/cursor/alpha definitions through search joins. Look at small integer expressions and range-conditioned simplification of square packing and bounds guards. Inspect rule provenance where a rewrite fires. |
+| IRWB-007, specialization | Begin with the separate read-only options buffer. Compare generic and specialized code on the same option values and a matrix of changing boards. A fixed depth, budget, or mode can affect loops and branches. A position can be known at call entry, but make/unmake mutates the board. Use a proved memory version or an explicitly tracked copy before folding later board loads. Record the host promise and alias assumptions. Treat buffer-content specialization as research beyond the current scalar parameter binder. |
+| IRWB-008, exact checking | Compare checked rule-backed edits on integer arithmetic with the evidence for empirical CFG and memory changes. A missed pinned en-passant test, for example, changes legal moves and should be caught by an appropriate fixture. |
+| IRWB-010, rewrite search | Start from hot coordinate and frame-offset expressions or short machine windows identified by heat. A replacement for division or remainder needs the signed range precondition. Require verified rules or exact window evidence before using a discovered replacement. |
+| IRWB-011, float tolerance | Chess is an integer control workload. Its moves, scores, counts, and memory use exact comparisons in any experiment involving a tolerance-enabled compiler. |
+
+An optional later `chess-hand` project can estimate a ceiling by hand-strength-reducing proven nonnegative coordinate arithmetic and removing redundant address recomputation. Keep move order, score rules and the same search budget so it runs the same tree. Qualify it with the same fixture matrix and report its numbers independently.
+
+## Implementation order
+
+1. Copy the pinned core and fixtures into the future project and slim the search record. Verify default ingest, source mapping, and RV32 lowering. Keep the upstream file split and comments around frame layout.
+2. Build the host FEN encoder, UCI decoder, and byte reader. Qualify position restoration, legal moves, check flags, and perft against the fixture file on the evaluator and both images. Run the supplied perft depths and use divide output for mismatches.
+3. Add the search wrapper and qualify upstream search assertions, tuple parity, suspension and cancellation. Check exact board restoration at completion. Exercise invalid option inputs at the wrapper boundary.
+4. Emit `project.json` inputs and replay every configured function at r0 with the standard cap. Run `npm test`, `node tools/parity.mjs chess`, and the reference parity checks with the generated inputs. Assert decisive agreement and inspect per-pass results for O2 and speed.
+5. Add the corpus notes and exploration scripts. Capture the instruction baseline and fixture/configuration table before attempting a specialization or hand-optimized ceiling.
+---
+Title: Port chess search into the corpus
+Ticket: IRWB-017
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: Design for porting the existing Typed chess engine into the checked optimization corpus.
+LastUpdated: 2026-11-26T10:34:29.75259685-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Port chess search into the corpus
+
+## Overview
+
+Design the port of the existing Typed chess core. The design preserves the explicit-stack search and uses perft and reference positions to qualify chess behavior. The implementation steps are in the design.
+
+## Documents
+
+- [Chess search corpus project](design-doc/01-chess-search-corpus-project.md)
+- [Design diary](log/01-diary.md)
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+
+## 2026-11-26
+
+Designed the chess core port, fixture contract, standard pass checks, and RV32 measurement plan. Measured evaluator and emulator costs using the unchanged upstream source.
+> - Use your docmgr and diary skills. Keep a short diary in the ticket's `log/` (a step per significant action). Relate the key files with `docmgr doc relate`.
+> - The design document should let a new intern implement the program: the goal and which optimizations it exercises; the Typed program design (functions, data layout, sizes); the independent oracle and how a result is checked against it; input specifications for generated cases; sizing against the step limit; how it becomes a corpus project (files, `project.json`); a test and measurement plan; implementation steps. Use prose, with code or pseudocode where it helps, and file references.
+> - How the program should be written: the way ordinary code is written, not pre-optimized, so the compiler has something to find; a hand-optimized version as a separate project can serve as a ceiling; constants worth specializing on (a bytecode, a pattern, a size) live in input buffers so the same program can be measured general and specialized.
+>
+> ## Constraints
+> - Write only inside your ticket directory (`ttmp/2026/11/26/<ID>--…/`). Do not modify `src/`, `tests/`, `tools/`, `corpus/`, other tickets or `ttmp/vocabulary.yaml`.
+> - Never run code from downloaded archives under `ttmp/**/sources/`.
+> - Do not run Candela-scale processes.
+> - When done, commit only your ticket directory on the current branch with the message `<ID>: ticket and design doc for <program>`. Do not push.
+> - Final message: the design doc's path, the ticket path, the commit hash, and a one-paragraph summary.
+> ## Your program — ticket IRWB-017: the existing chess search, ported into the corpus
+> The user already has a chess engine written in Typed in their own repository `/home/manuel/code/wesen/2026-10-20--ds-js-os` (read only; do not modify it): `apps/typed/chess/` (`position.typed`, `moves.typed`, `search.typed`, `state.typed`, and others), with reference positions in `bench/reference/chess/reference-positions.json` and a host runner in `bench/host/`. Design how to bring its engine core (position, move generation, search) into this repository as a corpus project.
+> - Why: branchy integer code, an explicit-stack alpha-beta search and move generation — realistic control flow, unlike loop-heavy kernels.
+> - Oracle: perft node counts for known positions, and the reference positions.
+
+</details>
+
+## Step 2 · Measure the unchanged engine
+
+Ingested the concatenated upstream files with the default `Program` at workbench HEAD `d4de7a3`. The read-only Node probe used a module resolution hook to load workbench TypeScript from source and the hash-checked vendor loader. It compared `evaluate`, `lowerToImage` plus `runImage`, and the vendored reference image using the host's FEN encoder. All 53 functions lifted. The two images agreed with the evaluator's result and guest bytes for perft depths 1 and 2 on the 12 JSON positions, plus start and sampled slices. Opening perft 1 ran 20,778 statements. The forced-board material search used 3,422 statements to start and 9,381 for the slice, so the design budgets that case for per-pass checks.
+
+The first `node --input-type=module` probe failed with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` on parameter properties. Retried with `--experimental-transform-types`. After compilation succeeded, extracting the host encoder into the inline probe exposed missing `boardWords` and `assert` bindings. Supplied those dependencies explicitly. The final probe used `benchCase` per entry, ran the evaluator and both images with 2 million steps as ceilings, and used the start result bytes as the input to each slice. The forced-board run used depth 1, budget 4, and mode 0.
+
+## Step 3 · Write and relate the port design
+
+Specified the unchanged board and frame layout, a search wrapper with input-buffer options, independent chess fixtures, and RV32 parity and measurement steps. The project loaders run checks on every function, so the design gives stateful helpers validated snapshots and keeps the full position matrix in focused host tests. The key compiler and upstream files are related on the design document. The proposed wrapper, checked pipelines and corpus integration are implementation steps.
+
+## Step 4 · Validate the ticket
+
+Checked the index and design frontmatter and resolved their relative Markdown links. The first `docmgr doctor --ticket IRWB-017 --stale-after 30` reported `invalid_frontmatter` for the diary because the frontmatter delimiters were missing. Added the ticket metadata and reran the check. The commit is scoped to the ticket.
+
+exec
+/usr/bin/zsh -lc "sed -n '56,82p;268,337p;655,668p' src/typed/program.ts
+rg -n 'optimizationContract|inconclusive|evidence' src/typed/passes.ts src/framework/contracts/differential* | tail -45
+cat corpus/projects/sort/project.json tools/corpus.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+exec
+/usr/bin/zsh -lc 'cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 1193ms:
+---
+description: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+metadata:
+    title: Docmgr
+    topics:
+        - imported-skill
+    what_for: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+    when_to_use: Use when working with Docmgr.
+name: docmgr
+---
+
+# Docmgr
+
+## Overview
+
+Use `docmgr` to keep documentation organized into ticket workspaces, with consistent metadata and bidirectional links between code/files and docs.
+
+## Quick Start
+
+### Shell safety: never paste unquoted backticks
+
+Bash/zsh treat backticks as command substitution. If you see a path rendered as `` `ttmp/.../doc.md` ``:
+- Prefer removing the backticks: `ttmp/.../doc.md`
+- Or quote the whole argument: ``'`ttmp/.../doc.md`'``
+
+### First-time setup (one-time)
+
+```bash
+docmgr status --summary-only
+docmgr init --seed-vocabulary
+docmgr vocab list
+```
+
+### Create a ticket
+
+```bash
+docmgr ticket create-ticket \
+  --ticket TICKET-ID \
+  --title "Descriptive Title" \
+  --topics topic1,topic2
+```
+
+### Add a document + relate files immediately
+
+```bash
+docmgr doc add --ticket TICKET-ID --doc-type analysis --title "Document Title"
+docmgr doc relate --ticket TICKET-ID \
+  --file-note "/abs/path/to/file.go:Why this file matters"
+```
+
+## Core Conventions (strict)
+
+- Use `docmgr doc relate` (not `docmgr relate`).
+- Do not pass `--doc-type` to `doc relate`; target either `--ticket TICKET-ID` (ticket index) or `--doc PATH` (specific doc).
+- Always format related files as `--file-note "path:reason"` (colon separator, not dash).
+- Prefer absolute paths in `--file-note` for clarity and copy/paste safety.
+- Prefer "subdocument-first" linking: relate most files to the focused subdoc, keep `index.md` as the overview.
+- Keep "RelatedFiles" tight (roughly 3-7 per ticket, not 20+).
+- Store any ad-hoc scripts you create for a ticket in that ticket's `scripts/` directory under `ttmp/.../scripts` so they are tracked. Name scripts with a numerical prefix (`01-...`, `02-...`) to preserve execution order and trace investigation steps.
+- Every active ticket should have a **diary**. On resume, read its latest relevant checkpoint and current files; expand earlier steps when needed rather than automatically rereading the entire history. An explicit detailed-diary request uses investigation mode from the diary skill.
+- Keep one authoritative current-state source per fact. A milestone receipt can own task/history effects while the diary owns reasoning; do not duplicate the same progress paragraph across every projection.
+
+## Milestones and compact resume
+
+A verified binary with `milestone record` can consolidate task/history bookkeeping and `ticket resume` can derive the current checkpoint. Check command availability once for an unfamiliar binary; this repository's implemented contract uses Glazed v1.3.6, including `--with-glaze-output --output json`. Follow installed help if that output API changes. Older binaries require the existing task/changelog workflow; never invoke a proposed API from a design sketch as though installed.
+
+Read [milestone commands and safety](references/milestones.md) when using these operations. A receipt is not proof of the underlying claim and does not replace a requested diary. Retry interrupted operations using the same ID/request; do not bypass conflicts or overwrite human edits.
+
+## Common Workflows
+
+### Get oriented on an existing ticket
+
+```bash
+docmgr ticket list --ticket TICKET-ID
+docmgr doc list --ticket TICKET-ID
+docmgr task list --ticket TICKET-ID
+docmgr vocab list
+```
+
+### Task bookkeeping
+
+```bash
+docmgr task add --ticket TICKET-ID --text "New task"
+docmgr task check --ticket TICKET-ID --id 1,2
+```
+
+### Changelog update (what + why + related files)
+
+```bash
+docmgr changelog update --ticket TICKET-ID \
+  --entry "What changed and why" \
+  --file-note "/abs/path/to/file.go:Reason"
+```
+
+### Search
+
+```bash
+docmgr doc search --query "search term"
+docmgr doc search --query "term" --topics backend --doc-type design-doc
+docmgr doc search --file path/to/file.go
+docmgr doc search --dir path/to/dir/
+```
+
+### Validate / hygiene
+
+```bash
+docmgr doctor --ticket TICKET-ID --stale-after 30
+docmgr validate frontmatter --doc path/to/doc.md --suggest-fixes
+```
+
+## Vocabulary
+
+If a `doctor` warning indicates an unknown topic/doc-type/category, add it to the vocabulary (or ignore if it's intentionally out-of-vocab):
+
+```bash
+docmgr vocab add --category topics --slug my-topic --description "Description"
+```
+
+## Reference
+
+Load `references/docmgr.md` for the full (long-form) docmgr workflow, command reference, and best practices.
+---
+name: diary
+description: Write and maintain chronological implementation diaries with evidence, failures, decisions, commits and review instructions. Use when asked to keep a diary, dev log, ticket work history or debugging record; detailed diary requests use the full investigation format.
+---
+
+# Diary
+
+## Select the entry mode
+
+- **Investigation:** substantive implementation, debugging, design decisions, or an explicit detailed diary request. Use the full [investigation format](references/investigation-entry.md).
+- **Milestone:** routine successful validation, publication or bookkeeping without substantive debugging. Use the compact [milestone format](references/milestone-entry.md).
+- When uncertain, preserve the meaningful failure/decision context rather than compressing it away. Higher-priority instructions and an explicit user format override these defaults.
+
+Each numbered step begins with 1–2 short prose paragraphs explaining intent and outcome. Record failures promptly, including the exact command and relevant diagnostic. Keep historical entries intact; change future entry conventions prospectively.
+
+## Prompt and evidence discipline
+
+Record the actual authored user request verbatim the first time it appears; later steps link to that entry. Do not fabricate a verbatim quote from a summary. Distinguish user-authored instructions from automatically injected runtime metadata; avoid repeating counters or budget notices. If only a summary survives, label it as a summary and link the original source when available.
+
+Use [evidence levels](references/evidence-levels.md): routine success needs command/result/revision, experiments need configuration and measurements, and failures need exact relevant diagnostics. Preserve raw bytes when identity matters, not just to archive decorative successful CLI output.
+
+## Working loop
+
+Implement toward a major feature or integration milestone, then validate its affected behavior at that boundary. Commit boundaries and validation boundaries are not the same: smaller focused commits are useful checkpoints and do not warrant extensive checks, full builds or broad test suites merely because a commit is being made. Prioritize visible feature progress over repeated validation and bookkeeping loops.
+
+At a major boundary, run the relevant validation gate. If it fails, collect the diagnostics, fix the issues together where practical, and rerun the narrow checks needed to verify those fixes rather than restarting the entire validation pipeline after each edit. Run an earlier targeted check only when it resolves a concrete uncertainty or material risk; honor explicit project-required checks. Record which checks passed, failed or were deferred, and never describe an unvalidated checkpoint as qualified.
+
+Update the detailed diary, tasks and changelog at meaningful milestones, preserving failure evidence as it occurs without requiring a full bookkeeping cycle for every small edit. Code and documentation may share a focused commit when that is clearer; two separate commits per small edit are not mandatory. Record the code hash in the subsequent checkpoint when available.
+
+Use `docmgr` for ticket creation, task updates and relations. If a verified local binary provides `milestone record`, it can consolidate task/history updates; it does not author the diary or judge evidence. Follow the docmgr skill's actual API and capability check, not a proposed command from a design sketch.
+
+Keep RelatedFiles focused on primary implementation and evidence files, with absolute `--file-note "path:reason"` arguments. A commit or bounded receipt supplies the full changed-path inventory; do not duplicate every path in metadata. Never hide review-critical files merely to hit an arbitrary count.
+
+## Resume and review
+
+Resume from the latest relevant checkpoint, current request and current files, then expand the necessary earlier investigation. Do not reread an entire long diary automatically. Unchanged instruction hashes are change signals, not proof the model still remembers the text; reload absent instructions and obey higher-priority full-read rules.
+
+The [workflow reference](references/diary.md) points to the canonical formats and evidence rules. No runtime phase loader or automatic policy enforcement is implied by this prose.
+
+ succeeded in 1200ms:
+  readonly pass: string;
+  readonly artifact: Artifact<TypedBlocks>;
+  readonly edits: readonly Edit[];
+  readonly correspondence?: EntityCorrespondence;
+  readonly ms: number;
+  readonly fns?: readonly string[];
+  readonly note?: string;
+  /** The assumptions in force when this revision was made (see `Program.assume`). */
+  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
+}
+
+export interface ApplyResult {
+  readonly pass: string;
+  readonly rev: string;
+  readonly edits: number;
+  readonly changed: boolean;
+  readonly kinds?: Readonly<Record<string, number>>;
+  readonly ms: number;
+  readonly check?: string;
+}
+
+const revNumber = (r: number | string) => (typeof r === 'string' ? +r.replace(/^r/, '') : r);
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+export class Program {
+  readonly manager = new AnalysisManager();
+  readonly revisions: Revision[] = [];
+      contractInputs: { origin: this.origin },
+    });
+    const ms = +(now() - t0).toFixed(2);
+    if (!r.changed) return { pass: pass.typed.name, rev: `r${this.rev}`, edits: 0, changed: false, ms };
+    const report = r.report as RevisionReport;
+    this.revisions.push({
+      rev: this.rev + 1,
+      pass: pass.typed.name,
+      artifact: r.artifact,
+      edits: report.edits,
+      correspondence: r.correspondence,
+      ms,
+      fns: report.fns,
+      assumptions: JSON.parse(JSON.stringify(this.assumptions)),
+    });
+    const checks =
+      (r.contract as { execution?: { checks?: { phase: string; evidence?: any }[] } } | undefined)?.execution
+        ?.checks ?? [];
+    const evidence = checks.find(c => c.phase === 'ensures' && c.evidence?.method === 'sampled')?.evidence as
+      | { agree: number; total: number; inconclusive: number }
+      | undefined;
+    return {
+      pass: pass.typed.name,
+      rev: `r${this.rev}`,
+      edits: report.edits.length,
+      changed: true,
+      kinds: report.kinds,
+      ms,
+      ...(evidence ? { check: `${evidence.agree}/${evidence.total - evidence.inconclusive}` } : {}),
+    };
+  }
+  /** What would a pass change now? Runs it without the gate and publishes nothing. */
+  async dryRun(x: string | TypedPass): Promise<{
+    pass: string;
+    edits: number;
+    kinds: Record<string, number>;
+    changes: unknown[];
+    error?: string;
+  }> {
+    const pass = this.resolvePass(x);
+    try {
+      const r = await applyPass(pass, this.head, { manager: this.manager });
+      const report = r.report as RevisionReport | undefined;
+      return {
+        pass: pass.typed.name,
+        edits: r.edits,
+        kinds: { ...(report?.kinds ?? {}) },
+        changes: (report?.edits ?? []).map(e => ({
+          fn: e.fn,
+          kind: e.kind,
+          ...(e.from ? { from: e.from } : {}),
+          ...(e.text ? { text: e.text } : {}),
+          ...(e.because ? { because: e.because } : {}),
+          ...(e.note ? { note: e.note } : {}),
+        })),
+      };
+    } catch (e) {
+      return { pass: pass.typed.name, edits: 0, kinds: {}, changes: [], error: (e as Error).message };
+    }
+  }
+  /** Passes that would change the program now (the prototype's "actions"), excluding the deliberately wrong one. */
+  async actions(): Promise<{ pass: string; edits: number; kinds: Record<string, number> }[]> {
+    this.requireOk();
+    const out = [];
+    for (const name of Object.keys(PASSES).filter(n => n !== 'div-to-shift')) {
+      const r = await this.dryRun(name);
+      if (r.edits > 0) out.push({ pass: r.pass, edits: r.edits, kinds: r.kinds });
+    }
+    return out;
+  }
+  /** The framework invariant behind `check`: one evidence record for the whole program (E5). */
+  async verify(opts: { count?: number; seed?: number } = {}) {
+    return this.manager.checkInvariant(
+      meaningKept({
+        inputs: this.inputs,
+        count: opts.count ?? 100,
+        seed: opts.seed ?? 7,
+        ...(this.options.entries ? { roots: this.options.entries } : {}),
+      }),
+      { origin: this.origin, candidate: this.head },
+    );
+  }
+}
+
+src/framework/contracts/differential.ts:6: * `InvariantDefinition`, so a transformation contract can `ensure` it like any other invariant. Its evidence records
+src/framework/contracts/differential.ts:7: * the method (`sampled`), the case count and seed, how many cases agreed, disagreed or were inconclusive, and the
+src/framework/contracts/differential.ts:49:  inconclusive?(outcome: Outcome): boolean;
+src/framework/contracts/differential.ts:66:   * per index, in the order of `todo`, exactly as `run`, `inconclusive` and `compare` would decide them; or
+src/framework/contracts/differential.ts:67:   * `undefined` to decide them here. The check's evidence is assembled in case order, whoever decided a case.
+src/framework/contracts/differential.ts:76:/** One decided case: what `compare` (or `inconclusive`) concluded. */
+src/framework/contracts/differential.ts:79:  | { readonly v: 'inconclusive' }
+src/framework/contracts/differential.ts:89:  readonly inconclusive: number;
+src/framework/contracts/differential.ts:90:  readonly status: 'agree' | 'disagree' | 'inconclusive';
+src/framework/contracts/differential.ts:107:  const result = (evidence: DifferentialEvidence): CheckResult => ({
+src/framework/contracts/differential.ts:108:    ok: evidence.status === 'agree',
+src/framework/contracts/differential.ts:110:      evidence.status === 'agree'
+src/framework/contracts/differential.ts:111:        ? `${evidence.agree}/${evidence.total} sampled cases agree (${evidence.inconclusive} inconclusive)`
+src/framework/contracts/differential.ts:112:        : evidence.status === 'disagree'
+src/framework/contracts/differential.ts:113:          ? `${evidence.disagree}/${evidence.total} sampled cases disagree`
+src/framework/contracts/differential.ts:114:          : `no decided case among ${evidence.total} (all inconclusive)`,
+src/framework/contracts/differential.ts:115:    evidence,
+src/framework/contracts/differential.ts:188:  INCONCLUSIVE: Decided = Object.freeze({ v: 'inconclusive' });
+src/framework/contracts/differential.ts:190: * Decide one case: run both sides, then `inconclusive`, then `compare`, as a check always has. `outcomes`, when
+src/framework/contracts/differential.ts:209:  if (spec.inconclusive?.(a) || spec.inconclusive?.(b)) return INCONCLUSIVE;
+src/framework/contracts/differential.ts:215:/** The evidence of decided cases, counted in case order (so counterexamples come in case order). */
+src/framework/contracts/differential.ts:225:    inconclusive = 0;
+src/framework/contracts/differential.ts:229:    if (d.v === 'inconclusive') inconclusive++;
+src/framework/contracts/differential.ts:247:    inconclusive,
+src/framework/contracts/differential.ts:248:    status: disagree ? 'disagree' : agree ? 'agree' : 'inconclusive',
+src/framework/contracts/differential.ts:271: * known for its subject key is not evaluated again. The evidence is the same either way.
+src/framework/contracts/differential.ts:324:/** The assurance a check's evidence supports: sampled differential testing is weaker than an exact checker. */
+src/framework/contracts/differential.ts:325:export function assuranceOf(evidence: unknown): 'checked-sampled' | 'checked-exact' {
+src/framework/contracts/differential.ts:326:  return (evidence as { method?: string } | null)?.method === 'sampled' ? 'checked-sampled' : 'checked-exact';
+src/typed/passes.ts:7: * `optimizationContract`: the program still means what r0 meant), and checks each preservation claim before the
+src/typed/passes.ts:224:export function optimizationContract(params: MeaningParams = {}): TransformationDefinition<any, any> {
+src/typed/passes.ts:279: * (rules/verify.ts, rules/evidence.ts), compiled into the rewrite visitor (IRWB-006). The hand-written body it
+{
+  "title": "Insertion sort",
+  "about": [
+    "Nested loops with loads and stores into one buffer. The checks",
+    "compare the sorted cells."
+  ],
+  "group": "Programs",
+  "pipeline": "O2",
+  "inputs": {
+    "sort": { "work": { "buffer": [0, 12], "cell": [0, 99] } }
+  },
+  "chapter": "checks",
+  "focus": 6,
+  "try": [
+    [
+      "Which bounds checks stay in sort, and which facts would remove",
+      "each?"
+    ],
+    [
+      "Where does sort spend its instructions on a reversed buffer of",
+      "10?"
+    ]
+  ]
+}
+// Read corpus/projects/<id>/ into { files } maps for the typed domain (Node only).
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+export const corpusDir = fileURLToPath(new URL('../corpus/projects/', import.meta.url));
+export const projectIds = () => readdirSync(corpusDir).filter(d => statSync(join(corpusDir, d)).isDirectory()).sort();
+export function projectFiles(id) {
+  const dir = join(corpusDir, id), files = {};
+  for (const f of readdirSync(dir)) if (f === 'project.json' || f.endsWith('.typed')) files[f] = readFileSync(join(dir, f), 'utf8');
+  return files;
+}
+
+/** Every file of a project (project.json, sources, notes, scripts/, ui/), path -> text. */
+export function projectAllFiles(id) {
+  const out = {};
+  const walk = (dir, prefix) => {
+    for (const f of readdirSync(dir).sort()) {
+      const p = join(dir, f);
+      if (statSync(p).isDirectory()) walk(p, prefix + f + '/');
+      else out[prefix + f] = readFileSync(p, 'utf8');
+    }
+  };
+  walk(join(corpusDir, id), '');
+  return out;
+}
+
+/** The built-in projects in the book's order (corpus/projects/index.json), as { id, files }. */
+export function builtinProjects() {
+  const order = JSON.parse(readFileSync(join(corpusDir, 'index.json'), 'utf8')).order;
+  const ids = [...order, ...projectIds().filter(id => !order.includes(id))];
+  return ids.map(id => ({ id, files: projectAllFiles(id) }));
+}
+
+codex
+The existing start and slice functions can drive the whole experiment. I’ll pass depth, budget, and mode to the start function in a buffer and use one Node harness for chess assertions, compiler parity, and instruction counts. The standard corpus loaders still check every function, so the design will keep a small set of valid helper inputs.
+exec
+/usr/bin/zsh -lc 'ticket=ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus
+doc="$ticket/design-doc/01-chess-search-corpus-project.md"
+sed -i '"'/"'^# Chess search corpus project/,$d'"' \""'$doc"
+cat >> "$doc" <<'"'EOF'
+# Chess search corpus project
+
+Add "'`corpus/projects/chess` using `state.typed`, `position.typed`, `moves.typed`, and `search.typed` from the user'"'s ds-js-os repository at "'`b19062b29fe4fb6b02863e92510501dc5c4bc9b3`. The existing engine gives the compiler branchy integer code with piece dispatch, early exits from attack scans, and an explicit-stack alpha-beta search. Preserve move order, tie breaking, and the upstream material and advanced modes. Keep the small helpers, signed division and remainder in coordinate decoding, and insertion sort in move ordering as written. The host supplies legal positions and drives the engine directly.
+
+## Port and memory layout
+
+Keep the four-file split and extract the search fields from the app state into `record ChessSearchState`. The bool fields are `running` and `advanced`. The i32 fields are `ply`, `depth`, `maxDepth`, `budget`, `nodes`, `completed`, `bestMove`, and `score`. The host allocates the record separately from the board, one 32-bit word per field, and uses the front-end layout when decoding it.
+
+| Region | Layout in u16 cells after the buffer length word |
+| --- | --- |
+| Board 0–127 | Rank stride 16 with eight playable cells per rank, starting at a8. Zero means empty. Piece kinds 1–6 follow PNBRQK, with 8 added for black. |
+| Metadata 128–134 | Side (0 white, 1 black), castling rights (KQkq = 1,2,4,8), en-passant square (128 for absent), white and black king squares, halfmove clock, fullmove number. |
+| Search frame at `160 + 16*ply` | Keep the upstream frame slots for depth, bounds, score, list cursor, pending move and flags. Scores in the frame have bias 32768. |
+| Search undo at `384 + 10*ply` | Metadata cells 129–134, moving piece, captured piece, capture square, and one spare cell. |
+| Search list at `1024 + 1024*ply` | 512 move slots followed by 512 priority slots. A move is `promotion*4096 + fromDense*64 + toDense`. Dense squares run a8 to h1, promotion codes 1–4 mean Q/R/B/N, and zero means no move. |
+| Perft scratch | Four-cell frames at `160 + 4*ply`, undo at `256 + 10*ply`, lists at `512 + 512*ply`. Run perft and search separately because their scratch overlaps. |
+
+Use zero-initialized 12,288-cell arenas for full workloads. The search cap is six ordinary plies plus four quiescence plies, so the last search list ends at cell 12,287. Use the upstream `charCodeAt` and `setCharCodeAt` operations and preserve the explicit stacks. The prior read-only probe ingested all 53 upstream functions with the default front end and produced both RV32 images. [Probe record](../log/01-diary.md), [lifter](../../../../../../src/typed/lift.ts)
+
+- **Position and legal moves.** `chessMake` and `chessUnmake` manage the board, rights, clocks, and undo state. `chessPseudoMoves` dispatches by piece and emits into a bounded list. `chessLegalMoves` filters candidates by making them and checking the moving king before restoring the position.
+- **Perft.** Call `chessPerft(board, depth)`. It counts legal sequences to exactly that depth, with one leaf at depth zero. The host exercises only the supplied depths, where the i32 count fits.
+- **Search.** Change the existing entry to `chessStartSearch(board: buffer, state: ChessSearchState, options: buffer): i32`. It reads three u16 cells for depth, budget, and the advanced flag (0 or 1), then uses the existing clamps and fallback selection. The host supplies valid options. Call `chessSearchSlice(board, state, steps)` with the same arena and record until `running` is false, then read the move, score, completed depth, and nodes from the record. The original step function traverses children with negated bounds, applies cutoffs on return, and unwinds pending moves when the budget is exhausted. The options buffer is read-only and separate from the mutable arena, so future specialization can bind the settings on the same source and vary the position.
+
+## Correctness and measurement
+
+Use one Node harness in `tests/typed/chess.test.mjs`. Copy upstream `bench/reference/chess/reference-positions.json` with its `chess 1.11.2` attribution. Encode each FEN once in the host, including the king caches, castling and en-passant state, and clocks. Decode legal moves to UCI with promotion suffixes and compare the sorted list and check flag with the fixture. Compare perft with the supplied counts and assert that legal generation, perft, and finished search restore all 135 position cells. The opening'"'s 20/400/8,902 counts and the pinned en-passant, castling, and promotion fixtures cover distinct paths. Exercise depth 3 through the same harness as an opt-in long case.
+
+Use the upstream host runner's chess assertions on a small set of search cases. Check the forced move on the compact fixture below, mate-in-one membership and score +29999, quiet mate in two "'`d6c7` and +29997, and the defended rook'"'s "'`d1d5` choice in material mode versus a different legal move in advanced mode. Check mate and stalemate scores (-30000 and 0), and that a budget-one search retains the first legal move, reports no completed depth, and restores the position. Use slice size 19 for the full runs. Use depth 1 and budget 1800 for the material and advanced depth-1 searches, depth 3 and budget 1600 for the quiet mate, and depth 4 and budget 1 for the budget case.
+
+Build fresh images for r0, checked O2, checked `speed`, and the vendored reference compiler with a recorded policy. Use `benchCase` for initial memory and `runImage` for execution, threading returned bytes through the start and slice calls. Compare concrete results and memory with evaluator r0 using `agrees`. Read full guest memory when decoding outputs. Verify the fixture assertions before reporting speed. Run the larger oracle cases with explicit higher statement and instruction ceilings in the host harness, and treat timeouts as inconclusive. For measurement, report per-fixture RV32 instructions on opening perft 2, legal en passant perft 2, quiet mate, and defended rook. Sum start and slice instructions for each search and include node count and completed depth to show the work matched. [Reference runner](../../../../../../tools/reference-check.mjs), [evaluator](../../../../../../src/typed/evaluate.ts), [RV32 runner](../../../../../../src/typed/backend/run.ts)
+
+## Generated pass checks
+
+The normal project loader and parity runner check every function, so give each stateful helper valid arguments using the current input format. Use one fixed board per function, a shared 3,072-cell arena for the small fixtures, and only a few live snapshots:
+
+- For `chessStartSearch`, use the forced position `k7/2K5/8/8/8/8/8/8 b - - 0 1`, zeroed state, and `options: {"cells":[1,4,0]}`. The only legal move is a8a7 (packed 8).
+- For search helpers, capture the started root, prepared root, and pending child from that same search. The started root with `steps: 8` checks a full `chessSearchSlice`. The prepared root supplies real list and frame offsets for `chessSearchStep` and score updates, and the pending child supplies the undo for completion and stop.
+- For perft, use the forced board and `depth: [0,2]`. For move helpers, use the promotion and legal en-passant fixtures with matching offsets, piece, side, and move. Use an actual pseudo list for ordering/filtering and its corresponding count, and an actual post-make board and undo for unmake. Use the castling fixture for the direct castle helper. Reuse the forced board for other board helpers where its arguments fit.
+- Encode buffers as `{"cells":[...]}`, state as `{"record":{...}}` with all fields set, and correlated scalars as fixed values. Scalar-only functions can use small valid domains such as `chessRay.direction: [0,7]`. Reuse the host FEN encoder and snapshot reads to prepare the checked-in specs.
+
+Run the ordinary `casesFrom` and `meaningKept` checks against r0 on every changed pass. Require no disagreements, evaluator limits, or unexpected traps on the small fixtures. Check evidence totals since an inconclusive sample can coexist with decided agreement. The cap is 20,000 evaluator statements per execution and the generated reference check uses 200,000 RV32 instructions. The prior probe measured 3,422 evaluator statements to start the forced search and 9,381 for its eight-step slice. Forced perft 2 used 14,662. Opening perft 1 already used 20,778, so leave opening and tactical searches in the explicit host suite. Recheck the port against both caps, including both checked pipelines. [Project loader](../../../../../../src/typed/program.ts), [parity runner](../../../../../../tools/parity.mjs), [input spec](../../../../../../corpus/reference.md)
+
+## Corpus integration and optimization targets
+
+Ship the four Typed files, `project.json`, `notes.md`, and `fixtures/reference-positions.json`. Use title “Chess search”, group `Programs`, pipeline `O2`, the upstream source order, the per-function inputs, and focus at `chessSearchStep` in the joined source. Add `chess` to the corpus index with the complete programs. Put the source revision and one reproducible run in the notes.
+
+1. Import the core, trim the state record, and change the start signature. Confirm default ingest and lowering.
+2. Bring over the fixtures and build the Node harness. Qualify the chess assertions and reference image at r0, then prepare and size the generated inputs.
+3. Run `npm test` and `node tools/parity.mjs chess`. Use the harness to qualify O2 and `speed` and record the instruction baseline on matching runs.
+
+| Compiler work | What chess gives it |
+| --- | --- |
+| IRWB-003 | Look for call reductions from inlining, rotation of ray or insertion loops, and register effects from coalescing and repeated constants such as frame strides and 32768. |
+| IRWB-006 and IRWB-008 | Inspect SSA at the cursor and score joins. Coordinate packing and checked index arithmetic are candidates for rule-backed rewrites with exact evidence. |
+| IRWB-007 | Bind contents of the read-only options buffer, then compare general and specialized runs on the same settings across multiple boards. Keep the mutable board outside the constant-memory promise. |
+| IRWB-010 | Use instruction heat to pick a small coordinate or frame-address expression for rewrite discovery, equality saturation, or a verified machine window. Preserve signed-range preconditions. |
+| IRWB-011 | Use chess as an integer control in tolerance experiments, with exact moves, scores, counts, and memory. |
+
+A separate hand-optimized project could later provide a ceiling using the same search tree and oracle.
+
+## Cuts after self-review
+
+- Removed the extra search wrapper, source file, and input-validation API. The existing start/slice pair and valid host inputs are sufficient.
+- Moved slice width out of the options buffer. Depth, budget, and mode are the settings worth specializing on.
+- Replaced per-helper arena sizing and fixture-generation machinery with one small arena size and shared snapshots. The stock checks need coherent inputs for every function.
+- Dropped the second override pipeline and extra coverage accounting. The checked pipelines and explicit advanced-search regressions already exercise the intended cases.
+- Dropped Kiwipete, the duplicated perft table, and dedicated divide tooling. The supplied fixture JSON carries the counts and covers special moves.
+- Dropped separate make/unmake, slice-width invariance, and upstream tuple suites. Position restoration, search assertions, and byte comparisons cover the experiment'"'s correctness requirements.
+- Consolidated the performance matrix and qualification into one host harness. The selected workloads distinguish move generation from the two search modes.
+- Removed project-specific exploration and benchmark scripts, extra UI prompts, and a prescribed hand-optimized design. The workbench already exposes IR and source, and the baseline experiment needs only the Node harness.
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 684ms:
+exec
+/usr/bin/zsh -lc 'ticket=ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus
+python3 - "$ticket/design-doc/01-chess-search-corpus-project.md" <<'"'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+text = p.read_text()
+text = text.replace('and defended rook. Sum start', 'and defended rook in both modes. Sum start')
+text = text.replace('The prepared root supplies real list and frame offsets for "'`chessSearchStep` and score updates, and the pending child supplies the undo for completion and stop.'"', 'The prepared root supplies real list and frame offsets for "'`chessSearchStep` and `chessAcceptScore`. For the latter, give the frame a narrow beta bound and sample scores on both sides of it. The pending child supplies the undo for completion and stop.'"')
+text = text.replace('Run the ordinary "'`casesFrom` and `meaningKept` checks against r0 on every changed pass. Require no disagreements, evaluator limits, or unexpected traps on the small fixtures. Check evidence totals since an inconclusive sample can coexist with decided agreement.'"', 'Run the ordinary "'`casesFrom` and `meaningKept` checks against r0 on every changed pass. Verify that the generated r0 cases run without traps, then require decisive agreement and zero inconclusives in the evidence for each pass. An inconclusive sample can coexist with decided agreement.'"')
+p.write_text(text)
+PY
+cat >> \""'$ticket/log/01-diary.md" <<'"'EOF'
+
+## Step 5 · Simplify the port after self-review
+
+Read the design and the current worktree's program loader, case builder, pass evidence, and corpus runners. The biggest removable cost was a second search interface. The revised design puts three options into the existing start call and drives search with the existing slice call. The compact pass cases still exercise real helper paths because both stock project loaders check all functions. A few shared snapshots cover those calls without new entry-point plumbing or a separate generator.
+
+Consolidated the test and measurement path into one Node harness. The independent oracle still covers special moves, terminal positions, perft, and tactical search. The prior measurement remains evidence for selecting compact cases. This review used the recorded probe and current worktree files for design evidence. The port and its thresholds remain to be verified during implementation.
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message "'`IRWB-017: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+EOF
+docmgr changelog update --ticket IRWB-017 --entry '"'Simplified the design to reuse the upstream search entry points and one Node harness. Kept the independent chess oracle, bounded pass cases, and RV32 measurements.'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 860ms:
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017/ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/changelog.md
+
+exec
+/usr/bin/zsh -lc 'git diff --check && git diff --stat && git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+exec
+/usr/bin/zsh -lc 'ticket=ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus
+docmgr validate frontmatter --doc "$ticket/design-doc/01-chess-search-corpus-project.md" && docmgr validate frontmatter --doc "$ticket/log/01-diary.md"
+python3 - "$ticket/design-doc/01-chess-search-corpus-project.md" <<'"'PY'
+import re
+import sys
+from pathlib import Path
+doc = Path(sys.argv[1])
+content = doc.read_text()
+for link in re.findall(r'\\]\\((["'^)]+)'"\\)', content):
+    assert (doc.parent / link.split('#', 1)[0]).is_file(), link
+cuts = content.split('## Cuts after self-review\\n', 1)[1].strip().splitlines()
+assert len(cuts) == 8 and all(line.startswith('- ') for line in cuts)
+print('Design links and eight-item cuts section verified.')
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 769ms:
+ .../changelog.md                                   |   4 +
+ .../design-doc/01-chess-search-corpus-project.md   | 137 ++++++++-------------
+ .../log/01-diary.md                                |   8 ++
+ 3 files changed, 61 insertions(+), 88 deletions(-)
+## codex/irwb-017
+ M ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/changelog.md
+ M ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/design-doc/01-chess-search-corpus-project.md
+ M ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/log/01-diary.md
+
+ succeeded in 1306ms:
+Frontmatter OK: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017/ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/design-doc/01-chess-search-corpus-project.md (Ticket=IRWB-017 DocType=design-doc)
+Frontmatter OK: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017/ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/log/01-diary.md (Ticket=IRWB-017 DocType=analysis)
+Design links and eight-item cuts section verified.
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/log/01-diary.md <<'EOF'
+
+Validated the revised design and diary frontmatter with docmgr, resolved the design's file links, checked that the eight cuts close the document, and ran "'`git diff --check`. The changes are limited to the ticket'"'s design, diary, and changelog.
+EOF
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 579ms:
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-017: simplify the design doc after self-review' -- ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 401ms:
+[codex/irwb-017 e1c1ff5] IRWB-017: simplify the design doc after self-review
+ 3 files changed, 63 insertions(+), 88 deletions(-)
+
+exec
+/usr/bin/zsh -lc 'git rev-parse HEAD && git status --short --branch && git diff-tree --no-commit-id --name-only -r HEAD' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017
+ succeeded in 811ms:
+e1c1ff5e8e49d4519e9d348cc0236d2f7f373508
+## codex/irwb-017
+ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/changelog.md
+ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/design-doc/01-chess-search-corpus-project.md
+ttmp/2026/11/26/IRWB-017--port-chess-search-into-the-corpus/log/01-diary.md
+
+codex
+Commit `e1c1ff5e8e49d4519e9d348cc0236d2f7f373508`. Only IRWB-017 changed. The diary is up to date and the commit is local.
+
+- Removed the search wrapper, extra Typed file, and validation API. The host can drive the existing start and slice functions directly.
+- Moved slice width out of the options buffer. Depth, budget, and mode are the specialization inputs.
+- Replaced per-helper arena sizing and fixture-generation machinery with one small arena size and shared snapshots.
+- Removed the second override pipeline and extra coverage accounting. The explicit advanced-search regressions cover that mode.
+- Removed Kiwipete, the duplicate perft table, and dedicated divide tooling. The reference fixtures already cover special moves and supply expected counts.
+- Removed standalone make/unmake, slice-width invariance, and upstream tuple suites. The remaining checks verify position restoration, chess outcomes, and guest memory.
+- Consolidated correctness checks and RV32 instruction measurements into one Node harness with a smaller benchmark matrix.
+- Removed custom browser scripts, extra UI prompts, and the prescribed hand-optimized design. The existing workbench views and Node harness support the experiment.
+tokens used
+152,331
+Commit `e1c1ff5e8e49d4519e9d348cc0236d2f7f373508`. Only IRWB-017 changed. The diary is up to date and the commit is local.
+
+- Removed the search wrapper, extra Typed file, and validation API. The host can drive the existing start and slice functions directly.
+- Moved slice width out of the options buffer. Depth, budget, and mode are the specialization inputs.
+- Replaced per-helper arena sizing and fixture-generation machinery with one small arena size and shared snapshots.
+- Removed the second override pipeline and extra coverage accounting. The explicit advanced-search regressions cover that mode.
+- Removed Kiwipete, the duplicate perft table, and dedicated divide tooling. The reference fixtures already cover special moves and supply expected counts.
+- Removed standalone make/unmake, slice-width invariance, and upstream tuple suites. The remaining checks verify position restoration, chess outcomes, and guest memory.
+- Consolidated correctness checks and RV32 instruction measurements into one Node harness with a smaller benchmark matrix.
+- Removed custom browser scripts, extra UI prompts, and the prescribed hand-optimized design. The existing workbench views and Node harness support the experiment.

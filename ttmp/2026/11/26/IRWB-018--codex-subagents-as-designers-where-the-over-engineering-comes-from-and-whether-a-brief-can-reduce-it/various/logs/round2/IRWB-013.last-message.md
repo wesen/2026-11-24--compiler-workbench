@@ -1,0 +1,5 @@
+- [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-013/ttmp/2026/11/26/IRWB-013--sha-256-and-chacha20/design-doc/01-sha-256-and-chacha20-corpus-project.md)
+- [Ticket IRWB-013](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-013/ttmp/2026/11/26/IRWB-013--sha-256-and-chacha20/)
+- Commit `59e24dcefff2a3ddd4aa9bc9f515969040e3a33f`
+
+The design specifies one corpus project with a single-block SHA-256 hash and a ChaCha20 block function with 16 live state words. It covers Typed layouts, generated inputs, published vectors, the framework SHA-256 oracle, the 20,000-statement budget, and RV32 instructions per byte. Small probes confirmed tape ingest and multiword results and identified two integration changes for implementation. Docmgr validation passed, and the commit contains only ticket files. A metadata lookup also displayed part of the IRWB-003 diary beyond the requested reading scope.

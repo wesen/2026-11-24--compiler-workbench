@@ -94,3 +94,30 @@ The families are keyword matches ("case" also matches "in this case"). They sele
 ### What warrants a second pair of eyes
 - **The round-2 rules come from my own review's categories.** Round 2 therefore tests whether stating them as generic policy changes the design, not whether the model finds them on its own. Round 3 is the test of the latter.
 - **The "work only from your worktree" rule is a new control.** Without it, round-2 agents could read the baseline designs on the `codex/` branches, as IRWB-015 read other branches.
+
+## Step 4: rounds 2 and 3 finished; metrics, cut lists, and the blind pack
+
+All 12 runs exited 0. Each made one commit, touched only its ticket and left a clean tree. Round 2's rule against reading other branches held: the only branch command any of them ran was `git branch --show-current`.
+
+### What I did
+- **Round 2 heads:** `codex2/irwb-0NN`. **Round 3 heads:** `0985c7f`, `3010f02`, `2ad5c47`, `c28b445`, `06bdc7e`, `e1c1ff5`. The baseline commits stay recorded in the IRWB-001 review.
+- **Rollouts.** Round 2 wrote six new work rollouts and seven approval sidecars (`various/sources/round2-*.txt`). Round 3 appended a second turn to each baseline rollout. I split that turn into its own file at the second `task_started`, keeping `session_meta`, and extracted all three rounds with `scripts/01` (the regex now accepts `codex2-`).
+- **Blind pack:** `scripts/04-blind-pack.mjs` writes 18 docs under shuffled names, seeded, with frontmatter and round 3's appended cuts section stripped. The key is `various/results/blind-key.json`.
+  - **Bug fixed:** the first version matched `cut` inside "Exe*cut*ive summary" and cut baseline IRWB-014 to 10 words. The pattern now takes whole words and only the last matching heading.
+- **Judge:** a fresh general-purpose agent, sandboxed to the pack directory, scores against `scripts/05-judge-rubric.md`.
+- **Content metrics:** `various/results/content-metrics-rounds.json`.
+
+### What I learned
+| round | mean words | error-contract sentences | no-write guarantees | minutes | node probes |
+|---|---:|---:|---:|---:|---|
+| baseline | 3,419 | 10.9% | 2.0 | 5.7–8.6 | 0, 1, 0, 5, 0, 6 |
+| round 2 (brief) | 2,064 | 3.9% | 0 | 6.8–9.3 | 8, 8, 6, 4, 4, 1 |
+| round 3 (self-review) | 1,657 | 8.7% | 0 | 2.6–4.1 | — |
+
+- **Round 2 found the framework gaps.** All four frame-array designs (012–015) found the tape requirement. Chess proposed the `entries` wiring ("Small loader change") with two checked entries and measured statement counts: pinned en passant perft 9,206; promotion search 12,054–12,953 at budget 2; opening perft over 20,000. Status codes appear 1–3 times per doc and fuel not at all. "Simplest alternative" shows up only as hypothetical "would" clauses: 0–1 uses of the word "alternative" and contrast markers at 0–0.56 per 1,000 words. The system prompt's writing rules still shape the prose.
+- **Round 3 shortened more but kept more of the error contract.**
+  - The VM dropped its status codes and output buffer but kept fuel.
+  - LZ kept the escape token and the policy buffer.
+  - Chess kept the per-function fixture regime: "The stock checks need coherent inputs for every function."
+  - Some cuts simplified the program itself: regex lost grouping, SHA lost multi-block input, the DSP lost a filter section. The judge's A4 score should show whether that cost optimization value.
+- **Tokens.** Output per run is 13.5–26.8K, and reported reasoning 1.7–5.2K. Most of the 1.7–4.1M total is cached input.

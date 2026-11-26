@@ -1,0 +1,215 @@
+{
+  "shared": {
+    "system-prompt": 27750,
+    "skills-catalogue": 46818,
+    "multi-agent": 2511,
+    "agents-md": 5056,
+    "skills-catalogue:differs": [
+      "IRWB-013",
+      "IRWB-014",
+      "IRWB-015",
+      "IRWB-016",
+      "IRWB-017"
+    ],
+    "agents-md:differs": [
+      "IRWB-013",
+      "IRWB-014",
+      "IRWB-015",
+      "IRWB-016",
+      "IRWB-017"
+    ]
+  },
+  "sessions": [
+    {
+      "id": "IRWB-012",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-57-24-01a21893-6d1e-7402-8f9b-3ebb9dd3cdec.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-012",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 24,
+      "commands": 35,
+      "toolNames": {
+        "exec_command": 35
+      },
+      "reasoningItems": 16,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry,evidence-levels}.md"
+      ],
+      "skillCmds": [
+        "cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md",
+        "cat /home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry,evidence-levels}.md && git status --porcelain=v1"
+      ],
+      "readsCount": 33,
+      "tokens": {
+        "input_tokens": 2042937,
+        "cached_input_tokens": 1947520,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 17267,
+        "reasoning_output_tokens": 2400,
+        "total_tokens": 2060204
+      }
+    },
+    {
+      "id": "IRWB-013",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-57-25-01a21893-6ebf-7e12-a15f-13f516c6420f.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-013",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 27,
+      "commands": 39,
+      "toolNames": {
+        "exec_command": 39
+      },
+      "reasoningItems": 17,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "skillCmds": [
+        "git status --short && git branch --show-current && cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md",
+        "cat /home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md; rg --files -g AGENTS.md -g '*lock*'; rg -n 'sha256|SHA256' src/framework/core/data.ts"
+      ],
+      "readsCount": 42,
+      "tokens": {
+        "input_tokens": 2696842,
+        "cached_input_tokens": 2576896,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 17942,
+        "reasoning_output_tokens": 2344,
+        "total_tokens": 2714784
+      }
+    },
+    {
+      "id": "IRWB-014",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-57-25-01a21893-710f-72a0-a873-2e9d1113f205.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-014",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 28,
+      "commands": 35,
+      "toolNames": {
+        "exec_command": 35
+      },
+      "reasoningItems": 19,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "skillCmds": [
+        "cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md",
+        "find ttmp/2026/11 -ipath '*IRWB-0*' -type f | rg 'IRWB-(003|006|007|008|010|011)' | rg '/(design-doc|analysis|reference)/'; cat .ttmp.yaml; cat /home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "readsCount": 45,
+      "tokens": {
+        "input_tokens": 2462055,
+        "cached_input_tokens": 2363520,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 18514,
+        "reasoning_output_tokens": 2506,
+        "total_tokens": 2480569
+      }
+    },
+    {
+      "id": "IRWB-015",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-57-27-01a21893-767e-7df0-9875-c06a1815db5b.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-015",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 25,
+      "commands": 27,
+      "toolNames": {
+        "exec_command": 30
+      },
+      "reasoningItems": 17,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "skillCmds": [
+        "cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md",
+        "cat /home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md; cat .ttmp.yaml; cat ttmp/vocabulary.yaml; find ttmp/2026/11 -path '*/design-doc/*.md' | rg 'IRWB-00[3678]|IRWB-01[01]' ; date '+%F %T %z'; docmgr ticket create-ticket --help"
+      ],
+      "readsCount": 26,
+      "tokens": {
+        "input_tokens": 2099914,
+        "cached_input_tokens": 2007040,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16268,
+        "reasoning_output_tokens": 2636,
+        "total_tokens": 2116182
+      }
+    },
+    {
+      "id": "IRWB-016",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-57-28-01a21893-7a5b-7813-b5b1-4928fd035210.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-016",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 22,
+      "commands": 29,
+      "toolNames": {
+        "exec_command": 29
+      },
+      "reasoningItems": 15,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md",
+        "/home/manuel/.codex/skills/diary/references/{investigation-entry,milestone-entry}.md"
+      ],
+      "skillCmds": [
+        "cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md",
+        "for id in 007 010 011; do find ttmp/2026/11/26/IRWB-$id* -maxdepth 2 -name '*.md'; done\nrg -n '^## |dB|FMA|reassoc' ttmp/2026/11/26/IRWB-011* --glob '*.md' --glob '!**/sources/**' | cut -c1-175 | head -65\nrg -n 'Int32Array' corpus/candela-gallery/*.typed | head -18\ncat /home/manuel/.codex/skills/dia"
+      ],
+      "readsCount": 46,
+      "tokens": {
+        "input_tokens": 1835381,
+        "cached_input_tokens": 1740160,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16131,
+        "reasoning_output_tokens": 1740,
+        "total_tokens": 1851512
+      }
+    },
+    {
+      "id": "IRWB-017",
+      "file": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-57-31-01a21893-8630-74d0-ba0a-8df12e83ba6b.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-017",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 29,
+      "commands": 22,
+      "toolNames": {
+        "exec_command": 28,
+        "write_stdin": 3
+      },
+      "reasoningItems": 20,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "skillCmds": [
+        "cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "readsCount": 10,
+      "tokens": {
+        "input_tokens": 2929258,
+        "cached_input_tokens": 2802176,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 20684,
+        "reasoning_output_tokens": 2841,
+        "total_tokens": 2949942
+      }
+    }
+  ]
+}

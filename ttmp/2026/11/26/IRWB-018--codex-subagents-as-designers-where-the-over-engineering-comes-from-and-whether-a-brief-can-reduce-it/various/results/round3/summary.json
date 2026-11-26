@@ -1,0 +1,180 @@
+{
+  "shared": {
+    "system-prompt": 68,
+    "skills-catalogue": 66,
+    "multi-agent": 0,
+    "agents-md": 643,
+    "agents-md:differs": [
+      "IRWB-013",
+      "IRWB-014",
+      "IRWB-015",
+      "IRWB-016",
+      "IRWB-017"
+    ]
+  },
+  "sessions": [
+    {
+      "id": "IRWB-012",
+      "file": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-51-01a2187d-dda7-7162-8452-ebbf50b18771.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 8,
+      "commands": 6,
+      "toolNames": {
+        "exec_command": 8
+      },
+      "reasoningItems": 7,
+      "reasoningSummaries": 0,
+      "skillReads": [],
+      "skillCmds": [],
+      "readsCount": 0,
+      "tokens": {
+        "input_tokens": 2740544,
+        "cached_input_tokens": 2627456,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 23000,
+        "reasoning_output_tokens": 4302,
+        "total_tokens": 2763544
+      }
+    },
+    {
+      "id": "IRWB-013",
+      "file": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-52-01a2187d-df09-7223-8b93-a0a3451e4480.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-013",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 8,
+      "commands": 11,
+      "toolNames": {
+        "exec_command": 11
+      },
+      "reasoningItems": 7,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "skillCmds": [
+        "cat /home/manuel/.codex/skills/diary/SKILL.md; tail -40 ttmp/2026/11/26/IRWB-013--*/log/01-diary.md; rg -n 'checkEach|function casesFrom|function meaningKept|function runImage|export const projectIds' src/typed/{evaluate.ts,passes.ts,backend/run.ts,program.ts} tools/corpus.mjs"
+      ],
+      "readsCount": 8,
+      "tokens": {
+        "input_tokens": 3076103,
+        "cached_input_tokens": 2941440,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 20573,
+        "reasoning_output_tokens": 4039,
+        "total_tokens": 3096676
+      }
+    },
+    {
+      "id": "IRWB-014",
+      "file": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-52-01a2187d-e123-77e0-b8b2-a511d0aab766.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 9,
+      "commands": 7,
+      "toolNames": {
+        "exec_command": 9
+      },
+      "reasoningItems": 9,
+      "reasoningSummaries": 0,
+      "skillReads": [],
+      "skillCmds": [],
+      "readsCount": 1,
+      "tokens": {
+        "input_tokens": 2904356,
+        "cached_input_tokens": 2773120,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 23779,
+        "reasoning_output_tokens": 5172,
+        "total_tokens": 2928135
+      }
+    },
+    {
+      "id": "IRWB-015",
+      "file": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-53-01a2187d-e3f9-7132-97c7-7c2a3db4b2f0.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-015",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 7,
+      "commands": 9,
+      "toolNames": {
+        "exec_command": 9
+      },
+      "reasoningItems": 7,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/{docmgr,diary}/SKILL.md"
+      ],
+      "skillCmds": [
+        "tail -32 ttmp/2026/11/26/IRWB-015--*/log/*.md; cat ttmp/2026/11/26/IRWB-015--*/{changelog,tasks}.md; cat /home/manuel/.codex/skills/{docmgr,diary}/SKILL.md"
+      ],
+      "readsCount": 45,
+      "tokens": {
+        "input_tokens": 3695499,
+        "cached_input_tokens": 3558144,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 26816,
+        "reasoning_output_tokens": 3488,
+        "total_tokens": 3722315
+      }
+    },
+    {
+      "id": "IRWB-016",
+      "file": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-54-01a2187d-ea46-71a1-8843-536109edda2e.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-016",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 7,
+      "commands": 4,
+      "toolNames": {
+        "exec_command": 7
+      },
+      "reasoningItems": 6,
+      "reasoningSummaries": 0,
+      "skillReads": [],
+      "skillCmds": [],
+      "readsCount": 41,
+      "tokens": {
+        "input_tokens": 3035527,
+        "cached_input_tokens": 2920192,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 22190,
+        "reasoning_output_tokens": 3561,
+        "total_tokens": 3057717
+      }
+    },
+    {
+      "id": "IRWB-017",
+      "file": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-round3/rollout-2026-11-26T10-33-55-01a2187d-ede2-7a50-9da2-9cc4b38371b5.jsonl",
+      "cwd": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017",
+      "model": "gpt-6.2-sol",
+      "effort": "medium",
+      "toolCalls": 8,
+      "commands": 11,
+      "toolNames": {
+        "exec_command": 11
+      },
+      "reasoningItems": 6,
+      "reasoningSummaries": 0,
+      "skillReads": [
+        "/home/manuel/.codex/skills/docmgr/SKILL.md",
+        "/home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "skillCmds": [
+        "cat /home/manuel/.codex/skills/docmgr/SKILL.md /home/manuel/.codex/skills/diary/SKILL.md"
+      ],
+      "readsCount": 12,
+      "tokens": {
+        "input_tokens": 4076312,
+        "cached_input_tokens": 3947648,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 23667,
+        "reasoning_output_tokens": 3622,
+        "total_tokens": 4099979
+      }
+    }
+  ]
+}

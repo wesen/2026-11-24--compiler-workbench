@@ -20,7 +20,7 @@ for (const file of files) {
   const lines = fs.readFileSync(file, 'utf8').trim().split('\n').map(l => JSON.parse(l));
   const meta = lines.find(l => l.type === 'session_meta')?.payload ?? {};
   const cwd = meta.cwd ?? '';
-  const id = (cwd.match(/codex-(irwb-\d+)/)?.[1] ?? path.basename(file)).toUpperCase();
+  const id = (cwd.match(/codex2?-(irwb-\d+)/)?.[1] ?? path.basename(file)).toUpperCase();
   const dir = path.join(outDir, id);
   fs.mkdirSync(dir, { recursive: true });
 

@@ -1,0 +1,5 @@
+- [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-012/ttmp/2026/11/26/IRWB-012--bytecode-vm/design-doc/01-a-stack-machine-bytecode-vm-for-specialization.md)
+- [IRWB-012 ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex2-irwb-012/ttmp/2026/11/26/IRWB-012--bytecode-vm/index.md)
+- Commit `fce37912366f9e591bf45913c86fb68d3c15a8da`
+
+The design specifies a Typed stack VM that runs seeded Fibonacci and a rolling checksum from a shared bytecode buffer. It defines valid generated inputs, an independent JavaScript oracle, and a comparison of general and hand-specialized execution in RV32 instructions per executed bytecode instruction. A minimal probe verified tape ingestion and identified the Node loader change needed for frame arrays. The full VM’s evaluator step budget remains an implementation check. The commit contains only the ticket documentation.

@@ -1,0 +1,1024 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a2187d-dda7-7162-8452-ebbf50b18771
+--------
+user
+Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-012: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+codex
+I’ll re-read IRWB-012 with the diary skill, cut details that don’t help test or measure the optimization, and commit the revised ticket.
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git log -1 --oneline && cat ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/design-doc/*.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+exec
+/usr/bin/zsh -lc 'cat ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/{index.md,tasks.md,changelog.md,log/01-diary.md}; cat /home/manuel/.codex/skills/diary/SKILL.md | head -65' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 4221ms:
+## codex/irwb-012
+4038fb8 IRWB-012: ticket and design doc for a bytecode VM
+---
+Title: Designing the Typed bytecode VM corpus project
+Ticket: IRWB-012
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: design-doc
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: repo://corpus/candela-gallery/kernel.typed
+      Note: Explicit stacks using fixed frame arrays
+    - Path: repo://corpus/reference.md
+      Note: Project and generated input specification
+    - Path: repo://src/typed/evaluate.ts
+      Note: Case generation, evaluator budget and pass equivalence
+    - Path: repo://src/typed/lift.ts
+      Note: Typed frontend operations lifted into checked workbench IR
+    - Path: repo://src/typed/specialize.ts
+      Note: Current scalar and field specialization bindings
+    - Path: repo://tools/reference-check.mjs
+      Note: Reference compiler and emulator comparison
+    - Path: repo://vendor/ds-js-os/compiler/typed/typed-wasm.js
+      Note: Typed parser and lowering for frame arrays, buffers and match
+ExternalSources: []
+Summary: A fixed-fuel Typed stack VM for comparing general and bytecode-specialized RV32 images on Fibonacci and checksum fixtures.
+LastUpdated: 2026-11-26T10:35:17.400230226-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Designing the Typed bytecode VM corpus project
+
+A small stack interpreter makes the cost of running a program through another program visible. The general VM reads its instruction stream, branches on the opcode, checks indices, and moves values between an operand stack and local variables. If a specializer knows the instruction stream, it can resolve the fetch, dispatch, and jump targets at compile time while leaving the input data dynamic. The resulting RV32 code computes the bytecode program directly, an instance of the first Futamura projection.
+
+Build one corpus project, `bytecode-vm`, with two bytecode fixtures. Fibonacci exercises conditional and backward jumps and repeatedly transfers values between locals and the stack. A rolling checksum uses the same VM to read data and perform arithmetic, with changing input length and values. Both fixtures share one Typed entry point. Keep the original interpreter straightforward so that its dispatch and stack traffic remain visible in the IR.
+
+## Typed entry point and value layout
+
+```text
+vmRun(code: buffer, data: buffer, out: buffer): i32
+```
+
+Use separate caller buffers. The first two are read through `.length` and `.charCodeAt(i)`. The host supplies bytecode as numeric u16 cells, including zero and high-bit operands. Each guest instruction occupies two cells. The first is an ASCII opcode number and the second is its unsigned 16-bit operand. The program counter `pc` is an instruction index. Fetch at `2 * pc` and `2 * pc + 1` after checking `0 <= pc < code.length / 2`. Code has 2–128 cells and an even length. Branch operands are absolute instruction indices. A fixed width makes every in-range instruction index an instruction boundary.
+
+Declare `const stack = new Int32Array(16)` and `const locals = new Int32Array(8)` once per call in `vmRun`. Both start zeroed. `sp` is the first free stack position. Use `i32` locals for `sp`, `pc`, the decoded operands, and the remaining fuel. Limit data to 16 u16 cells. The output buffer has exactly two u16 cells. On success, pop the result and write its low and high halves with `setCharCodeAt`, using `value & 65535` and `value >>> 16`. Return status zero. The host reconstructs the signed result using `(lo | (hi << 16)) | 0`. Every guest error returns a nonzero status before any output write. This lets the test compare every i32 result, including values whose bits coincide with a status code.
+
+The Typed parser gives arrays fixed literal sizes and keeps them in the declaring function's frame. Array names cannot be passed as arguments. Keep all push and pop logic in `vmRun`. A scalar-only helper such as `vmCellIndex(pc: i32): i32` is optional for an inlining experiment. If added, give the helper its own input spec because the pass check visits every function by default. The [Candela kernel](../../../../../../corpus/candela-gallery/kernel.typed) uses this frame-array and explicit-stack pattern. The [Typed frontend](../../../../../../vendor/ds-js-os/compiler/typed/typed-wasm.js) parses array declarations, indexed accesses, and text operations. The [lifter](../../../../../../src/typed/lift.ts) handles `array.address`, `array.zero`, u16 loads and stores, and the control flow behind checked accesses.
+
+### Dispatch and instruction set
+
+Initialize `pc = 0`, `sp = 0`, and `fuel = 192`. At the start of each iteration, check fuel and then the current PC. Decrement fuel once, fetch both cells, and increment `pc`. Use one `if` / `else if` chain on the numeric opcode with a final error branch. The frontend's `match` requires an enum, as in [Match enum](../../../../../../corpus/projects/match-enum/main.typed), while the buffer read yields an integer. Keep each opcode arm in one block of source and let successful arms fall through to the next loop iteration.
+
+| Opcode | Cell | Operand | Effect |
+| --- | ---: | --- | --- |
+| `P` | 80 | literal | Push the zero-extended operand. |
+| `L` | 76 | local index | Push the selected local. |
+| `S` | 83 | local index | Pop and store into the selected local. |
+| `A` | 65 | ignored | Pop right, then left. Push `left + right`. |
+| `D` | 68 | ignored | Pop right, then left. Push `left - right`. |
+| `M` | 77 | ignored | Pop right, then left. Push `left * right`. |
+| `J` | 74 | target | Assign the operand to `pc`. |
+| `Z` | 90 | target | Pop a condition. Assign the operand to `pc` if the condition equals zero. |
+| `I` | 73 | ignored | Pop an index, read that cell from `data`, and push its unsigned value. |
+| `N` | 78 | ignored | Push `data.length`. |
+| `H` | 72 | ignored | Pop the top value, publish it, and return success. |
+
+Add, subtract, and multiply wrap modulo 2³² and leave an i32. Emit zero for ignored operands when encoding fixtures. `H` may leave deeper operands in the private stack. Count `H` as one guest instruction.
+
+Use ordinary, explicit validation to give invalid guest code defined outcomes. At entry, check output length, code length, then data length. Use the following order within a dispatch arm where applicable. After opcode recognition check stack requirements, then the local index or the popped data index. Check jump targets on the next iteration via the PC guard, so an invalid untaken target is harmless. A push on a full stack or a pop from an insufficiently deep stack gives a stack error. For `I`, popping once creates the space for the push. For an arithmetic arm, check depth at least two, decrement and read for each pop, then write and increment for the push. Use a counted `while (fuel > 0)` with a fuel error after the loop to express the precedence of fuel exhaustion over the next PC check. The 192nd instruction can successfully halt.
+
+| Status | Meaning |
+| ---: | --- |
+| 0 | Guest halted successfully. |
+| 1 | Output length differs from two. |
+| 2 | Code is empty, odd-length, or longer than 128 cells. |
+| 3 | Data exceeds 16 cells. |
+| 4 | Fuel exhausted before the next fetch. |
+| 5 | Unknown opcode. |
+| 6 | PC outside the instruction stream, including fall-through. |
+| 7 | Operand stack underflow or overflow. |
+| 8 | Local index outside 0–7. |
+| 9 | Popped data index outside the data buffer. |
+
+The Typed frontend still emits checks around dynamic frame-array and buffer accesses. The explicit guest guards provide the error statuses, and the emitted checks provide candidates for bounds-check elimination. The JavaScript oracle should treat a Typed trap, calling-convention fault, or evaluator/emulator limit as a failed case even if the guest input is invalid.
+
+## Bytecode fixtures
+
+Assemble the following annotated listings in a host-side fixture builder during implementation. Strip comments, require two cells per instruction, resolve labels to instruction indices, and range-check u16 operands. Retain these disassemblies and the emitted arrays together in the project's tests or notes so changes to workloads and performance remain reproducible.
+
+```text
+Fibonacci                                   Rolling checksum (reverse order)
+00 P 0    ; data[0] is n                     00 P 0
+01 I                                        01 S 1    ; accumulator
+02 S 0    ; iterations remaining            02 N
+03 P 0                                      03 S 2    ; index one past next cell
+04 S 1    ; a                               04 L 2    ; loop
+05 P 1                                      05 Z 18
+06 S 2    ; b                               06 L 2
+07 L 0    ; loop                            07 P 1
+08 Z 22                                     08 D
+09 L 1                                      09 S 2
+10 L 2                                      10 L 1
+11 A                                        11 P 31
+12 S 3    ; next                            12 M
+13 L 2                                      13 L 2
+14 S 1                                      14 I
+15 L 3                                      15 A
+16 S 2                                      16 S 1
+17 L 0                                      17 J 4
+18 P 1                                      18 L 1    ; done
+19 D                                        19 H
+20 S 0
+21 J 7
+22 L 1    ; done
+23 H
+```
+
+Fibonacci returns `F(n)` with `F(0) = 0` and `F(1) = 1`. It executes `11 + 15*n` instructions including the final test and halt. Use `n = 0…10` for generated cases, at most 161 instructions. The checksum starts at zero and walks from the last data cell to the first, updating `acc = (31 * acc + cell) mod 2^32`. It executes `8 + 14*length` instructions, at most 176 for generated lengths 0–12. Both listings have peak stack depth two. Use Fibonacci at 0, 1, and 10 with results 0, 1, and 55. For the checksum, use empty data with result 0 and `[1, 2, 3]` with result 2946. Add `P 65535; P 65535; M; H` as a directed wraparound case with signed result −131071 and output cells `[1, 65534]`.
+
+## Corpus project and generated cases
+
+Place the implementation in `corpus/projects/bytecode-vm/`. Use `main.typed` for the entry point and dispatch loop, `notes.md` for the opcode table, fixture disassembly and workbench walkthrough, and `scripts/explore.js` for the workbench comparison. Keep the independent JS oracle and fixture builder in the Node test harness for the project. Workbench scripts are function bodies with injected handles, so the walkthrough should present a few reproducible fixture calls and inspect their IR and RV32 images. Use the Node test harness for the complete differential sweep. Directory discovery in [corpus.mjs](../../../../../../tools/corpus.mjs) picks up the project automatically. Place its ID next to `sort` and `histogram` in the explicit order in [projects/index.json](../../../../../../corpus/projects/index.json) for the browser. See [Corpus API](../../../../../../corpus/reference.md), [Strings](../../../../../../corpus/projects/strings/project.json), and [Sort](../../../../../../corpus/projects/sort/project.json).
+
+Use Fibonacci for the default checked `speed` pipeline. Set `focus` to the first dispatch arm's actual source line after implementing `main.typed`. The following example gives the input spec verbatim and uses 1 as a temporary focus value.
+
+```json
+{
+  "title": "Bytecode VM",
+  "about": ["A stack interpreter for Fibonacci and rolling-checksum bytecode."],
+  "group": "Programs",
+  "sources": ["main.typed"],
+  "pipeline": "speed",
+  "inputs": {
+    "vmRun": {
+      "code": {
+        "cells": [
+          80,0,73,0,83,0,80,0,83,1,80,1,83,2,76,0,90,22,
+          76,1,76,2,65,0,83,3,76,2,83,1,76,3,83,2,
+          76,0,80,1,68,0,83,0,74,7,76,1,72,0
+        ]
+      },
+      "data": { "buffer": [1, 1], "cell": [0, 10] },
+      "out": { "cells": [43690, 21845] }
+    }
+  },
+  "scripts": { "explore": { "about": "Inspect the VM dispatch and its RV32 cost", "fresh": true } },
+  "focus": 1
+}
+```
+
+For the checksum, set `code` to `{ "cells": [80,0,83,1,78,0,83,2,76,2,90,18,76,2,80,1,68,0,83,2,76,1,80,31,77,0,76,2,73,0,65,0,83,1,74,4,76,1,72,0] }` and `data` to `{ "buffer": [0,12], "cell": [0,65535] }`. Keep the output spec. Start a fresh Program from the same source and this alternate input spec, and run every checked pipeline from r0 on it. Run the published generic image on both fixtures as well. These specs keep executable bytecode and its matching data domain together. In [evaluate.ts](../../../../../../src/typed/evaluate.ts), `casesFrom` generates each parameter independently and `oneOf` coerces the selected value to a scalar. Use fixed `cells` per fixture and explicit tuples for extra cases.
+
+### Evaluator budget
+
+The pass contract counts executed IR statements, including branches and stores, with a limit of 20,000 per case. Guest fuel counts dispatches. Use an initial sizing envelope of 80 evaluator statements per dispatch plus 256 for setup and exit. At 192 dispatches that gives 15,616 statements. The estimate allows for the entire opcode chain, repeated checks, and temporary assignments. It needs confirmation from the actual lifted CFG and from counters. A loop such as `J 0` exercises the entire fuel budget but should be supplemented by a long, legal loop through a late dispatch arm and a checked data access.
+
+At implementation, count the longest feasible per-dispatch statement path in r0 and sample `steps` in r0 and after each changing pass. Include the largest generated input for both fixtures and the explicit exhaustion fixtures. Require zero inconclusives and a maximum of 16,000 evaluator statements in this acceptance sweep. If the measured path breaks the envelope, first reduce fixture ranges and the fuel cap together, keeping headroom for the longest successful fixture, then repeat the sweep. Frame setup and teardown are included in the measurement where the engine counts them. RV32 instructions have a separate run limit, 200,000 in the reference harness, and should be recorded independently.
+
+## Oracles and checks
+
+Write the JavaScript reference VM directly from the instruction table, using a JS `switch`, an array with `push` and `pop`, and eight zero-initialized locals. Use `| 0` for add/subtract and `Math.imul` for multiply. Decode u16 cells by numeric index and implement the same validation order and fuel accounting. Return `{ status, out, executed }`, including HALT in `executed`. Keep the JS executor independent of the Typed source, generated IR and optimizer. Test the JS oracle itself using the golden outcomes above.
+
+For every generated case and directed case, start each engine with a fresh copy of the same input memory. In Node, use `casesFrom` for checked case generation, `benchCase` for explicit inputs, and `readBuffer` with the case's memory-item addresses to recover full buffers. The convenience `p.exec` buffer display truncates long buffers. Compare the status, both output cells, and the original code and data cells. On guest errors verify the output sentinel is intact. Exercise odd and empty code, bad output size, oversized buffers, unknown opcode, fall-through, taken and untaken invalid branches, full and empty stack, local 7 versus 8, negative data index via subtraction, the last valid data index and the one-past-end index. Use `J 0` for exhaustion. Also run a checksum at length 16 and check that the oracle expects fuel exhaustion before the normal halt. To check the inclusive fuel boundary, run Fibonacci with n = 12 after inserting `J 24` at instruction 23 and moving `H` to 24. Its 192nd instruction halts with 144. Include a variant with one more jump before the halt to check that the next fetch never occurs.
+
+Run the following gates during implementation.
+
+1. Check JS against r0 in the evaluator and against the reference compiler's image on the emulator. [reference-check.mjs](../../../../../../tools/reference-check.mjs) shows how to compile and run a single image with the vendor reference compiler. Its default path compares that image against the Typed evaluator on generated inputs. The project test should assert the counters and fail on either disagreement or inconclusive results.
+2. Run `O2` and `speed` on fresh programs with per-pass checks enabled. Inspect the pipeline report for rejected passes as well as the final revision. `meaningKept` compares every changing pass with r0, by default on 40 cases per function with seed 7. `agrees` compares return values and observable memory on normal completion and treats any two traps as agreeing. The guest errors use ordinary status returns, so their statuses and buffers can be checked exactly. Exercise directed case tuples before and after optimization through the project harness. Keep a reproducible record of the first counterexample with the fixture, inputs, revision, pass, engine and seed.
+3. Lower r0 and the checked O2 and speed heads to RV32 and run the same direct comparisons with JS. Count zero unresolved cases before reporting any timing. When specialized images are available, run them under the declared code binding and compare both with general r0 and JS. Run a same-length program with one changed cell through the specialization router to confirm it does not select the specialized image for different code.
+
+## Specialization and speed experiments
+
+Bind the bytecode's exact length and ordered u16 cells at the entry boundary, with the guarantee that the buffer is immutable for the call and distinct from the writable output. Never bind the data buffer or its length. The current [specialize pass](../../../../../../src/typed/specialize.ts) and [Program.assume](../../../../../../src/typed/program.ts) bind numeric parameters or record fields. A fixed `cells` spec is test configuration. It provides no compiler proof that a buffer always contains those bytes, and a numeric binding on a pointer cannot supply that proof. Full bytecode specialization depends on the constant-memory work in [IRWB-007](../../IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory/index.md).
+
+With a constant-memory proof, propagate `pc` along each guest edge until the next fetch becomes known. Reuse residual blocks at guest loop headers. For a `Z` whose condition still depends on input, retain a conditional branch between the two known successors. This should eliminate dynamic dispatch and most code bounds checks while letting data reads remain dynamic. At guest PCs with a proven constant stack depth, look for stack slots that can become scalars or registers. Fuel and guest errors are part of the ABI, so their removal needs a proof over the admitted domain. For example, specializing checksum bytecode alone still admits length 16 and must preserve fuel exhaustion there. Cap code growth and fall back to the generic entry for unsupported specialization or different code. A host that selects variants can compare the length and complete cell sequence once before the call, or select using an already verified immutable artifact. Run the existing checked general path even while the specialized path is pending. A future hand-written ceiling may be a separate project implementing the fixture algorithms with direct locals and preserving observable results for the measured cases.
+
+| Ticket | What to look for |
+| --- | --- |
+| IRWB-003 | Compare `speed` with O2. Inspect the loop header and latch after rotation, dispatch layout, frame and spill counts, register homes for `pc`, `sp` and fuel, and materialization of hot constants. Look at inlining if the scalar decode helper is present. |
+| IRWB-006 | Inspect join values for `pc`, `sp` and loop state in SSA. Compare fold/simplify rule activity on address arithmetic before and after constants become visible. |
+| IRWB-007 | Compare generic and residual code for both bound code streams, with variable data. Track the disappearance of instruction fetches and dispatch branches independently of stack improvements. |
+| IRWB-008 | Use exact evidence where available for rule-derived arithmetic rewrites. Keep sampled end-to-end checks for dispatch, memory, fuel and control-flow edits whose equivalence still needs evidence. |
+| IRWB-010 | Try discovering and verifying a straight-line fusion such as `L a; L b; A; S c`. Check jump entries into the sequence, stack headroom, local validity, fuel, and intermediate error behavior before treating it as one superinstruction. Use the pure address and arithmetic expressions to exercise rule discovery and equality saturation. Inspect short straight-line RV32 windows after dispatch is gone for machine-level superoptimization. |
+| IRWB-011 | The VM uses exact integers. Its return bits and output cells provide a strict control workload alongside experiments using tolerance contracts for floats. |
+
+Measure one fresh emulator call per case and image. The primary metric is **executed RV32 instructions / executed guest instructions**. Read the numerator from the emulator run's `steps`. Use the independently counted guest instructions from JS for the denominator in every variant, including a residual image with no dispatch loop. Include the VM's prologue and result writes. If a specialization guard runs in the measured image it counts, and if a host resolves the binding beforehand record that separately. Report total RV32 instructions, guest instructions, the ratio, and image/function bytes for each fixture and case, for the general r0, O2, speed, and available specialized variants. Compare matched tuples such as Fibonacci 0, 5 and 10, or checksum length 0, 4 and 12. For a pooled number use `sum(RV32 steps) / sum(guest steps)` over the same successful cases. Record backend options, input seed, and compiler revision and hold them fixed for the main comparison. Use dynamic instruction heat and IR/assembly inspection to attribute changes in code fetches, dispatch branches, spills and bounds checks. Report errors and limit cases in the correctness results.
+
+Related designs include the [IRWB-003 speed guide](../../../25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/design-doc/01-intern-guide-closing-the-speed-gap-with-inlining-copy-coalescing-constants-in-registers-and-loop-rotation.md), the [IRWB-006 SSA and rules guide](../../../25/IRWB-006--rewrite-rules-as-verified-data-and-a-single-assignment-view-of-typed-blocks/design-doc/01-intern-guide-rewrite-rules-as-verified-data-and-a-single-assignment-view-of-typed-blocks.md), and the [IRWB-008 exact checking guide](../../IRWB-008--exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-as-the-standard-for-new-pipelines/design-doc/01-intern-guide-exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-for-new-pipelines.md). The [research agenda](../../../24/IRWB-002--research-agenda-compiler-techniques-and-frameworks-for-the-ir-workbench/design-doc/01-intern-guide-and-research-agenda-the-ir-workbench-as-it-is-and-the-compiler-techniques-and-frameworks-to-build-next.md) describes the proposed general specializer (E4), equality saturation and machine windows (B4–B5), and tolerance contracts (D6). In this checkout, [IRWB-010](../../IRWB-010--sketch-rewrite-search-on-ssa-and-verified-rules-rule-discovery-equality-saturation-a-window-superoptimizer/index.md) and [IRWB-011](../../IRWB-011--sketch-image-level-contracts-for-float-freedom-tolerance-contracts-judged-on-rendered-frames/index.md), like IRWB-007, provide ticket indexes rather than standalone design documents.
+
+## Implementation sequence
+
+1. Build the host fixture encoder, check its arrays against the listings, and verify the independent oracle with the golden and malformed cases.
+2. Implement the Typed ABI and dispatch. Start with `P` and `H`, add local and arithmetic operations, then fetch branches and data reads. Bring up r0 against JS and the reference RV32 image. Review the lifted controls and the frame stores for the intended source pattern.
+3. Add corpus metadata, notes, and the fresh exploration script. Test both generated case specs, the directed cases, and the evaluator budget at every changed revision. Record general image counts before changing anything for specialization.
+4. When constant-memory bindings can express the fixed code artifact, run the same checks and measurements on separately bound Fibonacci and checksum images. Compare their assembly with the general images and keep the generic VM as the baseline.
+
+ succeeded in 4396ms:
+---
+Title: A bytecode VM for compiler optimization
+Ticket: IRWB-012
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: Design a Typed bytecode VM corpus project and its compiler experiment harness.
+LastUpdated: 2026-11-26T10:35:17.128370637-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# A bytecode VM for compiler optimization
+
+## Overview
+
+The corpus project design specifies a Typed stack interpreter, two bytecode fixtures, and correctness and measurement plans for general and specialized RV32 images.
+
+## Key Links
+
+- [Design document](design-doc/01-designing-the-typed-bytecode-vm-corpus-project.md)
+- [Design diary](log/01-diary.md)
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- compiler
+- ir
+- performance
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts
+# Tasks
+
+## TODO
+- [x] Specify the Typed VM, bytecode fixtures, oracle and measurement plan <!-- t:1bfd -->
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+
+## 2026-11-26
+
+Documented the bytecode VM design, Fibonacci and checksum case specs, and the plan for checking and measuring general and specialized RV32 images.
+---
+Title: IRWB-012 design diary
+Ticket: IRWB-012
+Status: active
+Topics:
+    - compiler
+    - ir
+    - performance
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: Chronological design and validation record for IRWB-012.
+LastUpdated: 2026-11-26T10:35:17.128370637-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# IRWB-012 design diary
+
+## Step 1 — Read the compiler and corpus
+
+I traced text access, dispatch, and frame arrays from corpus examples through the vendored Typed frontend and the lifter. I checked the pass contract and reference runner to confirm that evaluator steps and RV32 instructions are different units.
+
+### Prompt context
+
+<details>
+<summary>User request verbatim</summary>
+
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node). It contains a compiler from Typed — a small statically typed language with TypeScript-like syntax — to 32-bit RISC-V (RV32IMF), built on an IR framework in which every pass is checked. Your task: create a docmgr ticket and write a design document for ONE new corpus program, described below, that will serve as a playground for compiler optimizations. Do not implement the program in this task. Stop after the design document is written and committed.
+
+## Read first
+- `corpus/projects/*/`: each project has `main.typed`, `project.json` (pipeline, input specifications for generated cases, focus), `notes.md`, `scripts/`. Look at several, e.g. `blend`, `checksum`, `sort`, `histogram`, `records`, `match-enum`, `strings`.
+- `corpus/reference.md`: the workbench API, including the input-specification format for generated cases.
+- `corpus/candela-gallery/*.typed`: a large Typed program (records, f32, `new Int32Array(n)` frame arrays, explicit stacks instead of recursion).
+- The language as the corpus uses it: `i32`, `f32`, `bool`, records, `enum` + `match`, `distinct` types, u16 text buffers (`charCodeAt`, `setCharCodeAt`, `.length`), `new Int32Array(n)` fixed-size arrays, `for`/`while`/`loop`/`break`/`continue`. Assume no recursion. Verify any feature you rely on against the front end and lifter in `src/typed/` (e.g. `lift.ts`) and the corpus.
+- How programs are checked: every pass is accepted only if the optimized program agrees with the original (r0) on generated cases (`casesFrom` and `meaningKept` in `src/typed/evaluate.ts`; step limit 2e4 per case for pass checks). The reference compiler's image on the RV32 emulator is a second oracle (`tools/reference-check.mjs`). Instruction counts on the emulator are the speed measure.
+- Optimization work this program should feed, as tickets under `ttmp/`: IRWB-003 (inlining, loop rotation, copy coalescing, constants in registers; the `speed` pipeline), IRWB-006 (rule tables, SSA), IRWB-007 (specialization on constant data, partial evaluation), IRWB-008 (exact checking), IRWB-010 (rule discovery, equality saturation, superoptimization), IRWB-011 (tolerance contracts for floats). Read their design docs only as far as you need.
+
+## Ticket and documents
+- Create the ticket: `docmgr ticket create-ticket --ticket <ID> --title "<title>" --topics compiler,ir,performance` (use only existing vocabulary topics: compiler, ir, performance, verification, research, candela, workbench, typescript; do not edit the vocabulary).
+- Add the design doc: `docmgr doc add --ticket <ID> --doc-type design-doc --title "<title>"`.
+- Use your docmgr and diary skills. Keep a short diary in the ticket's `log/` (a step per significant action). Relate the key files with `docmgr doc relate`.
+- The design document should let a new intern implement the program: the goal and which optimizations it exercises; the Typed program design (functions, data layout, sizes); the independent oracle and how a result is checked against it; input specifications for generated cases; sizing against the step limit; how it becomes a corpus project (files, `project.json`); a test and measurement plan; implementation steps. Use prose, with code or pseudocode where it helps, and file references.
+- How the program should be written: the way ordinary code is written, not pre-optimized, so the compiler has something to find; a hand-optimized version as a separate project can serve as a ceiling; constants worth specializing on (a bytecode, a pattern, a size) live in input buffers so the same program can be measured general and specialized.
+
+## Constraints
+- Write only inside your ticket directory (`ttmp/2026/11/26/<ID>--…/`). Do not modify `src/`, `tests/`, `tools/`, `corpus/`, other tickets or `ttmp/vocabulary.yaml`.
+- Never run code from downloaded archives under `ttmp/**/sources/`.
+- Do not run Candela-scale processes.
+- When done, commit only your ticket directory on the current branch with the message `<ID>: ticket and design doc for <program>`. Do not push.
+- Final message: the design doc's path, the ticket path, the commit hash, and a one-paragraph summary.
+## Your program — ticket IRWB-012: a bytecode VM
+A stack-machine bytecode interpreter written in Typed: an opcode `match` (or equivalent dispatch) in a loop, an operand stack and locals in `Int32Array`s, bytecode in a text buffer; plus small bytecode programs to run on it (for example fib, a sieve, insertion sort, a checksum).
+- Why: an interpreter specialized on its bytecode is a compiled program (the first Futamura projection); this is IRWB-007's specialization idea on a small, controllable program. It also exercises dispatch lowering, keeping VM state in registers, bounds checks on stack and code accesses, and superinstructions.
+- Oracle: the same bytecode on a JavaScript reference VM; specialized against unspecialized output.
+- Measure: instructions per executed bytecode instruction, general and specialized.
+
+</details>
+
+### Findings
+
+- The frontend restricts `match` to enums and gives `charCodeAt` an i32 result. Numeric dispatch keeps the bytecode on the supported path.
+- Frame arrays use literal sizes and stay in the declaring function. Candela provides an explicit stack example.
+- Generated cases draw each parameter independently. The current specializer binds scalars and record fields. IRWB-002 provides the research context for IRWB-007, IRWB-010, and IRWB-011.
+
+## Step 2 — Specify the VM and fixtures
+
+I created IRWB-012 with `docmgr ticket create-ticket` and added the design with `docmgr doc add`. Two-cell instructions, private frame arrays, and a two-cell output let the independent oracle compare full i32 results and guest failures exactly.
+
+The Fibonacci and checksum fixtures exercise different dispatch paths through one entry. Their generated domains fit inside a 192-dispatch fuel cap. The 16,000-statement target requires measurement once the Typed program exists. Both general and specialized images use the JS VM’s guest instruction count as the denominator.
+
+## Step 3 — Relate and check the design
+
+I related seven files with `docmgr doc relate` and updated the design task and changelog. The first diary write raised `FileNotFoundError` because the generated ticket had no `log/` directory. I created the directory. Doctor then reported `frontmatter delimiters '---' not found` for the diary. I added frontmatter using the existing `reference` document type.
+
+The documentation checks cover the project JSON, both bytecode listings and cell arrays, branch targets, sizing arithmetic, and links. `docmgr doctor --ticket IRWB-012 --stale-after 30` passed. Evaluator and emulator measurements belong to the implementation described in the design.
+---
+name: diary
+description: Write and maintain chronological implementation diaries with evidence, failures, decisions, commits and review instructions. Use when asked to keep a diary, dev log, ticket work history or debugging record; detailed diary requests use the full investigation format.
+---
+
+# Diary
+
+## Select the entry mode
+
+- **Investigation:** substantive implementation, debugging, design decisions, or an explicit detailed diary request. Use the full [investigation format](references/investigation-entry.md).
+- **Milestone:** routine successful validation, publication or bookkeeping without substantive debugging. Use the compact [milestone format](references/milestone-entry.md).
+- When uncertain, preserve the meaningful failure/decision context rather than compressing it away. Higher-priority instructions and an explicit user format override these defaults.
+
+Each numbered step begins with 1–2 short prose paragraphs explaining intent and outcome. Record failures promptly, including the exact command and relevant diagnostic. Keep historical entries intact; change future entry conventions prospectively.
+
+## Prompt and evidence discipline
+
+Record the actual authored user request verbatim the first time it appears; later steps link to that entry. Do not fabricate a verbatim quote from a summary. Distinguish user-authored instructions from automatically injected runtime metadata; avoid repeating counters or budget notices. If only a summary survives, label it as a summary and link the original source when available.
+
+Use [evidence levels](references/evidence-levels.md): routine success needs command/result/revision, experiments need configuration and measurements, and failures need exact relevant diagnostics. Preserve raw bytes when identity matters, not just to archive decorative successful CLI output.
+
+## Working loop
+
+Implement toward a major feature or integration milestone, then validate its affected behavior at that boundary. Commit boundaries and validation boundaries are not the same: smaller focused commits are useful checkpoints and do not warrant extensive checks, full builds or broad test suites merely because a commit is being made. Prioritize visible feature progress over repeated validation and bookkeeping loops.
+
+At a major boundary, run the relevant validation gate. If it fails, collect the diagnostics, fix the issues together where practical, and rerun the narrow checks needed to verify those fixes rather than restarting the entire validation pipeline after each edit. Run an earlier targeted check only when it resolves a concrete uncertainty or material risk; honor explicit project-required checks. Record which checks passed, failed or were deferred, and never describe an unvalidated checkpoint as qualified.
+
+Update the detailed diary, tasks and changelog at meaningful milestones, preserving failure evidence as it occurs without requiring a full bookkeeping cycle for every small edit. Code and documentation may share a focused commit when that is clearer; two separate commits per small edit are not mandatory. Record the code hash in the subsequent checkpoint when available.
+
+Use `docmgr` for ticket creation, task updates and relations. If a verified local binary provides `milestone record`, it can consolidate task/history updates; it does not author the diary or judge evidence. Follow the docmgr skill's actual API and capability check, not a proposed command from a design sketch.
+
+Keep RelatedFiles focused on primary implementation and evidence files, with absolute `--file-note "path:reason"` arguments. A commit or bounded receipt supplies the full changed-path inventory; do not duplicate every path in metadata. Never hide review-critical files merely to hit an arbitrary count.
+
+## Resume and review
+
+Resume from the latest relevant checkpoint, current request and current files, then expand the necessary earlier investigation. Do not reread an entire long diary automatically. Unchanged instruction hashes are change signals, not proof the model still remembers the text; reload absent instructions and obey higher-priority full-read rules.
+
+The [workflow reference](references/diary.md) points to the canonical formats and evidence rules. No runtime phase loader or automatic policy enforcement is implied by this prose.
+
+exec
+/usr/bin/zsh -lc "rg -n 'function agrees|function readBuffer|function benchCase|function casesFrom' src/typed/evaluate.ts; sed -n '1,62p' tools/reference-check.mjs; sed -n '135,190p' src/typed/program.ts; rg -n 'function bce|const bce|case .bounds|load16u' src/typed/passes.ts | head -35; cat corpus/projects/{checksum,sort}/project.json; sed -n '1,60p' /home/manuel/.codex/skills/diary/references/investigation-entry.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+exec
+/usr/bin/zsh -lc "sed -n '423,460p;462,495p;550,571p;594,627p' src/typed/evaluate.ts; rg -n 'arrayElement|codeUnitAddress|arrayDeclaration|match requires|I32_LOAD16_U' vendor/ds-js-os/compiler/typed/typed-wasm.js; rg -n -i 'bounds|unreachable|array.zero|load16u' src/typed/lift.ts | head -40" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 822ms:
+          const a = ev(v.args[0]) + (v.imm as number);
+          check(a, 2);
+          return mem.getUint16(a, true);
+        }
+        case 'call': {
+          const r = call(v.imm as string, v.args.map(ev), depth + 1);
+          if (typeof r === 'number') return r;
+          results = r;
+          return 0;
+        }
+        case 'result':
+          return results[v.imm as number];
+        case 'caddr': {
+          // text.checked_address: trap unless position < capacity (unsigned), then receiver + 2 * position
+          const r = ev(v.args[0]),
+            p = ev(v.args[1]);
+          check(r, 4);
+          if (p >>> 0 >= mem.getInt32(r, true) >>> 0) throw new Trap('checked address out of range', id);
+          return (r + (p << 1)) | 0;
+        }
+        case 'aaddr':
+          return (frame + (v.imm as number)) | 0;
+        case 'tuple':
+          throw new Error('evaluator: a tuple is only a returned value');
+        default: {
+          const a = ev(v.args[0]);
+          if (v.args.length === 1) return f32Op(v.op, a)!;
+          const b = ev(v.args[1]);
+          return I32_BINARY.has(v.op) ? binop(v.op, a, b) : f32Op(v.op, a, b)!;
+        }
+      }
+    };
+    try {
+      let b = f.blocks[0];
+      for (;;) {
+        let next: string | undefined;
+        for (const sid of b.stmts) {
+          if (++steps > limit) {
+            t.limit = true;
+            throw t;
+          }
+          if (counts) counts.set(sid, (counts.get(sid) || 0) + 1);
+          if (observe) observe(name, sid, L);
+          const s = st.get(sid) as StmtRec;
+          switch (s.op) {
+            case 'set':
+              L[s.local!] = ev(s.value!);
+              break;
+            case 'eval':
+              ev(s.value!);
+              break;
+            case 'store': {
+              const a = ev(s.addr!) + s.offset!,
+                v = ev(s.value!);
+              if (s.width === 32) {
+                check(a, 4);
+                mem.setInt32(a, v, true);
+              } else {
+                check(a, 2);
+                mem.setUint16(a, v & 65535, true);
+              }
+              break;
+            }
+            case 'zero':
+              bytes.fill(0, frame + s.offset!, frame + s.offset! + s.bytes!);
+              break;
+            case 'br':
+              next = s.to;
+              break;
+            case 'br_if':
+              next = ev(s.cond!) ? s.then : s.else;
+              break;
+const sameBytes = (a: Uint8Array, b: Uint8Array) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+};
+
+/**
+ * Compiler Workbench's verdict for one case: `expected` is the meaning, `got` the run under test. A fault (a
+ * calling-convention violation the emulator detects) never agrees; a trap agrees with any trap; otherwise
+ * results and the memory both wrote must match.
+ */
+export function agrees(expected: RunResult, got: RunResult): boolean {
+  if (got.fault) return false;
+  if (expected.trap) return !!got.trap;
+  if (got.trap || !sameResult(got.result, expected.result)) return false;
+  const n = Math.min(expected.bytes.length, got.bytes.length);
+  return sameBytes(got.bytes.subarray(0, expected.bytes.length), expected.bytes.subarray(0, n));
+}
+
+export interface MeaningParams {
+  readonly count?: number;
+  readonly seed?: number;
+export function meaningKept(
+  params: MeaningParams = {},
+): DifferentialInvariant<{ origin: typeof BlocksIR; candidate: typeof BlocksIR }> {
+  const count = params.count ?? 40,
+    seed = params.seed ?? 7,
+    inputs = params.inputs ?? {},
+    limit = params.limit ?? 2e4,
+    roots = params.roots ? [...params.roots].sort() : null;
+  const key = canonicalJson(roots ? { count, seed, inputs, limit, roots } : { count, seed, inputs, limit });
+  let check = meaningChecks.get(key);
+  if (!check) {
+    check = differential<{ origin: typeof BlocksIR; candidate: typeof BlocksIR }, Case, RunResult>({
+      id: 'typed.meaning-kept',
+      version: `1+${hash(key)}`,
+      description: `${roots ? `the entries ${roots.join(', ')} agree` : 'every function agrees'} with the origin on ${count} generated cases (seed ${seed})`,
+      inputs: { origin: BlocksIR, candidate: BlocksIR },
+      baseline: 'origin',
+      subject: 'candidate',
+      count,
+      seed,
+      random: rng,
+      cases: ({ origin }) => {
+        const st = storeOf(origin.value);
+        return (roots ?? [...st.fns.keys()]).flatMap(fn => casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }));
+      },
+      run: (_side, art, c) =>
+        evaluate(storeOf((art as Artifact<TypedBlocks>).value), c.fn, c.args, c.memory, { limit }),
+      inconclusive: r => r.limit,
+      compare: (expected, got, c) =>
+        agrees(expected, got)
+          ? true
+          : {
+              ok: false,
+              reason: `${c.fn}#${c.n}: expected ${String(outcome(expected))}, got ${String(outcome(got))}`,
+533:    I32_LOAD, I32_LOAD16_U, I32_STORE, I32_STORE16, I32_CONST, I32_EQZ, I32_EQ, I32_NE, I32_LT_S, I32_GT_S,
+615:    codeUnitAddress(receiver, position) {
+785:            this.codeUnitAddress(binding.index, pos);
+786:            this.code.push(I32_LOAD16_U, 1, 4);
+875:        this.codeUnitAddress(receiver, position);
+1117:        this.codeUnitAddress(receiver, position);
+1292:    arrayDeclaration(id, annotation) {
+1312:    arrayElement(array) {
+1402:        this.arrayElement(array);
+1411:        this.arrayElement(array);
+1474:        this.codeUnitAddress(receiver, position);
+1591:        if (lex.token.value === "new") return this.arrayDeclaration(id, annotation);
+1707:        if (!members) lex.fail("match requires an enum, got " + scalarType(type));
+12: *     branch over `unreachable`, a shift and an add). The Compiler Workbench corpus is lifted this way. A program whose
+123:  /** The size of the frame array area (array.address, array.zero). */
+387:        case 'unreachable':
+510:    x.op === 'load' || x.op === 'load16u' || x.op === 'call' || x.op === 'caddr' || x.op === 'result';
+579:          op === 'i32.load16_u' ? 'load16u' : 'load',
+597:    else if (op === 'array.zero') {
+717:    } else if (op === 'unreachable') {
+718:      stmt({ op: 'trap', why: 'unreachable' }, o);
+
+ succeeded in 831ms:
+102:export function readBuffer(bytes: Uint8Array, at: number): number[] {
+232:export function casesFrom(
+257:export function benchCase(st: Store, fname: string, bench: Readonly<Record<string, unknown>> = {}): Case {
+561:export function agrees(expected: RunResult, got: RunResult): boolean {
+608:      description: `${roots ? `the entries ${roots.join(', ')} agree` : 'every function agrees'} with the origin on ${count} generated cases (seed ${seed})`,
+// The evaluator at r0 against the reference compiler's images (typed-rv32.js, default policy), 100 cases per
+// function, as the book's chapter 13 reports it: node tools/reference-check.mjs [--o2]
+import { installVendor } from './node-vendor.mjs';
+import { projectIds, projectFiles } from './corpus.mjs';
+await installVendor({ reference: true });
+const { Program } = await import('../dist/typed/program.js');
+const { projectSource } = await import('../dist/typed/project.js');
+const B = await import('../dist/typed/backend/index.js');
+const o2 = process.argv.includes('--o2');
+let fns = 0, agree = 0, decided = 0, inconclusive = 0; const bad = [];
+for (const id of projectIds()) {
+  const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+  let image;
+  if (o2) { await p.pipeline('O2'); image = B.lowerToImage(p.head).image; }       // our O2 image vs the evaluator
+  else { const r = globalThis.typedRv32.compile(ps.source, [], undefined); image = B.imageFromCode(id, r.image, r.entries); }
+  const c = p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) });
+  for (const f of c.fns) { fns++; agree += f.agree; decided += f.total; inconclusive += f.inconclusive; if (f.status === 'disagree') bad.push(`${id}.${f.fn}: ${JSON.stringify(f.counterexamples[0])}`); }
+}
+console.log(JSON.stringify({ against: o2 ? 'our O2 images' : 'reference images', functions: fns, decided, agree, inconclusive }));
+if (bad.length) console.log(bad.join('\n'));
+
+  get id(): string {
+    return `prog:${this.name}`;
+  }
+  /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
+  readonly assumptions: Record<string, Record<string, number>> = {};
+  /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
+  get inputs(): ProgramInputs {
+    const base = this.options.inputs ?? {};
+    const out: Record<string, Record<string, unknown>> = Object.fromEntries(
+      Object.entries(base).map(([f, v]) => [f, { ...v }]),
+    );
+    for (const [f, params] of Object.entries(this.assumptions))
+      for (const [k, v] of Object.entries(params)) {
+        const dot = k.indexOf('.');
+        if (dot < 0) {
+          out[f] = { ...(out[f] ?? {}), [k]: v };
+          continue;
+        }
+        // a record field: fix it inside the parameter's record specification
+        const param = k.slice(0, dot),
+          field = k.slice(dot + 1);
+        const spec = ((out[f] ?? {})[param] ?? { record: {} }) as { record?: Record<string, unknown> };
+        out[f] = { ...(out[f] ?? {}), [param]: { ...spec, record: { ...(spec.record ?? {}), [field]: { oneOf: [v] } } } };
+      }
+    return out as ProgramInputs;
+  }
+  /**
+   * Restrict the program's meaning to inputs satisfying `bindings`: from now on the contract every pass must meet,
+   * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
+   */
+  assume(
+    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
+  ): Record<string, Record<string, number>> {
+    const previous = JSON.parse(JSON.stringify(this.assumptions));
+    for (const b of bindings) {
+      if (b.record && b.field) {
+        // every parameter of that record type, in every function
+        const st = storeOf(this.head.value);
+        for (const f of st.fns.values())
+          f.params.forEach((t, i) => {
+            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value;
+          });
+        continue;
+      }
+      this.fname(b.fn!);
+      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value;
+    }
+    return previous;
+  }
+  /** Specialize on an outer artifact's facts: assume them, then apply the `specialize` pass under that contract. */
+  async specialize(bindings: Artifact<import('./specialize.js').Bindings>): Promise<ApplyResult> {
+    const { specialize } = await import('./specialize.js');
+    const previous = this.assume(bindings.value.bindings);
+    try {
+      return await this.apply(specialize, { params: { bindings } });
+593:export const bce = typedPass({
+{
+  "title": "Checksum: a check that goes away",
+  "about": [
+    "A loop to work.length. The loop test proves the index is in",
+    "range, so bounds-check elimination removes the check inside."
+  ],
+  "group": "Start here",
+  "pipeline": "O2",
+  "inputs": { "total": { "work": { "buffer": [0, 40] } } },
+  "chapter": "bounds",
+  "focus": 4,
+  "try": [
+    [
+      "Which three facts does bce combine to remove the check? Show me",
+      "in its source."
+    ],
+    [
+      "Make a variant where the index can be negative and show that",
+      "bce refuses."
+    ]
+  ]
+}
+{
+  "title": "Insertion sort",
+  "about": [
+    "Nested loops with loads and stores into one buffer. The checks",
+    "compare the sorted cells."
+  ],
+  "group": "Programs",
+  "pipeline": "O2",
+  "inputs": {
+    "sort": { "work": { "buffer": [0, 12], "cell": [0, 99] } }
+  },
+  "chapter": "checks",
+  "focus": 6,
+  "try": [
+    [
+      "Which bounds checks stay in sort, and which facts would remove",
+      "each?"
+    ],
+    [
+      "Where does sort spend its instructions on a reversed buffer of",
+      "10?"
+    ]
+  ]
+}
+# Investigation entry
+
+Use this full format for substantive implementation, design, debugging, or an explicit detailed-diary request. Begin each step with 1–2 prose paragraphs. The prompt is verbatim once, then referenced. Preserve exact failures, not invented or reconstructed diagnostics.
+
+```markdown
+## Step N: Descriptive title
+
+One or two short paragraphs explaining intent, change and outcome.
+
+### Prompt Context
+**User prompt (verbatim):** "Actual authored request" (or: see Step N)
+**Assistant interpretation:** What is being requested.
+**Inferred user intent:** Intended outcome and reason.
+**Commit (code):** hash — "message" (when available)
+
+### What I did
+- Concrete files, symbols and commands.
+
+### Why
+- Rationale and considered alternatives.
+
+### What worked
+- Evidence-backed outcomes.
+
+### What didn't work
+- Exact command, diagnostic, scope and recovery; or no failures observed.
+
+### What I learned
+- Corrected assumptions and constraints.
+
+### What was tricky to build
+- Underlying cause, symptoms and exact solution, including ordering/lifetime boundaries.
+
+### What warrants a second pair of eyes
+- Review-critical correctness, concurrency, security or performance questions.
+
+### What should be done in the future
+- Follow-ups implied by this step; N/A if none.
+
+### Code review instructions
+- Starting files/symbols and validation commands.
+
+### Technical details
+- Concrete contracts, snippets, limits and references.
+```
+
+Do not add compatibility shims unless required. Record behavior changes and update tests/docs. A passing test alone does not prove all user requirements are satisfied.
+
+codex
+The old design spent much of its complexity on diagnosing malformed bytecode. I’ll replace the status and output-buffer protocol with a direct `i32` return and Typed’s existing bounds checks, while keeping both workloads, the independent oracle, and the specialization comparison.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+path = next(next(Path('ttmp/2026/11/26').glob('IRWB-012--*')).glob('design-doc/*.md'))
+header = path.read_text().split('\\n---\\n', 1)[0]
+path.write_text(header + '\\n---\\n\\n')
+PY
+cat >> ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/design-doc/01-designing-the-typed-bytecode-vm-corpus-project.md <<'EOF'
+# Designing the Typed bytecode VM corpus project
+
+Build one Typed interpreter, "'`bytecode-vm`, that runs Fibonacci and a rolling checksum. Both pass bytecode in a buffer and vary the data independently. Partial evaluation with known bytecode should replace instruction fetch and dispatch with direct branches while leaving the data computation dynamic. This is the first Futamura projection. Compare general and specialized images in RV32 instructions per executed guest instruction.
+
+## Interpreter
+
+```text
+vmRun(code: buffer, data: buffer): i32
+```
+
+Each instruction is two u16 cells, an ASCII opcode and an unsigned operand. Use `charCodeAt` to fetch both cells at `2 * pc` and `2 * pc + 1`. The PC starts at zero and advances by one instruction after each fetch. Jumps supply an absolute instruction index. Use a single `if` / `else if` chain in the table order. Typed'"'s "'`match` requires an enum and `charCodeAt` produces an i32.
+
+Inside `vmRun`, declare `const stack = new Int32Array(8)` and `const locals = new Int32Array(4)`. Typed zeroes them on entry to their declarations. Keep the arrays and the scalar PC, stack depth, and fuel in this one function. Push by writing `stack[sp]` and incrementing `sp`. Pop by decrementing `sp` and reading `stack[sp]`. Start `sp` at zero. Use Typed'"'s checked array and buffer accesses for out-of-range stack, local, code, and data accesses. The packed code can include zero and high-bit cells. The [Candela kernel](../../../../../../corpus/candela-gallery/kernel.typed) shows the frame-array pattern. See the [Typed frontend](../../../../../../vendor/ds-js-os/compiler/typed/typed-wasm.js) and [lifter](../../../../../../src/typed/lift.ts) for the checked accesses and array initialization.
+
+Give the loop 192 iterations. Each iteration consumes one unit of fuel, including the iteration that halts. Return zero for an unknown opcode or after the loop exhausts fuel. Zero is also a valid result. Bounds traps are observable and the two caller buffers are read-only.
+
+| Opcode | Operand | Effect |
+| --- | --- | --- |
+| "'`P` | literal | Push the unsigned operand. |
+| `L` | local index | Push the selected local. |
+| `S` | local index | Pop and store into the selected local. |
+| `A`, `D`, `M` | ignored | Pop right then left and push their sum, difference, or product, respectively, wrapping as i32. |
+| `J` | target | Set `pc` to the operand. |
+| `Z` | target | Pop a value and set `pc` to the operand if the value is zero. |
+| `I` | ignored | Pop an index and push `data.charCodeAt(index)`. |
+| `N` | ignored | Push `data.length`. |
+| `H` | ignored | Return the top stack value. |
+
+## Fixtures and corpus project
+
+Each line below is one instruction. Encode it as `[ascii(opcode), operand]`, using zero for missing operands. Keep the canonical listings here and the encoded cells in project inputs or test fixtures. Direct numeric conversion suffices for both listings.
+
+```text
+Fibonacci                               Rolling checksum (reverse order)
+00 P 0    ; data[0] is n                 00 N
+01 I                                    01 S 2    ; index one past next cell
+02 S 0    ; iterations remaining        02 L 2    ; loop
+03 P 1                                  03 Z 16
+04 S 2    ; b, with a = locals[1] = 0    04 L 2
+05 L 0    ; loop                        05 P 1
+06 Z 20                                 06 D
+07 L 1                                  07 S 2
+08 L 2                                  08 L 1    ; accumulator starts at 0
+09 A                                    09 P 31
+10 S 3    ; next                        10 M
+11 L 2                                  11 L 2
+12 S 1                                  12 I
+13 L 3                                  13 A
+14 S 2                                  14 S 1
+15 L 0                                  15 J 2
+16 P 1                                  16 L 1    ; done
+17 D                                    17 H
+18 S 0
+19 J 5
+20 L 1    ; done
+21 H
+```
+
+Fibonacci returns `F(n)` from `data[0]`, with `F(0) = 0` and `F(1) = 1`. It runs `9 + 15*n` instructions, at most 159 for generated n from 0 to 10. The checksum folds the data from right to left with `acc = (31 * acc + cell) mod 2''^32`. It runs `6 + 14*length` instructions, at most 174 for generated lengths 0–12. Both peak at two stack elements.
+
+Put the interpreter in `corpus/projects/bytecode-vm/main.typed`. Add `project.json` with title `Bytecode VM`, group `Programs`, sources `["main.typed"]`, pipeline `speed`, and focus on the first dispatch arm. Add `notes.md` with commands to inspect the general VM in the workbench and register the project in [the display order](../../../../../../corpus/projects/index.json). Keep the JS oracle and cross-engine checks in one Node test. See the [corpus API](../../../../../../corpus/reference.md) for the project format.
+
+Under `inputs.vmRun` use these specs. Replace each code placeholder with the encoded numeric cell array. Fibonacci is the project default. Run a fresh checked `speed` pipeline with the checksum spec in the Node test so every changing pass is checked on both workloads.
+
+| Fixture | `code` | `data` |
+| --- | --- | --- |
+| Fibonacci | `{ "cells": [/* Fibonacci cells */] }` | `{ "buffer": [1, 1], "cell": [0, 10] }` |
+| Checksum | `{ "cells": [/* checksum cells */] }` | `{ "buffer": [0, 12], "cell": [0, 65535] }` |
+
+## Correctness and sizing
+
+Implement the JS VM from the opcode table using `switch`, a JS push/pop stack with the same depth limit, and four zeroed locals. Check JS indices explicitly so out-of-range reads and writes are classified as bounds traps. Use `| 0` for addition and subtraction and `Math.imul` for multiplication. Return the i32 or trap outcome and the executed guest instruction count, including halt. Verify the oracle with Fibonacci at 0, 1, and 10 (0, 1, 55), checksum on empty data and `[1, 2, 3]` (0, 2946), and a wrapping multiply (`P 65535; P 65535; M; H` returns −131071). Cover the checked access families with one directed trap each for truncated code, stack underflow, an invalid local, and an invalid data index. Use a checksum at length 16 with all cells set to 1 to exercise fuel exhaustion on a normal loop path.
+
+Use `casesFrom` to generate cases and `benchCase` for directed calls. Compare the JS outcome against the evaluator at r0, the reference compiler'"'s RV32 image, and the workbench RV32 images at r0 and after checked "'`speed`. Each run starts from the same input bytes. On normal completion, compare the i32 and verify the caller buffers are unchanged. An expected bounds trap must agree with a trap. Engine faults and limits fail the test. Inspect the per-pass reports for rejections and inconclusive cases. [evaluate.ts](../../../../../../src/typed/evaluate.ts) implements the case generator and pass contract. [reference-check.mjs](../../../../../../tools/reference-check.mjs) shows how to run the reference image.
+
+`meaningKept` caps each case at 20,000 executed IR statements, with 40 cases per function and a default seed of 7. The 192-instruction guest cap gives an initial estimate of 15,616 evaluator statements at 80 per dispatch plus 256 for entry and exit. Verify the actual evaluator steps at r0 and through the checked pipeline on the largest generated cases and the fuel case. Reduce fuel and fixture ranges together if the measured steps leave little room below the limit. Keep RV32 steps separate from this budget.
+
+## Specialization and measurement
+
+For IRWB-007, bind the exact immutable code cells and length and leave `data` and its length dynamic. The [current specializer](../../../../../../src/typed/specialize.ts) handles numeric parameters and record fields. Fixed case-generator cells only specify test inputs. A code-content binding is the prerequisite for comparing specialized images. Once available, compile one variant per fixture and run each on the matching code and the same data cases as the general VM. Compare the variant with general r0 and JS, including the checksum fuel case. Known guest PCs should let the optimizer remove fetch and dispatch and turn guest jumps into direct edges while preserving the data-dependent branches, bounds traps, and fuel behavior.
+
+Use `speed` and the resulting assembly to inspect IRWB-003 loop rotation, copies, spills and register use for `pc`, `sp`, and fuel. For IRWB-006, inspect SSA joins and rule activity on address arithmetic. For IRWB-008, keep the sampled end-to-end gate even where individual rewrites have exact evidence. For IRWB-010, look for a fusion such as `L a; L b; A; S c` with valid indices, sufficient stack and fuel, and no jump into the middle. The exact i32 result is a control case for IRWB-011 float tolerance work.
+
+Report per-case **RV32 emulator steps / JS guest instruction count** for general r0, general `speed`, and each available specialized image. Count the whole call in the numerator and include HALT in the denominator. Use identical inputs and backend options, record the compiler revision and input seed, and include the raw numerator and denominator so the comparison is reproducible. Check assembly and executed instruction counts for changes in dispatch, frame traffic, and bounds checks.
+
+## Implementation order
+
+1. Encode the fixture listings directly and verify them with the independently written JS oracle.
+2. Implement the single Typed entry, add the corpus metadata and notes, and run the evaluator and reference image checks.
+3. Run the checked `speed` pipeline on both generators, verify the step budget, and record the general measurements. Add the specialized comparison once constant-memory bindings are available.
+
+## Cuts from the original design
+
+- Removed the output buffer, status codes, and duplicate guest bounds guards. An i32 result and Typed’s existing bounds traps cover the experiment.
+- Removed input-size restrictions and detailed malformed-code rules. Generated sizes and one fuel cap bound execution.
+- Dropped the optional decode helper and sized the frame to the fixtures. A single ordinary dispatch loop exposes the state the optimizer needs to improve.
+- Removed bytecode that initialized already-zero locals. The VM supplies zero initialization on every call.
+- Replaced the assembler and duplicate encoded listings with direct conversion of the numbered fixtures.
+- Dropped a separate workbench script and sample JSON scaffolding. The project notes and one Node harness cover inspection and testing.
+- Trimmed malformed-input cases, the padded fuel-boundary program, and the second step threshold. One directed case per bounds family and a regular fuel-exhausting loop exercise the relevant behavior.
+- Dropped the extra O2 run, aggregate ratio and code-size report. Matched per-case r0, `speed`, and specialized instruction counts answer the speed question.
+- Deferred the variant router, separate hand-written ceiling, and specializer implementation recipe. The experiment needs a code-binding contract and matched calls to each image.
+- Condensed the research references and implementation sequence to the work the corpus project requires.
+EOF' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 692ms:
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from datetime import datetime
+from pathlib import Path
+import re
+
+ticket = next(Path('ttmp/2026/11/26').glob('IRWB-012--*'))
+design = next((ticket / 'design-doc').glob('*.md'))
+diary = ticket / 'log' / '01-diary.md'
+now = datetime.now().astimezone().isoformat(timespec='seconds')
+def update_date(text):
+    return re.sub(r'"'^LastUpdated: .+$'"', 'LastUpdated: ' + now, text, count=1, flags=re.M)
+design.write_text(update_date(design.read_text().replace('Each line below is one instruction.', 'Each numbered entry below is one instruction.').replace('one directed trap each for truncated code, stack underflow, an invalid local, and an invalid data index.', 'directed traps for truncated code ("'`P` with no operand cell), stack underflow (`H`), stack overflow (`P 1; J 0`), an invalid local (`L 4`), and an invalid data index (`P 0; I` with empty data).'"').replace('One directed case per bounds family and a regular fuel-exhausting loop exercise the relevant behavior.', 'Direct bounds cases and a regular fuel-exhausting loop exercise the relevant behavior.')))
+diary.write_text(update_date(diary.read_text()))
+PY
+cat >> ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/log/01-diary.md <<'EOF'
+
+## Step 4 — Simplify the design
+
+I reviewed the design at "'`4038fb8` and traced the checks for dynamic frame-array and text accesses in the frontend and lifter. The output buffer and guest status codes were only carrying information about malformed bytecode. A direct i32 result and the existing Typed traps preserve the observable behavior the optimization needs. Fuel exhaustion and unknown opcodes now return zero.
+
+### Prompt context
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents'"' tickets. Commit only your ticket directory with the message "'`IRWB-012: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+
+### Review decisions
+
+- Kept both workloads because Fibonacci stresses local and stack traffic and the checksum adds a changing buffer length, indexed data loads, and multiplication.
+- Removed redundant bytecode initialization and recomputed branch targets and dynamic instruction counts. The largest generated runs now take 159 guest instructions for Fibonacci and 174 for checksum.
+- Kept the JS and reference compiler oracles, the checked `speed` pipeline with both case specifications, and per-case instructions for general and specialized images. The code binding remains a prerequisite for the specialized comparison.
+- Collected the cuts and reasons at the end of the design. Review the shorter ABI, fixture listings, and correctness plan together. The runtime budget remains an estimate until the interpreter is implemented.
+EOF
+docmgr changelog update --ticket IRWB-012 --entry '"'Simplified the VM to one scalar-returning entry with native bounds checks, direct fixture encoding, and one correctness and measurement harness.'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 1346ms:
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012/ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/changelog.md
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+import re
+
+ticket = next(Path('ttmp/2026/11/26').glob('IRWB-012--*'))
+doc = next((ticket / 'design-doc').glob('*.md'))
+body = doc.read_text()
+listing = re.search(r'"'```text'"\\nFibonacci["'^'"\\n]*\\n(.*?)\\n"'```'"', body, re.S)[1]
+programs = [[], []]
+for line in listing.splitlines():
+    for column, (address, opcode, operand) in enumerate(re.findall(r'(?<"'!'"\\S)(\\d\\d) ([A-Z])(?: (\\d+))?(?=\\s|"'$)'"', line)):
+        assert int(address) == len(programs[column])
+        programs[column].append((opcode, int(operand or '0')))
+
+# Check static stack shape and branch targets from the listing.
+effects = dict(P=(0,1), L=(0,1), S=(1,0), A=(2,1), D=(2,1),
+               M=(2,1), J=(0,0), Z=(1,0), I=(1,1), N=(0,1), H=(1,0))
+for program in programs:
+    pending = [(0,0)]
+    visited = {}
+    peak = 0
+    while pending:
+        pc, depth = pending.pop()
+        assert 0 <= pc < len(program)
+        if pc in visited:
+            assert visited[pc] == depth
+            continue
+        visited[pc] = depth
+        opcode, operand = program[pc]
+        assert 0 <= operand <= 65535
+        assert opcode not in 'LS' or operand < 4
+        pop, push = effects[opcode]
+        assert depth >= pop
+        new_depth = depth - pop + push
+        peak = max(peak, depth, new_depth)
+        if opcode in 'JZ':
+            pending.append((operand, new_depth))
+        if opcode not in 'JH':
+            pending.append((pc + 1, new_depth))
+    assert len(visited) == len(program)
+    assert peak == 2
+assert [(len(p), p[-1][0]) for p in programs] == [(22, 'H'), (18, 'H')]
+for program, start, branch, end, max_n, expected in zip(programs, (5,2), (6,3), (19,15), (10,12), (159,174)):
+    assert program[end] == ('J', start)
+    assert program[branch] == ('Z', end + 1)
+    assert start + (end-start+1)*max_n + 2 + len(program)-(end+1) == expected
+assert 6+14*16 > 192 and 80*192+256 == 15616 < 20000
+assert sum(31**i for i in range(16)) % 2**32
+assert 65535**2 - 2**32 == -131071
+assert ((3*31 + 2)*31 + 1) == 2946
+for path in re.findall(r'\\]\\((["'^)]+)'"\\)', body):
+    assert (doc.parent / path.split('#')[0]).is_file(), path
+assert len(body.split('## Cuts from the original design\\n')[1].strip().splitlines()) == 10
+print('Passed: fixture layout, branch targets, stack depths, guest counts, budget and golden arithmetic, relative links, and cut list')
+PY
+docmgr doctor --ticket IRWB-012 --stale-after 30 &&
+git diff --check &&
+git diff --stat &&
+git status --short --branch" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 1154ms:
+Passed: fixture layout, branch targets, stack depths, guest counts, budget and golden arithmetic, relative links, and cut list
+## Doctor Report (1 findings)
+
+### IRWB-012
+
+- ✅ All checks passed
+
+ .../changelog.md                                   |   4 +
+ ...signing-the-typed-bytecode-vm-corpus-project.md | 208 ++++++++-------------
+ .../log/01-diary.md                                |  17 +-
+ 3 files changed, 93 insertions(+), 136 deletions(-)
+## codex/irwb-012
+ M ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/changelog.md
+ M ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/design-doc/01-designing-the-typed-bytecode-vm-corpus-project.md
+ M ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/log/01-diary.md
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/log/01-diary.md <<'EOF'
+
+### Validation
+
+A static check walked both listings and confirmed the branch targets, stack depths, and guest count formulas. It also checked the sizing and golden arithmetic, file links, and ten cut entries. "'`docmgr doctor --ticket IRWB-012 --stale-after 30` and `git diff --check` passed.
+EOF
+git diff --check && git diff --name-only' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 517ms:
+ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/changelog.md
+ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/design-doc/01-designing-the-typed-bytecode-vm-corpus-project.md
+ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/log/01-diary.md
+
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-012: simplify the design doc after self-review' -- ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 652ms:
+[codex/irwb-012 0985c7f] IRWB-012: simplify the design doc after self-review
+ 3 files changed, 97 insertions(+), 136 deletions(-)
+
+exec
+/usr/bin/zsh -lc "git log -1 --format='%H%n%s' && git diff-tree --no-commit-id --name-only -r HEAD && git status --short --branch" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012
+ succeeded in 498ms:
+0985c7fa88ad10c3a2eff682b9522c5869026cd7
+IRWB-012: simplify the design doc after self-review
+ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/changelog.md
+ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/design-doc/01-designing-the-typed-bytecode-vm-corpus-project.md
+ttmp/2026/11/26/IRWB-012--a-bytecode-vm-for-compiler-optimization/log/01-diary.md
+## codex/irwb-012
+
+codex
+Commit `0985c7fa88ad10c3a2eff682b9522c5869026cd7`
+
+- Replaced the output buffer, status codes, and duplicate bounds guards with a direct `i32` result and Typed’s native bounds checks.
+- Dropped input-size restrictions and detailed malformed-bytecode rules. Generated input ranges and a single fuel cap bound the experiment.
+- Removed the optional decode helper and shrank the frame arrays to fit the fixtures.
+- Removed bytecode that initialized locals already zeroed by Typed.
+- Replaced the assembler and duplicate encodings with direct conversion of the numbered listings.
+- Dropped the separate workbench script and sample JSON scaffolding. Project notes and one Node test cover inspection and validation.
+- Trimmed malformed-input cases and removed the padded fuel-boundary program and secondary step threshold.
+- Dropped the extra O2 run, aggregate ratio, and code-size report. The comparison uses per-case instruction counts for r0, `speed`, and specialized images.
+- Deferred the variant router, hand-written performance ceiling, and specializer implementation recipe.
+- Condensed the research references and implementation sequence.
+tokens used
+136,088
+Commit `0985c7fa88ad10c3a2eff682b9522c5869026cd7`
+
+- Replaced the output buffer, status codes, and duplicate bounds guards with a direct `i32` result and Typed’s native bounds checks.
+- Dropped input-size restrictions and detailed malformed-bytecode rules. Generated input ranges and a single fuel cap bound the experiment.
+- Removed the optional decode helper and shrank the frame arrays to fit the fixtures.
+- Removed bytecode that initialized locals already zeroed by Typed.
+- Replaced the assembler and duplicate encodings with direct conversion of the numbered listings.
+- Dropped the separate workbench script and sample JSON scaffolding. Project notes and one Node test cover inspection and validation.
+- Trimmed malformed-input cases and removed the padded fuel-boundary program and secondary step threshold.
+- Dropped the extra O2 run, aggregate ratio, and code-size report. The comparison uses per-case instruction counts for r0, `speed`, and specialized images.
+- Deferred the variant router, hand-written performance ceiling, and specializer implementation recipe.
+- Condensed the research references and implementation sequence.
