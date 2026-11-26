@@ -178,4 +178,12 @@ The revised sample order fixes the number of RNG draws before implementation. Re
 
 Implemented the parser, normalized affine maps, explicit binder scopes, validated v6 projection and two-precision loop interpreter. Sticky lexer probe on Node 24 matched `x` at lastIndex 1. `npm ci --offline --no-audit --no-fund` installed the locked dependencies.
 
-`npm run build && node --test tests/tensor/language.test.mjs` first reported `AssertionError: y[i]:f32[Q]=0;` (return shape mismatch before unknown annotation). Moved shape-name lookup to the annotation token. Rerun passed 4/4, including f32 vs f64, lexicographic accumulation, affine extents and signed zero. Review `parse.ts` and `ir.ts` separately: inference is source-only, whereas validation also applies after substitution.
+`npm run build && node --test tests/tensor/language.test.mjs` first reported `AssertionError: y[i]:f32[Q]=0;` (return shape mismatch before unknown annotation). Moved shape-name lookup to the annotation token. Rerun passed 4/4, including f32 vs f64, lexicographic accumulation, affine extents and signed zero. Review `parse.ts` and `ir.ts` separately: inference is source-only, whereas validation also applies after substitution. Committed as `2cb41d7`.
+
+## Step 4: Separate structural preparation from numerical acceptance
+
+Extracted the existing native revision path into `prepareNativeCandidate`. Its regression test deliberately prepares a structurally valid but meaning-changing candidate: structure is the helper's limit. In tensor code, single-use inlining moves the producer tree (retaining its IDs), and splitting constructs explicit block/lane reductions. Both run the sampled gate before adopting the result.
+
+The focused command `node --test tests/tensor/passes.test.mjs` passed 8/8. The fixed input shows exact rejection and tolerant acceptance of the same candidate. Valid-IR mutations to axis order and tail bound were rejected on returned elements; nine ones produced 8 instead of 9 for the latter. Per-function coverage rejection and an exact inline after a split also passed. See `tests/tensor/passes.test.mjs` for reproduction. No lazy edit or framework tolerance policy was needed.
+
+Two additional probes tightened the compiler tests. A 309-digit input dimension initially threw `IR data must contain only finite numbers` from hashing rather than a source location; the lexer/parser now catches unsafe affine integer data before artifact creation. The two f32 answers for `[1,1,5] / 3` happened to coincide; `[1,1,3]` distinguishes a greedy reduction body from a parenthesized reduction divided afterwards. The corresponding tests now exercise these cases.

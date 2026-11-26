@@ -187,6 +187,36 @@ export function semanticCorrespondence(
   };
 }
 
+function checkWrites(pass: Pick<PassSpec<any, any>, 'id' | 'writes'>, changes: ChangeSet) {
+  const undeclared = undeclaredWrites(pass.writes, changes);
+  if (undeclared.length)
+    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
+      undeclared: undeclared.slice(0, 20),
+    });
+}
+
+/** Prepare a structurally checked native revision. Acceptance (including meaning) belongs to the caller. */
+export function prepareNativeCandidate<S>(
+  pass: Pick<PassSpec<S, {}>, 'id' | 'writes'>,
+  view: IRView<S>,
+  produced: NativeResult<S>,
+  options: { outputId?: string; store?: IRStore } = {},
+) {
+  const before = view.artifact;
+  const after = createIRArtifact(view.adapter, options.outputId ?? before.id, produced.native);
+  const afterView = openIR(after, view.adapter, options.store);
+  const changes = diff(view, afterView);
+  const correspondence = makeCorrespondence(
+    { artifact: before.id, revision: before.revision },
+    { artifact: after.id, revision: after.revision },
+    view.graph().entities.map(e => e.id),
+    afterView.graph().entities.map(e => e.id),
+    produced.correspondence ?? [],
+  );
+  checkWrites(pass, changes);
+  return { after, changes, correspondence, edits: produced.edits ?? changes.entities.length };
+}
+
 export async function applyPass<S, N extends Needs, P>(
   pass: Pass<S, N, P>,
   before: Artifact<S>,
@@ -220,19 +250,7 @@ export async function applyPass<S, N extends Needs, P>(
   let report: unknown;
   if (produced && typeof produced === 'object' && 'native' in produced) {
     if (edit.state === 'open') edit.rollback('native result');
-    const id = options.outputId ?? before.id;
-    after = createIRArtifact(pass.adapter, id, produced.native);
-    const afterView = openIR(after, pass.adapter, options.store);
-    changes = diff(view, afterView);
-    correspondence = makeCorrespondence(
-      { artifact: before.id, revision: before.revision },
-      { artifact: after.id, revision: after.revision },
-      // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
-      view.graph().entities.map(e => e.id),
-      afterView.graph().entities.map(e => e.id),
-      produced.correspondence ?? [],
-    );
-    edits = produced.edits ?? changes.entities.length;
+    ({ after, changes, correspondence, edits } = prepareNativeCandidate(pass, view, produced, options));
     report = produced.report;
   } else {
     if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
@@ -255,6 +273,7 @@ export async function applyPass<S, N extends Needs, P>(
     correspondence = prepared.correspondence;
     edits = changes.operations.filter(o => o.kind !== 'correspond').length;
     edit.rollback('applyPass publishes revisions itself');
+    checkWrites(pass, changes);
   }
   if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
     return {
@@ -265,12 +284,6 @@ export async function applyPass<S, N extends Needs, P>(
       edits: 0,
       preserved: [],
     };
-
-  const undeclared = undeclaredWrites(pass.writes, changes);
-  if (undeclared.length)
-    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
-      undeclared: undeclared.slice(0, 20),
-    });
 
   let contract: unknown;
   const gate = options.contract ?? pass.contract;

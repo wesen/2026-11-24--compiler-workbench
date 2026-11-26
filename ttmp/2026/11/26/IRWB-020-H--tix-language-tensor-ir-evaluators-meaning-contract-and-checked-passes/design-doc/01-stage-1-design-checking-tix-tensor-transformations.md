@@ -16,6 +16,10 @@ RelatedFiles:
       Note: Eager edit capability check
     - Path: repo://src/framework/passes/define-pass.ts
       Note: Only proposed framework extraction
+    - Path: repo://src/tensor/contract.ts
+      Note: Deterministic sample protocol and relation bindings
+    - Path: repo://tests/tensor/passes.test.mjs
+      Note: Exact rejection and tolerant acceptance on one revision; numerical mutants
 ExternalSources: []
 Summary: 'Reviewed design: extract synchronous candidate preparation; check numerical meaning in the tensor domain.'
 LastUpdated: 2026-11-26T13:48:37-05:00
@@ -27,7 +31,9 @@ WhenToUse: ""
 
 `compileTix` produces a handle containing an immutable origin artifact and its current revision. `runTix` evaluates the current revision. `optimizeTix` prepares and checks each named candidate before updating its local current pointer. A semantic rejection leaves the preceding revision runnable and processing continues. Identity is accepted without publishing a change. All three operations are synchronous.
 
-## Framework change ledger
+## Framework change ledger — implemented
+
+The extraction below was the only change in `src/framework/`. `tests/framework/ext-e3-e6.test.mjs` now exercises synchronous preparation: a structurally valid but meaning-changing candidate can be prepared, whereas an undeclared write cannot. Tix calls the helper on detached views; the unchanged async caller retains its original store semantics.
 
 **`src/framework/passes/define-pass.ts`: extract `prepareNativeCandidate`.** Share the native-result arm of `applyPass`: snapshot and validate the new artifact, project, diff, build correspondence and check declared writes. It returns a candidate, never a semantic verdict. Preserve the existing async runner's edit path and options. Repeating the native arm in tensor code would duplicate the framework's structural checks. Instead Tix supplies pure native kernels via `definePass` descriptors, with a domain driver that binds their versioned differential postconditions and calls `runDifferential` directly. No needs, analysis preservation, effects or external store. Test native preparation and undeclared writes, then run the existing async pass tests. **Drop the proposed async Tix parity test:** `applyPass` opens an edit eagerly; an adapter without `rebuild` cannot supply it. There is no stage-1 client for a lazy edit, so no second framework change.
 

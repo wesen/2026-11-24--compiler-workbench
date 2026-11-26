@@ -3,7 +3,6 @@ import {
   arities,
   constant,
   fail,
-  plain,
   same,
   variable,
   type Aff,
@@ -71,7 +70,9 @@ export function parse(source: string): Program {
       }
       if (/^\d+$/.test(t.text)) {
         pos++;
-        return constant(Number(t.text));
+        const n = Number(t.text);
+        if (!Number.isSafeInteger(n)) fail(t.at, 'affine integer too large');
+        return constant(n);
       }
       return variable(resolve(name()));
     }
@@ -93,7 +94,11 @@ export function parse(source: string): Program {
       }
       return a;
     }
-    return sum();
+    const at = peek().at,
+      a = sum();
+    if (!Number.isSafeInteger(a.c) || a.terms.some(([, n]) => !Number.isSafeInteger(n)))
+      fail(at, 'affine coefficient too large');
+    return a;
   }
   function type(known?: Set<string>) {
     expect('f32');

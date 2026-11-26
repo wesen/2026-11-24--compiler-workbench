@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compileTix, runTix } from '../../dist/tensor/program.js';
+import { compileTix, runTix } from '../../dist/tensor/index.js';
 import { openIR } from '../../dist/framework/ir/index.js';
 import { adapter } from '../../dist/tensor/ir.js';
 const fun = (stmt, ret = 'y', type = 'f32[N]') =>
@@ -32,6 +32,20 @@ test('checked shapes and scoped extents: diagnostics point into source', () => {
   assert.throws(() => compileTix(fun('y[i]=x[i,0];', 'y', 'f32[C]')), /3:10: return shape/);
 });
 
+test('oversize affine dimension is a source diagnostic rather than an IR hash failure', () => {
+  const d = '9'.repeat(309);
+  assert.throws(() => compileTix(`fn f(x:f32[${d}]):f32[${d}]{return x;}`), /1:12: affine integer too large/);
+});
+
+test('shape values, literals and calls round before their consumer', () => {
+  const p = compileTix(
+    'fn f(x:f32[D,0]):f32[1]{y[i]:f32[1]=(D-16777216)+(16777217-16777216)+log(exp(1));return y;}',
+  );
+  const inputs = { x: t([16777217, 0], []) };
+  assert.equal(runTix(p, 'f', inputs).data[0], Math.fround(Math.log(Math.fround(Math.exp(1)))));
+  assert.equal(runTix(p, 'f', inputs, { precision: 'f64' }).data[0], 3);
+});
+
 test('IR binds indices and returned tensor across multiple functions', () => {
   const p = compileTix(fun('y[i]=sum(j)x[i,j];') + '\nfn g(x:f32[D]):f32[D]{return x;}');
   const v = openIR(p.current, adapter);
@@ -47,13 +61,13 @@ test('IR binds indices and returned tensor across multiple functions', () => {
   assert.notEqual(b.data, x.data);
 });
 test('reduce body is greedy; accumulations round every step, first binder outermost', () => {
-  const x = t([1, 3], [1, 1, 5]);
+  const x = t([1, 3], [1, 1, 3]);
   const args = { x };
   const result = (stmt, prec = 'f32') =>
     runTix(compileTix(fun(stmt)), 'f', args, { precision: prec }).data[0];
   const r = Math.fround;
-  assert.equal(result('y[i]=sum(j)x[i,j]/C;'), r(r(r(1 / 3) + r(1 / 3)) + r(5 / 3)));
-  assert.equal(result('y[i]=(sum(j)x[i,j])/C;'), r(7 / 3));
+  assert.equal(result('y[i]=sum(j)x[i,j]/C;'), r(r(r(1 / 3) + r(1 / 3)) + 1));
+  assert.equal(result('y[i]=(sum(j)x[i,j])/C;'), r(5 / 3));
   args.x = t([2, 2], [16777216, 1, -16777216, 1]);
   assert.equal(result('y[q]:f32[N]=sum(i,j)x[i,j];'), 1);
   assert.equal(result('y[q]:f32[N]=sum(j,i)x[i,j];'), 2);

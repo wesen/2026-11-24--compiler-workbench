@@ -2,7 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AnalysisManager, createArtifact, defineAnalysis, defineType } from '../../dist/framework/contracts/index.js';
-import { definePass, applyPass, PassError, passAlgorithm, analysisAlgorithm } from '../../dist/framework/passes/index.js';
+import { openIR } from '../../dist/framework/ir/index.js';
+import { definePass, applyPass, prepareNativeCandidate, PassError, passAlgorithm, analysisAlgorithm } from '../../dist/framework/passes/index.js';
 import { AlgorithmRegistry, plan, sequence, apply, algorithm, executeOrThrow } from '../../dist/framework/strategy/index.js';
 import { ExpressionIR, expressionAdapter, exampleExpression, evaluateExpression } from '../../dist/labs/expressions.js';
 import { expressionContract } from '../../dist/labs/contracts.js';
@@ -69,6 +70,16 @@ const variableCount = defineAnalysis({
 const nodeCount = defineAnalysis({
   id: 'test.nodes', version: '1', description: 'number of nodes', input: ExpressionIR, output: Count,
   run: (_c, a) => Object.keys(a.value.nodes).length,
+});
+
+test('synchronous native preparation enforces writes but does not decide meaning', () => {
+  const before = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const view = openIR(before, expressionAdapter);
+  const wrong = wrongPass.run({before});
+  const {after, changes} = prepareNativeCandidate(wrongPass, view, wrong);
+  assert.notEqual(after.revision, before.revision);
+  assert.ok(changes.entities.some(c => c.entity === 'sum'));
+  assert.throws(() => prepareNativeCandidate(sneaky, view, wrong), e => e.code === 'undeclaredWrite');
 });
 
 test('E3: a native-style pass is diffed, checked against its contract and published with correspondence', async () => {
