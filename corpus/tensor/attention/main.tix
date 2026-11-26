@@ -1,0 +1,10 @@
+fn attention(q: f32[T, D], k: f32[S, D], v: f32[S, V]): f32[T, V] {
+  // The scale is sqrt(D) for a nonempty head; an empty dot product is zero.
+  scores[t, s] = (sum(d) q[t, d] * k[s, d]) / sqrt(max(D, 1));
+  peak[t] = max(s) scores[t, s];
+  e[t, s] = exp(scores[t, s] - peak[t]);
+  denom[t] = sum(s) e[t, s];
+  weights[t, s] = e[t, s] / denom[t];
+  y[t, j] = sum(s) weights[t, s] * v[s, j];
+  return y;
+}

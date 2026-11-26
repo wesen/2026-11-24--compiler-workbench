@@ -1,0 +1,7 @@
+fn softmax(x: f32[N, C]): f32[N, C] {
+  m[i] = max(j) x[i, j];
+  e[i, j] = exp(x[i, j] - m[i]);
+  s[i] = sum(j) e[i, j];
+  y[i, j] = e[i, j] / s[i];
+  return y;
+}

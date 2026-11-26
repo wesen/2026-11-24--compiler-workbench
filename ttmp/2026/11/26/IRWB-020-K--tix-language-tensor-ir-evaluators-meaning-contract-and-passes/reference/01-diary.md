@@ -233,3 +233,34 @@ The first `npm run build` failed with `TS2322` and `TS2345` because the shared p
 ### Review instructions
 
 Start at `applyNativePassSync` and compare its candidate preparation to `applyPass`. Confirm that `CheckResult` is a verdict from the host, not an alternate manager implementation. Existing edit-backed passes still get their draft and take the original async contract path.
+
+## Step 4: Implement Tix, its meaning gates and the corpus
+
+The fixed API now parses and statically checks Tix, constructs a read-only v6 tensor artifact, and interprets that artifact in either precision. The two native passes use the reviewed synchronous gate and the existing differential runner. The corpus covers all six requested programs.
+
+### Prompt context
+
+See Step 2. Framework commit: `3b538e2`.
+
+### What I did and why
+
+- Implemented affine checking, lexical index binding, scope and shape validation in `src/tensor/`, with bounds checked before creating an artifact. It stores neither call-time access guards nor typed-array payloads. A row-major interpreter shares the loop logic between f32 and f64.
+- In `meaning.ts`, used the review's origin-derived case schedule, positive `eps`, explicit signature equality and separate admission/execution budgets. `inline` compares immediate f32 output words; `split-sum` checks origin f64 within the fixed bound. Proved neither relation beyond those sampled calls.
+- Tested the two malformed rewrites as valid candidates: wrong scalar substitution and max of partial sums. Both reached the real gate and were declined. On the nine-element fixture exact rejects the same candidate that tolerance accepts (`0x3f900000` vs. `0x3f900002`). Corpus tests compare against independent JS formulas and show that layernorm now accepts a changed split candidate.
+- Recorded one conservative implementation refinement in the design: skip an `inline` substitution if the composed affine expression overflows or its bounds proof is lost. No runtime guard or larger solver is needed. For zero-width attention heads the corpus uses `sqrt(max(D,1))`; this is ordinary `sqrt(D)` when `D>0` and keeps the empty dot product finite.
+
+### What didn't work
+
+- The first `npm run build` also reported `TS2556` on spreading a dynamic array into a union of unary/binary Math call signatures and `TS2345`/`TS18046` on the IR projection's expression field. I lowered the two call arities explicitly and typed the projection's records as `Param | Stmt`.
+- The first combined `node --test tests/tensor/*.test.mjs tests/framework/native-pass-sync.test.mjs` had one failure: the exact test's predicate expected the specific witness in the retained examples, but got `[contractRejected] Pass tensor.split-sum output rejected: 128/140 sampled cases agree`. Earlier random cases had already filled the five-example limit. I pinned the discriminating test to shape `[1,9]` and kept dynamic and zero-length cases separately.
+- The new affine composition test initially failed with `1:4: no parameter axis binds shape name 'M' independently`. The fixture now includes a bare `M` axis as required by the reviewed design; the regression tests the proof limitation rather than invalid source.
+
+### What worked
+
+- `npm run build` passed. `node --input-type=module -` confirmed that `dist/tensor/index.js` exports exactly `compileTix`, `optimizeTix` and `runTix` and that optimization returns synchronously.
+- `node --test tests/tensor/*.test.mjs`: 21 passed. `node --test tests/framework/*.test.mjs`: 228 passed. `node --test tests/typed/{passes,evaluate-analyses,audit,strategies}.test.mjs`: 21 passed. The last repeat used the dot reporter; no full-suite run or sandbox escalation was needed.
+- Prettier passed for changed source and tests; `git diff --check` passed.
+
+### Review and remaining limits
+
+Start with `src/tensor/index.ts` for the API, then `tests/tensor/passes.test.mjs` for the exact/tolerant witness and mutation checks. The shape checker intentionally does not solve coupled dimension equations, and the contract can decline valid changes when its bounded domain cannot supply sufficient observations. CUDA and later optimizations remain out of scope.

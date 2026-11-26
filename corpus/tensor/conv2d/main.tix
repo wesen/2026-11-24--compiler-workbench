@@ -1,0 +1,5 @@
+fn conv2d(x: f32[N, C, H, W], kernel: f32[O, C, KH, KW]): f32[N, O, H-KH+1, W-KW+1] {
+  y[n, o, h, w]: f32[N, O, H-KH+1, W-KW+1] =
+    sum(c, dy, dx) x[n, c, h + dy, w + dx] * kernel[o, c, dy, dx];
+  return y;
+}

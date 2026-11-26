@@ -1,7 +1,7 @@
 ---
 Title: Tix language, tensor IR, evaluators, meaning contract and passes
 Ticket: IRWB-020-K
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -22,7 +22,7 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 1 tests the IR Workbench framework on tensor programs: Tix source checking, a v6 IR, f32 and f64 evaluators, a sampled meaning contract, and the checked `inline` and `split-sum` passes. The design reflects the in-session review. See the diary and tasks for implementation progress.
+Stage 1 tests the IR Workbench framework on tensor programs: Tix source checking, a v6 IR, f32 and f64 evaluators, a sampled meaning contract, and the checked `inline` and `split-sum` passes. Stage 1 is implemented and validated. The design reflects the in-session review and records the only framework changes.
 
 ## Key Links
 
@@ -31,7 +31,7 @@ Stage 1 tests the IR Workbench framework on tensor programs: Tix source checking
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

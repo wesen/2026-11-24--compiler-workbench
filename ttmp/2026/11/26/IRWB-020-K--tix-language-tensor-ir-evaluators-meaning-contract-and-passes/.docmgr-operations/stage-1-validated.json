@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "digest": "a7aca6ce9abcc49d92f999c420f8f17ab7d66ac2ae2d5e836456b54870047e18",
+  "request": {
+    "ticket": "IRWB-020-K",
+    "operation_id": "stage-1-validated",
+    "summary": "Implemented and validated Tix stage 1: build, 21 tensor tests, 228 framework tests, 21 targeted Typed tests.",
+    "phase": "validate",
+    "next": "Stage 1 complete; later stages remain out of scope.",
+    "task_ids": [
+      "3xci",
+      "opmz",
+      "va4l"
+    ],
+    "evidence": null,
+    "expected": null
+  },
+  "receipt": {
+    "sequence": 3,
+    "operation_id": "stage-1-validated",
+    "state": "committed",
+    "created_at": "2026-11-26T19:45:48.149317682Z",
+    "changed_paths": [
+      "tasks.md",
+      "changelog.md"
+    ],
+    "before": {
+      "changelog.md": "7a79725fe751d72303c144b9c71edef951ea500aeb911e1f720ba29b8e7da46c",
+      "tasks.md": "6e776ffe7079ac08013260791fd118af1d062b7f534dd0888c185ec19a37f58b"
+    },
+    "after": {
+      "changelog.md": "63055ca9fc9fb614d0e8639949346fde8c5d407e2f5f6083681aa854cdc65d21",
+      "tasks.md": "c178c4f8313bcdb79164732ef98adb89d3d7f261c88469906bce22b9bd2c9d87"
+    }
+  },
+  "changes": [
+    {
+      "path": "tasks.md",
+      "before": "6e776ffe7079ac08013260791fd118af1d062b7f534dd0888c185ec19a37f58b",
+      "after": "IyBUYXNrcwoKIyMgVE9ETwotIFt4XSBXcml0ZSB0aGUgc3RhZ2UgMSBkZXNpZ24gYW5kIHN0YXJ0IHRoZSBkaWFyeSA8IS0tIHQ6aTZ3aCAtLT4KLSBbeF0gUmV2aWV3IGRlc2lnbiBpbi1zZXNzaW9uIGJlZm9yZSBpbXBsZW1lbnRhdGlvbiA8IS0tIHQ6cmpucSAtLT4KLSBbeF0gSW1wbGVtZW50IFRpeCBjaGVja2luZywgdjYgSVIgYW5kIGJvdGggZXZhbHVhdG9ycyA8IS0tIHQ6M3hjaSAtLT4KLSBbeF0gSW1wbGVtZW50IGFuZCBkb2N1bWVudCB0aGUgYWdyZWVkIGZyYW1ld29yayBjaGFuZ2VzLCBtZWFuaW5nIGNvbnRyYWN0IGFuZCBjaGVja2VkIHBhc3NlcyA8IS0tIHQ6b3BteiAtLT4KLSBbeF0gQWRkIHRlbnNvciBjb3JwdXMgYW5kIHRlc3RzOyBydW4gZnJhbWV3b3JrIGFuZCByZWxldmFudCBUeXBlZCByZWdyZXNzaW9ucyA8IS0tIHQ6dmE0bCAtLT4K"
+    },
+    {
+      "path": "changelog.md",
+      "before": "7a79725fe751d72303c144b9c71edef951ea500aeb911e1f720ba29b8e7da46c",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKV3JvdGUgdGhlIFRpeCBzdGFnZSAxIGRlc2lnbiBhbmQgb3BlbmVkIHRoZSBkaWFyeTsgaWRlbnRpZmllZCBuYXRpdmUtb25seSBhbmQgc3luY2hyb25vdXMgY2hlY2tlZCBwYXNzIGdhcHMuCgpPcGVyYXRpb246IGBzdGFnZS0xLWRlc2lnbi1yZWFkeWAKCiMjIDIwMjYtMTEtMjYKCkFwcGxpZWQgdGhlIGluLXNlc3Npb24gcmV2aWV3OiBib3VuZGVkIGRldGVybWluaXN0aWMgY2FzZXMsIHBvc2l0aXZlIGVwcywgc3RhdGljIGJvdW5kcywgQ2hlY2tSZXN1bHQgZ2F0ZS4KCk9wZXJhdGlvbjogYHN0YWdlLTEtcmV2aWV3LWFwcGxpZWRgCgojIyAyMDI2LTExLTI2CgpJbXBsZW1lbnRlZCBhbmQgdmFsaWRhdGVkIFRpeCBzdGFnZSAxOiBidWlsZCwgMjEgdGVuc29yIHRlc3RzLCAyMjggZnJhbWV3b3JrIHRlc3RzLCAyMSB0YXJnZXRlZCBUeXBlZCB0ZXN0cy4KCk9wZXJhdGlvbjogYHN0YWdlLTEtdmFsaWRhdGVkYAo="
+    }
+  ]
+}
