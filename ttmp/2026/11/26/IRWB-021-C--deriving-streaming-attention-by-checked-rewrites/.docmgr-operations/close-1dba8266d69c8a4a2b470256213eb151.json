@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "116e3fed89421f9b30d3ca19919454c12a6aef3f74a933f4ed5a74ccf84c44e2",
+  "request": {
+    "ticket": "IRWB-021-C",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the checked derivation and GB10 research protocol."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-1dba8266d69c8a4a2b470256213eb151",
+    "state": "committed",
+    "created_at": "2026-11-26T17:43:26.254919218Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "index.md": "12e934dcca5df53d6c2e2f6a342ec4092bba4bd1b151ba53a6e3115690944ba6"
+    },
+    "after": {
+      "changelog.md": "9b3cfd6354a70f9d9a1f151d7d291ba21bf6fbd9f6260c0f8ef3ef0d32b33e9b",
+      "index.md": "1a627505d4aa485db01bfe712082fcf4c96be05470a2bed5bb77616289ce7d3e"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKQ29tcGxldGVkIHRoZSBjaGVja2VkIGRlcml2YXRpb24gYW5kIEdCMTAgcmVzZWFyY2ggcHJvdG9jb2wuCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "12e934dcca5df53d6c2e2f6a342ec4092bba4bd1b151ba53a6e3115690944ba6",
+      "after": "LS0tClRpdGxlOiBEZXJpdmluZyBzdHJlYW1pbmcgYXR0ZW50aW9uIGJ5IGNoZWNrZWQgcmV3cml0ZXMKVGlja2V0OiBJUldCLTAyMS1DClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSB2ZXJpZmljYXRpb24KICAgIC0gcmVzZWFyY2gKRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogIiIKTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjZUMTI6NDM6MjYuMjU0ODcyNzU3LTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIERlcml2aW5nIHN0cmVhbWluZyBhdHRlbnRpb24gYnkgY2hlY2tlZCByZXdyaXRlcwoKVGhlIFtkZXNpZ25dKGRlc2lnbi1kb2MvMDEtZnJvbS10aHJlZS1yb3ctcmVkdWN0aW9ucy10by1zdHJlYW1pbmctYXR0ZW50aW9uLm1kKSBkZXJpdmVzIGEgYmxvY2sgcmVkdWN0aW9uIGZyb20gVGl4IGF0dGVudGlvbiBhbmQgc3BlY2lmaWVzIGhvdyB0byBjaGVjayBlYWNoIHJldmlzaW9uLiBJdCBpbmNsdWRlcyB0aGUgbnVtZXJpY2FsIGNvbnRyYWN0IGFuZCB0aGUgR0IxMCBleHBlcmltZW50IHRoYXQgd291bGQgdGVzdCB0aGUgcmVzdWx0LgoKVGhlIFtyZXNlYXJjaCBkaWFyeV0ocmVmZXJlbmNlLzAxLXJlc2VhcmNoLWRpYXJ5Lm1kKSByZWNvcmRzIHRoZSBicmllZiwgZnJhbWV3b3JrIGludGVyZmFjZXMgYW5kIGFyaXRobWV0aWMgcHJvYmUuCg=="
+    }
+  ]
+}
