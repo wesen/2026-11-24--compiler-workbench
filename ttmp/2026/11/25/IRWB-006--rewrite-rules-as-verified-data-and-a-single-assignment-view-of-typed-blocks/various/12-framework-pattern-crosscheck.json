@@ -1,0 +1,83 @@
+{
+ "revisions": 71,
+ "rules": 67,
+ "differ": [],
+ "superset": [
+  {
+   "rule": "sub-self",
+   "framework": 74,
+   "compiled": 1
+  }
+ ],
+ "nonzero": {
+  "add-zero": {
+   "exact": true,
+   "framework": 1,
+   "compiled": 1
+  },
+  "sub-zero": {
+   "exact": true,
+   "framework": 1,
+   "compiled": 1
+  },
+  "sub-self": {
+   "exact": false,
+   "framework": 74,
+   "compiled": 1
+  },
+  "mul-one": {
+   "exact": true,
+   "framework": 2,
+   "compiled": 2
+  },
+  "mul-zero": {
+   "exact": true,
+   "framework": 3,
+   "compiled": 3
+  },
+  "mul-pow2": {
+   "exact": true,
+   "framework": 48,
+   "compiled": 48
+  },
+  "pow2-mul": {
+   "exact": true,
+   "framework": 11,
+   "compiled": 11
+  },
+  "not-lt": {
+   "exact": true,
+   "framework": 58,
+   "compiled": 58
+  },
+  "not-gt": {
+   "exact": true,
+   "framework": 2,
+   "compiled": 2
+  },
+  "not-ne": {
+   "exact": true,
+   "framework": 1,
+   "compiled": 1
+  },
+  "fold-sub": {
+   "exact": true,
+   "framework": 5,
+   "compiled": 5
+  },
+  "fold-mul": {
+   "exact": true,
+   "framework": 8,
+   "compiled": 8
+  },
+  "fold-gt": {
+   "exact": true,
+   "framework": 1,
+   "compiled": 1
+  }
+ },
+ "ms": {
+  "framework": 47425,
+  "compiled": 641
+ }
+}

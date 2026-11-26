@@ -1,0 +1,31 @@
+{
+ "r0": {
+  "fns": 70,
+  "gets": 794,
+  "pairs": 1033,
+  "phis": 228,
+  "deadPhis": 115,
+  "names": 1004,
+  "mismatches": 0,
+  "violations": 0
+ },
+ "total": {
+  "revisions": 194,
+  "fns": 306,
+  "fnsAtR0": 0,
+  "gets": 3329,
+  "pairs": 4392,
+  "phis": 996,
+  "deadPhis": 509,
+  "names": 4468,
+  "unreachable": 0,
+  "mismatches": 0,
+  "violations": 0
+ },
+ "bad": [],
+ "ms": {
+  "total": 36293,
+  "ssa": 556,
+  "reaching": 667
+ }
+}
