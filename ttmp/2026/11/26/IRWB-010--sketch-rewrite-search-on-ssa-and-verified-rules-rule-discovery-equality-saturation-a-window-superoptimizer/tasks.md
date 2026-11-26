@@ -9,4 +9,4 @@
 - [ ] E5: missed-optimization loop from provenance and heat on V-04 (ten hottest untouched shapes) <!-- t:7rc2 -->
 - [ ] E6: window census for B5 (2-3 instruction windows in hot images, shorter equivalents, executed share) <!-- t:n5qp -->
 - [ ] Re-measure section 8 on IRWB-003's speed pipeline and options once merged <!-- t:oq7p -->
-- [ ] Sketch guide written, second pass, uploaded to reMarkable (/ai/2026/11/26/IRWB-010) <!-- t:8ils -->
+- [x] Sketch guide written, second pass, uploaded to reMarkable (/ai/2026/11/26/IRWB-010) <!-- t:8ils -->

@@ -159,7 +159,7 @@ One detail matters for proof-producing search. The provenance a rule application
 |---|---|---|
 | `structural` | dropped, duplicated or reordered variables need `pure`; types from the operator signatures | (a precondition) |
 | `by-construction` | for `fold`: the replacement is the evaluator's own value of the matched operator; guards exclude every trapping input | `by-construction` |
-| `symbolic-linear` | both sides as normal forms `c₀ + Σ cᵢ·xᵢ` over ℤ/2³², once per guard instance (for `mul-pow2`, once for each of the 31 powers of two `k` may be) | `proof` |
+| `symbolic-linear` | both sides as normal forms `c0 + Σ c_i·x_i` over ℤ/2³², once per guard instance (for `mul-pow2`, once for each of the 31 powers of two `k` may be) | `proof` |
 | `bitwise-w1` | rules built from `and`, `or`, `xor`, checked on one bit | `proof` |
 | `exhaustive-w8` | every assignment at 8 bits, plus an argument that the identity does not depend on the width, where one exists (for rules built only from comparisons, `argumentFor`, `verify.ts:90`) | `reduced-width+argument` |
 | `random-32`, `f32-special` | boundary or special values crossed, then N random assignments at 32 bits | `sampled` |

@@ -182,3 +182,56 @@ The answer is that the functions are hot where they run (81.8 % of V-04's frame,
 
 ### Technical details
 - Lowering took 15.0 s (r0) and 16.6 s (O2); rendering X-03 36.6 s and 20.4 s, V-04 11.6 s and 5.5 s.
+
+## Step 4: The guide: a draft, a second reading, revisions, and the upload
+
+This step wrote the sketch guide (design-doc 01), reread it whole as its reader, recorded the problems before revising, fixed them, and uploaded it. The guide is 707 lines in five parts: the system parts (value trees, `Tx` provenance, the gate, rules with evidence, SSA, the backend, the measured target), the background from scratch (rewriting and phase ordering, e-graphs, extraction, explanations, rule discovery, superoptimization, related work), the design space (seven decisions), experiments E0–E6 with continue and stop criteria, and risks, open questions and connections.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Intern-grade, prose with bullets, pseudocode, diagrams, API and file references with line numbers; every number cited; related work only where certain; a second pass as the reader; tasks for the first experiments; related files; upload with the given name and directory.
+**Inferred user intent:** The idea preserved in a form someone else can start from.
+**Commit (code):** de2fc14 (draft), 0f2b2d5 (section 8), d0e6415 (second pass, tasks, relations); this step's diary and the final edits are in the next commit.
+
+### What I did
+- `docmgr doc add --ticket IRWB-010 --doc-type design-doc --title "Sketch guide: rewrite search on SSA and verified rules"`; wrote the guide; section 8 after the measurements of Steps 2–3.
+- Second pass: read the guide from the top. Notes before revising:
+  1. The summary said "O2 leaves `noise3` unchanged"; O2 removes two statements and leaves its executed instructions identical. Reworded.
+  2. "Once per guard instance" in the verifier table is opaque; added the `mul-pow2` example (31 instances) and what a width-transfer argument is (`argumentFor`, `verify.ts:90`).
+  3. Section 8 attributed `noise3`'s `fsgnj.s` to call arguments and `gnoise`'s `fsw`/`flw` to the stack as if measured; both are inferences. Now labelled as such.
+  4. The explanation example of section 12 was garbled (a sentence about an e-node extraction never chose). Replaced by a two-step explanation with a congruence step: `(x * 1) * 4 = x << 2` by `mul-one`, congruence, `mul-pow2`.
+  5. `x * 2.0 → x + x` uses `x` twice: it needs `pure(x)` and pays for both copies in extraction. Added.
+  6. Section 21 did not say what the loop would report on V-04; added: the noise family, 70.6 % of the frame in `hash3`, `gnoise` and `noise3`, untouched by any rule.
+  7. The IRWB-003 connection said `homes` "keeps constants in registers"; now cites IRWB-003's guide §14 for what it does.
+- Replaced the subscript glyph `ᵢ` (U+1D62) in the verifier table with `c_i`, `x_i`, in case the PDF font lacks it.
+- docmgr: tasks E0 (checked), E1–E6, the IRWB-003 re-measurement, the guide task; `docmgr doc relate` of seven files to the guide and the guide and diary to the index; WhatFor and WhenToUse in the guide's frontmatter and an overview in `index.md` (written with a python edit, because `docmgr meta update` refused the field: `error updating WhatFor (unknown field: WhatFor)`).
+- Upload: `remarquee upload bundle …/design-doc/01-sketch-guide-rewrite-search-on-ssa-and-verified-rules.md --name "IRWB-010 Sketch: Rewrite Search on SSA and Verified Rules" --remote-dir "/ai/2026/11/26/IRWB-010" --toc-depth 2 --non-interactive` → `OK: uploaded IRWB-010 Sketch: Rewrite Search on SSA and Verified Rules.pdf -> /ai/2026/11/26/IRWB-010`. `remarquee cloud ls /ai/2026/11/26/IRWB-010 --long --non-interactive` → `[f]	IRWB-010 Sketch: Rewrite Search on SSA and Verified Rules`.
+
+### Why
+- Related work is limited to works whose authors, venue and year I am certain of; Souper is cited as the arXiv preprint it is, and Cranelift's ægraph only for its scope, with a note that it is documented in that project's design notes.
+
+### What worked
+- The upload and the listing above.
+
+### What didn't work
+- `docmgr doc relate --ticket IRWB-010 --file-note "$D:the sketch guide"` failed with `malformed --file-note value "01-sketch-guide-…mdhe sketch guide"`: in zsh, `$D:t` is the "tail" modifier of a parameter. `${D}:` fixed it.
+- `docmgr meta update --doc … --field WhatFor` is not supported (above).
+
+### What I learned
+- The reader's likeliest misunderstanding is that rewrite search would speed up `noise3` directly; the guide now says plainly, with numbers, that its cost is calls and constants and that search matters after inlining.
+
+### What was tricky to build
+- Keeping the measured, the inferred and the proposed apart in section 8 and Part 3: every inference is labelled, every proposal marked **Proposed**.
+
+### What warrants a second pair of eyes
+- The claim that `x * 2.0 → x + x` is exact for every bit pattern is argued, not verified; E2 is where `verifyRule` must confirm it.
+- An author's second reading is not an independent review.
+
+### What should be done in the future
+- The experiments E1–E6 (tasks). The vault report is deferred to the implementation milestone.
+
+### Code review instructions
+- Read the guide's section 8 and Part 4 against `various/02-value-tree-shapes.json` and `various/03-heat.json`.
+
+### Technical details
+- Guide: `design-doc/01-sketch-guide-rewrite-search-on-ssa-and-verified-rules.md`, 707 lines.
