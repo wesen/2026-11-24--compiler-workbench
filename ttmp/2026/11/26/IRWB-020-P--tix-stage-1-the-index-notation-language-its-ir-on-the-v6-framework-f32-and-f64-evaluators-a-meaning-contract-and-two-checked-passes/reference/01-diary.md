@@ -280,3 +280,68 @@ covariance: max |c-r|/bound over correct programs 0.578; non-finite bounds 0
 
 - Bound of a rounded operation: `e = p + u * (|v| + p)`, u = 2^-24, p the propagated operand error (table in design
   section 6.3).
+
+## Step 4: Revise the design after review
+
+The reviewer accepted both framework changes and the tolerance rule, required two fixes on the manager path, and cut
+three knobs. I accepted every item; none needed a counter-argument. The design document's new section 17 lists each
+item and where it landed.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Turn 2 for IRWB-020-P: a reviewer has read your design; revise it, then implement stage 1 in your worktree. Same rules as turn 1 (worktree only, no other agents' tickets, no push)." followed by the review (Must change 1-2, Cut 1-3, Framework changes, Keep) and four instructions: revise the design and commit; implement stage 1 as revised; check it with the tensor tests, the framework tests and the Typed tests that cover the framework change, not the full suite; final message with paths, checks, framework changes, deviations and commit hashes.
+
+**Assistant interpretation:** Apply the review to the design, then build it.
+
+**Inferred user intent:** A stage-1 implementation whose public API is exactly the brief's, with the framework
+changes recorded.
+
+### What I did
+
+- Section 6.4: the three contract factories share one cache per `(relation, count, seed)` (Must 1).
+- Section 6.1: a case is `{ fn, n, shapes, seed }`, plain JSON, and is its own `describeCase` (Must 2).
+- Section 8: `optimizeTix` has no options; public pass names are `inline` and `split-sum` (Cut 1, Cut 2).
+- Section 6.1: no per-parameter range (Cut 3), with the consequence for layernorm's `eps` stated.
+- Section 9: `applyPassSync` has no `store` and a required `check`.
+- One unrequested change: the differential spec gets a third port, `origin`, because under `exact` the reference is
+  the pass's input and cases must still be generated from the origin.
+
+### Why
+
+- Must 1 and Must 2 are both failures that would have shown up as a rejection with the wrong reason, which is the
+  worst kind for a contract test.
+
+### What worked
+
+- N/A (document revision).
+
+### What didn't work
+
+- N/A.
+
+### What I learned
+
+- `applyPass` reports any throw from `verifyTransformation` as `contractRejected`, so a registry or encoding error on
+  the manager path looks like a failed meaning check. The parity test therefore has to assert the reason, not only
+  the verdict.
+
+### What was tricky to build
+
+- N/A.
+
+### What warrants a second pair of eyes
+
+- With Cut 3, about half of layernorm's cases are expected to be inconclusive. The contract test will report the
+  measured count.
+
+### What should be done in the future
+
+- N/A.
+
+### Code review instructions
+
+- Design section 17, then the sections it points to.
+
+### Technical details
+
+- Cache key: `relation/count/seed`; id `tensor.meaning-<relation>`, version `1+<count>.<seed>`.

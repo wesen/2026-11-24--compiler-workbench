@@ -32,7 +32,8 @@ WhenToUse: ""
 ## 1. Summary
 
 Stage 1 adds a second domain, `src/tensor/`, on the v6 framework: the Tix language, an IR for it, evaluators, a
-meaning contract and two checked passes. This document is the design. Nothing in `src/` has changed yet.
+meaning contract and two checked passes. This document is the design, revised after review (section 17 lists what
+the review changed).
 
 The stage is built from these parts:
 
@@ -198,8 +199,16 @@ A case is `(function, shape binding, inputs)`. Cases are generated from the **or
 - each shape name is drawn uniformly from 1 to 8;
 - the binding is redrawn (up to 64 times) if an extent of the origin function is below 1, or if the function's loop
   work, the sum over statements of the product of its extents, exceeds 2^18;
-- each input element is uniform in [-4, 4), rounded to f32. A caller of the contract can give a parameter its own
-  range (the corpus test gives layernorm's `eps` the range [1e-6, 1e-3]).
+- each input element is uniform in [-4, 4), rounded to f32.
+
+A case is the record `{ fn, n, shapes, seed }`: the function, the case number, the shape binding and the seed its
+input values are generated from. It is plain JSON, and it is also what `describeCase` returns. Evidence on the
+manager path passes through the framework's `immutable`, which refuses typed arrays and non-finite numbers, so a
+case never holds input data, and a counterexample's reason is a string.
+
+There is one domain. `optimizeTix` cannot pass any other, so no test checks another. A consequence: layernorm's
+`eps` is drawn from [-4, 4) like every input, so the cases where `variance + eps` is negative have a NaN reference
+and are inconclusive (rule 1 of section 6.3). They are counted as such and the remaining cases decide.
 
 Extents up to 8 are enough for the two passes: with block size 4, an extent of 6 or more reassociates a sum, and an
 extent that is not a multiple of 4 has a partial last block.
@@ -276,14 +285,21 @@ its own allowance.
 
 ### 6.4 The contract as framework definitions
 
-- `meaningSpec(relation, domain)`: a `DifferentialSpec` with ports `reference` and `candidate`, with `baselineKey`
-  set to the reference's revision so its cases and outcomes are computed once.
-- `tensorContract(relation, domain)`: a `TransformationDefinition` with inputs `{ input, origin }`, output
+- `meaningSpec(relation, { count, seed })`: a `DifferentialSpec` with ports `origin` (cases are generated from
+  it), `reference` and `candidate`, with `baselineKey` set to the origin's and the reference's revisions so the
+  cases and the reference's outcomes are computed once.
+- `tensorContract(relation, { count, seed })`: a `TransformationDefinition` with inputs `{ input, origin }`, output
   `{ output }` and one `ensures` clause on `differential(meaningSpec(...))`, binding `reference` to `input` for
   `exact` and to `origin` for `tolerance`. This is the contract `applyPass` takes, as Typed's
   `optimizationContract` is.
-- `checkMeaning(relation, domain, { origin, input, output })`: the same spec through `runDifferential`, returning a
-  `CheckResult` without a Promise. `optimizeTix` uses it through F1.
+- `checkMeaning(relation, { origin, input, output }, { count, seed })`: the same spec through `runDifferential`,
+  returning a `CheckResult` without a Promise. `optimizeTix` uses it through F1.
+
+**One object per parameter set.** The three factories share one cache keyed by `(relation, count, seed)` and return
+the same spec, invariant and contract objects for the same key, as Typed's `meaningKept` does. The id is
+`tensor.meaning-<relation>` and the version carries `count` and `seed`. `ContractRegistry.register` refuses a second
+object under one id and version, and `applyPass` reports any throw from `verifyTransformation` as
+`contractRejected`, so a fresh object per call would be a false rejection.
 
 ## 7. Passes
 
@@ -300,7 +316,7 @@ statement qualifies. Correspondence: D and its consumer merge into the consumer.
 It is bit-identical because the f32 meaning rounds every operation separately and an inlined expression performs the
 same operations on the same values.
 
-**`wrong-inline`** binds D's indices to the subscripts in reverse order. For rank 2 and above it reads the wrong
+**`wrongInline`** (exported from `src/tensor/passes.ts` in `WRONG_PASSES`, not in the public pass table) binds D's indices to the subscripts in reverse order. For rank 2 and above it reads the wrong
 elements (or traps, on a non-square shape). For rank 1 it is the correct pass, so the demonstration uses a rank-2
 statement.
 
@@ -315,7 +331,7 @@ sum(jb) sum(ji) body[j := 4*jb + ji]      jb in ceildiv(E, 4),  ji in min(4, E -
 with fresh names for `jb` and `ji`. The block size 4 is the pass's parameter default. Sums over several indices
 (conv2d's) and sums already split are left unchanged.
 
-**`wrong-split-sum`** uses `floor(E / 4)` blocks, written as `ceildiv(E - 3, 4)`, with `ji` in 4. It drops the
+**`wrongSplitSum`** (in `WRONG_PASSES`) uses `floor(E / 4)` blocks, written as `ceildiv(E - 3, 4)`, with `ji` in 4. It drops the
 partial last block.
 
 ### 7.3 Expected verdicts
@@ -324,30 +340,31 @@ partial last block.
 | --- | --- | --- |
 | `inline` | accepted | accepted |
 | `split-sum` | **rejected** | accepted |
-| `wrong-inline` | rejected | rejected |
-| `wrong-split-sum` | rejected | rejected |
+| wrong inline | rejected | rejected |
+| wrong split-sum | rejected | rejected |
 
-The tests assert this table on the corpus and on small programs written for it.
+The tests assert this table on the corpus and on small programs written for it, through `applyPassSync` with
+`checkMeaning` under the relation the row names. The public API checks a pass only under the relation it claims.
 
 ## 8. API
 
-File: `src/tensor/index.ts`. The fixed three functions, plus:
+File: `src/tensor/index.ts`. The fixed three functions, with these additions that the brief leaves open:
 
 ```ts
 interface TixProgram { readonly origin: Artifact<TixIR>; readonly current: Artifact<TixIR> }
 
-optimizeTix(program, passes, options?: {
-  relation?: 'exact' | 'tolerance';   // default: the relation each pass claims
-  count?: number; seed?: number;      // the check domain's case count per function and seed
-}): { program: TixProgram; steps: { pass: string; accepted: boolean; changed: boolean; relation: string; reason?: string }[] }
+optimizeTix(program, passes): {
+  program: TixProgram;
+  steps: { pass: string; accepted: boolean; changed: boolean; relation: 'exact' | 'tolerance'; reason?: string }[]
+}
 ```
 
 - `compileTix` returns `origin === current`. `optimizeTix` keeps `origin` and advances `current`.
+- Each pass is checked under the relation it claims (`inline`: `exact`; `split-sum`: `tolerance`), over the one
+  check domain with its default count and seed. There is no option to choose another relation or domain.
 - A rejected pass leaves `current` as it was and the remaining passes still run, as in Typed's `runPipeline`.
 - A pass that changes nothing is `accepted: true, changed: false`.
-- Pass names are `inline`, `split-sum`, `wrong-inline` and `wrong-split-sum`. The wrong variants are in the same
-  table so the fixed API can demonstrate their rejection.
-- `options.relation` is how the fixed API shows `exact` rejecting `split-sum`.
+- The public pass names are `inline` and `split-sum`. Another name throws.
 
 ## 9. Framework changes (the primary result)
 
@@ -376,8 +393,8 @@ because the analysis manager is, even when the pass, the differential check and 
 
 ```ts
 applyPassSync<S, P>(pass: Pass<S, {}, P>, before: Artifact<S>, options: {
-  store?: IRStore; params?: P; outputId?: string;
-  check?: (io: { input: Artifact<S>; output: Artifact<S>; correspondence: EntityCorrespondence }) => CheckResult;
+  params?: P; outputId?: string;
+  check: (io: { input: Artifact<S>; output: Artifact<S>; correspondence: EntityCorrespondence }) => CheckResult;
 }): PassResult<S>
 ```
 
@@ -386,6 +403,10 @@ of `applyPass` between the pass's return and the contract gate (create the outpu
 projections, build the correspondence, detect "nothing changed", enforce `writes`) moves into one internal function
 that both `applyPass` and `applyPassSync` call. A `check` that returns `ok: false` throws
 `PassError('contractRejected')`, as a rejected contract does in `applyPass`. `applyPass` keeps its behaviour.
+
+`check` is required: a step without it would be unchecked. There is no `store` option: with a native result and a
+caller's store, opening the output in that store throws `ir.unpublished`, because the store already holds a head for
+the same artifact id. Each application opens its views in fresh stores.
 
 **What it does not do.** It writes no record in an analysis manager: there are no facts, no evidence history and no
 reuse across calls. The manager path stays available for the same pass and the same spec (`applyPass` with
@@ -442,7 +463,7 @@ In `tests/tensor/`, where the risk is:
 | `syntax-check.test.mjs` | precedence and associativity; the reduction body rule (`sum(d) x[i, d] / D` against `(sum(d) x[i, d]) / D`); the `max(` rule; each check error of section 3 with its `line:col` |
 | `evaluate.test.mjs` | f32 results bit-identical to hand-written `Math.fround` loops for matmul, softmax and conv2d; accumulation order with two reduction indices; f64 differs from f32 where it should; a trap on a bad subscript in hand-built IR |
 | `contract.test.mjs` | the bound holds for the corpus (origin f32 within the bound of origin f64); case generation is deterministic and respects the redraw rules; inconclusive and trap outcomes |
-| `passes.test.mjs` | the table of section 7.3 on the corpus and on small programs; `inline` with affine subscripts; `split-sum` at extents 1, 3, 4, 5, 8; `optimizeTix` and `applyPass` with `tensorContract` agree; a program optimized by `optimizeTix` runs in `runTix` |
+| `passes.test.mjs` | the table of section 7.3 on the corpus and on small programs; `inline` with affine subscripts; `split-sum` at extents 1, 3, 4, 5, 8; the synchronous path and `applyPass` with `tensorContract` agree, including twice in one manager; a rejection on the manager path carries the meaning check's reason; a program optimized by `optimizeTix` runs in `runTix` |
 | `tests/framework/pass-sync.test.mjs` | F1 and F2 on a toy domain: accepted, rejected, undeclared write, no `rebuild` |
 
 After the implementation: `node --test tests/framework/`, and from `tests/typed/` the tests that apply passes
@@ -459,7 +480,7 @@ After the implementation: `node --test tests/framework/`, and from `tests/typed/
 | Subscript bounds: proved by the checker, checked at run time by the evaluator | Prove them again in IR validation | Needs reasoning about `min` after `split-sum`; the run-time check also turns a wrong pass's bad read into an outcome the contract rejects |
 | Tolerance is a running error bound | Fixed relative tolerance | Section 6.3: measured to reject correct programs and to have no separating value |
 | `exact` compares with the input, `tolerance` with the origin | Both compare with the origin | `inline` after an accepted `split-sum` would be rejected under `exact` |
-| Wrong variants are named passes in the same table | A separate export passed through an option | The fixed API takes names only |
+| Wrong variants are a separate export, applied in tests through `applyPassSync` | Named passes in the public table | Review: a deliberately wrong pass does not belong in the public table |
 | F1 and F2 | Sections 9, each | |
 
 ## 13. Left out
@@ -470,6 +491,7 @@ After the implementation: `node --test tests/framework/`, and from `tests/typed/
 - `split-sum` on sums over several indices, and a block-size argument through `optimizeTix` (the fixed API passes
   names only).
 - Manager records for `optimizeTix` (see F1).
+- Choosing the relation, the case count or the value ranges through the public API (review, section 17).
 - A workbench view, strategies and dataflow analyses for the tensor domain. Nothing in this stage uses
   `framework/strategy` or `framework/dataflow`.
 
@@ -491,11 +513,24 @@ After the implementation: `node --test tests/framework/`, and from `tests/typed/
 
 Each step is a commit and a diary step.
 
-## 16. Open questions for the reviewer
+## 16. Open questions
 
-1. `optimizeTix` checks each pass under the relation the pass claims unless `options.relation` is given. Is that the
-   intended reading of "each checked by your contract"?
-2. The wrong variants are reachable by name through `optimizeTix`. Say if they should be test-only.
+None. The two questions of the first version were answered by the review (section 17).
+
+## 17. Revision after review
+
+| Review item | Outcome |
+| --- | --- |
+| Must 1: definition identity on the manager path | Accepted. Section 6.4: one cached spec, invariant and contract per `(relation, count, seed)`. A test applies two passes through one manager. |
+| Must 2: case encoding in evidence | Accepted. Section 6.1: a case is `{ fn, n, shapes, seed }` and is its own `describeCase`; input values are regenerated from the seed. |
+| Cut 1: `optimizeTix` options | Accepted. Section 8: no options. The verdict table is shown through `applyPassSync` with `checkMeaning`. |
+| Cut 2: wrong variants in the public table | Accepted. Section 7: `WRONG_PASSES` is a separate export of `passes.ts`. |
+| Cut 3: per-parameter value range | Accepted. Section 6.1 states the consequence for layernorm's `eps`. |
+| F1: drop `store?`, make `check` required | Accepted. Section 9. |
+
+One addition the review did not ask for: the differential spec has a third port, `origin`, next to `reference` and
+`candidate`. Cases must come from the origin under both relations, and under `exact` the reference is the pass's
+input, whose extents after a `split-sum` are no longer plain affine forms.
 
 ## References
 
