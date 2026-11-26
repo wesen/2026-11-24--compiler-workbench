@@ -22,12 +22,13 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 2 tests the framework with a remote, asynchronous check of Tix-to-CUDA lowering. The design is ready for review; backend implementation and corpus measurements follow review.
+Stage 2 tests the framework with a remote, asynchronous check of Tix-to-CUDA lowering. The backend emits CUDA directly from checked Tix IR and checks the emitted artifact on the GB10. The framework source did not need changes.
 
 ## Key Links
 
 - [Design: Direct CUDA emission and batched lowering checks](./design-doc/01-direct-cuda-emission-and-batched-lowering-checks.md)
 - [Implementation diary and probe evidence](./reference/01-implementation-diary.md)
+- [Verification and corpus timings](./reference/02-cuda-verification-and-corpus-timings.md)
 
 ## Status
 

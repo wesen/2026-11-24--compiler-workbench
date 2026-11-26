@@ -231,3 +231,11 @@ See Step 2. Design revision commit: `dc87f19`.
 ### Review instructions
 
 Start at `src/tensor/index.ts` for the fixed API and `src/tensor/cuda-pass.ts` for the actual acceptance path. The GPU falsifier alters just the emitted ceiling bound, so it still exercises the real cross-kind postcondition. The independent seven-element split witness detects changes the f64 tolerance alone would not notice.
+
+## Step 4: Verify and measure the implementation
+
+Backend commit: `aa14d97`. The corrected `node --test tests/tensor/*.test.mjs` run completed with 24 passed, 0 failed, including five GPU tests. The entire run took about 280 seconds on the shared hosts. No framework source changed, so the additional framework and Typed suites were not run.
+
+`node corpus/tensor/benchmark-cuda.mjs` exited 0 on all six programs. The slow part was the unmodified local interpreter, not the locked GPU intervals. GPU medians ranged from 0.171 to 0.976 ms; local interpreter wall times ranged from 44 to 962 seconds under shared-host load. The [verification and timings report](./02-cuda-verification-and-corpus-timings.md) gives the individual results, ranges, command, environment and caveats. No full-size f64 or additional interpreter correctness run was performed.
+
+The as-built ABI groups all dimensions before data, and `--benchmark` fixes five measured iterations after a warm-up. The design now spells out both details; there are no other deviations from the reviewed design.

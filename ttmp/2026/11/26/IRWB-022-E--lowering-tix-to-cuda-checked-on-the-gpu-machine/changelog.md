@@ -29,3 +29,11 @@ Implemented CUDA source emission, preloaded event timing, remote batch transport
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/src/tensor/cuda-pass.ts — Checked lowering and evidence
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/tools/cuda-remote.mjs — Runtime data reuse and invocation isolation
+
+## 2026-11-26
+
+Verified 24 tensor tests including GB10 batches and a real rejected lowering; recorded all six GPU and f32 interpreter measurements.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/ttmp/2026/11/26/IRWB-022-E--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/02-cuda-verification-and-corpus-timings.md — Commands, verification, and six timing results
