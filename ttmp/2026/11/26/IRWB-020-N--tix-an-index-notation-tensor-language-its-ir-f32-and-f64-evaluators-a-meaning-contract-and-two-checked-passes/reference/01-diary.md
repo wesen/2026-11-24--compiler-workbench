@@ -241,3 +241,59 @@ tests, not the code:
 
 ### What warrants a second pair of eyes
 - The design document's §13 lists the deviations from revision 2.
+
+## Step 6: Diagnose the evaluation failures
+
+The independent evaluation of revision 5c025fd passed 22 of the 25 hidden acceptance tests. All three failures
+have one cause. My checker refuses an index that has the same name as a parameter or an earlier statement
+tensor. The hidden mlp program uses `x` both as its input tensor and as an output index. Tix's grammar does not
+need that restriction, and I added it myself, in design §3 rule 1. No code was changed in this turn.
+
+### Prompt Context
+**User prompt (verbatim):** The coordinator's turn-3 message. It is in this session and summarised here: it asks
+me to diagnose every failure with `file:line`, write `reference/02-report.md`, and change no code.
+
+### What I did
+- Wrote and ran `scripts/04-repro-index-named-like-a-tensor.mjs`:
+  - `y[i, x]` in mlp, where `x` is also the input tensor: `REJECTED 4:8: index x is a parameter`. This is the
+    hidden suite's `5:8`, shifted by one line because the suite's file has a leading comment.
+  - The same program with the index renamed to `e`: ok. This matches the variant suite's 25/25.
+  - A reduction index named like a parameter (`sum(k)` with a parameter `k`): rejected, `2:14`.
+  - An index named like an earlier statement tensor: rejected, `3:5`.
+  - An index named like a shape: rejected. That restriction is intended.
+
+### Cause, with file:line
+- `src/tensor/check.ts:69-74`: `taken(n)` reports a name as taken when it is a shape name, a parameter, *or* an
+  earlier statement tensor.
+- `src/tensor/check.ts:121-122`: every left-hand index is checked with `taken`. This is the line the three
+  hidden tests hit (`index x is a parameter`).
+- `src/tensor/check.ts:185-186`: the same check for reduction indices. It is latent: no evaluated program hit it.
+- The three failed tests (f32 bit-exact on mlp, f64 on mlp, optimizeTix inline on the corpus) all failed in
+  `compileTix(mlp)` and never reached the evaluator or the passes.
+
+### Why the result is right, and the restriction was mine
+- The brief does not say whether an index name may coincide with a tensor name. Its grammar keeps them apart: a
+  tensor name occurs only before `[` (in `ref` and on the left-hand side), and an index name only inside
+  brackets and reduction lists. Nothing is ambiguous, so the brief's language accepts the program. My design's
+  rule 1 ("separate sets, and no name may belong to two of them") was stricter than Tix, and the reviewer did
+  not catch it either.
+- Nothing downstream depends on the restriction:
+  - In the IR, `ref.name` and affine keys are separate fields.
+  - The evaluator keys tensors as `param:`/`stmt:`, and index slots by index name.
+  - `split-sum` only uses the set of names to pick fresh index names.
+  - The variant suite (25/25) shows the rest of the pipeline handles the renamed program.
+- The shape-name part of the restriction is load-bearing and should stay. The rule that decides between the
+  `max(...)` call and the `max(...)` reduction relies on shape names never being index names. A bare name in an
+  expression must also be a shape name.
+
+### The fix (not applied; code is frozen for this turn)
+- In `check.ts:121` and `check.ts:185`, test only `this.shapeSet.has(ix.name)` instead of calling `taken(...)`.
+  Keep `taken` for statement tensor names at line 116.
+- Add the four repro programs above to `tests/tensor/frontend.test.mjs`: three accepted, one rejected.
+
+### Other results
+- The differential cross-check (60 random programs, 180 cases: f32 bit-identical, f64 within 1e-9),
+  `inline` (60/60 accepted, bit-identical) and `split-sum` (60/60 accepted, same function) show no failure. I
+  have no reason to dispute any of them.
+- One limit worth noting: `inline` and `split-sum` being "accepted on 60/60" includes programs where the pass
+  had nothing to change. `optimizeTix` reports an unchanged pass as accepted.
