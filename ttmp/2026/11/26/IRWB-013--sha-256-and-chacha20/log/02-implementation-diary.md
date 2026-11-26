@@ -9,7 +9,15 @@ Topics:
 DocType: log
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://corpus/projects/sha-chacha/main.typed
+      Note: Tape kernels and hot loops
+    - Path: repo://corpus/projects/sha-chacha/project.json
+      Note: Entry roots and input generators
+    - Path: repo://corpus/projects/sha-chacha/scripts/explore.js
+      Note: Fixed-case instruction measurements
+    - Path: repo://tests/typed/sha-chacha.test.mjs
+      Note: Independent vectors, statement budgets and generated image checks
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T11:58:21.591018719-05:00
@@ -116,3 +124,102 @@ test for the vector and image assertions.
 
 `project.json` focus points at the SHA compression-loop header. Corpus
 discovery includes the project directory automatically.
+
+## Step 2 — Check vectors, images and the optimization workload
+
+Published SHA-256 and ChaCha20 vectors agree with the evaluator and
+the reference, O2, and checked speed images. The fresh workbench script
+also runs the two fixed blocks on r0 and speed and leaves the open
+project at r0.
+
+### Prompt Context
+
+**User prompt (verbatim):** See Step 1.
+**Assistant interpretation:** Verify both kernels end to end within the project.
+**Inferred user intent:** Make correctness and instruction counts reproducible for compiler experiments.
+**Commit (code):** `109b6db` — IRWB-013: add SHA-256 and ChaCha20 corpus kernels.
+
+### What I did
+
+- Added a project-only test covering the empty and `abc` SHA vectors,
+  a 55-cell SHA block, and the two ChaCha20 vectors from RFC 8439.
+  Each vector checks all output words, the signed scalar result, and
+  the input buffers.
+- Compared 100 generated cases per function to the reference, O2, and
+  speed images. Reused each r0 case across those images. Checked every
+  generated SHA digest against the framework's `sha256` oracle.
+- Ran the length-55 SHA block and RFC section 2.3.2 ChaCha block at
+  every speed revision with a 20,000-statement limit.
+- Inspected the RV32 listings for source lines in both hot loops.
+  Ran the fresh script through the workbench project loader.
+
+### Why
+
+The full published vectors verify byte order as well as the arithmetic.
+Generated reference comparisons verify lowering over more inputs.
+The direct `quarter` cases specifically exercise the reference ABI with
+four return words.
+
+### What worked
+
+- `node tools/parity.mjs --json sha-chacha` reported 200/200 entry
+  cases, 14 changed revisions through r14, zero rejected passes, and
+  zero inconclusive cases or disagreements.
+- `node --test tests/typed/sha-chacha.test.mjs` passed. Running the
+  same file directly reported both subtests and the budget diagnostics.
+- SHA statement counts were 4,737 at r0, 3,928 at r14, and 6,465 at peak.
+  ChaCha counts were 2,568 at r0, 2,259 at r14, and 3,528 at peak.
+- The selected project metadata and notes round-tripped through
+  `formatJson` and `wrapProse`. The focus points at line 43.
+
+### What did not work
+
+The first `git add -- corpus/projects/sha-chacha …` failed with
+`fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/impl-irwb-013/index.lock': Read-only file system`.
+The escalated staging and commit calls succeeded.
+
+### What I learned
+
+The standalone reference runner lacks both signature forwarding and a
+project filter. The project test supplies signatures to
+`imageFromCode` and runs the same O2 comparison locally. Its generated
+comparison uses r0 as the baseline for every image. The formatting
+CLI is also corpus-wide, so the formatting probe applies its helpers
+to the single project.
+
+### What was tricky to build
+
+The hottest instructions at r0 are in `rotr` and `rotl`. At r14 the
+SHA compression loop has no rotate calls or direct stack loads and
+stores on its source lines. ChaCha still calls `quarter` eight times
+per double round, with immediate shifts inside `quarter`. The
+source-attributed ChaCha loop listing drops from 48 direct stack
+loads and stores to 40 and retains 65 add-immediate-zero moves.
+
+### What warrants a second pair of eyes
+
+Use instruction counts for the fixed cases to compare later pass
+revisions and backend configurations. Static spill counts describe
+the compiled entry functions.
+
+### What should be done in the future
+
+Aggregate corpus expectation updates and any changes to the standalone
+reference runner belong in the integration work that owns those files.
+
+### Code review instructions
+
+Run `node --test tests/typed/sha-chacha.test.mjs` after
+`npm run build`, then `node tools/parity.mjs --json sha-chacha`.
+Open the project and run `explore` for instruction counts and RV32
+instruction IDs.
+
+### Technical details
+
+The fixed measurement cases use the same `coalesce`, `chains` and
+`homes` options at both revisions.
+
+| Kernel | r0 instructions | r14 instructions | r0 instructions/byte | r14 instructions/byte | r0 → r14 spills |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| SHA-256 | 14,108 | 7,962 | 220.4375 | 124.40625 | 13 → 0 |
+| ChaCha20 | 7,692 | 3,396 | 120.1875 | 53.0625 | 25 → 19 |

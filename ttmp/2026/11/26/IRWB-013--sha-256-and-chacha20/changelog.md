@@ -15,3 +15,7 @@ Implemented the SHA-256 and ChaCha20 Tape kernels and project input metadata.
 ## 2026-11-26
 
 Added a fresh r0 versus speed measurement script and documented block packing, hot loops, and the instruction denominator.
+
+## 2026-11-26
+
+Verified both kernels against full published vectors and 500 generated cases per RV32 image. Project-only parity passed 200 entry cases and the fixed cases stayed below 20,000 statements at every speed revision.
