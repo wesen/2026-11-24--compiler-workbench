@@ -253,3 +253,31 @@ What the judge reported:
 
 ### Claude implementations (usage restraint)
 Only the two medium Claude cells implement: Opus N and Fable P. Medium is cheaper, and choosing by effort, not by score, avoids a best-of-two selection bias. The four Claude design turns cost 898K subagent tokens, and the judge 274K.
+
+## Step 9: reviews checked, implementation dispatched, the Sol v2 round launched
+
+- **The blind reviewer** (Claude subagent, 348K tokens, 73 tool uses) wrote one review per design, 315–349 words, following `scripts/06-review-protocol-t1.md`. It checked repository claims in a clean checkout at the base revision (`.claude/worktrees/review-19ad269`, no IRWB-019 files) and re-ran the split-sum rounding witnesses the designs quote.
+- **I checked the four framework claims** most must-change items rest on, in the base checkout:
+  - `applyPass` calls `view.beginEdit()` unconditionally (`src/framework/passes/define-pass.ts:204`).
+  - The edit throws `ir.capability … is not Rewritable` without `rebuild` (`ir/transactions.ts:43`).
+  - `ContractRegistry.register` throws "cannot be redefined" for a second object at the same id@version (`contracts/registry.ts:9`), and `applyPass` reports the throw as `contractRejected`.
+  - `IRStore` throws `ir.unpublished` for an unknown revision of an artifact id it already holds (`ir/store.ts:52`), so the `store?` option some designs add breaks on native results.
+  
+  All four hold.
+- **Blinding:** no review mentions another document. Each review's title named its own blind letter; the copies sent (`reviews-send/`) say "Review of your design". The reviews are archived in `various/results/reviews-t1/`.
+- **Recurring review items:**
+  - **Cut** a redundant inline-against-origin check (9 designs) and the general shape solver (12).
+  - **Must change:** step budgets sized on the origin, which reject a correct `split-sum` (5); tests added to an existing framework test file (3); an unspecified positive `eps`, which makes layernorm non-finite and rejects a correct pass (B, C, G, J, M).
+  - The reviewer found no must-change item in D (Codex Astra xhigh) or K (Codex Astra medium).
+- **Implementation dispatched** with `10-dispatch-turn.sh t1 impl prompts/t1/turn2.md <reviews-send> --only …`:
+  - the twelve Codex and Pi cells;
+  - two Claude cells (Opus medium N, Fable medium P), sent by SendMessage.
+  
+  The Opus xhigh and Fable xhigh cells stop at design, for usage. Memory 46 GB free, 8 cores, so the agents will contend for CPU.
+- **Sol prompting experiment (v2) launched:** the four Sol cells (Codex and Pi, medium and high) redesign stage 1 from the same base with `prompts/developer-instructions-v2.md`. v2 is v1 plus four rules aimed at what the judge counted:
+  - support only the subset the corpus uses, and reject the rest with an ordinary error;
+  - specify errors only by where they are detected and their message;
+  - build one path per job;
+  - justify every numeric threshold by an error argument or a measurement.
+  
+  Items Q–T (`scripts/11-launch-t1-v2.sh`). They will be judged blind in one session with the four v1 Sol designs, to avoid judge drift between sessions.
