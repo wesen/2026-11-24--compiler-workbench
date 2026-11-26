@@ -1,0 +1,28 @@
+projects 44, pipelines O1 O2 O2+ loops checks O2-sccp, reuse true, 6996 ms
+pass        apps chg  edits  ent.chg  fns/tot   pass ms  check ms
+cfg          660 193   1060      865  247/319      1467       255
+fold         352  52     65      308    56/88       436        29
+simplify     440 207    329     1234  259/313      1409       148
+constprop    132  39     81      354    42/57       304        22
+dce          352  63     86      182    67/97       434        35
+licm         176  28    120      204    28/32       198        43
+lvn          176  20     96      240    24/32       206        11
+strength     132   3      3       30      3/6       284        11
+bce          176  40    104      416    52/76       484        37
+subst        352  69    146      830   73/106       645        58
+sccp          44  13     28      132    14/19        86        14
+rule-backed (simplify, fold): edits 394 of 2118 (18.6 %), entity changes 1542 of 4795 (32.2 %)
+simplify: replace edits 329, re-derived 329, not 0; 8.9 ms re-deriving
+  weakest strength per edit: {"proof":125,"reduced-width+argument":204}
+  firings: {"mul-one":12,"add-zero":23,"sub-zero":6,"mul-zero":12,"sub-self":6,"not-lt":192,"mul-pow2":92,"zero-mul":1,"not-gt":6,"not-ne":6}
+fold: replace edits 65, re-derived 65, not 0; 1.9 ms re-deriving
+  weakest strength per edit: {"by-construction":65}
+  firings: {"fold-mul":36,"fold-sub":25,"fold-shl":4,"fold-add":4,"fold-gt":4}
+pipeline   apps chg  edits  ent.chg   pass ms  check ms
+O1         352 101    247      571       824       312
+O2         704 150    433      996      1236       118
+O2+        748 161    461     1156      1242        77
+loops      308  88    269      616       704        50
+checks     176  77    272      446       628        33
+O2-sccp    704 150    436     1010      1319        73
+node $T/scripts/01-edit-census-corpus.mjs --json   9.25s user 0.25s system 132% cpu 7.144 total

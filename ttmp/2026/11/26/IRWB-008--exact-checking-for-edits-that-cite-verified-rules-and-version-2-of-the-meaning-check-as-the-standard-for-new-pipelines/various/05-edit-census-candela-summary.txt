@@ -1,0 +1,26 @@
+r0 cd36346ea7c4 head b33d1737c725 openMs 10017 totalMs 163217 peakRssMB 3494 differential {"baselineRuns":13280,"subjectRuns":64040,"replayed":108600,"delegated":0}
+pass       chg  edits replace ent.chg  fns   pass ms  check ms  subj.runs replayed
+cfg          1    974       0     882  110      8826     10390      13280        0
+fold         1    676     676    3879  103      9156      2597       6920     6360
+simplify     1     48      48     264   19      7699      1989       2720    10560
+constprop    1    925     925    6548  124     11956      2580       6480     6800
+fold         1    114     114    2008   53      7423      1612       3560     9720
+simplify     0      0       0       0    0       636         0          0        0
+dce          1   2164       0    4971  144     10386      2363       7080     6200
+cfg          1     18       0       9    3      6708       908        480    12800
+licm         1     87      19      97    8      7032      1921       1760    11520
+lvn          1    256     128     918   38      7054      1687       5360     7920
+strength     0      0       0       0    0      4287         0          0        0
+bce          0      0       0       0    0      2938         0          0        0
+subst        1    430     215    2400  160      8429      2459       8280     5000
+subst        1    280     140    1570  132      7790      2226       7040     6240
+dce          1      2       0       8    2     14488       899        600    12680
+cfg          1     20       0      12    2      5987       737        480    12800
+total {"edits":5994,"rep":2265,"ent":23566,"pass":120795,"check":32368,"subj":64040,"repl":108600}
+rule-backed steps (fold x2, simplify) {"edits":838,"rep":838,"ent":6151,"check":6198,"subj":13200,"pass":24278}
+rule-backed share: edits 14.0 % replace edits 37.0 % entity changes 26.1 % check ms 19.1 % subject runs 20.6 %
+fact-backed replace (constprop) 925 40.8 %
+fold replace 676 rederived 676 ms 12 weakest {"by-construction":676} not [] firings {"fold-sub":69,"fold-fdiv":8,"fold-shl":430,"fold-add":430,"fold-eqz":3,"fold-fmul":125,"fold-fmax":83,"fold-fsub":21,"fold-fmin":3}
+simplify replace 48 rederived 48 ms 2 weakest {"reduced-width+argument":16,"proof":32} not [] firings {"not-lt":12,"not-le":4,"mul-pow2":39,"add-zero":1}
+fold replace 114 rederived 114 ms 8 weakest {"by-construction":114} not [] firings {"fold-fmul":14,"fold-fmax":202,"fold-fmin":196,"fold-fsqrt":196,"fold-fadd":98,"fold-fsub":101,"fold-fdiv":98,"fold-or":4}
+check ms per subject run (all steps) 0.419
