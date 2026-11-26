@@ -1,0 +1,19 @@
+IRWB-004: the meaning check alone on Candela (r0 against its cfg revision, 13,280 cases, no reuse, calling thread)
+node --max-old-space-size=12288 --trace-gc scripts/09-candela-contract.mjs --local-only
+(Scavenge and Mark-Compact counts are for the whole process: lift, r0, cfg and the check; load average 11-14.)
+
+build                                          check ms   Scavenge   Mark-Compact
+D1 + F4 code, evaluator as before                34,772         99             35
++ locals in one reused Int32Array                37,330         97             34
++ stack-area memory in one reused buffer         10,959        105              5
+
+Profile various/profiles/14-contract-local.cpuprofile (the first row's code, 38,922 ms check):
+03-profile-summary.mjs --window runDifferentialAsync: (garbage collector) 18,213 ms self of 38,922 ms.
+Mark-Compact lines in the first two traces: one about every second, 464 MB live before and after
+("finalize incremental marking via stack guard; GC in old space requested"), 180-670 ms pause plus
+180-510 ms of incremental steps each.
+
+Cause: Candela has frame arrays, so every evaluation allocated a working memory of the case's memory plus
+STACK_BYTES (65,536): about 26,560 evaluations x ~66 KB = ~1.75 GB of ArrayBuffer backing stores during one
+check. External memory past V8's limit starts a full marking of the heap, which on the main thread (a heap of
+~460 MB of artifacts, projections and analysis results) costs most of a second each time.

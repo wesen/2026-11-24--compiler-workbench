@@ -93,7 +93,10 @@ export function validateCorrespondence(input: EntityCorrespondence): EntityCorre
     to: c.to,
     sourceEntities,
     targetEntities,
-    entries: [...entries.values()].sort((a, b) => compareText(canonical(a), canonical(b))),
+    // sorted by canonical text; each entry's text is its key, computed once above (IRWB-004)
+    entries: [...entries]
+      .sort(([a], [b]) => compareText(a, b))
+      .map(([, entry]) => entry),
   });
 }
 export function makeCorrespondence(

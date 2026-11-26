@@ -1,0 +1,14 @@
+Final frozen gates, IRWB-006, source a74063b + working tree (evidence, listing, wb.rules, semantics f32 closures)
+
+1. IRWB_FULL=1 passes + backend, parity, corpus revisions (scripts/10-frozen-gates-part.sh, run while the evidence
+   was computed; none of them imports src/typed/rules/evidence.ts): ../13-gates-final-part-summary.txt
+     IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs: tests 21, pass 21, fail 0
+     node tools/parity.mjs: {"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}
+     corpus revisions (IRWB-001 scripts/08-corpus-revisions.mjs) vs various/01-baseline-corpus-revisions.txt: IDENTICAL (44 lines)
+
+2. After the evidence was recorded and the build redone:
+     node --test --test-concurrency=3 "tests/**/*.test.mjs" (gate-npm-test.log): exit 0
+       tests 340, pass 337, fail 0, cancelled 0, skipped 3 (the environment-gated Candela tests), 114.8 s
+       (325 before this milestone's test files; + 9 in tests/typed/rules.test.mjs, + 6 in tests/typed/ssa.test.mjs)
+
+status 0

@@ -57,6 +57,10 @@ export class Edit<T> implements IREdit<T> {
   get state(): IREdit<T>['state'] {
     return this.#state;
   }
+  /** IRWB-004: how many operations the draft recorded; 0 means preparing it would rebuild the base unchanged. */
+  get operationCount(): number {
+    return this.#operations.length + this.#correspondence.length;
+  }
   #open(): void {
     if (this.#state !== 'open')
       throw new IRError('ir.edit-state', `Edit is ${this.#state}; mutation requires an open draft`);

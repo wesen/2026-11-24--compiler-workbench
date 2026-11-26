@@ -1,0 +1,41 @@
+ 00:36:53 up 6 days, 13:49,  1 user,  load average: 10.95, 12.54, 11.27
+{"pass":"cfg","ms":19763,"changed":true,"rev":1,"revision":"4aea7e81dd046901b550627db94bd36074be8797e59d9a75323c68e03472b1a3","fns":110,"edits":974,"checks":[[13280,13258,0,22,0]],"rssMB":1170}
+{"pass":"fold","ms":12731,"changed":true,"rev":2,"revision":"79007a4f826ab3b35f3fe67ce79729d15d29c6a309da84546c69aecb51cf4f86","fns":103,"edits":676,"checks":[[13280,13258,0,22,0]],"rssMB":1285}
+{"pass":"simplify","ms":9806,"changed":true,"rev":3,"revision":"28af3dbb9e5b4f16b4f975cf9fef28dc0f39988988be187ad22808315894f0a4","fns":19,"edits":48,"checks":[[13280,13258,0,22,0]],"rssMB":1626}
+{"pass":"constprop","ms":14071,"changed":true,"rev":4,"revision":"33425ba057ac4a89c2d0075559862bbff8dadb4817c251505f0cb13f16d07e77","fns":124,"edits":925,"checks":[[13280,13258,0,22,0]],"rssMB":2277}
+{"pass":"fold","ms":9927,"changed":true,"rev":5,"revision":"28ff4a86b2796fb49b5b9763d983f8c50a3438200cbf28580ac774c06f0f4c73","fns":53,"edits":114,"checks":[[13280,13258,0,22,0]],"rssMB":2614}
+{"pass":"simplify","ms":706,"changed":false,"rev":5,"revision":"28ff4a86b2796fb49b5b9763d983f8c50a3438200cbf28580ac774c06f0f4c73","fns":0,"edits":0,"checks":[],"rssMB":2678}
+{"pass":"dce","ms":15555,"changed":true,"rev":6,"revision":"8d4265f3a9dafbf2c26bc0bb449554ce239a1fe83d629f76b06543a7ced5427f","fns":144,"edits":2164,"checks":[[13280,13258,0,22,0]],"rssMB":2463}
+{"pass":"cfg","ms":8984,"changed":true,"rev":7,"revision":"e60948d78f340ddd3aba60ed8048290bd1e39fe4966f8ebb85b9d7d7912a8b24","fns":3,"edits":18,"checks":[[13280,13258,0,22,0]],"rssMB":2568}
+{"pass":"licm","ms":8756,"changed":true,"rev":8,"revision":"d4a9b9e51fccb3cdc52abb4d5544c935e5cdbf5df164d5a836f50ee0d5ff08b4","fns":8,"edits":87,"checks":[[13280,13258,0,22,0]],"rssMB":2674}
+{"pass":"lvn","ms":9135,"changed":true,"rev":9,"revision":"5d3725175064f3c3063a82d6789ba2e3f8189d5d31e52099c29a745b8a8de99d","fns":38,"edits":256,"checks":[[13280,13258,0,22,0]],"rssMB":2788}
+{"pass":"strength","ms":5573,"changed":false,"rev":9,"revision":"5d3725175064f3c3063a82d6789ba2e3f8189d5d31e52099c29a745b8a8de99d","fns":0,"edits":0,"checks":[],"rssMB":3123}
+{"pass":"bce","ms":3262,"changed":false,"rev":9,"revision":"5d3725175064f3c3063a82d6789ba2e3f8189d5d31e52099c29a745b8a8de99d","fns":0,"edits":0,"checks":[],"rssMB":3330}
+{"pass":"subst","ms":12421,"changed":true,"rev":10,"revision":"f61345f3f442635fdc9ac38285d5abae8315297ec29a0fbc6e260d9a208d05fc","fns":160,"edits":430,"checks":[[13280,13258,0,22,0]],"rssMB":3703}
+{"pass":"subst","ms":13020,"changed":true,"rev":11,"revision":"a41ec1727418de4032505293094153a373aebfc7860034f4a05e083c6664d026","fns":132,"edits":280,"checks":[[13280,13258,0,22,0]],"rssMB":4116}
+{"pass":"dce","ms":21567,"changed":true,"rev":12,"revision":"f7ff969f7ff9098088ab5fc236012d2abcb7db1567f5db8bbeeecc8fbda89e05","fns":2,"edits":2,"checks":[[13280,13258,0,22,0]],"rssMB":4477}
+{"pass":"cfg","ms":22279,"changed":true,"rev":13,"revision":"b33d1737c725506c7880b8701899d0a0d78f71d6a7b981db89d85d84f48c40d9","fns":2,"edits":20,"checks":[[13280,13258,0,22,0]],"rssMB":4799}
+	Command being timed: "node --max-old-space-size=12288 ttmp/2026/11/25/IRWB-004--cheap-experiments-cached-origin-outcomes-functions-as-the-unit-of-change-workers-and-a-worker-for-the-workbench/scripts/04-candela-o2-revisions.mjs"
+	User time (seconds): 175.92
+	System time (seconds): 7.09
+	Percent of CPU this job got: 88%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:26.58
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 4700036
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 2296988
+	Voluntary context switches: 11665
+	Involuntary context switches: 65232
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 96
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+ 00:40:20 up 6 days, 13:52,  1 user,  load average: 14.58, 12.26, 11.32

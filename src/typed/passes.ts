@@ -30,10 +30,12 @@ import {
   type RangeView,
   type ReachView,
 } from './analyses.js';
-import { F32_FOLDABLE, F32_OPERANDS, F32_RESULT, f32Op } from './f32.js';
-import { BlocksIR, blocksAdapter, blocksEntities } from './ir.js';
+import { F32_OPERANDS, F32_RESULT } from './f32.js';
+import { BlocksIR, blocksAdapter, blocksEntities, entityIdSet } from './ir.js';
 import { hash, meaningKept, type MeaningParams } from './evaluate.js';
-import { SYMBOL } from './listing.js';
+import { tableBody } from './rules/compile.js';
+import { FOLD_RULES } from './rules/fold.js';
+import { SIMPLIFY_RULES } from './rules/simplify.js';
 import {
   Store,
   typeClass,
@@ -44,7 +46,6 @@ import {
   type WorkFn,
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
-import { binop } from './evaluate.js';
 import { rotateSpec } from './rotate.js';
 import { makeInline } from './inline.js';
 
@@ -120,8 +121,8 @@ export function revisionCorrespondence(
   after: TypedBlocks,
   edits: readonly Edit[],
 ): CorrespondenceEntry[] {
-  const src = new Set(blocksEntities(before).map(e => e.id)),
-    dst = new Set(blocksEntities(after).map(e => e.id));
+  const src = entityIdSet(before),
+    dst = entityIdSet(after);
   const groups = new Map<
     string,
     { to: Set<string>; because: Set<string>; notes: string[]; relation: string }
@@ -248,27 +249,6 @@ export function optimizationContract(params: MeaningParams = {}): Transformation
 // ---------- the passes ----------
 const isPow2 = (n: number) => n > 0 && (n & (n - 1)) === 0;
 const log2 = (n: number) => 31 - Math.clz32(n);
-const FOLDABLE = new Set([
-  'add',
-  'sub',
-  'mul',
-  'and',
-  'or',
-  'xor',
-  'shl',
-  'shr',
-  'shru',
-  'eq',
-  'ne',
-  'lt',
-  'gt',
-  'le',
-  'ge',
-  'ltu',
-  'geu',
-  'div',
-  'rem',
-]);
 const lastStmt = (st: Store, b: BlockRec) =>
   b.stmts.length ? (st.get(b.stmts.at(-1)!) as StmtRec) : undefined;
 
@@ -277,101 +257,34 @@ const lastStmt = (st: Store, b: BlockRec) =>
  * bits exactly as the target computes them (f32.ts): rounded to nearest even, which is the rule the target applies
  * statically, so a folded constant is the value the program would compute. Operators that round in another direction
  * (floor, ceil, trunc, the saturating conversions) are not folded.
+ *
+ * The cases are the rule table FOLD_RULES (rules/fold.ts), one rule per operator, compiled into the rewrite visitor
+ * (IRWB-006). The hand-written body it replaced is kept in rules/handwritten.ts; on the corpus (every pipeline) and
+ * on Candela's O2 both give identical revisions, edit lists and correspondences.
  */
 export const fold = typedPass({
   name: 'fold',
   about: 'constant folding: an operator whose operands are constants becomes a constant',
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops', 'liveness', 'reaching'],
-  body: ({ tx }) =>
-    tx.rewrite(v => {
-      if (v.op === 'eqz' && v.args[0].isConst)
-        return tx.const(+(v.args[0].imm === 0), { because: [v.args[0]] });
-      if (F32_FOLDABLE.has(v.op) && v.args.every(a => a.isConst)) {
-        const [a, b] = v.args.map(x => x.imm as number);
-        return tx.const(f32Op(v.op, a, b)!, {
-          because: v.args,
-          ...(F32_RESULT.has(v.op) ? { type: 'f32' as const } : {}),
-        });
-      }
-      if (!FOLDABLE.has(v.op) || !v.args.every(a => a.isConst)) return;
-      const [a, b] = v.args.map(x => x.imm as number);
-      if ((v.op === 'div' || v.op === 'rem') && (b === 0 || (a === -2147483648 && b === -1))) return; // keep the trap
-      return tx.const(binop(v.op, a, b), { because: v.args });
-    }),
+  body: tableBody(FOLD_RULES.rules),
 });
 
 /**
  * The identities are i32 identities. None holds for f32 (x + 0 is not x for x = -0; x * 0 is not 0 for NaN or ∞;
  * x - x is not 0 for ∞; !(a < b) is not a >= b for NaN), so f32 operators are left alone; their own names keep
- * them out of the rules below, and the guard makes that explicit.
+ * them out of the rules.
+ *
+ * The identities are the rule table SIMPLIFY_RULES (rules/simplify.ts), each rule verified once for all inputs
+ * (rules/verify.ts, rules/evidence.ts), compiled into the rewrite visitor (IRWB-006). The hand-written body it
+ * replaced is kept in rules/handwritten.ts; both give identical revisions on the corpus and on Candela's O2.
  */
 export const simplify = typedPass({
   name: 'simplify',
   about: 'algebraic identities: x+0, x*1, x*2^k, x-x, !!x and inverted comparisons',
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
-  body: ({ tx }) =>
-    tx.rewrite(v => {
-      if (F32_OPERANDS.has(v.op) || F32_RESULT.has(v.op)) return;
-      const [a, b] = v.args,
-        k = b && b.isConst ? (b.imm as number) : null,
-        ka = a && a.isConst ? (a.imm as number) : null;
-      const note = (text: string) => ({ because: v.args.filter(x => x.isConst), note: text });
-      switch (v.op) {
-        case 'add':
-          if (k === 0) return a.id;
-          if (ka === 0) return b.id;
-          break;
-        case 'sub':
-          if (k === 0) return a.id;
-          if (a.isPure && a.same(b)) return tx.const(0, note('x - x'));
-          break;
-        case 'mul':
-          if (k === 1) return a.id;
-          if (ka === 1) return b.id;
-          if (k === 0 && a.isPure) return tx.const(0, note('x * 0'));
-          if (ka === 0 && b.isPure) return tx.const(0, note('0 * x'));
-          if (k !== null && isPow2(k))
-            return tx.make('shl', a.id, tx.const(log2(k)), note(`x * ${k} = x << ${log2(k)}`));
-          if (ka !== null && isPow2(ka))
-            return tx.make('shl', b.id, tx.const(log2(ka)), note(`${ka} * x = x << ${log2(ka)}`));
-          break;
-        case 'div':
-          if (k === 1) return a.id;
-          break;
-        case 'or':
-        case 'xor':
-        case 'shl':
-        case 'shr':
-        case 'shru':
-          if (k === 0) return a.id;
-          break;
-        case 'and':
-          if (k === 0 && a.isPure) return tx.const(0, note('x & 0'));
-          if (k === -1) return a.id;
-          break;
-        case 'eqz': {
-          const inner = a;
-          const inv: Record<string, string> = {
-            lt: 'ge',
-            ge: 'lt',
-            gt: 'le',
-            le: 'gt',
-            eq: 'ne',
-            ne: 'eq',
-            ltu: 'geu',
-            geu: 'ltu',
-          };
-          if (inv[inner.op])
-            return tx.make(inv[inner.op] as ValueRec['op'], inner.args[0].id, inner.args[1].id, {
-              note: `!(${SYMBOL[inner.op]}) is ${SYMBOL[inv[inner.op]]}`,
-            });
-          if (inner.op === 'eqz' && inner.args[0].isBoolean) return inner.args[0].id;
-          break;
-        }
-      }
-    }),
+  body: tableBody(SIMPLIFY_RULES.rules),
 });
 
 export const constprop = typedPass({

@@ -1,0 +1,35 @@
+{
+ "r0": "cd36346ea7c4",
+ "sum": {
+  "fns": 332,
+  "blocks": 2409,
+  "gets": 14598,
+  "pairs": 16800,
+  "names": 23850,
+  "phis": 4245,
+  "deadPhis": 2840,
+  "unreachable": 0,
+  "entryLoops": 0,
+  "mismatches": 0,
+  "violations": 0,
+  "maxPhisInFn": 1877
+ },
+ "bad": [],
+ "ms": {
+  "reaching": [
+   5341,
+   3287,
+   3040
+  ],
+  "ssa": [
+   1270,
+   1162,
+   1210
+  ],
+  "check": 879
+ },
+ "bytes": {
+  "reaching": 10718740,
+  "ssa": 3400010
+ }
+}

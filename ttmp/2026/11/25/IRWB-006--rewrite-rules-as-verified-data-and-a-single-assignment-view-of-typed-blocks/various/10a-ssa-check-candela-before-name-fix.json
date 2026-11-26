@@ -1,0 +1,79 @@
+{
+ "r0": "cd36346ea7c4",
+ "sum": {
+  "fns": 332,
+  "blocks": 2409,
+  "gets": 14598,
+  "pairs": 16800,
+  "names": 23848,
+  "phis": 4245,
+  "deadPhis": 2840,
+  "unreachable": 0,
+  "entryLoops": 0,
+  "mismatches": 5,
+  "violations": 10,
+  "maxPhisInFn": 1877
+ },
+ "bad": [
+  {
+   "fn": "asinPositive",
+   "mismatches": [
+    {
+     "stmt": "s:asinPositive.8",
+     "get": "v:asinPositive.58",
+     "local": 4,
+     "reaching": [
+      "s:asinPositive.7"
+     ],
+     "ssa": [
+      "s:asinPositive.1"
+     ]
+    },
+    {
+     "stmt": "s:asinPositive.8",
+     "get": "v:asinPositive.54",
+     "local": 4,
+     "reaching": [
+      "s:asinPositive.7"
+     ],
+     "ssa": [
+      "s:asinPositive.1"
+     ]
+    },
+    {
+     "stmt": "s:asinPositive.8",
+     "get": "v:asinPositive.50",
+     "local": 4,
+     "reaching": [
+      "s:asinPositive.7"
+     ],
+     "ssa": [
+      "s:asinPositive.1"
+     ]
+    }
+   ],
+   "violations": [
+    "v:asinPositive.58 reads local 4 but its name z.1 is of local 1",
+    "z.1 (bb:asinPositive.1) does not dominate its use in bb:asinPositive.4",
+    "v:asinPositive.54 reads local 4 but its name z.1 is of local 1"
+   ]
+  }
+ ],
+ "ms": {
+  "reaching": [
+   3630,
+   2801,
+   3544
+  ],
+  "ssa": [
+   1358,
+   1459,
+   1428
+  ],
+  "check": 605
+ },
+ "bytes": {
+  "reaching": 10718740,
+  "ssa": 3399774
+ }
+}

@@ -1,0 +1,25 @@
+IRWB-004 final measurements (this build, shared machine)
+
+1. No-change pass on Candela r0 (strength), scripts/02-framework-cost.mjs --passes strength --repeat 2, load 7.98
+   -> 22-framework-cost-final-strength.json, profile profiles/22-final-strength.cpuprofile
+   strength#0  4,295 ms  changed false  revision cd36346ea7c4f175…  (base build: 13,265 ms)
+   strength#1    655 ms  changed false  revision cd36346ea7c4f175…  (the ranges analysis already solved for r0)
+   profile, within applyPass (3,508 ms sampled over both): ranges analysis solveArtifact 2,362 ms
+   (immutable of its result 1,510 ms, solver 699 ms), typedPass run 876 ms (Store.from 368 ms),
+   beginEdit 211 ms. The framework's own steps (diff, correspondence, artifact) do not run: the edit is empty.
+
+2. One per-scene run, R-01 at stride 8, scripts/10-candela-per-scene.mjs R-01, back to back
+   -> 21-per-scene-R01-{new,base}.json and .log
+   this build  118,870 ms  (load 9.4 -> 11.3)  specialize 14,071 | constprop 13,188 | fold 10,520 | cfg 9,536 | dce 7,527 | cfg - 411 | dfe 9,090
+   base build  312,243 ms  (load 11.3 -> 8.7)  specialize 71,254 | constprop 51,811 | fold 35,454 | cfg 34,267 | dce 36,199 | cfg - 24,377 | dfe 25,879
+   both: 332 -> 137 functions, 12,358 -> 5,400 statements, frame differentBits 0, identical frame records
+   (IRWB-001's run of the base build on a quieter machine: 198,611 ms)
+
+3. Job pool (src/typed/parallel/job-pool.ts), the corpus through O2, one project per job, load 7.7
+   08-corpus-evidence.mjs (one thread, no pool)   2,709 ms
+   12-corpus-evidence-pool.mjs --threads 1        2,822 ms
+   12-corpus-evidence-pool.mjs --threads 4        2,267 ms
+   all three outputs identical to 10-corpus-evidence-baseline.txt (the base build's evidence)
+   The corpus is small: each worker's import of the compiler and the vendored front end is a large part of the
+   time. Candela-scale independent runs in parallel were not measured: the machine allowed one Candela-scale
+   process at a time.

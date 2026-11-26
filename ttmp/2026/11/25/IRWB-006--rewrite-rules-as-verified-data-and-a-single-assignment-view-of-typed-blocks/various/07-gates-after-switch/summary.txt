@@ -1,0 +1,12 @@
+== build
+== npm test (node --test --test-concurrency=3 tests/**/*.test.mjs)
+== IRWB_FULL=1 passes + backend
+== parity
+strings                 4 revs  200/200 (+0 limit)
+ui-gallery              5 revs  200/200 (+0 limit)
+value-numbering         2 revs  100/100 (+0 limit)
+wrong-shift             0 revs  200/200 (+0 limit)  rejected: div-to-shift
+{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}
+== corpus revisions vs baseline
+IDENTICAL (44 lines)
+status 0

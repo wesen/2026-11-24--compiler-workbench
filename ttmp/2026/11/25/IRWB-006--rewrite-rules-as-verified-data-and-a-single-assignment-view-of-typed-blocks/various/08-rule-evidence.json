@@ -1,0 +1,2287 @@
+{
+ "meta": {
+  "generatedBy": "ttmp/2026/11/25/IRWB-006--…/scripts/04-verify-rules.mjs",
+  "options": {
+   "random": 1000000,
+   "seed": 7,
+   "exhaustive32": true
+  },
+  "ms": 3997858
+ },
+ "evidence": {
+  "simplify": {
+   "add-zero": {
+    "rule": "add-zero",
+    "version": "1",
+    "fingerprint": "1b51eea4e5328d9d01de7a391e2a8d7b40db491a24ad0e6c99c07e0ab69d051b",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 45
+     }
+    ]
+   },
+   "zero-add": {
+    "rule": "zero-add",
+    "version": "1",
+    "fingerprint": "bda369788b308f3f32d22b42c35cc3d2dc2ea9d02c958997543c7c65d544cfcb",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 59
+     }
+    ]
+   },
+   "sub-zero": {
+    "rule": "sub-zero",
+    "version": "1",
+    "fingerprint": "017a319e3cfc6a84727a4ab5c84c59f7730583baf8c1a59ef4f8211af2c802e7",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 58
+     }
+    ]
+   },
+   "sub-self": {
+    "rule": "sub-self",
+    "version": "1",
+    "fingerprint": "20d743406672a3312eb8b81d268b03c09aa05c620521cd8ea5db2e3860cf6439",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 89
+     }
+    ]
+   },
+   "mul-one": {
+    "rule": "mul-one",
+    "version": "1",
+    "fingerprint": "310f90eb208c2bb3c3ea4a7cafd1b77ae1e298362c79edba2ce44387711e0b3f",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 76
+     }
+    ]
+   },
+   "one-mul": {
+    "rule": "one-mul",
+    "version": "1",
+    "fingerprint": "f8780ee3e39da11c05723d997b61276d3b3ffc749c567b949f34406dfc52a2a4",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 75
+     }
+    ]
+   },
+   "mul-zero": {
+    "rule": "mul-zero",
+    "version": "1",
+    "fingerprint": "d12e7a3ae75ffe05bfc8c7ce61aae394fab19d06c92b36df246eabb928cb6eeb",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 87
+     }
+    ]
+   },
+   "zero-mul": {
+    "rule": "zero-mul",
+    "version": "1",
+    "fingerprint": "be6b0b3b2a6aa086d5aba0a65867056e52342b80087c83bfff0088c04fbe6a5d",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 86
+     }
+    ]
+   },
+   "mul-pow2": {
+    "rule": "mul-pow2",
+    "version": "1",
+    "fingerprint": "13767b56b5b4478881e0cea8ecf14ffb2d112ade3ba3b7ae18f5285af5abfebb",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 31,
+      "detail": "normal forms equal for all 31 guard instances",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 1792,
+      "ms": 1
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1001488,
+      "detail": "boundary values crossed (1488), then random",
+      "ms": 3475
+     }
+    ]
+   },
+   "pow2-mul": {
+    "rule": "pow2-mul",
+    "version": "1",
+    "fingerprint": "ce9c7745b4a3d1bb48e91e9ef7b407d31639c65b5bac365961c595c7209df28f",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 31,
+      "detail": "normal forms equal for all 31 guard instances",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 1792,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1001488,
+      "detail": "boundary values crossed (1488), then random",
+      "ms": 3780
+     }
+    ]
+   },
+   "div-one": {
+    "rule": "div-one",
+    "version": "1",
+    "fingerprint": "67a1989f8b06f580ef719de783a809e3e83ff88a5a5f6a766900409bbe152c3b",
+    "verdict": "sound",
+    "strength": "exhaustive",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 180
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "pass",
+      "cases": 4294967296,
+      "ms": 131264
+     }
+    ]
+   },
+   "or-zero": {
+    "rule": "or-zero",
+    "version": "1",
+    "fingerprint": "d7f03ec4f16a7900f0521700eaa82e47b70d1b7dce89f96f04e9aa768429bd1c",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "bitwise-w1",
+      "verdict": "pass",
+      "cases": 2,
+      "detail": "each result bit depends only on the same bit of each operand",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 208
+     }
+    ]
+   },
+   "xor-zero": {
+    "rule": "xor-zero",
+    "version": "1",
+    "fingerprint": "a15f4c74c6b91440700dfb749c62d0f8e2fdbde4dc166c4e053650eb5840caa7",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "bitwise-w1",
+      "verdict": "pass",
+      "cases": 2,
+      "detail": "each result bit depends only on the same bit of each operand",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 367
+     }
+    ]
+   },
+   "shl-zero": {
+    "rule": "shl-zero",
+    "version": "1",
+    "fingerprint": "ce0f473a053e532221fa11cb7f9177474dd563faa8e0c3d5cc8b6aa1ebae0310",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "symbolic-linear",
+      "verdict": "pass",
+      "instances": 1,
+      "detail": "normal forms equal",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 375
+     }
+    ]
+   },
+   "shr-zero": {
+    "rule": "shr-zero",
+    "version": "1",
+    "fingerprint": "8dd9794324e2d75b9efa9efd65e86a896bb07477e81d5fcda288fd58efbd2653",
+    "verdict": "sound",
+    "strength": "exhaustive",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 209
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "pass",
+      "cases": 4294967296,
+      "ms": 169910
+     }
+    ]
+   },
+   "shru-zero": {
+    "rule": "shru-zero",
+    "version": "1",
+    "fingerprint": "3b47acf2d4849cf36140e2c2b92a2c6ad6de223d6763d2760f4a4d6c861c4147",
+    "verdict": "sound",
+    "strength": "exhaustive",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 338
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "pass",
+      "cases": 4294967296,
+      "ms": 236144
+     }
+    ]
+   },
+   "and-zero": {
+    "rule": "and-zero",
+    "version": "1",
+    "fingerprint": "c415e73c16bb449c5e33a323525d69bad30b7ce7579dfa986240f434a0f3249b",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "bitwise-w1",
+      "verdict": "pass",
+      "cases": 2,
+      "detail": "each result bit depends only on the same bit of each operand",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 191
+     }
+    ]
+   },
+   "and-ones": {
+    "rule": "and-ones",
+    "version": "1",
+    "fingerprint": "f7eee6e10be86fe40d383a9feb204ee3b640107632e2a7407aa4878b98e01741",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "bitwise-w1",
+      "verdict": "pass",
+      "cases": 2,
+      "detail": "each result bit depends only on the same bit of each operand",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 256,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 175
+     }
+    ]
+   },
+   "not-lt": {
+    "rule": "not-lt",
+    "version": "1",
+    "fingerprint": "c0014dc6ccdea0cb961ae7af43d23b3cb6ea87d5e65b77efb336cf89b375c780",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 35
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 323
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-ge": {
+    "rule": "not-ge",
+    "version": "1",
+    "fingerprint": "0f053c905b376d476667c6752f324a85d646cac91678c206c839ac5306ea8e97",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 46
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 470
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-gt": {
+    "rule": "not-gt",
+    "version": "1",
+    "fingerprint": "938427a5e55a781d2876b4681914afe948f5306f72b7aed15c4a432b14a29024",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 24
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 261
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-le": {
+    "rule": "not-le",
+    "version": "1",
+    "fingerprint": "165863b9e6e7570c81cbbc78e0107ba0d77b3eb6e234f999bc6c4ce9ee4810ab",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 12
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 298
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-eq": {
+    "rule": "not-eq",
+    "version": "1",
+    "fingerprint": "86676bb92c154c11923b85aa2607588f0646442b0cc0ff3f1eb2bec3016ee583",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 17
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 240
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-ne": {
+    "rule": "not-ne",
+    "version": "1",
+    "fingerprint": "ec33882247fa57f61f85611b6054bb5172d248a7031f4002ce0b22b3e86cba45",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 11
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 196
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-ltu": {
+    "rule": "not-ltu",
+    "version": "1",
+    "fingerprint": "19878291c46cd7632e0374e90366b103e1fcd0bf8783d1a3351ee3504d5e88e9",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 17
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 211
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-geu": {
+    "rule": "not-geu",
+    "version": "1",
+    "fingerprint": "953a0bdbb7a764f68a181b1b4537826328bc9d049a2d4f47af0daabf476c5ccd",
+    "verdict": "sound",
+    "strength": "reduced-width+argument",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 65536,
+      "ms": 13
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 234
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "n/a",
+      "detail": "more than 2^32 inputs"
+     }
+    ],
+    "argument": "At every width w, lt/le/gt/ge are the strict and non-strict signed total orders on w-bit integers, ltu/geu the unsigned ones, eq/ne equality and its complement, and eqz(c) is 1 exactly when c is 0. eqz(cmp(a, b)) = inv(a, b) says inv is the complement relation of cmp, a law of these relations that does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; the 32-bit sample checks the 32-bit operators directly."
+   },
+   "not-not": {
+    "rule": "not-not",
+    "version": "1",
+    "fingerprint": "e03d418ed28ab82c7f7399552b9a4d452970a0e3c74e828cec623b98ffbe4936",
+    "verdict": "sound",
+    "strength": "exhaustive",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "pass",
+      "cases": 2,
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000002,
+      "detail": "boundary values crossed (2), then random",
+      "ms": 270
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "pass",
+      "cases": 2,
+      "detail": "bool variables range over {0, 1}: every comparison yields 0 or 1",
+      "ms": 0
+     }
+    ]
+   }
+  },
+  "fold": {
+   "fold-eqz": {
+    "rule": "fold-eqz",
+    "version": "1",
+    "fingerprint": "d4c53d5cff63a829e99275e9f71a477ab5d43c3daa9aa6336bfeb7f6ec882486",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 304,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 1
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 224
+     }
+    ]
+   },
+   "fold-fadd": {
+    "rule": "fold-fadd",
+    "version": "1",
+    "fingerprint": "5714d70d34e1adb9a172e9cb2381e3c6d77aa6839f23075284cfc99411e0d173",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 1
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 352
+     }
+    ]
+   },
+   "fold-fsub": {
+    "rule": "fold-fsub",
+    "version": "1",
+    "fingerprint": "fe22d615f4aff7fff304ce23213f3bfac02621cc7473c875a4dca35a62d6cc73",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 1
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 396
+     }
+    ]
+   },
+   "fold-fmul": {
+    "rule": "fold-fmul",
+    "version": "1",
+    "fingerprint": "0210ce0604e4360d145e0c95e77480e9bd7f5866d500dc5598080a977c8d860f",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 455
+     }
+    ]
+   },
+   "fold-fdiv": {
+    "rule": "fold-fdiv",
+    "version": "1",
+    "fingerprint": "f5243397662922082308919cf8dafd8a2a1ff96faa3c135c08d642fc14f497fd",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 430
+     }
+    ]
+   },
+   "fold-fmin": {
+    "rule": "fold-fmin",
+    "version": "1",
+    "fingerprint": "4f494bfb5ec591bd2006b6c753dcd03b0a3c03b592fd4bfdc279928fcaaf9f28",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 1
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 444
+     }
+    ]
+   },
+   "fold-fmax": {
+    "rule": "fold-fmax",
+    "version": "1",
+    "fingerprint": "0c58210a7d0fdef08f0ee18140656e041f3bf12b40996984ca8c5ff967391949",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 471
+     }
+    ]
+   },
+   "fold-fcopysign": {
+    "rule": "fold-fcopysign",
+    "version": "1",
+    "fingerprint": "aab593f9e2c5f9efa32acb5fe1e72453beb0bc213f66010195603e89b8209ee4",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 542
+     }
+    ]
+   },
+   "fold-feq": {
+    "rule": "fold-feq",
+    "version": "1",
+    "fingerprint": "ec9fb5505a025f51c7a9127ebb1051a8da0a592bd4321279b65f2dcc813a4d54",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 1
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 716
+     }
+    ]
+   },
+   "fold-fne": {
+    "rule": "fold-fne",
+    "version": "1",
+    "fingerprint": "37f98ac86d1189c8f0f1a709924795158a1a17d4d0af27e00ee58b1e373d2496",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 2
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 601
+     }
+    ]
+   },
+   "fold-flt": {
+    "rule": "fold-flt",
+    "version": "1",
+    "fingerprint": "1366ebe5b995ed97e0b9bb4dc08a53900a154734906925af63a1d80cb9cef107",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 580
+     }
+    ]
+   },
+   "fold-fgt": {
+    "rule": "fold-fgt",
+    "version": "1",
+    "fingerprint": "86d04a0806a62baa8388b6273109fbd6b4b23bb45a782f71225cc3f19c45ba39",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 441
+     }
+    ]
+   },
+   "fold-fle": {
+    "rule": "fold-fle",
+    "version": "1",
+    "fingerprint": "33b189a407c8b15709bf3f7cd85e1e61640b03bf62e2cae4a911cc1820e2acd3",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 414
+     }
+    ]
+   },
+   "fold-fge": {
+    "rule": "fold-fge",
+    "version": "1",
+    "fingerprint": "d7de82d94622daa411feabaf6757b73fffa6cad017846dc26d1b4f30449b95f5",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 625,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000625,
+      "detail": "boundary values crossed (625), then random",
+      "ms": 425
+     }
+    ]
+   },
+   "fold-fneg": {
+    "rule": "fold-fneg",
+    "version": "1",
+    "fingerprint": "306ff8c41dadea37b590ce601b8c9c9e36cebb7059c121b49c2892433087c3e0",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 25,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000025,
+      "detail": "boundary values crossed (25), then random",
+      "ms": 392
+     }
+    ]
+   },
+   "fold-fabs": {
+    "rule": "fold-fabs",
+    "version": "1",
+    "fingerprint": "8eece2b2a723dbec6f56d5cafc7f6601901f35fd58e390fc397cb75a3566346d",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 25,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000025,
+      "detail": "boundary values crossed (25), then random",
+      "ms": 527
+     }
+    ]
+   },
+   "fold-fsqrt": {
+    "rule": "fold-fsqrt",
+    "version": "1",
+    "fingerprint": "0fdcc9fa28c1de8554b2d6d0a583a7cd62506abc9b2f6d9e811d869c8a9eb236",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 25,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000025,
+      "detail": "boundary values crossed (25), then random",
+      "ms": 446
+     }
+    ]
+   },
+   "fold-i2f": {
+    "rule": "fold-i2f",
+    "version": "1",
+    "fingerprint": "59a5068d88d46f15fc7caf1ff566b7143cfbab4d7cc6f56813cb540006c9e50d",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 48,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 443
+     }
+    ]
+   },
+   "fold-u2f": {
+    "rule": "fold-u2f",
+    "version": "1",
+    "fingerprint": "8c4c3340b0c1ec79846cebeed0a6e6b2a06fdfcf3ed878ed9ddbae27488a0e59",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 48,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 389
+     }
+    ]
+   },
+   "fold-f2bits": {
+    "rule": "fold-f2bits",
+    "version": "1",
+    "fingerprint": "b0eb0d87aa58e3c043706be1a2f7e25829fb40220432cb9359aeab3e1b094b35",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 25,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000025,
+      "detail": "boundary values crossed (25), then random",
+      "ms": 381
+     }
+    ]
+   },
+   "fold-bits2f": {
+    "rule": "fold-bits2f",
+    "version": "1",
+    "fingerprint": "a1a7637033f20a43890aa13e2092a6baf39a3742b062087ab61891ac86eb1cfe",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 48,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 0
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1000048,
+      "detail": "boundary values crossed (48), then random",
+      "ms": 369
+     }
+    ]
+   },
+   "fold-add": {
+    "rule": "fold-add",
+    "version": "1",
+    "fingerprint": "391b278b09121a9f895946266d49bf52fab55670a36ed11392e62ad0a2e1f23a",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 31
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 474
+     }
+    ]
+   },
+   "fold-sub": {
+    "rule": "fold-sub",
+    "version": "1",
+    "fingerprint": "70180e3044da0f70e27fda08b20f306f189568f12661929ce6caa79102c61e60",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 76
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 560
+     }
+    ]
+   },
+   "fold-mul": {
+    "rule": "fold-mul",
+    "version": "1",
+    "fingerprint": "f265dc2cf84fd4e1684233e369312e28b54bb2f3b00d4576c9319270741c59ec",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 39
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 534
+     }
+    ]
+   },
+   "fold-and": {
+    "rule": "fold-and",
+    "version": "1",
+    "fingerprint": "4861e678f9a16c65eb4d37d5b73176f349afb78ec8d043de3ed88618ff47b56a",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 31
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 344
+     }
+    ]
+   },
+   "fold-or": {
+    "rule": "fold-or",
+    "version": "1",
+    "fingerprint": "cdcd536f87df895667398a04a969afa76636c8b3ffd75f4d9da3cdb1953aba8f",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 29
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 341
+     }
+    ]
+   },
+   "fold-xor": {
+    "rule": "fold-xor",
+    "version": "1",
+    "fingerprint": "c3bc7e52acabf82dbdb7615147d68269280729e3d8f0dd53f8767595805743a2",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 30
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 339
+     }
+    ]
+   },
+   "fold-shl": {
+    "rule": "fold-shl",
+    "version": "1",
+    "fingerprint": "7202d468fa5ad7120dbfa1e3bab642776f2ce5cdf6169b83050a957776dfeb75",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 30
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 396
+     }
+    ]
+   },
+   "fold-shr": {
+    "rule": "fold-shr",
+    "version": "1",
+    "fingerprint": "c3655b79be7e077a3b5e3a81fe9ec08a7deee7072606b408f02c700fdaabd06e",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 58
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 430
+     }
+    ]
+   },
+   "fold-shru": {
+    "rule": "fold-shru",
+    "version": "1",
+    "fingerprint": "e885ad7186677bed5ead72043b4b815ac47f300cd9d4068b0ddc92a2171d5552",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 33
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 504
+     }
+    ]
+   },
+   "fold-eq": {
+    "rule": "fold-eq",
+    "version": "1",
+    "fingerprint": "086fd4f2d2de3c409f1e29115481fef34681ae50bf49996cf571fb227f1fc569",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 39
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 428
+     }
+    ]
+   },
+   "fold-ne": {
+    "rule": "fold-ne",
+    "version": "1",
+    "fingerprint": "509a28700a4cdbdb56ee6d2b3609486856c0a9703b0e92a7469f7ae238a46f36",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 35
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 440
+     }
+    ]
+   },
+   "fold-lt": {
+    "rule": "fold-lt",
+    "version": "1",
+    "fingerprint": "98303e6329ad1d9499c52e4d60455717bdd6ecba1f45f91231a9b264b26a490b",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 61
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 365
+     }
+    ]
+   },
+   "fold-gt": {
+    "rule": "fold-gt",
+    "version": "1",
+    "fingerprint": "b3bf04ad8daa25974204b03a32314559fb4f0569ef9c14a01188ba48bf3b8d0b",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 31
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 442
+     }
+    ]
+   },
+   "fold-le": {
+    "rule": "fold-le",
+    "version": "1",
+    "fingerprint": "124ce93c3e551e11304d5352ae64d885d6e7ba125af907f6c8425a976ed1fe43",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 61
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 596
+     }
+    ]
+   },
+   "fold-ge": {
+    "rule": "fold-ge",
+    "version": "1",
+    "fingerprint": "feec314c5da093762d6b85b25eb37901991495d1fdf3eb5ec625c26918cb2bf5",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 35
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 419
+     }
+    ]
+   },
+   "fold-ltu": {
+    "rule": "fold-ltu",
+    "version": "1",
+    "fingerprint": "93b7b98deb8e45ed20f93186c3bbe58a8d7e39640a6a0d1f4300bc3a907e13f0",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 31
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 508
+     }
+    ]
+   },
+   "fold-geu": {
+    "rule": "fold-geu",
+    "version": "1",
+    "fingerprint": "4a94da4972a5503c84f1ad8e7f9b792c7c3714f9f2506168e29c4d686ecb211b",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the operator never traps",
+      "ms": 32
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 1002304,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 449
+     }
+    ]
+   },
+   "fold-div": {
+    "rule": "fold-div",
+    "version": "1",
+    "fingerprint": "a1ee0e5aed231c12060ca0de0a98857ba068557b828557c0ec3b82a5ef9d4419",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the guard excludes every trapping input and 0 non-trapping ones (conservative)",
+      "ms": 47
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 987672,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 514
+     }
+    ]
+   },
+   "fold-rem": {
+    "rule": "fold-rem",
+    "version": "1",
+    "fingerprint": "e41ca95b105046fecc17d25b45b3ddb9e198e91ad00b9fe450ec40b9418c2d49",
+    "verdict": "sound",
+    "strength": "by-construction",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "by-construction",
+      "verdict": "pass",
+      "cases": 67840,
+      "detail": "the replacement is the evaluator’s value of the matched operator (binop, f32Op); the guard excludes every trapping input and 2 non-trapping ones (conservative)",
+      "ms": 34
+     },
+     {
+      "method": "random-32",
+      "verdict": "pass",
+      "cases": 987672,
+      "detail": "boundary values crossed (2304), then random",
+      "ms": 432
+     }
+    ]
+   }
+  },
+  "unsound-candidates": {
+   "div-pow2-shr": {
+    "rule": "div-pow2-shr",
+    "version": "1",
+    "fingerprint": "4a965f22c2018e7e5ca6b279c7d5b0ad7ccb069c36e3ece1c5e849385e88f875",
+    "verdict": "unsound",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "exhaustive-w8",
+      "verdict": "fail",
+      "cases": 9,
+      "ms": 0
+     }
+    ],
+    "counterexample": {
+     "bindings": {
+      "x": -127,
+      "k": 2
+     },
+     "lhs": -63,
+     "rhs": -64,
+     "method": "exhaustive-w8",
+     "width": 8
+    }
+   },
+   "mul-zero-impure": {
+    "rule": "mul-zero-impure",
+    "version": "1",
+    "fingerprint": "f122a7f56a16c76d90bb886b01683aefac5966bc705be44ff52ec2306f16b088",
+    "verdict": "unsound",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "fail",
+      "detail": "x is dropped (1 on the left, 0 on the right) without pure(x): its traps or effects would change",
+      "ms": 0
+     }
+    ],
+    "reason": "x is dropped (1 on the left, 0 on the right) without pure(x): its traps or effects would change"
+   },
+   "fadd-pos-zero": {
+    "rule": "fadd-pos-zero",
+    "version": "1",
+    "fingerprint": "0b8985aff9c6c8b0cc07dcb7c8d59cf402b8e98d8f1e9d8536afe18d133a5c99",
+    "verdict": "unsound",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "fail",
+      "cases": 2,
+      "ms": 0
+     }
+    ],
+    "counterexample": {
+     "bindings": {
+      "x": -2147483648
+     },
+     "lhs": 0,
+     "rhs": -2147483648,
+     "method": "f32-special",
+     "width": 32
+    }
+   },
+   "fmul-pos-zero": {
+    "rule": "fmul-pos-zero",
+    "version": "1",
+    "fingerprint": "1434daaf8a92a10cc014dbe6e432e83323ddefb1037bc880cd28ae83a70c71f4",
+    "verdict": "unsound",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "fail",
+      "cases": 2,
+      "ms": 0
+     }
+    ],
+    "counterexample": {
+     "bindings": {
+      "x": -2147483648
+     },
+     "lhs": -2147483648,
+     "rhs": 0,
+     "method": "f32-special",
+     "width": 32
+    }
+   },
+   "fsub-self": {
+    "rule": "fsub-self",
+    "version": "1",
+    "fingerprint": "658fc7c1fbe971f30e587eac10a55b3063719f5ddf94e299fb98167555860aaa",
+    "verdict": "unsound",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "fail",
+      "cases": 3,
+      "ms": 0
+     }
+    ],
+    "counterexample": {
+     "bindings": {
+      "x": 2139095040
+     },
+     "lhs": 2143289344,
+     "rhs": 0,
+     "method": "f32-special",
+     "width": 32
+    }
+   },
+   "not-flt": {
+    "rule": "not-flt",
+    "version": "1",
+    "fingerprint": "c24a4134755edd31cc563aafc5df7fe44ff87aaf48863303dfe3e87c9bf6fa51",
+    "verdict": "unsound",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "fail",
+      "cases": 5,
+      "ms": 0
+     }
+    ],
+    "counterexample": {
+     "bindings": {
+      "a": 0,
+      "b": 2143289344
+     },
+     "lhs": 1,
+     "rhs": 0,
+     "method": "f32-special",
+     "width": 32
+    }
+   },
+   "fadd-neg-zero": {
+    "rule": "fadd-neg-zero",
+    "version": "1",
+    "fingerprint": "17542f847c5b3ccb0bd37ec6fae367888e3b64114ee0b9c0d38afeee994eac1b",
+    "verdict": "unsound",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "fail",
+      "cases": 6,
+      "ms": 0
+     }
+    ],
+    "counterexample": {
+     "bindings": {
+      "x": 2143289345
+     },
+     "lhs": 2143289344,
+     "rhs": 2143289345,
+     "method": "f32-special",
+     "width": 32
+    }
+   }
+  },
+  "f32-candidates": {
+   "fneg-fneg": {
+    "rule": "fneg-fneg",
+    "version": "1",
+    "fingerprint": "88429381257908ede97a2267e8ca3178edd57505ab21fbdca64fefcf9a702cee",
+    "verdict": "sound",
+    "strength": "exhaustive",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000025,
+      "detail": "boundary values crossed (25), then random",
+      "ms": 442
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "pass",
+      "cases": 4294967296,
+      "ms": 941230
+     }
+    ]
+   },
+   "fabs-fneg": {
+    "rule": "fabs-fneg",
+    "version": "1",
+    "fingerprint": "68a0b7591cda082fade2ce02ca4d1c3b1c4e5da269dc9568f48ecbfb11803c18",
+    "verdict": "sound",
+    "strength": "exhaustive",
+    "methods": [
+     {
+      "method": "structural",
+      "verdict": "pass",
+      "ms": 0
+     },
+     {
+      "method": "f32-special",
+      "verdict": "pass",
+      "cases": 1000025,
+      "detail": "boundary values crossed (25), then random",
+      "ms": 1320
+     },
+     {
+      "method": "exhaustive-32",
+      "verdict": "pass",
+      "cases": 4294967296,
+      "ms": 2486233
+     }
+    ]
+   }
+  }
+ }
+}
