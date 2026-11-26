@@ -1,0 +1,51 @@
+✔ inline: a whole-program pass, registered, in the speed pipeline twice, and not scoped per function (11.34287ms)
+✔ inline on calls: energy calls nothing afterwards, the check agrees, and why reaches callee and call (172.981489ms)
+✔ inline: record results become locals; leaf reads read them; f32 code stays correct through the backend (2141.206734ms)
+✔ inline: limits and refusals (79.008578ms)
+✔ inline under an entry-only contract, then dfe: the inlined callees disappear (331.968959ms)
+✔ inline: a callee local read before written starts at 0 at every inlined call (211.778245ms)
+✔ speed on every corpus project agrees with r0 under the default and the new backend options (IRWB_FULL) (9255.281331ms)
+✖ B1: the tables give the hand-written passes' revisions, edits and correspondences (all projects) (18350.735736ms)
+✔ B1: the comparison sees a one-rule difference (a rule with another note changes the revision) (247.015209ms)
+✔ B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework (1.233012ms)
+✔ B2: binopW at 32 bits is the evaluator's binop (boundary values crossed, every i32 operator) (22.953041ms)
+✔ B2: every table rule has recorded evidence for its current version, and it says sound (3.034464ms)
+✔ B2: the fast methods, re-run, agree with the recorded evidence (1399.002025ms)
+✔ B2: deliberately unsound rules are rejected, each with a counterexample or a structural reason (2.603567ms)
+✔ B2: x + (-0) -> x passes the meaning check's f32 edge values and is refuted by NaN payloads (16.439949ms)
+✔ workbench: the rules listing fits 72 columns and shows every rule with its evidence (6.677116ms)
+✔ IRWB-003 options: extras are absent at their defaults, validated, and recorded when on (146.349986ms)
+✔ IRWB-003 frequencies and chains: rotated Blend runs its loop 7.33 times per call and ends it in one branch (313.797156ms)
+✔ IRWB-003 coalesce: the copy t7 = i in Blend disappears, and Blend runs in 370 with rotation (226.649903ms)
+✔ IRWB-003 homes: Collatz builds 1, 2 and 3 once, outside its loop (74.292606ms)
+✔ IRWB-003 rotate: Blend's header is duplicated into the preheader and the latch, checked, with provenance (201.391788ms)
+✔ IRWB-003 rotate: a header that is not the exit test (Collatz) gives a two-entry loop, still checked and analysable (257.709765ms)
+✔ IRWB-003: the benchmarks under O2+, rotate, cfg and all three options (840.104229ms)
+✔ IRWB-003: every corpus project agrees with r0 under each option alone and all together (IRWB_FULL) (11362.337706ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 23
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20543.09093
+
+✖ failing tests:
+
+test at tests/typed/rules.test.mjs:54:1
+✖ B1: the tables give the hand-written passes' revisions, edits and correspondences (all projects) (18350.735736ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  792 !== 616
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/tests/typed/rules.test.mjs:58:20)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 792,
+    expected: 616,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

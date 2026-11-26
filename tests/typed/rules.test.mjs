@@ -32,7 +32,8 @@ async function compareOnCorpus(ids, alt) {
   const differ = [];
   for (const id of ids) {
     const p = projectSource(id, projectFiles(id)), r0 = ingestProject(p);
-    for (const pl of ['O1', 'O2', 'O2+', 'loops', 'checks']) {
+    // IRWB-003's speed runs simplify and fold on inlined code: compared as well
+    for (const pl of ['O1', 'O2', 'O2+', 'loops', 'checks', 'speed']) {
       const manager = new AnalysisManager(), contract = optimizationContract({ inputs: p.meta.inputs });
       let cur = r0;
       for (const name of PIPELINES[pl]) {
@@ -54,7 +55,7 @@ test(`B1: the tables give the hand-written passes' revisions, edits and correspo
   const res = await compareOnCorpus(FULL ? projectIds() : SUBSET, { simplify: R.simplifyHandwritten, fold: R.foldHandwritten });
   assert.deepEqual(res.differ, []);
   assert.ok(res.changed > 0, 'some steps change the program, so the comparison has something to compare');
-  if (FULL) assert.equal(res.compared, 616);
+  if (FULL) assert.equal(res.compared, 792); // 616 on IRWB-006's five pipelines, 176 more (4 steps x 44) on speed
 });
 
 test('B1: the comparison sees a one-rule difference (a rule with another note changes the revision)', async () => {

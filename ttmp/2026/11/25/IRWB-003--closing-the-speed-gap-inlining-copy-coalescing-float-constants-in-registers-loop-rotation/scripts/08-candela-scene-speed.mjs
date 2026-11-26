@@ -129,21 +129,31 @@ for (const s of want.map(w => scenes.find(x => x.id === w || String(x.index) ===
     }
   }
   const d = await p.apply('dfe', { params: { roots: ENTRIES } });
-  steps.push({ pass: 'dfe', changed: d.changed, stmts: stmts(p) });
+  steps.push({ pass: 'dfe', changed: d.changed, check: d.check, fns: p.fns().length, stmts: stmts(p) });
+  console.error(JSON.stringify(steps.at(-1)));
   const ms = Math.round(performance.now() - t0);
+  const phase = (name, t) => console.error(JSON.stringify({ phase: name, ms: Math.round(performance.now() - t) }));
+  let t1 = performance.now();
   row.scene0 = before;
   row.speed = { pipeline, ms, fns: p.fns().length, stmts: stmts(p), steps, check: check(from, p) };
+  phase('check', t1);
+  if (flag('--save-head')) (await import('node:fs')).writeFileSync(flag('--save-head').replace('{scene}', s.id), JSON.stringify(p.head.value));
   for (const [key, o] of [['defaults', {}], ['options', OPTIONS]]) {
-    const img = lowerToImage(p.head, o).image,
-      r = render(engine(img), s);
+    t1 = performance.now();
+    const img = lowerToImage(p.head, o).image;
+    phase(`lower ${key}`, t1);
+    const r = render(engine(img), s);
     row.speed[key] = {
       bytes: img.value.bytes,
       perPixel: +(r.img.steps / px).toFixed(1),
       differentBits: differ(r.img, ref.img),
       ms: r.ms,
     };
+    console.error(JSON.stringify({ phase: `render ${key}`, ...row.speed[key] }));
   }
+  t1 = performance.now();
   const choices = Object.values(variantChoices(p.head, OPTIONS));
+  phase('choices', t1);
   row.speed.choices = {
     fns: choices.length,
     chains: choices.filter(c => c.chains).length,
