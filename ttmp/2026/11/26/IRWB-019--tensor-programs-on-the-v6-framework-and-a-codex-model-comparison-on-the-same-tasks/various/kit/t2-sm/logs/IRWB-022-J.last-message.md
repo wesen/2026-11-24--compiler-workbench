@@ -1,0 +1,7 @@
+IRWB-022-J is ready for review. The [ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sm-irwb-022-j/ttmp/2026/11/26/IRWB-022-J--lowering-tix-to-cuda-checked-on-the-gpu-machine/index.md), [design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sm-irwb-022-j/ttmp/2026/11/26/IRWB-022-J--lowering-tix-to-cuda-checked-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md), and diary are committed as `4aad86bd0b80e00af5450e10a93019c4c755b515`. The worktree is clean.
+
+- **Lowering and framework.** Emit CUDA C directly from the current Tix IR, including optimized revisions. The existing v6 transformation and async differential hook handled batching, verdict reuse, and rejection in the framework probe. No framework changes are proposed.
+- **Remote tool.** Add source-based compile caching, isolate each invocation’s files, and use shared locks for ordinary GPU runs so timed runs can take the lock exclusively.
+- **Relation.** Use a sampled tolerance against f64 where the Stage 1 f32 result fits comfortably inside that tolerance, with an f32 check for cancellation and nonfinite results. The 65,536-case GB10 probe matched every sampled non-NaN f32 word, found different NaN words for `log(-1)`, and reproduced a cancellation case where both f32 engines returned `0` while f64 returned `1`.
+
+Implementation and all six corpus timings follow review.

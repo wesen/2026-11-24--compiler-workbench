@@ -1,0 +1,10 @@
+**IRWB-022-K is ready for design review** in commit `160f7680d66466db9bb4f29e0e345331072b72c3`. The design emits CUDA C directly from the current Tix IR, which already records statement order, affine reads and reduction bounds after `inline` and `split-sum`. [Ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-ah-irwb-022-k/ttmp/2026/11/26/IRWB-022-K--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/index.md) · [Design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-ah-irwb-022-k/ttmp/2026/11/26/IRWB-022-K--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/design-doc/01-checked-cuda-lowering-for-tix.md) · [Diary and reproduction commands](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-ah-irwb-022-k/ttmp/2026/11/26/IRWB-022-K--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/reference/01-design-and-implementation-diary.md)
+
+**The chosen relation is tolerance against the original function’s f64 result**, using `abs(gpu − ref) ≤ 2e−6 + 2e−5 × abs(ref)`. On the GB10 with nvcc 13.0.88, `expf(-3.998291015625)` returned `0x3c964c60`; stage-1 f32 returned `0x3c964c61`. Across 196,614 probe outputs, the largest error used 0.67% of the tolerance budget.
+
+Two changes are proposed for implementation:
+
+- **Framework:** Allow a batch-only checker in `runDifferentialAsync`. A local probe confirmed that the existing framework already dispatches missing cases together and replays previous verdicts. The change removes the requirement to supply synchronous callbacks for a remote-only engine.
+- **GPU runner:** Give each invocation a private remote working directory and publish compiled binaries atomically under a per-key lock. Concurrent calls can then reuse a binary without overwriting each other’s results.
+
+The build, probes and ticket validation passed. The worktree is clean. Implementation and the six corpus benchmarks await review.

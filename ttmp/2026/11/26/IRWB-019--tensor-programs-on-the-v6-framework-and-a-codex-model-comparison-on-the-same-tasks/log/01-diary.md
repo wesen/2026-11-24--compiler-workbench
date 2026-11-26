@@ -507,3 +507,15 @@ A judge (Claude subagent, 203K tokens) scored the twelve Sol designs (four cells
   - No Claude cells in stage 2, to save usage (about 2.97M Claude subagent tokens so far).
 - `scripts/16-launch-t2-design.sh`; `08-status.mjs` now takes each round's base from `heads.json`.
 - **Bling before the launch:** load 0.06, 20 cores, 1.1 TB free.
+
+## Step 20: twelve stage-2 designs; the stage-2 evaluation written before reading them
+
+- **All twelve T2 design agents exited 0.** Designs run 1,739–3,516 words (`08-status.mjs t2`); Pi Astra xhigh (G) is the longest and Pi Astra medium (H) the shortest. Packed blind, seed 29 (`results/blind-key-t2.json`). The only ticket ID left in the documents is the base's, IRWB-020-B, which the brief tells every author to read.
+- **The rubric** (`scripts/17-judge-rubric-t2.md`) keeps R1–R8 and A1–A5, and its counts are "each kind once per document". A1 checks fidelity to the fixed mapping and API. A2 checks the relation claim: for exact, which operations are correctly rounded, the flags, and each intrinsic; for tolerance, the reference and the bound. The judge also records each design's relation.
+- **The review protocol** (`scripts/18-review-protocol-t2.md`): the same four parts. The reviewer may check GPU-arithmetic claims on bling with a few short runs, in a scratch directory.
+- **The evaluation** (`scratchpad/t2-eval/t2-eval.mjs`, sha256 `4ecd3fb2b84bb596…`, committed when stage 2 is done) was written before any design was read. Its reference is B's validated f32 interpreter; the random programs carry their own reference bits. It measures:
+  - bit-exact GPU results and the largest scaled difference from f32 and f64, on the corpus (small sizes), after `optimizeTix`, and on 20 random programs;
+  - `checkLowering` verdicts on 16 programs, and whether a claimed `exact` holds;
+  - `gpuMs` and bit agreement at the brief's sizes.
+  
+  A plumbing run on B (no CUDA API) reported every step as missing and cached the large f32 references. Their first computation took 547 s in the stage-1 interpreter.

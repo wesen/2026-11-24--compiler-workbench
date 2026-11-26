@@ -1,0 +1,9 @@
+IRWB-022-L is ready for design review in commit `b82a504eb82d`. The worktree is clean. [Ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-ax-irwb-022-l/ttmp/2026/11/26/IRWB-022-L--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/index.md) · [Design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-ax-irwb-022-l/ttmp/2026/11/26/IRWB-022-L--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/design-doc/01-checking-tix-cuda-lowering-on-the-gb10.md) · [Diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-ax-irwb-022-l/ttmp/2026/11/26/IRWB-022-L--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/reference/01-design-and-implementation-diary.md)
+
+**Lowering and relation.** Emit CUDA directly from the current Tix IR, including its optimized reduction order. Check against the original function’s f64 result using `abs(gpu − ref) ≤ 2e-6 + 2e-5·abs(ref)`. On the GB10, `expf(1 + 2^-23)` produced `0x402df855`, one bit-step below stage-1 f32’s `0x402df856`. Across 40,960 sampled results, the largest error used 15.6% of the allowance. [Probe results](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-ax-irwb-022-l/ttmp/2026/11/26/IRWB-022-L--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/scripts/04-probe-result.json)
+
+**Framework.** No edits proposed. The existing differential checker dispatched three uncached cases in one asynchronous batch, replayed all three on a repeat check, and rejected a changed candidate.
+
+**Remote tool.** Give each invocation a private run directory and coordinate compilation per input hash. Concurrent callers can then reuse the binary while each retrieves its own output.
+
+The build and ticket validation passed. Implementation and the six corpus timing measurements follow review.

@@ -2,3 +2,10 @@ Warning: No models match pattern "lunaroute/glm-5.3"
 Warning: No models match pattern "lunaroute/glm-5.3-flash"
 Warning: No models match pattern "lunaroute/deepseek-4.1-flash"
 Warning: No models match pattern "lunaroute/deepseek-4.1-flash-background"
+IRWB-022-F is ready for review: [ticket](ttmp/2026/11/26/IRWB-022-F--lowering-tix-to-cuda-checked-on-the-gpu-machine/index.md) · [design](ttmp/2026/11/26/IRWB-022-F--lowering-tix-to-cuda-checked-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md) · [diary](ttmp/2026/11/26/IRWB-022-F--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/01-implementation-diary.md).
+
+The design emits CUDA directly from the current Tix IR and checks it with a batched differential contract. **No framework changes are proposed:** a local probe confirmed that the existing cross-kind transformation API supports asynchronous checks, verdict replay, and rejection of a changed candidate. The proposed remote-tool change is an opt-in mode that isolates each run’s files while sharing compiled executables across input batches.
+
+The chosen relation is **sampled tolerance against the current revision’s f64 evaluator**. On the GB10, `expf` alone differed bitwise from rounded JS on 9,821 of 32,768 inputs. All probed intrinsic results and the 1,024-term ordered dot product fit the proposed tolerance. Corpus measurements remain for implementation after review.
+
+Commit: `a9ab21099a17481e6ea13ac77e7f96fa281e01d1`. Working tree clean; not pushed.

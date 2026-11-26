@@ -1911,3 +1911,3060 @@ fn softmax(x: f32[N,C]): f32[N,C] {
 created ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md
 created ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
 
+exec
+/usr/bin/zsh -lc 'npm ci --cache /tmp/irwb-022-i-npm-cache --no-audit --no-fund && npm run build' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "rg -n 'defineInvariant|checkInvariant\\(|verifyTransformation\\(|cacheable|differentialAsync' src/framework/contracts && rg -n 'verifyTransformation|defineTransformation\\(' src/framework/passes tests/framework | head -60 && cat src/tensor/{ir,passes}.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'cat ttmp/2026/11/26/IRWB-022-I--*/{index,tasks,changelog}.md && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 367ms:
+src/framework/contracts/definitions.ts:129:export const defineInvariant = <P extends Ports>(
+src/framework/contracts/differential.ts:11:import { defineInvariant } from './definitions.js';
+src/framework/contracts/differential.ts:117:  const inv = defineInvariant<P>({
+src/framework/contracts/README.md:15:| `defineInvariant<P>` | Defines a relation over named typed ports, such as an input/output approximation bound. |
+src/framework/contracts/README.md:80:| `checkInvariant(invariant,namedInputs)` | Query a relational invariant independently; returns checked evidence and records its actual typed inputs. |
+src/framework/contracts/README.md:98:await ctx.checkInvariant(WithinBudget, inputs);
+src/framework/contracts/README.md:137:`verifyTransformation(before,after,contract,correspondences?,options?)` is a convenience for an already computed lowering. It commits by default; `deferCommit:true` returns a prepared transaction for a host acceptance gate.
+src/framework/contracts/analysis-manager.ts:65:  cacheable: boolean;
+src/framework/contracts/analysis-manager.ts:202:      cacheable: true,
+src/framework/contracts/analysis-manager.ts:375:            frame.cacheable = false;
+src/framework/contracts/analysis-manager.ts:407:        frame.cacheable = false;
+src/framework/contracts/analysis-manager.ts:415:        frame.cacheable = false;
+src/framework/contracts/analysis-manager.ts:472:        if (!r || !r.cacheable || !this.reusable(r.dependencies, store, new Set([...seen, d.recordId])))
+src/framework/contracts/analysis-manager.ts:543:      current.cacheable &&
+src/framework/contracts/analysis-manager.ts:586:          cacheable: frame.cacheable,
+src/framework/contracts/analysis-manager.ts:596:        cacheable: frame.cacheable,
+src/framework/contracts/analysis-manager.ts:605:      if (parent && !record.cacheable) parent.cacheable = false;
+src/framework/contracts/analysis-manager.ts:638:      record.cacheable &&
+src/framework/contracts/analysis-manager.ts:1013:          cacheable: source.cacheable && frame.cacheable,
+src/framework/contracts/analysis-manager.ts:1029:      if (parent && !record.cacheable) parent.cacheable = false;
+src/framework/contracts/analysis-manager.ts:1146:        if (!frame.cacheable) parent.cacheable = false;
+src/framework/contracts/analysis-manager.ts:1250:      execution.bodyCacheable = bodyFrame.cacheable && this.reusable(bodyFrame.deps, overlay);
+src/framework/contracts/analysis-manager.ts:1401:          if (!bodyFrame.cacheable) frame.cacheable = false;
+src/framework/contracts/types.ts:189:  readonly cacheable: boolean;
+tests/framework/ir-examples.test.mjs:95:  const edit=view.beginEdit({verify:(result,before)=>manager.verifyTransformation(domain==='meshes'?{input:before,tolerance:.01}:{input:before},{output:result.artifact},contract,[correspondence(result.correspondence)],{deferCommit:true})});
+src/framework/passes/define-pass.ts:344:      const prepared = await manager.verifyTransformation(
+tests/framework/ext-e5.test.mjs:76:  const contract = defineTransformation({
+tests/framework/ext-e5.test.mjs:82:  const ok = await manager.verifyTransformation({ input }, { output: createArtifact(ExpressionIR, 'e', rewritten()) }, contract);
+tests/framework/ext-e5.test.mjs:84:  await assert.rejects(manager.verifyTransformation({ input }, { output: createArtifact(ExpressionIR, 'e', wrong()) }, contract), /disagree/);
+tests/framework/contracts.test.mjs:20: assert.throws(()=>C.defineTransformation({id:'bad',version:'1',description:'Bad input',inputs:{x:{}},outputs:{}}),/type|validator/i);
+tests/framework/contracts.test.mjs:22: assert.throws(()=>C.defineTransformation({id:'badselector',version:'1',description:'Bad selector',inputs:{a:ir},outputs:{a:ir},requires:[{property:positive,subject:{from:'elsewhere',port:'a'}}]}),/selector/);
+tests/framework/contracts.test.mjs:36: const t=C.defineTransformation({id:'requires-positive',version:'1',description:'Guarded kernel',inputs:{data:ir},outputs:{data:ir},requires:[{property:positive,subject:{from:'inputs',port:'data'}}],run(_ctx,inputs){called=true;return {outputs:inputs};}});
+tests/framework/contracts.test.mjs:44: const contract=C.defineTransformation({id:'bounded',version:'1',description:'Numeric change bound',inputs:{data:ir,tolerance:C.FiniteNumber},outputs:{data:ir},ensures:[{invariant:bound,bindings:{before:{from:'inputs',port:'data'},after:{from:'outputs',port:'data'},tolerance:{from:'inputs',port:'tolerance'}}}]});
+tests/framework/contracts.test.mjs:45: const out=C.createArtifact(ir,'out',[1,2,4]);await assert.rejects(manager.verifyTransformation({data:a,tolerance:.5},{data:out},contract),/Invariant rejected/);
+tests/framework/contracts.test.mjs:46: const accepted=await manager.verifyTransformation({data:a,tolerance:1},{data:out},contract);assert.equal(accepted.execution.status,'accepted');assert.equal(accepted.execution.checks[0].assurance,'checked');
+tests/framework/contracts.test.mjs:51: const contract=C.defineTransformation({id:'keep-positive',version:'1',description:'Preserve positivity',inputs:{before:ir},outputs:{after:ir},preserves:[{property:positive,from:'before',to:'after',mode:'check'}],establishes:[{property:positive,subject:{from:'outputs',port:'after'}}]});
+tests/framework/contracts.test.mjs:52: const bad=C.createArtifact(ir,'bad',[-1]);await assert.rejects(manager.verifyTransformation({before:a},{after:bad},contract),/preserved/);assert.equal(manager.properties(bad).length,0);
+tests/framework/contracts.test.mjs:53: const good=C.createArtifact(ir,'good',[2,3]);const tx=await manager.verifyTransformation({before:a},{after:good},contract,[],{deferCommit:true});assert.equal(manager.properties(good).length,0);assert.equal(tx.execution.status,'prepared');tx.commit();assert.equal(manager.properties(good)[0].ok,true);assert.ok(tx.execution.checks.some(c=>c.phase==='establishes'));
+tests/framework/contracts.test.mjs:61: const contract=C.defineTransformation({id:'permute',version:'1',description:'Verified permutation',inputs:{before:ir},outputs:{after:ir},preserves:[{property:positive,from:'before',to:'after',mode:'transfer',correspondence:'vertices'}],correspondence:[{id:'vertices',from:'before',to:'after',relation:'permutation'}]});
+tests/framework/contracts.test.mjs:62: const result=await manager.verifyTransformation({before:a},{after:b},contract,[relation(a,b)]);assert.equal(result.execution.checks.find(c=>c.phase==='preserves').assurance,'transferred');manager.invalidate(check,a);assert.equal(manager.properties(b).find(f=>f.property.id===positive.id).valid,false);
+tests/framework/contracts.test.mjs:74: const forbidden=C.defineTransformation({id:'undeclared',version:'1',description:'Forgot effect',inputs:{data:ir},outputs:{sum:C.FiniteNumber},async run(ctx,inputs){return {outputs:{sum:await ctx.analysis(analysis,inputs.data)}};}});
+tests/framework/contracts.test.mjs:76: const allowed=C.defineTransformation({id:'tracked',version:'1',description:'Tracks resource',inputs:{data:ir},outputs:{sum:C.FiniteNumber},effects:[read],cache:'tracked',async run(ctx,inputs){return {outputs:{sum:await ctx.analysis(analysis,inputs.data)}};}});
+tests/framework/contracts.test.mjs:82: assert.throws(()=>C.defineTransformation({id:'bad',version:'1',description:'Cached writes',inputs:{},outputs:{},effects:[write],cache:'tracked'}),/never/);
+tests/framework/contracts.test.mjs:84: const transformation=C.defineTransformation({id:'write',version:'1',description:'Stage then validate',inputs:{value:C.Integer},outputs:{value:C.Integer},effects:[write],cache:'never',ensures:[{invariant,bindings:{value:{from:'outputs',port:'value'}}}],run(ctx,{value}){ctx.writeResource(write,value);return {outputs:{value}};}});
+tests/framework/contracts.test.mjs:104: const {ir,a,positive,manager}=fixture(),contract=C.defineTransformation({id:'parallel',version:'1',description:'Concurrent guards',inputs:{data:ir},outputs:{data:ir},requires:[{property:positive,subject:{from:'inputs',port:'data'}}],ensures:[{property:positive,subject:{from:'outputs',port:'data'}}]});
+tests/framework/contracts.test.mjs:113: const t=C.defineTransformation({id:'bad-invariant',version:'1',description:'Must reject broken checker',inputs:{data:ir},outputs:{data:ir},ensures:[{invariant,bindings:{data:{from:'outputs',port:'data'}}}]});
+tests/framework/contracts.test.mjs:114: await assert.rejects(manager.verifyTransformation({data:a},{data:a},t),/await/);assert.equal(completed,true);
+tests/framework/contracts.test.mjs:128: const {ir,a,manager}=fixture(),t=C.defineTransformation({id:'typed',version:'1',description:'Typed ports',inputs:{data:ir},outputs:{data:ir}});
+tests/framework/contracts.test.mjs:130: const forged={...a,revision:'fake'};await assert.rejects(manager.verifyTransformation({data:a},{data:forged},t),/hash|revision/);assert.ok(manager.snapshot().executions.every(e=>e.status!=='accepted'));
+tests/framework/contracts.test.mjs:136: const contract=C.defineTransformation({id:'single-flight-transform',version:'1',description:'One verification per transaction',inputs:{},outputs:{value:C.Integer},ensures:[{invariant,bindings:{value:{from:'outputs',port:'value'}}}]});
+tests/framework/contracts.test.mjs:147: const contract=C.defineTransformation({id:'grow-limit',version:'1',description:'Changed resource state',inputs:{data:ir},outputs:{data:ir},requires:[{property,subject:{from:'inputs',port:'data'}}],ensures:[{property,subject:{from:'outputs',port:'data'}}],effects:[read,write],cache:'never',run(ctx,inputs){ctx.writeResource(write,20);return {outputs:inputs};}});
+tests/framework/contracts.test.mjs:157: const forbidden=C.defineTransformation({id:'nested-forbidden',version:'1',description:'Missing effect',inputs:{a:C.Integer},outputs:{a:C.Integer},async run(ctx,inputs){await ctx.checkInvariant(external,inputs);return {outputs:inputs};}});
+tests/framework/contracts.test.mjs:164: const contract=C.defineTransformation({id:'throwing',version:'1',description:'Fails after scheduling analysis',inputs:{data:ir},outputs:{data:ir},run(ctx,inputs){void ctx.analysis(slow,inputs.data);throw new Error('Kernel failed');}});
+tests/framework/contracts.test.mjs:171: const contract=C.defineTransformation({id:'in-flight-transform',version:'1',description:'Reject invalidated check',inputs:{data:ir},outputs:{data:ir},ensures:[{property,subject:{from:'outputs',port:'data'}}]});
+tests/framework/contracts.test.mjs:172: const pending=manager.verifyTransformation({data:a},{data:a},contract);await begun;manager.invalidate(checker,a,'Explicit invalidation while computing');release();await assert.rejects(pending,/invalidated/);assert.equal(manager.hasAnalysis(checker,a),false);assert.equal(manager.snapshot().executions.at(-1).status,'rejected');
+tests/framework/contracts.test.mjs:199: const transformation=C.defineTransformation({id:'sync-commit',version:'1',description:'Reject invalid adapter boundary',inputs:{},outputs:{value:C.Integer},effects:[write],cache:'never',run(ctx){ctx.writeResource(write,1);return {outputs:{value:1}};}});
+tests/framework/contracts.test.mjs:208:   const contract=C.defineTransformation({id:'rollback-contract',version:'1',description:'Explicit host rollback',inputs:{data:ir},outputs:{data:ir}}),tx=await manager.beginTransformation(contract,{data:a}),pending=tx.context.analysis(parent,a);
+import { defineIR } from '../framework/contracts/index.js';
+import { defineAdapter, type IREntity, type IRRelation } from '../framework/ir/index.js';
+import { plain, visit, type Affine, type Axis, type Expr, type Fn, type Module } from './model.js';
+
+function requireIR(condition: unknown, reason: string): asserts condition {
+  if (!condition) throw Error(reason);
+}
+function same(a: unknown, b: unknown) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+function checkForm(a: Affine, names: Set<string>) {
+  requireIR(
+    Number.isSafeInteger(a.constant) && a.terms.every(([n, k]) => names.has(n) && Number.isSafeInteger(k)),
+    'Invalid affine form',
+  );
+}
+function validateFn(fn: Fn) {
+  const shapes = new Set(fn.params.flatMap(p => p.shape.map(plain).filter((s): s is string => !!s)));
+  const tensors = new Map<string, Affine[]>();
+  const declare = (t: { name: string; shape: Affine[] }) => {
+    requireIR(!tensors.has(t.name) && t.shape.length, 'Invalid tensor definition');
+    for (const d of t.shape) {
+      checkForm(d, shapes);
+      requireIR(d.terms.length || d.constant >= 0, 'Negative dimension');
+    }
+    tensors.set(t.name, t.shape);
+  };
+  fn.params.forEach(declare);
+  function bind(axes: Axis[], outer: Set<string>) {
+    const scope = new Set(outer);
+    requireIR(axes.length, 'Missing axes');
+    for (const a of axes) {
+      requireIR(!scope.has(a.id), 'Duplicate binder');
+      const e = a.extent;
+      checkForm(e.dim, shapes);
+      requireIR(
+        e.kind === 'dim' ||
+          (e.kind === 'blocks' && ['ceil', 'floor'].includes(e.rounding)) ||
+          (e.kind === 'tail' && scope.has(e.block)),
+        'Invalid reduction bound',
+      );
+      scope.add(a.id);
+    }
+    return scope;
+  }
+  function expr(e: Expr, scope: Set<string>) {
+    switch (e.kind) {
+      case 'literal':
+        requireIR(!Number.isNaN(Number(e.text)), 'Invalid literal');
+        break;
+      case 'shape':
+        requireIR(shapes.has(e.name), 'Unknown shape');
+        break;
+      case 'load':
+        requireIR(tensors.get(e.name)?.length === e.indices.length, 'Invalid tensor read');
+        e.indices.forEach(a => checkForm(a, scope));
+        break;
+      case 'op':
+        requireIR(
+          (['neg', 'exp', 'log', 'tanh', 'sqrt'].includes(e.op) && e.args.length === 1) ||
+            (['+', '-', '*', '/', 'min', 'max'].includes(e.op) && e.args.length === 2),
+          'Invalid operation',
+        );
+        e.args.forEach(x => expr(x, scope));
+        break;
+      case 'reduce':
+        requireIR(e.op === 'sum' || e.op === 'max', 'Invalid reduction');
+        expr(e.body, bind(e.axes, scope));
+        break;
+      default:
+        throw Error('Invalid expression');
+    }
+  }
+  for (const s of fn.statements) {
+    requireIR(
+      s.axes.length === s.shape.length &&
+        s.axes.every((a, i) => a.extent.kind === 'dim' && same(a.extent.dim, s.shape[i])),
+      'Invalid result axes',
+    );
+    expr(s.expr, bind(s.axes, new Set()));
+    declare(s);
+  }
+  requireIR(same(tensors.get(fn.result), fn.shape), 'Invalid result');
+}
+function validate(value: unknown) {
+  const m = value as Module;
+  requireIR(
+    Array.isArray(m.functions) &&
+      m.functions.length &&
+      new Set(m.functions.map(f => f.name)).size === m.functions.length,
+    'Invalid functions',
+  );
+  m.functions.forEach(validateFn);
+}
+export const TixIR = defineIR<Module>({
+  id: 'tensor.tix',
+  version: '1',
+  description: 'Ordered tensor definitions with affine reads',
+  validate,
+});
+function* entities(m: Module): Generator<IREntity> {
+  for (const { name, statements, params, shape, result } of m.functions) {
+    yield { id: name, kind: 'function', attributes: { shape, result } };
+    for (const t of [...params, ...statements])
+      yield { id: name + '/' + t.name, kind: 'tensor', attributes: { ...t } };
+  }
+}
+function* relations(m: Module): Generator<IRRelation> {
+  for (const f of m.functions) {
+    let order = 0;
+    for (const t of [...f.params, ...f.statements]) {
+      const to = f.name + '/' + t.name;
+      yield {
+        id: 'contains/' + to,
+        from: f.name,
+        to,
+        kind: 'contains',
+        category: 'containment',
+        order: order++,
+      };
+    }
+    for (const s of f.statements) {
+      const from = f.name + '/' + s.name;
+      const reads = new Set<string>();
+      visit(s.expr, e => {
+        if (e.kind === 'load') reads.add(e.name);
+      });
+      for (const n of reads)
+        yield {
+          id: 'reads/' + from + '/' + n,
+          from,
+          to: f.name + '/' + n,
+          kind: 'reads',
+          category: 'dependency',
+        };
+    }
+  }
+}
+export const adapter = defineAdapter<Module>({
+  id: 'tensor.adapter',
+  version: '1',
+  description: 'Functions, tensor definitions and reads',
+  kind: TixIR.id,
+  schemaVersion: TixIR.version,
+  validate,
+  relationKinds: { contains: 'containment', reads: 'dependency' },
+  entities,
+  relations,
+  resolve: (m, id) => [...entities(m)].find(e => e.id === id),
+  describe: (_, id) => ({ label: id }),
+});
+import { definePass } from '../framework/passes/index.js';
+import { adapter, TixIR } from './ir.js';
+import {
+  add,
+  mapExpr,
+  substitute,
+  variable,
+  visit,
+  width,
+  type Affine,
+  type Expr,
+  type Fn,
+  type Module,
+} from './model.js';
+
+function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
+  return mapExpr(expr, e =>
+    e.kind === 'load' ? { ...e, indices: e.indices.map(a => substitute(a, bindings)) } : e,
+  );
+}
+function inline(fn: Fn): Fn {
+  const statements = [...fn.statements];
+  for (let i = 0; i < statements.length; i++) {
+    const p = statements[i];
+    if (p.name === fn.result) continue;
+    let pointwise = true;
+    visit(p.expr, e => {
+      if (e.kind === 'reduce') pointwise = false;
+    });
+    if (!pointwise) continue;
+    let uses = 0,
+      consumer = -1;
+    for (let j = i + 1; j < statements.length; j++)
+      visit(statements[j].expr, e => {
+        if (e.kind === 'load' && e.name === p.name) {
+          uses++;
+          consumer = j;
+        }
+      });
+    if (uses !== 1) continue;
+    const s = statements[consumer];
+    statements[consumer] = {
+      ...s,
+      expr: mapExpr(s.expr, e => {
+        if (e.kind !== 'load' || e.name !== p.name) return e;
+        return replaceIndices(p.expr, new Map(p.axes.map((a, k) => [a.id, e.indices[k]])));
+      }),
+    };
+    statements.splice(i--, 1);
+  }
+  return { ...fn, statements };
+}
+function split(fn: Fn): Fn {
+  return {
+    ...fn,
+    statements: fn.statements.map(s => ({
+      ...s,
+      expr: mapExpr(s.expr, e => {
+        if (e.kind !== 'reduce' || e.op !== 'sum' || e.axes.length !== 1) return e;
+        const [{ id, extent }] = e.axes;
+        if (extent.kind !== 'dim') return e;
+        const { dim } = extent,
+          block = id + '/block',
+          lane = id + '/lane';
+        const address = add(variable(lane), variable(block), width);
+        const body = replaceIndices(e.body, new Map([[id, address]]));
+        return {
+          kind: 'reduce',
+          op: 'sum',
+          axes: [{ id: block, extent: { kind: 'blocks', dim, rounding: 'ceil' } }],
+          body: {
+            kind: 'reduce',
+            op: 'sum',
+            axes: [{ id: lane, extent: { kind: 'tail', dim, block } }],
+            body,
+          },
+        };
+      }),
+    })),
+  };
+}
+function pass(name: string, transform: (fn: Fn) => Fn) {
+  return definePass<Module>({
+    id: 'tensor.' + name,
+    version: '1',
+    description: name,
+    ir: TixIR,
+    adapter,
+    writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
+    run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
+  });
+}
+export const inlinePass = pass('inline', inline),
+  splitPass = pass('split-sum', split);
+
+ succeeded in 674ms:
+---
+Title: Lowering Tix to CUDA with checked execution on the GPU machine
+Ticket: IRWB-022-I
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T15:11:45.471966399-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Lowering Tix to CUDA with checked execution on the GPU machine
+
+## Overview
+
+<!-- Provide a brief overview of the ticket, its goals, and current status -->
+
+## Key Links
+
+- **Related Files**: See frontmatter RelatedFiles field
+- **External Sources**: See frontmatter ExternalSources field
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- compiler
+- ir
+- verification
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts
+# Tasks
+
+## TODO
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/
+
+ succeeded in 6058ms:
+
+added 6 packages in 780ms
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   esbuild@0.25.12 (postinstall: node install.js)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc 'mkdir -p ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe && git rev-parse --short HEAD && ls -a' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 308ms:
+1880fc4
+.
+..
+.agents
+.aws
+.codex
+.git
+.gitignore
+.prettierrc.json
+.ttmp.yaml
+corpus
+dist
+node_modules
+package-lock.json
+package.json
+site-src
+src
+tests
+tools
+tsconfig.json
+ttmp
+vendor
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..110a1d39e19fe9f2946eaf21fced2f4faad66087
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+@@ -0,0 +1,88 @@
++// Run from the worktree root. The existing runner owns every GPU operation.
++import { createHash } from 'node:crypto';
++import { execFile } from 'node:child_process';
++import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { promisify } from 'node:util';
++
++const temp = await mkdtemp(join(tmpdir(), 'irwb-tix-fp-'));
++try {
++  const scratch = new DataView(new ArrayBuffer(4));
++  function fromWord(word) {
++    scratch.setUint32(0, word, true);
++    return scratch.getFloat32(0, true);
++  }
++  function word(value) {
++    scratch.setFloat32(0, value, true);
++    return scratch.getUint32(0, true);
++  }
++  let state = 0x20c0ffee;
++  function randomWord() {
++    state ^= state << 13;
++    state ^= state >>> 17;
++    state ^= state << 5;
++    return state >>> 0;
++  }
++  function finite() {
++    let x;
++    do x = fromWord(randomWord()); while (!Number.isFinite(x));
++    return x;
++  }
++  const cases = [];
++  for (const a of [-0, 0, -(2 ** -149), 2 ** -149, -(2 ** -126), 2 ** -126, -1, 1, fromWord(0x7f7fffff)])
++    for (const b of [-0, 0, -1, 1, 2 ** -149, 2 ** -24, 2])
++      cases.push([a, b, -1]);
++  cases.push([1 + 2 ** -23, 1 - 2 ** -23, -1], [1, 2 ** -24, 2 ** -24]);
++  for (let i = 0; i < 98_304; i++) {
++    // Alternate between raw finite f32 words and values in ranges with observable transcendental variation.
++    const a = i % 2 ? finite() : Math.fround((randomWord() / 2 ** 32 - 0.5) * (i % 4 ? 210 : 20));
++    cases.push([a, finite(), finite()]);
++  }
++  const input = Buffer.alloc(12 * cases.length);
++  cases.forEach((row, i) => row.forEach((x, j) => input.writeFloatLE(x, (3 * i + j) * 4)));
++  await copyFile(new URL('./fp-probe/main.cu', import.meta.url), join(temp, 'main.cu'));
++  await writeFile(join(temp, 'inputs.bin'), input);
++  const { stdout } = await promisify(execFile)(process.execPath, ['tools/cuda-remote.mjs', temp]);
++  const remote = JSON.parse(stdout);
++  const result = await readFile(join(temp, 'out', 'outputs.bin'));
++  const names = [
++    'add', 'sub', 'mul', 'div', 'neg', 'sqrt', 'expf', 'logf', 'tanhf', 'exp(double)', 'log(double)',
++    'tanh(double)', 'max', 'min', 'separate mul-add', 'plain mul-add', 'NaN propagation', 'max of sqrt',
++    'ordered sum tail',
++  ];
++  const stats = names.map(op => ({ op, nonNaNWordMismatch: 0, nanWordMismatch: 0, worstFiniteBudgetFraction: 0 }));
++  if (result.length !== cases.length * names.length * 4) throw Error('Unexpected GPU output length');
++  const f = Math.fround;
++  for (const [i, [a, b, c]] of cases.entries()) {
++    const exp = Math.exp(a), log = Math.log(a), tanh = Math.tanh(a), sqrt = Math.sqrt(a);
++    const reference = [
++      a + b, a - b, a * b, a / b, -a, sqrt, exp, log, tanh, exp, log, tanh, Math.max(a, b),
++      Math.min(a, b), f(a * b) + c, f(a * b) + c, f(sqrt) + b, Math.max(f(sqrt), b), f(a + b) + c,
++    ];
++    for (const [j, expected] of reference.entries()) {
++      const offset = (i * names.length + j) * 4;
++      const got = result.readFloatLE(offset);
++      const gotWord = result.readUInt32LE(offset);
++      const expectedWord = word(expected);
++      if (gotWord !== expectedWord) {
++        const mismatch = Number.isNaN(expected) && Number.isNaN(got) ? 'nanWordMismatch' : 'nonNaNWordMismatch';
++        stats[j][mismatch]++;
++        if (mismatch === 'nonNaNWordMismatch' && !stats[j].firstMismatch)
++          stats[j].firstMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++        if (mismatch === 'nanWordMismatch' && !stats[j].firstNaNMismatch)
++          stats[j].firstNaNMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++      }
++      if (Number.isFinite(expected) && Number.isFinite(f(expected)) && Number.isFinite(got)) {
++        const fraction = Math.abs(expected - got) / (2e-6 + 2e-5 * Math.abs(expected));
++        stats[j].worstFiniteBudgetFraction = Math.max(stats[j].worstFiniteBudgetFraction, fraction);
++      }
++    }
++  }
++  const hash = bytes => createHash('sha256').update(bytes).digest('hex');
++  console.log(JSON.stringify({
++    node: process.version, remote, cases: cases.length, inputSha256: hash(input), outputSha256: hash(result), stats,
++  }, null, 2));
++} finally {
++  await rm(temp, { recursive: true, force: true });
++}
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+new file mode 100644
+index 0000000000000000000000000000000000000000..acc1e220ddc81728d730dc08f24f6e11f97bedf1
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+@@ -0,0 +1,78 @@
++#include <cuda_runtime.h>
++#include <cmath>
++#include <cstdint>
++#include <cstdio>
++#include <vector>
++
++#define CUDA(call) do { \
++  cudaError_t error = (call); \
++  if (error != cudaSuccess) { \
++    fprintf(stderr, "%s: %s\n", #call, cudaGetErrorString(error)); \
++    return 1; \
++  } \
++} while (0)
++
++enum { columns = 19 };
++
++__device__ float js_minmax(float a, float b, bool max) {
++  if (isnan(a) || isnan(b)) return __uint_as_float(0x7fc00000);
++  if (a == b) {
++    unsigned x = __float_as_uint(a), y = __float_as_uint(b);
++    return __uint_as_float(max ? x & y : x | y);
++  }
++  return (max ? a > b : a < b) ? a : b;
++}
++
++__global__ void probe(const float* in, float* out, size_t n) {
++  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
++  if (i >= n) return;
++  float a = in[3 * i], b = in[3 * i + 1], c = in[3 * i + 2];
++  float* row = out + columns * i;
++  row[0] = __fadd_rn(a, b);
++  row[1] = __fsub_rn(a, b);
++  row[2] = __fmul_rn(a, b);
++  row[3] = __fdiv_rn(a, b);
++  row[4] = -a;
++  row[5] = __fsqrt_rn(a);
++  row[6] = expf(a);
++  row[7] = logf(a);
++  row[8] = tanhf(a);
++  row[9] = __double2float_rn(exp(static_cast<double>(a)));
++  row[10] = __double2float_rn(log(static_cast<double>(a)));
++  row[11] = __double2float_rn(tanh(static_cast<double>(a)));
++  row[12] = js_minmax(a, b, true);
++  row[13] = js_minmax(a, b, false);
++  row[14] = __fadd_rn(__fmul_rn(a, b), c);
++  row[15] = a * b + c;
++  float nan = __fsqrt_rn(a);
++  row[16] = nan + b;
++  row[17] = js_minmax(nan, b, true);
++  row[18] = __fadd_rn(__fadd_rn(a, b), c);
++}
++
++int main() {
++  int driver = 0;
++  cudaDeviceProp device{};
++  CUDA(cudaDriverGetVersion(&driver));
++  CUDA(cudaGetDeviceProperties(&device, 0));
++  printf("%s sm_%d%d nvcc %d.%d.%d driver %d\n", device.name, device.major, device.minor,
++    __CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__, __CUDACC_VER_BUILD__, driver);
++  FILE* input = fopen("inputs.bin", "rb");
++  if (!input || fseek(input, 0, SEEK_END) != 0) return 2;
++  size_t n = ftell(input) / (3 * sizeof(float));
++  std::vector<float> in(3 * n), out(columns * n);
++  rewind(input);
++  if (fread(in.data(), sizeof(float), in.size(), input) != in.size()) return 2;
++  fclose(input);
++  float* device_in;
++  float* device_out;
++  CUDA(cudaMalloc(&device_in, in.size() * sizeof(float)));
++  CUDA(cudaMalloc(&device_out, out.size() * sizeof(float)));
++  CUDA(cudaMemcpy(device_in, in.data(), in.size() * sizeof(float), cudaMemcpyHostToDevice));
++  probe<<<(n + 255) / 256, 256>>>(device_in, device_out, n);
++  CUDA(cudaGetLastError());
++  CUDA(cudaMemcpy(out.data(), device_out, out.size() * sizeof(float), cudaMemcpyDeviceToHost));
++  FILE* output = fopen("out/outputs.bin", "wb");
++  if (!output || fwrite(out.data(), sizeof(float), out.size(), output) != out.size()) return 2;
++  return fclose(output) != 0;
++}
+
+exec
+/usr/bin/zsh -lc "sed -n '140,220p' src/framework/contracts/types.ts && rg -n 'checkInvariant|verifyTransformation|execute<' src/framework/contracts/analysis-manager.ts && sed -n '1040,1165p' src/framework/contracts/analysis-manager.ts && sed -n '1,100p' src/framework/passes/define-pass.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 294ms:
+    ctx: ContractContext,
+    inputs: PortValues<I>,
+  ): TransformationBodyResult<O> | Promise<TransformationBodyResult<O>>;
+}
+export interface TransformationBodyResult<O extends Ports = Ports> {
+  readonly outputs: PortValues<O>;
+  readonly correspondence?: readonly Correspondence[];
+}
+export type AnyDefinition =
+  | ValueType
+  | IRType
+  | AnalysisDefinition<any, any>
+  | PropertyDefinition<any>
+  | InvariantDefinition<any>
+  | ObjectiveDefinition<any>
+  | EffectDefinition
+  | TransformationDefinition<any, any>;
+export interface DefinitionDescriptor extends DefinitionBase {
+  readonly category: AnyDefinition['category'];
+  readonly schema: unknown;
+}
+export type Assurance = 'declared' | 'checked' | 'transferred' | 'proof';
+export interface AnalysisDependency {
+  readonly type: 'analysis';
+  readonly key: string;
+  readonly recordId: string;
+}
+export interface PropertyDependency {
+  readonly type: 'property';
+  readonly key: string;
+  readonly factId: string;
+}
+export interface ResourceDependency {
+  readonly type: 'resource';
+  readonly resource: string;
+  readonly revision: string;
+  readonly view?: 'base' | 'staged';
+}
+export type Dependency = AnalysisDependency | PropertyDependency | ResourceDependency;
+export interface AnalysisRecord<T = unknown> {
+  readonly id: string;
+  readonly key: string;
+  readonly analysis: VersionRef;
+  readonly subject: EntityRef;
+  readonly subjectKind: string;
+  readonly subjectSchemaVersion: string;
+  readonly params: unknown;
+  readonly value: T;
+  readonly invalidationEpoch: number;
+  readonly cacheable: boolean;
+  readonly dependencies: readonly Dependency[];
+  readonly assurance: 'checked' | 'transferred';
+  readonly valid: boolean;
+  readonly invalidation?: string;
+  readonly generation: number;
+  readonly transfer?: {
+    readonly rule: VersionRef;
+    readonly sourceRecord: string;
+    readonly correspondence: Correspondence;
+    readonly evidence: unknown;
+  };
+}
+export interface PropertyFact {
+  readonly id: string;
+  readonly key: string;
+  readonly property: VersionRef;
+  readonly checker: VersionRef;
+  readonly subject: EntityRef;
+  readonly subjectKind: string;
+  readonly subjectSchemaVersion: string;
+  readonly ok: boolean;
+  readonly invalidationEpoch: number;
+  readonly assurance: Assurance;
+  readonly valid: boolean;
+  readonly reason: string;
+  readonly evidence: unknown;
+  readonly dependencies: readonly Dependency[];
+  readonly analysisRecord?: string;
+  readonly invalidation?: string;
+}
+export interface ContractEvent {
+391:      checkInvariant: <P extends Ports>(d: InvariantDefinition<P>, values: PortValues<P>) => {
+1105:  async checkInvariant<P extends Ports>(
+1550:  async verifyTransformation<I extends Ports, O extends Ports>(
+1566:  async execute<I extends Ports, O extends Ports>(
+          recordId: record.id,
+          sourceRecord: source.id,
+          rule: record.transfer!.rule,
+        },
+        definition,
+        ref(to),
+      );
+      return record;
+    } finally {
+      await Promise.allSettled([...frame.pending]);
+      frame.active = false;
+    }
+  }
+  async evaluateObjective<S>(
+    objective: ObjectiveDefinition<S>,
+    subject: Artifact<S>,
+  ): Promise<{
+    value: number;
+    direction: 'min' | 'max';
+    analysis: AnalysisRecord<number>;
+  }> {
+    this.registry.register(objective);
+    const analysis = await this.analyse(objective.analysis, subject);
+    if (typeof analysis.value !== 'number' || !Number.isFinite(analysis.value))
+      throw new ContractError('objective-value', 'Objective must produce a finite number');
+    return {
+      value: analysis.value,
+      direction: objective.direction,
+      analysis,
+    };
+  }
+  private validatePorts(ports: Ports, values: unknown) {
+    if (!values || typeof values !== 'object' || Array.isArray(values))
+      throw new ContractError('ports', 'Expected named port values');
+    const entries = values as Record<string, unknown>;
+    if (Object.keys(entries).length !== Object.keys(ports).length)
+      throw new ContractError('ports', 'Port names do not match contract');
+    for (const [name, type] of Object.entries(ports)) {
+      if (!Object.hasOwn(entries, name)) throw new ContractError('ports', `Missing port ${name}`);
+      if (type.category === 'ir') validateArtifact(type, entries[name]);
+      else {
+        const validateValue: (value: unknown) => void = type.validate;
+        validateValue(entries[name]);
+        canonical(entries[name]);
+      }
+    }
+  }
+  private validateCorrespondence(c: Correspondence, from: Artifact, to: Artifact) {
+    canonical(c);
+    if (!c.id || !c.relation || !sameRef(c.from, from) || !sameRef(c.to, to))
+      throw new ContractError(
+        'correspondence',
+        'Correspondence must identify exact input/output artifact revisions',
+      );
+    if (
+      c.entities?.some(
+        e =>
+          !Array.isArray(e.from) ||
+          !Array.isArray(e.to) ||
+          e.from.some(x => typeof x !== 'string') ||
+          e.to.some(x => typeof x !== 'string'),
+      )
+    )
+      throw new ContractError('correspondence', 'Correspondence entities must be string lists');
+  }
+  async checkInvariant<P extends Ports>(
+    definition: InvariantDefinition<P>,
+    inputs: PortValues<P>,
+  ): Promise<CheckEvidence> {
+    return this.invariantInternal(definition, inputs);
+  }
+  private async invariantInternal<P extends Ports>(
+    definition: InvariantDefinition<P>,
+    inputs: PortValues<P>,
+    parent?: Frame,
+  ): Promise<CheckEvidence> {
+    if (parent) this.checkActive(parent);
+    this.registry.register(definition);
+    const captured = immutable(inputs);
+    this.validatePorts(definition.inputs, captured);
+    // the key only detects cycles on the frame stack; an IR port is named by its artifact's identity and revision
+    // (IRWB-004: equal exactly when the artifacts are, without encoding two programs to compare them)
+    const key = `invariant:${fingerprint({
+      definition: definitionRef(definition),
+      inputs: Object.fromEntries(
+        Object.entries(captured as Record<string, unknown>).map(([name, value]) => {
+          const a = value as Artifact;
+          return [
+            name,
+            definition.inputs[name]?.category === 'ir'
+              ? { id: a.id, kind: a.kind, schemaVersion: a.schemaVersion, revision: a.revision }
+              : value,
+          ];
+        }),
+      ),
+    })}`;
+    if (parent?.stack.includes(key))
+      throw new ContractError('invariant-cycle', `Invariant cycle involving ${definition.id}`);
+    const frame = this.freshFrame(definition.effects, parent?.store ?? this.store, parent);
+    frame.stack = [...(parent?.stack ?? []), key];
+    try {
+      const result = checkResult(await definition.check(this.context(frame), captured));
+      await this.drain(frame);
+      this.checkActive(frame);
+      if (parent) {
+        for (const dependency of frame.deps) uniquePush(parent.deps, dependency);
+        if (!frame.cacheable) parent.cacheable = false;
+      }
+      const evidence: CheckEvidence = immutable({
+        phase: 'query',
+        definition: definitionRef(definition),
+        ok: result.ok,
+        assurance: 'checked',
+        reason: result.reason ?? (result.ok ? 'Invariant checked' : 'Invariant rejected'),
+        evidence: result.evidence ?? null,
+      });
+      this.event(
+        frame,
+        'invariant.checked',
+        {
+          inputs: captured,
+          result: evidence,
+        },
+        definition,
+      );
+      return evidence;
+/**
+ * IRWB-001 E3: passes with declared needs, writes and preservation, applied through v6's machinery.
+ *
+ * A pass is versioned code that turns one artifact revision into the next. It declares:
+ *   - `needs`: analyses whose results it reads (v6 analyses, e.g. dataflow facts), computed for the exact input;
+ *   - `writes`: the entity and relation kinds it may change; any other change is `undeclaredWrite`;
+ *   - `preserves`: analyses whose results it claims survive. Each claim is checked: first by the analysis's own
+ *     transfer verifier (E4: unchanged reads), otherwise by recomputing on the output and comparing. A claim that
+ *     neither confirms is `preserveViolated`, and the pass is not published;
+ *   - `contract`: an optional v6 transformation contract the output must satisfy before it is accepted.
+ *
+ * A pass edits either through a v6 `IREdit` on the logical projection (generic, pattern-friendly), or by returning
+ * a new native value with explicit correspondence entries (efficient for domain code). Either way the framework
+ * derives the v6 change set by diffing the two projections, validates the native value through the adapter, builds
+ * the correspondence, enforces `writes`, runs the contract, and checks the preservation claims. Nothing is
+ * published unless all of that succeeds.
+ */
+import type { Artifact } from '../core/types.js';
+import { canonical } from '../core/data.js';
+import { createIRArtifact, openIR } from '../ir/index.js';
+import { diff } from '../ir/diff.js';
+import { makeCorrespondence } from '../ir/correspondence.js';
+import type {
+  ChangeSet,
+  CorrespondenceEntry,
+  EntityCorrespondence,
+  IRAdapter,
+  IREdit,
+  IRStore,
+  IRView,
+} from '../ir/index.js';
+import type {
+  AnalysisDefinition,
+  AnalysisRecord,
+  CheckResult,
+  Correspondence,
+  IRType,
+  Ports,
+  TransformationDefinition,
+} from '../contracts/types.js';
+import type { AnalysisManager } from '../contracts/analysis-manager.js';
+
+export class PassError extends Error {
+  constructor(
+    readonly code: 'undeclaredWrite' | 'preserveViolated' | 'contractRejected' | 'badResult' | 'passFailed',
+    message: string,
+    readonly evidence?: unknown,
+  ) {
+    super(`[${code}] ${message}`);
+    this.name = 'PassError';
+  }
+}
+
+export type Needs = Readonly<Record<string, AnalysisDefinition<any, any>>>;
+export type FactValues<N extends Needs> = {
+  readonly [K in keyof N]: N[K] extends AnalysisDefinition<any, infer R> ? R : never;
+};
+
+export interface PassRunContext<S, N extends Needs, P> {
+  readonly before: Artifact<S>;
+  readonly view: IRView<S>;
+  readonly facts: FactValues<N>;
+  readonly records: { readonly [K in keyof N]: AnalysisRecord<unknown> };
+  readonly params: P;
+  /** A v6 edit on the logical projection; used when `run` returns nothing. */
+  readonly edit: IREdit<S>;
+}
+
+/** A native result: the new value, and how its entities relate to the input's (merge, split, replace…). */
+export interface NativeResult<S> {
+  readonly native: S;
+  readonly correspondence?: readonly CorrespondenceEntry[];
+  /** How many edits the pass made, for reporting (Compiler Workbench shows edits per pass). */
+  readonly edits?: number;
+  /** Domain report (e.g. the edit records of a Compiler Workbench revision), passed through to the result. */
+  readonly report?: unknown;
+}
+
+export interface PassSpec<S, N extends Needs, P = unknown> {
+  readonly id: string;
+  readonly version: string;
+  readonly description: string;
+  readonly ir: IRType<S>;
+  readonly adapter: IRAdapter<S>;
+  readonly needs?: N;
+  /** Entity kinds (glob `prefix*`) and relation kinds the pass may change. */
+  readonly writes: { readonly entities: readonly string[]; readonly relations: readonly string[] };
+  readonly preserves?: readonly AnalysisDefinition<any, any>[];
+  readonly contract?: TransformationDefinition<Ports, Ports>;
+  /** Extra contract inputs beyond `input` (e.g. `origin`: r0), supplied by the caller per application. */
+  run(ctx: PassRunContext<S, N, P>): void | NativeResult<S> | Promise<void | NativeResult<S>>;
+}
+
+export type Pass<S, N extends Needs = Needs, P = unknown> = Readonly<PassSpec<S, N, P>> & {
+  readonly category: 'pass';
+};
+
+export function definePass<S, N extends Needs = {}, P = unknown>(spec: PassSpec<S, N, P>): Pass<S, N, P> {
+  if (!spec.id || !spec.version) throw new Error('A pass needs an id and a version');
+  if (typeof spec.run !== 'function') throw new Error(`Pass ${spec.id} needs run`);
+
+ succeeded in 5327ms:
+{
+  "node": "v24.18.0",
+  "remote": {
+    "host": "manuel@bling",
+    "hash": "2c542e9ff52e4c2e",
+    "compiled": true,
+    "compileMs": 668,
+    "runMs": 304,
+    "exit": 0,
+    "stdout": "NVIDIA GB10 sm_121 nvcc 13.0.88 driver 13000\n",
+    "stderr": "",
+    "outputs": [
+      "outputs.bin"
+    ]
+  },
+  "cases": 98369,
+  "inputSha256": "d51a0ee76d1e42b447622801162e31241a4cab079692563b06b5205981c5d7b0",
+  "outputSha256": "a462368b722b3deda0a2101f7c1d06107050ff7cfa4e8802512a46a540758d4c",
+  "stats": [
+    {
+      "op": "add",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.002972529629016055
+    },
+    {
+      "op": "sub",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.0029741694926134652
+    },
+    {
+      "op": "mul",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.0029634368497196456
+    },
+    {
+      "op": "div",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 4,
+      "worstFiniteBudgetFraction": 0.0029671233447374173,
+      "firstNaNMismatch": {
+        "args": [
+          2147483648,
+          2147483648,
+          3212836864
+        ],
+        "expectedWord": 4290772992,
+        "gotWord": 2147483647
+      }
+    },
+    {
+      "op": "neg",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0
+    },
+    {
+      "op": "sqrt",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 49164,
+      "worstFiniteBudgetFraction": 0.002937983934521034,
+      "firstNaNMismatch": {
+        "args": [
+          2147483649,
+          2147483648,
+          3212836864
+        ],
+        "expectedWord": 4290772992,
+        "gotWord": 2147483647
+      }
+    },
+    {
+      "op": "expf",
+      "nonNaNWordMismatch": 15687,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.007298895065253096,
+      "firstMismatch": {
+        "args": [
+          3212836864,
+          2147483648,
+          3212836864
+        ],
+        "expectedWord": 1052531378,
+        "gotWord": 1052531379
+      }
+    },
+    {
+      "op": "logf",
+      "nonNaNWordMismatch": 2074,
+      "nanWordMismatch": 49164,
+      "worstFiniteBudgetFraction": 0.0034054706073502147,
+      "firstNaNMismatch": {
+        "args": [
+          2147483649,
+          2147483648,
+          3212836864
+        ],
+        "expectedWord": 2145386496,
+        "gotWord": 2147483647
+      },
+      "firstMismatch": {
+        "args": [
+          348788493,
+          2472025880,
+          2278670309
+        ],
+        "expectedWord": 3261898155,
+        "gotWord": 3261898156
+      }
+    },
+    {
+      "op": "tanhf",
+      "nonNaNWordMismatch": 2125,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.007137331474640453,
+      "firstMismatch": {
+        "args": [
+          3214824981,
+          2053490142,
+          2568155793
+        ],
+        "expectedWord": 3210229658,
+        "gotWord": 3210229657
+      }
+    },
+    {
+      "op": "exp(double)",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.0029531561503184623
+    },
+    {
+      "op": "log(double)",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 49164,
+      "worstFiniteBudgetFraction": 0.0029585694569037647,
+      "firstNaNMismatch": {
+        "args": [
+          2147483649,
+          2147483648,
+          3212836864
+        ],
+        "expectedWord": 2145386496,
+        "gotWord": 4290772992
+      }
+    },
+    {
+      "op": "tanh(double)",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.002452515215877953
+    },
+    {
+      "op": "max",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0
+    },
+    {
+      "op": "min",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0
+    },
+    {
+      "op": "separate mul-add",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.002976135736551036
+    },
+    {
+      "op": "plain mul-add",
+      "nonNaNWordMismatch": 2556,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.44737810863874344,
+      "firstMismatch": {
+        "args": [
+          1065353217,
+          1065353214,
+          3212836864
+        ],
+        "expectedWord": 0,
+        "gotWord": 2826960896
+      }
+    },
+    {
+      "op": "NaN propagation",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 49164,
+      "worstFiniteBudgetFraction": 0.002973339433040069,
+      "firstNaNMismatch": {
+        "args": [
+          2147483649,
+          2147483648,
+          3212836864
+        ],
+        "expectedWord": 4290772992,
+        "gotWord": 2147483647
+      }
+    },
+    {
+      "op": "max of sqrt",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 49164,
+      "worstFiniteBudgetFraction": 0,
+      "firstNaNMismatch": {
+        "args": [
+          2147483649,
+          2147483648,
+          3212836864
+        ],
+        "expectedWord": 4290772992,
+        "gotWord": 2143289344
+      }
+    },
+    {
+      "op": "ordered sum tail",
+      "nonNaNWordMismatch": 0,
+      "nanWordMismatch": 0,
+      "worstFiniteBudgetFraction": 0.0029792134912133756
+    }
+  ]
+}
+
+codex
+The GB10 probe matched Node’s f32 words for the tested non-NaN arithmetic when I used explicit rounding intrinsics and double-precision `exp`, `log`, and `tanh`. It also found different NaN encodings and thousands of mismatches with the single-precision transcendental functions. I’ll use the f64 tolerance relation and verify the budget on ordered reductions as well.
+exec
+/usr/bin/zsh -lc 'node --test tests/tensor/corpus.test.mjs tests/tensor/language.test.mjs tests/tensor/passes.test.mjs && command -v flock && flock --version' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "sed -n '115,165p' src/framework/contracts/definitions.ts && sed -n '1540,1610p' src/framework/contracts/analysis-manager.ts && cat src/framework/contracts/resources.ts && cat src/framework/contracts/index.ts && cat .gitignore" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ exited 1 in 415ms:
+  portType(d.subject, 'ir');
+  if (!d.check || d.check.category !== 'analysis') throw new Error('Property needs an analysis checker');
+  if (
+    d.proofVerifier &&
+    (d.proofVerifier.input.id !== d.subject.id || d.proofVerifier.input.version !== d.subject.version)
+  )
+    throw new Error('Proof verifier input must match property subject IR');
+  if (d.subject.id !== d.check.input.id || d.subject.version !== d.check.input.version)
+    throw new Error('Property checker input must match its subject IR');
+  return base({
+    ...d,
+    category: 'property',
+  });
+};
+export const defineInvariant = <P extends Ports>(
+  d: Omit<InvariantDefinition<P>, 'category' | 'effects'> & {
+    effects?: readonly EffectDefinition[];
+  },
+): InvariantDefinition<P> => {
+  ports(d.inputs);
+  if (typeof d.check !== 'function') throw new Error('Invariant needs a checker');
+  if (d.effects?.some(e => e.access === 'write')) throw new Error('Invariants cannot declare write effects');
+  return base({
+    ...d,
+    effects: d.effects ?? [],
+    category: 'invariant',
+  });
+};
+export const defineObjective = <S>(d: Omit<ObjectiveDefinition<S>, 'category'>): ObjectiveDefinition<S> => {
+  if (!['min', 'max'].includes(d.direction)) throw new Error('Objective direction must be min/max');
+  return base({
+    ...d,
+    category: 'objective',
+  });
+};
+export function defineTransformation<I extends Ports, O extends Ports>(
+  d: Omit<
+    TransformationDefinition<I, O>,
+    'category' | 'requires' | 'preserves' | 'ensures' | 'establishes' | 'effects' | 'cache' | 'correspondence'
+  > &
+    Partial<
+      Pick<
+        TransformationDefinition<I, O>,
+        'requires' | 'preserves' | 'ensures' | 'establishes' | 'effects' | 'cache' | 'correspondence'
+      >
+    >,
+): TransformationDefinition<I, O> {
+  ports(d.inputs);
+  ports(d.outputs);
+  if (d.run !== undefined && typeof d.run !== 'function')
+    throw new Error('Transformation run must be a function');
+        } catch (error) {
+          fail(error);
+          throw error;
+        }
+      },
+      rollback,
+      fail,
+    };
+    return transaction;
+  }
+  async verifyTransformation<I extends Ports, O extends Ports>(
+    before: PortValues<I>,
+    after: PortValues<O>,
+    contract: TransformationDefinition<I, O>,
+    correspondence: readonly Correspondence[] = [],
+    options: ExecutionOptions = {},
+  ): Promise<PreparedTransformation<O>> {
+    before = immutable(before);
+    after = immutable(after);
+    correspondence = immutable(correspondence);
+    options = immutable(options);
+    const transaction = await this.beginTransformation(contract, before, options);
+    const prepared = await transaction.verify(after, correspondence, { cached: options.cached });
+    if (!options.deferCommit) prepared.commit();
+    return prepared;
+  }
+  async execute<I extends Ports, O extends Ports>(
+    definition: TransformationDefinition<I, O>,
+    inputs: PortValues<I>,
+    options: ExecutionOptions = {},
+  ): Promise<PreparedTransformation<O>> {
+    if (!definition.run)
+      throw new ContractError(
+        'missing-implementation',
+        `Transformation ${definition.id} has no run implementation`,
+      );
+    inputs = immutable(inputs);
+    options = immutable(options);
+    const transaction = await this.beginTransformation(definition, inputs, options),
+      key = fingerprint({
+        definition: describeDefinition(definition),
+        inputs: transaction.inputs,
+      }),
+      cached = this.transformCache.get(key);
+    try {
+      let outputs: PortValues<O>,
+        correspondence: readonly Correspondence[] = [];
+      let reused = false;
+      if (definition.cache !== 'never' && cached && this.canReuseDependencies(cached.dependencies)) {
+        outputs = cached.outputs as PortValues<O>;
+        correspondence = cached.correspondence;
+        reused = true;
+        transaction.importBodyDependencies(cached.dependencies);
+      } else {
+        const result = await definition.run(transaction.context, transaction.inputs);
+        outputs = result.outputs;
+        correspondence = result.correspondence ?? [];
+      }
+      const prepared = await transaction.verify(outputs, correspondence, { cached: reused });
+      if (!options.deferCommit) {
+        prepared.commit();
+        if (definition.cache !== 'never') {
+          const execution = this.executions.find(x => x.id === prepared.execution.id)!;
+          const dependencies = execution.bodyDependencies;
+          if (execution.bodyCacheable && this.reusable(dependencies, this.store))
+            this.transformCache.set(key, {
+              outputs: prepared.outputs,
+              correspondence,
+              dependencies: immutable(dependencies),
+            });
+          else this.transformCache.delete(key);
+cat: src/framework/contracts/resources.ts: No such file or directory
+
+ succeeded in 699ms:
+✔ matmul agrees with the numerical oracle before and after optimization (32.442643ms)
+✔ softmax agrees with the numerical oracle before and after optimization (11.519305ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (13.126776ms)
+✔ attention agrees with the numerical oracle before and after optimization (32.641129ms)
+✔ mlp agrees with the numerical oracle before and after optimization (30.878715ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (2.675179ms)
+✔ every operation, input and literal rounds at the selected precision (8.361563ms)
+✔ lexicographic reductions, explicit grouping and nested binder scope (5.200478ms)
+✔ zero extents, empty reductions and shape values (1.288256ms)
+✔ affine shape normalization, annotations and multiple functions (1.816727ms)
+✔ invalid programs give source coordinates (1.524828ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (17.625835ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (10.46855ms)
+✔ passes compose across calls and preserve the source baseline (7.233847ms)
+✔ coverage required per function and screening is origin-only (7.243029ms)
+✔ exact comparison detects a changed zero sign (2.765105ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 244.845834
+/usr/bin/flock
+flock from util-linux 2.39.3
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..eec7001551528540ef211aa150f3bf7b6746207a
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+@@ -0,0 +1,126 @@
++// Run from the worktree root. The existing runner owns every GPU operation.
++import { createHash } from 'node:crypto';
++import { execFile } from 'node:child_process';
++import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { promisify } from 'node:util';
++
++const { compileTix, optimizeTix, runTix } = await import(pathToFileURL(join(process.cwd(), 'dist/tensor/index.js')));
++const temp = await mkdtemp(join(tmpdir(), 'irwb-tix-fp-'));
++try {
++  const scratch = new DataView(new ArrayBuffer(4));
++  function fromWord(word) {
++    scratch.setUint32(0, word, true);
++    return scratch.getFloat32(0, true);
++  }
++  function word(value) {
++    scratch.setFloat32(0, value, true);
++    return scratch.getUint32(0, true);
++  }
++  let state = 0x20c0ffee;
++  function randomWord() {
++    state ^= state << 13;
++    state ^= state >>> 17;
++    state ^= state << 5;
++    return state >>> 0;
++  }
++  function finite() {
++    let x;
++    do x = fromWord(randomWord()); while (!Number.isFinite(x));
++    return x;
++  }
++  const cases = [];
++  const dotWidth = 1023, dotRows = 4;
++  for (let row = 0; row < dotRows; row++) {
++    for (let k = 0; k < dotWidth; k++) {
++      const unit = () => randomWord() / 2 ** 32;
++      const pair = [
++        () => [2 * unit() - 1, 2 * unit() - 1],
++        () => [0.25 + 0.75 * unit(), 0.25 + 0.75 * unit()],
++        () => [[1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24][k] ?? 0, 1],
++        () => [(k % 2 ? -1 : 1) * (0.25 + 0.75 * unit()), 0.25 + 0.75 * unit()],
++      ][row]();
++      cases.push([...pair.map(Math.fround), 0]);
++    }
++  }
++  state = 0x20c0ffee;
++  for (const a of [-0, 0, -(2 ** -149), 2 ** -149, -(2 ** -126), 2 ** -126, -1, 1, fromWord(0x7f7fffff)])
++    for (const b of [-0, 0, -1, 1, 2 ** -149, 2 ** -24, 2])
++      cases.push([a, b, -1]);
++  cases.push([1 + 2 ** -23, 1 - 2 ** -23, -1], [1, 2 ** -24, 2 ** -24]);
++  for (let i = 0; i < 98_304; i++) {
++    // Alternate between raw finite f32 words and values in ranges with observable transcendental variation.
++    const a = i % 2 ? finite() : Math.fround((randomWord() / 2 ** 32 - 0.5) * (i % 4 ? 210 : 20));
++    cases.push([a, finite(), finite()]);
++  }
++  const input = Buffer.alloc(12 * cases.length);
++  cases.forEach((row, i) => row.forEach((x, j) => input.writeFloatLE(x, (3 * i + j) * 4)));
++  await copyFile(new URL('./fp-probe/main.cu', import.meta.url), join(temp, 'main.cu'));
++  await writeFile(join(temp, 'inputs.bin'), input);
++  const { stdout } = await promisify(execFile)(process.execPath, ['tools/cuda-remote.mjs', temp]);
++  const remote = JSON.parse(stdout);
++  const result = await readFile(join(temp, 'out', 'outputs.bin'));
++  const names = [
++    'add', 'sub', 'mul', 'div', 'neg', 'sqrt', 'expf', 'logf', 'tanhf', 'exp(double)', 'log(double)',
++    'tanh(double)', 'max', 'min', 'separate mul-add', 'plain mul-add', 'NaN propagation', 'max of sqrt',
++    'ordered sum tail',
++  ];
++  const stats = names.map(op => ({ op, nonNaNWordMismatch: 0, nanWordMismatch: 0, worstFiniteBudgetFraction: 0 }));
++  const columns = names.length + 2;
++  if (result.length !== cases.length * columns * 4) throw Error('Unexpected GPU output length');
++  const f = Math.fround;
++  for (const [i, [a, b, c]] of cases.entries()) {
++    const exp = Math.exp(a), log = Math.log(a), tanh = Math.tanh(a), sqrt = Math.sqrt(a);
++    const reference = [
++      a + b, a - b, a * b, a / b, -a, sqrt, exp, log, tanh, exp, log, tanh, Math.max(a, b),
++      Math.min(a, b), f(a * b) + c, f(a * b) + c, f(sqrt) + b, Math.max(f(sqrt), b), f(a + b) + c,
++    ];
++    for (const [j, expected] of reference.entries()) {
++      const offset = (i * columns + j) * 4;
++      const got = result.readFloatLE(offset);
++      const gotWord = result.readUInt32LE(offset);
++      const expectedWord = word(expected);
++      if (gotWord !== expectedWord) {
++        const mismatch = Number.isNaN(expected) && Number.isNaN(got) ? 'nanWordMismatch' : 'nonNaNWordMismatch';
++        stats[j][mismatch]++;
++        if (mismatch === 'nonNaNWordMismatch' && !stats[j].firstMismatch)
++          stats[j].firstMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++        if (mismatch === 'nanWordMismatch' && !stats[j].firstNaNMismatch)
++          stats[j].firstNaNMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++      }
++      if (Number.isFinite(expected) && Number.isFinite(f(expected)) && Number.isFinite(got)) {
++        const fraction = Math.abs(expected - got) / (2e-6 + 2e-5 * Math.abs(expected));
++        stats[j].worstFiniteBudgetFraction = Math.max(stats[j].worstFiniteBudgetFraction, fraction);
++      }
++    }
++  }
++  const dot = compileTix('fn dot(a:f32[N,K], b:f32[N,K]):f32[N] { y[i]=sum(k) a[i,k]*b[i,k]; return y; }');
++  const split = optimizeTix(dot, ['split-sum']);
++  if (!split.steps[0].accepted || split.program.current.revision === dot.current.revision)
++    throw Error('Expected a genuine accepted split-sum');
++  const shape = [dotRows, dotWidth];
++  const dots = cases.slice(0, dotRows * dotWidth);
++  const inputs = {
++    a: { shape, data: Float32Array.from(dots, row => row[0]) },
++    b: { shape, data: Float32Array.from(dots, row => row[1]) },
++  };
++  const reductions = [dot, split.program].map((program, variant) => {
++    const f32 = runTix(program, 'dot', inputs).data;
++    const f64 = runTix(program, 'dot', inputs, { precision: 'f64' }).data;
++    return Array.from(f64, (reference, row) => {
++      const got = result.readFloatLE((row * dotWidth * columns + names.length + variant) * 4);
++      const error = Math.abs(got - reference);
++      return { reference, got, f32WordEqual: word(f32[row]) === word(got), error,
++        budgetFraction: error / (2e-6 + 2e-5 * Math.abs(reference)) };
++    });
++  });
++  const hash = bytes => createHash('sha256').update(bytes).digest('hex');
++  console.log(JSON.stringify({
++    node: process.version, remote, cases: cases.length, inputSha256: hash(input), outputSha256: hash(result),
++    stats, reductions,
++  }, null, 2));
++} finally {
++  await rm(temp, { recursive: true, force: true });
++}
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+new file mode 100644
+index 0000000000000000000000000000000000000000..2b57006cbe1236b76cc5d298c5f7608cd2f4f127
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+@@ -0,0 +1,96 @@
++#include <cuda_runtime.h>
++#include <cmath>
++#include <cstdint>
++#include <cstdio>
++#include <vector>
++
++#define CUDA(call) do { \
++  cudaError_t error = (call); \
++  if (error != cudaSuccess) { \
++    fprintf(stderr, "%s: %s\n", #call, cudaGetErrorString(error)); \
++    return 1; \
++  } \
++} while (0)
++
++enum { columns = 21, dot_width = 1023, dot_rows = 4 };
++
++__device__ float js_minmax(float a, float b, bool max) {
++  if (isnan(a) || isnan(b)) return __uint_as_float(0x7fc00000);
++  if (a == b) {
++    unsigned x = __float_as_uint(a), y = __float_as_uint(b);
++    return __uint_as_float(max ? x & y : x | y);
++  }
++  return (max ? a > b : a < b) ? a : b;
++}
++
++__global__ void probe(const float* in, float* out, size_t n) {
++  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
++  if (i >= n) return;
++  float a = in[3 * i], b = in[3 * i + 1], c = in[3 * i + 2];
++  float* row = out + columns * i;
++  row[0] = __fadd_rn(a, b);
++  row[1] = __fsub_rn(a, b);
++  row[2] = __fmul_rn(a, b);
++  row[3] = __fdiv_rn(a, b);
++  row[4] = -a;
++  row[5] = __fsqrt_rn(a);
++  row[6] = expf(a);
++  row[7] = logf(a);
++  row[8] = tanhf(a);
++  row[9] = __double2float_rn(exp(static_cast<double>(a)));
++  row[10] = __double2float_rn(log(static_cast<double>(a)));
++  row[11] = __double2float_rn(tanh(static_cast<double>(a)));
++  row[12] = js_minmax(a, b, true);
++  row[13] = js_minmax(a, b, false);
++  row[14] = __fadd_rn(__fmul_rn(a, b), c);
++  row[15] = a * b + c;
++  float nan = __fsqrt_rn(a);
++  row[16] = nan + b;
++  row[17] = js_minmax(nan, b, true);
++  row[18] = __fadd_rn(__fadd_rn(a, b), c);
++  row[19] = row[20] = 0.0f;
++  if (i < dot_width * dot_rows && i % dot_width == 0) {
++    float sequential = 0.0f, blocked = 0.0f;
++    for (int k = 0; k < dot_width; ++k) {
++      const float* term = in + 3 * (i + k);
++      sequential = __fadd_rn(sequential, __fmul_rn(term[0], term[1]));
++    }
++    for (int k = 0; k < dot_width; k += 4) {
++      float partial = 0.0f;
++      for (int lane = 0; lane < 4 && k + lane < dot_width; ++lane) {
++        const float* term = in + 3 * (i + k + lane);
++        partial = __fadd_rn(partial, __fmul_rn(term[0], term[1]));
++      }
++      blocked = __fadd_rn(blocked, partial);
++    }
++    row[19] = sequential;
++    row[20] = blocked;
++  }
++}
++
++int main() {
++  int driver = 0;
++  cudaDeviceProp device{};
++  CUDA(cudaDriverGetVersion(&driver));
++  CUDA(cudaGetDeviceProperties(&device, 0));
++  printf("%s sm_%d%d nvcc %d.%d.%d driver %d\n", device.name, device.major, device.minor,
++    __CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__, __CUDACC_VER_BUILD__, driver);
++  FILE* input = fopen("inputs.bin", "rb");
++  if (!input || fseek(input, 0, SEEK_END) != 0) return 2;
++  size_t n = ftell(input) / (3 * sizeof(float));
++  std::vector<float> in(3 * n), out(columns * n);
++  rewind(input);
++  if (fread(in.data(), sizeof(float), in.size(), input) != in.size()) return 2;
++  fclose(input);
++  float* device_in;
++  float* device_out;
++  CUDA(cudaMalloc(&device_in, in.size() * sizeof(float)));
++  CUDA(cudaMalloc(&device_out, out.size() * sizeof(float)));
++  CUDA(cudaMemcpy(device_in, in.data(), in.size() * sizeof(float), cudaMemcpyHostToDevice));
++  probe<<<(n + 255) / 256, 256>>>(device_in, device_out, n);
++  CUDA(cudaGetLastError());
++  CUDA(cudaMemcpy(out.data(), device_out, out.size() * sizeof(float), cudaMemcpyDeviceToHost));
++  FILE* output = fopen("out/outputs.bin", "wb");
++  if (!output || fwrite(out.data(), sizeof(float), out.size(), output) != out.size()) return 2;
++  return fclose(output) != 0;
++}
+
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs > /tmp/irwb-022-i-gb10.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 5852ms:
+exec
+/usr/bin/zsh -lc "rg -n 'cuda-remote' tools package.json src/tensor && wc -l src/tensor/*.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "rg -n 'MemoryResources|defineEffect|type CheckResult|class ContractError' src/framework/contracts && sed -n '1,105p' tests/framework/contracts.test.mjs && cat .gitignore && git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 429ms:
+tools/cuda-remote.mjs:3://   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121] [-- program args...]
+tools/cuda-remote.mjs:28:  throw new Error('usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [-- args]');
+  131 src/tensor/contract.ts
+  103 src/tensor/evaluate.ts
+   48 src/tensor/index.ts
+  151 src/tensor/ir.ts
+   74 src/tensor/model.ts
+  324 src/tensor/parser.ts
+   94 src/tensor/passes.ts
+  925 total
+
+ succeeded in 905ms:
+src/framework/contracts/definitions.ts:85:export const defineEffect = <T>(d: Omit<EffectDefinition<T>, 'category'>): EffectDefinition<T> => {
+src/framework/contracts/README.md:17:| `defineEffect<T>` | Names read or write access to an exact revisioned resource with a scalar value type. |
+src/framework/contracts/README.md:153:`ResourcePort` exposes synchronous snapshot reads and an atomic synchronous commit of staged JSON writes against expected original revisions. `MemoryResources` is the included reference adapter. The port contract requires all-or-nothing commit: it validates all names/values and expected revisions before applying any write. Async external systems can be adapted by preparing a stable snapshot and using an appropriately transactional host commit boundary; they must not claim atomicity they cannot provide. Native async adapter methods and thenable commit results are rejected; rejected asynchronous adapter work is observed but cannot be undone by the manager. The host adapter remains responsible for its atomicity guarantee.
+src/framework/contracts/effects.ts:4:export class MemoryResources implements ResourcePort {
+src/framework/contracts/analysis-manager.ts:4:import { MemoryResources } from './effects.js';
+src/framework/contracts/analysis-manager.ts:37:export class ContractError extends Error {
+src/framework/contracts/analysis-manager.ts:115:  constructor(registry = new ContractRegistry(), resources: ResourcePort = new MemoryResources()) {
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as C from '../../dist/framework/contracts/index.js';
+
+function fixture(){
+ const ir=C.defineIR({id:'numbers',version:'1',description:'Finite number vector',validate(value){assert.ok(Array.isArray(value));assert.ok(value.every(x=>typeof x==='number'&&Number.isFinite(x)));}});
+ const sum=C.defineAnalysis({id:'sum',version:'1',description:'Vector sum',input:ir,output:C.FiniteNumber,run:(_ctx,a)=>a.value.reduce((x,y)=>x+y,0),transfer:{id:'sum.correspondence',version:'1',verify:(_ctx,{from,to,correspondence})=>({ok:correspondence.relation==='permutation'&&[...from.value].sort().join(',')===[...to.value].sort().join(','),evidence:{relation:correspondence.relation}})}});
+ const check=C.defineAnalysis({id:'nonnegative.check',version:'1',description:'Every element nonnegative',input:ir,output:C.Check,run:(_ctx,a)=>({ok:a.value.every(x=>x>=0),reason:'All vector entries must be nonnegative',evidence:{negative:a.value.filter(x=>x<0)}}),transfer:{id:'nonnegative.permutation',version:'1',verify:(_ctx,{from,to,correspondence})=>({ok:correspondence.relation==='permutation'&&[...from.value].sort().join(',')===[...to.value].sort().join(',')})}});
+ const positive=C.defineProperty({id:'nonnegative',version:'1',description:'Nonnegative values',subject:ir,check});
+ const a=C.createArtifact(ir,'a',[1,2,3]),b=C.createArtifact(ir,'b',[3,2,1]);
+ return {ir,sum,check,positive,a,b,manager:new C.AnalysisManager()};
+}
+const relation=(a,b,id='vertices')=>({id,from:{artifact:a.id,revision:a.revision},to:{artifact:b.id,revision:b.revision},relation:'permutation',entities:[{from:['0','1','2'],to:['2','1','0']}],evidence:{permutation:[2,1,0]}});
+
+test('typed definitions, exact registry versions, immutable manifests and artifacts are reusable',()=>{
+ const {ir,sum,positive,a}=fixture(),registry=new C.ContractRegistry();registry.register(positive);assert.equal(registry.get({id:'nonnegative.check',version:'1'}).category,'analysis');
+ assert.ok(registry.list().some(d=>d.category==='ir'));assert.equal(typeof registry.list().find(d=>d.id==='nonnegative.check').schema.run,'string');
+ assert.throws(()=>registry.register({...positive}),/redefined/);assert.throws(()=>registry.get({id:'nonnegative',version:'2'}),/registered/);
+ assert.ok(Object.isFrozen(a.value));assert.throws(()=>C.validateArtifact(ir,{...a,value:[9]}),/hash|revision/);
+ assert.throws(()=>C.defineTransformation({id:'bad',version:'1',description:'Bad input',inputs:{x:{}},outputs:{}}),/type|validator/i);
+ assert.throws(()=>C.defineAnalysis({id:'bad',version:'1',description:'Bad analysis',input:ir,output:C.Integer}),/run/);
+ assert.throws(()=>C.defineTransformation({id:'badselector',version:'1',description:'Bad selector',inputs:{a:ir},outputs:{a:ir},requires:[{property:positive,subject:{from:'elsewhere',port:'a'}}]}),/selector/);
+});
+
+test('analyses reuse exact revision+params and explicit invalidation reaches dependent analyses and properties',async()=>{
+ const {ir,sum,a,manager}=fixture();let calls=0;
+ const scaled=C.defineAnalysis({id:'scaled',version:'1',description:'Parameterized dependency',input:ir,output:C.FiniteNumber,async run(ctx,a,p){calls++;return (await ctx.analysis(sum,a))*p.factor;}});
+ assert.equal((await manager.analyse(scaled,a,{factor:2})).value,12);assert.equal((await manager.analyse(scaled,a,{factor:2})).value,12);assert.equal(calls,1);
+ assert.equal((await manager.analyse(scaled,a,{factor:3})).value,18);assert.equal(calls,2);
+ manager.invalidate(sum,a,'Math analysis implementation refresh');assert.equal(manager.hasAnalysis(scaled,a,{factor:2}),false);assert.equal((await manager.analyse(scaled,a,{factor:2})).value,12);assert.equal(calls,3);
+ const changed=C.createArtifact(ir,'a',[1,2,4]);assert.equal(manager.hasAnalysis(sum,changed),false);assert.equal((await manager.analyse(sum,changed)).value,7);
+});
+
+test('declared claims cannot satisfy preconditions and checked property facts identify exact revisions',async()=>{
+ const {ir,positive,manager}=fixture(),negative=C.createArtifact(ir,'bad',[-1]);manager.declare(positive,negative,'Author says it is valid');let called=false;
+ const t=C.defineTransformation({id:'requires-positive',version:'1',description:'Guarded kernel',inputs:{data:ir},outputs:{data:ir},requires:[{property:positive,subject:{from:'inputs',port:'data'}}],run(_ctx,inputs){called=true;return {outputs:inputs};}});
+ await assert.rejects(manager.execute(t,{data:negative}),/nonnegative/);assert.equal(called,false);
+ const fact=await manager.check(positive,negative);assert.equal(fact.assurance,'checked');assert.equal(fact.ok,false);assert.equal(fact.subject.revision,negative.revision);assert.equal(manager.explainProperty(positive,negative).valid,true);
+});
+
+test('relational invariants enforce numeric parameters and named input/output guarantees',async()=>{
+ const {ir,a,manager}=fixture();
+ const bound=C.defineInvariant({id:'bounded-change',version:'1',description:'Sum deviation below tolerance',inputs:{before:ir,after:ir,tolerance:C.FiniteNumber},check(_ctx,{before,after,tolerance}){const delta=Math.abs(before.value.reduce((x,y)=>x+y,0)-after.value.reduce((x,y)=>x+y,0));return {ok:delta<=tolerance,evidence:{delta,tolerance}};}});
+ const contract=C.defineTransformation({id:'bounded',version:'1',description:'Numeric change bound',inputs:{data:ir,tolerance:C.FiniteNumber},outputs:{data:ir},ensures:[{invariant:bound,bindings:{before:{from:'inputs',port:'data'},after:{from:'outputs',port:'data'},tolerance:{from:'inputs',port:'tolerance'}}}]});
+ const out=C.createArtifact(ir,'out',[1,2,4]);await assert.rejects(manager.verifyTransformation({data:a,tolerance:.5},{data:out},contract),/Invariant rejected/);
+ const accepted=await manager.verifyTransformation({data:a,tolerance:1},{data:out},contract);assert.equal(accepted.execution.status,'accepted');assert.equal(accepted.execution.checks[0].assurance,'checked');
+});
+
+test('preserves check and establishes run real property checkers before outputs become accepted',async()=>{
+ const {ir,a,positive,manager}=fixture();
+ const contract=C.defineTransformation({id:'keep-positive',version:'1',description:'Preserve positivity',inputs:{before:ir},outputs:{after:ir},preserves:[{property:positive,from:'before',to:'after',mode:'check'}],establishes:[{property:positive,subject:{from:'outputs',port:'after'}}]});
+ const bad=C.createArtifact(ir,'bad',[-1]);await assert.rejects(manager.verifyTransformation({before:a},{after:bad},contract),/preserved/);assert.equal(manager.properties(bad).length,0);
+ const good=C.createArtifact(ir,'good',[2,3]);const tx=await manager.verifyTransformation({before:a},{after:good},contract,[],{deferCommit:true});assert.equal(manager.properties(good).length,0);assert.equal(tx.execution.status,'prepared');tx.commit();assert.equal(manager.properties(good)[0].ok,true);assert.ok(tx.execution.checks.some(c=>c.phase==='establishes'));
+});
+
+test('analysis and property transfer require exact correspondence and a versioned executable justification',async()=>{
+ const {ir,sum,check,positive,a,b,manager}=fixture();await manager.analyse(sum,a);const moved=await manager.preserve(sum,a,b,relation(a,b));assert.equal(moved.value,6);assert.equal(moved.assurance,'transferred');assert.equal(moved.transfer.rule.version,'1');
+ const incorrect=C.createArtifact(ir,'wrong',[9]);await assert.rejects(manager.preserve(sum,a,incorrect,relation(a,incorrect)),/justify|transfer/i);
+ await assert.rejects(manager.preserve(sum,a,b,{...relation(a,b),to:{artifact:'wrong',revision:b.revision}}),/exact/);
+ const noRule=C.defineAnalysis({id:'plain',version:'1',description:'No transfer',input:ir,output:C.Integer,run:(_c,a)=>a.value.length});await manager.analyse(noRule,a);await assert.rejects(manager.preserve(noRule,a,b,relation(a,b)),/transfer rule/);
+ const contract=C.defineTransformation({id:'permute',version:'1',description:'Verified permutation',inputs:{before:ir},outputs:{after:ir},preserves:[{property:positive,from:'before',to:'after',mode:'transfer',correspondence:'vertices'}],correspondence:[{id:'vertices',from:'before',to:'after',relation:'permutation'}]});
+ const result=await manager.verifyTransformation({before:a},{after:b},contract,[relation(a,b)]);assert.equal(result.execution.checks.find(c=>c.phase==='preserves').assurance,'transferred');manager.invalidate(check,a);assert.equal(manager.properties(b).find(f=>f.property.id===positive.id).valid,false);
+});
+
+test('unauthorized or stale source results cannot be transferred',async()=>{
+ const {sum,a,b,manager}=fixture();await assert.rejects(manager.preserve(sum,a,b,relation(a,b)),/valid source/);await manager.analyse(sum,a);manager.invalidate(sum,a);await assert.rejects(manager.preserve(sum,a,b,relation(a,b)),/valid source/);
+});
+
+test('effect declarations enforce transitive reads even when a nested analysis was already cached',async()=>{
+ const {ir,a}=fixture(),resources=new C.MemoryResources({scale:2}),manager=new C.AnalysisManager(undefined,resources);
+ const read=C.defineEffect({id:'read-scale',version:'1',description:'Read scale resource',resource:'scale',access:'read',type:C.FiniteNumber});
+ const analysis=C.defineAnalysis({id:'scaled-sum',version:'1',description:'External scaling',input:ir,output:C.FiniteNumber,effects:[read],run:(ctx,a)=>ctx.readResource(read)*a.value.reduce((x,y)=>x+y,0)});
+ await manager.analyse(analysis,a);
+ const forbidden=C.defineTransformation({id:'undeclared',version:'1',description:'Forgot effect',inputs:{data:ir},outputs:{sum:C.FiniteNumber},async run(ctx,inputs){return {outputs:{sum:await ctx.analysis(analysis,inputs.data)}};}});
+ await assert.rejects(manager.execute(forbidden,{data:a}),/not declared|undeclared/);
+ const allowed=C.defineTransformation({id:'tracked',version:'1',description:'Tracks resource',inputs:{data:ir},outputs:{sum:C.FiniteNumber},effects:[read],cache:'tracked',async run(ctx,inputs){return {outputs:{sum:await ctx.analysis(analysis,inputs.data)}};}});
+ assert.equal((await manager.execute(allowed,{data:a})).outputs.sum,12);assert.equal((await manager.execute(allowed,{data:a})).execution.cached,true);resources.set('scale',3);assert.equal((await manager.execute(allowed,{data:a})).outputs.sum,18);
+});
+
+test('resource writes require cache never and rejected outputs publish no resource writes or facts',async()=>{
+ const write=C.defineEffect({id:'write-result',version:'1',description:'Store result',resource:'result',access:'write',type:C.Integer}),resources=new C.MemoryResources({result:0}),manager=new C.AnalysisManager(undefined,resources);
+ assert.throws(()=>C.defineTransformation({id:'bad',version:'1',description:'Cached writes',inputs:{},outputs:{},effects:[write],cache:'tracked'}),/never/);
+ const invariant=C.defineInvariant({id:'positive-result',version:'1',description:'Only positive',inputs:{value:C.Integer},check:(_c,{value})=>({ok:value>0})});
+ const transformation=C.defineTransformation({id:'write',version:'1',description:'Stage then validate',inputs:{value:C.Integer},outputs:{value:C.Integer},effects:[write],cache:'never',ensures:[{invariant,bindings:{value:{from:'outputs',port:'value'}}}],run(ctx,{value}){ctx.writeResource(write,value);return {outputs:{value}};}});
+ await assert.rejects(manager.execute(transformation,{value:-1}),/Invariant rejected/);assert.equal(resources.read('result').value,0);
+ const result=await manager.execute(transformation,{value:7});assert.equal(resources.read('result').value,7);assert.equal(result.execution.effects[0].staged,true);
+ const tx=await manager.beginTransformation(transformation,{value:9});tx.context.writeResource(write,9);const prepared=await tx.verify({value:9});resources.set('result',8);assert.throws(()=>prepared.commit(),/conflict/);assert.equal(resources.read('result').value,8);
+});
+
+test('a caught missing resource read is tracked so later resource creation invalidates cached fallback',async()=>{
+ const {ir,a}=fixture(),resources=new C.MemoryResources(),manager=new C.AnalysisManager(undefined,resources),read=C.defineEffect({id:'optional',version:'1',description:'Read optional factor',resource:'factor',access:'read',type:C.Integer});
+ let calls=0;const analysis=C.defineAnalysis({id:'fallback',version:'1',description:'Default when absent',input:ir,output:C.Integer,effects:[read],run(ctx){calls++;try{return ctx.readResource(read);}catch{return 1;}}});
+ assert.equal((await manager.analyse(analysis,a)).value,1);assert.equal((await manager.analyse(analysis,a)).value,1);assert.equal(calls,1);resources.set('factor',5);assert.equal((await manager.analyse(analysis,a)).value,5);assert.equal(calls,2);
+});
+
+test('analysis/property cycles are diagnosed and malformed truthy checker values are rejected',async()=>{
+ const {ir,a,manager}=fixture();let property;
+ const checker=C.defineAnalysis({id:'cycle-check',version:'1',description:'Cyclic checker',input:ir,output:C.Check,async run(ctx,subject){const fact=await ctx.check(property,subject);return {ok:fact.ok};}});property=C.defineProperty({id:'cycle',version:'1',description:'Cycle',subject:ir,check:checker});
+ await assert.rejects(manager.check(property,a),/cycle/);
+ const bad=C.defineAnalysis({id:'bad-check',version:'1',description:'Truthy object',input:ir,output:C.JsonValue,run:()=>({ok:'true'})});const prop=C.defineProperty({id:'bad',version:'1',description:'Malformed',subject:ir,check:bad});await assert.rejects(manager.check(prop,a),/boolean/);
+});
+
+test('parallel transactions checking the same immutable source commit without false stale evidence',async()=>{
+ const {ir,a,positive,manager}=fixture(),contract=C.defineTransformation({id:'parallel',version:'1',description:'Concurrent guards',inputs:{data:ir},outputs:{data:ir},requires:[{property:positive,subject:{from:'inputs',port:'data'}}],ensures:[{property:positive,subject:{from:'outputs',port:'data'}}]});
+ const transactions=await Promise.all(Array.from({length:5},()=>manager.beginTransformation(contract,{data:a})));const prepared=await Promise.all(transactions.map(t=>t.verify({data:a})));for(const p of prepared)assert.equal(p.commit().status,'accepted');
+node_modules/
+dist/
+out/
+*.tsbuildinfo
+.claude/worktrees/
+/node_modules
+/.playwright-mcp/
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..eec7001551528540ef211aa150f3bf7b6746207a
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+@@ -0,0 +1,126 @@
++// Run from the worktree root. The existing runner owns every GPU operation.
++import { createHash } from 'node:crypto';
++import { execFile } from 'node:child_process';
++import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { promisify } from 'node:util';
++
++const { compileTix, optimizeTix, runTix } = await import(pathToFileURL(join(process.cwd(), 'dist/tensor/index.js')));
++const temp = await mkdtemp(join(tmpdir(), 'irwb-tix-fp-'));
++try {
++  const scratch = new DataView(new ArrayBuffer(4));
++  function fromWord(word) {
++    scratch.setUint32(0, word, true);
++    return scratch.getFloat32(0, true);
++  }
++  function word(value) {
++    scratch.setFloat32(0, value, true);
++    return scratch.getUint32(0, true);
++  }
++  let state = 0x20c0ffee;
++  function randomWord() {
++    state ^= state << 13;
++    state ^= state >>> 17;
++    state ^= state << 5;
++    return state >>> 0;
++  }
++  function finite() {
++    let x;
++    do x = fromWord(randomWord()); while (!Number.isFinite(x));
++    return x;
++  }
++  const cases = [];
++  const dotWidth = 1023, dotRows = 4;
++  for (let row = 0; row < dotRows; row++) {
++    for (let k = 0; k < dotWidth; k++) {
++      const unit = () => randomWord() / 2 ** 32;
++      const pair = [
++        () => [2 * unit() - 1, 2 * unit() - 1],
++        () => [0.25 + 0.75 * unit(), 0.25 + 0.75 * unit()],
++        () => [[1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24][k] ?? 0, 1],
++        () => [(k % 2 ? -1 : 1) * (0.25 + 0.75 * unit()), 0.25 + 0.75 * unit()],
++      ][row]();
++      cases.push([...pair.map(Math.fround), 0]);
++    }
++  }
++  state = 0x20c0ffee;
++  for (const a of [-0, 0, -(2 ** -149), 2 ** -149, -(2 ** -126), 2 ** -126, -1, 1, fromWord(0x7f7fffff)])
++    for (const b of [-0, 0, -1, 1, 2 ** -149, 2 ** -24, 2])
++      cases.push([a, b, -1]);
++  cases.push([1 + 2 ** -23, 1 - 2 ** -23, -1], [1, 2 ** -24, 2 ** -24]);
++  for (let i = 0; i < 98_304; i++) {
++    // Alternate between raw finite f32 words and values in ranges with observable transcendental variation.
++    const a = i % 2 ? finite() : Math.fround((randomWord() / 2 ** 32 - 0.5) * (i % 4 ? 210 : 20));
++    cases.push([a, finite(), finite()]);
++  }
++  const input = Buffer.alloc(12 * cases.length);
++  cases.forEach((row, i) => row.forEach((x, j) => input.writeFloatLE(x, (3 * i + j) * 4)));
++  await copyFile(new URL('./fp-probe/main.cu', import.meta.url), join(temp, 'main.cu'));
++  await writeFile(join(temp, 'inputs.bin'), input);
++  const { stdout } = await promisify(execFile)(process.execPath, ['tools/cuda-remote.mjs', temp]);
++  const remote = JSON.parse(stdout);
++  const result = await readFile(join(temp, 'out', 'outputs.bin'));
++  const names = [
++    'add', 'sub', 'mul', 'div', 'neg', 'sqrt', 'expf', 'logf', 'tanhf', 'exp(double)', 'log(double)',
++    'tanh(double)', 'max', 'min', 'separate mul-add', 'plain mul-add', 'NaN propagation', 'max of sqrt',
++    'ordered sum tail',
++  ];
++  const stats = names.map(op => ({ op, nonNaNWordMismatch: 0, nanWordMismatch: 0, worstFiniteBudgetFraction: 0 }));
++  const columns = names.length + 2;
++  if (result.length !== cases.length * columns * 4) throw Error('Unexpected GPU output length');
++  const f = Math.fround;
++  for (const [i, [a, b, c]] of cases.entries()) {
++    const exp = Math.exp(a), log = Math.log(a), tanh = Math.tanh(a), sqrt = Math.sqrt(a);
++    const reference = [
++      a + b, a - b, a * b, a / b, -a, sqrt, exp, log, tanh, exp, log, tanh, Math.max(a, b),
++      Math.min(a, b), f(a * b) + c, f(a * b) + c, f(sqrt) + b, Math.max(f(sqrt), b), f(a + b) + c,
++    ];
++    for (const [j, expected] of reference.entries()) {
++      const offset = (i * columns + j) * 4;
++      const got = result.readFloatLE(offset);
++      const gotWord = result.readUInt32LE(offset);
++      const expectedWord = word(expected);
++      if (gotWord !== expectedWord) {
++        const mismatch = Number.isNaN(expected) && Number.isNaN(got) ? 'nanWordMismatch' : 'nonNaNWordMismatch';
++        stats[j][mismatch]++;
++        if (mismatch === 'nonNaNWordMismatch' && !stats[j].firstMismatch)
++          stats[j].firstMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++        if (mismatch === 'nanWordMismatch' && !stats[j].firstNaNMismatch)
++          stats[j].firstNaNMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++      }
++      if (Number.isFinite(expected) && Number.isFinite(f(expected)) && Number.isFinite(got)) {
++        const fraction = Math.abs(expected - got) / (2e-6 + 2e-5 * Math.abs(expected));
++        stats[j].worstFiniteBudgetFraction = Math.max(stats[j].worstFiniteBudgetFraction, fraction);
++      }
++    }
++  }
++  const dot = compileTix('fn dot(a:f32[N,K], b:f32[N,K]):f32[N] { y[i]=sum(k) a[i,k]*b[i,k]; return y; }');
++  const split = optimizeTix(dot, ['split-sum']);
++  if (!split.steps[0].accepted || split.program.current.revision === dot.current.revision)
++    throw Error('Expected a genuine accepted split-sum');
++  const shape = [dotRows, dotWidth];
++  const dots = cases.slice(0, dotRows * dotWidth);
++  const inputs = {
++    a: { shape, data: Float32Array.from(dots, row => row[0]) },
++    b: { shape, data: Float32Array.from(dots, row => row[1]) },
++  };
++  const reductions = [dot, split.program].map((program, variant) => {
++    const f32 = runTix(program, 'dot', inputs).data;
++    const f64 = runTix(program, 'dot', inputs, { precision: 'f64' }).data;
++    return Array.from(f64, (reference, row) => {
++      const got = result.readFloatLE((row * dotWidth * columns + names.length + variant) * 4);
++      const error = Math.abs(got - reference);
++      return { reference, got, f32WordEqual: word(f32[row]) === word(got), error,
++        budgetFraction: error / (2e-6 + 2e-5 * Math.abs(reference)) };
++    });
++  });
++  const hash = bytes => createHash('sha256').update(bytes).digest('hex');
++  console.log(JSON.stringify({
++    node: process.version, remote, cases: cases.length, inputSha256: hash(input), outputSha256: hash(result),
++    stats, reductions,
++  }, null, 2));
++} finally {
++  await rm(temp, { recursive: true, force: true });
++}
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..01b766ba8b50152c07fc8872d65c0492135baac6
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+@@ -0,0 +1,49 @@
++// Run from the worktree root after npm run build.
++import assert from 'node:assert/strict';
++import { setImmediate } from 'node:timers/promises';
++
++const C = await import(new URL('dist/framework/contracts/index.js', `file://${process.cwd()}/`));
++const ir = id => C.defineIR({
++  id, version: '1', description: 'Probe artifact',
++  validate(value) { assert.equal(typeof value, 'string'); },
++});
++const input = ir('probe.source'), output = ir('probe.cuda-source');
++const engine = C.defineEffect({
++  id: 'probe.engine', version: '1', description: 'Read pinned executor profile',
++  resource: 'engine', access: 'read', type: C.JsonValue,
++});
++const ports = { input, output };
++let checks = 0;
++const invariant = C.defineInvariant({
++  id: 'probe.meaning', version: '1', description: 'Await external evidence',
++  inputs: ports, effects: [engine],
++  async check(ctx, values) {
++    assert.deepEqual(ctx.readResource(engine), { arch: 'sm_121' });
++    checks++;
++    await setImmediate();
++    return { ok: values.input.value === values.output.value, reason: 'Probe meaning differs' };
++  },
++});
++const spec = C.defineTransformation({
++  id: 'probe.lower', version: '1', description: 'Cross-kind checked lowering',
++  inputs: { input }, outputs: { output }, cache: 'never', effects: [engine],
++  ensures: [{ invariant, bindings: { input: { from: 'inputs', port: 'input' }, output: { from: 'outputs', port: 'output' } } }],
++  run(_ctx, { input }) {
++    return { outputs: { output: C.createArtifact(output, input.id, input.value) } };
++  },
++});
++const manager = new C.AnalysisManager(undefined, new C.MemoryResources({ engine: { arch: 'sm_121' } }));
++const source = C.createArtifact(input, 'probe', 'meaning');
++const pending = manager.execute(spec, { input: source });
++assert.equal(manager.snapshot().executions.filter(e => e.status === 'accepted').length, 0);
++const accepted = await pending;
++assert.equal(accepted.outputs.output.kind, 'probe.cuda-source');
++assert.equal(accepted.execution.status, 'accepted');
++await assert.rejects(
++  manager.verifyTransformation({ input: source }, { output: C.createArtifact(output, 'probe', 'mutant') }, spec),
++  /Probe meaning differs/,
++);
++await manager.execute(spec, { input: source });
++assert.equal(checks, 3);
++assert.equal(manager.snapshot().executions.filter(e => e.status === 'rejected').length, 1);
++console.log('Async cross-kind check accepted, mutant rejected, repeat re-evaluated the invariant');
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+new file mode 100644
+index 0000000000000000000000000000000000000000..2b57006cbe1236b76cc5d298c5f7608cd2f4f127
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+@@ -0,0 +1,96 @@
++#include <cuda_runtime.h>
++#include <cmath>
++#include <cstdint>
++#include <cstdio>
++#include <vector>
++
++#define CUDA(call) do { \
++  cudaError_t error = (call); \
++  if (error != cudaSuccess) { \
++    fprintf(stderr, "%s: %s\n", #call, cudaGetErrorString(error)); \
++    return 1; \
++  } \
++} while (0)
++
++enum { columns = 21, dot_width = 1023, dot_rows = 4 };
++
++__device__ float js_minmax(float a, float b, bool max) {
++  if (isnan(a) || isnan(b)) return __uint_as_float(0x7fc00000);
++  if (a == b) {
++    unsigned x = __float_as_uint(a), y = __float_as_uint(b);
++    return __uint_as_float(max ? x & y : x | y);
++  }
++  return (max ? a > b : a < b) ? a : b;
++}
++
++__global__ void probe(const float* in, float* out, size_t n) {
++  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
++  if (i >= n) return;
++  float a = in[3 * i], b = in[3 * i + 1], c = in[3 * i + 2];
++  float* row = out + columns * i;
++  row[0] = __fadd_rn(a, b);
++  row[1] = __fsub_rn(a, b);
++  row[2] = __fmul_rn(a, b);
++  row[3] = __fdiv_rn(a, b);
++  row[4] = -a;
++  row[5] = __fsqrt_rn(a);
++  row[6] = expf(a);
++  row[7] = logf(a);
++  row[8] = tanhf(a);
++  row[9] = __double2float_rn(exp(static_cast<double>(a)));
++  row[10] = __double2float_rn(log(static_cast<double>(a)));
++  row[11] = __double2float_rn(tanh(static_cast<double>(a)));
++  row[12] = js_minmax(a, b, true);
++  row[13] = js_minmax(a, b, false);
++  row[14] = __fadd_rn(__fmul_rn(a, b), c);
++  row[15] = a * b + c;
++  float nan = __fsqrt_rn(a);
++  row[16] = nan + b;
++  row[17] = js_minmax(nan, b, true);
++  row[18] = __fadd_rn(__fadd_rn(a, b), c);
++  row[19] = row[20] = 0.0f;
++  if (i < dot_width * dot_rows && i % dot_width == 0) {
++    float sequential = 0.0f, blocked = 0.0f;
++    for (int k = 0; k < dot_width; ++k) {
++      const float* term = in + 3 * (i + k);
++      sequential = __fadd_rn(sequential, __fmul_rn(term[0], term[1]));
++    }
++    for (int k = 0; k < dot_width; k += 4) {
++      float partial = 0.0f;
++      for (int lane = 0; lane < 4 && k + lane < dot_width; ++lane) {
++        const float* term = in + 3 * (i + k + lane);
++        partial = __fadd_rn(partial, __fmul_rn(term[0], term[1]));
++      }
++      blocked = __fadd_rn(blocked, partial);
++    }
++    row[19] = sequential;
++    row[20] = blocked;
++  }
++}
++
++int main() {
++  int driver = 0;
++  cudaDeviceProp device{};
++  CUDA(cudaDriverGetVersion(&driver));
++  CUDA(cudaGetDeviceProperties(&device, 0));
++  printf("%s sm_%d%d nvcc %d.%d.%d driver %d\n", device.name, device.major, device.minor,
++    __CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__, __CUDACC_VER_BUILD__, driver);
++  FILE* input = fopen("inputs.bin", "rb");
++  if (!input || fseek(input, 0, SEEK_END) != 0) return 2;
++  size_t n = ftell(input) / (3 * sizeof(float));
++  std::vector<float> in(3 * n), out(columns * n);
++  rewind(input);
++  if (fread(in.data(), sizeof(float), in.size(), input) != in.size()) return 2;
++  fclose(input);
++  float* device_in;
++  float* device_out;
++  CUDA(cudaMalloc(&device_in, in.size() * sizeof(float)));
++  CUDA(cudaMalloc(&device_out, out.size() * sizeof(float)));
++  CUDA(cudaMemcpy(device_in, in.data(), in.size() * sizeof(float), cudaMemcpyHostToDevice));
++  probe<<<(n + 255) / 256, 256>>>(device_in, device_out, n);
++  CUDA(cudaGetLastError());
++  CUDA(cudaMemcpy(out.data(), device_out, out.size() * sizeof(float), cudaMemcpyDeviceToHost));
++  FILE* output = fopen("out/outputs.bin", "wb");
++  if (!output || fwrite(out.data(), sizeof(float), out.size(), output) != out.size()) return 2;
++  return fclose(output) != 0;
++}
+
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "node -e 'const d=require(\"/tmp/irwb-022-i-gb10.json\");console.log(JSON.stringify({...d,stats:d.stats.map(({op,nonNaNWordMismatch,nanWordMismatch,worstFiniteBudgetFraction})=>[op,nonNaNWordMismatch,nanWordMismatch,worstFiniteBudgetFraction])},null,2))'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 467ms:
+{
+  "node": "v24.18.0",
+  "remote": {
+    "host": "manuel@bling",
+    "hash": "45d796865bdf89ae",
+    "compiled": true,
+    "compileMs": 676,
+    "runMs": 303,
+    "exit": 0,
+    "stdout": "NVIDIA GB10 sm_121 nvcc 13.0.88 driver 13000\n",
+    "stderr": "",
+    "outputs": [
+      "outputs.bin"
+    ]
+  },
+  "cases": 102461,
+  "inputSha256": "747aec57f583162148d95bf94ac449d0fb020445f12c90743f407dcae380547a",
+  "outputSha256": "5703980963e26aab99d9923a4fc381de65ead61ba503dd4eb2ee248efc3de6aa",
+  "stats": [
+    [
+      "add",
+      0,
+      0,
+      0.002972529629016055
+    ],
+    [
+      "sub",
+      0,
+      0,
+      0.0029741694926134652
+    ],
+    [
+      "mul",
+      0,
+      0,
+      0.0029634368497196456
+    ],
+    [
+      "div",
+      0,
+      4,
+      0.0029671233447374173
+    ],
+    [
+      "neg",
+      0,
+      0,
+      0
+    ],
+    [
+      "sqrt",
+      0,
+      50193,
+      0.002937983934521034
+    ],
+    [
+      "expf",
+      16615,
+      0,
+      0.007298895065253096
+    ],
+    [
+      "logf",
+      2255,
+      50193,
+      0.0034054706073502147
+    ],
+    [
+      "tanhf",
+      3553,
+      0,
+      0.007292783237911396
+    ],
+    [
+      "exp(double)",
+      0,
+      0,
+      0.0029531561503184623
+    ],
+    [
+      "log(double)",
+      0,
+      50193,
+      0.0029585694569037647
+    ],
+    [
+      "tanh(double)",
+      0,
+      0,
+      0.002452515215877953
+    ],
+    [
+      "max",
+      0,
+      0,
+      0
+    ],
+    [
+      "min",
+      0,
+      0,
+      0
+    ],
+    [
+      "separate mul-add",
+      0,
+      0,
+      0.002976135736551036
+    ],
+    [
+      "plain mul-add",
+      2556,
+      0,
+      0.44737810863874344
+    ],
+    [
+      "NaN propagation",
+      0,
+      50193,
+      0.002973339433040069
+    ],
+    [
+      "max of sqrt",
+      0,
+      50193,
+      0
+    ],
+    [
+      "ordered sum tail",
+      0,
+      0,
+      0.0029792134912133756
+    ]
+  ],
+  "reductions": [
+    [
+      {
+        "reference": 23.14845159130922,
+        "got": 23.148452758789062,
+        "f32WordEqual": true,
+        "error": 0.0000011674798408023435,
+        "budgetFraction": 0.002510876554976188
+      },
+      {
+        "reference": 400.6175757844758,
+        "got": 400.6176452636719,
+        "f32WordEqual": true,
+        "error": 0.00006947919609956443,
+        "budgetFraction": 0.008669347228349862
+      },
+      {
+        "reference": 1.0000001788139343,
+        "got": 1,
+        "f32WordEqual": true,
+        "error": 1.7881393432617188e-7,
+        "budgetFraction": 0.008127904784478146
+      },
+      {
+        "reference": 8.453116922889928,
+        "got": 8.453116416931152,
+        "f32WordEqual": true,
+        "error": 5.059587753208916e-7,
+        "budgetFraction": 0.002957744994499258
+      }
+    ],
+    [
+      {
+        "reference": 23.1484515913092,
+        "got": 23.14845085144043,
+        "f32WordEqual": true,
+        "error": 7.398687706938745e-7,
+        "budgetFraction": 0.00159122160843274
+      },
+      {
+        "reference": 400.61757578447646,
+        "got": 400.61761474609375,
+        "f32WordEqual": true,
+        "error": 0.00003896161729244341,
+        "budgetFraction": 0.004861480959023204
+      },
+      {
+        "reference": 1.0000001788139343,
+        "got": 1.000000238418579,
+        "f32WordEqual": true,
+        "error": 5.960464477539063e-8,
+        "budgetFraction": 0.0027093015948260486
+      },
+      {
+        "reference": 8.453116922889931,
+        "got": 8.453119277954102,
+        "f32WordEqual": true,
+        "error": 0.0000023550641703451447,
+        "budgetFraction": 0.013767286192724082
+      }
+    ]
+  ]
+}
+
+ succeeded in 510ms:
+Async cross-kind check accepted, mutant rejected, repeat re-evaluated the invariant
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..eec7001551528540ef211aa150f3bf7b6746207a
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+@@ -0,0 +1,126 @@
++// Run from the worktree root. The existing runner owns every GPU operation.
++import { createHash } from 'node:crypto';
++import { execFile } from 'node:child_process';
++import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { promisify } from 'node:util';
++
++const { compileTix, optimizeTix, runTix } = await import(pathToFileURL(join(process.cwd(), 'dist/tensor/index.js')));
++const temp = await mkdtemp(join(tmpdir(), 'irwb-tix-fp-'));
++try {
++  const scratch = new DataView(new ArrayBuffer(4));
++  function fromWord(word) {
++    scratch.setUint32(0, word, true);
++    return scratch.getFloat32(0, true);
++  }
++  function word(value) {
++    scratch.setFloat32(0, value, true);
++    return scratch.getUint32(0, true);
++  }
++  let state = 0x20c0ffee;
++  function randomWord() {
++    state ^= state << 13;
++    state ^= state >>> 17;
++    state ^= state << 5;
++    return state >>> 0;
++  }
++  function finite() {
++    let x;
++    do x = fromWord(randomWord()); while (!Number.isFinite(x));
++    return x;
++  }
++  const cases = [];
++  const dotWidth = 1023, dotRows = 4;
++  for (let row = 0; row < dotRows; row++) {
++    for (let k = 0; k < dotWidth; k++) {
++      const unit = () => randomWord() / 2 ** 32;
++      const pair = [
++        () => [2 * unit() - 1, 2 * unit() - 1],
++        () => [0.25 + 0.75 * unit(), 0.25 + 0.75 * unit()],
++        () => [[1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24][k] ?? 0, 1],
++        () => [(k % 2 ? -1 : 1) * (0.25 + 0.75 * unit()), 0.25 + 0.75 * unit()],
++      ][row]();
++      cases.push([...pair.map(Math.fround), 0]);
++    }
++  }
++  state = 0x20c0ffee;
++  for (const a of [-0, 0, -(2 ** -149), 2 ** -149, -(2 ** -126), 2 ** -126, -1, 1, fromWord(0x7f7fffff)])
++    for (const b of [-0, 0, -1, 1, 2 ** -149, 2 ** -24, 2])
++      cases.push([a, b, -1]);
++  cases.push([1 + 2 ** -23, 1 - 2 ** -23, -1], [1, 2 ** -24, 2 ** -24]);
++  for (let i = 0; i < 98_304; i++) {
++    // Alternate between raw finite f32 words and values in ranges with observable transcendental variation.
++    const a = i % 2 ? finite() : Math.fround((randomWord() / 2 ** 32 - 0.5) * (i % 4 ? 210 : 20));
++    cases.push([a, finite(), finite()]);
++  }
++  const input = Buffer.alloc(12 * cases.length);
++  cases.forEach((row, i) => row.forEach((x, j) => input.writeFloatLE(x, (3 * i + j) * 4)));
++  await copyFile(new URL('./fp-probe/main.cu', import.meta.url), join(temp, 'main.cu'));
++  await writeFile(join(temp, 'inputs.bin'), input);
++  const { stdout } = await promisify(execFile)(process.execPath, ['tools/cuda-remote.mjs', temp]);
++  const remote = JSON.parse(stdout);
++  const result = await readFile(join(temp, 'out', 'outputs.bin'));
++  const names = [
++    'add', 'sub', 'mul', 'div', 'neg', 'sqrt', 'expf', 'logf', 'tanhf', 'exp(double)', 'log(double)',
++    'tanh(double)', 'max', 'min', 'separate mul-add', 'plain mul-add', 'NaN propagation', 'max of sqrt',
++    'ordered sum tail',
++  ];
++  const stats = names.map(op => ({ op, nonNaNWordMismatch: 0, nanWordMismatch: 0, worstFiniteBudgetFraction: 0 }));
++  const columns = names.length + 2;
++  if (result.length !== cases.length * columns * 4) throw Error('Unexpected GPU output length');
++  const f = Math.fround;
++  for (const [i, [a, b, c]] of cases.entries()) {
++    const exp = Math.exp(a), log = Math.log(a), tanh = Math.tanh(a), sqrt = Math.sqrt(a);
++    const reference = [
++      a + b, a - b, a * b, a / b, -a, sqrt, exp, log, tanh, exp, log, tanh, Math.max(a, b),
++      Math.min(a, b), f(a * b) + c, f(a * b) + c, f(sqrt) + b, Math.max(f(sqrt), b), f(a + b) + c,
++    ];
++    for (const [j, expected] of reference.entries()) {
++      const offset = (i * columns + j) * 4;
++      const got = result.readFloatLE(offset);
++      const gotWord = result.readUInt32LE(offset);
++      const expectedWord = word(expected);
++      if (gotWord !== expectedWord) {
++        const mismatch = Number.isNaN(expected) && Number.isNaN(got) ? 'nanWordMismatch' : 'nonNaNWordMismatch';
++        stats[j][mismatch]++;
++        if (mismatch === 'nonNaNWordMismatch' && !stats[j].firstMismatch)
++          stats[j].firstMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++        if (mismatch === 'nanWordMismatch' && !stats[j].firstNaNMismatch)
++          stats[j].firstNaNMismatch = { args: [a, b, c].map(word), expectedWord, gotWord };
++      }
++      if (Number.isFinite(expected) && Number.isFinite(f(expected)) && Number.isFinite(got)) {
++        const fraction = Math.abs(expected - got) / (2e-6 + 2e-5 * Math.abs(expected));
++        stats[j].worstFiniteBudgetFraction = Math.max(stats[j].worstFiniteBudgetFraction, fraction);
++      }
++    }
++  }
++  const dot = compileTix('fn dot(a:f32[N,K], b:f32[N,K]):f32[N] { y[i]=sum(k) a[i,k]*b[i,k]; return y; }');
++  const split = optimizeTix(dot, ['split-sum']);
++  if (!split.steps[0].accepted || split.program.current.revision === dot.current.revision)
++    throw Error('Expected a genuine accepted split-sum');
++  const shape = [dotRows, dotWidth];
++  const dots = cases.slice(0, dotRows * dotWidth);
++  const inputs = {
++    a: { shape, data: Float32Array.from(dots, row => row[0]) },
++    b: { shape, data: Float32Array.from(dots, row => row[1]) },
++  };
++  const reductions = [dot, split.program].map((program, variant) => {
++    const f32 = runTix(program, 'dot', inputs).data;
++    const f64 = runTix(program, 'dot', inputs, { precision: 'f64' }).data;
++    return Array.from(f64, (reference, row) => {
++      const got = result.readFloatLE((row * dotWidth * columns + names.length + variant) * 4);
++      const error = Math.abs(got - reference);
++      return { reference, got, f32WordEqual: word(f32[row]) === word(got), error,
++        budgetFraction: error / (2e-6 + 2e-5 * Math.abs(reference)) };
++    });
++  });
++  const hash = bytes => createHash('sha256').update(bytes).digest('hex');
++  console.log(JSON.stringify({
++    node: process.version, remote, cases: cases.length, inputSha256: hash(input), outputSha256: hash(result),
++    stats, reductions,
++  }, null, 2));
++} finally {
++  await rm(temp, { recursive: true, force: true });
++}
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..01b766ba8b50152c07fc8872d65c0492135baac6
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+@@ -0,0 +1,49 @@
++// Run from the worktree root after npm run build.
++import assert from 'node:assert/strict';
++import { setImmediate } from 'node:timers/promises';
++
++const C = await import(new URL('dist/framework/contracts/index.js', `file://${process.cwd()}/`));
++const ir = id => C.defineIR({
++  id, version: '1', description: 'Probe artifact',
++  validate(value) { assert.equal(typeof value, 'string'); },
++});
++const input = ir('probe.source'), output = ir('probe.cuda-source');
++const engine = C.defineEffect({
++  id: 'probe.engine', version: '1', description: 'Read pinned executor profile',
++  resource: 'engine', access: 'read', type: C.JsonValue,
++});
++const ports = { input, output };
++let checks = 0;
++const invariant = C.defineInvariant({
++  id: 'probe.meaning', version: '1', description: 'Await external evidence',
++  inputs: ports, effects: [engine],
++  async check(ctx, values) {
++    assert.deepEqual(ctx.readResource(engine), { arch: 'sm_121' });
++    checks++;
++    await setImmediate();
++    return { ok: values.input.value === values.output.value, reason: 'Probe meaning differs' };
++  },
++});
++const spec = C.defineTransformation({
++  id: 'probe.lower', version: '1', description: 'Cross-kind checked lowering',
++  inputs: { input }, outputs: { output }, cache: 'never', effects: [engine],
++  ensures: [{ invariant, bindings: { input: { from: 'inputs', port: 'input' }, output: { from: 'outputs', port: 'output' } } }],
++  run(_ctx, { input }) {
++    return { outputs: { output: C.createArtifact(output, input.id, input.value) } };
++  },
++});
++const manager = new C.AnalysisManager(undefined, new C.MemoryResources({ engine: { arch: 'sm_121' } }));
++const source = C.createArtifact(input, 'probe', 'meaning');
++const pending = manager.execute(spec, { input: source });
++assert.equal(manager.snapshot().executions.filter(e => e.status === 'accepted').length, 0);
++const accepted = await pending;
++assert.equal(accepted.outputs.output.kind, 'probe.cuda-source');
++assert.equal(accepted.execution.status, 'accepted');
++await assert.rejects(
++  manager.verifyTransformation({ input: source }, { output: C.createArtifact(output, 'probe', 'mutant') }, spec),
++  /Probe meaning differs/,
++);
++await manager.execute(spec, { input: source });
++assert.equal(checks, 3);
++assert.equal(manager.snapshot().executions.filter(e => e.status === 'rejected').length, 1);
++console.log('Async cross-kind check accepted, mutant rejected, repeat re-evaluated the invariant');
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+new file mode 100644
+index 0000000000000000000000000000000000000000..66f056d8b7166735a7fc5f5b545414033ecf16e2
+--- /dev/null
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+@@ -0,0 +1,98 @@
++#include <cuda_runtime.h>
++#include <cmath>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <vector>
++
++#define CUDA(call) do { \
++  cudaError_t error = (call); \
++  if (error != cudaSuccess) { \
++    fprintf(stderr, "%s: %s\n", #call, cudaGetErrorString(error)); \
++    return 1; \
++  } \
++} while (0)
++
++enum { columns = 21, dot_width = 1023, dot_rows = 4 };
++
++__device__ float js_minmax(float a, float b, bool max) {
++  if (isnan(a) || isnan(b)) return __uint_as_float(0x7fc00000);
++  if (a == b) {
++    unsigned x = __float_as_uint(a), y = __float_as_uint(b);
++    return __uint_as_float(max ? x & y : x | y);
++  }
++  return (max ? a > b : a < b) ? a : b;
++}
++
++__global__ void probe(const float* in, float* out, size_t n) {
++  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
++  if (i >= n) return;
++  float a = in[3 * i], b = in[3 * i + 1], c = in[3 * i + 2];
++  float* row = out + columns * i;
++  row[0] = __fadd_rn(a, b);
++  row[1] = __fsub_rn(a, b);
++  row[2] = __fmul_rn(a, b);
++  row[3] = __fdiv_rn(a, b);
++  row[4] = -a;
++  row[5] = __fsqrt_rn(a);
++  row[6] = expf(a);
++  row[7] = logf(a);
++  row[8] = tanhf(a);
++  row[9] = __double2float_rn(exp(static_cast<double>(a)));
++  row[10] = __double2float_rn(log(static_cast<double>(a)));
++  row[11] = __double2float_rn(tanh(static_cast<double>(a)));
++  row[12] = js_minmax(a, b, true);
++  row[13] = js_minmax(a, b, false);
++  row[14] = __fadd_rn(__fmul_rn(a, b), c);
++  row[15] = a * b + c;
++  float nan = __fsqrt_rn(a);
++  row[16] = nan + b;
++  row[17] = js_minmax(nan, b, true);
++  row[18] = __fadd_rn(__fadd_rn(a, b), c);
++  row[19] = row[20] = 0.0f;
++  if (i < dot_width * dot_rows && i % dot_width == 0) {
++    float sequential = 0.0f, blocked = 0.0f;
++    for (int k = 0; k < dot_width; ++k) {
++      const float* term = in + 3 * (i + k);
++      sequential = __fadd_rn(sequential, __fmul_rn(term[0], term[1]));
++    }
++    for (int k = 0; k < dot_width; k += 4) {
++      float partial = 0.0f;
++      for (int lane = 0; lane < 4 && k + lane < dot_width; ++lane) {
++        const float* term = in + 3 * (i + k + lane);
++        partial = __fadd_rn(partial, __fmul_rn(term[0], term[1]));
++      }
++      blocked = __fadd_rn(blocked, partial);
++    }
++    row[19] = sequential;
++    row[20] = blocked;
++  }
++}
++
++int main() {
++  if (std::system("/usr/local/cuda-13.0/bin/nvcc --version") != 0) return 2;
++  int driver = 0;
++  cudaDeviceProp device{};
++  CUDA(cudaDriverGetVersion(&driver));
++  CUDA(cudaGetDeviceProperties(&device, 0));
++  printf("%s sm_%d%d nvcc %d.%d.%d driver %d\n", device.name, device.major, device.minor,
++    __CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__, __CUDACC_VER_BUILD__, driver);
++  FILE* input = fopen("inputs.bin", "rb");
++  if (!input || fseek(input, 0, SEEK_END) != 0) return 2;
++  size_t n = ftell(input) / (3 * sizeof(float));
++  std::vector<float> in(3 * n), out(columns * n);
++  rewind(input);
++  if (fread(in.data(), sizeof(float), in.size(), input) != in.size()) return 2;
++  fclose(input);
++  float* device_in;
++  float* device_out;
++  CUDA(cudaMalloc(&device_in, in.size() * sizeof(float)));
++  CUDA(cudaMalloc(&device_out, out.size() * sizeof(float)));
++  CUDA(cudaMemcpy(device_in, in.data(), in.size() * sizeof(float), cudaMemcpyHostToDevice));
++  probe<<<(n + 255) / 256, 256>>>(device_in, device_out, n);
++  CUDA(cudaGetLastError());
++  CUDA(cudaMemcpy(out.data(), device_out, out.size() * sizeof(float), cudaMemcpyDeviceToHost));
++  FILE* output = fopen("out/outputs.bin", "wb");
++  if (!output || fwrite(out.data(), sizeof(float), out.size(), output) != out.size()) return 2;
++  return fclose(output) != 0;
++}
+
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs > /tmp/irwb-022-i-gb10.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'lockfile=$(mktemp /tmp/irwb-022-i-flock.XXXXXX) && flock -s "$lockfile" flock -s -n "$lockfile" true && flock -x "$lockfile" sh -c '"'if flock -s -n \""'$1" true; then exit 1; fi'"' sh \""'$lockfile" && rm "$lockfile" && printf '"'%s\\n' 'shared/shared succeeds and exclusive/shared conflicts'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 677ms:
+shared/shared succeeds and exclusive/shared conflicts
+
+exec
+/usr/bin/zsh -lc 'head -25 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/*.md && head -25 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/*.md && docmgr task add --help | head -26 && docmgr doc relate --help | head -24' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 5693ms:
+ succeeded in 646ms:
+---
+Title: Checked Tix to CUDA lowering
+Ticket: IRWB-022-I
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+DocType: design-doc
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T15:11:52.868981794-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Checked Tix to CUDA lowering
+
+## Executive Summary
+
+<!-- Provide a high-level overview of the design proposal -->
+
+---
+Title: Implementation diary
+Ticket: IRWB-022-I
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T15:11:53.44490389-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Implementation diary
+
+## Goal
+
+<!-- What is the purpose of this reference document? -->
+
+
+  # add - Add a task to tasks.md                                              
+                                                                              
+  Add a new checkbox task to the ticket's tasks.md.                           
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Append a new task                                                         
+                                                                              
+  docmgr task add --ticket MEN-4242 --text "Write design doc"                 
+                                                                              
+  # Insert after an existing task index                                       
+                                                                              
+  docmgr task add --ticket MEN-4242 --text "Add tests" --after 1              
+                                                                              
+  For more help, run: docmgr help add                                         
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr task add [flags]                                                     
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+                   --after    Insert after given task index (0=append) - <int>
+
+  # relate - Relate code files to a document or ticket                        
+                                                                              
+  Update RelatedFiles in a document's frontmatter or the ticket index.        
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Relate multiple files to the ticket index (notes required; repeat --file- 
+  note)                                                                       
+                                                                              
+  docmgr doc relate --ticket MEN-4242  --file-note                            
+  "backend/chat/api/register.go:Registers API routes"  --file-note            
+  "backend/chat/ws/manager.go:WebSocket lifecycle management"  --file-note    
+  "web/src/store/api/chatApi.ts:Frontend integration"                         
+                                                                              
+  # Relate multiple files to a specific document (notes required)             
+                                                                              
+  docmgr doc relate --doc ttmp/YYYY/MM/DD/MEN-4242--.../design/path-          
+  normalization-                                                              
+  strategy.md  --file-note "backend/chat/ws/manager.go:WebSocket lifecycle    
+  management"  --file-note "backend/chat/ws/heartbeat.go:Ping/pong behavior   
+  and                                                                         
+  timeouts"                                                                   
+                                                                              
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md')
+head = p.read_text().split('\\n---\\n', 1)[0].replace('Summary: \"\"', 'Summary: Direct CUDA emission, batched GB10 tolerance checking, runner changes and a corpus timing protocol.')
+p.write_text(head + '\\n---\\n\\n')
+PY
+cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md <<'EOF'
+# Checked Tix to CUDA lowering
+
+## Domain and API
+
+Lower the named function in "'`program.current` from a `compileTix` or `optimizeTix` result. Support the Stage 1 checked core, including affine shapes and addresses, shadowed reduction indices, zero extents, and generated block/tail bounds. Concrete calls have the same valid shapes, finite f32 inputs and in-bounds row-major reads as Stage 1. The target is a GB10 CUDA 13.0 environment with sufficient memory and launch capacity for the selected function and shape. Finite inputs can produce signed zeros, infinities and NaNs. The contract'"'s sampled domain is specified below.
+
+| Export from "'`dist/tensor/index.js` | Behavior |
+| --- | --- |
+| `cudaSource(program, fn)` | Emit the complete deterministic CUDA C++ translation unit, including a standalone batch-file reader and output writer. |
+| `runTixCuda(program, fn, inputs, options?)` | Execute one case of that translation unit via `tools/cuda-remote.mjs`, honoring `options.host`. Return the actual shape, `Float32Array` and CUDA-event `gpuMs`. |
+| `checkLowering(program, fn)` | Apply the checked lowering pass on the default GB10 and return `{ accepted, relation: '"'tolerance', reason? }"'`. The check is per named function and revision. |
+
+Source emission and a concrete run are independently accessible through the fixed API. The checked pass gives the lowering its sampled meaning verdict. Stage 1 exports keep their behavior and signatures.
+
+## Emit directly from Tix IR
+
+Emit CUDA text from the resolved Stage 1 function. The ordered definitions, explicit axes and expression trees already determine every kernel and loop. A kernel IR would restate that information and add a validator and emitter. There is a typed CUDA *source* artifact for the framework'"'s output port. Its payload contains the function name and translation unit. It has no kernel graph or editable adapter.
+
+1. Generate a C++ symbol for each tensor and binder from its identity. The C++ host binds shapes from bare axes in the input headers, evaluates affine dimensions and prepares row-major buffers. Emit integer shape and address arithmetic separately from scalar f32 expressions. Use signed 64-bit intermediates for affine expressions and 64-bit flattened offsets.
+2. Emit and materialize one kernel for each statement in the current revision, in definition order. Launch 256 threads per block, guard against the element count, and decode the linear thread number to row-major coordinates. Pass each kernel the shape values and pointers it needs. A single CUDA stream orders writes and later reads. Skip a launch with zero output elements. Empty buffers need no data copy, and a function returning an input directly can execute with zero launches and report zero kernel milliseconds.
+3. Emit a tree walk with a temporary for each scalar operation. For every reduction, nest sequential loops with the first binder outermost. Initialize the accumulator to "'`+0.0f` or `-INFINITY` and round every fold. An inner reduction gets a fresh accumulator inside the enclosing body. An empty loop returns its initializer. The three IR extent kinds emit affine dimensions, the specified integer ceiling/floor division by `width`, and `min(width, dim - width * block)`. This keeps both levels of a split sum and its short final block. Inline'"'s composed affine addresses use the same emitter as source addresses.
+4. Use one versioned little-endian binary request file with a case count, then each case's shapes and f32 words in parameter/rank order. Use 64-bit counts and dimensions. Write responses in the same order to "'`out/results.bin`, with case count, returned shape, f32 words and f64 `gpuMs` for each case. The translation unit knows ranks from the function. Include the timing value independently of tensor data. One-file-per-tensor would add paths and file operations for each case. A one-case run uses the batch format with count one. The TS wrapper writes a fresh request directory, asynchronously invokes the tool, validates the returned case count, shapes and byte lengths, and cleans up its directory.
+
+## Numerical relation
+
+Use a tolerance against `runTix` in f64 on the **current revision**, fed the same f32 input words. Each candidate must return the reference shape and element count. For every finite reference element `r`, require a finite candidate `g` and
+
+```text
+abs(g - r) <= 2e-6 + 2e-5 * abs(r)
+```
+
+For a nonfinite reference, require the same signed infinity or that both values are NaN. This covers an empty maximum and domain errors such as a negative square root. The tolerance gives zero sign and NaN payload no checking role. The emitter still implements signed-zero semantics. An already ill-conditioned f32 program can exceed the finite budget even when correctly lowered. This bound is for the contract'"'s reproducible cases. A universal forward-error bound would depend on sizes, conditioning, intermediate overflow and the operations involved.
+
+Keep Stage 1 f32 rounding sites despite the tolerance. Use the runner's "'`nvcc -O3 -arch=sm_121`, with the default gradual underflow and no fast-math flag. Emit f32 literal words computed from `Math.fround(Number(text))`, round shape values from integer with `__ll2float_rn`, and load and store f32. Use `__fadd_rn`, `__fsub_rn`, `__fmul_rn`, `__fdiv_rn`, unary sign flip and `__fsqrt_rn`. The explicit add/multiply intrinsics prevent contraction at the Tix rounding sites, including reductions. Compute `exp`, `log` and `tanh` on double arguments with the CUDA double routines and round once with `__double2float_rn`. Implement min/max with NaN propagation and tie handling that chooses +0 for a mixed-zero max and -0 for a mixed-zero min. Use that same max operation for the reduction fold.
+
+### Evidence from the GB10
+
+The [replay script](../scripts/01-fp-probe.mjs) runs a handwritten CUDA probe through the current tool. It compares 102,461 f32 triples covering raw finite words, bounded intrinsic ranges, zeros, subnormals, overflow and a multiply-add witness. It also computes four dot products of length 1023 twice, with sequential folding and then with the actual `split-sum` grouping including the three-element tail. Those eight outputs are compared to Stage 1 on Node 24.18.0. The physical device reported NVIDIA GB10, sm_121, nvcc 13.0.88 and driver API version 13000.
+
+| Probe | Observation |
+| --- | --- |
+| Explicit arithmetic, separate multiply/add, double transcendental path | Zero non-NaN word mismatches against the JS f32 reference. The worst selected primitive used about 0.30% of the finite tolerance. |
+| Plain `a*b+c` and CUDA single-precision transcendentals | Plain arithmetic differed in 2,556 cases. `expf`, `logf` and `tanhf` differed on 16,615, 2,255 and 3,553 non-NaN results respectively. |
+| NaN encodings | For `sqrt(-2''^-149)` the GPU wrote `0x7fffffff` and JS wrote `0xffc00000`. The NaN word differences make strict bit equality unsuitable for the whole domain with these operations. |
+| Ordered and split reductions | All eight matched the respective Stage 1 f32 words. The largest absolute error against the respective f64 reference was 6.95e-5 at a reference of about 400.62. The worst budget fraction across the eight was 1.38%. The half-ULP row gave 1 sequentially and 1.000000238418579 when split. |
+
+Reuse the Stage 1 tolerance at this scale based on these measured margins. A looser tolerance would discard sensitivity without a need demonstrated by the probe. Corpus-wide validation of the emitted program belongs to implementation. Run `npm run build`, then `node <ticket>/scripts/01-fp-probe.mjs` to reproduce.
+
+## Checked pass and reuse
+
+Use a versioned `defineTransformation` from the existing Tix IR contract type plus selected function to a typed CUDA source artifact. Its body calls the same emitter as `cudaSource`. Its `ensures` invariant is async and runs the **candidate artifact'"'s** source with the case batch. "'`AnalysisManager.execute` waits for the invariant before accepting the output. `checkLowering` surfaces the verdict and distinguishes a numerical counterexample from unavailable execution evidence in `reason`. The transformation uses `cache: '"'never'"'`. Model the pinned device/compiler configuration as a versioned read-only resource in `MemoryResources`. The tensor runner issues ephemeral execution requests using that profile.
+
+**Framework change ledger.** No source edits proposed. `definePass` writes a revision through the same IR adapter, and `applyNativePassSync` needs a synchronous two-artifact check. Extending either would require defining cross-kind diffs or another generic acceptance path. The existing transformation has independent input and output ports and an awaited postcondition. The [cross-kind probe](../scripts/02-contract-probe.mjs) ran on the worktree build and showed async acceptance, rejection of a different output artifact and re-execution of the invariant on repeat. The manager records checked evidence, while its transformation body cache would not save a repeated GPU postcondition. Putting the GPU batch and its memo in the tensor invariant avoids modifying the generic differential loop that Stage 1 uses per case.
+
+- **Batch construction.** Reuse the Stage 1 deterministic sample recipes and safety limits for the selected current function. Use shape assignments 1, 3, 4, 7 and mixed, plus all-zero and one-zero-at-a-time assignments to exercise empty outputs and reductions with nonempty outputs. Deduplicate shapes. Use seed 20, signed and positive data, the half-ULP sequence and signed zero. Select cases with valid source shapes/addresses, at most 4,096 elements per tensor and at most 10''^6 metered evaluator steps per case. Keep the Stage 1 optimizer'"'s existing streams and selection behavior. The CUDA check must have at least one eligible case. Record each case's shape assignment, stream and seed and compare every output of the single remote batch.
+- **Evidence reuse.** Retain a bounded process-local memo of completed semantic verdicts and share one in-flight Promise per identical check. Key it by the exact Tix revision, selected function, CUDA artifact revision, case-batch digest, checker/recipe version, Node version and pinned engine profile. Record the case count, measured max error/budget fraction, first mismatch coordinates and reported execution identity. A completed disagreement is evidence too. A transport, compile or malformed-output failure supplies no reusable result. The pinned configuration is a process lifetime assumption. Verify the reported engine profile on fresh runs and start a new session when it changes. A persistent memo would need live engine identity and a storage policy. The runner's binary cache is independent and can save compilation across different case data.
+
+## Proposed runner changes
+
+| Change in "'`tools/cuda-remote.mjs` | Reason and simpler alternative |
+| --- | --- |
+| Allow explicit runtime-only paths, e.g. `--runtime-input inputs.bin`. Hash build file names and bytes together with architecture, compile options and remote nvcc path/version. Keep files classified as build inputs by default. Allow a pinned `--nvcc` path for the contract. Include execution identity in results and surface upload/compile/run/fetch failure to the caller. | The current all-file hash is useful for self-contained fixtures. It recompiles identical `main.cu` for every new tensor input and can select a binary made with a different nvcc at the same path. No new floating-point flag is needed. |
+| Use a per-invocation remote working directory through upload, launch and fetch. Share only the compiled binary by build key. Use a per-key compile lock and install a successful binary by rename before other jobs can use it. | Today concurrent identical runs share `out/` and may delete or fetch each other'"'s files. A lock around only "'`./prog` leaves the upload/fetch race. Isolation also lets different inputs reuse the binary. |
+| Take a shared GPU lock for ordinary runs and an exclusive lock for `--timed`. Keep compilation and transfers to/from the caller outside the GPU lock. | The existing exclusive timed lock coordinates timed callers, but ordinary runs can still launch inside a measurement. Shared locks retain concurrency between ordinary runs. The guarantee applies to callers using the updated tool. |
+
+The worktree probes exercised the unmodified runner, async Node invocation, nvcc'"'s remote version query, and local "'`flock` shared/exclusive behavior. Verify build reuse when only input data changes, invalidation when a build input changes, isolation for simultaneous runs and the two lock modes after implementing the runner changes.
+
+## Verification and measurements after review
+
+- Build with `npm run build` and test the Stage 1 tensor files plus the local CUDA emitter, protocol and check orchestration tests. Use a fake batch engine to verify one batch, repeat/concurrent evidence reuse, failure retry and cache-key changes. Test that a valid CUDA artifact with an index or tail mutation fails the same invariant.
+- Keep remote assertions in their own `tests/tensor/cuda-gpu.test.mjs`. Check each small corpus function before and after actual accepted rewrites, including permuted inline addresses and the split half-ULP witness. Check nested shadowing, affine convolution offsets, empty outputs, empty reductions, a direct parameter return, signed zeros, NaN propagation and changed compiler inputs. Run only the relevant Node test files.
+- Benchmark original Stage 1 corpus programs on identical seeded f32 input buffers. Use small signed values and a positive eps for layernorm. Run the interpreter once at full size per function, timing `runTix` with a local monotonic clock after input preparation and compilation. On the GB10 use one short `--timed` invocation per function, with one warmup and three kernel timings in the same executable. Record CUDA events on the function'"'s stream immediately before the first launch and after the last launch. Synchronize the final event outside the timed interval and take the median. Keep allocation, copies, process startup, compilation and SSH outside the interval. Report CPU wall ms, GPU kernel ms, timing sample counts, machine/toolchain and a value comparison using the retained results. The standalone public runner reports a kernel interval for its own call.
+
+| Corpus function | Full-size bindings |
+| --- | --- |
+| matmul | M = K = N = 512 |
+| softmax | N = 4096, C = 1024 |
+| layernorm | N = 4096, D = 1024 |
+| attention | Q = K = 1024, D = V = 64 |
+| mlp | N = 1024, D = 256, H = 1024, O = 256 |
+| conv2d | N = 8, C = 16, H = W = 64, O = 32, kernel 3 × 3 |
+
+## Later
+
+- Implement and measure after design review. The GB10 probe is numerical evidence for the proposed lowering and does not supply corpus kernel timings.
+- Fusion, tiling and shared memory, tensor cores, other thread mappings, streaming attention and autotuning are deferred by the stage scope.
+EOF
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 523ms:
+exec
+/usr/bin/zsh -lc "docmgr task add --ticket IRWB-022-I --text 'Probe GB10 arithmetic and document the Stage 2 design and diary' && docmgr task add --ticket IRWB-022-I --text 'Review the design before implementing the CUDA emitter, checked pass and runner changes' && docmgr task add --ticket IRWB-022-I --text 'Verify the public API and measure the six required corpus workloads'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "node -e 'const d=require(\"/tmp/irwb-022-i-gb10.json\"); console.log(d.remote);console.log(d.inputSha256,d.outputSha256)'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 471ms:
+{
+  host: 'manuel@bling',
+  hash: '72700c930da364c2',
+  compiled: true,
+  compileMs: 648,
+  runMs: 302,
+  exit: 0,
+  stdout: 'nvcc: NVIDIA (R) Cuda compiler driver\n' +
+    'Copyright (c) 2005-2025 NVIDIA Corporation\n' +
+    'Built on Wed_Aug_20_01:57:39_PM_PDT_2025\n' +
+    'Cuda compilation tools, release 13.0, V13.0.88\n' +
+    'Build cuda_13.0.r13.0/compiler.36424714_0\n' +
+    'NVIDIA GB10 sm_121 nvcc 13.0.88 driver 13000\n',
+  stderr: '',
+  outputs: [ 'outputs.bin' ]
+}
+747aec57f583162148d95bf94ac449d0fb020445f12c90743f407dcae380547a 5703980963e26aab99d9923a4fc381de65ead61ba503dd4eb2ee248efc3de6aa
+
+ succeeded in 1352ms:
+Task 6gnw added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md
+Task flrz added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md
+Task k7o1 added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md')
+head = p.read_text().split('\\n---\\n', 1)[0].replace('Summary: \"\"', 'Summary: Stage 2 design checkpoint, CUDA and framework probe evidence, and reviewer handoff.')
+p.write_text(head + '\\n---\\n\\n')
+PY
+cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md <<'EOF'
+# Implementation diary
+
+## Step 1. Design checkpoint and GB10 probes
+
+I read the Stage 1 design and final report, then traced the evaluator, generated reduction bounds, pass runner and tool. I used two small replays to check the main design choices. One executes an async cross-kind framework transformation, and the other compares GB10 arithmetic with Node and actual Stage 1 reductions.
+
+The [design](../design-doc/01-checked-tix-to-cuda-lowering.md) proposes direct CUDA emission and a checked transformation with one remote batch per sampled function. The worktree at entry was "'`1880fc4` on `t2-sh/irwb-022-i`.
+
+### Prompt context
+
+<details>
+<summary>User prompt, verbatim</summary>
+
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node 24). It compiles two languages on one IR framework (`src/framework/`: `core`, `ir`, `contracts`, `passes`, `dataflow`, `strategy`):
+- **Typed,** a small statically typed language compiled to 32-bit RISC-V (`src/typed/`);
+- **Tix,** an index-notation language for tensor programs (`src/tensor/`, `corpus/tensor/`). Stage 1 built its front end, IR, f32 and f64 evaluators, a meaning contract and two checked passes. Its design and its final report are in ticket IRWB-020-B under `ttmp/2026/11/26/`. Read them first.
+
+The tensor domain exists to test the framework, not to be a product. Where the framework does not fit, that is a finding. Each change you make to `src/framework/`, with its reason, is a primary result of this stage.
+
+Your ticket is IRWB-022-I. This turn is **design only**: create the ticket, write the design document, start the diary, and commit. A reviewer will read the design and reply in this session. Implementation follows after the review, in the same session.
+
+## Stage 2 (yours): lowering Tix to CUDA, checked, on the GPU machine
+- **Lower a Tix function to CUDA C:** one kernel per statement, one thread per output element, and each reduction a sequential loop in the order the f32 meaning prescribes. Choose whether the lowered form is a second v6 artifact (a kernel IR) or is emitted directly from the Tix IR, and justify the choice. Programs returned by `optimizeTix` (after `inline` or `split-sum`) must lower too.
+- **Run it on the GPU machine** through `tools/cuda-remote.mjs` (read its header). The tool:
+  - copies a directory containing `main.cu` to `manuel@bling` (an NVIDIA GB10: sm_121, CUDA 13.0, `nvcc` at `/usr/local/cuda-13.0/bin/nvcc`);
+  - compiles with `nvcc -O3 -arch=sm_121`, reusing an earlier compile of identical inputs;
+  - runs the program and copies its `out/` directory back.
+  
+  You may extend the tool. Record each change and its reason.
+- **A checked lowering.** The lowering is a pass whose output must keep the stage-1 meaning. Its contract runs the candidate on the remote GPU. Decide which relation holds and establish it by probing on the GB10:
+  - either bit-identical with the f32 meaning, stating under which compiler flags and with which implementation of each operation and intrinsic;
+  - or a tolerance against the f64 reference, justified by an error argument or a measurement.
+  
+  The engine is expensive, remote and asynchronous. Design how the contract batches its cases and reuses evidence, and what the framework needs for that.
+- **Measure** the kernel time on the GPU for each corpus program at the sizes below, and the time of the stage-1 f32 interpreter on this machine for the same program.
+
+| Program (`corpus/tensor/<name>/main.tix`) | Sizes, in the program'"'s shape names |
+|---|---|
+| matmul | M = K = N = 512 |
+| softmax | N = 4096, C = 1024 |
+| layernorm | N = 4096, D = 1024 |
+| attention | Q = K = 1024, D = V = 64 |
+| mlp | N = 1024, D = 256, H = 1024, O = 256 |
+| conv2d | N = 8, C = 16, H = W = 64, O = 32 (3 × 3 kernel) |
+
+Later stages, which are not yours: fusion, tiling and shared memory, tensor cores, other thread mappings, streaming attention, autotuning. Do not design them.
+
+## Tix, fixed core (unchanged from stage 1)
+"'```
+program := fn+
+fn      := '"'fn' NAME '(' param (',' param)* ')' ':' type '{' stmt* 'return' NAME ';' '}'
+param   := NAME ':' type
+type    := 'f32' '[' dim (',' dim)* ']'        dim := affine expression of shape names and integers (N, D, H - 2)
+stmt    := NAME '[' NAME (',' NAME)* ']' (':' type)? '=' expr ';'
+expr    := expr ('+' | '-' | '*' | '/') expr | '-' expr | NUMBER | SHAPENAME | ref | call | reduce | '(' expr ')'
+ref     := NAME '[' aff (',' aff)* ']'           aff := affine expression of index names and integers (y + dy)
+call    := ('exp' | 'log' | 'sqrt' | 'tanh') '(' expr ')' | ('max' | 'min') '(' expr ',' expr ')'
+reduce  := ('sum' | 'max') '(' NAME (',' NAME)* ')' expr
+"'```
+- Line comments are `//`. Precedence is the usual one: unary minus, then `*` and `/`, then `+` and `-`, all left-associative.
+- A reduction'"'s body extends as far right as possible, to the end of the enclosing parentheses or statement.
+- Each statement defines a new tensor, assigned once. Its left-hand index names range over extents inferred from their plain (non-affine) uses on the right. An index used only in affine positions takes its extent from the statement's declared type, which is then required.
+- Reduction indices are bound by their reduction and range over extents inferred the same way. A shape name used in an expression denotes its value as a number. A function's shape names are bound by its inputs' shapes when it is called.
+- **f32 meaning:**
+  - every literal, shape value, operation and function result is rounded to f32 ("'`Math.fround` of the JavaScript double result);
+  - `sum` starts at 0 and `max` at −∞, and both accumulate in increasing lexicographic order of their indices, the first listed outermost, rounding after each step.
+  - Inputs are finite. Behaviour outside the valid domain (inconsistent shapes, an extent that cannot be inferred) is a check error at compile time.
+- **Three rules stage 1 settled** (the base implements them):
+  - tensor names and index names are separate: `y[x] = x[x] * 2` is valid;
+  - a reduction may rebind an index of an enclosing reduction, and the inner binding shadows the outer (`sum(j) a[i, j] + sum(j) b[i, j]` is a nested reduction);
+  - a shape value may be 0: an empty `sum` is 0 and an empty `max` is −∞.
+
+## Fixed API (additions in `dist/tensor/index.js` after the build)
+```ts
+cudaSource(program: TixProgram, fn: string): string
+  // the complete CUDA C translation unit for one function: its kernels and a main that reads the inputs and writes the result
+runTixCuda(program: TixProgram, fn: string,
+           inputs: Record<string, { shape: number[]; data: Float32Array }>,
+           options?: { host?: string }): Promise<{ shape: number[]; data: Float32Array; gpuMs: number }>
+  // runs on the GPU machine; gpuMs is the time of the function'"'s kernels on the GPU (CUDA events), without transfers or start-up
+checkLowering(program: TixProgram, fn: string): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }>
+  // your contract's verdict on the lowering of this function
+"'```
+Stage 1'"'s "'`compileTix`, `runTix` and `optimizeTix` keep their signatures and behaviour. Implementations are compared on this API. Anything beyond it is yours to design.
+
+## Repository facts
+- Build with `npm run build` (`tsc`, into `dist/`). Tests are `node --test tests/<dir>/<name>.test.mjs` and import from `../../dist/...`; on Node 24 pass files, not a bare directory. Prettier: 110 columns, single quotes.
+- Read `src/framework/contracts/README.md`, `src/framework/ir/README.md`, `src/framework/passes/define-pass.ts` (stage 1 added `applyNativePassSync`), and `src/tensor/`.
+- Your sandbox has network access, so `ssh` to the GPU machine works from it. Run GPU work only through the tool. Other agents share the machine: use `--timed` (a lock, so that measurements do not disturb each other) only for measurements, and keep those runs short.
+- Keep the tests that need the GPU in their own test file, so that the other tests run without the network.
+- In the sandbox, a test that spawns `node` can fail with EPERM. Request escalation for that command.
+- Scope: you may change `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and `src/framework/` and `tools/cuda-remote.mjs` where the stage needs it. Record each framework and tool change in your design. Do not modify `src/typed/`, `corpus/projects/`, other tools or existing tests outside `tests/tensor/`, except framework tests that a framework change makes necessary. Do not run the full suite (`npm test`): many agents share this machine.
+- Use your docmgr and diary skills for the ticket and diary. Commit on your current branch with messages starting `IRWB-022-I:`. Do not push.
+- Final message: the ticket and design paths, the framework and tool changes you propose, the relation you chose for the lowering and the probe that established it, the commit hash.
+Your ticket ID is IRWB-022-I. Name the ticket after the stage-2 work (lowering Tix to CUDA, checked, on the GPU machine).
+
+</details>
+
+The implementation, timing runs and report follow the review. The design turn needs executable evidence for the relation and framework decision.
+
+### Work and rationale
+
+- Read the Stage 1 [design](../../IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-semantics-and-checked-tensor-rewrites.md) and [report](../../IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md). Generated uses of `blocks` and `tail` made grouping preservation a backend requirement.
+- Exercised the existing heterogeneous transformation with two artifact kinds, a read-only resource and an actual async invariant. Used the same manager to reject a replacement output. The result favored the contract API over extending the same-IR edit runner.
+- Compiled and ran a standalone numerical probe through the existing CUDA tool. The GPU received actual f32 words, and the Node harness compared the returned raw f32 words before interpreting numerical deviations.
+
+### Results and recovery
+
+- `npm ls --depth=0` initially reported `ELSPROBLEMS` and four missing dependencies in the fresh worktree. `npm ci --cache /tmp/irwb-022-i-npm-cache --no-audit --no-fund` installed them, then `npm run build` succeeded. The three explicit Stage 1 tensor test files passed all 16 tests. The optional esbuild postinstall warning did not affect the TypeScript build.
+- `node <ticket>/scripts/02-contract-probe.mjs` printed `Async cross-kind check accepted, mutant rejected, repeat re-evaluated the invariant`. Repeating the transformation called the invariant again, so evidence reuse belongs inside the domain check.
+- `node <ticket>/scripts/01-fp-probe.mjs` compiled and ran via the default tool on GB10 sm_121, nvcc 13.0.88, reported driver API version 13000. The probe'"'s remote nvcc version query also reported compiler build "'`36424714_0`. The design records the operation counts. Sequential and split variants matched all eight CPU f32 words and spent at most 1.38% of the proposed f64 tolerance. NaN encodings differed even when both results were NaN.
+- A local `flock` probe using two acquisitions on one temporary lockfile succeeded for shared/shared and correctly blocked exclusive/shared. The new runner semantics still need an integration test on GB10.
+
+### Experiment identity
+
+The GPU run used the tool'"'s "'`nvcc -O3 -arch=sm_121` and Node 24.18.0. The sample stream is xorshift32 seeded with `0x20c0ffee` plus the fixed witnesses in the replay. Remote job hash `72700c930da364c2` reported `compiled: true` and `exit: 0`. The digests cover the exact raw input and GPU output. The replay regenerates the input and fetches new output for inspection.
+
+| Bytes | SHA-256 |
+| --- | --- |
+| `inputs.bin` | `747aec57f583162148d95bf94ac449d0fb020445f12c90743f407dcae380547a` |
+| `out/outputs.bin` | `5703980963e26aab99d9923a4fc381de65ead61ba503dd4eb2ee248efc3de6aa` |
+
+### Review and continuation
+
+Review the finite f64 budget and nonfinite rule, the ordinal identity of the candidate source used for checks, and the separation between a shared compiled binary and a run directory. The probe covered arithmetic and reduction grouping. GPU launcher behavior, runner changes, corpus cases and performance measurements remain for implementation after review.
+EOF
+python3 - <<'"'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md')
+head = p.read_text().split('\\n---\\n', 1)[0].replace('Summary: \"\"', 'Summary: Stage 2 design and GPU evidence for a checked Tix to CUDA lowering.')
+p.write_text(head + '\\n---\\n\\n')
+PY
+cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md <<'EOF'
+# Lowering Tix to CUDA with checked execution on the GPU machine
+
+Stage 2 lowers the current Tix function to one CUDA kernel per statement and uses the GB10 to check its output against the Stage 1 f64 evaluator. The design and probe are ready for review. Implementation and corpus measurements follow that review.
+
+- [Design](design-doc/01-checked-tix-to-cuda-lowering.md)
+- [Diary and probe evidence](reference/01-implementation-diary.md)
+- [Tasks](tasks.md)
+- [Changelog](changelog.md)
+EOF
+npx --no-install prettier --write ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/*.mjs
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1607ms:
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs 109ms
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs 19ms
+
+codex
+The four 1,023-term dot products matched Stage 1’s f32 output in both sequential and split-sum form. The largest error used 1.38% of the proposed f64 tolerance. The framework probe also confirmed that the existing async transformation can check a different output artifact kind, so the design proposes no framework changes.
+exec
+/usr/bin/zsh -lc 'root=$(pwd -P)
+docmgr doc relate --doc ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md '"\\
+  --file-note \""'$root/src/tensor/model.ts:Resolved scalar trees, affine forms and generated bounds" '"\\
+  --file-note \""'$root/src/tensor/evaluate.ts:Stage 1 f32 meaning and f64 reference" '"\\
+  --file-note \""'$root/src/tensor/contract.ts:Deterministic case recipe and existing tolerance" '"\\
+  --file-note \""'$root/src/framework/passes/define-pass.ts:Same-adapter edit runner used by Stage 1" '"\\
+  --file-note \""'$root/src/framework/contracts/analysis-manager.ts:Awaits the cross-kind lowering postcondition" '"\\
+  --file-note \""'$root/tools/cuda-remote.mjs:Remote execution and proposed cache and isolation changes" &&
+docmgr doc relate --doc ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md '"\\
+  --file-note \""'$root/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs:Recreates inputs and compares GB10 results" '"\\
+  --file-note \""'$root/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu:Handwritten arithmetic and dot-product witnesses" '"\\
+  --file-note \""'$root/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs:Exercises existing cross-kind async contract execution" &&
+docmgr task check --ticket IRWB-022-I --id 6gnw &&
+docmgr changelog update --ticket IRWB-022-I '"\\
+  --entry 'Proposed direct CUDA emission and an async cross-kind contract using batched f64 comparisons. Recorded GB10 arithmetic and reduction probes and opened the design for review.' \\
+  --file-note \""'$root/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md:Design proposal" '"\\
+  --file-note \""'$root/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md:Evidence and replay commands"
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1682ms:
+related 6 file(s) to ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md (added 6, updated 0, removed 0)
+related 3 file(s) to ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md (added 3, updated 0, removed 0)
+Task checked: 6gnw (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md)
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+
+exec
+/usr/bin/zsh -lc "git status --short --untracked-files=all && rg -n '"'^#|docmgr'"' ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/{README,index,tasks,changelog}.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'docmgr doctor --ticket IRWB-022-I --stale-after 30 && docmgr validate frontmatter --doc ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md && docmgr validate frontmatter --doc ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs && node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs > /tmp/irwb-022-i-gb10-repeat.json && node -e 'const a=require(\"/tmp/irwb-022-i-gb10.json\"), b=require(\"/tmp/irwb-022-i-gb10-repeat.json\");require(\"node:assert/strict\").deepEqual([b.inputSha256,b.outputSha256,b.stats,b.reductions],[a.inputSha256,a.outputSha256,a.stats,a.reductions]); console.log(JSON.stringify({compiled:b.remote.compiled,job:b.remote.hash,words:b.cases,outputSha256:b.outputSha256}));'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1114ms:
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md:1:# Changelog
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md:3:## 2026-11-26
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md:7:## 2026-11-26
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md:11:### Related Files
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md:1:# Lowering Tix to CUDA with checked execution on the GPU machine
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md:5:## Structure
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md:15:## Getting Started
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md:17:Use docmgr commands to manage this workspace:
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md:19:- Add documents: `docmgr doc add --ticket IRWB-022-I --doc-type design-doc --title "My Design"`
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md:20:- Import sources: `docmgr import file --ticket IRWB-022-I --file /path/to/doc.md`
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md:21:- Update metadata: `docmgr meta update --ticket IRWB-022-I --field Status --value review`
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md:1:# Tasks
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md:3:## TODO
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md:20:# Lowering Tix to CUDA with checked execution on the GPU machine
+
+ succeeded in 1199ms:
+## Doctor Report (1 findings)
+
+### IRWB-022-I
+
+- ✅ All checks passed
+
+Frontmatter OK: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md (Ticket=IRWB-022-I DocType=design-doc)
+Frontmatter OK: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md (Ticket=IRWB-022-I DocType=reference)
+
+ succeeded in 5134ms:
+Async cross-kind check accepted, mutant rejected, repeat re-evaluated the invariant
+{"compiled":false,"job":"72700c930da364c2","words":102461,"outputSha256":"5703980963e26aab99d9923a4fc381de65ead61ba503dd4eb2ee248efc3de6aa"}
+
+exec
+/usr/bin/zsh -lc "rg -n '[ \\t]+"'$'"' ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine || true; cat ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md && cat ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 364ms:
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md:53:  
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md:58:  
+# Tasks
+
+## TODO
+- [x] Probe GB10 arithmetic and document the Stage 2 design and diary <!-- t:6gnw -->
+- [ ] Review the design before implementing the CUDA emitter, checked pass and runner changes <!-- t:flrz -->
+- [ ] Verify the public API and measure the six required corpus workloads <!-- t:k7o1 -->
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+
+## 2026-11-26
+
+Proposed direct CUDA emission and an async cross-kind contract using batched f64 comparisons. Recorded GB10 arithmetic and reduction probes and opened the design for review.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md — Design proposal
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md — Evidence and replay commands
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md')
+s = p.read_text().replace('\\n  \\n', '\\n\\n')
+s = s.replace('The replay regenerates the input and fetches new output for inspection.', 'A second replay reported "'`compiled: false` for the same job and returned the identical digest and comparison results. It exercised the existing identical-input compile cache.'"')
+s = s.replace('the ordinal identity of the candidate source', 'the exact revision of the candidate source')
+p.write_text(s)
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md')
+p.write_text(p.read_text().replace('## TODO\\n- ', '## TODO\\n\\n- '))
+PY
+git add -- ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine && git diff --cached --check && git diff --cached --stat && git status --short --branch" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ exited 128 in 531ms:
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/t2-sh-irwb-022-i/index.lock': Read-only file system
+
+exec
+/usr/bin/zsh -lc 'git add -- ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 763ms:
+exec
+/usr/bin/zsh -lc 'git diff --cached --check && git diff --cached --stat && git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 363ms:
+ .../README.md                                      |  21 +++
+ .../changelog.md                                   |  14 ++
+ .../design-doc/01-checked-tix-to-cuda-lowering.md  | 117 +++++++++++++
+ .../index.md                                       |  27 +++
+ .../reference/01-implementation-diary.md           | 150 +++++++++++++++++
+ .../scripts/01-fp-probe.mjs                        | 187 +++++++++++++++++++++
+ .../scripts/02-contract-probe.mjs                  |  76 +++++++++
+ .../scripts/fp-probe/main.cu                       |  98 +++++++++++
+ .../tasks.md                                       |   7 +
+ 9 files changed, 697 insertions(+)
+## t2-sh/irwb-022-i
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+A  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md')
+s = p.read_text()
+needle = '### Experiment identity'
+entry = '- The sandboxed "'`git add -- <ticket>` failed to create the worktree Git index lock with `Read-only file system`. Repeating that scoped staging command with escalation succeeded. The staged diff contains only the ticket and its probes.'"\\n\\n'
+p.write_text(s.replace(needle, entry + needle))
+PY
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 508ms:
+exec
+/usr/bin/zsh -lc "git add -- ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md && git diff --cached --check && git commit -m 'IRWB-022-I: design checked Tix to CUDA lowering'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 331ms:
+[t2-sh/irwb-022-i c7fc6d4] IRWB-022-I: design checked Tix to CUDA lowering
+ 9 files changed, 699 insertions(+)
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/README.md
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/02-contract-probe.mjs
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/fp-probe/main.cu
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md
+
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git rev-parse HEAD' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 374ms:
+## t2-sh/irwb-022-i
+c7fc6d47775e623d6b0ee08d5586caff4b27039f
+
+codex
+[IRWB-022-I](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md) is ready for review. The [design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md) proposes emitting CUDA directly from the current Tix IR and checking one GPU batch per function. The existing async transformation API supports this, so no framework changes are proposed.
+
+The runner changes would separate runtime inputs from the compile cache key, isolate each remote invocation, report toolchain identity and execution failures, and coordinate ordinary runs with timed runs through shared and exclusive GPU locks.
+
+The contract uses `abs(got - ref) <= 2e-6 + 2e-5 * abs(ref)` for finite f64 references. The GB10 probe found different NaN encodings between CUDA and Node. All eight sequential and split-sum dot-product results matched Stage 1’s f32 words, and the worst result used **1.38%** of the proposed f64 error budget. The [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md) records the replay commands and evidence.
+
+Committed locally as `c7fc6d4`. The worktree is clean. Implementation and corpus timings follow review.
+tokens used
+136,085
+[IRWB-022-I](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md) is ready for review. The [design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md) proposes emitting CUDA directly from the current Tix IR and checking one GPU batch per function. The existing async transformation API supports this, so no framework changes are proposed.
+
+The runner changes would separate runtime inputs from the compile cache key, isolate each remote invocation, report toolchain identity and execution failures, and coordinate ordinary runs with timed runs through shared and exclusive GPU locks.
+
+The contract uses `abs(got - ref) <= 2e-6 + 2e-5 * abs(ref)` for finite f64 references. The GB10 probe found different NaN encodings between CUDA and Node. All eight sequential and split-sum dot-product results matched Stage 1’s f32 words, and the worst result used **1.38%** of the proposed f64 error budget. The [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md) records the replay commands and evidence.
+
+Committed locally as `c7fc6d4`. The worktree is clean. Implementation and corpus timings follow review.
