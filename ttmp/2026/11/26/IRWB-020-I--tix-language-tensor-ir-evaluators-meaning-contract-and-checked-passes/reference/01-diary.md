@@ -220,3 +220,50 @@ Reviewing the native validator exposed a missing unary operand that an expressio
 | Prettier check of changed TypeScript and test files, `git diff --check` | Passed. |
 
 Stage 1 follows the revised design. The meaning verdict is sampled over the specified shape/value schedule. A changed pass needs a valid, nonempty observation for every function. GPU work remains in the later stages.
+
+## Step 7 — Independent evaluation and final report
+
+The independent evaluator identified revision `8b94514`. I checked that the worktree started at `8b94514f89c9bfdece735fdf52cdc091008f6388` and read the implementation and repository assertions at that revision. **The independent evaluation reported zero failures, zero mismatches and zero rejected pass applications.** There is no failing input, rejection cause or corresponding source line to diagnose. The counts below are the evaluator's supplied results.
+
+| Check | Independent result | Relevant code at the evaluated revision |
+| --- | --- | --- |
+| Hidden fixed-core and API suite | 25/25 passed | `src/tensor/index.ts:12` compiles and `src/tensor/index.ts:24` dispatches execution. |
+| Differential f32 evaluation | 180/180 bit-identical, from three inputs for each of 60 programs | `src/tensor/evaluate.ts:12` selects rounding and `src/tensor/evaluate.ts:54` rounds each sum update. |
+| Differential f64 evaluation | 180/180 within 1e-9 relative to max(1, ∣r∣) | `src/tensor/evaluate.ts:11` selects storage and `src/tensor/evaluate.ts:12` selects the identity operation for rounding in f64. |
+| Inline | 60/60 accepted, bit-identical outputs on the tested inputs | `src/tensor/passes.ts:8` substitutes index tuples. `src/tensor/contract.ts:94` reads f32 output words for exact comparison. |
+| Split-sum | 60/60 accepted, f64 agreement within the reported 1e-9 criterion | `src/tensor/passes.ts:85` constructs the two folds. `src/tensor/evaluate.ts:67` clamps the inner endpoint. `src/tensor/contract.ts:104` implements the optimizer's separate f32-versus-f64 tolerance. |
+
+The repository has intentional rejections. The exact gate detects adjacent f32 words after reassociation (`tests/tensor/passes.test.mjs:26`). The wrong inline drops a negation (`tests/tensor/passes.test.mjs:75`) and the wrong split shortens an axis to a multiple of four (`tests/tensor/passes.test.mjs:101`). They are positive tests of the verifier and are reported as such.
+
+<details>
+<summary>Evaluation and reporting request, verbatim</summary>
+
+Stage 1 of IRWB-020-I has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `8b94514`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-I:`). Final message: the report's path, the commit hash, and one line per failure cause.
+
+</details>
+
+The [final report](02-report.md) distinguishes an accepted invocation from a changed revision. `src/framework/passes/define-pass.ts:284` returns identity for a kernel with no result, and `src/tensor/passes.ts:112` reports the accepted step. The independent summary supplies no changed-revision count. I measured it separately on the repository corpus.
+
+`npm run build` and `node --test tests/tensor/*.test.mjs` passed on Node 24.18.0. For each of the six corpus files I applied inline and then split-sum, comparing adjacent `current.revision` values. All 12 steps were accepted. Inline changed attention and the MLP. Split-sum changed matmul, softmax, layernorm, attention and the MLP. For those five final revisions I used `samples(origin.value, seededRandom(20))` per module, ran the origin at f64 and the candidate at f32, and divided each absolute difference by `1e-5 + 1e-5 * abs(reference)`. Across 60 concrete shape/fill cases and 2,415 output elements, the maximum ratio was 0.029826323291286257. The element was MLP output 21, flat row-major, on signed data at shape bindings [8, 8, 8, 8]. Its candidate was 0.3402996063232422 and its reference was 0.3403000060854551. These are local corpus measurements, independent of the evaluator's random-program counts.

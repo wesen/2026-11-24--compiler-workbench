@@ -21,6 +21,7 @@ WhenToUse: ""
 
 Stage 1 implements Tix as the second compiler domain. Six corpus programs exercise f32/f64 execution and checked rewrites. The framework change is confined to the shared pass runner. The design contains the change ledger, and the diary records the regression results.
 
+- [Final report and independent evaluation](reference/02-report.md)
 - [Design and framework change ledger](design-doc/01-tix-semantics-tensor-ir-and-checked-rewrites.md)
 - [Diary and probe results](reference/01-diary.md)
 - [Tasks](tasks.md)
