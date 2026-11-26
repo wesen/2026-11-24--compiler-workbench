@@ -574,4 +574,13 @@ With the evidence recorded and every new test passing, the frozen gates were run
 - `various/13-gates-final/summary.txt`, `scripts/10-frozen-gates-part.sh`.
 
 ### Technical details
-- Source for the gates: a74063b plus the working tree that becomes the next commit.
+- Source for the gates: a74063b plus the working tree that became 2c8bfd3. Steps 10 and 11 were committed in 2c8bfd3 — "IRWB-006 B2: recorded evidence for every table rule (15 proof, 4 exhaustive, 8 reduced-width+argument, 40 by construction), unsound candidates rejected in a test; wb.rules() at 72 columns; final gates green; diary steps 10-11".
+
+## Step 12: The vault report
+
+Milestone entry. The deep-dive report is written in the vault, with three figures generated from the recorded measurements, and reread against this diary and the files in `various/`. It is not committed: the brief says not to commit or push the vault.
+
+- **Report:** `/home/manuel/code/wesen/go-go-golems/go-go-parc/Projects/2026/11/25/PROJECT REPORT - IR Workbench - Rewrite Rules as Verified Data and a Single-Assignment View - Rule Tables With Identical Revisions, Evidence per Rule, and SSA Checked Against Reaching Definitions - A Technical Deep Dive.md` (frontmatter in the shape of the 2026/11/24 reports; `source_revision: 2c8bfd3`).
+- **Figures:** `python3 -I scripts/09-report-figures.py various/16-figures`, copied to `Projects/2026/11/25/_assets/irwb006-evidence-strength.png`, `irwb006-ssa-candela.png`, `irwb006-sccp-constants.png`; looked at each.
+- **Reread corrections:** the hand-written `simplify` has sixteen rewriting `return` statements (not "sites"); 141 exact-pattern matches in the cross-check (not 142, which included `sub-self`'s one); parity's 14 inconclusive cases are the ones at the step limit (`tests/typed/passes.test.mjs:76`); only two of IRWB-001's four float rewrites passed the meaning check before the edge-value sweep (report 3); claims about *why* `fold` fires on Candela and about the f32 loop's cost were replaced by the counts and by "not profiled"; the SSA fact size is the after-fix 3,400,010 bytes.
+- **Style:** textbook register, no analogies; mermaid diagram of the SSA construction; tables for methods, evidence, candidates, SSA checks and SCCP.

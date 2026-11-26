@@ -15,4 +15,4 @@
 - [x] A1/A2: SCCP prototype on SSA in a new pipeline, measured against constprop on the corpus <!-- t:ob4k -->
 - [x] Workbench: rules listing at 72 columns <!-- t:hxt4 -->
 - [x] Frozen gates: npm test, IRWB_FULL passes/backend, parity, corpus revisions identical to baseline <!-- t:86m6 -->
-- [ ] Vault report (deep dive), checked against the diary <!-- t:v34a -->
+- [x] Vault report (deep dive), checked against the diary <!-- t:v34a -->
