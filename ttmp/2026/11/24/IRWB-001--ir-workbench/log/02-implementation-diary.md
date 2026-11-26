@@ -1618,3 +1618,21 @@ The first of the four research-guide agents finished. Its guide is about 1,000 l
 - **Source positions defeat per-function reuse.** A comment edit changes 154 parts, because front-end ops store absolute source positions. A code hash without ops and positions changes 0.
 - **The memo is keyed on the whole origin.** Any source edit recomputes all 13,280 baseline outcomes.
 - **Facts on demand:** `strength` needs the range facts of 1 function out of 332: 76 ms against 3,292 ms to solve all of them.
+
+## Step 36: IRWB-008 guide merged (exact checking for verified rules)
+
+The second research-guide agent finished. Its guide is uploaded to `/ai/2026/11/26/IRWB-008` (the agent verified it with `remarquee cloud ls`). The branch touches ticket files only, and I merged it as a ticket-only merge.
+
+### What I learned (the agent's measurements, scripts 01–04)
+- **Every rule-backed edit can be re-derived from the rule data alone**, by an independent normalizer of about 50 lines:
+  - corpus: 394 of 394, in 10.8 ms;
+  - Candela O2: 838 of 838, in 22 ms, against 6,198 ms of sampled checks for the same steps.
+- **The share of edits backed by rules is modest:** 18.6% of all edits on the corpus and 14.0% on Candela. Of replace edits, 59.8% and 37.0%. Adding `constprop`, `sccp` and `strength` would raise that to 76.8% and 77.8%, which makes those passes the next candidates for rule form.
+- **Checking Candela with version 2**: estimated at about 290 s without semantic keys, about 65 s with them, and about 54 s for the proposed version 3.
+- **A soundness point found in the second pass.** `Program.apply(…, { check: false })` publishes unchecked revisions, so "every earlier step was checked" cannot be assumed. The memo's semantic keys carry the argument case by case instead.
+
+### Open, the user's decisions
+- the order of evidence strengths;
+- an in-house bit-vector procedure, or a vendored SMT solver (downloaded code);
+- the audit share;
+- IRWB-005's five recommendations. Applying the record-layout fix requires re-measuring the guide's Candela numbers.
