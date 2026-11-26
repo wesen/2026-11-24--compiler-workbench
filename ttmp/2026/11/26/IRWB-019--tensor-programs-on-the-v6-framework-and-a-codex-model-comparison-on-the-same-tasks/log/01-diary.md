@@ -303,3 +303,29 @@ Only the two medium Claude cells implement: Opus N and Fable P. Medium is cheape
 - **The v1 suite would have failed both on the invalid test** found in step 10 ("a two-index reduction accumulates lexicographically": 22 of 23 passing). Both reject that program, as the brief requires: B with "2:5 Cannot infer extent", E with "2:31: cannot infer index extent".
 - **The suite is frozen** from here: `acceptance.test.mjs` sha256 `ca81276f0939aade…` (v1: `ca4f792e16ed96a9…`). Adding tests after seeing results would fit the suite to the implementations.
 - **If most implementations reach 25 of 25,** the suite is a floor, not a ranking. The planned objective comparison beyond it is a differential cross-check: random programs from the fixed core, run on every implementation bit for bit, with disagreements resolved against a hand reference. It uses only the brief, so it can be written now without looking at any implementation.
+
+## Step 12: a differential cross-check, and the first divergence: name reuse
+
+- **The cross-check** (`scratchpad/t1-acceptance/crosscheck.mjs`; committed with the suite when all implementations are done) was written from the brief alone, before looking at any implementation's code.
+  - It generates random valid programs in the fixed core as syntax trees, prints them with minimal parentheses, and evaluates the trees directly under the brief's f32 rules. No parser is needed on the reference side.
+  - Programs avoid domain errors by construction: `log` and `sqrt` take e·e + c, `exp` takes tanh(e)·2, and division is by e·e + 1 or by a shape value.
+  - 60 programs × 3 cases, seed 7. The programs contain 88 reductions (23 over two indices), 103 calls and 62 unary minuses.
+  - Each implementation runs in its own child process. The check records f32 bit agreement, f64 agreement (1e-9), and for `inline` and `split-sum`: accepted, and if accepted, whether the result still computes the same function. Both passes are correct on every program, so a rejection is a false rejection.
+- **A generator bug found before use:** the grammar is ambiguous for `max(N, C) …` (a call on two shape values, or a reduction over two indices). The generator no longer puts a bare shape name into a call argument. N's implementation resolves the ambiguity explicitly ("a call when every name is a shape name"), and N lists it as a deviation.
+- **Results so far:**
+
+| item | cell | hidden suite (frozen) | suite variant | cross-check f32 / f64 | inline acc./kept | split-sum acc./kept |
+|---|---|---|---|---|---|---|
+| B | Codex Astra medium | 25/25 | 25/25 | 180/180 · 180/180 | 60/60 | 60/60 |
+| E | Pi Astra medium | 25/25 | 25/25 | 180/180 · 180/180 | 60/60 | 59/59 |
+| J | Pi Astra xhigh | 25/25 | 25/25 | 180/180 · 180/180 | 60/60 | 60/60 |
+| P | Claude Fable medium | 22/25 | 25/25 | 180/180 · 180/180 | 60/60 | 60/60 |
+| N | Claude Opus medium | 22/25 | 25/25 | 180/180 · 180/180 | 60/60 | 60/60 |
+
+- **The divergence is name reuse.** The suite's mlp writes `y[i, x] = (sum(f) g[i, f] * w2[f, x]) + b2[x]`, and `x` is also mlp's input tensor.
+  - Both Claude implementations reject this: P with "5:8: 'x' is a tensor and cannot be an index", N with "5:8: index x is a parameter".
+  - The three OpenAI implementations accept it. The brief does not say whether index and tensor names may coincide; there is no syntactic ambiguity, since references always carry brackets.
+  - The frozen suite's score stands, and the *variant* (`acceptance-variant-names.test.mjs`, which renames that one index to `e`) is reported next to it as a sensitivity check. All three of P's and N's failures are this one rule, and both pass 25/25 on the variant. **Lesson:** specify namespaces in a fixed core, and don't write test programs that depend on an unspecified rule.
+- **E rejected a correct `split-sum` on one cross-check program** (program 39, no reason in the step). That program is well conditioned on the generated cases: f32 against f64 within 4e-7 relative. So this is a false rejection by E's contract on its own sampled cases.
+- **Five independent implementations agree bit for bit with the tree-walking reference** on all 180 random cases. The fixed core's f32 meaning is precise enough to implement identically.
+- **Claude usage:** P's implementation took 280K tokens, N's 237K. Total Claude subagent tokens in IRWB-019 so far: about 2.04M (designs 0.90M, implementations 0.52M, judges and reviewer 0.62M).

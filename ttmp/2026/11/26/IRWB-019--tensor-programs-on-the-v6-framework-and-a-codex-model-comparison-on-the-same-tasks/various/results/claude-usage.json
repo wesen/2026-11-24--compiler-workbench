@@ -46,5 +46,21 @@
   "subagent_tokens": 347906,
   "tool_uses": 73,
   "minutes": 19.3
+ },
+ {
+  "item": "IRWB-020-P",
+  "cell": "fable/medium",
+  "turn": "impl",
+  "subagent_tokens": 280331,
+  "tool_uses": 27,
+  "minutes": 15.4
+ },
+ {
+  "item": "IRWB-020-N",
+  "cell": "opus/medium",
+  "turn": "impl",
+  "subagent_tokens": 237315,
+  "tool_uses": 52,
+  "minutes": 16.0
  }
 ]
