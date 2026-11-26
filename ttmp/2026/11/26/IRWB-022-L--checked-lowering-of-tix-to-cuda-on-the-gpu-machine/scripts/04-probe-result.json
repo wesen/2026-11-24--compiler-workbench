@@ -1,0 +1,95 @@
+{
+  "node": "v24.18.0",
+  "remote": {
+    "host": "manuel@bling",
+    "hash": "2ecf3f06e2f561a1",
+    "compiled": true,
+    "compileMs": 647,
+    "runMs": 285,
+    "exit": 0,
+    "stdout": "NVIDIA GB10 sm_121 nvcc 13.0.88\nevent interval 0.005472 ms\n",
+    "stderr": "",
+    "outputs": [
+      "words.bin"
+    ]
+  },
+  "seed": 22,
+  "count": 4096,
+  "inputSHA256": "2323389df54ae891e56f0fdd6ea544d47d9a0ce9ae05aae4038645d580db6b54",
+  "outputSHA256": "bc37ca2ffb5e8293062edddc5a0ead7d0c81252452ccf815ba3429d5e5afff67",
+  "contractionWitness": "0x00000000",
+  "subnormalProduct": "0x00000001",
+  "ops": {
+    "add": {
+      "different": 0,
+      "maxAbs": 1.1920928955078125e-7,
+      "maxBudgetFraction": 0.0028300984685216465
+    },
+    "sub": {
+      "different": 0,
+      "maxAbs": 1.1920928955078125e-7,
+      "maxBudgetFraction": 0.0027998286370482348
+    },
+    "mul": {
+      "different": 0,
+      "maxAbs": 1.1913900266335986e-7,
+      "maxBudgetFraction": 0.0027099391730353323
+    },
+    "div": {
+      "different": 0,
+      "maxAbs": 4.6973405432026993e-7,
+      "maxBudgetFraction": 0.0027996960094291167
+    },
+    "exp": {
+      "different": 1243,
+      "first": {
+        "i": 0,
+        "x": "0x3f800001",
+        "y": "0x3f7ffffe",
+        "gpu": "0x402df855",
+        "f32": "0x402df856"
+      },
+      "maxAbs": 6.759831716607323e-7,
+      "maxBudgetFraction": 0.006135215614606227
+    },
+    "log": {
+      "different": 294,
+      "first": {
+        "i": 42,
+        "x": "0xbfe47750",
+        "y": "0x3f908e2a",
+        "gpu": "0x3df91a3b",
+        "f32": "0x3df91a3c"
+      },
+      "maxAbs": 1.2062781262756062e-7,
+      "maxBudgetFraction": 0.0033596057594618904
+    },
+    "sqrt": {
+      "different": 0,
+      "maxAbs": 5.959043503089845e-8,
+      "maxBudgetFraction": 0.002692866201809446
+    },
+    "tanh": {
+      "different": 1169,
+      "first": {
+        "i": 4,
+        "x": "0xbf0aad97",
+        "y": "0x3eb72240",
+        "gpu": "0xbefd128f",
+        "f32": "0xbefd1290"
+      },
+      "maxAbs": 9.650498489222059e-8,
+      "maxBudgetFraction": 0.0075756355433024185
+    },
+    "dot7": {
+      "different": 0,
+      "maxAbs": 0.0000013758906796113024,
+      "maxBudgetFraction": 0.15602517977116856
+    },
+    "mulSub": {
+      "different": 0,
+      "maxAbs": 3.538535509051144e-7,
+      "maxBudgetFraction": 0.02839344688735839
+    }
+  }
+}
