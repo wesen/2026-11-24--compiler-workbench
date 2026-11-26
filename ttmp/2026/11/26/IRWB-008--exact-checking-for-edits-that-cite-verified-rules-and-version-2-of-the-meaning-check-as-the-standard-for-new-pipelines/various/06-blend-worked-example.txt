@@ -1,0 +1,15 @@
+== fold at r2: check 40/40 agree; subject runs 40, replayed 0
+edit {"id":"edit:r2.0","rev":2,"pass":"fold","fn":"blend","kind":"replace","stmt":"s:blend.0","field":"value","from":"v:blend.2","to":"v:blend.34","text":"64","because":[]}
+  before mul(4, 16) 
+  after  64
+  new root record {"id":"v:blend.34","op":"const","args":[],"origin":[{"because":["v:blend.0","v:blend.1"],"from":"v:blend.2","kind":"recorded","rev":2,"via":"fold"}]}
+  correspondence entry of the old root {"because":["v:blend.0","v:blend.1"],"from":["v:blend.2"],"relation":"fold","to":["v:blend.34"]}
+  re-derived true firing fold-mul@1 [by-construction] mul(#a, #b) → #mul(a, b)
+== simplify at r3: check 40/40 agree; subject runs 40, replayed 0
+edit {"id":"edit:r3.0","rev":3,"pass":"simplify","fn":"blend","kind":"replace","stmt":"s:blend.4","field":"cond","from":"v:blend.8","to":"v:blend.35","text":"(i >= n)","because":[]}
+  before eqz(lt(get#6, get#1)) 
+  after  ge(get#6, get#1)
+  new root record {"id":"v:blend.35","op":"ge","args":["v:blend.5","v:blend.6"],"origin":[{"because":[],"from":"v:blend.8","kind":"recorded","note":"!(<) is >=","rev":3,"via":"simplify"}]}
+  correspondence entry of the old root {"from":["v:blend.8"],"note":"!(<) is >=","relation":"simplify","to":["v:blend.35"]}
+  re-derived true firing not-lt@1 [reduced-width+argument] eqz(lt(a, b)) → ge(a, b)
+evidence not-lt: {"version":"1","fingerprint":"c0014dc6ccde","verdict":"sound","strength":"reduced-width+argument","methods":["structural:pass","exhaustive-w8:pass 65536","random-32:pass 1002304","exhaustive-32:n/a"]}

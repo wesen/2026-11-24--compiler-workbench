@@ -1,0 +1,33 @@
+== simplify at r1: check 40/40 agree; subject runs 40, replayed 0
+edit {"id":"edit:r1.0","rev":1,"pass":"simplify","fn":"tidy","kind":"replace","stmt":"s:tidy.0","field":"value","from":"v:tidy.4","to":"v:tidy.0","text":"x","because":[]}
+  before add(mul(get#0, 1), 0) 
+  after  get#0
+  new root record (an existing value: no value was made at the root)
+  correspondence entry of the old root {"from":["v:tidy.4"],"relation":"removed","to":[]}
+  re-derived true firing mul-one@1 [proof] mul(x, 1) → x; add-zero@1 [proof] add(x, 0) → x
+edit {"id":"edit:r1.1","rev":1,"pass":"simplify","fn":"tidy","kind":"replace","stmt":"s:tidy.1","field":"value","from":"v:tidy.9","to":"v:tidy.5","text":"y","because":[]}
+  before mul(sub(get#1, 0), 1) 
+  after  get#1
+  new root record (an existing value: no value was made at the root)
+  correspondence entry of the old root {"from":["v:tidy.9"],"relation":"removed","to":[]}
+  re-derived true firing sub-zero@1 [proof] sub(x, 0) → x; mul-one@1 [proof] mul(x, 1) → x
+edit {"id":"edit:r1.2","rev":1,"pass":"simplify","fn":"tidy","kind":"replace","stmt":"s:tidy.2","field":"value","from":"v:tidy.12","to":"v:tidy.24","text":"0","because":[]}
+  before mul(get#0, 0) 
+  after  0
+  new root record {"id":"v:tidy.24","op":"const","args":[],"origin":[{"because":["v:tidy.11"],"from":"v:tidy.12","kind":"recorded","note":"x * 0","rev":1,"via":"simplify"}]}
+  correspondence entry of the old root {"because":["v:tidy.11"],"from":["v:tidy.12"],"note":"x * 0","relation":"simplify","to":["v:tidy.24"]}
+  re-derived true firing mul-zero@1 [proof] mul(x, 0) → 0 if pure x
+edit {"id":"edit:r1.3","rev":1,"pass":"simplify","fn":"tidy","kind":"replace","stmt":"s:tidy.3","field":"value","from":"v:tidy.21","to":"v:tidy.17","text":"((a + b) + z)","because":[]}
+  before add(add(add(get#2, get#3), get#4), sub(get#0, get#0)) 
+  after  add(add(get#2, get#3), get#4)
+  new root record (an existing value: no value was made at the root)
+  correspondence entry of the old root {"from":["v:tidy.21"],"relation":"removed","to":[]}
+  re-derived true firing sub-self@1 [proof] sub(x, x) → 0 if pure x; add-zero@1 [proof] add(x, 0) → x
+== simplify at r3: check 40/40 agree; subject runs 40, replayed 0
+edit {"id":"edit:r3.0","rev":3,"pass":"simplify","fn":"tidy","kind":"replace","stmt":"s:tidy.3","field":"value","from":"v:tidy.28","to":"v:tidy.15","text":"(a + b)","because":[]}
+  before add(add(get#2, get#3), 0) 
+  after  add(get#2, get#3)
+  new root record (an existing value: no value was made at the root)
+  correspondence entry of the old root {"from":["v:tidy.28"],"relation":"removed","to":[]}
+  re-derived true firing add-zero@1 [proof] add(x, 0) → x
+evidence not-lt: {"version":"1","fingerprint":"c0014dc6ccde","verdict":"sound","strength":"reduced-width+argument","methods":["structural:pass","exhaustive-w8:pass 65536","random-32:pass 1002304","exhaustive-32:n/a"]}

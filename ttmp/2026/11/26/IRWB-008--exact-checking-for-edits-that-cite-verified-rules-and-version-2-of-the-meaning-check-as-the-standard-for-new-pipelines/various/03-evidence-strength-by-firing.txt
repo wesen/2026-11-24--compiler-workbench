@@ -1,0 +1,12 @@
+evidence options: {"random":1000000,"seed":7,"exhaustive32":true}
+simplify: 27 rules, 0 without matching evidence
+  strength                 rules  firings corpus  firings Candela
+  proof                       15             152               40
+  exhaustive                   4               0                0
+  reduced-width+argument       8             204               16
+  proof: add-zero 23/1, sub-zero 6/0, sub-self 6/0, mul-one 12/0, mul-zero 12/0, zero-mul 1/0, mul-pow2 92/39
+  reduced-width+argument: not-lt 192/12, not-gt 6/0, not-le 0/4, not-ne 6/0
+fold: 40 rules, 0 without matching evidence
+  strength                 rules  firings corpus  firings Candela
+  by-construction             40              73             2081
+  by-construction: fold-eqz 0/3, fold-fadd 0/98, fold-fsub 0/122, fold-fmul 0/139, fold-fdiv 0/106, fold-fmin 0/199, fold-fmax 0/285, fold-fsqrt 0/196, fold-add 4/430, fold-sub 25/69, fold-mul 36/0, fold-or 0/4, fold-shl 4/430, fold-gt 4/0

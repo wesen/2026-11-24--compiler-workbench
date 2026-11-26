@@ -1,0 +1,413 @@
+{
+ "r0": "cd36346ea7c4",
+ "head": "b33d1737c725",
+ "openMs": 10017,
+ "totalMs": 163217,
+ "peakRssMB": 3494,
+ "differential": {
+  "baselineRuns": 13280,
+  "subjectRuns": 64040,
+  "replayed": 108600,
+  "delegated": 0
+ },
+ "steps": [
+  {
+   "pass": "cfg",
+   "changed": true,
+   "passMs": 8826,
+   "checkMs": 10390,
+   "baselineRuns": 13280,
+   "subjectRuns": 13280,
+   "replayed": 0,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 974,
+   "kinds": {
+    "retarget": 488,
+    "unreachable": 438,
+    "replaceStmt": 2,
+    "remove": 4,
+    "move": 38,
+    "merge": 4
+   },
+   "entityChanges": 882,
+   "fns": 110,
+   "fnsTotal": 332,
+   "revision": "4aea7e81dd04",
+   "rssMB": 1134
+  },
+  {
+   "pass": "fold",
+   "changed": true,
+   "passMs": 9156,
+   "checkMs": 2597,
+   "baselineRuns": 0,
+   "subjectRuns": 6920,
+   "replayed": 6360,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 676,
+   "kinds": {
+    "replace": 676
+   },
+   "entityChanges": 3879,
+   "fns": 103,
+   "fnsTotal": 332,
+   "revision": "79007a4f826a",
+   "replace": 676,
+   "rederived": 676,
+   "rederiveMs": 12,
+   "firings": {
+    "fold-sub": 69,
+    "fold-fdiv": 8,
+    "fold-shl": 430,
+    "fold-add": 430,
+    "fold-eqz": 3,
+    "fold-fmul": 125,
+    "fold-fmax": 83,
+    "fold-fsub": 21,
+    "fold-fmin": 3
+   },
+   "weakest": {
+    "by-construction": 676
+   },
+   "not": [],
+   "rssMB": 1268
+  },
+  {
+   "pass": "simplify",
+   "changed": true,
+   "passMs": 7699,
+   "checkMs": 1989,
+   "baselineRuns": 0,
+   "subjectRuns": 2720,
+   "replayed": 10560,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 48,
+   "kinds": {
+    "replace": 48
+   },
+   "entityChanges": 264,
+   "fns": 19,
+   "fnsTotal": 332,
+   "revision": "28af3dbb9e5b",
+   "replace": 48,
+   "rederived": 48,
+   "rederiveMs": 2,
+   "firings": {
+    "not-lt": 12,
+    "not-le": 4,
+    "mul-pow2": 39,
+    "add-zero": 1
+   },
+   "weakest": {
+    "reduced-width+argument": 16,
+    "proof": 32
+   },
+   "not": [],
+   "rssMB": 1594
+  },
+  {
+   "pass": "constprop",
+   "changed": true,
+   "passMs": 11956,
+   "checkMs": 2580,
+   "baselineRuns": 0,
+   "subjectRuns": 6480,
+   "replayed": 6800,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 925,
+   "kinds": {
+    "replace": 925
+   },
+   "entityChanges": 6548,
+   "fns": 124,
+   "fnsTotal": 332,
+   "revision": "33425ba057ac",
+   "rssMB": 2216
+  },
+  {
+   "pass": "fold",
+   "changed": true,
+   "passMs": 7423,
+   "checkMs": 1612,
+   "baselineRuns": 0,
+   "subjectRuns": 3560,
+   "replayed": 9720,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 114,
+   "kinds": {
+    "replace": 114
+   },
+   "entityChanges": 2008,
+   "fns": 53,
+   "fnsTotal": 332,
+   "revision": "28ff4a86b279",
+   "replace": 114,
+   "rederived": 114,
+   "rederiveMs": 8,
+   "firings": {
+    "fold-fmul": 14,
+    "fold-fmax": 202,
+    "fold-fmin": 196,
+    "fold-fsqrt": 196,
+    "fold-fadd": 98,
+    "fold-fsub": 101,
+    "fold-fdiv": 98,
+    "fold-or": 4
+   },
+   "weakest": {
+    "by-construction": 114
+   },
+   "not": [],
+   "rssMB": 2546
+  },
+  {
+   "pass": "simplify",
+   "changed": false,
+   "passMs": 636,
+   "rssMB": 2594
+  },
+  {
+   "pass": "dce",
+   "changed": true,
+   "passMs": 10386,
+   "checkMs": 2363,
+   "baselineRuns": 0,
+   "subjectRuns": 7080,
+   "replayed": 6200,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 2164,
+   "kinds": {
+    "remove": 2164
+   },
+   "entityChanges": 4971,
+   "fns": 144,
+   "fnsTotal": 332,
+   "revision": "8d4265f3a9da",
+   "rssMB": 2288
+  },
+  {
+   "pass": "cfg",
+   "changed": true,
+   "passMs": 6708,
+   "checkMs": 908,
+   "baselineRuns": 0,
+   "subjectRuns": 480,
+   "replayed": 12800,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 18,
+   "kinds": {
+    "replaceStmt": 3,
+    "retarget": 12,
+    "unreachable": 3
+   },
+   "entityChanges": 9,
+   "fns": 3,
+   "fnsTotal": 332,
+   "revision": "e60948d78f34",
+   "rssMB": 2398
+  },
+  {
+   "pass": "licm",
+   "changed": true,
+   "passMs": 7032,
+   "checkMs": 1921,
+   "baselineRuns": 0,
+   "subjectRuns": 1760,
+   "replayed": 11520,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 87,
+   "kinds": {
+    "local": 19,
+    "insert": 27,
+    "replace": 19,
+    "block": 8,
+    "retarget": 14
+   },
+   "entityChanges": 97,
+   "fns": 8,
+   "fnsTotal": 332,
+   "revision": "d4a9b9e51fcc",
+   "rssMB": 2517
+  },
+  {
+   "pass": "lvn",
+   "changed": true,
+   "passMs": 7054,
+   "checkMs": 1687,
+   "baselineRuns": 0,
+   "subjectRuns": 5360,
+   "replayed": 7920,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 256,
+   "kinds": {
+    "local": 64,
+    "replace": 128,
+    "insert": 64
+   },
+   "entityChanges": 918,
+   "fns": 38,
+   "fnsTotal": 332,
+   "revision": "5d3725175064",
+   "rssMB": 2639
+  },
+  {
+   "pass": "strength",
+   "changed": false,
+   "passMs": 4287,
+   "rssMB": 2660
+  },
+  {
+   "pass": "bce",
+   "changed": false,
+   "passMs": 2938,
+   "rssMB": 2681
+  },
+  {
+   "pass": "subst",
+   "changed": true,
+   "passMs": 8429,
+   "checkMs": 2459,
+   "baselineRuns": 0,
+   "subjectRuns": 8280,
+   "replayed": 5000,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 430,
+   "kinds": {
+    "replace": 215,
+    "remove": 215
+   },
+   "entityChanges": 2400,
+   "fns": 160,
+   "fnsTotal": 332,
+   "revision": "f61345f3f442",
+   "rssMB": 3088
+  },
+  {
+   "pass": "subst",
+   "changed": true,
+   "passMs": 7790,
+   "checkMs": 2226,
+   "baselineRuns": 0,
+   "subjectRuns": 7040,
+   "replayed": 6240,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 280,
+   "kinds": {
+    "replace": 140,
+    "remove": 140
+   },
+   "entityChanges": 1570,
+   "fns": 132,
+   "fnsTotal": 332,
+   "revision": "a41ec1727418",
+   "rssMB": 3494
+  },
+  {
+   "pass": "dce",
+   "changed": true,
+   "passMs": 14488,
+   "checkMs": 899,
+   "baselineRuns": 0,
+   "subjectRuns": 600,
+   "replayed": 12680,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 2,
+   "kinds": {
+    "remove": 2
+   },
+   "entityChanges": 8,
+   "fns": 2,
+   "fnsTotal": 332,
+   "revision": "f7ff969f7ff9",
+   "rssMB": 3175
+  },
+  {
+   "pass": "cfg",
+   "changed": true,
+   "passMs": 5987,
+   "checkMs": 737,
+   "baselineRuns": 0,
+   "subjectRuns": 480,
+   "replayed": 12800,
+   "evidence": [
+    13280,
+    13258,
+    0,
+    22
+   ],
+   "edits": 20,
+   "kinds": {
+    "retarget": 4,
+    "unreachable": 6,
+    "remove": 2,
+    "move": 6,
+    "merge": 2
+   },
+   "entityChanges": 12,
+   "fns": 2,
+   "fnsTotal": 332,
+   "revision": "b33d1737c725",
+   "rssMB": 3283
+  }
+ ]
+}
