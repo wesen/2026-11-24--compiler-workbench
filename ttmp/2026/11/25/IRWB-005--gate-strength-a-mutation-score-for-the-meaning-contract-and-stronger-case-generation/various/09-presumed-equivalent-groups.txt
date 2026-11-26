@@ -1,0 +1,167 @@
+
+## cmp-weaken ge: 31
+  blend.blend  "(t7 >=u load32[work+0])"  in  if (t7 >=u load32[work+0]) goto .4 else .7
+  bounds-lab.window  "(t4 >=u load32[a+0])"  in  if (t4 >=u load32[a+0]) goto .4 else .7
+  bounds-lab.pairs  "(t5 >=u load32[b+0])"  in  if (t5 >=u load32[b+0]) goto .8 else .11
+  bounds-lab.tail  "(t4 >=u load32[a+0])"  in  if (t4 >=u load32[a+0]) goto .8 else .11
+  bounds-offset.rises  "(t3 >=u load32[work+0])"  in  if (t3 >=u load32[work+0]) goto .4 else .7
+  bounds-offset.rises  "(t4 >=u load32[work+0])"  in  if (t4 >=u load32[work+0]) goto .8 else .11
+  bounds-param.prefix  "(t4 >=u load32[work+0])"  in  if (t4 >=u load32[work+0]) goto .4 else .7
+  bounds-two.dot  "(t5 >=u load32[b+0])"  in  if (t5 >=u load32[b+0]) goto .8 else .11
+  fragments.blend  "(t7 >=u load32[work+0])"  in  if (t7 >=u load32[work+0]) goto .4 else .7
+  heat-lab.sort  "(t4 >=u load32[work+0])"  in  if (t4 >=u load32[work+0]) goto .7 else .10
+  heat-lab.sort  "(t5 >=u load32[work+0])"  in  if (t5 >=u load32[work+0]) goto .11 else .14
+  heat-lab.sort  "(t6 >=u load32[work+0])"  in  if (t6 >=u load32[work+0]) goto .18 else .21
+  heat-lab.sort  "(t8 >=u load32[work+0])"  in  if (t8 >=u load32[work+0]) goto .22 else .25
+  heat-lab.sort  "(t9 >=u load32[work+0])"  in  if (t9 >=u load32[work+0]) goto .26 else .29
+  heat-lab.sort  "(t10 >=u load32[work+0])"  in  if (t10 >=u load32[work+0]) goto .30 else .33
+  histogram.histogram  "(t6 >=u load32[bins+0])"  in  if (t6 >=u load32[bins+0]) goto .8 else .11
+  histogram.histogram  "(t7 >=u load32[bins+0])"  in  if (t7 >=u load32[bins+0]) goto .12 else .15
+  histogram.histogram  "(t10 >=u load32[bins+0])"  in  if (t10 >=u load32[bins+0]) goto .16 else .19
+  orders.kernel  "(t8 >=u load32[v+0])"  in  if (t8 >=u load32[v+0]) goto .4 else .7
+  params-demo.blend  "(t7 >=u load32[work+0])"  in  if (t7 >=u load32[work+0]) goto .4 else .5
+  regalloc-lab.accum  "(t7 >=u load32[v+0])"  in  if (t7 >=u load32[v+0]) goto .4 else .7
+  sort.sort  "(t4 >=u load32[work+0])"  in  if (t4 >=u load32[work+0]) goto .7 else .10
+  sort.sort  "(t5 >=u load32[work+0])"  in  if (t5 >=u load32[work+0]) goto .11 else .14
+  sort.sort  "(t6 >=u load32[work+0])"  in  if (t6 >=u load32[work+0]) goto .18 else .21
+  sort.sort  "(t8 >=u load32[work+0])"  in  if (t8 >=u load32[work+0]) goto .22 else .25
+  sort.sort  "(t9 >=u load32[work+0])"  in  if (t9 >=u load32[work+0]) goto .26 else .29
+  sort.sort  "(t10 >=u load32[work+0])"  in  if (t10 >=u load32[work+0]) goto .30 else .33
+  start-here.smooth  "(t5 >=u load32[samples+0])"  in  if (t5 >=u load32[samples+0]) goto .4 else .7
+  start-here.peak  "(x > best)"  in  if (x > best) goto .8 else .10
+  ui-gallery.sum  "(t4 >=u load32[v+0])"  in  if (t4 >=u load32[v+0]) goto .4 else .7
+  wrong-shift.bucket  "(t3 >=u load32[work+0])"  in  if (t3 >=u load32[work+0]) goto .4 else .5
+
+## hoist-trap hoist: 19
+  blend.blend  "s = (s + (load16[(work + (t7 << 1))+4] * inv))"  in  s = (s + (load16[(work + (t7 << 1))+4] * inv))
+  bounds-lab.window  "s = (s + load16[(a + (t4 << 1))+4])"  in  s = (s + load16[(a + (t4 << 1))+4])
+  bounds-lab.pairs  "s = (s + (t6 * load16[(b + (t5 << 1))+4]))"  in  s = (s + (t6 * load16[(b + (t5 << 1))+4]))
+  bounds-lab.tail  "s = (t5 - load16[(a + (t4 << 1))+4])"  in  s = (t5 - load16[(a + (t4 << 1))+4])
+  bounds-offset.rises  "t5 = load16[(work + (t3 << 1))+4]"  in  t5 = load16[(work + (t3 << 1))+4]
+  bounds-param.prefix  "s = (s + load16[(work + (t4 << 1))+4])"  in  s = (s + load16[(work + (t4 << 1))+4])
+  bounds-two.dot  "s = (s + (t6 * load16[(b + (t5 << 1))+4]))"  in  s = (s + (t6 * load16[(b + (t5 << 1))+4]))
+  fragments.blend  "s = (s + (load16[(work + (t7 << 1))+4] * inv))"  in  s = (s + (load16[(work + (t7 << 1))+4] * inv))
+  heat-lab.sort  "t12 = load16[(work + (t4 << 1))+4]"  in  t12 = load16[(work + (t4 << 1))+4]
+  heat-lab.sort  "t11 = (t12 > load16[(work + (t5 << 1))+4])"  in  t11 = (t12 > load16[(work + (t5 << 1))+4])
+  heat-lab.sort  "t = load16[(work + (t6 << 1))+4]"  in  t = load16[(work + (t6 << 1))+4]
+  histogram.histogram  "t9 = load16[(bins + (t10 << 1))+4]"  in  t9 = load16[(bins + (t10 << 1))+4]
+  orders.kernel  "s = ((s + (load16[(v + (t8 << 1))+4] * a)) + (b / 4))"  in  s = ((s + (load16[(v + (t8 << 1))+4] * a)) + (b / 4))
+  regalloc-lab.accum  "x = load16[(v + (t7 << 1))+4]"  in  x = load16[(v + (t7 << 1))+4]
+  sort.sort  "t12 = load16[(work + (t4 << 1))+4]"  in  t12 = load16[(work + (t4 << 1))+4]
+  sort.sort  "t11 = (t12 > load16[(work + (t5 << 1))+4])"  in  t11 = (t12 > load16[(work + (t5 << 1))+4])
+  sort.sort  "t = load16[(work + (t6 << 1))+4]"  in  t = load16[(work + (t6 << 1))+4]
+  start-here.smooth  "t6 = load16[(samples + (t5 << 1))+4]"  in  t6 = load16[(samples + (t5 << 1))+4]
+  ui-gallery.sum  "t5 = load16[(v + (t4 << 1))+4]"  in  t5 = load16[(v + (t4 << 1))+4]
+
+## drop-check branch: 19
+  bounds-lab.tail  "if (t4 >=u load32[a+0]) goto .8 else .11"  in  if (t4 >=u load32[a+0]) goto .8 else .11
+  bounds-offset.rises  "if (t3 >=u load32[work+0]) goto .4 else .7"  in  if (t3 >=u load32[work+0]) goto .4 else .7
+  bounds-offset.rises  "if (t4 >=u load32[work+0]) goto .8 else .11"  in  if (t4 >=u load32[work+0]) goto .8 else .11
+  heat-lab.sort  "if (t4 >=u load32[work+0]) goto .7 else .10"  in  if (t4 >=u load32[work+0]) goto .7 else .10
+  heat-lab.sort  "if (t5 >=u load32[work+0]) goto .11 else .14"  in  if (t5 >=u load32[work+0]) goto .11 else .14
+  heat-lab.sort  "if (t6 >=u load32[work+0]) goto .18 else .21"  in  if (t6 >=u load32[work+0]) goto .18 else .21
+  heat-lab.sort  "if (t8 >=u load32[work+0]) goto .22 else .25"  in  if (t8 >=u load32[work+0]) goto .22 else .25
+  heat-lab.sort  "if (t9 >=u load32[work+0]) goto .26 else .29"  in  if (t9 >=u load32[work+0]) goto .26 else .29
+  heat-lab.sort  "if (t10 >=u load32[work+0]) goto .30 else .33"  in  if (t10 >=u load32[work+0]) goto .30 else .33
+  histogram.histogram  "if (t6 >=u load32[bins+0]) goto .8 else .11"  in  if (t6 >=u load32[bins+0]) goto .8 else .11
+  histogram.histogram  "if (t7 >=u load32[bins+0]) goto .12 else .15"  in  if (t7 >=u load32[bins+0]) goto .12 else .15
+  histogram.histogram  "if (t10 >=u load32[bins+0]) goto .16 else .19"  in  if (t10 >=u load32[bins+0]) goto .16 else .19
+  sort.sort  "if (t4 >=u load32[work+0]) goto .7 else .10"  in  if (t4 >=u load32[work+0]) goto .7 else .10
+  sort.sort  "if (t5 >=u load32[work+0]) goto .11 else .14"  in  if (t5 >=u load32[work+0]) goto .11 else .14
+  sort.sort  "if (t6 >=u load32[work+0]) goto .18 else .21"  in  if (t6 >=u load32[work+0]) goto .18 else .21
+  sort.sort  "if (t8 >=u load32[work+0]) goto .22 else .25"  in  if (t8 >=u load32[work+0]) goto .22 else .25
+  sort.sort  "if (t9 >=u load32[work+0]) goto .26 else .29"  in  if (t9 >=u load32[work+0]) goto .26 else .29
+  sort.sort  "if (t10 >=u load32[work+0]) goto .30 else .33"  in  if (t10 >=u load32[work+0]) goto .30 else .33
+  wrong-shift.bucket  "if (t3 >=u load32[work+0]) goto .4 else .5"  in  if (t3 >=u load32[work+0]) goto .4 else .5
+
+## check-range len+1: 19
+  bounds-lab.tail  "if (t4 >=u load32[a+0]) goto .8 else .11"  in  if (t4 >=u load32[a+0]) goto .8 else .11
+  bounds-offset.rises  "if (t3 >=u load32[work+0]) goto .4 else .7"  in  if (t3 >=u load32[work+0]) goto .4 else .7
+  bounds-offset.rises  "if (t4 >=u load32[work+0]) goto .8 else .11"  in  if (t4 >=u load32[work+0]) goto .8 else .11
+  heat-lab.sort  "if (t4 >=u load32[work+0]) goto .7 else .10"  in  if (t4 >=u load32[work+0]) goto .7 else .10
+  heat-lab.sort  "if (t5 >=u load32[work+0]) goto .11 else .14"  in  if (t5 >=u load32[work+0]) goto .11 else .14
+  heat-lab.sort  "if (t6 >=u load32[work+0]) goto .18 else .21"  in  if (t6 >=u load32[work+0]) goto .18 else .21
+  heat-lab.sort  "if (t8 >=u load32[work+0]) goto .22 else .25"  in  if (t8 >=u load32[work+0]) goto .22 else .25
+  heat-lab.sort  "if (t9 >=u load32[work+0]) goto .26 else .29"  in  if (t9 >=u load32[work+0]) goto .26 else .29
+  heat-lab.sort  "if (t10 >=u load32[work+0]) goto .30 else .33"  in  if (t10 >=u load32[work+0]) goto .30 else .33
+  histogram.histogram  "if (t6 >=u load32[bins+0]) goto .8 else .11"  in  if (t6 >=u load32[bins+0]) goto .8 else .11
+  histogram.histogram  "if (t7 >=u load32[bins+0]) goto .12 else .15"  in  if (t7 >=u load32[bins+0]) goto .12 else .15
+  histogram.histogram  "if (t10 >=u load32[bins+0]) goto .16 else .19"  in  if (t10 >=u load32[bins+0]) goto .16 else .19
+  sort.sort  "if (t4 >=u load32[work+0]) goto .7 else .10"  in  if (t4 >=u load32[work+0]) goto .7 else .10
+  sort.sort  "if (t5 >=u load32[work+0]) goto .11 else .14"  in  if (t5 >=u load32[work+0]) goto .11 else .14
+  sort.sort  "if (t6 >=u load32[work+0]) goto .18 else .21"  in  if (t6 >=u load32[work+0]) goto .18 else .21
+  sort.sort  "if (t8 >=u load32[work+0]) goto .22 else .25"  in  if (t8 >=u load32[work+0]) goto .22 else .25
+  sort.sort  "if (t9 >=u load32[work+0]) goto .26 else .29"  in  if (t9 >=u load32[work+0]) goto .26 else .29
+  sort.sort  "if (t10 >=u load32[work+0]) goto .30 else .33"  in  if (t10 >=u load32[work+0]) goto .30 else .33
+  wrong-shift.bucket  "if (t3 >=u load32[work+0]) goto .4 else .5"  in  if (t3 >=u load32[work+0]) goto .4 else .5
+
+## cmp-weaken geu: 15
+  bounds-lab.total  "(i >= load32[a+0])"  in  if (i >= load32[a+0]) goto .2 else .3
+  bounds-lab.pairs  "(i >= load32[a+0])"  in  if (i >= load32[a+0]) goto .2 else .3
+  bounds-lab.tail  "(i >= load32[a+0])"  in  if (i >= load32[a+0]) goto .2 else .3
+  bounds-offset.rises  "((i + 1) >= load32[work+0])"  in  if ((i + 1) >= load32[work+0]) goto .2 else .3
+  bounds-two.dot  "(i >= load32[a+0])"  in  if (i >= load32[a+0]) goto .2 else .3
+  checksum.total  "(i >= load32[work+0])"  in  if (i >= load32[work+0]) goto .2 else .3
+  early-exit.find  "(i >= load32[work+0])"  in  if (i >= load32[work+0]) goto .2 else .3
+  heat-lab.sort  "(i >= load32[work+0])"  in  if (i >= load32[work+0]) goto .2 else .3
+  histogram.histogram  "(i >= load32[work+0])"  in  if (i >= load32[work+0]) goto .2 else .3
+  ramp.ramp  "(i >= load32[out+0])"  in  if (i >= load32[out+0]) goto .2 else .3
+  sort.sort  "(i >= load32[work+0])"  in  if (i >= load32[work+0]) goto .2 else .3
+  start-here.peak  "(i >= load32[samples+0])"  in  if (i >= load32[samples+0]) goto .2 else .3
+  strength.meter  "(i >= load32[work+0])"  in  if (i >= load32[work+0]) goto .2 else .3
+  strings.digits  "(i >= load32[s+0])"  in  if (i >= load32[s+0]) goto .2 else .3
+  strings.digits  "(c >= 48)"  in  if (c >= 48) goto .8 else .9
+
+## cmp-weaken le: 15
+  calls.clamp  "(t5 < t6)"  in  if (t5 < t6) goto .1 else .2
+  calls.clamp  "(t3 < t4)"  in  if (t3 < t4) goto .4 else .5
+  div-checks.safeShare  "(t4 < 10)"  in  if (t4 < 10) goto .1 else .2
+  div-checks.safeShare  "(1 < t3)"  in  if (1 < t3) goto .4 else .5
+  fixed-point.qmul  "(t5 < 32767)"  in  if (t5 < 32767) goto .1 else .2
+  fixed-point.qmul  "(-32768 < t4)"  in  if (-32768 < t4) goto .4 else .5
+  histogram.histogram  "(t8 < t9)"  in  if (t8 < t9) goto .20 else .21
+  match-enum.dist  "(t4 < t5)"  in  if (t4 < t5) goto .1 else .2
+  match-enum.dist  "(t6 < t7)"  in  if (t6 < t7) goto .4 else .5
+  ramp.ramp  "(t5 < 65535)"  in  if (t5 < 65535) goto .8 else .9
+  records.manhattan  "(t4 < t5)"  in  if (t4 < t5) goto .1 else .2
+  records.manhattan  "(t6 < t7)"  in  if (t6 < t7) goto .4 else .5
+  start-here.clamp  "(t5 < t6)"  in  if (t5 < t6) goto .1 else .2
+  start-here.clamp  "(t3 < t4)"  in  if (t3 < t4) goto .4 else .5
+  strength.meter  "(t3 < 1000)"  in  if (t3 < 1000) goto .8 else .9
+
+## const -1: 11
+  bounds-lab.total  "0"  in  i = 0
+  checksum.total  "0"  in  i = 0
+  div-checks.safeShare  "1"  in  if (1 < t3) goto .4 else .5
+  fixed-point.qmul  "32767"  in  if (t5 < 32767) goto .1 else .2
+  fixed-point.qmul  "-32768"  in  if (-32768 < t4) goto .4 else .5
+  heat-lab.sort  "1"  in  i = 1
+  ramp.ramp  "65535"  in  if (t5 < 65535) goto .8 else .9
+  sort.sort  "1"  in  i = 1
+  start-here.peak  "0"  in  i = 0
+  strength.meter  "0"  in  i = 0
+  strings.digits  "0"  in  i = 0
+
+## const +1: 7
+  div-checks.safeShare  "10"  in  if (t4 < 10) goto .1 else .2
+  fixed-point.qmul  "32767"  in  if (t5 < 32767) goto .1 else .2
+  fixed-point.qmul  "-32768"  in  if (-32768 < t4) goto .4 else .5
+  my-analysis.f  "0"  in  b = 0
+  ramp.ramp  "65535"  in  if (t5 < 65535) goto .8 else .9
+  start-here.smooth  "0"  in  s = 0
+  strength.meter  "1000"  in  if (t3 < 1000) goto .8 else .9
+
+## swap swap: 5
+  constants.poly  "(b - 14)"  in  c = (b - 14)
+  match-enum.dist  "(load32[p+0] - load32[q+0])"  in  dx = (load32[p+0] - load32[q+0])
+  match-enum.dist  "(load32[p+4] - load32[q+4])"  in  dy = (load32[p+4] - load32[q+4])
+  records.manhattan  "(load32[p+0] - load32[q+0])"  in  dx = (load32[p+0] - load32[q+0])
+  records.manhattan  "(load32[p+4] - load32[q+4])"  in  dy = (load32[p+4] - load32[q+4])
+
+## cmp-weaken ltu: 3
+  histogram.histogram  "(t8 < t9)"  in  if (t8 < t9) goto .20 else .21
+  strength.meter  "(t3 < 1000)"  in  if (t3 < 1000) goto .8 else .9
+  wrong-shift.bucket  "(i < load32[work+0])"  in  if !((i < load32[work+0])) goto .2 else .3
+
+## shift shru: 1
+  strength.meter  "(level >> 2)"  in  return ((level >> 2) + (level & 7))

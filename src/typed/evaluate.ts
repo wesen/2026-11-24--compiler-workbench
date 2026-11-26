@@ -353,10 +353,16 @@ export function evaluate(
   fname: string,
   args: readonly number[],
   memBytes: Uint8Array,
-  opts: { limit?: number; counts?: boolean } = {},
+  opts: {
+    limit?: number;
+    counts?: boolean;
+    /** IRWB-005 C5: called before each executed statement with the frame's locals (read only; facts checking). */
+    observe?: (fn: string, stmt: string, locals: Int32Array) => void;
+  } = {},
 ): RunResult {
   const limit = opts.limit ?? 2e5,
-    counts = opts.counts ? new Map<string, number>() : null;
+    counts = opts.counts ? new Map<string, number>() : null,
+    observe = opts.observe;
   // frame arrays live in a stack area above the guest memory, as on the target; programs without them get none, so
   // an access past the memory image still traps
   let frames = hasFrames.get(st);
@@ -457,6 +463,7 @@ export function evaluate(
             throw t;
           }
           if (counts) counts.set(sid, (counts.get(sid) || 0) + 1);
+          if (observe) observe(name, sid, L);
           const s = st.get(sid) as StmtRec;
           switch (s.op) {
             case 'set':

@@ -1,0 +1,35 @@
+ingest + bcm 13993 ms; bcm changed 35 functions
+base (r0 + bcm) vs r0, 40 gate cases per function: {"agree":13258,"disagree":0,"inconclusive":22}
+cheap functions: 325; chosen: 2: s9_sdf_0, s10_mat_1
+s9_sdf_0               |A|  17 sites 224 default killed 40/207 strong 50 skipped 17  {"build":10436,"judge":688744,"classify":191814} {"rssMB":1407,"heapMB":463,"peakRssMB":1439,"afterGc":true}  cross-check {"compared":0,"differ":0}  928749 ms
+s10_mat_1              |A|  11 sites 116 default killed 70/116 strong 70 skipped 0  {"build":5804,"judge":254362,"classify":61001} {"rssMB":1413,"heapMB":458,"peakRssMB":1439,"afterGc":true}  cross-check {"compared":0,"differ":0}  1280750 ms
+framework gate vs replicated gate (functions nothing calls): {"compared":0,"differ":0}
+
+gate default: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                  29    13    2   14  44.8%  86.7%
+f32                  284    87   92  105  34.8%  48.6%
+const                 10    10    0    0 100.0% 100.0%
+TOTAL                323   110   94  119  38.1%  53.9%
+
+gate default400: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                  29    16    0   13  55.2% 100.0%
+f32                  284   154   44   86  57.9%  77.8%
+const                 10    10    0    0 100.0% 100.0%
+TOTAL                323   180   44   99  59.0%  80.4%
+
+gate strong: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                  29    14    1   14  48.3%  93.3%
+f32                  284    96   83  105  38.4%  53.6%
+const                 10    10    0    0 100.0% 100.0%
+TOTAL                323   120   84  119  41.5%  58.8%
+
+gate strong-cov: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                  29    14    1   14  48.3%  93.3%
+f32                  284    97   82  105  38.8%  54.2%
+const                 10    10    0    0 100.0% 100.0%
+TOTAL                323   121   83  119  41.9%  59.3%
+
+gate time (ms): {"default":91423,"default400":508443.3,"strong":140030.9,"strong-cov":203186}
+total 1280752 ms
+systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 node    1278.46s user 2.59s system 99% cpu 21:21.14 total
+exit 0

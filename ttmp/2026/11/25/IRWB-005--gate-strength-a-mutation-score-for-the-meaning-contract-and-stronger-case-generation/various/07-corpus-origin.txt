@@ -1,0 +1,108 @@
+across-calls     r0 sites 5  default killed 5/5  378 ms
+algebra          r0 sites 11  default killed 11/11  814 ms
+blend            r0 sites 25  default killed 21/25  37892 ms
+bounds-lab       r0 sites 92  default killed 69/92  157288 ms
+bounds-offset    r0 sites 35  default killed 27/35  180605 ms
+bounds-param     r0 sites 18  default killed 15/18  193694 ms
+bounds-two       r0 sites 26  default killed 20/26  213194 ms
+branches         r0 sites 48  default killed 40/48  218219 ms
+call-chain       r0 sites 11  default killed 11/11  219070 ms
+calls            r0 sites 12  default killed 10/12  221728 ms
+checksum         r0 sites 18  default killed 13/18  241902 ms
+collatz          r0 sites 30  default killed 26/30  265713 ms
+constants        r0 sites 9  default killed 8/9  266508 ms
+dead-code        r0 sites 22  default killed 8/22  269510 ms
+diagnostics      r0 sites 4  default killed 4/4  269704 ms
+distinct         r0 sites 0  default killed 0/0  269733 ms
+div-checks       r0 sites 15  default killed 13/15  271464 ms
+div-magic        r0 sites 29  default killed 26/29  323034 ms
+early-exit       r0 sites 22  default killed 17/22  342070 ms
+first-steps      r0 sites 6  default killed 6/6  342366 ms
+fixed-point      r0 sites 22  default killed 19/22  345923 ms
+fragments        r0 sites 25  default killed 20/25  376254 ms
+gcd              r0 sites 5  default killed 5/5  376608 ms
+heat-lab         r0 sites 84  default killed 63/84  809649 ms
+histogram        r0 sites 52  default killed 36/52  873786 ms
+licm-nested      r0 sites 20  default killed 16/20  1117038 ms
+licm-traps       r0 sites 11  default killed 9/11  1158337 ms
+match-enum       r0 sites 34  default killed 26/34  1166927 ms
+my-analysis      r0 sites 16  default killed 14/16  1414726 ms
+my-first-pass    r0 sites 4  default killed 4/4  1414923 ms
+nested-loops     r0 sites 18  default killed 14/18  1530409 ms
+orders           r0 sites 41  default killed 28/41  1579689 ms
+params-demo      r0 sites 25  default killed 20/25  1625930 ms
+pressure         r0 sites 6  default killed 6/6  1626826 ms
+ramp             r0 sites 25  default killed 18/25  1653420 ms
+records          r0 sites 19  default killed 15/19  1656618 ms
+regalloc-lab     r0 sites 43  default killed 38/43  1694328 ms
+sort             r0 sites 84  default killed 63/84  2030222 ms
+start-here       r0 sites 60  default killed 46/60  2107128 ms
+strength         r0 sites 36  default killed 29/36  2136974 ms
+strings          r0 sites 79  default killed 61/79  2219231 ms
+ui-gallery       r0 sites 30  default killed 25/30  2246278 ms
+value-numbering  r0 sites 27  default killed 25/27  2311000 ms
+wrong-shift      r0 sites 27  default killed 22/27  2338519 ms
+
+gate default: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 226   219    0    7  96.9% 100.0%
+const                542   470   36   36  89.9%  92.9%
+cmp-flip             119   119    0    0 100.0% 100.0%
+cmp-weaken           162    61    1  100  44.2%  98.4%
+drop-check            43     4    0   39  11.8% 100.0%
+check-range           42     3    1   38   8.8%  75.0%
+shift                 87    87    0    0 100.0% 100.0%
+hoist-trap             2     1    0    1 100.0% 100.0%
+drop-store             8     8    0    0 100.0% 100.0%
+TOTAL               1231   972   38  221  83.1%  96.2%
+
+gate check100: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 226   219    0    7  96.9% 100.0%
+const                542   472   34   36  90.2%  93.3%
+cmp-flip             119   119    0    0 100.0% 100.0%
+cmp-weaken           162    61    1  100  44.2%  98.4%
+drop-check            43     4    0   39  11.8% 100.0%
+check-range           42     4    0   38  11.8% 100.0%
+shift                 87    87    0    0 100.0% 100.0%
+hoist-trap             2     1    0    1 100.0% 100.0%
+drop-store             8     8    0    0 100.0% 100.0%
+TOTAL               1231   975   35  221  83.3%  96.5%
+
+gate strong: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 226   219    0    7  96.9% 100.0%
+const                542   506    0   36  96.7% 100.0%
+cmp-flip             119   119    0    0 100.0% 100.0%
+cmp-weaken           162    62    0  100  44.9% 100.0%
+drop-check            43     4    0   39  11.8% 100.0%
+check-range           42     3    1   38   8.8%  75.0%
+shift                 87    87    0    0 100.0% 100.0%
+hoist-trap             2     1    0    1 100.0% 100.0%
+drop-store             8     8    0    0 100.0% 100.0%
+TOTAL               1231  1009    1  221  86.2%  99.9%
+
+gate strong-cases: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 226   219    0    7  96.9% 100.0%
+const                542   473   33   36  90.4%  93.5%
+cmp-flip             119   119    0    0 100.0% 100.0%
+cmp-weaken           162    61    1  100  44.2%  98.4%
+drop-check            43     4    0   39  11.8% 100.0%
+check-range           42     3    1   38   8.8%  75.0%
+shift                 87    87    0    0 100.0% 100.0%
+hoist-trap             2     1    0    1 100.0% 100.0%
+drop-store             8     8    0    0 100.0% 100.0%
+TOTAL               1231   975   35  221  83.3%  96.5%
+
+gate default+div: mutants, killed, survived-wrong, equivalent, kill rate lower..upper
+swap                 226   219    0    7  96.9% 100.0%
+const                542   502    4   36  96.0%  99.2%
+cmp-flip             119   119    0    0 100.0% 100.0%
+cmp-weaken           162    62    0  100  44.9% 100.0%
+drop-check            43     4    0   39  11.8% 100.0%
+check-range           42     3    1   38   8.8%  75.0%
+shift                 87    87    0    0 100.0% 100.0%
+hoist-trap             2     1    0    1 100.0% 100.0%
+drop-store             8     8    0    0 100.0% 100.0%
+TOTAL               1231  1005    5  221  85.9%  99.5%
+
+gate time (ms): {"default":136340.4,"check100":105350.9,"strong":449417.1,"strong-cases":73775.9,"default+div":235594}
+total 2338519 ms
+node --max-old-space-size=8192 tools/mutation-score.mjs --base origin --gates  1916.55s user 4.04s system 82% cpu 38:58.79 total

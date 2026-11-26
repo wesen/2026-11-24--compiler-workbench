@@ -1,0 +1,33 @@
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (93.84516ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (298.74388ms)
+✔ P2.4: the book's other r0 numbers reproduce (317.330041ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (1390.524764ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (339.00495ms)
+✔ P2.4: encoders and the disassembler round-trip (72.754559ms)
+✔ P2.4: options are validated with the prototype's codes (31.930866ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (5.477628ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (15.001268ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (19.045427ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (16.390447ms)
+✔ P2.4: heat, diffs, machine stages and image status (26.838041ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (4168.446639ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit) (1368.859413ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (175.088426ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (163.862758ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (42.35537ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (56.895114ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (10.325809ms)
+✔ P2.6: corpus parity (all projects) (3949.629718ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (211.31098ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8464.910248
+
+real	0m8.520s
+user	0m15.850s
+sys	0m0.713s

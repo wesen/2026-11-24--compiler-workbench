@@ -1,0 +1,33 @@
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (86.606152ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (926.250617ms)
+✔ P2.4: the book's other r0 numbers reproduce (301.940725ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (1609.154625ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (353.271433ms)
+✔ P2.4: encoders and the disassembler round-trip (109.662599ms)
+✔ P2.4: options are validated with the prototype's codes (35.746422ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (7.956071ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (39.072778ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (40.722426ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (23.796239ms)
+✔ P2.4: heat, diffs, machine stages and image status (40.105907ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (17798.712631ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit) (704.936057ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (452.031145ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (864.234372ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (61.686028ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (133.270265ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (11.892208ms)
+✔ P2.6: corpus parity (all projects) (15666.230795ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (563.301352ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 22253.882036
+
+real	0m22.301s
+user	0m45.083s
+sys	0m0.695s

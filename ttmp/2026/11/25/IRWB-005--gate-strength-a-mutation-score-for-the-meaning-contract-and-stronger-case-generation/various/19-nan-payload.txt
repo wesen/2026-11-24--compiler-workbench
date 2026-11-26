@@ -1,0 +1,46 @@
+F32_EDGES NaNs: 0x7fc00000
+F32_EXTRA NaNs: 0xffc00000, 0x7fa00000
+{
+ "addNegZero": {
+  "version 1 (Program.apply)": {
+   "accepted": true,
+   "check": "80/80"
+  },
+  "version 2": {
+   "ok": false,
+   "reason": "2/160 sampled cases disagree"
+  },
+  "non-canonical NaN arguments in the cases": {
+   "v1": 0,
+   "v2": 2
+  },
+  "runs": {
+   "canonical": "0x7fc00000: r0 0x7fc00000, rewritten 0x7fc00000",
+   "quiet, payload 1": "0x7fc00001: r0 0x7fc00000, rewritten 0x7fc00001  DIFFERS",
+   "negative quiet": "0xffc00000: r0 0x7fc00000, rewritten 0xffc00000  DIFFERS",
+   "signalling": "0x7fa00000: r0 0x7fc00000, rewritten 0x7fa00000  DIFFERS",
+   "signalling, payload 1": "0x7f800001: r0 0x7fc00000, rewritten 0x7f800001  DIFFERS"
+  }
+ },
+ "scaled": {
+  "version 1 (Program.apply)": {
+   "accepted": true,
+   "check": "80/80"
+  },
+  "version 2": {
+   "ok": true,
+   "reason": "160/160 sampled cases agree (0 inconclusive)"
+  },
+  "non-canonical NaN arguments in the cases": {
+   "v1": 0,
+   "v2": 5
+  },
+  "runs": {
+   "canonical": "0x7fc00000: r0 0x7fc00000, rewritten 0x7fc00000",
+   "quiet, payload 1": "0x7fc00001: r0 0x7fc00000, rewritten 0x7fc00000",
+   "negative quiet": "0xffc00000: r0 0x7fc00000, rewritten 0x7fc00000",
+   "signalling": "0x7fa00000: r0 0x7fc00000, rewritten 0x7fc00000",
+   "signalling, payload 1": "0x7f800001: r0 0x7fc00000, rewritten 0x7fc00000"
+  }
+ }
+}
