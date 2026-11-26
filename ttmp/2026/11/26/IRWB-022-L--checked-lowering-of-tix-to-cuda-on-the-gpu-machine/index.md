@@ -21,6 +21,7 @@ WhenToUse: ""
 
 The CUDA backend emits directly from Tix, batches correctness checks on the GB10 and compares each result with the original program's f64 evaluation.
 
+- [Final report with the independent evaluation](reference/02-report.md)
 - [Design and change ledger](design-doc/01-checking-tix-cuda-lowering-on-the-gb10.md)
 - [Implementation results and corpus timings](reference/02-cuda-lowering-results-and-corpus-timings.md)
 - [Diary and probe reproduction commands](reference/01-design-and-implementation-diary.md)

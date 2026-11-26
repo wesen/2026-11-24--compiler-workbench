@@ -15,3 +15,7 @@ Implemented direct CUDA lowering, binary execution, the origin-f64 guarantee and
 ## 2026-11-26
 
 Completed the reviewed CUDA backend, verified 29 tensor tests, and reconciled all six GPU and interpreter timing pairs.
+
+## 2026-11-26
+
+Published the final report for 709f8fb with independent results and a single untimed GB10 experiment isolating the intrinsic differences.

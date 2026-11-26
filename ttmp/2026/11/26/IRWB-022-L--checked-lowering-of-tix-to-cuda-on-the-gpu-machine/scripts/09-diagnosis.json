@@ -1,0 +1,56 @@
+{
+  "seed": 22,
+  "host": "manuel@bling",
+  "hash": "5593a43b81ed19b9",
+  "comparisons": [
+    {
+      "name": "softmax",
+      "optimized": false,
+      "elements": 187,
+      "shippedDifferences": 81,
+      "wideDifferences": 0
+    },
+    {
+      "name": "softmax",
+      "optimized": true,
+      "elements": 187,
+      "shippedDifferences": 68,
+      "wideDifferences": 0
+    },
+    {
+      "name": "attention",
+      "optimized": false,
+      "elements": 143,
+      "shippedDifferences": 86,
+      "wideDifferences": 0
+    },
+    {
+      "name": "attention",
+      "optimized": true,
+      "elements": 143,
+      "shippedDifferences": 82,
+      "wideDifferences": 0
+    },
+    {
+      "name": "mlp",
+      "optimized": false,
+      "elements": 143,
+      "shippedDifferences": 21,
+      "wideDifferences": 0
+    },
+    {
+      "name": "mlp",
+      "optimized": true,
+      "elements": 143,
+      "shippedDifferences": 24,
+      "wideDifferences": 0
+    },
+    {
+      "name": "logged",
+      "optimized": false,
+      "elements": 11,
+      "shippedDifferences": 11,
+      "wideDifferences": 0
+    }
+  ]
+}
