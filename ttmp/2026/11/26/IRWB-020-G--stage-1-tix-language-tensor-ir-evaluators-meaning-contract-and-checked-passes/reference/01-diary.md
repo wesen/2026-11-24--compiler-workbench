@@ -235,3 +235,37 @@ Now do the following in this session:
 Node 24 probe confirmed the weak-map self-reference lookup and canonical `Float32Array.of(NaN)` word on this
 host (`7fc00000`). `npm ci` succeeded, with only the esbuild install-script policy warning. Start at the
 revised design's artifact, sampled domain and framework inventory sections.
+
+## Step 3: Shared native pass preparation and the synchronous gate
+
+The first end-to-end probe found that native preparation itself fit Tix, but the existing pass runner creates
+an edit transaction even when the kernel returns native data. Tix has a projection and validator, not a
+logical-graph rebuild. The new synchronous route does not open an edit.
+
+### Prompt Context
+
+See Step 2. The reviewed design is commit `00025ab`.
+
+### What I did and why
+
+- Factored native artifact preparation, identity reporting, and write checks in `src/framework/passes/define-pass.ts`.
+  `applyPassSync` runs the host `CheckResult` callback on the validated revisions. It disallows managed clauses,
+  a kernel's `edit` accessor, and asynchronous results. Async `applyPass` still uses its managed contract path.
+- Added `tests/framework/sync-pass.test.mjs` for parity with async native preparation, read-only adapters,
+  veto, identity, write declarations, invalid native data, and unsupported sync capabilities.
+
+### What didn't work
+
+After `npm run build`, a `node --input-type=module` probe calling public `optimizeTix` returned
+`IRError: Adapter tensor.tix-tree is not Rewritable` (`ir.capability`). `applyPassSync` was still allocating
+an unused edit via `view.beginEdit()`. After removing that allocation, the same probe inlined an affine
+slice (`[4, 6]`), collapsed a chain from three statements to one, and split the length-eight witness from
+`1` to `1.000000238418579`.
+
+### What worked / review instructions
+
+`node --test tests/framework/*.test.mjs` passed 228 tests, and
+`node --test tests/typed/{passes,evaluate-analyses,meaning-memo,strategies,inline}.test.mjs` passed 31.
+Review `prepareNative`, `checkWrites`, and `applyPassSync` in that order. Do not require a rebuild just to
+inspect a replacement's logical projection. This finding is specific to the new entry point; the async
+runner's edit capability and contract manager were not changed.
