@@ -1714,3 +1714,17 @@ The user asked for an experiment. Six Codex agents each create a docmgr ticket a
 
 ### What warrants a second pair of eyes
 - **The sandbox reported `approval: on-request`.** In `exec` mode nobody can approve a request, so a command needing escalation fails rather than waits.
+
+## Step 39: IRWB-007 guide merged (specializing Candela on its scene data)
+
+The third research-guide agent finished. Its guide is uploaded to `/ai/2026/11/26/IRWB-007`, which the agent verified by listing it. The branch touches ticket files only, and I merged it as a ticket-only merge.
+
+### What I learned (the agent's measurements, scripts 01–04)
+- **The scenes are small.** At most 24 objects, 2 lights and 15 BVH nodes (depth at most 4), and no triangle meshes. B-01 is one sphere and one plane in a single BVH leaf.
+- **The binding-time profile tests my hypothesis before anything is built.** The agent ran a shadow evaluator, checked bit for bit against the real one. On B-01, 51% of a pixel's operations depend only on constant memory, and `oRow` alone takes 35%. The most a specializer could cut:
+  - **polyvariant:** 2.66–3.04× on B-01, at least 2× on 11 of 18 scenes, and 4.51–4.94× on R-01;
+  - **monovariant:** at most 1.23× on 17 scenes.
+
+  So "multiples, not percents" holds only for a polyvariant specializer. It is already false for the 7 ray-marched and volume scenes, where dynamic arithmetic dominates.
+- **The hand staging was a small part of the cost.** The gallery's `s<k>_` sections are at most 3% of a pixel's operations in the object-and-BVH scenes.
+- **A stated falsifier:** if Phases 2 and 3 leave B-01 above 6,000 instructions per pixel (from IRWB-003's 8,267.7), the hypothesis fails.
