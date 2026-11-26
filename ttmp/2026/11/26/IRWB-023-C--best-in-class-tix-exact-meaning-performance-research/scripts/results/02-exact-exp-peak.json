@@ -1,0 +1,1 @@
+{"host":"manuel@bling","hash":"fb7f4b98baf199f1af6cb770295bc1a7ca898f05b9c9aae1ac746f5a79e3adb9","compiled":false,"compileMs":3,"runMs":316,"exit":0,"stdout":"{\"mode\":\"peak\",\"ffmaMacPerS\":1.349e+13,\"fmulFaddMacPerS\":7.197e+12,\"dfmaPerS\":1.931e+11,\"ffmaTflops\":26.98,\"fmulFaddTflops\":14.39,\"dfmaTflops\":0.386}\n","stderr":"","outputs":[]}

@@ -1,0 +1,1 @@
+{"host":"manuel@bling","hash":"820ea852731a110dd9b625e6225a120440d3b0d47e107ed351b31ff51a428d06","compiled":true,"compileMs":905,"runMs":884,"exit":0,"stdout":"{\"mode\":\"exhaust\",\"inputs\":4294967296,\"mismatches\":861,\"fallbacks\":2057372123,\"inRangeRoundingTestFallbacks\":475,\"firstMismatchWord\":\"0x3acf67f8\",\"ms\":591.1}\n","stderr":"","outputs":[]}
