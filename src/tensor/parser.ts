@@ -45,6 +45,30 @@ interface Binder {
   token: Token;
   dim?: Affine;
 }
+interface Access {
+  index: Affine;
+  extent: Affine;
+  token: Token;
+  binders: Map<string, Binder>;
+}
+function checkBounds({ index, extent, token, binders }: Access) {
+  if ([...binders.values()].some(b => b.dim && !b.dim.terms.length && b.dim.constant === 0)) return;
+  let lo = constant(index.constant),
+    hi = constant(index.constant),
+    excess: Affine;
+  try {
+    for (const [id, k] of index.terms) {
+      const last = add(binders.get(id)!.dim!, constant(-1));
+      if (k < 0) lo = add(lo, last, k);
+      else hi = add(hi, last, k);
+    }
+    excess = add(hi, extent, -1);
+  } catch (error) {
+    fail(token, (error as Error).message);
+  }
+  if ((!lo.terms.length && lo.constant < 0) || (!excess.terms.length && excess.constant >= 0))
+    fail(token, 'Index outside axis');
+}
 export function parse(source: string): Module {
   return new Parser(lex(source)).program();
 }
@@ -54,6 +78,8 @@ class Parser {
   private tensors = new Map<string, Tensor>();
   private symbols = new Set<string>();
   private scope = new Map<string, Binder>();
+  // Extents can be inferred by a later read in the same RHS.
+  private accesses: Access[] = [];
   constructor(private tokens: Token[]) {}
   private get t() {
     return this.tokens[this.pos];
@@ -193,6 +219,7 @@ class Parser {
   }
   private statement(): Statement {
     this.scope.clear();
+    this.accesses = [];
     const t = this.ident();
     if (this.tensors.has(t.text)) fail(t, 'Tensor already assigned');
     this.expect('[');
@@ -208,6 +235,7 @@ class Parser {
     this.expect(';');
     const axes = this.axes(binders),
       shape = binders.map(b => b.dim!);
+    this.accesses.forEach(checkBounds);
     const s = { name: t.text, shape, axes, expr };
     this.tensors.set(s.name, s);
     return s;
@@ -265,8 +293,8 @@ class Parser {
           if (b.dim && JSON.stringify(b.dim) !== JSON.stringify(d)) fail(tok, 'Inconsistent extent');
           b.dim = d;
         }
-        if (!a.terms.length && (a.constant < 0 || (!d.terms.length && a.constant >= d.constant)))
-          fail(tok, 'Index outside axis');
+        const binders = new Map([...this.scope.values()].map(b => [b.id, b]));
+        this.accesses.push({ index: a, extent: d, token: tok, binders });
         return a;
       });
       this.expect(']');

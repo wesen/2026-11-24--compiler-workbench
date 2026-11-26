@@ -1,0 +1,6 @@
+fn mlp(x: f32[N,D], w: f32[D,H], bias: f32[H], v: f32[H,O], outBias: f32[O]): f32[N,O] {
+  h[i,j] = (sum(d) x[i,d] * w[d,j]) + bias[j];
+  g[i,j] = 0.5 * h[i,j] * (1 + tanh(0.79788456 * (h[i,j] + 0.044715 * h[i,j] * h[i,j] * h[i,j])));
+  y[i,j] = (sum(k) g[i,k] * v[k,j]) + outBias[j];
+  return y;
+}

@@ -134,3 +134,9 @@ Accepted all four cuts. Direct input axes bind symbols, and compile-time checks 
 ## Step 3. Implement the native pass path and executable IR
 
 Extracted native preparation and write enforcement from applyPass and reused them in applyNativePassSync. The new runner rejects manager-dependent declarations and returns immediately on an unchanged revision. Its regression test uses an adapter without rebuild. Added the parser, lexical binder resolution, affine forms, IR projection and evaluator. After npm run build, a worktree probe parsed a row sum, created a tensor.tix artifact and evaluated [1,2,3] to Float32Array [6]. The installed formatter was available through npm exec --offline.
+
+## Step 4. Gate both rewrites and exercise all six programs
+
+Added the public API, contract selection and both native rewrites. The generator checks coverage per function and screens on the origin. The exact and tolerance checks use the same framework differential machinery with different baselines. Identity-order substitution and floor block count are test-only kernels submitted to the normal checked pass entry.
+
+Added six independent numerical corpus fixtures and checks for both precisions before and after optimization. A probe showed that our first two reduction-precedence examples rounded to the same f32 result. Replacing [1,1,16777216] with [1,2,4] distinguishes an in-body division (2.3333334922790527) from division after the fold (2.3333332538604736). The static address checks use all inferred extents after parsing the RHS.
