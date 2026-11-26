@@ -1,0 +1,93 @@
+{
+ "node": "v24.18.0",
+ "cold": {
+  "immutable": 1306.8,
+  "contentHash": 878.1,
+  "revisionHash": 26.5,
+  "validateBlocks": 240.9,
+  "entities": 826.4,
+  "relations": 1220.4,
+  "sortEntitiesAlone": 9.1,
+  "sortRelationsAlone": 29.9,
+  "validateGraph": 607.5,
+  "resolveCheck": 222.7,
+  "counts": {
+   "entities": 103618,
+   "relations": 132054
+  },
+  "createIRArtifactTotal": 6388.6
+ },
+ "r0": "cd36346ea7c4f175d7db025afe953e89f078902ef1ee44beaf15a7906b140456",
+ "warm": {
+  "immutable": 0.1,
+  "contentHash": 287.5,
+  "revisionHash": 31.6,
+  "validateBlocks": 124.2,
+  "entities": 80.8,
+  "relations": 100.4,
+  "sortEntitiesAlone": 7.2,
+  "sortRelationsAlone": 23.6,
+  "validateGraph": 325.3,
+  "resolveCheck": 216.8,
+  "counts": {
+   "entities": 103618,
+   "relations": 132054
+  },
+  "createIRArtifactTotal": 1045.8
+ },
+ "perPart": {
+  "totalMs": 2113.8,
+  "entities": 103618,
+  "relations": 132054,
+  "top": [
+   [
+    "tracePath",
+    177.5,
+    6165,
+    8443
+   ],
+   [
+    "cdlInit",
+    112.3,
+    5390,
+    6159
+   ],
+   [
+    "sampleLobe",
+    82.4,
+    2800,
+    3857
+   ],
+   [
+    "envL",
+    52.8,
+    852,
+    1071
+   ],
+   [
+    "neeAt",
+    46.6,
+    1785,
+    2392
+   ]
+  ],
+  "medianMs": 2.532
+ },
+ "delta": {
+  "cfgRun": 523.8,
+  "createIRArtifactR1": 1683.4,
+  "diffWhole": 419.4,
+  "changedEntities": 882,
+  "changedRelations": 3737,
+  "correspondenceWhole": 5212.2,
+  "correspondenceEntries": 103618,
+  "correspondenceNonRetained": 882,
+  "diffChangedPartsOnly": 721.9,
+  "partsChanged": 110,
+  "partDiffEntities": 882,
+  "partDiffRelations": 3737,
+  "entityIdSets": 245.4
+ },
+ "r1": "4aea7e81dd046901b550627db94bd36074be8797e59d9a75323c68e03472b1a3",
+ "rssMB": 1402
+}

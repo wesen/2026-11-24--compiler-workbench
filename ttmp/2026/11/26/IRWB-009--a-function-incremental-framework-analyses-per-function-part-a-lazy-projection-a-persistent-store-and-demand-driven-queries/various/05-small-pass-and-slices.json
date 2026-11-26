@@ -1,0 +1,70 @@
+{
+ "node": "v24.18.0",
+ "replayMs": 111996.7,
+ "r12": "f7ff969f7ff9098088ab5fc236012d2abcb7db1567f5db8bbeeecc8fbda89e05",
+ "r12Matches": true,
+ "lastCfg": {
+  "needs": 22.7,
+  "storeFromAlone": 207.1,
+  "passRun": 831.6,
+  "fns": [
+   "hitMesh",
+   "traceAll"
+  ],
+  "createIRArtifact": 1791.8,
+  "revision": "b33d1737c725506c7880b8701899d0a0d78f71d6a7b981db89d85d84f48c40d9",
+  "matches": true,
+  "openBothViews": 65.3,
+  "diff": 366,
+  "changedEntities": 12,
+  "changedRelations": 36,
+  "correspondence": 11052.2,
+  "correspondenceEntries": 93138,
+  "undeclared": 0,
+  "undeclaredMs": 0,
+  "applyPassWhole": 8361.8,
+  "applyPassSameRevision": true
+ },
+ "slices": {
+  "parts": 332,
+  "partChars": 14797589,
+  "parseFreezeSumMs": 1093.6,
+  "largestParseFreeze": [
+   [
+    "tracePath",
+    946233,
+    82.6
+   ],
+   [
+    "cdlInit",
+    616825,
+    59
+   ],
+   [
+    "sampleLobe",
+    449131,
+    29.5
+   ],
+   [
+    "s3_mat_2",
+    60870,
+    25.2
+   ],
+   [
+    "s8_evalMaterial",
+    74369,
+    23.1
+   ]
+  ],
+  "medianParseFreezeMs": 1.438,
+  "assembleParts": 173.4,
+  "validateBlocks": 111.2,
+  "revisionText": 1253.2,
+  "revisionChars": 16319710,
+  "portableSha256Ms": 358.2,
+  "portableSha256WorstSliceMs": 62.1,
+  "sliceChars": 1048576,
+  "revisionMatches": true
+ },
+ "rssMB": 2540
+}
