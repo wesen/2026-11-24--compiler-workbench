@@ -144,3 +144,18 @@ Incorporate the reviewer response before implementing. After implementation, run
 ### Code review instructions
 
 Start with the framework changes and gate tests in the [Stage 1 design](../design-doc/01-stage-1-design-for-tix-tensor-programs.md). The two targeted commands above exercised the existing framework. The probe tested the arithmetic and acceptance machinery directly. Tensor parsing and pass behavior will have their own tests after implementation.
+
+## Step 2 — Revise the design after review
+
+The review identified a reference-lifetime bug in the proposed API. The revised program handle retains the flat source artifact across optimization calls. Wrong variants are now test kernels registered with the same pass API and checked on generated inputs. Framework coverage goes in a new test file.
+
+### Prompt context
+
+The reviewer requested a separate revision commit followed by Stage 1 implementation and targeted verification. The review required actual wrong kernels, a new framework test file and a persistent reference. It asked to cut the joint rank solver and call-time access checks, and clarified that the native runner should take a `definePass` pass.
+
+### Decisions and checks
+
+- Kept direct exact inversion for single-symbol affine input axes to handle `2*N+1` without a joint solver. Coupled axes can be checked after names are bound by other axes.
+- Moved the access proof to compile time using symbolic intervals and simple sufficient bounds. Concrete calls remain limited to valid shape bindings.
+- Kept the standalone differential runner, exceptional-value matching, the rounding witness, and one origin-derived suite per call.
+- The implementation and review gates follow this documentation checkpoint.
