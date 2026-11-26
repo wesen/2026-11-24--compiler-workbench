@@ -3,24 +3,56 @@
   "config": "sm",
   "model": "gpt-6.2-sol",
   "effort": "medium",
-  "round": "r1-sm"
+  "round": "r1-sm",
+  "harness": "codex"
  },
  "IRWB-021-B": {
   "config": "sh",
   "model": "gpt-6.2-sol",
   "effort": "high",
-  "round": "r1-sh"
+  "round": "r1-sh",
+  "harness": "codex"
  },
  "IRWB-021-C": {
   "config": "am",
   "model": "gpt-6.2-astra",
   "effort": "medium",
-  "round": "r1-am"
+  "round": "r1-am",
+  "harness": "codex"
  },
  "IRWB-021-A": {
   "config": "ah",
   "model": "gpt-6.2-astra",
   "effort": "high",
-  "round": "r1-ah"
+  "round": "r1-ah",
+  "harness": "codex"
+ },
+ "IRWB-021-H": {
+  "config": "pi-sm",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "medium",
+  "round": "r1-pi-sm",
+  "harness": "pi"
+ },
+ "IRWB-021-G": {
+  "config": "pi-sh",
+  "model": "openai-codex/gpt-6.2-sol",
+  "effort": "high",
+  "round": "r1-pi-sh",
+  "harness": "pi"
+ },
+ "IRWB-021-F": {
+  "config": "pi-am",
+  "model": "openai-codex/gpt-6.2-astra",
+  "effort": "medium",
+  "round": "r1-pi-am",
+  "harness": "pi"
+ },
+ "IRWB-021-E": {
+  "config": "pi-ah",
+  "model": "openai-codex/gpt-6.2-astra",
+  "effort": "high",
+  "round": "r1-pi-ah",
+  "harness": "pi"
  }
 }
