@@ -1,7 +1,7 @@
 ---
 Title: Certified scheduling for Tix
 Ticket: IRWB-023-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -11,46 +11,18 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-26T18:26:37.857809066-05:00
+Summary: IRWB-023-A research into exact GPU schedules with proof and performance evidence.
+LastUpdated: 2026-11-26T18:47:46.865912837-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Certified scheduling for Tix
 
-## Overview
+This ticket studies the performance of checked, ordered-f32 schedules on the GB10. The leading proposals are row-resident execution, revision-bound schedule checking, and ordered contraction tiling with conditional integer specialization.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
-
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- compiler
-- ir
-- verification
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Research design and results](design-doc/01-certified-scheduling-for-tix.md)
+- [Research diary](reference/01-research-diary.md)
+- [Prototypes and raw evidence](scripts/)
+- [Tasks](tasks.md)
+- [Changelog](changelog.md)

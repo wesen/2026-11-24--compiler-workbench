@@ -1,0 +1,7 @@
+{"test":"dot-domains","counts":{"fixed-grid":{"accepted":1200,"grid":0,"integer bound":0,"exponent bound":0},"varied-grids":{"accepted":1200,"grid":0,"integer bound":0,"exponent bound":0},"f32-bounded":{"accepted":0,"grid":1200,"integer bound":0,"exponent bound":0},"raw-near-bounds":{"accepted":0,"grid":1200,"integer bound":0,"exponent bound":0}},"interpreterChecks":32}
+{"test":"per-axis-grids","globalA":false,"globalB":false,"pairMatches":16}
+{"test":"boundary","label":"binary32 coefficient limit","proof":"integer bound","ordered":"16806416","onceRounded":"16806418","orderedWord":"4b803908","onceRoundedWord":"4b803909"}
+{"test":"boundary","label":"underflow before addition","proof":"exponent bound","ordered":"0","onceRounded":"1.401298464324817e-45","orderedWord":"0","onceRoundedWord":"1"}
+{"test":"boundary","label":"exact subnormal grid","proof":"accepted","ordered":"2.802596928649634e-45","onceRounded":"2.802596928649634e-45","orderedWord":"2","onceRoundedWord":"2"}
+{"test":"boundary","label":"overflow before cancellation","proof":"exponent bound","ordered":"NaN","onceRounded":"0","orderedWord":"ffc00000","onceRoundedWord":"0"}
+{"test":"boundary","label":"signed zero","proof":"accepted","ordered":"0","onceRounded":"0","orderedWord":"0","onceRoundedWord":"0"}

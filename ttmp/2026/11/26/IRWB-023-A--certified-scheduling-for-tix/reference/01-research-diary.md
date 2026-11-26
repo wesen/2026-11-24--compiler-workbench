@@ -1,7 +1,7 @@
 ---
 Title: Research diary
 Ticket: IRWB-023-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -11,7 +11,7 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
+Summary: Research chronology with replay commands, measurements, counterexamples and fixes.
 LastUpdated: 2026-11-26T18:26:44.290808056-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -135,3 +135,51 @@ See Step 1. The first research checkpoint is `f1d92a6`, `IRWB-023-A: establish e
 ### Review and next experiment
 
 Replay the local certificate before running CUDA. Review the experimental artifacts separately for verifier scope and CUDA correctness. Use the integer miss result to choose a second baseline and a guard implementation with per-block failure reduction. Check eligibility off the synthetic grid and quantify the speculative sum alternative before making the final ranking.
+
+## Step 3 — Test guard eligibility, alternative carries and a better contraction baseline
+
+Using an unoptimized but correct comparison inflated the INT8 result. The follow-up paired three genuinely different costs. Exact tiling preserves Tix's ordered carries, prepacked WMMA uses a proved subdomain, and the checked variants include scanning and dispatch. This changed the recommendation to ship ordered tiling and conditionally pursue INT8 when provenance can remove recurring packing.
+
+### Prompt context
+
+See Step 1. The second checkpoint is `f2809f4`, `IRWB-023-A: measure exact residency, schedule witnesses and integer contraction`. It retains the original CUDA integer source corresponding to the first timing hash.
+
+### What I did
+
+- Ran `node <ticket>/scripts/05-dyadic-domain.mjs`. It evaluated four synthetic value families of 1,200 dots each, proved and matched 2,400 grid examples, and declined all 2,400 off-grid examples. Cross-checked 32 dots and the boundary witnesses with the interpreter. Added the case where distinct row and column grids give 16 exact results despite both whole-tensor grids failing.
+- Ran `node <ticket>/scripts/06-prefix-witness.mjs`. Varied both width and distribution across 4,608 rows. The chunk-level guess looked promising on uniform data but verified only one of 4,608 nonuniform candidate pairs at width 1024 and none at width 4096. The four-element softmax witness reproduced precisely one ULP of denominator difference. I dropped this from the near-term GPU plan.
+- Reran `04-integer-bench.mjs` with an exact tiled FP32 control, separate predicated fallback, and per-block guard failure reduction. For 512³, the tiled control gave 0.055456 ms against 0.210656 ms stage 2, 0.049472 ms packed and 0.070016 ms checked inline on the same grid. The routed miss took 0.076448 ms instead of 0.484448 ms inline. It still cost more than the unconditional tile. At K=64, the tile and prepacked device times tied at about 0.0106 ms. All outputs matched.
+- Cross-checked the dyadic range argument against IEEE 754 and the documented s32 WMMA accumulation semantics. Read Ozaki-style slicing and binned summation for their distinct numerical goals. Read Kapre and DeHon to frame the difference between the one-shot guess and iterative recovery.
+
+### What did not work
+
+The exact tile invalidated the premise that the whole-input guard was a speed win. For the synthetic hit it added more latency than the tensor-core compute saved. The first inline fallback remained slow in the follow-up run. The second CUDA compile emitted `main.cu(40): warning #128-D: loop is not reachable` on the compile-time-disabled inline fallback in the routed template instantiation. GB10 compiled and ran the intended branches. The diagnostic is retained with the raw timing log.
+
+### What warrants a second pair of eyes
+
+Review the signed-zero proof and both exponent boundaries with the actual target's gradual underflow behavior. Reuse must attach to an immutable packed operand and its aliasing and synchronization discipline. The trial hit rates are synthetic, and the timing comparison does not answer whether real production data offers enough persistent packed reuse.
+
+## Step 4 — Emit from the certificate and exercise fallback
+
+The local structural check proved a narrow plan. To connect it to the performance result, I split the verifier into a reusable module and compiled the verified phase trees into executable CUDA for both normalizations. A shape sweep ran the approved path, the baseline and both handwritten controls on identical buffers.
+
+### What I did
+
+- Probed the refactored module by rerunning `02-schedule-certificate.mjs`. It preserved all 16 mutant failures and real v6 postcondition behavior. The final replay's manager p95 was 0.342 ms for softmax and 0.203 ms for layernorm.
+- Ran `node <ticket>/scripts/01-row-bench.mjs --certified --sweep softmax layernorm`. Accepted certificates were keyed by immutable source and schedule revisions and recorded with the generated CUDA kernel digest. The final GB10 replay matched all observed outputs in full, tail, finite-edge, 4096×63, 16×1024 and over-cap configurations. Full-size generated medians were 0.387232 and 0.179456 ms against 0.767328 and 0.444576 ms. The cap at 2048 deliberately exercised the stage-2 fallback at width 4096. Handwritten wider-row variants showed opportunity beyond the cap.
+- Read current framework evidence handling, including the externally checked `proofVerifier` path. Reviewed Halide scheduling semantics, affine translation validation, GPUVerify, Alive-FP and VeriTile. Identified the checked abstract phase model and the executable/toolchain boundary as separate engineering milestones.
+- Ran `node --test tests/tensor/language.test.mjs tests/tensor/passes.test.mjs tests/tensor/corpus.test.mjs tests/tensor/cuda.test.mjs` after the clean build. All 19 focused local tests passed. The full suite and extra shared-GPU tests were outside the research measurement needs.
+
+### What did not work
+
+The initial `--certified --sweep` run passed emitted in-cap cases and the softmax fallback. Layernorm's fallback reported `0/4194304` and first mismatch reference `be060279`, candidate `00000000` at index 0, followed by `result differs` and exit 1. The launch wrapper's copied `k3` call wrote `expected.ptr` instead of its `out` parameter. An initial search-and-replace missed the argument spelling because gamma and beta occur before the destination. The corrected `beta.ptr, out, cells` call made the next full replay pass. This was a test of why schedule evidence must be paired with executable validation.
+
+### Review instructions
+
+Use the design's Replay section. The last generated evidence link binds matching source and schedule revisions and the emitted kernel digest. The earlier handwritten record establishes performance for a broader set of owners than the certificate currently supports. Timing measurements are device events and snapshots on a shared GB10. The final plan leaves the generality and target-side assurance questions explicit.
+
+## Step 5 — Verify the research handoff
+
+The design now contains three ranked proposals, two Mermaid diagrams, primary-source citations, paired measurements, counterexamples and replay commands. Verified all 21 local design links and parsed every JSONL observation. Checked each ticket JavaScript script with `node --check`. The fresh TypeScript build and the 19 focused tensor tests passed again.
+
+Docmgr closed all three tasks and the ticket. `docmgr doctor --ticket IRWB-023-A --stale-after 30` reported all checks passed. Both design and diary frontmatter validated, and `git diff --check` passed. The final commit is limited to the ticket directory.

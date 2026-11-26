@@ -101,6 +101,10 @@ __global__ void resident(const float* score, const float* values, float* out, in
 }
 #endif
 
+#ifdef CERTIFIED_ROW
+#include "certificate.cuh"
+#endif
+
 using Launch = std::function<void()>;
 static constexpr unsigned blocks(U count) { return (count + 255) / 256; }
 
@@ -180,15 +184,26 @@ static void run(int rows, int cols, const char* label, bool edges, bool timed) {
   x.upload(data(cells, 20, edges).data());
 #if defined(CASE_SOFTMAX)
   DeviceBuffer expected(cells), fused(cells), variant(cells);
-  Launch baseline = [&] {
+  auto baseline_to = [&](float* out) {
     k0<<<blocks(rows), 256>>>(rows, cols, x.ptr, t1.ptr, rows);
     k1<<<blocks(cells), 256>>>(rows, cols, x.ptr, t1.ptr, t2.ptr, cells);
     k2<<<blocks(rows), 256>>>(rows, cols, t2.ptr, t3.ptr, rows);
-    k3<<<blocks(cells), 256>>>(rows, cols, t2.ptr, t3.ptr, expected.ptr, cells);
+    k3<<<blocks(cells), 256>>>(rows, cols, t2.ptr, t3.ptr, out, cells);
   };
+  Launch baseline = [&] { baseline_to(expected.ptr); };
   Launch alternate = [&] { resident<false><<<rows, BLOCK, 4 * cols>>>(x.ptr, fused.ptr, cols); };
   Launch parallel = [&] { resident<true><<<rows, BLOCK, 4 * cols>>>(x.ptr, variant.ptr, cols); };
+#ifdef CERTIFIED_ROW
+  DeviceBuffer verified(cells);
+  Launch checked = [&] {
+    if (cols > cert_cap) return baseline_to(verified.ptr);
+    certified_row<<<rows, cert_lanes, sizeof(float) * cert_vectors * cols>>>(x.ptr, verified.ptr, cols, rows);
+  };
+  if (cols > cert_cap) printf("certified shape fallback %s width %d cap %d\n", label, cols, cert_cap);
+  measure(label, cells, {baseline, alternate, parallel, checked}, {&expected, &fused, &variant, &verified}, timed);
+#else
   measure(label, cells, {baseline, alternate, parallel}, {&expected, &fused, &variant}, timed);
+#endif
 #elif defined(CASE_LAYERNORM)
   DeviceBuffer expected(cells), fused(cells), variant(cells);
   DeviceBuffer gamma(cols), beta(cols), eps(1);
@@ -196,15 +211,26 @@ static void run(int rows, int cols, const char* label, bool edges, bool timed) {
   beta.upload(data(cols, 22, edges).data());
   const float epsilon = edges ? -1.0f : 1.0e-5f;
   eps.upload(&epsilon);
-  Launch baseline = [&] {
+  auto baseline_to = [&](float* out) {
     k0<<<blocks(rows), 256>>>(rows, cols, x.ptr, t1.ptr, rows);
     k1<<<blocks(cells), 256>>>(rows, cols, x.ptr, t1.ptr, t2.ptr, cells);
     k2<<<blocks(rows), 256>>>(rows, cols, t2.ptr, t3.ptr, rows);
-    k3<<<blocks(cells), 256>>>(rows, cols, t2.ptr, t3.ptr, eps.ptr, gamma.ptr, beta.ptr, expected.ptr, cells);
+    k3<<<blocks(cells), 256>>>(rows, cols, t2.ptr, t3.ptr, eps.ptr, gamma.ptr, beta.ptr, out, cells);
   };
+  Launch baseline = [&] { baseline_to(expected.ptr); };
   Launch alternate = [&] { resident<false><<<rows, BLOCK, 4 * cols>>>(x.ptr, gamma.ptr, beta.ptr, eps.ptr, fused.ptr, cols); };
   Launch parallel = [&] { resident<true><<<rows, BLOCK, 4 * cols>>>(x.ptr, gamma.ptr, beta.ptr, eps.ptr, variant.ptr, cols); };
+#ifdef CERTIFIED_ROW
+  DeviceBuffer verified(cells);
+  Launch checked = [&] {
+    if (cols > cert_cap) return baseline_to(verified.ptr);
+    certified_row<<<rows, cert_lanes, sizeof(float) * cert_vectors * cols>>>(x.ptr, gamma.ptr, beta.ptr, eps.ptr, verified.ptr, cols, rows);
+  };
+  if (cols > cert_cap) printf("certified shape fallback %s width %d cap %d\n", label, cols, cert_cap);
+  measure(label, cells, {baseline, alternate, parallel, checked}, {&expected, &fused, &variant, &verified}, timed);
+#else
   measure(label, cells, {baseline, alternate, parallel}, {&expected, &fused, &variant}, timed);
+#endif
 #elif defined(CASE_ATTENTION)
   const int d = timed ? 64 : 19;
   const int v = timed ? 64 : 11;
@@ -232,7 +258,7 @@ static void run(int rows, int cols, const char* label, bool edges, bool timed) {
 #endif
 }
 
-int main() {
+int main(int argc, char** argv) {
   try {
 #if defined(CASE_ATTENTION)
     run(1024, 1024, "full", false, true);
@@ -241,6 +267,13 @@ int main() {
 #endif
     run(19, 131, "tail", false, false);
     run(9, 17, "finite-edges", true, false);
+#if !defined(CASE_ATTENTION)
+    if (argc == 2 && strcmp(argv[1], "sweep") == 0) {
+      run(4096, 63, "narrow", false, true);
+      run(16, 1024, "few-rows", false, true);
+      run(1024, 4096, "over-cap", false, true);
+    }
+#endif
   } catch (const std::exception& e) {
     fprintf(stderr, "%s\n", e.what());
     return 1;

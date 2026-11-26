@@ -8,32 +8,35 @@ constexpr int tile = 64, depth = 32, threads = 128;
 constexpr float to_coeff = 0x1p7f, to_value = 0x1p-14f;
 
 // The scale is fixed for this experiment. Verify the input value before using its coefficient.
-__device__ signed char coefficient(float value, int* bad) {
+__device__ signed char coefficient(float value, bool& invalid) {
   const float scaled = __fmul_rn(value, to_coeff);
   if (scaled >= -128.0f && scaled <= 127.0f) {
     const int q = __float2int_rz(scaled);
     if (__int2float_rn(q) == scaled) return static_cast<signed char>(q);
   }
-  atomicOr(bad, 1);
+  invalid = true;
   return 0;
 }
 
 __global__ void pack(const float* a, const float* b, signed char* qa, signed char* qb,
                      int m, int n, int k, int* bad) {
   const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  if (i < m * k) qa[i] = coefficient(a[i], bad);
+  bool invalid = false;
+  if (i < m * k) qa[i] = coefficient(a[i], invalid);
   if (i < k * n) {
     const int reduction = i / n, column = i % n;
-    qb[column * k + reduction] = coefficient(b[i], bad);
+    qb[column * k + reduction] = coefficient(b[i], invalid);
   }
+  if (__syncthreads_or(invalid) && threadIdx.x == 0) atomicOr(bad, 1);
 }
 
-template<bool CheckFlag>
+template<bool CheckFlag, bool InlineFallback = true>
 __global__ void contraction(const float* a, const float* b, const signed char* qa,
                             const signed char* qb, const int* bad, float* out,
                             int n, int k) {
   const int row = blockIdx.y * tile, col = blockIdx.x * tile;
   if (CheckFlag && *bad) {
+    if (!InlineFallback) return;
     for (int index = threadIdx.x; index < tile * tile; index += blockDim.x) {
       const int i = row + index / tile, j = col + index % tile;
       float acc = 0.0f;
@@ -83,6 +86,39 @@ __global__ void contraction(const float* a, const float* b, const signed char* q
   }
 }
 
+// Cache both input tiles while advancing each output's original K carry.
+constexpr int fTile = 32, fDepth = 16;
+template<bool OnlyOnMiss>
+__global__ void ordered_tile(const float* a, const float* b, const int* bad, float* out, int n, int k) {
+  if (OnlyOnMiss && !*bad) return;
+  __shared__ float left[fTile][fDepth], right[fDepth][fTile];
+  const int row = blockIdx.y * fTile, col = blockIdx.x * fTile;
+  const int row_lane = threadIdx.x / 16, column_lane = threadIdx.x % 16;
+  float result[4][2] = {};
+  for (int base = 0; base < k; base += fDepth) {
+    for (int i = threadIdx.x; i < fTile * fDepth; i += blockDim.x) {
+      left[i / fDepth][i % fDepth] = a[(row + i / fDepth) * k + base + i % fDepth];
+      right[i / fTile][i % fTile] = b[(base + i / fTile) * n + col + i % fTile];
+    }
+    __syncthreads();
+    #pragma unroll
+    for (int d = 0; d < fDepth; d++) {
+      #pragma unroll
+      for (int i = 0; i < 4; i++) {
+        #pragma unroll
+        for (int j = 0; j < 2; j++) {
+          const float product = __fmul_rn(left[row_lane + 8 * i][d], right[d][column_lane + 16 * j]);
+          result[i][j] = __fadd_rn(result[i][j], product);
+        }
+      }
+    }
+    __syncthreads();
+  }
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 2; j++)
+      out[(row + row_lane + 8 * i) * n + col + column_lane + 16 * j] = result[i][j];
+}
+
 struct Workspace {
   signed char* qa = nullptr;
   signed char* qb = nullptr;
@@ -101,9 +137,10 @@ struct Workspace {
 
 using Launch = std::function<void()>;
 
-static void run(int m, int n, int k, const char* label, bool invalid, bool extreme, bool timed) {
+static void run(int m, int n, int k, const char* label, int miss, bool extreme, bool timed) {
   if (m % tile || n % tile || k % depth || k > 1024) throw std::runtime_error("unsupported test geometry");
   DeviceBuffer a(m * k), b(k * n), ordered(m * n), packed(m * n), guarded(m * n);
+  DeviceBuffer tiled(m * n), routed(m * n);
   Workspace workspace(m * k, k * n);
   std::mt19937 random(23);
   auto make = [&](int count) {
@@ -111,14 +148,15 @@ static void run(int m, int n, int k, const char* label, bool invalid, bool extre
     for (int i = 0; i < count; i++)
       data[i] = extreme ? -1.0f : static_cast<float>(int(random() % 256) - 128) / 128.0f;
     if (!extreme) data[0] = -0.0f;
+    if (miss == 2) for (auto& x : data) x += 0.001f;
     return data;
   };
   a.upload(make(m * k).data());
   auto b_host = make(k * n);
-  if (invalid) b_host[b_host.size() - 2] = 0x1p-149f;
+  if (miss == 1) b_host[b_host.size() - 2] = 0x1p-149f;
   b.upload(b_host.data());
 
-  const dim3 grid(n / tile, m / tile);
+  const dim3 grid(n / tile, m / tile), float_grid(n / fTile, m / fTile);
   const auto prepare = [&] {
     check(cudaMemsetAsync(workspace.bad, 0, sizeof(int)));
     pack<<<(std::max(m * k, k * n) + 255) / 256, 256>>>(
@@ -132,15 +170,27 @@ static void run(int m, int n, int k, const char* label, bool invalid, bool extre
     contraction<true><<<grid, threads>>>(
       a.ptr, b.ptr, workspace.qa, workspace.qb, workspace.bad, guarded.ptr, n, k);
   };
+  Launch exact_tiled = [&] { ordered_tile<false><<<float_grid, threads>>>(
+    a.ptr, b.ptr, workspace.bad, tiled.ptr, n, k); };
+  Launch route = [&] {
+    prepare();
+    contraction<true, false><<<grid, threads>>>(
+      a.ptr, b.ptr, workspace.qa, workspace.qb, workspace.bad, routed.ptr, n, k);
+    ordered_tile<true><<<float_grid, threads>>>(a.ptr, b.ptr, workspace.bad, routed.ptr, n, k);
+  };
   prepare();
-  baseline();
-  auto launches = invalid ? std::vector<Launch>{baseline, checked} : std::vector<Launch>{baseline, resident, checked};
+  std::vector<Launch> launches{baseline, exact_tiled, checked, route};
+  std::vector<const char*> names{"ordered", "exact-tiled", "guarded-inline", "guarded-routed"};
+  if (!miss) {
+    launches.push_back(resident);
+    names.push_back("prepacked");
+  }
   for (const auto& launch : launches) launch();
   check(cudaGetLastError());
   check(cudaDeviceSynchronize());
   int verdict;
   check(cudaMemcpy(&verdict, workspace.bad, sizeof(verdict), cudaMemcpyDeviceToHost));
-  if (verdict != invalid) throw std::runtime_error("bad guard verdict");
+  if (verdict != (miss != 0)) throw std::runtime_error("bad guard verdict");
 
   std::vector<float> ref(m * n), got(m * n);
   ordered.download(ref.data());
@@ -152,8 +202,10 @@ static void run(int m, int n, int k, const char* label, bool invalid, bool extre
     printf("equal %s %s %zu/%d guard %d\n", label, version, equal, m * n, verdict);
     if (equal != got.size()) throw std::runtime_error("contraction differs");
   };
-  if (!invalid) compare(packed, "prepacked");
-  compare(guarded, "guarded");
+  if (!miss) compare(packed, "prepacked");
+  compare(tiled, "exact-tiled");
+  compare(guarded, "guarded-inline");
+  compare(routed, "guarded-routed");
   if (!timed) return;
 
   Event start, stop;
@@ -171,7 +223,7 @@ static void run(int m, int n, int k, const char* label, bool invalid, bool extre
     }
   }
   for (size_t v = 0; v < launches.size(); v++) {
-    const char* version = v == 0 ? "ordered" : v == 1 && !invalid ? "prepacked" : "guarded";
+    const char* version = names[v];
     printf("samples_ms %s %s", label, version);
     for (float t : observations[v]) printf(" %.6f", t);
     auto sorted = observations[v];
@@ -182,11 +234,12 @@ static void run(int m, int n, int k, const char* label, bool invalid, bool extre
 
 int main() {
   try {
-    run(512, 512, 512, "512-cube", false, false, true);
-    run(512, 512, 64, "512x512x64", false, false, true);
-    run(512, 512, 512, "512-cube-miss", true, false, true);
-    run(256, 192, 96, "rectangular", false, false, false);
-    run(64, 64, 1024, "maximum-coefficient-bound", false, true, false);
+    run(512, 512, 512, "512-cube", 0, false, true);
+    run(512, 512, 64, "512x512x64", 0, false, true);
+    run(512, 512, 512, "512-cube-single-miss", 1, false, true);
+    run(512, 512, 512, "512-cube-many-misses", 2, false, true);
+    run(256, 192, 96, "rectangular", 0, false, false);
+    run(64, 64, 1024, "maximum-coefficient-bound", 0, true, false);
   } catch (const std::exception& e) {
     fprintf(stderr, "%s\n", e.what());
     return 1;
