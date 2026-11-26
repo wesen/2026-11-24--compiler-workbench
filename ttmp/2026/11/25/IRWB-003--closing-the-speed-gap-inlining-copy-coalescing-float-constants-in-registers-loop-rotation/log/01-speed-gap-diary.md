@@ -1,0 +1,838 @@
+---
+Title: Speed gap diary (IRWB-003)
+Ticket: IRWB-003
+Status: active
+Topics:
+    - compiler
+    - ir
+    - candela
+    - performance
+DocType: log
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: Chronological record of IRWB-003, closing the measured speed gap to the reference compiler with inlining, copy coalescing, constants in registers and loop rotation.
+LastUpdated: 2026-11-25T23:30:00-05:00
+WhatFor: Reconstructing what was done, measured and decided, and why.
+WhenToUse: Before resuming or reviewing IRWB-003.
+---
+
+# Speed gap diary (IRWB-003)
+
+## Step 1: Read the brief, the guides and the code; record the frozen baselines
+
+This step loaded the skills, read everything the brief names, read the code that the four items touch, and recorded the baselines that must stay identical at the end. Nothing was changed in the code. The four baselines are green and saved in `various/`, and a probe script reproduces the benchmark table exactly.
+
+### Prompt Context
+**User prompt (verbatim):** "ask subagents to always commit at appropriate intervals and keep a detailed diary as you work (using the diary format from the skill). When a milestone is finished, write a detailed project report for the obsidian vault as a deep dive technical analysis blog post using a textbook writing style (no analogies, see skill). [...] For each, create a ticket and design doc (if you don't have already) Create a detailed analysis / design / implementation guide that is for a new intern, explaining all the parts of the system needed to understand what it is, with prose paragraphs and bullet point sand pseudocode and diagrams and api references and file references. It should be very clear and technical. Store in the ticket and the nupload to remarkable. Then implement"
+**Assistant interpretation:** The coordinator assigned me milestone IRWB-003 (the speed gap): write an intern guide in the ticket, upload it, implement inlining (E3), copy coalescing (H2), f32 constants in registers and loop rotation (G1) behind a new pipeline and new default-off backend options, measure against the reference compiler on the corpus and Candela, keep a detailed diary, commit at working increments, and write a vault report that the coordinator commits.
+**Inferred user intent:** Close the measured instruction gap to the reference compiler without changing anything the book's numbers depend on, with every new transformation checked by the meaning contract and traceable by `why`.
+**Commit (code):** none in this step.
+
+### What I did
+- Loaded the skills `ticket-research-docmgr-remarkable`, `docmgr`, `diary`, `textbook-authoring`, `remarkable-upload`.
+- Read the IRWB-002 intern guide: Part 1 (sections 1–17), items E3, G1, H2, the roadmap and the glossary; IRWB-001 design-doc 05 §9; IRWB-001 diary steps 18–29; the f32 backend agent's diary steps 8–10.
+- Read the code: `src/typed/model.ts`, `src/typed/tx.ts`, `src/typed/passes.ts` (typedPass, dfe, licm, lvn, subst, PASSES, PIPELINES), `src/typed/program.ts` (apply, pipeline, why), `src/typed/evaluate.ts` (evaluate, meaningKept), `src/typed/analyses.ts` (isPure, loops, liveness), `src/typed/ir.ts` (validator, projection), `src/typed/backend/{select,regalloc,compile,options,image}.ts`, `src/typed/ilp32f.ts`, `src/typed/reference.ts`, `src/typed/strategies.ts`, the workbench's option and pipeline code (`site-src/views.js`, `site-src/main.js`, `src/workbench/workbench.ts`), and IRWB-001 scripts 08 and 13.
+- Built (`npm run build`) at 420d8e1 and recorded the baselines:
+  - `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs > various/01-baseline-corpus-revisions.txt` (44 lines, 10.7 s);
+  - `npm test > various/02-baseline-npm-test.txt`;
+  - `node tools/parity.mjs > various/03-baseline-parity.txt`;
+  - `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs > various/04-baseline-irwb-full.txt`.
+- Wrote `scripts/01-benchmark-probe.mjs`: the benchmarks of `tests/typed/backend.test.mjs` "P2.6: the book's table" with a pipeline and backend options as arguments, and the listing and machine code of chosen functions.
+- Wrote `scripts/02-candela-shapes.mjs`: per Candela function at r0, statements, calls, call sites, record results, frame arrays, recursion → `various/05-candela-r0-call-shapes.json`.
+
+### Why
+- The freeze is checked by diffing at the end, so the baselines have to be taken before the first edit, on the exact commit the branch starts from.
+- The guide's design has to rest on the IR's real shapes, so I measured where Candela's calls sit before deciding how general the inliner must be.
+
+### What worked
+- `npm test`: `tests 325`, `pass 322`, `fail 0`, `skipped 3`, 62.2 s.
+- `tools/parity.mjs`: `{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}`.
+- IRWB_FULL: `tests 21`, `pass 21`, 21.7 s.
+- The probe at O2 reproduces the table exactly:
+
+  | benchmark | r0 | ours | ref | bytes |
+  |---|---:|---:|---:|---:|
+  | blend | 531 | 451 | 383 | 88 |
+  | checksum | 446 | 366 | 292 | 52 |
+  | sort | 2022 | 2022 | 1533 | 240 |
+  | collatz | 1590 | 1590 | 1486 | 88 |
+  | value-numbering | 690 | 570 | 695 | 92 |
+
+- Candela at r0: `{"fns":332,"calls":918,"rootCalls":918,"nestedCalls":0,"recordResultFns":180,"frameArrayFns":2,"selfRecursive":[],"singleSite":220,"smallLeaves":95}`. Every call is the whole value of a `set`, `eval` or `return`.
+
+### What didn't work
+- `T=ttmp/2026/11/25/IRWB-003*; cat $T/index.md`: zsh does not expand a glob in an assignment (`No such file or directory`). Used `$(ls …)` or the full path.
+- A first `npm run build && … git rev-parse HEAD` in one command was refused by the worktree guard ("names git in a form too complex to verify"); git now runs as its own command.
+
+### What I learned
+- **Blend's loop costs 11 instructions per iteration at O2** (from the probe's machine code): the head's `blt`, the copy `t7 = i`, the capacity `lw`, the `bltu`, six for the body (`slli add lhu mul add addi`), and the `jal` back to the head. 40 × 11 + 11 = 451.
+- **The image records its options** (`compile.ts:409`, `options: o`), and the validator requires exactly the keys of `backendDefaults` (`image.ts:171–172`). A new key in `backendDefaults` would change every image revision, so new options need their own defaults table and must be left out of the image when they are off.
+- **Tail-duplicating a loop header is valid whatever its condition reads**: each predecessor that jumped to the header now runs the copy at the same point of the execution, once. Purity matters only if a transformation changes how many times the condition runs.
+- **The evaluator gives every call fresh locals** (`evaluate.ts:366`, `new Int32Array`), so an inlined callee's locals that are read before written must be set to zero where the inlined body starts.
+- **`result#k` reads "the latest multi-result call in this frame"** (`evaluate.ts:394`), and the backend requires it in the call's block before the next call (`select.ts:392`). Splitting a block at a call must not separate a leaf read from its call.
+- **Workbench enumerations are tests**: `tests/workbench/strategies.test.mjs:106` (13 passes) and `:112` (the pipeline names) will change when `inline`, `rotate` and `O3` are added.
+
+### What was tricky to build
+- Nothing was built in this step.
+
+### What warrants a second pair of eyes
+- The claim that frozen means "identical revisions and green suites", not "no test file changes": two enumeration assertions must grow by the new names.
+
+### What should be done in the future
+- Write the intern guide (next step), then implement in the order coalescing, rotation and layout, constants, inlining, each with tests and a commit.
+
+### Code review instructions
+- `node ttmp/2026/11/25/IRWB-003--…/scripts/01-benchmark-probe.mjs --show blend` prints the table and Blend's code.
+
+### Technical details
+- Baselines were taken on 420d8e11988fa12a80bc7b84019ec27ebac0f625 with `dist/` built from it.
+
+## Step 2: The intern guide: a draft, a second reading, a revision, the upload
+
+This step wrote the intern guide as `design-doc/01-intern-guide-…md` (docmgr design-doc), reread it as its reader, wrote review notes, revised it, and uploaded it to reMarkable. The second reading found that the draft's worked example of the block layout did not follow from its own algorithm, and that rotation of a header whose two targets are both inside the loop makes the loop irreducible; both changed the design, not only the prose.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** An intern-level analysis, design and implementation guide in the ticket, with prose, bullets, pseudocode, diagrams, API and file references; a second pass; the upload.
+**Inferred user intent:** Someone new can understand the parts of the system involved and implement or review the milestone from the guide alone.
+**Commit (code):** this step's commit (documentation and scripts only).
+
+### What I did
+- `docmgr doc add --ticket IRWB-003 --doc-type design-doc --title "Intern guide: closing the speed gap with inlining, copy coalescing, constants in registers and loop rotation"`.
+- First draft: Part 1 (the IR, passes, Tx, the contract, the backend's selection, allocation, finish, ilp32f, images, measurements, Candela per-scene programs), Part 2 (Blend instruction by instruction; sort, Collatz, Candela), Part 3 (designs), Part 4 (order of work, validation, risks, reference).
+- `scripts/03-candela-gap-totals.mjs` on IRWB-001's `f32-backend-01-candela-images.tsv` → `various/07-candela-o2-gap-totals.txt`.
+- Review notes before revising (comprehension gaps first):
+  1. The layout example (§11.1 of the draft) did not follow from its algorithm: with `weight = min(freq(b), freq(s))` and position tie-breaks, `bb.0 → bb.2` is linked before `bb.0 → bb.3` and the latch ends next to the trap block.
+  2. The rotation rules assumed the header's test is an exit test. In Collatz and sort's inner loop both targets are inside the loop; the reader would ask whether duplication is still legal.
+  3. Two notions of "hot": natural-loop depth for the estimate, another weighting for the layout.
+  4. "latch", "preheader", "guard" used before definition.
+  5. Collatz's `3` is built only on odd iterations.
+  6. "about half of the total gap" was imprecise.
+  7. O3 could be read as containing `dfe`, which refuses without roots.
+  8. Evaluator line numbers off by two or three.
+- Revised: Part 3 rewritten and spliced in with `scripts/04-splice-section.mjs`; new §11 "Block frequencies and the cost estimate" (SCC-based branch probabilities, frequencies by propagation) used by layout, coalescing, homes and the estimate; new §10.3 on non-exit headers; definitions in §10.1; corrected numbers and line references; cross-references renumbered with `sed`.
+- `docmgr doc relate` with seven files; `docmgr task add` for eleven tasks.
+- `remarquee upload bundle <guide> --name "IRWB-003 Intern Guide: Closing the Speed Gap" --remote-dir "/ai/2026/11/25/IRWB-003" --toc-depth 2 --non-interactive`.
+
+### Why
+- The layout algorithm is the piece that turns rotation into fewer instructions, so its worked example has to be executable by hand; a wrong example would send an implementer after a wrong algorithm.
+- Allowing rotation of non-exit headers is what lets Collatz and sort's inner loop gain at all; the cost is irreducibility, which the guide must justify (`solver.ts:63`: widening at retreating-edge targets).
+
+### What worked
+- `OK: uploaded IRWB-003 Intern Guide: Closing the Speed Gap.pdf -> /ai/2026/11/25/IRWB-003`.
+- `remarquee cloud ls /ai/2026/11/25/IRWB-003 --long` → `[f]	IRWB-003 Intern Guide: Closing the Speed Gap`.
+- Gap totals: `{"net":4043187,"positive":5307267,"negative":-1264080}`; `fbm3` 1,816,438 and `cdlRenderSpan` 870,470, together 50.6% of the positive gaps.
+
+### What didn't work
+- A `python3 - <<'EOF'` heredoc was refused by the worktree guard ("too complex to verify"); I wrote the computation as `scripts/03-candela-gap-totals.mjs` instead.
+- The first run of script 03 counted the TSV's `TOTAL` row as a function (`net` 8,087,148, twice the real one); it now skips that row.
+
+### What I learned
+- With weights from block frequencies times branch probabilities, rotated Blend lays out as `bb.0, bb.3, bb.7, bb.2, bb.4`, which makes the latch's back edge the taken branch: an estimated 10 instructions per iteration instead of 11.
+- Every cycle of a CFG contains a retreating edge of any depth-first search, so the solver's widening (at retreating-edge targets) still terminates on irreducible loops.
+
+### What was tricky to build
+- Keeping the guide's numbers apart: measured (with a source), derived by counting (labelled estimates), and proposed.
+
+### What warrants a second pair of eyes
+- The guide's predictions (Blend 371, Checksum 286) are counts from listings, not measurements; Part 4 measures them.
+
+### What should be done in the future
+- After implementation, add an "Outcomes" section with the measured numbers and the departures from this design.
+
+### Code review instructions
+- Read the guide's Part 3; the worked layout example in §12.1 can be checked by hand against §11.
+
+### Technical details
+- Guide: ~700 lines; ToC depth 2 in the PDF.
+
+## Step 3: Options plumbing that leaves every default image as it was
+
+This step added the three new backend options without touching `backendDefaults`. An image records its options, and its validator requires exactly the keys of `backendDefaults`, so the new booleans live in a second table and appear in an image only when they differ from their defaults; `layout` got its second value. The corpus revisions are identical after the change.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** New behaviour behind default-off options; the frozen images must not change.
+**Inferred user intent:** The book's numbers stay reproducible while the new options are measured.
+**Commit (code):** the commit of Step 6.
+
+### What I did
+- `src/typed/backend/options.ts`: `BackendOptions.layout: 'source' | 'loops'`, optional `coalesce` and `homes`; `backendExtras = { coalesce: false, homes: false }`; `checkBackendOptions` accepts both tables' names, validates the extras as booleans, and deletes an extra that equals its default; `layout` accepts `'loops'`; `diffOptions` compares against both tables.
+- `src/typed/backend/image.ts`: the validator allows the extras' keys.
+- `src/typed/backend/index.ts`: exports `backendExtras`.
+- `node ttmp/2026/11/24/IRWB-001--ir-workbench/scripts/08-corpus-revisions.mjs | diff - various/01-baseline-corpus-revisions.txt`.
+
+### Why
+- Adding `coalesce: false` to `backendDefaults` would put the key into every image's `options`, change every image revision, and break the freeze (`compile.ts:409`, `image.ts:171–172`).
+
+### What worked
+- `npx tsc` clean; the diff printed nothing (`IDENTICAL`).
+
+### What didn't work
+- Applying the edits with a Node script fed by a heredoc, in the same command as a `git diff`, was refused by the worktree guard ("this command is too complex to verify that it stays inside the worktree"). I made the edits with the Edit tool.
+
+### What I learned
+- The validator's "exactly these keys" rule makes an option set part of an image's identity; the extras keep that property for options that are on.
+
+### What was tricky to build
+- `checkBackendOptions` returns a frozen object that is also stored in the image; deleting extras at their default before freezing keeps the object identical to the old one, key for key.
+
+### What warrants a second pair of eyes
+- `diffOptions` now merges both tables per entry; it is used for labels only.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `src/typed/backend/options.ts` (`backendExtras`, `checkBackendOptions`); the test `IRWB-003 options` in `tests/typed/speed.test.mjs`.
+
+### Technical details
+- An image compiled with `{ coalesce: false }` has the same revision as one compiled with `{}` (asserted in the test).
+
+## Step 4: Block frequencies and the layout; the first corpus measurement makes strings slower
+
+This step built `src/typed/backend/frequency.ts` (branch probabilities from strongly connected components, frequencies by sweeps, the cost estimate) and `src/typed/backend/layout.ts` (chains by weight), hooked the layout into `select`, and wrote `scripts/05-corpus-options.mjs`, which checks a pipeline and options on the whole corpus against r0. The layout alone, without rotation, made 18 projects faster and 6 slower, `strings` by 7%. The cause was the tie-break; Step 5 fixes it and decides the layout per function by the estimate.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** G1's block layout, as the guide's §11–12 design it.
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit of Step 6.
+
+### What I did
+- `frequency.ts`: `targetsOf`; Tarjan's SCCs, iterative; `blockFrequencies(st, f)` (a target ending in `trap` gets 0; stay 0.88 against leave 0.12; enter 0.88; otherwise 0.5; Gauss-Seidel sweeps in reverse postorder, at most 200, tolerance 1e-9, cap 1e9); `estimateCost(code, fr)`.
+- `layout.ts`: `layoutBlocks(st, f, fr)`.
+- `select.ts`: `order` from `layoutBlocks` under `layout: 'loops'`; `const b = st.get(bid)` in place of `f.blocks[k]` (the same object in source order); a `j succ[0]` for a block without a terminator whose successor is not next, under `'loops'` only.
+- `scripts/05-corpus-options.mjs`: per project, the head after a pipeline, lowered with the options, run against the evaluator of **r0** on 100 cases per function, so that the passes and the backend are checked in one comparison; instructions summed over the decided cases; `--base` for a second pipeline with default options.
+- `node scripts/05-corpus-options.mjs --pipeline O2 --options '{"layout":"loops"}' --base O2 --json various/08-corpus-o2-layout-loops.json` (29 s).
+
+### Why
+- The layout is what turns rotation into fewer instructions; measuring it alone first separates its effect from rotation's.
+
+### What worked
+- Revisions under the default options: identical.
+- `{"instructions":901925,"bytes":5164,"agree":6986,"decided":6986,"inconclusive":14,"disagree":0,"base":{"instructions":910718,"bytes":5160},"faster":18,"slower":["calls +158","div-checks +196","div-magic +8","histogram +519","ramp +47","strings +7670"]}`.
+- Collatz's benchmark fell from 1,590 to 1,370 with the layout alone.
+
+### What didn't work
+- `strings` +7,670 instructions. Its `||` chains are 50/50 branches for the heuristic, and ties were broken by the IR position of the target. That picked the rare `t5 = 1` block as the fall-through of each test and left the common path (`t5 = (c == 101)`) ending in a `jal` (both codes printed by `scripts/06-variant-probe.mjs strings --options '{"layout":"loops"}' --code`).
+
+### What I learned
+- With no profile, a tie in the static weights carries no information, and the IR's own order is the better default: the lifter puts the evaluation of the next operand of `||` right after its test.
+
+### What was tricky to build
+- The iterative Tarjan: the parent's low-link is updated after the child is popped, from the child's final low-link.
+
+### What warrants a second pair of eyes
+- The layout's comparator treats weights within a relative 1e-9 as equal. Such a comparator is not transitive, but it is deterministic for a given input.
+
+### What should be done in the future
+- Done in Step 5: ties prefer the IR's fall-through, and the layout is chosen per function by the estimate.
+
+### Code review instructions
+- `src/typed/backend/frequency.ts`, `src/typed/backend/layout.ts`; the `order` lines in `select.ts`.
+
+### Technical details
+- Output: `various/08-corpus-o2-layout-loops.json`.
+
+## Step 5: Coalescing, constant homes, and the choice per function by the estimate
+
+This step built copy coalescing (`src/typed/backend/coalesce.ts`) and constant homes (two hooks in `select`), and a chooser (`src/typed/backend/variants.ts`) that compiles a function plainly and then with each requested option on top of the best so far, keeping a variant only when its estimated cost is lower. The layout's ties now prefer the IR's own fall-through. Under the default options the backend still compiles each function once, exactly as before. On the benchmarks each option alone and all three together agree with the evaluator; coalescing alone takes Blend from 451 to 411 and sort from 2,022 to 1,887.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** H2 (coalescing) and f32 constants in registers, "when registers allow".
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit of Step 6.
+
+### What I did
+- `coalesce.ts`: liveness per machine block, then per instruction; interference edges between virtual registers of one class (a definition interferes with everything live after it, except the source of a copy); candidates are virtual-to-virtual `mv` copies, hottest block first; union-find with member lists and the lower register as representative; renaming; copies that became `r <- r` dropped; hints and `localReg` renamed.
+- `select.ts`: `SelectContext.homes` (keys `f:<bits>`, `x:<value>`) and `onConst(key, block, value)`; one register per home, defined after the entry's parameter copies and zeroing (`li`, and `fmv.w.x` for f32, with `why: 'constant home'`); `val(const)` returns the home, or for an f32 copies it into the target; for i32 only when no target is given and no immediate form applied.
+- `variants.ts`: `chooseVariant(st, f, o, compile)`: plain (source layout), then `'loops'`, then `coalesce`, then `homes` (a recording selection first; the keys whose block frequencies add up to more than 1). A variant is kept if its estimate is lower by more than 1e-9.
+- `compile.ts`: `compileFunction` builds one `once(opts, hooks)` closure; with the defaults it calls it once, otherwise `chooseVariant`; `FnCompilation.choice`; `variantChoices(blocks, options)` exported for scripts and tests.
+- `layout.ts`: among equal weights, the edge to the IR's next block first.
+- `scripts/06-variant-probe.mjs`: per function the choice, the estimates, the frequencies, the order, and the code.
+
+### Why
+- Linear scan with whole intervals can lose when two intervals merge or a home lives across calls; comparing finished code per function makes every option a non-loss by the estimate.
+- The tie-break restores the IR's order where the estimate has no preference (Step 4).
+
+### What worked
+- Benchmarks after O2 (`scripts/01-benchmark-probe.mjs --options …`), every result `same`:
+
+  | options | blend | checksum | sort | collatz | value-numbering |
+  |---|---:|---:|---:|---:|---:|
+  | none | 451 | 366 | 2022 | 1590 | 570 |
+  | layout loops | 450 | 366 | 1977 | 1480 | 569 |
+  | coalesce | 411 | 326 | 1887 | 1590 | 570 |
+  | homes | 451 | 366 | 2022 | 1329 | 492 |
+  | all three | 410 | 326 | 1842 | 1219 | 491 |
+
+- Revisions under the default options: identical.
+
+### What didn't work
+- Collatz under `'loops'` went from 1,370 (Step 4) to 1,480. The probe shows why: the estimate chose `'loops'` (100.2 against 106.5 for the source order), but the heuristic rates `x > 1` 50/50, so the chains make the rare `t3 = 0` block the guard's fall-through. Step 4's 1,370 came from a tie that happened to favour the hot side. Both orders are correct; the static probabilities are the limit.
+
+### What I learned
+- Collatz's real exit test is `if !(t3)`, one block after its header, because the `&&` is lifted through a temporary assigned in two blocks. Jump threading over the constant `t3 = 0` would make the header an exit test; it is not part of this milestone's design.
+
+### What was tricky to build
+- A home must not be written by anything but its definition. The selector never writes a register that `val` returned (it already returns locals' registers directly), so returning a home is safe.
+- The recording selection for homes runs with the layout and coalescing already chosen, so the counted uses are those of the final code.
+
+### What warrants a second pair of eyes
+- `coalesce.ts` treats only `rs1` and `rs2` as uses and `rd` as the definition (`usesOf` and `defsOf` of `regalloc.ts`); an instruction that read `rd` implicitly would break that, and the selector emits none.
+
+### What should be done in the future
+- Measure on Candela (f32 constants, licm and lvn copies), which the options were designed for.
+
+### Code review instructions
+- `src/typed/backend/{coalesce,variants}.ts`; `select.ts` (`homeReg`, `onConst`); `compile.ts` (`compileFunction`).
+
+### Technical details
+- `variantChoices(blocks, options)` returns `{ layout, coalesce, homes, cost: { plain, chosen } }` per function, or `null` under the defaults.
+
+## Step 6: The rotate pass, the tests, and the corpus under O2+, rotate, cfg with every option
+
+This step wrote `rotate` (`src/typed/rotate.ts`), registered it, wrote `tests/typed/speed.test.mjs`, and measured the corpus. Blend reaches 370 and Checksum 286, against the reference compiler's 383 and 292. Over the whole corpus, with O2+, `rotate` and `cfg` and all three options, instructions fall by 15.7% against O2, no project is slower, and every decided case agrees with r0.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** G1 loop rotation (the guide's §10).
+**Inferred user intent:** See Step 1.
+**Commit (code):** this step's commit.
+
+### What I did
+- `src/typed/rotate.ts`: `rotateSpec`, a `TypedPassSpec` (needs `loops`; writes `stmts`, `values`, `cfg`). A header that is only a `br_if` whose condition has no `call` or `result` is copied, with fresh value ids, origin from the header's test and `because: [loop id, header]`, into every block that ends in `br header`.
+- `src/typed/passes.ts`: `import { rotateSpec } from './rotate.js'`; `export const rotate = typedPass(rotateSpec)`; `rotate` in `PASSES`.
+- `tests/typed/speed.test.mjs`, 8 tests: the options; frequencies and layout on rotated Blend (`bb.3` = 0.88/0.12, the order, `blt t1, a1, bb.3`, no `jal zero`, 410); coalescing (one copy fewer, 370); homes on Collatz (`x:1`, `x:2`, `x:3`, 1,329); rotate on Blend (header gone, two copies, `why` to `s:blend.4` and line 4, `whyChain` relation `rotate`); rotate on Collatz (two-entry loop: the `loops` fact is empty, `strength` still runs, the image agrees); the benchmarks under everything; a corpus-wide test under `IRWB_FULL=1`.
+- `tests/workbench/strategies.test.mjs`: 13 → 14 passes, and `rotate`'s source is `src/typed/rotate.ts`.
+- `scripts/05-corpus-options.mjs --pipeline '[…O2+…, "rotate", "cfg"]' --options '{"layout":"loops","coalesce":true,"homes":true}' --base O2 --json various/09-corpus-o2plus-rotate-all-options.json`.
+
+### Why
+- `rotate.ts` exports a spec instead of calling `typedPass` itself: `passes.ts` imports it to register it, and `typedPass` reads `ENTITY_WRITES`, a `const` of `passes.ts` that is still uninitialized while `rotate.ts` loads inside that import.
+
+### What worked
+- `node --test tests/typed/speed.test.mjs`: 8 of 8; with `IRWB_FULL=1`: 8 of 8, the corpus test 28.7 s.
+- Corpus: `{"instructions":767343,"bytes":4976,"agree":6986,"decided":6986,"inconclusive":14,"disagree":0,"rejected":[],"base":{"instructions":910718,"bytes":5160},"faster":36,"slower":[]}`.
+- Benchmarks (probe), O2+ then rotate and cfg: Blend 410 with the layout alone, 370 with all three options; Checksum 286; sort 1,959 with the layout alone.
+- `p.apply('rotate')` on Blend after O2+: `{"edits":3,"kinds":{"replaceStmt":2,"unreachable":1},"check":"40/40"}`.
+
+### What didn't work
+- The first `rotate.ts` called `typedPass` at load time and imported a helper module that did not exist; I rewrote it before the first build, as described under Why.
+- `01-benchmark-probe.mjs --pipeline '[…]'` failed with `[unknownPipeline] no pipeline "[…]"` (the list was passed as a name); scripts 01, 05 and 06 now parse a JSON list.
+
+### What I learned
+- After rotating Collatz's non-exit header, `p.fact('loops')` is `[]`, and `strength`, which needs the interval analysis, still runs: the solver's widening at retreating edges covers the irreducible cycle.
+
+### What was tricky to build
+- `tx.replaceStmt` takes `from` from its options when one is given, so the copy's origin names the header's test (`s:blend.4`) rather than the replaced `br`; that is what lets `why` reach the loop test's source line.
+
+### What warrants a second pair of eyes
+- A replaced `br` gets no correspondence entry of its own, as with `cfg`'s `replaceStmt`; `makeCorrespondence` completes it as removed.
+
+### What should be done in the future
+- The inline pass and O3; then Candela.
+
+### Code review instructions
+- `src/typed/rotate.ts`; `node --test tests/typed/speed.test.mjs`; `IRWB_FULL=1 node --test tests/typed/speed.test.mjs`.
+
+### Technical details
+- A header shared by several back edges is processed once (`done`).
+
+## Step 7: A frozen test pins `layout: 'source'`; the block order becomes its own option, `chains`
+
+The full suite failed once after Step 6, in a frozen test: `tests/typed/backend.test.mjs:294` asserts that `{ layout: 'loops' }` is refused. Extending `layout` with a second value, as the guide designed, would have meant editing a test the freeze protects. I left `layout` exactly as it was and made the frequency-based block order a third extra option, `chains`. After the rename the full suite passes and the corpus revisions are identical. Steps 4–6 above say `layout: 'loops'`; they describe what was built at the time, and the measurements in them are unchanged by the rename.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** `npm test` must stay green and identical; prefer not to edit frozen tests.
+**Inferred user intent:** The book's behaviour, including which options the backend refuses, stays as it was.
+**Commit (code):** this step's commit.
+
+### What I did
+- `npm test` → `✖ P2.4: options are validated with the prototype's codes`; the test's line 294 is `refuse({ layout: 'loops' }, 'badArgument', /layout is 'source'/)`.
+- `options.ts`: `layout` back to `'source'` only, with its old message; `backendExtras = { chains: false, coalesce: false, homes: false }`; `chains` validated like the other extras.
+- `select.ts` (`const loops = o.chains === true`), `variants.ts` (`chains` in place of the layout value; `VariantChoice.chains`), `compile.ts` (`if (!o.chains && !o.coalesce && !o.homes) return once(o, {})`).
+- `tests/typed/speed.test.mjs`: `chains: true` everywhere; `{ layout: 'loops' }` is now asserted to be refused.
+- `npm test`; `scripts/08 | diff - various/01-…`.
+
+### Why
+- A new option that defaults off changes nothing a frozen test observes; a new value of an existing option changes what that option accepts.
+
+### What worked
+- `npm test`: `tests 333`, `pass 330`, `fail 0`, `skipped 3`.
+- `REVISIONS-IDENTICAL`.
+- `node --test tests/typed/speed.test.mjs tests/typed/backend.test.mjs`: 22 of 22.
+
+### What didn't work
+- See above: the first full run after Step 6: `ℹ tests 333 ℹ pass 329 ℹ fail 1`.
+
+### What I learned
+- The frozen surface includes refusals, not only numbers.
+
+### What was tricky to build
+- Nothing beyond the rename.
+
+### What warrants a second pair of eyes
+- The guide (§12, §16.1) still names the option `layout: 'loops'`; its outcomes section records the rename.
+
+### What should be done in the future
+- The guide's outcomes section: list this departure.
+
+### Code review instructions
+- `git diff 420d8e1 -- src/typed/backend/options.ts`: `layout` is unchanged.
+
+### Technical details
+- Option names in a refusal's fix line now read `registers, fuse, immediates, divmagic, useRanges, order, spill, hints, layout, chains, coalesce, homes`; the frozen test matches only their start (`/fix: options: registers, fuse/`).
+
+## Step 8: The inline pass
+
+This step wrote `inline` (`src/typed/inline.ts`), a whole-program pass like `dfe`, and its tests. On the `calls` project it removes all four calls of `energy` in one application, the contract agrees on 120 of 120 cases, and `why` on an inlined statement reaches both the callee's return (`s:sq.0`, source line 2) and the removed call (`s:energy.2`, line 6). On the f32 convention fixture it turns record results into locals and leaves no leaf read behind, and the image agrees with the evaluator with and without the new backend options.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** E3 as the guide's §15 designs it: single-site and small callees, record results, parameters as locals, provenance, the contract, entry-only programs.
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit of Step 9.
+
+### What I did
+- `src/typed/inline.ts`: `makeInline(correspond)` returns a `TypedPass` (`definePass` with `id: 'typed.inline'`, needs `liveness`, writes entities `local`, `block`, `stmt.*`, `value.*` and relations `declares`, `contains`, `uses`, `operand`, `reads`, `writes`, `succ`, `jump`; `typed.program: true`). Per caller, sites at the root of `set`, `eval` and `return`; per site: new locals `g_<name>`; a continuation block with the rest of the block; argument assignments; `0` for the callee's non-parameter locals live at its entry; copies of the callee's blocks (callee bodies always from the input revision); each `return` rewritten by the site's kind; leaf reads after a record call rewritten to `get g_r<j>` up to the next record call; the new blocks placed after the call's block, in the callee's order, then the continuation.
+- Refusals: callees in a call-graph cycle, with a frame array, with `zero` or `aaddr`, with a return that is not their declared result, or whose leaf reads do not follow their call in the same block; a caller whose own leaf reads do not; a site after which a leaf read belongs to an earlier call (the result-leaf rule).
+- Limits (params, defaults `maxSize` 16, `maxSingle` 200, `maxCaller` 3,000 statements).
+- `src/typed/passes.ts`: `import { makeInline } from './inline.js'`; `export const inline = makeInline(revisionCorrespondence)`; `inline` in `PASSES`.
+- `scripts/07-inline-probe.mjs <project> [--before …] [--params …] [--after …] [--why]`.
+- `tests/typed/inline.test.mjs`, 7 tests (registration; `calls` with provenance; the f32 record fixture through the backend; limits and frame-array refusal; entry-only contract and `dfe`; zeroing; the corpus under the new pipeline with `IRWB_FULL=1`).
+
+### Why
+- `makeInline` takes the correspondence function as an argument so that `inline.ts` imports only types from `passes.ts`: a runtime import would form a cycle in which `passes.ts` reads `inline` before `inline.ts` has run, whenever `inline.ts` is loaded first.
+- Callee bodies from the input revision make one application one level of inlining, deterministic regardless of the order callers are visited in.
+
+### What worked
+- `node scripts/07-inline-probe.mjs calls --why`: `{"pass":"inline","rev":"r1","edits":34,"changed":true,"kinds":{"local":12,"block":14,"remove":4,"inline":4},"ms":67.13,"check":"120/120"}`.
+- `why` of `s:energy.16 t6 = (sq_x2 * sq_x2)`: `via: inline`, `note: inlined from sq into energy at s:energy.2`, `from: s:sq.0 return (x * x)` ← `op:sq#3 end (line 2)`, `because: [v:energy.8 sq(c) (detached), s:energy.2 t6 = sq(c) (removed@r1, call 0 (line 6))]`.
+- `node --test tests/typed/inline.test.mjs`: 7 of 7; with `IRWB_FULL=1`: 7 of 7, the corpus test 44.1 s.
+
+### What didn't work
+- First test run: 2 of 7 failed. (1) `6 !== 3`: each callee `return` becomes two statements (`set` and `br`), both with `from: s:sq.0`; the test now counts the `set`s. (2) `[notCompiled] prog:limits did not compile: recursive call cycle: fact -> fact`: the Typed front end refuses recursion, so the cycle rule cannot be shown on a Typed program; the test shows the frame-array refusal instead.
+- The zeroing test as first written did not exercise zeroing: Typed initializes every local, so lifted code reads none before writing it, and the pass made no zero assignment (checked: the list of statements with note `starts at 0` was `[]`). The test now first applies a small user pass that removes `last`'s `t = 0` (valid: a fresh frame holds 0); `t` is then live at `last`'s entry, the inlined copy in `sum`'s loop gets `last_t = 0`, and the contract agrees. Without the zeroing, `last(k & 1)` for even `k` would return the previous call's `7 + i`.
+
+### What I learned
+- In lifted code, no local is live at a function's entry except parameters, so zeroing never fires on lifted programs; it matters only after a pass removes an initialization.
+- After `inline` and O2, the parameter copies (`sq_x = a`) remain: O2 has no copy propagation, and `subst` only substitutes a temporary read once. The backend's `coalesce` removes the corresponding `mv`s.
+
+### What was tricky to build
+- The evaluator's leaf reads are frame-wide ("the latest multi-result call in this frame", `evaluate.ts:405`): after inlining, a record call inside the copied body runs in the caller's frame. The pass therefore requires every leaf read of the caller and the callee to follow its call in its own block (the backend's rule, `select.ts:392–396`), and rewrites the reads of an inlined record call up to and including the next record call's arguments.
+
+### What warrants a second pair of eyes
+- `inlineSite` mutates block statement lists directly and records `remove`, `replace` and `inline` edits itself; `tx.commit()` derives successors and prunes. The copied blocks always end with a terminator (an explicit `br` where the callee's block fell through), so the source layout's fall-through assumption is never needed for them.
+
+### What should be done in the future
+- Copy propagation in a pass pipeline would remove the parameter copies before the backend.
+
+### Code review instructions
+- `src/typed/inline.ts` (`inlineSite`, `inlineCaller`, `refuseCallee`, `leavesStayPut`); `tests/typed/inline.test.mjs`.
+
+### Technical details
+- Provenance table as built: copies `from` the callee entity, `because [call value, call statement]`; argument assignments `from` the call value, `because [fn:g]`; zero assignments the same, note `g's local l starts at 0`; continuation `from` the call's block, note `after the call to g`; the branch into the copy `from` the call statement; rewritten leaf reads `from` the `result` value, `because [call value]`.
+
+## Step 9: The `speed` pipeline (not `O3`), presets, the workbench options row; corpus and benchmarks
+
+This step added the pipeline, the presets and the RV32 options row, and measured. The pipeline is named `speed`, not `O3` as the brief suggested: a frozen workbench test asserts that `O3` is an unknown pipeline. Under `speed` and the three options, the corpus runs 728,450 instructions against O2's 910,718 (−20.0%), in 4,356 bytes against 5,160, with no project slower and every case agreeing with r0; Blend runs in 370 and insertion sort in 1,824.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "The workbench must offer the new pipeline and options (presets, `PIPELINES`, the strategy registry)"; npm test identical.
+**Inferred user intent:** See Step 1.
+**Commit (code):** this step's commit.
+
+### What I did
+- `PIPELINES.speed = ['inline', 'inline', …O2+…, 'rotate', 'cfg']` (first named `O3`).
+- `PRESETS`: `speed` (the pipeline as one plan) and `fastest-all` (the fewest instructions among O0, O1, O2, loops, O2+ and speed; the strategy metrics compile with the default backend options).
+- `tests/workbench/strategies.test.mjs`: 14 → 15 passes, `inline`'s source in `src/typed/inline.ts`, `speed` after `O2+` in the pipeline list.
+- Workbench: `backendExtras` exported through `src/workbench/index.ts` and `site-src/wb.js`; `wb.backendOptions()` includes the extras; `site-src/main.js` starts the UI state with them; `site-src/views.js` filters and counts options against both tables and has a row "Speed, chosen per function by the estimate" with toggles `chains`, `coalesce`, `homes`. `npm run build:site`: `dist/site built in 462 ms: app.js 2325 KiB …`.
+- `scripts/05-corpus-options.mjs --pipeline O3 --options '{"chains":true,"coalesce":true,"homes":true}' --base O2 --json various/10-corpus-o3-all-options.json` (the same pipeline, before the rename).
+- `scripts/01-benchmark-probe.mjs --pipeline O3 --options …` with `{}` and the three options.
+
+### Why
+- `tests/workbench/strategies.test.mjs:74`: `assert.throws(() => wb.strategy.choose('x', { a: 'O3' }), e => e.code === 'unknownPipeline' …)`. Naming the pipeline `O3` would make that frozen refusal pass the choose and fail the test; `speed` keeps it.
+
+### What worked
+- Corpus: `{"pipeline":"O3","options":{"chains":true,"coalesce":true,"homes":true},"instructions":728450,"bytes":4356,"agree":6986,"decided":6986,"inconclusive":14,"disagree":0,"rejected":[],"base":{"instructions":910718,"bytes":5160},"faster":39,"slower":[]}`.
+- Benchmarks (every result `same`):
+
+  | pipeline, options | blend | checksum | sort | collatz | value-numbering |
+  |---|---:|---:|---:|---:|---:|
+  | O2, defaults (book) | 451 | 366 | 2022 | 1590 | 570 |
+  | speed, defaults | 450 | 325 | 1985 | 1480 | 569 |
+  | speed, all three | 370 | 286 | 1824 | 1218 | 451 |
+  | reference compiler | 383 | 292 | 1533 | 1486 | 695 |
+
+- `npm test`: `tests 340`, `pass 337`, `fail 0`, `skipped 3` (baseline 325/322/0/3; 15 new tests).
+- `scripts/08 | diff`: `REVISIONS-IDENTICAL`.
+
+### What didn't work
+- `node --test tests/workbench/strategies.test.mjs` with the pipeline named `O3`: `✖ wb.strategy: project files in the short form, presets and pipelines, at tile width … Missing expected exception.` and the pipeline enumeration. Renamed; the enumeration grows by `speed`.
+- A test-fixing Node script fed by a heredoc was refused by the worktree guard; edits made with the Edit tool.
+
+### What I learned
+- Frozen tests pin names as well as numbers: `layout: 'loops'` (Step 7) and `O3` are both refused by name in them.
+
+### What was tricky to build
+- The UI's option state starts from the defaults and counts every key that differs from them; the extras had to be in both the initial state and the comparison table, or `chains: false` would show as "1 changed".
+
+### What warrants a second pair of eyes
+- `fastest-all` judges by instructions with the default backend options (`measure`, `strategies.ts:66`), so it sees the passes' effect only; under the defaults `speed` is barely faster than O2+ (rotation needs `chains`).
+
+### What should be done in the future
+- A strategy metric with backend options, so that a preset can choose by the speed the options give.
+
+### Code review instructions
+- `src/typed/passes.ts` (`PIPELINES.speed`), `src/typed/strategies.ts` (`PRESETS`), `site-src/views.js` (`ALL_DEFAULTS`, `optionsBlock`).
+
+### Technical details
+- Outputs: `various/10-corpus-o3-all-options.json`.
+
+## Step 10: The option ablation on the corpus, the browser check, and the frozen checks
+
+This step measured what each backend option buys on top of the `speed` pipeline, checked the RV32 options row in a browser, and ran the frozen checks against the baselines of Step 1. Each option alone saves 3.9–4.8% of the corpus's instructions on top of the pipeline, all three together 13.6%, and no project is slower under any of them. Parity and the full-corpus suites are identical to the baseline.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Measurements for the report; "everything frozen identical (diff revisions)".
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit after Step 11.
+
+### What I did
+- `scripts/05-corpus-options.mjs --pipeline speed --options <o> --base O2 --json various/13-corpus-speed-<o>.json` for `{}`, `{"chains":true}`, `{"coalesce":true}`, `{"homes":true}`.
+- `scripts/01-benchmark-probe.mjs --pipeline speed [--options …] --json various/12-benchmarks-speed-{defaults,all-options}.json`.
+- `node tools/serve-site.mjs dist/site 8771`; in a browser (Playwright): the Pipeline view lists `speed`; Next pass offers `apply rotate` and `apply inline`; RV32 → Backend options shows the row "Speed, chosen per function by the estimate"; toggling the three options changes the button to "Backend options 3 changed" and the code line to `p.compile({"chains":true,"coalesce":true,"homes":true})`, with no refusal. Screenshot `various/14-rv32-options-row.png`. Server stopped by PID.
+- `node tools/parity.mjs > various/15-final-parity.txt`; `diff various/03-baseline-parity.txt various/15-final-parity.txt`.
+- `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs > various/16-final-irwb-full.txt`, diffed against `various/04-…` with the per-test times removed.
+- `scripts/10-report-figures.py` (matplotlib) → `various/figures/irwb003-{benchmarks,corpus-ablation,corpus-projects}.png`.
+
+### Why
+- The ablation separates the passes' effect (default options) from each option's.
+
+### What worked
+- Corpus totals (instructions over 6,986 decided cases; O2 910,718):
+
+  | pipeline, options | instructions | vs O2 | bytes |
+  |---|---:|---:|---:|
+  | speed, defaults | 843,371 | −7.4% | 4,812 |
+  | speed + chains | 803,917 | −11.7% | 4,640 |
+  | speed + coalesce | 810,170 | −11.0% | 4,588 |
+  | speed + homes | 802,506 | −11.9% | 4,764 |
+  | speed + all three | 728,450 | −20.0% | 4,356 |
+
+  Every run: `agree 6986`, `disagree 0`, `slower []`.
+- `PARITY-IDENTICAL`; `IRWB-FULL-IDENTICAL-EXCEPT-TIMES` (21 of 21).
+
+### What didn't work
+- `browser_take_screenshot` into the scratchpad: `File access denied … outside allowed roots`; saved into the ticket's `various/` instead.
+- `10-report-figures.py` first run: `TypeError: string indices must be integers` — script 05's JSON has `base: "O2"` and the base totals under `total.base`.
+
+### What I learned
+- The three options overlap little: against `speed` with the default options (843,371), chains alone saves 4.7%, coalesce 3.9%, homes 4.8% (sum 13.5%), and all three together 13.6%.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The Playwright snapshot of the first navigation was written by the tool into the main checkout's `.playwright-mcp/` (outside this worktree); I left it there.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- `various/13-*.json`, `various/15-final-parity.txt`, `various/16-final-irwb-full.txt`.
+
+### Technical details
+- Parity line: `{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}`.
+
+## Step 11: Candela per scene, first attempt: the frozen O2+ reproduces; inlining without dfe doubles the program
+
+This step ran the per-scene measurement (`scripts/08-candela-scene-speed.mjs`, IRWB-001's script 13 extended) on B-01 and R-01 with `--base`. The O2+ row for B-01 reproduced IRWB-001's numbers exactly, but the `speed` pipeline would have carried the originals of every inlined callee through all of O2+: one `inline` took the scene program from 5,317 to 11,979 statements (corrected in Step 14: 4,786 is the size after O2+, not the input of `speed`). I stopped the run after 25 minutes and restarted it with `dfe` after each `inline`, which is what a program with entries allows.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Candela … per-scene per pixel vs `kernel` for B-01 and R-01 …, frames bit-identical (scripts 11 and 13)"; one Candela-scale process at a time, heap ≤ 12 GB.
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit after this step.
+
+### What I did
+- `/usr/bin/time -v node --max-old-space-size=12288 scripts/08-candela-scene-speed.mjs B-01 R-01 --base > various/11-… 2> various/11-….log` (the machine's load average was about 12 on 8 cores, from other agents).
+- After the first `inline` line: `kill 3944567` (the node process's PID); the log is kept as `various/11a-candela-scenes-speed-first-run.log`.
+- Added `--dfe-after-inline` to script 08: after each `inline`, `dfe` with the gallery entries; restarted with `B-01 R-01 --dfe-after-inline` (no `--base`: B-01's O2+ row had already reproduced IRWB-001's).
+
+### Why
+- With entries, a callee inlined at its only call site is dead at once. Keeping it until the end makes every later pass analyse and check it; on B-01 that is more than half of the program.
+
+### What worked
+- B-01, O2+ on the scene program (same build): `{"ms":670914,"fns":135,"stmts":4786,"check":{"agree":2699,"disagree":0,"inconclusive":1},"bytes":74044,"perPixel":10435,"differentBits":0}` — IRWB-001's `08-candela-per-scene-o2.json` has the same `stmts`, `bytes`, `perPixel` and `differentBits` (its `ms` was 212,264 on an idle machine).
+- B-01 `inline` (first application): `{"changed":true,"check":"146/146","ms":62348,"stmts":11979}`.
+
+### What didn't work
+- Running the pipeline as written on an entry-only program: 5,317 → 11,979 statements after one `inline`, with 19 passes still to go. `/usr/bin/time`: `Command terminated by signal 15`, `Elapsed 25:14.48`, `Maximum resident set size 7735912` KB.
+
+### What I learned
+- The `speed` pipeline is written for programs without entries, where nothing can be removed. A program with entries should interleave `dfe`.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- With `dfe` between the two `inline`s, the second `inline` counts call sites in a program without the dead originals, so more callees qualify as single-site. That is a different (and legitimate) pipeline from `speed` followed by `dfe`; the results state which one was measured.
+
+### What should be done in the future
+- A pipeline variant with `dfe` for programs with entries, once pipelines can carry pass parameters.
+
+### Code review instructions
+- `scripts/08-candela-scene-speed.mjs` (`--dfe-after-inline`).
+
+### Technical details
+- See Step 12 for the results of the restarted run.
+
+## Step 12: Merging the integration branch (IRWB-004 and IRWB-006), and the gates on the result
+
+The coordinator merged IRWB-004 (cheap experiments) and IRWB-006 (rules as data, SSA) into `irwb-001/import-v6-prototype` and asked me to merge its head, `1f45c94`, into this branch before the final gates. The merge had one conflict, in the import lines of `passes.ts`. On the merged tree every gate passes: `npm test` (365 tests, 0 failures), the 44 corpus revision lines and the parity line identical to the baseline, the IRWB_FULL passes and backend suites identical, and IRWB-006's rule comparison, extended to the `speed` pipeline, finds no difference in 792 compared steps.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator (verbatim, abridged to the instructions): "Please merge that branch into yours at a convenient point before your final gates, and re-run your gates on the result. […] After merging, also run `IRWB_FULL=1 node --test tests/typed/rules.test.mjs`. […] `storeOf()` returns frozen records. […] A whole-program pass like `inline` should follow `dfe`'s pattern. […] include the merge in your diary." Correction: "the integration head that contains both merges is `1f45c94`".
+**Assistant interpretation:** Merge `1f45c94` into this branch, check that my code does not write to `storeOf` records, re-run the gates.
+**Inferred user intent:** The coordinator can merge this branch without surprises.
+**Commit (code):** a63d262 (merge), 292845a (rules comparison on `speed`, gate outputs).
+
+### What I did
+- Stopped the second per-scene run first (`kill 3999532`; log kept as `various/11b-candela-scenes-speed-second-run.log`): its last line was the final `cfg` (497,228 ms for a pass that changed nothing), it had then written nothing for 11 minutes, and the merged build was to be measured anyway, being about 3.5 times faster on Candela. Committed (47c521b).
+- `git merge --no-edit 1f45c94` → `CONFLICT (content): Merge conflict in src/typed/passes.ts`. IRWB-006 had removed `import { binop } from './evaluate.js'` (fold moved to `src/typed/rules/`); I kept my two imports (`rotateSpec`, `makeInline`) and dropped `binop` (no remaining use). `npx tsc` clean.
+- Checked the IRWB-004 behaviour changes against my code: `inline` copies with `Store.from` for both the source and the working store, as `dfe` does; the backend (`select`, `coalesce`, `layout`, `frequency`, `variants`) only reads the store; my tests and scripts only read `storeOf` records. None of my code calls `meaningKept(...).check()` directly.
+- Gates: `npm test > various/18-merged-npm-test.txt`; `scripts/08 > various/19-…` and `diff` with `various/01-…`; `tools/parity.mjs > various/20-…` and `diff` with `various/03-…`; `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs > various/21-…`, diffed with `various/04-…` without times; `IRWB_FULL=1 node --test tests/typed/rules.test.mjs tests/typed/speed.test.mjs tests/typed/inline.test.mjs > various/22-…`.
+- `tests/typed/rules.test.mjs`: its comparison runs over `['O1', 'O2', 'O2+', 'loops', 'checks']`, so it did not cover `speed` as the coordinator expected; I added `'speed'` to the list and changed the expected number of compared steps from 616 to 792 (4 `simplify`/`fold` steps × 44 projects more). `various/23-merged-irwb-full-rules.txt`.
+
+### Why
+- The `speed` pipeline runs `simplify` and `fold` on inlined code, which none of IRWB-006's pipelines produce; comparing the rule tables with the hand-written passes there is the coverage the coordinator asked for.
+
+### What worked
+- `npm test`: `tests 365`, `pass 362`, `fail 0`, `skipped 3`.
+- `REVISIONS-IDENTICAL`, `PARITY-IDENTICAL`; IRWB_FULL passes/backend: `diff-exit=0`, 21 of 21.
+- IRWB_FULL `speed.test.mjs` and `inline.test.mjs`: 15 of 15, the corpus tests included.
+- IRWB_FULL `rules.test.mjs` with `speed`: 9 of 9; `differ` empty.
+
+### What didn't work
+- The first IRWB_FULL run of `rules.test.mjs` after adding `speed`: `✖ B1: … AssertionError: 792 !== 616` — the comparison itself found no difference; only the pinned count of compared steps changed.
+
+### What I learned
+- After the merge, Candela runs are expected to be about 3.5 times faster (IRWB-004); the per-scene and general measurements are therefore run on the merged build.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- `tests/typed/rules.test.mjs` belongs to IRWB-006; my edit adds a pipeline and updates one count.
+
+### What should be done in the future
+- The coordinator may register IRWB-006's `sccp` and `O2-sccp` next to `speed`.
+
+### Code review instructions
+- `git show a63d262 -- src/typed/passes.ts`; `git show 292845a -- tests/typed/rules.test.mjs`.
+
+### Technical details
+- Merge base 420d8e1; the integration head 1f45c94 (`IRWB-004: merge cheap experiments (subagent)`).
+
+## Step 13: Candela per scene on the merged build — B-01 finished, then the machine stopped responding
+
+This step re-ran the per-scene measurement on the merged build (Step 12). B-01 finished: under `speed` with `dfe` after each `inline` and the three backend options, it executes 8,267.7 instructions per pixel against 8,501 for the reference compiler's `kernel` image, with every output float bit-identical to the reference frame. R-01 had not written a line when the machine stopped responding. The coordinator reported the facts below; this entry records them and what I measured, and attributes no cause.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Coordinator (verbatim, abridged to the facts and instructions): "The machine stopped responding. The previous boot's system log ends abruptly at 2026-11-26 01:39:07, with no shutdown and no OOM-killer entry, and the machine was rebooted at 09:14. Your process stopped with it; your transcript and worktree are intact. The cause is not confirmed. At the time, your per-scene speed run and IRWB-005's Candela mutation run were both running. […] New mandatory rule. Run every Candela-scale node process under a memory cap […] `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 node --max-old-space-size=10240 <script> ...` […] Add a diary step for the failure, with the facts above. Do not attribute a cause that is not measured."
+**Assistant interpretation:** Record the failure factually; keep the cut-off log; re-run what did not finish under the memory cap.
+**Inferred user intent:** No more machine-wide failures from one process; no unmeasured claims.
+**Commit (code):** the commit after this step.
+
+### What I did
+- 01:18: `/usr/bin/time -v node --max-old-space-size=12288 scripts/08-candela-scene-speed.mjs B-01 R-01 --dfe-after-inline --save-head …/head-{scene}.json > various/11-… 2> various/11-….log` (no memory cap; the cap rule did not exist yet).
+- A second background command waited for that process (PID 4100977) to exit and would then have started `tools/candela-o2.mjs --pipeline speed --save … --json` on the general program; it never started (no `various/24-*` file exists).
+- After the reboot: the log `various/11-candela-scenes-speed.log` (31 lines, last written 01:29) ends with B-01's complete result row (it parses as JSON); R-01 wrote nothing. `various/11-candela-scenes-speed.json` is empty (0 bytes; the script writes it only at the end). The scratchpad, which held the saved head files, was cleared by the reboot.
+- Kept the log as `various/11c-candela-scenes-speed-B01-cut-off.log`, labelled cut off; removed the empty JSON.
+
+### Why
+- The B-01 row is complete and valid evidence; the R-01 and general measurements are re-run under the cap (Step 14).
+
+### What worked
+- B-01 on the merged build (log, last line):
+  - pipeline 139.9 s (the same pipeline took far longer before the merge: one `inline` 46 s then, 8.8 s now); 135 → 44 functions, 5,317 → 8,390 statements;
+  - every changed application accepted by the entry-only contract: 18 applications with `146/146`;
+  - check against the scene program, 20 cases per surviving function: `{"agree":879,"disagree":0,"inconclusive":1}`;
+  - default options: 102,040 bytes, 8,749.1 instructions per pixel, 0 differing floats;
+  - chains + coalesce + homes: 94,828 bytes, **8,267.7** instructions per pixel, 0 differing floats;
+  - the estimate's choices: of 44 functions, `chains` 16, `coalesce` 33, homes 26 (128 constants);
+  - phases: lowering 14.4 s (defaults) and 44.2 s (options), rendering 184 s and 209 s, `variantChoices` 24.8 s.
+
+### What didn't work
+- The run did not finish: the machine stopped responding (facts in Prompt Context). What I had measured of my own process before: RSS 7,561,992 KB at 14 min 57 s of the run (during R-01), and 7,735,912 KB maximum for the pre-merge run (Step 11, `/usr/bin/time`); `free -g` at 01:08 showed 20 GB available of 62. I have no measurement from 01:29 to 01:39.
+
+### What I learned
+- The per-scene process holds about 7.5 GB, within a 10 GB heap; under the cap it has room, and if it does not, it exits with 137 instead of affecting the machine.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The R-01 and general measurements reported later come from runs after the reboot, under the memory cap.
+
+### What should be done in the future
+- Every Candela-scale run under `systemd-run --user --scope -p MemoryMax=14G -p MemorySwapMax=0` with `--max-old-space-size=10240`.
+
+### Code review instructions
+- `various/11c-candela-scenes-speed-B01-cut-off.log`.
+
+### Technical details
+- B-01's O2+ row on this build (Step 11): 10,435 per pixel, 74,044 bytes, 0 differing floats.
+
+## Step 14: R-01 under the memory cap; the per-scene results
+
+This step re-ran R-01, the scene that had not finished, under the coordinator's memory cap, and combined it with B-01's row from the cut-off log. R-01 under `speed` with the three options executes 18,186.7 instructions per pixel, 20.4% fewer than O2+ and 16.2% more than the reference compiler's `kernel` image; its frame is bit-identical to the reference's. The run held at most 7.05 GB and exited normally.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 and Step 13 (the coordinator's resume note).
+**Assistant interpretation:** Re-run what did not finish, under `systemd-run --user --scope -p MemoryMax=14G -p MemorySwapMax=0` with `--max-old-space-size=10240`.
+**Inferred user intent:** See Step 13.
+**Commit (code):** the commit after this step.
+
+### What I did
+- `npx tsc` (dist unchanged since the merge build); tested the launcher with a one-line node program (`capped ok`, exit 0).
+- `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 /usr/bin/time -v node --max-old-space-size=10240 scripts/08-candela-scene-speed.mjs R-01 --dfe-after-inline > various/11-candela-scene-R01-speed.json 2> various/11-candela-scene-R01-speed.log`.
+- `various/11-candela-scenes-speed.json` = `[B-01's row (last line of various/11c-…-cut-off.log), R-01's row (various/11-candela-scene-R01-speed.json)]`, written by a two-line `node -e`; `scripts/10-report-figures.py` takes O2+ from it when present, else B-01's from `various/11a-…` (this build) and R-01's from IRWB-001's `08-candela-per-scene-o2.json`. Figure `various/figures/irwb003-candela-scenes.png`.
+- Corrected a number in Step 11: the input of `speed` on B-01 has 5,317 statements, not 4,786 (that is O2+'s output).
+
+### Why
+- B-01's row in the cut-off log is complete; re-running it would measure the same thing.
+
+### What worked
+- `Exit status: 0`, `Elapsed 8:49.03`, `Maximum resident set size 7054772` KB.
+- R-01: pipeline 103.8 s; 137 → 44 functions, 5,400 → 8,471 statements; 18 changed applications, each `146/146`; check `{"agree":879,"disagree":0,"inconclusive":1}`; default options 102,864 bytes, 19,314.3 per pixel, 0 differing floats; the three options 95,376 bytes, **18,186.7** per pixel, 0 differing floats; choices `chains` 16, `coalesce` 33, homes 26 (127 constants) of 44.
+- Per scene, instructions per pixel:
+
+  | | B-01 | R-01 |
+  |---|---:|---:|
+  | reference `kernel` | 8,501 | 15,655.9 |
+  | O2+ | 10,435 | 22,850.9 |
+  | speed, defaults | 8,749.1 | 19,314.3 |
+  | speed + the three options | 8,267.7 | 18,186.7 |
+
+### What didn't work
+- The first figure had its legend cut at both sides; two columns now.
+
+### What I learned
+- The same reduction, about 20% of O2+'s cost on both scenes, leaves R-01 above `kernel` and B-01 below it, because R-01 started 46% above `kernel` and B-01 23%. Where R-01's remaining 16% goes has not been measured.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- R-01's O2+ number is IRWB-001's (same frozen pipeline; B-01's was re-measured on this build and matched IRWB-001's exactly).
+
+### What should be done in the future
+- The other 16 scenes (not run: time).
+
+### Code review instructions
+- `various/11-candela-scenes-speed.json`, `various/11-candela-scene-R01-speed.log`.
+
+### Technical details
+- The general program's measurement follows in Step 15.
+
+## Step 15: The general Candela program under `speed`, per case against `kernel`
+
+This step ran the `speed` pipeline on the general Candela program (all 332 functions, full contract, no entries) and measured its images per case against the reference compiler's `kernel` image, both under the memory cap. Every pass application was accepted, the head agrees with r0 on all 33,183 decided cases of the final check, and every image agrees with its evaluator. With the three options, the general image executes 601.8 instructions per decided case against 727.3 for `kernel`: 17.3% fewer. At O2 (IRWB-001) it executed 16.4% more than `kernel`.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 and Step 13.
+**Assistant interpretation:** "Candela general image per case … vs `kernel`".
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit after this step.
+
+### What I did
+- `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 /usr/bin/time -v node --max-old-space-size=10240 tools/candela-o2.mjs --pipeline speed --save <scratchpad>/candela-speed-head.json --json > various/24-candela-general-speed-pipeline.json 2> various/24-….log` (each pass checked on 40 cases per function, then a final check of the head against r0 on 100 cases per function, step limit 2e5).
+- `systemd-run … node --max-old-space-size=10240 scripts/09-candela-image-options.mjs --head <scratchpad>/candela-speed-head.json --json various/25-candela-general-images.json --table various/25-candela-general-images.tsv > various/25-….txt 2> various/25-….log`: our image of r0, our images of the head with the default options and with the three options, and the reference `kernel` image; 100 cases per function; each of our images judged by the evaluator of the program it was lowered from, `kernel` by r0's; instructions over the cases every image and evaluator finished.
+
+### Why
+- The per-case table is the measure IRWB-001 reported for the general program (870.3 at O2 against 747.7 for `kernel`).
+
+### What worked
+- Pipeline: `Exit status: 0`, `Elapsed 7:29.73`, `Maximum resident set size 9441112` KB; 18 revisions, none rejected; `inline` r1: 721 sites in 185 callers, r2: 388 sites in 81 callers; statements 12,358 → 39,189 after the two `inline`s → 28,688 at the end; `rotate`: 44 jumps to a loop header replaced by copies of its test, in 12 functions. Final check: `{"total":33200,"agree":33183,"disagree":0,"inconclusive":17}`.
+- Images: `Exit status: 0`, `Elapsed 33:16.26`, `Maximum resident set size 5382324` KB:
+
+  | image | bytes | per decided case | agree / disagree |
+  |---|---:|---:|---:|
+  | ours, r0 | 183,324 | 894.2 | 32,985 / 0 |
+  | ours, speed head, default options | 297,044 | 703.9 | 32,985 / 0 |
+  | ours, speed head, chains + coalesce + homes | 263,584 | **601.8** | 32,985 / 0 |
+  | reference `kernel` | 434,996 | 727.3 | 32,985 / 0 |
+
+  (32,984 decided cases; 215 inconclusive per image.)
+- Per function against `kernel` (instructions per case × decided cases): 283 functions faster, 36 slower, net −4,142,097 (IRWB-001's O2: net +4,043,187). `fbm3` 42,790.7 per case against 52,061.7 (r0 68,705.6); `cdlRenderSpan` 58,292 against 62,046.6; `noise3` 747.1 against 915.6. The largest remaining positive gaps: `skyL_wgsl` (+18,060), `hdriSample` (+13,090), `traceAll` (+12,190).
+
+### What didn't work
+- Nothing in these runs.
+
+### What I learned
+- Without entries nothing can be removed, so the general head is 2.3 times r0's statements and its image 1.44 times r0's bytes (with the options; 1.62 with the defaults), still 61% of `kernel`'s bytes.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The decided set here (32,984 cases) is the one where r0, the head and all four images finish; IRWB-001's O2 table used its own set (32,985), so its 870.3 and 747.7 compare with each other, not with this table's numbers.
+
+### What should be done in the future
+- `skyL_wgsl`, `hdriSample`, `traceAll`: not investigated.
+
+### Code review instructions
+- `various/25-candela-general-images.txt` (totals), `.tsv` (per function).
+
+### Technical details
+- The saved head (39.6 MB) is in the scratchpad, not in the ticket.
+
+## Step 16: Final gates, and the vault report
+
+This step ran the final gates on the last code state (unchanged since the merge commit's follow-up, 292845a; only ticket files changed since) and finished the vault report. Everything frozen is identical to the baseline of Step 1.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 and Step 13.
+**Assistant interpretation:** Diff every frozen output against `various/01–04`; write the report and check it against this diary.
+**Inferred user intent:** See Step 1.
+**Commit (code):** this step's commit.
+
+### What I did
+- `npx tsc`; `scripts/08 > various/26-final-corpus-revisions.txt` and `diff` with `various/01-…`; `npm test > various/27-final-npm-test.txt`; `tools/parity.mjs > various/28-final-parity.txt` and `diff` with `various/03-…`; `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs > various/29-…`, diffed with `various/04-…` without times; `IRWB_FULL=1 node --test tests/typed/rules.test.mjs tests/typed/speed.test.mjs tests/typed/inline.test.mjs > various/30-…`.
+- The vault report `Projects/2026/11/25/PROJECT REPORT - IR Workbench - Closing the Speed Gap - … .md`, figures `_assets/irwb003-{benchmarks,corpus-ablation,corpus-projects,candela-scenes,rv32-options-row}.png`; reread against Steps 1–15: every number in it was checked against the diary or the `various/` file it came from. Corrections made during the reread: Blend's measured difference (80 = two instructions per iteration and the return copy, less the jump the plain code's last iteration skips; first written as 81), the sort explanation (six capacity checks per swapping iteration, for two positions; first written as an unmeasured comparison with the reference), the image-size remark (`calls` 212 → 108 bytes; first written as an unmeasured cause), B-01's input size (5,317 statements, not 4,786), the number of checked applications (18 per scene), and the `kernel`/`stock` size ratio (1.39, first written as 2.4). The vault is not committed.
+
+### Why
+- The freeze is the milestone's main constraint; the report is the milestone's account.
+
+### What worked
+- `REVISIONS-IDENTICAL`; `npm test`: `tests 365`, `pass 362`, `fail 0`, `skipped 3`; `PARITY-IDENTICAL`; `IRWB-FULL-IDENTICAL` (21 of 21); rules, speed and inline with `IRWB_FULL=1`: 24 of 24.
+
+### What didn't work
+- Nothing.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- `npm test` grew from 325 to 365 tests: 15 are this milestone's, the rest came with the merge.
+
+### What should be done in the future
+- See the report's section 9 and the open task "Per scene for the other 16 Candela scenes".
+
+### Code review instructions
+- `various/26-…` to `various/30-…`.
+
+### Technical details
+- N/A.

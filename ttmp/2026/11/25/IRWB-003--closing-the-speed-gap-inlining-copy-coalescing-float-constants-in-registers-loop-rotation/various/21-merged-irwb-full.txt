@@ -1,0 +1,29 @@
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (142.791194ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (548.323656ms)
+✔ P2.4: the book's other r0 numbers reproduce (518.214431ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (2507.539659ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (520.450046ms)
+✔ P2.4: encoders and the disassembler round-trip (108.830336ms)
+✔ P2.4: options are validated with the prototype's codes (38.183036ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (20.856529ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (59.78707ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (49.822557ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (40.734869ms)
+✔ P2.4: heat, diffs, machine stages and image status (57.674834ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (4778.940391ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit) (1488.708606ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (319.929207ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (322.754273ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (113.527418ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (142.852489ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (39.889423ms)
+✔ P2.6: corpus parity (all projects) (5676.598884ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (246.819214ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11351.836883

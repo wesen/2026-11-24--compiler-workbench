@@ -1,0 +1,17 @@
+✔ B1: the tables give the hand-written passes' revisions, edits and correspondences (all projects) (13272.04044ms)
+✔ B1: the comparison sees a one-rule difference (a rule with another note changes the revision) (323.718117ms)
+✔ B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework (1.939976ms)
+✔ B2: binopW at 32 bits is the evaluator's binop (boundary values crossed, every i32 operator) (32.387996ms)
+✔ B2: every table rule has recorded evidence for its current version, and it says sound (3.222081ms)
+✔ B2: the fast methods, re-run, agree with the recorded evidence (1299.563744ms)
+✔ B2: deliberately unsound rules are rejected, each with a counterexample or a structural reason (2.561846ms)
+✔ B2: x + (-0) -> x passes the meaning check's f32 edge values and is refuted by NaN payloads (10.475234ms)
+✔ workbench: the rules listing fits 72 columns and shows every rule with its evidence (4.466452ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15230.035134

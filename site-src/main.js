@@ -9,7 +9,7 @@ import './dock.js';
 import './dsl.js';
 import './compiler.js';
 import './candela.js';
-import { createWb, setVendor, PIPELINES, backendDefaults, didYouMean, yieldToHost } from './wb.js';
+import { createWb, setVendor, PIPELINES, backendDefaults, backendExtras, didYouMean, yieldToHost } from './wb.js';
 import { PROJECTS, BOOK, REFERENCE, SOURCES, BUILD, LAZY } from './content.generated.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -35,7 +35,7 @@ const S = (UI.S = {
   heat: null,
   lastCheck: null,
   runLog: [],
-  backend: Object.fromEntries(Object.entries(backendDefaults).filter(([k]) => k !== 'layout')),
+  backend: Object.fromEntries(Object.entries({ ...backendDefaults, ...backendExtras }).filter(([k]) => k !== 'layout')),
   chapter: store.get('wb.chapter') || 'welcome',
 });
 

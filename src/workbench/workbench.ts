@@ -15,7 +15,7 @@ import type { StrategyNode, StrategyPlan } from '../framework/strategy/ir.js';
 import { ANALYSES, flowGraph } from '../typed/analyses.js';
 import { BuilderError, passBuilder as kernelPassBuilder, USER_PASSES } from '../typed/builder.js';
 import { hash } from '../typed/evaluate.js';
-import { backendDefaults, backendOptionsAbout } from '../typed/backend/index.js';
+import { backendDefaults, backendExtras, backendOptionsAbout } from '../typed/backend/index.js';
 import { blocksAdapter, BlocksIR, storeOf } from '../typed/ir.js';
 import { describeText, lineage as lineageOf, linesOf, listing as listingOf } from '../typed/listing.js';
 import type { Store, WorkFn } from '../typed/model.js';
@@ -1127,7 +1127,7 @@ export function createWb(config: WbConfig = {}) {
       },
       yaml: toYaml,
       backendOptions() {
-        return { ...backendDefaults, about: { ...backendOptionsAbout } };
+        return { ...backendDefaults, ...backendExtras, about: { ...backendOptionsAbout } };
       },
       /** Run prototype-style synchronous code: `fn` gets a root on which async kernel calls are synchronous. */
       sync<T>(fn: (scope: { wb: any; p: any; project: any }) => T, opts: SyncOptions = {}) {

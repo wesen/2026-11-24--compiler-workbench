@@ -1,0 +1,31 @@
+{"pass":"inline","changed":true,"check":"146/146","ms":8829,"stmts":11979}
+{"pass":"dfe","changed":true,"check":"146/146","fns":81,"stmts":9053}
+{"pass":"inline","changed":true,"check":"146/146","ms":6380,"stmts":11604}
+{"pass":"dfe","changed":true,"check":"146/146","fns":44,"stmts":10853}
+{"pass":"cfg","changed":true,"check":"146/146","ms":5037,"stmts":10013}
+{"pass":"fold","changed":false,"ms":438,"stmts":10013}
+{"pass":"simplify","changed":true,"check":"146/146","ms":4049,"stmts":10013}
+{"pass":"constprop","changed":true,"check":"146/146","ms":21123,"stmts":10013}
+{"pass":"fold","changed":true,"check":"146/146","ms":3363,"stmts":10013}
+{"pass":"simplify","changed":true,"check":"146/146","ms":3904,"stmts":10013}
+{"pass":"dce","changed":true,"check":"146/146","ms":4175,"stmts":9016}
+{"pass":"cfg","changed":false,"ms":268,"stmts":9016}
+{"pass":"licm","changed":true,"check":"146/146","ms":3860,"stmts":9041}
+{"pass":"lvn","changed":true,"check":"146/146","ms":4965,"stmts":9104}
+{"pass":"strength","changed":false,"ms":24756,"stmts":9104}
+{"pass":"bce","changed":false,"ms":13246,"stmts":9104}
+{"pass":"subst","changed":true,"check":"146/146","ms":4918,"stmts":8812}
+{"pass":"subst","changed":true,"check":"146/146","ms":4966,"stmts":8616}
+{"pass":"dce","changed":true,"check":"146/146","ms":3772,"stmts":8586}
+{"pass":"cfg","changed":true,"check":"146/146","ms":3176,"stmts":8580}
+{"pass":"subst","changed":true,"check":"146/146","ms":3809,"stmts":8403}
+{"pass":"rotate","changed":true,"check":"146/146","ms":3065,"stmts":8390}
+{"pass":"cfg","changed":false,"ms":148,"stmts":8390}
+{"pass":"dfe","changed":false,"fns":44,"stmts":8390}
+{"phase":"check","ms":1387}
+{"phase":"lower defaults","ms":14419}
+{"phase":"render defaults","bytes":102040,"perPixel":8749.1,"differentBits":0,"ms":184287}
+{"phase":"lower options","ms":44188}
+{"phase":"render options","bytes":94828,"perPixel":8267.7,"differentBits":0,"ms":209350}
+{"phase":"choices","ms":24766}
+{"scene":"B-01","stride":4,"pixels":1600,"referenceKernel":8501,"scene0":{"fns":135,"stmts":5317},"speed":{"pipeline":"speed","ms":139913,"fns":44,"stmts":8390,"steps":[{"pass":"inline","changed":true,"check":"146/146","ms":8829,"stmts":11979},{"pass":"dfe","changed":true,"check":"146/146","fns":81,"stmts":9053},{"pass":"inline","changed":true,"check":"146/146","ms":6380,"stmts":11604},{"pass":"dfe","changed":true,"check":"146/146","fns":44,"stmts":10853},{"pass":"cfg","changed":true,"check":"146/146","ms":5037,"stmts":10013},{"pass":"fold","changed":false,"ms":438,"stmts":10013},{"pass":"simplify","changed":true,"check":"146/146","ms":4049,"stmts":10013},{"pass":"constprop","changed":true,"check":"146/146","ms":21123,"stmts":10013},{"pass":"fold","changed":true,"check":"146/146","ms":3363,"stmts":10013},{"pass":"simplify","changed":true,"check":"146/146","ms":3904,"stmts":10013},{"pass":"dce","changed":true,"check":"146/146","ms":4175,"stmts":9016},{"pass":"cfg","changed":false,"ms":268,"stmts":9016},{"pass":"licm","changed":true,"check":"146/146","ms":3860,"stmts":9041},{"pass":"lvn","changed":true,"check":"146/146","ms":4965,"stmts":9104},{"pass":"strength","changed":false,"ms":24756,"stmts":9104},{"pass":"bce","changed":false,"ms":13246,"stmts":9104},{"pass":"subst","changed":true,"check":"146/146","ms":4918,"stmts":8812},{"pass":"subst","changed":true,"check":"146/146","ms":4966,"stmts":8616},{"pass":"dce","changed":true,"check":"146/146","ms":3772,"stmts":8586},{"pass":"cfg","changed":true,"check":"146/146","ms":3176,"stmts":8580},{"pass":"subst","changed":true,"check":"146/146","ms":3809,"stmts":8403},{"pass":"rotate","changed":true,"check":"146/146","ms":3065,"stmts":8390},{"pass":"cfg","changed":false,"ms":148,"stmts":8390},{"pass":"dfe","changed":false,"fns":44,"stmts":8390}],"check":{"agree":879,"disagree":0,"inconclusive":1,"bad":[]},"defaults":{"bytes":102040,"perPixel":8749.1,"differentBits":0,"ms":184287},"options":{"bytes":94828,"perPixel":8267.7,"differentBits":0,"ms":209350},"choices":{"fns":44,"chains":16,"coalesce":33,"homes":26,"homeKeys":128}}}

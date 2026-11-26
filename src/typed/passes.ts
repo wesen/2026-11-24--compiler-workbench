@@ -46,6 +46,8 @@ import {
   type WorkFn,
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
+import { rotateSpec } from './rotate.js';
+import { makeInline } from './inline.js';
 
 type AnalysisName = keyof typeof ANALYSES;
 interface FactViews {
@@ -1026,6 +1028,11 @@ export const subst = typedPass({
   },
 });
 
+/** IRWB-003: loop rotation by header duplication (src/typed/rotate.ts). */
+export const rotate = typedPass(rotateSpec);
+/** IRWB-003: inlining, a whole-program pass like dfe (src/typed/inline.ts). */
+export const inline = makeInline(revisionCorrespondence);
+
 export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   fold,
   simplify,
@@ -1040,6 +1047,8 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   subst,
   bcm,
   dfe,
+  rotate,
+  inline,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */
@@ -1087,6 +1096,33 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'dce',
     'cfg',
     'subst',
+  ],
+  /**
+   * IRWB-003: two levels of inlining, then O2+, then loop rotation and a cfg to merge what rotation leaves in a
+   * line. Meant for the backend options chains, coalesce and homes. No dfe: it needs the program's entries.
+   */
+  speed: [
+    'inline',
+    'inline',
+    'cfg',
+    'fold',
+    'simplify',
+    'constprop',
+    'fold',
+    'simplify',
+    'dce',
+    'cfg',
+    'licm',
+    'lvn',
+    'strength',
+    'bce',
+    'subst',
+    'subst',
+    'dce',
+    'cfg',
+    'subst',
+    'rotate',
+    'cfg',
   ],
   loops: ['cfg', 'simplify', 'licm', 'lvn', 'subst', 'dce', 'cfg'],
   checks: ['cfg', 'simplify', 'bce', 'cfg'],

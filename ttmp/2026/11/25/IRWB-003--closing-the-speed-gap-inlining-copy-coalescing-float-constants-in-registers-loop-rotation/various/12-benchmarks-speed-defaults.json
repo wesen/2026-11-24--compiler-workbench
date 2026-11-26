@@ -1,0 +1,51 @@
+{
+ "pipeline": "speed",
+ "options": {},
+ "rows": [
+  {
+   "id": "blend",
+   "r0": 531,
+   "ours": 450,
+   "ref": 383,
+   "bytes": 92,
+   "same": true,
+   "rejected": []
+  },
+  {
+   "id": "checksum",
+   "r0": 446,
+   "ours": 325,
+   "ref": 292,
+   "bytes": 56,
+   "same": true,
+   "rejected": []
+  },
+  {
+   "id": "sort",
+   "r0": 2022,
+   "ours": 1985,
+   "ref": 1533,
+   "bytes": 252,
+   "same": true,
+   "rejected": []
+  },
+  {
+   "id": "collatz",
+   "r0": 1590,
+   "ours": 1480,
+   "ref": 1486,
+   "bytes": 96,
+   "same": true,
+   "rejected": []
+  },
+  {
+   "id": "value-numbering",
+   "r0": 690,
+   "ours": 569,
+   "ref": 695,
+   "bytes": 96,
+   "same": true,
+   "rejected": []
+  }
+ ]
+}

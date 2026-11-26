@@ -1,0 +1,362 @@
+{
+  "pipeline": "speed",
+  "r0": {
+    "blocks": 2409,
+    "stmts": 12358,
+    "values": 37220,
+    "locals": 10383
+  },
+  "head": {
+    "blocks": 5151,
+    "stmts": 28688,
+    "values": 72057,
+    "locals": 28818
+  },
+  "rev": 18,
+  "steps": [
+    {
+      "pass": "inline",
+      "changed": true,
+      "rev": 1,
+      "edits": 19967,
+      "kinds": {
+        "local": 13955,
+        "block": 3837,
+        "remove": 721,
+        "inline": 721,
+        "replace": 733
+      },
+      "fns": 185,
+      "check": "agree",
+      "stmts": [
+        12358,
+        32574
+      ]
+    },
+    {
+      "pass": "inline",
+      "changed": true,
+      "rev": 2,
+      "edits": 7575,
+      "kinds": {
+        "local": 4122,
+        "block": 2394,
+        "remove": 388,
+        "inline": 388,
+        "replace": 283
+      },
+      "fns": 81,
+      "check": "agree",
+      "stmts": [
+        32574,
+        39189
+      ]
+    },
+    {
+      "pass": "cfg",
+      "changed": true,
+      "rev": 3,
+      "edits": 20355,
+      "kinds": {
+        "retarget": 1523,
+        "unreachable": 3371,
+        "remove": 1951,
+        "move": 11555,
+        "merge": 1951,
+        "replaceStmt": 4
+      },
+      "fns": 205,
+      "check": "agree",
+      "stmts": [
+        39189,
+        35814
+      ]
+    },
+    {
+      "pass": "fold",
+      "changed": true,
+      "rev": 4,
+      "edits": 1031,
+      "kinds": {
+        "replace": 1031
+      },
+      "fns": 133,
+      "check": "agree",
+      "stmts": [
+        35814,
+        35814
+      ]
+    },
+    {
+      "pass": "simplify",
+      "changed": true,
+      "rev": 5,
+      "edits": 125,
+      "kinds": {
+        "replace": 125
+      },
+      "fns": 32,
+      "check": "agree",
+      "stmts": [
+        35814,
+        35814
+      ]
+    },
+    {
+      "pass": "constprop",
+      "changed": true,
+      "rev": 6,
+      "edits": 2230,
+      "kinds": {
+        "replace": 2230
+      },
+      "fns": 159,
+      "check": "agree",
+      "stmts": [
+        35814,
+        35814
+      ]
+    },
+    {
+      "pass": "fold",
+      "changed": true,
+      "rev": 7,
+      "edits": 368,
+      "kinds": {
+        "replace": 368
+      },
+      "fns": 96,
+      "check": "agree",
+      "stmts": [
+        35814,
+        35814
+      ]
+    },
+    {
+      "pass": "simplify",
+      "changed": true,
+      "rev": 8,
+      "edits": 13,
+      "kinds": {
+        "replace": 13
+      },
+      "fns": 8,
+      "check": "agree",
+      "stmts": [
+        35814,
+        35814
+      ]
+    },
+    {
+      "pass": "dce",
+      "changed": true,
+      "rev": 9,
+      "edits": 5127,
+      "kinds": {
+        "remove": 5127
+      },
+      "fns": 177,
+      "check": "agree",
+      "stmts": [
+        35814,
+        30687
+      ]
+    },
+    {
+      "pass": "cfg",
+      "changed": true,
+      "rev": 10,
+      "edits": 178,
+      "kinds": {
+        "replaceStmt": 31,
+        "retarget": 36,
+        "unreachable": 99,
+        "remove": 4,
+        "move": 4,
+        "merge": 4
+      },
+      "fns": 14,
+      "check": "agree",
+      "stmts": [
+        30687,
+        30540
+      ]
+    },
+    {
+      "pass": "licm",
+      "changed": true,
+      "rev": 11,
+      "edits": 93,
+      "kinds": {
+        "local": 21,
+        "insert": 29,
+        "replace": 21,
+        "block": 8,
+        "retarget": 14
+      },
+      "fns": 9,
+      "check": "agree",
+      "stmts": [
+        30540,
+        30569
+      ]
+    },
+    {
+      "pass": "lvn",
+      "changed": true,
+      "rev": 12,
+      "edits": 1348,
+      "kinds": {
+        "local": 337,
+        "replace": 674,
+        "insert": 337
+      },
+      "fns": 107,
+      "check": "agree",
+      "stmts": [
+        30569,
+        30906
+      ]
+    },
+    {
+      "pass": "strength",
+      "changed": false,
+      "rev": 12,
+      "edits": 0,
+      "stmts": [
+        30906,
+        30906
+      ]
+    },
+    {
+      "pass": "bce",
+      "changed": false,
+      "rev": 12,
+      "edits": 0,
+      "stmts": [
+        30906,
+        30906
+      ]
+    },
+    {
+      "pass": "subst",
+      "changed": true,
+      "rev": 13,
+      "edits": 1860,
+      "kinds": {
+        "replace": 930,
+        "remove": 930
+      },
+      "fns": 211,
+      "check": "agree",
+      "stmts": [
+        30906,
+        29976
+      ]
+    },
+    {
+      "pass": "subst",
+      "changed": true,
+      "rev": 14,
+      "edits": 1206,
+      "kinds": {
+        "replace": 603,
+        "remove": 603
+      },
+      "fns": 189,
+      "check": "agree",
+      "stmts": [
+        29976,
+        29373
+      ]
+    },
+    {
+      "pass": "dce",
+      "changed": true,
+      "rev": 15,
+      "edits": 151,
+      "kinds": {
+        "remove": 151
+      },
+      "fns": 15,
+      "check": "agree",
+      "stmts": [
+        29373,
+        29222
+      ]
+    },
+    {
+      "pass": "cfg",
+      "changed": true,
+      "rev": 16,
+      "edits": 20,
+      "kinds": {
+        "retarget": 4,
+        "unreachable": 6,
+        "remove": 2,
+        "move": 6,
+        "merge": 2
+      },
+      "fns": 2,
+      "check": "agree",
+      "stmts": [
+        29222,
+        29216
+      ]
+    },
+    {
+      "pass": "subst",
+      "changed": true,
+      "rev": 17,
+      "edits": 1014,
+      "kinds": {
+        "replace": 507,
+        "remove": 507
+      },
+      "fns": 145,
+      "check": "agree",
+      "stmts": [
+        29216,
+        28709
+      ]
+    },
+    {
+      "pass": "rotate",
+      "changed": true,
+      "rev": 18,
+      "edits": 65,
+      "kinds": {
+        "replaceStmt": 44,
+        "unreachable": 21
+      },
+      "fns": 12,
+      "check": "agree",
+      "stmts": [
+        28709,
+        28688
+      ]
+    },
+    {
+      "pass": "cfg",
+      "changed": false,
+      "rev": 18,
+      "edits": 0,
+      "stmts": [
+        28688,
+        28688
+      ]
+    }
+  ],
+  "final": {
+    "total": 33200,
+    "agree": 33183,
+    "disagree": 0,
+    "inconclusive": 17,
+    "counterexamples": []
+  },
+  "ms": {
+    "pipeline": 332194,
+    "final": 111607,
+    "total": 448776
+  }
+}

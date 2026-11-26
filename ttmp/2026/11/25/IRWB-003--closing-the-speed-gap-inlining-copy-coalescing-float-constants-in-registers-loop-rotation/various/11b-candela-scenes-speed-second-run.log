@@ -1,0 +1,47 @@
+{"pass":"inline","changed":true,"check":"146/146","ms":45964,"stmts":11979}
+{"pass":"dfe","changed":true,"check":"146/146","fns":81,"stmts":9053}
+{"pass":"inline","changed":true,"check":"146/146","ms":40598,"stmts":11604}
+{"pass":"dfe","changed":true,"check":"146/146","fns":44,"stmts":10853}
+{"pass":"cfg","changed":true,"check":"146/146","ms":28349,"stmts":10013}
+{"pass":"fold","changed":false,"ms":24347,"stmts":10013}
+{"pass":"simplify","changed":true,"check":"146/146","ms":36905,"stmts":10013}
+{"pass":"constprop","changed":true,"check":"146/146","ms":65522,"stmts":10013}
+{"pass":"fold","changed":true,"check":"146/146","ms":31291,"stmts":10013}
+{"pass":"simplify","changed":true,"check":"146/146","ms":28395,"stmts":10013}
+{"pass":"dce","changed":true,"check":"146/146","ms":25707,"stmts":9016}
+{"pass":"cfg","changed":false,"ms":14898,"stmts":9016}
+{"pass":"licm","changed":true,"check":"146/146","ms":24024,"stmts":9041}
+{"pass":"lvn","changed":true,"check":"146/146","ms":27762,"stmts":9104}
+{"pass":"strength","changed":false,"ms":53549,"stmts":9104}
+{"pass":"bce","changed":false,"ms":45319,"stmts":9104}
+{"pass":"subst","changed":true,"check":"146/146","ms":28853,"stmts":8812}
+{"pass":"subst","changed":true,"check":"146/146","ms":33490,"stmts":8616}
+{"pass":"dce","changed":true,"check":"146/146","ms":30591,"stmts":8586}
+{"pass":"cfg","changed":true,"check":"146/146","ms":26015,"stmts":8580}
+{"pass":"subst","changed":true,"check":"146/146","ms":23648,"stmts":8403}
+{"pass":"rotate","changed":true,"check":"146/146","ms":27374,"stmts":8390}
+{"pass":"cfg","changed":false,"ms":497228,"stmts":8390}
+Command terminated by signal 15
+	Command being timed: "node --max-old-space-size=12288 ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/scripts/08-candela-scene-speed.mjs B-01 R-01 --dfe-after-inline"
+	User time (seconds): 2326.89
+	System time (seconds): 26.07
+	Percent of CPU this job got: 100%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 39:00.67
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 8188188
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 8671406
+	Voluntary context switches: 56401
+	Involuntary context switches: 523342
+	Swaps: 0
+	File system inputs: 8
+	File system outputs: 184
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

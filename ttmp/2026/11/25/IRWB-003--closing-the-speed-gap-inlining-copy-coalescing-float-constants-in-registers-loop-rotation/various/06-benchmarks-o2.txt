@@ -1,0 +1,253 @@
+==== blend after O2 {}
+function blend(work: buffer, n: i32, a: i32, b: i32): i32
+bb:blend.0  -> [.1]
+    s:blend.1    s = 0
+    s:blend.2    i = 0
+    s:blend.15   inv = ((a * b) + 64)
+    s:blend.3    goto .1
+bb:blend.1  -> [.2, .3]
+    s:blend.4    if (i >= n) goto .2 else .3
+bb:blend.2  -> []
+    s:blend.14   return (s / 8)
+bb:blend.3  -> [.4, .7]
+    s:blend.5    t7 = i
+    s:blend.6    if (t7 >=u load32[work+0]) goto .4 else .7
+bb:blend.4  -> []
+    s:blend.7    trap
+bb:blend.7  -> [.1]
+    s:blend.10   s = (s + (load16[(work + (t7 << 1))+4] * inv))
+    s:blend.11   i = (i + 1)
+    s:blend.12   goto .1
+  addi t0, zero, 0
+  addi t1, zero, 0
+  mul t2, a2, a3
+  addi t2, t2, 64
+  blt t1, a1, bb.3
+  srai t3, t0, 31
+  srli t3, t3, 29
+  add t3, t0, t3
+  srai t3, t3, 3
+  addi a0, t3, 0   ; copy
+  ret   ; return (no frame to pop)
+  addi t3, t1, 0   ; copy
+  lw t4, 0(a0)
+  bltu t3, t4, bb.7
+  ebreak   ; unreachable
+  slli t3, t3, 1
+  add t3, a0, t3
+  lhu t3, 4(t3)
+  mul t3, t3, t2
+  add t0, t0, t3
+  addi t1, t1, 1
+  jal zero, bb.1
+==== checksum after O2 {}
+function total(work: buffer): i32
+bb:total.0  -> [.1]
+    s:total.0    s = 0
+    s:total.1    i = 0
+    s:total.2    goto .1
+bb:total.1  -> [.2, .3]
+    s:total.3    if (i >= load32[work+0]) goto .2 else .3
+bb:total.2  -> []
+    s:total.13   return s
+bb:total.3  -> [.1]
+    s:total.4    t3 = i
+    s:total.9    s = (s + load16[(work + (t3 << 1))+4])
+    s:total.10   i = (i + 1)
+    s:total.11   goto .1
+  addi t0, zero, 0
+  addi t1, zero, 0
+  lw t2, 0(a0)
+  blt t1, t2, bb.3
+  addi a0, t0, 0   ; copy
+  ret   ; return (no frame to pop)
+  addi t2, t1, 0   ; copy
+  slli t2, t2, 1
+  add t2, a0, t2
+  lhu t2, 4(t2)
+  add t0, t0, t2
+  addi t1, t1, 1
+  jal zero, bb.1
+==== sort after O2 {}
+function sort(work: buffer): i32
+bb:sort.0  -> [.1]
+    s:sort.0     swaps = 0
+    s:sort.1     i = 1
+    s:sort.2     goto .1
+bb:sort.1  -> [.2, .3]
+    s:sort.3     if (i >= load32[work+0]) goto .2 else .3
+bb:sort.2  -> []
+    s:sort.54    return swaps
+bb:sort.3  -> [.4]
+    s:sort.4     j = i
+    s:sort.5     goto .4
+bb:sort.4  -> [.5, .6]
+    s:sort.6     if (j > 0) goto .5 else .6
+bb:sort.5  -> [.7, .10]
+    s:sort.7     t4 = (j - 1)
+    s:sort.8     if (t4 >=u load32[work+0]) goto .7 else .10
+bb:sort.6  -> [.15]
+    s:sort.20    t11 = 0
+    s:sort.21    goto .15
+bb:sort.7  -> []
+    s:sort.9     trap
+bb:sort.10  -> [.11, .14]
+    s:sort.12    t5 = j
+    s:sort.13    t12 = load16[(work + (t4 << 1))+4]
+    s:sort.14    if (t5 >=u load32[work+0]) goto .11 else .14
+bb:sort.11  -> []
+    s:sort.15    trap
+bb:sort.14  -> [.15]
+    s:sort.18    t11 = (t12 > load16[(work + (t5 << 1))+4])
+    s:sort.19    goto .15
+bb:sort.15  -> [.16, .17]
+    s:sort.22    if !(t11) goto .16 else .17
+bb:sort.16  -> [.1]
+    s:sort.51    i = (i + 1)
+    s:sort.52    goto .1
+bb:sort.17  -> [.18, .21]
+    s:sort.23    t6 = j
+    s:sort.24    if (t6 >=u load32[work+0]) goto .18 else .21
+bb:sort.18  -> []
+    s:sort.25    trap
+bb:sort.21  -> [.22, .25]
+    s:sort.28    t = load16[(work + (t6 << 1))+4]
+    s:sort.29    t8 = j
+    s:sort.30    if (t8 >=u load32[work+0]) goto .22 else .25
+bb:sort.22  -> []
+    s:sort.31    trap
+bb:sort.25  -> [.26, .29]
+    s:sort.34    t9 = (j - 1)
+    s:sort.35    t13 = (work + (t8 << 1))
+    s:sort.36    if (t9 >=u load32[work+0]) goto .26 else .29
+bb:sort.26  -> []
+    s:sort.37    trap
+bb:sort.29  -> [.30, .33]
+    s:sort.40    store16[t13+4] = load16[(work + (t9 << 1))+4]
+    s:sort.41    t10 = (j - 1)
+    s:sort.42    if (t10 >=u load32[work+0]) goto .30 else .33
+bb:sort.30  -> []
+    s:sort.43    trap
+bb:sort.33  -> [.4]
+    s:sort.46    store16[(work + (t10 << 1))+4] = t
+    s:sort.47    swaps = (swaps + 1)
+    s:sort.48    j = (j - 1)
+    s:sort.49    goto .4
+  addi t0, zero, 0
+  addi t1, zero, 1
+  lw t2, 0(a0)
+  blt t1, t2, bb.3
+  addi a0, t0, 0   ; copy
+  ret   ; return (no frame to pop)
+  addi t2, t1, 0   ; copy
+  bge zero, t2, bb.6
+  addi t3, t2, -1
+  lw t4, 0(a0)
+  bgeu t3, t4, bb.7
+  jal zero, bb.10
+  addi t4, zero, 0
+  jal zero, bb.15
+  ebreak   ; unreachable
+  addi a1, t2, 0   ; copy
+  slli t3, t3, 1
+  add t3, a0, t3
+  lhu t3, 4(t3)
+  lw a2, 0(a0)
+  bltu a1, a2, bb.14
+  ebreak   ; unreachable
+  slli a1, a1, 1
+  add a1, a0, a1
+  lhu a1, 4(a1)
+  slt t4, a1, t3
+  bne t4, zero, bb.17
+  addi t1, t1, 1
+  jal zero, bb.1
+  addi t3, t2, 0   ; copy
+  lw t4, 0(a0)
+  bltu t3, t4, bb.21
+  ebreak   ; unreachable
+  slli t3, t3, 1
+  add t3, a0, t3
+  lhu t3, 4(t3)
+  addi t4, t2, 0   ; copy
+  lw a1, 0(a0)
+  bltu t4, a1, bb.25
+  ebreak   ; unreachable
+  addi a1, t2, -1
+  slli t4, t4, 1
+  add t4, a0, t4
+  lw a2, 0(a0)
+  bltu a1, a2, bb.29
+  ebreak   ; unreachable
+  slli a1, a1, 1
+  add a1, a0, a1
+  lhu a1, 4(a1)
+  sh a1, 4(t4)
+  addi t4, t2, -1
+  lw a1, 0(a0)
+  bltu t4, a1, bb.33
+  ebreak   ; unreachable
+  slli t4, t4, 1
+  add t4, a0, t4
+  sh t3, 4(t4)
+  addi t0, t0, 1
+  addi t2, t2, -1
+  jal zero, bb.4
+==== collatz after O2 {}
+function collatz(n: i32): i32
+bb:collatz.0  -> [.1]
+    s:collatz.0  x = n
+    s:collatz.1  steps = 0
+    s:collatz.2  goto .1
+bb:collatz.1  -> [.2, .3]
+    s:collatz.3  if (x > 1) goto .2 else .3
+bb:collatz.2  -> [.4]
+    s:collatz.4  t3 = (steps < 1000)
+    s:collatz.5  goto .4
+bb:collatz.3  -> [.4]
+    s:collatz.6  t3 = 0
+    s:collatz.7  goto .4
+bb:collatz.4  -> [.5, .6]
+    s:collatz.8  if !(t3) goto .5 else .6
+bb:collatz.5  -> []
+    s:collatz.17 return steps
+bb:collatz.6  -> [.7, .8]
+    s:collatz.9  if ((x % 2) == 0) goto .7 else .8
+bb:collatz.7  -> [.9]
+    s:collatz.10 x = (x / 2)
+    s:collatz.11 goto .9
+bb:collatz.8  -> [.9]
+    s:collatz.12 x = ((3 * x) + 1)
+    s:collatz.13 goto .9
+bb:collatz.9  -> [.1]
+    s:collatz.14 steps = (steps + 1)
+    s:collatz.15 goto .1
+  addi t0, a0, 0   ; copy
+  addi a0, zero, 0
+  addi t1, zero, 1
+  bge t1, t0, bb.3
+  slti t1, a0, 1000
+  jal zero, bb.4
+  addi t1, zero, 0
+  bne t1, zero, bb.6
+  ret   ; return (no frame to pop)
+  addi t1, zero, 2
+  rem t1, t0, t1
+  bne t1, zero, bb.8
+  srai t1, t0, 31
+  srli t1, t1, 31
+  add t1, t0, t1
+  srai t0, t1, 1
+  jal zero, bb.9
+  addi t1, zero, 3
+  mul t1, t1, t0
+  addi t0, t1, 1
+  addi a0, a0, 1
+  jal zero, bb.1
+pipeline O2 options {}
+benchmark        r0   ours    ref  bytes  result
+blend            531    451    383     88  same
+checksum         446    366    292     52  same
+sort            2022   2022   1533    240  same
+collatz         1590   1590   1486     88  same
+value-numbering  690    570    695     92  same

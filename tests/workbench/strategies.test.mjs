@@ -103,13 +103,16 @@ test('wb.pass: the kernel builder from a project script; applied, listed, and us
 test('wb.compiler and wb.source: declarations with ids and versions, and where each is defined', () => {
   const { wb } = makeWb();
   const c = wb.compiler();
-  assert.equal(c.passes.length, 13); // the eleven of Compiler Workbench, bcm and dfe
+  assert.equal(c.passes.length, 15); // the eleven of Compiler Workbench, bcm and dfe; IRWB-003's rotate, inline
+  assert.match(c.passes.find(x => x.name === 'rotate').source, /^src\/typed\/rotate\.ts:\d+$/);
+  assert.match(c.passes.find(x => x.name === 'inline').source, /^src\/typed\/inline\.ts:\d+$/);
   const licm = c.passes.find(x => x.name === 'licm');
   assert.equal(licm.id, 'typed.licm');
   assert.deepEqual(licm.needs, { loops: 'typed.loops@1' });
   assert.match(licm.source, /^src\/typed\/passes\.ts:\d+$/);
   assert.deepEqual(c.analyses.map(a => a.name), ['cfg', 'dominators', 'loops', 'liveness', 'reaching', 'ranges']);
-  assert.deepEqual(Object.keys(c.pipelines), ['O0', 'O1', 'O2', 'O2+', 'loops', 'checks', 'broken']);
+  // IRWB-003 adds speed after O2+
+  assert.deepEqual(Object.keys(c.pipelines), ['O0', 'O1', 'O2', 'O2+', 'speed', 'loops', 'checks', 'broken']);
   const d = wb.source.definition('licm');
   assert.match(d.text, /name: 'licm'/);
   assert.ok(d.from <= d.line && d.line <= d.to);

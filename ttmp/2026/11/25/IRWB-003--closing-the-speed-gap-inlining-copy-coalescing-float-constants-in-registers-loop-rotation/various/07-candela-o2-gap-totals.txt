@@ -1,0 +1,5 @@
+{"net":4043187,"positive":5307267,"negative":-1264080}
+fbm3                 1816438 44.9% of net 34.2% of positive
+cdlRenderSpan        870470 21.5% of net 16.4% of positive
+s16_mat_0            214150 5.3% of net 4.0% of positive
+s16_bumpN_1          192910 4.8% of net 3.6% of positive

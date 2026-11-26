@@ -1,0 +1,34 @@
+head r18 28688 statements
+image r0 183324 bytes 3857 ms
+image head 297044 bytes 17953 ms
+image options 263584 bytes 38362 ms
+image kernel 434996 bytes
+50 functions 88938 ms
+100 functions 213071 ms
+150 functions 868070 ms
+200 functions 1036490 ms
+250 functions 1172581 ms
+300 functions 1288404 ms
+	Command being timed: "node --max-old-space-size=10240 ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/scripts/09-candela-image-options.mjs --head /tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/candela-speed-head.json --json ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/various/25-candela-general-images.json --table ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/various/25-candela-general-images.tsv"
+	User time (seconds): 2727.04
+	System time (seconds): 8.21
+	Percent of CPU this job got: 137%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 33:16.26
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 5382324
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 1687767
+	Voluntary context switches: 120019
+	Involuntary context switches: 496262
+	Swaps: 0
+	File system inputs: 16
+	File system outputs: 464
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

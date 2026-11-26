@@ -18,7 +18,7 @@ export {
 export { WbProgram, FACTS, benchOf, argSpec } from './programs.js';
 export { handle, selection, fragments, usesOf, type EntityHost } from './entities.js';
 export { PIPELINES, PASSES } from '../typed/passes.js';
-export { backendDefaults, backendOptionsAbout, runImage } from '../typed/backend/index.js';
+export { backendDefaults, backendExtras, backendOptionsAbout, runImage } from '../typed/backend/index.js';
 export { setVendor } from '../typed/vendor.js';
 export { formatJson, wrapProse, TILE_WIDTH } from '../typed/format.js';
 export {

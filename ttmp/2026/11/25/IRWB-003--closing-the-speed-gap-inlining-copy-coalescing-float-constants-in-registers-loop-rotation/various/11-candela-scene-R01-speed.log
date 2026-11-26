@@ -1,0 +1,54 @@
+{"pass":"inline","changed":true,"check":"146/146","ms":4324,"stmts":12334}
+{"pass":"dfe","changed":true,"check":"146/146","fns":81,"stmts":9200}
+{"pass":"inline","changed":true,"check":"146/146","ms":3236,"stmts":11824}
+{"pass":"dfe","changed":true,"check":"146/146","fns":44,"stmts":11073}
+{"pass":"cfg","changed":true,"check":"146/146","ms":2515,"stmts":10224}
+{"pass":"fold","changed":false,"ms":168,"stmts":10224}
+{"pass":"simplify","changed":true,"check":"146/146","ms":2234,"stmts":10224}
+{"pass":"constprop","changed":true,"check":"146/146","ms":10250,"stmts":10224}
+{"pass":"fold","changed":true,"check":"146/146","ms":2483,"stmts":10224}
+{"pass":"simplify","changed":true,"check":"146/146","ms":2417,"stmts":10224}
+{"pass":"dce","changed":true,"check":"146/146","ms":3106,"stmts":9105}
+{"pass":"cfg","changed":false,"ms":138,"stmts":9105}
+{"pass":"licm","changed":true,"check":"146/146","ms":2559,"stmts":9130}
+{"pass":"lvn","changed":true,"check":"146/146","ms":3149,"stmts":9195}
+{"pass":"strength","changed":false,"ms":31888,"stmts":9195}
+{"pass":"bce","changed":false,"ms":9299,"stmts":9195}
+{"pass":"subst","changed":true,"check":"146/146","ms":3430,"stmts":8899}
+{"pass":"subst","changed":true,"check":"146/146","ms":3457,"stmts":8700}
+{"pass":"dce","changed":true,"check":"146/146","ms":3109,"stmts":8670}
+{"pass":"cfg","changed":true,"check":"146/146","ms":3964,"stmts":8664}
+{"pass":"subst","changed":true,"check":"146/146","ms":3095,"stmts":8484}
+{"pass":"rotate","changed":true,"check":"146/146","ms":2734,"stmts":8471}
+{"pass":"cfg","changed":false,"ms":138,"stmts":8471}
+{"pass":"dfe","changed":false,"fns":44,"stmts":8471}
+{"phase":"check","ms":1104}
+{"phase":"lower defaults","ms":16145}
+{"phase":"render defaults","bytes":102864,"perPixel":19314.3,"differentBits":0,"ms":148478}
+{"phase":"lower options","ms":23363}
+{"phase":"render options","bytes":95376,"perPixel":18186.7,"differentBits":0,"ms":168475}
+{"phase":"choices","ms":39862}
+{"scene":"R-01","stride":4,"pixels":1600,"referenceKernel":15655.9,"scene0":{"fns":137,"stmts":5400},"speed":{"pipeline":"speed","ms":103843,"fns":44,"stmts":8471,"steps":[{"pass":"inline","changed":true,"check":"146/146","ms":4324,"stmts":12334},{"pass":"dfe","changed":true,"check":"146/146","fns":81,"stmts":9200},{"pass":"inline","changed":true,"check":"146/146","ms":3236,"stmts":11824},{"pass":"dfe","changed":true,"check":"146/146","fns":44,"stmts":11073},{"pass":"cfg","changed":true,"check":"146/146","ms":2515,"stmts":10224},{"pass":"fold","changed":false,"ms":168,"stmts":10224},{"pass":"simplify","changed":true,"check":"146/146","ms":2234,"stmts":10224},{"pass":"constprop","changed":true,"check":"146/146","ms":10250,"stmts":10224},{"pass":"fold","changed":true,"check":"146/146","ms":2483,"stmts":10224},{"pass":"simplify","changed":true,"check":"146/146","ms":2417,"stmts":10224},{"pass":"dce","changed":true,"check":"146/146","ms":3106,"stmts":9105},{"pass":"cfg","changed":false,"ms":138,"stmts":9105},{"pass":"licm","changed":true,"check":"146/146","ms":2559,"stmts":9130},{"pass":"lvn","changed":true,"check":"146/146","ms":3149,"stmts":9195},{"pass":"strength","changed":false,"ms":31888,"stmts":9195},{"pass":"bce","changed":false,"ms":9299,"stmts":9195},{"pass":"subst","changed":true,"check":"146/146","ms":3430,"stmts":8899},{"pass":"subst","changed":true,"check":"146/146","ms":3457,"stmts":8700},{"pass":"dce","changed":true,"check":"146/146","ms":3109,"stmts":8670},{"pass":"cfg","changed":true,"check":"146/146","ms":3964,"stmts":8664},{"pass":"subst","changed":true,"check":"146/146","ms":3095,"stmts":8484},{"pass":"rotate","changed":true,"check":"146/146","ms":2734,"stmts":8471},{"pass":"cfg","changed":false,"ms":138,"stmts":8471},{"pass":"dfe","changed":false,"fns":44,"stmts":8471}],"check":{"agree":879,"disagree":0,"inconclusive":1,"bad":[]},"defaults":{"bytes":102864,"perPixel":19314.3,"differentBits":0,"ms":148478},"options":{"bytes":95376,"perPixel":18186.7,"differentBits":0,"ms":168475},"choices":{"fns":44,"chains":16,"coalesce":33,"homes":26,"homeKeys":127}}}
+	Command being timed: "node --max-old-space-size=10240 ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/scripts/08-candela-scene-speed.mjs R-01 --dfe-after-inline"
+	User time (seconds): 800.73
+	System time (seconds): 6.87
+	Percent of CPU this job got: 152%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 8:49.03
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 7054772
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 3873691
+	Voluntary context switches: 65251
+	Involuntary context switches: 31908
+	Swaps: 0
+	File system inputs: 1840
+	File system outputs: 88
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
