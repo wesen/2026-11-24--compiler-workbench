@@ -361,3 +361,105 @@ Two scripts measure what the design would split. `01-analyses-per-function.mjs` 
 
 ### Technical details
 - Solving here freezes each region's record separately (`immutable` per region), so `solveAndFreezeAllMs` (3.3 s) is comparable to Step 2's solve plus per-region freeze (1.06 s + 1.43 s, at lower load).
+
+## Step 7: The guide's first draft, and the notes of its second reading
+
+I created the design doc with `docmgr doc add --ticket IRWB-009 --doc-type design-doc --title "Intern guide: a function-incremental framework for the IR Workbench"` and wrote the first draft in full: Part 1 (§1–§10, the system with this ticket's measurements), Part 2 (§11–§26, the design, risks, plan, API, related work, open questions, file map, glossary). Then I reread the whole draft as its reader, top to bottom, and wrote down what a newcomer would stumble on and what was technically wrong, before changing anything.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Write the guide; the brief asks for a second pass "reread it as its reader and revise".
+**Inferred user intent:** A guide an intern can act on, not a draft.
+**Commit (code):** none.
+
+### What I did
+- `docmgr doc add …` → `$T/design-doc/01-intern-guide-a-function-incremental-framework-for-the-ir-workbench.md`; wrote the draft with the editor.
+- Reread it in five chunks and recorded the notes below.
+
+### Review notes: comprehension gaps
+1. §1 uses "O2" and "r13" without saying what they are. Add: O2 is the 16-pass standard pipeline; rN is the program after N changing passes.
+2. Part 2 has no overview of how its pieces fit together; a reader meets keys, per-part facts, validation, projection, the page, the store and the query engine one after another without a map back to the four approved pieces. Add a short section with a diagram.
+3. §11.2's work size `W(e)` mixes records and cases through a conversion constant `c̄` that nothing measures. Split it into two sizes, each with its own time, so that both are measurable.
+4. §13.2's code sketch uses an invented `await-free` keyword; replace with plain pseudocode, and justify the "under one second" claim with arithmetic from measured pieces instead of a reference to §15 and §18.5 (which do not apply to a pass that changes nothing).
+5. §18.1's table derives `part@i` from `revision@i`, which would make every function's part task depend on the whole revision and re-run after any edit. Derive `part@i/f` from `step#i/f` instead, and state the bookkeeping term that remains (one verification per function per stage).
+6. §17.4 rule 3 says the page accepts derived results "only when the pack was produced by a local tool", which the page cannot check. Restate it in terms of what the page can load at all (same-origin scripts from the user's own server).
+
+### Review notes: technical corrections
+7. §1's table gives "`makeCorrespondence` 5–11 s" for the 2-function pass; for that pass it was measured once, 11.1 s, alone. "Three pieces … this table shows them" introduces a four-row table.
+8. §2.4 cites IRWB-004 step 4 for the 18,178,949-character text; step 3 measured it.
+9. §3.4 refers to "the code hash of §12.2"; it is §12.1.
+10. §12.1 claims the recording store sees reads of `at` fields; a store wrapper sees `get`/`fn` calls, not field reads. Field reads need read-tracking proxies in test mode; the position-shift test is the robust check.
+11. §12.1 calls a text-moving edit "the most common edit in the workbench"; nothing measured that. Say "any edit that adds or removes a line".
+12. §15.1 claims the eager projection leaves "every pipeline step" once §15.3–§15.4 hold; `applyPass` still calls `openIR`, whose constructor projects (`view.ts:196`). §15.5 must make `openIR` lazy in the graph, not only in the entity map.
+13. §15.4 says the compact correspondence has "one entry per changed entity … a few dozen"; it has entries for every entity of the changed parts. Say that.
+14. §21 P2's target "2-function `cfg` under 1 s" ignores `pass.run` (832 ms, 05), which P2 does not change. Target under 1.5 s for P2 and itemize the remainder; the per-function step memo of P5 is what removes `pass.run`'s whole-program copy.
+15. §12.3 says "§21 measures how often it matters"; it is P4 that records it.
+16. §20 lacks the risk that task verification itself visits every function's task once per stage (5,312 per O2 run).
+
+### What worked
+- The draft's structure held up; every number traced to a `various/` file, an IRWB-004 file or a diary step.
+
+### What didn't work
+- No failures; the notes above are the defects.
+
+### What I learned
+- The draft's weakest parts were the ones I wrote from the design outward (the query table, the acceptance targets) rather than from a measurement inward.
+
+### What was tricky to build
+- Keeping proposed acceptance targets honest: each must be derivable from measured remaining components (P1: IRWB-004's 655 ms warm no-change pass plus 76 ms of demanded facts; P2: 832 ms of `pass.run` remain).
+
+### What warrants a second pair of eyes
+- P4's "under 60 s" for a warm-store O2 run and P6's 1.5× criterion are judgments, not measurements; they are stated as targets.
+
+### What should be done in the future
+- Apply the sixteen notes (Step 8).
+
+### Code review instructions
+- Read the guide against this list.
+
+### Technical details
+- None beyond the notes.
+
+## Step 8: The revision applied; docmgr tasks, relations, changelog and index
+
+I applied all sixteen notes of Step 7 to the guide, then reread the changed passages in the context of the whole document: the opening promises, the invariant's notation (now `T_rec/R`, `T_case/K`, `T_id/N` everywhere, including falsification item 2, P0, P6 and the glossary), the query table and its diagram, the walk-throughs and the plan's targets now tell one story. Then the ticket's bookkeeping: six files related to the guide, eleven tasks (the three of this round, P0–P6, and the deferred vault report), a changelog entry, and the index's overview.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Finish the second pass; "Add docmgr tasks for the phases, and relate the key files."
+**Inferred user intent:** The ticket should show what was delivered and what the next person does.
+**Commit (code):** none (documents only).
+
+### What I did
+- Edits to the guide for notes 1–16, among them: §1 explains O2 and rN and corrects the 2-function row; §11.2 defines two work sizes R(e), K(e) and three time terms; a new §11.4 maps the seven design sections to the four approved pieces with a diagram; §13.2's pseudocode is plain, and its one-second claim is arithmetic from IRWB-004's warm no-change run (655 ms) minus the views not built (249 ms) plus one demanded region (76 ms); §15.5 makes `openIR` lazy in its graph; §18.1 derives `part@i/f` from `step#i/f` and §18.2 states the verification bookkeeping term; §17.4 rule 3 is restated in terms of what the page can load; P2's target is 1.5 s with `pass.run` named as the remainder.
+- One further correction found while applying note 4: IRWB-004's profile figures for `typedPass.run` (876 ms) and `beginEdit` (211 ms) are sums over its two runs (`various/23-final-measurements.txt`: "within applyPass (3,508 ms sampled over both)"). §1, §4.4 and §13.2 now say so instead of presenting them as one run's cost.
+- `docmgr doc relate --doc …/design-doc/01-… --file-note …` for `adapters.ts`, `define-pass.ts`, `dataflow/analysis.ts`, `runtime.ts`, `parts.ts`, `passes.ts`; `docmgr doc relate --ticket IRWB-009` for the guide and `scripts/03-o2-edit-size.mjs`.
+- `docmgr task add` ×11; `docmgr task check --id n6lg,w95r`; `docmgr changelog update`; index overview, summary, what-for and when-to-use written.
+- `docmgr doctor --ticket IRWB-009 --stale-after 30`: "All checks passed".
+
+### Why
+- The second pass is the brief's requirement and the writing guidance's; the tasks are how the next person finds the phases.
+
+### What worked
+- The guide is 1,003 lines (101,487 bytes) before these edits and slightly longer after; every number cites a `various/` file, an IRWB-004 file or a diary step.
+
+### What didn't work
+- No failures.
+
+### What I learned
+- Profile totals across repeated runs are easy to misread as one run's cost; the source file said "over both", and I had dropped that qualifier in the first draft.
+
+### What was tricky to build
+- Keeping the query engine's walk-through consistent with its table after changing where `part@i` comes from: the blank-line edit now re-runs 154 × 13 part assemblies and fourteen identity terms, and no `step`, `facts` or `verdict` task.
+
+### What warrants a second pair of eyes
+- The guide's related-work section lists only works I am certain of, and names two more (ThinLTO; an OOPSLA 2015 incremental build system) as unverified.
+
+### What should be done in the future
+- Upload (Step 9).
+
+### Code review instructions
+- `docmgr doc list --ticket IRWB-009`; `docmgr task list --ticket IRWB-009`.
+
+### Technical details
+- Task ids: `n6lg` measurements, `w95r` guide, `n28g` upload, `r3a5` P0, `c8gw` P1, `26kv` P2, `m8bh` P3, `z0z7` P4, `prcr` P5, `mz2q` P6, `ab2z` vault report (deferred).
