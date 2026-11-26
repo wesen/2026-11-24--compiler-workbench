@@ -76,3 +76,18 @@ I linked seven sources with `docmgr doc relate` and linked the design and diary 
 
 - `docmgr validate frontmatter` passed for both documents. `docmgr doctor --ticket IRWB-015 --stale-after 30` passed.
 - A read-only check parsed the example project JSON, resolved local links and verified the capacity fixtures and step-budget arithmetic.
+
+## Step 4. Simplify the design after a skeptical review
+
+The fixed-pattern experiment needs a generic machine with overlapping paths, repetition and both character predicates. I kept those properties and removed nested parsing. Top-level alternatives can share Accept, and each starred atom can expose its split's skip edge for direct patching. Two flag banks now track both reachability and closure visitation.
+
+### Prompt context
+
+> Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-015: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+
+### Evidence and follow-through
+
+- The replacement fixed pattern `[a-c]*d|ab*` retains two paths after the initial `a`. I kept the tape loader requirement and all three correctness comparisons.
+- I reduced the generated runs to two profiles and kept directed cases for range boundaries, empty text, competing alternatives and errors. I reduced the benchmark to paired general and specialized runs on the same cases.
+- The inline `node --input-type=module` check evaluated the oracle expression from the revised document. It passed 20 expected results and checked the JSON, 416-byte array payload and 494-visit bound. A separate check resolved the local links and confirmed the cuts section is last. Docmgr frontmatter validation passed.
+- The step budget remains an estimate until the matcher is implemented and the stress fixture can be measured.
