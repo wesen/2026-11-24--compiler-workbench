@@ -1636,3 +1636,54 @@ The second research-guide agent finished. Its guide is uploaded to `/ai/2026/11/
 - an in-house bit-vector procedure, or a vendored SMT solver (downloaded code);
 - the audit share;
 - IRWB-005's five recommendations. Applying the record-layout fix requires re-measuring the guide's Candela numbers.
+
+## Step 37: IRWB-003 merged (the speed gap closed on most benchmarks); report 8 pushed; all four milestones in
+
+The speed-gap agent finished; every acceptance criterion is met. It added the `inline` and `rotate` passes, the `speed` pipeline, and three backend options (`chains`, `coalesce`, `homes`), chosen per function by a static, frequency-weighted estimate.
+
+| | O2 | speed + options | reference |
+|---|---:|---:|---:|
+| Blend | 451 | 370 | 383 |
+| Checksum | 366 | 286 | 292 |
+| insertion sort | 2,022 | 1,824 | 1,533 |
+| Collatz | 1,590 | 1,218 | 1,486 |
+| Candela general, instructions per case | — | 601.8 | 727.3 (`kernel`) |
+| B-01, instructions per pixel | 10,435 | 8,267.7 | 8,501 (`kernel`) |
+| R-01, instructions per pixel | 22,850.9 | 18,186.7 | 15,655.9 (`kernel`) |
+
+The corpus runs 20.0% fewer instructions, and both Candela frames are bit-identical to the reference's.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 29.
+
+### What I did
+- **Scope.** New files `src/typed/{inline,rotate}.ts` and `src/typed/backend/{frequency,layout,coalesce,variants}.ts`; hooks in `select`, `compile`, `options`, `image` and `index`, in `passes.ts` and `strategies.ts`, in the workbench and the site; tests.
+- **Merge.** `git merge --no-ff --no-commit`: automatic. The agent had already merged `1f45c94` and resolved the `passes.ts` import conflict itself. Gates on the tree that now holds all four milestones:
+  - `tsc`: clean;
+  - tests: 377, 374 pass, 3 skipped;
+  - `IRWB_FULL` passes and backend: 21/21;
+  - `IRWB_FULL` rules, SSA, speed and inline: 30/30;
+  - parity: 6,986/6,986;
+  - corpus revisions: identical to the 420d8e1 baseline in IRWB-006's `various/01`;
+  - `build:site`: ok.
+
+  Merge commit `b59ca85`.
+- **Report 8:**
+  - the alias becomes "report 8";
+  - the summary said the agent changed "two enumeration assertions". It changed three: the pass count and the pipeline list in `tests/workbench/strategies.test.mjs`, and IRWB-006's pinned step count in `tests/typed/rules.test.mjs`, 616 → 792, after `speed` joined that comparison;
+  - added a sentence on report 7's record-layout defect: the frame comparison, not the contract, is the decisive Candela evidence;
+  - linked reports 5, 6 and 7.
+
+  Vault commit `63ac669`, pushed, with the report and five `irwb003-*` figures only. `remarquee cloud ls /ai/2026/11/25/IRWB-003` lists the guide.
+
+### What I learned
+- **Report 4's conclusion is confirmed.** It said the remaining gap was "inlining and code generation, not pass ordering". Inlining with `dfe` after each `inline`, plus the three code-generation options, takes B-01 below `kernel`, and takes the general Candela image from 16.4% slower than `kernel` to 17.3% faster.
+- **R-01 is still 16.2% above `kernel`.** The largest remaining per-function gaps are in `skyL_wgsl`, `hdriSample` and `traceAll`, which were not investigated.
+- **Insertion sort's remaining 19%** is six capacity checks per swapping iteration covering two positions: territory for bounds-check merging.
+- **Speed and size now pull apart, as they do for the reference.** B-01's `speed` image is 28% larger than its O2+ image.
+
+### Open (mine to decide or carry)
+- Registering IRWB-006's `sccp` and `O2-sccp` next to `speed`.
+- Strategy metrics compile with default backend options, so `fastest-all` cannot see the options.
+- The other 16 per-scene measurements are a task in the IRWB-003 ticket.
+- **The combined synthesis report** (user, mid-turn: "you should write a combined one as well, when done") follows once IRWB-007 and IRWB-010/011 have uploaded their guides.
