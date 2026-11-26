@@ -9,6 +9,7 @@ import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
 export { cudaSource } from './cuda-source.js';
+export { checkLowering } from './cuda-contract.js';
 export { runTixCuda } from './cuda-run.js';
 
 export interface TixProgram {

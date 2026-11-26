@@ -61,3 +61,7 @@ Accepted both required changes. Reading `runDifferentialAsync` confirmed `todo` 
 ## Step 3: Emit and run the actual translation unit
 
 Added ordinal CUDA generation and a shared versioned packet runner. `npm run build` initially reported TS2345 (Buffer<ArrayBufferLike> vs Buffer<ArrayBuffer>); explicitly typing the packet list fixed it. Built successfully and launched the full-size CPU and timed GPU benchmark script. GB10 compiled the emitted MLP, convolution, matmul and attention programs and returned event samples and endpoint values. No tool change.
+
+## Step 4: Check emitted bytes, not an interpreter of the candidate
+
+`cuda-contract.ts` uses a heterogeneous transformation with the async differential postcondition. Replayed verdicts use the emitted revision and the origin/function, not timing records. A wrong block count on the GB10 failed at an output coordinate although the unmodified candidate had already passed. All six corpus gates passed unchanged. GPU tests also exercised empty and signed-zero behavior; small local tests checked packet validation and preloading. The first full run passed 20/20; after adding coverage a combined build/test command hit the host-side 180 s command timeout after nine successful tests, so I reran the requested test command separately. No framework or tool sources changed.

@@ -11,7 +11,7 @@ import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
 type Relation = 'exact' | 'tolerance';
-interface Sample {
+export interface Sample {
   fn: string;
   shapeValues: number[];
   stream: string;
@@ -20,7 +20,7 @@ interface Sample {
 }
 const seed = 20,
   half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
-function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
+export function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
   ].sort();
@@ -69,7 +69,7 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
   }
   return out;
 }
-function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
+export function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
   if (JSON.stringify(ref.shape) !== JSON.stringify(got.shape))
     return { ok: false, reason: 'Output shape differs' };
   const words = (b: BufferValue) => new Uint32Array(b.data.buffer, b.data.byteOffset, b.data.length);
