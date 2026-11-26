@@ -22,6 +22,7 @@ WhenToUse: ""
 Stage 2 lowers the current Tix function to one CUDA kernel per statement and uses the GB10 to check its output against the Stage 1 f64 evaluator. The reviewed lowering is implemented, tested and measured on the six corpus workloads.
 
 - [Design](design-doc/01-checked-tix-to-cuda-lowering.md)
+- [Final report](reference/02-report.md)
 - [Verification and corpus timings](reference/02-cuda-lowering-verification-and-corpus-timings.md)
 - [Diary and probe evidence](reference/01-implementation-diary.md)
 - [Tasks](tasks.md)
