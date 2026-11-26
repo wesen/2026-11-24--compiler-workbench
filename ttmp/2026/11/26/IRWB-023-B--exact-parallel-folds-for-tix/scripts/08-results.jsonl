@@ -1,0 +1,2 @@
+{"name":"expf","cases":32,"words":360,"changed":63,"verdict":{"accepted":true,"relation":"tolerance"},"witnessChanged":1,"expected":[0.7310585975646973,0.2689414322376251],"actual":[0.7310585379600525,0.2689414322376251]}
+{"name":"omit33rd","cases":32,"words":360,"changed":0,"verdict":{"accepted":true,"relation":"tolerance"},"witnessChanged":33,"expected":[0.03030303120613098,0.03030303120613098],"actual":[0.03125,0.03125]}

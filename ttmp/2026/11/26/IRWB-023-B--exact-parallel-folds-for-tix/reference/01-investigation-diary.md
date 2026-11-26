@@ -115,3 +115,17 @@ I implemented two adjacent predicted paths and compared *every chunk boundary* w
 **What was tricky.** The predecessor below an exact power of two is closer than the successor above. Repeating the calculation after shifting by an even number of ULPs can land in that asymmetry. Excluding the low boundary fixes it. Nonnegative terms also permit a directional proof because every exact pre-round sum stays above the start.
 
 **Review and follow-up.** Compare the three mutations and their signed witnesses in `03-results.json`; inspect the clamps in `relocate`. The tree is numerically wrong but hardly faster at the large shape. Next isolate the exponential cost and try a target-specific exact fast path.
+
+## Step 3. Enumerate the discrepancy and deploy the repair
+
+The timing ablation pointed toward the exponential. I tried a small Taylor polynomial after table-based range reduction and compared each candidate with the existing rounded-double GPU oracle. An isolated sample near −1 made a cubic look exact. The complete active range found 903 exceptions with 128 cells and one with 1,024 cells. Correcting the last one made a large enough performance difference to move this proposal ahead of speculative reduction.
+
+**Prompt context.** See Step 1. Previous checkpoint `f0b392a`. Build `npm run build` before the drivers. Minimal probes checked explicit FP64 FMA/range reduction over 1,024 words, Python Decimal.exp and BigUint64 table serialization. The public framework's simple `verifyTransformation` invariant probe also passed.
+
+**What I ran.** `04-run.mjs sweep` enumerated the central range, with separate sweeps of the two constant-output bands. `07-midpoint.py` located the rare failure at both 60 and 100 decimal digits. `06-cross-check.sh` streamed device bytes to SHA-256, recomputed every word on Node, and checked the digests across three adjacent intervals. `04-run.mjs bench` used the same executable with rotating order and 15 measurements per variant. `08-meaning-gap.mjs` actually executed two incorrect CUDA candidates through the current checker. All raw data, versions and commands accompany the design.
+
+**Failures and recovery.** CUDA expf and every unpatched polynomial had counterexamples in the active interval. The initial detached invocation `tmux -L irwb023b new-session -d -s exp-audit ...` left no audit receipts. `tmux -L irwb023b list-sessions` returned `no server running on /tmp/tmux-1000/irwb023b`. I reran with explicit working directory and a foreground `tmux wait-for audit-finished` attached to the calling shell. All three intervals then completed. The interval checker explicitly compares both endpoints, word count and digest.
+
+**What worked and why.** The cubic absolute approximation error usually stays in the target rounding cell. A one-word change for the exception preserved the hot path. All negative normal/subnormal words, −0 and −∞ were exercised on both machines. The f32 scalar scope and exact coverage make this stronger than testing a large random tensor.
+
+**Review and next decision.** Inspect `04-exp.cuh` for operation order and bit scaling, `05-kernels.cu` for the shared out-of-line device routine, and `06-*-node.json` for independent reference bytes. The single bad input maps to the same table coefficient for both successful polynomials. Try correcting the coefficient under full-domain constraints instead of branching on a rare argument.

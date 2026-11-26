@@ -13,7 +13,11 @@ __device__ float prefix(float x, int lane) {
   return x;
 }
 
-template<Method method>
+struct RoundedDoubleExp {
+  __device__ static float eval(float x) { return __double2float_rn(exp(static_cast<double>(x))); }
+};
+
+template<Method method, class Exp = RoundedDoubleExp>
 __global__ void rowSoftmax(const float* input, float* output, int cols) {
   __shared__ float e[maxCols], work[threads], maximum, denominator;
   __shared__ Transfer table[32];
@@ -31,7 +35,7 @@ __global__ void rowSoftmax(const float* input, float* output, int cols) {
   __syncthreads();
   for (int j=lane;j<cols;j+=threads) {
     float shift=__fsub_rn(input[base+j],maximum);
-    e[j]=__double2float_rn(exp(static_cast<double>(shift)));
+    e[j]=Exp::eval(shift);
   }
   __syncthreads();
   if constexpr (method==Owner) {
@@ -91,6 +95,7 @@ __global__ void rowSoftmax(const float* input, float* output, int cols) {
 
 static unsigned rng(unsigned& s) { s^=s<<13; s^=s>>17; s^=s<<5; return s; }
 static unsigned bits(float x) { unsigned u; memcpy(&u,&x,sizeof(x)); return u; }
+#ifndef TIX_KERNELS_ONLY
 int main(int argc,char** argv) {
   int rows=argc>1?atoi(argv[1]):4096, cols=argc>2?atoi(argv[2]):1024;
   int spread=argc>3?atoi(argv[3]):2, repeats=argc>4?atoi(argv[4]):11;
@@ -137,3 +142,4 @@ int main(int argc,char** argv) {
     puts("");
   }
 }
+#endif
