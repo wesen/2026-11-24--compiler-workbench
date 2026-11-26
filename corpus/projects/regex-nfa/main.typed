@@ -47,7 +47,7 @@ function regexMatch(pattern: buffer, text: buffer): i32 {
 
     let i = 0;
     while (true) {
-        // Mark successors before enqueueing so each state enters the queue once.
+        // Mark successors before enqueueing so each state is queued once.
         let head = 0;
         let tail = 0;
         for (let state = 0; state < stateCount; state = state + 1) {
