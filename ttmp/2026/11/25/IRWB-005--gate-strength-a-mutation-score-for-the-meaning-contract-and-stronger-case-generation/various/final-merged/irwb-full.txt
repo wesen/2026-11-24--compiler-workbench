@@ -1,0 +1,33 @@
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (111.569949ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (381.240892ms)
+✔ P2.4: the book's other r0 numbers reproduce (444.08736ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (2328.911007ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (580.011792ms)
+✔ P2.4: encoders and the disassembler round-trip (132.716249ms)
+✔ P2.4: options are validated with the prototype's codes (37.992836ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (9.403678ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (27.09427ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (39.221402ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (30.39578ms)
+✔ P2.4: heat, diffs, machine stages and image status (129.021163ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (5201.796341ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit) (1504.27949ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (328.80029ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (219.920907ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (66.483323ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (119.171608ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (11.697965ms)
+✔ P2.6: corpus parity (all projects) (6018.063411ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (294.576249ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11366.206941
+
+real	0m11.425s
+user	0m16.614s
+sys	0m0.841s
