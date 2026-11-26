@@ -4165,3 +4165,1071 @@ created ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-
   docmgr meta --help --long-help for information about all flags.             
 
 
+exec
+/usr/bin/zsh -lc 'command -v tsc && tsc --version && ls -d node_modules dist vendor/*' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc "sed -n '1,240p' src/framework/contracts/definitions.ts && sed -n '1100,1225p' src/framework/contracts/analysis-manager.ts && sed -n '1540,1605p' src/framework/contracts/analysis-manager.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc "rg -n 'validateArtifact|negative zero|Object\\.is|function revisionOf|function validateOnce|export function' src/framework/core/data.ts src/framework/contracts/definitions.ts src/framework/ir/adapters.ts && rg -n 'writes|root' src/framework/ir/diff.ts && cat .ttmp.yaml && git status --short --untracked-files=all" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ exited 1 in 451ms:
+ succeeded in 453ms:
+import {
+  canonical,
+  deepFreeze,
+  fingerprint,
+  immutable,
+  isCanonical,
+  revisionOf,
+  validateOnce,
+} from '../core/data.js';
+import type { Artifact } from '../core/types.js';
+import type {
+  AnalysisDefinition,
+  AnyDefinition,
+  CheckResult,
+  DefinitionDescriptor,
+  EffectDefinition,
+  IRType,
+  InvariantDefinition,
+  ObjectiveDefinition,
+  Ports,
+  PropertyDefinition,
+  TransformationDefinition,
+  ValueType,
+  VersionRef,
+} from './types.js';
+const nonempty = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+function portType(value: unknown, category?: 'ir' | 'type'): asserts value is IRType<any> | ValueType<any> {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !['ir', 'type'].includes(
+      (
+        value as {
+          category: string;
+        }
+      ).category,
+    ) ||
+    (category &&
+      (
+        value as {
+          category: string;
+        }
+      ).category !== category) ||
+    typeof (
+      value as {
+        validate?: unknown;
+      }
+    ).validate !== 'function'
+  )
+    throw new Error(`Expected ${category ?? 'IR or scalar'} type with runtime validator`);
+}
+function ports(value: unknown): asserts value is Ports {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Expected named port definitions');
+  for (const [name, type] of Object.entries(value)) {
+    if (!nonempty(name)) throw new Error('Port name required');
+    portType(type);
+  }
+}
+function base<
+  T extends {
+    id: string;
+    version: string;
+    description: string;
+  },
+>(value: T): T {
+  if (!nonempty(value.id) || !nonempty(value.version) || typeof value.description !== 'string')
+    throw new Error('Definitions need id, version and description');
+  return deepFreeze(value);
+}
+export const defineType = <T>(d: Omit<ValueType<T>, 'category'>): ValueType<T> => {
+  if (typeof d.validate !== 'function') throw new Error('Type requires a runtime validator');
+  return base({
+    ...d,
+    category: 'type',
+  });
+};
+export const defineIR = <T>(d: Omit<IRType<T>, 'category'>): IRType<T> => {
+  if (typeof d.validate !== 'function') throw new Error('IR requires a runtime validator');
+  return base({
+    ...d,
+    category: 'ir',
+  });
+};
+export const defineEffect = <T>(d: Omit<EffectDefinition<T>, 'category'>): EffectDefinition<T> => {
+  portType(d.type, 'type');
+  if (!nonempty(d.resource) || !['read', 'write'].includes(d.access))
+    throw new Error('Effect needs resource and read/write access');
+  return base({
+    ...d,
+    category: 'effect',
+  });
+};
+export const defineAnalysis = <S, R>(
+  d: Omit<AnalysisDefinition<S, R>, 'category' | 'effects'> & {
+    effects?: readonly EffectDefinition[];
+  },
+): AnalysisDefinition<S, R> => {
+  portType(d.input, 'ir');
+  portType(d.output, 'type');
+  if (typeof d.run !== 'function') throw new Error('Analysis needs run');
+  if (
+    d.transfer &&
+    (!nonempty(d.transfer.id) || !nonempty(d.transfer.version) || typeof d.transfer.verify !== 'function')
+  )
+    throw new Error('Analysis transfer needs exact rule identity and verifier');
+  if (d.effects?.some(e => e.access === 'write')) throw new Error('Analyses cannot declare write effects');
+  return base({
+    ...d,
+    effects: d.effects ?? [],
+    category: 'analysis',
+  });
+};
+export const defineProperty = <S>(d: Omit<PropertyDefinition<S>, 'category'>): PropertyDefinition<S> => {
+  portType(d.subject, 'ir');
+  if (!d.check || d.check.category !== 'analysis') throw new Error('Property needs an analysis checker');
+  if (
+    d.proofVerifier &&
+    (d.proofVerifier.input.id !== d.subject.id || d.proofVerifier.input.version !== d.subject.version)
+  )
+    throw new Error('Proof verifier input must match property subject IR');
+  if (d.subject.id !== d.check.input.id || d.subject.version !== d.check.input.version)
+    throw new Error('Property checker input must match its subject IR');
+  return base({
+    ...d,
+    category: 'property',
+  });
+};
+export const defineInvariant = <P extends Ports>(
+  d: Omit<InvariantDefinition<P>, 'category' | 'effects'> & {
+    effects?: readonly EffectDefinition[];
+  },
+): InvariantDefinition<P> => {
+  ports(d.inputs);
+  if (typeof d.check !== 'function') throw new Error('Invariant needs a checker');
+  if (d.effects?.some(e => e.access === 'write')) throw new Error('Invariants cannot declare write effects');
+  return base({
+    ...d,
+    effects: d.effects ?? [],
+    category: 'invariant',
+  });
+};
+export const defineObjective = <S>(d: Omit<ObjectiveDefinition<S>, 'category'>): ObjectiveDefinition<S> => {
+  if (!['min', 'max'].includes(d.direction)) throw new Error('Objective direction must be min/max');
+  return base({
+    ...d,
+    category: 'objective',
+  });
+};
+export function defineTransformation<I extends Ports, O extends Ports>(
+  d: Omit<
+    TransformationDefinition<I, O>,
+    'category' | 'requires' | 'preserves' | 'ensures' | 'establishes' | 'effects' | 'cache' | 'correspondence'
+  > &
+    Partial<
+      Pick<
+        TransformationDefinition<I, O>,
+        'requires' | 'preserves' | 'ensures' | 'establishes' | 'effects' | 'cache' | 'correspondence'
+      >
+    >,
+): TransformationDefinition<I, O> {
+  ports(d.inputs);
+  ports(d.outputs);
+  if (d.run !== undefined && typeof d.run !== 'function')
+    throw new Error('Transformation run must be a function');
+  const result = base({
+    ...d,
+    category: 'transformation' as const,
+    requires: d.requires ?? [],
+    preserves: d.preserves ?? [],
+    ensures: d.ensures ?? [],
+    establishes: d.establishes ?? [],
+    effects: d.effects ?? [],
+    cache: d.cache ?? 'pure',
+    correspondence: d.correspondence ?? [],
+  });
+  if (result.cache === 'pure' && result.effects.length)
+    throw new Error('Pure transformation cannot declare resource effects');
+  if (result.cache !== 'never' && result.effects.some(e => e.access === 'write'))
+    throw new Error('Write effects require cache: never');
+  if (!['pure', 'tracked', 'never'].includes(result.cache)) throw new Error('Invalid cache policy');
+  const selector = (
+    s: {
+      from: 'inputs' | 'outputs';
+      port: string;
+    },
+    pre = false,
+  ) => {
+    if (!s || !['inputs', 'outputs'].includes(s.from) || !nonempty(s.port))
+      throw new Error('Invalid contract port selector');
+    if (pre && s.from === 'outputs') throw new Error('Preconditions cannot refer to outputs');
+    const ports = s.from === 'inputs' ? result.inputs : result.outputs;
+    if (!Object.hasOwn(ports, s.port)) throw new Error(`Unknown ${s.from} port ${s.port}`);
+    return ports[s.port];
+  };
+  for (const [phase, conditions] of [
+    ['requires', result.requires],
+    ['ensures', result.ensures],
+    ['establishes', result.establishes],
+  ] as const)
+    for (const c of conditions) {
+      if ('property' in c) {
+        const type = selector(c.subject, phase === 'requires');
+        if (
+          type.category !== 'ir' ||
+          type.id !== c.property.subject.id ||
+          type.version !== c.property.subject.version
+        )
+          throw new Error(`Property ${c.property.id} is incompatible with port ${c.subject.port}`);
+      } else {
+        for (const [name, type] of Object.entries(c.invariant.inputs as Ports)) {
+          const s = c.bindings[name];
+          if (!s) throw new Error(`Missing invariant binding ${name}`);
+          const bound = selector(s, phase === 'requires');
+          if (bound.category !== type.category || bound.id !== type.id || bound.version !== type.version)
+            throw new Error(`Invariant port ${name} is incompatible`);
+        }
+        if (Object.keys(c.bindings).length !== Object.keys(c.invariant.inputs).length)
+          throw new Error('Unexpected invariant bindings');
+      }
+    }
+  for (const p of result.preserves) {
+    const from = result.inputs[p.from],
+      to = result.outputs[p.to];
+    if (
+      !from ||
+      !to ||
+      from.category !== 'ir' ||
+      to.category !== 'ir' ||
+      from.id !== p.property.subject.id ||
+      to.id !== p.property.subject.id ||
+      from.version !== p.property.subject.version ||
+      to.version !== p.property.subject.version
+    )
+      throw new Error(`Preservation ${p.property.id} needs compatible IR input/output ports`);
+    if (!['check', 'transfer'].includes(p.mode)) throw new Error('Preservation mode must be check/transfer');
+    if (p.mode === 'transfer' && (!p.correspondence || !p.property.check.transfer))
+      throw new Error('Transfer preservation needs a correspondence and registered transfer checker');
+  }
+  for (const c of result.correspondence) {
+          e.to.some(x => typeof x !== 'string'),
+      )
+    )
+      throw new ContractError('correspondence', 'Correspondence entities must be string lists');
+  }
+  async checkInvariant<P extends Ports>(
+    definition: InvariantDefinition<P>,
+    inputs: PortValues<P>,
+  ): Promise<CheckEvidence> {
+    return this.invariantInternal(definition, inputs);
+  }
+  private async invariantInternal<P extends Ports>(
+    definition: InvariantDefinition<P>,
+    inputs: PortValues<P>,
+    parent?: Frame,
+  ): Promise<CheckEvidence> {
+    if (parent) this.checkActive(parent);
+    this.registry.register(definition);
+    const captured = immutable(inputs);
+    this.validatePorts(definition.inputs, captured);
+    // the key only detects cycles on the frame stack; an IR port is named by its artifact's identity and revision
+    // (IRWB-004: equal exactly when the artifacts are, without encoding two programs to compare them)
+    const key = `invariant:${fingerprint({
+      definition: definitionRef(definition),
+      inputs: Object.fromEntries(
+        Object.entries(captured as Record<string, unknown>).map(([name, value]) => {
+          const a = value as Artifact;
+          return [
+            name,
+            definition.inputs[name]?.category === 'ir'
+              ? { id: a.id, kind: a.kind, schemaVersion: a.schemaVersion, revision: a.revision }
+              : value,
+          ];
+        }),
+      ),
+    })}`;
+    if (parent?.stack.includes(key))
+      throw new ContractError('invariant-cycle', `Invariant cycle involving ${definition.id}`);
+    const frame = this.freshFrame(definition.effects, parent?.store ?? this.store, parent);
+    frame.stack = [...(parent?.stack ?? []), key];
+    try {
+      const result = checkResult(await definition.check(this.context(frame), captured));
+      await this.drain(frame);
+      this.checkActive(frame);
+      if (parent) {
+        for (const dependency of frame.deps) uniquePush(parent.deps, dependency);
+        if (!frame.cacheable) parent.cacheable = false;
+      }
+      const evidence: CheckEvidence = immutable({
+        phase: 'query',
+        definition: definitionRef(definition),
+        ok: result.ok,
+        assurance: 'checked',
+        reason: result.reason ?? (result.ok ? 'Invariant checked' : 'Invariant rejected'),
+        evidence: result.evidence ?? null,
+      });
+      this.event(
+        frame,
+        'invariant.checked',
+        {
+          inputs: captured,
+          result: evidence,
+        },
+        definition,
+      );
+      return evidence;
+    } finally {
+      await Promise.allSettled([...frame.pending]);
+      frame.active = false;
+    }
+  }
+  private async condition(
+    condition: Condition,
+    phase: CheckEvidence['phase'],
+    inputs: Record<string, unknown>,
+    outputs: Record<string, unknown>,
+    frame: Frame,
+  ): Promise<CheckEvidence> {
+    const select = (s: { from: 'inputs' | 'outputs'; port: string }) =>
+      (s.from === 'inputs' ? inputs : outputs)[s.port];
+    if ('property' in condition) {
+      const subject = select(condition.subject) as Artifact,
+        fact = await this.checkInternal(condition.property, subject, frame);
+      return immutable({
+        phase,
+        definition: definitionRef(condition.property),
+        ok: fact.ok,
+        assurance: fact.assurance,
+        reason: fact.reason,
+        evidence: fact.evidence,
+        subject: fact.subject,
+        factId: fact.id,
+      });
+    }
+    const values = Object.fromEntries(Object.entries(condition.bindings).map(([k, s]) => [k, select(s)]));
+    const result = await this.invariantInternal(condition.invariant, values, frame);
+    return immutable({
+      ...result,
+      phase,
+    });
+  }
+  async beginTransformation<I extends Ports, O extends Ports>(
+    definition: TransformationDefinition<I, O>,
+    inputs: PortValues<I>,
+    options: ExecutionOptions = {},
+  ): Promise<TransformationTransaction<I, O>> {
+    this.registry.register(definition);
+    const captured = immutable(inputs);
+    const overlay: Store = {
+        analyses: new Map(),
+        facts: new Map(),
+        analysisHistory: new Map(),
+        factHistory: new Map(),
+      },
+      frame = this.freshFrame(definition.effects, overlay),
+      checks: CheckEvidence[] = [],
+      correspondences: Correspondence[] = [];
+    const execution: MutableExecution = {
+      id: options.id ?? this.id('contract'),
+      transformation: definitionRef(definition),
+      descriptor: describeDefinition(definition),
+      status: 'prepared',
+      cached: options.cached ?? false,
+      cacheReason: options.cached
+        ? 'Compiler reused an artifact; semantic checks still run'
+        : 'New transformation verification',
+        } catch (error) {
+          fail(error);
+          throw error;
+        }
+      },
+      rollback,
+      fail,
+    };
+    return transaction;
+  }
+  async verifyTransformation<I extends Ports, O extends Ports>(
+    before: PortValues<I>,
+    after: PortValues<O>,
+    contract: TransformationDefinition<I, O>,
+    correspondence: readonly Correspondence[] = [],
+    options: ExecutionOptions = {},
+  ): Promise<PreparedTransformation<O>> {
+    before = immutable(before);
+    after = immutable(after);
+    correspondence = immutable(correspondence);
+    options = immutable(options);
+    const transaction = await this.beginTransformation(contract, before, options);
+    const prepared = await transaction.verify(after, correspondence, { cached: options.cached });
+    if (!options.deferCommit) prepared.commit();
+    return prepared;
+  }
+  async execute<I extends Ports, O extends Ports>(
+    definition: TransformationDefinition<I, O>,
+    inputs: PortValues<I>,
+    options: ExecutionOptions = {},
+  ): Promise<PreparedTransformation<O>> {
+    if (!definition.run)
+      throw new ContractError(
+        'missing-implementation',
+        `Transformation ${definition.id} has no run implementation`,
+      );
+    inputs = immutable(inputs);
+    options = immutable(options);
+    const transaction = await this.beginTransformation(definition, inputs, options),
+      key = fingerprint({
+        definition: describeDefinition(definition),
+        inputs: transaction.inputs,
+      }),
+      cached = this.transformCache.get(key);
+    try {
+      let outputs: PortValues<O>,
+        correspondence: readonly Correspondence[] = [];
+      let reused = false;
+      if (definition.cache !== 'never' && cached && this.canReuseDependencies(cached.dependencies)) {
+        outputs = cached.outputs as PortValues<O>;
+        correspondence = cached.correspondence;
+        reused = true;
+        transaction.importBodyDependencies(cached.dependencies);
+      } else {
+        const result = await definition.run(transaction.context, transaction.inputs);
+        outputs = result.outputs;
+        correspondence = result.correspondence ?? [];
+      }
+      const prepared = await transaction.verify(outputs, correspondence, { cached: reused });
+      if (!options.deferCommit) {
+        prepared.commit();
+        if (definition.cache !== 'never') {
+          const execution = this.executions.find(x => x.id === prepared.execution.id)!;
+          const dependencies = execution.bodyDependencies;
+          if (execution.bodyCacheable && this.reusable(dependencies, this.store))
+            this.transformCache.set(key, {
+
+ succeeded in 711ms:
+src/framework/core/data.ts:61:    return Object.is(v, -0) ? '0' : String(v);
+src/framework/core/data.ts:67:export function canonical(value: unknown): string {
+src/framework/core/data.ts:74:      return Object.is(v, -0) ? '0' : String(v);
+src/framework/core/data.ts:120:export function deepFreeze<T>(value: T): T {
+src/framework/core/data.ts:121:  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+src/framework/core/data.ts:133:export function immutable<T>(value: T): T {
+src/framework/core/data.ts:139:      return Object.is(v, -0) ? 0 : v;
+src/framework/core/data.ts:190:export function sha256(text: string): string {
+src/framework/core/data.ts:195:export function fingerprint(value: unknown): string {
+src/framework/core/data.ts:210:export function revisionOf(kind: string, schemaVersion: string, value: unknown): string {
+src/framework/core/data.ts:235:export function validateOnce<V>(
+src/framework/core/data.ts:253:export function isCanonical(value: unknown): boolean {
+src/framework/core/data.ts:262:export function sameCanonical(a: unknown, b: unknown): boolean {
+src/framework/contracts/definitions.ts:150:export function defineTransformation<I extends Ports, O extends Ports>(
+src/framework/contracts/definitions.ts:259:export function describeDefinition(d: AnyDefinition): DefinitionDescriptor {
+src/framework/contracts/definitions.ts:269:export function createArtifact<T>(ir: IRType<T>, id: string, value: T): Artifact<T> {
+src/framework/contracts/definitions.ts:286:export function validateArtifact<T>(ir: IRType<T>, value: unknown): asserts value is Artifact<T> {
+src/framework/ir/adapters.ts:26:export function defineAdapter<T>(definition: IRAdapter<T>): IRAdapter<T> {
+src/framework/ir/adapters.ts:67:export function describeAdapter(adapter: IRAdapter<any>): AdapterDescriptor {
+src/framework/ir/adapters.ts:128:export function createIRArtifact<T>(definition: IRAdapter<T>, id: string, value: T): Artifact<T> {
+src/framework/ir/adapters.ts:146:export function validateIRArtifact<T>(definition: IRAdapter<T>, artifact: Artifact<T>): Artifact<T> {
+src/framework/ir/adapters.ts:163:export function validateEntity(entity: IREntity): IREntity {
+src/framework/ir/adapters.ts:180:export function validateGraph(adapter: IRAdapter<any>, input: IRGraph): IRGraph {
+src/framework/ir/adapters.ts:227:export function compareRelations(a: IRRelation, b: IRRelation): number {
+src/framework/ir/adapters.ts:235:export function project<T>(adapter: IRAdapter<T>, value: T): IRGraph {
+src/framework/ir/adapters.ts:269:export function deserializeIR<T>(adapter: IRAdapter<T>, id: string, text: string): Artifact<T> {
+72:  const rootsChanged = before.roots !== after.roots && canonical(before.roots) !== canonical(after.roots);
+78:    ...(rootsChanged
+80:          roots: {
+81:            before: before.roots,
+82:            after: after.roots,
+87:    changed: entities.length > 0 || relations.length > 0 || rootsChanged,
+117:  for (const id of changes.roots?.before ?? []) add(changes.from, id);
+118:  for (const id of changes.roots?.after ?? []) add(changes.to, id);
+root: ttmp
+defaults:
+    owners: []
+    intent: ""
+filenamePrefixPolicy: ""
+vocabulary: ttmp/vocabulary.yaml
+?? ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/README.md
+?? ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+?? ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+?? ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md
+?? ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+?? ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+
+codex
+The fixed synchronous `optimizeTix` API exposes a framework gap. Typed’s pass runner returns a Promise, while the framework’s differential checker already runs synchronously. I’ll propose a small native-pass entry point that shares Typed’s artifact validation, diff, and write checks.
+exec
+/usr/bin/zsh -lc "node --input-type=module -e 'import assert from \"node:assert/strict\"; const f=Math.fround; const xs=[1,0,0,0,2**-24,2**-24]; const fold=(ns,round)=>ns.reduce((acc,x)=>round(acc+x),0); const origin=fold(xs,f); const split=fold([fold(xs.slice(0,4),f),fold(xs.slice(4),f)],f); const wrong=fold([fold(xs.slice(0,4),f)],f); const ref=fold(xs,x=>x); const bits=x=>new Uint32Array(Float32Array.of(x).buffer)[0].toString(16).padStart(8,\"0\"); const tol=(a,b)=>Math.abs(a-b)<=1e-5+1e-5*Math.abs(a); console.log({origin,split,wrong,ref,bits:[bits(origin),bits(split)],signedZeroBits:[bits(0),bits(-0)],splitAccepted:tol(ref,split),droppedTailAccepted:tol(6,4)}); assert.notEqual(bits(origin),bits(split)); assert.ok(tol(ref,split)); assert.ok("'!tol(6,4)); assert.notEqual(bits(1),bits(f(f(2**24+1)-2**24)));'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc "rg -n 'applyPass|runPipeline|differential|compiler.*contract' tests/framework/pass-policy.test.mjs tests/framework/ext-e3-e6.test.mjs tests/typed/passes.test.mjs tests/typed/meaning-memo.test.mjs tests/typed/strategies.test.mjs && sed -n '120,165p' src/framework/ir/adapters.ts && sed -n '1,120p' src/framework/ir/diff.ts && git rev-parse --short HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc 'cat ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/{index.md,README.md,tasks.md,changelog.md,design-doc/01-tix-stage-1-design.md,reference/01-diary.md}' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc 'npm run build' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 914ms:
+---
+Title: Tix Language, IR, Evaluators, Meaning Contract, and Checked Passes
+Ticket: IRWB-020-A
+Status: active
+Topics:
+    - compiler
+    - ir
+    - typescript
+    - verification
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T12:39:23.621077251-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Tix Language, IR, Evaluators, Meaning Contract, and Checked Passes
+
+## Overview
+
+<!-- Provide a brief overview of the ticket, its goals, and current status -->
+
+## Key Links
+
+- **Related Files**: See frontmatter RelatedFiles field
+- **External Sources**: See frontmatter ExternalSources field
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- compiler
+- ir
+- typescript
+- verification
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts
+# Tix Language, IR, Evaluators, Meaning Contract, and Checked Passes
+
+This is the document workspace for ticket IRWB-020-A.
+
+## Structure
+
+- **design/**: Design documents and architecture notes
+- **reference/**: Reference documentation and API contracts
+- **playbooks/**: Operational playbooks and procedures
+- **scripts/**: Utility scripts and automation
+- **sources/**: External sources and imported documents
+- **various/**: Scratch or meeting notes, working notes
+- **archive/**: Optional space for deprecated or reference-only artifacts
+
+## Getting Started
+
+Use docmgr commands to manage this workspace:
+
+- Add documents: `docmgr doc add --ticket IRWB-020-A --doc-type design-doc --title "My Design"`
+- Import sources: `docmgr import file --ticket IRWB-020-A --file /path/to/doc.md`
+- Update metadata: `docmgr meta update --ticket IRWB-020-A --field Status --value review`
+# Tasks
+
+## TODO
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+---
+Title: Tix Stage 1 Design
+Ticket: IRWB-020-A
+Status: active
+Topics:
+    - compiler
+    - ir
+    - typescript
+    - verification
+DocType: design-doc
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T12:39:34.449286473-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Tix Stage 1 Design
+
+## Executive Summary
+
+<!-- Provide a high-level overview of the design proposal -->
+
+## Problem Statement
+
+<!-- Describe the problem this design addresses -->
+
+## Proposed Solution
+
+<!-- Describe the proposed solution in detail -->
+
+## Design Decisions
+
+<!-- Document key design decisions and rationale -->
+
+## Alternatives Considered
+
+<!-- List alternative approaches that were considered and why they were rejected -->
+
+## Implementation Plan
+
+<!-- Outline the steps to implement this design -->
+
+## Open Questions
+
+<!-- List any unresolved questions or concerns -->
+
+## References
+
+<!-- Link to related documents, RFCs, or external resources -->
+---
+Title: Diary
+Ticket: IRWB-020-A
+Status: active
+Topics:
+    - compiler
+    - ir
+    - typescript
+    - verification
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T12:39:34.636625814-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Diary
+
+## Goal
+
+<!-- What is the purpose of this reference document? -->
+
+## Context
+
+<!-- Provide background context needed to use this reference -->
+
+## Quick Reference
+
+<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
+
+## Usage Examples
+
+<!-- Show how to use this reference in practice -->
+
+## Related
+
+<!-- Link to related documents or resources -->
+
+ succeeded in 962ms:
+{
+  origin: 1,
+  split: 1.0000001192092896,
+  wrong: 1,
+  ref: 1.0000001192092896,
+  bits: [ '3f800000', '3f800001' ],
+  signedZeroBits: [ '00000000', '80000000' ],
+  splitAccepted: true,
+  droppedTailAccepted: false
+}
+
+ succeeded in 957ms:
+tests/typed/passes.test.mjs:8:const { projectSource, ingestProject, runPipeline } = await import('../../dist/typed/project.js');
+tests/typed/passes.test.mjs:14:const { applyPass, PassError } = await import('../../dist/framework/passes/index.js');
+tests/typed/passes.test.mjs:22:  const run = await runPipeline(r0, 'O2', { manager, inputs: p.meta.inputs });
+tests/typed/passes.test.mjs:43:  const a = await runPipeline(r0, 'O2', { manager: new AnalysisManager(), inputs: p.meta.inputs });
+tests/typed/passes.test.mjs:44:  const b = await runPipeline(r0, 'O2', { manager: new AnalysisManager(), inputs: p.meta.inputs });
+tests/typed/passes.test.mjs:51:  await assert.rejects(applyPass(P.PASSES['div-to-shift'], r0, { manager, contract, contractInputs: { origin: r0 } }), e => {
+tests/typed/passes.test.mjs:60:  const { artifact } = await runPipeline(r0, ['cfg', 'simplify', 'licm'], { manager, inputs: p.meta.inputs });
+tests/typed/passes.test.mjs:63:  await assert.rejects(applyPass(lying, artifact, { manager }), e => e instanceof PassError && e.code === 'preserveViolated');
+tests/typed/passes.test.mjs:64:  const honest = await applyPass(P.lvn, artifact, { manager });
+tests/typed/passes.test.mjs:71:  await assert.rejects(applyPass(sneaky, r0, { manager }), e => e instanceof TxError && e.code === 'undeclaredWrite');
+tests/typed/passes.test.mjs:73:  await assert.rejects(applyPass(silent, r0, { manager }), e => e instanceof TxError && e.code === 'missingBecause');
+tests/typed/passes.test.mjs:85:    const run = await runPipeline(r0, p.meta.pipeline, { manager, inputs: p.meta.inputs });
+tests/typed/passes.test.mjs:102:  const direct = await runPipeline(r0, 'O2', { manager: new AnalysisManager(), inputs: p.meta.inputs });
+tests/typed/meaning-memo.test.mjs:10:const { projectSource, ingestProject, runPipeline } = await import('../../dist/typed/project.js');
+tests/typed/meaning-memo.test.mjs:15:const { applyPass } = await import('../../dist/framework/passes/index.js');
+tests/typed/meaning-memo.test.mjs:25:  const { artifact } = await runPipeline(r0, 'O2', { manager: new C.AnalysisManager(), inputs: p.meta.inputs });
+tests/typed/meaning-memo.test.mjs:87:    const run = await runPipeline(r0, passes, { manager: new C.AnalysisManager(), inputs: p.meta.inputs });
+tests/typed/meaning-memo.test.mjs:94:    C.differentialStats(true);
+tests/typed/meaning-memo.test.mjs:98:    const stats = C.differentialStats(true);
+tests/typed/meaning-memo.test.mjs:107:  const bad = await applyPass(P.PASSES['div-to-shift'], r0, { manager: new C.AnalysisManager() });
+tests/framework/ext-e3-e6.test.mjs:1:// IRWB-001 E3 (definePass / applyPass) and E6 (passes and analyses as strategy algorithms).
+tests/framework/ext-e3-e6.test.mjs:5:import { definePass, applyPass, PassError, passAlgorithm, analysisAlgorithm } from '../../dist/framework/passes/index.js';
+tests/framework/ext-e3-e6.test.mjs:77:  const r = await applyPass(cseNative, r0, { manager });
+tests/framework/ext-e3-e6.test.mjs:87:  const again = await applyPass(cseNative, r.artifact, { manager });
+tests/framework/ext-e3-e6.test.mjs:95:  const a = await applyPass(cseNative, r0, { manager }), b = await applyPass(cseEdit, r0, { manager });
+tests/framework/ext-e3-e6.test.mjs:104:  await assert.rejects(applyPass(wrongPass, r0, { manager }), e => e instanceof PassError && e.code === 'contractRejected');
+tests/framework/ext-e3-e6.test.mjs:110:  await assert.rejects(applyPass(sneaky, r0, { manager }), e => {
+tests/framework/ext-e3-e6.test.mjs:123:  const r = await applyPass(keepsVariables, r0, { manager });
+tests/framework/ext-e3-e6.test.mjs:126:  await assert.rejects(applyPass(lies, r0, { manager }), e => e instanceof PassError && e.code === 'preserveViolated');
+ * value and its hashes cannot change afterwards; checking it again would recompute the same SHA-256.
+ */
+const VERIFIED = new WeakSet<object>();
+/**
+ * Projections by adapter and canonical value. A captured adapter is frozen and a canonical value is deep-frozen;
+ * projecting is a deterministic function of the two, and it already validated the graph and every resolve.
+ */
+const PROJECTED = new WeakMap<object, WeakMap<object, IRGraph>>();
+export function createIRArtifact<T>(definition: IRAdapter<T>, id: string, value: T): Artifact<T> {
+  const adapter = defineAdapter(definition);
+  requireText(id, 'Artifact ID');
+  const snapshot = immutable(value);
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot, r => synchronous(r, 'Adapter validation'), adapter);
+  const artifact = immutable({
+    id,
+    kind: adapter.kind,
+    schemaVersion: adapter.schemaVersion,
+    value: snapshot,
+    contentHash: fingerprint(snapshot),
+    revision: revisionOf(adapter.kind, adapter.schemaVersion, snapshot),
+  });
+  project(adapter, artifact.value);
+  VERIFIED.add(artifact);
+  return artifact;
+}
+export function validateIRArtifact<T>(definition: IRAdapter<T>, artifact: Artifact<T>): Artifact<T> {
+  const adapter = defineAdapter(definition),
+    snapshot = immutable(artifact);
+  requireText(snapshot.id, 'Artifact ID');
+  if (snapshot.kind !== adapter.kind || snapshot.schemaVersion !== adapter.schemaVersion)
+    throw new IRError('ir.kind', `Adapter ${adapter.id} requires ${adapter.kind}@${adapter.schemaVersion}`);
+  if (
+    !VERIFIED.has(snapshot) &&
+    (snapshot.contentHash !== fingerprint(snapshot.value) ||
+      snapshot.revision !== revisionOf(snapshot.kind, snapshot.schemaVersion, snapshot.value))
+  )
+    throw new IRError('ir.revision', 'Artifact content/revision hash does not match its value');
+  VERIFIED.add(snapshot);
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot.value, r => synchronous(r, 'Adapter validation'), adapter);
+  return snapshot;
+}
+export function validateEntity(entity: IREntity): IREntity {
+  const e = immutable(entity);
+  requireText(e.id, 'Entity ID');
+import { canonical, immutable } from '../core/data.js';
+import type {
+  ChangeSet,
+  EditOperation,
+  EntityChange,
+  IRGraph,
+  IRRef,
+  IRView,
+  RelationChange,
+  RevisionRef,
+} from './types.js';
+import { compareText, refKey, revisionRef } from './common.js';
+export function diffGraphs(
+  before: IRGraph,
+  after: IRGraph,
+  from: RevisionRef,
+  to: RevisionRef,
+  operations: readonly EditOperation[] = [],
+): ChangeSet {
+  const entities: EntityChange[] = [],
+    relations: RelationChange[] = [];
+  const oldEntities = new Map(before.entities.map(e => [e.id, e])),
+    newEntities = new Map(after.entities.map(e => [e.id, e]));
+  const oldRelations = new Map(before.relations.map(r => [r.id, r])),
+    newRelations = new Map(after.relations.map(r => [r.id, r]));
+  for (const id of [...new Set([...oldEntities.keys(), ...newEntities.keys()])].sort(compareText)) {
+    const old = oldEntities.get(id),
+      current = newEntities.get(id);
+    if (!old)
+      entities.push({
+        entity: id,
+        kind: 'inserted',
+        after: current!,
+      });
+    else if (!current)
+      entities.push({
+        entity: id,
+        kind: 'removed',
+        before: old,
+      });
+    else if (old !== current && canonical(old) !== canonical(current))
+      entities.push({
+        entity: id,
+        kind: 'updated',
+        before: old,
+        after: current,
+      });
+  }
+  for (const id of [...new Set([...oldRelations.keys(), ...newRelations.keys()])].sort(compareText)) {
+    const old = oldRelations.get(id),
+      current = newRelations.get(id);
+    if (!old)
+      relations.push({
+        relation: id,
+        kind: 'inserted',
+        after: current!,
+      });
+    else if (!current)
+      relations.push({
+        relation: id,
+        kind: 'removed',
+        before: old,
+      });
+    else if (old !== current && canonical(old) !== canonical(current))
+      relations.push({
+        relation: id,
+        kind: 'updated',
+        before: old,
+        after: current,
+      });
+  }
+  const rootsChanged = before.roots !== after.roots && canonical(before.roots) !== canonical(after.roots);
+  return immutable({
+    from,
+    to,
+    entities,
+    relations,
+    ...(rootsChanged
+      ? {
+          roots: {
+            before: before.roots,
+            after: after.roots,
+          },
+        }
+      : {}),
+    operations,
+    changed: entities.length > 0 || relations.length > 0 || rootsChanged,
+  });
+}
+/** Diff logical projections, even across different adapters/representations. */
+export function diff(before: IRView<any>, after: IRView<any>): ChangeSet {
+  return diffGraphs(before.graph(), after.graph(), revisionRef(before.artifact), revisionRef(after.artifact));
+}
+export function affectedEntities(changes: ChangeSet): readonly IRRef[] {
+  const refs = new Map<string, IRRef>();
+  function add(revision: RevisionRef, entity: string): void {
+    const ref = {
+      ...revision,
+      entity,
+    };
+    refs.set(refKey(ref), ref);
+  }
+  for (const change of changes.entities) {
+    if (change.before) add(changes.from, change.entity);
+    if (change.after) add(changes.to, change.entity);
+  }
+  for (const change of changes.relations) {
+    if (change.before) {
+      add(changes.from, change.before.from);
+      add(changes.from, change.before.to);
+    }
+    if (change.after) {
+      add(changes.to, change.after.from);
+      add(changes.to, change.after.to);
+    }
+  }
+  for (const id of changes.roots?.before ?? []) add(changes.from, id);
+  for (const id of changes.roots?.after ?? []) add(changes.to, id);
+  return immutable([...refs.values()].sort((a, b) => compareText(refKey(a), refKey(b))));
+}
+19ad269
+
+ succeeded in 6134ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md')
+header = p.read_text().split('---', 2)[1]
+p.write_text('---'+header+'---\\n\\n'+'''# Tix Stage 1 Design
+
+Tix compiles index notation into a v6 artifact with explicit iteration domains and ordered scalar expressions. The f32 interpreter defines source meaning. The same loop traversal with f64 arithmetic supplies the reference for "'`split-sum`. The fixed synchronous API needs one framework addition. The pass layer will share its existing native-candidate preparation and add a synchronous entry point that can require a sampled contract before returning a revision.
+
+## Source and input domain
+
+- A program is one or more distinct functions in the supplied grammar. Each takes one or more named, rank-one or higher f32 tensors. A function contains an ordered list of single assignments. References resolve to parameters or earlier assignments, and the return names a tensor whose dimensions match the function'"'s declared result. Unique tensor names, scoped reduction binders and distinct indices per binder list make references unambiguous.
+- Shape expressions and subscripts are integer affine expressions. Normalize them to a constant plus integer coefficients on shape names or scoped index IDs. Tensor axes and iteration extents are nonnegative safe integers. An affine parameter signature must jointly determine all its shape names. At each call, each input has its declared rank and shape under that binding, and its finite "'`Float32Array` or `Float64Array` has exactly the row-major element count. The supported sizes fit the host typed arrays. Empty axes are allowed.
+- General syntax and source-shape errors are diagnosed by `compileTix` at 1-based line and column. Concrete consistency can be checked only once `runTix` receives shapes. For example, `x: f32[N], y: f32[N]` is a valid signature, and the concrete axes must agree. By comparison, a pointwise statement using the same plain index on `x: f32[N]` and `y: f32[M]` has conflicting symbolic extents at compile time.
+- Parse with a location-aware lexer and recursive descent for precedence. A reduction recursively parses a full expression up to its enclosing delimiter. In particular, the divisor in `sum(d) x[i,d] / D` is inside the fold. For `max`, a parenthesized list of bare names followed by an expression starter introduces a reduction. In the ambiguous `max(N, M) - x[i]` spelling where both names are in scope as scalar shape values, prefer the binary call. Parenthesize a negative reduction body to select the reduction in that case. This resolves the overlap using function signature names without adding tokens.
+- Infer each index extent from plain subscript uses that resolve to that binder, including occurrences inside nested reductions. Every plain witness for a binder must yield the same normalized affine extent. A statement annotation supplies the extent of any unwitnessed left-hand index and must match any witnessed extent. A reduction binder requires a plain witness since the annotation contains only left-hand axes. This allows `x[n,c,y+dy,x+dx]` when the output annotation supplies the spatial extents and the kernel supplies plain witnesses for `dy` and `dx`.
+- Check rank and affine access bounds with the full index scope at each read. For a subscript `k + Σ aᵢ iᵢ`, its minimum uses `Eᵢ-1` for negative coefficients and its maximum uses `Eᵢ-1` for positive coefficients, where `Eᵢ` is the binder extent. Prove both bounds under the declared nonnegative extents and the positive enclosing extents needed to reach that read. An empty enclosing loop makes the access unreachable. For example, with output extent `H-KH+1`, the maximum of `y+dy` is `H-1`.
+- Use exact elimination over affine forms for parameter binding and compile-time bounds. Rank-check the parameter coefficient matrix once, solve the concrete system with exact rational arithmetic, and require an integer solution consistent with every parameter axis. For bounds, eliminate variables from linear inequalities over rationals, with integer strict comparisons converted to inclusive bounds, and diagnose an access when these shape constraints cannot establish safety. Keep the source dimension constraints in the function signature in the artifact, including those of annotated temporaries that optimization may remove. Rational implication is conservative for systems whose safety depends on integer feasibility alone. Plain-name binding and offset-only access checks are simpler alternatives, but miss affine signatures and the general indexed reads in the grammar. A full integer constraint solver would accept more cases and is omitted for Stage 1.
+
+## Artifact and evaluators
+
+`src/tensor/` will contain the front end, IR and adapter, evaluator, contract and passes. `compileTix` produces a `TixProgram` with the original and current `Artifact<TensorModule>` (initially the same). `runTix` evaluates the current artifact. `optimizeTix` carries the same original artifact across calls and returns the last accepted current artifact plus one acceptance boolean per requested pass. The entry point emits the specified API from `dist/tensor/index.js`.
+
+Use `defineIR` and `defineAdapter` for `tensor.module@1` and create revisions using `createIRArtifact`. The native value is ordered single-assignment tensor definitions with expression trees. A function stores its signature and shape constraints, parameter IDs, ordered definitions and return ID. Each definition holds a result shape, ordered output binders and scalar body. A read names a tensor ID with affine subscripts using resolved binder IDs. A reduction stores its operator, ordered binders with explicit extents and its body. The optimized IR has a blocked-sum node with a binder, extent, body and block size. Store literal spellings as strings so artifact hashing never normalizes a semantically relevant floating-point bit pattern. Native validation verifies references, index scopes, extents and bounds, including the executable domain of an optimized reduction. Source checking separately infers the extents demanded by the surface syntax.
+
+The v6 projection exposes function, parameter, statement and return entities with stable IDs. Statement attributes carry the indexed expression and extents. Containment, tensor reads and the return value are relations. A statement retains its identity and source order key when a neighboring statement is deleted. The same validator serves the IR type and adapter. An AST alone would require recovering binders and extents in both passes. A CFG or per-expression graph would add reconstruction work. Expression trees inside ordered tensor definitions give both passes the information they need and make the loop order explicit.
+
+Evaluate each statement into a fresh, row-major typed array. Iterate output coordinates and reduction indices in the stored order, with the first index outermost. In f32 mode round input loads, literals, shape values and every scalar result with `Math.fround`. Use JavaScript arithmetic and `Math` functions as specified, and round each accumulator update. Each sum starts at `+0`, and each max starts at `-Infinity`. Keep signed zero, infinities and NaNs produced by arithmetic. Return a `Float32Array`. In f64 mode use the same iteration order and scalar operations with JavaScript numbers and `Float64Array` storage. Load f64 inputs as given and widen f32 inputs. A source artifact produces the sequential f64 reference. An optimized artifact in f64 mode evaluates its current grouping. Sharing loop traversal and selecting the rounding operation is simpler than maintaining two walkers with independent indexing behavior.
+
+## Meaning contract
+
+Reuse the synchronous `runDifferential` with two versioned tensor `DifferentialSpec`s and their comparison callbacks. The exact baseline is the pass'"'s input revision in f32. The tolerance baseline is always the original artifact in f64, even after several accepted passes or separate "'`optimizeTix` calls. Every invocation generates the same cases from the original signature. An exact step following a tolerant step must preserve every sampled bit of its input on those cases, so it inherits the prior comparison to the original. Checking tolerance against the latest f32 revision would allow error to accumulate across accepted steps.
+
+**Cases.** Check every callable function. Use a deterministic bounded search of shape bindings over `0,1,2,3,4,5,6,8,9` and a fixed seed of 7 to generate mixed assignments as well as uniform ones. Derive concrete shapes from the affine signatures and retain only bindings satisfying the original extent constraints. Try fixed-size signatures directly. Select up to eight distinct legal bindings per function, prioritizing empty, singleton, full block and tail reductions when present. Limit each sampled tensor to 4,096 elements and each evaluation to 100,000 scalar expression or reduction-loop visits. For each selected binding use all-zero (including a signed-zero variant), all-one, alternating-sign, seeded f32 values in `[-1,1]`, and the f32 half-ULP pattern `[1,0,0,0,2''^-24,2''^-24,0,…]` along a last axis that can hold it. Oversized or over-budget cases supply no evidence. A changed artifact requires at least one completed case per function. On an applicable tolerance check a nonfinite output is a failed comparison. The suite exercises representative inputs and cannot certify arbitrary shapes or values. A corpus-only input list would give no evidence for independent Tix sources.
+
+**Observation.** Compare the returned shape and every row-major output element. Include the function, shape binding, input pattern or seed, and first differing coordinate with bits or numerical error in counterexample evidence. Store evidence in canonical data using strings for nonfinite values and bits. An aggregate norm could hide a single wrong output element.
+
+| Relation | Requirement |
+| --- | --- |
+| Exact | Shapes match and each element has the same uint32 bit pattern in the f32 output buffers. In particular, `+0` and `-0` differ. Used by `inline`. |
+| Tolerance | Shapes match and every f32 candidate value and f64 reference value are finite, with `abs(candidate - reference) <= 1e-5 + 1e-5 * abs(reference)`. Used by `split-sum`. |
+
+The absolute term allows small reduction-order errors when the sum nearly cancels. The relative term scales with a larger reference value. For a direct sum of up to nine terms bounded by one, eight f32 additions have a first-order absolute error bound of about `9 * 8 * 2''^-24 ≈ 4.3e-6`. The threshold leaves room at that scale and remains far below a unit term lost in the tail witness. Compound expressions may amplify error and the checker can reject a valid reassociation for those samples. A pure relative bound would give no allowance at zero. The tolerance is an acceptance policy for the sampled domain, with no claim of an error bound for arbitrary programs or shapes.
+
+## Passes and discriminating tests
+
+Both passes use `definePass`, with declared v6 writes and native tree results. Each requested pass proposes one module revision containing its eligible rewrites. A no-op is an accepted step. A contract rejection leaves the current revision in use for the next step.
+
+- **`inline`.** Find a non-returned pointwise producer (no reduction) referenced at exactly one syntactic read. Substitute its expression at the read, composing its output binders with the consumer'"'s affine subscripts. Resolved IDs avoid capture even under nested reductions. Remove the producer. Keep the original expression tree and the f32 operations at its nodes. A materialized f32 value is already rounded and loading it adds no new arithmetic. Projected writes are statements, containment and reads. Replacing only same-name, identity-index reads is simpler but would miss a permuted read. Test permutation under a reduction and a signed-zero result. A wrong inline variant ignores a square tensor's index permutation. On "'`[[1,2],[3,4]]`, correct substitution preserves the transpose and the wrong one changes the off-diagonal bits.
+- **`split-sum`.** Replace a one-index sum of extent `E` with ordered blocks of four. Each block folds indices `4*b` through `min(4*b+4,E)-1` from `+0`. The outer loop folds the block results from `+0` in block order. Empty domains return `+0`. Leave max, multi-index sums and existing blocked sums alone. Only the statement body'"'s projected attributes change. A single dedicated IR node expresses the two levels and clipped tail without introducing storage for partial sums. Test lengths 0, 1, 4, 5 and 6, and check that a second application is a no-op. For a fixed length-six sum, "'`[1,0,0,0,2''^-24,2''^-24]` gives sequential f32 bits `3f800000`, blocked bits `3f800001`, and an f64 reference exactly equal to the blocked result. Check the same candidate through both relations. The exact one rejects and the tolerance one accepts. A wrong variant omits the final partial block. On six ones its f32 result is 4 and the reference is 6, so the tolerance check rejects.
+
+Exercise the deliberately wrong native rewrites through the same framework pass gate using test-local definitions. Check the rejected candidate was structurally valid and that the public pipeline returns a runnable accepted artifact. Also check repeated optimization calls and an exact inline after a split to exercise the two reference anchors.
+
+## Framework finding and proposed change
+
+| Framework location | Fits today | Proposed change and reason |
+| --- | --- | --- |
+| `src/framework/core/`, `src/framework/ir/` | Artifact identity, canonical data, adapter validation and projection fit indexed tensor definitions. | None. Keep input and output buffers in the evaluator and contract cases. |
+| `src/framework/contracts/` | `runDifferential` accepts domain-provided cases, distinct per-side evaluation and a comparison callback. Its sampled evidence can represent exact or tolerant comparisons. | None. The contract lives in the tensor domain. The framework'"'s asynchronous transformation manager is unnecessary for these effect-free checks. |
+| "'`src/framework/passes/define-pass.ts` | `applyPass` already creates and validates native candidate artifacts, diffs their projections, checks declared writes and builds correspondence. The public entry point and its manager verification return promises. | Extract the synchronous native-candidate preparation and write-checking steps for reuse by `applyPass` and a new `applyNativePassSync`. It takes a `definePass` pass with no analysis needs or preservation claims, and a required synchronous `(before, after) => CheckResult` gate. It handles a synchronous native result or an identity. It validates the check result with the existing contracts `Check` type and returns a changed revision only after an affirmative verdict. Use the normal `PassResult` and preserve failed-check evidence on `PassError`. This path has no store, edit mutation, resource transaction, or manager-backed contract. |
+| `src/framework/dataflow/`, `src/framework/strategy/` | Neither pass has a CFG analysis requirement or a scheduling decision beyond the requested order. The strategy interpreter is itself asynchronous. | None. |
+
+A direct tensor-local loop calling the rewrite functions and `runDifferential` would satisfy the timing of the API, but would either bypass v6 candidate enforcement or duplicate it in a domain. Making the whole transformation manager synchronous would expand the change to analysis, effects, and transactions. The native path shares the portion Tix exercises. Add focused framework coverage to `tests/framework/ext-e3-e6.test.mjs` for native diff/correspondence, undeclared writes and rejection before a changed artifact is returned. The existing asynchronous tests cover its shared preparation.
+
+A repository build with Node `v24.18.0` succeeded. A standalone Node arithmetic probe confirmed the two reduction bit patterns, the signed-zero bit patterns, and the tail mutation'"'s numerical failure. These results are arithmetic evidence for the fixtures. The tensor pipeline and synchronous pass entry point are proposed.
+
+## Corpus and implementation checks
+
+| "'`corpus/tensor/<name>/main.tix` | Computation and focused check |
+| --- | --- |
+| `matmul` | `A[M,K] · B[K,N]`. A nonsquare hand-computed product checks axis order and contraction extent. |
+| `softmax` | Row max, shifted exponential, row sum, normalization. Include large common offsets and check row totals. |
+| `layernorm` | Per-row mean and population variance, epsilon inside the square root, then per-feature gamma and beta. A constant row must yield beta. |
+| `attention` | Single head. Scaled query/key dot products, max-shifted softmax per query row and contraction with values. Use different query and key lengths. |
+| `mlp` | Two affine layers with biases and tanh-GELU between them, using `0.5*x*(1+tanh(sqrt(2/pi)*(x+0.044715*x*x*x)))` with a literal square-root coefficient. |
+| `conv2d` | NCHW input, OIHW weights, stride 1 and no padding. Declare output spatial axes `H-KH+1`, `W-KW+1`. Use an asymmetric kernel and multiple channels to check subscript order and bounds. |
+
+After review, build the checker and artifact, add both evaluator modes, then implement the common pass path and the negative witnesses. Add corpus checks with independent expected values. Front-end tests cover the two reduction-body parses, `max` disambiguation, conflicts, missing extents, affine bounds and diagnostics. Evaluator tests cover precision, lexicographic order, empty reductions and row-major shape. After implementation run `npm run build`, `node --test tests/tensor/`, `node --test tests/framework/`, and the Typed suites covering the changed native path, starting with `passes.test.mjs`, `meaning-memo.test.mjs` and `strategies.test.mjs`.
+
+## Later
+
+- Lower to CUDA and run on the GPU machine.
+- Add fusion.
+- Add contraction tiling.
+- Add attention-specific rewrites.
+'"''')
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 371ms:
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'JS'
+import assert from 'node:assert/strict';
+import { defineIR, runDifferential } from './dist/framework/contracts/index.js';
+import { defineAdapter, createIRArtifact } from './dist/framework/ir/index.js';
+import { applyPass, definePass } from './dist/framework/passes/index.js';
+import { AnalysisManager } from './dist/framework/contracts/index.js';
+const validate = v => assert.ok(Array.isArray(v.values));
+const ir = defineIR({id:'probe.tensor',version:'1',description:'probe',validate});
+const part = v => ({id:'body',kind:'statement',attributes:v});
+const adapter = defineAdapter({id:ir.id,version:'1',kind:ir.id,schemaVersion:ir.version,description:'probe',relationKinds:{},validate,entities:v=>[part(v)],resolve:(v,id)=>id==='body'?part(v):undefined,relations:()=>[],describe:(_v,e)=>({label:e.id})});
+const values = [1,0,0,0,2**-24,2**-24];
+const original = createIRArtifact(adapter,'probe',{values,block:0});
+const rewrite = definePass({id:'probe.block',version:'1',description:'probe',ir,adapter,writes:{entities:['statement'],relations:[]},run:({before})=>({native:{...before.value,block:4}})});
+const result = applyPass(rewrite,original,{manager:new AnalysisManager()});
+assert.ok(result instanceof Promise);
+const {artifact:candidate,changes} = await result;
+assert.equal(changes.entities.length,1);
+const run = (v,f) => { const fold = xs=>xs.reduce((s,x)=>f(s+x),0); return v.block ? fold([fold(v.values.slice(0,4)),fold(v.values.slice(4))]) : fold(v.values); };
+const check = tolerance => runDifferential({id:tolerance?'probe.tolerance':'probe.exact',version:'1',description:'probe',inputs:{baseline:ir,subject:ir},baseline:'baseline',subject:'subject',count:1,cases:()=>[0],run:(side,a)=>run(a.value,tolerance&&side==='baseline'?x=>x:Math.fround),compare:(a,b)=>tolerance?Math.abs(a-b)<=1e-5+1e-5*Math.abs(a):Object.is(a,b)},{baseline:original,subject:candidate});
+assert.equal(check(false).status,'disagree');
+assert.equal(check(true).status,'agree');
+console.log('applyPass returned a Promise; the native result produced one entity diff; runDifferential synchronously returned disagree (exact) and agree (tolerance).');
+JS" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc "rg -n 'export const Check|reason|evidence' src/framework/contracts/definitions.ts | tail -24 && rg -n 'export interface IRAdapter|describe:' src/framework/ir/types.ts && rg --files -g 'AGENTS.md' --hidden -g '"'!.git'"' src ttmp .agents .codex" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ exited 1 in 257ms:
+298:export const Check: ValueType<CheckResult> = defineType<CheckResult>({
+301:  description: 'Dynamically checked proposition and its evidence',
+304:      throw new Error('Expected {ok:boolean, reason?, evidence?}');
+305:    if ((v as CheckResult).reason !== undefined && typeof (v as CheckResult).reason !== 'string')
+306:      throw new Error('Check reason must be text');
+64:export interface IRAdapter<T = unknown> extends VersionRef {
+
+ exited 1 in 290ms:
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/dist/framework/ir/transactions.js:25
+            throw new IRError('ir.capability', `Adapter ${view.adapter.id} is not Rewritable`);
+                  ^
+
+IRError: Adapter probe.tensor is not Rewritable
+    at new Edit (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/dist/framework/ir/transactions.js:25:19)
+    at View.beginEdit (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/dist/framework/ir/view.js:133:16)
+    at applyPass (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/dist/framework/passes/define-pass.js:72:23)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/[eval1]:13:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:224:26
+    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:221:20)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  code: 'ir.capability'
+}
+
+Node.js v24.18.0
+
+codex
+A probe found another constraint in the same pass path. `applyPass` opens a graph edit even when the pass returns native IR, which forces the adapter to implement `rebuild`. The proposed native entry point will avoid opening that unused edit. The reduction probe also confirmed that the two f32 orders differ by one bit on the witness.
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'JS'
+import assert from 'node:assert/strict';
+import { AnalysisManager, defineIR, runDifferential } from './dist/framework/contracts/index.js';
+import { defineAdapter, createIRArtifact } from './dist/framework/ir/index.js';
+import { applyPass, definePass } from './dist/framework/passes/index.js';
+const validate = v => assert.ok(Array.isArray(v.values));
+const ir = defineIR({id:'probe.tensor',version:'1',description:'probe',validate});
+const part = v => ({id:'body',kind:'statement',attributes:v});
+const adapter = defineAdapter({id:ir.id,version:'1',kind:ir.id,schemaVersion:ir.version,description:'probe',relationKinds:{},validate,entities:v=>[part(v)],resolve:(v,id)=>id==='body'?part(v):undefined,relations:()=>[],describe:(_v,e)=>({label:e.id}),rebuild:(_v,g)=>g.entities[0].attributes});
+const values = [1,0,0,0,2**-24,2**-24];
+const original = createIRArtifact(adapter,'probe',{values,block:0});
+const rewrite = definePass({id:'probe.block',version:'1',description:'probe',ir,adapter,writes:{entities:['statement'],relations:[]},run:({before})=>({native:{...before.value,block:4}})});
+const result = applyPass(rewrite,original,{manager:new AnalysisManager()});
+assert.ok(result instanceof Promise);
+const {artifact:candidate,changes} = await result;
+assert.equal(changes.entities.length,1);
+const run = (v,f) => { const fold = xs=>xs.reduce((s,x)=>f(s+x),0); return v.block ? fold([fold(v.values.slice(0,4)),fold(v.values.slice(4))]) : fold(v.values); };
+const check = tolerance => runDifferential({id:tolerance?'probe.tolerance':'probe.exact',version:'1',description:'probe',inputs:{baseline:ir,subject:ir},baseline:'baseline',subject:'subject',count:1,cases:()=>[0],run:(side,a)=>run(a.value,tolerance&&side==='baseline'?x=>x:Math.fround),compare:(a,b)=>tolerance?Math.abs(a-b)<=1e-5+1e-5*Math.abs(a):Object.is(a,b)},{baseline:original,subject:candidate});
+assert.equal(check(false).status,'disagree');
+assert.equal(check(true).status,'agree');
+console.log('applyPass returned a Promise; the native result produced one entity diff; runDifferential synchronously returned disagree (exact) and agree (tolerance).');
+JS" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 293ms:
+applyPass returned a Promise; the native result produced one entity diff; runDifferential synchronously returned disagree (exact) and agree (tolerance).
+

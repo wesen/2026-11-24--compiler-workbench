@@ -5954,3 +5954,910 @@ status:
 tests/typed/meaning-memo.test.mjs
 tests/typed/passes.test.mjs
 
+exec
+/usr/bin/zsh -lc 'cat src/framework/core/data.ts | head -200' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc "rg -n -C 4 \"beginEdit|\\.rebuild\" src/framework/ir/{view,transactions}.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc "sed -n '1,85p' src/framework/contracts/definitions.ts && cat src/framework/passes/index.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc "cat src/typed/project.ts | head -80 && sed -n '80,120p' src/framework/strategy/README.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc 'ls tests/typed' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 469ms:
+import { sha256Parts } from './sha256.js';
+
+/**
+ * Values that `immutable` produced: deep-frozen plain records and arrays in canonical form (finite numbers, -0 as 0,
+ * no accessors, symbols, holes or cycles). Nothing in one can change, so its canonical text is fixed: `canonical`
+ * may cache it, and `immutable` returns such a value as it is. Only `immutable` adds to this set, and only objects
+ * it built itself.
+ */
+const CANONICAL = new WeakSet<object>();
+/**
+ * Canonical text of canonical values of at least `RECORD_MIN` characters. IRWB-001 kept only large values (4,096
+ * characters or more); IRWB-004 also keeps records, so a program value whose records survive a pass is encoded by
+ * looking up its records' texts. Tiny values are cheaper to encode again than to keep.
+ */
+const TEXT = new WeakMap<object, string>();
+const RECORD_MIN = 64;
+
+/**
+ * The keys of a canonical record in sorted order. `immutable` inserted them sorted, so `Object.keys` returns them in
+ * that order unless the record has integer-like keys (which every object enumerates first, numerically).
+ */
+function sortedKeys(v: object): string[] {
+  const keys = Object.keys(v);
+  for (let i = 1; i < keys.length; i++) if (keys[i - 1] > keys[i]) return keys.sort();
+  return keys;
+}
+/**
+ * The canonical text of a canonical value (one `immutable` built). Its subtree is canonical, frozen, acyclic and made
+ * of own data properties, so none of the checks of the general encoder can fail; this gives the same text faster.
+ */
+function encodeCanonical(v: object): string {
+  const cached = TEXT.get(v);
+  if (cached !== undefined) return cached;
+  let result: string;
+  if (Array.isArray(v)) {
+    let s = '[';
+    for (let i = 0; i < v.length; i++) {
+      if (i) s += ',';
+      const x = v[i];
+      s += x !== null && typeof x === 'object' ? encodeCanonical(x) : encodePrimitive(x);
+    }
+    result = s + ']';
+  } else {
+    let s = '{';
+    const keys = sortedKeys(v);
+    for (let i = 0; i < keys.length; i++) {
+      if (i) s += ',';
+      const x = (v as Record<string, unknown>)[keys[i]];
+      s += JSON.stringify(keys[i]) + ':' + (x !== null && typeof x === 'object' ? encodeCanonical(x) : encodePrimitive(x));
+    }
+    result = s + '}';
+  }
+  if (result.length >= RECORD_MIN) TEXT.set(v, result);
+  return result;
+}
+function encodePrimitive(v: unknown): string {
+  if (v === null) return 'null';
+  if (typeof v === 'string' || typeof v === 'boolean') return JSON.stringify(v);
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) throw new Error('IR data must contain only finite numbers');
+    return Object.is(v, -0) ? '0' : String(v);
+  }
+  throw new Error(`IR data cannot contain ${typeof v}`);
+}
+
+/** Canonical finite JSON. Rejects values that would make persistent keys ambiguous. */
+export function canonical(value: unknown): string {
+  const ancestors = new Set<object>();
+  function encode(v: unknown): string {
+    if (v === null) return 'null';
+    if (typeof v === 'string' || typeof v === 'boolean') return JSON.stringify(v);
+    if (typeof v === 'number') {
+      if (!Number.isFinite(v)) throw new Error('IR data must contain only finite numbers');
+      return Object.is(v, -0) ? '0' : String(v);
+    }
+    if (typeof v !== 'object') throw new Error(`IR data cannot contain ${typeof v}`);
+    if (CANONICAL.has(v)) return encodeCanonical(v); // IRWB-004: the same text, without re-checking a canonical value
+    const cached = TEXT.get(v);
+    if (cached !== undefined) return cached;
+    if (ancestors.has(v)) throw new Error('IR data cannot contain cycles');
+    const prototype = Object.getPrototypeOf(v);
+    if (!Array.isArray(v) && prototype !== Object.prototype && prototype !== null) {
+      throw new Error('IR data must be plain records or arrays');
+    }
+    ancestors.add(v);
+    let result: string;
+    if (Array.isArray(v)) {
+      if (Object.keys(v).length !== v.length)
+        throw new Error('IR arrays cannot be sparse or have extra properties');
+      if (Object.getOwnPropertySymbols(v).length) throw new Error('IR arrays cannot contain symbol keys');
+      const entries: string[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const descriptor = Object.getOwnPropertyDescriptor(v, String(i));
+        if (!descriptor || !('value' in descriptor))
+          throw new Error('IR arrays require own data elements without holes or accessors');
+        entries.push(encode(descriptor.value));
+      }
+      result = '[' + entries.join(',') + ']';
+    } else {
+      if (Object.getOwnPropertySymbols(v).length) throw new Error('IR data cannot contain symbol keys');
+      result =
+        '{' +
+        Object.keys(v)
+          .sort()
+          .map(k => {
+            const descriptor = Object.getOwnPropertyDescriptor(v, k)!;
+            if (!('value' in descriptor)) throw new Error('IR data cannot contain accessors');
+            return JSON.stringify(k) + ':' + encode(descriptor.value);
+          })
+          .join(',') +
+        '}';
+    }
+    ancestors.delete(v);
+    if (result.length >= RECORD_MIN && CANONICAL.has(v)) TEXT.set(v, result);
+    return result;
+  }
+  return encode(value);
+}
+
+export function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) deepFreeze(child);
+  }
+  return value;
+}
+
+/**
+ * A deep-frozen canonical copy: what `JSON.parse(canonical(value))`, deep-frozen, would give (keys in sorted order,
+ * -0 as 0), built directly instead of through text, with the same rejections as `canonical`. A value that
+ * `immutable` produced is returned as it is; canonical parts of a new value are shared, not copied.
+ */
+export function immutable<T>(value: T): T {
+  const ancestors = new Set<object>();
+  function build(v: unknown): unknown {
+    if (v === null || typeof v === 'string' || typeof v === 'boolean') return v;
+    if (typeof v === 'number') {
+      if (!Number.isFinite(v)) throw new Error('IR data must contain only finite numbers');
+      return Object.is(v, -0) ? 0 : v;
+    }
+    if (typeof v !== 'object') throw new Error(`IR data cannot contain ${typeof v}`);
+    if (CANONICAL.has(v)) return v;
+    if (ancestors.has(v)) throw new Error('IR data cannot contain cycles');
+    const prototype = Object.getPrototypeOf(v);
+    if (!Array.isArray(v) && prototype !== Object.prototype && prototype !== null) {
+      throw new Error('IR data must be plain records or arrays');
+    }
+    ancestors.add(v);
+    let out: unknown[] | Record<string, unknown>;
+    if (Array.isArray(v)) {
+      if (Object.keys(v).length !== v.length)
+        throw new Error('IR arrays cannot be sparse or have extra properties');
+      if (Object.getOwnPropertySymbols(v).length) throw new Error('IR arrays cannot contain symbol keys');
+      const items: unknown[] = new Array(v.length);
+      for (let i = 0; i < v.length; i++) {
+        const descriptor = Object.getOwnPropertyDescriptor(v, i);
+        if (!descriptor || !('value' in descriptor))
+          throw new Error('IR arrays require own data elements without holes or accessors');
+        items[i] = build(descriptor.value);
+      }
+      out = items;
+    } else {
+      if (Object.getOwnPropertySymbols(v).length) throw new Error('IR data cannot contain symbol keys');
+      // JSON.parse gives a plain object with own data properties in text order (here: sorted). Assignment creates
+      // exactly such a property on a fresh plain object (IRWB-004: much faster than defineProperty), except for a
+      // "__proto__" key, which would set the prototype; defineProperty keeps it an own property, as JSON.parse does
+      const record: Record<string, unknown> = {};
+      for (const k of Object.keys(v).sort()) {
+        const descriptor = Object.getOwnPropertyDescriptor(v, k)!;
+        if (!('value' in descriptor)) throw new Error('IR data cannot contain accessors');
+        const x = build(descriptor.value);
+        if (k === '__proto__')
+          Object.defineProperty(record, k, { value: x, enumerable: true, writable: true, configurable: true });
+        else record[k] = x;
+      }
+      out = record;
+    }
+    ancestors.delete(v);
+    Object.freeze(out);
+    CANONICAL.add(out);
+    return out;
+  }
+  return build(value) as T;
+}
+
+/**
+ * Portable SHA-256 for identical browser/Node content addresses; no platform or npm dependency. IRWB-004: the
+ * implementation is in sha256.ts (node:crypto in Node, a streaming portable one elsewhere); the digest is unchanged.
+ */
+export function sha256(text: string): string {
+  return sha256Parts([text]);
+}
+
+const HASH = new WeakMap<object, string>();
+export function fingerprint(value: unknown): string {
+  if (value && typeof value === 'object' && CANONICAL.has(value)) {
+    let h = HASH.get(value);
+    if (h === undefined) HASH.set(value, (h = sha256(canonical(value))));
+    return h;
+  }
+
+ succeeded in 470ms:
+import {
+  canonical,
+  deepFreeze,
+  fingerprint,
+  immutable,
+  isCanonical,
+  revisionOf,
+  validateOnce,
+} from '../core/data.js';
+import type { Artifact } from '../core/types.js';
+import type {
+  AnalysisDefinition,
+  AnyDefinition,
+  CheckResult,
+  DefinitionDescriptor,
+  EffectDefinition,
+  IRType,
+  InvariantDefinition,
+  ObjectiveDefinition,
+  Ports,
+  PropertyDefinition,
+  TransformationDefinition,
+  ValueType,
+  VersionRef,
+} from './types.js';
+const nonempty = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+function portType(value: unknown, category?: 'ir' | 'type'): asserts value is IRType<any> | ValueType<any> {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !['ir', 'type'].includes(
+      (
+        value as {
+          category: string;
+        }
+      ).category,
+    ) ||
+    (category &&
+      (
+        value as {
+          category: string;
+        }
+      ).category !== category) ||
+    typeof (
+      value as {
+        validate?: unknown;
+      }
+    ).validate !== 'function'
+  )
+    throw new Error(`Expected ${category ?? 'IR or scalar'} type with runtime validator`);
+}
+function ports(value: unknown): asserts value is Ports {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Expected named port definitions');
+  for (const [name, type] of Object.entries(value)) {
+    if (!nonempty(name)) throw new Error('Port name required');
+    portType(type);
+  }
+}
+function base<
+  T extends {
+    id: string;
+    version: string;
+    description: string;
+  },
+>(value: T): T {
+  if (!nonempty(value.id) || !nonempty(value.version) || typeof value.description !== 'string')
+    throw new Error('Definitions need id, version and description');
+  return deepFreeze(value);
+}
+export const defineType = <T>(d: Omit<ValueType<T>, 'category'>): ValueType<T> => {
+  if (typeof d.validate !== 'function') throw new Error('Type requires a runtime validator');
+  return base({
+    ...d,
+    category: 'type',
+  });
+};
+export const defineIR = <T>(d: Omit<IRType<T>, 'category'>): IRType<T> => {
+  if (typeof d.validate !== 'function') throw new Error('IR requires a runtime validator');
+  return base({
+    ...d,
+    category: 'ir',
+  });
+};
+export const defineEffect = <T>(d: Omit<EffectDefinition<T>, 'category'>): EffectDefinition<T> => {
+export * from './define-pass.js';
+export * from './bridge.js';
+
+ succeeded in 469ms:
+/**
+ * Projects: a directory of Typed sources plus `project.json` (title, pipeline, per-function input specs). A port
+ * of Compiler Workbench's projects.js source assembly: the sources named in `project.json` come first, then the
+ * remaining `.typed` files in name order; they are concatenated (each ending in a newline) into one program whose
+ * name is the project id with `-` replaced by `_`, and a file map records where each file starts.
+ */
+import { applyPass, type PassResult } from '../framework/passes/define-pass.js';
+import type { AnalysisManager } from '../framework/contracts/analysis-manager.js';
+import type { Artifact } from '../framework/core/types.js';
+import { createIRArtifact } from '../framework/ir/adapters.js';
+import type { ProgramInputs } from './evaluate.js';
+import { blocksAdapter } from './ir.js';
+import { ingest, type IngestOptions } from './lift.js';
+import type { TypedBlocks } from './model.js';
+import { joinText } from './format.js';
+import { optimizationContract, PASSES, PIPELINES, type RevisionReport } from './passes.js';
+
+export interface ProjectMeta {
+  readonly title: string;
+  readonly about: string;
+  readonly group: string;
+  readonly pipeline: string;
+  readonly inputs: ProgramInputs;
+  readonly sources: readonly string[];
+  /** How to ingest the sources (`{ "tape": true }` for programs with frame arrays, f32 min/max or conversions). */
+  readonly ingest?: IngestOptions;
+  /** Entry points: when present, the meaning check generates cases for these functions only (`MeaningParams.roots`). */
+  readonly entries?: readonly string[];
+  readonly [field: string]: unknown;
+}
+
+export interface ProjectSource {
+  readonly id: string;
+  readonly name: string;
+  readonly meta: ProjectMeta;
+  readonly source: string;
+  readonly fileMap: readonly { readonly file: string; readonly start: number; readonly lines: number }[];
+}
+
+export function projectSource(id: string, files: Readonly<Record<string, string>>): ProjectSource {
+  let m: Record<string, unknown> = {};
+  if (files['project.json']) m = JSON.parse(files['project.json']);
+  const typed = Object.keys(files)
+    .filter(f => f.endsWith('.typed'))
+    .sort();
+  const named = Array.isArray(m.sources) ? (m.sources as string[]) : [];
+  const sources = named.filter(f => files[f] !== undefined).concat(typed.filter(f => !named.includes(f)));
+  // prose fields may be written as arrays of lines, so project.json stays narrow; they mean the joined text
+  if (m.about !== undefined) m.about = joinText(m.about);
+  if (Array.isArray(m.try)) m.try = m.try.map(x => joinText(x));
+  if (m.scripts && typeof m.scripts === 'object')
+    for (const sc of Object.values(m.scripts as Record<string, Record<string, unknown>>))
+      if (sc && sc.about !== undefined) sc.about = joinText(sc.about);
+  const meta = {
+    title: id,
+    about: '',
+    group: 'Mine',
+    pipeline: 'O2',
+    inputs: {},
+    ...m,
+    sources,
+  } as ProjectMeta;
+  let source = '',
+    line = 1;
+  const fileMap: { file: string; start: number; lines: number }[] = [];
+  for (const f of sources) {
+    let t = files[f];
+    if (!t.endsWith('\n')) t += '\n';
+    const n = t.split('\n').length - 1;
+    fileMap.push({ file: f, start: line, lines: n });
+    source += t;
+    line += n;
+  }
+  return { id, name: id.replace(/-/g, '_'), meta, source, fileMap };
+}
+
+/** r0 of a project as a v6 artifact. */
+export function ingestProject(p: ProjectSource): Artifact<TypedBlocks> {
+  return createIRArtifact(blocksAdapter, p.name, ingest(p.name, p.source, p.meta.ingest ?? {}).toNative());
+}
+## Failure, concurrency and budgets
+
+`StrategyRejected` is the only recoverable exception channel. Algorithms may use `ctx.reject`; failed invariants and empty feasible sets use it. Ordinary exceptions, invalid algorithm outputs, unavailable references, cycles and exceeded budgets remain fatal. `attempt` does not hide implementation bugs. When parallel siblings fail differently, a fatal failure takes precedence over rejection; explicit cancellation takes precedence over rejection when the external signal is aborted. Within a failure class, source-order index gives deterministic error selection.
+
+`parallel`, `fork` and `forEach` support optional local `concurrency`. `ExecuteOptions.maxConcurrency` limits active algorithm calls globally, including nested groups. Only algorithm calls acquire a permit, so composites never hold a permit while waiting for child work. This is asynchronous scheduling, not CPU worker parallelism.
+
+All started operations are awaited after failure. Unscheduled siblings are marked skipped while the trace budget permits. There is no rollback: successful compiler tasks can remain cached even if a later alternative rejects or execution fails. That retained work remains observable.
+
+`maxSteps` counts every allocated node visit, including skipped subtree records, and therefore bounds trace-record allocation. A limit failure does not allocate records for remaining nodes; the nearest recorded ancestor explains the budget failure. `maxDepth` bounds execution nesting; plans are also limited to 10,000 static nodes and static depth 128. `maxItems` and `maxIterations` are required at the corresponding nodes. These are structural budgets, not memory/process isolation or wall-clock preemption. Algorithm evidence payload sizes remain the host's responsibility.
+
+Cancellation is cooperative. The interpreter checks `AbortSignal` between nodes and before/after algorithms and cancels queued semaphore requests. Long asynchronous algorithms must honor `ctx.signal`; synchronous JavaScript cannot be preempted by this interpreter. No fallback catches cancellation. Already-started host work is awaited, not abandoned with an unhandled rejection.
+
+## Validation, editing and interchange
+
+- `validate(value, registry?)` returns `{valid, issues}` with paths and codes. It checks JSON shape, format version, exact fields, IDs, references, lexical binding availability, algorithm categories/versions and numeric bounds.
+- `assertValid(value, registry?)` throws `PlanValidationError` with the same issues.
+- `walk(plan, visitor?)` returns ordered `{node,parent?,path,depth,slot?}` visits and optionally calls `visitor(node, visit)` in preorder; `find(plan,id)` or `find(plan,predicate)` returns the first matching node or undefined (`predicate(node, visit)`); `childNodes(node)` exposes direct structural children.
+- `replace(plan,id,node)`, `insertBefore(plan,id,node)`, `insertAfter(plan,id,node)` and `remove(plan,id)` return new immutable validated plans. Invalid operations leave the old plan untouched. Insertions create a fresh sequence when the target has no sequence parent. Removal supports list entries; a required child or root must be replaced explicitly (an empty sequence is identity).
+- `diff(before,after)` reports added, removed, changed and moved nodes by stable node ID. Composite changes refer to child IDs rather than duplicating entire descendant trees. Plan metadata changes use the `$plan` pseudo-ID.
+- `serialize(plan, pretty=true)` uses deterministic key ordering; `deserialize(text, registry?)` validates and freezes the JSON interchange value. The workbench has its own lossless YAML view/editor; persisted plan bytes remain normal data.
+
+## Execution evidence
+
+`execute(plan, registry, input, options?)` preflights the plan, snapshots it and the registry, then returns a `StrategyExecution` for succeeded, rejected, failed or cancelled execution. Invalid plans fail preflight with `PlanValidationError` and do not run any algorithm. `executeOrThrow` wraps a nonsuccessful execution in `StrategyExecutionError`, retaining the complete `execution` property.
+
+The execution contains the exact immutable plan, SHA-256 plan revision, algorithm manifest, input, terminal result/error, node records and an event stream. Each dynamic record has its own execution ID, stable plan node ID, parent execution ID, deterministic structural path, iteration/item/branch location, input/output, status, child IDs, evidence, timestamps and compiler invocation/cache links. A repeated or mapped static node has multiple dynamic records; inactive paths are explicitly skipped. Selection, predicates, fixpoint comparisons, checks and recovery decisions are recorded at the responsible nodes.
+
+Pass an explicit execution ID to correlate compiler runs. Otherwise, IDs combine the plan revision and a process-local run counter. Timings describe elapsed inclusive wall time, not exclusive CPU profiling.
+
+`onEvent` receives frozen events. If an observer throws, its error is recorded as `observer-error` evidence and the observer is disabled; compiler semantics remain unchanged. Returned traces are immutable and retain this diagnostic.
+
+## Scope boundary
+
+This module does not implement the separately proposed semantic property/contract system or generic IR rewriting framework. It invokes existing transformations through a clean registry, and composes, edits, validates and explains their strategies. Domain algorithm correctness and semantic equivalence remain the domain compiler's responsibility.
+
+ succeeded in 482ms:
+src/framework/ir/transactions.ts-38-  #committing = false;
+src/framework/ir/transactions.ts-39-  #publishing = false;
+src/framework/ir/transactions.ts-40-  #rollbackReason?: string;
+src/framework/ir/transactions.ts-41-  constructor(view: IRView<T>, store: IRStore, options: EditOptions<T> = {}) {
+src/framework/ir/transactions.ts:42:    if (!view.adapter.rebuild)
+src/framework/ir/transactions.ts-43-      throw new IRError('ir.capability', `Adapter ${view.adapter.id} is not Rewritable`);
+src/framework/ir/transactions.ts-44-    if (options.verify !== undefined && typeof options.verify !== 'function')
+src/framework/ir/transactions.ts-45-      throw new IRError('ir.acceptance', 'Edit verification must be callable');
+src/framework/ir/transactions.ts-46-    if (options.label !== undefined) requireText(options.label, 'Edit label');
+--
+src/framework/ir/transactions.ts-302-    this.#state = 'preparing';
+src/framework/ir/transactions.ts-303-    try {
+src/framework/ir/transactions.ts-304-      this.#store.assertHead(this.base, this.#generation);
+src/framework/ir/transactions.ts-305-      const graph = validateGraph(this.#view.adapter, this.preview());
+src/framework/ir/transactions.ts:306:      const value = synchronous(this.#view.adapter.rebuild!(this.base.value, graph), 'Native IR rebuild');
+src/framework/ir/transactions.ts-307-      const artifact = createIRArtifact(this.#view.adapter, this.base.id, value),
+src/framework/ir/transactions.ts-308-        actual = project(this.#view.adapter, artifact.value);
+src/framework/ir/transactions.ts-309-      // Reject adapters that silently drop a requested edit or fabricate logical entities/edges.
+src/framework/ir/transactions.ts-310-      if (
+--
+src/framework/ir/view.ts-171-    );
+src/framework/ir/view.ts-172-    requireText(value.kind, 'Visualization kind');
+src/framework/ir/view.ts-173-    return value;
+src/framework/ir/view.ts-174-  }
+src/framework/ir/view.ts:175:  beginEdit(options?: EditOptions<T>): IREdit<T> {
+src/framework/ir/view.ts-176-    return new Edit(this, this.#store, options);
+src/framework/ir/view.ts-177-  }
+src/framework/ir/view.ts-178-  at(artifact: Artifact<T>): IRView<T> {
+src/framework/ir/view.ts-179-    return new View(artifact, this.adapter, this.#store);
+
+ succeeded in 485ms:
+audit.test.mjs
+backend.test.mjs
+bcm.test.mjs
+bytecode-vm.test.mjs
+candela.test.mjs
+chess-search.test.mjs
+dfe.test.mjs
+evaluate-analyses.test.mjs
+f32-backend-fixture.mjs
+f32-backend.test.mjs
+f32-dsp.test.mjs
+f32-fixture.mjs
+f32.test.mjs
+facts-check.test.mjs
+format.test.mjs
+ingest.test.mjs
+inline.test.mjs
+lz-roundtrip.test.mjs
+meaning-memo.test.mjs
+mutate.test.mjs
+parallel.test.mjs
+passes.test.mjs
+program.test.mjs
+project-meta.test.mjs
+regex-nfa.test.mjs
+rules.test.mjs
+sha-chacha.test.mjs
+specialize.test.mjs
+speed.test.mjs
+ssa.test.mjs
+strategies.test.mjs
+tape.test.mjs
+
+exec
+/usr/bin/zsh -lc 'npm ci --offline --ignore-scripts --no-audit --no-fund' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 1090ms:
+
+added 6 packages in 734ms
+
+exec
+/usr/bin/zsh -lc 'npm run build' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc 'cat src/framework/ir/types.ts | head -90' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc 'rg -n "beginEdit|function.*run|rebuild" src/framework/passes/define-pass.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc 'git rev-parse --short HEAD' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc 'cat tests/framework/ext-e3-e6.test.mjs | head -135' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc 'cat src/framework/ir/index.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 880ms:
+19ad269
+
+ succeeded in 902ms:
+import type { Artifact, Diagnostic, EntityRef } from '../core/types.js';
+export interface VersionRef {
+  readonly id: string;
+  readonly version: string;
+}
+export interface RevisionRef {
+  readonly artifact: string;
+  readonly revision: string;
+}
+export interface IRRef extends EntityRef {
+  readonly entity: string;
+}
+export type EntityTarget = string | IRRef;
+/** IRWB-001 E1 adds 'control': control-flow successor edges (a CFG), distinct from containment and dataflow. */
+export type RelationCategory =
+  | 'containment'
+  | 'dependency'
+  | 'binding'
+  | 'adjacency'
+  | 'provenance'
+  | 'control';
+export type Capability =
+  | 'Traversable'
+  | 'Queryable'
+  | 'Rewritable'
+  | 'Diffable'
+  | 'Verifiable'
+  | 'Serializable'
+  | 'Visualizable'
+  | 'Operations';
+/** A logical projection. Native domain storage remains owned by the adapter. */
+export interface IREntity {
+  readonly id: string;
+  readonly kind: string;
+  readonly attributes: Readonly<Record<string, unknown>>;
+}
+export interface IRRelation {
+  readonly id: string;
+  readonly kind: string;
+  readonly category: RelationCategory;
+  readonly from: string;
+  readonly to: string;
+  readonly order?: number;
+  readonly attributes?: Readonly<Record<string, unknown>>;
+}
+export interface IRGraph {
+  readonly entities: readonly IREntity[];
+  readonly relations: readonly IRRelation[];
+  readonly roots: readonly string[];
+}
+export interface EntityDescription {
+  readonly label: string;
+  readonly detail?: string;
+  readonly stats?: Readonly<Record<string, number | string>>;
+}
+export interface Operation {
+  readonly name: string;
+  readonly operands: readonly string[];
+}
+export interface IRVisualization {
+  readonly kind: string;
+  readonly data: unknown;
+}
+export interface IRAdapter<T = unknown> extends VersionRef {
+  readonly kind: string;
+  readonly schemaVersion: string;
+  readonly description: string;
+  readonly relationKinds: Readonly<Record<string, RelationCategory>>;
+  entities(value: T): Iterable<IREntity>;
+  resolve(value: T, entity: string): IREntity | undefined;
+  relations(value: T): Iterable<IRRelation>;
+  describe(value: T, entity: string): EntityDescription;
+  roots?(value: T): readonly string[];
+  validate?(value: unknown): void;
+  /** Translate a validated logical edit back into this representation's native storage. */
+  rebuild?(base: T, graph: IRGraph): T;
+  operation?(value: T, entity: string): Operation | undefined;
+  serialize?(value: T): string;
+  deserialize?(text: string): T;
+  visualize?(value: T, selection: readonly string[]): IRVisualization;
+}
+export interface AdapterDescriptor extends VersionRef {
+  readonly kind: string;
+  readonly schemaVersion: string;
+  readonly description: string;
+  readonly relationKinds: Readonly<Record<string, RelationCategory>>;
+  readonly capabilities: readonly Capability[];
+}
+export interface WalkOptions {
+  readonly order?: 'pre' | 'post' | 'breadth';
+
+ succeeded in 936ms:
+// IRWB-001 E3 (definePass / applyPass) and E6 (passes and analyses as strategy algorithms).
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { AnalysisManager, createArtifact, defineAnalysis, defineType } from '../../dist/framework/contracts/index.js';
+import { definePass, applyPass, PassError, passAlgorithm, analysisAlgorithm } from '../../dist/framework/passes/index.js';
+import { AlgorithmRegistry, plan, sequence, apply, algorithm, executeOrThrow } from '../../dist/framework/strategy/index.js';
+import { ExpressionIR, expressionAdapter, exampleExpression, evaluateExpression } from '../../dist/labs/expressions.js';
+import { expressionContract } from '../../dist/labs/contracts.js';
+
+const ALL_EXPR = ['expression.*'];
+const env = { x: 3, y: 4 };
+
+// Native style: merge squareCopy into square (a CSE), with explicit correspondence.
+const cseNative = definePass({
+  id: 'test.cse-native', version: '1', description: 'merge squareCopy into square', ir: ExpressionIR, adapter: expressionAdapter,
+  writes: { entities: ALL_EXPR, relations: ['operand', 'contains'] },
+  contract: expressionContract,
+  run({ before }) {
+    const nodes = structuredClone(before.value.nodes);
+    if (!nodes.squareCopy) return;
+    delete nodes.squareCopy;
+    for (const n of Object.values(nodes)) if (n.args) n.args = n.args.map(a => (a === 'squareCopy' ? 'square' : a));
+    return { native: { root: before.value.root, nodes }, correspondence: [{ from: ['square', 'squareCopy'], to: ['square'], relation: 'cse', because: ['squareCopy'] }], edits: 2 };
+  },
+});
+
+// Edit style: the same CSE through a v6 IREdit with reasons.
+const cseEdit = definePass({
+  id: 'test.cse-edit', version: '1', description: 'merge squareCopy into square (IREdit)', ir: ExpressionIR, adapter: expressionAdapter,
+  writes: { entities: ALL_EXPR, relations: ['operand', 'contains'] },
+  contract: expressionContract,
+  run({ edit, view }) {
+    if (!view.entities().some(r => r.entity === 'squareCopy')) return;
+    edit.redirectReferences('squareCopy', 'square', { because: ['squareCopy'], note: 'equal content' });
+    edit.remove('squareCopy', { because: ['square'] });
+    edit.correspond(['square', 'squareCopy'], ['square'], 'cse', { because: ['squareCopy'] });
+  },
+});
+
+// Wrong: turn the final add into a mul. Semantics change; the contract must reject it.
+const wrongPass = definePass({
+  id: 'test.wrong', version: '1', description: 'sum becomes a product', ir: ExpressionIR, adapter: expressionAdapter,
+  writes: { entities: ALL_EXPR, relations: ['operand', 'contains'] }, contract: expressionContract,
+  run({ before }) {
+    const nodes = structuredClone(before.value.nodes);
+    nodes.sum = { op: 'mul', args: nodes.sum.args };
+    return { native: { root: before.value.root, nodes } };
+  },
+});
+
+// Declares it writes only operand edges, but changes an entity: undeclaredWrite.
+const sneaky = definePass({
+  id: 'test.sneaky', version: '1', description: 'changes a constant it did not declare', ir: ExpressionIR, adapter: expressionAdapter,
+  writes: { entities: [], relations: ['operand'] },
+  run({ before }) {
+    const nodes = structuredClone(before.value.nodes);
+    nodes.double = { op: 'add', args: ['y', 'y'] }; // unchanged content
+    nodes.extra = { op: 'constant', value: 1 };
+    return { native: { root: before.value.root, nodes } };
+  },
+});
+
+// Analyses for preservation claims.
+const Count = defineType({ id: 'test.count', version: '1', description: 'a count', validate(v) { if (!Number.isInteger(v)) throw new Error('int'); } });
+const variableCount = defineAnalysis({
+  id: 'test.variables', version: '1', description: 'number of variable nodes', input: ExpressionIR, output: Count,
+  run: (_c, a) => Object.values(a.value.nodes).filter(n => n.op === 'variable').length,
+});
+const nodeCount = defineAnalysis({
+  id: 'test.nodes', version: '1', description: 'number of nodes', input: ExpressionIR, output: Count,
+  run: (_c, a) => Object.keys(a.value.nodes).length,
+});
+
+test('E3: a native-style pass is diffed, checked against its contract and published with correspondence', async () => {
+  const manager = new AnalysisManager();
+  const r0 = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const r = await applyPass(cseNative, r0, { manager });
+  assert.equal(r.changed, true);
+  assert.equal(r.edits, 2);
+  assert.ok(!('squareCopy' in r.artifact.value.nodes));
+  assert.equal(evaluateExpression(r.artifact.value, env), evaluateExpression(r0.value, env));
+  const cse = r.correspondence.entries.find(e => e.relation === 'cse');
+  assert.deepEqual(cse.from, ['square', 'squareCopy']);
+  assert.deepEqual(cse.because, ['squareCopy']);
+  assert.ok(r.changes.entities.some(c => c.entity === 'squareCopy' && c.kind === 'removed'));
+  // a pass with nothing to do returns the same artifact
+  const again = await applyPass(cseNative, r.artifact, { manager });
+  assert.equal(again.changed, false);
+  assert.equal(again.artifact, r.artifact);
+});
+
+test('E3: an edit-style pass produces the same revision as the native one', async () => {
+  const manager = new AnalysisManager();
+  const r0 = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const a = await applyPass(cseNative, r0, { manager }), b = await applyPass(cseEdit, r0, { manager });
+  assert.equal(a.artifact.revision, b.artifact.revision);
+  const op = b.changes.operations.find(o => o.kind === 'redirectReferences');
+  assert.equal(op.data.note, 'equal content');
+});
+
+test('E3: a semantically wrong pass is rejected by its contract; nothing is published', async () => {
+  const manager = new AnalysisManager();
+  const r0 = createArtifact(ExpressionIR, 'e', exampleExpression());
+  await assert.rejects(applyPass(wrongPass, r0, { manager }), e => e instanceof PassError && e.code === 'contractRejected');
+});
+
+test('E3: a change outside the declared writes is undeclaredWrite', async () => {
+  const manager = new AnalysisManager();
+  const r0 = createArtifact(ExpressionIR, 'e', exampleExpression());
+  await assert.rejects(applyPass(sneaky, r0, { manager }), e => {
+    assert.equal(e.code, 'undeclaredWrite');
+    assert.ok(e.evidence.undeclared.some(u => u.includes('extra')));
+    return true;
+  });
+});
+
+test('E3: preservation claims are checked: confirmed by recompute, or preserveViolated', async () => {
+  const manager = new AnalysisManager();
+  const r0 = createArtifact(ExpressionIR, 'e', exampleExpression());
+  await manager.analyse(variableCount, r0);
+  await manager.analyse(nodeCount, r0);
+  const keepsVariables = definePass({ ...cseNative, id: 'test.cse-keeps-vars', preserves: [variableCount] });
+  const r = await applyPass(keepsVariables, r0, { manager });
+  assert.deepEqual(r.preserved, [{ analysis: 'test.variables', how: 'confirmed-by-recompute', evidence: { equalValue: true } }]);
+  const lies = definePass({ ...cseNative, id: 'test.cse-lies', preserves: [nodeCount] });
+  await assert.rejects(applyPass(lies, r0, { manager }), e => e instanceof PassError && e.code === 'preserveViolated');
+});
+
+test('E6: passes run as Strategy IR transforms; results are reported to the host', async () => {
+  const manager = new AnalysisManager(), results = [];
+  const registry = new AlgorithmRegistry();
+  registry.register(passAlgorithm(cseNative, { manager, onResult: r => results.push(r) }));
+  registry.register(analysisAlgorithm(variableCount, { manager }));
+  const p = plan('test.plan', sequence('steps', apply('cse', algorithm('test.cse-native', '1')), apply('again', algorithm('test.cse-native', '1'))));
+  const r0 = createArtifact(ExpressionIR, 'e', exampleExpression());
+
+ succeeded in 962ms:
+99:  if (typeof spec.run !== 'function') throw new Error(`Pass ${spec.id} needs run`);
+204:  const edit = view.beginEdit();
+240:      // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
+241:      // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
+
+ succeeded in 951ms:
+export * from './types.js';
+export * from './common.js';
+export * from './adapters.js';
+export { IRStore } from './store.js';
+export * from './view.js';
+export * from './traversal.js';
+export * from './diff.js';
+export * from './correspondence.js';
+export * from './readers.js';
+export * from './patterns.js';
+export * from './rewrites.js';
+
+ succeeded in 8950ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'JS'
+import { defineIR } from './dist/framework/contracts/definitions.js';
+import { differential, differentialSpec, runDifferential } from './dist/framework/contracts/differential.js';
+import { createIRArtifact, defineAdapter, openIR } from './dist/framework/ir/index.js';
+import { applyPass, definePass } from './dist/framework/passes/index.js';
+import { AnalysisManager } from './dist/framework/contracts/index.js';
+const ir = defineIR({id:'probe.tensor', version:'1',description:'probe',validate(){}});
+const entity = value => ({id:'s',kind:'stmt',attributes:value});
+const adapter = defineAdapter({id:'probe',version:'1',kind:ir.id,schemaVersion:ir.version,description:'native',relationKinds:{},entities:v=>[entity(v)],resolve:(v,id)=>id==='s'?entity(v):undefined,relations:()=>[],describe:()=>({label:'s'}),validate:ir.validate});
+const artifact = createIRArtifact(adapter,'p',{block:2});
+console.log('projection',openIR(artifact,adapter).graph().entities.length);
+const pending = applyPass(definePass({id:'probe.copy',version:'1',description:'native',adapter,ir,writes:{entities:['stmt'],relations:[]},run:({before})=>({native:before.value})}),artifact,{manager:new AnalysisManager()});
+console.log('promise',pending instanceof Promise);
+try { await pending; } catch(e) { console.log(e.message); }
+const v=[1,0,2**-24,2**-24,0.25];
+const sum=xs=>xs.reduce((s,x)=>Math.fround(s+x),0);
+const flat=sum(v), blocked=sum([sum(v.slice(0,2)),sum(v.slice(2,4)),sum(v.slice(4))]), reference=v.reduce((s,x)=>s+x,0);
+const bits=x=>new Uint32Array(new Float32Array([x]).buffer)[0].toString(16);
+console.log({flat:bits(flat),blocked:bits(blocked),reference,tailDropped:blocked-0.25});
+for (const mode of ['exact','tolerance','wrong-tail']) {
+const check=differential({id:'probe.'+mode, version:'1',description:'probe',inputs:{origin:ir,candidate:ir},baseline:'origin',subject:'candidate',count:1,cases:()=>[v],run:side=>side==='baseline'?(mode==='exact'?flat:reference):(mode==='wrong-tail'?blocked-0.25:blocked),compare:(a,b)=>mode==='exact'?bits(a)===bits(b):Math.abs(a-b)<=1e-6+1e-5*Math.abs(a)});
+console.log(mode,runDifferential(differentialSpec(check),{origin:artifact,candidate:artifact}).status);
+}
+JS" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 300ms:
+projection 1
+promise true
+Adapter probe is not Rewritable
+{
+  flat: '3fa00000',
+  blocked: '3fa00001',
+  reference: 1.2500001192092896,
+  tailDropped: 1.0000001192092896
+}
+exact disagree
+tolerance agree
+wrong-tail disagree
+
+codex
+The probe found one framework gap. `applyPass` returns a Promise and opens a graph edit even when the pass produces a native result. I’ll propose a small synchronous path for native passes that shares the existing write checks. The differential checker already runs synchronously. On a five-element sum, it rejected a one-bit f32 difference under exact comparison, accepted it under tolerance, and rejected a dropped tail.
+exec
+/usr/bin/zsh -lc "docmgr task add --ticket IRWB-020-D --text 'Prepare the stage-1 design, framework probes and diary for review'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 609ms:
+Task 5prt added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+
+exec
+/usr/bin/zsh -lc 'docmgr task check --ticket IRWB-020-D --id 5prt' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 742ms:
+Task checked: 5prt (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-020-D
+
+exec
+/usr/bin/zsh -lc "docmgr task add --ticket IRWB-020-D --text 'Review the design and resolve stage-1 decisions in this session'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 482ms:
+Task hvax added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+
+exec
+/usr/bin/zsh -lc "docmgr task add --ticket IRWB-020-D --text 'After review, implement Tix, both evaluators, the framework change, checked passes and corpus, then run tensor, framework and affected Typed tests'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 434ms:
+Task ryxt added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d/ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+
+exec
+/usr/bin/zsh -lc 'git status --short && git check-ignore dist node_modules' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc "sed -n '140,164p' src/framework/contracts/README.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc 'docmgr changelog update --help | head -35' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'JS'
+import {immutable} from './dist/framework/core/data.js';
+const cell = new Float32Array([1,2,4,8]);
+const transposed = [cell[0],cell[2],cell[1],cell[3]];
+console.log({storedMinusZero:Object.is(immutable([-0])[0],-0),inlineCorrect:transposed,wrong:Array.from(cell)});
+JS" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-ah-irwb-020-d
+ succeeded in 350ms:
+
+Failed provisional analysis/fact records remain in history with invalidation explaining that they were discarded. They are not exposed as current facts and cannot authorize reuse. The execution still contains the rejected checks, exact revisions, effects and error, so failure is inspectable rather than disappearing.
+
+### Computational reuse versus guarantee checks
+
+A cached artifact is still checked under the current contract. The body has its own tracked dependency frame; pre/post checks do not masquerade as computational dependencies.
+
+`execution.bodyDependencies` and `bodyCacheable` describe what the previous kernel used. Before an external compiler reuses that kernel's artifact, it calls `manager.canReuseDependencies(previous.bodyDependencies)`. If reuse is allowed, `tx.importBodyDependencies(...)` validates and imports those dependencies, resource compare-and-swap stamps, permissions and evidence links. Then current guarantees run normally. Importing the complete old manifest on every warm run prevents a second cache hit from dropping body-only dependencies.
+
+The v5 compiler adapter uses its generic pass policy hooks for this sequence. New artifacts are checked before the artifact store and computational cache accept them; cache hits are gated too. A rejected current guarantee cannot expose an old cached artifact as an accepted result of the new run.
+
+## Revisioned effects
+
+`ResourcePort` exposes synchronous snapshot reads and an atomic synchronous commit of staged JSON writes against expected original revisions. `MemoryResources` is the included reference adapter. The port contract requires all-or-nothing commit: it validates all names/values and expected revisions before applying any write. Async external systems can be adapted by preparing a stable snapshot and using an appropriately transactional host commit boundary; they must not claim atomicity they cannot provide. Native async adapter methods and thenable commit results are rejected; rejected asynchronous adapter work is observed but cannot be undone by the manager. The host adapter remains responsible for its atomicity guarantee.
+
+Resource access is checked transitively. An analysis's declared read does not grant its caller permission; the enclosing transformation must declare the effect too. Cached analysis reuse checks the same permissions and dependency revisions. Missing-resource reads record a `missing` revision before throwing, so a caught fallback is invalidated if the resource later appears.
+
+Writes are staged and visible to subsequent reads in the same transaction. Preconditions can read the original resource state, while postconditions see staged revisions. Commit checks the physical original revisions for conflicts and validates post-write dependencies against the proposed final view before installing writes and facts. A rejected postcondition publishes neither the proposed resource state nor its facts.
+
+These rules enforce use of the explicit effect port. They do not sandbox arbitrary JavaScript: an application implementation that directly changes global variables, files or network state outside the port violates the host contract and cannot be made pure by declaration. `cache:'pure'` is not a security boundary. The same qualification applies to caller-supplied validators and transfer/certificate verifiers; their versions and behavior remain an application responsibility.
+
+## Scope
+
+This module implements semantic pass contracts and analysis management. It does not introduce a universal AST, generic rewrite matcher, transaction-based IR editor, e-graph, static effect inference, persistent cache backend or formal proof engine. Those are separate architectural layers.
+
+ succeeded in 409ms:
+{
+  storedMinusZero: false,
+  inlineCorrect: [ 1, 4, 2, 8 ],
+  wrong: [ 1, 2, 4, 8 ]
+}
+
+ succeeded in 439ms:
+
+  # update - Append an entry to changelog.md for a ticket                     
+                                                                              
+  Append a dated changelog entry with optional title, message, and related    
+  files.                                                                      
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Append an entry with a message                                            
+                                                                              
+  docmgr changelog update --ticket MEN-4242 --entry "Normalized chat API      
+  paths"                                                                      
+                                                                              
+  # Include related files with notes                                          
+                                                                              
+  docmgr changelog update --ticket MEN-4242  --file-note                      
+  "backend/chat/api/register.go:Source of path normalization"  --file-note    
+  "web/src/store/api/chatApi.ts=Frontend integration"                         
+                                                                              
+  # Use suggestions (git + ripgrep + existing docs); print suggestions only   
+                                                                              
+  docmgr changelog update --ticket MEN-4242 --suggest --query WebSocket --    
+  topics                                                                      
+  chat,backend,websocket                                                      
+                                                                              
+  # Apply suggestions and write them into the entry                           
+                                                                              
+  docmgr changelog update --ticket MEN-4242 --suggest --apply-suggestions --  
+  query                                                                       
+  WebSocket                                                                   
+                                                                              
+  For more help, run: docmgr help update                                      
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+
+ succeeded in 543ms:
+?? ttmp/2026/11/26/IRWB-020-D--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/
+dist
+node_modules
+

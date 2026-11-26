@@ -21,6 +21,12 @@ topics:
       description: Meaning checks, oracles, mutation testing and proofs of passes and rules
     - slug: research
       description: Research-grade directions, sketch tickets and design spaces
+    - slug: tensor
+      description: Tensor programs, the index-notation language and their compilation
+    - slug: gpu
+      description: GPU backends (CUDA on the GB10 machine)
+    - slug: agents
+      description: Coding agents as designers and implementers; model comparisons
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

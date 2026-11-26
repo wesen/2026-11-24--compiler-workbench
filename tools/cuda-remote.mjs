@@ -18,11 +18,13 @@ import { join, relative } from 'node:path';
 
 const argv = process.argv.slice(2);
 const sep = argv.indexOf('--');
-const opts = sep < 0 ? argv : argv.slice(0, sep), progArgs = sep < 0 ? [] : argv.slice(sep + 1);
+const opts = sep < 0 ? argv : argv.slice(0, sep),
+  progArgs = sep < 0 ? [] : argv.slice(sep + 1);
 const flag = name => opts.includes(name);
 const value = (name, d) => (opts.includes(name) ? opts[opts.indexOf(name) + 1] : d);
 const dir = opts.find((a, i) => !a.startsWith('--') && !['--host', '--arch'].includes(opts[i - 1]));
-if (!dir) throw new Error('usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [-- args]');
+if (!dir)
+  throw new Error('usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [-- args]');
 const host = value('--host', process.env.CUDA_REMOTE_HOST ?? 'manuel@bling.local');
 const arch = value('--arch', 'sm_121');
 const nvcc = process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc';
@@ -38,7 +40,10 @@ const walk = d => {
 walk(dir);
 if (!files.includes('main.cu')) throw new Error(`${dir}: no main.cu`);
 const h = createHash('sha256').update(arch);
-for (const f of files) h.update(f).update('\0').update(readFileSync(join(dir, f)));
+for (const f of files)
+  h.update(f)
+    .update('\0')
+    .update(readFileSync(join(dir, f)));
 const hash = h.digest('hex').slice(0, 16);
 const remote = `irwb-cuda/${hash}`;
 const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host];
@@ -47,7 +52,9 @@ const q = s => `'${String(s).replace(/'/g, `'\\''`)}'`;
 // copy the files (tar over ssh: one round trip, no rsync needed on either side)
 const tar = spawnSync('tar', ['-C', dir, '-cf', '-', ...files], { maxBuffer: 1 << 30 });
 if (tar.status !== 0) throw new Error(`tar: ${tar.stderr}`);
-const put = spawnSync('ssh', [...ssh, `mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], { input: tar.stdout });
+const put = spawnSync('ssh', [...ssh, `mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], {
+  input: tar.stdout,
+});
 if (put.status !== 0) throw new Error(`ssh copy: ${put.stderr}`);
 
 // compile if needed, then run; timings measured on the remote side
@@ -65,9 +72,15 @@ const run = spawnSync('ssh', [...ssh, 'bash -s'], { input: script, maxBuffer: 1 
 const meta = /@@meta (\d) (\d+) (\d+) (\d+)/.exec(run.stdout ?? '');
 const stdout = (run.stdout ?? '').replace(/@@meta.*\n?/, '').replace(/@@compile-failed\n?/, '');
 const result = {
-  host, hash, compiled: meta ? meta[1] === '1' : false,
-  compileMs: meta ? Number(meta[2]) : null, runMs: meta ? Number(meta[3]) : null,
-  exit: meta ? Number(meta[4]) : run.status, stdout, stderr: run.stderr ?? '', outputs: [],
+  host,
+  hash,
+  compiled: meta ? meta[1] === '1' : false,
+  compileMs: meta ? Number(meta[2]) : null,
+  runMs: meta ? Number(meta[3]) : null,
+  exit: meta ? Number(meta[4]) : run.status,
+  stdout,
+  stderr: run.stderr ?? '',
+  outputs: [],
 };
 
 // fetch out/
@@ -77,7 +90,12 @@ if (meta) {
     mkdirSync(join(dir, 'out'), { recursive: true });
     execFileSync('tar', ['-C', join(dir, 'out'), '-xf', '-'], { input: get.stdout });
     const outs = [];
-    const w2 = d => { for (const e of readdirSync(d)) { const p = join(d, e); statSync(p).isDirectory() ? w2(p) : outs.push(relative(join(dir, 'out'), p)); } };
+    const w2 = d => {
+      for (const e of readdirSync(d)) {
+        const p = join(d, e);
+        statSync(p).isDirectory() ? w2(p) : outs.push(relative(join(dir, 'out'), p));
+      }
+    };
     w2(join(dir, 'out'));
     result.outputs = outs.sort();
   }

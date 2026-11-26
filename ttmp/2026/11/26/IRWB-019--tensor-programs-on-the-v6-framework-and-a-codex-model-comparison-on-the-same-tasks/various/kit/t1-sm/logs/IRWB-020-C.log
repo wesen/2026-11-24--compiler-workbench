@@ -3436,3 +3436,920 @@ export async function runPipeline(
  succeeded in 787ms:
 created IRWB-020-C at ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes (9 dirs, 4 files)
 
+exec
+/usr/bin/zsh -lc 'npm ci --offline --no-audit --no-fund' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc "docmgr doc add --ticket IRWB-020-C --doc-type design-doc --title 'Tix stage 1 design' --status review --intent short-term && docmgr doc add --ticket IRWB-020-C --doc-type analysis --title 'Diary' --status active --intent short-term" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc "sed -n '160,205p' src/framework/ir/view.ts; sed -n '145,189p' src/framework/ir/transactions.ts; sed -n '1,130p' src/framework/ir/correspondence.ts; date +%F; rg -n 'TTMP|ttmp' .gitignore" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ exited 1 in 579ms:
+  visualize(selection: readonly EntityTarget[] = this.entities()): IRVisualization {
+    if (!this.adapter.visualize)
+      throw new IRError('ir.capability', `Adapter ${this.adapter.id} is not Visualizable`);
+    const value = immutable(
+      synchronous(
+        this.adapter.visualize(
+          this.artifact.value,
+          selection.map(r => this.ref(r).entity),
+        ),
+        'IR visualization',
+      ),
+    );
+    requireText(value.kind, 'Visualization kind');
+    return value;
+  }
+  beginEdit(options?: EditOptions<T>): IREdit<T> {
+    return new Edit(this, this.#store, options);
+  }
+  at(artifact: Artifact<T>): IRView<T> {
+    return new View(artifact, this.adapter, this.#store);
+  }
+}
+export function openIR<T>(
+  artifact: Artifact<T>,
+  adapter: IRAdapter<T>,
+  store: IRStore = new IRStore(),
+): IRView<T> {
+  const captured = defineAdapter(adapter),
+    snapshot = validateIRArtifact(captured, artifact),
+    graph = project(captured, snapshot.value);
+  store.retain(snapshot);
+  return new View(snapshot, captured, store, graph);
+}
+    this.#entities.set(
+      id,
+      validateEntity({
+        ...entity,
+        attributes: {
+          ...entity.attributes,
+          ...snapshot,
+        },
+      }),
+    );
+    this.#record(
+      'update',
+      {
+        entity: id,
+        attributes: snapshot,
+      },
+      why,
+    );
+  }
+  connect(from: EntityTarget, relation: string | RelationSpec, to: EntityTarget, reason?: Reason): string {
+    this.#open();
+    const why = normalizeReason(reason);
+    const source = this.#id(from),
+      target = this.#id(to),
+      spec = typeof relation === 'string' ? { kind: relation } : immutable(relation);
+    requireText(spec.kind, 'Relation kind');
+    if (!Object.hasOwn(this.#view.descriptor.relationKinds, spec.kind))
+      throw new IRError('ir.relation', `Undeclared relation ${spec.kind}`);
+    let id = spec.id;
+    if (id === undefined) {
+      const prefix = `${spec.kind}:${source}:${target}`;
+      id = prefix;
+      let n = 1;
+      while (this.#relations.has(id)) id = `${prefix}:${n++}`;
+    }
+    requireText(id, 'Relation ID');
+    if (this.#relations.has(id)) throw new IRError('ir.relation', `Relation ${id} already exists`);
+    const edge: IRRelation = immutable({
+      id,
+      kind: spec.kind,
+      category: this.#view.descriptor.relationKinds[spec.kind],
+      from: source,
+      to: target,
+      ...(spec.order === undefined ? {} : { order: spec.order }),
+      ...(spec.attributes === undefined ? {} : { attributes: spec.attributes }),
+import { canonical, immutable } from '../core/data.js';
+import type {
+  CorrespondenceEntry,
+  Reason,
+  EntityCorrespondence,
+  EntityTrace,
+  IRRef,
+  RevisionRef,
+  TraceStep,
+} from './types.js';
+import { compareText, IRError, IRBudgetError, limit, refKey, requireText, sameRevision } from './common.js';
+function revision(value: RevisionRef): void {
+  requireText(value.artifact, 'Correspondence artifact');
+  requireText(value.revision, 'Correspondence revision');
+}
+function unique(values: readonly string[], label: string): readonly string[] {
+  if (!Array.isArray(values)) throw new IRError('ir.correspondence', `${label} must be an array`);
+  values.forEach(v => requireText(v, label));
+  if (new Set(values).size !== values.length) throw new IRError('ir.correspondence', `Duplicate ${label}`);
+  return [...values].sort(compareText);
+}
+/** IRWB-001 E2: a reason is optional; when present, `because` is a non-empty list of distinct non-empty strings. */
+export function normalizeReason(reason: Reason | undefined): Reason {
+  if (!reason) return {};
+  const out: { because?: readonly string[]; note?: string } = {};
+  if (reason.because !== undefined) {
+    if (!Array.isArray(reason.because)) throw new IRError('ir.reason', 'because must be an array of strings');
+    const because = [
+      ...new Set(
+        (reason.because as unknown[]).map((b): string => (requireText(b, 'because entry'), b as string)),
+      ),
+    ];
+    if (because.length) out.because = because;
+  }
+  if (reason.note !== undefined) {
+    requireText(reason.note, 'Reason note');
+    out.note = reason.note;
+  }
+  return out;
+}
+function mergeReasons(reasons: readonly Reason[]): Reason {
+  const because = [...new Set(reasons.flatMap(r => r.because ?? []))];
+  const notes = [...new Set(reasons.flatMap(r => (r.note ? [r.note] : [])))];
+  return {
+    ...(because.length ? { because } : {}),
+    ...(notes.length ? { note: notes.join(' > ') } : {}),
+  };
+}
+export function validateCorrespondence(input: EntityCorrespondence): EntityCorrespondence {
+  const c = immutable(input);
+  if (c.formatVersion !== 1) throw new IRError('ir.correspondence', 'Unsupported correspondence format');
+  revision(c.from);
+  revision(c.to);
+  const sourceEntities = unique(c.sourceEntities, 'source entity'),
+    targetEntities = unique(c.targetEntities, 'target entity');
+  const source = new Set(sourceEntities),
+    target = new Set(targetEntities),
+    seenSource = new Set<string>(),
+    seenTarget = new Set<string>();
+  if (!Array.isArray(c.entries))
+    throw new IRError('ir.correspondence', 'Correspondence entries must be an array');
+  const entries = new Map<string, CorrespondenceEntry>();
+  for (const entry of c.entries) {
+    requireText(entry.relation, 'Correspondence relation');
+    const from = unique(entry.from, 'entry source'),
+      to = unique(entry.to, 'entry target');
+    if (!from.length && !to.length)
+      throw new IRError('ir.correspondence', 'Empty-to-empty correspondence has no meaning');
+    for (const id of from) {
+      if (!source.has(id)) throw new IRError('ir.correspondence', `Unknown source entity ${id}`);
+      seenSource.add(id);
+    }
+    for (const id of to) {
+      if (!target.has(id)) throw new IRError('ir.correspondence', `Unknown target entity ${id}`);
+      seenTarget.add(id);
+    }
+    const normalized: CorrespondenceEntry = {
+      from,
+      to,
+      relation: entry.relation,
+      ...normalizeReason(entry),
+    };
+    entries.set(canonical(normalized), normalized);
+  }
+  if (seenSource.size !== source.size || seenTarget.size !== target.size)
+    throw new IRError(
+      'ir.correspondence',
+      'Correspondence must account for every source and target entity, including additions/removals',
+    );
+  return immutable({
+    formatVersion: 1,
+    from: c.from,
+    to: c.to,
+    sourceEntities,
+    targetEntities,
+    // sorted by canonical text; each entry's text is its key, computed once above (IRWB-004)
+    entries: [...entries]
+      .sort(([a], [b]) => compareText(a, b))
+      .map(([, entry]) => entry),
+  });
+}
+export function makeCorrespondence(
+  from: RevisionRef,
+  to: RevisionRef,
+  sourceEntities: readonly string[],
+  targetEntities: readonly string[],
+  explicit: readonly CorrespondenceEntry[] = [],
+): EntityCorrespondence {
+  const source = unique(sourceEntities, 'source entity'),
+    target = unique(targetEntities, 'target entity');
+  const targetSet = new Set(target),
+    sourceSet = new Set(source);
+  const entries: CorrespondenceEntry[] = immutable(explicit).map(e => ({ ...e }));
+  const mappedSource = new Set(entries.flatMap(e => [...e.from])),
+    mappedTarget = new Set(entries.flatMap(e => [...e.to]));
+  for (const id of source) {
+    if (mappedSource.has(id)) continue;
+    if (targetSet.has(id)) {
+      entries.push({
+        from: [id],
+        to: [id],
+        relation: 'retained',
+      });
+      mappedTarget.add(id);
+    } else
+      entries.push({
+        from: [id],
+        to: [],
+        relation: 'removed',
+      });
+2026-11-26
+
+ succeeded in 1546ms:
+created ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+created ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md
+
+ exited 1 in 1698ms:
+npm error code 1
+npm error path /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/node_modules/esbuild
+npm error command failed
+npm error command sh -c node install.js
+npm error node:internal/child_process:1143
+npm error     result.error = new ErrnoException(result.error, 'spawnSync ' + options.file);
+npm error                    ^
+npm error
+npm error <ref *1> Error: spawnSync /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/node_modules/esbuild/bin/esbuild EPERM
+npm error     at Object.spawnSync (node:internal/child_process:1143:20)
+npm error     at spawnSync (node:child_process:911:24)
+npm error     at Object.execFileSync (node:child_process:954:15)
+npm error     at validateBinaryVersion (/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/node_modules/esbuild/install.js:102:28)
+npm error     at /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/node_modules/esbuild/install.js:287:5 {
+npm error   errno: -1,
+npm error   code: 'EPERM',
+npm error   syscall: 'spawnSync /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/node_modules/esbuild/bin/esbuild',
+npm error   path: '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/node_modules/esbuild/bin/esbuild',
+npm error   spawnargs: [ '--version' ],
+npm error   error: [Circular *1],
+npm error   status: 0,
+npm error   signal: null,
+npm error   output: [
+npm error     null,
+npm error     Buffer(8) [Uint8Array] [
+npm error       48, 46, 50, 53,
+npm error       46, 49, 50, 10
+npm error     ],
+npm error     Buffer(0) [Uint8Array] []
+npm error   ],
+npm error   pid: 409,
+npm error   stdout: Buffer(8) [Uint8Array] [
+npm error     48, 46, 50, 53,
+npm error     46, 49, 50, 10
+npm error   ],
+npm error   stderr: Buffer(0) [Uint8Array] []
+npm error }
+npm error
+npm error Node.js v24.18.0
+npm error Log files were not written due to an error writing to the directory: /home/manuel/.npm/_logs
+npm error You can rerun the command with `--loglevel=verbose` to see the logs in your terminal
+
+exec
+/usr/bin/zsh -lc 'npm ci --offline --ignore-scripts --no-audit --no-fund && node node_modules/typescript/bin/tsc -p tsconfig.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc 'rg --files ttmp/2026/11/26/IRWB-020-C* --hidden | sort; cat ttmp/2026/11/26/IRWB-020-C*/{index,tasks,changelog}.md; git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 1269ms:
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/README.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/index.md
+ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+---
+Title: Tix language, tensor IR, evaluators, contract and checked passes
+Ticket: IRWB-020-C
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+    - typescript
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T12:39:42.037280721-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Tix language, tensor IR, evaluators, contract and checked passes
+
+## Overview
+
+<!-- Provide a brief overview of the ticket, its goals, and current status -->
+
+## Key Links
+
+- **Related Files**: See frontmatter RelatedFiles field
+- **External Sources**: See frontmatter ExternalSources field
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- compiler
+- ir
+- verification
+- typescript
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts
+# Tasks
+
+## TODO
+# Changelog
+
+## 2026-11-26
+
+- Initial workspace created
+?? ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/
+
+ succeeded in 9610ms:
+
+added 6 packages in 1s
+
+codex
+The fixed synchronous `optimizeTix` API exposes a framework gap. Native IR editing and differential checks already have synchronous entry points, but `applyPass` always returns a promise. I’ll propose a narrow synchronous path that reuses the native pass checks.
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'NODE'
+import assert from 'node:assert/strict';
+import { canonical } from './dist/framework/core/index.js';
+import { defineIR, differential, differentialSpec, runDifferential } from './dist/framework/contracts/index.js';
+import { createIRArtifact, defineAdapter, openIR } from './dist/framework/ir/index.js';
+import { applyPass, definePass } from './dist/framework/passes/index.js';
+import { AnalysisManager } from './dist/framework/contracts/index.js';
+const data = [1, 0, 0, 0, ...Array(4).fill(2 ** -24), .25];
+const sum = xs => xs.reduce((a, b) => Math.fround(a + b), 0);
+const linear = sum(data), split = sum([sum(data.slice(0, 4)), sum(data.slice(4, 8)), sum(data.slice(8))]);
+const ref = data.reduce((a, b) => a + b, 0);
+const ir = defineIR({ id: 'probe', version: '1', description: 'probe', validate(v) { assert.equal(typeof v, 'number'); }});
+const entity = value => ({ id: 'e', kind: 'value', attributes: { value } });
+const adapter = defineAdapter({ id: 'probe', version: '1', kind: ir.id, schemaVersion: ir.version,
+  description: 'probe', validate: ir.validate, relationKinds: {}, entities: v => [entity(v)],
+  resolve: (v, id) => id === 'e' ? entity(v) : undefined, describe: () => ({}), relations: () => [] });
+const origin = createIRArtifact(adapter, 'probe', linear);
+const candidate = createIRArtifact(adapter, 'probe', split);
+assert.equal(openIR(origin, adapter).graph().entities.length, 1);
+const pass = definePass({ id: 'probe', version: '1', description: 'probe', ir, adapter,
+  writes: { entities: ['value'], relations: [] }, run: () => ({ native: split }) });
+const pending = applyPass(pass, origin, { manager: new AnalysisManager() });
+assert.ok(pending instanceof Promise);
+assert.equal((await pending).artifact.revision, candidate.revision);
+for (const [id, compare] of [
+  ['exact', (a,b) => Object.is(a,b)],
+  ['tolerance', (_,b) => Math.abs(b - ref) <= 2e-6 + 2e-5 * Math.abs(ref)],
+]) {
+  const inv = differential({ id, version: '1', description: id, inputs: { origin: ir, candidate: ir },
+    baseline: 'origin', subject: 'candidate', count: 1, cases: () => [null], run: (_, a) => a.value, compare });
+  assert.equal(runDifferential(differentialSpec(inv), { origin, candidate }).status, id === 'exact' ? 'disagree' : 'agree');
+}
+const bit = n => new Uint32Array(new Float32Array([n]).buffer)[0].toString(16);
+assert.equal(bit(-0), '80000000');
+assert.equal(canonical(-0), canonical(0));
+console.log({ linear, split, ref, linearBits: bit(linear), splitBits: bit(split), badTail: sum([sum(data.slice(0,4)),sum(data.slice(4,8))]) });
+NODE" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ exited 1 in 277ms:
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/dist/framework/ir/transactions.js:25
+            throw new IRError('ir.capability', `Adapter ${view.adapter.id} is not Rewritable`);
+                  ^
+
+IRError: Adapter probe is not Rewritable
+    at new Edit (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/dist/framework/ir/transactions.js:25:19)
+    at View.beginEdit (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/dist/framework/ir/view.js:133:16)
+    at applyPass (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/dist/framework/passes/define-pass.js:72:23)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/[eval1]:21:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:224:26
+    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:221:20)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  code: 'ir.capability'
+}
+
+Node.js v24.18.0
+
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'NODE'
+import assert from 'node:assert/strict';
+import { canonical } from './dist/framework/core/index.js';
+import { AnalysisManager, defineIR, differential, differentialSpec, runDifferential } from './dist/framework/contracts/index.js';
+import { createIRArtifact, defineAdapter, openIR } from './dist/framework/ir/index.js';
+import { applyPass, definePass } from './dist/framework/passes/index.js';
+const src = [1,0,0,0,...Array(4).fill(2**-24),0.25];
+const sum = xs => xs.reduce((a,b) => Math.fround(a+b),0);
+const partials = [sum(src.slice(0,4)),sum(src.slice(4,8)),sum(src.slice(8))];
+const linear = sum(src), split = sum(partials), ref = src.reduce((a,b) => a+b,0);
+const ir = defineIR({ id:'probe',version:'1',description:'probe',validate(v){assert.equal(typeof v,'number');} });
+const entity = value => ({id:'e',kind:'value',attributes:{value}});
+const adapter = defineAdapter({id:'probe',version:'1',kind:ir.id,schemaVersion:ir.version,
+  description:'probe',validate:ir.validate,relationKinds:{},entities:v=>[entity(v)],resolve:v=>entity(v),
+  describe:()=>({}),relations:()=>[],rebuild:v=>v});
+const origin = createIRArtifact(adapter,'probe',linear), candidate = createIRArtifact(adapter,'probe',split);
+assert.equal(openIR(origin,adapter).graph().entities.length,1);
+const pass = definePass({id:'probe',version:'1',description:'probe',ir,adapter,
+  writes:{entities:['value'],relations:[]}, run:()=>({native:split})});
+const pending = applyPass(pass,origin,{manager:new AnalysisManager()});
+assert.ok(pending instanceof Promise);
+assert.equal((await pending).artifact.revision,candidate.revision);
+for(const [id,compare,status] of [['exact',Object.is,'disagree'],
+  ['tolerance',(_,b)=>Math.abs(b-ref)<=2e-6+2e-5*Math.abs(ref),'agree']]){
+  const inv = differential({id,version:'1',description:id,inputs:{origin:ir,candidate:ir},
+    baseline:'origin',subject:'candidate',count:1,cases:()=>[null],run:(_,a)=>a.value,compare});
+  assert.equal(runDifferential(differentialSpec(inv),{origin,candidate}).status,status);
+}
+const bit = n => new Uint32Array(new Float32Array([n]).buffer)[0].toString(16);
+assert.equal(bit(-0),'80000000');
+assert.equal(canonical(-0),canonical(0));
+console.log({linear,split,ref,linearBits:bit(linear),splitBits:bit(split),badTail:sum(partials.slice(0,2))});
+NODE" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 333ms:
+{
+  linear: 1.25,
+  split: 1.250000238418579,
+  ref: 1.250000238418579,
+  linearBits: '3fa00000',
+  splitBits: '3fa00002',
+  badTail: 1.000000238418579
+}
+
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-020-C--*')
+python3 - \""'$ticket" <<'"'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+def body(path, content):
+    f = p / path
+    parts = f.read_text().split('---', 2)
+    f.write_text('---' + parts[1] + '---\\n\\n' + content)
+body('design-doc/01-tix-stage-1-design.md', \"\"\"# Tix stage 1 design
+
+Tix compiles checked index notation to a v6 artifact. The evaluator executes that artifact directly.
+The two passes operate on the same artifact and check the returned tensors before the public API
+advances to a new revision. The only proposed framework code change is a synchronous entry point
+for native-value passes with a mandatory check.
+
+## Source and call domain
+
+Use the fixed grammar with one or more nonrecursive functions, each with at least one tensor
+parameter and one returned parameter or statement tensor. Identifiers and shape names resolve by
+scope. Numeric expressions accept finite JS numeric literals. Affine expressions use integer
+constants and coefficients, grouping, addition, subtraction and multiplication by integer
+constants. At call time, shape names and extents are nonnegative safe integers. Support empty axes
+and row-major tensors whose sizes can be represented and allocated in the requested typed array.
+Inputs have the named parameter shapes, exactly the number of elements their shapes specify, and
+finite values in either API carrier. A finite f64 carrier value can round to infinity in f32.
+
+A lexer retains 1-based line and column. Use recursive descent with infix precedence levels and
+parse a reduction body with the full expression parser through the current delimiter. Parentheses
+can bound that body. Classify two-argument "'`max` using its argument forms and their shape-name
+bindings. Where both readings are possible, two in-scope scalar shape names select the call.
+Otherwise a bare identifier list followed by a body selects the reduction. Test the ambiguous
+prefix alongside ordinary calls, reductions and subtraction. A separate parser-generator
+dependency would add build plumbing for this small grammar.
+
+Normalize shape and index expressions to an integer constant plus ordered coefficients. Bind shape
+names from parameter dimensions by solving the affine signature equations. Compile the equation
+structure once and require full column rank so that a consistent call has a unique binding. This
+allows signatures such as `f32[H - 2]` without requiring a bare `H` elsewhere. Exact integer
+arithmetic in checking and rational elimination avoid silently accepting a rounded dimension or a
+fractional binding. Require output annotations and shape-valued scalar expressions to refer to
+names bound by the signature.
+
+Check statements in order. Keep one tensor namespace for parameters and new definitions, and a
+lexical namespace for index binders. Assign each LHS or reduction index a distinct ID. Only an axis
+whose normalized access is the index itself supplies a plain-use extent. All such uses must agree
+as normalized shape expressions. A statement annotation supplies the axes with no plain use and
+must agree with the axes that have one. A reduction index has no annotation, so it needs a plain
+use within its lexical scope. Reject duplicate binders in a list, undefined tensors or indices,
+wrong ranks, unresolved extents and a return type that differs from the returned tensor type.
+
+For each affine access, derive the minimum and maximum from its active index ranges using
+coefficient signs. Check them against the referenced dimension. An access inside an empty
+iteration space requires no bounds check. Reject statically inconsistent shapes and access bounds
+with the relevant source location. Record constraints that depend on concrete sizes and check them
+when the call binds its input shapes, before evaluation. For example, a convolution with output
+`H - 2` needs a nonnegative output extent and its input accesses must be valid for that extent.
+`compileTix(source)` has no concrete input shapes, so a conflict between two supplied tensor
+shapes can only be diagnosed by `runTix`. Use the same shape and bounds preflight to select
+contract cases. The simpler bare-name binder would exclude affine-only parameter signatures.
+Requiring symbolic extent agreement keeps this stage from introducing a general constraint solver
+for state such as conditional equality between independently bound dimensions.
+
+## Artifact and evaluators
+
+Use `defineIR` and `createIRArtifact` for `tensor.tix@1`, a finite JSON value containing
+functions in source order. Each function has typed parameter tensors, an ordered list of typed
+statement tensors and a return ID. A statement stores its output binders and an expression tree
+with resolved tensor references, affine offsets, primitive operations and reductions with ordered
+binders and resolved extents. The split form adds an internal blocked-sum node with the original
+binder, body and extent and a fixed block size. The IR validator checks shape and binding
+consistency and the internal blocked-sum form. Keep unary negation explicit so `-0` is represented
+without storing negative zero in the artifact. Keep tensor data and evaluated intermediates in
+runtime arrays. The framework'"'s JSON canonicalization collapses signed zero and excludes
+nonfinite values.
+
+Project functions, parameters and statements as entities with stable IDs and expose ordered
+containment and tensor use edges. Use one dependency edge per distinct producer/consumer pair.
+Include the statement expression tree in its entity attributes so body-only rewrites appear in
+the v6 diff. Domain rewrites return a native program and use the existing correspondence rules
+for retained and removed entities. A flat entity per scalar expression would allow generic local
+editing but would add graph rebuilding and binder management for two scoped tree rewrites. A
+statement tree preserves the extent and order needed to enumerate loops.
+
+"'`src/tensor/index.ts` exports the fixed synchronous API. `TixProgram` keeps the current v6
+artifact and its original artifact. The clean compile shares one artifact for both. Evaluators
+visit statements in order, enumerate output coordinates in row-major order, and evaluate the
+scalar expression at each coordinate. A reduction visits increasing lexicographic coordinates
+with its first binder outermost. Use a shared traversal with a rounding operation of
+`Math.fround` for f32 or the identity for f64. Round inputs upon conversion for f32, and round
+literals, shape values, unary and binary operations, intrinsics and each reduction accumulation.
+Use JS `Math` intrinsics and initial values of +0 for sum and −∞ for max. A blocked sum starts a
+new +0 accumulator per block and combines the block results with an outer +0 accumulator. For
+f32 output storage, choose one quiet NaN bit pattern for JS NaN, whose payload is unspecified,
+and preserve all other bits including signed zero. f64 uses JS double arithmetic throughout.
+A separate f64 interpreter would duplicate indexing and binding code; direct small tensor
+oracles in the tests will check the shared traversal.
+
+## Meaning contract and pass policy
+
+Use versioned `differential()` definitions, and run their specs with `runDifferential()` on
+the synchronous path. The baseline always determines the case suite. Cases are deterministic,
+small, valid calls for each entry function, driven by the origin signature and checked extents.
+Try shape-name bindings of 0, 1, 2, 3, 4, 5, 7 and 9, plus seeded mixed assignments from those
+sizes and targeted shapes with a full block and a tail. Fixed-size signatures use their declared
+dimensions. Keep cases with at most 4,096 elements in any parameter or statement tensor and
+at most 100,000 scalar evaluation visits per case. Include zero and signed zero, ones, a
+nonuniform signed or positive bounded pattern, and seeded values. Case values are finite
+and f32-representable so both precisions read the same numbers. Include the rounding witness
+below in the fixture domain. The checker requires cases for every entry being checked. A pass
+cannot acquire acceptance from an empty suite or a suite with zero comparable cases for an entry.
+The seed, entry name, shapes, input pattern and first differing element make failures
+reproducible. Report the decision as sampled evidence. These bounds limit contract work
+independently of which call shapes the evaluator supports.
+
+The observation is the returned tensor shape and all its row-major elements. Protect parameter
+names and shapes, return type and function set by a structural signature comparison as part of the
+gate.
+
+- **Exact** compares the raw f32 words using a `Uint32Array` view. This distinguishes +0 and −0
+  and handles nonfinite results. Comparing ordinary JS numbers would lose a distinction or
+  mishandle NaNs.
+- **Tolerance** compares candidate f32 against the original unoptimized f64 program on the same
+  inputs. For every element with reference value `r`, require
+  `abs(candidate - r) <= 2e-6 + 2e-5 * abs(r)`. The absolute term gives a fixed noise floor near
+  zero, including cancellation residuals. The relative term allows about 168 f32 spacings near
+  1 and leaves headroom for rounding through short corpus reductions and downstream operations.
+  The constants are a policy for these finite sampled cases, with no general numerical stability
+  guarantee. Select tolerance cases with entirely finite reference outputs independently of the
+  candidate. A nonfinite candidate on a selected case fails. A relative-only bound is unusable
+  at zero and a bound scaled by input magnitude could hide substantial errors after cancellation.
+
+Run requested passes in order. A changed `inline` must agree exactly with its immediate input.
+Check the result against the original as well, with exact comparison for functions still in
+exact mode and tolerance for functions where an earlier split was accepted. For `split-sum`,
+use the tolerance comparison against the original on functions whose bodies were changed by the
+pass, and keep the prior relation for the others. Store the set of functions that entered
+tolerance mode along with the original artifact so subsequent calls to `optimizeTix` keep the
+same baseline. Exact checks on the current input prevent a later inline from spending the split'"'s
+error budget. Comparing tolerant revisions pairwise would allow error to accumulate across runs.
+A rejected meaning check yields "'`accepted: false` and the next named pass sees the current
+accepted artifact. A pass with no edit records an accepted identity.
+
+## Rewrites and evidence
+
+- **inline** finds a reduction-free producer whose tensor has exactly one reference occurrence
+  across all statements and the return. Inline a statement use, substitute the consumer'"'s affine
+  indices for the producer's output IDs, normalize the resulting accesses, and remove the
+  producer. Preserve all scalar operation boundaries and the consumer's reduction ordering.
+  Restrict the rule to pointwise producers and use unique binders throughout to avoid capture.
+  Materializing the producer is the fallback for a returned tensor, multiply used tensor or
+  producer with a reduction. Tests include a use under a reduction and a substitution of a
+  nontrivial affine index. Mutate a valid rank-two substitution by swapping axes on a square,
+  asymmetric fixture. Both versions validate as IR. The meaning check must reject the mutation.
+- **split-sum** replaces a one-binder sum by the internal blocked sum, with block size four.
+  For block "'`b`, visit original indices `4*b` through
+  `min(4*b + 4, extent) - 1`, then add the subtotal to the outer accumulator. Preserve the
+  body and its original index ID. Leave max, multi-index sums and already blocked nodes alone.
+  Using source reductions to express the rewrite would require adding division and a truncated
+  tail to affine bounds; the internal node expresses those bounds directly. Mutate the block
+  loop to drop the final partial block in the test candidate, preserving validity as IR by
+  using a truncated effective reduction extent on a fixed-shape fixture.
+
+Use a length-nine input with a pass-through reduction and return its result in an output axis of
+length one. The input is `[1, 0, 0, 0, 2''^-24, 2''^-24, 2''^-24, 2''^-24, 0.25]`. Linear f32 returns
+`1.25` (word `0x3fa00000`). Blocked f32 and the original f64 reference return
+`1.250000238418579` (f32 word `0x3fa00002`). The exact gate must reject the real rewrite
+and the tolerance gate must accept it. The tail-dropping candidate returns
+`1.000000238418579`, so the tolerance gate must reject it. Node 24 reproduced these
+values in a probe using the built framework'"'s differential runner. These probes are policy and
+numeric checks. The implementation tests will exercise the artifacts and gates end to end.
+
+## Framework change
+
+| File | Proposed change and reason |
+| --- | --- |
+| "'`src/framework/passes/define-pass.ts` | Add `applyNativePassSync` for a native kernel that returns a candidate or an identity and a required synchronous semantic check. Share native artifact construction, projection diff, correspondence and declared-write checks with `applyPass`. Return the existing pass result shape and use `PassError('"'contractRejected', …)"'` for a negative verdict. |
+| `src/framework/passes/index.ts` | The existing wildcard export already exposes the new function. |
+
+The native synchronous entry point receives a pass ID, version, IR definition, adapter, write
+declarations, kernel and mandatory check. The kernel takes the input artifact and parameters.
+The framework checks the matching IR definition and adapter, validates the produced artifact,
+checks writes, and invokes the gate with immutable before and candidate artifacts. It requires
+a synchronous `CheckResult`. The caller gets the candidate only once the check accepts. Use
+private views for diffing and keep this entry point limited to native revisions and pure sampled
+checks without analysis dependencies, edit transactions, effects or a caller-supplied store.
+
+The built `applyPass` probe returned a promise even for a synchronous kernel. It also attempted
+to open a graph edit and failed with `ir.capability` when the adapter had no `rebuild`. The
+synchronous native path can use a projection-only adapter. Reusing `applyPass` would be the
+simplest option for an async host; it conflicts with the fixed API here. Calling domain kernels
+and their invariant directly in Tix would work synchronously but duplicate the framework'"'s
+native validation, write enforcement and revision bookkeeping. A synchronous "'`AnalysisManager`
+transaction would be broader than the missing feature. The existing `runDifferential` already
+takes a comparator and produces the evidence needed here. No contracts, core, IR, dataflow or
+strategy changes are proposed. Signed zero needs a domain encoding, not a framework identity change.
+
+## Corpus and implementation checks
+
+| File under `corpus/tensor/` | Workload and independent check |
+| --- | --- |
+| `matmul/main.tix` | Rectangular matrix product with a hand-computed result. |
+| `softmax/main.tix` | Max-shifted exponentials. Check normalization and the order of probabilities on large logits. |
+| `layernorm/main.tix` | Last-axis mean and variance, epsilon before sqrt, gamma scale and beta offset. Check a constant row and a nonconstant row. |
+| `attention/main.tix` | Single-head scaled QK scores, max-shifted row softmax and weighted V. Check unequal query/key lengths and a small worked case. |
+| `mlp/main.tix` | Two projections with bias and tanh-GELU between them. Check against the formula and use asymmetric weights. |
+| `conv2d/main.tix` | NCHW, stride 1, valid 3×3 convolution, with affine `H - 2` and `W - 2` outputs. Check a small nonuniform multi-channel tensor against direct loops. |
+
+Use `tests/tensor/*.test.mjs` importing the built API. Check diagnostics with source locations,
+binding and rectangular shapes, reduction reach and lexicographic order, empty reductions,
+affine bounds, row-major observations, f32 primitive rounding and f64 reference behavior.
+Assert the pass witnesses, both semantically wrong candidates, continued optimization after
+rejection, and origin preservation across calls. Add focused framework tests for the synchronous
+path'"'s native validation, write enforcement and mandatory gate, including a projection-only
+adapter. After implementation, build and run the tensor suite, "'`node --test tests/framework/`,
+and Typed pass, inline, and meaning tests that cover the shared path. Tests that spawn Node may
+need sandbox escalation.
+
+## Later
+
+- CUDA lowering and execution on the GPU machine are outside stage 1.
+- Fusion, contraction tiling and attention-specific rewrites belong to later stages.
+""")
+body('"'index.md', \"\"\"# Tix language, tensor IR, evaluators, contract and checked passes
+
+Stage 1 introduces Tix as a second IR Workbench domain and uses two checked passes to test the
+framework's fit. The design is ready for review before implementation.
+
+- [Stage 1 design](design-doc/01-tix-stage-1-design.md)
+- [Diary](analysis/01-diary.md)
+- [Tasks](tasks.md)
+- [Changelog](changelog.md)
+\"\"\")
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 568ms:
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-020-C--*')
+design=\""'$ticket/design-doc/01-tix-stage-1-design.md"
+python3 - "$design" <<'"'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])
+s=p.read_text()
+s=s.replace('The IR validator checks shape and binding\\nconsistency and the internal blocked-sum form.', 'The IR validator checks shape and binding\\nconsistency and the internal blocked-sum form. Passes carry checked extents explicitly so an\\nedit may remove the plain access from which the source checker inferred a binder.')
+s=s.replace('at most 100,000 scalar evaluation visits per case. Include', 'at most 100,000 scalar evaluation visits per origin case. Fail the check if a candidate\\nexhausts that budget on a selected case. Include')
+s=s.replace('  loop to drop the final partial block in the test candidate, preserving validity as IR by\\n  using a truncated effective reduction extent on a fixed-shape fixture.', '  result to drop the final partial block in the test candidate. In the fixed-shape fixture,\\n  make a valid eight-column prefix with "'`prefix[i,d]: f32[1,8] = x[i,d+i];` and block the'"\\n  sum over that prefix.')
+s=s.replace('Use a length-nine input with a pass-through reduction and return its result in an output axis of\\nlength one. The input is', 'Use "'`x: f32[1,9]` and `y[i] = sum(d) x[i,d];` to return a tensor of length one. The input row is'"')
+p.write_text(s)
+PY
+rg -n 'BigInt\\(' src | head -12
+docmgr task add --ticket IRWB-020-C --text 'Write the Stage 1 design and start the diary'
+docmgr task add --ticket IRWB-020-C --text 'Review the design in the working session'
+docmgr task add --ticket IRWB-020-C --text 'Implement the reviewed Tix and native-pass design, corpus and tests'
+docmgr task check --ticket IRWB-020-C --id 1" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 1186ms:
+src/labs/expressions.ts:297:      out = new Map(n.value === 0 ? [] : [['', BigInt(n.value)]]);
+src/labs/expressions.ts:320:      value <= BigInt(Number.MAX_SAFE_INTEGER) && value >= BigInt(Number.MIN_SAFE_INTEGER),
+Task 052m added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+Task lx1c added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+Task ooa3 added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+Task checked: 052m (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md)
+
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-020-C--*')
+diary=\""'$ticket/analysis/01-diary.md"
+python3 - "$diary" <<'"'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])
+p.write_text('---'+p.read_text().split('---',2)[1]+'---\\n\\n')
+PY
+cat >> \""'$diary" <<'"'EOF'
+# Diary
+
+## Step 1 — Trace the native pass and write the stage 1 design
+
+I traced Typed's origin check through the v6 pass, contract and IR layers. Tix can reuse
+the artifact and differential machinery. The fixed synchronous optimizer needs a native
+pass entry point that shares the existing validation and write checks.
+
+### Prompt context
+
+The user asked for the stage 1 design and a review checkpoint before implementation.
+The authored request follows verbatim.
+
+~~~~text
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node 24). Until now it has compiled one language: Typed, a small statically typed language, to 32-bit RISC-V. Every optimization pass is checked against the original program. The compiler is built on a reusable IR framework in "'`src/framework/` (`core`, `ir`, `contracts`, `passes`, `dataflow`, `strategy`), which has so far carried only that one domain. The Typed domain is in `src/typed/`.
+
+This task starts a second domain on the same framework: tensor programs, eventually compiled to CUDA for an NVIDIA GPU. The purpose is to test the framework, not to build a product. Where the framework does not fit tensor programs, that is a finding. Each change you make to `src/framework/`, with its reason, is the primary result of this stage.
+
+Your ticket is IRWB-020-C. This turn is **design only**: create the ticket, write the design document, start the diary, and commit. A reviewer will read the design and reply in this session. Implementation follows after the review, in the same session.
+
+## Stage 1 (yours): the language, its IR, evaluators, a contract, two passes
+- **Tix,** a small index-notation language, specified below. Parse it and check it (shapes, index extents, single assignment), with errors that give `line:col`.
+- **Its IR as a v6 artifact** in `src/tensor/`, using `src/framework` (artifacts, IR definitions, contracts, passes). Choose the IR'"'s form.
+- **Two evaluators:** f32 (the program's meaning, defined below) and f64 (a reference for tolerance checks).
+- **A meaning contract for tensor passes.** It needs a domain (which shapes and input values to check on), an observation (what is compared) and a relation. The relation is either exact (bit-identical f32 outputs) or a tolerance against the f64 reference. Choose the tolerance and justify it.
+- **Two checked passes** that exercise the contract:
+  - "'`inline`: substitute a pointwise statement with a single use into its consumer. Its f32 results must be bit-identical.
+  - `split-sum`: rewrite a `sum` reduction over one index into a two-level reduction (blocks, then within blocks). It reassociates the sum, so f32 results change, and it must be accepted only under the tolerance relation.
+
+  Show that the exact relation rejects `split-sum`, that the tolerance relation accepts it, and that the contract rejects a deliberately wrong variant of each pass.
+- **A corpus** under `corpus/tensor/<name>/main.tix`, with at least: matmul, softmax (max-shifted), layernorm (gamma, beta, eps), single-head attention, an MLP block with tanh-GELU, and conv2d (NCHW, stride 1, no padding).
+
+Later stages, which are not yours: lowering to CUDA and running it on the GPU machine, fusion, tiling of contractions, attention-specific rewrites. Do not design them. Do not let them bend this stage, beyond keeping the IR suitable for loop-level lowering.
+
+## Tix, fixed core (implementations are compared on it)
+```
+program := fn+
+fn      := '"'fn' NAME '(' param (',' param)* ')' ':' type '{' stmt* 'return' NAME ';' '}'
+param   := NAME ':' type
+type    := 'f32' '[' dim (',' dim)* ']'        dim := affine expression of shape names and integers (N, D, H - 2)
+stmt    := NAME '[' NAME (',' NAME)* ']' (':' type)? '=' expr ';'
+expr    := expr ('+' | '-' | '*' | '/') expr | '-' expr | NUMBER | SHAPENAME | ref | call | reduce | '(' expr ')'
+ref     := NAME '[' aff (',' aff)* ']'           aff := affine expression of index names and integers (y + dy)
+call    := ('exp' | 'log' | 'sqrt' | 'tanh') '(' expr ')' | ('max' | 'min') '(' expr ',' expr ')'
+reduce  := ('sum' | 'max') '(' NAME (',' NAME)* ')' expr
+"'```
+- Line comments are `//`. Precedence is the usual one: unary minus, then `*` and `/`, then `+` and `-`, all left-associative.
+- A reduction'"'s body extends as far right as possible, to the end of the enclosing parentheses or statement. So "'`sum(d) x[i, d] / D` sums `x[i, d] / D`, and `(sum(d) x[i, d]) / D` divides the sum.
+- Each statement defines a new tensor, assigned once. Its left-hand index names range over extents inferred from their plain (non-affine) uses on the right. An index used only in affine positions takes its extent from the statement'"'s declared type, which is then required.
+- Reduction indices are bound by their reduction and range over extents inferred the same way. A shape name such as "'`D` used in an expression denotes its value as a number. A function'"'s shape names are bound by its inputs' shapes when it is called.
+- **f32 meaning:**
+  - every literal, shape value, operation and function result is rounded to f32 ("'`Math.fround` of the JavaScript double result);
+  - `sum` starts at 0 and `max` at −∞, and both accumulate in increasing lexicographic order of their indices, the first listed outermost, rounding after each step.
+  - Inputs are finite. Behaviour outside the valid domain (inconsistent shapes, an extent that cannot be inferred) is a check error at compile time.
+
+Example:
+```
+fn softmax(x: f32[N, C]): f32[N, C] {
+  m[i] = max(j) x[i, j];
+  e[i, j] = exp(x[i, j] - m[i]);
+  s[i] = sum(j) e[i, j];
+  y[i, j] = e[i, j] / s[i];
+  return y;
+}
+```
+
+## Fixed API (in `dist/tensor/index.js` after the build)
+```ts
+compileTix(source: string): TixProgram      // throws Error whose message contains line:col on invalid source
+runTix(program: TixProgram, fn: string,
+       inputs: Record<string, { shape: number[]; data: Float32Array | Float64Array }>,
+       options?: { precision?: '"'f32' | 'f64' }): { shape: number[]; data: Float32Array | Float64Array }
+optimizeTix(program: TixProgram, passes: string[]): { program: TixProgram; steps: { pass: string; accepted: boolean }[] }
+"'```
+`runTix` takes row-major data. `optimizeTix` runs the named passes in order, each checked by your contract, and returns a program `runTix` can run. Anything beyond this API is yours to design.
+
+## Repository facts
+- Build with `npm run build` (`tsc`, into `dist/`). Tests are `node --test tests/<dir>/<name>.test.mjs` and import from `../../dist/...`. See `tests/framework/core.test.mjs` for the pattern. Prettier: 110 columns, single quotes.
+- Read `src/framework/contracts/README.md`, `src/framework/ir/README.md`, `src/framework/strategy/README.md`, and enough of `src/typed/` (for example `src/typed/passes.ts`, `src/typed/evaluate.ts`, `src/typed/project.ts`) to see how one domain uses the framework.
+- Nothing checks tensor programs yet. The Typed corpus-wide tests cover only `corpus/projects`. Your tests are the only checks on your work, so put them where the risk is.
+- In the sandbox, a test that spawns `node` can fail with EPERM. Request escalation for that command.
+- Scope: you may add `src/tensor/`, `tests/tensor/` and `corpus/tensor/`, and change `src/framework/` where the tensor domain needs it. Record every framework change in your design. After the implementation, run `node --test tests/framework/` and the tests in `tests/typed/` that cover what you changed. Do not modify `src/typed/`, `tools/`, `corpus/projects/` or existing tests, except framework tests that your framework change makes necessary.
+- Use your docmgr and diary skills for the ticket and diary. Commit on your current branch with messages starting `IRWB-020-C:`. Do not push.
+- Final message: the ticket and design paths, the framework changes you propose, the commit hash.
+Your ticket ID is IRWB-020-C. Name the ticket after the stage-1 work (the Tix language, its IR, evaluators, contract and passes).
+~~~~
+
+### What I did and why
+
+- Read the framework'"'s contracts, IR and strategy docs and followed Typed's
+  "'`typedPass`, `optimizationContract`, `meaningKept` and `runPipeline` code.
+- Created the docmgr ticket, design and diary. The design proposes a synchronous native
+  pass entry point with a mandatory gate and a shared v6 candidate-preparation path.
+- Used the existing differential runner to check the planned rounding witness. This isolates
+  the two numerical relations before adding parsing, indexing or evaluation.
+
+### What worked
+
+- `npm ci --offline --ignore-scripts --no-audit --no-fund` and
+  `node node_modules/typescript/bin/tsc -p tsconfig.json` succeeded.
+- On Node 24.18.0, creating and opening artifacts, applying a native pass through the
+  existing async API with a rebuild-capable adapter, and running a differential invariant'"'s
+  spec synchronously all worked. The native pass returned a promise. The signed zero probe
+  confirmed raw f32 word "'`0x80000000` and identical core canonical keys for either zero.
+- The linear and blocked results were `1.25` and `1.250000238418579`. The f64 reference
+  matched the blocked value. The existing differential runner reported disagreement under
+  exact comparison and agreement under tolerance. Dropping the tail gave `1.000000238418579`.
+
+### What did not work
+
+- `npm ci --offline --no-audit --no-fund` failed in the esbuild postinstall with
+  `spawnSync …/node_modules/esbuild/bin/esbuild EPERM`. TypeScript built after installation
+  with lifecycle scripts disabled.
+- The first native pass probe used an adapter with no graph rebuild and
+  `applyPass` threw `IRError: Adapter probe is not Rewritable` (`ir.capability`).
+  The retest used a rebuild-capable probe adapter. Tix'"'s proposed native path requires only
+  projection.
+
+### What warrants a second pair of eyes
+
+Review the affine signature and extent rules, the requirement for comparable cases per
+entry, and the choice to carry each function's original relation across later calls to
+"'`optimizeTix`. The proposed framework surface intentionally scopes out synchronous
+analysis transactions. Check whether that split is the right one for later domain users.
+
+### Review checkpoint
+
+Start with the [stage 1 design](../design-doc/01-tix-stage-1-design.md), especially
+“Meaning contract and pass policy” and “Framework change.” Implementation, the corpus and
+the tensor and framework test suites follow the design review. The ticket'"'s design commit
+contains this checkpoint and can be found by its "'`IRWB-020-C:` subject.
+EOF
+docmgr doc relate --doc "$ticket/design-doc/01-tix-stage-1-design.md" --file-note '"'src/framework/passes/define-pass.ts:Native pass path and synchronous extension point' --file-note 'src/framework/contracts/differential.ts:Synchronous differential runner and sampled evidence' --file-note 'src/framework/ir/adapters.ts:Artifact validation and projection adapter' --file-note 'src/typed/project.ts:Existing optimization baseline and rejection loop'
+docmgr changelog update --ticket IRWB-020-C --entry 'Drafted the Stage 1 design and started the diary with framework and rounding probes. The design is ready for review.'
+docmgr doctor --ticket IRWB-020-C --stale-after 30
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 1035ms:
+related 4 file(s) to ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md (added 4, updated 0, removed 0)
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+## Doctor Report (1 findings)
+
+### IRWB-020-C
+
+- ✅ All checks passed
+
+
+codex
+The Node 24 probe confirmed the rounding witness. The linear and blocked sums produce different f32 words, and the blocked sum matches the original f64 result. The design and diary are ready, and docmgr validation passed. I’ll verify the staged files and commit.
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-020-C--*')
+git add -- \""'$ticket" && git diff --cached --check && git diff --cached --stat && git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ exited 128 in 234ms:
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/t1-sm-irwb-020-c/index.lock': Read-only file system
+
+exec
+/usr/bin/zsh -lc 'git add -- ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 298ms:
+exec
+/usr/bin/zsh -lc 'git diff --cached --check && git diff --cached --stat && git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 242ms:
+ .../README.md                                      |  21 ++
+ .../analysis/01-diary.md                           | 151 +++++++++++++
+ .../changelog.md                                   |   9 +
+ .../design-doc/01-tix-stage-1-design.md            | 243 +++++++++++++++++++++
+ .../index.md                                       |  29 +++
+ .../tasks.md                                       |   6 +
+ 6 files changed, 459 insertions(+)
+## t1-sm/irwb-020-c
+A  ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/README.md
+A  ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md
+A  ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+A  ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+A  ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/index.md
+A  ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-020-C: Design Tix and checked tensor passes'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 206ms:
+[t1-sm/irwb-020-c d887783] IRWB-020-C: Design Tix and checked tensor passes
+ 6 files changed, 459 insertions(+)
+ create mode 100644 ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/README.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/index.md
+ create mode 100644 ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git rev-parse HEAD' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 237ms:
+## t1-sm/irwb-020-c
+d887783341f7968bbe19f19bb188e4b910c099d3
+
