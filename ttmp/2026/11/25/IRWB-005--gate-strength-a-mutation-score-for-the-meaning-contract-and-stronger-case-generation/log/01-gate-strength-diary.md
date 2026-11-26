@@ -898,3 +898,50 @@ Reading the Candela summary of Step 18, one number did not fit: under `check100`
 
 ### Technical details
 - The 11 rule-1 mutants: 3 `swap` of `((1 + sqrt(m)) / (1 − sqrt(m)))` in s10_mat_1, s3_mat_1, s5_mat_4, and 8 more of s5_mat_4 (`fadd`, `fmin` ×2, `swap` ×2, `sign`, `fmul`, `fsub`).
+
+## Step 20: The deep search over the presumed equivalents, completed
+
+The rewritten deep search (Step 17 explains why the first one left nothing) ran to the end in 32 min 50 s: 169 mutants (the 145 presumed equivalent and the 24 equivalent only under the specification), up to 100,000 specified cases per affected function. It found witnesses for exactly 3 mutants, and they are exactly the 3 that the inspection by group had argued were not equivalent: `qmul`'s two clamp comparisons moved away from their clamp values, and `ramp`'s `v < 65535` → `v < 65534`. Every mutant the inspection had argued equivalent stayed without a witness. The corpus's final numbers are therefore: 1,144 mutants, 192 equivalent (26 proved, 24 under the specification only, 142 presumed and argued by inspection), 909 killed and 43 wrong accepted by the default gate, a kill rate of 83.1 %..95.5 %; version 2 accepts 5 (99.5 %).
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Equivalent mutants are identified, and the classification method is reported"; the presumed class had to be resolved as far as possible.
+**Inferred user intent:** A kill rate whose upper end is not inflated by unresolved survivors.
+**Commit (code):** 1d09e9c (script 10, second version); results committed with this step.
+
+### What I did
+- `node --max-old-space-size=8192 scripts/10-deep-presumed.mjs various/04-corpus-final.jsonl various/10-corpus-final-deep.jsonl 100000` → `various/10-corpus-final-deep.{txt,jsonl}`; exit 0; 1,995 s user.
+- `scripts/17-report-tables.mjs various/10-corpus-final-deep.jsonl` → `various/17-report-tables-deep.md` (per operator, per project, classes and methods, every wrong mutant each gate accepts, with its witness).
+- `python3 -I scripts/14-figures.py various/10-corpus-final-deep.jsonl <scratchpad> various/13-candela.json`: the three corpus figures from the final records and a new Candela figure (`irwb005-candela-by-function.png`); copied to the vault's `_assets/`.
+
+### Why
+- The lower end of the kill rate counts every presumed equivalent as a miss; each one resolved either way narrows the interval.
+
+### What worked
+- Witnesses (chunk = seed 1001 + k, n = index in the chunk):
+  - `fixed-point.qmul` `t5 < 32767` → `t5 < 32766`: chunk 3, n 5,491, args (−3442, −2437): expected 32766, got 32767.
+  - `fixed-point.qmul` `−32768 < t4` → `−32767 < t4`: chunk 4, n 3,068, args (−2095, 4004): expected −32767, got −32768.
+  - `ramp.ramp` `v < 65535` → `v < 65534`: chunk 3, n 4,603, args (buffer, 4681): same return value 74,896, different output buffer (the cell holding 65,534 is clamped to 65,535 by the mutant).
+- Time per subject: heat-lab 516 s, my-analysis 636 s (one mutant; its loop runs long), sort 352 s, the rest under 75 s each.
+- Gates on the final records (wrong accepted, of 952 non-equivalent): default 43, default80 40, check100 39, strong-cases 39, default+div 10, strong 5, strong-cov 5.
+
+### What didn't work
+- Nothing in this step; the first attempt is Step 17.
+
+### What I learned
+- The inspection's arguments held without exception: 166 mutants argued equivalent, none refuted by 100,000 cases per function; 3 argued wrong, all three confirmed. A witness for a one-value intermediate needs tens of thousands of random cases (here 35,491 to 43,068).
+
+### What was tricky to build
+- Nothing new; the second version's per-subject chunks made the run feasible (r0 runs once per chunk instead of once per mutant).
+
+### What warrants a second pair of eyes
+- The 142 remaining presumed equivalents rest on the group arguments of the report's section 9, not on a proof.
+
+### What should be done in the future
+- A symbolic or exhaustive-by-construction argument for the two largest groups (`cmp-weaken` on non-negative counters, `hoist-trap` before the same check) would turn them into proved equivalents.
+
+### Code review instructions
+- `various/10-corpus-final-deep.txt` (the three reclassifications), `various/17-report-tables-deep.md`.
+
+### Technical details
+- Final per-operator (default, upper; strong): const 91.1 % → 99.1 % (n 449), cmp-weaken 96.7 % → 100 %, check-range 75.0 % → 75.0 % (n 4), all others 100 %.

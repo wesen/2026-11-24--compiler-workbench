@@ -39,3 +39,12 @@ Held-out base r0 (96.2 % / 99.9 %); C5 range facts hold on 149M checks; NaN-payl
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a6abc74d4c978a51f/ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/log/01-gate-strength-diary.md — steps 12-17
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a6abc74d4c978a51f/ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/various/18-freeze-diff-merged.txt — gates on the merged branch
+
+## 2026-11-26
+
+Candela subset complete under the 14G cap (18 functions, 3,931 mutants); classification audit reclassified 29 Candela mutants (default 96.8% upper, 114 wrong accepted; check100 67; v2 100); classifier fixed for unspecified functions
+
+### Related Files
+
+- tools/mutation-classify.mjs — unconstrained witness of an unspecified function is a specified witness
+- ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/scripts/22-candela-summary.mjs — Candela summary with the two reclassification rules

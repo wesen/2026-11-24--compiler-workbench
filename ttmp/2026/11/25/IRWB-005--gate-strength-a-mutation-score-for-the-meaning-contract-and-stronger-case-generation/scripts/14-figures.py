@@ -127,3 +127,25 @@ fig.tight_layout()
 fig.savefig(f"{out}/irwb005-kill-rate-by-operator.png", facecolor=SURFACE)
 print("wrong accepted:", dict(zip([g for g, _ in GATES], counts)))
 print("classes by operator:", {o: dict(tab[o]) for o in ops})
+
+# 4. Candela: wrong mutants accepted per function under three gates (optional third argument: various/13-candela.json,
+#    written by scripts/22-candela-summary.mjs after its reclassification)
+if len(sys.argv) > 3:
+    cj = json.load(open(sys.argv[3]))
+    fns = [k for k, v in cj["byFunction"]["default"].items() if v["survived-wrong"] > 0]
+    fns.sort(key=lambda k: -cj["byFunction"]["default"][k]["survived-wrong"])
+    CG = [("default", "version 1, 40 cases", BLUE), ("check100", "version 1, 100 cases", AQUA), ("strong", "version 2", ORANGE)]
+    fig, ax = plt.subplots(figsize=(7.2, 3.6), dpi=160)
+    fig.patch.set_facecolor(SURFACE)
+    style(ax)
+    y = list(range(len(fns)))[::-1]
+    for i, (g, label, colour) in enumerate(CG):
+        vals = [cj["byFunction"][g][k]["survived-wrong"] for k in fns]
+        ax.barh([v + 0.26 - 0.26 * i for v in y], vals, height=0.24, color=colour, label=label)
+    ax.set_yticks(y, [k.replace("candela.", "") for k in fns], color=INK, fontsize=9)
+    ax.set_xlabel("wrong mutants accepted (Candela subset, 3,931 mutants)", color=INK2, fontsize=9)
+    ax.set_title("Candela: where wrong mutants get through", color=INK, fontsize=10, loc="left", pad=22)
+    ax.legend(frameon=False, fontsize=8, loc="lower left", bbox_to_anchor=(0, 1.0), ncol=3, labelcolor=INK)
+    fig.tight_layout()
+    fig.savefig(f"{out}/irwb005-candela-by-function.png", facecolor=SURFACE)
+    print("candela wrong accepted:", {g: cj["total"][g]["survived-wrong"] for g, _, _ in CG})
