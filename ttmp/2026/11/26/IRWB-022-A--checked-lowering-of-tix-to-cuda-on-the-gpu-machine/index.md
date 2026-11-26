@@ -19,4 +19,4 @@ WhenToUse: ""
 
 # Checked lowering of Tix to CUDA on the GPU machine
 
-The [design](design-doc/01-checked-cuda-lowering-and-numerical-evidence.md) proposes direct CUDA emission and a batched GPU check against the original f64 meaning. The [diary](reference/01-design-diary.md) records the GB10 and framework probes. Design submitted for review.
+The [design](design-doc/01-checked-cuda-lowering-and-numerical-evidence.md) proposes direct CUDA emission and a batched GPU check against the original f64 meaning. The [diary](reference/01-design-diary.md) records the GB10 and framework probes. The [results](reference/02-cuda-lowering-results-and-corpus-measurements.md) record the implementation, live checks and six timing pairs.

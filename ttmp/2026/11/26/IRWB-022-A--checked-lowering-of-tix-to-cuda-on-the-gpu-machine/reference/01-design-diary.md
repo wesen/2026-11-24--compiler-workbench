@@ -182,3 +182,9 @@ Now do the following in this session:
 The first full tensor test run passed 28 of 29. The NaN propagation test reported “Values have same structure but are not reference-equal” for two Float32Arrays displaying [-0, -0, NaN]. A typed-array byte comparison had imposed a NaN payload requirement. Comparing the decoded scalar values retains both zero-sign assertions and checks NaN propagation. The subsequent node --test tests/tensor/*.test.mjs run passed all 29 tests. A targeted rerun of the strengthened split-tail test also passed with both transformations changing the program. npm run build succeeded on Node 24.18.0.
 
 The tests use the binary decoder for malformed frames and the actual engine for candidate rejection and replay. This is the verification change from the revised design's proposed fake batch runner. The compile-lock experiment is reproducible via scripts/05-check-isolation.mjs. The public exports live at dist/tensor/index.js after the build.
+
+## Step 5 — Compare the two engines at all six requested sizes
+
+Against backend revision da01eb9, scripts/04-measure.mjs completed on both machines with seed 20. All six returned shape pairs matched their expected extents and both endpoint values agreed within the comparison allowance in each pair. The full table, timing boundaries and raw records are linked in the results document. The largest local run was MLP at 813.613 seconds. Each GPU entry is a three-interval median after preloading and warm-up.
+
+A separate GB10 pass through all six corpus programs after inline and split-sum accepted every lowering, including five changed revisions. The final export probe listed the original three functions and all three requested CUDA functions. Tests and live acceptance evidence are recorded at ba8474d. The remaining assumption for replay is the reviewed process-lifetime engine identity.
