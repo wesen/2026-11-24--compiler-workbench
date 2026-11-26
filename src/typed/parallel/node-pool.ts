@@ -74,7 +74,10 @@ export function startMeaningPool(options: MeaningPoolOptions = {}): MeaningPool 
   const threads = Math.max(1, Math.min(options.threads ?? 4, Math.max(1, availableParallelism())));
   const minCases = options.minCases ?? 64;
   const stats: MeaningPoolStats = { jobs: 0, local: 0, cases: 0, partsSent: 0, casesSent: 0, busyMs: [] };
-  const waiting = new Map<number, { resolve: (v: readonly Decided[]) => void; reject: (e: Error) => void; slot: Slot }>();
+  const waiting = new Map<
+    number,
+    { resolve: (v: readonly Decided[]) => void; reject: (e: Error) => void; slot: Slot }
+  >();
   let nextId = 1,
     closed = false;
   const caseSets = new WeakMap<readonly Case[], number>();

@@ -1,0 +1,19 @@
+ 00:56:18 up 6 days, 14:08,  1 user,  load average: 9.44, 8.79, 9.71
+R-01 specialize r1 14071ms
+R-01 constprop r2 13188ms
+R-01 fold r3 10520ms
+R-01 cfg r4 9536ms
+R-01 dce r5 7527ms
+R-01 cfg - 411ms
+R-01 dfe r6 9090ms
+{"scene":"R-01","fns":"332->137","stmts":"12358->5400","differentBits":0,"ms":118870}
+ 00:58:20 up 6 days, 14:10,  1 user,  load average: 11.31, 9.51, 9.85
+R-01 specialize r1 71254ms
+R-01 constprop r2 51811ms
+R-01 fold r3 35454ms
+R-01 cfg r4 34267ms
+R-01 dce r5 36199ms
+R-01 cfg - 24377ms
+R-01 dfe r6 25879ms
+{"scene":"R-01","fns":"332->137","stmts":"12358->5400","differentBits":0,"ms":312243}
+ 01:03:35 up 6 days, 14:15,  1 user,  load average: 8.74, 10.01, 10.11

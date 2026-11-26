@@ -12,3 +12,13 @@ Baselines at 420d8e1: corpus revision listing; Candela r0 cost profile (no-chang
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/ttmp/2026/11/25/IRWB-004--cheap-experiments-cached-origin-outcomes-functions-as-the-unit-of-change-workers-and-a-worker-for-the-workbench/design-doc/01-intern-guide-cheap-experiments-in-the-ir-workbench.md — the intern guide
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/ttmp/2026/11/25/IRWB-004--cheap-experiments-cached-origin-outcomes-functions-as-the-unit-of-change-workers-and-a-worker-for-the-workbench/various/04-candela-o2-baseline.json — the reference for identical revisions and evidence
+
+## 2026-11-26
+
+Increments 1-4: A1-A7 (9d3ea30), F1 records keep identity (8e81345), D1 + F4 contract pool + evaluator memory reuse (bc5690c), F4 browser engine worker + SHA-256 window fix (bc821fa). Candela O2 12:06 -> 3:27 with identical revisions and evidence; contract 46.7 s -> 9.1 s local, 4.6 s on 4 warm workers; worker renders hold the page at most 116 ms.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/site-src/engine-worker.js — the Candela view's engine worker
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/src/framework/contracts/differential.ts — D1 reuse, decide hook, decideCase
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-ace75c1737b051a8c/src/typed/parts.ts — function parts, closure keys, programs as parts

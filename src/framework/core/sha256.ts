@@ -132,7 +132,10 @@ export class Sha256 {
       // encodeInto on the rest made a browser flatten an 18 MB string once per 64 KiB, about 7 MB/s (IRWB-004)
       let end = Math.min(text.length, pos + Math.floor((this.#buf.length - this.#have) / 3));
       if (end < text.length && isHigh(text.charCodeAt(end - 1))) end--; // keep a surrogate pair together
-      const r = Sha256.#encoder.encodeInto(pos === 0 && end === text.length ? text : text.slice(pos, end), this.#buf.subarray(this.#have));
+      const r = Sha256.#encoder.encodeInto(
+        pos === 0 && end === text.length ? text : text.slice(pos, end),
+        this.#buf.subarray(this.#have),
+      );
       pos += r.read;
       this.#have += r.written;
       this.#bytes += r.written;

@@ -93,7 +93,18 @@ export function partText(p: FunctionPart): string {
   let t = TEXTS.get(p);
   if (t === undefined) {
     const list = (xs: readonly object[]) => '[' + xs.map(x => canonical(x)).join(',') + ']';
-    t = '[' + canonical(p.fn) + ',' + list(p.blocks) + ',' + list(p.stmts) + ',' + list(p.values) + ',' + list(p.ops) + ']';
+    t =
+      '[' +
+      canonical(p.fn) +
+      ',' +
+      list(p.blocks) +
+      ',' +
+      list(p.stmts) +
+      ',' +
+      list(p.values) +
+      ',' +
+      list(p.ops) +
+      ']';
     TEXTS.set(p, t);
   }
   return t;

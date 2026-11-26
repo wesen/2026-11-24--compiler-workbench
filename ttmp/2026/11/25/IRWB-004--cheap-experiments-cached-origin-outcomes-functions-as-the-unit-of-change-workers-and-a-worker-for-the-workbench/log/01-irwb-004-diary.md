@@ -10,12 +10,22 @@ Topics:
 DocType: log
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://site-src/engine-worker.js
+      Note: Candela engine worker
+    - Path: repo://src/typed/evaluate.ts
+      Note: meaningKept keys and decide hook; evaluator buffer reuse
+    - Path: repo://src/typed/model.ts
+      Note: Store.base, toNative record reuse, Store.view
+    - Path: repo://src/typed/parallel/node-pool.ts
+      Note: worker pool for the meaning check
+    - Path: repo://src/typed/parts.ts
+      Note: function parts, closure keys, PartsRef
 ExternalSources: []
-Summary: "Chronological, step-numbered investigation diary of IRWB-004: measuring where a pass on Candela spends its time, then caching the origin's outcomes (D1), making functions the unit of change (F1), and moving work onto worker threads in Node and a Web Worker in the browser (F4)."
+Summary: 'Chronological, step-numbered investigation diary of IRWB-004: measuring where a pass on Candela spends its time, then caching the origin''s outcomes (D1), making functions the unit of change (F1), and moving work onto worker threads in Node and a Web Worker in the browser (F4).'
 LastUpdated: 2026-11-25T23:30:00-05:00
-WhatFor: "Resume point and evidence trail for IRWB-004."
-WhenToUse: "Read the latest step when resuming; expand earlier steps only as needed."
+WhatFor: Resume point and evidence trail for IRWB-004.
+WhenToUse: Read the latest step when resuming; expand earlier steps only as needed.
 ---
 
 # IRWB-004 diary
@@ -413,3 +423,167 @@ The seven fixes of the guide's §13 are in, each behind the same identity: an em
 
 ### Technical details
 - `sameJson(a, b)`: `a === b`, else both arrays of equal length with equal items, or both plain records with the same own key count, every key of `a` own in `b`, and equal values.
+
+## Step 8: D1, function parts and closure keys; the meaning check reuses what cannot have changed
+
+The meaning check now keeps, per origin revision, its cases and the origin's outcome on each, and keeps every decided verdict under the case index and a *closure key*: a hash of the code the case can reach. A later check replays a verdict instead of evaluating the case when the candidate's closure key for that case's function is the one it was decided under. The closure key is built from *function parts*, which F1's shared records make identity-stable: a part is one function's records, and a pass that changes three functions yields 329 parts that are the previous revision's objects. On the corpus, the evidence of every check is identical with reuse on, reuse off, and on the base build.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Guide §15 (D1) and the parts of §14.3 that D1 needs.
+**Inferred user intent:** An experiment that changes a few functions should not re-run the origin, or the functions it did not change.
+**Commit (code):** `bc5690c` — "IRWB-004 D1 + F4 (contract): function parts and closure keys; …" (together with Steps 9 and 10)
+
+### What I did
+- `src/typed/parts.ts` (new): `partsOf(v)` (per frozen value; reuses the previous part object when the function record and every record list are the same objects), `partText`, `partHash` (once per part object), `calleesOf`, `hasFrameArrays`, `closureOf`, `closureKey(v, f)` = SHA-256 of sorted `name:partHash` lines (or `name:missing`) plus `frames:<bool>`.
+- `src/framework/contracts/differential.ts`: spec fields `baselineKey`, `subjectKey`, `decide`; a `REUSE` map (at most 4 keys) of `{ cases, outcomes[], verdicts: Map<"i\0subjectKey", Decided> }` keyed by `id@version#seed#count#baselineKey`; `runDifferential` and `runDifferentialAsync` decide each case once per memo key and tally in case order (`tally`); `setDifferentialReuse`, `differentialStats`.
+- `src/typed/evaluate.ts` `meaningKept`: `baselineKey: origin kind@schema:revision`, `subjectKey: closureKey(candidate.value, c.fn)`. `casesFrom` and `agrees` are untouched.
+- `tests/typed/meaning-memo.test.mjs` (new, 4 tests): parts kept by identity across O2 on `calls`; a callee change changes the caller's key, an unreachable function does not, frame arrays do; reuse gives deep-equal evidence for agreeing candidates (Blend, across-calls) and for `div-to-shift` on wrong-shift (counterexamples in order); the origin's outcome is computed once per case.
+- `$T/scripts/08-corpus-evidence.mjs`: each corpus project through O2 as `Program.apply` checks it; prints head revision, summed counts and a SHA-256 of every step's evidence.
+
+### Why
+- What a case's outcome depends on, read from `evaluate`: the case, the step limit (in the spec version), the records reachable by calls by name, and whether any function has frame arrays (`STACK_BYTES` above guest memory). `validateBlocks` enforces that a statement's values and blocks belong to its own function, so the part grouping by `fn` is exact.
+
+### What worked
+- `node --test tests/typed/meaning-memo.test.mjs`: 4 of 4.
+- Corpus evidence: `IRWB_ROOT=<base>/ node …/08-corpus-evidence.mjs` against this build with `IRWB_REUSE=0` and with reuse: `EVIDENCE-IDENTICAL` (44 lines; `various/10-corpus-evidence-baseline.txt`). Run times 34.6 s (base), 4.7 s (no reuse), 4.2 s (reuse).
+- Candela O2 with D1 only (`various/11-candela-o2-d1.{json,log}`, load 8.9): wall 12:06 → 6:10, peak RSS 5.79 → 3.03 GB, every revision and every check identical to `04-candela-o2-baseline.json`.
+
+### What didn't work
+- The first parts test used `cfg` on across-calls, which does not change that program (A1 returned r0 itself), so `assert.notEqual(revision)` failed with both revisions `811ef589…`. A survey over the corpus (scratch script) showed `calls` (3 functions, O2 changes 1) and found no part that was a new object with equal content.
+
+### What I learned
+- The baseline outcome cache stores each case's `RunResult` with its memory image; for Candela that is about 13,280 images of a few KiB.
+
+### What was tricky to build
+- **Evidence in case order.** Verdicts can come from the memo, from this thread or from workers; `tally` walks the cases in order, so counts and the first five counterexamples are those of the unmemoized loop.
+
+### What warrants a second pair of eyes
+- The soundness of `subjectKey` rests on the evaluator's dependencies listed above. A future evaluator that reads something else of the program (the front end's tables, counters) must add it to `closureKey`.
+
+### What should be done in the future
+- F4 for the cases that are still evaluated (Step 9).
+
+### Code review instructions
+- `src/typed/parts.ts`, `src/framework/contracts/differential.ts` (`prepare`, `memoKeys`, `runDifferential`), the two lines in `meaningKept`; `node --test tests/typed/meaning-memo.test.mjs`; `node …/08-corpus-evidence.mjs`.
+
+### Technical details
+- Memo key: `${index}\0${closureKey}` under `typed.meaning-kept@1+<params hash>#7#40#typed.blocks@<schema>:<origin revision>`.
+
+## Step 9: F4 in Node, a worker pool for the contract; the evaluator's memory made the main thread three times slower
+
+The meaning check can hand its undecided cases to a `decide` hook; `src/typed/parallel/node-pool.ts` implements it with worker threads that hold programs as parts and decide each case with the same `decideCase` and the same specification. Measuring it showed that one worker decided the 13,280 cases of Candela's cfg check in 17.9 s while the main thread took 46.7 s. The profile put 18.2 of the main thread's 38.9 s in the garbage collector: every evaluation allocated a fresh 66 KiB working memory (the case memory plus `STACK_BYTES`), and that external memory made V8 mark the main thread's 464 MB heap about once a second. Reusing one buffer for the stack-area memory cut the local check to 11.0 s; the identical evidence held throughout.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Guide §16 (F4, Node), and the measurement the brief asks for (speed-up and identical verdicts).
+**Inferred user intent:** Use the machine's cores for the contract without trusting the parallel path more than the serial one.
+**Commit (code):** `bc5690c`
+
+### What I did
+- `src/framework/contracts/differential.ts`: `decideCase` exported (the one function that runs both sides, then `inconclusive`, then `compare`); `differentialSpec(inv)` (a WeakMap from the invariant to its spec, so the invariant object keeps its shape); `runDifferentialAsync`; `check` returns a promise when the spec has `decide`.
+- `src/typed/meaning-exec.ts` (new): `setMeaningExecutor`, `meaningExecutor`, `MeaningJob`. `meaningKept` passes `decide: (ports, cases, todo) => meaningExecutor()?.decide({ params, origin, candidate, cases, todo })`.
+- `src/typed/parallel/protocol.ts`, `meaning-worker.ts`, `node-pool.ts` (new): case i to worker i mod N (so each worker computes the origin's outcome of its cases once); jobs carry only missing part texts and cases; `minCases` (64) keeps small jobs local; workers `unref` when idle; first-in-first-out case sets on both sides (`CASE_SETS_MAX` 8).
+- `src/typed/evaluate.ts` `evaluate`: with frame arrays, the working memory is a zeroed prefix of one reused `SCRATCH` buffer (the result still gets `bytes.slice(0, memBytes.length)`); a call's locals are a zeroed `subarray` of one reused `LOCALS` Int32Array. `DataView` over exactly the prefix.
+- `tests/typed/parallel.test.mjs` (new, 2 tests): workers (3 threads, `minCases: 1`) give deep-equal evidence for Blend, across-calls and strength through O2 and for the wrong pass, with reuse on and off, two rounds each; small jobs stay local.
+- `$T/scripts/09-candela-contract.mjs`: the check alone (r0 against its cfg revision), local and on 1, 2, 4 threads, cold and warm; `--local-only` for a profile. `04-candela-o2-revisions.mjs` gained `--threads N` and `--no-reuse`. `03-profile-summary.mjs` gained `--window NAME`.
+
+### Why
+- Evaluating cases is the contract's whole cost once D1 removed the repeated work, and cases are independent.
+
+### What worked
+- `various/13-candela-contract-threads.json` (before the evaluator fix, load 12.6–15.3): local 46,661 ms; 1 thread 23,489 cold / 17,852 warm; 2 threads 17,032 / 10,629; 4 threads 16,889 / 8,347; all `same: true`, counts 13,280 / 13,258 / 0 / 22.
+- `various/14-contract-gc.txt`: `--trace-gc` counts for the local check: 99 scavenges and 35 mark-compacts (34,772 ms) → with `LOCALS` only 97 / 34 (37,330 ms) → with `SCRATCH` 105 / 5 (10,959 ms).
+- `various/17-candela-contract-threads-inc3.json` (after the fix, load 10.3): local 9,058 ms; 4 threads warm 4,637 ms (1.95×), cold 10,766 ms; 2 threads warm 7,849; reuse warm (same candidate) 21 ms; all identical.
+- Gates: `npm test` 335 tests, 332 pass, 3 skipped (79.4 s on a loaded machine); corpus revisions `IDENTICAL-44`; corpus evidence `EVIDENCE-IDENTICAL`; parity unchanged; `IRWB_FULL` 21 of 21 (12.6 s).
+
+### What didn't work
+- Importing `CASE_SETS_MAX` from `meaning-worker.js` into the pool would run the worker's top level on the main thread (`parentPort` is null there); the shared types and constant moved to `protocol.ts` before the first run.
+- The `LOCALS` change alone did nothing measurable (34 mark-compacts instead of 35); the trigger was the 64 KiB stack area, not the locals. I kept it, since it removes an allocation per call and the evidence is identical.
+
+### What I learned
+- One worker beat the main thread by 2.6× on the same code because the main thread's heap was large and the evaluator's ArrayBuffers forced full markings of it. After the fix the main thread is as fast per case as a worker, and the pool's gain is what the cores give (1.95× on 4 threads at load 10).
+- A cold pool pays for shipping 442 part texts and assembling two programs in each worker: 10.8 s cold against 4.6 s warm.
+
+### What was tricky to build
+- **The same decision in two realms.** The worker obtains the specification by calling `meaningKept(params)` itself and `differentialSpec` on the result, and decides with the exported `decideCase`; no comparison logic is duplicated.
+- **A reused buffer and the bounds check.** `check(addr, w)` compares against `bytes.length`, so the working memory must be a view of exactly `size` bytes, and the `DataView` must not extend past it.
+
+### What warrants a second pair of eyes
+- `evaluate` now shares `LOCALS` and `SCRATCH` per realm; it is synchronous and never re-entered, but a future host call from inside the evaluator would break that assumption.
+- Workers report errors as messages; an evaluator `Error` (not a `Trap`) on a worker becomes an `Error` with the worker's stack in its message, not the original object.
+
+### What should be done in the future
+- A pool that keeps part texts per revision would avoid recomputing which parts each worker lacks; cheap already (a set lookup per part).
+
+### Code review instructions
+- `src/typed/parallel/*.ts`, `decideCase` and `runDifferentialAsync` in `differential.ts`, the two buffers in `evaluate`; `node --test tests/typed/parallel.test.mjs`; `node --max-old-space-size=12288 $T/scripts/09-candela-contract.mjs`.
+
+## Step 10: Candela O2 before and after, on the calling thread and on four workers
+
+With increments 1–3, O2 on Candela takes 3:27 instead of 12:06, with every revision and every check's counts identical. On four worker threads it took 3:42: on a machine at load 11–15 the workers did not get the cores, and each revision's parts and program assembly cost each worker time the calling thread does not spend.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** The acceptance item "before and after times for cfg, full O2 on Candela".
+**Inferred user intent:** Numbers measured on the same script, with the revisions diffed.
+**Commit (code):** `bc821fa` (the measurement files)
+
+### What I did
+- `/usr/bin/time -v node --max-old-space-size=12288 $T/scripts/04-candela-o2-revisions.mjs` → `various/15-candela-o2-inc3.{json,log}`; then with `--threads 4` → `16-…`. Compared step by step with `04-candela-o2-baseline.json`.
+
+### What worked
+- Revisions: r0 `cd36346e…`, head `b33d1737…` in all three runs; every step's revision and `checks` equal (`same same` for all 16 steps).
+- Wall time 12:06.05 → 3:26.58 (local) and 3:42.26 (4 threads); passes 721,434 → 187,556 and 205,336 ms; peak RSS 5,789,656 → 4,700,036 kB and 6,939,668 kB.
+- Per step (base / local / 4 threads, ms): cfg 18,811 / 19,763 / 28,900; fold 21,400 / 12,731 / 17,461; simplify 27,868 / 9,806 / 13,291; constprop 37,193 / 14,071 / 19,985; fold 42,339 / 9,927 / 12,221; simplify 10,536 / 706 / 978; dce 42,489 / 15,555 / 20,515; cfg 45,596 / 8,984 / 9,959; licm 50,193 / 8,756 / 11,910; lvn 54,390 / 9,135 / 13,254; strength 13,231 / 5,573 / 5,712; bce 15,184 / 3,262 / 3,737; subst 75,523 / 12,421 / 14,149; subst 80,738 / 13,020 / 13,545; dce 89,577 / 21,567 / 10,332; cfg 96,366 / 22,279 / 9,387.
+- `differentialStats` over the local run: 13,280 origin runs, 64,040 subject runs, 108,600 replayed verdicts (of 172,640 decided cases, 63% replayed). The pool run delegated the same 64,040.
+
+### What didn't work
+- Four threads were slower overall. The first cfg (28.9 s against 19.8 s) pays the cold start; later steps are within noise of the local run except the last dce and cfg, where the workers were faster (10.3 / 9.4 s against 21.6 / 22.3 s).
+
+### What I learned
+- Base times grew with the revision number (18.8 s to 96.4 s) because the base copied and re-hashed everything and RSS grew to 5.3 GB; the new times stay between 0.7 and 22 s.
+
+### What should be done in the future
+- Use the pool by default only where cores are free; the tools take `--threads`.
+
+## Step 11: F4 in the browser, the Candela view's engines in a Web Worker
+
+The Candela view now renders on a Web Worker: compiling the reference image, lifting r0, the sky table and every engine call run there, and the page only draws. A stride-1 render of B-01 holds the page for at most 96 ms (evaluator) and 116 ms (emulator), against 3.5 s for the emulator in the page; worker frames are bit-identical to the page's (0 of 307,200 floats and 0 of 102,400 colour sums differ). Two things were not the engines: the page stalled 0.6–3.5 s inside `CanvasRenderingContext2D::FinalizeFrame` waiting on the GPU process, fixed with a CPU-backed canvas, and the portable SHA-256 ran at 7 MB/s in Chromium.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Guide §16.4: a worker for rendering, opening Candela and passes, within the page's CSP and SRI rules; frames identical.
+**Inferred user intent:** The workbench stays usable while Candela works.
+**Commit (code):** `bc821fa` — "IRWB-004 F4 (browser): the Candela view's engines run in a Web Worker …"
+
+### What I did
+- `site-src/engine-worker.js` (new): messages `init` (Candela data from the page), `render` (engine `kernel | stock | r0 | head | own`; a project revision as a `PartsRef` plus missing part texts; progress about every 100 ms), `stop`, `lift`. A rebuilt revision must hash to the revision the page named, or the worker refuses it.
+- `tools/build-site.mjs`: `candela/engine-worker.js` = the seven vendored scripts (each checked against `VENDOR.json`) followed by the esbuild bundle; `LAZY.candela.worker` with its SHA-384 for the record.
+- `site-src/index.html` CSP: `worker-src 'self'`. `tools/serve-site.mjs`: the same policy as a `content-security-policy` header on every response, so the worker (which does not see the meta tag) runs under it.
+- `site-src/candela.js`: the worker client; `UI.S.cdl.where = 'page'` renders in the page as before; history entries carry `where`, and frames are compared across engines or across `where`; Stop reaches the worker. Canvas context `getContext('2d', { willReadFrequently: true })`.
+- `src/typed/parts.ts`: `PartsRef`, `partsRef`, `parsePart`, `assembleParts`, `missingParts` (the meaning worker uses them too). `site-src/wb.js` exports the part helpers.
+- `src/framework/core/sha256.ts` `Sha256.update`: encodes a window of at most `(room)/3` UTF-16 units (a surrogate pair kept together), not `text.slice(pos)`.
+
+### Why
+- A worker script cannot carry an `integrity` attribute and `connect-src 'none'` rules out fetching bytes to check, so the worker loads nothing: everything it runs is in one same-origin file, assembled and checked at build time, like `app.js`.
+
+### What worked
+- Playwright, `dist/site` on 127.0.0.1:8772 (`various/19-browser-render.json`, screenshot `18-browser-worker-render-B01-stride1.png`): r0 stride 8 in the worker 3,273 ms, longest page gap 25 ms; the page's r0 frame 0 / 4,800 different from it; kernel stride 1 in the worker 35.6 s, longest gap 116 ms; r0 stride 1 in the worker 65.7 s, longest gap 96 ms, 0 / 307,200 (acc 0 / 102,400) against kernel; kernel stride 1 in the page 33.6 s, longest gap 3,460 ms (86 gaps over 100 ms), identical to both worker frames. Console: 0 errors, 0 warnings.
+- SHA-256 portable on 18 MB in Node after the fix: 330–392 ms, the same digest as node:crypto; `tests/framework/identity-caches.test.mjs` 4 of 4.
+
+### What didn't work
+- The first worker renders still showed a 3.2–3.6 s gap on the page while the page's JS profile was idle. A CDP trace showed `CrRendererMain CanvasRenderingContext2D::FinalizeFrame` → "GPU backpressure via GL_COMMANDS_COMPLETED_CHROMIUM" (581 ms in the traced run) and `CrGpuMain` tasks of 991 ms: headless Chromium's software GPU under load. After the canvas change: 25 ms.
+- `PerformanceObserver('longtask')` reported the same gaps as long tasks; a 10 ms `setInterval` heartbeat was the measure I could trust.
+
+### What I learned
+- Opening Candela in the page still takes 8.6 s (profiled) after the hashing fix: `immutable` 2.2 s, the eager projection in `createIRArtifact` 3.0 s (per-record entities and relations 1.5 s, `validateGraph` 0.8 s), both hashes 1.1 s, `canonical` 0.5 s, GC 1.9 s (`various/20-browser-open-and-pass.json`). cfg in the page: 21.3 s (about 45 s before), one task.
+
+### What warrants a second pair of eyes
+- The worker bundle includes the reference compiler; its SHA-384 is recorded in `LAZY` but no browser checks a worker script's integrity.
+
+### What should be done in the future
+- Open and passes in the worker need the page to adopt a revision in slices (parts, tables, canonical text, hashing, validation and projection, each under 100 ms). Not done; see the final report.
+
+### Code review instructions
+- `site-src/engine-worker.js`, the worker section of `site-src/candela.js`, the worker block in `tools/build-site.mjs`; `npm run build:site && node tools/serve-site.mjs dist/site 8772`, Candela layout, Render with the default (worker) and with `wbUI.S.cdl.where = 'page'`.
