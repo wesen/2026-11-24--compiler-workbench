@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "digest": "c2f964ee408fa87796d0428f45f28fc33b70447ff4b910901d155f8f1a02bfe9",
+  "request": {
+    "ticket": "IRWB-021-G",
+    "operation_id": "research-design-reviewed",
+    "summary": "Wrote and reviewed the checked streaming-attention research design; no compiler or CUDA implementation",
+    "phase": "validate",
+    "next": "Review the design before starting the future Tix/CUDA experiment",
+    "task_ids": [
+      "2jpu"
+    ],
+    "evidence": null,
+    "expected": null
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "research-design-reviewed",
+    "state": "committed",
+    "created_at": "2026-11-26T17:53:18.923923442Z",
+    "changed_paths": [
+      "tasks.md",
+      "changelog.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "tasks.md": "ff6bf5496dcb7e75ffbe11ddddd6804e0d5512ce1d05291388c997849695ce06"
+    },
+    "after": {
+      "changelog.md": "b0082aae0c2faadfa0b4c09dd2d1c71b636979f7e9b723f7dd06aa102ce27ad2",
+      "tasks.md": "7f4b52e5afb9ad9791584bbdf01af80f7ec8b43326f6b81fbd4c885fb67ac462"
+    }
+  },
+  "changes": [
+    {
+      "path": "tasks.md",
+      "before": "ff6bf5496dcb7e75ffbe11ddddd6804e0d5512ce1d05291388c997849695ce06",
+      "after": "IyBUYXNrcwoKIyMgVE9ETwotIFt4XSBTcGVjaWZ5IGFuZCByZXZpZXcgdGhlIGRlcml2YXRpb24sIGNoZWNraW5nIGNvbnRyYWN0LCBnZW5lcmFsaXR5LCBhbmQgR0IxMCBleHBlcmltZW50IDwhLS0gdDoyanB1IC0tPgo="
+    },
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKV3JvdGUgYW5kIHJldmlld2VkIHRoZSBjaGVja2VkIHN0cmVhbWluZy1hdHRlbnRpb24gcmVzZWFyY2ggZGVzaWduOyBubyBjb21waWxlciBvciBDVURBIGltcGxlbWVudGF0aW9uCgpPcGVyYXRpb246IGByZXNlYXJjaC1kZXNpZ24tcmV2aWV3ZWRgCg=="
+    }
+  ]
+}
