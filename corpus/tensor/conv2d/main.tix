@@ -1,0 +1,5 @@
+// 2-D convolution, NCHW, stride 1, no padding: y[n, k, p, q] = Σ_{c,r,s} x[n, c, p + r, q + s] · w[k, c, r, s].
+fn conv2d(x: f32[N, C, H, W], w: f32[K, C, R, S]): f32[N, K, H - R + 1, W - S + 1] {
+  y[n, k, p, q]: f32[N, K, H - R + 1, W - S + 1] = sum(c, r, s) x[n, c, p + r, q + s] * w[k, c, r, s];
+  return y;
+}

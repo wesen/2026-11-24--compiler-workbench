@@ -1,0 +1,8 @@
+// Layer normalisation over the last axis, with gain gamma, bias beta and eps = 1e-5.
+fn layernorm(x: f32[N, D], gamma: f32[D], beta: f32[D]): f32[N, D] {
+  mu[i] = (sum(d) x[i, d]) / D;
+  xc[i, d] = x[i, d] - mu[i];
+  var[i] = (sum(d) xc[i, d] * xc[i, d]) / D;
+  y[i, d] = xc[i, d] / sqrt(var[i] + 0.00001) * gamma[d] + beta[d];
+  return y;
+}

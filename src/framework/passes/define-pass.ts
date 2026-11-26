@@ -20,6 +20,12 @@ import { canonical } from '../core/data.js';
 import { createIRArtifact, openIR } from '../ir/index.js';
 import { diff } from '../ir/diff.js';
 import { makeCorrespondence } from '../ir/correspondence.js';
+import {
+  differentialSpec,
+  runDifferential,
+  type DifferentialEvidence,
+  type DifferentialInvariant,
+} from '../contracts/differential.js';
 import type {
   ChangeSet,
   CorrespondenceEntry,
@@ -187,6 +193,52 @@ export function semanticCorrespondence(
   };
 }
 
+/** The result of a pass that changed nothing. */
+function unchanged<S>(pass: Pass<S, any, any>, before: Artifact<S>): PassResult<S> {
+  return {
+    pass: { id: pass.id, version: pass.version },
+    changed: false,
+    before,
+    artifact: before,
+    edits: 0,
+    preserved: [],
+  };
+}
+
+const isNative = <S>(x: unknown): x is NativeResult<S> => !!x && typeof x === 'object' && 'native' in x;
+
+/**
+ * IRWB-020-N F2: what follows a native result, shared by `applyPass` and `applyPassSync`: the output artifact
+ * (validated by the adapter), the change set against the input's projection, and the total correspondence.
+ */
+function nativeOutcome<S>(
+  pass: Pass<S, any, any>,
+  before: Artifact<S>,
+  view: IRView<S>,
+  produced: NativeResult<S>,
+  outputId: string | undefined,
+  store: IRStore | undefined,
+) {
+  const after = createIRArtifact(pass.adapter, outputId ?? before.id, produced.native);
+  const afterView = openIR(after, pass.adapter, store);
+  const changes = diff(view, afterView);
+  const correspondence = makeCorrespondence(
+    { artifact: before.id, revision: before.revision },
+    { artifact: after.id, revision: after.revision },
+    // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+    view.graph().entities.map(e => e.id),
+    afterView.graph().entities.map(e => e.id),
+    produced.correspondence ?? [],
+  );
+  return {
+    after,
+    changes,
+    correspondence,
+    edits: produced.edits ?? changes.entities.length,
+    report: produced.report,
+  };
+}
+
 export async function applyPass<S, N extends Needs, P>(
   pass: Pass<S, N, P>,
   before: Artifact<S>,
@@ -201,7 +253,9 @@ export async function applyPass<S, N extends Needs, P>(
     records[name] = record;
     facts[name] = record.value;
   }
-  const edit = view.beginEdit();
+  // IRWB-020-N F1: the edit is opened on first use, so a pass that returns a native value runs on an adapter that
+  // is not rewritable (opening an edit requires `rebuild`)
+  let edit: IREdit<S> | undefined;
   let produced: void | NativeResult<S>;
   try {
     produced = await pass.run({
@@ -210,44 +264,34 @@ export async function applyPass<S, N extends Needs, P>(
       facts: facts as FactValues<N>,
       records: records as PassRunContext<S, N, P>['records'],
       params: options.params as P,
-      edit,
+      get edit() {
+        return (edit ??= view.beginEdit());
+      },
     });
   } catch (e) {
-    if (edit.state === 'open') edit.rollback('pass threw');
+    if (edit?.state === 'open') edit.rollback('pass threw');
     throw e;
   }
   let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
   let report: unknown;
-  if (produced && typeof produced === 'object' && 'native' in produced) {
-    if (edit.state === 'open') edit.rollback('native result');
-    const id = options.outputId ?? before.id;
-    after = createIRArtifact(pass.adapter, id, produced.native);
-    const afterView = openIR(after, pass.adapter, options.store);
-    changes = diff(view, afterView);
-    correspondence = makeCorrespondence(
-      { artifact: before.id, revision: before.revision },
-      { artifact: after.id, revision: after.revision },
-      // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
-      view.graph().entities.map(e => e.id),
-      afterView.graph().entities.map(e => e.id),
-      produced.correspondence ?? [],
-    );
-    edits = produced.edits ?? changes.entities.length;
-    report = produced.report;
+  if (isNative<S>(produced)) {
+    if (edit?.state === 'open') edit.rollback('native result');
+    ({ after, changes, correspondence, edits, report } = nativeOutcome(
+      pass,
+      before,
+      view,
+      produced,
+      options.outputId,
+      options.store,
+    ));
   } else {
+    if (!edit) return unchanged(pass, before); // neither a native value nor an edit: nothing changed
     if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
     if (edit.operationCount === 0) {
       // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
       // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
       edit.rollback('no operations');
-      return {
-        pass: { id: pass.id, version: pass.version },
-        changed: false,
-        before,
-        artifact: before,
-        edits: 0,
-        preserved: [],
-      };
+      return unchanged(pass, before);
     }
     const prepared = edit.prepare();
     after = prepared.artifact;
@@ -281,9 +325,7 @@ export async function applyPass<S, N extends Needs, P>(
         { output: after } as never,
         gate,
         gate.correspondence.length
-          ? gate.correspondence.map(req =>
-              semanticCorrespondence(correspondence, req.id, req.relation),
-            )
+          ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
           : [semanticCorrespondence(correspondence)],
       );
       contract = prepared;
@@ -301,12 +343,7 @@ export async function applyPass<S, N extends Needs, P>(
       await manager.analyse(def, before);
     }
     try {
-      const record = await manager.preserve(
-        def,
-        before,
-        after,
-        semanticCorrespondence(correspondence),
-      );
+      const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
       preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
     } catch {
       const old = await manager.analyse(def, before),
@@ -331,6 +368,126 @@ export async function applyPass<S, N extends Needs, P>(
     correspondence,
     edits,
     preserved,
+    contract,
+    report,
+  };
+}
+
+export interface SyncApplyOptions<P> {
+  readonly params?: P;
+  /** Additional contract inputs, e.g. `{ origin: r0 }`. */
+  readonly contractInputs?: Readonly<Record<string, unknown>>;
+  readonly outputId?: string;
+  /** A contract for this application, overriding the pass's own. */
+  readonly contract?: TransformationDefinition<Ports, Ports>;
+}
+
+/** One checked guarantee of a synchronous application: the invariant and its sampled evidence. */
+export interface SyncContractCheck {
+  readonly invariant: string;
+  readonly evidence: DifferentialEvidence;
+}
+
+/**
+ * IRWB-020-N F2: a synchronous checked pass application, for a host whose API cannot await (`applyPass` is async
+ * because the analysis manager is). Its domain: the pass returns a native result (or nothing) synchronously, has
+ * no `needs` and no `preserves`; every clause of the contract is an `ensures` over a sampled differential
+ * invariant, which is decided here by `runDifferential` exactly as the invariant's check decides it. Nothing is
+ * recorded in an analysis manager: the evidence is returned in `contract` (an array of `SyncContractCheck`). A
+ * rejection throws the same `PassError('contractRejected')` as `applyPass`. There is no `store`: publishing a
+ * native result's revision through a store is the async path's business.
+ */
+export function applyPassSync<S, N extends Needs, P>(
+  pass: Pass<S, N, P>,
+  before: Artifact<S>,
+  options: SyncApplyOptions<P> = {},
+): PassResult<S> {
+  if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length)
+    throw new PassError('badResult', `Pass ${pass.id} declares needs or preserves; apply it with applyPass`);
+  const gate = options.contract ?? pass.contract;
+  const checks: {
+    invariant: DifferentialInvariant<Ports>;
+    bindings: Readonly<Record<string, { from: string; port: string }>>;
+  }[] = [];
+  if (gate) {
+    const other =
+      gate.requires.length + gate.preserves.length + gate.establishes.length + gate.effects.length;
+    if (other || gate.correspondence.length)
+      throw new PassError(
+        'badResult',
+        `Contract ${gate.id} has clauses applyPassSync cannot check; use applyPass`,
+      );
+    for (const c of gate.ensures) {
+      if (!('invariant' in c) || (c.invariant as { method?: string }).method !== 'sampled')
+        throw new PassError(
+          'badResult',
+          `Contract ${gate.id}: applyPassSync checks only differential invariants`,
+        );
+      checks.push({ invariant: c.invariant as DifferentialInvariant<Ports>, bindings: c.bindings });
+    }
+  }
+  const view = openIR(before, pass.adapter);
+  const produced = pass.run({
+    before,
+    view,
+    facts: {} as FactValues<N>,
+    records: {} as PassRunContext<S, N, P>['records'],
+    params: options.params as P,
+    get edit(): IREdit<S> {
+      throw new PassError('badResult', `Pass ${pass.id}: applyPassSync passes return a native result`);
+    },
+  });
+  if (produced && typeof (produced as { then?: unknown }).then === 'function')
+    throw new PassError('badResult', `Pass ${pass.id} is asynchronous; apply it with applyPass`);
+  if (!isNative<S>(produced)) return unchanged(pass, before);
+  const { after, changes, correspondence, edits, report } = nativeOutcome(
+    pass,
+    before,
+    view,
+    produced,
+    options.outputId,
+    undefined,
+  );
+  if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
+    return unchanged(pass, before);
+  const undeclared = undeclaredWrites(pass.writes, changes);
+  if (undeclared.length)
+    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
+      undeclared: undeclared.slice(0, 20),
+    });
+  const ports: Record<string, Record<string, unknown>> = {
+    inputs: { input: before, ...(options.contractInputs ?? {}) },
+    outputs: { output: after },
+  };
+  const contract: SyncContractCheck[] = [];
+  for (const { invariant, bindings } of checks) {
+    const bound = Object.fromEntries(
+      Object.entries(bindings).map(([name, sel]) => {
+        const value = ports[sel.from]?.[sel.port];
+        if (value === undefined)
+          throw new PassError('badResult', `Contract port ${sel.from}.${sel.port} is not supplied`);
+        return [name, value];
+      }),
+    );
+    const evidence = runDifferential(differentialSpec(invariant), bound as never);
+    contract.push({ invariant: invariant.id, evidence });
+    if (evidence.status !== 'agree')
+      throw new PassError(
+        'contractRejected',
+        `Pass ${pass.id} output rejected: ${invariant.id}: ${evidence.disagree}/${evidence.total} sampled cases disagree` +
+          (evidence.counterexamples.length ? ` (${evidence.counterexamples[0].reason})` : ''),
+        { checks: contract },
+      );
+  }
+  return {
+    pass: { id: pass.id, version: pass.version },
+    changed: true,
+    before,
+    artifact: after,
+    changes,
+    correspondence,
+    edits,
+    preserved: [],
     contract,
     report,
   };

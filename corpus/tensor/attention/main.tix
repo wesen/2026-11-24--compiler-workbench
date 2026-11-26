@@ -1,0 +1,10 @@
+// Single-head scaled dot-product attention: softmax(q·kᵀ / sqrt(D)) · v, max-shifted softmax over the keys.
+fn attention(q: f32[T, D], k: f32[S, D], v: f32[S, E]): f32[T, E] {
+  s[t, u] = (sum(d) q[t, d] * k[u, d]) / sqrt(D);
+  m[t] = max(u) s[t, u];
+  w[t, u] = exp(s[t, u] - m[t]);
+  z[t] = sum(u) w[t, u];
+  p[t, u] = w[t, u] / z[t];
+  o[t, c] = sum(u) p[t, u] * v[u, c];
+  return o;
+}
