@@ -572,3 +572,24 @@ Readings:
 - **Blinding:** no review mentions another document. The titles ("Review of doc A") were replaced with "Review of your design"; my first substitution missed them because of the missing hyphen, and the dispatch used the corrected copies. The reviews are archived in `results/reviews-t2/`.
 - **Dispatched:** the twelve Codex and Pi cells, `10-dispatch-turn.sh t2 impl prompts/t2/turn2.md <reviews-send> --network`.
 - **Claude total in IRWB-019:** about 3.44M subagent tokens.
+
+## Step 23: the exactness question, settled exhaustively; first stage-2 evaluation
+
+- **The probe** (`various/exact-probe/`):
+  - **GPU side:** for every one of the 2³² f32 bit patterns, `(float)exp((double)x)`, `(float)log(...)` and `(float)tanh(...)` are computed with NaN canonicalized. Each chunk of 2²⁰ results is hashed as h = Σ bits(yᵢ)·(2i + 1) mod 2³². This took 1.5 s for all three functions.
+  - **JavaScript side:** the same hash of `Math.fround(Math.exp(x))` etc. (`compare.mjs`, 8 worker threads, 156 s).
+  - **Result: all 3 × 4,096 chunk hashes agree.** A single differing result changes a chunk's hash, because 2i + 1 is invertible mod 2³². So on the GB10 (CUDA 13.0), the double-precision functions rounded to f32 equal the f32 meaning's `Math.fround(Math.f(x))` for every f32 input, NaN compared as a class.
+- **Consequences:**
+  - A stage-2 lowering can be bit-exact with the f32 meaning, checked under the exact relation. It needs no contraction (`-fmad=false` or `__fmul_rn`/`__fadd_rn`), the default correctly rounded division and `sqrt`, and the transcendentals in double.
+  - Two caveats:
+    - the f32 meaning is defined through JavaScript's `Math` functions, so this holds for V8 in Node 24.18 and is not a property of the language;
+    - `max` and `min` must reproduce `Math.max`/`Math.min` on signed zeros, which `fmaxf` does not guarantee.
+  - All twelve designs chose tolerance. Four had sampled exactly this comparison and found no non-NaN mismatch.
+- **The first stage-2 evaluation, A (Codex, Astra, medium):**
+  - Stage-1 suite 25/25. API complete.
+  - **Bit-exact** with the f32 meaning on every program that uses only `+ − * /` and `sqrt`: matmul, layernorm and conv, at small and full size (262,144/262,144 matmul elements, 4,194,304/4,194,304 layernorm). So A does not contract.
+  - **Not exact** where `exp` or `tanh` appear (softmax, attention, mlp). The scaled differences are ≤ 9e-8 at small sizes and 2.2e-5 at full size in mlp. A uses the single-precision intrinsics; the double versions would have made it exact.
+  - **After `inline` + `split-sum`:** the same pattern.
+  - **Random programs:** 16/20 bit-exact.
+  - **`checkLowering`:** accepted 16/16 (tolerance), about 6 s each.
+  - **`gpuMs` at full size:** matmul 0.255 ms, softmax 0.448, layernorm 0.480, attention 1.394, mlp 0.819, conv 0.351.
