@@ -43,9 +43,11 @@ function chessIsPiece(board: buffer, square: i32, piece: i32): bool {
 function chessAttacked(board: buffer, square: i32, side: i32): bool {
     const color = side * 8;
     const pawn = square - chessPawnStep(side);
-    if (chessIsPiece(board, pawn - 1, color + 1) || chessIsPiece(board, pawn + 1, color + 1)) return true;
+    if (chessIsPiece(board, pawn - 1, color + 1)
+            || chessIsPiece(board, pawn + 1, color + 1)) return true;
     for (let i = 0; i < 8; i = i + 1) {
-        if (chessIsPiece(board, square + chessKnight(i), color + 2)) return true;
+        if (chessIsPiece(board, square + chessKnight(i), color + 2))
+            return true;
     }
     for (let i = 0; i < 8; i = i + 1) {
         const step = chessRay(i);
@@ -56,7 +58,8 @@ function chessAttacked(board: buffer, square: i32, side: i32): bool {
                 if (piece / 8 === side) {
                     const kind = piece % 8;
                     if (kind === 6 && at === square + step) return true;
-                    if (kind === 5 || (i < 4 && kind === 4) || (i >= 4 && kind === 3)) return true;
+                    if (kind === 5 || (i < 4 && kind === 4)
+                            || (i >= 4 && kind === 3)) return true;
                 }
                 break;
             }
@@ -70,7 +73,9 @@ function chessInCheck(board: buffer, side: i32): bool {
     return chessAttacked(board, board.charCodeAt(131 + side), 1 - side);
 }
 
-function chessRight(rights: i32, mask: i32): bool { return (rights / mask) % 2 === 1; }
+function chessRight(rights: i32, mask: i32): bool {
+    return (rights / mask) % 2 === 1;
+}
 function chessRemoveRight(rights: i32, mask: i32): i32 {
     if (chessRight(rights, mask)) return rights - mask;
     return rights;
@@ -94,11 +99,14 @@ function chessMake(board: buffer, move: i32, undo: i32): i32 {
     const kind = piece % 8;
     let captureSquare = to;
     const enPassant = board.charCodeAt(130);
-    if (kind === 1 && to === enPassant && board.charCodeAt(to) === 0 && from % 16 !== to % 16) {
+    if (kind === 1 && to === enPassant && board.charCodeAt(to) === 0
+            && from % 16 !== to % 16) {
         captureSquare = to - chessPawnStep(side);
     }
     const captured = board.charCodeAt(captureSquare);
-    for (let i = 0; i < 6; i = i + 1) { board.setCharCodeAt(undo + i, board.charCodeAt(129 + i)); }
+    for (let i = 0; i < 6; i = i + 1) {
+        board.setCharCodeAt(undo + i, board.charCodeAt(129 + i));
+    }
     board.setCharCodeAt(undo + 6, piece);
     board.setCharCodeAt(undo + 7, captured);
     board.setCharCodeAt(undo + 8, captureSquare);
@@ -125,7 +133,9 @@ function chessMake(board: buffer, move: i32, undo: i32): i32 {
     let clock = Math.min(65535, board.charCodeAt(133) + 1);
     if (kind === 1 || captured !== 0) { clock = 0; }
     board.setCharCodeAt(133, clock);
-    if (side === 1) { board.setCharCodeAt(134, Math.min(65535, board.charCodeAt(134) + 1)); }
+    if (side === 1) {
+        board.setCharCodeAt(134, Math.min(65535, board.charCodeAt(134) + 1));
+    }
     board.setCharCodeAt(128, 1 - side);
     board.setCharCodeAt(from, 0);
     if (captureSquare !== to) { board.setCharCodeAt(captureSquare, 0); }
@@ -154,6 +164,8 @@ function chessUnmake(board: buffer, move: i32, undo: i32): i32 {
     board.setCharCodeAt(to, 0);
     board.setCharCodeAt(board.charCodeAt(undo + 8), board.charCodeAt(undo + 7));
     board.setCharCodeAt(128, side);
-    for (let i = 0; i < 6; i = i + 1) { board.setCharCodeAt(129 + i, board.charCodeAt(undo + i)); }
+    for (let i = 0; i < 6; i = i + 1) {
+        board.setCharCodeAt(129 + i, board.charCodeAt(undo + i));
+    }
     return 0;
 }

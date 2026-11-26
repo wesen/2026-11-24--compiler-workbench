@@ -38,7 +38,7 @@ test('chess-search workbench and fresh inspector check the configured roots', as
       assert.equal(row.inconclusive, 0, row.fn);
     }
   };
-  assert.deepEqual(wb.current.locate(project.meta.focus), { file: 'main.typed', line: 4 });
+  assert.deepEqual(wb.current.locate(project.meta.focus), { file: 'main.typed', line: 5 });
   checkRows(wb.current.check({ count: 1 }).fns, 1);
   const inspection = await project.run('explore');
   assert.equal(wb.current.rev, 'r0');

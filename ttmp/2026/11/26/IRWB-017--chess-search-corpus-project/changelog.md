@@ -19,3 +19,7 @@ Qualified all 12 chess fixtures and the scoped speed pipeline. All three RV32 im
 ## 2026-11-26
 
 Added regression coverage for the fixture oracle, generated parity, and the fresh workbench inspector with both entry roots.
+
+## 2026-11-26
+
+Wrapped the chess corpus files to the workbench tile limits and verified the updated source focus and identical RV32 image bytes.
