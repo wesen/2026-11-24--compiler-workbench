@@ -1,0 +1,86 @@
+simplify: algebraic identities: x+0, x*1, x*2^k, x-x, !!x and inverted
+comparisons
+(no rule has an f32 root operator (simplify leaves f32 operators alone))
+
+rule      pattern → replacement                                 evidence
+add-zero  add(x, 0) → x                                            proof
+zero-add  add(0, x) → x                                            proof
+sub-zero  sub(x, 0) → x                                            proof
+sub-self  sub(x, x) → 0 if pure x                                  proof
+mul-one   mul(x, 1) → x                                            proof
+one-mul   mul(1, x) → x                                            proof
+mul-zero  mul(x, 0) → 0 if pure x                                  proof
+zero-mul  mul(0, x) → 0 if pure x                                  proof
+mul-pow2  mul(x, #k) → shl(x, #log2 k) if pow2 k                   proof
+pow2-mul  mul(#k, x) → shl(x, #log2 k) if pow2 k                   proof
+div-one   div(x, 1) → x                                       exhaustive
+or-zero   or(x, 0) → x                                             proof
+xor-zero  xor(x, 0) → x                                            proof
+shl-zero  shl(x, 0) → x                                            proof
+shr-zero  shr(x, 0) → x                                       exhaustive
+shru-zero shru(x, 0) → x                                      exhaustive
+and-zero  and(x, 0) → 0 if pure x                                  proof
+and-ones  and(x, -1) → x                                           proof
+not-lt    eqz(lt(a, b)) → ge(a, b)                           w8+argument
+not-ge    eqz(ge(a, b)) → lt(a, b)                           w8+argument
+not-gt    eqz(gt(a, b)) → le(a, b)                           w8+argument
+not-le    eqz(le(a, b)) → gt(a, b)                           w8+argument
+not-eq    eqz(eq(a, b)) → ne(a, b)                           w8+argument
+not-ne    eqz(ne(a, b)) → eq(a, b)                           w8+argument
+not-ltu   eqz(ltu(a, b)) → geu(a, b)                         w8+argument
+not-geu   eqz(geu(a, b)) → ltu(a, b)                         w8+argument
+not-not   eqz(eqz(x)) → x if bool x                           exhaustive
+
+27 rules: 15 proof, 4 exhaustive, 8 w8+argument
+
+fold: constant folding: an operator whose operands are constants becomes
+a constant
+(replacements are the evaluator’s own values (binop, f32Op); traps are
+kept)
+
+rule           pattern → replacement                            evidence
+fold-eqz       eqz(#a) → #eqz(a)                            by evaluator
+fold-fadd      fadd(#a, #b) → #fadd(a, b)                   by evaluator
+fold-fsub      fsub(#a, #b) → #fsub(a, b)                   by evaluator
+fold-fmul      fmul(#a, #b) → #fmul(a, b)                   by evaluator
+fold-fdiv      fdiv(#a, #b) → #fdiv(a, b)                   by evaluator
+fold-fmin      fmin(#a, #b) → #fmin(a, b)                   by evaluator
+fold-fmax      fmax(#a, #b) → #fmax(a, b)                   by evaluator
+fold-fcopysign fcopysign(#a, #b) → #fcopysign(a, b)         by evaluator
+fold-feq       feq(#a, #b) → #feq(a, b)                     by evaluator
+fold-fne       fne(#a, #b) → #fne(a, b)                     by evaluator
+fold-flt       flt(#a, #b) → #flt(a, b)                     by evaluator
+fold-fgt       fgt(#a, #b) → #fgt(a, b)                     by evaluator
+fold-fle       fle(#a, #b) → #fle(a, b)                     by evaluator
+fold-fge       fge(#a, #b) → #fge(a, b)                     by evaluator
+fold-fneg      fneg(#a) → #fneg(a)                          by evaluator
+fold-fabs      fabs(#a) → #fabs(a)                          by evaluator
+fold-fsqrt     fsqrt(#a) → #fsqrt(a)                        by evaluator
+fold-i2f       i2f(#a) → #i2f(a)                            by evaluator
+fold-u2f       u2f(#a) → #u2f(a)                            by evaluator
+fold-f2bits    f2bits(#a) → #f2bits(a)                      by evaluator
+fold-bits2f    bits2f(#a) → #bits2f(a)                      by evaluator
+fold-add       add(#a, #b) → #add(a, b)                     by evaluator
+fold-sub       sub(#a, #b) → #sub(a, b)                     by evaluator
+fold-mul       mul(#a, #b) → #mul(a, b)                     by evaluator
+fold-and       and(#a, #b) → #and(a, b)                     by evaluator
+fold-or        or(#a, #b) → #or(a, b)                       by evaluator
+fold-xor       xor(#a, #b) → #xor(a, b)                     by evaluator
+fold-shl       shl(#a, #b) → #shl(a, b)                     by evaluator
+fold-shr       shr(#a, #b) → #shr(a, b)                     by evaluator
+fold-shru      shru(#a, #b) → #shru(a, b)                   by evaluator
+fold-eq        eq(#a, #b) → #eq(a, b)                       by evaluator
+fold-ne        ne(#a, #b) → #ne(a, b)                       by evaluator
+fold-lt        lt(#a, #b) → #lt(a, b)                       by evaluator
+fold-gt        gt(#a, #b) → #gt(a, b)                       by evaluator
+fold-le        le(#a, #b) → #le(a, b)                       by evaluator
+fold-ge        ge(#a, #b) → #ge(a, b)                       by evaluator
+fold-ltu       ltu(#a, #b) → #ltu(a, b)                     by evaluator
+fold-geu       geu(#a, #b) → #geu(a, b)                     by evaluator
+fold-div       div(#a, #b) → #div(a, b) if no trap(a, b)    by evaluator
+fold-rem       rem(#a, #b) → #rem(a, b) if no trap(a, b)    by evaluator
+
+40 rules: 40 by evaluator
+max width 72
+error: unknownRuleSet [unknownRuleSet] no rule set "nope"
+  fix: rule sets: simplify, fold

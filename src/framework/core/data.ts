@@ -1,3 +1,5 @@
+import { sha256Parts } from './sha256.js';
+
 /**
  * Values that `immutable` produced: deep-frozen plain records and arrays in canonical form (finite numbers, -0 as 0,
  * no accessors, symbols, holes or cycles). Nothing in one can change, so its canonical text is fixed: `canonical`
@@ -5,9 +7,61 @@
  * it built itself.
  */
 const CANONICAL = new WeakSet<object>();
-/** Canonical text of large canonical values (small ones are cheaper to encode again than to keep). */
+/**
+ * Canonical text of canonical values of at least `RECORD_MIN` characters. IRWB-001 kept only large values (4,096
+ * characters or more); IRWB-004 also keeps records, so a program value whose records survive a pass is encoded by
+ * looking up its records' texts. Tiny values are cheaper to encode again than to keep.
+ */
 const TEXT = new WeakMap<object, string>();
-const CACHE_MIN = 4096;
+const RECORD_MIN = 64;
+
+/**
+ * The keys of a canonical record in sorted order. `immutable` inserted them sorted, so `Object.keys` returns them in
+ * that order unless the record has integer-like keys (which every object enumerates first, numerically).
+ */
+function sortedKeys(v: object): string[] {
+  const keys = Object.keys(v);
+  for (let i = 1; i < keys.length; i++) if (keys[i - 1] > keys[i]) return keys.sort();
+  return keys;
+}
+/**
+ * The canonical text of a canonical value (one `immutable` built). Its subtree is canonical, frozen, acyclic and made
+ * of own data properties, so none of the checks of the general encoder can fail; this gives the same text faster.
+ */
+function encodeCanonical(v: object): string {
+  const cached = TEXT.get(v);
+  if (cached !== undefined) return cached;
+  let result: string;
+  if (Array.isArray(v)) {
+    let s = '[';
+    for (let i = 0; i < v.length; i++) {
+      if (i) s += ',';
+      const x = v[i];
+      s += x !== null && typeof x === 'object' ? encodeCanonical(x) : encodePrimitive(x);
+    }
+    result = s + ']';
+  } else {
+    let s = '{';
+    const keys = sortedKeys(v);
+    for (let i = 0; i < keys.length; i++) {
+      if (i) s += ',';
+      const x = (v as Record<string, unknown>)[keys[i]];
+      s += JSON.stringify(keys[i]) + ':' + (x !== null && typeof x === 'object' ? encodeCanonical(x) : encodePrimitive(x));
+    }
+    result = s + '}';
+  }
+  if (result.length >= RECORD_MIN) TEXT.set(v, result);
+  return result;
+}
+function encodePrimitive(v: unknown): string {
+  if (v === null) return 'null';
+  if (typeof v === 'string' || typeof v === 'boolean') return JSON.stringify(v);
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) throw new Error('IR data must contain only finite numbers');
+    return Object.is(v, -0) ? '0' : String(v);
+  }
+  throw new Error(`IR data cannot contain ${typeof v}`);
+}
 
 /** Canonical finite JSON. Rejects values that would make persistent keys ambiguous. */
 export function canonical(value: unknown): string {
@@ -20,6 +74,7 @@ export function canonical(value: unknown): string {
       return Object.is(v, -0) ? '0' : String(v);
     }
     if (typeof v !== 'object') throw new Error(`IR data cannot contain ${typeof v}`);
+    if (CANONICAL.has(v)) return encodeCanonical(v); // IRWB-004: the same text, without re-checking a canonical value
     const cached = TEXT.get(v);
     if (cached !== undefined) return cached;
     if (ancestors.has(v)) throw new Error('IR data cannot contain cycles');
@@ -56,7 +111,7 @@ export function canonical(value: unknown): string {
         '}';
     }
     ancestors.delete(v);
-    if (result.length >= CACHE_MIN && CANONICAL.has(v)) TEXT.set(v, result);
+    if (result.length >= RECORD_MIN && CANONICAL.has(v)) TEXT.set(v, result);
     return result;
   }
   return encode(value);
@@ -98,7 +153,7 @@ export function immutable<T>(value: T): T {
       if (Object.getOwnPropertySymbols(v).length) throw new Error('IR arrays cannot contain symbol keys');
       const items: unknown[] = new Array(v.length);
       for (let i = 0; i < v.length; i++) {
-        const descriptor = Object.getOwnPropertyDescriptor(v, String(i));
+        const descriptor = Object.getOwnPropertyDescriptor(v, i);
         if (!descriptor || !('value' in descriptor))
           throw new Error('IR arrays require own data elements without holes or accessors');
         items[i] = build(descriptor.value);
@@ -106,18 +161,17 @@ export function immutable<T>(value: T): T {
       out = items;
     } else {
       if (Object.getOwnPropertySymbols(v).length) throw new Error('IR data cannot contain symbol keys');
-      // JSON.parse gives a plain object with own data properties in text order (here: sorted); defineProperty
-      // keeps a "__proto__" key an own property, as JSON.parse does
+      // JSON.parse gives a plain object with own data properties in text order (here: sorted). Assignment creates
+      // exactly such a property on a fresh plain object (IRWB-004: much faster than defineProperty), except for a
+      // "__proto__" key, which would set the prototype; defineProperty keeps it an own property, as JSON.parse does
       const record: Record<string, unknown> = {};
       for (const k of Object.keys(v).sort()) {
         const descriptor = Object.getOwnPropertyDescriptor(v, k)!;
         if (!('value' in descriptor)) throw new Error('IR data cannot contain accessors');
-        Object.defineProperty(record, k, {
-          value: build(descriptor.value),
-          enumerable: true,
-          writable: true,
-          configurable: true,
-        });
+        const x = build(descriptor.value);
+        if (k === '__proto__')
+          Object.defineProperty(record, k, { value: x, enumerable: true, writable: true, configurable: true });
+        else record[k] = x;
       }
       out = record;
     }
@@ -129,61 +183,12 @@ export function immutable<T>(value: T): T {
   return build(value) as T;
 }
 
-const K = [
-  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98,
-  0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
-  0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8,
-  0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-  0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
-  0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
-  0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
-  0xc67178f2,
-];
-function rotr(v: number, bits: number): number {
-  return (v >>> bits) | (v << (32 - bits));
-}
-
-/** Portable SHA-256 for identical browser/Node content addresses; no platform or npm dependency. */
+/**
+ * Portable SHA-256 for identical browser/Node content addresses; no platform or npm dependency. IRWB-004: the
+ * implementation is in sha256.ts (node:crypto in Node, a streaming portable one elsewhere); the digest is unchanged.
+ */
 export function sha256(text: string): string {
-  const bytes = new TextEncoder().encode(text);
-  const length = Math.ceil((bytes.length + 9) / 64) * 64;
-  const padded = new Uint8Array(length);
-  padded.set(bytes);
-  padded[bytes.length] = 0x80;
-  const view = new DataView(padded.buffer);
-  const bits = bytes.length * 8;
-  view.setUint32(length - 8, Math.floor(bits / 0x100000000));
-  view.setUint32(length - 4, bits >>> 0);
-  const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
-  const w = new Uint32Array(64);
-  for (let offset = 0; offset < length; offset += 64) {
-    for (let i = 0; i < 16; i++) w[i] = view.getUint32(offset + i * 4);
-    for (let i = 16; i < 64; i++) {
-      const a = w[i - 15],
-        b = w[i - 2];
-      w[i] =
-        w[i - 16] +
-        (rotr(a, 7) ^ rotr(a, 18) ^ (a >>> 3)) +
-        w[i - 7] +
-        (rotr(b, 17) ^ rotr(b, 19) ^ (b >>> 10));
-    }
-    let [a, b, c, d, e, f, g, j] = h;
-    for (let i = 0; i < 64; i++) {
-      const t1 = (j + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
-      const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
-      j = g;
-      g = f;
-      f = e;
-      e = (d + t1) | 0;
-      d = c;
-      c = b;
-      b = a;
-      a = (t1 + t2) | 0;
-    }
-    const v = [a, b, c, d, e, f, g, j];
-    for (let i = 0; i < 8; i++) h[i] = (h[i] + v[i]) | 0;
-  }
-  return h.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
+  return sha256Parts([text]);
 }
 
 const HASH = new WeakMap<object, string>();
@@ -194,6 +199,54 @@ export function fingerprint(value: unknown): string {
     return h;
   }
   return sha256(canonical(value));
+}
+
+const REVISION = new WeakMap<object, Map<string, string>>();
+/**
+ * IRWB-004: `fingerprint({ kind, schemaVersion, value })`, an artifact's revision, computed once per canonical value.
+ * The canonical text of that record is `{"kind":K,"schemaVersion":S,"value":V}` (keys sorted, strings JSON-encoded),
+ * so it is hashed from its three pieces without building it, V being the value's (cached) canonical text.
+ */
+export function revisionOf(kind: string, schemaVersion: string, value: unknown): string {
+  if (typeof kind !== 'string' || typeof schemaVersion !== 'string')
+    return fingerprint({ kind, schemaVersion, value });
+  const hashIt = () =>
+    sha256Parts([
+      '{"kind":' + JSON.stringify(kind) + ',"schemaVersion":' + JSON.stringify(schemaVersion) + ',"value":',
+      canonical(value),
+      '}',
+    ]);
+  if (!value || typeof value !== 'object' || !CANONICAL.has(value)) return hashIt();
+  const key = kind + '\u0000' + schemaVersion;
+  let m = REVISION.get(value);
+  if (!m) REVISION.set(value, (m = new Map()));
+  let h = m.get(key);
+  if (h === undefined) m.set(key, (h = hashIt()));
+  return h;
+}
+
+const VALIDATED = new WeakMap<object, WeakSet<object>>();
+/**
+ * IRWB-004: run `validator(value)` unless it already accepted this canonical value. A canonical value cannot change
+ * and validators are deterministic, so the verdict would be the same; a value that failed is validated again (and
+ * fails again). `check` receives the validator's result (e.g. to require that it is not a promise); the validator is
+ * called with `thisArg` as `this`, as a method call on its owner would.
+ */
+export function validateOnce<V>(
+  validator: (value: V) => unknown,
+  value: V,
+  check?: (result: unknown) => void,
+  thisArg?: unknown,
+): void {
+  const cacheable = !!value && typeof value === 'object' && CANONICAL.has(value as object);
+  const seen = cacheable ? VALIDATED.get(validator) : undefined;
+  if (seen?.has(value as object)) return;
+  const result = validator.call(thisArg, value);
+  check?.(result);
+  if (!cacheable) return;
+  let s = seen ?? VALIDATED.get(validator);
+  if (!s) VALIDATED.set(validator, (s = new WeakSet()));
+  s.add(value as object);
 }
 
 /** True for values `immutable` produced: deep-frozen, canonical, already validated. */

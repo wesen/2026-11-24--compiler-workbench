@@ -1,0 +1,95 @@
+across-calls           reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 640 O2-sccp 640 O2+ 630 O2x2 630
+algebra                reads made constant: constprop   1 sccp   1 (only constprop 0, only sccp 0)  instr O2 20 O2-sccp 20 O2+ 20 O2x2 20
+blend                  reads made constant: constprop   1 sccp   1 (only constprop 0, only sccp 0)  instr O2 1925 O2-sccp 1925 O2+ 1925 O2x2 1925
+bounds-lab             reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 5333 O2-sccp 5333 O2+ 5038 O2x2 5038
+bounds-offset          reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 1364 O2-sccp 1364 O2+ 1364 O2x2 1364
+bounds-param           reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 502 O2-sccp 502 O2+ 502 O2x2 502
+bounds-two             reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 810 O2-sccp 810 O2+ 760 O2x2 760
+branches               reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 139 O2-sccp 139 O2+ 139 O2x2 139
+call-chain             reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 1050 O2-sccp 1050 O2+ 1050 O2x2 1050
+calls                  reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 651 O2-sccp 651 O2+ 651 O2x2 651
+checksum               reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 1410 O2-sccp 1410 O2+ 1260 O2x2 1260
+collatz                reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 7461 O2-sccp 7461 O2+ 7461 O2x2 7461
+constants              reads made constant: constprop   3 sccp   6 (only constprop 0, only sccp 3)  instr O2 70 O2-sccp 40 O2+ 70 O2x2 40
+dead-code              reads made constant: constprop   1 sccp   1 (only constprop 0, only sccp 0)  instr O2 30 O2-sccp 30 O2+ 30 O2x2 30
+diagnostics            reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 30 O2-sccp 30 O2+ 30 O2x2 30
+distinct               reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 340 O2-sccp 340 O2+ 340 O2x2 340
+div-checks             reads made constant: constprop   4 sccp   4 (only constprop 0, only sccp 0)  instr O2 162 O2-sccp 162 O2+ 162 O2x2 162
+div-magic              reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 769 O2-sccp 769 O2+ 769 O2x2 769
+early-exit             reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 631 O2-sccp 631 O2+ 566 O2x2 566
+first-steps            reads made constant: constprop   1 sccp   1 (only constprop 0, only sccp 0)  instr O2 220 O2-sccp 220 O2+ 220 O2x2 220
+fixed-point            reads made constant: constprop   4 sccp   4 (only constprop 0, only sccp 0)  instr O2 411 O2-sccp 411 O2+ 411 O2x2 411
+fragments              reads made constant: constprop   1 sccp   1 (only constprop 0, only sccp 0)  instr O2 2299 O2-sccp 2299 O2+ 2299 O2x2 2299
+gcd                    reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 324 O2-sccp 324 O2+ 324 O2x2 324
+heat-lab               reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 8832 O2-sccp 8832 O2+ 8832 O2x2 8832
+histogram              reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 2292 O2-sccp 2292 O2+ 2230 O2x2 2230
+licm-nested            reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 1678 O2-sccp 1678 O2+ 1678 O2x2 1678
+licm-traps             reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 153 O2-sccp 153 O2+ 153 O2x2 153
+match-enum             reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 251 O2-sccp 251 O2+ 251 O2x2 251
+my-analysis            reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 200975 O2-sccp 200975 O2+ 200975 O2x2 200975
+my-first-pass          reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 50 O2-sccp 50 O2+ 50 O2x2 50
+nested-loops           reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 2342 O2-sccp 2342 O2+ 2342 O2x2 2342
+orders                 reads made constant: constprop   5 sccp   5 (only constprop 0, only sccp 0)  instr O2 1204 O2-sccp 1204 O2+ 1204 O2x2 1204
+params-demo            reads made constant: constprop   1 sccp   1 (only constprop 0, only sccp 0)  instr O2 2299 O2-sccp 2299 O2+ 2299 O2x2 2299
+pressure               reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 240 O2-sccp 240 O2+ 240 O2x2 240
+ramp                   reads made constant: constprop   2 sccp   2 (only constprop 0, only sccp 0)  instr O2 1040 O2-sccp 1040 O2+ 970 O2x2 970
+records                reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 260 O2-sccp 260 O2+ 260 O2x2 260
+regalloc-lab           reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 2614 O2-sccp 2614 O2+ 2614 O2x2 2614
+sort                   reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 5043 O2-sccp 5043 O2+ 5043 O2x2 5043
+start-here             reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 3871 O2-sccp 3871 O2+ 3750 O2x2 3750
+strength               reads made constant: constprop   2 sccp   2 (only constprop 0, only sccp 0)  instr O2 1938 O2-sccp 1938 O2+ 1802 O2x2 1802
+strings                reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 10833 O2-sccp 10833 O2+ 10302 O2x2 10302
+ui-gallery             reads made constant: constprop   2 sccp   2 (only constprop 0, only sccp 0)  instr O2 1058 O2-sccp 1058 O2+ 1058 O2x2 1058
+value-numbering        reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 3082 O2-sccp 3082 O2+ 3082 O2x2 3082
+wrong-shift            reads made constant: constprop   0 sccp   0 (only constprop 0, only sccp 0)  instr O2 1650 O2-sccp 1650 O2+ 1500 O2x2 1500
+{
+ "sums": {
+  "constprop": 28,
+  "sccp": 31,
+  "onlyConstprop": 0,
+  "onlySccp": 3,
+  "ms": {
+   "constprop": 1231,
+   "sccp": 1272
+  }
+ },
+ "totals": {
+  "O2": {
+   "statements": 709,
+   "bytes": 5160,
+   "instructions": 278296,
+   "limited": 1,
+   "rejected": 0
+  },
+  "O2-sccp": {
+   "statements": 708,
+   "bytes": 5148,
+   "instructions": 278266,
+   "limited": 1,
+   "rejected": 0
+  },
+  "O2+": {
+   "statements": 695,
+   "bytes": 5104,
+   "instructions": 276656,
+   "limited": 1,
+   "rejected": 0
+  },
+  "O2x2": {
+   "statements": 693,
+   "bytes": 5092,
+   "instructions": 276626,
+   "limited": 1,
+   "rejected": 0
+  }
+ },
+ "better": [
+  "constants"
+ ],
+ "worse": [],
+ "fewerStmts": [
+  "constants"
+ ],
+ "ms": 116170
+}
+node $T/scripts/07-sccp-corpus.mjs --json $T/various/11-sccp-corpus.json  118.20s user 0.58s system 102% cpu 1:56.41 total

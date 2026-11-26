@@ -1420,3 +1420,37 @@ Then implement, use subagents as you like"
 
 ### What warrants a second pair of eyes
 - **Parallel Candela runs.** IRWB-003 and IRWB-004 both need them. The briefs limit each agent to one Candela-scale process at a time, with a 12 GB heap.
+
+## Step 30: IRWB-006 merged (rules as verified data, SSA view); report 5 corrected and pushed
+
+The first of the four milestone agents finished. IRWB-006 turned `simplify` (27 rules) and `fold` (40 rules) into rule tables, with identical revisions on the corpus and on Candela. It recorded verification evidence per rule, added an SSA view that agrees with reaching definitions everywhere, and added a first sparse consumer, `sccp`. I merged the branch, re-ran every gate on the merged tree, corrected four claims in its vault report, and committed and pushed the vault.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 29.
+
+### What I did
+- Checked the branch's scope. Outside its ticket it touches `src/typed/passes.ts` (imports and two bodies), `src/workbench/workbench.ts` (`wb.rules()`), and new files under `src/typed/rules/`, `src/typed/ssa.ts`, `src/typed/sccp.ts` and the tests.
+- `git merge --no-ff --no-commit`: automatic. Gates on the merged tree:
+  - `npx tsc`: clean;
+  - tests: 340, 337 pass, 3 skipped;
+  - `IRWB_FULL`: 21/21;
+  - parity: 6,986/6,986;
+  - `scripts/08`: `corpus revisions IDENTICAL (44 projects)`;
+  - `build:site`: ok.
+
+  Merge commit `4fb1bba`.
+- Relayed to the IRWB-005 agent the finding that `F32_EDGES` holds only the canonical NaN, so `x + (−0) → x` survives the meaning check.
+- **Reviewed report 5 against the code and the diaries:**
+  - **Wrong claim, in three places.** It said the parity tool's 6,986 cases "agree with the reference compiler". `tools/parity.mjs` checks each project's O2 head against its own r0 through `meaningKept`. Fixed, and the evaluator's oracle evidence is restated as Candela's 32,985 of 33,200 decided cases against the reference images.
+  - **"Typed, a typed subset of JavaScript"** is inaccurate (`distinct`, `match`, records). It now reads "a small statically typed language with TypeScript-like syntax".
+  - **Confirmed:** sixteen rewriting returns in the hand-written `simplify` (`grep -c "return "` on `simplifyBody`). Confirmed the float-rewrite history against IRWB-001's `log/04` step 5: two of the four were caught only at 400 cases before the edge sweep. The report-1 link names an existing note.
+- Vault commit `3f39568`, pushed. Staged only the report and `irwb006-{evidence-strength,ssa-candela,sccp-constants}.png`.
+- `remarquee cloud ls /ai/2026/11/25/IRWB-006` lists the guide.
+
+### What I learned
+- **`sccp` makes 31 reads constant against `constprop`'s 28.** `O2-sccp` brings the `constants` project from 70 to 40 instructions in one run. Over the corpus the gain is small (278,296 → 278,266 instructions), because `constprop` already finds nearly everything there.
+- **Candela found a bug the corpus could not.** Two locals named `z` in `asinPositive` collided in the SSA names.
+
+### Open (from the agent)
+- **Registering `sccp` and `O2-sccp`** in the shared lists after the IRWB-003 merge; then re-run `IRWB_FULL=1 node --test tests/typed/rules.test.mjs`.
+- **A pruned SSA variant.** 2,840 of Candela's 4,245 phis are dead.

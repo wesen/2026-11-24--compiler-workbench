@@ -1,0 +1,29 @@
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (99.352531ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (790.974709ms)
+✔ P2.4: the book's other r0 numbers reproduce (276.843401ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (1489.135205ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (399.258775ms)
+✔ P2.4: encoders and the disassembler round-trip (90.340394ms)
+✔ P2.4: options are validated with the prototype's codes (48.395327ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (6.509119ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (21.21681ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (27.381303ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (23.40375ms)
+✔ P2.4: heat, diffs, machine stages and image status (47.354906ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (21060.293396ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit) (1429.842991ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (609.255536ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (838.029134ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (44.828472ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (151.746977ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (10.683652ms)
+✔ P2.6: corpus parity (all projects) (17222.746876ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (1079.567524ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26018.011498

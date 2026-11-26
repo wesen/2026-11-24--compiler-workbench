@@ -1,0 +1,20 @@
+{
+ "simplify": {
+  "add-zero": 4,
+  "mul-one": 2,
+  "mul-pow2": 15,
+  "mul-zero": 2,
+  "not-gt": 1,
+  "not-lt": 32,
+  "not-ne": 1,
+  "sub-self": 1,
+  "sub-zero": 1
+ },
+ "fold": {
+  "fold-add": 1,
+  "fold-gt": 1,
+  "fold-mul": 9,
+  "fold-shl": 1,
+  "fold-sub": 6
+ }
+}

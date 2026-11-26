@@ -1,0 +1,17 @@
+{
+  "what": "IRWB-004: opening Candela as a project and applying cfg in the page (both still on the main thread), Chromium via Playwright on 127.0.0.1:8772, after the Candela view loaded. Profiles: CDP Profiler, 0.5 ms sampling; inclusive ms per function.",
+  "open, before the SHA-256 window fix (profiled)": {
+    "loadProject ms": 14082,
+    "createIRArtifact": 11154, "sha256Parts": 5463, "of which Sha256.update self": 4367, "fingerprint (contentHash)": 3575, "revisionOf": 2566,
+    "project": 3482, "perRecord": 1954, "validateGraph": 736, "immutable": 2467, "garbage collector": 1999, "ingest": 393, "toNative": 322, "validateBlocks": 277
+  },
+  "open, after (profiled)": {
+    "loadProject ms": 8608,
+    "createIRArtifact": 5521, "sha256Parts": 1099, "fingerprint": 1110, "revisionOf": 485, "canonical": 497,
+    "project": 3009, "perRecord": 1503, "validateGraph": 829, "immutable": 2214, "garbage collector": 1888, "ingest": 555, "toNative": 380, "validateOnce": 180
+  },
+  "open, unprofiled, before the fix": { "loadProject ms": 11659 },
+  "cause of the hashing cost": "Sha256.update passed the rest of the text (text.slice(pos)) to TextEncoder.encodeInto for every 64 KiB; Chromium flattened that rest each time. Node uses node:crypto and never ran this path on large texts. Fixed: a window of at most (buffer room)/3 UTF-16 units. The portable path now hashes 18 MB in 330-390 ms in Node.",
+  "cfg on r0, wb.current.apply('cfg')": { "ms": 21319, "longest main-thread gap ms": 21335, "check": "13258/13258", "edits": 974, "baseline (IRWB-001 brief)": "about 45 s" },
+  "acceptance": "not reached for open and pass: both are one main-thread task (8.6 s and 21.3 s). Rendering is in the worker (19-browser-render.json)."
+}

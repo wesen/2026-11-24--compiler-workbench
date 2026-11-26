@@ -1,0 +1,33 @@
+{
+ "node": "v24.18.0",
+ "lift": 186,
+ "toNative": 416,
+ "createIRArtifact": 3692,
+ "r0": "cd36346ea7c4f175d7db025afe953e89f078902ef1ee44beaf15a7906b140456",
+ "contentHash": "267149650d448e14bf9d69c3b769a59c3b4ad89821e6ced34999fa4a6f078d86",
+ "canonicalCached": 5,
+ "textChars": 18178949,
+ "sha256": 288,
+ "sha256MBps": 63,
+ "storeFrom": 447,
+ "storeOf": 412,
+ "projectCached": 0,
+ "entities": 103618,
+ "relations": 132054,
+ "cfgAnalysis": 493,
+ "cfg": {
+  "ms": 18632,
+  "changed": true,
+  "rev": "4aea7e81dd046901b550627db94bd36074be8797e59d9a75323c68e03472b1a3",
+  "fns": 110,
+  "check": [
+   {
+    "total": 13280,
+    "agree": 13258,
+    "disagree": 0,
+    "inconclusive": 22
+   }
+  ]
+ },
+ "rssMB": 1414
+}

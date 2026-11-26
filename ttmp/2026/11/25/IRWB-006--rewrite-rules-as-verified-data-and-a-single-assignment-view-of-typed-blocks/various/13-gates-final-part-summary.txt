@@ -1,0 +1,16 @@
+== source a74063b + working tree
+== IRWB_FULL=1 passes + backend
+ℹ tests 21
+ℹ pass 21
+ℹ fail 0
+ℹ skipped 0
+ℹ duration_ms 65438.901719
+== parity
+strings                 4 revs  200/200 (+0 limit)
+ui-gallery              5 revs  200/200 (+0 limit)
+value-numbering         2 revs  100/100 (+0 limit)
+wrong-shift             0 revs  200/200 (+0 limit)  rejected: div-to-shift
+{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}
+== corpus revisions vs baseline
+IDENTICAL (44 lines)
+status 0

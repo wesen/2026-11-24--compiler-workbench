@@ -1117,9 +1117,21 @@ export class AnalysisManager {
     this.registry.register(definition);
     const captured = immutable(inputs);
     this.validatePorts(definition.inputs, captured);
+    // the key only detects cycles on the frame stack; an IR port is named by its artifact's identity and revision
+    // (IRWB-004: equal exactly when the artifacts are, without encoding two programs to compare them)
     const key = `invariant:${fingerprint({
       definition: definitionRef(definition),
-      inputs: captured,
+      inputs: Object.fromEntries(
+        Object.entries(captured as Record<string, unknown>).map(([name, value]) => {
+          const a = value as Artifact;
+          return [
+            name,
+            definition.inputs[name]?.category === 'ir'
+              ? { id: a.id, kind: a.kind, schemaVersion: a.schemaVersion, revision: a.revision }
+              : value,
+          ];
+        }),
+      ),
     })}`;
     if (parent?.stack.includes(key))
       throw new ContractError('invariant-cycle', `Invariant cycle involving ${definition.id}`);

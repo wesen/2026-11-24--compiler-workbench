@@ -1,0 +1,35 @@
+[
+ {
+  "scene": "R-01",
+  "index": 1,
+  "before": {
+   "fns": 332,
+   "stmts": 12358,
+   "blocks": 2409
+  },
+  "after": {
+   "fns": 137,
+   "stmts": 5400,
+   "blocks": 1208
+  },
+  "removedFns": 195,
+  "stmtCut": 56.3,
+  "frame": {
+   "stride": 8,
+   "floats": 4800,
+   "differentBits": 0,
+   "evaluatorSteps": 2425263,
+   "emulatorInstructions": 6564752
+  },
+  "ms": 118870,
+  "log": [
+   "specialize r1 14071ms",
+   "constprop r2 13188ms",
+   "fold r3 10520ms",
+   "cfg r4 9536ms",
+   "dce r5 7527ms",
+   "cfg - 411ms",
+   "dfe r6 9090ms"
+  ]
+ }
+]

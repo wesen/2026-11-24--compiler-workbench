@@ -8,6 +8,8 @@ import { differential, type DifferentialInvariant } from '../framework/contracts
 import type { Artifact } from '../framework/core/types.js';
 import { f32Op, toBits } from './f32.js';
 import { BlocksIR, storeOf } from './ir.js';
+import { meaningExecutor } from './meaning-exec.js';
+import { closureKey } from './parts.js';
 import type { StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';
 
 /** Compiler Workbench's generator (xorshift32): its seeds must give its cases. */
@@ -329,6 +331,10 @@ export interface RunResult {
 /** The stack area the evaluator adds above guest memory when a program has frame arrays (as the interpreter's). */
 export const STACK_BYTES = 65536;
 const hasFrames = new WeakMap<Store, boolean>();
+/** The locals of the calls in progress (`evaluate` is synchronous, so one array serves every evaluation in a realm). */
+let LOCALS = new Int32Array(4096);
+/** The working memory of an evaluation with a stack area (see `evaluate`). */
+let SCRATCH = new Uint8Array(0);
 const I32_BINARY = new Set(
   ['add', 'sub', 'mul', 'div', 'rem', 'and', 'or', 'xor', 'shl', 'shr', 'shru'].concat([
     'eq',
@@ -362,18 +368,34 @@ export function evaluate(
   let frames = hasFrames.get(st);
   if (frames === undefined) hasFrames.set(st, (frames = [...st.fns.values()].some(f => f.arrayBytes)));
   const size = frames ? (memBytes.length + STACK_BYTES + 15) & -16 : memBytes.length;
-  const bytes = new Uint8Array(size);
+  // IRWB-004: with a stack area, the working memory is a zeroed prefix of one reused buffer (the result gets a copy
+  // of the guest part, as before), instead of a new 64 KiB ArrayBuffer per call, whose external memory made the
+  // collector mark the whole heap about once a second during a meaning check
+  let bytes: Uint8Array;
+  if (frames) {
+    if (SCRATCH.length < size) SCRATCH = new Uint8Array(size);
+    bytes = SCRATCH.subarray(0, size);
+    bytes.fill(0, memBytes.length);
+  } else bytes = new Uint8Array(size);
   bytes.set(memBytes);
-  const mem = new DataView(bytes.buffer);
+  const mem = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let steps = 0,
-    sp = size;
+    sp = size,
+    localsTop = 0;
   const check = (addr: number, w: number) => {
     if (addr < 0 || addr + w > bytes.length) throw new Trap('memory access outside guest memory: ' + addr);
   };
   function call(name: string, argv: readonly number[], depth: number): number | number[] {
     if (depth > 64) throw new Trap('call depth');
     const f: WorkFn = st.fn(name);
-    const L = new Int32Array(f.locals.length);
+    // IRWB-004: a call's locals are a zeroed window of one reused Int32Array (what `new Int32Array(n)` gave, without
+    // allocating an ArrayBuffer per call, whose external memory made the collector mark the whole heap every second)
+    const base = localsTop,
+      n = f.locals.length;
+    if (base + n > LOCALS.length) LOCALS = new Int32Array(Math.max(2 * LOCALS.length, base + n));
+    const L = LOCALS.subarray(base, base + n);
+    L.fill(0);
+    localsTop = base + n;
     argv.forEach((a, i) => (L[i] = a));
     const saved = sp;
     let frame = 0,
@@ -486,6 +508,7 @@ export function evaluate(
       }
     } finally {
       sp = saved;
+      localsTop = base;
     }
   }
   const image = () => (size === memBytes.length ? bytes : bytes.slice(0, memBytes.length));
@@ -605,6 +628,14 @@ export function meaningKept(
             },
       describeCase: c => ({ fn: c.fn, n: c.n, args: c.args }),
       maxCounterexamples: 5,
+      // IRWB-004 D1: the cases and the origin's outcomes are a function of the origin's value (and of the parameters,
+      // which the version carries); a case's outcome on the candidate is a function of the case and the code the case
+      // can reach (closureKey). See src/typed/parts.ts.
+      baselineKey: ({ origin }) => `${origin.kind}@${origin.schemaVersion}:${origin.revision}`,
+      subjectKey: (art, c) => closureKey((art as Artifact<TypedBlocks>).value, c.fn),
+      // IRWB-004 F4: an installed executor (worker threads) decides the cases; without one, they are decided here
+      decide: (ports, cases, todo) =>
+        meaningExecutor()?.decide({ params, origin: ports.origin, candidate: ports.candidate, cases, todo }),
     });
     meaningChecks.set(key, check);
   }

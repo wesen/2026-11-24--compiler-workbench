@@ -17,6 +17,11 @@ const TYPES = {
   '.png': 'image/png',
 };
 
+// IRWB-004: the page's policy (site-src/index.html's meta tag) as a header on every response, so that a worker
+// script, which does not see the page's meta tag, runs under the same policy
+const CSP =
+  "default-src 'self'; script-src 'self' 'unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'";
+
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
@@ -27,7 +32,7 @@ const server = createServer(async (req, res) => {
     }
     if ((await stat(path).catch(() => null))?.isDirectory()) path = join(path, 'index.html');
     const body = await readFile(path);
-    res.writeHead(200, { 'content-type': TYPES[extname(path)] || 'application/octet-stream', 'cache-control': 'no-store' });
+    res.writeHead(200, { 'content-type': TYPES[extname(path)] || 'application/octet-stream', 'cache-control': 'no-store', 'content-security-policy': CSP });
     res.end(body);
   } catch {
     res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');

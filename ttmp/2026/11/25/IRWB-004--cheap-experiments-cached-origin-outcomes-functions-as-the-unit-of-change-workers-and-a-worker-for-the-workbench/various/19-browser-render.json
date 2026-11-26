@@ -1,0 +1,19 @@
+{
+  "what": "IRWB-004 F4 browser: Candela B-01 rendered by the engine worker and in the page (UI.S.cdl.where), Chromium via Playwright, dist/site served by tools/serve-site.mjs on 127.0.0.1:8772. maxGapMs: the longest gap between ticks of a 10 ms setInterval on the page's main thread during the render. compare: bits of pass 0's 12 floats per pixel and of the colour sums, against the frames rendered before it in the same session.",
+  "machine": "shared, load average 10-12 on 8 cores; headless Chromium (software GPU)",
+  "before the canvas fix": [
+    { "engine": "r0", "where": "worker", "stride": 8, "ms": 3157, "maxGapMs": 3578, "cause": "trace: CrRendererMain CanvasRenderingContext2D::FinalizeFrame, 'GPU backpressure via GL_COMMANDS_COMPLETED_CHROMIUM' 581 ms (in a traced run whose gap was 587 ms); the page's JS profile was idle" },
+    { "engine": "r0", "where": "page", "stride": 8, "ms": 10031, "maxGapMs": 3198, "compare": "0/4800 vs the worker's r0 frame" },
+    { "engine": "kernel", "where": "worker", "stride": 8, "ms": 5611, "setupMs": 1822, "maxGapMs": 607 },
+    { "engine": "kernel", "where": "page", "stride": 8, "ms": 8947, "setupMs": 1297, "maxGapMs": 3583, "compare": "0/4800 vs the worker's kernel frame" }
+  ],
+  "after (canvas getContext('2d', { willReadFrequently: true }))": [
+    { "engine": "r0", "where": "worker", "stride": 8, "ms": 3273, "setupMs": 619, "steps": 1255754, "maxGapMs": 25, "over100": 0 },
+    { "engine": "r0", "where": "page", "stride": 8, "ms": 2748, "setupMs": 593, "steps": 1255754, "maxGapMs": 1617, "over100": 1, "compare": "0/4800 (acc 0/1600) vs evaluator r0 in the worker" },
+    { "engine": "kernel", "where": "worker", "stride": 1, "ms": 35573, "setupMs": 1254, "steps": 217105487, "maxGapMs": 116, "over100": 1 },
+    { "engine": "r0", "where": "worker", "stride": 1, "ms": 65740, "steps": 79653353, "maxGapMs": 96, "over100": 0, "compare": "0/307200 (acc 0/102400) vs emulator kernel in the worker" },
+    { "engine": "kernel", "where": "page", "stride": 1, "ms": 33581, "steps": 217105487, "maxGapMs": 3460, "over100": 86, "compare": "0/307200 (acc 0/102400) vs evaluator r0 in the worker; 0/307200 (acc 0/102400) vs emulator kernel in the worker" }
+  ],
+  "console": "0 errors, 0 warnings",
+  "screenshot": "18-browser-worker-render-B01-stride1.png"
+}
