@@ -1,0 +1,25 @@
+function blend(work: buffer, n: i32, a: i32, b: i32): i32
+bb:blend.0  -> [.1]
+    s:blend.1    s = 0
+    s:blend.2    i = 0
+    s:blend.15   inv = ((a * b) + 64)
+    s:blend.3    goto .1
+bb:blend.1  -> [.2, .3]
+    s:blend.4    if (i >= n) goto .2 else .3
+bb:blend.2  -> []
+    s:blend.14   return (s / 8)
+bb:blend.3  -> [.4, .7]
+    s:blend.5    t7 = i
+    s:blend.6    if (t7 >=u load32[work+0]) goto .4 else .7
+bb:blend.4  -> []
+    s:blend.7    trap
+bb:blend.7  -> [.1]
+    s:blend.10   s = (s + (load16[(work + (t7 << 1))+4] * inv))
+    s:blend.11   i = (i + 1)
+    s:blend.12   goto .1
+drop-check {"pass":"mutant","rev":"r7","edits":2,"changed":true,"kinds":{"replaceStmt":1,"unreachable":1},"ms":16.71,"check":"40/40"}
+   spec 4000 agree 4000 disagree 0 inconclusive 0 null
+   unconstrained 4000 agree 3869 disagree 131 inconclusive 0 {"case":{"args":[1024,26,-16,518],"fn":"blend","n":36},"reason":"blend#36: expected trap, got -2855784"}
+lt->le {"pass":"mutant","rev":"r6","edits":0,"changed":false,"ms":9.98}
+   spec 4000 agree 4000 disagree 0 inconclusive 0 null
+   unconstrained 4000 agree 4000 disagree 0 inconclusive 0 null
