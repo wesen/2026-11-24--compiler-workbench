@@ -28,6 +28,7 @@ Stage 2 tests the framework with a remote, asynchronous check of Tix-to-CUDA low
 
 - [Design: Direct CUDA emission and batched lowering checks](./design-doc/01-direct-cuda-emission-and-batched-lowering-checks.md)
 - [Implementation diary and probe evidence](./reference/01-implementation-diary.md)
+- [Final report and independent evaluation](./reference/02-report.md)
 - [Verification and corpus timings](./reference/02-cuda-verification-and-corpus-timings.md)
 
 ## Status

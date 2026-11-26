@@ -37,3 +37,11 @@ Verified 24 tensor tests including GB10 batches and a real rejected lowering; re
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/ttmp/2026/11/26/IRWB-022-E--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/02-cuda-verification-and-corpus-timings.md — Commands, verification, and six timing results
+
+## 2026-11-26
+
+Published the Stage 2 report, including independent results and a one-run intrinsic ablation; left the evaluated implementation unchanged.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/ttmp/2026/11/26/IRWB-022-E--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/02-report.md — Publication copy and independent evidence
