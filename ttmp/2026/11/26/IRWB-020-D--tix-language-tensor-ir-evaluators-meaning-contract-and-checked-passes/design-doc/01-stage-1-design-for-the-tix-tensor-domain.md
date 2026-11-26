@@ -1,7 +1,7 @@
 ---
 Title: Stage 1 design for the Tix tensor domain
 Ticket: IRWB-020-D
-Status: review
+Status: complete
 Topics:
     - ir
     - verification
@@ -116,3 +116,5 @@ Each row is one `corpus/tensor/<name>/main.tix`. Check against an independent sm
 ## Implemented framework change
 
 In `src/framework/passes/define-pass.ts`, `applyNativePassSync` uses `prepareNative` and `checkWrites` shared with `applyPass`. This supports immediate checked results from a read-only tensor adapter. The existing pass declaration and barrel export suffice. The regression is `tests/framework/native-pass-sync.test.mjs`.
+
+The six compiled corpus programs passed the ramp calibration on all 697 returned elements. The largest error/tolerance ratio was 0.01648 rounded upward (attention). Layernorm reproduced the design probe over all 65 elements. The implementation follows the reviewed design.

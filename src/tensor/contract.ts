@@ -1,6 +1,7 @@
 import type { Artifact } from '../framework/core/types.js';
 import { canonical } from '../framework/core/data.js';
 import { differential, differentialSpec, runDifferential } from '../framework/contracts/differential.js';
+import { defineType } from '../framework/contracts/definitions.js';
 import type { CheckResult } from '../framework/contracts/types.js';
 import { evaluate, volume } from './evaluate.js';
 import type { Inputs, Tensor } from './evaluate.js';
@@ -11,7 +12,15 @@ import type { Affine, Axis, Bindings, Expr, Fn, Module } from './model.js';
 export type Relation = 'exact' | 'tolerance';
 type Pattern = 'ramp' | 'mixed' | 'witness';
 type Sample = { fn: string; sizes: Record<string, number>; pattern: Pattern; inputs: Inputs };
-const ports = { baseline: TixIR, candidate: TixIR };
+const entry = defineType<string>({
+  id: 'tix.entry',
+  version: '1',
+  description: 'Tix function name',
+  validate(name) {
+    if (typeof name !== 'string') throw Error('expected a function name');
+  },
+});
+const ports = { origin: TixIR, baseline: TixIR, candidate: TixIR, entry };
 const witness = [1, 0, 2 ** -24, 2 ** -24, 0.25];
 
 // Check admissibility and estimate loop work before allocating any generated input.
@@ -133,6 +142,31 @@ function compare(a: Tensor, b: Tensor, relation: Relation) {
 function signature(m: Module) {
   return canonical(m.functions.map(f => ({ name: f.name, params: f.params, shape: f.shape })));
 }
+function invariant(relation: Relation) {
+  return differential<typeof ports, Sample, { output: Tensor; skip: boolean }>({
+    id: 'tix.' + relation,
+    version: '1',
+    description: 'Sampled elementwise Tix output comparison',
+    inputs: ports,
+    baseline: 'baseline',
+    subject: 'candidate',
+    count: 3,
+    seed: 7,
+    cases: ({ origin, entry }, random) =>
+      samples(origin.value.functions.find(f => f.name === entry)!, random),
+    run: (side, _value, c, inputs) => {
+      const artifact = side === 'subject' ? inputs.candidate : inputs.baseline;
+      const reference = relation === 'tolerance' && side === 'baseline';
+      const f = artifact.value.functions.find(f => f.name === c.fn)!;
+      const output = evaluate(f, c.inputs, reference ? 'f64' : 'f32');
+      return { output, skip: reference && !output.data.every(Number.isFinite) };
+    },
+    inconclusive: o => o.skip,
+    compare: (a, b) => compare(a.output, b.output, relation),
+    describeCase: ({ fn, sizes, pattern }) => ({ fn, sizes, pattern }),
+  });
+}
+const invariants = { exact: invariant('exact'), tolerance: invariant('tolerance') };
 export function checkMeaning(
   origin: Artifact<Module>,
   before: Artifact<Module>,
@@ -143,27 +177,10 @@ export function checkMeaning(
     return { ok: false, reason: 'function interface changed' };
   const reports = [];
   for (const fn of origin.value.functions) {
-    const inv = differential<typeof ports, Sample, { output: Tensor; skip: boolean }>({
-      id: 'tix.' + relation,
-      version: '1',
-      description: 'Sampled elementwise Tix output comparison',
-      inputs: ports,
-      baseline: 'baseline',
-      subject: 'candidate',
-      count: 3,
-      seed: 7,
-      cases: (_ports, random) => samples(fn, random),
-      run: (side, artifact, c) => {
-        const reference = relation === 'tolerance' && side === 'baseline';
-        const f = artifact.value.functions.find(f => f.name === c.fn)!;
-        const output = evaluate(f, c.inputs, reference ? 'f64' : 'f32');
-        return { output, skip: reference && !output.data.every(Number.isFinite) };
-      },
-      inconclusive: o => o.skip,
-      compare: (a, b) => compare(a.output, b.output, relation),
-      describeCase: ({ fn, sizes, pattern }) => ({ fn, sizes, pattern }),
-    });
+    const inv = invariants[relation];
     const evidence = runDifferential(differentialSpec(inv), {
+      origin,
+      entry: fn.name,
       baseline: relation === 'exact' ? before : origin,
       candidate,
     });

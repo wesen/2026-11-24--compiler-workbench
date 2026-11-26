@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "a7c14ceb57cf41bf8da5fba291b9ec7eaa5560805d438f2471f4ad4c8f3779df",
+  "request": {
+    "ticket": "IRWB-020-D",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the reviewed tensor stage. The bounded ramp, real pass verdicts, both mutants and targeted regressions passed."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-a663e845520e83e312a2fa9f719c1373",
+    "state": "committed",
+    "created_at": "2026-11-26T19:49:40.37620447Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "419100ecdcafea2a1404f11244d70e6bc45106ed62df2c1187da3edd7c96e851",
+      "index.md": "09fdd4c167fa0ec25c8c346f64949df78fd35dcb369fb5e83e5ff5f379d6d7c4"
+    },
+    "after": {
+      "changelog.md": "0bfe1f3d37e357bc59cb2ec230d0ff6dc7cfa81d63f415eed05227184e009174",
+      "index.md": "0fdac76e28a4f89722bb9364bfa91f4b277ef48b64d4ed8f7acea388d2b75b2e"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "419100ecdcafea2a1404f11244d70e6bc45106ed62df2c1187da3edd7c96e851",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKU3VibWl0dGVkIHRoZSBzdGFnZS0xIGRlc2lnbiBmb3IgcmV2aWV3LiBQcm9iZWQgdGhlIHN5bmNocm9ub3VzIHBhc3MgYm91bmRhcnkgYW5kIG1lYXN1cmVkIGFuIGV4YWN0LXZlcnN1cy10b2xlcmFudCBzcGxpdC1zdW0gd2l0bmVzcy4KCiMjIDIwMjYtMTEtMjYKCkNvbXBsZXRlZCB0aGUgcmV2aWV3ZWQgdGVuc29yIHN0YWdlLiBUaGUgYm91bmRlZCByYW1wLCByZWFsIHBhc3MgdmVyZGljdHMsIGJvdGggbXV0YW50cyBhbmQgdGFyZ2V0ZWQgcmVncmVzc2lvbnMgcGFzc2VkLgo="
+    },
+    {
+      "path": "index.md",
+      "before": "09fdd4c167fa0ec25c8c346f64949df78fd35dcb369fb5e83e5ff5f379d6d7c4",
+      "after": "LS0tClRpdGxlOiBUaXggbGFuZ3VhZ2UsIHRlbnNvciBJUiwgZXZhbHVhdG9ycywgbWVhbmluZyBjb250cmFjdCBhbmQgY2hlY2tlZCBwYXNzZXMKVGlja2V0OiBJUldCLTAyMC1EClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBpcgogICAgLSB2ZXJpZmljYXRpb24KRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogSW1wbGVtZW50ZWQgYW5kIHRlc3RlZCBUaXggc3RhZ2UgMSBvbiB0aGUgdjYgSVIgZnJhbWV3b3JrLgpMYXN0VXBkYXRlZDogMjAyNi0xMS0yNlQxNDo0OTo0MC4zNzYxNTU2MzMtMDU6MDAKV2hhdEZvcjogIiIKV2hlblRvVXNlOiAiIgotLS0KCiMgVGl4IGxhbmd1YWdlLCB0ZW5zb3IgSVIsIGV2YWx1YXRvcnMsIG1lYW5pbmcgY29udHJhY3QgYW5kIGNoZWNrZWQgcGFzc2VzCgpUaGUgW3N0YWdlLTEgZGVzaWduXSguL2Rlc2lnbi1kb2MvMDEtc3RhZ2UtMS1kZXNpZ24tZm9yLXRoZS10aXgtdGVuc29yLWRvbWFpbi5tZCkgcmVjb3JkcyB0aGUgaW1wbGVtZW50ZWQgbGFuZ3VhZ2UsIHRlbnNvciBJUiwgcHJlY2lzaW9uIHJ1bGVzIGFuZCBzYW1wbGVkIHBhc3MgY29udHJhY3QuIFRoZSBmcmFtZXdvcmsgbm93IHJ1bnMgc3luY2hyb25vdXMgbmF0aXZlIHBhc3NlcyB1c2luZyB0aGUgZXhpc3RpbmcgcGFzcyBkZWNsYXJhdGlvbiwgZGlmZiwgY29ycmVzcG9uZGVuY2UgYW5kIGRlY2xhcmVkIHdyaXRlcy4KClRoZSBbZGlhcnldKC4vcmVmZXJlbmNlLzAxLWRlc2lnbi1hbmQtaW1wbGVtZW50YXRpb24tZGlhcnkubWQpIGNvbnRhaW5zIHRoZSByZXZpZXcgZGVjaXNpb25zLCBudW1lcmljIG1lYXN1cmVtZW50cyBhbmQgcmVncmVzc2lvbiByZXN1bHRzLiBTZWUgdGhlIFt0YXNrc10oLi90YXNrcy5tZCkgYW5kIFtjaGFuZ2Vsb2ddKC4vY2hhbmdlbG9nLm1kKS4K"
+    }
+  ]
+}

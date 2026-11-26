@@ -1,7 +1,7 @@
 ---
 Title: Design and implementation diary
 Ticket: IRWB-020-D
-Status: active
+Status: complete
 Topics:
     - ir
     - verification
@@ -144,7 +144,8 @@ Accepted every review item. The native runner takes an existing pass, the unchan
 
 A Node 24 probe evaluated the proposed layernorm formula with eps 1e-5 in f64 and with f32 rounding after every operation. Shapes (1,1), (3,3), (5,5), (3,5), (5,3) cover 65 elements. Maximum absolute error divided by the allowed error was 0.006351215756243548. The implementation checkpoint will repeat the comparison using compiled corpus functions.
 
-### Reviewer request (verbatim)
+<details>
+<summary>Reviewer request (verbatim)</summary>
 
 A reviewer has read your design for IRWB-020-D. The review:
 
@@ -177,6 +178,8 @@ Now do the following in this session:
 3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
 4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
 
+</details>
+
 ## Step 3 — Synchronous framework gate
 
 Added applyNativePassSync in src/framework/passes/define-pass.ts. Existing Pass declarations supply kernels. Both runners now use prepareNative and checkWrites. The sync path opens a read-only projection, checks changed revisions once and refuses analysis-manager dependencies. The native-only framework regression exercises write declarations, rejection evidence, identities and asynchronous misuse. npm run build and node --test tests/framework/native-pass-sync.test.mjs passed.
@@ -186,3 +189,33 @@ Added applyNativePassSync in src/framework/passes/define-pass.ts. Existing Pass 
 Implemented the fixed synchronous API, parser and symbolic extent checker, tensor.tix projection, shared row-major evaluator, sampled differential contract and native rewrites in src/tensor. Numeric literals retain their spelling in finite IR. Disjoint lexical binder IDs let inline compose affine accesses without capture. The contract samples each original function separately so one function's finite coverage cannot hide a second function with no evidence.
 
 All six corpus sources compiled to v6 artifacts. A build-and-run smoke applied inline then split-sum to each source and all twelve steps were accepted. Both Typed regression files and the 18 framework test files passed. The next checkpoint exercises independent corpus outputs, both precisions and deliberately incorrect rewrites through the real gate.
+
+
+## Step 5 — Numerical and regression checks
+
+The implementation now uses one versioned framework invariant per relation with explicit origin, baseline, candidate and entry-function ports. Source checks also recognize grouped plain index uses and the unambiguous juxtaposed body of a max reduction whose indices share shape names. A closeout import of dist/tensor/index.js listed exactly compileTix, optimizeTix and runTix.
+
+The corpus tests compare independent outputs for each original and optimized program in both precisions. The actual split witness changed from word 0x3fa00000 to 0x3fa00001. The forced exact gate rejected it, the tolerance gate admitted it, and the same harness rejected a dropped tail and a wrong transposition. The public optimizer continued successfully after a rejected step. Signed-zero disagreement, nonfinite candidate disagreement, lexical scope and per-function finite coverage have separate tests.
+
+Two fixture failures informed the tests. Running `node --test --test-isolation=none tests/tensor/language.test.mjs` showed `0.9999999403953552` versus expected `1` for log(exp(1)) in f32. The expected value now includes the intermediate f32 rounding. Running the same command with `tests/tensor/*.test.mjs` exposed `[undeclaredWrite] Pass tix.split-sum.mutant changed kinds it did not declare in writes`. The first nonfinite mutant removed its tensor read. The revised mutant adds NaN to the real reduction, preserves the read and reaches the numerical gate.
+
+| Compiled corpus function | Ramp output elements | Maximum absolute error as a fraction of tolerance |
+| --- | ---: | ---: |
+| attention | 83 | 0.01647443 |
+| conv2d | 327 | 0 |
+| layernorm | 65 | 0.00635122 |
+| matmul | 74 | 0 |
+| mlp | 83 | 0.01071181 |
+| softmax | 65 | 0.00472113 |
+
+The fractions above round upward. The corpus test regenerates the ramp from the origin and checks every element.
+
+| Final command | Result |
+| --- | --- |
+| `npm run build` | Passed on Node 24.18.0 |
+| `node --test tests/tensor/*.test.mjs` | All three files passed |
+| `node --test --test-isolation=none tests/tensor/*.test.mjs` | 29 passed, zero failures |
+| `node --test tests/framework/*.test.mjs` | All 18 files passed |
+| `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` | Both files passed |
+
+The reviewed design is e96f096, the framework checkpoint is 0ae3433, and the initial domain and corpus implementation is 5358570. The regression checkpoint contains the final parser and invariant refinements. There are no deviations from the revised design.

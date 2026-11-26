@@ -126,7 +126,17 @@ class Parser {
     if (this.input[p++].text !== '(') return false;
     while (ident.test(this.input[p].text)) {
       names.push(this.input[p++].text);
-      if (this.input[p].text === ')') return names.length !== 2 || !names.every(n => this.shapes.has(n));
+      if (this.input[p].text === ')') {
+        const next = this.input[p + 1].text;
+        // Juxtaposition can only start a reduction body, even when the indices share shape names.
+        return (
+          next === '(' ||
+          ident.test(next) ||
+          number.test(next) ||
+          names.length !== 2 ||
+          !names.every(n => this.shapes.has(n))
+        );
+      }
       if (this.input[p++].text !== ',') return false;
     }
     return false;
@@ -152,7 +162,13 @@ class Parser {
         const index = this.affine(
           name => this.scope.get(name.text)?.id ?? fail(name.at, 'unbound index ' + name.text),
         );
-        return { index, binder: this.pos === start + 1 ? this.scope.get(this.input[start].text) : undefined };
+        let first = start,
+          last = this.pos - 1;
+        while (this.input[first].text === '(' && this.input[last].text === ')') {
+          first++;
+          last--;
+        }
+        return { index, binder: first === last ? this.scope.get(this.input[first].text) : undefined };
       });
       if (indices.length !== shape.length) fail(at, 'rank mismatch for ' + n);
       indices.forEach(({ binder }, i) => {
