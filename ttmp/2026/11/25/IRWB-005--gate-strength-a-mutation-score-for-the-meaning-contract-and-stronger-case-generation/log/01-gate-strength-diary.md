@@ -358,3 +358,52 @@ Measured: `casesFrom` on the artifact store and on the ingest store differ for 1
 
 ### Technical details
 - Key order of `K` in the artifact: `bB bL bO bS bU etab gBary__x gBary__y gLam gTau gTime gTri rngS scene sky skyOn spectral`.
+
+## Step 8: The corpus measurement: 1,144 mutants after O2, seven gate configurations
+
+The first full measurement. Every corpus project's pipeline head was mutated at every site (1,144 mutants over 42 projects with sites; `algebra` and `distinct` have none), each mutant was judged by seven gate configurations, and every mutant some gate accepted was classified. The default gate kills 909 and lets 40 wrong mutants through; 195 are equivalent. Of the 40, 33 diverge (an increment `i + 1` became `i + 0`, or a loop condition stopped being reachable), and 7 compute a different result on inputs the gate did not sample. Contract version 2 lets 2 through. The ablations say where the gain comes from: the divergence rule alone (`default+div`) leaves 7, the 40 boundary cases alone (`strong-cases`) leave 36, both together leave 2. Doubling or more than doubling the default sample (80, 100 cases) leaves 37 and 36.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Acceptance items 1 and 2 on the corpus.
+**Inferred user intent:** The kill rate per project and operator, with equivalent mutants accounted for.
+**Commit (code):** c44a839 (harness as run); results committed with this step.
+
+### What I did
+- `node --max-old-space-size=8192 tools/mutation-score.mjs --gates default,default80,check100,strong,strong-cases,default+div,strong-cov --json various/04-corpus-final.json --jsonl various/04-corpus-final.jsonl` → `various/04-corpus-final.txt`; 20 min 52 s wall, 1,203 s user.
+- Analysed the JSONL: classes, methods, the non-divergent survivors and their witnesses, the O2 listing of `strength.meter`.
+
+### Why
+- The final revision is the base the guide chose (guide §10); r0 as a base is the held-out run (Step 9).
+
+### What worked
+- 1,144 mutants, 0 invalid, 42 projects. Default gate: killed 908 + killed-inconclusive 1, survived-wrong 40, equivalent 195 (26 proved exhaustively on the specified domain, 13 of them different outside it; 24 equivalent under the specification with an unconstrained witness; 145 presumed). Kill rate 83.1 % (presumed counted as misses) .. 95.8 % (presumed excluded).
+- Per operator (default, upper): cmp-flip 106/106, drop-store 8/8, swap 210/210 of non-equivalent, shift 109/109, const 409 of 446 (91.7 %), cmp-weaken 59 of 61 (96.7 %), check-range 3 of 4 (75 %), drop-check 4 of 4, hoist-trap 1 of 1. The equivalents concentrate in cmp-weaken (88), drop-check (27), check-range (26), hoist-trap (20): checks that can never fire and signed/unsigned changes on values that are never negative.
+- Survived-wrong under default by method: sample-diverges 24, exhaustive-diverges 9, sample 6, exhaustive 1.
+- Kill rate upper bound (default → v2): total 95.8 % → 99.8 %; default80 96.1 %, check100 96.2 %, strong-cases 96.2 %, default+div 99.3 %, strong-cov 99.8 %. Per project: 15 of 42 at 100 % under default; under v2 every project is at 100 % except bounds-lab 98.5 % and strength 96.3 %.
+- Reference image: 81,950 (case, mutant) comparisons on survivors' sample cases, 0 disagreements with the mutant where r0 agreed, 0 with r0.
+- Gate time over all 1,144 mutants (ms): default (Program.apply, incl. building the revision) 61,948; default80 34,077; check100 39,365; strong 163,218; strong-cases 28,632; default+div 83,011; strong-cov 149,433. The divergence rule's cost is in the mutants that diverge: each such case is re-run to 2e5 statements.
+
+### What didn't work
+- Nothing failed. The run took 21 minutes, most of it classification.
+
+### What I learned
+- The seven non-divergent survivors of the default gate, with what kills them:
+  - `branches.grade` `score >= 80` → `>= 79` (wrong only at 79, spec [40, 100]); `branches.sign` `x < 0` → `x < -1` and `x > 0` → `x > 1` (wrong only at −1, 1); `fixed-point.qmul` `a*b + 128` → `+ 129` (wrong when a·b ≡ 127 mod 256); `bounds-lab.pairs` `i >= len(a)` → `i > len(a)`: killed by v2's boundary and constant cases.
+  - `bounds-lab.pairs` check on `b` admitting `i == len(b)`: wrong only when `len(a) = len(b) + 1` (witness from case 2 of the 4,000-case sample); and `strength.meter` `t3 < 1000` → `t3 < 999`, where O2 has turned `Math.min(level + c, 1000)` into a branch: wrong only when the running sum is exactly 999 at some step (witness case 3,333 of 4,200). Both survive v2: one needs a relation between two inputs, the other a value of an intermediate. Neither boundary values of inputs nor coverage reaches them (both branches of `t3 < 1000` are covered).
+- Coverage-guided selection (`strong-cov`) kills exactly what the fixed boundary scheme kills on the corpus, at similar cost.
+
+### What was tricky to build
+- N/A (measurement).
+
+### What warrants a second pair of eyes
+- The 145 presumed-equivalent mutants: no difference in 4,200 specified and 4,000 unconstrained cases each. Their inspection is Step 10.
+
+### What should be done in the future
+- Held-out base (r0), f32 fixture, Candela subset, pipeline cost under v2.
+
+### Code review instructions
+- `various/04-corpus-final.json` (`total`, `bySubject`, `byOperator`, `byFunction` per gate), `various/04-corpus-final.jsonl` (one record per mutant).
+
+### Technical details
+- Survived-wrong for v2 (`strong`): `bounds-lab.pairs check-range len+1 "if (t5 >=u load32[b+0]) goto .8 else .11"`, `strength.meter const -1 "1000"`.

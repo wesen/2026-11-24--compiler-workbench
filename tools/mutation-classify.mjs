@@ -25,12 +25,14 @@ export function classifier({ r0st, basest, inputs, reference = null, budget = 30
     if (pack) return pack;
     const spec = inputs[g] ?? {};
     const run = cs => cs.map(c => evaluate(r0st, c.fn, c.args, c.memory, { limit: LIMIT }));
-    const domain = M.finiteDomain(r0st, g, spec, budget);
+    // the specified domain: records at their declared offsets (diary step 7; identical cases on the corpus)
+    const gen = strongModule ? strongModule.offsetOrdered(r0st) : r0st;
+    const domain = M.finiteDomain(gen, g, spec, budget);
     const sampleCases = [
-      ...casesFrom(r0st, g, { count: sample, seed: 101, inputs: spec }),
+      ...casesFrom(gen, g, { count: sample, seed: 101, inputs: spec }),
       ...(strongModule ? strongModule.boundaryCases(r0st, g, { inputs: spec, extra: 200 }) : []),
     ];
-    const freeCases = casesFrom(r0st, g, { count: free, seed: 102, inputs: {} });
+    const freeCases = casesFrom(gen, g, { count: free, seed: 102, inputs: {} });
     pack = { domain, domainRuns: domain && run(domain), sample: sampleCases, sampleRuns: domain ? null : run(sampleCases), free: freeCases, freeRuns: run(freeCases) };
     if (reference && !domain)
       pack.ref = sampleCases.slice(0, refCases).map(k => {
@@ -54,8 +56,9 @@ export function classifier({ r0st, basest, inputs, reference = null, budget = 30
     }
     return tot;
   }
+  /** `mutant`: an artifact, or a store (Candela's overlay of a mutated sub-program on the base). */
   return function classify(mutant, site) {
-    const mst = storeOf(mutant.value);
+    const mst = mutant.value ? storeOf(mutant.value) : mutant;
     const A = M.affected(basest, site.fn);
     const out = { affected: A.length };
     const domains = A.map(g => packFor(g).domain);

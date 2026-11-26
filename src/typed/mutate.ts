@@ -670,3 +670,19 @@ export function subProgram(v: TypedBlocks, fns: readonly string[]): TypedBlocks 
     ops: pick(v.ops),
   };
 }
+
+/**
+ * A view of `base` in which the functions of `part` (a mutated sub-program) replace their namesakes: `fn`, `fns` and
+ * `get` see `part`'s records first. Evaluating a caller on it runs the caller's unchanged code around the mutated
+ * function without copying the large program. Records a mutation made take their ids from the sub-program's
+ * counters, which are the base's, so they do not collide with the base's ids.
+ */
+export function overlay(base: Store, part: Store): Store {
+  const view = Object.create(base) as Store;
+  const fns = new Map(base.fns);
+  for (const [n, f] of part.fns) fns.set(n, f);
+  Object.defineProperty(view, 'fns', { value: fns });
+  Object.defineProperty(view, 'get', { value: (id: string) => part.ents.get(id) ?? base.ents.get(id) });
+  Object.defineProperty(view, 'has', { value: (id: string) => part.ents.has(id) || base.ents.has(id) });
+  return view;
+}

@@ -2,18 +2,22 @@
 //
 // Base: r0 with bcm applied (so bcm's merged checks are among the sites), checked against r0 on every function's
 // 40 gate cases. Subset: functions whose own 40 gate cases at r0 stay within --max-steps statements (no step-limit
-// hit), spread evenly by name over --count functions, plus every function bcm changed (up to --bcm of them).
+// hit), spread evenly by name over --count functions, plus up to --bcm functions bcm changed.
 //
-// Each mutated function f is judged on a sub-program: f, the functions that reach f by calls (A), and everything they
-// call (mutate.ts `closure`, `subProgram`). Cases are generated per function from the seed, and every callee is in the
-// sub-program, so the gate's cases and runs for A are exactly the full gate's; every other function runs unchanged
-// code and agreed (or was inconclusive) for the base. The gate restricted to A (meaningKept with roots: A) therefore
-// gives the full gate's verdict, as long as other functions have decided cases, which Candela's thousands do.
-// Mutants are revisions of the sub-program made by mutantPass through applyPass, like the corpus's.
+// A whole-program revision of Candela costs about as much as bcm's application (30 s: clone, validate, hash and
+// diff 235,000 records), so a mutant is a revision of a *small* program: the mutated function f and its callees
+// (mutate.ts `closure`, `subProgram`), made by mutantPass through applyPass like the corpus's mutants. It is judged
+// by overlaying it on the full base (`overlay`): the functions that reach f by calls (A) run their unchanged code
+// around the mutated f. The gate's rules are applied on the cases of A: cases per function from the seed (version
+// 1: casesFrom on the r0 artifact's store, exactly as meaningKept generates them; version 2: strongCasesFrom),
+// step limit 2e4, a limit on r0 is no verdict, `agrees` per case, version 2's divergence re-run. Every other
+// function runs unchanged code and agreed for the base, and Candela has thousands of decided cases outside A, so
+// this is the full gate's verdict. Where nothing calls f (A = [f]) the framework's own gate (checkInvariant of
+// meaningKept on the small program) is run as well, and the two verdicts are compared.
 //
 //   node --max-old-space-size=12288 tools/mutation-score-candela.mjs [--count 30] [--bcm 6] [--max-steps 2000]
 //        [--functions a,b] [--gates default,check100,strong,strong-cases,default+div] [--sample 400]
-//        [--json out.json] [--jsonl out.jsonl]
+//        [--no-classify] [--json out.json] [--jsonl out.jsonl]
 import { writeFileSync } from 'node:fs';
 import { installVendor } from './node-vendor.mjs';
 import { candelaInputs, candelaSource, MAX_SOURCE } from './candela.mjs';
@@ -26,7 +30,7 @@ const { AnalysisManager } = await import('../dist/framework/contracts/index.js')
 const { applyPass } = await import('../dist/framework/passes/index.js');
 const { bcm } = await import('../dist/typed/passes.js');
 const { ANALYSES, liveView } = await import('../dist/typed/analyses.js');
-const { casesFrom, evaluate, meaningKept } = await import('../dist/typed/evaluate.js');
+const { casesFrom, evaluate, agrees, meaningKept } = await import('../dist/typed/evaluate.js');
 const M = await import('../dist/typed/mutate.js');
 const S = await import('../dist/typed/cases-strong.js');
 const C = await import('./mutation-classify.mjs');
@@ -36,13 +40,13 @@ const flag = (name, d) => (args.includes(name) ? args[args.indexOf(name) + 1] : 
 const list = (name, d) => (flag(name, null) ? flag(name).split(',') : d);
 const count = +flag('--count', 30), bcmCount = +flag('--bcm', 6), maxSteps = +flag('--max-steps', 2000), sample = +flag('--sample', 400);
 const gateNames = list('--gates', ['default', 'check100', 'strong', 'strong-cases', 'default+div']);
-const GATES = {
-  default: (inputs, roots) => meaningKept({ inputs, count: 40, seed: 7, roots }),
-  default80: (inputs, roots) => meaningKept({ inputs, count: 80, seed: 7, roots }),
-  check100: (inputs, roots) => meaningKept({ inputs, count: 100, seed: 7, roots }),
-  strong: (inputs, roots) => S.meaningKeptStrong({ inputs, count: 40, extra: 40, seed: 7, roots }),
-  'strong-cases': (inputs, roots) => S.meaningKeptStrong({ inputs, count: 40, extra: 40, seed: 7, divergence: 0, roots }),
-  'default+div': (inputs, roots) => S.meaningKeptStrong({ inputs, count: 40, extra: 0, seed: 7, roots }),
+const GATE_SPEC = {
+  default: { v: 1, count: 40 },
+  default80: { v: 1, count: 80 },
+  check100: { v: 1, count: 100 },
+  strong: { v: 2, count: 40, extra: 40, divergence: 10 },
+  'strong-cases': { v: 2, count: 40, extra: 40, divergence: 0 },
+  'default+div': { v: 2, count: 40, extra: 0, divergence: 10 },
 };
 
 const t0 = performance.now();
@@ -53,71 +57,119 @@ const bcmRun = await applyPass(bcm, r0, { manager: new AnalysisManager() });
 const base = bcmRun.artifact, r0st = storeOf(r0.value), basest = storeOf(base.value);
 console.error(`ingest + bcm ${Math.round(performance.now() - t0)} ms; bcm changed ${bcmRun.report.fns.length} functions`);
 
-// the base against r0 on every function's 40 gate cases, and r0's cost per function
-const baseCheck = { agree: 0, disagree: 0, inconclusive: 0 }, cost = {};
-for (const f of r0st.fns.values()) {
-  const cases = casesFrom(r0st, f.name, { count: 40, seed: 7, inputs: inputs[f.name] ?? {} });
-  const runs = cases.map(c => evaluate(r0st, f.name, c.args, c.memory, { limit: 2e4 }));
-  cost[f.name] = { max: Math.max(...runs.map(r => r.steps)), limited: runs.filter(r => r.limit).length };
-  const c = M.compareOn(r0st, basest, cases, { limit: 2e4, baselineRuns: runs });
-  baseCheck.agree += c.agree;
-  baseCheck.disagree += c.disagree;
-  baseCheck.inconclusive += c.inconclusive;
+/** The gate's cases for one function and r0's runs on them, cached per gate and function. */
+const gateCases = new Map();
+function casesOf(g, fn) {
+  const key = `${g}|${fn}`;
+  let x = gateCases.get(key);
+  if (!x) {
+    const G = GATE_SPEC[g], spec = inputs[fn] ?? {};
+    const cases = G.v === 1
+      ? casesFrom(r0st, fn, { count: G.count, seed: 7, inputs: spec })
+      : S.strongCasesFrom(r0st, fn, { count: G.count, extra: G.extra, seed: 7, inputs: spec });
+    x = { cases, runs: cases.map(c => evaluate(r0st, fn, c.args, c.memory, { limit: 2e4 })) };
+    gateCases.set(key, x);
+  }
+  return x;
 }
-console.error(`base (r0 + bcm) vs r0, 40 cases per function: ${JSON.stringify(baseCheck)}`);
+/** runDifferential's rules on the cases of A (guide section 10). */
+function judge(g, A, mst) {
+  const G = GATE_SPEC[g], e = { agree: 0, disagree: 0, inconclusive: 0 };
+  for (const fn of A) {
+    const { cases, runs } = casesOf(g, fn);
+    for (let i = 0; i < cases.length; i++) {
+      const a = runs[i], c = cases[i];
+      if (a.limit) {
+        e.inconclusive++;
+        continue;
+      }
+      let b = evaluate(mst, fn, c.args, c.memory, { limit: 2e4 });
+      if (b.limit && G.divergence) {
+        b = evaluate(mst, fn, c.args, c.memory, { limit: 2e4 * G.divergence });
+        if (b.limit) {
+          e.disagree++;
+          continue;
+        }
+      }
+      if (b.limit) e.inconclusive++;
+      else if (agrees(a, b)) e.agree++;
+      else e.disagree++;
+    }
+  }
+  return e;
+}
+
+// the base against r0 on every function's 40 gate cases (version 1), and r0's cost per function
+const baseCheck = { agree: 0, disagree: 0, inconclusive: 0 }, cost = {};
+for (const f of r0st.fns.keys()) {
+  const e = judge('default', [f], basest);
+  for (const k of Object.keys(baseCheck)) baseCheck[k] += e[k];
+  const { runs } = casesOf('default', f);
+  cost[f] = { max: Math.max(...runs.map(r => r.steps)), limited: runs.filter(r => r.limit).length };
+}
+console.error(`base (r0 + bcm) vs r0, 40 gate cases per function: ${JSON.stringify(baseCheck)}`);
 if (baseCheck.disagree) throw new Error('the base disagrees with r0');
 
 const cheap = [...r0st.fns.keys()].filter(n => cost[n].limited === 0 && cost[n].max <= maxSteps).sort();
 let chosen = list('--functions', null);
 if (!chosen) {
   const withSites = cheap.filter(n => M.mutationSites(basest, { fns: [n] }).length > 0);
-  const even = Array.from({ length: Math.min(count, withSites.length) }, (_, i) => withSites[Math.floor((i * withSites.length) / Math.min(count, withSites.length))]);
+  const k = Math.min(count, withSites.length);
+  const even = Array.from({ length: k }, (_, i) => withSites[Math.floor((i * withSites.length) / k)]);
   const byBcm = bcmRun.report.fns.filter(n => cheap.includes(n)).sort().slice(0, bcmCount);
   chosen = [...new Set([...even, ...byBcm])];
 }
 console.error(`cheap functions: ${cheap.length}; chosen: ${chosen.length}: ${chosen.join(', ')}`);
 
-const records = [], baseVerdicts = {};
+const records = [], baseVerdicts = {}, crossCheck = { compared: 0, differ: 0 };
+const classify = C.classifier({ r0st, basest, inputs, sample, free: sample });
 for (const f of chosen) {
-  const A = M.affected(basest, f), cl = M.closure(basest, A);
-  const subR0 = createIRArtifact(blocksAdapter, 'candela', M.subProgram(r0.value, cl));
-  const subBase = createIRArtifact(blocksAdapter, 'candela', M.subProgram(base.value, cl));
-  const manager = new AnalysisManager(), sbst = storeOf(subBase.value);
-  const live = (await manager.analyse(ANALYSES.liveness, subBase)).value;
-  const sites = M.mutationSites(sbst, { fns: [f], live: fn => liveView(live, sbst, fn) });
-  const gates = {};
-  baseVerdicts[f] = { affected: A.length, closure: cl.length };
-  for (const g of gateNames) {
-    const inv = GATES[g](inputs, A);
-    const ev = await manager.checkInvariant(inv, { origin: subR0, candidate: subBase });
-    baseVerdicts[f][g] = ev.ok ? 'accepts' : `REJECTS: ${ev.reason}`;
-    if (ev.ok) gates[g] = inv;
-  }
-  const classify = C.classifier({ r0st: storeOf(subR0.value), basest: sbst, inputs, sample, free: sample });
+  const A = M.affected(basest, f), own = M.closure(basest, [f]);
+  const tiny = createIRArtifact(blocksAdapter, 'candela', M.subProgram(base.value, own));
+  const tinyR0 = createIRArtifact(blocksAdapter, 'candela', M.subProgram(r0.value, own));
+  const manager = new AnalysisManager(), tst = storeOf(tiny.value);
+  const live = (await manager.analyse(ANALYSES.liveness, tiny)).value;
+  const sites = M.mutationSites(tst, { fns: [f], live: fn => liveView(live, tst, fn) });
+  // every gate on the base, restricted to A (the rest of the base agreed: baseCheck)
+  baseVerdicts[f] = { affected: A.length, own: own.length };
+  const gates = gateNames.filter(g => {
+    const e = judge(g, A, basest);
+    baseVerdicts[f][g] = e.disagree ? `REJECTS ${JSON.stringify(e)}` : `accepts ${e.agree}/${e.agree + e.inconclusive}`;
+    return !e.disagree;
+  });
+  const frameworkGate = A.length === 1 ? meaningKept({ inputs, count: 40, seed: 7, roots: [f] }) : null;
   for (const site of sites) {
     const rec = { subject: 'candela', base: 'r0+bcm', fn: site.fn, operator: site.operator, variant: site.variant, target: site.target, stmt: site.stmt, text: site.text, affected: A.length, gates: {} };
     let mutant;
     try {
-      mutant = (await applyPass(M.mutantPass, subBase, { manager, params: { site } })).artifact;
+      mutant = (await applyPass(M.mutantPass, tiny, { manager, params: { site } })).artifact;
     } catch (e) {
       rec.invalid = e.message.split('\n')[0].slice(0, 200);
       records.push(rec);
       continue;
     }
     rec.mutantRev = mutant.revision.slice(0, 12);
-    for (const [g, inv] of Object.entries(gates)) {
-      const t = performance.now();
-      const ev = await manager.checkInvariant(inv, { origin: subR0, candidate: mutant });
-      const e = ev.evidence;
-      rec.gates[g] = { verdict: ev.ok ? 'survived' : e.status === 'inconclusive' ? 'killed-inconclusive' : 'killed', agree: e.agree, disagree: e.disagree, inconclusive: e.inconclusive, ms: +(performance.now() - t).toFixed(2) };
+    const mst = M.overlay(basest, storeOf(mutant.value));
+    for (const g of gates) {
+      const t = performance.now(), e = judge(g, A, mst);
+      rec.gates[g] = { verdict: e.disagree ? 'killed' : 'survived', ...e, ms: +(performance.now() - t).toFixed(2) };
     }
-    if (!args.includes('--no-classify') && Object.values(rec.gates).some(g => g.verdict === 'survived')) rec.classification = classify(mutant, site);
+    if (frameworkGate && rec.gates.default) {
+      const ev = await manager.checkInvariant(frameworkGate, { origin: tinyR0, candidate: mutant });
+      crossCheck.compared++;
+      if (ev.ok !== (rec.gates.default.verdict === 'survived')) {
+        crossCheck.differ++;
+        rec.crossCheck = ev.reason;
+      }
+    }
+    if (!args.includes('--no-classify') && Object.values(rec.gates).some(g => g.verdict === 'survived')) rec.classification = classify(mst, site);
     records.push(rec);
   }
   const mine = records.filter(r => r.fn === f && r.gates.default);
   console.error(`${f.padEnd(22)} |A| ${String(A.length).padStart(3)} sites ${String(sites.length).padStart(3)} default killed ${mine.filter(r => r.gates.default.verdict.startsWith('killed')).length}/${mine.length}  ${Math.round(performance.now() - t0)} ms`);
 }
-const summary = C.summarize(records, gateNames, { subject: 'candela', base: 'r0+bcm', chosen, cheap: cheap.length, maxSteps, sample, baseCheck, baseVerdicts, ms: Math.round(performance.now() - t0) });
+console.error(`framework gate vs replicated gate (functions nothing calls): ${JSON.stringify(crossCheck)}`);
+const summary = C.summarize(records, gateNames, { subject: 'candela', base: 'r0+bcm', chosen, cheap: cheap.length, maxSteps, sample, baseCheck, baseVerdicts, crossCheck, ms: Math.round(performance.now() - t0) });
 C.printTables(summary);
 console.log(`total ${summary.ms} ms`);
 if (flag('--json', null)) writeFileSync(flag('--json'), JSON.stringify(summary, null, 1));
