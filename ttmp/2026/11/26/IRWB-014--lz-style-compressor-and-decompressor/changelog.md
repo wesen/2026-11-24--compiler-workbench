@@ -11,3 +11,11 @@ Documented the LZ corpus design, generated inputs, round-trip oracle, tape loade
 ## 2026-11-26
 
 Implemented the bounded hash-chain codec, corpus input metadata, and fresh exploration script. Existing Node loaders already support tape metadata.
+
+## 2026-11-26
+
+Verified exact token fixtures and complete decoded prefixes on the evaluator and RV32 images. Recorded 400/400 project parity, per-pass verdicts, evaluator budgets, and paired instruction totals.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/impl-irwb-014/tests/typed/lz-roundtrip.test.mjs — Project-local reference oracle and measurements

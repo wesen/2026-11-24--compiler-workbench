@@ -16,6 +16,8 @@ RelatedFiles:
       Note: Tape ingestion and valid generated input specs
     - Path: repo://corpus/projects/lz-roundtrip/scripts/explore.js
       Note: Fresh workbench experiment
+    - Path: repo://tests/typed/lz-roundtrip.test.mjs
+      Note: Corpus fixtures, checked round trips, and measurements
 ExternalSources: []
 Summary: Design decisions and probe results for the LZ corpus project.
 LastUpdated: 0001-01-01T00:00:00Z
@@ -140,3 +142,37 @@ The implementation should preserve the design's search, token format and decoder
 ### Review and next action
 
 Start at the two checked loads in the compressor and the forward copy in the decoder. Use exact fixture prefixes to review the distance and length fields. The next checkpoint will add the repeatable oracles, measure the pass budget and report paired instruction totals.
+
+## Step 5 — Checked the codec and measured its images
+
+The host test verifies the exact packed bytes independently of the decoder, then compares each decoded prefix to the original case memory. It also checks every changed `speed` revision and measures specialization on the same fixed-limit cases used for the general image.
+
+### Prompt context
+
+See Step 4 for the implementation request. The measurement follows the reviewed design's 100 seed-7 wrapper cases and preserves their memory and arguments across image runs.
+
+### Changes and rationale
+
+- Added `tests/typed/lz-roundtrip.test.mjs` for exact encoding and decoding fixtures, generated equivalence, the RV32 round-trip oracle, evaluator step counts, and an in-memory Workbench run.
+- The decoding fixture puts extra cells after its five-token prefix to exercise the explicit `packedLen`. The instruction comparison uses the original generated cases whose limit is 3. The specialization check generates its own cases under the two scalar bindings.
+- Reused the reference compile and emulator path directly in the test. In this checkout `tools/reference-check.mjs` loops over all project IDs even when given a project argument, so invoking it would exceed the permitted scope.
+
+### Evidence
+
+- `node --test --test-isolation=none tests/typed/lz-roundtrip.test.mjs` passed both tests. The isolation flag exposed the test diagnostics in this Node build. The default `node --test tests/typed/lz-roundtrip.test.mjs` run passed and reported only the file-level result.
+- `node tools/parity.mjs lz-roundtrip --json` reported 400/400 agreements across four functions, with zero disagreements, inconclusives or rejected passes.
+- General and specialized `speed` each changed eight revisions in this order. `inline`, `cfg`, `simplify`, `licm`, `subst` three times, then `rotate`. Every changed revision agreed on 400/400 cases. Applying the two scalar bindings agreed on 160/160 cases. All 400 general generated cases completed without traps on both evaluator revisions.
+- Maximum generated evaluator steps were 1,703 at r0 and 1,262 at the `speed` head. The 24-A wrapper ran in 1,745 and 1,252 statements respectively. The 24-cell collision-heavy wrapper ran in 1,767 and 1,296 respectively. These samples stayed below the design's 12,440 sizing estimate and the 20,000-statement checker limit.
+
+| RV32 image | Cases | Total instructions |
+| --- | ---: | ---: |
+| r0, default backend | 100 | 185,876 |
+| General `speed`, with `chains`, `coalesce`, `homes` | 100 | 157,682 |
+| Reference, default policy | 100 | 156,405 |
+| General `speed`, with the same three backend options | 34 with limit 3 | 54,993 |
+| Specialized `speed`, with the same three backend options | Same 34 | 54,959 |
+
+### Failures and review
+
+- Staging the first checkpoint failed with `Unable to create '…/.git/worktrees/impl-irwb-014/index.lock': Read-only file system` under the sandbox. The authorized, path-scoped Git command succeeded with escalation and produced `70388b8` (`IRWB-014: add the LZ round-trip corpus project`).
+- Review starts with the token fixtures and the loop over `roundTrips` in the new test. The standing script-count assertion described in Step 4 remains outside this ticket's allowed edits.
