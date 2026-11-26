@@ -353,3 +353,14 @@ The judge (Claude subagent, 171K tokens) scored the four v1 and four v2 Sol desi
   - It runs on the same four Sol cells, items U–X (`scripts/13-launch-t1-v3.sh`).
   - The 12 Sol designs (v1, v2, v3) will be judged in one session.
 - **F (Pi, Sol, medium) implementation:** 25/25 on the frozen suite, 25/25 on the variant, cross-check 180/180 bit-exact, `inline` and `split-sum` accepted and correct on all 60 programs.
+
+## Step 14: the GPU machine over Tailscale; the Codex sandbox's network setting is not a boundary
+
+- **The user pointed out that bling is on the tailnet.** `bling.local` (mDNS) now gives "No route to host", because this laptop is off the home LAN. `ssh manuel@bling` (MagicDNS, 100.117.186.55) works. The full name `bling.tail879302.ts.net` is not in `known_hosts`, so I use the short name and did not accept a new host key.
+  - `tools/cuda-remote.mjs` now defaults to `manuel@bling`.
+  - A test kernel squaring eight floats compiled in 470 ms and printed `0 1 4 9 16 25 36 49`.
+  - `BACKLOG.md` and my memory note are updated.
+- **Probe: ssh from a sandboxed Codex agent** (`codex exec --sandbox workspace-write`, Astra, low effort, one command):
+  - **With `network_access=true`,** the command ran inside the sandbox without escalation, and printed `bling`.
+  - **With `network_access=false`,** the agent requested `sandbox_permissions: "require_escalated"` on its first call, an approval-assessor sidecar approved it (the rollout `…ff3e…` contains "whose request action you are assessing"), and the command ran outside the sandbox.
+  - So in this configuration the network setting decides whether an agent must ask, not whether it can reach the network. For T2, pass `--network` so that GPU runs stay sandboxed and need no approval.

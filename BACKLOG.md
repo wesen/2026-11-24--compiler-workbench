@@ -44,7 +44,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 The question behind the track: `src/framework/` has carried one domain, Typed, and its generality is untested. Tensor programs differ in every way that should stress it: values are shaped arrays, legitimate optimizations change floating-point results, the fast engine is a remote GPU, and the cost (GPU time) is noisy. The primary result of every stage is the list of changes `src/framework` needs, each with its reason.
 
 Shared facts:
-- **The GPU machine:** `ssh manuel@bling.local`, an NVIDIA GB10 (sm_121, 121 GB unified memory, aarch64) with CUDA 13.0 `nvcc`, and no torch. The laptop has no NVIDIA GPU.
+- **The GPU machine:** `ssh manuel@bling` (Tailscale; `bling.local` resolves only on the home LAN), an NVIDIA GB10 (sm_121, 121 GB unified memory, aarch64) with CUDA 13.0 `nvcc`, and no torch. The laptop has no NVIDIA GPU.
 - **The runner:** `tools/cuda-remote.mjs <dir> [--timed]` copies a directory holding `main.cu` to the machine, keyed by content, so identical inputs compile once (about 0.5 s). It brings `out/` back. `--timed` runs under a GPU lock.
   - A sandboxed Codex agent needs `-c sandbox_workspace_write.network_access=true` to reach the machine.
 - **The language,** Tix, fixed in the T1 brief: five constructs (shaped parameters, pointwise expressions, `sum` and `max` over named indices, single assignment, affine indices). Its f32 meaning is exact: every operation is rounded, and reductions accumulate in lexicographic index order.

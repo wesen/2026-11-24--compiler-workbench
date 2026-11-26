@@ -9,7 +9,8 @@
 // --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so that concurrent users do
 // not disturb each other's timings; untimed runs do not wait for it.
 // Prints one JSON object: { host, hash, compiled, compileMs, runMs, exit, stdout, stderr, outputs }.
-// Environment: CUDA_REMOTE_HOST (default manuel@bling.local), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
+// Environment: CUDA_REMOTE_HOST (default manuel@bling, the Tailscale name; bling.local resolves only on the home
+// LAN), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
 // Inside the Codex sandbox, ssh needs network access (-c sandbox_workspace_write.network_access=true).
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -25,7 +26,7 @@ const value = (name, d) => (opts.includes(name) ? opts[opts.indexOf(name) + 1] :
 const dir = opts.find((a, i) => !a.startsWith('--') && !['--host', '--arch'].includes(opts[i - 1]));
 if (!dir)
   throw new Error('usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [-- args]');
-const host = value('--host', process.env.CUDA_REMOTE_HOST ?? 'manuel@bling.local');
+const host = value('--host', process.env.CUDA_REMOTE_HOST ?? 'manuel@bling');
 const arch = value('--arch', 'sm_121');
 const nvcc = process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc';
 
