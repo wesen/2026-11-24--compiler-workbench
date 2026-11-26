@@ -130,3 +130,49 @@ The probe also produced the example the guide is built around. Dropping Blend's 
 
 ### Technical details
 - The mutant pass declares `writes: ['stmts', 'cfg', 'values']`; `tx.replaceStmt` of the `br_if` by `br` and the transaction's `commit` prune the trap block (`unreachable` edit).
+
+## Step 3: The intern guide, its second pass, and its upload
+
+I wrote the intern guide (`design-doc/01-intern-guide-how-strong-is-the-meaning-contract-and-how-to-make-it-stronger.md`, 580 lines) in four parts: the gate and what it protects, measuring it with mutants, a stronger generator, and the implementation plan. It is built around the Blend example from Step 2. The design decisions that shape the implementation are recorded in it: mutants are one `typed.mutant` pass applied through `Program.apply`; ten operators, each tied to the pass bug it models; a classification cascade whose classes separate "equivalent" from "equivalent under the specification"; the kill rate as an interval; the strong generator appends to the default cases and is a contract version `2+<hash>` under the same id.
+
+The second pass found one factual error, which I checked against the code before fixing: I had written that the guest memory is 4 KiB. It is the allocated prefix, rounded to 16 bytes and at least 1,024 bytes (`Memory.image()`, evaluate.ts:95). For Blend's 40-cell buffer at 1024 the image is 1,120 bytes, so reads of cells 40–45 do not trap and cell 46 does (checked with a one-line script).
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Write the intern guide, reread it as its reader and revise, store it in the ticket, upload it.
+**Inferred user intent:** A document a new person can implement the milestone from.
+**Commit (code):** see the commit after this step.
+
+### What I did
+- `docmgr doc add --ticket IRWB-005 --doc-type design-doc --title "Intern guide: how strong is the meaning contract, and how to make it stronger"`; wrote the guide.
+- Second pass. Review notes before revising: (1) §1 had a self-correcting sentence about the counterexample; (2) §5's "4 KiB" was wrong; (3) §3 table cell empty, Candela's gate scope (all 332 functions, no `roots`) unstated; (4) §9 used the word "analogy"; (5) §12 said each method has two outcomes, the cascade has three; (6) missing: what happens when a stronger gate rejects the unmutated base; (7) missing: a picture of the harness; (8) missing: a recap at the end of Part 1; (9) §12's classes did not say whether they are per gate or per mutant. Revised each in place.
+- Verified the memory layout: `new Memory().buffer(Array(40).fill(1))` → at 1024, top 1120, image 1120; cell 45 at 1118 inside, cell 46 at 1120 outside.
+- `remarquee upload bundle <guide> --name "IRWB-005 Intern Guide: Gate Strength" --remote-dir "/ai/2026/11/25/IRWB-005" --toc-depth 2 --non-interactive`
+- docmgr: 10 tasks added, `jjbr` checked; 4 files related to the guide; changelog entry.
+
+### Why
+- The brief orders guide → upload → implementation. Writing the operator table and the classification rules first forced decisions (base revision, the specification-relative notion of equivalence, how a stronger gate's rejection of the base is handled) that would otherwise have been made implicitly in code.
+
+### What worked
+- Upload: `OK: uploaded IRWB-005 Intern Guide: Gate Strength.pdf -> /ai/2026/11/25/IRWB-005`; `remarquee cloud ls /ai/2026/11/25/IRWB-005` lists `[f] IRWB-005 Intern Guide: Gate Strength`.
+
+### What didn't work
+- No failures. The factual error above was caught by the reread, not by a tool.
+
+### What I learned
+- Whether an out-of-bounds read traps depends on where the buffer lies in the image: past the last buffer it traps after the 16-byte padding, past an earlier buffer it reads the next buffer. This will decide many `drop-check` and `hoist-trap` classifications.
+
+### What was tricky to build
+- `check-range` on `caddr`: the natural `caddr(r, p − 1) + 2` traps wrongly at `p = 0`. The design uses `d = (p ≠ 0)`, `caddr(r, p − d) + 2d`, which checks `p ≤ cap` for `p ≥ 1` and is unchanged at `p = 0`; `p` must be pure because it is copied.
+
+### What warrants a second pair of eyes
+- The exact caller-set shortcut for Candela (guide §10): the corner case "no decided case" must combine the mutant's evidence on A with the base's on F∖A, not be computed on A alone.
+
+### What should be done in the future
+- Implement in the order of guide §17.
+
+### Code review instructions
+- Read the guide; §10–§12 are the contracts the code must meet.
+
+### Technical details
+- Classification parameters chosen: exhaustive budget 300,000 inputs over A; large sample 4,000 cases per function; step limit 2e5 for classification; divergence = mutant at 2e5 where r0 finished within 2e4.
