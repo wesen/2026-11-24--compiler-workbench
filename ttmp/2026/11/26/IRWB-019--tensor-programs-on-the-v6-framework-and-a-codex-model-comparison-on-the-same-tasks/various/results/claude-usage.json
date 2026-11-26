@@ -1,4 +1,26 @@
 [
- {"item": "IRWB-020-N", "cell": "opus/medium", "turn": "design", "subagent_tokens": 135850, "tool_uses": 27, "minutes": 8.2},
- {"item": "IRWB-020-P", "cell": "fable/medium", "turn": "design", "subagent_tokens": 168915, "tool_uses": 24, "minutes": 13.0}
+ {
+  "item": "IRWB-020-N",
+  "cell": "opus/medium",
+  "turn": "design",
+  "subagent_tokens": 135850,
+  "tool_uses": 27,
+  "minutes": 8.2
+ },
+ {
+  "item": "IRWB-020-P",
+  "cell": "fable/medium",
+  "turn": "design",
+  "subagent_tokens": 168915,
+  "tool_uses": 24,
+  "minutes": 13.0
+ },
+ {
+  "item": "IRWB-020-M",
+  "cell": "opus/xhigh",
+  "turn": "design",
+  "subagent_tokens": 261486,
+  "tool_uses": 43,
+  "minutes": 22.3
+ }
 ]

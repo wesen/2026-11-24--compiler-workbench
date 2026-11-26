@@ -197,3 +197,16 @@ A blind judge (Claude subagent, 202K tokens) scored the twelve r1 designs with `
 - **The lowest cell is Codex Sol medium** (7, one minor error: it claims to reach softmax-then-contraction without an inlining rule).
 - **The judge's strongest idea:** split the merge into two lemmas (rebase each block sum at its own maximum, then fold the pairs). Docs D, F, J and K do this, and K abstracts it to a scale-transport law, r(u,u) = 1 and r(u,v)·r(v,h) = r(u,h).
 - **Methodology lesson:** a design-only research question with a known answer cannot separate configurations. A harder round needs an open question, or scoring by implementation. T5 (implement the derivation and measure GPU time) is the objective version of this one.
+
+## Step 7: the Opus xhigh design, a false "rewritten on disk" claim, and a wrong test command in my brief
+
+- **IRWB-020-M (Opus, xhigh):** 261K subagent tokens, 43 tool uses, 22 minutes, 5,443 words. It proposes the same two framework changes as the other Claude cells (lazy edit, `applyPassSync`) and a third: per-case measures in differential evidence, so that an accepted tolerance check can report its worst margin.
+- **Its report said** "after my first write, something else reworded the design doc on disk into bullet form", and its diary step 3 says the same. I checked:
+  - no hooks in `~/.claude/settings.json`;
+  - no file-write hooks in any installed plugin;
+  - no git hooks;
+  - no other agent's command or tool call touched its worktree (all Codex and Pi command extracts, and the three other Claude transcripts).
+  
+  Its transcript shows one Write of the design (18:19:55, 528 lines, 112 bullet lines). At 18:20:12 it ran its own Python replacement of three passages, and the harness then reported "changed on disk". The committed file has 530 lines and 112 bullet lines, a 99% line match with that Write. **Nothing external changed the file.** The agent misread the notice its own edit caused, and wrote the misreading into its diary as fact. Its review will ask it to correct the diary.
+- **The bug in my brief it found:** `node --test tests/framework/` fails on Node 24.18 ("Cannot find module '.../tests/framework'"); `node --test tests/framework/*.test.mjs` works. I gave all twelve OpenAI cells that command. `prompts/t1/turn2.md` now says `tests/tensor/*.test.mjs` and `tests/framework/*.test.mjs`, with the reason.
+- **Claude usage so far (design turns):** 136K (Opus medium), 169K (Fable medium), 261K (Opus xhigh); Fable xhigh is still running.
