@@ -187,3 +187,9 @@ Extracted the existing native revision path into `prepareNativeCandidate`. Its r
 The focused command `node --test tests/tensor/passes.test.mjs` passed 8/8. The fixed input shows exact rejection and tolerant acceptance of the same candidate. Valid-IR mutations to axis order and tail bound were rejected on returned elements; nine ones produced 8 instead of 9 for the latter. Per-function coverage rejection and an exact inline after a split also passed. See `tests/tensor/passes.test.mjs` for reproduction. No lazy edit or framework tolerance policy was needed.
 
 Two additional probes tightened the compiler tests. A 309-digit input dimension initially threw `IR data must contain only finite numbers` from hashing rather than a source location; the lexer/parser now catches unsafe affine integer data before artifact creation. The two f32 answers for `[1,1,5] / 3` happened to coincide; `[1,1,3]` distinguishes a greedy reduction body from a parenthesized reduction divided afterwards. The corresponding tests now exercise these cases.
+
+## Step 5: Corpus and final regression gate
+
+The six `corpus/tensor/*/main.tix` programs now run before and after both passes against independent small fixtures in f32 and f64. The six cases include large logits, a constant normalization row, unequal attention lengths, signed GELU inputs and the last valid conv window. The kernel and contract checkpoint was `afc165c`.
+
+On Node v24.18.0, `npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed 20/20; `node --test tests/framework/*.test.mjs` passed 226/226; `node --test tests/typed/{passes,project-meta,strategies,audit,inline}.test.mjs` passed 27/27. A direct import of `dist/tensor/index.js` exposed exactly `compileTix`, `optimizeTix`, and `runTix`. No full suite, device tests or push. No material deviations from the reviewed design. Numerical acceptance is sampled, and each symbol needs a plain input axis, as reviewed.

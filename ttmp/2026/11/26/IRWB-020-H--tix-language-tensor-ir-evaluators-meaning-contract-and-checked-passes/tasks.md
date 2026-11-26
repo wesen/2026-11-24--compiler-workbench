@@ -5,4 +5,4 @@
 - [x] Resolve review before implementation <!-- t:548c -->
 - [x] Implement Tix front end, tensor artifact and evaluators <!-- t:ikf9 -->
 - [x] Implement checked passes, counterexamples and framework seam <!-- t:d4i4 -->
-- [ ] Qualify six corpus programs and run framework and affected Typed regressions; reconcile ledger <!-- t:bn2v -->
+- [x] Qualify six corpus programs and run framework and affected Typed regressions; reconcile ledger <!-- t:bn2v -->

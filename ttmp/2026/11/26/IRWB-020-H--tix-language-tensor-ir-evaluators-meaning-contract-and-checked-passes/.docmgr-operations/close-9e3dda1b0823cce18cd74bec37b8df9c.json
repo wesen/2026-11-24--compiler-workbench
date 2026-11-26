@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "b6a5e3b7f8ee13121c7aefbaba4c3a8a9bba003247f51fde57decfa90cc73f25",
+  "request": {
+    "ticket": "IRWB-020-H",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed stage 1: six Tix corpus fixtures, checked rewrites and a single shared candidate-preparation extraction. All requested regression gates passed."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-9e3dda1b0823cce18cd74bec37b8df9c",
+    "state": "committed",
+    "created_at": "2026-11-26T19:06:03.601851818Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "7efa71f87ffe907037d2c46d7efef4d731e33018511a34c543056feda88c5345",
+      "index.md": "90cba859d3265c24499afb6c5d8e8eb302c5a8ba4f8cb92ace634f2907754f63"
+    },
+    "after": {
+      "changelog.md": "000abde88e754b257d1fd8e64dc43c64637450f99dbed557cedaebca7bf9af3b",
+      "index.md": "fbae6390f20baab274686ff8e511df02ee7e483e536e65a98a82efd30012f2f3"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "7efa71f87ffe907037d2c46d7efef4d731e33018511a34c543056feda88c5345",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKU3VibWl0dGVkIHRoZSBzdGFnZS0xIGRlc2lnbiBmb3IgcmV2aWV3LCBpbmNsdWRpbmcgYSBwcm9wb3NlZCBzeW5jaHJvbm91cyBjYW5kaWRhdGUtcHJlcGFyYXRpb24gc2VhbSBhbmQgYSBtZWFzdXJlZCBmMzIgcmVhc3NvY2lhdGlvbiB3aXRuZXNzLiBJbXBsZW1lbnRhdGlvbiBpcyBwZW5kaW5nIHJldmlldy4KCiMjIDIwMjYtMTEtMjYKCkNvbXBsZXRlZCBzdGFnZSAxOiBzaXggVGl4IGNvcnB1cyBmaXh0dXJlcywgY2hlY2tlZCByZXdyaXRlcyBhbmQgYSBzaW5nbGUgc2hhcmVkIGNhbmRpZGF0ZS1wcmVwYXJhdGlvbiBleHRyYWN0aW9uLiBBbGwgcmVxdWVzdGVkIHJlZ3Jlc3Npb24gZ2F0ZXMgcGFzc2VkLgo="
+    },
+    {
+      "path": "index.md",
+      "before": "90cba859d3265c24499afb6c5d8e8eb302c5a8ba4f8cb92ace634f2907754f63",
+      "after": "LS0tClRpdGxlOiBUaXggbGFuZ3VhZ2UsIHRlbnNvciBJUiwgZXZhbHVhdG9ycywgbWVhbmluZyBjb250cmFjdCBhbmQgY2hlY2tlZCBwYXNzZXMKVGlja2V0OiBJUldCLTAyMC1IClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBpcgogICAgLSB2ZXJpZmljYXRpb24KRG9jVHlwZTogaW5kZXgKSW50ZW50OiBzaG9ydC10ZXJtCk93bmVyczogW10KUmVsYXRlZEZpbGVzOiBbXQpFeHRlcm5hbFNvdXJjZXM6IFtdClN1bW1hcnk6IFN0YWdlIDEgb2YgdGhlIHRlbnNvciBkb21haW4sIHVzaW5nIFRpeCB0byB0ZXN0IHRoZSByZXVzYWJsZSBJUiBmcmFtZXdvcmsuCkxhc3RVcGRhdGVkOiAyMDI2LTExLTI2VDE0OjA2OjAzLjYwMTc1MDU3Mi0wNTowMApXaGF0Rm9yOiBTdGFnZSBzY29wZSwgZGVzaWduIHJldmlldyBhbmQgaW1wbGVtZW50YXRpb24gdHJhY2tpbmcKV2hlblRvVXNlOiBTdGFydCBoZXJlIGZvciBJUldCLTAyMC1ICi0tLQoKIyBUaXggbGFuZ3VhZ2UsIHRlbnNvciBJUiwgZXZhbHVhdG9ycywgbWVhbmluZyBjb250cmFjdCBhbmQgY2hlY2tlZCBwYXNzZXMKCioqU3RhZ2UgMSBpbXBsZW1lbnRlZCBhbmQgY2hlY2tlZC4qKiBgc3JjL3RlbnNvci9gIGltcGxlbWVudHMgVGl4LCBib3RoIENQVSBldmFsdWF0b3JzIGFuZCB0aGUgdHdvIGNoZWNrZWQgcGFzc2VzLiBgY29ycHVzL3RlbnNvci9gIGNvbnRhaW5zIHNpeCBleGVjdXRhYmxlIHNvdXJjZSBmaXh0dXJlcy4gVGhlIG9ubHkgZnJhbWV3b3JrIGNoYW5nZSB3YXMgZXh0cmFjdGluZyBzeW5jaHJvbm91cyBuYXRpdmUtY2FuZGlkYXRlIHByZXBhcmF0aW9uLiBHUFUgd29yayBpcyBvdXRzaWRlIHRoaXMgdGlja2V0LgoKLSBbRGVzaWduIGFuZCBmcmFtZXdvcmsgY2hhbmdlIGxlZGdlcl0oZGVzaWduLWRvYy8wMS1zdGFnZS0xLWRlc2lnbi1jaGVja2luZy10aXgtdGVuc29yLXRyYW5zZm9ybWF0aW9ucy5tZCkg4oCUIHJldmlld2VkIHBsYW4gYW5kIGFjdHVhbCBmcmFtZXdvcmsgY2hhbmdlLgotIFtEaWFyeV0ocmVmZXJlbmNlLzAxLWRpYXJ5Lm1kKSDigJQgcmVxdWVzdCwgaW52ZXN0aWdhdGlvbiBhbmQgYXJpdGhtZXRpYyBwcm9iZS4KLSBbVGFza3NdKHRhc2tzLm1kKSDCtyBbQ2hhbmdlbG9nXShjaGFuZ2Vsb2cubWQpCg=="
+    }
+  ]
+}
