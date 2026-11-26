@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "digest": "2ce810c712372d10c53a3958c481017bdaab96e11f009254d86a1033dffdda29",
+  "request": {
+    "ticket": "IRWB-020-Q",
+    "operation_id": "stage1-design-draft",
+    "summary": "Drafted Stage 1 design, including synchronous pass/contract friction and a concrete reassociation witness.",
+    "phase": "checkpoint",
+    "next": "Review the design in-session before implementation.",
+    "task_ids": null,
+    "evidence": null,
+    "expected": null
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "stage1-design-draft",
+    "state": "committed",
+    "created_at": "2026-11-26T18:49:13.548716479Z",
+    "changed_paths": [
+      "changelog.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe"
+    },
+    "after": {
+      "changelog.md": "b7dc8151fc11aa8352c9f9371e5ce72e07f893844f80d266266dd5c6abe9a470"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKRHJhZnRlZCBTdGFnZSAxIGRlc2lnbiwgaW5jbHVkaW5nIHN5bmNocm9ub3VzIHBhc3MvY29udHJhY3QgZnJpY3Rpb24gYW5kIGEgY29uY3JldGUgcmVhc3NvY2lhdGlvbiB3aXRuZXNzLgoKT3BlcmF0aW9uOiBgc3RhZ2UxLWRlc2lnbi1kcmFmdGAK"
+    }
+  ]
+}
