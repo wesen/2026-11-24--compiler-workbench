@@ -127,3 +127,7 @@ Review the restricted synchronous gate, shape-domain constraints, and exact-vs-t
 
 Start at the [framework change ledger](../design-doc/01-stage-1-design.md#framework-change-ledger). Compare `applyPass`'s native-result branch with `runDifferential`'s side-specific callback. The delivery section lists the intended gates, not tests already passed.
 
+
+## Step 2: Review boundary
+
+Accepted every review item. The contract now enumerates concrete bindings in order, samples positive parameters (eps:f32[1]), and uses only one relation per step. Plain input axes bind symbols. The sync gate takes an existing Pass, not a second pass spec. The design diff is the review checklist. Next implement, build and test using globs.
