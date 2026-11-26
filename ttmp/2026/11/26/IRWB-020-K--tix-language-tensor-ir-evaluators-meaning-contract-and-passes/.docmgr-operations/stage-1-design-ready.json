@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "digest": "ddb71b526ef6051e799485dee0990b2033db432d8f823fb391e9038e4929e0a2",
+  "request": {
+    "ticket": "IRWB-020-K",
+    "operation_id": "stage-1-design-ready",
+    "summary": "Wrote the Tix stage 1 design and opened the diary; identified native-only and synchronous checked pass gaps.",
+    "phase": "checkpoint",
+    "next": "Review the design in-session before implementation",
+    "task_ids": [
+      "i6wh"
+    ],
+    "evidence": null,
+    "expected": null
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "stage-1-design-ready",
+    "state": "committed",
+    "created_at": "2026-11-26T17:59:45.760551639Z",
+    "changed_paths": [
+      "tasks.md",
+      "changelog.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "tasks.md": "7b17bfe931847773c8e0a9724711a1caae3fc051d3b5803afdb177b58675a8c5"
+    },
+    "after": {
+      "changelog.md": "9bbb7eac01d0878e0d5d59b85544830135658075497bd0799defa2e25a642273",
+      "tasks.md": "9c72a49213045311a43fcb95d2c29da1edc2472b72904e2d1bcc1ec3230f283a"
+    }
+  },
+  "changes": [
+    {
+      "path": "tasks.md",
+      "before": "7b17bfe931847773c8e0a9724711a1caae3fc051d3b5803afdb177b58675a8c5",
+      "after": "IyBUYXNrcwoKIyMgVE9ETwotIFt4XSBXcml0ZSB0aGUgc3RhZ2UgMSBkZXNpZ24gYW5kIHN0YXJ0IHRoZSBkaWFyeSA8IS0tIHQ6aTZ3aCAtLT4KLSBbIF0gUmV2aWV3IGRlc2lnbiBpbi1zZXNzaW9uIGJlZm9yZSBpbXBsZW1lbnRhdGlvbiA8IS0tIHQ6cmpucSAtLT4KLSBbIF0gSW1wbGVtZW50IFRpeCBjaGVja2luZywgdjYgSVIgYW5kIGJvdGggZXZhbHVhdG9ycyA8IS0tIHQ6M3hjaSAtLT4KLSBbIF0gSW1wbGVtZW50IGFuZCBkb2N1bWVudCB0aGUgYWdyZWVkIGZyYW1ld29yayBjaGFuZ2VzLCBtZWFuaW5nIGNvbnRyYWN0IGFuZCBjaGVja2VkIHBhc3NlcyA8IS0tIHQ6b3BteiAtLT4KLSBbIF0gQWRkIHRlbnNvciBjb3JwdXMgYW5kIHRlc3RzOyBydW4gZnJhbWV3b3JrIGFuZCByZWxldmFudCBUeXBlZCByZWdyZXNzaW9ucyA8IS0tIHQ6dmE0bCAtLT4K"
+    },
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKV3JvdGUgdGhlIFRpeCBzdGFnZSAxIGRlc2lnbiBhbmQgb3BlbmVkIHRoZSBkaWFyeTsgaWRlbnRpZmllZCBuYXRpdmUtb25seSBhbmQgc3luY2hyb25vdXMgY2hlY2tlZCBwYXNzIGdhcHMuCgpPcGVyYXRpb246IGBzdGFnZS0xLWRlc2lnbi1yZWFkeWAK"
+    }
+  ]
+}
