@@ -102,5 +102,13 @@
   "subagent_tokens": 205388,
   "tool_uses": 19,
   "minutes": 11.7
+ },
+ {
+  "item": "(reviewer t2)",
+  "cell": "opus/default",
+  "turn": "review",
+  "subagent_tokens": 266656,
+  "tool_uses": 60,
+  "minutes": 17.1
  }
 ]

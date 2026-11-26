@@ -561,3 +561,14 @@ Readings:
 - **Framework and tool changes:**
   - **tool:** a private remote working directory per call, with a per-key compile lock and atomic publishing of the binary;
   - **framework:** ten designs leave `src/framework` unchanged and use `defineTransformation` with `differential.decide`. D and J propose a batch-only differential spec without the synchronous run/compare, and H works around the same gap with a throwing stub.
+
+## Step 22: stage-2 reviews checked; implementation dispatched
+
+- **The blind reviewer** (Claude subagent, 267K tokens, 60 tool uses) wrote twelve reviews, 308–348 words each. It worked in the clean `t2-base` checkout and compiled into the scratchpad.
+  - **One GPU probe:** under CUDA 13's default lazy module loading, a kernel's first CUDA-event interval includes its load. I reran the probe: 0.101 ms on the first launch against 0.003 ms on later ones, and 0.005 ms after an explicit `cudaFuncGetAttributes`. So a one-case `runTixCuda` that does not load its kernels before the start event puts start-up into `gpuMs`, which the fixed API excludes. That was a must-change in nine designs.
+  - **One local measurement:** on the stage-1 tolerance cases, the f32 interpreter's own error against f64 uses at most 25% of the stage-1 budget (conv2d 0.247), before and after the passes. So the stage-1 bound, which most designs adopt for the lowering, does not reject a correct lowering of the corpus.
+- **I checked its framework claim:** the differential spec already has `baselineKey`, `subjectKey` and an asynchronous `decide` (`src/framework/contracts/differential.ts:57-69`). So designs that built their own case batching or verdict memo duplicate existing machinery.
+- **Recurring cuts:** engine-identity stamps (verdict reuse is process-local), shared GPU locks for untimed runs, in-flight coalescing, and full-size f64 comparisons. The batch-only differential variant (D, J) is judged a needed, minimal framework change.
+- **Blinding:** no review mentions another document. The titles ("Review of doc A") were replaced with "Review of your design"; my first substitution missed them because of the missing hyphen, and the dispatch used the corrected copies. The reviews are archived in `results/reviews-t2/`.
+- **Dispatched:** the twelve Codex and Pi cells, `10-dispatch-turn.sh t2 impl prompts/t2/turn2.md <reviews-send> --network`.
+- **Claude total in IRWB-019:** about 3.44M subagent tokens.
