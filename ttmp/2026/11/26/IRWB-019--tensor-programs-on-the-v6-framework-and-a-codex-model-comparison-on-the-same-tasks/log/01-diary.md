@@ -53,3 +53,39 @@ It has not yet been run against an implementation. If all four implementations d
 - `fc06d50`: the r1 brief and launcher.
 
 Both rounds were launched at about 13:5x. All eight agents started with the intended model and effort, according to the log headers.
+
+## Step 2: the remote CUDA runner, Pi as a third factor, and the Codex design results
+
+### The remote CUDA runner (`8c3eca3`, `ceee771`)
+`tools/cuda-remote.mjs <dir> [--timed] [-- args]` copies a directory holding `main.cu` and its inputs to `bling:~/irwb-cuda/<hash>/`. The hash is the SHA-256 of the files and the architecture, so identical inputs compile once. It compiles with `nvcc -O3 -arch=sm_121`, runs `./prog args`, and brings `out/` back. `--timed` runs under `flock ~/irwb-cuda/.gpu.lock`, so concurrent agents do not disturb each other's timings.
+- Test: an f32 map over 1,000 elements compiled in 0.52 s and ran with correct outputs (`y[999] = 500.5`).
+- A rerun skipped the compile.
+- `runMs` is about 370 ms, mostly CUDA context start-up; the kernel takes 1.3 ms.
+
+I wrote this rather than leaving it to the stage-2 agents, so that every configuration has the same transport and the same lock.
+
+### Pi as a third factor
+The user asked: "oh, also compare how running gpt-6.2 sol/astra in the pi coding agent (different system prompt) compares", then "add that to your matrix".
+
+- Pi 1.5.1 (`pi -p`, `--model openai-codex/gpt-6.2-sol|astra`, `--thinking medium|high`), with `--no-extensions --no-mcp`. The policy is passed with `--append-system-prompt`. Pi has no sandbox.
+- **Pi's system message is a different object from Codex's.** Measured in a probe session, its sections are: preamble 126 characters, tools 274, rules 589, docs 1,320, the appended policy 1,346, skills 27,543, cwd. The harness's own text is about 2.3K characters, against Codex's 27,750-character system prompt. It has neither the coding rules nor the writing rules that IRWB-018 traced the over-engineering to.
+- **The matrix is now harness × model × effort** (2×2×2), with eight agents per task. Pi tickets are E to H, assigned at random (`*-config-key.json`, now with a `harness` field).
+- **Kit additions** (vault `91acd15`): `12-launch-pi-round.sh`, `13-resume-pi-round.sh`, `14-extract-pi-sessions.mjs`. Each was tested on a scratch repository before use.
+- **A failed first launch:** `S=ttmp/.../IRWB-019*/scripts/...` does not expand the glob in a zsh assignment ("No such file or directory"). The relaunch used `$(ls …)`. The earlier exit monitor had failed for the same family of reason, a zsh "no matches found" on not-yet-existing files, and was re-armed under `bash -c` with `nullglob`.
+
+### Codex designs (turn 1)
+
+| round | item | minutes | tool calls | commands | skill files read | design words |
+|---|---|---:|---:|---:|---|---:|
+| t1-sm | IRWB-020-C | 5.2 | 17 | 15 | docmgr, diary | 2,588 |
+| t1-sh | IRWB-020-A | 8.2 | 22 | 42 | docmgr, diary + 2 references | 2,876 |
+| t1-am | IRWB-020-B | 4.7 | 13 | 10 | docmgr, diary | 2,577 |
+| t1-ah | IRWB-020-D | 7.4 | 29 | 15 | none | 2,765 |
+| r1-sm | IRWB-021-D | 4.9 | 20 | 31 | docmgr, diary + references | |
+| r1-sh | IRWB-021-B | 6.1 | 18 | 32 | docmgr, diary + references | |
+| r1-am | IRWB-021-C | 4.2 | 15 | 11 | none | |
+| r1-ah | IRWB-021-A | 7.9 | 27 | 19 | none | |
+
+- Every agent made one commit, inside its own ticket.
+- Astra read no skill file in three of four cells; Sol read them in all four.
+- Judging and reviewing wait for the Pi cells, so that all eight documents of a task are scored and reviewed together.
