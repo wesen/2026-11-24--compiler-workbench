@@ -76,3 +76,27 @@ I linked seven repository files with `docmgr doc relate`. The implementation and
 The ticket passed `docmgr doctor --ticket IRWB-013 --fail-on warning` and the design passed frontmatter validation. All 16 local Markdown links resolved, and a host SHA-256 check matched the published digest for the 56-byte fixture.
 
 The sandboxed staging command `git add -- "$ticket"` failed with `Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/codex-irwb-013/index.lock': Read-only file system`. The staging retry requests access to the existing worktree index and uses the same ticket path.
+
+## Step 5 — Simplify the workload after review
+
+I reread the design at `a493a0b67dd6727343ad324ae837e53215f5255b` and checked the worktree's corpus and compiler interfaces. I reduced SHA to one padded block because that retains the full schedule, compression loop and dynamic round table. The ChaCha loop keeps all sixteen working words in scalar locals. The reduced plan uses the existing pass and image checks, published vectors and the framework's SHA oracle.
+
+<details>
+<summary>Self-review request</summary>
+
+~~~~text
+Re-read your design document as a skeptical senior engineer whose goal is the simplest design that still serves the experiment. Identify everything that could be removed or simplified without weakening the experiment, revise the document accordingly, and add a short section at the end listing each cut with a one-line reason. Keep the diary up to date. Work only from the files in your worktree; do not read other git branches, other worktrees, or other agents' tickets. Commit only your ticket directory with the message `IRWB-013: simplify the design doc after self-review`. Do not push. Final message: the commit hash and the list of cuts.
+~~~~
+
+</details>
+
+### Review decisions
+
+- A 55-byte limit preserves one pass through the full SHA algorithm from padding to serialization. ChaCha alone supplies the intended allocation stress.
+- The SHA table is the only specialization input because it is read in the hot loop. The general image still has an explicit changed-table test.
+- The harness owns argument shapes. One host test and one workbench measurement script cover distinct needs.
+- The evaluator budgets remain estimates. Implementation must measure them under the existing cap.
+
+### Verification
+
+The design and diary passed frontmatter validation. The local Markdown links resolved, the eight cuts matched the revised scope, and the planning arithmetic stayed below the existing cap. `git diff --check` passed. The worktree changes were confined to the ticket's design, diary and changelog.
