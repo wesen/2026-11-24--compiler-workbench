@@ -180,3 +180,9 @@ Now do the following in this session:
 ## Step 3 — Synchronous framework gate
 
 Added applyNativePassSync in src/framework/passes/define-pass.ts. Existing Pass declarations supply kernels. Both runners now use prepareNative and checkWrites. The sync path opens a read-only projection, checks changed revisions once and refuses analysis-manager dependencies. The native-only framework regression exercises write declarations, rejection evidence, identities and asynchronous misuse. npm run build and node --test tests/framework/native-pass-sync.test.mjs passed.
+
+## Step 4 — Language, corpus and checked optimizer
+
+Implemented the fixed synchronous API, parser and symbolic extent checker, tensor.tix projection, shared row-major evaluator, sampled differential contract and native rewrites in src/tensor. Numeric literals retain their spelling in finite IR. Disjoint lexical binder IDs let inline compose affine accesses without capture. The contract samples each original function separately so one function's finite coverage cannot hide a second function with no evidence.
+
+All six corpus sources compiled to v6 artifacts. A build-and-run smoke applied inline then split-sum to each source and all twelve steps were accepted. Both Typed regression files and the 18 framework test files passed. The next checkpoint exercises independent corpus outputs, both precisions and deliberately incorrect rewrites through the real gate.
