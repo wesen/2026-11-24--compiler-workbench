@@ -1,14 +1,15 @@
 # Bytecode VM
 
-One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling checksum
-at entry 34. The corpus uses the fixed 64-cell code image in project.json,
-with integer counts from 0 through 12 and seeds from −8 through 8. Local 0
-starts at the count, local 1 at the seed, and locals 2 and 3 at zero. Each
-fixture reaches HALT with one value on the operand stack.
+One Typed interpreter runs seeded Fibonacci at entry 0 and a rolling
+checksum at entry 34. The corpus uses the fixed 64-cell code image in
+project.json, with integer counts from 0 through 12 and seeds from −8
+through 8. Local 0 starts at the count, local 1 at the seed, and locals
+2 and 3 at zero. Each fixture reaches HALT with one value on the operand
+stack.
 
-Each instruction is an opcode and an operand in adjacent u16 cells. Offsets
-are absolute cell indices. Unused operands are zero. Arithmetic wraps to
-signed i32.
+Each instruction is an opcode and an operand in adjacent u16 cells.
+Offsets are absolute cell indices. Unused operands are zero. Arithmetic
+wraps to signed i32.
 
 | Opcode | Mnemonic | Effect |
 | --- | --- | --- |
@@ -24,9 +25,9 @@ signed i32.
 
 ## Seeded Fibonacci
 
-Local 2 holds the current value, local 1 the next value, and local 3 their
-sum during each update. The fixture executes 15n + 4 instructions including
-HALT.
+Local 2 holds the current value, local 1 the next value, and local 3
+their sum during each update. The fixture executes 15n + 4 instructions
+including HALT.
 
 ```text
  0  LOAD  0     fib_loop
@@ -76,11 +77,11 @@ instructions including HALT.
 
 Open Bytecode VM and select Explore in the Scripts view, or run
 `project.run('explore')` in the console. It starts from a fresh r0,
-applies the checked `speed` pipeline, and reports the two images' results
-and executed RV32 instruction counts. Select the opcode fetch in the
-source to inspect the corresponding IR. Compare the dispatch loop with
-`p.asmDiff('r0', p.rev, { fn: 'runVm', coalesce: true })`
-after applying `p.pipeline('speed')` to the open program.
+applies the checked `speed` pipeline, and reports the two images'
+results and executed RV32 instruction counts. Select the opcode fetch
+in the source to inspect the corresponding IR. To compare the dispatch
+loop, apply `p.pipeline('speed')` to the open program, then run
+`p.asmDiff('r0', p.rev, { fn: 'runVm', coalesce: true })`.
 
 ## Measurements
 
@@ -90,16 +91,19 @@ instruction. The hand-specialized image uses one Typed loop per fixture,
 takes only the two scalars, and runs through the same checked `speed`
 pipeline. Its ratios use the original bytecode dispatch count.
 
-| Fixture at n = 12, seed = 8 | Result | Guest instructions | r0 RV32 | speed RV32 | Hand-specialized RV32 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Seeded Fibonacci | 1,152 | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
-| Rolling checksum | 1,298,667,478 | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+At n = 12 and seed = 8, Fibonacci returns 1,152 and checksum returns
+1,298,667,478.
 
-The `speed` revision executed more RV32 instructions for both fixtures in
-this comparison. Across the 442 valid calls, the evaluator reached at most
-4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and 3,699 at r0
-and 4,690 at `speed` for checksum. All finished within the 20,000-statement
-pass-check limit.
+| Fixture | Guest | r0 | speed | Hand-specialized |
+| --- | ---: | ---: | ---: | ---: |
+| Fibonacci | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
+| Checksum | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+
+The `speed` revision executed more RV32 instructions for both fixtures
+in this comparison. Across the 442 valid calls, the evaluator reached
+at most 4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and
+3,699 at r0 and 4,690 at `speed` for checksum. All finished within the
+20,000-statement pass-check limit.
 
 Reproduce the measurement with
 `node --test --test-isolation=none tests/typed/bytecode-vm.test.mjs`
