@@ -681,3 +681,22 @@ I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineerin
   - **The nine single-precision backends** are at a median 0.475 ms for softmax, 1.16× the unfused bound.
   - **What exactness costs:** the double transcendentals make softmax about 1.65× slower (medians 0.785 against 0.475) and mlp and attention 7–15% slower. matmul, conv and layernorm show no consistent difference.
   - **Caveat:** the evaluator's `gpuMs` are single runs in fresh processes, and differ from I's warm medians by up to 2× (attention, conv).
+
+## Step 27: round R2, creativity and scientific depth (four models); the model scorecard artifact
+
+- **The user's request** (verbatim): "ok let's try something different, let's make a pass and comparison across models (sol, astra in codex, opus fable) on creativity and scientific prowess, and ask them to come up with design documents on all possible compiler work they would do to make tix best in class, they can research all they want, test all they want, etc... then score on ingenuity, creativity, advanced science. design doc and diaries and all that"
+- **The round** (`prompts/r2/common.md`, `scripts/20-launch-r2.sh`, `results/r2-config-key.json`). The question: what compiler work would make Tix best in class? Research and experiments are allowed; product code stays unchanged; deliverables are a ranked design document, a diary and commits.
+  - **Cells:** IRWB-023-A is Codex · Sol · high; B is Codex · Astra · high; C is Opus and D is Fable, as Claude Code subagents at their default effort. Their effort is left unset because the user named no level this time, so the efforts do not match; report it as a caveat.
+- **Base:** `r2-base` at `12bc661`, which is I's tip `ff1c4e7` plus the tool header fix. It has no `BACKLOG.md` and no IRWB-019 ticket, so no agent sees my queue or analysis, and the ideas are their own.
+- **Policy r2** (`developer-instructions-r2.md`) keeps only the probe rule and the isolation rule.
+  - v1 says "describe only what can be built with the current code" and "prefer the smallest deliverable". Those would cap a creativity round, and a policy outranks the brief (§6 of report 11).
+  - The global Codex config carries v1, which `-c developer_instructions` overrides.
+  - The Claude cells get the same two rules at the top of their brief (`scratchpad/claude-briefs/`).
+- **Research for Codex:** `codex exec` has no `--search`, but `-c web_search=live` works in `exec` mode. One probe confirmed it ("web search: site:arxiv.org/abs/1706.03762 …"). Network access stays on for `ssh`. Timeout: 3 hours.
+- **Judging, planned before reading any design:** two blind judges from different model families, a Claude subagent and Codex · Sol, with web access to check citations, scoring ingenuity, creativity, scientific depth, evidence, correctness and padding. Then I verify the load-bearing claims and experiments myself. The cross-family pair is meant to expose self-preference: the stage-1 and stage-2 judges were Claude only.
+- **The scorecard artifact,** at https://claude.ai/artifact/LohZckE2CXVn7PGZV41dhW, uses the Data type, with every figure traced to a data file.
+  - `scripts/21-scorecard-data.mjs` builds five JSON files (designs, implementations, kernels, references, R2 cells). Each embeds the script's own code. The page source is in `various/scorecard/index.html`.
+  - It shows the per-model summary, the design scatter per stage, Sol's policy session, implementation sizes, the twelve stage-2 backends, speed against cuBLAS and bandwidth, and the R2 cells (running).
+  - **A bug, found by the type's check** ("not_a_number" ×12 in the implementation chart): the Pi cells' model ids are `openai-codex/gpt-6.2-…`, so my lookup table mapped them to nothing, and 12 rows had no model.
+    - The fix: match the model by name, and throw on any unmapped cell.
+    - My earlier per-model answer to the user was unaffected, because it stripped the prefix with a regex.

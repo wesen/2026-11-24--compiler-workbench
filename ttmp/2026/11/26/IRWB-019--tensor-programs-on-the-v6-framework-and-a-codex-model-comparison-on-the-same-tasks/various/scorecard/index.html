@@ -1,0 +1,487 @@
+<meta name="dash-one-writer">
+<meta name="dash-form" content="freeform">
+<style>
+.sc { display: grid; gap: var(--cds-gap-xl); max-width: 1120px; }
+.sc h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+.sc h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+.sc h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.sc p { margin: 0; max-width: 72ch; line-height: 1.55; }
+.sc-muted { color: var(--color-fg-muted); }
+.sc-section { display: grid; gap: var(--cds-gap-md); }
+.sc-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--cds-gap-lg); }
+.sc-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-sm); align-content: start; min-width: 0; }
+.sc-chart { position: relative; min-height: 270px; }
+.sc-chart.sc-tall { min-height: 330px; }
+.sc-chart svg { display: block; width: 100%; overflow: visible; }
+.sc-chart text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); }
+.sc-chart .domain, .sc-chart .tick line { stroke: var(--cds-chart-axis); }
+.sc-chart .sc-grid line { stroke: var(--cds-chart-grid); }
+.sc-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: var(--cds-pad-sm); font-size: var(--cds-font-size-caption); line-height: 1.45; max-width: 240px; z-index: 2; color: var(--color-fg); }
+.sc-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.sc-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sc-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
+.sc-legend i.sc-hollow { background: transparent; border: 2px solid var(--color-fg-muted); }
+.sc-legend i.sc-filled { background: var(--color-fg-muted); }
+.sc-table-wrap { overflow-x: auto; }
+.sc table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.sc th, .sc td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.sc th { font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); vertical-align: bottom; }
+.sc .num { text-align: right; }
+.sc-pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); color: var(--color-fg-muted); }
+.sc-pill.sc-ok { color: var(--color-ok); border-color: var(--color-ok); }
+.sc-pill.sc-warn { color: var(--color-warn); border-color: var(--color-warn); }
+.sc-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 0; }
+.sc ul { margin: 0; padding-left: 1.2em; line-height: 1.55; max-width: 76ch; }
+.sc details summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+.sc details[open] summary { margin-bottom: var(--cds-gap-sm); }
+.sc-lede b { font-weight: var(--cds-font-weight-medium); }
+</style>
+
+<div class="sc">
+  <header class="sc-section" id="sc-head">
+    <h1>Sol, Astra, Opus and Fable on the Tix compiler</h1>
+    <p class="sc-lede">Stage 1 design fitness was highest for <b data-draw="s1-lead" class="dash-skeleton" data-source="model_summary" data-field="model">—</b>, and stage 2 over-engineering was lowest for <b data-draw="s2-lead" class="dash-skeleton" data-source="model_summary" data-field="model">—</b>. <b data-draw="exact-n" class="dash-skeleton" data-source="stage2_exact" data-field="exact" data-row="0">—</b> of the <b data-draw="exact-total" class="dash-skeleton" data-source="stage2_exact" data-field="total" data-row="0">—</b> stage-2 GPU backends are bit-exact with the f32 meaning, all written by <b data-draw="exact-by" class="dash-skeleton" data-source="stage2_exact" data-field="authors" data-row="0">—</b>.</p>
+    <p class="sc-muted">Tix is an index-notation tensor language built on the IR Workbench's v6 framework. Each stage was designed and implemented independently by every agent configuration from one brief, scored blind, and checked by hidden tests. Stage 1 built the language and two checked passes; stage 2 lowered it to CUDA on an NVIDIA GB10.</p>
+  </header>
+
+  <section class="sc-section" id="sc-models">
+    <h2>The four models at a glance</h2>
+    <p class="sc-muted">Judge scores run 0 to 10. Over-engineering is better when lower, fitness when higher. Means over each model's designs.</p>
+    <div class="sc-table-wrap">
+      <table data-source="model_summary" data-row-key="model" aria-label="Per-model summary">
+        <thead>
+          <tr>
+            <th data-field="model">Model</th>
+            <th data-field="s1_designs" class="num">Stage 1 designs</th>
+            <th data-field="s1_over_engineering" class="num">Over-engineering</th>
+            <th data-field="s1_fitness" class="num">Fitness</th>
+            <th data-field="s2_designs" class="num">Stage 2 designs</th>
+            <th data-field="s2_over_engineering" class="num">Over-engineering</th>
+            <th data-field="s2_fitness" class="num">Fitness</th>
+            <th data-field="s1_correct" class="num">Stage 1 implementations correct</th>
+            <th data-field="s1_lines_median" class="num">Median tensor source lines</th>
+            <th data-field="s2_exact" class="num">Stage 2 bit-exact backends</th>
+          </tr>
+        </thead>
+        <tbody data-draw="model-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sc-section" id="sc-designs">
+    <h2>Design scores: over-engineering against fitness</h2>
+    <p class="sc-muted">One dot per design document. The best designs sit top left. Dots with the same scores are spread side by side.</p>
+    <div class="sc-legend" aria-hidden="true">
+      <span><i data-model="Sol"></i>Sol</span><span><i data-model="Astra"></i>Astra</span><span><i data-model="Opus"></i>Opus</span><span><i data-model="Fable"></i>Fable</span>
+    </div>
+    <div class="sc-pair">
+      <div class="sc-card" id="sc-designs-s1">
+        <h3>Stage 1: the language, IR, evaluators and passes</h3>
+        <div class="sc-chart dash-skeleton" data-draw="design-scatter" data-pack="Stage 1 designs" data-source="designs"></div>
+      </div>
+      <div class="sc-card" id="sc-designs-s2">
+        <h3>Stage 2: lowering to CUDA, checked on the GPU</h3>
+        <div class="sc-chart dash-skeleton" data-draw="design-scatter" data-pack="Stage 2 designs" data-source="designs"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sc-section" id="sc-policy">
+    <h2>Sol's policy wording</h2>
+    <p>Sol over-engineered most, so three versions of its standing instructions were tried on the stage-1 brief. All twelve Sol designs were judged together in one session, so the scores compare directly. Version 2 carried an example that narrowed the brief's grammar, and every agent followed the policy over the brief. Version 3 added task-specific rules without examples.</p>
+    <div class="sc-table-wrap">
+      <table data-source="policy_summary" data-row-key="policy" aria-label="Sol policy comparison">
+        <thead>
+          <tr>
+            <th data-field="policy">Policy</th>
+            <th data-field="designs" class="num">Designs</th>
+            <th data-field="over_engineering" class="num">Over-engineering</th>
+            <th data-field="fitness" class="num">Fitness</th>
+          </tr>
+        </thead>
+        <tbody data-draw="policy-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sc-section" id="sc-impl">
+    <h2>Implementations: size and correctness</h2>
+    <p class="sc-muted">Every implementation in both stages computes the right results; stage 1 was checked against an independent reference on 180 random cases, stage 2 by accepting all 16 checked lowerings. A filled dot in stage 2 marks a backend that is bit-exact with the f32 meaning.</p>
+    <div class="sc-legend" aria-hidden="true">
+      <span><i data-model="Sol"></i>Sol</span><span><i data-model="Astra"></i>Astra</span><span><i data-model="Opus"></i>Opus</span><span><i data-model="Fable"></i>Fable</span><span><i class="sc-filled"></i>bit-exact</span><span><i class="sc-hollow"></i>within tolerance</span>
+    </div>
+    <div class="sc-pair">
+      <div class="sc-card" id="sc-impl-s1">
+        <h3>Stage 1: all tensor source lines</h3>
+        <div class="sc-chart dash-skeleton" data-draw="impl-lines" data-stage="Stage 1" data-source="implementations"></div>
+      </div>
+      <div class="sc-card" id="sc-impl-s2">
+        <h3>Stage 2: tensor source lines added</h3>
+        <div class="sc-chart dash-skeleton" data-draw="impl-lines" data-stage="Stage 2" data-source="implementations"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sc-section" id="sc-exact">
+    <h2>Stage 2: the twelve GPU backends</h2>
+    <p>The three bit-exact backends round every addition and multiplication explicitly, so nothing fuses into FMA, and compute <code>exp</code>, <code>log</code> and <code>tanh</code> in double before rounding. An exhaustive check over all 2³² f32 inputs showed that construction equals the f32 meaning. The other nine use single-precision <code>expf</code> and <code>tanhf</code> and are about one unit in the last place off where those appear. Every backend checks itself only under tolerance.</p>
+    <div class="sc-table-wrap">
+      <table data-source="implementations" data-row-key="item" aria-label="Stage 2 implementations">
+        <thead>
+          <tr>
+            <th data-field="item">Ticket</th>
+            <th data-field="model">Model</th>
+            <th data-field="harness">Harness</th>
+            <th data-field="effort">Effort</th>
+            <th data-field="bit_exact">Result</th>
+            <th data-field="tensor_lines" class="num">Lines added</th>
+            <th data-field="framework" class="num">Framework change</th>
+          </tr>
+        </thead>
+        <tbody data-draw="exact-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sc-section" id="sc-speed">
+    <h2>How fast the generated CUDA is</h2>
+    <p>Stage 2 fixed a naive mapping: one kernel per statement, one thread per output element, each reduction a sequential loop. The merged backend (IRWB-022-I) is several times slower than cuBLAS on the matrix multiplies and than one fused pass at the measured 244 GB/s on the row-wise programs. References were measured on the same GB10 with cuBLAS in strict FP32 math.</p>
+    <div class="sc-table-wrap">
+      <table data-source="efficiency" data-row-key="program" aria-label="Merged backend against references">
+        <thead>
+          <tr>
+            <th data-field="program">Program</th>
+            <th data-field="ours_ms" class="num">Merged backend, ms</th>
+            <th data-field="reference">Reference</th>
+            <th data-field="ref_ms" class="num">Reference, ms</th>
+            <th data-field="times_slower" class="num">Times slower</th>
+          </tr>
+        </thead>
+        <tbody data-draw="speed-rows"></tbody>
+      </table>
+    </div>
+    <div class="sc-card" id="sc-kernels">
+      <h3>Kernel time of every backend, per program (log scale)</h3>
+      <p class="sc-muted">Color is the model, a filled dot a bit-exact backend. The exact backends pay for double-precision <code>exp</code> on softmax; elsewhere the spread is mostly run-to-run noise.</p>
+      <div class="sc-chart sc-tall dash-skeleton" data-draw="kernel-dots" data-source="kernels"></div>
+    </div>
+  </section>
+
+  <section class="sc-section" id="sc-r2">
+    <h2>The creativity round (running)</h2>
+    <p>Four cells answer one open question: what compiler work would make Tix best in class? Each may search the web and run experiments on the GB10, and writes a ranked design document and a diary. Codex runs Sol and Astra at high effort; Opus and Fable run as Claude Code subagents at their default effort. All four get the same brief and the same two standing rules. Two judges from different model families will score the designs blind on ingenuity, creativity, scientific depth, evidence, correctness and padding. Their scores appear here when the round is done.</p>
+    <div class="sc-table-wrap">
+      <table data-source="r2_cells" data-row-key="item" aria-label="Creativity round cells">
+        <thead>
+          <tr>
+            <th data-field="item">Ticket</th>
+            <th data-field="model">Model</th>
+            <th data-field="harness">Harness</th>
+            <th data-field="effort">Effort</th>
+            <th data-field="status">Status</th>
+          </tr>
+        </thead>
+        <tbody data-draw="r2-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details class="sc-card" id="sc-caveats">
+    <summary>How far these numbers go</summary>
+    <ul>
+      <li>Each configuration ran once. Opus and Fable have two stage-1 designs and one stage-1 implementation each, and did not run in stage 2.</li>
+      <li>The design judges were Claude subagents. Blinding hides the author's name but not the writing style, so the Claude designs' scores may carry a style preference.</li>
+      <li>Two judges scoring the same document differed by up to two fitness points, so gaps under about one point are noise.</li>
+      <li>Kernel times are single runs in fresh processes and differ from warm medians by up to two times.</li>
+      <li>Stage 1 counts all tensor source lines; stage 2 counts the lines each implementation added to the stage-1 base.</li>
+      <li>The two Claude stage-1 implementations pass 22 of 25 hidden tests because they forbid an index named like a tensor, a rule the brief left open. Both pass the variant suite that allows it.</li>
+    </ul>
+  </details>
+</div>
+
+<script>
+window.SC = {
+  MODELS: ['Sol', 'Astra', 'Opus', 'Fable'],
+  color: (m) => dash.colors[Math.max(0, window.SC.MODELS.indexOf(m)) % dash.colors.length],
+  f1: (v) => (v == null || Number.isNaN(+v) ? 'not run' : d3.format('.1f')(+v)),
+  median: (xs) => { const s = xs.slice().sort((a, b) => a - b), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; },
+  settle: (el, st) => { if (st !== 'loading') el.classList.remove('dash-skeleton'); },
+  tip: (el) => {
+    const t = document.createElement('div');
+    t.className = 'sc-tip'; t.hidden = true; el.appendChild(t);
+    return {
+      show: (ev, lines) => {
+        t.replaceChildren(...lines.map((s, i) => { const d = document.createElement('div'); d.textContent = s; if (i === 0) d.style.fontWeight = '500'; return d; }));
+        t.hidden = false;
+        const b = el.getBoundingClientRect(), x = ev.clientX - b.left, y = ev.clientY - b.top;
+        const w = t.offsetWidth, h = t.offsetHeight;
+        t.style.left = Math.max(0, Math.min(b.width - w, x + 12)) + 'px';
+        t.style.top = Math.max(0, y - h - 10) + 'px';
+      },
+      hide: () => { t.hidden = true; },
+    };
+  },
+  failText: (el, what) => { el.replaceChildren(); const p = document.createElement('p'); p.className = 'sc-muted'; p.textContent = what + ' could not be loaded.'; el.appendChild(p); },
+};
+document.querySelectorAll('.sc-legend i[data-model]').forEach((el) => { el.style.background = window.SC.color(el.dataset.model); });
+</script>
+
+<script>
+dash.calc('model_summary', {
+  inputs: ['designs', 'implementations'],
+  title: 'Per-model summary',
+  description: 'Mean judge scores per model and stage, implementation correctness, median size, and bit-exact backends.',
+  fn: (designs, implementations) => {
+    const mean = (xs) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
+    const median = (xs) => { const s = xs.slice().sort((a, b) => a - b), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
+    return ['Sol', 'Astra', 'Opus', 'Fable'].map((model) => {
+      const d1 = designs.filter((d) => d.model === model && d.pack === 'Stage 1 designs');
+      const d2 = designs.filter((d) => d.model === model && d.pack === 'Stage 2 designs');
+      const i1 = implementations.filter((i) => i.model === model && i.stage === 'Stage 1');
+      const i2 = implementations.filter((i) => i.model === model && i.stage === 'Stage 2');
+      return {
+        model,
+        s1_designs: d1.length,
+        s1_over_engineering: mean(d1.map((d) => +d.over_engineering)),
+        s1_fitness: mean(d1.map((d) => +d.fitness)),
+        s2_designs: d2.length,
+        s2_over_engineering: mean(d2.map((d) => +d.over_engineering)),
+        s2_fitness: mean(d2.map((d) => +d.fitness)),
+        s1_correct: i1.filter((i) => i.correct === true).length + '/' + i1.length,
+        s1_lines_median: median(i1.map((i) => +i.tensor_lines)),
+        s2_exact: i2.length ? i2.filter((i) => i.bit_exact === true).length + '/' + i2.length : 'not run',
+      };
+    });
+  },
+});
+
+dash.calc('stage2_exact', {
+  inputs: ['implementations'],
+  title: 'Bit-exact stage-2 backends',
+  description: 'How many stage-2 backends are bit-exact, and which models wrote them.',
+  fn: (implementations) => {
+    const s2 = implementations.filter((i) => i.stage === 'Stage 2');
+    const exact = s2.filter((i) => i.bit_exact === true);
+    return [{ exact: exact.length, total: s2.length, authors: [...new Set(exact.map((i) => i.model))].join(' and ') || 'none' }];
+  },
+});
+
+dash.calc('policy_summary', {
+  inputs: ['designs'],
+  title: 'Sol policy comparison',
+  description: 'Mean scores of the Sol designs judged together in one session, per policy version.',
+  fn: (designs) => {
+    const rows = designs.filter((d) => d.pack === 'Stage 1, Sol policy session');
+    return ['v1', 'v2', 'v3'].map((policy) => {
+      const r = rows.filter((d) => d.policy === policy);
+      const m = (k) => (r.length ? Math.round((r.reduce((a, d) => a + +d[k], 0) / r.length) * 10) / 10 : null);
+      return { policy, designs: r.length, over_engineering: m('over_engineering'), fitness: m('fitness') };
+    });
+  },
+});
+
+dash.calc('efficiency', {
+  inputs: ['kernels', 'references'],
+  title: 'Merged backend against references',
+  description: 'The merged stage-2 backend (IRWB-022-I) kernel time divided by the reference time on the same GB10.',
+  fn: (kernels, references) => references.map((r) => {
+    const k = kernels.find((x) => x.item === 'IRWB-022-I' && x.program === r.program);
+    const ours = k ? +k.gpu_ms : null;
+    return { program: r.program, ours_ms: ours, reference: r.reference, ref_ms: Math.round(+r.ref_ms * 10000) / 10000, times_slower: ours != null ? Math.round((ours / +r.ref_ms) * 10) / 10 : null };
+  }),
+});
+</script>
+
+<script>
+dash.draw('s1-lead', (el) => {
+  const s = dash.data('model_summary'); window.SC.settle(el, s.status);
+  if (s.status !== 'ok') { el.textContent = '—'; return; }
+  const best = s.data.filter((r) => r.s1_fitness != null).sort((a, b) => b.s1_fitness - a.s1_fitness)[0];
+  el.textContent = best ? best.model + ' (' + window.SC.f1(best.s1_fitness) + ', ' + best.s1_designs + ' designs)' : '—';
+  if (best) el.dataset.where = 'model=' + encodeURIComponent(best.model);
+});
+dash.draw('s2-lead', (el) => {
+  const s = dash.data('model_summary'); window.SC.settle(el, s.status);
+  if (s.status !== 'ok') { el.textContent = '—'; return; }
+  const best = s.data.filter((r) => r.s2_over_engineering != null).sort((a, b) => a.s2_over_engineering - b.s2_over_engineering)[0];
+  el.textContent = best ? best.model + ' (' + window.SC.f1(best.s2_over_engineering) + ')' : '—';
+  if (best) el.dataset.where = 'model=' + encodeURIComponent(best.model);
+});
+for (const [name, field] of [['exact-n', 'exact'], ['exact-total', 'total'], ['exact-by', 'authors']]) {
+  dash.draw(name, (el) => {
+    const s = dash.data('stage2_exact'); window.SC.settle(el, s.status);
+    el.textContent = s.status === 'ok' && s.data[0] ? String(s.data[0][field]) : '—';
+  });
+}
+
+const tableRows = (tbody, rows, cells) => {
+  tbody.replaceChildren(...rows.map((r) => {
+    const tr = document.createElement('tr');
+    for (const c of cells) {
+      const td = document.createElement('td');
+      if (c.num) td.className = 'num';
+      const v = c.get(r);
+      if (v instanceof Node) td.appendChild(v); else td.textContent = v;
+      tr.appendChild(td);
+    }
+    return tr;
+  }));
+};
+const msg = (tbody, cols, text) => { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = cols; td.className = 'sc-muted'; td.textContent = text; tr.appendChild(td); tbody.replaceChildren(tr); };
+const modelCell = (m) => { const f = document.createDocumentFragment(), s = document.createElement('span'); s.className = 'sc-swatch'; s.style.background = window.SC.color(m); f.append(s, m); return f; };
+const pill = (text, cls) => { const s = document.createElement('span'); s.className = 'sc-pill ' + cls; s.textContent = text; return s; };
+
+dash.draw('model-rows', (tbody) => {
+  const s = dash.data('model_summary');
+  if (s.status === 'error') return msg(tbody, 10, 'The summary could not be computed.');
+  if (s.status !== 'ok') return tbody.replaceChildren();
+  const f1 = window.SC.f1;
+  tableRows(tbody, s.data, [
+    { get: (r) => modelCell(r.model) },
+    { num: 1, get: (r) => String(r.s1_designs) },
+    { num: 1, get: (r) => f1(r.s1_over_engineering) },
+    { num: 1, get: (r) => f1(r.s1_fitness) },
+    { num: 1, get: (r) => (r.s2_designs ? String(r.s2_designs) : 'not run') },
+    { num: 1, get: (r) => f1(r.s2_over_engineering) },
+    { num: 1, get: (r) => f1(r.s2_fitness) },
+    { num: 1, get: (r) => r.s1_correct },
+    { num: 1, get: (r) => (r.s1_lines_median == null ? '—' : d3.format(',')(r.s1_lines_median)) },
+    { num: 1, get: (r) => r.s2_exact },
+  ]);
+});
+
+dash.draw('policy-rows', (tbody) => {
+  const s = dash.data('policy_summary');
+  if (s.status === 'error') return msg(tbody, 4, 'The policy comparison could not be computed.');
+  if (s.status !== 'ok') return tbody.replaceChildren();
+  tableRows(tbody, s.data, [
+    { get: (r) => r.policy },
+    { num: 1, get: (r) => String(r.designs) },
+    { num: 1, get: (r) => window.SC.f1(r.over_engineering) },
+    { num: 1, get: (r) => window.SC.f1(r.fitness) },
+  ]);
+});
+
+dash.draw('exact-rows', (tbody) => {
+  const s = dash.data('implementations');
+  if (s.status === 'error') return msg(tbody, 7, 'The implementations could not be loaded.');
+  if (s.status !== 'ok') return tbody.replaceChildren();
+  const rows = s.data.filter((r) => r.stage === 'Stage 2').sort((a, b) => (b.bit_exact === true) - (a.bit_exact === true) || +a.tensor_lines - +b.tensor_lines);
+  tableRows(tbody, rows, [
+    { get: (r) => r.item },
+    { get: (r) => modelCell(r.model) },
+    { get: (r) => r.harness },
+    { get: (r) => r.effort },
+    { get: (r) => (r.bit_exact === true ? pill('bit-exact', 'sc-ok') : pill('within tolerance', '')) },
+    { num: 1, get: (r) => d3.format(',')(+r.tensor_lines) },
+    { num: 1, get: (r) => r.framework },
+  ]);
+  tbody.querySelectorAll('tr').forEach((tr, i) => { tr.dataset.key = encodeURIComponent(rows[i].item); });
+});
+
+dash.draw('speed-rows', (tbody) => {
+  const s = dash.data('efficiency');
+  if (s.status === 'error') return msg(tbody, 5, 'The speed comparison could not be computed.');
+  if (s.status !== 'ok') return tbody.replaceChildren();
+  const ms = (v) => (v == null ? '—' : d3.format('.3f')(v));
+  tableRows(tbody, s.data, [
+    { get: (r) => r.program },
+    { num: 1, get: (r) => ms(r.ours_ms) },
+    { get: (r) => r.reference },
+    { num: 1, get: (r) => d3.format('.4f')(r.ref_ms) },
+    { num: 1, get: (r) => (r.times_slower == null ? '—' : d3.format('.1f')(r.times_slower) + '×') },
+  ]);
+});
+
+dash.draw('r2-rows', (tbody) => {
+  const s = dash.data('r2_cells');
+  if (s.status === 'error') return msg(tbody, 5, 'The round could not be loaded.');
+  if (s.status !== 'ok') return tbody.replaceChildren();
+  tableRows(tbody, s.data, [
+    { get: (r) => r.item },
+    { get: (r) => modelCell(r.model) },
+    { get: (r) => r.harness },
+    { get: (r) => r.effort },
+    { get: (r) => pill(r.status, r.status === 'done' ? 'sc-ok' : 'sc-warn') },
+  ]);
+});
+</script>
+
+<script>
+dash.draw('design-scatter', (el) => {
+  const d = dash.data('designs'); window.SC.settle(el, d.status);
+  if (d.status === 'error') return window.SC.failText(el, 'The design scores');
+  if (d.status !== 'ok') { el.replaceChildren(); return; }
+  const rows = d.data.filter((r) => r.pack === el.dataset.pack);
+  el.replaceChildren();
+  const W = Math.max(260, el.clientWidth), H = 270, m = { t: 12, r: 16, b: 44, l: 44 };
+  const x = d3.scaleLinear([0, 10], [m.l, W - m.r]), y = d3.scaleLinear([4, 10], [H - m.b, m.t]);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).attr('role', 'img')
+    .attr('aria-label', `${el.dataset.pack}: over-engineering against fitness for ${rows.length} designs, colored by model`);
+  svg.append('g').attr('class', 'sc-grid').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(-(W - m.l - m.r)).tickFormat(''));
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(5));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4));
+  svg.append('text').attr('x', (m.l + W - m.r) / 2).attr('y', H - 8).attr('text-anchor', 'middle').text('over-engineering (lower is better)');
+  svg.append('text').attr('transform', `translate(12,${(m.t + H - m.b) / 2}) rotate(-90)`).attr('text-anchor', 'middle').text('fitness');
+  const pts = [];
+  for (const [, g] of d3.group(rows, (r) => r.over_engineering + ',' + r.fitness)) g.forEach((r, i) => pts.push({ r, dx: (i - (g.length - 1) / 2) * 10 }));
+  const tip = window.SC.tip(el);
+  svg.append('g').selectAll('circle').data(pts).join('circle')
+    .attr('cx', (p) => x(+p.r.over_engineering) + p.dx).attr('cy', (p) => y(+p.r.fitness)).attr('r', 5.5)
+    .style('fill', (p) => window.SC.color(p.r.model)).style('stroke', 'var(--color-bg)').style('stroke-width', 1.5)
+    .on('pointerenter pointermove', (ev, p) => tip.show(ev, [p.r.item, `${p.r.model} · ${p.r.harness} · ${p.r.effort}`, `over-engineering ${p.r.over_engineering}, fitness ${p.r.fitness}`]))
+    .on('pointerleave', tip.hide);
+});
+
+dash.draw('impl-lines', (el) => {
+  const d = dash.data('implementations'); window.SC.settle(el, d.status);
+  if (d.status === 'error') return window.SC.failText(el, 'The implementations');
+  if (d.status !== 'ok') { el.replaceChildren(); return; }
+  const stage = el.dataset.stage, rows = d.data.filter((r) => r.stage === stage && window.SC.MODELS.includes(r.model));
+  const models = window.SC.MODELS.filter((mm) => rows.some((r) => r.model === mm));
+  el.replaceChildren();
+  const W = Math.max(260, el.clientWidth), m = { t: 10, r: 18, b: 40, l: 56 }, band = 46, H = m.t + m.b + band * models.length;
+  const xs = rows.map((r) => +r.tensor_lines);
+  const x = d3.scaleLinear([0, d3.max(xs) * 1.08], [m.l, W - m.r]).nice(), y = d3.scaleBand(models, [m.t, H - m.b]).padding(0.3);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).attr('role', 'img')
+    .attr('aria-label', `${stage}: tensor source lines per implementation, by model`);
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(3, Math.floor(W / 110))).tickFormat(d3.format(',')));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).tickSize(0)).call((g) => g.select('.domain').remove());
+  svg.append('text').attr('x', (m.l + W - m.r) / 2).attr('y', H - 6).attr('text-anchor', 'middle').text(stage === 'Stage 1' ? 'tensor source lines' : 'lines added');
+  const tip = window.SC.tip(el);
+  const order = d3.group(rows, (r) => r.model);
+  const pts = rows.map((r) => { const g = order.get(r.model); const i = g.indexOf(r); return { r, dy: ((i % 3) - 1) * 7 }; });
+  svg.append('g').selectAll('circle').data(pts).join('circle')
+    .attr('cx', (p) => x(+p.r.tensor_lines)).attr('cy', (p) => y(p.r.model) + y.bandwidth() / 2 + p.dy).attr('r', 5.5)
+    .style('fill', (p) => (stage === 'Stage 2' && p.r.bit_exact !== true ? 'var(--color-bg)' : window.SC.color(p.r.model)))
+    .style('stroke', (p) => window.SC.color(p.r.model)).style('stroke-width', 2)
+    .on('pointerenter pointermove', (ev, p) => tip.show(ev, [p.r.item, `${p.r.model} · ${p.r.harness} · ${p.r.effort}`,
+      `${d3.format(',')(+p.r.tensor_lines)} lines · framework ${p.r.framework}`,
+      stage === 'Stage 1' ? `hidden suite ${p.r.hidden_suite}` + (p.r.minutes != null ? ` · ${p.r.minutes} min` : '') : (p.r.bit_exact ? 'bit-exact' : 'within tolerance')]))
+    .on('pointerleave', tip.hide);
+});
+
+dash.draw('kernel-dots', (el) => {
+  const d = dash.data('kernels'); window.SC.settle(el, d.status);
+  if (d.status === 'error') return window.SC.failText(el, 'The kernel times');
+  if (d.status !== 'ok') { el.replaceChildren(); return; }
+  const rows = d.data, programs = ['matmul', 'conv', 'softmax', 'layernorm', 'mlp', 'attention'].filter((p) => rows.some((r) => r.program === p));
+  el.replaceChildren();
+  const W = Math.max(260, el.clientWidth), m = { t: 10, r: 18, b: 40, l: 76 }, band = 44, H = m.t + m.b + band * programs.length;
+  const x = d3.scaleLog([0.1, 10], [m.l, W - m.r]), y = d3.scaleBand(programs, [m.t, H - m.b]).padding(0.25);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).attr('role', 'img')
+    .attr('aria-label', 'Kernel time of each stage-2 backend per program, on a log scale, colored by model, filled when bit-exact');
+  svg.append('g').attr('class', 'sc-grid').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues([0.1, 0.2, 0.5, 1, 2, 5, 10]).tickSize(-(H - m.t - m.b)).tickFormat(''));
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues([0.1, 0.2, 0.5, 1, 2, 5, 10]).tickFormat((v) => v + ' ms'));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).tickSize(0)).call((g) => g.select('.domain').remove());
+  const tip = window.SC.tip(el);
+  const idx = d3.group(rows, (r) => r.program);
+  const pts = rows.filter((r) => programs.includes(r.program)).map((r) => { const g = idx.get(r.program); const i = g.indexOf(r); return { r, dy: ((i % 4) - 1.5) * 6 }; });
+  svg.append('g').selectAll('circle').data(pts).join('circle')
+    .attr('cx', (p) => x(Math.max(0.1, Math.min(10, +p.r.gpu_ms)))).attr('cy', (p) => y(p.r.program) + y.bandwidth() / 2 + p.dy).attr('r', 5)
+    .style('fill', (p) => (p.r.bit_exact === true ? window.SC.color(p.r.model) : 'var(--color-bg)'))
+    .style('stroke', (p) => window.SC.color(p.r.model)).style('stroke-width', 2)
+    .on('pointerenter pointermove', (ev, p) => tip.show(ev, [`${p.r.program}: ${d3.format('.3f')(+p.r.gpu_ms)} ms`, `${p.r.item} · ${p.r.model} · ${p.r.harness} · ${p.r.effort}`, p.r.bit_exact ? 'bit-exact' : 'within tolerance']))
+    .on('pointerleave', tip.hide);
+});
+</script>
