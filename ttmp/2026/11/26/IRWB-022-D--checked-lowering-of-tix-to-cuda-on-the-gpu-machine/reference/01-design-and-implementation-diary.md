@@ -190,3 +190,11 @@ Now do the following in this session:
 Changed the emitter, runtime and batch codec, and isolated the remote run from its locked build cache. The original design probe still returned the same mismatch counts with the new tool; JSON now reported nvcc V13.0.88. An emitted two-row exp/sum returned `[10.107337951660156,74.68368530273438]`, with a 0.004512 ms warmed event interval. `npm run build` exceeded the initial 20 s command timeout under shared-host load; a first import before the asynchronous rebuild completed reported `does not provide an export named runTixCuda`. Retried after `tsc` emitted the files. No code workaround.
 
 Review `cuda-source.ts` for lexical loop/rounding sites, `cuda-run.ts` for wire validation and `tools/cuda-remote.mjs` for lock scope. No framework change. Full-size CPU evaluations are running separately with raw output saved for comparison. Next: test the checked transformation and concurrent remote runs.
+
+## Step 4: Check a cross-type candidate and test a real rejection
+
+At runner checkpoint `79c782b`, I reused stage-1 case/reference construction and added a lowering-specific async `ensures`. The invariant delegates missing cases to one process, and a fresh manager per checked call avoids retaining histories indefinitely. The framework owns replay. The test seam compares altered emitted bytes, not a re-emission from Tix. A truncated split tail compiled, ran and was rejected with a coordinate, while an authorized two-fold sum returned the changed f32 word. Identical concurrent calls produced complete private outputs.
+
+`node --test tests/tensor/cuda.test.mjs`: 5/5 once the build finished. A premature run against the previous dist reported `Should not delegate` in the synthetic-empty case. The fix in source prevents a newly added empty shape from standing in for missing finite evidence.
+
+First `node --test tests/tensor/cuda-gpu.test.mjs`: 10/11. Node typed-array deep equality reported `Values have same structure but are not reference-equal` on `[NaN,-0,-0,-1]` from both engines: it compared NaN payloads. The relation has no NaN-payload requirement. Changed that test to compare scalar values (still distinguishes zero sign). No arithmetic change. The full tensor-only regression will verify this. No framework source or corpus programs changed.

@@ -89,10 +89,10 @@ export function decodeBatch(bytes: Buffer, shapes: number[][]): CudaResult[] {
   if (pos !== bytes.length) throw Error('Extra result bytes');
   return results;
 }
-export function profile(host?: string) {
+export function profile(host?: string, nvcc?: string) {
   return {
     host: host ?? process.env.CUDA_REMOTE_HOST ?? 'manuel@bling',
-    nvcc: process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc',
+    nvcc: nvcc ?? process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc',
     arch: 'sm_121',
     flags: ['-O3', '-arch=sm_121'],
   };
@@ -101,10 +101,10 @@ export async function runBatch(
   fn: Fn,
   source: string,
   batch: readonly Inputs[],
-  options: { host?: string; timed?: boolean } = {},
+  options: { host?: string; nvcc?: string; timed?: boolean } = {},
 ): Promise<CudaResult[]> {
   const { bytes, shapes } = encodeBatch(fn, batch),
-    target = profile(options.host);
+    target = profile(options.host, options.nvcc);
   const dir = await mkdtemp(join(tmpdir(), 'tix-cuda-'));
   try {
     await Promise.all([writeFile(join(dir, 'main.cu'), source), writeFile(join(dir, 'input.bin'), bytes)]);

@@ -11,7 +11,7 @@ import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
 type Relation = 'exact' | 'tolerance';
-interface Sample {
+export interface Sample {
   fn: string;
   shapeValues: number[];
   stream: string;
@@ -20,14 +20,23 @@ interface Sample {
 }
 const seed = 20,
   half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
-function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
+export function meaningCases(
+  fn: Fn,
+  baseline: Fn,
+  relation: Relation,
+  random: () => number,
+  zeroAxes = false,
+): Sample[] {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
   ].sort();
   const seen = new Set<string>(),
     out: Sample[] = [];
-  for (const n of [1, 3, 4, 7, 'mixed'] as const) {
-    const shapeValues = symbols.map((_, i) => (n === 'mixed' ? [3, 5, 7][i % 3] : n));
+  const assignments = [1, 3, 4, 7, 'mixed'].map(n =>
+    symbols.map((_, i) => (typeof n === 'string' ? [3, 5, 7][i % 3] : n)),
+  );
+  if (zeroAxes) assignments.push(...symbols.map((_, j) => symbols.map((_, i) => (i === j ? 0 : 3))));
+  for (const shapeValues of assignments) {
     const key = JSON.stringify(shapeValues);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -55,6 +64,8 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
       try {
         const ref = evaluate(fn, inputs, relation === 'exact' ? 'f32' : 'f64', true);
         if (relation === 'tolerance' && !ref.data.every(Number.isFinite)) continue;
+        // Extra empty-shape probes cannot by themselves witness an otherwise non-comparable function.
+        if (zeroAxes && shapeValues.includes(0) && !ref.data.length && !out.length) continue;
         out.push({
           fn: fn.name,
           shapeValues,
@@ -69,7 +80,7 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
   }
   return out;
 }
-function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
+export function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
   if (JSON.stringify(ref.shape) !== JSON.stringify(got.shape))
     return { ok: false, reason: 'Output shape differs' };
   const words = (b: BufferValue) => new Uint32Array(b.data.buffer, b.data.byteOffset, b.data.length);
@@ -103,7 +114,7 @@ export function meaningGate(origin: Artifact<Module>, relation: Relation) {
     const samples: Sample[] = [];
     const random = seededRandom(seed);
     for (const [i, fn] of origin.value.functions.entries()) {
-      const group = cases(fn, baseline.value.functions[i], relation, random);
+      const group = meaningCases(fn, baseline.value.functions[i], relation, random);
       if (!group.length) return { ok: false, reason: 'No comparable case for ' + fn.name };
       samples.push(...group);
     }

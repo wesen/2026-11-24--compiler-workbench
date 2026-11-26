@@ -49,3 +49,4 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
 
 export { cudaSource } from './cuda-source.js';
 export { runTixCuda } from './cuda-run.js';
+export { checkLowering } from './cuda-contract.js';
