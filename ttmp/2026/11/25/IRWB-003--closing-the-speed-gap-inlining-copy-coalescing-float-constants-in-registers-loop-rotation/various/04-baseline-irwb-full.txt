@@ -1,0 +1,29 @@
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (101.79652ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (729.231545ms)
+✔ P2.4: the book's other r0 numbers reproduce (260.019359ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (1305.097084ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (351.615557ms)
+✔ P2.4: encoders and the disassembler round-trip (85.238058ms)
+✔ P2.4: options are validated with the prototype's codes (39.779102ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (6.267163ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (19.702999ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (29.485738ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (26.254154ms)
+✔ P2.4: heat, diffs, machine stages and image status (43.999826ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (17837.037658ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 6986 decided cases (14 at the step limit) (692.185825ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (460.175463ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (669.138085ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (34.44528ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (124.06467ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (10.329551ms)
+✔ P2.6: corpus parity (all projects) (14998.814185ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (645.592456ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21670.855146
