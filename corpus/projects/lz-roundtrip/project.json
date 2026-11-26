@@ -1,16 +1,22 @@
 {
   "title": "LZ round trip",
   "about": [
-    "Find repeated triples through a hash chain, then decode literals and",
-    "overlapping back-references with checked buffer accesses."
+    "Find repeated triples through a hash chain, then decode literals",
+    "and overlapping back-references with checked buffer accesses."
   ],
   "group": "Programs",
   "sources": ["main.typed"],
   "pipeline": "speed",
   "ingest": { "tape": true },
-  "focus": 74,
+  "focus": 82,
   "scripts": {
-    "explore": { "about": "Encode and decode 24 A cells and count RV32 instructions.", "fresh": true }
+    "explore": {
+      "about": [
+        "Encode and decode 24 A cells",
+        "and count RV32 instructions."
+      ],
+      "fresh": true
+    }
   },
   "inputs": {
     "hash3": { "a": [0, 127], "b": [0, 127], "c": [0, 127] },

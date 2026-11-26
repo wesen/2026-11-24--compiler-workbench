@@ -176,3 +176,11 @@ See Step 4 for the implementation request. The measurement follows the reviewed 
 
 - Staging the first checkpoint failed with `Unable to create '…/.git/worktrees/impl-irwb-014/index.lock': Read-only file system` under the sandbox. The authorized, path-scoped Git command succeeded with escalation and produced `70388b8` (`IRWB-014: add the LZ round-trip corpus project`).
 - Review starts with the token fixtures and the loop over `roundTrips` in the new test. The standing script-count assertion described in Step 4 remains outside this ticket's allowed edits.
+
+## Step 6 — Fit the corpus files to the Workbench tiles
+
+Wrapped the Typed calls and wrapper signature, reflowed the notes, and split the JSON prose into shorter lines. The decoder focus moved from line 74 in Step 4 to line 82. The exploration script already fit its tile at 73 columns.
+
+- `node tools/format-corpus.mjs` normalized the JSON and notes. `node tools/format-corpus.mjs --check` reported zero changes.
+- `node --test tests/typed/format.test.mjs` passed all four tests after a rerun outside the sandbox. The sandboxed run failed at the nested formatter launch with `spawnSync …/bin/node EPERM`.
+- `node --test tests/typed/lz-roundtrip.test.mjs` passed.
