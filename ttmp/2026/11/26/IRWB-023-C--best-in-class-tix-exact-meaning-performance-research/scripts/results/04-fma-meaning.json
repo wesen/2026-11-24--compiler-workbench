@@ -1,0 +1,24 @@
+{
+ "randomWords": {
+  "triples": 1048576,
+  "eftMismatches": 0,
+  "naiveMismatches": 0
+ },
+ "randomNormals": {
+  "triples": 262144,
+  "eftMismatches": 0,
+  "naiveMismatches": 0
+ },
+ "nearMidpoint": {
+  "triples": 65536,
+  "eftMismatches": 0,
+  "naiveMismatches": 65536,
+  "firstNaive": {
+   "a": -1.6155873264856266e-27,
+   "b": 0.9999998807907104,
+   "c": -3.697079547279209e-20,
+   "gpu": -3.697079547279209e-20,
+   "naive": -3.697079870396636e-20
+  }
+ }
+}

@@ -292,12 +292,12 @@ static void perf(int S) {
          "\"tflops\":{\"naive\":%.2f,\"exact128\":%.2f,\"exact64\":%.2f,\"fma128\":%.2f,\"fma64\":%.2f,\"exactSplitK128\":%.2f,\"cublas\":%.2f},"
          "\"wordsDifferentFromNaive\":{\"exact128\":%lld,\"exact64\":%lld,\"fma128\":%lld,\"exactSplitK128\":%lld,\"cublas\":%lld},"
          "\"splitKVsItsTreeOracle\":%lld,\"maxRelDiffFromNaive\":{\"fma128\":%.3g,\"exactSplitK128\":%.3g,\"cublas\":%.3g},"
-         "\"row0BatchInvarianceWordDiffs\":{\"cublas\":%lld,\"exact64\":%lld,\"exactSplitK128\":%lld}}\n",
+         "\"row0BatchInvarianceWordDiffs\":{\"cublas\":%lld,\"exact64\":%lld,\"exactSplitK128\":%lld},\"cublasVsSequentialFma\":%lld}\n",
          S, reps, tNaive, tT128, tT64, tF128, tF64, tSplit, tCublas, tf(tNaive), tf(tT128), tf(tT64), tf(tF128), tf(tF64), tf(tSplit), tf(tCublas),
          (long long)mismatches(n, t128, nullptr), (long long)mismatches(n, t64, nullptr), (long long)mismatches(n, f, nullptr),
          (long long)mismatches(n, s, nullptr), sgemm ? (long long)mismatches(n, cb, nullptr) : -1LL,
          (long long)mismatches(c, s, nullptr), max_rel(n, f), max_rel(n, s), sgemm ? max_rel(n, cb) : -1.0,
-         (long long)cublasRowDiff, (long long)tiledRowDiff, (long long)splitRowDiff);
+         (long long)cublasRowDiff, (long long)tiledRowDiff, (long long)splitRowDiff, sgemm ? (long long)mismatches(f, cb, nullptr) : -1LL);
 }
 
 // Runs naive, the f64 reference and each deliberate bug on one shape and reports exact and tolerance verdicts.
