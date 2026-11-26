@@ -3077,3 +3077,860 @@ test at tests/tensor/passes.test.mjs:1:1
 ℹ todo 0
 ℹ duration_ms 2709.011164
 
+exec
+/usr/bin/zsh -lc 'node --test --test-isolation=none tests/tensor/passes.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ exited 1 in 347ms:
+✖ real split needs tolerance and the tail-dropping kernel fails that same tolerance gate (7.151661ms)
+✔ inline keeps exact bits under reduction and affine substitution, and rejects swapped indices (5.402342ms)
+✔ the current revision survives rejection and the original survives later calls (5.116402ms)
+✔ a split can spend its extra outer accumulations above the origin cap (28.810114ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 83.397857
+
+✖ failing tests:
+
+test at tests/tensor/passes.test.mjs:22:1
+✖ real split needs tolerance and the tail-dropping kernel fails that same tolerance gate (7.151661ms)
+  PassError: [badResult] Pass test.drop-tail requires a native result on the synchronous path
+      at get edit (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/dist/framework/passes/define-pass.js:115:19)
+      at Object.run (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/tests/tensor/passes.test.mjs:44:36)
+      at applyNativePassSync (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/dist/framework/passes/define-pass.js:108:39)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/tests/tensor/passes.test.mjs:47:23)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    code: 'badResult',
+    evidence: undefined
+  }
+
+exec
+/usr/bin/zsh -lc "sed -n '52,254p' src/tensor/parse.ts; git diff src/framework/passes/define-pass.ts | head -110; cat ttmp/2026/11/26/IRWB-020-C*/design-doc/01-tix-stage-1-design.md | sed -n '37,91p'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 276ms:
+    if (text[0] === '\r' || text[0] === '\n') {
+      line++;
+      col = 1;
+    } else {
+      col += text.length;
+    }
+    offset = lexer.lastIndex;
+  }
+  tokens.push({ text: '', kind: 'end', line, col });
+  return tokens;
+}
+
+class Parser {
+  private index = 0;
+  private shapeNames = new Set<string>();
+
+  constructor(private readonly tokens: readonly Token[]) {}
+
+  private peek(): Token {
+    return this.tokens[this.index]!;
+  }
+
+  private pop(): Token {
+    const token = this.peek();
+    if (token.kind !== 'end') this.index++;
+    return token;
+  }
+
+  private expect(text: string): Token {
+    const token = this.pop();
+    if (token.text !== text) fail(token, `expected "${text}"`);
+    return token;
+  }
+
+  private name(): Token {
+    const token = this.pop();
+    if (token.kind !== 'name' || keywords.has(token.text)) fail(token, 'expected a name');
+    return token;
+  }
+
+  private list<T>(item: () => T, end: string): T[] {
+    const items = [item()];
+    while (this.peek().text === ',') {
+      this.pop();
+      items.push(item());
+    }
+    this.expect(end);
+    return items;
+  }
+
+  private affine(min = 1): Affine {
+    const token = this.pop();
+    let value: Affine;
+    if (token.text === '-') {
+      value = affineSum(token, [[this.affine(3), -1]]);
+    } else if (token.text === '(') {
+      value = this.affine();
+      this.expect(')');
+    } else if (token.kind === 'number' && /^[0-9]+$/.test(token.text)) {
+      const integer = Number(token.text);
+      if (!Number.isSafeInteger(integer)) fail(token, 'expected a safe integer');
+      value = constant(integer);
+    } else if (token.kind === 'name' && !keywords.has(token.text)) {
+      value = variable(token.text);
+    } else {
+      fail(token, 'expected an affine expression');
+    }
+
+    while (true) {
+      const op = this.peek();
+      if (op.text !== '+' && op.text !== '-' && op.text !== '*') return value;
+      const precedence = binary[op.text];
+      if (precedence < min) return value;
+      this.pop();
+      const right = this.affine(precedence + 1);
+      if (op.text === '*') {
+        if (value.terms.length && right.terms.length) fail(op, 'affine multiplication requires a constant');
+        value = value.terms.length
+          ? affineSum(op, [[value, right.constant]])
+          : affineSum(op, [[right, value.constant]]);
+      } else {
+        value = affineSum(op, [
+          [value, 1],
+          [right, op.text === '+' ? 1 : -1],
+        ]);
+      }
+    }
+  }
+
+  private type(): Affine[] {
+    this.expect('f32');
+    this.expect('[');
+    return this.list(() => this.affine(), ']');
+  }
+
+  private maxReduction(): boolean {
+    const axes: string[] = [];
+    let end = this.index;
+    while (true) {
+      const token = this.tokens[end]!;
+      if (token.kind !== 'name' || keywords.has(token.text)) return false;
+      axes.push(token.text);
+      const separator = this.tokens[++end]!.text;
+      if (separator === ')') break;
+      if (separator !== ',') return false;
+      end++;
+    }
+    if (axes.length !== 2) return true;
+    const next = this.tokens[end + 1]!;
+    if (next.text === '-') return !axes.every(axis => this.shapeNames.has(axis));
+    return next.kind === 'number' || next.text === '(' || next.kind === 'name';
+  }
+
+  private atom(): Expr<string> {
+    const token = this.pop();
+    const at = location(token);
+    if (token.text === '-') return { at, kind: 'primitive', op: 'neg', args: [this.expr(3)] };
+    if (token.text === '(') {
+      const value = this.expr();
+      this.expect(')');
+      return value;
+    }
+    if (token.kind === 'number') {
+      const value = Number(token.text);
+      if (!Number.isFinite(value)) fail(at, 'literal must be a finite number');
+      return { at, kind: 'number', value };
+    }
+    if (token.text === 'sum' || token.text === 'max') {
+      this.expect('(');
+      if (token.text === 'sum' || this.maxReduction()) {
+        const axes = this.list(() => this.name().text, ')');
+        return { at, kind: 'reduce', op: token.text, axes, body: this.expr() };
+      }
+      const left = this.expr();
+      this.expect(',');
+      const right = this.expr();
+      this.expect(')');
+      return { at, kind: 'primitive', op: 'max', args: [left, right] };
+    }
+    if (token.text === 'min' || unaryCalls.has(token.text)) {
+      const op = token.text as 'min' | 'exp' | 'log' | 'sqrt' | 'tanh';
+      this.expect('(');
+      const args = [this.expr()];
+      if (op === 'min') {
+        this.expect(',');
+        args.push(this.expr());
+      }
+      this.expect(')');
+      return { at, kind: 'primitive', op, args };
+    }
+    if (token.kind !== 'name' || keywords.has(token.text)) fail(at, 'expected a scalar expression');
+    if (this.peek().text !== '[') return { at, kind: 'shape', name: token.text };
+    this.pop();
+    return { at, kind: 'ref', tensor: token.text, indices: this.list(() => this.affine(), ']') };
+  }
+
+  private expr(min = 1): Expr<string> {
+    let left = this.atom();
+    while (Object.hasOwn(binary, this.peek().text)) {
+      const token = this.peek();
+      const op = token.text as keyof typeof binary;
+      if (binary[op] < min) break;
+      this.pop();
+      left = { at: location(token), kind: 'primitive', op, args: [left, this.expr(binary[op] + 1)] };
+    }
+    return left;
+  }
+
+  private param(): Parameter {
+    const name = this.name();
+    this.expect(':');
+    return { name: name.text, at: location(name), shape: this.type() };
+  }
+
+  private statement(): SourceStatement {
+    const name = this.name();
+    this.expect('[');
+    const axes = this.list(() => this.name().text, ']');
+    const shape = this.peek().text === ':' ? (this.pop(), this.type()) : undefined;
+    this.expect('=');
+    const expr = this.expr();
+    this.expect(';');
+    return { at: location(name), name: name.text, axes, shape, expr };
+  }
+
+  private function(): SourceFunction {
+    this.expect('fn');
+    const name = this.name();
+    this.expect('(');
+    const params = this.list(() => this.param(), ')');
+    this.shapeNames = new Set(
+      params.flatMap(param => param.shape.flatMap(dim => dim.terms.map(([key]) => key))),
+    );
+    this.expect(':');
+    const result = this.type();
+    this.expect('{');
+    const statements: SourceStatement[] = [];
+    while (this.peek().text !== 'return') statements.push(this.statement());
+    this.expect('return');
+    const returns = this.name();
+    this.expect(';');
+    this.expect('}');
+    return {
+diff --git a/src/framework/passes/define-pass.ts b/src/framework/passes/define-pass.ts
+index 62d3f2c..d8b8c71 100644
+--- a/src/framework/passes/define-pass.ts
++++ b/src/framework/passes/define-pass.ts
+@@ -16,8 +16,10 @@
+  * published unless all of that succeeds.
+  */
+ import type { Artifact } from '../core/types.js';
+-import { canonical } from '../core/data.js';
++import { canonical, immutable } from '../core/data.js';
+ import { createIRArtifact, openIR } from '../ir/index.js';
++import { synchronous } from '../ir/common.js';
++import { Check, validateArtifact } from '../contracts/definitions.js';
+ import { diff } from '../ir/diff.js';
+ import { makeCorrespondence } from '../ir/correspondence.js';
+ import type {
+@@ -33,6 +35,7 @@ import type {
+   AnalysisDefinition,
+   AnalysisRecord,
+   Correspondence,
++  CheckResult,
+   IRType,
+   Ports,
+   TransformationDefinition,
+@@ -187,6 +190,122 @@ export function semanticCorrespondence(
+   };
+ }
+ 
++function prepareNativeCandidate<S>(
++  pass: Pick<PassSpec<S, Needs>, 'adapter'>,
++  view: IRView<S>,
++  produced: NativeResult<S>,
++  id: string,
++  store?: IRStore,
++) {
++  const before = view.artifact;
++  const after = createIRArtifact(pass.adapter, id, produced.native);
++  const afterView = openIR(after, pass.adapter, store);
++  const changes = diff(view, afterView);
++  const correspondence = makeCorrespondence(
++    { artifact: before.id, revision: before.revision },
++    { artifact: after.id, revision: after.revision },
++    view.graph().entities.map(e => e.id),
++    afterView.graph().entities.map(e => e.id),
++    produced.correspondence ?? [],
++  );
++  return {
++    after,
++    changes,
++    correspondence,
++    edits: produced.edits ?? changes.entities.length,
++    report: produced.report,
++  };
++}
++
++function unchanged(before: Artifact, after: Artifact, changes: ChangeSet): boolean {
++  return after.revision === before.revision && !changes.entities.length && !changes.relations.length;
++}
++
++function identity<S>(pass: Pick<PassSpec<S, Needs>, 'id' | 'version'>, before: Artifact<S>): PassResult<S> {
++  return {
++    pass: { id: pass.id, version: pass.version },
++    changed: false,
++    before,
++    artifact: before,
++    edits: 0,
++    preserved: [],
++  };
++}
++
++function assertDeclaredWrites(pass: Pick<PassSpec<any, any>, 'id' | 'writes'>, changes: ChangeSet): void {
++  const undeclared = undeclaredWrites(pass.writes, changes);
++  if (undeclared.length)
++    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
++      undeclared: undeclared.slice(0, 20),
++    });
++}
++
++/** Apply a native-only pass with a mandatory synchronous gate and private IR views. */
++export function applyNativePassSync<S, N extends Needs, P>(
++  pass: Pass<S, N, P>,
++  input: Artifact<S>,
++  options: {
++    readonly params?: P;
++    readonly check: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult;
++  },
++): PassResult<S> {
++  if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
++    throw new PassError('badResult', `Pass ${pass.id} requires the asynchronous pass runner`);
++  if (typeof options?.check !== 'function')
++    throw new PassError('badResult', `Pass ${pass.id} requires a synchronous check`);
++
++  const view = openIR(input, pass.adapter);
++  const before = view.artifact;
++  validateArtifact(pass.ir, before);
++  const produced = synchronous(
++    pass.run({
++      before,
++      view,
++      facts: {} as FactValues<N>,
++      records: {} as PassRunContext<S, N, P>['records'],
++      params: options.params as P,
++      get edit(): IREdit<S> {
++        throw new PassError('badResult', `Pass ${pass.id} requires a native result on the synchronous path`);
++      },
++    }),
++    `Pass ${pass.id} kernel`,
++  );
++  if (produced === undefined) return identity(pass, before);
++  if (!produced || typeof produced !== 'object' || !('native' in produced))
+
+Use the fixed grammar with one or more nonrecursive functions, each with at least one tensor
+parameter and one returned parameter or statement tensor. Identifiers and shape names resolve by
+scope. A `NUMBER` token is `[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?` and must convert to a
+finite JS number. Unary signs are separate tokens. Affine expressions use integer tokens
+(`[0-9]+`), grouping, addition, subtraction and multiplication by integer constants. Shape
+names and extents are nonnegative safe integers. Support empty axes and row-major tensors
+whose sizes can be represented and allocated in the requested typed array. Inputs have the named
+parameter shapes, exactly the number of elements their shapes specify, and finite values in either
+API carrier. A finite f64 carrier value can round to infinity in f32.
+
+A lexer retains 1-based line and column. Use recursive descent with infix precedence levels and
+parse a reduction body with the full expression parser through the current delimiter. Parentheses
+can bound that body. Classify two-argument `max` using its argument forms and their shape-name
+bindings. Where both readings are possible, two in-scope scalar shape names select the call.
+Otherwise a bare identifier list followed by a body selects the reduction. Test the ambiguous
+prefix alongside ordinary calls, reductions and subtraction. A separate parser-generator
+dependency would add build plumbing for this small grammar.
+
+Normalize shape and index expressions to an integer constant plus ordered coefficients.
+Anchor each shape name to an input dimension. Prefer a bare name. A dimension `a*N+b` with one
+name is also an anchor, by directly inverting that dimension. Other affine dimensions may use any
+anchored names. A signature with names that occur exclusively in coupled dimensions is outside the
+supported binding domain. A simultaneous equation solver would accept those additional signatures.
+Direct anchors keep binding local while supporting shifted signatures such as `f32[H - 2]`.
+Annotations and shape-valued scalar expressions use names anchored by the signature.
+
+Check statements in order. Keep one tensor namespace for parameters and new definitions, and a
+lexical namespace for index binders. Assign each LHS or reduction index a distinct ID. Only an axis
+whose normalized access is the index itself supplies a plain-use extent. All such uses must agree
+as normalized shape expressions. A statement annotation supplies the axes with no plain use and
+must agree with the axes that have one. A reduction index has no annotation, so it needs a plain
+use within its lexical scope. Reject duplicate binders in a list, undefined tensors or indices,
+wrong ranks, unresolved extents and a return type that differs from the returned tensor type.
+
+For an affine access, derive its minimum and maximum from the active index ranges using
+coefficient signs. Prove that the minimum is nonnegative and the maximum is less than the
+referenced dimension. Assume nonnegative shape names and tensor dimensions, and positive
+active extents on the path. Normalize first and use constants and lower bounds from
+single-name dimensions. A statically empty iteration space needs no bounds proof. Reject
+inconsistent extents and access bounds that cannot be established, with source locations.
+Runtime access guards would accept additional programs whose indices are safe only at some
+sizes. The valid call domain gives each parameter its declared shape and each tensor a
+nonnegative extent. Binding validates those dimensions and data lengths when instantiating types.
+
+## Artifact and evaluators
+
+Use `defineIR` and `createIRArtifact` for `tensor.tix@1`, a finite JSON value containing
+functions in source order. Each function has typed parameter tensors, an ordered list of typed
+statement tensors and a return ID. A statement stores its output binders and an expression tree
+with resolved tensor references, affine offsets, primitive operations and reductions with ordered
+binders and resolved extents. The split form adds an internal blocked-sum node with the original
+binder, body and extent and a fixed block size. The IR validator checks shape and binding
+consistency and the internal blocked-sum form. Passes carry checked extents explicitly so an
+edit may remove the plain access from which the source checker inferred a binder. Keep unary negation explicit so `-0` is represented
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/tensor/parse.ts')
+s=p.read_text()
+s=s.replace('private affine(min = 1): Affine', 'private affine(min = 1, checkName?: (token: Token) => void): Affine')
+s=s.replace('this.affine(3), -1', 'this.affine(3, checkName), -1')
+s=s.replace('value = this.affine();', 'value = this.affine(1, checkName);')
+s=s.replace('      value = variable(token.text);', '      checkName?.(token);\\n      value = variable(token.text);')
+s=s.replace('const right = this.affine(precedence + 1);', 'const right = this.affine(precedence + 1, checkName);')
+s=s.replace('private type(): Affine[]', 'private type(checkName?: (token: Token) => void): Affine[]')
+s=s.replace(\"return this.list(() => this.affine(), ']');\", \"return this.list(() => this.affine(1, checkName), ']');\")
+s=s.replace('  private maxReduction(): boolean {', '''  private boundType(): Affine[] {
+    return this.type(token => {
+      if ("'!this.shapeNames.has(token.text)) fail(token, `unbound shape name "${token.text}"`);
+    });
+  }
+
+  private maxReduction(): boolean {'"''')
+s=s.replace('private atom(): Expr<string>', 'private atom(indices: ReadonlySet<string>): Expr<string>')
+s=s.replace('this.expr(3)', 'this.expr(indices, 3)')
+s=s.replace('body: this.expr()', 'body: this.expr(new Set([...indices, ...axes]))')
+s=s.replace('this.expr()', 'this.expr(indices)')
+s=s.replace(\"    return { at, kind: 'ref', tensor: token.text, indices: this.list(() => this.affine(), ']') };\", '''    const offsets = this.list(() => this.affine(1, name => {
+      if ("'!indices.has(name.text)) fail(name, `unbound index "${name.text}"`);
+    }), '"']');
+    return { at, kind: 'ref', tensor: token.text, indices: offsets };''')
+s=s.replace('private expr(min = 1): Expr<string>', 'private expr(indices: ReadonlySet<string>, min = 1): Expr<string>')
+s=s.replace('this.atom();','this.atom(indices);')
+s=s.replace('this.expr(binary[op] + 1)', 'this.expr(indices, binary[op] + 1)')
+s=s.replace(\"(this.pop(), this.type())\", \"(this.pop(), this.boundType())\")
+s=s.replace(\"    const expr = this.expr(indices);\\n    this.expect(';');\", \"    const expr = this.expr(new Set(axes));\\n    this.expect(';');\")
+s=s.replace('const result = this.type();', 'const result = this.boundType();')
+p.write_text(s)
+p=Path('tests/tensor/passes.test.mjs')
+s=p.read_text().replace('run(ctx) {\\n      return splitSumPass.run({ ...ctx, before: prefixed.artifact });','run() {\\n      return splitSumPass.run({ before: prefixed.artifact });')
+p.write_text(s)
+p=Path('tests/tensor/language.test.mjs')
+s=p.read_text().replace(\"['a[i] = x[j]; return a;', /unbound index/],\", \"['a[i] = x[j]; return a;', /unbound index/],\\n    ['a[i] = x[i+j-j]; return a;', /unbound index/],\")
+p.write_text(s)
+PY
+cat >> tests/tensor/passes.test.mjs <<'EOF'
+
+test('tolerance selects finite origin f64 observations and requires coverage', () => {
+  const sometimesFinite = compileTix("'`fn f(x: f32[1,9]): f32[1] {
+    y[i] = sum(d) x[i,d] / x[i,d];
+    return y;
+  }`);
+  const split = applyNativePassSync(splitSumPass, sometimesFinite.artifact, {
+    check: meaningCheck(sometimesFinite.artifact, '"'tolerance'),
+  });
+  assert.equal(split.contract.evidence.total, 2);
+  assert.equal(split.contract.evidence.agree, 2);
+  const neverFinite = compileTix("'`fn f(x: f32[1,9]): f32[1] {
+    y[i] = (sum(d) x[i,d]) / 0;
+    return y;
+  }`);
+  assert.throws(() => applyNativePassSync(splitSumPass, neverFinite.artifact, {
+    check: meaningCheck(neverFinite.artifact, '"'tolerance'),
+  }), /no comparable cases/);
+});
+EOF
+node node_modules/prettier/bin/prettier.cjs --write src/tensor/parse.ts tests/tensor/{language,passes}.test.mjs
+npm run build && node --test --test-isolation=none tests/tensor/*.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 7458ms:
+src/tensor/parse.ts 87ms
+tests/tensor/language.test.mjs 38ms (unchanged)
+tests/tensor/passes.test.mjs 16ms
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ rectangular row-major matmul (56.486397ms)
+✔ max-shifted softmax on large logits (30.292111ms)
+✔ layernorm includes gamma, beta and epsilon (31.225029ms)
+✔ scaled single-head attention with unequal query and key lengths (123.014147ms)
+✔ two projections with a tanh-GELU activation and bias (109.138851ms)
+✔ NCHW valid convolution with multiple channels and filters (3.985187ms)
+✔ the compiled program is a v6 artifact with tensor definitions and dependencies (1.456782ms)
+✔ reduction bodies reach rightward, and reductions visit indices in lexical list order (1.504051ms)
+✔ max calls and reductions disambiguate, binders can shadow, and empty reductions have identities (2.306258ms)
+✔ affine anchors, mixed dimensions and affine-only output indices (1.781959ms)
+✔ f32 rounds all scalar operations and shape values, and f64 reads row-major doubles (1.471622ms)
+✔ syntax and static shape errors include their source location (2.198502ms)
+✔ real split needs tolerance and the tail-dropping kernel fails that same tolerance gate (11.026644ms)
+✔ inline keeps exact bits under reduction and affine substitution, and rejects swapped indices (7.365464ms)
+✔ the current revision survives rejection and the original survives later calls (13.123677ms)
+✔ a split can spend its extra outer accumulations above the origin cap (103.694242ms)
+✔ tolerance selects finite origin f64 observations and requires coverage (3.334139ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 633.635055
+
+codex
+The real split passes the tolerance gate and fails the exact gate on the rounding witness. The same gate rejects the tail-dropping kernel, and the exact gate rejects the swapped-axis inline kernel. The budget regression also passes. I’ll run the three requested test commands against the final build.
+exec
+/usr/bin/zsh -lc 'node --test tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc 'node --test tests/framework/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+exec
+/usr/bin/zsh -lc "node node_modules/prettier/bin/prettier.cjs --check 'src/tensor/*.ts' src/framework/passes/define-pass.ts 'tests/tensor/*.test.mjs' tests/framework/native-pass-sync.test.mjs && git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 2269ms:
+✔ tests/tensor/corpus.test.mjs (1680.713436ms)
+✔ tests/tensor/language.test.mjs (650.560254ms)
+✔ tests/tensor/passes.test.mjs (874.01035ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1701.55341
+
+ succeeded in 3019ms:
+Checking formatting...
+All matched files use Prettier code style!
+
+ succeeded in 3320ms:
+✔ tests/framework/conformance.test.mjs (1820.695146ms)
+✔ tests/framework/contracts.test.mjs (407.441101ms)
+✔ tests/framework/core-review.test.mjs (409.414116ms)
+✔ tests/framework/core.test.mjs (503.629153ms)
+✔ tests/framework/ext-e1-e2.test.mjs (414.79971ms)
+✔ tests/framework/ext-e3-e6.test.mjs (772.313895ms)
+✔ tests/framework/ext-e4.test.mjs (470.117722ms)
+✔ tests/framework/ext-e5.test.mjs (795.021884ms)
+✔ tests/framework/identity-caches.test.mjs (2322.922306ms)
+✔ tests/framework/ir-examples.test.mjs (2079.792473ms)
+✔ tests/framework/ir-foundation.test.mjs (510.348035ms)
+✔ tests/framework/ir-review.test.mjs (893.289443ms)
+✔ tests/framework/ir-rewriting.test.mjs (775.223406ms)
+✔ tests/framework/layering.test.mjs (344.381111ms)
+✔ tests/framework/native-pass-sync.test.mjs (420.076704ms)
+✔ tests/framework/pass-policy.test.mjs (289.970728ms)
+✔ tests/framework/run-extensions.test.mjs (253.264468ms)
+✔ tests/framework/strategy.test.mjs (392.566871ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2767.44849
+
+ succeeded in 3659ms:
+✔ tests/typed/inline.test.mjs (2829.95996ms)
+✔ tests/typed/meaning-memo.test.mjs (1241.857958ms)
+✔ tests/typed/passes.test.mjs (3076.983089ms)
+✔ tests/typed/strategies.test.mjs (2785.275424ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3108.420489
+
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-020-C--*')
+diary=\""'$ticket/analysis/01-diary.md"
+python3 - "$diary" "$ticket/index.md" <<'"'PY'
+from pathlib import Path
+import sys
+diary, index = [Path(name) for name in sys.argv[1:]]
+s=diary.read_text()
+needle='The user supplied the review, then requested a design-only revision commit followed by\\nimplementation, scoped test runs, and implementation commits in this session.'
+review=\"\"\"The user supplied the review below. The implementation request follows the design revision.
+
+~~~~text
+A reviewer has read your design for IRWB-020-C. The review:
+
+# Review of your design
+
+## Must change
+
+1. **Wrong "'`split-sum` variant.** "Mutate the block result to drop the final partial block in the test candidate. In the fixed-shape fixture, make a valid eight-column prefix with `prefix[i,d]: f32[1,8] = x[i,d+i];` and block the sum over that prefix." What the prefix fixture shows, and its expected verdict, are never stated. Define the wrong variant as a pass kernel run through the sync gate on the contract'"'s cases.
+2. **Budget.** \"Fail the check if a candidate exhausts that budget on a selected case\". The budget is measured \"per origin case\", and "'`split-sum` adds outer accumulation visits. A correct candidate near the cap is therefore rejected. Say how the candidate'"'s budget is set.
+3. **"'`NUMBER` is undefined.** "Numeric expressions accept finite JS numeric literals" admits `0x10`, `1_0` and `.5`. Give the token grammar.
+4. **Case selection.** "plus seeded mixed assignments from those sizes and targeted shapes with a full block and a tail" fixes neither how many assignments there are nor how they are chosen.
+
+## Cut
+
+1. Inline'"'s second check, \"Check the result against the original as well … tolerance for functions where an earlier split was accepted\", and \"Store the set of functions that entered tolerance mode\". Exact agreement with the input on the same origin-derived cases implies both.
+2. \"Bind shape names … by solving the affine signature equations … rational elimination\" and \"Record constraints that depend on concrete sizes and check them when the call binds\". These add a solver and a call-time error contract.
+
+## Framework changes
+
+- **"'`applyNativePassSync` with shared native-candidate preparation:** needed, because the fixed API is synchronous, and correctly placed. As specified it is not minimal: "receives a pass ID, version, IR definition, adapter, write declarations, kernel and mandatory check" duplicates `definePass`. Take a `Pass` and refuse `needs` and `preserves`.
+- No missed change.
+
+## Keep
+
+Keep the rule that tolerance cases are chosen "with entirely finite reference outputs independently of the candidate". Keep the 0.25-tail witness (`0x3fa00000` against `0x3fa00002`, verified), which catches both the reassociation and a dropped tail.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-020-C:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+~~~~
+
+The design revision is commit `4cedbf8`."""
+assert needle in s
+diary.write_text(s.replace(needle,review))
+s=index.read_text().replace("Stage 1 introduces Tix as a second IR Workbench domain and uses two checked passes to test the'"\\nframework's fit. The design is ready for review before implementation.\", \"Stage 1 introduces Tix as a second IR Workbench domain. The synchronous public API compiles\\nand evaluates tensor programs and checks inline and split-sum before advancing the artifact.\\nThe reviewed design and implementation are complete.\")
+index.write_text(s)
+PY
+cat >> \""'$diary" <<'"'EOF'
+
+## Step 3 — Implement the checked tensor pipeline
+
+Tix now compiles to a "'`tensor.tix@1` artifact with a projection for functions,
+parameters, statements and their dependencies. Both evaluators use the same index
+enumeration and scalar tree traversal. The optimizer applies the native kernels
+through the framework and advances its artifact only after a changed revision passes
+the configured comparison.
+
+### Prompt context
+
+See step 2 for the reviewed implementation request. The public API remains the
+synchronous `compileTix`, `runTix` and `optimizeTix` from the original brief.
+
+### What changed and why
+
+- `src/framework/passes/define-pass.ts` adds `applyNativePassSync` over `definePass`.
+  It reuses artifact creation, projection diff, entity correspondence and declared-write
+  checking with the existing asynchronous path. Its required check returns a synchronous
+  `CheckResult`. A projection-only adapter works.
+- `src/tensor/` provides the lexer, parser, static shape and bounds checks, v6 artifact,
+  evaluators, sampled relations and the two checked kernels. The exact gate compares
+  raw f32 words against the immediate revision. The tolerance gate uses finite outcomes
+  from the original f64 evaluator on the same sampled call domain.
+- `corpus/tensor/` holds matmul, softmax, layernorm, attention, MLP and convolution.
+  `tests/tensor/` covers the fixed API, language, arithmetic, sample coverage and pass
+  witnesses. `tests/framework/native-pass-sync.test.mjs` covers the new entry point.
+
+### What worked
+
+- `npm run build` succeeded, and `dist/tensor/index.d.ts` has the fixed signatures.
+- `node --test tests/tensor/*.test.mjs` passed all three files.
+  `node --test --test-isolation=none tests/tensor/*.test.mjs` passed all 17 individual tests.
+- `node --test tests/framework/*.test.mjs` passed all 18 files.
+- `node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs` passed all four files.
+- Prettier passed on the changed source and tests. `git diff --check` passed.
+- The real split fails exact and passes tolerance on the specified witness. The tolerance
+  gate rejects the wrong tail-dropping kernel with the same cases, and the exact gate
+  rejects the wrong inline kernel'"'s swapped axes. The 3,846-term budget regression
+  shows a split can use its extra outer accumulations above the origin's work cap.
+
+### What did not work
+
+The first tensor run failed in "'`tests/tensor/passes.test.mjs`. The command
+`node --test --test-isolation=none tests/tensor/passes.test.mjs` exposed
+`[badResult] Pass test.drop-tail requires a native result on the synchronous path`.
+Spreading the pass context in the mutant invoked the unavailable logical-edit getter.
+The mutant now supplies only the artifact its delegated native kernel needs. The rerun
+exercised the expected contract rejection.
+
+### Review checkpoint
+
+The implementation follows the revised design. Read `src/tensor/index.ts` for the
+public API, `src/tensor/meaning.ts` for selection and comparison, and
+`tests/tensor/passes.test.mjs` for both real and wrong pass decisions. The framework
+change is limited to `src/framework/passes/define-pass.ts` and its new focused test.
+EOF
+docmgr task check --ticket IRWB-020-C --id ooa3
+docmgr changelog update --ticket IRWB-020-C --entry '"'Implemented the synchronous Tix pipeline and six-project corpus. The tensor, framework and selected Typed tests passed, including the split and inline mutation checks.'
+docmgr doc relate --doc \""'$ticket/analysis/01-diary.md" --file-note '"'src/tensor/index.ts:Fixed synchronous API' --file-note 'src/tensor/meaning.ts:Case sampling and numerical relations' --file-note 'tests/tensor/passes.test.mjs:Numeric and mutation witnesses' --file-note 'tests/framework/native-pass-sync.test.mjs:Framework native-pass checks'
+docmgr doctor --ticket IRWB-020-C --stale-after 30
+git status --short && git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 1184ms:
+Task checked: ooa3 (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-020-C
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+related 4 file(s) to ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md (added 4, updated 0, removed 0)
+## Doctor Report (1 findings)
+
+### IRWB-020-C
+
+- ✅ All checks passed
+
+ M src/framework/passes/define-pass.ts
+ M ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md
+ M ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+ M ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/index.md
+ M ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+?? corpus/tensor/
+?? src/tensor/
+?? tests/framework/native-pass-sync.test.mjs
+?? tests/tensor/
+
+exec
+/usr/bin/zsh -lc 'docmgr ticket close --help | tail -46; git diff --numstat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 308ms:
+
+  # close - Close a ticket with recoverable status and changelog projections  
+                                                                              
+  Preflights both files and journals the operation before writing history,    
+  then status. This is recoverable, not atomic multi-file visibility.         
+  Cooperating close/milestone operations share a ticket lock. Other editors do
+  not participate in that lock. An already matching status/intent is a no-op  
+  unless an explicit operation ID is supplied. Use --operation-id for retry   
+  identity. After an interrupted default close, retry with the reported ID and
+  original options. Conflicting human edits stop recovery. Open tasks produce 
+  a warning, not a failure. See: docmgr help milestone-workflows.             
+                                                                              
+  For more help, run: docmgr help close                                       
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr ticket close [flags]                                                 
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+         --changelog-entry     - <string> (default "Ticket closed")           
+                -h, --help    help for close                                  
+                  --intent     - <string>                                     
+            --operation-id    Stable retry ID; otherwise generated and        
+  reported - <string>                                                         
+                    --root     - <string> (default "ttmp")                    
+                  --status     - <string> (default "complete")                
+                  --ticket     - <string>                                     
+       --with-glaze-output    Switch this run to Glaze structured output      
+               --long-help    Show long help                                  
+                                                                              
+  Use docmgr ticket close --help --long-help for information about all flags. 
+
+132	47	src/framework/passes/define-pass.ts
+101	3	ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/analysis/01-diary.md
+4	0	ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/changelog.md
+3	2	ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/index.md
+1	1	ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes/tasks.md
+
+exec
+/usr/bin/zsh -lc 'git add -- src/tensor src/framework/passes/define-pass.ts tests/tensor tests/framework/native-pass-sync.test.mjs corpus/tensor ttmp/2026/11/26/IRWB-020-C--tix-language-tensor-ir-evaluators-contract-and-checked-passes' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 215ms:
+exec
+/usr/bin/zsh -lc 'git diff --cached --check && git diff --cached --stat && git log -2 --oneline' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 246ms:
+ corpus/tensor/attention/main.tix                   |   9 +
+ corpus/tensor/conv2d/main.tix                      |   4 +
+ corpus/tensor/layernorm/main.tix                   |   7 +
+ corpus/tensor/matmul/main.tix                      |   4 +
+ corpus/tensor/mlp/main.tix                         |   6 +
+ corpus/tensor/softmax/main.tix                     |   7 +
+ src/framework/passes/define-pass.ts                | 179 ++++++++---
+ src/tensor/check.ts                                | 352 +++++++++++++++++++++
+ src/tensor/evaluate.ts                             | 252 +++++++++++++++
+ src/tensor/index.ts                                |  50 +++
+ src/tensor/ir.ts                                   |  78 +++++
+ src/tensor/meaning.ts                              | 228 +++++++++++++
+ src/tensor/model.ts                                | 128 ++++++++
+ src/tensor/parse.ts                                | 288 +++++++++++++++++
+ src/tensor/passes.ts                               | 105 ++++++
+ tests/framework/native-pass-sync.test.mjs          | 125 ++++++++
+ tests/tensor/corpus.test.mjs                       | 123 +++++++
+ tests/tensor/language.test.mjs                     | 156 +++++++++
+ tests/tensor/passes.test.mjs                       | 161 ++++++++++
+ .../analysis/01-diary.md                           | 104 +++++-
+ .../changelog.md                                   |   4 +
+ .../index.md                                       |   5 +-
+ .../tasks.md                                       |   2 +-
+ 23 files changed, 2324 insertions(+), 53 deletions(-)
+4cedbf8 IRWB-020-C: Revise Tix design after review
+d887783 IRWB-020-C: Design Tix and checked tensor passes
+
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-020-C: Implement Tix and checked tensor passes'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 214ms:
+[t1-sm/irwb-020-c ce9cf4d] IRWB-020-C: Implement Tix and checked tensor passes
+ 23 files changed, 2324 insertions(+), 53 deletions(-)
+ create mode 100644 corpus/tensor/attention/main.tix
+ create mode 100644 corpus/tensor/conv2d/main.tix
+ create mode 100644 corpus/tensor/layernorm/main.tix
+ create mode 100644 corpus/tensor/matmul/main.tix
+ create mode 100644 corpus/tensor/mlp/main.tix
+ create mode 100644 corpus/tensor/softmax/main.tix
+ create mode 100644 src/tensor/check.ts
+ create mode 100644 src/tensor/evaluate.ts
+ create mode 100644 src/tensor/index.ts
+ create mode 100644 src/tensor/ir.ts
+ create mode 100644 src/tensor/meaning.ts
+ create mode 100644 src/tensor/model.ts
+ create mode 100644 src/tensor/parse.ts
+ create mode 100644 src/tensor/passes.ts
+ create mode 100644 tests/framework/native-pass-sync.test.mjs
+ create mode 100644 tests/tensor/corpus.test.mjs
+ create mode 100644 tests/tensor/language.test.mjs
+ create mode 100644 tests/tensor/passes.test.mjs
+
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -2 --format='%H %s'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c
+ succeeded in 246ms:
+## t1-sm/irwb-020-c
+ce9cf4d281e6025466b198ea3061fa8edfe76f1a IRWB-020-C: Implement Tix and checked tensor passes
+4cedbf87af1de21d66b28178712c54d8cca6a7b0 IRWB-020-C: Revise Tix design after review
+
+codex
+Implemented IRWB-020-C. The fixed synchronous API builds to `dist/tensor/index.js`. [Source](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/src/tensor) · [Six-program corpus](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/corpus/tensor) · [Tensor tests](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/tests/tensor)
+
+On the rounding witness, exact comparison rejected `split-sum` and tolerance accepted it. The same gates rejected the tail-dropping split and the swapped-axis inline.
+
+The sole framework source change adds `applyNativePassSync` so the fixed API can reuse native artifact validation, diffs, correspondence, and declared-write checks with a mandatory synchronous gate. [define-pass.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/src/framework/passes/define-pass.ts)
+
+**Verification**
+
+- `npm run build` passed.
+- `node --test tests/tensor/*.test.mjs` passed all 17 tests across three files.
+- `node --test tests/framework/*.test.mjs` passed all 18 files.
+- `node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs` passed all four files.
+- Prettier and docmgr validation passed.
+
+**Deviations from the revised design** — None. The worktree is clean.
+
+**Commits**
+
+- `4cedbf87af1de21d66b28178712c54d8cca6a7b0` — Revised design
+- `ce9cf4d281e6025466b198ea3061fa8edfe76f1a` — Implementation, corpus, tests, and diary
+tokens used
+181,667
+Implemented IRWB-020-C. The fixed synchronous API builds to `dist/tensor/index.js`. [Source](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/src/tensor) · [Six-program corpus](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/corpus/tensor) · [Tensor tests](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/tests/tensor)
+
+On the rounding witness, exact comparison rejected `split-sum` and tolerance accepted it. The same gates rejected the tail-dropping split and the swapped-axis inline.
+
+The sole framework source change adds `applyNativePassSync` so the fixed API can reuse native artifact validation, diffs, correspondence, and declared-write checks with a mandatory synchronous gate. [define-pass.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c/src/framework/passes/define-pass.ts)
+
+**Verification**
+
+- `npm run build` passed.
+- `node --test tests/tensor/*.test.mjs` passed all 17 tests across three files.
+- `node --test tests/framework/*.test.mjs` passed all 18 files.
+- `node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs` passed all four files.
+- Prettier and docmgr validation passed.
+
+**Deviations from the revised design** — None. The worktree is clean.
+
+**Commits**
+
+- `4cedbf87af1de21d66b28178712c54d8cca6a7b0` — Revised design
+- `ce9cf4d281e6025466b198ea3061fa8edfe76f1a` — Implementation, corpus, tests, and diary

@@ -1,0 +1,573 @@
+[
+  {
+    "doc": "doc-A.md",
+    "counts": {
+      "R1": 2,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 1,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 4,
+      "A2": 5,
+      "A3": 4,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 3,
+    "fitness": 8,
+    "quotes": {
+      "R1": [
+        "failure evidence includes the first disagreeing shape or element, with expected/actual words or numerical error and bound",
+        "If the suite cannot exercise a function at any valid shape, it cannot authorize a changed artifact."
+      ],
+      "R2": [
+        "A tolerance sample whose output or reference has a nonfinite element fails the gate"
+      ],
+      "R4": [
+        "add the passed/rejected native-path regression to the E3 pass tests: identity, correspondence/write gating, and existing async contract rejection"
+      ],
+      "R5": [
+        "Verify this budget against measured corpus errors after review"
+      ],
+      "R8": [
+        "Use exact integer arithmetic for shape/index algebra (integer strings in JSON if needed, decoded for checking/evaluation)"
+      ],
+      "A1": [
+        "Every shape name must have a bare input axis from which to bind its value.",
+        "Solving simultaneous equations for names that occur only in affine input axes needs additional machinery and is deferred; diagnose the lack of a binding axis at compile time."
+      ],
+      "A3": [
+        "The framework already fits the representation and both relations.",
+        "Using `applyPass` as-is would require a Promise in the fixed API"
+      ]
+    },
+    "notes": "Faithful semantics and the best-justified tolerance (16u absolute plus 128u relative, derived on the witness, with headroom for downstream operations); signatures whose shape names have no bare input axis are rejected. Excess is small: contract evidence and vacuity rules, a planned tolerance measurement, and integer-string encoding."
+  },
+  {
+    "doc": "doc-B.md",
+    "counts": {
+      "R1": 3,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 4,
+      "A2": 4,
+      "A3": 5,
+      "A4": 5,
+      "A5": 4
+    },
+    "over_engineering": 3,
+    "fitness": 8,
+    "quotes": {
+      "R1": [
+        "The seed, entry name, shapes, input pattern and first differing element make failures reproducible.",
+        "A pass cannot acquire acceptance from an empty suite or a suite with zero comparable cases for an entry.",
+        "Fail the check if a candidate exhausts that budget on a selected case."
+      ],
+      "R2": [
+        "choose one quiet NaN bit pattern for JS NaN, whose payload is unspecified",
+        "A nonfinite candidate on a selected case fails."
+      ],
+      "R4": [
+        "Add focused framework tests for the synchronous path's native validation, write enforcement and mandatory gate, including a projection-only adapter."
+      ],
+      "R8": [
+        "Bind shape names from parameter dimensions by solving the affine signature equations. Compile the equation structure once and require full column rank"
+      ],
+      "A1": [
+        "Only an axis whose normalized access is the index itself supplies a plain-use extent."
+      ],
+      "A2": [
+        "The relative term allows about 168 f32 spacings near 1 and leaves headroom for rounding through short corpus reductions and downstream operations."
+      ],
+      "A5": [
+        "In the fixed-shape fixture, make a valid eight-column prefix with `prefix[i,d]: f32[1,8] = x[i,d+i];` and block the sum over that prefix."
+      ]
+    },
+    "notes": "Strong framework analysis, confirmed by a probe (applyPass returns a Promise and needs a rebuild-capable adapter), and a correct witness; but plain use is decided after normalization, so `i + 0` counts as plain. The tolerance constants are justified only qualitatively, and a general affine signature solver is added."
+  },
+  {
+    "doc": "doc-C.md",
+    "counts": {
+      "R1": 4,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 5,
+      "A2": 5,
+      "A3": 4,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 4,
+    "fitness": 8,
+    "quotes": {
+      "R1": [
+        "Report the relation and seed, case counts, and a compact first counterexample with function, concrete shapes, input pattern/seed, output index, and actual/expected bits or values.",
+        "If no shape with decided cases exists for any function, reject the changed candidate.",
+        "A budget cutoff must not silently turn a candidate failure on a completed baseline case into agreement.",
+        "the restricted entry refuses those definitions and thenable results"
+      ],
+      "R2": [
+        "use a fixed quiet NaN representation for stored NaN",
+        "Reject nonfinite results for this relation."
+      ],
+      "R4": [
+        "Add framework tests for native shared validation and correspondence, rejection by contract and write set, unsupported clauses and thenables"
+      ],
+      "R8": [
+        "For affine input types, build the joint coefficient matrix once at compile time, reject a signature that cannot uniquely determine all its shape names, and solve the exact equations on a call."
+      ],
+      "A3": [
+        "Factor reusable named-port and check-result validation out of the manager for a small synchronous pure postcondition verifier.",
+        "`differential` can already run synchronously without a delegated `decide` hook, and it already delegates comparison to the caller."
+      ]
+    },
+    "notes": "Semantics, contract and tests are all on target, and the tolerance is derived with headroom. Excess: a new synchronous contract verifier in `contracts/`, which it admits is unneeded since `differential` already runs synchronously, plus an affine signature solver and several extra contract statuses."
+  },
+  {
+    "doc": "doc-D.md",
+    "counts": {
+      "R1": 2,
+      "R2": 1,
+      "R3": 0,
+      "R4": 0,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 3,
+      "A2": 4,
+      "A3": 5,
+      "A4": 5,
+      "A5": 4
+    },
+    "over_engineering": 2,
+    "fitness": 7,
+    "quotes": {
+      "R1": [
+        "Evidence identifies the first differing output coordinate for a failing case, with its words or its numerical error and bound.",
+        "Require at least one case per function for a changed candidate."
+      ],
+      "R2": [
+        "Tolerance requires finite outputs on both sides"
+      ],
+      "R8": [
+        "a block width and a tail policy for the clipped last block"
+      ],
+      "A1": [
+        "Parameter axes are positive integer literals or bare shape names."
+      ],
+      "A2": [
+        "Accept if `abs(candidate - r) <= 4 * 2^-24 * max(1, abs(r))` at every element.",
+        "For composed functions and signed cancellation the formula is a fixed acceptance policy, with no general numerical error guarantee."
+      ],
+      "A5": [
+        "Recognize a whole bound or one such axis bound plus an affine expression nonnegative using shape lower bounds alone."
+      ]
+    },
+    "notes": "Lean, with a concrete framework finding (the eager edit needs a rewritable adapter), but parameter dimensions are restricted to bare names. The 4u tolerance is derived only for the direct-sum fixture, so it may reject valid splits in composed corpus programs."
+  },
+  {
+    "doc": "doc-E.md",
+    "counts": {
+      "R1": 1,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 0
+    },
+    "scores": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 5,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 2,
+    "fitness": 7,
+    "quotes": {
+      "R1": [
+        "report the function, shape binding, input profile and first differing output coordinate on a mismatch"
+      ],
+      "R2": [
+        "use one quiet-NaN bit pattern when writing f32 arrays",
+        "When the original reference or original f32 result is nonfinite, require the candidate f32 word to match the original f32 word for that element."
+      ],
+      "R4": [
+        "Add focused framework coverage for sync checked application with a projection-only adapter, rejection with evidence, shared write enforcement, and the existing async native path."
+      ],
+      "A1": [
+        "Input axes are positive safe integer constants or bare shape names.",
+        "Statement and return dimensions can also be a shape name plus or minus an integer constant",
+        "Access indices support sums and differences of bound index names and integer constants"
+      ],
+      "A2": [
+        "Require `|C - R| <= max(|O - R|, 2u * max(1, |R|))` per element.",
+        "it may reject a correct regrouping whose downstream computation amplifies the error"
+      ]
+    },
+    "notes": "The least excess and a minimal framework change, confirmed by a probe, but it accepts a narrow subset of the fixed core: bare-name parameters, shape-plus-or-minus-constant declared dimensions, and subscripts without integer coefficients. The tolerance is very tight: the original's own error, or 2u."
+  },
+  {
+    "doc": "doc-F.md",
+    "counts": {
+      "R1": 3,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 4,
+      "A2": 4,
+      "A3": 4,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 3,
+    "fitness": 8,
+    "quotes": {
+      "R1": [
+        "Case labels, shape bindings and first differing index with bits or numerical error make counterexamples reproducible.",
+        "if no feasible cases fit the budget for any function, the check cannot accept a change.",
+        "it rejects unsupported needs, preservation claims, manager contracts, logical edits and thenables instead of bypassing them"
+      ],
+      "R2": [
+        "Do not silently accept nonfinite tolerance observations or inconclusive cases."
+      ],
+      "R4": [
+        "plus write and semantic rejection and identity behavior"
+      ],
+      "R8": [
+        "Establish async/sync structural parity on a native pass"
+      ],
+      "A1": [
+        "Bind shape names from bare input axes, then evaluate all affine input axes and require a consistent binding; an unbound shape name is diagnosed at compile time."
+      ],
+      "A2": [
+        "`abs(candidate32 - origin64) <= 8u * max(1, abs(origin64))`",
+        "Require the original f32 result to fit the same envelope on those cases",
+        "It is an intentionally tight sampled budget, not a forward-error claim for longer reductions, arbitrary cancellation or nonlinear programs."
+      ],
+      "A3": [
+        "The gap is a synchronous native pass acceptance path, not a tensor-specific feature or a numerical limitation of contracts."
+      ]
+    },
+    "notes": "Compact and accurate, with a correct witness and good tests; shape names need a bare input axis. The 8u tolerance also requires the original f32 to fit the envelope, which may veto splits in composed programs, and it plans async/sync parity tests."
+  },
+  {
+    "doc": "doc-G.md",
+    "counts": {
+      "R1": 2,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 4,
+      "A2": 4,
+      "A3": 5,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 3,
+    "fitness": 8,
+    "quotes": {
+      "R1": [
+        "Preserve case descriptions and the first mismatched output coordinate with its expected and actual value or bits in internal evidence.",
+        "Each changed function must have a decided case, and all decided cases must agree."
+      ],
+      "R2": [
+        "Use a fixed quiet NaN encoding at tensor storage",
+        "Original nonfinite and empty results supply no numerical evidence for this relation."
+      ],
+      "R4": [
+        "For native pass preparation, test declared writes, malformed native output and correspondence with a projection-only adapter."
+      ],
+      "R8": [
+        "Use decimal strings for affine coefficients, with BigInt for exact shape arithmetic"
+      ],
+      "A1": [
+        "each used shape name must appear as a bare input dimension somewhere. A name that can only be recovered by solving an affine input equation is reported during compilation at its use."
+      ],
+      "A2": [
+        "|candidate - r| <= 5 * (gamma(3, 2^-24) + gamma(4, 2^-53)) * max(1, |r|)",
+        "An ill-conditioned program or larger sum can fail this budget."
+      ]
+    },
+    "notes": "Precise and well-tested design with a minimal, probe-backed framework extraction; shape names need a bare input axis. The tolerance of about 15u is derived only for the five-term fixture. BigInt coefficient encoding has no present use."
+  },
+  {
+    "doc": "doc-H.md",
+    "counts": {
+      "R1": 4,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 2
+    },
+    "scores": {
+      "A1": 5,
+      "A2": 5,
+      "A3": 4,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 4,
+    "fitness": 8,
+    "quotes": {
+      "R1": [
+        "Record sampled evidence and replayable case information (function, shape, pattern/seed, first differing element, and bits or error bound).",
+        "If any function has no cases",
+        "an evaluated case exhausts its budget, the changed candidate cannot be accepted",
+        "Reject unsupported declarations, missing gates or thenable results in the new path."
+      ],
+      "R2": [
+        "Tolerance requires finite candidate and reference outputs",
+        "Use a fixed quiet NaN encoding at f32 buffer stores"
+      ],
+      "R4": [
+        "add the sync framework path with tests for exact port/shape validation, undeclared writes, refusal of unsupported async/semantic declarations and evidence on rejected candidates"
+      ],
+      "R8": [
+        "uniquely determined over the rationals (full column rank). At invocation, solve the fixed system exactly against the supplied dimensions",
+        "Represent literal spellings and any wide integer coefficients as strings in the finite JSON payload"
+      ],
+      "A3": [
+        "Add an explicit context-free, synchronous invariant definition and a `verifyPostconditionsSync` runner for already-computed artifact pairs."
+      ]
+    },
+    "notes": "Semantically exact (including `i + 0`, affine signatures and the declared-type rule), with a sound contract and decisive tests. Excess: a rank-based signature solver, a second synchronous contract runner, wide-integer strings, and extra budget and vacuity statuses."
+  },
+  {
+    "doc": "doc-I.md",
+    "counts": {
+      "R1": 3,
+      "R2": 1,
+      "R3": 0,
+      "R4": 2,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 4,
+      "A5": 5
+    },
+    "over_engineering": 4,
+    "fitness": 6,
+    "quotes": {
+      "R1": [
+        "Case evidence records function, concrete shapes and profile/seed or fixed values sufficient to reconstruct the case, plus the first differing coordinate and bits or numerical error.",
+        "If a function has no usable case, a changed candidate cannot pass the gate.",
+        "Require those clauses; reject unsupported clauses before running rather than silently ignoring them."
+      ],
+      "R2": [
+        "Require both finite and `abs(c - r) <= 2^-19 + 2^-21 * abs(r)`.",
+        "Encode nonfinite values or bit patterns as strings in evidence so v6 records remain finite JSON."
+      ],
+      "R4": [
+        "Contract tests check exact/tolerant verdicts, empty per-function sampling, partial blocks, mutants",
+        "Framework tests check an accepted native pass, disallowed writes, malformed ports/artifacts, unsupported sync contracts/async work"
+      ],
+      "R8": [
+        "and that the same invariant gives the same verdict and evidence through the async path"
+      ],
+      "A1": [
+        "Parameter axes are positive integer constants or bare shape names.",
+        "Return types and statement annotations also allow sums and differences of those names and integer constants, e.g. `H - 2`. Tensor subscripts support the same affine fragment over in-scope indices"
+      ],
+      "A2": [
+        "This is a measured-on-cases gate, not a bound for arbitrary chains of operations, cancellation at larger scale or ill-conditioned nonlinear expressions."
+      ],
+      "A3": [
+        "Add a synchronous entry for an existing `differential()` invariant; get its registered spec, reject async delegation"
+      ],
+      "A4": [
+        "Framework tests check an accepted native pass, disallowed writes, malformed ports/artifacts, unsupported sync contracts/async work, and that the same invariant gives the same verdict and evidence through the async path."
+      ]
+    },
+    "notes": "Good contract and decisive checks, but it restricts the fixed core: bare-name parameters, and declared dimensions and subscripts limited to sums and differences. It also spreads framework changes over four files, with parity and guard tests."
+  },
+  {
+    "doc": "doc-J.md",
+    "counts": {
+      "R1": 3,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 2
+    },
+    "scores": {
+      "A1": 5,
+      "A2": 5,
+      "A3": 5,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 4,
+    "fitness": 9,
+    "quotes": {
+      "R1": [
+        "Include the function, shape binding, input pattern or seed, and first differing coordinate with bits or numerical error in counterexample evidence.",
+        "A changed artifact requires at least one eligible case per function",
+        "the candidate must complete every selected case within the budget"
+      ],
+      "R2": [
+        "On an applicable tolerance check a nonfinite output is a failed comparison.",
+        "Store evidence in canonical data using strings for nonfinite values and bits."
+      ],
+      "R4": [
+        "Add focused framework coverage to `tests/framework/ext-e3-e6.test.mjs` for a native adapter without `rebuild`, diff/correspondence, undeclared writes and rejection before a changed artifact is returned."
+      ],
+      "R8": [
+        "Rank-check the parameter coefficient matrix once, solve the concrete system with exact rational arithmetic",
+        "For bounds, eliminate variables from linear inequalities over rationals, with integer strict comparisons converted to inclusive bounds."
+      ]
+    },
+    "notes": "The best fit overall: full fixed core, clear contract with a derived tolerance, a per-area framework fit table and a minimal pass-layer change. Excess: a rational signature solver plus inequality elimination for bounds, and budget, vacuity and evidence statuses."
+  },
+  {
+    "doc": "doc-K.md",
+    "counts": {
+      "R1": 3,
+      "R2": 1,
+      "R3": 0,
+      "R4": 1,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 5,
+      "A5": 5
+    },
+    "over_engineering": 3,
+    "fitness": 6,
+    "quotes": {
+      "R1": [
+        "Evidence identifies the version/seed, decided counts and a bounded set of counterexamples",
+        "Require coverage of every function; without a legal sample for a function, do not accept.",
+        "Do not allow analysis needs, preservation, async or logical edit bodies, or shared store/manager state in this path."
+      ],
+      "R2": [
+        "require equal return shapes and finite elements",
+        "values/bits rendered as JSON-safe strings"
+      ],
+      "R4": [
+        "Framework tests: undeclared write, false guarantee, an unsupported capability"
+      ],
+      "R8": [
+        "evidence parity with the existing async path using the same differential spec"
+      ],
+      "A1": [
+        "Input axes are positive integer literals or bare shape names.",
+        "Reject unsupported affine parameter declarations at the declaration.",
+        "normalize `i + 0` to `i`"
+      ],
+      "A2": [
+        "require `abs(candidateF32 - originalF64) <= 2^-19 * (1 + abs(originalF64))` elementwise",
+        "This motivates the envelope for small sums, not a forward-error bound for arbitrary expression graphs."
+      ],
+      "A3": [
+        "Add synchronous verification of the pure differential subset of `defineTransformation`"
+      ]
+    },
+    "notes": "Concise and testable, but it restricts parameter dimensions to bare names and explicitly treats `i + 0` as a plain use. The tolerance is justified only for small sums, and it adds a synchronous contracts path with parity tests."
+  },
+  {
+    "doc": "doc-L.md",
+    "counts": {
+      "R1": 3,
+      "R2": 1,
+      "R3": 1,
+      "R4": 0,
+      "R5": 0,
+      "R6": 0,
+      "R7": "no",
+      "R8": 1
+    },
+    "scores": {
+      "A1": 4,
+      "A2": 3,
+      "A3": 5,
+      "A4": 4,
+      "A5": 5
+    },
+    "over_engineering": 3,
+    "fitness": 7,
+    "quotes": {
+      "R1": [
+        "Cases and the first mismatch identify the function, concrete shapes, input profile and output row-major coordinate.",
+        "A function with no valid shape profile leaves the step unaccepted.",
+        "An unknown pass name is reported where the host resolves it."
+      ],
+      "R2": [
+        "use the usual float write for numbers and a fixed quiet NaN word (`0x7fc00000`) when a computation produces NaN",
+        "Decline the tolerance check on a nonfinite output."
+      ],
+      "R3": [
+        "Division by a constant is affine here when the normalized coefficients and constant divide exactly."
+      ],
+      "R8": [
+        "Store an ordered coefficient list and constant using decimal integer strings, with `BigInt` arithmetic during normalization and instantiation."
+      ],
+      "A1": [
+        "A source name occurring only inside nontrivial affine input dimensions produces a compile error at that dimension"
+      ],
+      "A2": [
+        "An inline after a split that visibly changed the sampled output may therefore be declined.",
+        "`abs(candidate - reference) <= 2^-20 * max(1, abs(reference))`",
+        "composed programs or large and poorly conditioned reductions can exceed it"
+      ],
+      "A4": [
+        "Assert exact inline, exact rejection and tolerance acceptance of the distinguishing split, both mutation rejections, short blocks, composition of affine indices and preservation of the accepted head across a rejection."
+      ]
+    },
+    "notes": "Clean, probe-backed framework extraction and correct semantics, apart from requiring a bare input axis per shape name and adding division to affine forms. Because inline also checks exact against the origin, a correct inline after an accepted split is rejected, and no test covers origin retention across calls."
+  }
+]

@@ -1,0 +1,6 @@
+[Final report: `reference/02-report.md`](ttmp/2026/11/26/IRWB-020-F--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md)  
+**Commit:** `3286438c91603138fc8b0bd81bd6bcb0712bcdea`
+
+**Failure causes:** None. The independent evaluation reported no failures or rejections.
+
+The local build and all 23 tensor tests passed again. `src/`, `tests/`, and `corpus/` are unchanged from the evaluated revision `6e5fee7`.

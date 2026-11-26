@@ -1,0 +1,9 @@
+{
+ "IRWB-020-C": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sm-irwb-020-c",
+  "branch": "t1-sm/irwb-020-c",
+  "base": "d887783",
+  "rev": "ab5a2ca",
+  "resumedFrom": "t1-sm"
+ }
+}

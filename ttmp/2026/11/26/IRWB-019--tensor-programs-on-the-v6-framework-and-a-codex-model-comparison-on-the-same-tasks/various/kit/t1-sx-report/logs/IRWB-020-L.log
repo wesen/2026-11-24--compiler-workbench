@@ -1,0 +1,1251 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a218fe-3f25-7201-bd6e-ec640ca27f73
+--------
+user
+Stage 1 of IRWB-020-L has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `1c217ab`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-L:`). Final message: the report's path, the commit hash, and one line per failure cause.
+codex
+I’m using the docmgr and diary skills to record the independent evaluation and write the report. The supplied results list no failures or rejections. I’ll distinguish those results from the deliberate rejection tests in the repository.
+exec
+/usr/bin/zsh -lc 'docmgr doc add --help | head -65 && node --version && npm exec --offline -- prettier --version' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git log -4 --oneline && rg --files ttmp/2026/11/26/IRWB-020-L*' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc "rg -n '"'^export |''^function |''^const (extents|patterns|sparse|seed|maxWork|maxElements)|it'"\\(|test\\(' src/tensor tests/tensor tests/framework/native-pass-sync.test.mjs && rg -n 'prepareNative|checkWrites|applyNativePassSync|applyPass|beginEdit' src/framework/passes/define-pass.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 299ms:
+tests/framework/native-pass-sync.test.mjs:7:function validate({ count }) {
+tests/framework/native-pass-sync.test.mjs:40:test('the synchronous runner validates and diffs a native result on a read-only projection', () => {
+tests/framework/native-pass-sync.test.mjs:59:test('declared writes are checked before the synchronous gate', () => {
+tests/framework/native-pass-sync.test.mjs:70:test('a rejected gate reports evidence and leaves the input artifact intact', () => {
+tests/framework/native-pass-sync.test.mjs:87:test('a synchronous native pass cannot use the edit context or return a promise', () => {
+tests/tensor/corpus.test.mjs:9:function close(actual, expected, tolerance) {
+tests/tensor/corpus.test.mjs:18:function check(name, inputs, shape, expected) {
+tests/tensor/corpus.test.mjs:36:function softmax(row) {
+tests/tensor/corpus.test.mjs:43:function matmul(a, b, m, k, n, bias = Array(n).fill(0)) {
+tests/tensor/corpus.test.mjs:54:test('rectangular matmul agrees with a direct contraction', () => {
+tests/tensor/corpus.test.mjs:61:test('max-shifted softmax handles large logits and normalizes each row', () => {
+tests/tensor/corpus.test.mjs:71:test('layernorm applies epsilon, gamma and beta to constant and varying rows', () => {
+tests/tensor/corpus.test.mjs:95:test('single-head attention agrees with independently computed weights and values', () => {
+tests/tensor/corpus.test.mjs:118:test('MLP agrees with bias, tanh-GELU and the second affine layer', () => {
+tests/tensor/corpus.test.mjs:142:test('NCHW conv2d handles asymmetric input extents and multiple channels', () => {
+tests/tensor/language.test.mjs:10:test('Tix exports the fixed synchronous API and creates an inspectable, immutable v6 artifact', () => {
+tests/tensor/language.test.mjs:35:test('literal, shape, and parameter values round on entry to f32 evaluation', () => {
+tests/tensor/language.test.mjs:50:test('reduction bodies are greedy and ordinary precedence is left associative', () => {
+tests/tensor/language.test.mjs:67:test('multi-index reductions use one accumulator in lexicographic order', () => {
+tests/tensor/language.test.mjs:80:test('shadowed indices, max calls and max reductions have distinct scopes', () => {
+tests/tensor/language.test.mjs:103:test('single-symbol affine input axes bind shapes and support bounded affine coordinates', () => {
+tests/tensor/language.test.mjs:135:test('empty sums and maxima retain their initial accumulators', () => {
+tests/tensor/language.test.mjs:144:test('invalid Tix fails compilation with a source location', () => {
+src/tensor/parse.ts:18:export interface ParsedFunction {
+src/tensor/parse.ts:26:function tokenize(source: string): Token[] {
+src/tensor/parse.ts:43:    if (/^\s/.test(text) || text.startsWith('//')) continue;
+src/tensor/parse.ts:44:    const kind = /^[A-Za-z_]/.test(text) ? 'name' : /^[\d.]/.test(text) ? 'number' : 'symbol';
+src/tensor/parse.ts:98:    if (token.kind !== 'number' || !/^\d+$/.test(token.text))
+src/tensor/parse.ts:256:export function parseTix(source: string): ParsedFunction[] {
+tests/tensor/passes.test.mjs:19:function apply(name, program, relation) {
+tests/tensor/passes.test.mjs:25:test('the real split-sum kernel fails the exact gate and passes the origin f64 tolerance gate', () => {
+tests/tensor/passes.test.mjs:51:test('inline composes affine coordinates and preserves f32 words, including signed zero', () => {
+tests/tensor/passes.test.mjs:81:test('both orders work and every optimization call preserves the flat f64 origin', () => {
+tests/tensor/passes.test.mjs:103:test('a public tolerance rejection retains the current revision and the pipeline continues', () => {
+tests/tensor/passes.test.mjs:125:test('the tolerance gate compares NaN and signed infinity and leaves multi-index sums flat', () => {
+tests/tensor/passes.test.mjs:138:test('the exact gate rejects a deliberately wrong inline kernel on generated calls', () => {
+tests/tensor/passes.test.mjs:177:test('the f64 tolerance gate rejects a deliberately wrong split kernel that drops the tail', () => {
+tests/tensor/passes.test.mjs:212:test('no covered sample means a changed candidate is rejected, while a multi-use producer is left alone', () => {
+tests/tensor/passes.test.mjs:222:test('inline retains the materialized producer if source bounds cannot prove the composed read', () => {
+src/tensor/meaning.ts:8:export type Relation = 'exact' | 'tolerance';
+src/tensor/meaning.ts:22:const seed = 7;
+src/tensor/meaning.ts:23:const extents = [0, 1, 3, 4, 5, 7, 8, 9];
+src/tensor/meaning.ts:24:const patterns: readonly Pattern[] = ['ones', 'mixed', 'sparse'];
+src/tensor/meaning.ts:25:const sparse = [1, -0, 0, 0, 2 ** -25, 2 ** -25, 2 ** -25, 2 ** -25];
+src/tensor/meaning.ts:26:const maxElements = 4096;
+src/tensor/meaning.ts:27:const maxWork = 100_000;
+src/tensor/meaning.ts:29:function samples(fn: TensorFunction, random: () => number): Case[] {
+src/tensor/meaning.ts:91:export function generateCases(origin: TensorArtifact): Cases {
+src/tensor/meaning.ts:106:function run(artifact: TensorArtifact, input: Case, precision: Precision): Outcome {
+src/tensor/meaning.ts:116:function coordinate(offset: number, shape: readonly number[]): number[] {
+src/tensor/meaning.ts:128:function words(data: Tensor['data']): Uint32Array {
+src/tensor/meaning.ts:132:function compare(baseline: Outcome, candidate: Outcome, relation: Relation): CheckResult {
+src/tensor/meaning.ts:162:export function meaningCheck(
+src/tensor/passes.ts:6:function mapExpression(expr: Expr, visit: (node: Expr) => Expr): Expr {
+src/tensor/passes.ts:9:      return visit({ ...expr, arg: mapExpression(expr.arg, visit) });
+src/tensor/passes.ts:11:      return visit({
+src/tensor/passes.ts:17:      return visit({ ...expr, body: mapExpression(expr.body, visit) });
+src/tensor/passes.ts:19:      return visit(expr);
+src/tensor/passes.ts:23:function inlineStatements(fn: TensorFunction): Statement[] | undefined {
+src/tensor/passes.ts:128:export const tensorPasses = new Map([
+src/tensor/ir.ts:14:function requireIR(condition: unknown, message: string): asserts condition {
+src/tensor/ir.ts:18:function validateAffine(a: Affine, names: ReadonlySet<string>) {
+src/tensor/ir.ts:20:    typeof a.constant === 'string' && integer.test(a.constant) && Array.isArray(a.terms),
+src/tensor/ir.ts:26:      names.has(name) && last < name && typeof n === 'string' && n !== '0' && integer.test(n),
+src/tensor/ir.ts:33:function floorDiv(n: bigint, positive: bigint) {
+src/tensor/ir.ts:37:function nonnegative(value: Affine, constraints: readonly Affine[]): boolean {
+src/tensor/ir.ts:62:export class UnprovedAccess extends Error {
+src/tensor/ir.ts:68:function validateRead(
+src/tensor/ir.ts:98:export function validateFunction(fn: TensorFunction) {
+src/tensor/ir.ts:100:    identifier.test(fn.name) && Array.isArray(fn.params) && fn.params.length && Array.isArray(fn.statements),
+src/tensor/ir.ts:105:    names.size === fn.shapeNames.length && fn.shapeNames.every(n => identifier.test(n)),
+src/tensor/ir.ts:122:    requireIR(identifier.test(name) && !tensors.has(name) && dims.length, 'Invalid tensor definition');
+src/tensor/ir.ts:131:      requireIR(identifier.test(binder.id) && !nested.has(binder.id), 'Invalid index binder');
+src/tensor/ir.ts:141:        requireIR(numberLiteral.test(node.text), 'Invalid literal');
+src/tensor/ir.ts:188:function validate(value: unknown): asserts value is TensorIR {
+src/tensor/ir.ts:202:function projection(value: TensorIR): Projection {
+src/tensor/ir.ts:265:export const TensorType = defineIR<TensorIR>({
+src/tensor/ir.ts:272:export const tensorAdapter = defineAdapter<TensorIR>({
+src/tensor/index.ts:12:export interface TixProgram {
+src/tensor/index.ts:17:export function compileTix(source: string): TixProgram {
+src/tensor/index.ts:22:export function runTix(
+src/tensor/index.ts:33:export function optimizeTix(
+src/tensor/evaluate.ts:4:export type Precision = 'f32' | 'f64';
+src/tensor/evaluate.ts:5:export interface Tensor {
+src/tensor/evaluate.ts:9:export type Inputs = Readonly<Record<string, Tensor>>;
+src/tensor/evaluate.ts:12:export function bindShapes(fn: TensorFunction, shapes: ReadonlyMap<string, readonly number[]>): Bindings {
+src/tensor/evaluate.ts:43:export function extentOf(extent: Affine, shapes: Bindings): number {
+src/tensor/evaluate.ts:49:export function elementCount(shape: readonly number[]): number {
+src/tensor/evaluate.ts:56:function storage(shape: number[], precision: Precision): Buffer {
+src/tensor/evaluate.ts:63:function write(buffer: Buffer, i: number, value: number) {
+src/tensor/evaluate.ts:68:export function evaluate(fn: TensorFunction, inputs: Inputs, precision: Precision): Tensor {
+src/tensor/evaluate.ts:96:      visit();
+src/tensor/model.ts:3:export interface Location {
+src/tensor/model.ts:8:export function fail(at: Location, message: string): never {
+src/tensor/model.ts:13:export interface Affine {
+src/tensor/model.ts:18:export function constant(n: bigint): Affine {
+src/tensor/model.ts:22:export function variable(name: string): Affine {
+src/tensor/model.ts:26:export function scale(a: Affine, n: bigint): Affine {
+src/tensor/model.ts:34:export function add(a: Affine, b: Affine): Affine {
+src/tensor/model.ts:46:export function subtract(a: Affine, b: Affine): Affine {
+src/tensor/model.ts:50:export function sameAffine(a: Affine, b: Affine): boolean {
+src/tensor/model.ts:58:export function evaluateAffine(a: Affine, resolve: (name: string) => bigint): bigint {
+src/tensor/model.ts:64:export function substituteAffine(a: Affine, resolve: (name: string) => Affine): Affine {
+src/tensor/model.ts:70:export type Unary = '-' | 'exp' | 'log' | 'sqrt' | 'tanh';
+src/tensor/model.ts:71:export type Binary = '+' | '-' | '*' | '/' | 'min' | 'max';
+src/tensor/model.ts:73:export type Expression<R, B> =
+src/tensor/model.ts:92:export interface Binder {
+src/tensor/model.ts:97:export interface Read {
+src/tensor/model.ts:103:export type Expr = Expression<Read, Binder>;
+src/tensor/model.ts:105:export interface Parameter {
+src/tensor/model.ts:110:export interface Statement {
+src/tensor/model.ts:116:export interface TensorFunction {
+src/tensor/model.ts:125:export interface TensorIR {
+src/tensor/model.ts:129:export type TensorArtifact = Artifact<TensorIR>;
+src/tensor/model.ts:131:export function* expressions(expr: Expr): Generator<Expr> {
+src/tensor/check.ts:14:export const sameShape = (a: readonly Affine[], b: readonly Affine[]) =>
+src/tensor/check.ts:17:function checkType(dims: readonly Affine[], names: ReadonlySet<string>, at: Location) {
+src/tensor/check.ts:24:function checkFunction(raw: ParsedFunction): TensorFunction {
+src/tensor/check.ts:133:export function checkSource(raw: readonly ParsedFunction[]): TensorIR {
+170: * matches records to a contract's `correspondence` requirements by `id` and `relation`, so applyPass builds one
+193:function prepareNative<S>(view: IRView<S>, produced: NativeResult<S>, outputId: string, store?: IRStore) {
+225:function checkWrites(pass: { id: string; writes: PassSpec<any, any>['writes'] }, changes: ChangeSet) {
+234:export function applyNativePassSync<S, N extends Needs, P>(
+265:  const { after, changes, correspondence, edits, report } = prepareNative(view, produced, before.id);
+268:  checkWrites(pass, changes);
+291:export async function applyPass<S, N extends Needs, P>(
+305:  const edit = view.beginEdit();
+324:    ({ after, changes, correspondence, edits, report } = prepareNative(
+343:    edit.rollback('applyPass publishes revisions itself');
+347:  checkWrites(pass, changes);
+
+ succeeded in 320ms:
+## t1-sx/irwb-020-l
+1c217ab IRWB-020-L: Implement Tix and verify checked tensor passes
+6ba6c1a IRWB-020-L: Add synchronous native pass application
+afa7ca0 IRWB-020-L: Revise Tix design after review
+07b209d IRWB-020-L: Design Tix tensor IR and checked passes
+ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md
+ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-tix-tensor-programs.md
+ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/README.md
+
+ succeeded in 688ms:
+
+  # add - Add a new document to a workspace                                   
+                                                                              
+  Creates a new document in the subdirectory named after its doc-type.        
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Create a design doc in a ticket workspace                                 
+                                                                              
+  docmgr doc add --ticket MEN-3475 --doc-type design-doc --title "Draft       
+  Architecture"                                                               
+                                                                              
+  # Override ticket defaults (topics/owners) for this one doc                 
+                                                                              
+  docmgr doc add --ticket MEN-3475 --doc-type reference --title "API          
+  Contracts"  --                                                              
+  topics api,backend --owners manuel,alice                                    
+                                                                              
+  # Seed multiple external sources + related files in frontmatter             
+                                                                              
+  docmgr doc add --ticket MEN-3475 --doc-type reference --title "Trace Links"  --
+  external-sources                                                            
+  "https://example.com/spec,https://github.com/org/repo/issues/123"  --related-
+  files "pkg/commands/add.go,pkg/commands/relate.go"                          
+                                                                              
+  For more help, run: docmgr help add                                         
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr doc add [flags]                                                      
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+                --doc-type    Document type (per vocabulary; stored under <doc-
+  type>/ subdir - <string>                                                    
+        --external-sources    Comma-separated list of external sources (URLs) -
+  <stringList>                                                                
+                -h, --help    help for add                                    
+                  --intent    Intent (overrides ticket default) - <string>    
+                  --owners    Comma-separated list of owners (overrides ticket
+  defaults) - <stringList>                                                    
+           --related-files    Comma-separated list of related files to seed   
+  frontmatter - <stringList>                                                  
+                    --root    Root directory for docs - <string> (default     
+  "ttmp")                                                                     
+                  --status    Status (overrides ticket default) - <string>    
+                 --summary    Short summary for the document - <string>       
+                  --ticket    Ticket identifier - <string>                    
+                   --title    Document title - <string>                       
+                  --topics    Comma-separated list of topics (overrides ticket
+  defaults) - <stringList>                                                    
+       --with-glaze-output    Switch this run to Glaze structured output      
+               --long-help    Show long help                                  
+                                                                              
+  Use docmgr doc add --help --long-help for information about all flags.      
+
+v24.18.0
+3.6.2
+
+exec
+/usr/bin/zsh -lc "docmgr doc add --ticket IRWB-020-L --doc-type reference --status complete --title 'Report' --summary 'Tix Stage 1 implementation, framework findings, and evaluation results'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc "nl -ba src/tensor/check.ts | sed -n '13,132p' && nl -ba src/tensor/evaluate.ts | sed -n '12,182p' && nl -ba src/tensor/meaning.ts | sed -n '22,193p'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc 'npm run build' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc "nl -ba src/tensor/passes.ts | sed -n '23,131p' && nl -ba src/tensor/index.ts | sed -n '9,54p' && rg -n '"'^```mermaid|mermaid'"' src site-src package.json && git rev-parse 1c217ab"'^{commit}' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 531ms:
+    13	
+    14	export const sameShape = (a: readonly Affine[], b: readonly Affine[]) =>
+    15	  a.length === b.length && a.every((extent, i) => sameAffine(extent, b[i]));
+    16	
+    17	function checkType(dims: readonly Affine[], names: ReadonlySet<string>, at: Location) {
+    18	  for (const dim of dims) {
+    19	    for (const [name] of dim.terms) if (!names.has(name)) fail(at, `Unbound shape '${name}'`);
+    20	    if (dim.terms.length === 0 && BigInt(dim.constant) < 0n) fail(at, 'Negative tensor extent');
+    21	  }
+    22	}
+    23	
+    24	function checkFunction(raw: ParsedFunction): TensorFunction {
+    25	  const params = raw.params.map(({ name, type }) => ({ name: name.text, shape: type.dims }));
+    26	  const shapeNames = new Set(raw.params.flatMap(({ type }) => type.names));
+    27	  const direct = new Set(
+    28	    params.flatMap(param => param.shape.flatMap(dim => (dim.terms.length === 1 ? [dim.terms[0][0]] : []))),
+    29	  );
+    30	  for (const name of shapeNames)
+    31	    if (!direct.has(name)) fail(raw.name, `Shape '${name}' needs a single-symbol input axis`);
+    32	  const tensors = new Map<string, readonly Affine[]>();
+    33	
+    34	  for (const { name, type } of raw.params) {
+    35	    if (tensors.has(name.text)) fail(name, `Tensor '${name.text}' is already defined`);
+    36	    checkType(type.dims, shapeNames, type.at);
+    37	    tensors.set(name.text, type.dims);
+    38	  }
+    39	  checkType(raw.resultType.dims, shapeNames, raw.resultType.at);
+    40	  for (const name of raw.resultType.names)
+    41	    if (!shapeNames.has(name)) fail(raw.resultType.at, `Unbound shape '${name}'`);
+    42	
+    43	  let nextBinder = 0;
+    44	  function enter(names: readonly Name[], parent: Scope): { scope: Scope; indices: Inferred[] } {
+    45	    const scope = new Map(parent);
+    46	    const seen = new Set<string>();
+    47	    const indices = names.map(at => {
+    48	      if (seen.has(at.text)) fail(at, `Duplicate index '${at.text}'`);
+    49	      seen.add(at.text);
+    50	      const slot: Inferred = { id: `i${nextBinder++}`, at };
+    51	      scope.set(at.text, slot);
+    52	      return slot;
+    53	    });
+    54	    return { scope, indices };
+    55	  }
+    56	
+    57	  function resolveBinders(indices: readonly Inferred[], annotation?: readonly Affine[]): Binder[] {
+    58	    return indices.map(({ id, extent, at }, axis) => {
+    59	      const declared = annotation?.[axis];
+    60	      if (extent && declared && !sameAffine(extent, declared))
+    61	        fail(at, `Declared extent for '${at.text}' conflicts with its uses`);
+    62	      const resolved = extent ?? declared;
+    63	      if (!resolved) fail(at, `Cannot infer the extent of '${at.text}'`);
+    64	      return { id, extent: resolved };
+    65	    });
+    66	  }
+    67	
+    68	  function resolve(expr: ParsedExpr, scope: Scope): Expr {
+    69	    switch (expr.kind) {
+    70	      case 'literal':
+    71	        return expr;
+    72	      case 'shape':
+    73	        if (!shapeNames.has(expr.name)) fail(expr.at, `Unbound shape '${expr.name}'`);
+    74	        return expr;
+    75	      case 'read': {
+    76	        const shape = tensors.get(expr.tensor);
+    77	        if (!shape) fail(expr.at, `Tensor '${expr.tensor}' is not defined before this use`);
+    78	        if (shape.length !== expr.coords.length) fail(expr.at, `Rank mismatch for '${expr.tensor}'`);
+    79	        const coords = expr.coords.map(({ affine, names, plain }, axis) => {
+    80	          for (const name of names) if (!scope.has(name)) fail(expr.at, `Unbound index '${name}'`);
+    81	          if (plain !== undefined) {
+    82	            const slot = scope.get(plain)!;
+    83	            if (slot.extent && !sameAffine(slot.extent, shape[axis]))
+    84	              fail(expr.at, `Conflicting extents for index '${plain}'`);
+    85	            slot.extent = shape[axis];
+    86	          }
+    87	          return substituteAffine(affine, name => variable(scope.get(name)!.id));
+    88	        });
+    89	        return { ...expr, coords };
+    90	      }
+    91	      case 'unary':
+    92	        return { ...expr, arg: resolve(expr.arg, scope) };
+    93	      case 'binary':
+    94	        return { ...expr, left: resolve(expr.left, scope), right: resolve(expr.right, scope) };
+    95	      case 'reduce': {
+    96	        const inner = enter(expr.binders, scope);
+    97	        const body = resolve(expr.body, inner.scope);
+    98	        return { ...expr, binders: resolveBinders(inner.indices), body };
+    99	      }
+   100	    }
+   101	  }
+   102	
+   103	  const statements = raw.statements.map(({ name, indices, type, body }) => {
+   104	    if (tensors.has(name.text)) fail(name, `Tensor '${name.text}' is already defined`);
+   105	    if (type) {
+   106	      if (type.dims.length !== indices.length) fail(type.at, 'Statement rank differs from its annotation');
+   107	      for (const name of type.names) if (!shapeNames.has(name)) fail(type.at, `Unbound shape '${name}'`);
+   108	      checkType(type.dims, shapeNames, type.at);
+   109	    }
+   110	    const local = enter(indices, new Map());
+   111	    const checked = resolve(body, local.scope);
+   112	    const binders = resolveBinders(local.indices, type?.dims);
+   113	    tensors.set(
+   114	      name.text,
+   115	      binders.map(binder => binder.extent),
+   116	    );
+   117	    return { name: name.text, binders, body: checked };
+   118	  });
+   119	
+   120	  const result = tensors.get(raw.result.text);
+   121	  if (!result) fail(raw.result, `Unknown return tensor '${raw.result.text}'`);
+   122	  if (!sameShape(result, raw.resultType.dims)) fail(raw.result, 'Returned tensor has a different shape');
+   123	  return {
+   124	    name: raw.name.text,
+   125	    shapeNames: [...shapeNames],
+   126	    params,
+   127	    resultShape: raw.resultType.dims,
+   128	    statements,
+   129	    result: raw.result.text,
+   130	  };
+   131	}
+   132	
+    12	export function bindShapes(fn: TensorFunction, shapes: ReadonlyMap<string, readonly number[]>): Bindings {
+    13	  const values = new Map<string, bigint>();
+    14	  for (const { name, shape } of fn.params) {
+    15	    const actual = shapes.get(name);
+    16	    if (!actual || actual.length !== shape.length || actual.some(n => !Number.isSafeInteger(n) || n < 0))
+    17	      throw new Error(`Invalid shape for input '${name}'`);
+    18	    shape.forEach((dim, axis) => {
+    19	      if (dim.terms.length !== 1) return;
+    20	      const [symbol, factor] = dim.terms[0];
+    21	      const numerator = BigInt(actual[axis]) - BigInt(dim.constant);
+    22	      const denominator = BigInt(factor);
+    23	      const value = numerator / denominator;
+    24	      if (
+    25	        numerator % denominator !== 0n ||
+    26	        value < 0n ||
+    27	        (values.has(symbol) && values.get(symbol) !== value)
+    28	      )
+    29	        throw new Error(`Inconsistent binding for shape '${symbol}'`);
+    30	      values.set(symbol, value);
+    31	    });
+    32	  }
+    33	  for (const { name, shape } of fn.params) {
+    34	    const actual = shapes.get(name)!;
+    35	    if (
+    36	      shape.some((dim, axis) => evaluateAffine(dim, symbol => values.get(symbol)!) !== BigInt(actual[axis]))
+    37	    )
+    38	      throw new Error(`Inconsistent shape for input '${name}'`);
+    39	  }
+    40	  return values;
+    41	}
+    42	
+    43	export function extentOf(extent: Affine, shapes: Bindings): number {
+    44	  const n = Number(evaluateAffine(extent, name => shapes.get(name)!));
+    45	  if (!Number.isSafeInteger(n) || n < 0) throw new Error('Invalid concrete extent');
+    46	  return n;
+    47	}
+    48	
+    49	export function elementCount(shape: readonly number[]): number {
+    50	  return shape.includes(0) ? 0 : shape.reduce((n, dim) => n * dim, 1);
+    51	}
+    52	
+    53	const identity = (value: number) => value;
+    54	type Buffer = { tensor: Tensor; words?: Uint32Array };
+    55	
+    56	function storage(shape: number[], precision: Precision): Buffer {
+    57	  const count = elementCount(shape);
+    58	  if (precision === 'f64') return { tensor: { shape, data: new Float64Array(count) } };
+    59	  const data = new Float32Array(count);
+    60	  return { tensor: { shape, data }, words: new Uint32Array(data.buffer) };
+    61	}
+    62	
+    63	function write(buffer: Buffer, i: number, value: number) {
+    64	  if (buffer.words && Number.isNaN(value)) buffer.words[i] = 0x7fc00000;
+    65	  else buffer.tensor.data[i] = value;
+    66	}
+    67	
+    68	export function evaluate(fn: TensorFunction, inputs: Inputs, precision: Precision): Tensor {
+    69	  const round = precision === 'f32' ? Math.fround : identity;
+    70	  const shapes = bindShapes(
+    71	    fn,
+    72	    new Map(Object.entries(inputs).map(([name, tensor]) => [name, tensor.shape])),
+    73	  );
+    74	  const tensors = new Map<string, Tensor>();
+    75	  for (const { name } of fn.params) {
+    76	    const input = inputs[name];
+    77	    if (input.data.length !== elementCount(input.shape)) throw new Error(`Invalid data length for '${name}'`);
+    78	    const buffer = storage(input.shape.slice(), precision);
+    79	    for (let i = 0; i < input.data.length; i++) write(buffer, i, round(input.data[i]));
+    80	    tensors.set(name, buffer.tensor);
+    81	  }
+    82	
+    83	  const indices = new Map<string, number>();
+    84	  const extents = new WeakMap<Binder, number>();
+    85	  function bound(binder: Binder): number {
+    86	    let n = extents.get(binder);
+    87	    if (n === undefined) {
+    88	      n = extentOf(binder.extent, shapes);
+    89	      extents.set(binder, n);
+    90	    }
+    91	    return n;
+    92	  }
+    93	
+    94	  function iterate(binders: readonly Binder[], visit: () => void, depth = 0): void {
+    95	    if (depth === binders.length) {
+    96	      visit();
+    97	      return;
+    98	    }
+    99	    const binder = binders[depth];
+   100	    const extent = bound(binder);
+   101	    for (let i = 0; i < extent; i++) {
+   102	      indices.set(binder.id, i);
+   103	      iterate(binders, visit, depth + 1);
+   104	    }
+   105	  }
+   106	
+   107	  function scalar(node: Expr): number {
+   108	    switch (node.kind) {
+   109	      case 'literal':
+   110	        return round(Number(node.text));
+   111	      case 'shape':
+   112	        return round(Number(shapes.get(node.name)!));
+   113	      case 'read': {
+   114	        const tensor = tensors.get(node.tensor)!;
+   115	        let offset = 0;
+   116	        for (let axis = 0; axis < node.coords.length; axis++) {
+   117	          const { constant, terms } = node.coords[axis];
+   118	          const coord =
+   119	            constant === '0' && terms.length === 1 && terms[0][1] === '1'
+   120	              ? indices.get(terms[0][0])!
+   121	              : Number(evaluateAffine(node.coords[axis], name => BigInt(indices.get(name)!)));
+   122	          offset = offset * tensor.shape[axis] + coord;
+   123	        }
+   124	        return tensor.data[offset];
+   125	      }
+   126	      case 'unary': {
+   127	        const n = scalar(node.arg);
+   128	        return round(node.op === '-' ? -n : Math[node.op](n));
+   129	      }
+   130	      case 'binary': {
+   131	        const a = scalar(node.left);
+   132	        const b = scalar(node.right);
+   133	        switch (node.op) {
+   134	          case '+':
+   135	            return round(a + b);
+   136	          case '-':
+   137	            return round(a - b);
+   138	          case '*':
+   139	            return round(a * b);
+   140	          case '/':
+   141	            return round(a / b);
+   142	          case 'max':
+   143	            return round(Math.max(a, b));
+   144	          case 'min':
+   145	            return round(Math.min(a, b));
+   146	        }
+   147	      }
+   148	      case 'reduce': {
+   149	        if (node.block !== undefined) {
+   150	          const binder = node.binders[0];
+   151	          const extent = bound(binder);
+   152	          let total = 0;
+   153	          for (let start = 0; start < extent; start += node.block) {
+   154	            let partial = 0;
+   155	            const end = Math.min(extent, start + node.block);
+   156	            for (let i = start; i < end; i++) {
+   157	              indices.set(binder.id, i);
+   158	              partial = round(partial + scalar(node.body));
+   159	            }
+   160	            total = round(total + partial);
+   161	          }
+   162	          return total;
+   163	        }
+   164	        let acc = node.op === 'sum' ? 0 : -Infinity;
+   165	        if (node.binders.some(binder => bound(binder) === 0)) return acc;
+   166	        iterate(node.binders, () => {
+   167	          const n = scalar(node.body);
+   168	          acc = round(node.op === 'sum' ? acc + n : Math.max(acc, n));
+   169	        });
+   170	        return acc;
+   171	      }
+   172	    }
+   173	  }
+   174	
+   175	  for (const stmt of fn.statements) {
+   176	    const buffer = storage(stmt.binders.map(bound), precision);
+   177	    let offset = 0;
+   178	    if (buffer.tensor.data.length) iterate(stmt.binders, () => write(buffer, offset++, scalar(stmt.body)));
+   179	    tensors.set(stmt.name, buffer.tensor);
+   180	  }
+   181	  return tensors.get(fn.result)!;
+   182	}
+    22	const seed = 7;
+    23	const extents = [0, 1, 3, 4, 5, 7, 8, 9];
+    24	const patterns: readonly Pattern[] = ['ones', 'mixed', 'sparse'];
+    25	const sparse = [1, -0, 0, 0, 2 ** -25, 2 ** -25, 2 ** -25, 2 ** -25];
+    26	const maxElements = 4096;
+    27	const maxWork = 100_000;
+    28	
+    29	function samples(fn: TensorFunction, random: () => number): Case[] {
+    30	  const cases: Case[] = [];
+    31	  const seen = new Set<string>();
+    32	  const sizes = [...extents.map(n => () => n), (i: number) => [2, 3, 5][i % 3]];
+    33	  for (const size of sizes) {
+    34	    const binding = new Map(fn.shapeNames.map((name, i) => [name, BigInt(size(i))]));
+    35	    const shapeOf = (dim: Parameters<typeof extentOf>[0]) => extentOf(dim, binding);
+    36	    function cost(expr: Expr): number {
+    37	      switch (expr.kind) {
+    38	        case 'unary':
+    39	          return 1 + cost(expr.arg);
+    40	        case 'binary':
+    41	          return 1 + cost(expr.left) + cost(expr.right);
+    42	        case 'reduce': {
+    43	          const iterations = elementCount(expr.binders.map(binder => shapeOf(binder.extent)));
+    44	          return iterations === 0 ? 1 : 1 + iterations * cost(expr.body);
+    45	        }
+    46	        default:
+    47	          return 1;
+    48	      }
+    49	    }
+    50	    let shapes: number[][];
+    51	    try {
+    52	      shapes = fn.params.map(param => param.shape.map(shapeOf));
+    53	      if (shapes.some(shape => elementCount(shape) > maxElements)) continue;
+    54	      let work = 0;
+    55	      for (const stmt of fn.statements) {
+    56	        const count = elementCount(stmt.binders.map(binder => shapeOf(binder.extent)));
+    57	        if (count > maxElements) {
+    58	          work = Infinity;
+    59	          break;
+    60	        }
+    61	        if (count) work += count * cost(stmt.body);
+    62	      }
+    63	      if (work > maxWork) continue;
+    64	    } catch {
+    65	      // The affine signature has no concrete call at this assignment.
+    66	      continue;
+    67	    }
+    68	    const key = JSON.stringify(shapes);
+    69	    if (seen.has(key)) continue;
+    70	    seen.add(key);
+    71	    for (const pattern of patterns) {
+    72	      const inputs = Object.fromEntries(
+    73	        fn.params.map(({ name }, i) => {
+    74	          const shape = shapes[i];
+    75	          const data = Float32Array.from({ length: elementCount(shape) }, (_, j) =>
+    76	            pattern === 'ones'
+    77	              ? 1
+    78	              : pattern === 'mixed'
+    79	                ? (Math.floor(random() * 33) - 16) / 16
+    80	                : sparse[j % sparse.length],
+    81	          );
+    82	          return [name, { shape, data }];
+    83	        }),
+    84	      );
+    85	      cases.push({ name: fn.name, shapes, pattern, inputs });
+    86	    }
+    87	  }
+    88	  return cases;
+    89	}
+    90	
+    91	export function generateCases(origin: TensorArtifact): Cases {
+    92	  const random = seededRandom(seed);
+    93	  const items: Case[] = [];
+    94	  const uncovered: string[] = [];
+    95	  for (const fn of origin.value.functions) {
+    96	    const cases = samples(fn, random);
+    97	    if (cases.length === 0) uncovered.push(fn.name);
+    98	    items.push(...cases);
+    99	  }
+   100	  return { items, uncovered };
+   101	}
+   102	
+   103	type Outcome = { tensor: Tensor } | { error: string };
+   104	const ports = { baseline: TensorType, candidate: TensorType };
+   105	
+   106	function run(artifact: TensorArtifact, input: Case, precision: Precision): Outcome {
+   107	  const fn = artifact.value.functions.find(fn => fn.name === input.name);
+   108	  if (!fn) return { error: 'function is missing' };
+   109	  try {
+   110	    return { tensor: evaluate(fn, input.inputs, precision) };
+   111	  } catch (error) {
+   112	    return { error: error instanceof Error ? error.message : String(error) };
+   113	  }
+   114	}
+   115	
+   116	function coordinate(offset: number, shape: readonly number[]): number[] {
+   117	  return shape
+   118	    .slice()
+   119	    .reverse()
+   120	    .map(extent => {
+   121	      const index = offset % extent;
+   122	      offset = Math.floor(offset / extent);
+   123	      return index;
+   124	    })
+   125	    .reverse();
+   126	}
+   127	
+   128	function words(data: Tensor['data']): Uint32Array {
+   129	  return new Uint32Array(data.buffer, data.byteOffset, data.length);
+   130	}
+   131	
+   132	function compare(baseline: Outcome, candidate: Outcome, relation: Relation): CheckResult {
+   133	  if ('error' in baseline) return { ok: false, reason: `reference could not run: ${baseline.error}` };
+   134	  if ('error' in candidate) return { ok: false, reason: `candidate could not run: ${candidate.error}` };
+   135	  const a = baseline.tensor;
+   136	  const b = candidate.tensor;
+   137	  if (a.shape.length !== b.shape.length || a.shape.some((n, i) => n !== b.shape[i]))
+   138	    return { ok: false, reason: `expected shape [${a.shape}], got [${b.shape}]` };
+   139	
+   140	  const expectedBits = relation === 'exact' ? words(a.data) : undefined;
+   141	  const actualBits = relation === 'exact' ? words(b.data) : undefined;
+   142	  for (let i = 0; i < a.data.length; i++) {
+   143	    const ref = a.data[i];
+   144	    const got = b.data[i];
+   145	    const ok =
+   146	      expectedBits && actualBits
+   147	        ? expectedBits[i] === actualBits[i]
+   148	        : Number.isFinite(ref)
+   149	          ? Number.isFinite(got) && Math.abs(got - ref) <= 1e-5 + 2e-5 * Math.abs(ref)
+   150	          : Object.is(ref, got);
+   151	    if (!ok) {
+   152	      const detail =
+   153	        expectedBits && actualBits
+   154	          ? `expected 0x${expectedBits[i].toString(16)}, got 0x${actualBits[i].toString(16)}`
+   155	          : `expected ${ref}, got ${got}`;
+   156	      return { ok: false, reason: `[${coordinate(i, a.shape)}]: ${detail}` };
+   157	    }
+   158	  }
+   159	  return { ok: true };
+   160	}
+   161	
+   162	export function meaningCheck(
+   163	  origin: TensorArtifact,
+   164	  cases: Cases,
+   165	  relation: Relation,
+   166	): (before: TensorArtifact, candidate: TensorArtifact) => CheckResult {
+   167	  const spec: DifferentialSpec<typeof ports, Case, Outcome> = {
+   168	    id: `tensor.meaning.${relation}`,
+   169	    version: '1',
+   170	    description: 'Compare returned tensors on generated calls',
+   171	    inputs: ports,
+   172	    baseline: 'baseline',
+   173	    subject: 'candidate',
+   174	    count: cases.items.length,
+   175	    seed,
+   176	    cases: () => cases.items,
+   177	    run: (side, artifact, input) =>
+   178	      run(artifact, input, side === 'baseline' && relation === 'tolerance' ? 'f64' : 'f32'),
+   179	    compare: (baseline, candidate) => compare(baseline, candidate, relation),
+   180	    describeCase: input => ({ function: input.name, shapes: input.shapes, pattern: input.pattern, seed }),
+   181	  };
+   182	  return (before, candidate) => {
+   183	    if (cases.uncovered.length)
+   184	      return { ok: false, reason: 'Missing sampled calls', evidence: { uncovered: cases.uncovered } };
+   185	    const baseline = relation === 'exact' ? before : origin;
+   186	    const evidence = runDifferential(spec, { baseline, candidate });
+   187	    return {
+   188	      ok: evidence.status === 'agree',
+   189	      reason: `${evidence.agree}/${evidence.total} sampled calls agree`,
+   190	      evidence,
+   191	    };
+   192	  };
+   193	}
+
+ exited 1 in 566ms:
+    23	function inlineStatements(fn: TensorFunction): Statement[] | undefined {
+    24	  let statements = [...fn.statements];
+    25	  let changed = false;
+    26	  let i = 0;
+    27	  while (i < statements.length) {
+    28	    const producer = statements[i];
+    29	    if (
+    30	      fn.result === producer.name ||
+    31	      Array.from(expressions(producer.body)).some(node => node.kind === 'reduce')
+    32	    ) {
+    33	      i++;
+    34	      continue;
+    35	    }
+    36	    const consumers = statements.slice(i + 1).flatMap(stmt =>
+    37	      Array.from(expressions(stmt.body))
+    38	        .filter(node => node.kind === 'read' && node.tensor === producer.name)
+    39	        .map(() => stmt),
+    40	    );
+    41	    if (consumers.length !== 1) {
+    42	      i++;
+    43	      continue;
+    44	    }
+    45	
+    46	    const consumer = consumers[0];
+    47	    const body = mapExpression(consumer.body, node => {
+    48	      if (node.kind !== 'read' || node.tensor !== producer.name) return node;
+    49	      const coordinates = new Map(producer.binders.map((binder, axis) => [binder.id, node.coords[axis]]));
+    50	      return mapExpression(producer.body, part =>
+    51	        part.kind === 'read'
+    52	          ? {
+    53	              ...part,
+    54	              coords: part.coords.map(coord => substituteAffine(coord, name => coordinates.get(name)!)),
+    55	            }
+    56	          : part,
+    57	      );
+    58	    });
+    59	    const candidate = [...statements];
+    60	    candidate[statements.indexOf(consumer)] = { ...consumer, body };
+    61	    candidate.splice(i, 1);
+    62	    try {
+    63	      validateFunction({ ...fn, statements: candidate });
+    64	    } catch (error) {
+    65	      if (!(error instanceof UnprovedAccess)) throw error;
+    66	      i++;
+    67	      continue;
+    68	    }
+    69	    statements = candidate;
+    70	    changed = true;
+    71	  }
+    72	  return changed ? statements : undefined;
+    73	}
+    74	
+    75	const inline = definePass({
+    76	  id: 'tensor.inline',
+    77	  version: '1',
+    78	  description: 'Inline single-use pointwise tensor definitions',
+    79	  ir: TensorType,
+    80	  adapter: tensorAdapter,
+    81	  writes: { entities: ['statement'], relations: ['contains', 'reads', 'next'] },
+    82	  run({ before }) {
+    83	    let changed = false;
+    84	    const functions = before.value.functions.map(fn => {
+    85	      const statements = inlineStatements(fn);
+    86	      if (!statements) return fn;
+    87	      changed = true;
+    88	      return { ...fn, statements };
+    89	    });
+    90	    if (changed) return { native: { functions } };
+    91	  },
+    92	});
+    93	
+    94	const blockSize = 4;
+    95	
+    96	const splitSum = definePass({
+    97	  id: 'tensor.split-sum',
+    98	  version: '1',
+    99	  description: 'Split single-index sums into consecutive blocks',
+   100	  ir: TensorType,
+   101	  adapter: tensorAdapter,
+   102	  writes: { entities: ['statement'], relations: [] },
+   103	  run({ before }) {
+   104	    let changed = false;
+   105	    const functions = before.value.functions.map(fn => ({
+   106	      ...fn,
+   107	      statements: fn.statements.map(stmt => ({
+   108	        ...stmt,
+   109	        body: mapExpression(stmt.body, node => {
+   110	          if (
+   111	            node.kind !== 'reduce' ||
+   112	            node.op !== 'sum' ||
+   113	            node.binders.length !== 1 ||
+   114	            node.block !== undefined
+   115	          )
+   116	            return node;
+   117	          const { extent } = node.binders[0];
+   118	          if (!extent.terms.length && BigInt(extent.constant) <= BigInt(blockSize)) return node;
+   119	          changed = true;
+   120	          return { ...node, block: blockSize };
+   121	        }),
+   122	      })),
+   123	    }));
+   124	    if (changed) return { native: { functions } };
+   125	  },
+   126	});
+   127	
+   128	export const tensorPasses = new Map([
+   129	  ['inline', inline],
+   130	  ['split-sum', splitSum],
+   131	]);
+     9	import { parseTix } from './parse.js';
+    10	import { tensorPasses } from './passes.js';
+    11	
+    12	export interface TixProgram {
+    13	  readonly origin: TensorArtifact;
+    14	  readonly artifact: TensorArtifact;
+    15	}
+    16	
+    17	export function compileTix(source: string): TixProgram {
+    18	  const artifact = createIRArtifact(tensorAdapter, 'tix', checkSource(parseTix(source)));
+    19	  return Object.freeze({ origin: artifact, artifact });
+    20	}
+    21	
+    22	export function runTix(
+    23	  program: TixProgram,
+    24	  fn: string,
+    25	  inputs: Inputs,
+    26	  options?: { precision?: Precision },
+    27	): Tensor {
+    28	  const entry = program.artifact.value.functions.find(candidate => candidate.name === fn);
+    29	  if (!entry) throw new Error(`Unknown Tix function '${fn}'`);
+    30	  return evaluate(entry, inputs, options?.precision ?? 'f32');
+    31	}
+    32	
+    33	export function optimizeTix(
+    34	  program: TixProgram,
+    35	  passes: string[],
+    36	): { program: TixProgram; steps: { pass: string; accepted: boolean }[] } {
+    37	  const { origin } = program;
+    38	  let { artifact } = program;
+    39	  const cases = generateCases(origin);
+    40	  const steps = passes.map(name => {
+    41	    const pass = tensorPasses.get(name);
+    42	    if (!pass) throw new Error(`Unknown Tix pass '${name}'`);
+    43	    try {
+    44	      artifact = applyNativePassSync(pass, artifact, {
+    45	        check: meaningCheck(origin, cases, name === 'inline' ? 'exact' : 'tolerance'),
+    46	      }).artifact;
+    47	      return { pass: name, accepted: true };
+    48	    } catch (error) {
+    49	      if (!(error instanceof PassError) || error.code !== 'contractRejected') throw error;
+    50	      return { pass: name, accepted: false };
+    51	    }
+    52	  });
+    53	  return { program: artifact === program.artifact ? program : Object.freeze({ origin, artifact }), steps };
+    54	}
+
+ succeeded in 874ms:
+created ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md
+
+ succeeded in 6074ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc "report='ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md'
+sed -i '/"'^# Report/,$d'"' \""'$report"
+cat >> "$report" <<'"'EOF'
+# Tix and the IR Workbench’s second compilation domain
+
+Tix is a small language for tensor computations written in index notation. It was built to answer a framework question. Could IR Workbench, which had compiled the statically typed language Typed to 32-bit RISC-V, carry a second intermediate representation and check optimizations under a different definition of meaning? At revision "'`1c217ab`, Tix compiles to an immutable tensor artifact, interprets it in f32 and f64, and runs two checked passes through the framework. The independent evaluation reported 25 of 25 acceptance tests passing and agreement with its reference evaluator on all 180 program-input pairs in each precision. The production framework change was a synchronous entry point for native passes. The existing artifact, projection, correspondence, and differential-checking machinery served the new domain.
+
+## A language that makes index ranges and arithmetic order matter
+
+A Tix function takes named tensors and returns one tensor. A statement defines a tensor once, and the left-hand indices describe the elements it computes. The right-hand side uses scalar arithmetic, elementary functions, affine tensor coordinates, and reductions. There is no mutable tensor assignment. A program may contain several independent functions. The public interface consists of `compileTix`, `runTix`, and `optimizeTix`. Compilation reports source errors with a one-based line and column. Execution takes named, row-major inputs and defaults to f32. Optimization takes a sequence of pass names and reports acceptance for each step. These calls are synchronous. [Public interface](../../../../../../src/tensor/index.ts)
+
+The entire matrix multiplication in the corpus is this function.
+
+```text
+fn matmul(a: f32[M, K], b: f32[K, N]): f32[M, N] {
+  y[i, j] = sum(k) a[i, k] * b[k, j];
+  return y;
+}
+```
+
+The checker infers `i` from the first axis of `a`, `j` from the second axis of `b`, and `k` from the matching contraction axes. It compares normalized affine expressions when a binder has several plain uses. For the convolution, the coordinate `y + dy` does not by itself tell the compiler the range of the output index `y`. The output annotation supplies `H - 2`, and a plain filter coordinate supplies the kernel extent of three for `dy`. The checker can then show the upper bound is `H - 1` whenever that iteration region runs. The same reasoning applies to the width. In the implemented input domain each shape name has an input axis from which it can be recovered directly. An axis such as `2*N+1` suffices, and axes involving several names are checked once those names have been bound. Affine access proofs use symbolic intervals and simple nonnegative extent constraints. [Source checker](../../../../../../src/tensor/check.ts) · [Access verification](../../../../../../src/tensor/ir.ts) · [Convolution example](../../../../../../corpus/tensor/conv2d/main.tix)
+
+A reduction has a deliberately wide body. In `sum(d) x[i,d] / D`, each term is divided before it reaches the accumulator. In `(sum(d) x[i,d]) / D`, the accumulator is divided once. This matters in f32 even when the corresponding real-number formula is the same. The parser handles the usual precedence for scalar arithmetic and lets a reduction consume the rest of the enclosing expression. The tests distinguish the two forms with an input on which their rounded results differ. They also check reduction binder shadowing and the distinction between a binary `max` call and a `max` reduction. [Parser](../../../../../../src/tensor/parse.ts) · [Language tests](../../../../../../tests/tensor/language.test.mjs)
+
+## A native tensor IR with a framework projection
+
+The IR stores ordered functions and ordered tensor definitions. Each definition carries its result binders, their resolved extent expressions, and a scalar expression tree. Tensor reads use normalized affine coordinates over binder IDs. During checking, each scope gets its own IDs, so an optimizer can substitute a coordinate without accidentally capturing a source-level name. Reductions are expression nodes with an operator, an ordered binder list, and a body. A one-index sum can additionally carry a block size. This makes the grouping part of the representation while leaving the original extent and term expression visible. [IR model](../../../../../../src/tensor/model.ts)
+
+Tix keeps this representation high enough to make a single use or a pointwise producer easy to recognize, and explicit enough that a loop order can be read directly from it. Extents are resolved before the artifact is created. Rewrites can therefore remove a read that originally supplied an extent without forcing the compiler to infer the extent again. The framework sees a logical graph of functions, parameters, and statements. Containment gives the function structure, adjacency records statement order, and read edges identify tensor dependencies. The full expression tree is a statement attribute, so changing an arithmetic operator or a reduction order shows up in the framework’s diff even when the dependency edges stay the same. [Native validator and adapter](../../../../../../src/tensor/ir.ts)
+
+The v6 artifact is the framework’s immutable, content-addressed representation of a revision. Tix defines its artifact type and supplies a read-only adapter that projects and validates the native value. Integer coefficients are decimal strings in the artifact and are calculated exactly with `BigInt`. Numerical literals also keep their source text until evaluation. This allows the artifact to use the framework’s canonical finite JSON representation while the evaluator can still produce signed zero, infinity, or NaN in typed-array storage. The public program handle retains both the source artifact and the current artifact. They initially identify the same revision. An accepted optimization changes the current artifact and carries the source artifact forward. [Artifact construction](../../../../../../src/tensor/index.ts#L12) · [Affine representation](../../../../../../src/tensor/model.ts#L12)
+
+```mermaid
+flowchart TD
+    S["Tix source"] --> C["Parse, check shapes, and resolve binders"]
+    C --> O["Original v6 tensor artifact"]
+    O --> H["Program handle with origin and current revision"]
+    H --> R["runTix interprets the current revision"]
+    H --> P["Native pass proposes a candidate"]
+    P --> V["Validate candidate, diff, and check declared writes"]
+    O --> D["Generate cases from the origin"]
+    V --> G["Evaluate and compare candidate outputs"]
+    D --> G
+    H --> G
+    G -->|accept| H2["Keep origin and adopt candidate"]
+    G -->|reject| H3["Keep origin and current revision"]
+```
+
+## Two precisions in one evaluator
+
+Both modes instantiate the affine shapes, traverse statements in definition order, and materialize their results in row-major arrays. In f32 mode the evaluator rounds input elements on ingress. It rounds each literal, shape value, arithmetic operation, and elementary-function result using `Math.fround` on the JavaScript double result. For a flat reduction the first listed index is outermost and the last varies fastest. A sum starts at positive zero, a maximum starts at negative infinity, and every update rounds. A reduction over several indices has one accumulator across the full lexicographic traversal. The f32 array writer standardizes NaN to the word `0x7fc00000`, and preserves the sign of zero. [Evaluator](../../../../../../src/tensor/evaluate.ts)
+
+The f64 mode uses the same traversal and expression semantics with JavaScript double arithmetic and `Float64Array` buffers. It removes the explicit f32 rounding. Its use of the same traversal is important because grouping can affect double precision as well. Public f64 execution interprets the supplied program’s current artifact. The tolerance check explicitly evaluates the unoptimized source artifact in f64. One regression uses four `2''^-54` terms to distinguish the double-precision flat and blocked folds and verifies that the source reference survives a second optimization call. The test corpus uses separately written JavaScript loop references to exercise the parts that both interpreter modes share. [Reference-lifetime test](../../../../../../tests/tensor/passes.test.mjs#L81) · [Corpus references](../../../../../../tests/tensor/corpus.test.mjs)
+
+## What it means for a pass to be accepted
+
+The contract observes the returned shape and all its row-major elements. Its exact relation compares the f32 output words of the candidate and the preceding revision. This detects a sign change on zero and compares NaN through the standardized storage word. Its tolerance relation compares candidate f32 with the original flat f64 reference. For a finite reference element `r` and a finite candidate element `c`, the condition is
+
+```text
+abs(c - r) <= 1e-5 + 2e-5 * abs(r)
+```
+
+A nonfinite reference matches NaN or the same signed infinity, as applicable. A shape mismatch or an execution error on a selected case counts as disagreement. The checker records the generated case and the first differing output coordinate with expected and observed words or values. Exact inline after a tolerant step uses the preceding revision as its f32 baseline. If its words are identical on the same origin-derived cases, the observation already accepted against the original f64 run is preserved. Another tolerant step compares to the original f64 run again, so successive passes do not get separate allowances for accumulated error. [Comparison and evidence](../../../../../../src/tensor/meaning.ts#L132) · [Relation dispatch](../../../../../../src/tensor/index.ts#L33)
+
+The case suite is generated once per optimization call from the source artifact. It visits every function. For symbolic shapes it tries uniform assignments from `0, 1, 3, 4, 5, 7, 8, 9` and one asymmetric assignment cycling through `2, 3, 5`. It filters unsupported concrete extents, deduplicates the actual input shapes, and caps each input or materialized tensor at 4,096 elements and estimated source work at 100,000 scalar expression visits per call. For each remaining shape it generates ones, mixed-sign multiples of `1/16` with seed 7, and a sparse pattern with signed zero and very small positive terms. These data are exactly representable in f32. The values exercise signs, short and partial blocks, and rounding around a large contribution relative to its neighbors. A function with zero usable cases prevents publication of a changed artifact. [Case generator](../../../../../../src/tensor/meaning.ts#L22)
+
+The tolerance is an empirical whole-output envelope informed by the rounding error of a short sum. For ordinary round-to-nearest f32 addition, unit roundoff is `2''^-24`. A classical bound for a sum of nine terms of magnitude at most one, already rounded and in the range where the relative rounding model applies, is below `5e-6`. With four-element blocks and nine terms, the longest addition path has at most seven updates. The absolute term gives extra room near cancellation and the relative term scales with the output magnitude. Neither calculation bounds an arbitrary output expression containing divisions, exponentials, or very ill-conditioned cancellation. The acceptance decision comes from the samples. A repository test demonstrates the consequence by amplifying a benign change in sum grouping until the final output falls outside the envelope. [Cancellation regression](../../../../../../tests/tensor/passes.test.mjs#L103)
+
+## The two passes and the framework change
+
+`inline` finds a reduction-free tensor definition with one static read occurrence in a later statement. A tensor returned from the function remains materialized. The pass uses the consumer’s coordinates to substitute for the producer’s result binders and composes affine coordinates in each copied read. It preserves expression order and the consumer’s resolved extents, then removes the producer and lets the projection account for the changed dependencies. This also works when the consumer reads inside a reduction. Before proposing the replacement, the pass checks the composed access bounds. If the checker’s conservative proof cannot establish them, the producer stays materialized. A regression covers this case. [Inline kernel](../../../../../../src/tensor/passes.ts#L23) · [Affine proof regression](../../../../../../tests/tensor/passes.test.mjs#L222)
+
+`split-sum` changes a flat one-index sum to consecutive blocks of four. Each block gets a zero-initialized inner accumulator. The outer accumulator visits those partial sums in block order. The final block stops at the original extent. Multi-index sums and maxima retain their original traversal. With an input of `[1, 0, 0, 0, 2''^-25, 2''^-25, 2''^-25, 2''^-25]`, the flat f32 fold rounds away each small term after it has reached one. The blocked fold combines the last four terms into `2''^-23` before adding that partial to one. The output words are `0x3f800000` and `0x3f800001`. The flat f64 result is `1.0000001192092896`, equal to the blocked f32 value. The exact gate rejects the real split kernel on this witness and the tolerance gate accepts it. [Split kernel](../../../../../../src/tensor/passes.ts#L94) · [Gate witness](../../../../../../tests/tensor/passes.test.mjs#L25)
+
+The framework integration exposed two issues at the same call boundary. The existing `applyPass` returns a promise, as does managed transformation verification. It also opens a logical edit before invoking a pass kernel, even on the path where the kernel returns a native value. The design probe exercised that route and got a capability error from a read-only projection. Tix needed a synchronous result and already had a native validator. Making the tensor adapter implement logical rebuilding solely for pass invocation would have introduced an unused translation. [Existing pass entry point](../../../../../../src/framework/passes/define-pass.ts#L291)
+
+The only framework source change is in `src/framework/passes/define-pass.ts`. It adds `applyNativePassSync` for an existing `definePass` registration and a required synchronous check. The new path opens the input projection, calls the native kernel without opening an edit, and uses the same candidate construction, diff, entity correspondence, and declared-write enforcement as the existing runner. It returns a changed artifact after the gate accepts. The tensor check uses the framework’s existing standalone `runDifferential` with tensor-specific cases, evaluator, and relation. The new test file checks the read-only path, write enforcement, the evidence returned on rejection, and synchronous invocation. [Shared native preparation](../../../../../../src/framework/passes/define-pass.ts#L193) · [Synchronous runner](../../../../../../src/framework/passes/define-pass.ts#L234) · [Framework tests](../../../../../../tests/framework/native-pass-sync.test.mjs)
+
+## Checks and independent evaluation
+
+The repository checks exercised compilation, both evaluator modes, artifact inspection, and pass sequencing through the built API. The six corpus programs cover rectangular matrix multiplication, max-shifted softmax, layer normalization with gamma, beta, and epsilon, single-head attention, a tanh-GELU MLP, and stride-one NCHW convolution with a three-by-three filter. Their independent loop references check output shapes and values. The build and all three tensor test files passed, covering 23 tests. The 18 framework test files passed. The Typed pass and strategy test files passed and exercise the existing asynchronous paths that share native candidate preparation. [Corpus checks](../../../../../../tests/tensor/corpus.test.mjs) · [Typed pass tests](../../../../../../tests/typed/passes.test.mjs) · [Typed strategy tests](../../../../../../tests/typed/strategies.test.mjs)
+
+Two deliberate wrong kernels checked whether the gate could detect a real defect. Both are registered passes that run through the same synchronous framework entry point and generated-case machinery. The wrong inline kernel substitutes subtraction for addition and is rejected by the exact gate. The wrong split kernel stops at four for a reduction of extent seven. On the ones case its candidate returns four against a reference of seven, so the tolerance gate rejects it. Separate tests cover retaining the current revision after a rejection, continuing with later passes, and accepting an unchanged revision as an identity. [Deliberate wrong kernels and pipeline tests](../../../../../../tests/tensor/passes.test.mjs)
+
+The independent evaluator reported the following results for revision `1c217ab`. The 25 hidden acceptance tests were written from the fixed core and API brief before the implementation existed. The differential evaluation used 60 random programs, each with three inputs, and compared the outputs to an independent reference.
+
+| Independent check | Reported result |
+| --- | --- |
+| Hidden fixed-core and API acceptance suite | 25 of 25 passed |
+| Plain f32 evaluation | 180 of 180 bit-identical |
+| Plain f64 evaluation | 180 of 180 within `1e-9 × max(1, abs(reference))` |
+| `optimizeTix(p, ['"'inline'])"'` | Accepted for all 60 programs. Every accepted result was bit-identical to the original. |
+| `optimizeTix(p, ['"'split-sum'])"'` | Accepted for all 60 programs. Every accepted result agreed in f64 within the reported `1e-9` criterion. |
+
+The supplied independent results contain zero failures or rejections. The accepted counts describe public step verdicts, which include identities. The evaluator supplied aggregate outcomes without a count of changed revisions. The deliberate rejections described above are measured repository checks. In particular, the f64 cross-check and the f32 witness answer different questions about the split pass. The cross-check compares the original and optimized evaluations in double precision. The witness shows an observable f32 difference and exercises the runtime contract’s f64 tolerance. [Public verdict handling](../../../../../../src/tensor/index.ts#L40) · [Exact-versus-tolerance test](../../../../../../tests/tensor/passes.test.mjs#L25)
+
+## What I would do differently
+
+I would count changed, unchanged, and rejected steps separately in the evaluation record from the start. The public verdict is useful for pass sequencing. For an experiment, a count of changed artifacts would reveal how often each kernel found an opportunity, and the existing framework result already has a `changed` field. I would also keep the small rounding witness as a required check alongside broader generated coverage. The witness gives a known reason for the precision relation to matter, while the independent comparison measures agreement on a larger input collection.
+
+I would make sample coverage easier to inspect per function and shape. The uncovered-function regression already shows that a bounded grid can leave a valid source with zero checked calls. The asymmetric assignment and partial-block sizes are similarly intentional. A coverage record would let a reader see which shapes actually ran after filtering, and make it easier to tell whether a numerical decision came from broad coverage or a single special case.
+
+Finally, I would investigate reusing the original proof of a producer’s access safety when substituting into a separately proved consumer read. The implemented pass recomputes bounds over the composed expression and conservatively keeps the producer if that check fails. The regression shows a valid example where the individual reads both have proofs and the combined inequality exceeds the implemented prover. That example is a concrete place to assess whether retaining and composing local facts would be worth the added compiler complexity. [Affine proof regression](../../../../../../tests/tensor/passes.test.mjs#L222)
+EOF
+wc -w "$report" && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 244ms:
+2809 ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md
+?? ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md
+
+codex
+The report draft covers the implementation, framework change, and independent results. It also separates accepted steps from actual rewrites: the API accepts no-ops, and the independent results do not report how many programs changed. I’ll rerun the local checks and verify the report links before committing.
+exec
+/usr/bin/zsh -lc 'node --test tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc 'node --test tests/framework/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc "python3 - 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md' <<'PY'
+from pathlib import Path
+import re
+import sys
+p = Path(sys.argv[1])
+s = p.read_text()
+s = s.replace('caps each input or materialized tensor', 'caps each source input or statement tensor')
+s = s.replace('A classical bound for a sum of nine terms of magnitude at most one, already rounded and in the range where the relative rounding model applies, is below "'`5e-6`.'"', 'For a sum of nine already-rounded terms of magnitude at most one, the standard relative rounding model gives an absolute bound of "'`9 × (9u)/(1 - 9u)` with `u = 2''^-24`, below `5e-6`.'"')
+s = s.replace('The cross-check compares the original and optimized evaluations in double precision.', 'The reported split check concerns double-precision agreement after optimization.')
+p.write_text(s)
+targets = re.findall(r'\\]\\((\\.\\./["'^)]+)'"\\)', s)
+for target in targets:
+    name, _, fragment = target.partition('#')
+    file = p.parent / name
+    assert file.is_file(), (p, target)
+    if fragment.startswith('L'):
+        assert 1 <= int(fragment[1:]) <= len(file.read_text().splitlines()), target
+blocks = re.findall(r'"'^'"\\x60{3}mermaid\\n(.*?)"'^'"\\x60{3}"'$'"', s, re.MULTILINE | re.DOTALL)
+assert len(blocks) == 1 and blocks[0].splitlines()[0] == 'flowchart TD'
+statements = blocks[0].splitlines()[1:]
+declared = set(re.findall(r'\\b(\\w+)\\[\"["'^"]+"'"\\]', blocks[0]))
+for line in statements:
+    edge = re.fullmatch(r'\\s+(\\w+)(?:\\[\"["'^"]+"'"\\])? --> (?:\\|["'^|]+'"\\| )?(\\w+)(?:\\[\"["'^"]+"'"\\])?\\s*', line)
+    edge = edge or re.fullmatch(r'\\s+(\\w+) -->\\|["'^|]+'"\\| (\\w+)\\[\"["'^"]+"'"\\]', line)
+    assert edge and set(edge.groups()) <= declared, line
+prose = re.sub(r'"'^'"\\x60{3}.*?"'^'"\\x60{3}"'$'"', '', s.split('---', 2)[-1], flags=re.MULTILINE | re.DOTALL)
+print(f'{len(targets)} relative links resolve. Mermaid flowchart has {len(statements)} edges with declared endpoints. Report has {len(prose.split())} words outside fenced blocks.')
+PY
+git diff --exit-code 1c217ab -- src tests corpus && git status --short --untracked-files=all -- src tests corpus" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 875ms:
+32 relative links resolve. Mermaid flowchart has 12 edges with declared endpoints. Report has 2649 words outside fenced blocks.
+
+ succeeded in 1072ms:
+✔ tests/tensor/corpus.test.mjs (576.53987ms)
+✔ tests/tensor/language.test.mjs (293.367437ms)
+✔ tests/tensor/passes.test.mjs (297.422735ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 586.562079
+
+ succeeded in 1985ms:
+✔ tests/framework/conformance.test.mjs (843.9136ms)
+✔ tests/framework/contracts.test.mjs (347.639315ms)
+✔ tests/framework/core-review.test.mjs (313.166041ms)
+✔ tests/framework/core.test.mjs (165.526944ms)
+✔ tests/framework/ext-e1-e2.test.mjs (237.934864ms)
+✔ tests/framework/ext-e3-e6.test.mjs (361.072319ms)
+✔ tests/framework/ext-e4.test.mjs (317.33834ms)
+✔ tests/framework/ext-e5.test.mjs (284.543194ms)
+✔ tests/framework/identity-caches.test.mjs (1227.698526ms)
+✔ tests/framework/ir-examples.test.mjs (907.636402ms)
+✔ tests/framework/ir-foundation.test.mjs (264.657348ms)
+✔ tests/framework/ir-review.test.mjs (452.320786ms)
+✔ tests/framework/ir-rewriting.test.mjs (394.027335ms)
+✔ tests/framework/layering.test.mjs (205.47257ms)
+✔ tests/framework/native-pass-sync.test.mjs (176.75561ms)
+✔ tests/framework/pass-policy.test.mjs (192.293024ms)
+✔ tests/framework/run-extensions.test.mjs (114.159253ms)
+✔ tests/framework/strategy.test.mjs (232.334721ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1502.590273
+
+ succeeded in 2312ms:
+✔ tests/typed/passes.test.mjs (1797.87823ms)
+✔ tests/typed/strategies.test.mjs (1463.364803ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1810.617937
+
+exec
+/usr/bin/zsh -lc "ticket_dir='ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes'
+report=\""'$ticket_dir/reference/02-report.md"
+python3 - "$report" "$ticket_dir/index.md" <<'"'PY'
+from pathlib import Path
+import sys
+report, index = map(Path, sys.argv[1:])
+s = report.read_text()
+needle = 'The case suite is generated once per optimization call from the source artifact.'
+snippet = \"\"\"The baseline selection appears directly in the gate.
+
+"'```ts
+const baseline = relation === '"'exact' ? before : origin;
+const evidence = runDifferential(spec, { baseline, candidate });
+"'```
+
+"""
+assert needle in s
+report.write_text(s.replace(needle, snippet + needle, 1))
+s = index.read_text()
+index.write_text(s.replace('"'- [Diary]', '- [Final report](reference/02-report.md)\\n- [Diary]', 1))
+PY
+cat >> \""'$ticket_dir/reference/01-diary.md" <<'"'EOF'
+
+## Step 5 — Record the independent evaluation and write the report
+
+The evaluation of "'`1c217ab` reported complete agreement on its acceptance suite and both differential precision checks. It reported acceptance on all 60 programs for each optimization. There are no reported failures or rejections to diagnose and no evidence that contradicts a reported result. I used the implementation and test files to document the measured results and the limits of the acceptance counts.
+
+### Prompt context
+
+**User prompt (verbatim)**
+
+> Stage 1 of IRWB-020-L has been evaluated independently. Your results:
+>
+> - **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `1c217ab`): 25/25 passed.
+> - **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: '"'f64'"'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+> - **`optimizeTix(p, ['"'inline'])"'`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+> - **`optimizeTix(p, ['"'split-sum'])"'`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+>
+> In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+>
+> 1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket'"'s "'`scripts/` if that helps. If you think a result is wrong, say why.
+> 2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+>    - Tix;
+>    - the IR you chose and why;
+>    - the evaluators;
+>    - the meaning contract: relations, cases, the tolerance and how you justified it;
+>    - the two passes;
+>    - each framework change and why it was needed;
+>    - how you checked the work;
+>    - the evaluation results above, including every failure and its cause;
+>    - what you would do differently.
+>
+>    Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+> 3. **Commit** (message starting `IRWB-020-L:`). Final message: the report'"'s path, the commit hash, and one line per failure cause.
+
+### Diagnosis and evidence
+
+- Independent failure causes. None reported. The hidden suite passed 25/25. The f32 cross-check agreed bitwise on 180/180 calls and the f64 cross-check met its relative criterion on 180/180. Each pass was accepted on all 60 programs with the reported agreement in its comparison.
+- Acceptance alone does not count rewrites. "'`src/framework/passes/define-pass.ts:260` returns the input when the kernel produces no change. `src/tensor/index.ts:47` reports that step as accepted. The evaluation supplied aggregate verdicts without revised-artifact counts.
+- The deliberate local rejections are reproducible tests. The real split kernel changes fold order at `src/tensor/evaluate.ts:149`, and the f32 word comparison at `src/tensor/meaning.ts:147` rejects the one-bit mismatch in `tests/tensor/passes.test.mjs:25`. The wrong inline emits subtraction at `tests/tensor/passes.test.mjs:154`. The wrong split truncates a length-seven bound to four in `tests/tensor/passes.test.mjs:190`, so the tolerance comparison at `src/tensor/meaning.ts:149` rejects the ones case.
+- Reran `npm run build`, `node --test tests/tensor/*.test.mjs` (3 files), `node --test tests/framework/*.test.mjs` (18 files), and `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` (2 files). All passed on Node 24.18.0. The external results are attributed to the evaluator and the local commands rerun the repository checks.
+- Checked all report links and the structure of the Mermaid flowchart. The report stays within the requested word range. `git diff --exit-code 1c217ab -- src tests corpus` confirmed the evaluated source, tests, and corpus match the evaluation revision.
+
+[Final report](02-report.md)
+EOF
+worktree="$(pwd)"
+docmgr doc relate --doc "$report" '"\\
+--file-note \""'$worktree/src/tensor/index.ts:Public API and source artifact lifetime" '"\\
+--file-note \""'$worktree/src/tensor/ir.ts:Native tensor artifact validation and projection" '"\\
+--file-note \""'$worktree/src/tensor/evaluate.ts:Row-major interpreter and both rounding modes" '"\\
+--file-note \""'$worktree/src/tensor/meaning.ts:Sampled cases and comparison relations" '"\\
+--file-note \""'$worktree/src/tensor/passes.ts:Inline and split-sum kernels" '"\\
+--file-note \""'$worktree/src/framework/passes/define-pass.ts:Synchronous native pass runner" '"\\
+--file-note \""'$worktree/tests/tensor/passes.test.mjs:Rounding witness and deliberate negative controls" '"\\
+&& docmgr changelog update --ticket IRWB-020-L --entry 'Recorded the independent evaluation of 1c217ab and added the final Stage 1 report. Reran the local verification against the evaluated code.' && docmgr doctor --ticket IRWB-020-L --stale-after 30
+rg -n 'return unchanged|op: .-.|constant: .4.' src/framework/passes/define-pass.ts tests/tensor/passes.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 6431ms:
+related 7 file(s) to ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md (added 7, updated 0, removed 0)
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+## Doctor Report (1 findings)
+
+### IRWB-020-L
+
+- ✅ All checks passed
+
+tests/tensor/passes.test.mjs:154:        op: '-',
+tests/tensor/passes.test.mjs:189:        binders: [{ ...binder, extent: { constant: '4', terms: [] } }],
+src/framework/passes/define-pass.ts:261:  if (produced === undefined) return unchanged(pass, before);
+src/framework/passes/define-pass.ts:267:  if (after.revision === before.revision) return unchanged(pass, before);
+src/framework/passes/define-pass.ts:336:      return unchanged(pass, before);
+src/framework/passes/define-pass.ts:346:    return unchanged(pass, before);
+
+exec
+/usr/bin/zsh -lc "python3 - 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md' <<'PY'
+from pathlib import Path
+import re
+import sys
+diary, report = map(Path, sys.argv[1:])
+s = diary.read_text().replace('src/framework/passes/define-pass.ts:260', 'src/framework/passes/define-pass.ts:261').replace('tests/tensor/passes.test.mjs:190', 'tests/tensor/passes.test.mjs:189')
+diary.write_text(s)
+report_text = report.read_text()
+markdown = report_text.split('---', 2)[-1]
+prose = re.sub(r'"'^'"\\x60{3}.*?"'^'"\\x60{3}"'$'"', '', markdown, flags=re.MULTILINE | re.DOTALL)
+words = len(prose.split())
+assert 2000 <= words <= 3500
+assert markdown.count('\\x60\\x60\\x60mermaid') == 1
+assert markdown.count('\\x60\\x60\\x60ts') == 1
+for href in re.findall(r'\\]\\((["'^)]+)'"\\)', markdown):
+    destination, _, anchor = href.partition('#')
+    target = report.parent / destination
+    assert target.is_file(), href
+    if anchor:
+        assert anchor.startswith('L') and 1 <= int(anchor[1:]) <= len(target.read_text().splitlines()), href
+for filename, line in re.findall(r'"'`((?:src|tests)/[''^:`]+):('"\\d+)"'`'"', s.split('## Step 5', 1)[-1]):
+    path = Path(filename)
+    assert path.is_file() and int(line) <= len(path.read_text().splitlines()), (filename, line)
+print(f'{words} words outside fenced blocks. Report links and diary source citations checked.')
+PY
+git status --short --untracked-files=all && git diff --check && git diff --exit-code 1c217ab -- src tests corpus" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 1517ms:
+2657 words outside fenced blocks. Report links and diary source citations checked.
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+?? ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md
+
+exec
+/usr/bin/zsh -lc "git add -- 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md' 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md' 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/changelog.md' && git diff --cached --check && git diff --cached --stat && git commit -m 'IRWB-020-L: Report Tix Stage 1 evaluation'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 382ms:
+ .../changelog.md                                   |   4 +
+ .../index.md                                       |   1 +
+ .../reference/01-diary.md                          |  42 ++++++
+ .../reference/02-report.md                         | 141 +++++++++++++++++++++
+ 4 files changed, 188 insertions(+)
+[t1-sx/irwb-020-l 5299798] IRWB-020-L: Report Tix Stage 1 evaluation
+ 4 files changed, 188 insertions(+)
+ create mode 100644 ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md
+
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -1 --format='%H %s' && git diff --exit-code 1c217ab HEAD -- src tests corpus && git diff --check 1c217ab HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 345ms:
+## t1-sx/irwb-020-l
+52997989770d3ee52b5715bcb1f8c9355f223e93 IRWB-020-L: Report Tix Stage 1 evaluation
+
+codex
+[Final report — `reference/02-report.md`](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md)
+
+Committed as `52997989770d3ee52b5715bcb1f8c9355f223e93`. The source, tests, and corpus match evaluated revision `1c217ab`.
+
+The independent evaluation reported no failures or rejections to diagnose.
+tokens used
+262,903
+[Final report — `reference/02-report.md`](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md)
+
+Committed as `52997989770d3ee52b5715bcb1f8c9355f223e93`. The source, tests, and corpus match evaluated revision `1c217ab`.
+
+The independent evaluation reported no failures or rejections to diagnose.

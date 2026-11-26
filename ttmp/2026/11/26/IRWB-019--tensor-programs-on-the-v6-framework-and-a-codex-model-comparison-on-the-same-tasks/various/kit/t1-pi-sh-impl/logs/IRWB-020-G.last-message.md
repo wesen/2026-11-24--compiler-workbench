@@ -1,0 +1,15 @@
+Implemented IRWB-020-G Stage 1. `src/tensor/` provides the Tix parser and shape checker, v6 IR, f32 and f64 evaluators, and checked `inline` and `split-sum` passes. The fixed API builds to `dist/tensor/index.js`. Six reference programs live in `corpus/tensor/`, with regression tests in `tests/tensor/`.
+
+The length-8 witness confirms that `split-sum` changes the f32 result from `0x3f800000` to `0x3f800002`: the exact gate rejects it, and the tolerance gate accepts it against the compiled original’s f64 result. Both deliberately wrong rewrites were rejected by the meaning gate.
+
+**Only framework change:** `src/framework/passes/define-pass.ts` adds `applyPassSync` and shares native artifact preparation, correspondence, and write checks with the async runner. No contract-manager changes.
+
+**Deviation from the revised design:** `inline` handles affine reads, including slices and repeated indices, but leaves a producer in place if the composed access exceeds safe-integer arithmetic or cannot be proved in bounds by the static checker. This is documented in the [design](ttmp/2026/11/26/IRWB-020-G--stage-1-tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md).
+
+**Checks passed:**
+- `npm run build`
+- `node --test tests/tensor/*.test.mjs` — 32 passed
+- `node --test tests/framework/*.test.mjs` — 228 passed
+- `node --test tests/typed/{passes,evaluate-analyses,meaning-memo,strategies,inline}.test.mjs` — 31 passed
+
+Commits: `00025ab` (design revision), `5e8fbd5` (framework), `a989925` (Tix implementation). Worktree clean; nothing pushed.

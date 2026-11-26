@@ -2857,3 +2857,1134 @@ index 62d3f2c..d540a99 100644
 ℹ todo 0
 ℹ duration_ms 108.368541
 
+ERROR: Reconnecting... 2/5
+exec
+/usr/bin/zsh -lc "cat > tests/tensor/language.test.mjs <<'EOF'
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as Tix from '../../dist/tensor/index.js';
+import { openIR } from '../../dist/framework/ir/index.js';
+import { tensorAdapter } from '../../dist/tensor/ir.js';
+
+const { compileTix, optimizeTix, runTix } = Tix;
+const tensor = (shape, values) => ({ shape, data: Float64Array.from(values) });
+const values = result => [...result.data];
+
+test('public API returns an inspectable immutable v6 artifact and supports several functions', () => {
+  assert.deepEqual(Object.keys(Tix).sort(), ['compileTix', 'optimizeTix', 'runTix']);
+  const program = compileTix("'`
+    // source-level tensor alias
+    fn identity(x: f32[N]): f32[N] { return x; }
+    fn increment(x: f32[N]): f32[N] { y[i] = x[i] + 1; return y; }
+  `);
+  const view = openIR(program.artifact, tensorAdapter);
+  assert.equal(view.artifact.kind, '"'tensor.module');
+  assert.equal(view.graph().roots.length, 2);
+  assert.equal(view.graph().relations.filter(edge => edge.kind === 'reads').length, 1);
+  assert.ok(Object.isFrozen(program.artifact.value.functions));
+  const x = tensor([2], [16_777_217, -0]);
+  const rounded = runTix(program, 'identity', { x });
+  assert.ok(rounded.data instanceof Float32Array);
+  assert.deepEqual(values(rounded), [16_777_216, -0]);
+  const full = runTix(program, 'identity', { x }, { precision: 'f64' });
+  assert.ok(full.data instanceof Float64Array);
+  assert.deepEqual(values(full), [16_777_217, -0]);
+  assert.deepEqual(values(runTix(program, 'increment', { x })), [16_777_216, 1]);
+  assert.deepEqual(optimizeTix(program, []), { program, steps: [] });
+});
+
+test('reduction bodies absorb operations up to the delimiter, with left-associative arithmetic', () => {
+  const program = compileTix("'`
+    fn inside(x: f32[D]): f32[1] { y[i]: f32[1] = sum(d) x[d] / D; return y; }
+    fn outside(x: f32[D]): f32[1] { y[i]: f32[1] = (sum(d) x[d]) / D; return y; }
+    fn arithmetic(x: f32[N]): f32[N] { y[i] = -x[i] * 2 + 12 / 3 / 2 - 1; return y; }
+  `);
+  const x = tensor([3], [16_777_216, 1, -16_777_216]);
+  assert.deepEqual(values(runTix(program, '"'inside', { x })), [0.5]);
+  assert.deepEqual(values(runTix(program, 'outside', { x })), [0]);
+  assert.deepEqual(values(runTix(program, 'arithmetic', { x: tensor([2], [2, 3]) })), [-3, -5]);
+});
+
+test('folds follow binder order, with lexical shadowing and explicit empty identities', () => {
+  const program = compileTix("'`
+    fn forward(x: f32[A, B]): f32[1] { y[i]: f32[1] = sum(a,b) x[a,b]; return y; }
+    fn reverse(x: f32[A, B]): f32[1] { y[i]: f32[1] = sum(b,a) x[a,b]; return y; }
+    fn shadow(x: f32[N, D]): f32[N] { y[i] = (sum(i,d) x[i,d]) + x[i,0]; return y; }
+    fn empty_max(x: f32[N]): f32[1] { y[i]: f32[1] = max(j) x[j]; return y; }
+  `.replace('"'f32[N, D]): f32[N] { y[i] = (sum', 'f32[N, 2]): f32[N] { y[i] = (sum'));
+  const x = tensor([2, 2], [16_777_216, 1, -16_777_216, 0]);
+  assert.deepEqual(values(runTix(program, 'forward', { x })), [0]);
+  assert.deepEqual(values(runTix(program, 'reverse', { x })), [1]);
+  assert.deepEqual(values(runTix(program, 'forward', { x }, { precision: 'f64' })), [1]);
+  assert.deepEqual(values(runTix(program, 'shadow', { x: tensor([2, 2], [1, 2, 3, 4]) })), [11, 13]);
+  assert.deepEqual(values(runTix(program, 'forward', { x: tensor([4, 0], []) })), [0]);
+  assert.deepEqual(values(runTix(program, 'empty_max', { x: tensor([0], []) })), [-Infinity]);
+});
+
+test('max disambiguates two arguments from reduction binders and handles a negative reduction body', () => {
+  const program = compileTix("'`
+    fn f(x: f32[N, M]): f32[1] {
+      y[i]: f32[1] = max(N, M) - (max(j, k) -x[j, k]);
+      return y;
+    }
+    fn g(x: f32[N, M]): f32[1] { y[i]: f32[1] = max(N, M) (-x[N,M]); return y; }
+    fn h(x: f32[N]): f32[N] { y[i] = min(3, log(exp(sqrt(x[i])))); return y; }
+  `);
+  const x = tensor([2, 3], [2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(values(runTix(program, '"'f', { x })), [5]);
+  assert.deepEqual(values(runTix(program, 'g', { x })), [-2]);
+  assert.deepEqual(values(runTix(program, 'h', { x: tensor([2], [1, 16]) })), [1, 3]);
+});
+
+test('affine shape binding follows parameter witnesses and affine subscripts can select a crop', () => {
+  const program = compileTix("'`
+    fn crop(x: f32[2 * N + 2], marker: f32[N + M]): f32[2 * N] {
+      y[i]: f32[N + N] = x[1 + i] + M;
+      return y;
+    }
+  `);
+  const x = tensor([8], [0, 1, 2, 3, 4, 5, 6, 7]);
+  const result = runTix(program, '"'crop', { x, marker: tensor([5], Array(5).fill(0)) });
+  assert.deepEqual(result.shape, [6]);
+  assert.deepEqual(values(result), [3, 4, 5, 6, 7, 8]);
+  assert.throws(() => runTix(program, 'crop', { x: tensor([7], Array(7).fill(0)), marker: tensor([5], Array(5).fill(0)) }), /bind/);
+});
+
+test('compile-time diagnostics give line and column for syntax, assignment, shape, and bounds failures', () => {
+  const bad = [
+    ['', /1:1:.*function/],
+    ['fn f(a: f32[N]): f32[N] {\\n  x[i] = "'$; return x; }'"', /2:10:.*character/],
+    ['fn f(a: f32[N]): f32[N] {\\n  a[i] = a[i]; return a; }', /2:3:.*already assigned/],
+    ['fn f(a: f32[N]): f32[N] { x[i] = y[i]; y[i] = a[i]; return x; }', /\\d+:\\d+:.*later tensor/],
+    ['fn f(a: f32[N], b: f32[M]): f32[N] { y[i] = a[i] + b[i]; return y; }', /\\d+:\\d+:.*conflicting extents/],
+    ['fn f(a: f32[N]): f32[N] { y[i]: f32[N - 1] = a[i]; return y; }', /\\d+:\\d+:.*conflicting extents/],
+    ['fn f(a: f32[N]): f32[N] { y[i] = a[i+1]; return y; }', /\\d+:\\d+:.*cannot infer extent/],
+    ['fn f(a: f32[N]): f32[N] { y[i]: f32[N] = a[i+1]; return y; }', /\\d+:\\d+:.*bounds/],
+    ['fn f(a: f32[N]): f32[N] { y[i]: f32[N] = sum(j) a[j+1]; return y; }', /\\d+:\\d+:.*cannot infer extent/],
+    ['fn f(a: f32[N]): f32[N] { y[i]: f32[N] = a[j]; return y; }', /\\d+:\\d+:.*unbound index/],
+    ['fn f(a: f32[N, N]): f32[N] { y[i] = a[i]; return y; }', /\\d+:\\d+:.*rank 2/],
+    ['fn f(a: f32[N]): f32[M] { return a; }', /\\d+:\\d+:.*no input binding/],
+    ['fn f(a: f32[N]): f32[N + 1] { return a; }', /\\d+:\\d+:.*declared shape/],
+    ['fn f(a: f32[N+M]): f32[N+M] { return a; }', /\\d+:\\d+:.*cannot bind shape name/],
+  ];
+  for (const [source, diagnostic] of bad) assert.throws(() => compileTix(source), diagnostic, source);
+});
+EOF
+# The shadowing fixture uses a fixed second axis to make the constant read statically safe.
+python3 - <<'PY'
+from pathlib import Path
+p=Path('tests/tensor/language.test.mjs')
+s=p.read_text().replace('fn shadow(x: f32[N, D])', 'fn shadow(x: f32[N, 2])')
+s=s.replace(\".replace('f32[N, D]): f32[N] { y[i] = (sum', 'f32[N, 2]): f32[N] { y[i] = (sum')\", '')
+p.write_text(s)
+PY
+cat > tests/tensor/passes.test.mjs <<'EOF'
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { compileTix, optimizeTix, runTix } from '../../dist/tensor/index.js';
+import { applyNativePassSync, definePass } from '../../dist/framework/passes/index.js';
+import { meaningGates } from '../../dist/tensor/meaning.js';
+import { inline, splitSum } from '../../dist/tensor/passes.js';
+
+const f32 = (shape, values) => ({ shape, data: Float32Array.from(values) });
+const bits = result => Array.from(new Uint32Array(result.data.buffer));
+const splitSource = 'fn sum6(x: f32[6]): f32[1] { y[j]: f32[1] = sum(i) x[i]; return y; }';
+const halfUlp = f32([6], [1, 0, 0, 0, 2 ** -24, 2 ** -24]);
+
+function mutate(pass, name, edit) {
+  return definePass({
+    ...pass,
+    id: name,
+    run(context) {
+      const native = structuredClone(pass.run(context).native);
+      edit(native.functions[0].statements[0]);
+      return { native };
+    },
+  });
+}
+
+function rejectsGeneratedCase(thunk, pattern, message) {
+  assert.throws(thunk, error => {
+    assert.equal(error.code, 'contractRejected');
+    const witnesses = error.evidence.reports[0].counterexamples;
+    assert.ok(witnesses.some(w => w.case.pattern === pattern && message.test(w.reason)));
+    return true;
+  });
+}
+
+test('single-use inline composes a permuted read under a reduction and preserves signed zero', () => {
+  const program = compileTix("'`
+    fn permute(x: f32[2,2]): f32[2] {
+      p[i,j] = x[i,j] + 1;
+      y[i] = sum(j) p[j,i];
+      return y;
+    }
+    fn signed(x: f32[N]): f32[N] {
+      p[i] = -x[i];
+      z[i] = p[i] * 1;
+      return z;
+    }
+  `);
+  const optimized = optimizeTix(program, ['"'inline']);
+  assert.deepEqual(optimized.steps, [{ pass: 'inline', accepted: true }]);
+  assert.deepEqual(optimized.program.artifact.value.functions.map(fn => fn.statements.length), [1, 1]);
+  assert.deepEqual([...runTix(optimized.program, 'permute', { x: f32([2, 2], [1, 2, 3, 4]) }).data], [6, 8]);
+  assert.deepEqual(bits(runTix(optimized.program, 'signed', { x: f32([2], [0, -0]) })), [0x80000000, 0]);
+});
+
+test('the generated alternating-sign case rejects an inline that ignores the index permutation', () => {
+  const program = compileTix("'`
+    fn transpose(x: f32[2,2]): f32[2,2] {
+      p[i,j] = x[i,j];
+      y[i,j] = p[j,i];
+      return y;
+    }
+  `);
+  const wrong = mutate(inline, '"'test.wrong-inline', stmt => stmt.body.indices.reverse());
+  const gate = meaningGates(program.origin)('exact');
+  assert.equal(applyNativePassSync(inline, program.artifact, gate).changed, true);
+  rejectsGeneratedCase(() => applyNativePassSync(wrong, program.artifact, gate), 'alternating-sign', /f32 bits/);
+  assert.equal(program.artifact.value.functions[0].statements.length, 2);
+});
+
+test('generated half-ULPs distinguish blocked and sequential f32, and generated ones catch a dropped tail', () => {
+  const program = compileTix(splitSource);
+  const gates = meaningGates(program.origin);
+  rejectsGeneratedCase(
+    () => applyNativePassSync(splitSum, program.artifact, gates('exact')),
+    'half-ulp',
+    /3f800000.*3f800001/,
+  );
+  const optimized = optimizeTix(program, ['split-sum', 'split-sum']);
+  assert.deepEqual(optimized.steps, [
+    { pass: 'split-sum', accepted: true },
+    { pass: 'split-sum', accepted: true },
+  ]);
+  assert.deepEqual(bits(runTix(program, 'sum6', { x: halfUlp })), [0x3f800000]);
+  assert.deepEqual(bits(runTix(optimized.program, 'sum6', { x: halfUlp })), [0x3f800001]);
+  assert.equal(runTix(program, 'sum6', { x: halfUlp }, { precision: 'f64' }).data[0], 1 + 2 ** -23);
+  assert.equal(optimizeTix(optimized.program, ['split-sum']).program.artifact, optimized.program.artifact);
+
+  const wrong = mutate(splitSum, 'test.wrong-split', stmt => {
+    stmt.body.index.extent.constant = 4;
+  });
+  rejectsGeneratedCase(
+    () => applyNativePassSync(wrong, program.artifact, gates('tolerance')),
+    'ones',
+    /reference 6, f32 candidate 4/,
+  );
+});
+
+test('blocked reductions handle empty, singleton, full and partial domains', () => {
+  const program = compileTix('fn f(x: f32[N]): f32[1] { y[j]: f32[1] = sum(i) x[i]; return y; }');
+  const { program: optimized, steps } = optimizeTix(program, ['split-sum']);
+  assert.equal(steps[0].accepted, true);
+  for (const length of [0, 1, 4, 5, 6])
+    assert.deepEqual([...runTix(optimized, 'f', { x: f32([length], Array(length).fill(1)) }).data], [length]);
+});
+
+test('split can use extra physical visits at the logical case-screening limit', () => {
+  const program = compileTix("'`
+    fn budget(x: f32[4096], bias: f32[12]): f32[12] {
+      y[j] = (sum(i) x[i]) + bias[j] * 0;
+      return y;
+    }
+  `);
+  // 12 × 4096 × 2 charged iterations and reads, plus expression and output visits.
+  // The 12 × 1024 outer blocks would exceed 100,000 if charged a second time.
+  const result = optimizeTix(program, ['"'split-sum']);
+  assert.equal(result.steps[0].accepted, true);
+  assert.notEqual(result.program.artifact.revision, program.artifact.revision);
+});
+
+test('tolerance checks preserve the nonfinite classification and the sign of infinity', () => {
+  const program = compileTix('fn f(x: f32[6]): f32[1] { y[j]: f32[1] = (sum(i) x[i]) / 0; return y; }');
+  assert.equal(optimizeTix(program, ['split-sum']).steps[0].accepted, true);
+  const wrong = mutate(splitSum, 'test.wrong-infinity', stmt => {
+    stmt.body = { kind: 'negate', operand: stmt.body };
+  });
+  rejectsGeneratedCase(
+    () => applyNativePassSync(wrong, program.artifact, meaningGates(program.origin)('tolerance')),
+    'ones',
+    /reference Infinity, f32 candidate -Infinity/,
+  );
+});
+
+test('an inline after an accepted split keeps its input bits and the original anchor across optimize calls', () => {
+  const program = compileTix("'`
+    fn f(x: f32[6]): f32[1] {
+      t[i] = x[i] * 1;
+      y[j]: f32[1] = sum(i) t[i];
+      return y;
+    }
+  `);
+  const split = optimizeTix(program, ['"'split-sum']).program;
+  const inlined = optimizeTix(split, ['inline']);
+  assert.equal(inlined.steps[0].accepted, true);
+  assert.equal(inlined.program.origin, program.origin);
+  assert.deepEqual(bits(runTix(inlined.program, 'f', { x: halfUlp })), [0x3f800001]);
+  assert.equal(inlined.program.artifact.value.functions[0].statements.length, 1);
+});
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 2614ms:
+exec
+/usr/bin/zsh -lc "cat > tests/tensor/corpus.test.mjs <<'EOF'
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { compileTix, optimizeTix, runTix } from '../../dist/tensor/index.js';
+
+const tensor = (shape, values) => ({ shape, data: Float32Array.from(values) });
+
+function checkCorpus(name, inputs, shape, expected) {
+  const url = new URL("'`../../corpus/tensor/${name}/main.tix`, import.meta.url);
+  const origin = compileTix(readFileSync(url, '"'utf8'));
+  const { program, steps } = optimizeTix(origin, ['inline', 'split-sum']);
+  assert.deepEqual(steps.map(step => step.accepted), [true, true]);
+  for (const result of [
+    runTix(origin, name, inputs),
+    runTix(origin, name, inputs, { precision: 'f64' }),
+    runTix(program, name, inputs),
+  ]) {
+    assert.deepEqual(result.shape, shape);
+    assert.equal(result.data.length, expected.length);
+    for (const [i, value] of expected.entries())
+      assert.ok(Math.abs(result.data[i] - value) <= 2e-6 * Math.max(1, Math.abs(value)), "'`${name}[${i}]: expected ${value}, got ${result.data[i]}`);
+  }
+}
+
+test('"'matmul contracts non-square matrices in row-major order', () => {
+  checkCorpus('matmul', {
+    a: tensor([2, 3], [1, 2, 3, 4, 5, 6]),
+    b: tensor([3, 1], [1, 0, -1]),
+  }, [2, 1], [-2, -2]);
+});
+
+test('softmax uses a max shift, even with common offsets that would overflow exp', () => {
+  const a = Math.exp(-2);
+  const b = Math.exp(-1);
+  const sum = a + b + 1;
+  checkCorpus('softmax', { x: tensor([2, 3], [1000, 1001, 1002, -1000, -1000, -1000]) },
+    [2, 3], [a / sum, b / sum, 1 / sum, 1 / 3, 1 / 3, 1 / 3]);
+});
+
+test('layernorm uses population variance, epsilon, and per-feature gamma and beta', () => {
+  const r = 1 / Math.sqrt(1 + 1e-5);
+  checkCorpus('layernorm', {
+    x: tensor([2, 2], [10, 10, 1, 3]),
+    gamma: tensor([2], [2, 3]),
+    beta: tensor([2], [4, 5]),
+  }, [2, 2], [4, 5, 4 - 2 * r, 5 + 3 * r]);
+});
+
+test('single-head attention distinguishes query length from key length and scales scores', () => {
+  const weight = Math.exp(Math.SQRT1_2);
+  checkCorpus('attention', {
+    q: tensor([1, 2], [1, 0]),
+    k: tensor([2, 2], [0, 0, 1, 0]),
+    v: tensor([2, 2], [1, 3, 3, 1]),
+  }, [1, 2], [(1 + 3 * weight) / (1 + weight), (3 + weight) / (1 + weight)]);
+});
+
+test('the MLP applies both affine layers and the tanh formula for GELU', () => {
+  const gelu = x => (x / 2) * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x + 0.044715 * x ** 3)));
+  checkCorpus('mlp', {
+    x: tensor([1, 2], [2, 3]),
+    w1: tensor([2, 2], [1, 0, 0, -1]),
+    b1: tensor([2], [-1, 1]),
+    w2: tensor([2, 1], [2, 4]),
+    b2: tensor([1], [0.5]),
+  }, [1, 1], [2 * gelu(1) + 4 * gelu(-2) + 0.5]);
+});
+
+test('NCHW convolution sums channels with an asymmetric unpadded kernel', () => {
+  checkCorpus('conv2d', {
+    x: tensor([1, 2, 2, 3], [1, 2, 3, 4, 5, 6, 10, 20, 30, 40, 50, 60]),
+    w: tensor([1, 2, 1, 2], [1, -1, 2, 0]),
+  }, [1, 1, 2, 2], [19, 39, 79, 99]);
+});
+EOF
+npm exec --offline -- prettier --write 'src/tensor/*.ts' 'tests/tensor/*.test.mjs' tests/framework/native-pass-sync.test.mjs src/framework/passes/define-pass.ts && npm run build" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 5017ms:
+src/tensor/check.ts 85ms
+src/tensor/evaluate.ts 40ms
+src/tensor/index.ts 6ms
+src/tensor/ir.ts 18ms
+src/tensor/meaning.ts 24ms
+src/tensor/model.ts 13ms (unchanged)
+src/tensor/parse.ts 25ms
+src/tensor/passes.ts 10ms
+tests/tensor/corpus.test.mjs 27ms
+tests/tensor/language.test.mjs 11ms
+tests/tensor/passes.test.mjs 12ms
+tests/framework/native-pass-sync.test.mjs 6ms
+src/framework/passes/define-pass.ts 28ms
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc 'git status --short && git diff --numstat && git diff --check && git diff -- src/framework/passes/define-pass.ts | tail -85' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 250ms:
+ M src/framework/passes/define-pass.ts
+?? corpus/tensor/
+?? src/tensor/
+?? tests/framework/native-pass-sync.test.mjs
+?? tests/tensor/
+104	43	src/framework/passes/define-pass.ts
+-    const id = options.outputId ?? before.id;
+-    after = createIRArtifact(pass.adapter, id, produced.native);
+-    const afterView = openIR(after, pass.adapter, options.store);
+-    changes = diff(view, afterView);
+-    correspondence = makeCorrespondence(
+-      { artifact: before.id, revision: before.revision },
+-      { artifact: after.id, revision: after.revision },
+-      // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+-      view.graph().entities.map(e => e.id),
+-      afterView.graph().entities.map(e => e.id),
+-      produced.correspondence ?? [],
+-    );
+-    edits = produced.edits ?? changes.entities.length;
++    const prepared = prepareNative(view, produced, options.outputId, options.store);
++    after = prepared.artifact;
++    changes = prepared.changes;
++    correspondence = prepared.correspondence;
++    edits = prepared.edits;
+     report = produced.report;
+   } else {
+     if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
+@@ -240,14 +326,7 @@ export async function applyPass<S, N extends Needs, P>(
+       // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
+       // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
+       edit.rollback('no operations');
+-      return {
+-        pass: { id: pass.id, version: pass.version },
+-        changed: false,
+-        before,
+-        artifact: before,
+-        edits: 0,
+-        preserved: [],
+-      };
++      return unchanged(pass, before);
+     }
+     const prepared = edit.prepare();
+     after = prepared.artifact;
+@@ -257,20 +336,9 @@ export async function applyPass<S, N extends Needs, P>(
+     edit.rollback('applyPass publishes revisions itself');
+   }
+   if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
+-    return {
+-      pass: { id: pass.id, version: pass.version },
+-      changed: false,
+-      before,
+-      artifact: before,
+-      edits: 0,
+-      preserved: [],
+-    };
++    return unchanged(pass, before);
+ 
+-  const undeclared = undeclaredWrites(pass.writes, changes);
+-  if (undeclared.length)
+-    throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
+-      undeclared: undeclared.slice(0, 20),
+-    });
++  checkWrites(pass, changes);
+ 
+   let contract: unknown;
+   const gate = options.contract ?? pass.contract;
+@@ -281,9 +349,7 @@ export async function applyPass<S, N extends Needs, P>(
+         { output: after } as never,
+         gate,
+         gate.correspondence.length
+-          ? gate.correspondence.map(req =>
+-              semanticCorrespondence(correspondence, req.id, req.relation),
+-            )
++          ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
+           : [semanticCorrespondence(correspondence)],
+       );
+       contract = prepared;
+@@ -301,12 +367,7 @@ export async function applyPass<S, N extends Needs, P>(
+       await manager.analyse(def, before);
+     }
+     try {
+-      const record = await manager.preserve(
+-        def,
+-        before,
+-        after,
+-        semanticCorrespondence(correspondence),
+-      );
++      const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
+       preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
+     } catch {
+       const old = await manager.analyse(def, before),
+
+exec
+/usr/bin/zsh -lc 'node --test tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ exited 1 in 519ms:
+✔ tests/tensor/corpus.test.mjs (202.737666ms)
+✖ tests/tensor/language.test.mjs (80.615948ms)
+✔ tests/tensor/passes.test.mjs (243.172479ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 255.119581
+
+✖ failing tests:
+
+test at tests/tensor/language.test.mjs:1:1
+✖ tests/tensor/language.test.mjs (80.615948ms)
+  'test failed'
+
+exec
+/usr/bin/zsh -lc 'node --test --test-isolation=none tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ exited 1 in 591ms:
+✔ matmul contracts non-square matrices in row-major order (24.531721ms)
+✔ softmax uses a max shift, even with common offsets that would overflow exp (16.154391ms)
+✔ layernorm uses population variance, epsilon, and per-feature gamma and beta (23.700732ms)
+✔ single-head attention distinguishes query length from key length and scales scores (33.624666ms)
+✔ the MLP applies both affine layers and the tanh formula for GELU (48.464463ms)
+✔ NCHW convolution sums channels with an asymmetric unpadded kernel (1.722981ms)
+✔ public API returns an inspectable immutable v6 artifact and supports several functions (0.97095ms)
+✔ reduction bodies absorb operations up to the delimiter, with left-associative arithmetic (1.228413ms)
+✔ folds follow binder order, with lexical shadowing and explicit empty identities (1.576483ms)
+✖ max disambiguates two arguments from reduction binders and handles a negative reduction body (2.24395ms)
+✔ affine shape binding follows parameter witnesses and affine subscripts can select a crop (0.70065ms)
+✔ compile-time diagnostics give line and column for syntax, assignment, shape, and bounds failures (1.067923ms)
+✔ single-use inline composes a permuted read under a reduction and preserves signed zero (3.671752ms)
+✔ the generated alternating-sign case rejects an inline that ignores the index permutation (2.396359ms)
+✔ generated half-ULPs distinguish blocked and sequential f32, and generated ones catch a dropped tail (4.281879ms)
+✔ blocked reductions handle empty, singleton, full and partial domains (1.628192ms)
+✔ split can use extra physical visits at the logical case-screening limit (86.202584ms)
+✔ tolerance checks preserve the nonfinite classification and the sign of infinity (1.815698ms)
+✔ an inline after an accepted split keeps its input bits and the original anchor across optimize calls (1.67896ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 18
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 297.41497
+
+✖ failing tests:
+
+test at tests/tensor/language.test.mjs:62:1
+✖ max disambiguates two arguments from reduction binders and handles a negative reduction body (2.24395ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   0.9999999403953552,
+  -   1,
+      3
+    ]
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/tests/tensor/language.test.mjs:74:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('tests/tensor/language.test.mjs')
+s=p.read_text().replace('    [1, 3],\\n', '    [1 - 2 ** -24, 3],\\n')
+s=s.replace(\"tensor([2], [1, 16]) })), [1, 3]);\", \"tensor([2], [1, 16]) })), [1 - 2 ** -24, 3]);\")
+assert '1 - 2 ** -24, 3' in s
+p.write_text(s)
+p=Path('src/framework/passes/define-pass.ts')
+s=p.read_text()
+s=s.replace(\"\"\"export function undeclaredWrites(writes: PassSpec<any, any>['writes'], changes: ChangeSet): readonly string[] {\"\"\",\"\"\"export function undeclaredWrites(
+  writes: PassSpec<any, any>['writes'],
+  changes: ChangeSet,
+): readonly string[] {\"\"\")
+s=s.replace(\"\"\"          ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
+\"\"\", \"\"\"          ? gate.correspondence.map(req =>
+              semanticCorrespondence(correspondence, req.id, req.relation),
+            )
+\"\"\")
+s=s.replace(\"\"\"      const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
+\"\"\",\"\"\"      const record = await manager.preserve(
+        def,
+        before,
+        after,
+        semanticCorrespondence(correspondence),
+      );
+\"\"\")
+p.write_text(s)
+PY
+cat >> tests/tensor/passes.test.mjs <<'EOF'
+
+test('the public pipeline retains its input when a generated case fails tolerance', () => {
+  const program = compileTix("'`
+    fn cancellation(x: f32[6]): f32[1] {
+      y[j]: f32[1] = sum(i) (100000000 * x[i] + 1);
+      return y;
+    }
+  `);
+  const result = optimizeTix(program, ['"'split-sum', 'inline']);
+  assert.deepEqual(result.steps, [
+    { pass: 'split-sum', accepted: false },
+    { pass: 'inline', accepted: true },
+  ]);
+  assert.equal(result.program.artifact, program.artifact);
+  assert.deepEqual(
+    [...runTix(result.program, 'cancellation', { x: f32([6], Array(6).fill(0)) }).data],
+    [6],
+  );
+});
+EOF
+npm exec --offline -- prettier --write tests/tensor/language.test.mjs tests/tensor/passes.test.mjs && npm run build" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 4239ms:
+tests/tensor/language.test.mjs 49ms (unchanged)
+tests/tensor/passes.test.mjs 21ms
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+codex
+All six corpus programs accepted both passes. The generated alternating-sign input caught the wrong inline, generated ones caught the dropped reduction tail, and half-ULPs distinguished exact rejection from tolerance acceptance. One evaluator test had assumed `log(exp(1))` stayed exactly 1 in f32. I corrected the expectation to account for rounding the `exp` result before `log`.
+exec
+/usr/bin/zsh -lc "cat >> 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' <<'EOF'
+
+## Step 3. Add the synchronous native pass entry point
+
+The synchronous runner uses an ordinary "'`Pass` and runs the same native artifact preparation, projection diff, correspondence and declared-write check as the existing async runner. A throwing `edit` accessor preserves the existing kernel context type without opening an edit. The fixture uses an adapter with no graph rebuild capability, which exercises the gap found in Step 1.
+
+### Changes and evidence
+
+- `src/framework/passes/define-pass.ts` adds `applyNativePassSync`. The synchronous path rejects managed clauses, thenables and graph edit access. It validates the supplied `CheckResult` and returns a changed artifact only on acceptance.
+- `tests/framework/native-pass-sync.test.mjs` checks native artifact validation, correspondence, declared writes, evidence on rejection and synchronous boundaries. The existing tests are unchanged.
+- `npm run build` succeeded. `node --test --test-isolation=none tests/framework/native-pass-sync.test.mjs tests/framework/ext-e3-e6.test.mjs` passed all 10 subtests. The full requested framework and selected Typed suite commands are recorded at the implementation checkpoint.
+EOF
+git diff --check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 294ms:
+exec
+/usr/bin/zsh -lc "git add -- src/framework/passes/define-pass.ts tests/framework/native-pass-sync.test.mjs 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' && git diff --cached --check && git commit -m 'IRWB-020-A: Add checked synchronous native pass application'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ exited 1:
+2026-11-26T19:52:43.059398Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"The automatic permission approval review did not finish before its deadline. Do not assume the action is unsafe based on the timeout alone. You may retry once, or ask the user for guidance or explicit approval.\")" }
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git diff --cached --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 249ms:
+## t1-sh/irwb-020-a
+ M src/framework/passes/define-pass.ts
+ M ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+?? corpus/tensor/
+?? src/tensor/
+?? tests/framework/native-pass-sync.test.mjs
+?? tests/tensor/
+
+exec
+/usr/bin/zsh -lc 'node --test tests/tensor/*.test.mjs && node --test --test-isolation=none tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 816ms:
+✔ tests/tensor/corpus.test.mjs (210.409142ms)
+✔ tests/tensor/language.test.mjs (83.918352ms)
+✔ tests/tensor/passes.test.mjs (213.209691ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 228.522001
+✔ matmul contracts non-square matrices in row-major order (20.612259ms)
+✔ softmax uses a max shift, even with common offsets that would overflow exp (10.753316ms)
+✔ layernorm uses population variance, epsilon, and per-feature gamma and beta (19.680265ms)
+✔ single-head attention distinguishes query length from key length and scales scores (38.356076ms)
+✔ the MLP applies both affine layers and the tanh formula for GELU (36.514685ms)
+✔ NCHW convolution sums channels with an asymmetric unpadded kernel (1.319595ms)
+✔ public API returns an inspectable immutable v6 artifact and supports several functions (0.671559ms)
+✔ reduction bodies absorb operations up to the delimiter, with left-associative arithmetic (0.692974ms)
+✔ folds follow binder order, with lexical shadowing and explicit empty identities (0.898712ms)
+✔ max disambiguates two arguments from reduction binders and handles a negative reduction body (1.788379ms)
+✔ affine shape binding follows parameter witnesses and affine subscripts can select a crop (1.021072ms)
+✔ compile-time diagnostics give line and column for syntax, assignment, shape, and bounds failures (1.633721ms)
+✔ single-use inline composes a permuted read under a reduction and preserves signed zero (3.169506ms)
+✔ the generated alternating-sign case rejects an inline that ignores the index permutation (2.79829ms)
+✔ generated half-ULPs distinguish blocked and sequential f32, and generated ones catch a dropped tail (2.100378ms)
+✔ blocked reductions handle empty, singleton, full and partial domains (1.565925ms)
+✔ split can use extra physical visits at the logical case-screening limit (87.7992ms)
+✔ tolerance checks preserve the nonfinite classification and the sign of infinity (1.430793ms)
+✔ an inline after an accepted split keeps its input bits and the original anchor across optimize calls (1.516783ms)
+✔ the public pipeline retains its input when a generated case fails tolerance (0.737111ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 271.202024
+
+exec
+/usr/bin/zsh -lc 'node --test tests/framework/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 1248ms:
+✔ tests/framework/conformance.test.mjs (567.793098ms)
+✔ tests/framework/contracts.test.mjs (198.573415ms)
+✔ tests/framework/core-review.test.mjs (144.587755ms)
+✔ tests/framework/core.test.mjs (146.017245ms)
+✔ tests/framework/ext-e1-e2.test.mjs (146.650152ms)
+✔ tests/framework/ext-e3-e6.test.mjs (208.115377ms)
+✔ tests/framework/ext-e4.test.mjs (145.376825ms)
+✔ tests/framework/ext-e5.test.mjs (105.343115ms)
+✔ tests/framework/identity-caches.test.mjs (818.498834ms)
+✔ tests/framework/ir-examples.test.mjs (609.9977ms)
+✔ tests/framework/ir-foundation.test.mjs (193.6426ms)
+✔ tests/framework/ir-review.test.mjs (219.036512ms)
+✔ tests/framework/ir-rewriting.test.mjs (280.733315ms)
+✔ tests/framework/layering.test.mjs (93.575313ms)
+✔ tests/framework/native-pass-sync.test.mjs (106.610087ms)
+✔ tests/framework/pass-policy.test.mjs (131.842822ms)
+✔ tests/framework/run-extensions.test.mjs (93.357007ms)
+✔ tests/framework/strategy.test.mjs (186.987417ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 981.787464
+
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/passes.test.mjs tests/typed/meaning-memo.test.mjs tests/typed/strategies.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 1220ms:
+✔ tests/typed/meaning-memo.test.mjs (253.122157ms)
+✔ tests/typed/passes.test.mjs (954.932373ms)
+✔ tests/typed/strategies.test.mjs (700.286227ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 964.721406
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/tensor/model.ts')
+s=p.read_text().replace('export function safeInteger(value: bigint): number {', 'export class AffineRangeError extends Error {}\\n\\nexport function safeInteger(value: bigint): number {').replace(\"throw new Error('affine integer is outside the safe integer range')\", \"throw new AffineRangeError('affine integer is outside the safe integer range')\")
+p.write_text(s)
+p=Path('src/tensor/passes.ts')
+s=p.read_text().replace('add, BLOCK_SIZE, children, constant, mapChildren', 'add, AffineRangeError, BLOCK_SIZE, children, constant, mapChildren')
+s=s.replace('  let statements = fn.statements;\\n', '  let statements = fn.statements;\\n  const unrepresentable = new Set<string>();\\n')
+s=s.replace('stmt => stmt.name "'!== fn.returns && counts.get(stmt.name) === 1 && pointwise(stmt.body),'"', '''stmt =>
+        stmt.name "'!== fn.returns &&
+        !unrepresentable.has(stmt.name) &&
+        counts.get(stmt.name) === 1 &&
+        pointwise(stmt.body),'"''')
+s=s.replace(\"\"\"    statements = statements
+      .filter(stmt => stmt "'!== producer)
+      .map(stmt => ({ ...stmt, body: rewrite(stmt.body) }));""","""    try {
+      statements = statements.filter(stmt => stmt !== producer).map(stmt => ({ ...stmt, body: rewrite(stmt.body) }));
+    } catch (error) {
+      if (!(error instanceof AffineRangeError)) throw error;
+      unrepresentable.add(producer.name);
+    }""")
+assert '"'unrepresentable.add(producer.name)' in s
+p.write_text(s)
+PY
+cat >> tests/tensor/passes.test.mjs <<'EOF'
+
+test('inline leaves an otherwise valid singleton read if affine composition cannot be encoded', () => {
+  const program = compileTix("'`
+    fn singleton(x: f32[1]): f32[1] {
+      p[i]: f32[1] = x[9007199254740991 * i];
+      y[j]: f32[1] = p[2 * j];
+      return y;
+    }
+  `);
+  const optimized = optimizeTix(program, ['"'inline']);
+  assert.deepEqual(optimized.steps, [{ pass: 'inline', accepted: true }]);
+  assert.equal(optimized.program.artifact, program.artifact);
+  assert.deepEqual([...runTix(optimized.program, 'singleton', { x: f32([1], [7]) }).data], [7]);
+});
+EOF
+npm exec --offline -- prettier --write src/tensor/model.ts src/tensor/passes.ts tests/tensor/passes.test.mjs && npm run build" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 4347ms:
+src/tensor/model.ts 68ms
+src/tensor/passes.ts 17ms
+tests/tensor/passes.test.mjs 42ms (unchanged)
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc "git add -- src/framework/passes/define-pass.ts tests/framework/native-pass-sync.test.mjs 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 243ms:
+exec
+/usr/bin/zsh -lc 'git diff --cached --check && git diff --cached --stat && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 257ms:
+ src/framework/passes/define-pass.ts                | 136 +++++++++++++++------
+ tests/framework/native-pass-sync.test.mjs          |  87 +++++++++++++
+ .../reference/01-diary.md                          |  10 ++
+ 3 files changed, 199 insertions(+), 34 deletions(-)
+M  src/framework/passes/define-pass.ts
+A  tests/framework/native-pass-sync.test.mjs
+M  ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+?? corpus/tensor/
+?? src/tensor/
+?? tests/tensor/
+
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-020-A: Add checked synchronous native pass application'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 201ms:
+[t1-sh/irwb-020-a 3802855] IRWB-020-A: Add checked synchronous native pass application
+ 3 files changed, 199 insertions(+), 34 deletions(-)
+ create mode 100644 tests/framework/native-pass-sync.test.mjs
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/tensor/evaluate.ts')
+s=p.read_text().replace(\"\"\"export class EvaluationLimit extends Error {
+  constructor() {
+    super('tensor evaluation exceeded its logical visit budget');
+  }
+}
+\"\"\", \"export class EvaluationLimit extends Error {}\\n\")
+s=s.replace('if (--budget < 0) throw new EvaluationLimit();', \"if (--budget < 0) throw new EvaluationLimit('tensor evaluation exceeded its logical visit budget');\")
+s=s.replace('if (count > tensorLimit) throw new EvaluationLimit();', \"if (count > tensorLimit) throw new EvaluationLimit("'`tensor '"'"'${stmt.name}'"' exceeds "'${tensorLimit} elements`);")
+p.write_text(s)
+PY
+npm exec --offline -- prettier --check '"'src/tensor/*.ts' 'tests/tensor/*.test.mjs' tests/framework/native-pass-sync.test.mjs && npm run build && node --test tests/tensor/*.test.mjs && node --test --test-isolation=none tests/tensor/*.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ exited 1 in 904ms:
+Checking formatting...
+[warn] src/tensor/evaluate.ts
+[warn] Code style issues found in the above file. Run Prettier with --write to fix.
+
+exec
+/usr/bin/zsh -lc "npm exec --offline -- prettier --write src/tensor/evaluate.ts && npm exec --offline -- prettier --check 'src/tensor/*.ts' 'tests/tensor/*.test.mjs' tests/framework/native-pass-sync.test.mjs && npm run build && node --test tests/tensor/*.test.mjs && node --test --test-isolation=none tests/tensor/*.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 5193ms:
+src/tensor/evaluate.ts 81ms
+Checking formatting...
+All matched files use Prettier code style!
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ tests/tensor/corpus.test.mjs (207.166787ms)
+✔ tests/tensor/language.test.mjs (83.127456ms)
+✔ tests/tensor/passes.test.mjs (206.21054ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 221.119681
+✔ matmul contracts non-square matrices in row-major order (19.842076ms)
+✔ softmax uses a max shift, even with common offsets that would overflow exp (10.7734ms)
+✔ layernorm uses population variance, epsilon, and per-feature gamma and beta (21.867854ms)
+✔ single-head attention distinguishes query length from key length and scales scores (31.0259ms)
+✔ the MLP applies both affine layers and the tanh formula for GELU (33.532164ms)
+✔ NCHW convolution sums channels with an asymmetric unpadded kernel (1.569148ms)
+✔ public API returns an inspectable immutable v6 artifact and supports several functions (0.660606ms)
+✔ reduction bodies absorb operations up to the delimiter, with left-associative arithmetic (0.778641ms)
+✔ folds follow binder order, with lexical shadowing and explicit empty identities (0.903074ms)
+✔ max disambiguates two arguments from reduction binders and handles a negative reduction body (1.019235ms)
+✔ affine shape binding follows parameter witnesses and affine subscripts can select a crop (0.891741ms)
+✔ compile-time diagnostics give line and column for syntax, assignment, shape, and bounds failures (1.137982ms)
+✔ single-use inline composes a permuted read under a reduction and preserves signed zero (3.234915ms)
+✔ the generated alternating-sign case rejects an inline that ignores the index permutation (2.181375ms)
+✔ generated half-ULPs distinguish blocked and sequential f32, and generated ones catch a dropped tail (2.066188ms)
+✔ blocked reductions handle empty, singleton, full and partial domains (2.164414ms)
+✔ split can use extra physical visits at the logical case-screening limit (87.710167ms)
+✔ tolerance checks preserve the nonfinite classification and the sign of infinity (2.192614ms)
+✔ an inline after an accepted split keeps its input bits and the original anchor across optimize calls (2.020107ms)
+✔ the public pipeline retains its input when a generated case fails tolerance (1.152515ms)
+✔ inline leaves an otherwise valid singleton read if affine composition cannot be encoded (0.556872ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 259.203741
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/tensor/parse.ts')
+s=p.read_text().replace(\"\"\"      const first = this.expression();
+      const args = op === 'max' || op === 'min' ? [first, (this.expect(','), this.expression())] : [first];
+\"\"\",\"\"\"      const args = [this.expression()];
+      if (op === 'max' || op === 'min') {
+        this.expect(',');
+        args.push(this.expression());
+      }
+\"\"\")
+p.write_text(s)
+p=Path('src/tensor/passes.ts')
+s=p.read_text().replace(\"\"\"    function rewrite(expr: Expression): Expression {
+      if (expr.kind === 'read' && expr.tensor === producer"'!.name) {
+        const indices = new Map(producer!.indices.map((binder, i) => [binder.id, expr.indices[i]]));
+        return substitute(producer!.body, indices);
+      }
+      return mapChildren(expr, rewrite);
+    }
+""","""    const rewrite = (expr: Expression): Expression => {
+      if (expr.kind === '"'read' && expr.tensor === producer.name) {
+        const indices = new Map(producer.indices.map((binder, i) => [binder.id, expr.indices[i]]));
+        return substitute(producer.body, indices);
+      }
+      return mapChildren(expr, rewrite);
+    };
+\"\"\")
+p.write_text(s)
+PY
+npm exec --offline -- prettier --check 'src/tensor/*.ts' 'tests/tensor/*.test.mjs' tests/framework/native-pass-sync.test.mjs && npm run build && node --test tests/tensor/*.test.mjs && node --test tests/framework/*.test.mjs && node --test tests/typed/passes.test.mjs tests/typed/meaning-memo.test.mjs tests/typed/strategies.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 6821ms:
+Checking formatting...
+All matched files use Prettier code style!
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ tests/tensor/corpus.test.mjs (227.568924ms)
+✔ tests/tensor/language.test.mjs (92.281502ms)
+✔ tests/tensor/passes.test.mjs (239.169416ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 251.925455
+✔ tests/framework/conformance.test.mjs (563.956838ms)
+✔ tests/framework/contracts.test.mjs (231.088199ms)
+✔ tests/framework/core-review.test.mjs (139.54932ms)
+✔ tests/framework/core.test.mjs (204.929963ms)
+✔ tests/framework/ext-e1-e2.test.mjs (148.175429ms)
+✔ tests/framework/ext-e3-e6.test.mjs (271.744833ms)
+✔ tests/framework/ext-e4.test.mjs (157.154254ms)
+✔ tests/framework/ext-e5.test.mjs (113.673097ms)
+✔ tests/framework/identity-caches.test.mjs (881.614167ms)
+✔ tests/framework/ir-examples.test.mjs (623.572837ms)
+✔ tests/framework/ir-foundation.test.mjs (195.520231ms)
+✔ tests/framework/ir-review.test.mjs (209.079076ms)
+✔ tests/framework/ir-rewriting.test.mjs (318.693791ms)
+✔ tests/framework/layering.test.mjs (93.89518ms)
+✔ tests/framework/native-pass-sync.test.mjs (113.096896ms)
+✔ tests/framework/pass-policy.test.mjs (158.103547ms)
+✔ tests/framework/run-extensions.test.mjs (79.192286ms)
+✔ tests/framework/strategy.test.mjs (175.109604ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1051.166375
+✔ tests/typed/meaning-memo.test.mjs (305.311907ms)
+✔ tests/typed/passes.test.mjs (929.882908ms)
+✔ tests/typed/strategies.test.mjs (718.575791ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 943.018724
+
+codex
+The final build passed, along with all three tensor test files, all 18 framework test files, and the three selected Typed suites. The tensor run also verified that a near-budget split can use its extra block visits, and that a rejected rewrite leaves the original artifact runnable. I’ll record the results in the diary and commit the implementation.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+ticket=Path('ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes')
+p=ticket/'design-doc/01-tix-stage-1-design.md'
+s=p.read_text().replace(\"Remove the producer. Keep the original expression tree\", \"Remove the producer when the composed affine coefficients fit the IR's safe-integer representation. Leave an unrepresentable substitution alone. Keep the original expression tree\")
+p.write_text(s)
+p=ticket/'index.md'
+s=p.read_text().replace('The design review is complete and Stage 1 implementation is underway.', 'Stage 1 is implemented and verified. The public API is built into "'`dist/tensor/index.js`.'"').replace('The ticket is **active**.', 'The ticket is **complete**.')
+p.write_text(s)
+PY
+cat >> 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' <<'EOF'
+
+## Step 4. Implement and verify Tix and the corpus
+
+Built the parser, checker, native artifact and evaluator under "'`src/tensor/`. The tensor contract and two passes run through the framework entry point from `3802855`. All six corpus programs accepted both pass steps on generated inputs. The reviewed design is recorded in `df5c3ee`.
+
+### What worked
+
+- `npm run build` succeeded with Node `v24.18.0`. An import of `dist/tensor/index.js` confirmed the three required runtime exports. Prettier 3.6.2 checked the new TypeScript and test files.
+- `node --test tests/tensor/*.test.mjs` passed all three files. Running the same files with `--test-isolation=none` reported 21 passing subtests.
+- `node --test tests/framework/*.test.mjs` passed all 18 files. `node --test tests/typed/passes.test.mjs tests/typed/meaning-memo.test.mjs tests/typed/strategies.test.mjs` passed all three files.
+- The generated alternating-sign case detected the wrong transpose inline. The generated ones detected the dropped tail at length six. The generated half-ULP case rejected the correct blocked reduction under exact comparison and accepted it under tolerance.
+- Layernorm sampled with its positive literal epsilon. A separate test exercised NaN and infinity reference handling. A near-cap case confirmed that physical block overhead does not exhaust the logical budget. A cancellation case exercised a public pipeline rejection and continuation on its input revision.
+
+### What needed correction
+
+- The first Tix build reported `TS7006: Parameter '"'term' implicitly has an 'any' type"'` in the IR witness validator and `TS2367` for the parser'"'s EOF comparison after TypeScript narrowed the token. An explicit affine dimension type and token-position termination resolved them. The evaluator also needed its missing "'`children` import.
+- The first language test run expected `1` for f32 `log(exp(1))`. Actual output was `0.9999999403953552` because `exp(1)` rounds first. The test now checks the rounded composition.
+
+### Implementation detail and review entry points
+
+A singleton index can make a source access valid even when composing two valid affine subscripts would overflow the IR'"'s coefficient representation. The inliner skips that substitution and continues with other producers. The design and a regression test record this case.
+
+Start at "'`src/tensor/index.ts` for the API, `src/tensor/meaning.ts` for the checked domain, and `tests/tensor/passes.test.mjs` for the negative witnesses. The framework diff is confined to `src/framework/passes/define-pass.ts`. [Stage 1 design](../design-doc/01-tix-stage-1-design.md)
+EOF
+docmgr task check --ticket IRWB-020-A --id wa1w,73yt,bzsw && docmgr meta update --ticket IRWB-020-A --field Status --value complete && docmgr meta update --doc '"'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md' --field Status --value complete && docmgr meta update --doc 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' --field Status --value complete && docmgr doc relate --doc 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/src/tensor/index.ts:Public compiler, evaluator and optimizer entry points' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/src/tensor/meaning.ts:Deterministic contracts and counterexample evidence' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/tests/tensor/passes.test.mjs:Generated mutation, reduction ordering and budget checks' --file-note '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/tests/framework/native-pass-sync.test.mjs:New synchronous native runner regression coverage' && docmgr changelog update --ticket IRWB-020-A --entry 'Implemented and checked the Tix parser, indexed artifact, evaluators, sampled meaning contract, checked passes, and six corpus programs. The framework change is the synchronous native pass entry point and shared candidate preparation.' && docmgr doctor --ticket IRWB-020-A --stale-after 30 && git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 1448ms:
+Tasks checked: wa1w,73yt,bzsw (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-020-A
+updated Status in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md
+updated Status in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md
+updated Status in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+related 4 file(s) to ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md (added 4, updated 0, removed 0)
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+## Doctor Report (1 findings)
+
+### IRWB-020-A
+
+- ✅ All checks passed
+
+
+exec
+/usr/bin/zsh -lc "git add -- src/tensor tests/tensor corpus/tensor 'ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 197ms:
+exec
+/usr/bin/zsh -lc 'docmgr task list --ticket IRWB-020-A' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+exec
+/usr/bin/zsh -lc "git diff --cached --check && git diff --cached --stat && sed -n '1,75p' dist/tensor/index.d.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 247ms:
+ corpus/tensor/attention/main.tix                   |   9 +
+ corpus/tensor/conv2d/main.tix                      |   5 +
+ corpus/tensor/layernorm/main.tix                   |   8 +
+ corpus/tensor/matmul/main.tix                      |   4 +
+ corpus/tensor/mlp/main.tix                         |   7 +
+ corpus/tensor/softmax/main.tix                     |   7 +
+ src/tensor/check.ts                                | 217 +++++++++++++++
+ src/tensor/evaluate.ts                             | 202 ++++++++++++++
+ src/tensor/index.ts                                |  53 ++++
+ src/tensor/ir.ts                                   | 195 ++++++++++++++
+ src/tensor/meaning.ts                              | 216 +++++++++++++++
+ src/tensor/model.ts                                | 171 ++++++++++++
+ src/tensor/parse.ts                                | 297 +++++++++++++++++++++
+ src/tensor/passes.ts                               | 103 +++++++
+ tests/tensor/corpus.test.mjs                       | 109 ++++++++
+ tests/tensor/language.test.mjs                     | 113 ++++++++
+ tests/tensor/passes.test.mjs                       | 183 +++++++++++++
+ .../changelog.md                                   |   4 +
+ .../design-doc/01-tix-stage-1-design.md            |   6 +-
+ .../index.md                                       |   8 +-
+ .../reference/01-diary.md                          |  37 ++-
+ .../tasks.md                                       |   6 +-
+ 22 files changed, 1947 insertions(+), 13 deletions(-)
+import type { Precision, TensorInput, TensorInputs } from './evaluate.js';
+import type { TixProgram } from './model.js';
+export type { TixProgram } from './model.js';
+export declare function compileTix(source: string): TixProgram;
+export declare function runTix(program: TixProgram, fn: string, inputs: TensorInputs, options?: {
+    precision?: Precision;
+}): TensorInput;
+export declare function optimizeTix(program: TixProgram, passes: string[]): {
+    program: TixProgram;
+    steps: {
+        pass: string;
+        accepted: boolean;
+    }[];
+};
+
+ succeeded in 429ms:
+[giu2] [x] Write the Stage 1 design and start the diary
+[zkek] [x] Review the Stage 1 design
+[wa1w] [x] Implement Tix checking, the v6 artifact, and both evaluator modes
+[73yt] [x] Implement the synchronous native pass path, meaning contract, and checked passes
+[bzsw] [x] Add the six tensor programs, negative witnesses, and regression coverage
+
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-020-A: Implement Tix and verify checked tensor passes'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 205ms:
+[t1-sh/irwb-020-a d25be76] IRWB-020-A: Implement Tix and verify checked tensor passes
+ 22 files changed, 1947 insertions(+), 13 deletions(-)
+ create mode 100644 corpus/tensor/attention/main.tix
+ create mode 100644 corpus/tensor/conv2d/main.tix
+ create mode 100644 corpus/tensor/layernorm/main.tix
+ create mode 100644 corpus/tensor/matmul/main.tix
+ create mode 100644 corpus/tensor/mlp/main.tix
+ create mode 100644 corpus/tensor/softmax/main.tix
+ create mode 100644 src/tensor/check.ts
+ create mode 100644 src/tensor/evaluate.ts
+ create mode 100644 src/tensor/index.ts
+ create mode 100644 src/tensor/ir.ts
+ create mode 100644 src/tensor/meaning.ts
+ create mode 100644 src/tensor/model.ts
+ create mode 100644 src/tensor/parse.ts
+ create mode 100644 src/tensor/passes.ts
+ create mode 100644 tests/tensor/corpus.test.mjs
+ create mode 100644 tests/tensor/language.test.mjs
+ create mode 100644 tests/tensor/passes.test.mjs
+
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -3 --format='%h %s' && git diff --name-only 13a833f..HEAD -- src/framework src/typed tools corpus/projects" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a
+ succeeded in 233ms:
+## t1-sh/irwb-020-a
+d25be76 IRWB-020-A: Implement Tix and verify checked tensor passes
+3802855 IRWB-020-A: Add checked synchronous native pass application
+df5c3ee IRWB-020-A: Revise the Tix design after review
+src/framework/passes/define-pass.ts
+
+codex
+Implemented IRWB-020-A Stage 1. [src/tensor](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/src/tensor) contains the Tix parser and checker, v6 IR, f32 and f64 evaluators, and checked `inline` and `split-sum` passes. The build exports `compileTix`, `runTix`, and `optimizeTix` from `dist/tensor/index.js`. The [corpus](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/corpus/tensor) contains all six requested programs.
+
+Production-generated cases reject both deliberately wrong rewrites. The half-ULP case rejects the correct `split-sum` under exact comparison and accepts it against the original f64 result.
+
+The only framework file changed was [define-pass.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/src/framework/passes/define-pass.ts). It adds `applyNativePassSync` and shares native candidate validation, diffs, correspondence, and write checks with `applyPass`. The synchronous path can check a candidate without opening a graph edit.
+
+**Verification**
+
+- `npm run build` passed.
+- `node --test tests/tensor/*.test.mjs` passed all three files. A rerun with `--test-isolation=none` reported 21 passing subtests.
+- `node --test tests/framework/*.test.mjs` passed all 18 files.
+- `node --test tests/typed/passes.test.mjs tests/typed/meaning-memo.test.mjs tests/typed/strategies.test.mjs` passed all three files.
+- `docmgr doctor --ticket IRWB-020-A` passed.
+
+One implementation detail added after review is that `inline` skips a substitution if the composed affine coefficients exceed the IR’s safe-integer range. The [revised design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md) and [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md) record the case.
+
+Commits are `df5c3ee` for the revised design, `3802855` for the framework change, and `d25be76` for the Tix implementation and verification. The worktree is clean.
+tokens used
+240,425
+Implemented IRWB-020-A Stage 1. [src/tensor](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/src/tensor) contains the Tix parser and checker, v6 IR, f32 and f64 evaluators, and checked `inline` and `split-sum` passes. The build exports `compileTix`, `runTix`, and `optimizeTix` from `dist/tensor/index.js`. The [corpus](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/corpus/tensor) contains all six requested programs.
+
+Production-generated cases reject both deliberately wrong rewrites. The half-ULP case rejects the correct `split-sum` under exact comparison and accepts it against the original f64 result.
+
+The only framework file changed was [define-pass.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/src/framework/passes/define-pass.ts). It adds `applyNativePassSync` and shares native candidate validation, diffs, correspondence, and write checks with `applyPass`. The synchronous path can check a candidate without opening a graph edit.
+
+**Verification**
+
+- `npm run build` passed.
+- `node --test tests/tensor/*.test.mjs` passed all three files. A rerun with `--test-isolation=none` reported 21 passing subtests.
+- `node --test tests/framework/*.test.mjs` passed all 18 files.
+- `node --test tests/typed/passes.test.mjs tests/typed/meaning-memo.test.mjs tests/typed/strategies.test.mjs` passed all three files.
+- `docmgr doctor --ticket IRWB-020-A` passed.
+
+One implementation detail added after review is that `inline` skips a substitution if the composed affine coefficients exceed the IR’s safe-integer range. The [revised design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md) and [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sh-irwb-020-a/ttmp/2026/11/26/IRWB-020-A--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md) record the case.
+
+Commits are `df5c3ee` for the revised design, `3802855` for the framework change, and `d25be76` for the Tix implementation and verification. The worktree is clean.

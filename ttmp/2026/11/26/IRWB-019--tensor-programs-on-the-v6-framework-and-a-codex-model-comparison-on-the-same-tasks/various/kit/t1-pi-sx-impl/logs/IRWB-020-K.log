@@ -2,3 +2,21 @@ Warning: No models match pattern "lunaroute/glm-5.3"
 Warning: No models match pattern "lunaroute/glm-5.3-flash"
 Warning: No models match pattern "lunaroute/deepseek-4.1-flash"
 Warning: No models match pattern "lunaroute/deepseek-4.1-flash-background"
+**IRWB-020-K stage 1 is complete.** [Ticket](ttmp/2026/11/26/IRWB-020-K--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/index.md) · [Revised design](ttmp/2026/11/26/IRWB-020-K--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/design-doc/01-tix-stage-1-design.md) · [Diary](ttmp/2026/11/26/IRWB-020-K--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/reference/01-diary.md)
+
+- `src/tensor/` implements Tix parsing and checking, the v6 tensor IR, f32 and f64 evaluation, and the checked `inline` and `split-sum` passes. The build exports exactly `compileTix`, `runTix`, and `optimizeTix`.
+- `corpus/tensor/` contains matmul, max-shifted softmax, layernorm, single-head attention, tanh-GELU MLP, and NCHW conv2d. `tests/tensor/` checks all six against independent formulas.
+- The nine-element witness produced `0x3f900000` before `split-sum` and `0x3f900002` after it. Exact rejected the candidate; tolerance accepted it. Both deliberately wrong rewrites reached the real gate and were rejected.
+
+**Framework change:** `src/framework/passes/define-pass.ts` adds a native-only mode so read-only adapters need no edit draft, and `applyNativePassSync` so `optimizeTix` can check candidates synchronously. Both paths share candidate validation, diffing, correspondence, and write checks. No contract-layer changes were needed.
+
+**Refinement to the revised design:** `inline` skips substitutions whose composed affine access cannot be represented or proven in bounds. The attention corpus uses `sqrt(max(D,1))` to keep zero-width heads finite.
+
+| Check | Result |
+|---|---:|
+| `npm run build` | Passed |
+| `node --test tests/tensor/*.test.mjs` | 21 passed |
+| `node --test tests/framework/*.test.mjs` | 228 passed |
+| `node --test tests/typed/{passes,evaluate-analyses,audit,strategies}.test.mjs` | 21 passed |
+
+**Commits:** `dcf0145` revised design; `3b538e2` framework hooks; `24f830a` Tix implementation, corpus, and tests. Worktree is clean; nothing was pushed.

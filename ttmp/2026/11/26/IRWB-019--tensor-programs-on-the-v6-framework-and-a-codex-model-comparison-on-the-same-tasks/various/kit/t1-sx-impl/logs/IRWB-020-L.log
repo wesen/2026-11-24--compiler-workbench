@@ -3464,3 +3464,498 @@ v24.18.0
 ℹ todo 0
 ℹ duration_ms 2275.687991
 
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'NODE'
+import {compileTix, optimizeTix} from './dist/tensor/index.js';
+const program = compileTix("'`
+fn proof(x: f32[2*A-2*B+1], a: f32[A], b: f32[B], v: f32[A-B]): f32[1] {
+ t[i]: f32[A-B+1] = x[2*i];
+ y[j]: f32[1] = t[0];
+ return y;
+}`);
+console.log(optimizeTix(program,['"'inline']).steps);
+NODE" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ exited 1 in 283ms:
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/tensor/model.js:2
+    throw new Error(`${at.line}:${at.col}: ${message}`);
+          ^
+
+Error: 3:21: Cannot prove index 1 of 'x' is in bounds
+    at fail (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/tensor/model.js:2:11)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/tensor/ir.js:77:13
+    at Array.forEach (<anonymous>)
+    at validateRead (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/tensor/ir.js:61:17)
+    at validateExpr (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/tensor/ir.js:117:17)
+    at validateFunction (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/tensor/ir.js:145:9)
+    at Object.validate (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/tensor/ir.js:158:9)
+    at validateOnce (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/framework/core/data.js:267:30)
+    at createIRArtifact (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/framework/ir/adapters.js:122:9)
+    at prepareNative (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/dist/framework/passes/define-pass.js:67:19)
+
+Node.js v24.18.0
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('src/tensor/ir.ts')
+s = p.read_text().replace('  fail,\\n', '').replace('expressions, fail, sameAffine', 'expressions, sameAffine')
+idx = s.index('function validateRead(')
+s = s[:idx]+'''export class UnprovedAccess extends Error {
+  constructor(read: Read, axis: number) {
+    super("'`${read.at.line}:${read.at.col}: Cannot prove index ${axis + 1} of '"'"'${read.tensor}'"' is in bounds"'`);
+  }
+}
+
+'"'''+s[idx:]
+s = s.replace(\"fail(read.at, "'`Cannot prove index ${axis + 1} of '"'"'${read.tensor}'"' is in bounds"'`);", "throw new UnprovedAccess(read, axis);")
+s = s.replace('"'function validateFunction(fn: TensorFunction)', 'export function validateFunction(fn: TensorFunction)')
+p.write_text(s)
+p = Path('src/tensor/passes.ts')
+s = p.read_text().replace(\"import { TensorType, tensorAdapter } from './ir.js';\", \"import { TensorType, tensorAdapter, UnprovedAccess, validateFunction } from './ir.js';\")
+s = s.replace(\"import type { Expr, Statement }\", \"import type { Expr, Statement, TensorFunction }\")
+s = s.replace(\"function inlineStatements(input: readonly Statement[], result: string): Statement[] | undefined {\\n  const statements = [...input];\", \"function inlineStatements(fn: TensorFunction): Statement[] | undefined {\\n  let statements = [...fn.statements];\")
+s = s.replace('result === producer.name', 'fn.result === producer.name')
+s = s.replace('''    statements[statements.indexOf(consumer)] = { ...consumer, body };
+    statements.splice(i, 1);
+    changed = true;''','''    const candidate = [...statements];
+    candidate[statements.indexOf(consumer)] = { ...consumer, body };
+    candidate.splice(i, 1);
+    try {
+      validateFunction({ ...fn, statements: candidate });
+    } catch (error) {
+      if ("'!(error instanceof UnprovedAccess)) throw error;
+      i++;
+      continue;
+    }
+    statements = candidate;
+    changed = true;'"''')
+s = s.replace('inlineStatements(fn.statements, fn.result)', 'inlineStatements(fn)')
+p.write_text(s)
+PY
+cat >> tests/tensor/passes.test.mjs <<'EOF'
+
+test('inline retains the materialized producer if source bounds cannot prove the composed read', () => {
+  const program = compileTix("'`
+    fn proof(x: f32[2*A-2*B+1], a: f32[A], b: f32[B], v: f32[A-B]): f32[1] {
+      t[i]: f32[A-B+1] = x[2*i];
+      y[j]: f32[1] = t[0];
+      return y;
+    }
+  `);
+  assert.equal(optimizeTix(program, ['"'inline']).program, program);
+  const tensor = data => ({ shape: [data.length], data: Float32Array.from(data) });
+  assert.deepEqual([...runTix(program, 'proof', {
+    x: tensor([2, 9, 5]), a: tensor([0, 0]), b: tensor([0]), v: tensor([0]),
+  }).data], [2]);
+});
+EOF
+npm exec --offline -- prettier --write src/tensor/{ir,passes}.ts tests/tensor/passes.test.mjs && npm run build && node --test tests/tensor/*.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 8711ms:
+src/tensor/ir.ts 108ms (unchanged)
+src/tensor/passes.ts 22ms (unchanged)
+tests/tensor/passes.test.mjs 54ms
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ tests/tensor/corpus.test.mjs (305.707405ms)
+✔ tests/tensor/language.test.mjs (172.051971ms)
+✔ tests/tensor/passes.test.mjs (193.50484ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 321.475992
+
+exec
+/usr/bin/zsh -lc "cat >> 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' <<'EOF'
+
+## Step 3 — Add the synchronous native pass runner
+
+The new framework entry point takes the existing "'`definePass` object and reuses native candidate preparation, correspondence and declared-write checks from `applyPass`. It accepts a synchronous check and exposes its decision as pass evidence. It can open a read-only adapter because it does not start an edit.
+
+### Prompt context
+
+**User prompt (verbatim)**
+
+> A reviewer has read your design for IRWB-020-L. The review:
+>
+> # Review of your design
+>
+> ## Must change
+>
+> 1. **The wrong variants are artifact edits, not pass variants.** The design says "Change an inlined addition to subtraction while keeping the artifact valid" and "Mutate a blocked sum with a fixed extent of seven to stop at four". The brief requires that the contract reject a deliberately wrong *variant of each pass*. Define each wrong variant as a kernel, run it through `applyNativePassSync`, and check it on the contract'"'s generated cases, not as a hand-mutated artifact.
+> 2. **Scope.** \""'`tests/framework/ext-e3-e6.test.mjs` | Check that a read-only projection supports the new native path…". The brief allows edits to existing framework tests only where the framework change requires them. Put the new tests in a new file.
+> 3. **Which program is the reference across calls.** The design says "`TixProgram` is a v6 `Artifact<TensorIR>`" and "`split-sum` always compares to the pipeline origin'"'s flat f64 evaluation\". On a second "'`optimizeTix` call, the pipeline origin may already be split, so its f64 run is no longer flat. State which program is the tolerance reference, and where it is kept.
+>
+> ## Cut
+>
+> 1. "check that the affine input axes determine every shape name uniquely by rank over the rationals". No corpus program needs this solver.
+> 2. "Discharge remaining shape-dependent access and extent conditions when actual shapes are bound, before indexing". This is a call-time error contract beyond compile errors with `line:col`.
+>
+> ## Framework changes
+>
+> - **`applyNativePassSync` sharing candidate creation, diff, correspondence and write checks with `applyPass`:** needed, because the fixed `optimizeTix` is synchronous and `applyPass` is async. It is minimal, and correctly placed in `define-pass.ts`. The design does not say whether it takes a `definePass` `Pass`. It should, so that pass metadata is not declared a second time.
+> - No missed change. Your probe correctly found the `beginEdit` capability error, and the sync path avoids it.
+>
+> ## Keep
+>
+> - Matching nonfinite references by NaN or signed infinity, instead of failing them. This keeps zero and signed-zero inputs usable.
+> - The 2⁻²⁵ witness, which separates the two orders (`0x3f800000` against `0x3f800001`, verified).
+> - One origin-derived suite per call.
+>
+> Now do the following in this session:
+> 1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+> 2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-020-L:`, and keep the diary at each significant step.
+> 3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+> 4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+
+### Decisions and evidence
+
+- The review revision is `afa7ca0`. The synchronous path uses the existing registered pass with empty analysis records and an unavailable edit capability. It validates the artifact under the adapter and declared IR type, checks declared writes before the gate, and returns the candidate after acceptance.
+- `npm run build` passed. `node --test tests/framework/native-pass-sync.test.mjs tests/framework/ext-e3-e6.test.mjs` passed both files. The new tests cover a read-only adapter, change and correspondence evidence, undeclared writes, rejected evidence and misuse of the synchronous API.
+- `node --test tests/framework/*.test.mjs` passed all 18 files. `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` passed both existing Typed files, including native, edit and strategy call paths.
+- The tensor implementation initially failed `npm run build` with `src/tensor/ir.ts(141,41): error TS7006: Parameter '"'binder' implicitly has an 'any' type."'` The `Array.isArray` check had widened the item type when iterating the readonly statements. I retained the explicitly typed statement list and the build passed.
+EOF
+git diff --check && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 249ms:
+ M src/framework/passes/define-pass.ts
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+?? corpus/tensor/
+?? src/tensor/
+?? tests/framework/native-pass-sync.test.mjs
+?? tests/tensor/
+
+exec
+/usr/bin/zsh -lc "git add -- src/framework/passes/define-pass.ts tests/framework/native-pass-sync.test.mjs 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' && git diff --cached --check && git commit -m 'IRWB-020-L: Add synchronous native pass application'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -2 --format='%h %s' && wc -l src/tensor/*.ts tests/tensor/*.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 258ms:
+## t1-sx/irwb-020-l
+ M src/framework/passes/define-pass.ts
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+?? corpus/tensor/
+?? src/tensor/
+?? tests/framework/native-pass-sync.test.mjs
+?? tests/tensor/
+afa7ca0 IRWB-020-L: Revise Tix design after review
+07b209d IRWB-020-L: Design Tix tensor IR and checked passes
+  142 src/tensor/check.ts
+  182 src/tensor/evaluate.ts
+   54 src/tensor/index.ts
+  284 src/tensor/ir.ts
+  193 src/tensor/meaning.ts
+  145 src/tensor/model.ts
+  258 src/tensor/parse.ts
+  131 src/tensor/passes.ts
+  167 tests/tensor/corpus.test.mjs
+  172 tests/tensor/language.test.mjs
+  243 tests/tensor/passes.test.mjs
+ 1971 total
+
+codex
+The tensor, framework, and relevant Typed tests passed. I also found a valid affine program whose inlined read exceeded the compiler’s conservative bounds proof. `inline` now leaves that producer materialized, and a regression test covers the case.
+exec
+/usr/bin/zsh -lc "python3 - 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes' <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1]) / 'design-doc/01-stage-1-design-for-tix-tensor-programs.md'
+s = p.read_text()
+s = s.replace('Concrete tensor extents must fit the same range.', 'Concrete tensor extents must fit the same range and materialized tensors must fit typed-array storage.')
+s = s.replace('Use stable binder IDs to preserve scope if the consumer read is inside a reduction. Repeat for newly exposed single uses so a chain can collapse in one invocation.', 'Use stable binder IDs to preserve scope if the consumer read is inside a reduction. Recheck composed affine bounds and retain the producer when the checker cannot prove the composed read. Repeat for newly exposed single uses so a chain can collapse in one invocation.')
+s = s.replace('sparse values including signed zero and small positive terms. For the sparse rounding case, cycle the flat sequence "'`[1, 0, 0, 0, 2''^-25, 2''^-25, 2''^-25, 2''^-25]`.'"', 'sparse values including signed zero and small positive terms. For the sparse rounding case, cycle the flat sequence "'`[1, -0, 0, 0, 2''^-25, 2''^-25, 2''^-25, 2''^-25]`.'"')
+p.write_text(s)
+PY
+git diff --check && npm exec --offline -- prettier --check 'src/tensor/*.ts' 'tests/tensor/*.test.mjs' tests/framework/native-pass-sync.test.mjs src/framework/passes/define-pass.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 1027ms:
+Checking formatting...
+All matched files use Prettier code style!
+
+exec
+/usr/bin/zsh -lc 'node tests/tensor/corpus.test.mjs && node tests/tensor/passes.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 468ms:
+✔ rectangular matmul agrees with a direct contraction (18.293524ms)
+✔ max-shifted softmax handles large logits and normalizes each row (6.833797ms)
+✔ layernorm applies epsilon, gamma and beta to constant and varying rows (6.419112ms)
+✔ single-head attention agrees with independently computed weights and values (29.258278ms)
+✔ MLP agrees with bias, tanh-GELU and the second affine layer (30.890356ms)
+✔ NCHW conv2d handles asymmetric input extents and multiple channels (5.080225ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.772021
+✔ the real split-sum kernel fails the exact gate and passes the origin f64 tolerance gate (10.259253ms)
+✔ inline composes affine coordinates and preserves f32 words, including signed zero (6.004959ms)
+✔ both orders work and every optimization call preserves the flat f64 origin (6.140107ms)
+✔ a public tolerance rejection retains the current revision and the pipeline continues (2.710355ms)
+✔ the tolerance gate compares NaN and signed infinity and leaves multi-index sums flat (2.710434ms)
+✔ the exact gate rejects a deliberately wrong inline kernel on generated calls (2.171582ms)
+✔ the f64 tolerance gate rejects a deliberately wrong split kernel that drops the tail (1.008086ms)
+✔ no covered sample means a changed candidate is rejected, while a multi-use producer is left alone (1.450287ms)
+✔ inline retains the materialized producer if source bounds cannot prove the composed read (1.101509ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 38.639964
+
+ exited 1:
+2026-11-26T19:51:22.869903Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"The automatic permission approval review did not finish before its deadline. Do not assume the action is unsafe based on the timeout alone. You may retry once, or ask the user for guidance or explicit approval.\")" }
+exec
+/usr/bin/zsh -lc "git add -- src/framework/passes/define-pass.ts tests/framework/native-pass-sync.test.mjs 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' && git diff --cached --check && git commit -m 'IRWB-020-L: Add synchronous native pass application'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 263ms:
+[t1-sx/irwb-020-l 6ba6c1a] IRWB-020-L: Add synchronous native pass application
+ 3 files changed, 257 insertions(+), 45 deletions(-)
+ create mode 100644 tests/framework/native-pass-sync.test.mjs
+
+exec
+/usr/bin/zsh -lc "ticket_dir='ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes'
+python3 - \""'$ticket_dir/index.md" <<'"'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+s = p.read_text().replace('The design is ready for review. Implementation follows the review.', 'The reviewed Stage 1 implementation exports the synchronous Tix API from "'`dist/tensor/index.js` after the build. The six corpus programs live under `corpus/tensor/`. The diary records the generated-case contract checks and the framework and Typed regressions.'"')
+p.write_text(s)
+PY
+worktree=\""'$(pwd)"
+docmgr doc relate --doc "$ticket_dir/design-doc/01-stage-1-design-for-tix-tensor-programs.md" --file-note "$worktree/src/tensor/index.ts:Public Tix API and persistent origin artifact"
+git diff --check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 662ms:
+related 1 file(s) to ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-tix-tensor-programs.md (added 1, updated 0, removed 0)
+
+exec
+/usr/bin/zsh -lc "cat >> 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md' <<'EOF'
+
+## Step 4 — Implement and verify the tensor domain
+
+"'`src/tensor/` now compiles Tix to immutable v6 artifacts, evaluates f32 and f64, and applies `inline` and `split-sum` through the checked native runner. The program keeps the flat source artifact for all later tolerance checks. Each optimization call generates a single suite from it. All six programs in `corpus/tensor/` compile and run in both precisions.
+
+### Decisions and evidence
+
+- Framework checkpoint `6ba6c1a` contains the sole framework source change and its new test file. Its first local commit request met the diagnostic “The automatic permission approval review did not finish before its deadline.” The authorized retry succeeded.
+- The production split kernel is rejected by the exact comparison on the sparse case and accepted by tolerance against the flat f64 reference. The test-only `definePass` kernels execute through `applyNativePassSync` on the generated suite. The wrong inline flips addition to subtraction. The wrong split drops the final three elements of a length-seven sum and is rejected with an expected value of seven and an observed value of four.
+- A cross-call test uses a second, f64-sensitive input with four `2''^-54` terms. The blocked f64 evaluation differs from the flat f64 evaluation. The original artifact is still retained after both pass orders and after a second call.
+- A targeted `node --input-type=module` probe using the `proof` fixture in `tests/tensor/passes.test.mjs` exposed a valid original program for which a composed affine read failed with `3:21: Cannot prove index 1 of '"'x' is in bounds"'`. Inline now retains that producer when the conservative proof cannot establish the composed access. Only the explicit bounds-proof failure is treated as inapplicability. The regression checks the normal public optimization entry and evaluation.
+- `npm run build` and `node --test tests/tensor/*.test.mjs` passed. The three tensor files exercise 23 tests, including independent corpus references, rounding, affine diagnostics, both wrong kernels, rejection and continuation, and source reference lifetime. `node --test tests/framework/*.test.mjs` passed 18 files, and `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` passed both files.
+- Prettier checked the added TypeScript and tests and the changed framework pass file. Ticket validation and staged whitespace checks are part of the implementation checkpoint.
+EOF
+docmgr task check --ticket IRWB-020-L --id diun && docmgr meta update --ticket IRWB-020-L --field Status --value complete && docmgr meta update --ticket IRWB-020-L --doc-type design-doc --field Status --value complete && docmgr changelog update --ticket IRWB-020-L --entry '"'Implemented the synchronous framework runner and Tix Stage 1. Verified both wrong pass kernels, the persistent flat reference, the six corpus programs, and the framework and Typed regressions.' && docmgr doctor --ticket IRWB-020-L --stale-after 30" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 1191ms:
+Task checked: diun (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-020-L
+updated Status in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md
+updated Status in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-tix-tensor-programs.md
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+## Doctor Report (1 findings)
+
+### IRWB-020-L
+
+- ✅ All checks passed
+
+
+exec
+/usr/bin/zsh -lc 'npm run build && git diff --check && git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 3819ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+## t1-sx/irwb-020-l
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/changelog.md
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-tix-tensor-programs.md
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md
+ M ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/tasks.md
+?? corpus/tensor/
+?? src/tensor/
+?? tests/tensor/
+
+exec
+/usr/bin/zsh -lc 'node --test tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc 'node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+exec
+/usr/bin/zsh -lc 'node --test tests/framework/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 982ms:
+✔ tests/tensor/corpus.test.mjs (640.857026ms)
+✔ tests/tensor/language.test.mjs (191.952245ms)
+✔ tests/tensor/passes.test.mjs (252.693077ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 649.359445
+
+ succeeded in 1627ms:
+✔ tests/framework/conformance.test.mjs (767.503124ms)
+✔ tests/framework/contracts.test.mjs (348.503117ms)
+✔ tests/framework/core-review.test.mjs (251.34821ms)
+✔ tests/framework/core.test.mjs (196.270536ms)
+✔ tests/framework/ext-e1-e2.test.mjs (251.006883ms)
+✔ tests/framework/ext-e3-e6.test.mjs (299.964297ms)
+✔ tests/framework/ext-e4.test.mjs (241.538755ms)
+✔ tests/framework/ext-e5.test.mjs (152.634843ms)
+✔ tests/framework/identity-caches.test.mjs (1038.501712ms)
+✔ tests/framework/ir-examples.test.mjs (851.744431ms)
+✔ tests/framework/ir-foundation.test.mjs (263.520114ms)
+✔ tests/framework/ir-review.test.mjs (270.29304ms)
+✔ tests/framework/ir-rewriting.test.mjs (330.719018ms)
+✔ tests/framework/layering.test.mjs (112.529055ms)
+✔ tests/framework/native-pass-sync.test.mjs (127.351877ms)
+✔ tests/framework/pass-policy.test.mjs (180.290492ms)
+✔ tests/framework/run-extensions.test.mjs (95.329868ms)
+✔ tests/framework/strategy.test.mjs (238.717817ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1321.329135
+
+ succeeded in 1871ms:
+✔ tests/typed/passes.test.mjs (1561.550609ms)
+✔ tests/typed/strategies.test.mjs (1309.574906ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1568.789147
+
+exec
+/usr/bin/zsh -lc "rg -n '"'^export function (applyNativePassSync|compileTix|runTix|optimizeTix)'"' src/framework/passes/define-pass.ts src/tensor/index.ts && rg --files src/tensor tests/tensor corpus/tensor" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 232ms:
+src/tensor/index.ts:17:export function compileTix(source: string): TixProgram {
+src/tensor/index.ts:22:export function runTix(
+src/tensor/index.ts:33:export function optimizeTix(
+src/framework/passes/define-pass.ts:234:export function applyNativePassSync<S, N extends Needs, P>(
+corpus/tensor/matmul/main.tix
+corpus/tensor/attention/main.tix
+corpus/tensor/layernorm/main.tix
+corpus/tensor/mlp/main.tix
+src/tensor/parse.ts
+src/tensor/meaning.ts
+src/tensor/ir.ts
+src/tensor/index.ts
+src/tensor/model.ts
+src/tensor/passes.ts
+src/tensor/evaluate.ts
+src/tensor/check.ts
+corpus/tensor/conv2d/main.tix
+corpus/tensor/softmax/main.tix
+tests/tensor/corpus.test.mjs
+tests/tensor/language.test.mjs
+tests/tensor/passes.test.mjs
+
+exec
+/usr/bin/zsh -lc "git add -- src/tensor tests/tensor corpus/tensor 'ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes' && git diff --cached --check && git diff --cached --stat && git commit -m 'IRWB-020-L: Implement Tix and verify checked tensor passes'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 224ms:
+ corpus/tensor/attention/main.tix                   |   9 +
+ corpus/tensor/conv2d/main.tix                      |   4 +
+ corpus/tensor/layernorm/main.tix                   |   7 +
+ corpus/tensor/matmul/main.tix                      |   4 +
+ corpus/tensor/mlp/main.tix                         |   6 +
+ corpus/tensor/softmax/main.tix                     |   7 +
+ src/tensor/check.ts                                | 142 +++++++++++
+ src/tensor/evaluate.ts                             | 182 +++++++++++++
+ src/tensor/index.ts                                |  54 ++++
+ src/tensor/ir.ts                                   | 284 +++++++++++++++++++++
+ src/tensor/meaning.ts                              | 193 ++++++++++++++
+ src/tensor/model.ts                                | 145 +++++++++++
+ src/tensor/parse.ts                                | 258 +++++++++++++++++++
+ src/tensor/passes.ts                               | 131 ++++++++++
+ tests/tensor/corpus.test.mjs                       | 167 ++++++++++++
+ tests/tensor/language.test.mjs                     | 172 +++++++++++++
+ tests/tensor/passes.test.mjs                       | 243 ++++++++++++++++++
+ .../changelog.md                                   |   4 +
+ .../01-stage-1-design-for-tix-tensor-programs.md   |  12 +-
+ .../index.md                                       |   6 +-
+ .../reference/01-diary.md                          |  13 +
+ .../tasks.md                                       |   2 +-
+ 22 files changed, 2036 insertions(+), 9 deletions(-)
+[t1-sx/irwb-020-l 1c217ab] IRWB-020-L: Implement Tix and verify checked tensor passes
+ 22 files changed, 2036 insertions(+), 9 deletions(-)
+ create mode 100644 corpus/tensor/attention/main.tix
+ create mode 100644 corpus/tensor/conv2d/main.tix
+ create mode 100644 corpus/tensor/layernorm/main.tix
+ create mode 100644 corpus/tensor/matmul/main.tix
+ create mode 100644 corpus/tensor/mlp/main.tix
+ create mode 100644 corpus/tensor/softmax/main.tix
+ create mode 100644 src/tensor/check.ts
+ create mode 100644 src/tensor/evaluate.ts
+ create mode 100644 src/tensor/index.ts
+ create mode 100644 src/tensor/ir.ts
+ create mode 100644 src/tensor/meaning.ts
+ create mode 100644 src/tensor/model.ts
+ create mode 100644 src/tensor/parse.ts
+ create mode 100644 src/tensor/passes.ts
+ create mode 100644 tests/tensor/corpus.test.mjs
+ create mode 100644 tests/tensor/language.test.mjs
+ create mode 100644 tests/tensor/passes.test.mjs
+
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -3 --format='%H %s' && git diff --check 07b209d..HEAD && docmgr doctor --ticket IRWB-020-L --stale-after 30" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l
+ succeeded in 435ms:
+## t1-sx/irwb-020-l
+1c217ab807b59ab23dc16ddd37ec18aec44567ca IRWB-020-L: Implement Tix and verify checked tensor passes
+6ba6c1ac31eeaa01628d599cf5a3f13df4a6bbf6 IRWB-020-L: Add synchronous native pass application
+afa7ca068e4018d6f06d8f024a40e7fffbf10e69 IRWB-020-L: Revise Tix design after review
+## Doctor Report (1 findings)
+
+### IRWB-020-L
+
+- ✅ All checks passed
+
+
+codex
+Implemented Tix Stage 1. The synchronous `compileTix`, `runTix`, and `optimizeTix` API builds to `dist/tensor/index.js`. It includes a checked tensor IR, f32 and f64 evaluators, and two checked passes. The original flat artifact remains the f64 reference across optimization calls. [API source](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/src/tensor/index.ts) · [Corpus](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/corpus/tensor) · [Revised design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-tix-tensor-programs.md)
+
+**Framework change.** `define-pass.ts` adds `applyNativePassSync` for existing `definePass` registrations. It supports read-only IR projections and shares candidate creation, diffing, correspondence, and write checks with `applyPass`. [Framework change](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/src/framework/passes/define-pass.ts:234) · [New framework tests](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/tests/framework/native-pass-sync.test.mjs)
+
+**Verification passed.**
+
+- `npm run build`
+- `node --test tests/tensor/*.test.mjs` — 23 tests across 3 files, including all six corpus programs.
+- `node --test tests/framework/*.test.mjs` — 18 files.
+- `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` — 2 files.
+
+The exact gate rejected the production `split-sum` on the rounding witness, and the f64 tolerance gate accepted it. Both deliberately wrong kernels were rejected on generated cases. [Pass tests](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/tests/tensor/passes.test.mjs)
+
+**Design adjustment.** `inline` retains a producer when the compiler cannot prove the composed affine access is in bounds. A regression test covers this case.
+
+**Commits.** `afa7ca0` revised the design, `6ba6c1a` added the framework runner, and `1c217ab` implemented and verified Tix. The worktree is clean.
+tokens used
+221,559
+Implemented Tix Stage 1. The synchronous `compileTix`, `runTix`, and `optimizeTix` API builds to `dist/tensor/index.js`. It includes a checked tensor IR, f32 and f64 evaluators, and two checked passes. The original flat artifact remains the f64 reference across optimization calls. [API source](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/src/tensor/index.ts) · [Corpus](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/corpus/tensor) · [Revised design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/ttmp/2026/11/26/IRWB-020-L--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-for-tix-tensor-programs.md)
+
+**Framework change.** `define-pass.ts` adds `applyNativePassSync` for existing `definePass` registrations. It supports read-only IR projections and shares candidate creation, diffing, correspondence, and write checks with `applyPass`. [Framework change](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/src/framework/passes/define-pass.ts:234) · [New framework tests](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/tests/framework/native-pass-sync.test.mjs)
+
+**Verification passed.**
+
+- `npm run build`
+- `node --test tests/tensor/*.test.mjs` — 23 tests across 3 files, including all six corpus programs.
+- `node --test tests/framework/*.test.mjs` — 18 files.
+- `node --test tests/typed/passes.test.mjs tests/typed/strategies.test.mjs` — 2 files.
+
+The exact gate rejected the production `split-sum` on the rounding witness, and the f64 tolerance gate accepted it. Both deliberately wrong kernels were rejected on generated cases. [Pass tests](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-sx-irwb-020-l/tests/tensor/passes.test.mjs)
+
+**Design adjustment.** `inline` retains a producer when the compiler cannot prove the composed affine access is in bounds. A regression test covers this case.
+
+**Commits.** `afa7ca0` revised the design, `6ba6c1a` added the framework runner, and `1c217ab` implemented and verified Tix. The worktree is clean.
