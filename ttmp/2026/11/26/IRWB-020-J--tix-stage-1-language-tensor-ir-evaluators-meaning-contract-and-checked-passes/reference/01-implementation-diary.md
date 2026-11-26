@@ -170,3 +170,7 @@ affected Typed tests are deferred to implementation. `docmgr doctor --ticket IRW
 ## Step 2: Apply review before implementing
 
 Accepted all review items. Positive profiles now depend on the declared singleton type, not a parameter name. Origin admission and candidate work bounds are separate. Bitwise equality on the same calls is transitive, so inline needs no history flag. Dropped equation solving and error measurement. No new framework capability beyond the reviewed sync gate. Review the sample-domain and composition sections first. `npm ci --offline --no-audit --no-fund` installed six packages. Next: build and exercise the reviewed design.
+
+## Step 3: Exercise private prepared edits
+
+Implemented the reviewed synchronous differential-only entry point and package export. It checks the supported clauses and artifact ports before running the body, checks write kinds before meaning, and disposes of its private draft. A lab expression edit produced the same revision, correspondence and sampled evidence under the sync runner and AnalysisManager. `node --test tests/framework/sampled-sync.test.mjs`: 2 passed; `npm run build`: passed. No changes to the async runner or contracts. Design revision: `7f77e8c`.
