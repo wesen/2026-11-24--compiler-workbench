@@ -20,3 +20,11 @@ Revised the design after review to use framework differential batching and evide
 ## 2026-11-26
 
 Implemented the checked CUDA backend and isolated remote binary reuse. Focused tensor tests verified original and optimized corpus programs, mutation rejection, and remote compile concurrency.
+
+## 2026-11-26
+
+Recorded all six full-size corpus timing pairs and matching f32 output digests. The final focused suite passed 29 tests.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md — Benchmark method, test coverage and measured timings

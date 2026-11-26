@@ -184,3 +184,11 @@ The first standalone API smoke command raced the TypeScript build and imported t
 - `npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed all 29 tests, including ten GB10 tests. All six corpus functions passed before and after their Stage 1 pass sequence. The same contract rejected the CUDA transposed-index and truncated-tail candidates.
 - The remote runner test issued simultaneous jobs with different runtime bytes and one build key. Exactly one compiled, both got their own responses, and a header change produced a new build key and output.
 - A final packet-allocation adjustment sizes f32 payloads from the number of four-byte words actually written. The subsequent build and the four network-free tensor test files passed all 19 tests. Full-size CPU and GPU runs use the same input recipe and run separately.
+
+## Step 4. Verify the committed backend and measure the corpus
+
+The final test rerun on `be85ba9` passed all 29 tensor tests. The six GPU measurements ran separately from those tests, one `--timed` invocation per function. Each invocation warmed up once and took the median of three CUDA event intervals with the generated kernels preloaded.
+
+The interpreter runs the same full-size input recipe. The original serial benchmark captured matmul, softmax, layernorm and attention. I stopped it after the attention record so it would not repeat the separately started MLP and conv2d measurements. The long CPU jobs use tmux and overlap on the shared host, so their figures are observed wall times. A detached sandbox tmux launch exited with the sandbox before writing a log. Keeping the invoking shell active with `tmux wait-for` allowed the final tests and the split benchmark jobs to run and report their exit status.
+
+The [timing report](02-cuda-lowering-verification-and-corpus-timings.md) records all six CPU and GPU results and links the replay script. CPU and GPU shapes and byte digests matched on every measured case. MLP was the last interpreter job to finish and took 1,285,227.803 ms. Its median GPU kernel interval was 0.957664 ms.
