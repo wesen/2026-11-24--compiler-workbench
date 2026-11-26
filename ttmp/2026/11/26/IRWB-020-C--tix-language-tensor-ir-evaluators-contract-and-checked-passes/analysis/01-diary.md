@@ -277,3 +277,69 @@ The implementation follows the revised design. Read `src/tensor/index.ts` for th
 public API, `src/tensor/meaning.ts` for selection and comparison, and
 `tests/tensor/passes.test.mjs` for both real and wrong pass decisions. The framework
 change is limited to `src/framework/passes/define-pass.ts` and its new focused test.
+
+## Step 4 — Diagnose the independent evaluation and publish the report
+
+The independent evaluation targets `ce9cf4d281e6025466b198ea3061fa8edfe76f1a`.
+I checked the four reported groups against the evaluated source and the checked-in
+tests. Every reported check passed or was accepted. There are zero external
+failures or rejections to trace, and I found no basis for disputing the results.
+
+### Prompt context
+
+The user supplied independently measured results and requested a report commit.
+The authored request follows verbatim.
+
+~~~~text
+Stage 1 of IRWB-020-C has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `ce9cf4d`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-C:`). Final message: the report's path, the commit hash, and one line per failure cause.
+~~~~
+
+### Diagnostic findings
+
+- Hidden acceptance reported 25 of 25 passing.
+- All 180 f32 cases matched bitwise, and all 180 f64 cases met the reported threshold.
+- Both pass runs reported 60 of 60 accepted. The evaluation did not report how many
+  inputs actually changed. An identity returns without a comparison in
+  `src/framework/passes/define-pass.ts:273` or `src/framework/passes/define-pass.ts:284`.
+  The public optimizer records its acceptance at `src/tensor/index.ts:43`.
+- The expected local exact rejection comes from comparing different f32 words at
+  `src/tensor/meaning.ts:135` after the outer addition at
+  `src/tensor/evaluate.ts:234). The tail-dropping mutation omits the ninth value at
+  `tests/tensor/passes.test.mjs:36`, which exceeds the comparison bound at
+  `src/tensor/meaning.ts:145`. The swapped-axis mutation at
+  `tests/tensor/passes.test.mjs:77` triggers the exact comparator at
+  `src/tensor/meaning.ts:135`. These are local contract tests with expected rejection
+  outcomes. The independent evaluation reported no such rejection.
+
+### Verification
+
+`npm run build` and `node --test --test-isolation=none tests/tensor/passes.test.mjs`
+passed. All five focused tests passed. The report distinguishes those locally
+repeated tests from the independent results as supplied by the user. With zero
+reported external failures, no reproduction script was needed.
+
+The [final report](../reference/02-report.md) records the domain, design, evaluation,
+and what I would change about verification and reporting. This checkpoint changes
+ticket documentation only.

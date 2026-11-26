@@ -24,6 +24,7 @@ Stage 1 introduces Tix as a second IR Workbench domain. The synchronous public A
 and evaluates tensor programs and checks inline and split-sum before advancing the artifact.
 The reviewed design and implementation are complete.
 
+- [Stage 1 report](reference/02-report.md)
 - [Stage 1 design](design-doc/01-tix-stage-1-design.md)
 - [Diary](analysis/01-diary.md)
 - [Tasks](tasks.md)
