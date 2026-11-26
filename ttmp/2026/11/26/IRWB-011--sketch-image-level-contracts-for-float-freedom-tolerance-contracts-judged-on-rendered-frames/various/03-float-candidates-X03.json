@@ -1,0 +1,131 @@
+{
+ "sites": {
+  "exact": 0,
+  "fma": 834,
+  "recip": 23,
+  "reassoc": 9
+ },
+ "scenes": [
+  {
+   "scene": "X-03",
+   "stride": 4,
+   "pixels": 400,
+   "exposure": 0.7086328370157441,
+   "harnessDifferentFloats": 0,
+   "exactPerPixel": 367086,
+   "noise": {
+    "relRms": 1.5417247516391548,
+    "relMax": 12.693086525655467,
+    "psnr8": 8.025168609537427,
+    "max8": 255,
+    "diff8Share": 0.205,
+    "top1PctShare": 0.4477934929262594
+   },
+   "variants": {
+    "fma": {
+     "perPixel": 367067,
+     "differentFloats": 358,
+     "differentPixels": 126,
+     "vsExact": {
+      "relRms": 0.00010022110413122165,
+      "relMax": 0.0016437285372317984,
+      "psnr8": null,
+      "max8": 0,
+      "diff8Share": 0,
+      "top1PctShare": 0.794085516793117
+     },
+     "savedPerPixel": 15292.4975,
+     "z": {
+      "n": 8,
+      "exactVsExact": {
+       "over3Share": 0.010948905109489052,
+       "meanZ2": 1.2708051278896533,
+       "values": 822
+      },
+      "variantVsExact": {
+       "over3Share": 0.010948905109489052,
+       "meanZ2": 1.270801519119786,
+       "values": 822
+      }
+     },
+     "meanVsExactMean": {
+      "relRms": 0.00003593659032248682,
+      "relMax": 0.00037474746574697553,
+      "psnr8": null,
+      "max8": 0,
+      "diff8Share": 0,
+      "top1PctShare": 0.5607110248724497
+     }
+    },
+    "recip": {
+     "perPixel": 367087,
+     "differentFloats": 1,
+     "differentPixels": 1,
+     "vsExact": {
+      "relRms": 4.5116475151731436e-17,
+      "relMax": 1.5628805444243522e-15,
+      "psnr8": null,
+      "max8": 0,
+      "diff8Share": 0,
+      "top1PctShare": 1
+     },
+     "z": {
+      "n": 8,
+      "exactVsExact": {
+       "over3Share": 0.010948905109489052,
+       "meanZ2": 1.2708051278896533,
+       "values": 822
+      },
+      "variantVsExact": {
+       "over3Share": 0.010948905109489052,
+       "meanZ2": 1.2708051277478905,
+       "values": 822
+      }
+     },
+     "meanVsExactMean": {
+      "relRms": 9.50880098033722e-10,
+      "relMax": 2.6220784476004952e-8,
+      "psnr8": null,
+      "max8": 0,
+      "diff8Share": 0,
+      "top1PctShare": 1
+     }
+    },
+    "reassoc": {
+     "perPixel": 367064,
+     "differentFloats": 0,
+     "differentPixels": 0,
+     "vsExact": {
+      "relRms": 0,
+      "relMax": 0,
+      "psnr8": null,
+      "max8": 0,
+      "diff8Share": 0,
+      "top1PctShare": 0
+     },
+     "z": {
+      "n": 8,
+      "exactVsExact": {
+       "over3Share": 0.010948905109489052,
+       "meanZ2": 1.2708051278896533,
+       "values": 822
+      },
+      "variantVsExact": {
+       "over3Share": 0.010948905109489052,
+       "meanZ2": 1.2708051278896533,
+       "values": 822
+      }
+     },
+     "meanVsExactMean": {
+      "relRms": 0,
+      "relMax": 0,
+      "psnr8": null,
+      "max8": 0,
+      "diff8Share": 0,
+      "top1PctShare": 0
+     }
+    }
+   }
+  }
+ ]
+}

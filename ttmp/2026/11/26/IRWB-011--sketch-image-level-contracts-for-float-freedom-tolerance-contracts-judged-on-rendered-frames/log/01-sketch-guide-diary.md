@@ -162,3 +162,74 @@ The result is that one pass differs from another by 8.0 to 17.4 dB of PSNR on th
 ### Technical details
 - Frame indices per scene: `[0, 2, 3, …, P]` (in each `<scene>.json`). Layout of `<scene>.f32`: Float32 little-endian, `[pass][pixel row-major][r, g, b, a]`.
 - The per-pass luminance inspection was a `node -e` one-liner over `NF.load` (not kept as a script); its output for S-02: pass 30 mean 1.85e3, max 7.39e5; other passes' means 5.82–11.2.
+
+## Step 3: Three float transformations against the exact frames and the noise floor
+
+This step measured what the noise floor is for: three transformations the bit-exact contract forbids, applied to Candela's r0 outside the pass system, lowered by this compiler, rendered on the emulator, and judged against the exact frame (same frame index) and against the reference passes of Step 2 (different frame indices). The transformations are contraction into fused multiply-adds (an image patch), reciprocal of constant divisors, and constant reassociation (both store edits before lowering).
+
+Contraction saves 1.62 % to 4.17 % of executed instructions. In six of eight scenes it changes no displayed 8-bit level, although it changes 151 to 895 output floats per scene. In G-01 and S-02 a few pixels follow different paths. The budget of the guide's section 14, applied to the RMS of the paired difference, rejected contraction on S-02 at 16 passes by 1.2 dB, while the independent test saw no difference. That separated two quantities the draft had merged (bias and divergence) and changed the design of the paired test.
+
+### Prompt Context
+**User prompt (verbatim):** see IRWB-010's diary, Step 1.
+**Assistant interpretation:** The brief's "which RV32F instructions make which transformations pay (`fmadd.s`)" and "compile-time error against Monte Carlo noise, with statistical tests across seeds", measured rather than argued.
+**Inferred user intent:** Know whether float freedom is worth a contract before designing one.
+**Commit (code):** none (ticket scripts only; see the commit after this step).
+
+### What I did
+- `scripts/03-float-candidates.mjs` (header documents every rule). Variants: `exact` (r0 lowered, default options), `fma` (image patch: fusable `fmul.s` + `fadd.s`/`fsub.s` → `fmadd.s` (0x43) / `fmsub.s` (0x47) / `fnmsub.s` (0x4b) plus a `nop` (0x00000013); conditions: the add covers a value whose operand is the product, one function, no control flow or branch target between, no writes to the product's operands, no other use of its result register), `recip` (`fdiv(x, c)` → `fmul(x, fl(1/c))`, c finite, non-zero, not a power of two), `reassoc` (`fadd(fadd(x, c1), c2)` → `fadd(x, fl(c1 + c2))`, likewise `fmul`). Static sites: fma 834, recip 23, reassoc 9.
+- Smoke test on B-01 alone, before the full run: images ready in 53.5 s; harness 0 differing floats; the same B-01 numbers as the full run.
+- The runs, sequential, each under the cap, as one background command:
+  - `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 /usr/bin/time -v node --max-old-space-size=10240 scripts/03-float-candidates.mjs --scenes B-01,R-01,L-03,G-01,V-02,S-02,V-04 --zpasses 16 --json various/03-float-candidates.json > various/03-float-candidates.jsonl 2> various/03-float-candidates.log` → 16 min 25 s, peak RSS 2,466,336 KB, exit 0.
+  - the same with `--scenes X-03 --zpasses 8` into `various/03-float-candidates-X03.{json,jsonl,log}` → 5 min 30 s, peak RSS 2,453,540 KB, exit 0.
+- `scripts/05-summarize-candidates.mjs`: one line per scene and variant, with the section 14 budget at f = 0.1 (`PSNR_noise(n) + 20 + 3.01 dB`, from `various/02-noise-floor.json`) and the margin. Run with `node scripts/05-summarize-candidates.mjs various/03-float-candidates.jsonl various/03-float-candidates-X03.jsonl` (no Candela, under a second).
+- Wrote the guide's section 11 and revised sections 14, 15, 19, E2, the summary box, the risks and open question 8.
+
+### Why
+- r0, not the O2 head: the image patch and the store edits are measurement devices; r0 is the reference every frame is compared with, and lowering it needs no pipeline run (IRWB-010's O2 head took 2.97 GB and 1 min 53 s).
+- The `nop` patch keeps every address, so no relocation pass is needed, and it makes the saving exactly countable as the `nop`s' executions.
+
+### What worked
+- The harness: 0 of 4,800 floats differ between this compiler's exact image and the reference engine's pass 0, in all eight scenes.
+- Contraction (display domain; budget at f = 0.1; margin = paired PSNR − budget):
+
+  | scene | floats / pixels changed | pass 0 paired PSNR, max | budget, margin | N-pass means paired PSNR, max | budget, margin | saved per pixel |
+  |---|---|---|---|---|---|---:|
+  | B-01 | 801 / 356 | ∞, 0 | 38.2, ∞ | ∞, 0 | 47.5, ∞ | 253.2 (2.24 %) |
+  | R-01 | 406 / 155 | ∞, 0 | 39.7, ∞ | ∞, 0 | 50.0, ∞ | 416.5 (1.65 %) |
+  | L-03 | 700 / 350 | ∞, 0 | 40.4, ∞ | ∞, 0 | 53.5, ∞ | 175.6 (2.11 %) |
+  | G-01 | 680 / 329 | 44.0, 43 | 38.9, +5.2 | 61.7, 4 | 50.9, +10.8 | 414.7 (2.15 %) |
+  | V-02 | 151 / 53 | ∞, 0 | 34.6, ∞ | ∞, 0 | 38.0, ∞ | 535.4 (1.62 %) |
+  | S-02 | 895 / 362 | 39.8, 81 | 31.5, +8.3 | 32.6, 179 | 33.8, **−1.2** | 880.4 (2.44 %) |
+  | V-04 | 813 / 360 | ∞, 0 | 39.2, ∞ | ∞, 0 | 48.9, ∞ | 3,650.9 (3.35 %) |
+  | X-03 | 358 / 126 | ∞, 0 | 31.0, ∞ | ∞, 0 (N = 8) | 40.6, ∞ | 15,292.5 (4.17 %) |
+
+- Reciprocal: floats changed only in S-02 (755 in 366 pixels), V-04 (11 in 6) and X-03 (1 in 1); no display change; instructions per pixel unchanged or up by 2 (V-02), 15 (V-04), 1 (X-03).
+- Reassociation: 77 / 92 / 46 / 87 floats changed in B-01 / L-03 / G-01 / V-04, none elsewhere; no display change; 5 to 22 instructions per pixel saved.
+- The independent test: for every variant and scene, the share of |z| > 3 equals the exact null's; mean z² equal to three decimals except fma in G-01 (1.0141 against 1.0163) and S-02 (0.9869 against 0.9867).
+
+### What didn't work
+- The budget formula as drafted: it rejects contraction on S-02 at 16 passes (32.6 dB against 33.8 dB) where the independent test finds nothing. Not a defect of the measurement but of the draft design: the RMS of the paired difference includes divergence, which is noise. The guide's section 15 now proposes a bias estimate (signed mean with standard error), a diverged-pixel count, and the independent test on the diverged pixels.
+- A `node -e` summary one-liner with a heredoc into the scratchpad was refused by the worktree isolation check ("too complex to verify that it stays inside the worktree"); kept as `scripts/05-summarize-candidates.mjs` instead, which is better anyway because the guide's tables come from it.
+
+### What I learned
+- A last-bit change inside a path tracer is invisible unless it flips a decision; where it flips one, the pixel becomes a fresh sample, and in a firefly-prone scene (S-02) a fresh sample can be 179 levels after 16 passes.
+- Path divergence also shows in the instruction counts: G-01's fma variant executes 19,483 instructions per pixel against 19,293, S-02's 36,004 against 36,038, X-03's 367,067 against 367,086.
+- The reciprocal is not merely free of gain on the emulator; it can cost an instruction per execution (likely `fl(1/c)` needing `addi` where `c` needed only `lui`; not attributed).
+
+### What was tricky to build
+- Fusion legality on finished machine code: the script uses `covers` to pair the add with its product and scans the instructions between them for control flow, branch targets and register conflicts. A wrong fusion would show as a large paired difference with no divergence explanation; none appeared, but the check is a measurement, not a proof.
+
+### What warrants a second pair of eyes
+- The fusion conditions in `03-float-candidates.mjs` (the scan between the pair). Fused register reads were checked by the harness only indirectly.
+- The classification of the S-02 and G-01 differences as divergence rests on their concentration (top 1 % of squared differences carry over 99.9 %) and on the changed instruction counts, not on per-pixel path traces.
+
+### What should be done in the future
+- E2 with the separated paired test; the signed-mean bias estimate needs the variant's passes saved, which this script does not do.
+- The vault report is deferred to the implementation milestone (see Step 1).
+
+### Code review instructions
+- `scripts/03-float-candidates.mjs` (the `fma` patch and the two store edits); `scripts/05-summarize-candidates.mjs`; re-run the summary over the committed JSONL.
+
+### Technical details
+- Exact instructions per pixel (pass 0, this compiler's r0 image): B-01 11,300; R-01 25,308; L-03 8,307; G-01 19,293; V-02 33,054; S-02 36,038; V-04 108,839; X-03 367,086.
+- JSON numbers: an infinite PSNR is serialized as `null` (identical display).

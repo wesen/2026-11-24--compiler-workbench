@@ -29,8 +29,8 @@ RelatedFiles:
 ExternalSources: []
 Summary: 'Intern-grade sketch: why every float result is bit-exact today, IEEE-754 rounding and what reassociation, contraction and reciprocals change, Monte Carlo noise and statistical tests from scratch, the measured noise floor of eight Candela scenes, three measured float transformations judged against it, the design space of a tolerance contract kept apart from the exact pipelines, first experiments and open questions.'
 LastUpdated: 2026-11-26T10:02:52.895528747-05:00
-WhatFor: ""
-WhenToUse: ""
+WhatFor: "Picking up the image-level tolerance contract for float transformations, with the system background, the measured Monte Carlo noise floor and three measured candidates in one place."
+WhenToUse: "Before any float transformation that changes the last bit is proposed for Candela, and before experiments E1-E5."
 ---
 
 # Sketch guide: image-level contracts for float freedom
@@ -50,6 +50,8 @@ This is a **sketch**. Nothing is implemented. The ticket measured the noise floo
 > **The direction in one screen.**
 > - **Today every float is exact.** The evaluator defines each f32 operation bit for bit, the backend never fuses, and the meaning check compares bits. The gallery's own C core is compiled with `-ffp-contract=off` "so the device and the host round alike".
 > - **The renderer's noise is large.** One pass against another differs by 8.0–17.4 dB PSNR on the displayed image, and two 16-pass accumulations by 10.8–30.5 dB, depending on the scene (section 10).
+> - **Three transformations, measured (section 11).** Contraction into fused multiply-adds saves 1.6–4.2 % of executed instructions in eight scenes. In six of them it changes no displayed 8-bit level, even though it changes hundreds of output floats. In G-01 and S-02 a few pixels follow a different path. The reciprocal and constant reassociation change no display level and save next to nothing.
+> - **The first lesson for the design:** a budget on the RMS of the paired difference rejects contraction on S-02 (by 1.2 dB at 16 passes), while the independent test sees no difference. Divergence is fresh noise, not bias, so the paired test must estimate bias separately from counting diverged pixels.
 > - **The proposal** is a contract judged on rendered frames, per scene, at the accumulation depth the gallery displays. It uses two comparisons: a paired one with the same seeds, which detects small systematic changes, and an independent one with different seeds, which asks whether the candidate is the same estimator. It lives in its own pipelines and its own revisions, and never in O2.
 
 # Part 1: The parts of the system you need
@@ -247,7 +249,56 @@ Five findings follow from these tables, and each shapes the design of Part 4.
 
 ## 11. Three float transformations, judged against the noise
 
-CANDIDATES-PLACEHOLDER
+The noise floor says how large a change could be and still drown in the renderer's noise. This section measures how large three real transformations actually are. `scripts/03-float-candidates.mjs` applies each one to Candela's **r0**, outside the pass system (a measurement, not a pass). It lowers the result with this compiler's backend at default options and renders it on the emulator, on the grid of section 10. It then compares the result twice. The **paired** comparison renders the variant with the exact program's frame index 0. The **independent** comparison accumulates the variant's passes [0, N) and holds them against the reference passes [N, 2N), with N = 16 (X-03: 8). `scripts/05-summarize-candidates.mjs` turns the output (`various/03-float-candidates.jsonl`, `-X03.jsonl`) into the numbers below; the diary, step 3, has the commands.
+
+The three variants:
+
+- **fma (contraction).** The script patches the exact *image*: each fusable `fmul.s` followed by `fadd.s` or `fsub.s` becomes one `fmadd.s`, `fmsub.s` or `fnmsub.s`, and the `fmul.s` becomes a `nop`. A pair is fused only if the add covers a value whose operand is the product, both are in one function, no branch, jump, call or branch target lies between them, and nothing between them writes the product's operand registers or touches its result register. The `nop` keeps every address, so no relocation is needed. The instructions a real fusion would save are counted as the `nop`s' executions. There are 834 such sites.
+- **recip.** `fdiv(x, c)` with `c` a finite constant that is not zero and not a power of two becomes `fmul(x, fl(1/c))`. There are 23 sites.
+- **reassoc.** `fadd(fadd(x, c1), c2)` becomes `fadd(x, fl(c1 + c2))`, likewise for `fmul`, with the constants on either side. There are 9 sites at r0; IRWB-010's census counts 10 at O2.
+
+**The harness is exact.** Before any variant, the script renders the unmodified r0 image and compares its pass 0 with the reference engine's pass 0 from section 10. In all eight scenes, zero of the 4,800 output floats differ (400 pixels × 12 floats). Every difference below is therefore the variant's.
+
+**Contraction**, against the exact program and against the budget of section 14 at `f = 0.1`:
+
+| scene | floats changed (of 4,800) | pixels changed (of 400) | pass 0: paired PSNR, max levels | budget, margin | 16-pass means: paired PSNR, max levels | budget, margin | instructions saved per pixel |
+|---|---:|---:|---|---|---|---|---:|
+| B-01 | 801 | 356 | ∞, 0 | 38.2, ∞ | ∞, 0 | 47.5, ∞ | 253 (2.24 %) |
+| R-01 | 406 | 155 | ∞, 0 | 39.7, ∞ | ∞, 0 | 50.0, ∞ | 417 (1.65 %) |
+| L-03 | 700 | 350 | ∞, 0 | 40.4, ∞ | ∞, 0 | 53.5, ∞ | 176 (2.11 %) |
+| G-01 | 680 | 329 | 44.0 dB, 43 | 38.9, **+5.2** | 61.7 dB, 4 | 50.9, **+10.8** | 415 (2.15 %) |
+| V-02 | 151 | 53 | ∞, 0 | 34.6, ∞ | ∞, 0 | 38.0, ∞ | 535 (1.62 %) |
+| S-02 | 895 | 362 | 39.8 dB, 81 | 31.5, **+8.3** | 32.6 dB, 179 | 33.8, **−1.2** | 880 (2.44 %) |
+| V-04 | 813 | 360 | ∞, 0 | 39.2, ∞ | ∞, 0 | 48.9, ∞ | 3,651 (3.35 %) |
+| X-03 | 358 | 126 | ∞, 0 | 31.0, ∞ | ∞, 0 (8 passes) | 40.6, ∞ | 15,293 (4.17 %) |
+
+The budget is `PSNR_noise(n) + 23.0 dB` (section 14); the margin is the paired PSNR minus the budget, and a positive margin is within budget. "∞" means that not one 8-bit display level differs. The saving is relative to the exact program's instructions per pixel, which range from 8,307 (L-03) to 367,086 (X-03).
+
+**Reciprocal and constant reassociation:**
+
+| scene | recip: floats, pixels changed | recip: instructions per pixel (exact → variant) | reassoc: floats, pixels changed | reassoc: instructions per pixel saved |
+|---|---|---|---|---:|
+| B-01 | 0, 0 | 11,300 → 11,300 | 77, 42 | 7 |
+| R-01 | 0, 0 | 25,308 → 25,308 | 0, 0 | 12 |
+| L-03 | 0, 0 | 8,307 → 8,307 | 92, 53 | 5 |
+| G-01 | 0, 0 | 19,293 → 19,293 | 46, 31 | 8 |
+| V-02 | 0, 0 | 33,054 → 33,056 | 0, 0 | 11 |
+| S-02 | 755, 366 | 36,038 → 36,038 | 0, 0 | 21 |
+| V-04 | 11, 6 | 108,839 → 108,854 | 87, 44 | 9 |
+| X-03 | 1, 1 | 367,086 → 367,087 | 0, 0 | 22 |
+
+Neither changes a single display level in any scene, at pass 0 or after 16 passes (X-03: 8). In every scene and for every variant, the independent test gives the same statistics as the exact program's own null (exact passes [0, N) against [N, 2N)) to the printed precision. The share of |z| > 3 is identical. The mean z² is identical except for contraction in G-01 (1.014 against 1.016) and in S-02 (0.9869 against 0.9867).
+
+Six findings follow.
+
+1. **Contraction changes many floats and almost no pixels.** It changes the last bits of 151 to 895 output floats per scene, in 13 % to 91 % of the pixels. In six of eight scenes, not one 8-bit level of the displayed image changes, after one pass or after 16 (X-03: 8). In those six, the paired difference in linear radiance is 84 to 123 dB below the difference between two passes: relative RMS 4.6 × 10⁻⁷ to 1.0 × 10⁻⁴, against 2.8 for B-01's pass 0 against pass 1 (`05-summarize-candidates.mjs`, "linear dB below noise"). Inside a renderer, a last-bit change is invisible unless it flips a decision.
+2. **Sometimes it flips a decision.** In G-01, one pixel at pass 0 follows a different path: its three channels differ by up to 43 levels, and the largest 1 % of the squared differences carry more than 99.99 % of the total. In S-02 (a diamond, rendered spectrally), two channel values differ at pass 0. After 16 passes, 23 of 1,200 channel values differ, by up to 179 levels: one program found a bright path in some pixel that the other did not. Path divergence is rare, but it is real, and the instruction counts show it too. G-01's variant executes 19,483 instructions per pixel against the exact 19,293, and S-02's 36,004 against 36,038, because the diverged paths executed different code.
+3. **The budget as written rejects contraction on S-02.** At 16 passes, S-02's paired PSNR (32.6 dB) is 1.2 dB short of its budget (33.8 dB). The independent test sees nothing (0 % of |z| > 3 for both, mean z² 0.9869 against 0.9867). Both are correct, because they measure different things. The RMS of the paired difference mixes **bias**, the same shift in every pass, which the budget is meant to bound, with **divergence**, fresh samples from the same distribution, which is noise and averages out. A diverged S-02 pixel that found a firefly contributes 179 levels of "difference" that is not bias at all. **The paired test must separate the two**: count the diverged pixels, estimate bias from the *signed mean* of the paired difference with its standard error, and leave the diverged pixels to the independent test. Section 15 now says this. It is the measurement's main lesson for the design.
+4. **Contraction pays.** The `nop`s the patch inserts execute 1.62 % to 4.17 % of each frame's instructions. A real fusion would save exactly those. The two scenes built on procedural noise gain most: X-03 saves 15,293 instructions per pixel (4.17 %) and V-04 3,651 (3.35 %), because `noise3` and its callees are chains of multiply-adds (IRWB-010 §8). X-03's variant also executes 19 fewer instructions per pixel than the exact program with no display change, a sign that a float difference changed a loop count somewhere without changing a visible result. IRWB-010's census counted a related share at O2: in its own definition, the additions with a product operand are 3.93 % of V-04's frame, without the adjacency and register conditions used here.
+5. **The reciprocal costs and gains nothing here.** It changes floats only in S-02 (755 floats in 366 pixels), V-04 (11 floats in 6 pixels) and X-03 (1 float in 1 pixel), and never a display level. S-02 is the only spectral scene measured, and the spectral branch of `renderPixel` divides by the constant 106.857 once per sample (`kernel.typed:2628`), which is a likely source. The script does not attribute changes to sites. It saves no instruction. In V-02, V-04 and X-03 the variant executes 2, 15 and 1 *more* instructions per pixel. A likely cause, which the script does not attribute, is that `fl(1/c)` has more significant bits than `c` and needs an `addi` after its `lui`. Section 19's prediction holds: on an instruction-counting emulator a reciprocal is a pure cost, and only a device timing can show its benefit.
+6. **Constant reassociation is too rare to matter alone.** Its 9 sites save 5 to 22 instructions per pixel (at most 0.06 %), change at most 92 floats, and no display level. Its value, if any, is as an enabling step for other folds, which is IRWB-010's territory.
+
+The measurement has limits. It covers eight scenes of eighteen, 400 pixels per scene, and at most 16 passes, against the gallery's 64. The transformations apply to r0 rather than to the O2 head. The independent test at N = 16 has little power (E3). And the S-02 divergence shows that a scene can produce a large paired difference from a handful of samples, so a larger grid will see more of them.
 
 # Part 4: The design space
 
@@ -296,7 +347,7 @@ budget_s(n) = f · σ_s / √n          (per pixel and channel, display domain)
 in PSNR:  PSNR_paired(candidate, exact; n) ≥ PSNR_noise_s(n) + 20·log10(1/f) + 3.01 dB
 ```
 
-(`PSNR_noise_s(n)` is the measured PSNR of two *independent* n-pass means, as in section 10. Their difference has √2 times the spread of one mean, hence the 3.01 dB.) With `f = 0.1`, the candidate's paired difference must be at least 23 dB below the scene's measured noise PSNR at the same depth. The choice of `f` is the one policy decision. It is a statement of the form "the compiler may add at most a tenth of the noise the renderer already has", and it can be reviewed without knowing anything about floats. Because the budget scales with σ_s, noisy scenes (S-02, V-02) tolerate more absolute change than clean ones (L-03). That is the intended behaviour: a change invisible under S-02's noise may be visible in L-03's sky.
+(`PSNR_noise_s(n)` is the measured PSNR of two *independent* n-pass means, as in section 10. Their difference has √2 times the spread of one mean, hence the 3.01 dB.) The PSNR form bounds the whole paired difference, which is an upper bound on the systematic part. Section 11 shows that it is too strict where pixels diverge, so the budget should bound the estimated bias (section 15) and the PSNR form should serve as a quick sufficient check. With `f = 0.1`, the candidate's paired difference must be at least 23 dB below the scene's measured noise PSNR at the same depth. The choice of `f` is the one policy decision. It is a statement of the form "the compiler may add at most a tenth of the noise the renderer already has", and it can be reviewed without knowing anything about floats. Because the budget scales with σ_s, noisy scenes (S-02, V-02) tolerate more absolute change than clean ones (L-03). That is the intended behaviour: a change invisible under S-02's noise may be visible in L-03's sky.
 
 ## 15. Two tests, because there are two questions
 
@@ -306,13 +357,16 @@ in PSNR:  PSNR_paired(candidate, exact; n) ≥ PSNR_noise_s(n) + 20·log10(1/f) 
  D = candidate_n - exact_n  per pixel               z = (cand_n - exact'_n) / se   per channel value
  noise cancels where paths agree                    noise does not cancel
  detects: systematic change (bias), divergence       detects: a different estimator (bias beyond se)
- accept if: PSNR(D) clears the budget AND            accept if: share(|z|>3), mean z² match the
-            diverged pixels <= a share                          exact-vs-exact null of the same scene
+ accept if: |mean D| (bias, with its standard       accept if: share(|z|>3), mean z² match the
+            error) clears the budget AND                        exact-vs-exact null of the same scene
+            diverged pixels <= a share
  cost: n passes of the candidate                     cost: n passes of the candidate + 2n of exact
        (exact passes reused)                               (exact passes reused from the noise floor)
 ```
 
-The paired test is the sensitive one. It decides most candidates, because a transformation that changes only the last bit shows up as tiny paired differences far below any budget. The independent test settles the cases where many pixels diverge. A diverged pixel is a different sample of what should be the same distribution, and only a comparison across seeds can say whether it is. Section 11 measured both for the three transformations.
+The paired test is the sensitive one. It decides most candidates, because a transformation that changes only the last bit shows up as tiny paired differences far below any budget. In six of eight scenes in section 11, contraction left the display unchanged and the paired test decided at once.
+
+The paired difference has two parts, and the test must keep them apart. A pixel whose path did not change contributes a **rounding difference**: small and repeatable, and its signed mean over pixels and passes estimates the bias. A pixel whose path diverged contributes a **fresh sample**: it can be large (179 levels in S-02 after 16 passes, section 11), but it is zero-mean if the candidate is the same estimator. Bounding the RMS of all of `D` treats the second kind as if it were the first, and it rejected contraction on S-02 while the independent test found nothing. **Proposed:** the paired test classifies a pixel as diverged when its paired difference exceeds a rounding-scale threshold. It reports the number of diverged pixels. It bounds the bias by the mean of `D` over all pixels with its standard error, which is the quantity the budget of section 14 is about. The diverged pixels go to the independent test, which asks whether they are samples of the same distribution. Section 11 measured both tests for the three transformations.
 
 ## 16. Accumulation: why the budget must be set at the displayed depth
 
@@ -362,9 +416,9 @@ The exact noise passes are computed once per scene and reused for every candidat
 
 | transformation | instructions before → after | what it saves on this target | status |
 |---|---|---|---|
-| contraction `a·b ± c` | `fmul.s` + `fadd.s`/`fsub.s` → one `fmadd.s`/`fmsub.s`/`fnmsub.s` | one instruction per site, and the product's register | measured in §11 |
-| constant reassociation `(x ⊕ c1) ⊕ c2` | two ops and two constants → one op and one constant | one operation and one constant rebuild (2–3 instructions) per site | measured in §11; 10 sites in Candela at O2 (IRWB-010 census) |
-| reciprocal `x / c` | `fdiv.s` → `fmul.s` | **no instruction**: the emulator counts instructions, so the gain is invisible to the project's metric; only a cycle count on the device shows it | measured in §11 (error only) |
+| contraction `a·b ± c` | `fmul.s` + `fadd.s`/`fsub.s` → one `fmadd.s`/`fmsub.s`/`fnmsub.s` | one instruction per site, and the product's register | measured in §11: 1.62–4.17 % of executed instructions |
+| constant reassociation `(x ⊕ c1) ⊕ c2` | two ops and two constants → one op and one constant | one operation and one constant rebuild (2–3 instructions) per site | measured in §11: 9 sites at r0, at most 0.06 %; 10 sites at O2 (IRWB-010 census) |
+| reciprocal `x / c` | `fdiv.s` → `fmul.s` | **no instruction**: the emulator counts instructions, so the gain is invisible to the project's metric; only a cycle count on the device shows it | measured in §11: no saving, up to 15 more instructions per pixel |
 | general reassociation | same count | latency or parallelism only | not measured |
 | reciprocal / square-root estimates | none on RV32F | none | not applicable |
 
@@ -382,8 +436,8 @@ Two points need care. First, the project measures **instructions** on an emulato
 
 **E2. The paired test as a contract on fused multiply-adds.**
 - *Setup.* `O2-float` (**Proposed**) = O2 plus a contraction step in the backend, behind an option. The frame contract on all 18 scenes at 64 passes with `f = 0.1`.
-- *Measure.* Per scene: paired PSNR against the budget; diverged pixels; instructions per pixel saved.
-- *Continue if* every scene clears its budget and the saving is at least the 1–2 % that §11's dynamic counts predict.
+- *Measure.* Per scene: the bias estimate (signed mean of the paired difference, with its standard error) against the budget; diverged pixels; the independent test on the diverged pixels; instructions per pixel saved.
+- *Continue if* every scene clears its budget and the saving is at least the 1.6–4.2 % that §11's `nop` counts predict (measured on r0; the O2 head may differ).
 - *Stop if* any scene fails at `f = 0.1`. Then look at which sites cause the divergence and whether excluding those sites, for example in comparisons that steer branches, keeps the gain.
 
 **E3. The independent test's power.**
@@ -413,6 +467,7 @@ Two points need care. First, the project measures **instructions** on an emulato
 | the scenes do not cover the code | a transformation in code no scene reaches is accepted unseen | record coverage (functions and branches executed) in the evidence; keep the per-call ulp filter for all functions |
 | the budget is set at the wrong depth | bias becomes visible as passes accumulate (§16) | judge at 64 passes or scale the budget by √(64/n) |
 | fireflies decide the verdict | linear metrics are dominated by single samples (§10) | display domain; robust statistics; E1 |
+| divergence is read as bias | a diverged pixel's paired difference can be 179 levels and still be noise (§11, S-02) | bound the bias by the signed mean; count diverged pixels; independent test on them (§15) |
 | "not rejected" is read as "equivalent" | low power at small n | equivalence test with a stated minimum detectable effect (E3) |
 | tolerance leaks into the exact world | a tolerance revision used as an origin | separate pipelines; assurance `checked-tolerance`; no exact pipeline reads it |
 | the display mapping changes | `viewImage` is a preview, not the scene's tone map | state the mapping in the contract's version; re-measure the noise floor when it changes |
@@ -420,13 +475,14 @@ Two points need care. First, the project measures **instructions** on an emulato
 
 ## 21. Open questions
 
-1. What is `f`? 0.1 (20 dB below the noise) is a starting point, not a derivation.
+1. What is `f`? 0.1 (a systematic change 20 dB below the noise of one n-pass mean) is a starting point, not a derivation.
 2. Should the budget be per scene only, or per region (sky, surfaces, volumes)? A uniform per-scene budget lets a large error hide in a noisy region.
 3. Which depth should the contract judge at? The gallery shows every pass from 1 to 64. A candidate within budget at 64 may be visible at 4 in a clean region, though at 4 the noise is also larger.
 4. How should albedo and normal outputs be judged if a denoiser is ever added? They are nearly noise-free, so their budget cannot come from noise.
 5. Does the anchor design of §17 (a) need the anchor's meaning check to be stronger than sampled, given that every later exact pass trusts it?
 6. Should a strategy's `chooseBest` be allowed to trade instructions against frame error under this contract, as D6 proposed, or should the contract be a pure constraint?
 7. What does a tolerance revision mean for IRWB-008's exact checking? An edit that cites an inexact rule has no exact proof, only a frame-level verdict.
+8. What threshold classifies a pixel as diverged (section 15)? In S-02, rounding differences and diverged paths are many orders of magnitude apart, so a threshold exists there. Whether it can be per scene, or must be per pixel and channel scaled by that pixel's noise, is open.
 
 ## 22. How this connects to the other tickets
 
@@ -462,7 +518,7 @@ Two points need care. First, the project measures **instructions** on an emulato
 | `src/typed/candela-render.ts`, `tools/candela-render.mjs` | the frame protocol |
 | `corpus/candela-gallery/kernel.typed` | the renderer, its RNG |
 | ds-js-os `firmware/nucleus/candela_gallery.{h,c}` (read only) | the gallery's passes and accumulation; `-ffp-contract=off` |
-| this ticket's `scripts/01–04`, `various/01-passes/` | the noise floor and the candidates; the saved passes for reuse |
+| this ticket's `scripts/01–05`, `various/01-passes/` | the noise floor, the candidates and their summary; the saved passes for reuse |
 | `ttmp/2026/11/24/IRWB-002--*/design-doc/01-*.md` | items B6 and D6 |
 
 # Appendix C: Glossary
