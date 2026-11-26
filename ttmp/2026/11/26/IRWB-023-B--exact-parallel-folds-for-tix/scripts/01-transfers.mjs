@@ -22,7 +22,7 @@ function trace(start, row) {
   }
   return {seed, tag, low, high, end:word(end)};
 }
-function relocate(t, entry) {
+function relocate(t, entry, nonnegativeTerms=false) {
   const w = word(entry);
   if (w === t.seed) return value(t.end);
   if ((w >>> 23) !== t.tag || (w & 1) !== (t.seed & 1)) return;
@@ -30,7 +30,8 @@ function relocate(t, entry) {
   if (exponent === 0 || exponent === 255) return;
   const delta = w - t.seed;
   const lower = t.tag * 2**23, upper = lower + 2**23;
-  if (Math.min(t.low,t.low + delta) <= lower ||
+  const lowest=Math.min(t.low,t.low + delta);
+  if ((nonnegativeTerms && t.tag<256 ? lowest<lower : lowest<=lower) ||
       Math.max(t.high,t.high + delta) >= upper) return;
   return value(t.end + delta);
 }
@@ -54,7 +55,7 @@ const patterns = {
 const program = compileTix('fn row(x:f32[N,K]):f32[N]{ y[i]=sum(j) x[i,j]; return y; }');
 for (const [name, sample] of Object.entries(patterns)) {
   for (const width of [8,32,128]) {
-    let total=0, direct=0, translated=0, replay=0, oneAnchor=0, wrongPredict=0, wrongFinal=0;
+    let total=0, direct=0, translated=0, replay=0, oneAnchor=0, wrongPredict=0, wrongFinal=0, directionalExtra=0;
     for (let r=0;r<128;r++) {
       const row=Float32Array.from({length:1023+r%3},(_,i)=>sample(i));
       let carry=0, reference=0, estimate=0;
@@ -70,6 +71,10 @@ for (const [name, sample] of Object.entries(patterns)) {
         else if (found !== undefined) translated++;
         else replay++;
         const oracle=fold(reference,chunk);
+        if(found===undefined && chunk.every(x=>x>=0)) {
+          const monotone=relocate(anchor,carry,true) ?? relocate(neighbor,carry,true);
+          if(monotone!==undefined) { assert.equal(word(monotone),word(oracle)); directionalExtra++; }
+        }
         if (!Object.is(value(anchor.end),oracle)) wrongPredict++;
         carry = found ?? fold(carry,chunk);
         assert.equal(word(carry),word(oracle),name+' chunk '+k);
@@ -83,6 +88,6 @@ for (const [name, sample] of Object.entries(patterns)) {
         assert.equal(word(carry),word(fromTix));
       }
     }
-    console.log(JSON.stringify({name,width,total,direct,translated,replay,oneAnchor,wrongPredict,wrongFinal}));
+    console.log(JSON.stringify({name,width,total,direct,translated,replay,oneAnchor,wrongPredict,wrongFinal,directionalExtra}));
   }
 }

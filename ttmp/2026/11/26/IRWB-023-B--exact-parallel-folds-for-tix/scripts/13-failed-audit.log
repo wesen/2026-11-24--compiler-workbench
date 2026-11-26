@@ -1,0 +1,26 @@
+node:internal/errors:985
+  const err = new Error(message);
+              ^
+
+Error: Command failed: node tools/cuda-remote.mjs /tmp/tix-calibrate-lfzI1D -- audit 00000000 33000000
+    at genericNodeError (node:internal/errors:985:15)
+    at wrappedFn (node:internal/errors:539:14)
+    at checkExecSyncError (node:child_process:925:11)
+    at execFileSync (node:child_process:961:15)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r2-ah-irwb-023-b/ttmp/2026/11/26/IRWB-023-B--exact-parallel-folds-for-tix/scripts/10-run.mjs:62:24
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    `{"host":"manuel@bling","hash":"efeaf0abf3f1e277090e3bbbae786583ea96792f33bc9b78727c54033f0e10ab","compiled":false,"compileMs":4,"runMs":3458,"exit":134,"stdout":"fd16895305c0e291210403fecee2b86f17a315c0874dc983b746dc1ce0215b8a  ./prog\\nNVIDIA GB10 sm_121 runtime=13000 driver=13000 nvcc=13.0.88\\n6074656f49f9cfa5e132236a081594fe734b9d821f9da5f6ea5975870d9b47a6  -\\n","stderr":"*** stack smashing detected ***: terminated\\nbash: line 16: 1667879 Aborted                 (core dumped) ./prog 'audit' '00000000' '33000000'\\n","outputs":[]}\n`,
+    ''
+  ],
+  pid: 602,
+  stdout: `{"host":"manuel@bling","hash":"efeaf0abf3f1e277090e3bbbae786583ea96792f33bc9b78727c54033f0e10ab","compiled":false,"compileMs":4,"runMs":3458,"exit":134,"stdout":"fd16895305c0e291210403fecee2b86f17a315c0874dc983b746dc1ce0215b8a  ./prog\\nNVIDIA GB10 sm_121 runtime=13000 driver=13000 nvcc=13.0.88\\n6074656f49f9cfa5e132236a081594fe734b9d821f9da5f6ea5975870d9b47a6  -\\n","stderr":"*** stack smashing detected ***: terminated\\nbash: line 16: 1667879 Aborted                 (core dumped) ./prog 'audit' '00000000' '33000000'\\n","outputs":[]}\n`,
+  stderr: ''
+}
+
+Node.js v24.18.0

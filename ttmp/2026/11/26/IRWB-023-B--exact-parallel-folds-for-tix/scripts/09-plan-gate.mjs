@@ -2,6 +2,7 @@
 // The kernel template and the provenance of receipts are trusted parts of this prototype.
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
+import {inspectRow} from './12-row-region.mjs';
 import {compileTix,optimizeTix} from '../../../../../../dist/tensor/index.js';
 import {TixIR} from '../../../../../../dist/tensor/ir.js';
 import {defineIR,createArtifact,defineTransformation,defineInvariant,AnalysisManager,ContractError} from '../../../../../../dist/framework/contracts/index.js';
@@ -30,30 +31,12 @@ const canonical={version:'row-owner-v1',function:'softmax',sum:'ordered-fadd-rn'
   binary:binary(deploy),profile:profile(deploy),table:deploy.tableSha256};
 const scalarIR=(id)=>defineIR({id,version:'1',description:id,validate(v){if(!v||typeof v!=='object') throw Error(id);}});
 const Receipt=scalarIR('ticket023.receipt'),Plan=scalarIR('ticket023.schedule');
-const eq=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
-const dim=(a,extent)=>a?.extent.kind==='dim' && eq(a.extent.dim,extent);
-const plain=(x,id)=>x?.constant===0 && x.terms.length===1 && eq(x.terms[0],[id,1]);
-const isLoad=(e,name,ids)=>e?.kind==='load'&&e.name===name&&e.indices.length===ids.length&&e.indices.every((a,i)=>plain(a,ids[i]));
-const op=(e,name)=>e?.kind==='op'&&e.op===name;
-
 function verifyRows(module,chosen) {
   const fn=module.functions.find(f=>f.name===chosen);
   if(fn?.params.length!==1 || fn.statements.length!==4) return 'function signature or statement count';
-  const [x]=fn.params,[m,e,s,y]=fn.statements,[N,C]=x.shape;
-  if(x.shape.length!==2 || fn.result!==y.name) return 'rank or returned tensor';
-  for(const [stmt,shape] of [[m,[N]],[e,[N,C]],[s,[N]],[y,[N,C]]]) {
-    if(!eq(stmt.shape,shape)||stmt.axes.length!==shape.length||!stmt.axes.every((a,i)=>dim(a,shape[i]))) return 'iteration domain';
-  }
-  function rowFold(stmt,name,tensor) {
-    const r=stmt.expr;
-    return r.kind==='reduce'&&r.op===name&&r.axes.length===1&&dim(r.axes[0],C)&&isLoad(r.body,tensor,[stmt.axes[0].id,r.axes[0].id]);
-  }
-  if(!rowFold(m,'max',x.name)) return 'maximum must cover this parameter row';
-  const ea=e.axes.map(a=>a.id),ya=y.axes.map(a=>a.id);
-  const sub=e.expr.args?.[0];
-  if(!op(e.expr,'exp')||!op(sub,'-')||!isLoad(sub.args[0],x.name,ea)||!isLoad(sub.args[1],m.name,[ea[0]])) return 'shift lacks its same-row maximum';
-  if(!rowFold(s,'sum',e.name)) return 'sum has different fold tree or index map';
-  if(!op(y.expr,'/')||!isLoad(y.expr.args[0],e.name,ya)||!isLoad(y.expr.args[1],s.name,[ya[0]])) return 'divide or broadcast differs';
+  const region=inspectRow(fn,0);
+  if(region.error) return region.error;
+  if(fn.result!==region.output) return 'returned tensor';
 }
 function verifyReceipt(plan,spans) {
   let end=0;

@@ -5,10 +5,12 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createHash} from 'node:crypto';
 import {compileTix,cudaSource} from '../../../../../../dist/tensor/index.js';
+import {regions} from './12-row-region.mjs';
 const read=f=>readFileSync(new URL(f,import.meta.url),'utf8');
 const [action,...args]=process.argv.slice(2);
-const deploy=action.startsWith('deploy-');
-const mode=deploy?action.slice(7):action;
+const attention=action.startsWith('attention-');
+const deploy=action.startsWith('deploy-')||attention;
+const mode=deploy?action.slice(action.indexOf('-')+1):action;
 const dir=mkdtempSync(join(tmpdir(),'tix-calibrate-'));
 try {
   const N=16384;
@@ -45,8 +47,17 @@ try {
     const src=cudaSource(compileTix(readFileSync('corpus/tensor/softmax/main.tix','utf8')),'softmax');
     const harness=read('05-kernels.cu').replace(/struct Cubic \{[\s\S]*?struct NativeExp/, 
       'struct Cubic { __device__ __noinline__ static float eval(float x) { return shortExp<'+tableBits+','+degree+'>(x); } };\nusing Quartic=Cubic;\nstruct NativeExp');
+    let tail=deploy?read('11-deploy.cu'):harness;
+    if(attention) {
+      const ap=compileTix(readFileSync('corpus/tensor/attention/main.tix','utf8'));
+      const matches=regions(ap.current.value.functions[0]);
+      if(matches.length!==1||matches[0].first!==1) throw Error('attention region does not match');
+      const au=cudaSource(ap,'attention');
+      tail=tail.slice(0,tail.indexOf('int main(int argc,char** argv)'))+
+        '\nnamespace att {\n'+au.slice(au.indexOf('__global__ void k0'),au.indexOf('static void run_case('))+'\n}\n'+read('13-attention.cu');
+    }
     writeFileSync(join(dir,'main.cu'),src.slice(0,src.indexOf('static void run_case('))+
-      '\n#include "power.cuh"\n#include "exp.cuh"\n#define TIX_KERNELS_ONLY\n'+read('02-kernels.cu')+(deploy?read('11-deploy.cu'):harness));
+      '\n#include "power.cuh"\n#include "exp.cuh"\n#define TIX_KERNELS_ONLY\n'+read('02-kernels.cu')+tail);
   }
   const out=JSON.parse(execFileSync('node',['tools/cuda-remote.mjs',dir,...(mode==='bench'?['--timed']:[]),'--',...(mode==='fit'?[]:[mode]),...args],{encoding:'utf8'}));
   console.log(JSON.stringify({...out,tableSha256:createHash('sha256').update(powers).digest('hex')}));

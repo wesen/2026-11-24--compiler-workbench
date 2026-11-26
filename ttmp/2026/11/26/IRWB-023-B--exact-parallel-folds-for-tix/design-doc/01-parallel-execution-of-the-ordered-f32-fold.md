@@ -1,7 +1,7 @@
 ---
-Title: Parallel execution of the ordered f32 fold
+Title: Fitting an exponential and preserving the ordered fold in Tix
 Ticket: IRWB-023-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -9,70 +9,277 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: Current numerical acceptance relation
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Generated kernel and scalar baseline
+    - Path: repo://src/tensor/evaluate.ts
+      Note: Ordered f32 meaning and source binder traversal
+    - Path: repo://ttmp/2026/11/26/IRWB-023-B--exact-parallel-folds-for-tix/scripts/10-calibrate.cu
+      Note: Per-cell coefficient bounds and conflict witnesses
+    - Path: repo://ttmp/2026/11/26/IRWB-023-B--exact-parallel-folds-for-tix/scripts/11-deploy.cu
+      Note: Audited deployment and matched timing control
+    - Path: repo://ttmp/2026/11/26/IRWB-023-B--exact-parallel-folds-for-tix/scripts/12-row-region.mjs
+      Note: Source domain and escape checks
 ExternalSources: []
-Summary: ""
+Summary: A fitted exponential and checked row schedule deliver exact softmax and attention on the GB10.
 LastUpdated: 2026-11-26T18:27:07.354961386-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
-# Parallel execution of the ordered f32 fold
+# Fitting an exponential and preserving the ordered fold in Tix
 
-Take the source-order f32 fold as a performance contract. A fast tree reduction that gives a reproducible answer still owes us the *particular* answer computed by the Tix interpreter. My first target is a row of softmax. Its parallel max and exponential surround a scalar sum whose roundings influence every output. It has enough independent work to make honest controls possible.
+On the GB10, a Tix softmax over 4,096 rows of 1,024 values took **0.175072 ms** with the research compiler schedule, **0.744544 ms** with the merged CUDA emitter, and **0.141184 ms** for a streaming kernel on the same buffers. The scheduled softmax and the public f32 interpreter produced the same 16,777,216 output bytes. All three times are medians of 21 interleaved CUDA-event intervals. The schedule retains every addition in the denominator, in source order. Its exponential uses a quadratic polynomial and a table in which **one binary64 coefficient moved four representable values**. That small change let a cheaper polynomial reproduce every required f32 output on this device. [Deployment and samples](../scripts/11-full.json) · [Independent whole-function result](../scripts/11-full-node.jsonl)
 
-## Research design
+I would fund the following work, in priority order.
 
-1. Place a whole row in a cooperative GPU block. Parallelize pointwise work and the maximum, then let one owner perform the sum in lexical order. This gives an exact competitor for any numerical innovation. Compare word by word, and compare CUDA event samples at the same shape on the same data.
-2. Evaluate adjacent chunks concurrently from predicted starting values. Within a fixed normal exponent range, translating an accumulator by an even number of representable steps preserves round-to-nearest-even decisions. Record the extrema of the entire predicted path. If the true entry has matching parity and both paths stay in the interior, adjust the end by the same displacement. Otherwise replay from the known entry. Count actual replay, dependence length and GPU time separately.
-3. Bind that choice to a checked schedule artifact. Check coverage, ordering, local rounded operations, the guard and its fallback; retain a GPU comparison against the current f32 tree. Test the gate with real wrong candidates outside the shapes exercised by the public lowering contract.
+| Rank | Compiler work | Decision from this round |
+|---|---|---|
+| 1 | Synthesize an intrinsic for the argument domain established by the IR. Fit its coefficients to the actual f32 reference and certify the deployed executable by enumeration. | Build. The final quadratic matched Node on every negative-sign input through −∞. The matched streaming control leaves relatively little headroom at the corpus softmax size. |
+| 2 | Recognize a row-local region by binder identity and use a cooperative GPU schedule with one ordered-sum owner per row. | Build this control first. It halved time before changing the exponential. The same region occurs inside attention, where the whole-function gain was smaller and measurable. |
+| 3 | Execute chunks of an ordered fold speculatively, with a mathematical certificate for translating each chunk to the actual incoming accumulator. | Keep as a research option. The transfer is exact under its guard and often succeeds on positive terms. The implementation lost to the simple owner after scalar optimization. |
+
+## What would count as best in class
+
+I would compete on **time to a reproducible source answer**. For the first milestone, a user should be able to ask which operation produced an output word and get the same answer from the GPU and the current Tix f32 revision, including at a near-midpoint exponential and on a non-multiple tile width. Fast kernels compete within that constraint. An implementation that computes a more accurate mathematical sum may be valuable under a separate contract. The reference for this question is the executable source tree, which specifies every intermediate rounding. Scope a claim to the observed output, admissible inputs, target and reference runtime.
+
+Use three scorecard columns. The first is assurance. Specify whether a claim rests on a structural derivation for a restricted schedule, exhaustive enumeration of a scalar domain, or comparison of sampled program outputs. Count wrong words and show the first differing input. The second is paired device latency. Report warm, rotating-order intervals for the generated baseline, candidate and streaming control, with the input distribution, shape and fallbacks. The third is the cost and reuse of evidence. Charge full enumeration once per executable signature and reference profile. Charge the source-region check on each new program. A backend that spends seconds qualifying every 0.2 ms call will lose even if its kernel wins.
+
+My proposed promotion gate for this first target is zero wrong words on the enumerated domain, successful structural discharge, agreement on independent full-size and boundary programs, at least 3× the paired Stage 2 speed and at least 75% of matched streaming throughput at 4096 × 1024. The final prototype reached 4.25× and 80.6%, respectively. Its algorithmic input-plus-output bandwidth was 191.7 GB/s versus 237.7 GB/s for the matched control. Both figures count one input read and one output write. Actual DRAM traffic can differ through caches and table reads. The coordinator's separate 244 GB/s streaming figure provides a useful scale. No cross-vendor performance record is claimed. cuBLAS SGEMM's reported 8.15 TFLOP/s at 512³ measures a different operation, with a different freedom to contract or group operations.
+
+### The contract the repository already implements
+
+The Stage 1 interpreter resolves binders, walks affine addresses row-major, starts sum at +0, folds in increasing lexical order and applies `Math.fround` at each scalar operation. Its f64 mode evaluates the same tree without those roundings. Stage 1 checks `inline` against the preceding f32 revision on chosen samples. An accepted `split-sum` can change rounding and spends a sampled tolerance budget against the f64 origin. Stage 2 lowers the *current* revision. Its CUDA uses explicit rounded operations and double exp converted to f32. Its implemented heterogeneous invariant compares GPU outputs to f64 within a budget, including an explicit comparison rule for nonfinite results. An exact backend must honor the actual nested fold if the caller already accepted a split. [Stage 1 design](../../IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-semantics-and-checked-tensor-rewrites.md) · [Stage 1 report](../../IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md) · [Stage 2 design](../../IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md) · [Stage 2 report](../../IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md)
+
+I sent two altered but runnable CUDA programs through the actual lowering invariant. Replacing rounded-double exp by CUDA expf passed all 32 generated cases, although 63 of the 360 returned f32 words differed from the public interpreter. With logits [0, −1], one of the two final probabilities changed. A second mutation skipped the 33rd addition. It agreed on every sampled f32 word and received the same tolerance verdict. At width 33, all-zero logits should produce 1/33 everywhere. Every output was 1/32. Tightening the numeric comparator would expose the first defect. The second requires coverage of schedule boundaries or a structural argument. [Real CUDA mutant runs](../scripts/08-results.jsonl)
+
+## 1. Fit the output word that the language actually promises
+
+The argument to exp in stable softmax is especially attractive. For a nonempty row of finite f32 logits, its maximum is a row member. For every column, the exact difference from that maximum is nonpositive. Rounding preserves that order. The subtraction can overflow to −∞ on extreme finite inputs. Both signed zeros are possible and exp returns one at either. The relevant scalar domain therefore has roughly half the binary32 encodings, a fixed cardinality independent of the size of the tensor. For an indirect input such as an attention score, a prior computation can overflow or produce NaN. The deployed routine uses the rounded-double operation whenever the test `x <= 0` is false. This explicitly handles unordered comparisons. On the finite-logit domain there are no NaN outputs. The earlier stage report records different device and Node NaN payloads for a separate operation. Assign any future NaN-payload promise its own scope.
+
+### Search space and prior work
+
+Tang's table-driven exp separates range reduction, a small polynomial and reconstruction. RLIBM-32 shows how the entire rounding interval of a desired output can constrain polynomial synthesis. The application here makes two choices specific to Tix. Use the versioned Node f32 *observation* as the authority, then make the final coefficient a discrete variable in the actual CUDA instruction sequence. The search can certify a faster table, or return two source-level f32 inputs demonstrating why that table family cannot work. No assumption about mathematical correct rounding of JavaScript transcendental functions is required. [Ping Tak Peter Tang, *Table-driven implementation of the exponential function in IEEE floating-point arithmetic*, 1989](https://doi.org/10.1145/63522.214389) · [Jay P. Lim and Santosh Nagarakatte, *RLIBM-32: High Performance Correctly Rounded Math Libraries for 32-bit Floating Point Representations*, 2021](https://arxiv.org/abs/2104.04043)
+
+For a table with B entries, choose an integer k near xB/ln 2 using f32, decompose it as jB+t with 0 ≤ t < B, and compute the residual r = x − k ln(2)/B with an explicit f64 FMA and a fixed binary64 constant. The approximate choice of k suffices because the residual uses the same k. Approximate exp(r)−1 by u. The quadratic uses u = r(1+r/2). The cubic adds r/6 to the inner coefficient 1/2 and the quartic adds the next Taylor term. The code fixes operation order, rounding and constants. Form scale = 2^j A[t] by adjusting the exponent bits of a positive normal double. The output is the f32 conversion of a single f64 FMA computing scale·u+scale. Scaling a double this way stays in its normal range even when the final binary32 result is subnormal. The internal FMA is intentional. Tix exposes one rounding of exp's result and does not prescribe the implementation inside exp. Its separate source multiply and add still require separate roundings. [Executable expression](../scripts/04-exp.cuh) · [NVIDIA, *Floating Point and IEEE 754*, CUDA documentation](https://docs.nvidia.com/cuda/floating-point/index.html)
+
+The endpoint shortcuts have an elementary explanation. At magnitudes up to 2^-25, exp(−a) ≥ 1−a and, for a>0, the inequality is strict. This stays on the one side of the binary32 midpoint immediately below 1. From magnitude 104 onward, exp(−104) is below half the smallest positive f32 subnormal. The middle interval contains 265,289,728 encodings. We ultimately enumerated the two outer ranges too. A proof about the real exp alone would not establish what an installed Node or CUDA binary returns.
+
+### A failure close enough to measure
+
+A 1,024-word pilot near −1 made the smaller cubic look perfect. In the complete middle interval, GPU comparisons to the current lowering's double-exp-then-f32 path gave the following counts. The coordinator independently established that path's agreement with the Node observation on f32 exp. The final qualification below also executes Node directly.
+
+| Implementation before fitting | Wrong words out of 265,289,728 |
+|---|---:|
+| CUDA expf | 100,518,511 |
+| 128-cell quadratic | 1,674,541 |
+| 128-cell cubic | 903 |
+| 1,024-cell quadratic | 3,996 |
+| 1,024-cell cubic | 1 |
+| 128-cell quartic | 1 |
+
+Both single failures occur at input word `0xc16912cd`, which is exactly −14.56709003448486328125. The polynomial returned `0x34fd331a`; Node returned its successor `0x34fd331b`. Computing the real exponential at 60 and 100 decimal digits placed it above the midpoint by about 6.69787×10^-23, or 2.35660×10^-9 of a binary32 ULP. That distance is roughly 1.265 binary64 ULPs at the output. A good polynomial and wider arithmetic still left just enough freedom to select the wrong word. A patch on that exact argument sufficed for both functions in the first deployment. The pilot and full sweeps used identical arithmetic. [Pilot](../scripts/04-probe.json) · [Complete active sweep](../scripts/04-active.json) · [Midpoint calculation](../scripts/07-results.txt)
+
+### Turning the last rounding into a fit problem
+
+The two failing approximations look up the same fractional octave. Fix the decomposition, r and u for an input x. Vary only the positive table coefficient A[t]. The exact value entering the final double rounding is 2^j × A[t] × (1+u). The multiplier is positive. On the central range, even including f32 cell-selection error, the residual is less than 1/B in magnitude for the tested tables. All three polynomials have 1+u>0 there. Exponent adjustment, f64 nearest-even rounding and narrowing to f32 are monotone. Consequently the set of consecutive binary64 table words that give x its desired output word is an interval. The proof also covers subnormal target outputs. Plateaus in the conversion are precisely the freedom that the fitter can use.
+
+For each x, binary-search the lower and upper admissible word offsets within a chosen window about the initial table value. Inputs in cell t jointly require the largest lower bound and smallest upper bound. The GPU uses integer max and min and retains the source word attaining each bound. If the intersection contains zero, keep the original table word. Otherwise choose the feasible offset closest to zero. If two actual constraints cross, their witnesses refute **every choice of that one coefficient** with the other operations fixed. If only a search-window boundary prevents a fit, the honest diagnosis is that this search did not find one. A larger polynomial family can change either outcome.
 
 ```mermaid
 flowchart LR
-  A[Row inputs] --> M[Parallel max]
-  M --> E[Parallel rounded exponential]
-  E --> S[Source-order fold]
-  S --> D[Parallel rounded division]
+    X[Input word and oracle output] --> R[Cell t and fixed residual polynomial]
+    R --> B[Search admissible coefficient interval]
+    B --> I[Intersect all intervals for cell t]
+    I -->|Feasible| A[Store closest feasible table word]
+    I -->|Conflict| W[Return two incompatible inputs]
+    A --> E[Compile deployed routine]
+    E --> V[Enumerate routine and independent Node reference]
 ```
+
+| Cells / degree | Window in double word steps | Cells refuted by competing inputs | Only outside window | Feasible cells requiring edits |
+|---|---:|---:|---:|---:|
+| 128 / cubic | ±65,536 | 111 | 0 | 9 |
+| 128 / quartic | ±64 | 0 | 0 | 1 |
+| 1,024 / quadratic | ±65,536 | 659 | 0 | 134 |
+| 1,024 / cubic | ±64 | 0 | 0 | 1 |
+| 4,096 / quadratic | ±512 | 7 | 2 | 47 |
+| 16,384 / quadratic | ±128 | 0 | 0 | 1 |
+
+One example makes the word *refuted* concrete. In cell zero of the 128-cell cubic, the negative input whose magnitude bits are `0x3b30f99e` requires a shift of at least +9,572. Magnitude `0x37f4c0ea` permits at most +8. Increasing the search radius cannot fix their disagreement. For the feasible families, the quartic took +4 at entry 126, the cubic +5 at entry 1,008, and the large quadratic +4 at entry 16,124. The quartic cell had admissible offsets [4,10]. For the other two cells the upper value reached the searched boundary. The result allows a table change chosen during compilation to replace a runtime exceptional-word branch. The 128 KiB quadratic table also removes a polynomial operation from the regular path. [Calibration kernel](../scripts/10-calibrate.cu) · [Bounds, edits and witnesses](../scripts/10-fit.json)
+
+### Certify the code that runs
+
+Fitting used the rounded-double CUDA implementation as an oracle. I made a second experiment independent of both the fitter and that oracle. Compile one executable with an out-of-line scalar device function. The timed tensor kernel and a separate audit kernel call that function. For every sign-bit-one encoding from −0 to −∞ inclusive, write the scalar output word in input-magnitude-word order. Stream those bytes through SHA-256 on the GPU host. On the local machine, reinterpret each magnitude word as f32, negate it and execute `Math.fround(Math.exp(x))` on Node 24.18.0, V8 13.6.233.17-node.50. Compare the byte counts, adjacent half-open domains and digests. The +0 case uses the same magnitude-zero branch and appears at finite row maxima in whole-program checks.
+
+| Magnitude-word interval | Inputs | SHA-256 of the little-endian output stream |
+|---|---:|---|
+| [00000000, 33000000) | 855,638,016 | `6074656f49f9cfa5e132236a081594fe734b9d821f9da5f6ea5975870d9b47a6` |
+| [33000000, 42d00000) | 265,289,728 | `9a94598ce63b8f954f8e0c1d5c8977aee25455b4aea7be794d4ffd8d1ae0703f` |
+| [42d00000, 7f800001) | 1,018,167,297 | `41db906f7c612d6da591d1c0166b9fc06b79fac836834510c5de751fdd475aaa` |
+
+The patched cubic, patched quartic and fitted deployment quadratic all agreed across these 2,139,095,041 inputs. In the first executable the device also compared the cubic and quartic word by word. The quadratic executable SHA-256 is `114f845ed565fc0b612ea3c14e369723df8f4c631399d1c2be471410258a6871`. It used the GB10 sm_121, nvcc 13.0.88, runtime and driver API version 13000. This is exhaustive empirical evidence on the specified domain, conditional on the harness, toolchain, execution and digest comparison. It does not prove a real-analysis theorem about all exp implementations. Changing an inlined instruction, compiler, binary, GPU profile, reference engine or domain invalidates some part of the receipt. The first implementation can afford to invalidate conservatively. [Quadratic GPU receipt](../scripts/11-active-gpu.json) · [Independent Node receipt](../scripts/11-active-node.json) · [Enumeration and comparison](../scripts/06-node-audit.mjs)
+
+The final quadratic's local oracle phase took about 12.0 s across all three intervals on the shared host. This is offline qualification. The reference streams can be reused for another target if the Node reference, domain and byte ordering match. Compiling another whole executable changed its identity in this study and triggered another device audit. Eventually a separately compiled device module with a stable content hash could amortize that cost across many kernels. Loading exactly those bytes, with verified entry points and parameters, would be a separate engineering milestone. The existing remote build key identifies source and compiler *path*. An upgrade in place can change a compiler without changing that path. The prototype records the actual executable hash as well as the runner's source hash.
+
+### Integration, risks and criteria for promotion
+
+Use a typed intrinsic artifact carrying the operation, reference version, input classification, operation sequence, table bytes or their content identity, target and accepted receipt. A v6 invariant binds this artifact to the proposed schedule and its source artifact. Check that the selected binary and table match, that each interval starts where its predecessor ended, that both sides enumerated the stated word count, and that output digests agree. Keep the source proof of the restricted domain separate from the scalar enumeration. That division allows many source functions to reuse a scalar result without copying its billion-case evidence into every transformation record. The CPU gate built here processes three interval records.
+
+The search only works this easily for small finite input domains and a monotone scalar parameter. A two-input intrinsic has about 2^64 word pairs before restrictions. A polynomial whose range-reduction index depends on the fitted coefficient may lose monotonicity. Binary64 doubles have a prohibitive exhaustive domain. The next operations to consider would be single-argument f32 log or tanh on a demonstrably useful subdomain, each with a new table, oracle and performance experiment. There is no measured speed claim for them here. Promote the exp pass when the *same* qualified code remains faster than the rounded-double control across relevant data distributions and the amortization policy avoids device work on routine plan selection. Make disagreement, missing evidence and unsupported specialization distinct outcomes. All three should lead to a known executable path.
+
+## 2. Fuse a row by preserving the dependency that matters
+
+The corpus softmax has four definitions. Its row maximum feeds a shift and exponential, the shifted exponentials feed a sum, and each final division needs both an exponential and the row sum. One GPU block can own one row. Its lanes load columns and reduce the maximum with the emitter's signed-zero-aware max, evaluate the specified rounded subtraction and exponential, then retain the f32 results in shared memory. One thread executes the source fold, starting at +0, visiting j=0 through C−1 with an explicit round-to-nearest f32 addition. After a barrier, the lanes emit rounded divisions. The row schedule has one external input and one external output. At the benchmark size the materialized program logically moves about 24 NC bytes across its kernels for the full-size tensors, versus 8 NC bytes in the fused schedule, ignoring small row arrays and cache effects. These are logical bytes rather than hardware performance-counter readings.
+
+```mermaid
+flowchart TD
+    X[Row of logits] --> M[Parallel max over same row]
+    X --> E[Rounded subtract and exp per column]
+    M --> E
+    E --> H[Store f32 values in shared memory]
+    H --> S[One owner adds columns in source order]
+    H --> D[Parallel division per column]
+    S --> D
+    D --> Y[One output store per coordinate]
+```
+
+There is a short correctness argument for this restricted template. Each scheduled row owns disjoint output addresses. The maximum of a finite row can be computed by a tree because the result selects the greatest member with +0 preferred over −0 on ties. The neutral element is −∞. The emitter also propagates NaNs with a fixed representation for its binary max operation. For each legal column the producer reads exactly the same input and stored row maximum as the source. Shared f32 storage preserves that value. Induct on the column number: identical incoming accumulator and identical column value, passed to the same rounded addition, give the identical next accumulator. The final divide consumes those same two f32 words in the same order. Each cross-thread read follows a block-wide barrier. The proof depends on ownership, operand order, coverage and f32 operation identities. It imposes no associativity obligation on addition. Existing source-to-CUDA primitive semantics at other sites remain part of the trusted base.
+
+Row-local fusion itself is familiar. The Triton tutorial uses a resident row to limit global traffic; its example explicitly uses an approximate exponential. Exo shows the value of expressing performance work as checked scheduling over loop programs. Tix supplies two additional handles: lexical binder identities tell us which maximum bounds which subtraction, and the exact f32 tree tells us which dependency we must retain. The research result is how far the simple ordered owner gets once its neighboring operations use verified faster implementations. [Triton project, *Fused Softmax*, documentation accessed 2026](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html) · [Yuka Ikarashi, Gilbert Louis Bernstein, Alex Reinking, Hasan Genc and Jonathan Ragan-Kelley, *Exocompilation for Productive Programming of Hardware Accelerators*, 2022](https://www.cs.cornell.edu/~yuka/pdf/exo_pldi2022_full.pdf)
+
+### Identify the region without relying on source names
+
+Inspect four consecutive definitions in the current native IR. Require rank two for the incoming tensor, row extent N, column extent C, a plain affine read of this tensor at (row, reduction-column), and a maximum binding that column over C. Require the exp argument to subtract that row's max from the same input coordinate. Require an ordered single-binder sum over the exponential and the quotient to read the same exponential coordinate and row denominator. Compare binder IDs under the correspondence between statements. Merely matching variable spellings or tensor shapes would accept a transposed read on a square tensor. Reject the match if a later statement reads a supposedly private intermediate or if the function returns it.
+
+The ticket recognizer found exactly two regions in the six original fixtures. In softmax it found `x → y` at definition zero. In attention it found `score → weight` at definition one. It found none in conv2d, matmul, MLP or layernorm. Injecting a downstream use of the exponential in attention made privatization invalid and the recognizer rejected it. Applying the existing split pass also made the source fold tree ineligible. In a general emitter the scope guard must retain zero extents, arbitrary supported affine shapes and any prior accepted revision. This prototype uses a width cap of 1,024, chooses the generated route on empty dimensions and wide rows, and bounds flat integer indexing in the host. The deployed scalar routine has a precise path for a positive or unordered argument. [Region recognizer](../scripts/12-row-region.mjs) · [Corpus scan](../scripts/12-results.txt)
+
+### Timing the schedule and pricing each change
+
+All timing runs used `tools/cuda-remote.mjs --timed`. Each executable included the actual generated Stage 2 kernel definitions and corresponding launch shapes. Allocation, data generation, transfers, hashing, compilation and SSH were outside the events. Inputs came from seed 23023 and were reused across variants. Each variant ran before timing. The start position rotated across repetitions. Times are single-launch or launch-chain medians in milliseconds. The shared system, warmed arrays, modest sample counts and differing device clocks limit extrapolation. The historical single-run Stage 2 numbers provide context; all speed ratios below use a paired control in the same run.
+
+| First ablation, 11 intervals | Generated | Fused ordered | Fused chunk transfer | Fused ordinary tree |
+|---|---:|---:|---:|---:|
+| 4096 × 1024, two-unit logit spread | 0.741344 | 0.361632 | 0.362592 | 0.355648 |
+| 127 × 997, 80-unit spread | 0.107872 | 0.020832 | 0.024928 | 0.018784 |
+
+The exact schedules matched every word. The tree changed 3,822,368 of 4,194,304 outputs in the first row of the table and 108,656 of 126,619 in the second. Its small speed advantage over the ordered owner motivated the investigation of the exponential. At full size, replacing exact rounded-double exp by a patched cubic reduced the fused owner's median from 0.360576 to 0.191744 ms. With that cubic the speculative transfer took 0.224480 ms, and the wrong tree took 0.188640 ms. Ordinary CUDA expf with the strict sum took 0.148608 ms and changed 1,675,766 output words across all 4,096 rows. In other words, two apparently attractive shortcuts had quite different prices. [Full samples and mismatch counts](../scripts/05-full.json)
+
+| Patched-scalar campaign, 15 intervals | Generated | Ordered double | Ordered cubic | Ordered quartic | Cubic transfer | Cubic tree | Ordered expf |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Full, narrow spread, repeat | .748672 | .358560 | .189472 | .209120 | .211072 | .187584 | .139488 |
+| Full, 160-unit spread | .763168 | .367744 | .196896 | .217568 | .235872 | .193856 | .148800 |
+| 127 × 997, 80-unit spread | .107840 | .020832 | .016672 | .016704 | .020800 | .014624 | .008672 |
+
+All strict variants again agreed. The wide full-size case exercises underflow in exp; it changed 1,810,901 outputs with the tree and 855,639 with expf. The short case changed 108,656 and 50,219 respectively. In three separate fitted-table runs the 128-cell quartic, 1,024-cell cubic and 16,384-cell quadratic with an ordered owner took 0.213344, 0.191872 and 0.173248 ms. The large table paid its way at this size. The raw calibration harness retains the label `cubic` for the selected implementation; the driver argument and receipt filename identify the actual family. [Repeat](../scripts/05-repeat.json) · [Wide](../scripts/05-wide.json) · [Short](../scripts/05-tail.json) · [Fitted quadratic](../scripts/10-quad-bench.json)
+
+| Final selectable schedule, 21 intervals | Generated | Selected quadratic | Matched stream | Speedup vs generated |
+|---|---:|---:|---:|---:|
+| 4096 × 1024, two-unit spread | .744544 | .175072 | .141184 | 4.25× |
+| 4096 × 1024, 160-unit spread | .769344 | .178304 | .139584 | 4.31× |
+| 127 × 997, 80-unit spread | .109696 | .016928 | .004000 | 6.48× |
+
+For the first line the complete observed ranges were [.741376,.837696], [.173184,.184576], and [.139296,.146688] ms respectively. The largest and smallest variant times are well separated. The short-row gain against Stage 2 is large, but there the strict softmax takes over four streaming intervals: launch, exponential execution and the serial fold matter more. Full outputs from all three calls matched independent `runTix` digests. Twelve additional cases covered zero rows, zero columns, widths 1, 2, 7, 31, 32, 33, 997, 1023, 1024 and 1025, extreme finite values, signed zeros and tiny subnormals. Width 1025 exercised the real fallback. [Final full](../scripts/11-full.json) · [Wide](../scripts/11-wide.json) · [Short](../scripts/11-tail.json) · [Boundary oracle runs](../scripts/11-edges-node.jsonl)
+
+### What transfers to attention
+
+The six-definition attention program first computes a scaled score matrix and finally contracts the weights with V. I retained both generated contractions and their buffers. Only the four definitions from row maximum through normalized weight were replaced. At Q=K=1024 and D=V=64, 15 interleaved intervals gave **1.045792 ms** for the unmodified chain and **0.757056 ms** for the three-kernel chain, a 1.38× gain. Timing the fused middle by itself on the materialized scores gave 0.047264 ms. The two large contractions dominate what remains. At Q=7, K=33, D=5, V=3, times were 0.019840, 0.011520 and 0.004480 ms. All 65,536 full-size outputs and all 21 small outputs agreed with the original CUDA and with separate public Tix interpreter runs. The attention executable also passed its own exhaustive scalar audit after relinking. The small case forces distinct row/column extents and a partial warp. [Full attention](../scripts/13-full.json) · [Small attention](../scripts/13-small.json) · [Independent whole-function digest](../scripts/13-full-node.json) · [Relinked scalar audit](../scripts/13-active-gpu.json)
+
+This result sets a limit on the proposal. A 4.25× softmax speedup does not imply the same factor for an enclosing program. The attention schedule still materializes scores and weights. Streaming attention that replaces the denominator by an online recurrence would need its own rounding argument. The next experiment I would authorize on attention is tiling score and value storage while proving that each consumer sees the original f32 word in the original fold position; reordering the normalization cannot borrow the exp certificate. The portable result here is the small region contract and its profitable reuse between two functions.
+
+For v6 the schedule should be a first-class target artifact with a checked template identifier, concrete source binder mapping, region boundary, shape predicate and fallback. The invariant needs both the source revision and the plan. The prototype calls `AnalysisManager.verifyTransformation` on standalone softmax and uses the same recognizer to select the region in the attention experiment. The actual GPU code in the experiment is a trusted handwritten template. Checking `tail = masked` in a plan cannot establish that arbitrary C++ masks each load. Generate from a small trusted template or validate a restricted loop/synchronization IR before emitting C++. Bind the resulting executable as well. This distinction matters for every proposed correctness guarantee. Measure success by accepted matches, rejection of unsafe matches, full output equality, and paired end-to-end time. The same template should decline shapes or programs outside its scope without preventing the original backend from running.
+
+## 3. Can the ordered sum itself be parallelized?
+
+Consider the transition T of a chunk of f32 inputs. For an incoming f32 word a, T(a) performs the exact ordered sequence of rounded adds. Each chunk is a function, and composing these functions in order is associative. A general table for T would need up to 2^32 entries per chunk. The useful question is whether the particular path taken by a chunk admits a compact representation near its actual entry. Thinking of the chunk as a function also clarifies why adding independently computed chunk *sums* can fail. The same chunk can implement different effective increments at even and odd incoming significands.
+
+For a fixed sign and fixed normal exponent, the interior f32 words form a uniformly spaced grid. Let q denote one grid step in numeric value; for negative encodings, increasing the raw word walks in the negative numeric direction. Suppose a trace starts at a predicted word p and records every intermediate rounded accumulator, including the input and output. Let d be the raw word difference from p to the known true entry. When d is even, translating a grid value by d steps preserves tie parity. If each predicted result and its translated copy remain strictly inside the same sign/exponent binade, then rounding after translation gives the translation of the rounded result. The nearest-neighbor cells have the same endpoints and the same open/closed half-way boundaries. Induction proves that T(actual) is the recorded end word plus d. The lower boundary needs care because the neighbor toward zero may have a smaller spacing. The implementation conservatively excludes that boundary from both paths.
+
+Two adjacent predicted seeds suffice to represent both parities. For each seed the certificate consists of its beginning and end words and its minimum and maximum raw word along the entire path. One equality comparison handles the case in which the true seed already matches. Otherwise check sign, normal exponent, even difference and bounds on the extrema before and after translation. If neither trace applies, replay the chunk from the actual entry. In the small CPU model the predictor uses the exclusive f64 prefix rounded to f32. In the GPU implementation, one warp computes approximate prefixes of per-chunk f32 sums, with 32 contiguous terms per lane. Accuracy of this prediction affects cost alone. The owner commits chunks in lexical order. A replay of one chunk gives the exact entry for the next even when prediction was very bad.
 
 ```mermaid
 flowchart LR
-  P[Predicted chunk entry] --> T[Trace and extrema]
-  T --> G{Can translate from exact entry?}
-  G -->|yes| A[Translate end word]
-  G -->|no| R[Replay local chunk]
-  A --> N[Exact next entry]
-  R --> N
+    C[Contiguous terms] --> P[Estimate each incoming prefix]
+    P --> T[Trace adjacent seeds concurrently]
+    A[Actual incoming word] --> G{Identity or valid even translation?}
+    T --> G
+    G -->|Yes| H[Return exact translated endpoint]
+    G -->|No| F[Replay only this chunk from actual word]
+    H --> N[Exact next entry]
+    F --> N
 ```
 
-## Evidence and decision rule
+Kapre and DeHon already demonstrated that parallel hardware can recover the exact sequential accumulator. They guess a vector of prefixes and iteratively propagate errors until neighboring transitions agree. My proposed certificate checks a local translation of a trajectory and has a bounded replay path. It makes the stability of the exponent and the direction of the terms measurable compiler facts. Demmel, Ahrens and Nguyen's reproducible accumulation targets a sum independent of reduction order. A stable answer across different orders and the specific sequential Tix answer are distinct numerical specifications. I know of no basis from this study for a priority claim about all parallel summation algorithms. [Nachiket Kapre and André DeHon, *Optimistic Parallelization of Floating-Point Accumulation*, 2007](https://nachiket.github.io/publications/fp-accum_arith-2007.pdf) · [James Demmel, Willow Ahrens and Hong Diep Nguyen, *Efficient Reproducible Floating Point Summation and BLAS*, 2016](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-121.html)
 
-The local build and public evaluator ran on Node 24.18.0. For the three-term row `[1, 2^-24, 2^-24]` the public evaluator returned 1. The untimed CUDA probe on NVIDIA GB10 sm_121 produced `0x3f800000` for the half-ULP tie. These are feasibility observations. For the proposed optimization the acceptance criteria are zero changed finite words, agreement on signed zeros, an explicit NaN policy and a speed advantage over a competitive exact control. A frequent translation hit with worse end-to-end time would favor the control.
+### Falsification at two precisions
 
-Kapre and DeHon already solved sequential-equivalent parallel accumulation by guessing a whole prefix and relaxing errors until neighboring entries agree. Their measured FPGA results establish that strict summation can expose parallelism. Here the candidate is a local transfer function with a bounded fallback and a compiler-checkable validity interval. Demmel, Ahrens and Nguyen target order-independent reproducibility, a useful distinct accuracy contract. [Kapre and DeHon, *Optimistic Parallelization of Floating-Point Accumulation*, 2007](https://nachiket.github.io/publications/fp-accum_arith-2007.pdf). [Demmel, Ahrens and Nguyen, *Efficient Reproducible Floating Point Summation and BLAS*, 2016](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-121.html).
+I built an integer model of binary floating point with four significant bits, exact integer inputs and explicit nearest-even rounding. It exhausts both signs, distinct predicted/actual grid points of magnitude 32 through 60, and all pairs from a 65-element representable term set. This tests the translation condition at a precision small enough to see failures frequently. There were 8,444 accepted nonidentity strict translations with zero errors. Admitting odd shifts caused 7,680 errors among 25,420 acceptances. Checking endpoints alone caused 2,180 errors among 21,856. Including the low boundary without a direction argument caused 644 errors among 16,156. For instance, the magnitude-40 negative anchor translated to magnitude 32 followed by terms 0 and +2. The original path stayed rounded to −40; translation predicted −32, while the lower binade contains −30 exactly. The mutant's mistake was ignoring the neighbor on the other side of a power of two. [Model and explicit rounding](../scripts/03-miniature.mjs) · [Counts and individual witnesses](../scripts/03-results.json)
 
-Build the exact control and replay checker first. Promote the speculative method only on data and shapes where the savings repay prediction and validation. Limit the first implementation to one contiguous reduction axis, one output owner and finite, well-defined calls. Unhandled cases execute the existing source-order emitter. More aggressive fusion and contraction schedules can then reuse the same obligations.
+In binary32 I checked 194,670 chunk endpoints over nine streams, widths 8, 32 and 128, and tail lengths around 1,024. Every guarded endpoint equaled a separately executed sequential f32 loop. Fifty-four selected whole rows also went through the public Tix evaluator. These counts exercise the implementation; the translation lemma supplies the reasoning for other inputs. Here are the width-32 counts out of 4,138 chunks per stream.
 
-## First measurements
+| Terms | A predicted seed equaled the entry | Accepted even translation | Replayed |
+|---|---:|---:|---:|
+| Uniform positive | 1,116 | 2,595 | 427 |
+| exp of shifts in [−2,0] | 1,070 | 2,666 | 402 |
+| exp of shifts in [−80,0] | 1,619 | 2,214 | 305 |
+| Signed uniform | 763 | 917 | 2,458 |
+| Rounded signed products | 767 | 854 | 2,517 |
+| One followed by half-ULPs | 128 | 0 | 4,010 |
+| Alternating large spikes and cancellation | 128 | 0 | 4,010 |
+| Signed minimum subnormals | 4,138 | 0 | 0 |
+| Finite extreme terms yielding overflow | 128 | 0 | 4,010 |
 
-On 4096 × 1024 finite uniform logits spanning two units, the fused single-owner kernel matched the generated CUDA output at all 4,194,304 coordinates. Its median was 0.362 ms against 0.741 ms for the actual generated kernels in the same executable. The translation kernel took 0.363 ms and also matched every word. The conventional tree changed 3,822,368 outputs but took 0.356 ms. At 127 × 997 over an 80-unit input range, those times were 0.0208, 0.1079, 0.0249 and 0.0188 ms respectively (owner, generated, translated, tree). This puts row-local fusion first. It weakens the case for publishing speculative folds on this workload. The small gain available even to the wrong tree motivates a separate experiment on the exponential.
+There is a refinement specific to Tix's ability to recognize the output of exp or a square. For a positive normal entry and nonnegative terms, the sequence is nondecreasing. An exact pre-round sum cannot approach the lower boundary from below. The lower boundary can therefore be admitted in both paths, and just the two endpoints bound the trace. This direction-aware rule admitted all 4,010 half-ULP replays and returned the sequential result on each. It admitted zero additional width-32 chunks on the random narrow-exponential stream. It also passed 3,256 miniature nonidentity tests. The GPU uses endpoint bounds for monotonicity but kept the more conservative low-boundary exclusion in its measured kernel. The extension has **no measured GPU speedup**. [Binary32 data, including width ablations](../scripts/01-results.jsonl)
 
-The finite-word transfer follows from translation symmetry of nearest-even rounding on a uniform grid. The low significand bit decides a half-way tie. An even shift preserves that bit at every intermediate state. A four-significand-bit model checked 8,444 nonidentity relocations with no wrong endpoints. Admitting odd shifts caused 7,680 errors. Checking only the trajectory endpoints caused 2,180 errors. Including the low power-of-two boundary without a direction proof caused 644. On 4,138 width-32 chunks of positive random data, 427 replayed. On the same number of signed chunks 2,458 replayed. These frequencies motivate source-level sign information, and the GPU measurements put a price on using it. Raw counts, mutation witnesses and all event samples are in the ticket scripts.
+Smaller chunks reduce replay but increase the number of summaries to construct and commit. For narrow shifted exponentials the replay rate rose from 460/16,426 at width 8 to 402/4,138 at width 32 and 290/1,066 at width 128. A single seed accepted 1,924 of the 4,138 width-32 chunks; the paired seeds accepted 3,736. Blindly taking the main predicted endpoint was wrong 3,374 times. The extra coverage costs a second path, and neither a high hit rate nor a cheap f64 predictor is a GPU timing. The actual cooperative implementation added loads, two sequences of speculative adds, prefix exchange, summary storage and serial commits. A single independent row is already assigned to each of thousands of blocks at the main shape. The GPU has other rows to execute during a true recurrence.
 
-## A faster exact exponential changes the ranking
+I would keep this template in the ticket until it beats the best exact owner with the optimized exponential by at least 10% on an identified workload, including tails, prediction, fallback and unfavorable inputs. Candidate workloads have very few independent outputs, long contiguous sums and a known term sign. Measure latency and replay on those actual programs. For v6, model preconditions such as nonnegativity, ordered chunk partition and fallback as checks on the schedule artifact. Never turn replay statistics into a proof obligation. Incorrect prediction is an ordinary runtime branch. The measured evidence argues against implementing this as a default tensor optimization.
 
-A finite input row has an unusually useful postcondition. Subtracting its maximum gives only nonpositive arguments, including signed zero and possibly negative infinity through overflow. The compiler can specialize this single-argument f32 function and exhaustively test its entire observable domain once. I used a table of powers of two and explicit f64 fused polynomial evaluation. Multiplication by a power of two adjusts an exponent. For all small magnitudes the answer rounds to one, and for large negative arguments it rounds to zero. Explicit f32 rounding at the output remains.
+### Where the framework should draw the assurance boundary
 
-On the 265,289,728 active input words, `expf` disagreed with the GB10 rounded-double path 100,518,511 times. A 128-cell quadratic missed 1,674,541, a 128-cell cubic missed 903, and a 1,024-cell quadratic missed 3,996. A 1,024-cell cubic and a 128-cell quartic each missed **one** argument, raw word `c16912cd`. At that argument the real exponential lies about 1.265 binary64 ULPs above a binary32 midpoint. A one-word patch fixed both kernels. In the deployment executable, both patched device functions produced the same output on every negative-sign input through negative infinity. SHA-256 digests of their outputs agreed with independent Node 24.18.0 enumeration of all 2,139,095,041 inputs. Source and timing receipts identify the same executable SHA-256. Positive zero follows the same magnitude-zero branch.
+The current `assuranceOf` in `src/framework/contracts/differential.ts` distinguishes sampled evidence by its method field. Its other branch labels evidence as exact. The template invariant has a narrower conclusion than a universal program-equivalence check. Persist an explicit proposition with every result, for example “device entry E on domain D returns oracle R's word” or “plan P matches the four source definitions with this ownership map.” Require downstream consumers to check that proposition, revision and profile before displaying or reusing it. The existing `defineInvariant` and artifact ports carry this in a Tix-owned schema today. A generic change would be justified if independently developed domains need a shared typed representation of evidence scopes; the prototypes required none.
 
-The fused owner with the patched cubic took 0.191744 ms at the corpus size, down from 0.360576 ms with rounded double exp and 0.755008 ms for generated CUDA. Every returned word matched. A second locked run gave 0.189472 versus 0.748672 ms. Keeping ordinary CUDA expf was faster but changed 1,675,766 output words in the first run. The existing lowering checker accepted expf, including 63 changed words among its 360 compared positions. Another valid candidate that silently omitted term 33 passed every sampled word and changed every output on a width-33 all-zero row. These are different gaps. One calls for the right relation; the other calls for a schedule argument covering every extent.
+Record the plan and receipt as immutable artifact values in the IR/contract layer. The sampled differential checker already accepts a batched remote decision and can include target identity in its subject key. The synchronous native pass path that handles inline and split is appropriate for native IR edits; a heterogeneous target and remote evidence fit the asynchronous manager. No general dataflow solver is necessary for the four-statement proof. A sign analysis could later use the framework's analysis facilities when it has several consumers. No strategy gets to publish a faster candidate until its particular semantic checks have succeeded.
 
-**Revised priority.** Invest first in reusable exhaustively certified f32 intrinsics with an index-domain proof, then in exact cooperative row scheduling. Develop bounded speculative accumulation only behind a performance gate. Build the trusted simple schedule first to measure the incremental benefit of each faster scalar kernel. For both top proposals reuse v6's typed artifacts and heterogeneous invariant bindings. Bind the reference runtime, device binary, domain and digest to the receipt. Publishing an intrinsic receipt as a whole-program proof would overstate its coverage.
+## Building the compiler in stages
 
-## Replacing the exception by a constraint on the table
+1. **Introduce a checked row schedule and make the old backend a fallback.** Work from `program.current`. Add a Tix-owned plan IR with resolved tensor IDs, source axes, ownership, column extent, external reads/writes, barrier phases and scalar implementation references. Start with the single-owner schedule and the existing scalar instructions. Use `defineIR`, `createArtifact`, `defineTransformation`, `defineInvariant` and the asynchronous manager already used by Stage 2. Check coverage, no escaping private values and exact order of the fold by construction. Keep a simple versioned template small enough to review. Test the width-33 omission and the escaped attention intermediate before adding more schedules.
 
-Fix the range reduction and polynomial. For an input in cell t, increase only the positive binary64 table value A[t]. The last instruction rounds A[t] times a positive quantity with a single fused multiply-add, followed by a monotone conversion to f32. The set of table words returning the requested f32 word is an interval. Binary-search its endpoints in a bounded window and intersect the intervals from all inputs using integer max/min. Empty intersections carry two inputs as evidence. This is a discrete one-coefficient instance of the rounding-interval approach to libm synthesis. [Lim and Nagarakatte, RLIBM-32, 2021](https://arxiv.org/abs/2104.04043).
+2. **Install independent f32 checking alongside the existing numerical budget.** Use shapes near actual schedule boundaries, including 0, 1, W−1, W and W+1, distinct affine dimensions, the half-ULP sequence, the exp midpoint witness and finite overflow cases. Validate the exact current revision separately from an origin-relative f64 tolerance. Preserve explicit statuses for unsupported scalar domain, unavailable execution, disagreement and agreement. Reuse the framework's batched `differential` API for sampled output evidence. Store its sampled scope even when the comparator is exact on each returned word. The typed invariant for the schedule is a separate record.
 
-A 128-cell cubic has 111 cells with contradictory requirements. For cell zero one input needs a coefficient at least 9,572 binary64 word steps above the base, another allows at most 8. A 1,024-cell quadratic has 659 conflicted cells. Increasing the quadratic to 16,384 cells allowed every cell to fit, with a single four-step change to cell 16,124. A compact 128-cell quartic and 1,024-cell cubic also fit after a single table change each. The result eliminates a data-dependent equality test against the exceptional argument. The short quadratic also saves a polynomial operation at the cost of a 128 KiB table.
+3. **Build the scalar fitter and audit cache offline.** Fit the table against a target oracle, extract a pair of witnesses for each conflict, compile each feasible candidate, and independently enumerate the deployed device routine and Node's observable reference. Record complete partition coverage, word counts, digests, operation and domain, reference engine, binary and table hashes, architecture, compiler, flags, runtime and driver. Only higher-level evidence that consumes the exact profile and proves the domain can reuse the scalar receipt. The prototype's validator accepted the real schedule and a binder-renamed program and rejected ten mutations. These include missing interval coverage, stale binary, changed oracle, swapped axis, wrong max broadcast, a changed subtraction sign, a prior split, wrong tail or tree, and a changed reference digest. [Actual v6 gate](../scripts/09-plan-gate.mjs) · [Calibrated-gate results](../scripts/09-calibrated.jsonl)
 
-In the final 21-interval deployment, the quadratic took **0.175072 ms**, compared with **0.744544 ms** for generated softmax and **0.141184 ms** for a matched streaming kernel. The current public Tix f32 interpreter returned an identical SHA-256 digest for all 4,194,304 words. A second full-size input with wide logits and 12 boundary/empty-shape cases matched independently. The deployed executable was re-audited across the entire negative domain. The prototype v6 schedule gate accepted the genuine and alpha-renamed row and rejected ten changes including a stale binary, transposed maximum, missing digest interval and previously reassociated sum. No framework edit was needed. This makes table fitting under domain and executable receipts the highest-priority compiler work.
+4. **Select on measured whole-program time among eligible schedules.** Include the regular emitter and the cooperative double-exp owner. Price the quadratic table and GPU occupancy at each important shape. Record raw intervals for a nearby distribution and a wide-logit distribution. Stop when extra tuning saves less than qualification costs for the expected number of calls. The existing framework strategy layer could choose among accepted plans if selection grows beyond these cases. No new generic numerical abstraction or framework-wide scheduling language is needed for this prototype. Register versioned artifacts and make cache dependencies explicit first.
+
+5. **Revisit speculative sums only at a measured bottleneck.** Build the direction-aware range check first. Compare to an ordered schedule that parallelizes across all available rows, then price summary cost and replay on real distributions. Use an adversarial binade-crossing row to bound the cost of falling back. A global accuracy mode that permits reassociation remains a separate Tix policy decision.
+
+### Evidence boundaries and reproduction
+
+The measurements support a working fast template and an exhaustively observed unary operation on one device/runtime profile. A full formal validation of arbitrary CUDA, arbitrary affine fusion or the tensor language is still open. The versioned template, launch code, CUDA primitive semantics, hardware, CPU reference and receipt parser remain in the trusted base. Hash comparison assumes SHA-256 collision resistance. The experimental harness instantiates CUDA from this checkout and uses fixed parameter lists for the two corpus functions. The proposed compiler would derive those calls from the region plan. No product files were changed to obtain the results.
+
+From repository root, build with `npm run build`. In the following commands `P` is the relative path of this ticket. The `06`, `11` and `13` qualification scripts write fresh measurement receipts alongside themselves. The stored receipts support review without GPU access.
+
+```sh
+P=ttmp/2026/11/26/IRWB-023-B--exact-parallel-folds-for-tix
+node "$P/scripts/01-transfers.mjs"
+node "$P/scripts/03-miniature.mjs"
+node "$P/scripts/02-benchmark.mjs" 4096 1024 2 11
+node "$P/scripts/04-run.mjs" sweep
+node "$P/scripts/04-run.mjs" bench 4096 1024 2 15
+sh "$P/scripts/06-cross-check.sh"
+python3 "$P/scripts/07-midpoint.py"
+node "$P/scripts/08-meaning-gap.mjs"
+node "$P/scripts/10-run.mjs" fit
+node "$P/scripts/10-run.mjs" deploy-bench quadratic 4096 1024 2 21
+node "$P/scripts/10-run.mjs" deploy-edges quadratic
+sh "$P/scripts/11-qualify.sh"
+node "$P/scripts/09-plan-gate.mjs" calibrated
+node "$P/scripts/12-discover.mjs"
+node "$P/scripts/10-run.mjs" attention-bench quadratic 1024 1024 64 64 15
+sh "$P/scripts/13-qualify.sh"
+node "$P/scripts/14-verify-receipts.mjs"
+```
+
+Calibration and deployment drivers read the saved `10-fit.json`; the fit command above prints a new receipt without replacing it. To qualify a new build, save the relevant fit and benchmark JSON under the matching filenames before running the corresponding qualification script. The public-oracle drivers reject a differing digest. The diary records original probes, failed assumptions, a failed audit and its recovery. [Investigation diary](../reference/01-investigation-diary.md)

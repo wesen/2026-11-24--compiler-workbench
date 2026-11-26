@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "72d0b727a5ddc9239f92df8c92eeed9fe0eb74f0384e01418838b36c515bca54",
+  "request": {
+    "ticket": "IRWB-023-B",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the GB10 research round with exhaustive scalar certificates, whole-program checks, schedule falsifiers, and replayable timings."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-1e7126e7a9475c59bf563f4aec604f44",
+    "state": "committed",
+    "created_at": "2026-11-26T23:56:04.901041419Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "index.md": "c05a2ba3718d2b66809feb9ff7e11806a587f0f7b7274650d42ba44e8e66e110"
+    },
+    "after": {
+      "changelog.md": "bcce9d2d59766c77c6ecd0fef4a5254a40130e772126bbec0d809b1d36ff1a34",
+      "index.md": "89da283bf397f9f78a74e6af774ef6987e2f456bb906ba2492543705bfccc67c"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKQ29tcGxldGVkIHRoZSBHQjEwIHJlc2VhcmNoIHJvdW5kIHdpdGggZXhoYXVzdGl2ZSBzY2FsYXIgY2VydGlmaWNhdGVzLCB3aG9sZS1wcm9ncmFtIGNoZWNrcywgc2NoZWR1bGUgZmFsc2lmaWVycywgYW5kIHJlcGxheWFibGUgdGltaW5ncy4K"
+    },
+    {
+      "path": "index.md",
+      "before": "c05a2ba3718d2b66809feb9ff7e11806a587f0f7b7274650d42ba44e8e66e110",
+      "after": "LS0tClRpdGxlOiBFeGFjdCBwYXJhbGxlbCBmb2xkcyBmb3IgVGl4ClRpY2tldDogSVJXQi0wMjMtQgpTdGF0dXM6IGNvbXBsZXRlClRvcGljczoKICAgIC0gY29tcGlsZXIKICAgIC0gaXIKICAgIC0gdmVyaWZpY2F0aW9uCkRvY1R5cGU6IGluZGV4CkludGVudDogbG9uZy10ZXJtCk93bmVyczogW10KUmVsYXRlZEZpbGVzOiBbXQpFeHRlcm5hbFNvdXJjZXM6IFtdClN1bW1hcnk6IENoZWNrZWQgcm93IGZ1c2lvbiBhbmQgZXhoYXVzdGl2ZWx5IGZpdHRlZCBiaW5hcnkzMiBleHBvbmVudGlhbCBpbXBsZW1lbnRhdGlvbnMgb24gdGhlIEdCMTAuCkxhc3RVcGRhdGVkOiAyMDI2LTExLTI2VDE4OjU2OjA0LjkwMDk5MTMyNC0wNTowMApXaGF0Rm9yOiAiIgpXaGVuVG9Vc2U6ICIiCi0tLQoKIyBFeGFjdCBwYXJhbGxlbCBmb2xkcyBmb3IgVGl4CgpBIGZpdHRlZCBleHBvbmVudGlhbCBhbmQgYSBjb29wZXJhdGl2ZSByb3cgc2NoZWR1bGUgY3V0IDQwOTYgw5cgMTAyNCBzb2Z0bWF4IGZyb20gMC43NDUgdG8gMC4xNzUgbXMgb24gdGhlIEdCMTAsIHdpdGggbWF0Y2hpbmcgb3V0cHV0IHdvcmRzLiBUaGUgc2FtZSByZWdpb24gY3V0IGZ1bGwgYXR0ZW50aW9uIGZyb20gMS4wNDYgdG8gMC43NTcgbXMuIFRoZSBpbnZlc3RpZ2F0aW9uIGFsc28gZm91bmQgY291bnRlcmV4YW1wbGVzIHRvIHNldmVyYWwgY29lZmZpY2llbnQgZmFtaWxpZXMgYW5kIGEgY29ycmVjdCBzcGVjdWxhdGl2ZSBzdW0gdGhhdCBkaWQgbm90IHBheSBmb3IgaXRzZWxmLgoKLSBbRGVzaWduLCByYW5rZWQgcHJvcG9zYWxzIGFuZCByZXBsaWNhdGlvbiBjb21tYW5kc10oZGVzaWduLWRvYy8wMS1wYXJhbGxlbC1leGVjdXRpb24tb2YtdGhlLW9yZGVyZWQtZjMyLWZvbGQubWQpCi0gW1Jlc2VhcmNoIGRpYXJ5LCBmYWlsZWQgZXhwZXJpbWVudHMgYW5kIHJlY292ZXJ5XShyZWZlcmVuY2UvMDEtaW52ZXN0aWdhdGlvbi1kaWFyeS5tZCkKLSBbU29mdG1heCB0aW1pbmdzXShzY3JpcHRzLzExLWZ1bGwuanNvbikgYW5kIFtpbmRlcGVuZGVudCBmMzIgZGlnZXN0XShzY3JpcHRzLzExLWZ1bGwtbm9kZS5qc29ubCkKLSBbQXR0ZW50aW9uIHRpbWluZ3NdKHNjcmlwdHMvMTMtZnVsbC5qc29uKSBhbmQgW2luZGVwZW5kZW50IGYzMiBkaWdlc3RdKHNjcmlwdHMvMTMtZnVsbC1ub2RlLmpzb24pCi0gW0NvZWZmaWNpZW50LWZpdHRpbmcgcmVjZWlwdHNdKHNjcmlwdHMvMTAtZml0Lmpzb24pIGFuZCBbdjYgaW52YXJpYW50IHJlc3VsdHNdKHNjcmlwdHMvMDktY2FsaWJyYXRlZC5qc29ubCkKCkFsbCBwcm90b3R5cGVzIGFuZCBtZWFzdXJlbWVudHMgcmVzaWRlIGluIHRoaXMgdGlja2V0LiBSZXNlYXJjaCB3YXMgcGVyZm9ybWVkIGZyb20gcHJvZHVjdCByZXZpc2lvbiBgMTJiYzY2MWAuCg=="
+    }
+  ]
+}

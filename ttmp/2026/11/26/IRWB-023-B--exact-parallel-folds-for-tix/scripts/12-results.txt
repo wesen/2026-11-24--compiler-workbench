@@ -1,0 +1,8 @@
+{"name":"attention","found":[{"first":1,"input":"score","output":"weight","shape":[{"constant":0,"terms":[["Q",1]]},{"constant":0,"terms":[["K",1]]}]}]}
+{"mutation":"extra downstream read","reason":"internal tensor escapes the four-statement region"}
+split attention has no eligible original-fold region
+{"name":"conv2d","found":[]}
+{"name":"layernorm","found":[]}
+{"name":"matmul","found":[]}
+{"name":"mlp","found":[]}
+{"name":"softmax","found":[{"first":0,"input":"x","output":"y","shape":[{"constant":0,"terms":[["N",1]]},{"constant":0,"terms":[["C",1]]}]}]}

@@ -1,7 +1,7 @@
 ---
 Title: Investigation diary
 Ticket: IRWB-023-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -11,7 +11,7 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
+Summary: Research sequence, falsifiers, measured deployments, failures and recovery.
 LastUpdated: 2026-11-26T18:27:33.028288216-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -143,3 +143,23 @@ Both polynomial kernels addressed the same fractional-octave table entry at the 
 **What failed.** The first run of `09-plan-gate.mjs` returned `Error: IR data cannot contain undefined` when the success result included an absent reason. Omitting that field on success let the manager record the invariant. It accepted two valid submissions and rejected ten mutations for both calibrated and patched manifests. The small-window 4,096-cell quadratic had seven conflicting cells and two whose allowed shift lay outside the searched window; only the former have two-input impossibility evidence.
 
 **Review and next decision.** Inspect the packed witness/offset atomics in `10-calibrate.cu`, the independent SHA check and the actual v6 postcondition. The result depends on monotonicity in a *single* coefficient with all other instructions fixed. A different basis or mixed degree could resolve an empty intersection. The next transfer test is the four-statement region in attention with the original score and value contractions retained.
+
+## Step 5. Transfer to attention and independently check both executables
+
+I extracted the four-definition affine pattern into the reusable region matcher. It found softmax and the middle of attention, rejected an escaping private temporary and declined a split attention revision. The GPU attention probe kept the generated score and value contractions and replaced only the four middle launches by the row template. This tested the value of the proposal inside a larger program and the price of rebinding the evidence after a link.
+
+**Prompt context.** See Step 1. Prior checkpoint `a2dae6e`. The same-shape softmax comparison used an actual streaming kernel in the deployment executable. The remaining question was whether that gain survives integration.
+
+**What I ran.** Corpus discovery `12-discover.mjs`, the real attention benchmark at 7/33/5/3 and 1024/1024/64/64, the public f32 attention evaluator at both shapes, and a second complete qualification of the newly linked scalar routine. The full attention CPU oracle took 40.64 s here. The full logits and outputs used independent input generation in CUDA host code and Node; their common seed is 23023.
+
+**What failed and how I verified recovery.** The first attention executable gave numerically equal outputs and showed 1.048160 versus 0.759008 ms at full size. At the smaller shape it gave 0.019840 versus 0.010624 ms; the isolated regions took 0.047360 and 0.004416 ms. Its subsequent `10-run.mjs attention-audit quadratic 00000000 33000000` printed the expected byte digest but exited 134 with `*** stack smashing detected ***: terminated`. I discarded that executable's qualification. Inspecting the joined source showed that I had renamed the softmax `main` to a non-main function that could reach its closing brace without returning an int. Only C++ main receives an implicit successful return. I removed the renamed entry point, called the audit helper directly and returned explicitly. A 1,024-word device/Node probe then passed. I repeated both benchmarks, all three scalar intervals and both whole-program oracle comparisons with the corrected executable. The first error text is preserved in `13-failed-audit.log`.
+
+**What worked.** The corrected 15-interval measurements were 1.045792 and 0.757056 ms for full generated and selected attention. The isolated fused region took 0.047264 ms. At the asymmetric small size the respective medians were 0.019840, 0.011520 and 0.004480 ms. All 65,536 or 21 returned words agreed with the public evaluator. The attention executable SHA-256 begins `84d9d70f`; its three exhaustive output hashes match Node as well. This supplies a second measured integration while preserving the exact contraction order. A separate local replay added the direction-aware boundary ablation to the chunk study. It recovered all 4,010 half-ULP replays at width 32 and zero extra narrow-exponential chunks.
+
+**Review and decision.** Compare `12-row-region.mjs` with the source/evaluation rules and inspect `13-attention.cu` to see precisely which generated kernels survive. The schedule checker proves restricted source obligations. It trusts the template implementation. The strongest empirical evidence is per deployed scalar binary; the whole-program observations cover the named inputs. Rank domain-specific intrinsic fitting first, exact region fusion second, and leave speculative folds behind a performance gate.
+
+## Step 6. Verify the delivered evidence
+
+The offline receipt checker tied each complete scalar sweep to the binary and execution profile timed in its own campaign. It also matched the independent public-evaluator outputs for 15 softmax calls (8,544,452 words) and two attention calls (65,557 words). This is the final review entry for the Step 1 request.
+
+`npm run build` had passed before the experiments. The final `node --test tests/tensor/corpus.test.mjs` passed all six corpus tests. Syntax checks passed for every ticket MJS file; all JSON receipts parsed. During the link check, `A[t](1+u)` was interpreted as a Markdown link. I added explicit multiplication symbols and reran the check. All local links now resolve, the design contains three Mermaid diagrams, frontmatter validated and `docmgr doctor --ticket IRWB-023-B` passed. All three ticket tasks are checked and the ticket is complete. Review the final results with `node <ticket>/scripts/14-verify-receipts.mjs`.
