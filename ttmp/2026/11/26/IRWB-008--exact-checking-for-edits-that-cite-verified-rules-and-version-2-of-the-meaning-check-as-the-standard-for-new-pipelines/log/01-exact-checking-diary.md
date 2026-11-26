@@ -419,3 +419,13 @@ I applied all twenty review notes of Step 6. While I was revising, the coordinat
 
 ### Technical details
 - N/A.
+
+## Step 8: Bookkeeping, commit, upload; the vault report deferred
+
+Milestone entry. The ticket's bookkeeping was completed and committed, and the guide was uploaded and verified in the cloud. This round ends here, as briefed: nothing under `src/`, `tests/` or `tools/` changed.
+
+- **Bookkeeping:** `docmgr doc relate` (7 files on the guide); `docmgr task add` (the guide round, Phases 0–5, the user's decisions); `docmgr changelog update`; the overview in `index.md`; `docmgr doctor --ticket IRWB-008 --stale-after 30`: all checks passed.
+- **Commit:** `16e06b8` — "IRWB-008: intern guide (…), second pass, IRWB-005 final numbers at bff08a6; phase tasks, changelog, overview; diary steps 5-7" (ticket files only). Earlier: `635d2ff` (measurements, diary steps 1–4).
+- **Upload:** `remarquee upload bundle <guide.md> --name "IRWB-008 Intern Guide: Exact Checking for Verified Rules" --remote-dir "/ai/2026/11/26/IRWB-008" --toc-depth 2 --non-interactive` → `OK: uploaded IRWB-008 Intern Guide: Exact Checking for Verified Rules.pdf -> /ai/2026/11/26/IRWB-008`. Verified: `remarquee cloud ls /ai/2026/11/26/IRWB-008 --non-interactive` → `[f] IRWB-008 Intern Guide: Exact Checking for Verified Rules`. No `--force`.
+- **Vault report: deferred.** The coordinator first relayed a request for a vault report after the upload, then withdrew it (summarized: for IRWB-007 to IRWB-011 the vault report comes only after the implementation, not after the guide round). The report is deferred to the implementation milestone. No file was created in the vault under `Projects/2026/11/26/` or `_assets/irwb008-*`, so nothing had to be deleted.
+- **Task:** `cgxs` (guide round) checked; Phases 0–5 and the user's decisions stay open.
