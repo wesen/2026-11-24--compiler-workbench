@@ -1,0 +1,10 @@
+// Single-head scaled dot-product attention: T queries and keys of width D, values of width E.
+fn attention(q: f32[T, D], k: f32[T, D], v: f32[T, E]): f32[T, E] {
+  s[t, u] = (sum(d) q[t, d] * k[u, d]) / sqrt(D);
+  m[t] = max(u) s[t, u];
+  e[t, u] = exp(s[t, u] - m[t]);
+  z[t] = sum(u) e[t, u];
+  w[t, u] = e[t, u] / z[t];
+  o[t, j] = sum(u) w[t, u] * v[u, j];
+  return o;
+}

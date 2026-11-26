@@ -1,0 +1,5 @@
+// Matrix product.
+fn matmul(a: f32[N, K], b: f32[K, M]): f32[N, M] {
+  c[i, j] = sum(k) a[i, k] * b[k, j];
+  return c;
+}

@@ -1,0 +1,9 @@
+// Layer normalisation over the last axis, with scale gamma, shift beta and eps (a one-element tensor).
+fn layernorm(x: f32[N, D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N, D] {
+  mean[i] = (sum(d) x[i, d]) / D;
+  c[i, d] = x[i, d] - mean[i];
+  var[i] = (sum(d) c[i, d] * c[i, d]) / D;
+  r[i] = sqrt(var[i] + eps[0]);
+  y[i, d] = c[i, d] / r[i] * gamma[d] + beta[d];
+  return y;
+}
