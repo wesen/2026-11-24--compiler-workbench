@@ -1,0 +1,12 @@
+record SearchState {
+    running: bool;
+    ply: i32;
+    depth: i32;
+    maxDepth: i32;
+    budget: i32;
+    nodes: i32;
+    completed: i32;
+    bestMove: i32;
+    score: i32;
+    advanced: bool;
+}

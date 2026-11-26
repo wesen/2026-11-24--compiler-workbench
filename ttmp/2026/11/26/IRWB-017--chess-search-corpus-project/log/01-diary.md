@@ -9,7 +9,15 @@ Topics:
 DocType: reference
 Intent: short-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://corpus/projects/chess-search/project.json
+      Note: Entry roots and generated fixture inputs
+    - Path: repo://corpus/projects/chess-search/scripts/fixtures.mjs
+      Note: Independent chess assertions and RV32 instruction counts
+    - Path: repo://corpus/projects/chess-search/search.typed
+      Note: Iterative search and budget unwind
+    - Path: repo://tests/typed/chess-search.test.mjs
+      Note: Project-scoped tests and workbench smoke
 ExternalSources: []
 Summary: Investigation and validation of the chess search corpus design.
 LastUpdated: 2026-11-26T11:00:00-05:00
@@ -86,3 +94,87 @@ Recorded the port boundary, storage, generated inputs, loader gap, and oracle pl
 `docmgr doctor --ticket IRWB-017 --stale-after 30` initially reported `invalid_frontmatter` for the diary. Added the ticket's reference metadata and reran the check. Removed temporary probe files before staging the ticket.
 
 The first `git add -- "$ticket"` hit `Unable to create .../index.lock: Read-only file system` under the shared Git worktree metadata. Requested sandbox escalation for the ticket-only commit.
+
+## Step 5 — Ported the core and qualified project ingestion
+
+The pinned upstream checkout matched the design revision. I kept the move ordering, make/unmake, clocks and search stack layout. The port removes UI and timer concerns and the guards that the supported input domain makes unnecessary.
+
+### Prompt context
+
+<details>
+<summary>Implementation request</summary>
+
+> You are working in a git worktree of the IR Workbench repository (TypeScript, Node). It contains a compiler from Typed, a small statically typed language with TypeScript-like syntax, to 32-bit RISC-V (RV32IMF), built on an IR framework in which every optimization pass is checked against the original program. Your task: implement the corpus project designed in your ticket IRWB-017. The design document is in `ttmp/2026/11/26/IRWB-017--*/design-doc/`. It has been reviewed; implement it as designed. Where the design turns out to be wrong about the code, follow the code and record the deviation in your diary.
+>
+> ## Read first
+> - Your design document.
+> - `corpus/reference.md` and two or three existing corpus projects (for example `corpus/projects/sort`, `checksum`, `histogram`).
+> - `tests/typed/project-meta.test.mjs`: `project.json` now supports `"ingest": { "tape": true }` (needed for frame arrays) and `"entries": [...]` (checks generate cases for the listed entry functions only), in `Program.fromProject`, `ingestProject` and `tools/parity.mjs`.
+>
+> ## Deliverables
+> - The corpus project under `corpus/projects/<name>/` as the design describes (`.typed` sources, `project.json`, `notes.md`, any scripts the design calls for).
+> - The tests and checks the design calls for, under `tests/typed/`.
+> - Your ticket's diary (use your docmgr and diary skills), tasks and changelog, kept current as you work.
+>
+> ## Environment
+> - `node_modules` is found from the repository root. Run `npm run build` once before using `dist/`.
+> - Six agents share this machine. Run only your own tests (`node --test tests/typed/<your-test>.test.mjs`) and, for your project, `node tools/parity.mjs <name>` or `node tools/reference-check.mjs <name>` if useful. Do not run the full test suite (`npm test`), corpus-wide tools without a project argument, or anything that touches Candela.
+>
+> ## Constraints
+> - Do not modify `src/`, `tools/`, other corpus projects, other tickets, or existing tests. Adding your project's id to `corpus/projects/index.json` is allowed.
+> - Never run code from downloaded archives under `ttmp/**/sources/`.
+> - Commit at sensible points on your current branch with messages starting `IRWB-017:`. Do not push.
+> - Final message: what you built (paths), how it was checked (commands and results), what deviates from the design, and the commit hashes.
+> Your ticket is IRWB-017. Your design document is `ttmp/2026/11/26/IRWB-017--chess-search-corpus-project/design-doc/01-port-the-typed-chess-engine-into-the-optimization-corpus.md`.
+> The upstream engine is in `/home/manuel/code/wesen/2026-10-20--ds-js-os` (read only; do not modify it).
+
+</details>
+
+### What I did
+
+- Copied the fixture data verbatim, adapted the upstream FEN encoder and move decoder, and generated the two padded boards from the named fixtures.
+- Read the project metadata tests and traced entry propagation through `Program.fromProject`, the browser workbench and the parity command.
+- Built once with `npm run build`, then used a project-local Node probe to check ingestion, record offsets and the assembled focus.
+
+### What worked and what changed from the design
+
+- The default ingest path loaded 50 functions and `program.check({ count: 1 })` checked only `chessSearch` and `chessPerft`, with one successful case apiece. The frames use the caller's buffer, so tape ingest for Typed frame arrays was unnecessary.
+- The proposed source order failed with `unknown type SearchState` at line 1, column 44. Moving `state.typed` ahead of `main.typed` fixed the declaration order and put the search-step call at assembled line 16.
+- The current Node and workbench loaders already support scoped entries. The corpus scanner includes new directories, so the project index requires no edit.
+- `tools/reference-check.mjs` loops over every project even with an id argument. The project runner uses the same reference compiler with the exact assembled source and scopes all generated checks to this project.
+
+### Fixture probe and recovery
+
+The first opening oracle check reported an empty decoded list although `chessLegalMoves` returned 20. A targeted `benchCase` probe showed that `readBuffer` caps output at 256 cells and the list starts at 512. The runner now reads cells from guest memory using a `DataView`. The same probe confirmed `SearchState` byte offsets and opening perft depth one (20).
+
+### Review
+
+Start with `project.json` for the roots and exact inputs, then `main.typed` for the driver. The fixture runner checks restored position cells separately from whole guest memory parity. The coverage and measured counts are recorded in the next qualification step.
+
+## Step 6 — Qualified fixtures, pass checks, and instruction counts
+
+The project runner checked 12 independent legal move sets, check statuses, and every recorded perft depth, plus depth zero. The evaluator and the three RV32 images agreed on the entire initialized guest memory for each call. The bounded search also returned the first legal move after two nodes and left `completed` at zero. The depth-three search found the reference mate in two.
+
+### Evidence and commits
+
+- `ddfddc3` ports the engine, fixture data, metadata, runner, and inspector.
+- `node corpus/projects/chess-search/scripts/fixtures.mjs` passed all concrete assertions and 20 generated cases per root. The r0 evaluator used at most 12,819 statements for generated search and 9,162 for generated perft under the 20,000 limit.
+- `node tools/parity.mjs chess-search --json` published 18 changed revisions and agreed on 200 out of 200 cases with zero rejections, disagreements, or inconclusives.
+- `node corpus/projects/chess-search/scripts/fixtures.mjs measure` independently reproduced the depth-three result `d6c7`, score 29,997, completed depth 3, and 1,344 chess nodes. The evaluator used 7,820,284 statements. The r0, checked speed with `chains`, `coalesce`, and `homes`, and reference images executed 14,804,396, 10,079,349, and 10,827,760 instructions respectively. The final trimmed source accounts for the different counts from the design probe.
+- `cmp corpus/projects/chess-search/fixtures/reference-positions.json /home/manuel/code/wesen/2026-10-20--ds-js-os/bench/reference/chess/reference-positions.json` confirmed a byte-for-byte match.
+
+### Noteworthy decisions and failures
+
+The sandbox rejected both the default and a private tmux socket with `Operation not permitted`. I ran the terminating parity process through the command session. The sandbox also denied Git's worktree index lock with `Read-only file system`. The project commit succeeded with restricted-path staging and escalation.
+
+## Step 7 — Exercised the workbench inspector and project tests
+
+The workbench regression opens only the chess project through the same project API used by the browser. It checks the assembled focus, runs the fresh inspector and verifies the active program remains at r0. The inspector returns the search-step function ID and attack-ray loop header IDs.
+
+### Evidence
+
+- `node --test tests/typed/chess-search.test.mjs` and a rerun with the TAP reporter passed. The default isolation in this environment reported at file granularity.
+- A targeted `casesFrom` probe confirmed that the 20 generated search calls cover all six depth and advanced-flag combinations.
+- `docmgr doctor --ticket IRWB-017 --stale-after 30` passed.
+- `node --test --test-isolation=none tests/typed/chess-search.test.mjs` reported four passing named tests. Every changed inspector revision passed 80 out of 80 generated cases, and the final inspector checks passed 20 out of 20 per root with zero traps or limits.
+- The Scripts view prints plain YAML. Added clickable r0 search and ray-loop links to the first line of `notes.md`, which the Source view renders. A project-only workbench probe resolved the function and both ray-loop headers, and a Node probe of the site's inline renderer verified all four navigation links.
