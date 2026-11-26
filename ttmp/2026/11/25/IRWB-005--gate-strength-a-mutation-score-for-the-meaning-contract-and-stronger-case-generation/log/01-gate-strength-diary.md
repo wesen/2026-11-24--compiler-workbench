@@ -929,7 +929,7 @@ The rewritten deep search (Step 17 explains why the first one left nothing) ran 
 - Nothing in this step; the first attempt is Step 17.
 
 ### What I learned
-- The inspection's arguments held without exception: 166 mutants argued equivalent, none refuted by 100,000 cases per function; 3 argued wrong, all three confirmed. A witness for a one-value intermediate needs tens of thousands of random cases (here 35,491 to 43,068).
+- The inspection's arguments held without exception: 166 mutants argued equivalent, none refuted by 100,000 cases per function; 3 argued wrong, all three confirmed. A witness for a one-value intermediate needs tens of thousands of random cases (here 34,603 to 43,068).
 
 ### What was tricky to build
 - Nothing new; the second version's per-subject chunks made the run feasible (r0 runs once per chunk instead of once per mutant).
@@ -945,3 +945,47 @@ The rewritten deep search (Step 17 explains why the first one left nothing) ran 
 
 ### Technical details
 - Final per-operator (default, upper; strong): const 91.1 % → 99.1 % (n 449), cmp-weaken 96.7 % → 100 %, check-range 75.0 % → 75.0 % (n 4), all others 100 %.
+
+## Step 21: Which extra cases help on Candela's weakest functions
+
+Step 18 found that on Candela 100 random cases help more than version 2's boundary cases. A follow-up under the cap took the two functions where the default gate is weakest, `s9_sdf_0` and `s10_mat_1`, and compared the default, 400 random cases, version 2, and version 2 with coverage-chosen extra cases. The 400-case gate kills 180 of 242 non-equivalent mutants; version 2 kills 120, with coverage 121; the default 110. The source shows why: `s9_sdf_0` is a Menger-sponge distance function whose cross terms matter only inside a box of half-size 0.6, and fewer than 1 % of the default generator's points fall there. Neither boundary bit patterns nor coverage reach that region; only more points do.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 ("optional coverage guidance. Measure the kill-rate gain and the time cost").
+**Assistant interpretation:** Measure coverage guidance where it could matter, which the corpus could not show (every reachable block already covered).
+**Inferred user intent:** Know which strengthening is worth it on real float code.
+**Commit (code):** 486744b (gates `strong-cov`, `default400`); results committed with this step.
+
+### What I did
+- `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 node --max-old-space-size=10240 --expose-gc tools/mutation-score-candela.mjs --functions s9_sdf_0,s10_mat_1 --fn-budget 900 --gates default,default400,strong,strong-cov --json various/13-candela-followup.json --jsonl various/13-candela-followup.jsonl` → `various/13-candela-followup.txt`; exit 0, 21 min 21 s; peak 1,439 MB resident, 463 MB live heap after a full collection.
+- `scripts/22-candela-summary.mjs various/13-candela-followup-summary.json various/13-candela-followup.jsonl` → `various/13-candela-followup-summary.txt` (38 reclassified: 20 by a `default400` disagreement on a specified case, 18 by the unconstrained-is-specified rule).
+- Read `s9_sdf_0` in `corpus/candela-gallery/scenes.typed:1985` and `makeF32` in `src/typed/evaluate.ts:206`.
+
+### Why
+- Coverage guidance had no room on the corpus; on region-limited float code it might have.
+
+### What worked
+- 323 mutants (s9_sdf_0 207 of 224 sites, s10_mat_1 116), 81 equivalent (all presumed). Killed / wrong accepted / kill rate (lower..upper) / gate time: default 110 / 132 / 34.1 %..45.5 % / 91 s; default400 180 / 62 / 55.7 %..74.4 % / 508 s; strong 120 / 122 / 37.2 %..49.6 % / 140 s; strong-cov 121 / 121 / 37.5 %..50.0 % / 203 s.
+- Per function: s9_sdf_0 killed by default 40, default400 104, strong 50, strong-cov 50 (of 166 non-equivalent); s10_mat_1 default 70, default400 76 (all), strong 70, strong-cov 71.
+
+### What didn't work
+- Coverage guidance: one extra kill for 45 % more time than version 2.
+
+### What I learned
+- An unspecified f32 coordinate lands in [−0.6, 0.6] with probability about 0.2 (55 % from [−4, 4], 15 % from [0, 1], some edges), so about 0.75 % of 3-D points are inside the box: 0.3 per 40 cases, 3 per 400.
+- The classifier's 1,000 cases per function are not enough on such code: the 400-case gate (seed 7) found 20 witnesses the classifier (seeds 101, 102) missed. The presumed equivalents of `s9_sdf_0` are not trustworthy; the lower bound is the better estimate there.
+
+### What was tricky to build
+- Nothing new.
+
+### What warrants a second pair of eyes
+- Whether the program's float constants (0.6, 1, 3) as a pool, or points scaled by them, would reach the region: not measured.
+
+### What should be done in the future
+- For float code, a pool built from the program's float constants and an option for more random cases per function.
+
+### Code review instructions
+- `various/13-candela-followup-summary.txt`.
+
+### Technical details
+- s9_sdf_0 sites by variant: f32 ulp 59, f32 sign 59, f32 fdiv 21, swap 19, f32 fadd 14, f32 fmin 13, f32 fsub 12, f32 fmul 5, f32 fmax 5.

@@ -1,0 +1,414 @@
+{
+ "subject": "candela",
+ "parts": [
+  "ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/various/13-candela-followup.jsonl"
+ ],
+ "gates": [
+  "default",
+  "default400",
+  "strong",
+  "strong-cov"
+ ],
+ "total": {
+  "default": {
+   "killed": 110,
+   "killed-inconclusive": 0,
+   "survived-wrong": 132,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 0,
+   "equivalent-presumed": 81,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.45454545454545453,
+   "lower": 0.34055727554179566
+  },
+  "default400": {
+   "killed": 180,
+   "killed-inconclusive": 0,
+   "survived-wrong": 62,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 0,
+   "equivalent-presumed": 81,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.743801652892562,
+   "lower": 0.5572755417956656
+  },
+  "strong": {
+   "killed": 120,
+   "killed-inconclusive": 0,
+   "survived-wrong": 122,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 0,
+   "equivalent-presumed": 81,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.49586776859504134,
+   "lower": 0.3715170278637771
+  },
+  "strong-cov": {
+   "killed": 121,
+   "killed-inconclusive": 0,
+   "survived-wrong": 121,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 0,
+   "equivalent-presumed": 81,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.5,
+   "lower": 0.3746130030959752
+  }
+ },
+ "bySubject": {
+  "default": {
+   "candela": {
+    "killed": 110,
+    "killed-inconclusive": 0,
+    "survived-wrong": 132,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 81,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.45454545454545453,
+    "lower": 0.34055727554179566
+   }
+  },
+  "default400": {
+   "candela": {
+    "killed": 180,
+    "killed-inconclusive": 0,
+    "survived-wrong": 62,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 81,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.743801652892562,
+    "lower": 0.5572755417956656
+   }
+  },
+  "strong": {
+   "candela": {
+    "killed": 120,
+    "killed-inconclusive": 0,
+    "survived-wrong": 122,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 81,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.49586776859504134,
+    "lower": 0.3715170278637771
+   }
+  },
+  "strong-cov": {
+   "candela": {
+    "killed": 121,
+    "killed-inconclusive": 0,
+    "survived-wrong": 121,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 81,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.5,
+    "lower": 0.3746130030959752
+   }
+  }
+ },
+ "byOperator": {
+  "default": {
+   "swap": {
+    "killed": 13,
+    "killed-inconclusive": 0,
+    "survived-wrong": 3,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 13,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 0.8125,
+    "lower": 0.4482758620689655
+   },
+   "f32": {
+    "killed": 87,
+    "killed-inconclusive": 0,
+    "survived-wrong": 129,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 68,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.4027777777777778,
+    "lower": 0.30633802816901406
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  },
+  "default400": {
+   "swap": {
+    "killed": 16,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 13,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 1,
+    "lower": 0.5517241379310345
+   },
+   "f32": {
+    "killed": 154,
+    "killed-inconclusive": 0,
+    "survived-wrong": 62,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 68,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.7129629629629629,
+    "lower": 0.5422535211267606
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  },
+  "strong": {
+   "swap": {
+    "killed": 14,
+    "killed-inconclusive": 0,
+    "survived-wrong": 2,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 13,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 0.875,
+    "lower": 0.4827586206896552
+   },
+   "f32": {
+    "killed": 96,
+    "killed-inconclusive": 0,
+    "survived-wrong": 120,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 68,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.4444444444444444,
+    "lower": 0.3380281690140845
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  },
+  "strong-cov": {
+   "swap": {
+    "killed": 14,
+    "killed-inconclusive": 0,
+    "survived-wrong": 2,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 13,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 0.875,
+    "lower": 0.4827586206896552
+   },
+   "f32": {
+    "killed": 97,
+    "killed-inconclusive": 0,
+    "survived-wrong": 119,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 68,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.44907407407407407,
+    "lower": 0.3415492957746479
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  }
+ },
+ "byFunction": {
+  "default": {
+   "candela.s9_sdf_0": {
+    "killed": 40,
+    "killed-inconclusive": 0,
+    "survived-wrong": 126,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.24096385542168675,
+    "lower": 0.1932367149758454
+   },
+   "candela.s10_mat_1": {
+    "killed": 70,
+    "killed-inconclusive": 0,
+    "survived-wrong": 6,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 40,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 0.9210526315789473,
+    "lower": 0.603448275862069
+   }
+  },
+  "default400": {
+   "candela.s9_sdf_0": {
+    "killed": 104,
+    "killed-inconclusive": 0,
+    "survived-wrong": 62,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.6265060240963856,
+    "lower": 0.5024154589371981
+   },
+   "candela.s10_mat_1": {
+    "killed": 76,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 40,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 1,
+    "lower": 0.6551724137931034
+   }
+  },
+  "strong": {
+   "candela.s9_sdf_0": {
+    "killed": 50,
+    "killed-inconclusive": 0,
+    "survived-wrong": 116,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.30120481927710846,
+    "lower": 0.24154589371980675
+   },
+   "candela.s10_mat_1": {
+    "killed": 70,
+    "killed-inconclusive": 0,
+    "survived-wrong": 6,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 40,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 0.9210526315789473,
+    "lower": 0.603448275862069
+   }
+  },
+  "strong-cov": {
+   "candela.s9_sdf_0": {
+    "killed": 50,
+    "killed-inconclusive": 0,
+    "survived-wrong": 116,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.30120481927710846,
+    "lower": 0.24154589371980675
+   },
+   "candela.s10_mat_1": {
+    "killed": 71,
+    "killed-inconclusive": 0,
+    "survived-wrong": 5,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 40,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 0.9342105263157895,
+    "lower": 0.6120689655172413
+   }
+  }
+ },
+ "gateMs": {
+  "default": 91423,
+  "default400": 508443.3,
+  "strong": 140030.9,
+  "strong-cov": 203186
+ }
+}

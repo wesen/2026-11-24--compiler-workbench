@@ -1,0 +1,483 @@
+{
+ "subject": "candela",
+ "base": "r0+bcm",
+ "chosen": [
+  "s9_sdf_0",
+  "s10_mat_1"
+ ],
+ "cheap": 325,
+ "maxSteps": 2000,
+ "sample": 400,
+ "baseCheck": {
+  "agree": 13258,
+  "disagree": 0,
+  "inconclusive": 22
+ },
+ "baseVerdicts": {
+  "s9_sdf_0": {
+   "affected": 17,
+   "own": 3,
+   "default": "accepts 665/680",
+   "default400": "accepts 6617/6800",
+   "strong": "accepts 1303/1360",
+   "strong-cov": "accepts 1302/1360"
+  },
+  "s10_mat_1": {
+   "affected": 11,
+   "own": 3,
+   "default": "accepts 425/440",
+   "default400": "accepts 4217/4400",
+   "strong": "accepts 826/880",
+   "strong-cov": "accepts 826/880"
+  }
+ },
+ "crossCheck": {
+  "compared": 0,
+  "differ": 0
+ },
+ "perFn": {
+  "s9_sdf_0": {
+   "affected": 17,
+   "sites": 224,
+   "judged": 207,
+   "skipped": 17,
+   "ms": {
+    "build": 10436,
+    "judge": 688744,
+    "classify": 191814
+   },
+   "mem": {
+    "rssMB": 1407,
+    "heapMB": 463,
+    "peakRssMB": 1439,
+    "afterGc": true
+   }
+  },
+  "s10_mat_1": {
+   "affected": 11,
+   "sites": 116,
+   "judged": 116,
+   "skipped": 0,
+   "ms": {
+    "build": 5804,
+    "judge": 254362,
+    "classify": 61001
+   },
+   "mem": {
+    "rssMB": 1413,
+    "heapMB": 458,
+    "peakRssMB": 1439,
+    "afterGc": true
+   }
+  }
+ },
+ "ms": 1280752,
+ "gates": [
+  "default",
+  "default400",
+  "strong",
+  "strong-cov"
+ ],
+ "total": {
+  "default": {
+   "killed": 110,
+   "killed-inconclusive": 0,
+   "survived-wrong": 94,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 34,
+   "equivalent-presumed": 85,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.5392156862745098,
+   "lower": 0.3806228373702422
+  },
+  "default400": {
+   "killed": 180,
+   "killed-inconclusive": 0,
+   "survived-wrong": 44,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 18,
+   "equivalent-presumed": 81,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.8035714285714286,
+   "lower": 0.5901639344262295
+  },
+  "strong": {
+   "killed": 120,
+   "killed-inconclusive": 0,
+   "survived-wrong": 84,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 34,
+   "equivalent-presumed": 85,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.5882352941176471,
+   "lower": 0.41522491349480967
+  },
+  "strong-cov": {
+   "killed": 121,
+   "killed-inconclusive": 0,
+   "survived-wrong": 83,
+   "equivalent-spec-proved": 0,
+   "equivalent-spec": 34,
+   "equivalent-presumed": 85,
+   "invalid": 0,
+   "unclassified": 0,
+   "mutants": 323,
+   "upper": 0.5931372549019608,
+   "lower": 0.4186851211072664
+  }
+ },
+ "bySubject": {
+  "default": {
+   "candela": {
+    "killed": 110,
+    "killed-inconclusive": 0,
+    "survived-wrong": 94,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 85,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.5392156862745098,
+    "lower": 0.3806228373702422
+   }
+  },
+  "default400": {
+   "candela": {
+    "killed": 180,
+    "killed-inconclusive": 0,
+    "survived-wrong": 44,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 18,
+    "equivalent-presumed": 81,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.8035714285714286,
+    "lower": 0.5901639344262295
+   }
+  },
+  "strong": {
+   "candela": {
+    "killed": 120,
+    "killed-inconclusive": 0,
+    "survived-wrong": 84,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 85,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.5882352941176471,
+    "lower": 0.41522491349480967
+   }
+  },
+  "strong-cov": {
+   "candela": {
+    "killed": 121,
+    "killed-inconclusive": 0,
+    "survived-wrong": 83,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 85,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 323,
+    "upper": 0.5931372549019608,
+    "lower": 0.4186851211072664
+   }
+  }
+ },
+ "byOperator": {
+  "default": {
+   "swap": {
+    "killed": 13,
+    "killed-inconclusive": 0,
+    "survived-wrong": 2,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 14,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 0.8666666666666667,
+    "lower": 0.4482758620689655
+   },
+   "f32": {
+    "killed": 87,
+    "killed-inconclusive": 0,
+    "survived-wrong": 92,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 71,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.4860335195530726,
+    "lower": 0.348
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  },
+  "default400": {
+   "swap": {
+    "killed": 16,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 13,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 1,
+    "lower": 0.5517241379310345
+   },
+   "f32": {
+    "killed": 154,
+    "killed-inconclusive": 0,
+    "survived-wrong": 44,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 18,
+    "equivalent-presumed": 68,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.7777777777777778,
+    "lower": 0.5789473684210527
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  },
+  "strong": {
+   "swap": {
+    "killed": 14,
+    "killed-inconclusive": 0,
+    "survived-wrong": 1,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 14,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 0.9333333333333333,
+    "lower": 0.4827586206896552
+   },
+   "f32": {
+    "killed": 96,
+    "killed-inconclusive": 0,
+    "survived-wrong": 83,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 71,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.5363128491620112,
+    "lower": 0.384
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  },
+  "strong-cov": {
+   "swap": {
+    "killed": 14,
+    "killed-inconclusive": 0,
+    "survived-wrong": 1,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 14,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 29,
+    "upper": 0.9333333333333333,
+    "lower": 0.4827586206896552
+   },
+   "f32": {
+    "killed": 97,
+    "killed-inconclusive": 0,
+    "survived-wrong": 82,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 71,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 284,
+    "upper": 0.5418994413407822,
+    "lower": 0.388
+   },
+   "const": {
+    "killed": 10,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 0,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 10,
+    "upper": 1,
+    "lower": 1
+   }
+  }
+ },
+ "byFunction": {
+  "default": {
+   "candela.s9_sdf_0": {
+    "killed": 40,
+    "killed-inconclusive": 0,
+    "survived-wrong": 89,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 44,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.31007751937984496,
+    "lower": 0.23121387283236994
+   },
+   "candela.s10_mat_1": {
+    "killed": 70,
+    "killed-inconclusive": 0,
+    "survived-wrong": 5,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 0.9333333333333333,
+    "lower": 0.603448275862069
+   }
+  },
+  "default400": {
+   "candela.s9_sdf_0": {
+    "killed": 104,
+    "killed-inconclusive": 0,
+    "survived-wrong": 44,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 18,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.7027027027027027,
+    "lower": 0.5502645502645502
+   },
+   "candela.s10_mat_1": {
+    "killed": 76,
+    "killed-inconclusive": 0,
+    "survived-wrong": 0,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 40,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 1,
+    "lower": 0.6551724137931034
+   }
+  },
+  "strong": {
+   "candela.s9_sdf_0": {
+    "killed": 50,
+    "killed-inconclusive": 0,
+    "survived-wrong": 79,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 44,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.3875968992248062,
+    "lower": 0.28901734104046245
+   },
+   "candela.s10_mat_1": {
+    "killed": 70,
+    "killed-inconclusive": 0,
+    "survived-wrong": 5,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 0.9333333333333333,
+    "lower": 0.603448275862069
+   }
+  },
+  "strong-cov": {
+   "candela.s9_sdf_0": {
+    "killed": 50,
+    "killed-inconclusive": 0,
+    "survived-wrong": 79,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 34,
+    "equivalent-presumed": 44,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 207,
+    "upper": 0.3875968992248062,
+    "lower": 0.28901734104046245
+   },
+   "candela.s10_mat_1": {
+    "killed": 71,
+    "killed-inconclusive": 0,
+    "survived-wrong": 4,
+    "equivalent-spec-proved": 0,
+    "equivalent-spec": 0,
+    "equivalent-presumed": 41,
+    "invalid": 0,
+    "unclassified": 0,
+    "mutants": 116,
+    "upper": 0.9466666666666667,
+    "lower": 0.6120689655172413
+   }
+  }
+ },
+ "gateMs": {
+  "default": 91423,
+  "default400": 508443.3,
+  "strong": 140030.9,
+  "strong-cov": 203186
+ }
+}
