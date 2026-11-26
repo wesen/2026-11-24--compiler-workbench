@@ -246,7 +246,8 @@ export function makeProjects(
   function kernelFor(id: string, files: Record<string, string>, name?: string): Program {
     const meta = metaOf(id);
     const ingest = meta.ingest && typeof meta.ingest === 'object' ? meta.ingest : null;
-    if (!ingest && !meta.inputsFrom) return env.kernel.open(id, files);
+    const entries = Array.isArray(meta.entries) ? (meta.entries as string[]) : null;
+    if (!ingest && !entries && !meta.inputsFrom) return env.kernel.open(id, files);
     const ps = projectSource(id, files);
     const inputs: Record<string, unknown> = { ...((ps.meta.inputs as Record<string, unknown>) ?? {}) };
     const k = new Program(name ?? ps.name, ps.source, {
@@ -254,6 +255,7 @@ export function makeProjects(
       fileMap: ps.fileMap,
       project: id,
       ...(ingest ? { ingest } : {}),
+      ...(entries ? { entries } : {}),
     });
     // the Program reads its inputs object on every check; fill it once the program is lifted
     if (meta.inputsFrom === 'candela' && k.status === 'ok')

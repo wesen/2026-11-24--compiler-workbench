@@ -17,10 +17,11 @@ for (const id of only.length ? only : projectIds()) {
   const row = { id, pipeline: p.meta.pipeline };
   try {
     const r0 = ingestProject(p), manager = new AnalysisManager();
-    const run = await runPipeline(r0, p.meta.pipeline, { manager, inputs: p.meta.inputs });
+    const roots = p.meta.entries ? { roots: p.meta.entries } : {};
+    const run = await runPipeline(r0, p.meta.pipeline, { manager, inputs: p.meta.inputs, ...roots });
     row.revisions = run.steps.filter(s => s.changed).map(s => s.pass);
     row.rejected = run.steps.filter(s => s.rejected).map(s => s.pass);
-    const final = await manager.checkInvariant(meaningKept({ inputs: p.meta.inputs, count: 100 }), { origin: r0, candidate: run.artifact });
+    const final = await manager.checkInvariant(meaningKept({ inputs: p.meta.inputs, count: 100, ...roots }), { origin: r0, candidate: run.artifact });
     const ev = final.evidence;
     row.fns = Object.keys(r0.value.fns).length;
     Object.assign(row, { total: ev.total, agree: ev.agree, inconclusive: ev.inconclusive, disagree: ev.disagree });

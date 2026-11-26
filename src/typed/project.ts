@@ -10,7 +10,7 @@ import type { Artifact } from '../framework/core/types.js';
 import { createIRArtifact } from '../framework/ir/adapters.js';
 import type { ProgramInputs } from './evaluate.js';
 import { blocksAdapter } from './ir.js';
-import { ingest } from './lift.js';
+import { ingest, type IngestOptions } from './lift.js';
 import type { TypedBlocks } from './model.js';
 import { joinText } from './format.js';
 import { optimizationContract, PASSES, PIPELINES, type RevisionReport } from './passes.js';
@@ -22,6 +22,10 @@ export interface ProjectMeta {
   readonly pipeline: string;
   readonly inputs: ProgramInputs;
   readonly sources: readonly string[];
+  /** How to ingest the sources (`{ "tape": true }` for programs with frame arrays, f32 min/max or conversions). */
+  readonly ingest?: IngestOptions;
+  /** Entry points: when present, the meaning check generates cases for these functions only (`MeaningParams.roots`). */
+  readonly entries?: readonly string[];
   readonly [field: string]: unknown;
 }
 
@@ -72,7 +76,7 @@ export function projectSource(id: string, files: Readonly<Record<string, string>
 
 /** r0 of a project as a v6 artifact. */
 export function ingestProject(p: ProjectSource): Artifact<TypedBlocks> {
-  return createIRArtifact(blocksAdapter, p.name, ingest(p.name, p.source).toNative());
+  return createIRArtifact(blocksAdapter, p.name, ingest(p.name, p.source, p.meta.ingest ?? {}).toNative());
 }
 
 export interface PipelineStep {
@@ -100,6 +104,8 @@ export async function runPipeline(
     seed?: number;
     /** The step limit of each case of the meaning check (default the check's 2e4 statements). */
     limit?: number;
+    /** Check only from these entry functions (a project's `entries`); default every function. */
+    roots?: readonly string[];
     start?: Artifact<TypedBlocks>;
   },
 ): Promise<{ artifact: Artifact<TypedBlocks>; steps: PipelineStep[] }> {
@@ -113,6 +119,7 @@ export async function runPipeline(
     count: options.count ?? 40,
     seed: options.seed ?? 7,
     ...(options.limit === undefined ? {} : { limit: options.limit }),
+    ...(options.roots ? { roots: options.roots } : {}),
   });
   let cur = options.start ?? origin;
   const steps: PipelineStep[] = [];

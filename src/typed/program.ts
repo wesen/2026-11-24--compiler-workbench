@@ -130,7 +130,13 @@ export class Program {
   }
 
   static fromProject(p: ProjectSource): Program {
-    return new Program(p.name, p.source, { inputs: p.meta.inputs, fileMap: p.fileMap, project: p.id });
+    return new Program(p.name, p.source, {
+      inputs: p.meta.inputs,
+      fileMap: p.fileMap,
+      project: p.id,
+      ...(p.meta.ingest ? { ingest: p.meta.ingest } : {}),
+      ...(p.meta.entries ? { entries: p.meta.entries } : {}),
+    });
   }
 
   get id(): string {
