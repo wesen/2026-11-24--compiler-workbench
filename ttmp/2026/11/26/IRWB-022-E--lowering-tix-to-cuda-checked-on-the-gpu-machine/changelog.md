@@ -20,3 +20,12 @@ Accepted design review: preload kernels before events, fix 256 threads, and remo
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/ttmp/2026/11/26/IRWB-022-E--lowering-tix-to-cuda-checked-on-the-gpu-machine/design-doc/01-direct-cuda-emission-and-batched-lowering-checks.md — Reviewed design
+
+## 2026-11-26
+
+Implemented CUDA source emission, preloaded event timing, remote batch transport and the checked cross-kind transformation, without framework edits.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/src/tensor/cuda-pass.ts — Checked lowering and evidence
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sh-irwb-022-e/tools/cuda-remote.mjs — Runtime data reuse and invocation isolation

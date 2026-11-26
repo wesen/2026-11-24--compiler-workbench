@@ -18,8 +18,22 @@ interface Sample {
   inputs: Inputs;
   reference: BufferValue;
 }
-const seed = 20,
-  half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
+export const sampleSeed = 20;
+const half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
+export const allowedError = (r: number) => 2e-6 + 2e-5 * Math.abs(r);
+export function sampleValue(stream: string, i: number, random: () => number) {
+  switch (stream) {
+    case 'signed':
+      return 2 * random() - 1;
+    case 'positive':
+      return 0.25 + 0.75 * random();
+    case 'zero':
+      return i % 2 ? -0 : 0;
+    default:
+      return half[i % half.length];
+  }
+}
+const seed = sampleSeed;
 function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
@@ -38,18 +52,7 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
       const inputs: Inputs = Object.create(null);
       fn.params.forEach((p, j) => {
         const shape = shapes[j];
-        const data = Float32Array.from({ length: size(shape) }, (_, i) => {
-          switch (stream) {
-            case 'signed':
-              return 2 * random() - 1;
-            case 'positive':
-              return 0.25 + 0.75 * random();
-            case 'zero':
-              return i % 2 ? -0 : 0;
-            default:
-              return half[i % half.length];
-          }
-        });
+        const data = Float32Array.from({ length: size(shape) }, (_, i) => sampleValue(stream, i, random));
         inputs[p.name] = { shape, data };
       });
       try {
@@ -76,7 +79,7 @@ function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
   const a = relation === 'exact' ? words(ref) : ref.data,
     b = relation === 'exact' ? words(got) : got.data;
   for (let i = 0; i < a.length; i++) {
-    const allowed = 2e-6 + 2e-5 * Math.abs(a[i]);
+    const allowed = allowedError(a[i]);
     if (relation === 'exact' ? a[i] !== b[i] : !Number.isFinite(b[i]) || Math.abs(a[i] - b[i]) > allowed) {
       let k = i;
       const coord = ref.shape.map(() => 0);

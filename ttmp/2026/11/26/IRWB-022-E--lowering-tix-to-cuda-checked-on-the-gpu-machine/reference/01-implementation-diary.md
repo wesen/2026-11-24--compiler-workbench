@@ -205,3 +205,29 @@ The review found that CUDA 13 lazy module loading could be charged to the first 
 ### Decision and review instructions
 
 The review's event probe was sufficient to change the timing boundary; the generated CUDA will exercise this path in integration tests. Removed remote stamp queries, shared untimed locks, single-flight and extra full-size interpreter validation. Kept process-local evidence and origin f64, and retained per-run isolation and build serialization. See the revised design; no code changed in this checkpoint.
+
+## Step 3: Implement direct emission, isolated execution and the checked pass
+
+I implemented the three CUDA entry points over one emitter, with no edits to `src/framework/`. Preloads and event setup happen before timing in the emitted host code. The optional benchmark mode uses the same kernels and allocates and uploads only once for one warm-up and five timed repetitions.
+
+### Prompt context
+
+See Step 2. Design revision commit: `dc87f19`.
+
+### What I did
+
+- Added `cuda-emit.ts` for one kernel per statement, device-side affine indexing with unsigned arithmetic, checked host dimension arithmetic, and the case/result ABI. The ABI groups a case's dimensions before its payloads, so its shape can be validated before copying data.
+- Added `cuda-run.ts` for the versioned binary frames and asynchronous remote dispatch. The runner uses a private local directory and does not read a result unless the child reports success.
+- Added `cuda-pass.ts` for the terminal source artifact and sampled, batched invariant. Stable case references are computed once per origin/function memo entry. A changed source revision misses the memo; an incomplete/failed batch rejects without supplying verdicts. The Stage-1 contract now shares the stream values and numerical allowance without changing its samples or comparator behavior.
+- Added `--runtime-dir` to `tools/cuda-remote.mjs`, a private remote run directory, and locked atomic executable install. The build key includes the real nvcc version; `--timed` is unchanged. Fetch errors are failures rather than silently leaving a usable old `out/`.
+- Added offline and GPU tests, and the corpus benchmark driver at `corpus/tensor/benchmark-cuda.mjs`.
+
+### Initial checks and fixes
+
+- The modified tool successfully reran `scripts/02-fp-probe.mjs`, reproducing the design's numerical results.
+- Initial `npm run build` attempts hit the 15 s and 60 s command limits on the shared host. The uninterrupted run exposed `TS2304: Cannot find name 'EOF'` in `cuda-pass.ts` (stray delimiter) and `TS2345` at `cuda-run.ts:87` (inferred `Buffer<ArrayBuffer>[]` could not accept a `Buffer<ArrayBufferLike>` from a typed-array view). Removed the delimiter and explicitly typed the chunks as `Buffer[]`; `npm run build` then passed.
+- The first `node --test tests/tensor/*.test.mjs` hit `ReferenceError: EOF is not defined` loading each new test file; removed their stray delimiters too. The 16 preexisting tensor tests passed on that attempt. See the verification checkpoint next for the rerun.
+
+### Review instructions
+
+Start at `src/tensor/index.ts` for the fixed API and `src/tensor/cuda-pass.ts` for the actual acceptance path. The GPU falsifier alters just the emitted ceiling bound, so it still exercises the real cross-kind postcondition. The independent seven-element split witness detects changes the f64 tolerance alone would not notice.
