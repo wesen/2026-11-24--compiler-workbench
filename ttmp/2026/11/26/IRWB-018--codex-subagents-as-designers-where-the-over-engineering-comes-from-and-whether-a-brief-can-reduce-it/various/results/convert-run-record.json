@@ -1,0 +1,109 @@
+{
+  "schema": "go-minitrace-conversion-run-v1",
+  "adapter": "codex",
+  "started_at": "2026-11-26T15:51:53Z",
+  "finished_at": "2026-11-26T15:51:53Z",
+  "output_dir": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-archives",
+  "collision_policy": "error",
+  "inputs": [
+    {
+      "native_session_id": "01a2187d-dda7-7162-8452-ebbf50b18771",
+      "source_path": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-51-01a2187d-dda7-7162-8452-ebbf50b18771.jsonl",
+      "source_format": "codex-session-jsonl-v1",
+      "working_directory": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-012",
+      "role": "unknown",
+      "identity_basis": "first-session-meta",
+      "sha256": "ecdc079860195086a59e1767e62e1d179417c162b157cb1ba8cb90fe64a267e5",
+      "size_bytes": 1032653
+    },
+    {
+      "native_session_id": "01a2187d-df09-7223-8b93-a0a3451e4480",
+      "source_path": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-52-01a2187d-df09-7223-8b93-a0a3451e4480.jsonl",
+      "source_format": "codex-session-jsonl-v1",
+      "working_directory": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-013",
+      "role": "unknown",
+      "identity_basis": "first-session-meta",
+      "sha256": "86a872ff9fcc33213720a7622e72e57273a17a44e4059044ad1bf9998b61ee9d",
+      "size_bytes": 1003214
+    },
+    {
+      "native_session_id": "01a2187d-e123-77e0-b8b2-a511d0aab766",
+      "source_path": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-52-01a2187d-e123-77e0-b8b2-a511d0aab766.jsonl",
+      "source_format": "codex-session-jsonl-v1",
+      "working_directory": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-014",
+      "role": "unknown",
+      "identity_basis": "first-session-meta",
+      "sha256": "4163de4cdb3a1ebe795939390846751a9fa871a122bf7d12f553e1b78b4fa02d",
+      "size_bytes": 957023
+    },
+    {
+      "native_session_id": "01a2187d-e3f9-7132-97c7-7c2a3db4b2f0",
+      "source_path": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-53-01a2187d-e3f9-7132-97c7-7c2a3db4b2f0.jsonl",
+      "source_format": "codex-session-jsonl-v1",
+      "working_directory": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-015",
+      "role": "unknown",
+      "identity_basis": "first-session-meta",
+      "sha256": "7de4079b68ea1ca4bb07c110b04a6291d6fe7bb9b8cb9a268e7a5b1cb57b3d14",
+      "size_bytes": 1117674
+    },
+    {
+      "native_session_id": "01a2187d-ea46-71a1-8843-536109edda2e",
+      "source_path": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-54-01a2187d-ea46-71a1-8843-536109edda2e.jsonl",
+      "source_format": "codex-session-jsonl-v1",
+      "working_directory": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-016",
+      "role": "unknown",
+      "identity_basis": "first-session-meta",
+      "sha256": "a72add68d5bac2aa0017f7c405e36e97aa1473e196a0be79a301bbf507db3c5d",
+      "size_bytes": 1022117
+    },
+    {
+      "native_session_id": "01a2187d-ede2-7a50-9da2-9cc4b38371b5",
+      "source_path": "/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-55-01a2187d-ede2-7a50-9da2-9cc4b38371b5.jsonl",
+      "source_format": "codex-session-jsonl-v1",
+      "working_directory": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/codex-irwb-017",
+      "role": "unknown",
+      "identity_basis": "first-session-meta",
+      "sha256": "169cd95db7fae3996570656c3c7cdad5777a5ef8ce7be74ad4af632a1a5d4115",
+      "size_bytes": 1166150
+    }
+  ],
+  "outputs": [
+    {
+      "session_id": "01a2187d-dda7-7162-8452-ebbf50b18771",
+      "path": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-archives/active/2026-11/01a2187d-dda7-7162-8452-ebbf50b18771.minitrace.json",
+      "status": "created"
+    },
+    {
+      "session_id": "01a2187d-df09-7223-8b93-a0a3451e4480",
+      "path": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-archives/active/2026-11/01a2187d-df09-7223-8b93-a0a3451e4480.minitrace.json",
+      "status": "created"
+    },
+    {
+      "session_id": "01a2187d-e123-77e0-b8b2-a511d0aab766",
+      "path": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-archives/active/2026-11/01a2187d-e123-77e0-b8b2-a511d0aab766.minitrace.json",
+      "status": "created"
+    },
+    {
+      "session_id": "01a2187d-e3f9-7132-97c7-7c2a3db4b2f0",
+      "path": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-archives/active/2026-11/01a2187d-e3f9-7132-97c7-7c2a3db4b2f0.minitrace.json",
+      "status": "created"
+    },
+    {
+      "session_id": "01a2187d-ea46-71a1-8843-536109edda2e",
+      "path": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-archives/active/2026-11/01a2187d-ea46-71a1-8843-536109edda2e.minitrace.json",
+      "status": "created"
+    },
+    {
+      "session_id": "01a2187d-ede2-7a50-9da2-9cc4b38371b5",
+      "path": "/tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/irwb018-archives/active/2026-11/01a2187d-ede2-7a50-9da2-9cc4b38371b5.minitrace.json",
+      "status": "created"
+    }
+  ],
+  "failures": [],
+  "summary": {
+    "requested": 6,
+    "published": 6,
+    "failed": 0
+  },
+  "complete": true
+}

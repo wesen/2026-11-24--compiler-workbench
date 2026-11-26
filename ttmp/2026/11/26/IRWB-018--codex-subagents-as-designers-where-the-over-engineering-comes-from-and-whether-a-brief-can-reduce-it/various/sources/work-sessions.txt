@@ -1,0 +1,6 @@
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-51-01a2187d-dda7-7162-8452-ebbf50b18771.jsonl
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-52-01a2187d-df09-7223-8b93-a0a3451e4480.jsonl
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-52-01a2187d-e123-77e0-b8b2-a511d0aab766.jsonl
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-53-01a2187d-e3f9-7132-97c7-7c2a3db4b2f0.jsonl
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-54-01a2187d-ea46-71a1-8843-536109edda2e.jsonl
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-55-01a2187d-ede2-7a50-9da2-9cc4b38371b5.jsonl

@@ -1,0 +1,3 @@
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-51-01a2187d-de2f-7a51-8ba6-9a6b2f8365ed.jsonl
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-54-01a2187d-e6c0-77a0-85a7-e320548be8fd.jsonl
+/home/manuel/.codex/sessions/2026/11/26/rollout-2026-11-26T10-33-56-01a2187d-ef2a-71d0-8468-8ccbfcf0bd5b.jsonl
