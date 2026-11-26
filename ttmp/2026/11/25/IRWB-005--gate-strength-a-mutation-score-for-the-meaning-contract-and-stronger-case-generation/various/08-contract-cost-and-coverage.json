@@ -1,0 +1,1689 @@
+{
+ "summary": {
+  "totalsMs": {
+   "v1-40": 28563,
+   "v1-80": 27902,
+   "v2": 26650,
+   "v2-nodiv": 26585
+  },
+  "differs": [],
+  "coverage": {
+   "blocks": 433,
+   "v1-40": 392,
+   "v1-100": 392,
+   "v2": 392,
+   "v2-cov": 392
+  },
+  "uncovered": [
+   "blend.blend 6/6/6/6 of 7",
+   "bounds-lab.total 6/6/6/6 of 7",
+   "bounds-lab.pairs 9/9/9/9 of 10",
+   "bounds-lab.tail 8/8/8/8 of 10",
+   "bounds-offset.rises 11/11/11/11 of 13",
+   "bounds-two.dot 9/9/9/9 of 10",
+   "checksum.total 6/6/6/6 of 7",
+   "dead-code.pick 5/5/5/5 of 7",
+   "early-exit.find 9/9/9/9 of 10",
+   "fragments.blend 6/6/6/6 of 7",
+   "heat-lab.sort 22/22/22/22 of 28",
+   "histogram.histogram 15/15/15/15 of 19",
+   "match-enum.area 9/9/9/9 of 10",
+   "orders.kernel 6/6/6/6 of 7",
+   "params-demo.blend 6/6/6/6 of 7",
+   "ramp.ramp 9/9/9/9 of 10",
+   "regalloc-lab.accum 6/6/6/6 of 7",
+   "sort.sort 22/22/22/22 of 28",
+   "start-here.smooth 6/6/6/6 of 7",
+   "start-here.peak 9/9/9/9 of 10",
+   "strength.meter 9/9/9/9 of 10",
+   "strings.vowels 21/21/21/21 of 22",
+   "strings.digits 12/12/12/12 of 13",
+   "ui-gallery.sum 6/6/6/6 of 7",
+   "wrong-shift.bucket 6/6/6/6 of 7"
+  ]
+ },
+ "rows": [
+  {
+   "id": "across-calls",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 1394.9,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 914.8,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1053.7,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 843.5,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "w": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "keep": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "algebra",
+   "pipeline": "O1",
+   "v1-40": {
+    "ms": 320.2,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 292.2,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 213.7,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 225.2,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "tidy": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "blend",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 1455.7,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 1138.6,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1334.1,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 1248.8,
+    "accepted": 6,
+    "rejected": []
+   },
+   "coverage": {
+    "blend": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    }
+   }
+  },
+  {
+   "id": "bounds-lab",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 3827,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 2887.5,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 2759.4,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 2342.3,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "total": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    },
+    "window": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    },
+    "pairs": {
+     "v1-40": 9,
+     "blocks": 10,
+     "v1-100": 9,
+     "v2": 9,
+     "v2-cov": 9
+    },
+    "tail": {
+     "v1-40": 8,
+     "blocks": 10,
+     "v1-100": 8,
+     "v2": 8,
+     "v2-cov": 8
+    }
+   }
+  },
+  {
+   "id": "bounds-offset",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 921.6,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 649.4,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 552,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 689,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "rises": {
+     "v1-40": 11,
+     "blocks": 13,
+     "v1-100": 11,
+     "v2": 11,
+     "v2-cov": 11
+    }
+   }
+  },
+  {
+   "id": "bounds-param",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 426.5,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 432.5,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 580.6,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 380.3,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "prefix": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    }
+   }
+  },
+  {
+   "id": "bounds-two",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 632.9,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 639.2,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 597.3,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 704.7,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "dot": {
+     "v1-40": 9,
+     "blocks": 10,
+     "v1-100": 9,
+     "v2": 9,
+     "v2-cov": 9
+    }
+   }
+  },
+  {
+   "id": "branches",
+   "pipeline": "O1",
+   "v1-40": {
+    "ms": 364.9,
+    "accepted": 3,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 392.8,
+    "accepted": 3,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 410.1,
+    "accepted": 3,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 275.5,
+    "accepted": 3,
+    "rejected": []
+   },
+   "coverage": {
+    "sign": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    },
+    "grade": {
+     "v1-40": 10,
+     "blocks": 10,
+     "v1-100": 10,
+     "v2": 10,
+     "v2-cov": 10
+    }
+   }
+  },
+  {
+   "id": "call-chain",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 363.9,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 388.6,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 317.4,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 453.8,
+    "accepted": 1,
+    "rejected": []
+   },
+   "coverage": {
+    "h": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "g": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "f": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "calls",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 443.8,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 571.4,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 515.2,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 519.9,
+    "accepted": 1,
+    "rejected": []
+   },
+   "coverage": {
+    "sq": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "clamp": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    },
+    "energy": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "checksum",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 365.4,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 597,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 447.9,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 407,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "total": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    }
+   }
+  },
+  {
+   "id": "collatz",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 583.7,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 663.6,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 356.3,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 456.1,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "collatz": {
+     "v1-40": 10,
+     "blocks": 10,
+     "v1-100": 10,
+     "v2": 10,
+     "v2-cov": 10
+    }
+   }
+  },
+  {
+   "id": "constants",
+   "pipeline": "O1",
+   "v1-40": {
+    "ms": 146.8,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 150.9,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 141.9,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 145.8,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "poly": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "dead-code",
+   "pipeline": "O1",
+   "v1-40": {
+    "ms": 197.7,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 197.5,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 194,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 207.9,
+    "accepted": 6,
+    "rejected": []
+   },
+   "coverage": {
+    "pick": {
+     "v1-40": 5,
+     "blocks": 7,
+     "v1-100": 5,
+     "v2": 5,
+     "v2-cov": 5
+    }
+   }
+  },
+  {
+   "id": "diagnostics",
+   "pipeline": "O0",
+   "v1-40": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "f": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "distinct",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 269.5,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 207.2,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 193.6,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 178.9,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "add": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "perimeter": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "div-checks",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 450.9,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 664.2,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 620,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 619.4,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "share": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "safeShare": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    }
+   }
+  },
+  {
+   "id": "div-magic",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 724.4,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 489.6,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 531.7,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 554.9,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "digitsum": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    },
+    "sevenths": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "early-exit",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 626.4,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 432.8,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 338.1,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 424.9,
+    "accepted": 5,
+    "rejected": []
+   },
+   "coverage": {
+    "find": {
+     "v1-40": 9,
+     "blocks": 10,
+     "v1-100": 9,
+     "v2": 9,
+     "v2-cov": 9
+    }
+   }
+  },
+  {
+   "id": "first-steps",
+   "pipeline": "O1",
+   "v1-40": {
+    "ms": 104,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 135,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 114.4,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 96.6,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "scale": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "twice": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "fixed-point",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 514.3,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 470.4,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 519,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 502.7,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "qmul": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    },
+    "lerp": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "fragments",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 593.5,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 814,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 477.2,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 453.2,
+    "accepted": 6,
+    "rejected": []
+   },
+   "coverage": {
+    "blend": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    }
+   }
+  },
+  {
+   "id": "gcd",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 167.5,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 144.1,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 134.7,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 136,
+    "accepted": 1,
+    "rejected": []
+   },
+   "coverage": {
+    "gcd": {
+     "v1-40": 4,
+     "blocks": 4,
+     "v1-100": 4,
+     "v2": 4,
+     "v2-cov": 4
+    }
+   }
+  },
+  {
+   "id": "heat-lab",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 1531.9,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 994.8,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1100.2,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 1010.9,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "sort": {
+     "v1-40": 22,
+     "blocks": 28,
+     "v1-100": 22,
+     "v2": 22,
+     "v2-cov": 22
+    }
+   }
+  },
+  {
+   "id": "histogram",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 666.2,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 682.6,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 652.5,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 822.2,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "histogram": {
+     "v1-40": 15,
+     "blocks": 19,
+     "v1-100": 15,
+     "v2": 15,
+     "v2-cov": 15
+    }
+   }
+  },
+  {
+   "id": "licm-nested",
+   "pipeline": "loops",
+   "v1-40": {
+    "ms": 151.1,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 148.6,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 156.7,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 197.1,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "table": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    }
+   }
+  },
+  {
+   "id": "licm-traps",
+   "pipeline": "loops",
+   "v1-40": {
+    "ms": 92.2,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 73.6,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 70.8,
+    "accepted": 1,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 70.4,
+    "accepted": 1,
+    "rejected": []
+   },
+   "coverage": {
+    "ratio": {
+     "v1-40": 4,
+     "blocks": 4,
+     "v1-100": 4,
+     "v2": 4,
+     "v2-cov": 4
+    }
+   }
+  },
+  {
+   "id": "match-enum",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 556.5,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 603.9,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 472.3,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 616.1,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "area": {
+     "v1-40": 9,
+     "blocks": 10,
+     "v1-100": 9,
+     "v2": 9,
+     "v2-cov": 9
+    },
+    "dist": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    }
+   }
+  },
+  {
+   "id": "my-analysis",
+   "pipeline": "O0",
+   "v1-40": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "f": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    }
+   }
+  },
+  {
+   "id": "my-first-pass",
+   "pipeline": "O0",
+   "v1-40": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "double": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "nested-loops",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 320.5,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 292.4,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 278.8,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 432.3,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "grid": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    }
+   }
+  },
+  {
+   "id": "orders",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 600.6,
+    "accepted": 10,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 641.5,
+    "accepted": 10,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 591.3,
+    "accepted": 10,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 585.2,
+    "accepted": 10,
+    "rejected": []
+   },
+   "coverage": {
+    "kernel": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    },
+    "rescale": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "params-demo",
+   "pipeline": "O0",
+   "v1-40": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 0,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "blend": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    }
+   }
+  },
+  {
+   "id": "pressure",
+   "pipeline": "O1",
+   "v1-40": {
+    "ms": 440.9,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 161.6,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 164.2,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 167.6,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "mixer": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "ramp",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 427.7,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 511.8,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 419.7,
+    "accepted": 6,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 590.8,
+    "accepted": 6,
+    "rejected": []
+   },
+   "coverage": {
+    "ramp": {
+     "v1-40": 9,
+     "blocks": 10,
+     "v1-100": 9,
+     "v2": 9,
+     "v2-cov": 9
+    }
+   }
+  },
+  {
+   "id": "records",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 489.2,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 505.7,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 623.2,
+    "accepted": 0,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 587.8,
+    "accepted": 0,
+    "rejected": []
+   },
+   "coverage": {
+    "manhattan": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    },
+    "nudge": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "regalloc-lab",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 1379.6,
+    "accepted": 3,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 1878.9,
+    "accepted": 3,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1756.9,
+    "accepted": 3,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 1917.5,
+    "accepted": 3,
+    "rejected": []
+   },
+   "coverage": {
+    "mixer": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "step": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "accum": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    }
+   }
+  },
+  {
+   "id": "sort",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 1690,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 1903.6,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1758.2,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 1830.5,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "sort": {
+     "v1-40": 22,
+     "blocks": 28,
+     "v1-100": 22,
+     "v2": 22,
+     "v2-cov": 22
+    }
+   }
+  },
+  {
+   "id": "start-here",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 1714.3,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 1497.8,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1672,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 1573.7,
+    "accepted": 5,
+    "rejected": []
+   },
+   "coverage": {
+    "clamp": {
+     "v1-40": 7,
+     "blocks": 7,
+     "v1-100": 7,
+     "v2": 7,
+     "v2-cov": 7
+    },
+    "weight": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "smooth": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    },
+    "peak": {
+     "v1-40": 9,
+     "blocks": 10,
+     "v1-100": 9,
+     "v2": 9,
+     "v2-cov": 9
+    }
+   }
+  },
+  {
+   "id": "strength",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 757.8,
+    "accepted": 7,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 920.7,
+    "accepted": 7,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1377.5,
+    "accepted": 7,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 834.3,
+    "accepted": 7,
+    "rejected": []
+   },
+   "coverage": {
+    "meter": {
+     "v1-40": 9,
+     "blocks": 10,
+     "v1-100": 9,
+     "v2": 9,
+     "v2-cov": 9
+    },
+    "signed": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    }
+   }
+  },
+  {
+   "id": "strings",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 1675.9,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 2384.3,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 1838.5,
+    "accepted": 4,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 2354,
+    "accepted": 4,
+    "rejected": []
+   },
+   "coverage": {
+    "vowels": {
+     "v1-40": 21,
+     "blocks": 22,
+     "v1-100": 21,
+     "v2": 21,
+     "v2-cov": 21
+    },
+    "digits": {
+     "v1-40": 12,
+     "blocks": 13,
+     "v1-100": 12,
+     "v2": 12,
+     "v2-cov": 12
+    }
+   }
+  },
+  {
+   "id": "ui-gallery",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 664.2,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 800.8,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 806.4,
+    "accepted": 5,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 675.3,
+    "accepted": 5,
+    "rejected": []
+   },
+   "coverage": {
+    "score": {
+     "v1-40": 4,
+     "blocks": 4,
+     "v1-100": 4,
+     "v2": 4,
+     "v2-cov": 4
+    },
+    "sum": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    }
+   }
+  },
+  {
+   "id": "value-numbering",
+   "pipeline": "O2",
+   "v1-40": {
+    "ms": 461,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v1-80": {
+    "ms": 566.3,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2": {
+    "ms": 454.7,
+    "accepted": 2,
+    "rejected": []
+   },
+   "v2-nodiv": {
+    "ms": 412.2,
+    "accepted": 2,
+    "rejected": []
+   },
+   "coverage": {
+    "halves": {
+     "v1-40": 4,
+     "blocks": 4,
+     "v1-100": 4,
+     "v2": 4,
+     "v2-cov": 4
+    }
+   }
+  },
+  {
+   "id": "wrong-shift",
+   "pipeline": "broken",
+   "v1-40": {
+    "ms": 48.4,
+    "accepted": 0,
+    "rejected": [
+     "div-to-shift"
+    ]
+   },
+   "v1-80": {
+    "ms": 59.5,
+    "accepted": 0,
+    "rejected": [
+     "div-to-shift"
+    ]
+   },
+   "v2": {
+    "ms": 54.1,
+    "accepted": 0,
+    "rejected": [
+     "div-to-shift"
+    ]
+   },
+   "v2-nodiv": {
+    "ms": 40.3,
+    "accepted": 0,
+    "rejected": [
+     "div-to-shift"
+    ]
+   },
+   "coverage": {
+    "eighth": {
+     "v1-40": 1,
+     "blocks": 1,
+     "v1-100": 1,
+     "v2": 1,
+     "v2-cov": 1
+    },
+    "bucket": {
+     "v1-40": 6,
+     "blocks": 7,
+     "v1-100": 6,
+     "v2": 6,
+     "v2-cov": 6
+    }
+   }
+  }
+ ]
+}

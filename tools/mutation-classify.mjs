@@ -17,8 +17,17 @@ try {
 
 export const LIMIT = 2e5;
 
-/** A classifier for one subject: r0 and base as stores, the subject's inputs, optional reference program. */
-export function classifier({ r0st, basest, inputs, reference = null, budget = 300000, sample = 4000, free = sample, refCases = 400 }) {
+/**
+ * A classifier for one subject: r0 and base as stores, the subject's inputs, optional reference program.
+ * `limit` is the step limit of classification runs (default 2e5); with `rerun`, a mutant at the limit where r0
+ * finished is run again with `rerun` times the limit (compareOn). `sampleFor(g)` / `freeFor(g)` / `boundaryFor(g)`
+ * give the sample sizes per function (default `sample`, `free`, 200), so a large program can sample callers less.
+ */
+export function classifier({
+  r0st, basest, inputs, reference = null, budget = 300000, sample = 4000, free = sample, refCases = 400,
+  limit = LIMIT, rerun = 0, sampleFor = () => sample, freeFor = () => free, boundaryFor = () => 200,
+}) {
+  const LIMIT = limit;
   const packs = new Map();
   function packFor(g) {
     let pack = packs.get(g);
@@ -29,10 +38,10 @@ export function classifier({ r0st, basest, inputs, reference = null, budget = 30
     const gen = strongModule ? strongModule.offsetOrdered(r0st) : r0st;
     const domain = M.finiteDomain(gen, g, spec, budget);
     const sampleCases = [
-      ...casesFrom(gen, g, { count: sample, seed: 101, inputs: spec }),
-      ...(strongModule ? strongModule.boundaryCases(r0st, g, { inputs: spec, extra: 200 }) : []),
+      ...casesFrom(gen, g, { count: sampleFor(g), seed: 101, inputs: spec }),
+      ...(strongModule ? strongModule.boundaryCases(r0st, g, { inputs: spec, extra: boundaryFor(g) }) : []),
     ];
-    const freeCases = casesFrom(gen, g, { count: free, seed: 102, inputs: {} });
+    const freeCases = casesFrom(gen, g, { count: freeFor(g), seed: 102, inputs: {} });
     pack = { domain, domainRuns: domain && run(domain), sample: sampleCases, sampleRuns: domain ? null : run(sampleCases), free: freeCases, freeRuns: run(freeCases) };
     if (reference && !domain)
       pack.ref = sampleCases.slice(0, refCases).map(k => {
@@ -50,7 +59,7 @@ export function classifier({ r0st, basest, inputs, reference = null, budget = 30
     for (const g of A) {
       const pk = packFor(g);
       if (!pk[part + 'Runs']) pk[part + 'Runs'] = pk[part].map(c => evaluate(r0st, c.fn, c.args, c.memory, { limit: LIMIT }));
-      const c = M.compareOn(r0st, mst, pk[part], { limit: LIMIT, stopAtWitness: true, baselineRuns: pk[part + 'Runs'] });
+      const c = M.compareOn(r0st, mst, pk[part], { limit: LIMIT, rerun, stopAtWitness: true, baselineRuns: pk[part + 'Runs'] });
       for (const k of Object.keys(tot)) tot[k] += c[k];
       if (c.witness) return { ...tot, witness: c.witness };
     }

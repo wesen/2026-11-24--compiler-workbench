@@ -392,6 +392,8 @@ export function meaningKeptStrong(
   });
   let check = strongChecks.get(key);
   if (!check) {
+    /** Per case: did the origin finish within the limit (set when the baseline runs, read by the subject's run). */
+    const originFinished = new WeakMap<Case, boolean>();
     check = differential<{ origin: typeof BlocksIR; candidate: typeof BlocksIR }, Case, RunResult>({
       id: 'typed.meaning-kept',
       version: `2+${hash(key)}`,
@@ -419,7 +421,13 @@ export function meaningKeptStrong(
       run: (side, art, c): Diverged => {
         const st = storeOf((art as Artifact<TypedBlocks>).value),
           r = evaluate(st, c.fn, c.args, c.memory, { limit });
-        if (side === 'baseline' || !r.limit || !divergence) return r;
+        if (side === 'baseline') {
+          originFinished.set(c, !r.limit);
+          return r;
+        }
+        // re-run only where the origin finished: elsewhere the case is no verdict whatever the candidate does
+        // (runDifferential runs a case's baseline before its subject)
+        if (!r.limit || !divergence || originFinished.get(c) !== true) return r;
         const again = evaluate(st, c.fn, c.args, c.memory, { limit: limit * divergence });
         // not inconclusive: if the origin finished, compare reports the divergence; if not, the case is skipped
         return again.limit ? { ...again, limit: false, diverged: true } : again;

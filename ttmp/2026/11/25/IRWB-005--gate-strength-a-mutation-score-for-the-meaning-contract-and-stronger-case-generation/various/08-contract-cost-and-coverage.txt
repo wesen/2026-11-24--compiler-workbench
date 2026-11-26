@@ -1,0 +1,88 @@
+across-calls     v1-40 1395 ms  v1-80 915 ms  v2 1054 ms  v2-nodiv 844 ms
+algebra          v1-40 320 ms  v1-80 292 ms  v2 214 ms  v2-nodiv 225 ms
+blend            v1-40 1456 ms  v1-80 1139 ms  v2 1334 ms  v2-nodiv 1249 ms
+bounds-lab       v1-40 3827 ms  v1-80 2888 ms  v2 2759 ms  v2-nodiv 2342 ms
+bounds-offset    v1-40 922 ms  v1-80 649 ms  v2 552 ms  v2-nodiv 689 ms
+bounds-param     v1-40 427 ms  v1-80 433 ms  v2 581 ms  v2-nodiv 380 ms
+bounds-two       v1-40 633 ms  v1-80 639 ms  v2 597 ms  v2-nodiv 705 ms
+branches         v1-40 365 ms  v1-80 393 ms  v2 410 ms  v2-nodiv 276 ms
+call-chain       v1-40 364 ms  v1-80 389 ms  v2 317 ms  v2-nodiv 454 ms
+calls            v1-40 444 ms  v1-80 571 ms  v2 515 ms  v2-nodiv 520 ms
+checksum         v1-40 365 ms  v1-80 597 ms  v2 448 ms  v2-nodiv 407 ms
+collatz          v1-40 584 ms  v1-80 664 ms  v2 356 ms  v2-nodiv 456 ms
+constants        v1-40 147 ms  v1-80 151 ms  v2 142 ms  v2-nodiv 146 ms
+dead-code        v1-40 198 ms  v1-80 198 ms  v2 194 ms  v2-nodiv 208 ms
+diagnostics      v1-40 0 ms  v1-80 0 ms  v2 0 ms  v2-nodiv 0 ms
+distinct         v1-40 270 ms  v1-80 207 ms  v2 194 ms  v2-nodiv 179 ms
+div-checks       v1-40 451 ms  v1-80 664 ms  v2 620 ms  v2-nodiv 619 ms
+div-magic        v1-40 724 ms  v1-80 490 ms  v2 532 ms  v2-nodiv 555 ms
+early-exit       v1-40 626 ms  v1-80 433 ms  v2 338 ms  v2-nodiv 425 ms
+first-steps      v1-40 104 ms  v1-80 135 ms  v2 114 ms  v2-nodiv 97 ms
+fixed-point      v1-40 514 ms  v1-80 470 ms  v2 519 ms  v2-nodiv 503 ms
+fragments        v1-40 594 ms  v1-80 814 ms  v2 477 ms  v2-nodiv 453 ms
+gcd              v1-40 168 ms  v1-80 144 ms  v2 135 ms  v2-nodiv 136 ms
+heat-lab         v1-40 1532 ms  v1-80 995 ms  v2 1100 ms  v2-nodiv 1011 ms
+histogram        v1-40 666 ms  v1-80 683 ms  v2 653 ms  v2-nodiv 822 ms
+licm-nested      v1-40 151 ms  v1-80 149 ms  v2 157 ms  v2-nodiv 197 ms
+licm-traps       v1-40 92 ms  v1-80 74 ms  v2 71 ms  v2-nodiv 70 ms
+match-enum       v1-40 557 ms  v1-80 604 ms  v2 472 ms  v2-nodiv 616 ms
+my-analysis      v1-40 0 ms  v1-80 0 ms  v2 0 ms  v2-nodiv 0 ms
+my-first-pass    v1-40 0 ms  v1-80 0 ms  v2 0 ms  v2-nodiv 0 ms
+nested-loops     v1-40 321 ms  v1-80 292 ms  v2 279 ms  v2-nodiv 432 ms
+orders           v1-40 601 ms  v1-80 642 ms  v2 591 ms  v2-nodiv 585 ms
+params-demo      v1-40 0 ms  v1-80 0 ms  v2 0 ms  v2-nodiv 0 ms
+pressure         v1-40 441 ms  v1-80 162 ms  v2 164 ms  v2-nodiv 168 ms
+ramp             v1-40 428 ms  v1-80 512 ms  v2 420 ms  v2-nodiv 591 ms
+records          v1-40 489 ms  v1-80 506 ms  v2 623 ms  v2-nodiv 588 ms
+regalloc-lab     v1-40 1380 ms  v1-80 1879 ms  v2 1757 ms  v2-nodiv 1918 ms
+sort             v1-40 1690 ms  v1-80 1904 ms  v2 1758 ms  v2-nodiv 1831 ms
+start-here       v1-40 1714 ms  v1-80 1498 ms  v2 1672 ms  v2-nodiv 1574 ms
+strength         v1-40 758 ms  v1-80 921 ms  v2 1378 ms  v2-nodiv 834 ms
+strings          v1-40 1676 ms  v1-80 2384 ms  v2 1839 ms  v2-nodiv 2354 ms
+ui-gallery       v1-40 664 ms  v1-80 801 ms  v2 806 ms  v2-nodiv 675 ms
+value-numbering  v1-40 461 ms  v1-80 566 ms  v2 455 ms  v2-nodiv 412 ms
+wrong-shift      v1-40 48 ms  v1-80 60 ms  v2 54 ms  v2-nodiv 40 ms
+{
+ "totalsMs": {
+  "v1-40": 28563,
+  "v1-80": 27902,
+  "v2": 26650,
+  "v2-nodiv": 26585
+ },
+ "differs": [],
+ "coverage": {
+  "blocks": 433,
+  "v1-40": 392,
+  "v1-100": 392,
+  "v2": 392,
+  "v2-cov": 392
+ },
+ "uncovered": [
+  "blend.blend 6/6/6/6 of 7",
+  "bounds-lab.total 6/6/6/6 of 7",
+  "bounds-lab.pairs 9/9/9/9 of 10",
+  "bounds-lab.tail 8/8/8/8 of 10",
+  "bounds-offset.rises 11/11/11/11 of 13",
+  "bounds-two.dot 9/9/9/9 of 10",
+  "checksum.total 6/6/6/6 of 7",
+  "dead-code.pick 5/5/5/5 of 7",
+  "early-exit.find 9/9/9/9 of 10",
+  "fragments.blend 6/6/6/6 of 7",
+  "heat-lab.sort 22/22/22/22 of 28",
+  "histogram.histogram 15/15/15/15 of 19",
+  "match-enum.area 9/9/9/9 of 10",
+  "orders.kernel 6/6/6/6 of 7",
+  "params-demo.blend 6/6/6/6 of 7",
+  "ramp.ramp 9/9/9/9 of 10",
+  "regalloc-lab.accum 6/6/6/6 of 7",
+  "sort.sort 22/22/22/22 of 28",
+  "start-here.smooth 6/6/6/6 of 7",
+  "start-here.peak 9/9/9/9 of 10",
+  "strength.meter 9/9/9/9 of 10",
+  "strings.vowels 21/21/21/21 of 22",
+  "strings.digits 12/12/12/12 of 13",
+  "ui-gallery.sum 6/6/6/6 of 7",
+  "wrong-shift.bucket 6/6/6/6 of 7"
+ ]
+}
+node $T/scripts/08-contract-cost-and-coverage.mjs   101.47s user 0.65s system 87% cpu 1:56.41 total

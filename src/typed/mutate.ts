@@ -593,10 +593,15 @@ export function compareOn(
     stopAtWitness?: boolean;
     /** The baseline's runs on `cases`, when already computed (the origin is the same for every mutant). */
     baselineRuns?: readonly RunResult[];
+    /**
+     * When the subject hits the limit where the baseline finished, run it again with `rerun` times the limit and
+     * compare that run; only a subject still running then diverges (for large programs, where the limit is low).
+     */
+    rerun?: number;
   } = {},
 ): Comparison {
   const limit = opts.limit ?? 2e5,
-    below = opts.divergeBelow ?? 2e4;
+    below = opts.rerun ? limit : (opts.divergeBelow ?? 2e4);
   let agree = 0,
     disagree = 0,
     inconclusive = 0,
@@ -609,7 +614,8 @@ export function compareOn(
       inconclusive++; // no verdict whatever the subject does
       continue;
     }
-    const b: RunResult = evaluate(subject, c.fn, c.args, c.memory, { limit });
+    let b: RunResult = evaluate(subject, c.fn, c.args, c.memory, { limit });
+    if (b.limit && opts.rerun) b = evaluate(subject, c.fn, c.args, c.memory, { limit: limit * opts.rerun });
     if (a.limit || b.limit) {
       inconclusive++;
       if (!a.limit && b.limit && a.steps <= below) {
@@ -618,7 +624,7 @@ export function compareOn(
           fn: c.fn,
           n: c.n,
           args: c.args,
-          reason: `diverges: limit ${limit}, baseline ${a.steps} steps`,
+          reason: `diverges: limit ${opts.rerun ? limit * opts.rerun : limit}, baseline ${a.steps} steps`,
         };
         if (opts.stopAtWitness) break;
       }

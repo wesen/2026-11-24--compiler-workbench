@@ -122,9 +122,15 @@ if (!chosen) {
 console.error(`cheap functions: ${cheap.length}; chosen: ${chosen.length}: ${chosen.join(', ')}`);
 
 const records = [], baseVerdicts = {}, crossCheck = { compared: 0, differ: 0 };
-const classify = C.classifier({ r0st, basest, inputs, sample, free: sample });
+const callerSample = +flag('--caller-sample', 100);
 for (const f of chosen) {
   const A = M.affected(basest, f), own = M.closure(basest, [f]);
+  // classification on Candela: the mutated function's own cases in full (sample + 200 boundary + unconstrained),
+  // its callers' at callerSample (+ 40 boundary); step limit 2e4 with a 10x re-run of a mutant where r0 finished
+  const classify = C.classifier({
+    r0st, basest, inputs, limit: 2e4, rerun: 10,
+    sampleFor: g => (g === f ? sample : callerSample), freeFor: g => (g === f ? sample : callerSample), boundaryFor: g => (g === f ? 200 : 40),
+  });
   const tiny = createIRArtifact(blocksAdapter, 'candela', M.subProgram(base.value, own));
   const tinyR0 = createIRArtifact(blocksAdapter, 'candela', M.subProgram(r0.value, own));
   const manager = new AnalysisManager(), tst = storeOf(tiny.value);

@@ -407,3 +407,50 @@ The first full measurement. Every corpus project's pipeline head was mutated at 
 
 ### Technical details
 - Survived-wrong for v2 (`strong`): `bounds-lab.pairs check-range len+1 "if (t5 >=u load32[b+0]) goto .8 else .11"`, `strength.meter const -1 "1000"`.
+
+## Step 9: What version 2 costs on correct pipelines, what each case set covers, and a cost bug in the divergence rule
+
+Two measurements on correct programs, where a gate's cost matters most because nearly every pass application is correct. Version 2 accepts exactly the passes version 1 accepts on all 44 projects and ends at the same heads. The time of whole pipelines does not change measurably, because a check is a small part of a pass application on the corpus. Measured alone, a check costs in proportion to its cases: version 2 costs what 80 default cases cost, about twice the default. Coverage of r0's blocks is identical for every case set (392 of 433), so on the corpus the stronger cases kill more by choosing values, not by reaching more code.
+
+The check-time measurement first showed version 2 at 1,977 ms against 817 ms without the divergence rule. The cause: the subject side re-ran every case at 10× the limit whenever it hit the limit, also where r0 itself hit the limit (my-analysis), and those cases are no verdict anyway. Fixed: the baseline's run records, per case object, whether the origin finished (`runDifferential` runs a case's baseline before its subject), and the subject re-runs only where it did. Verdicts cannot change; after the fix version 2 costs 1,139 ms against 1,215 ms for 80 default cases.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Measure the kill rate gained and the time cost."
+**Inferred user intent:** Know whether a stronger gate is affordable.
+**Commit (code):** pending (next commit).
+
+### What I did
+- `scripts/08-contract-cost-and-coverage.mjs`: per project, the pipeline under v1-40 (Program.apply's contract), v1-80, v2, v2-nodiv via `applyPass(..., { contract })`; accepted passes and head compared; then `blockCoverage` of r0 per function for v1-40, v1-100, v2, v2-cov. Output `various/08-contract-cost-and-coverage.{txt,json}`; 1 min 56 s.
+- `scripts/11-check-time.mjs`: per project, the head against r0 with each invariant's own `check` (no manager): first call and mean of 10. Before the fix: `various/11-check-time-before-fix.{txt,json}`; after: `various/11-check-time.{txt,json}`.
+- `cases-strong.ts`: `originFinished = new WeakMap<Case, boolean>()` per strong check; the baseline run sets it; the subject re-runs only when it is `true`.
+
+### Why
+- The per-mutant gate times of Step 8 are dominated by mutants (diverging ones pay for re-runs); correct candidates are the common case.
+
+### What worked
+- Pipelines: totals v1-40 28,563 ms, v1-80 27,902 ms, v2 26,650 ms, v2-nodiv 26,585 ms; `differs: []` (same accepted passes, same heads, all 44 projects).
+- Coverage of r0: 433 blocks, 392 covered by each of v1-40, v1-100, v2, v2-cov. The 41 others are trap blocks of bounds checks that the specifications never reach and `dead-code.pick`'s two dead blocks (25 functions list one or more, e.g. `blend.blend 6/6/6/6 of 7`, `heat-lab.sort 22/22/22/22 of 28`).
+- Check time, all projects' heads once (steady state, ms): before the fix v1-40 432, v1-80 853, v1-100 1,091, v2 1,977, v2-nodiv 817, v2-cov 1,981; after the fix (machine under heavier load, load average 12.7) v1-40 560, v1-80 1,215, v1-100 1,507, v2 1,139, v2-nodiv 953, v2-cov 1,090. Per case: 150–215 µs for every configuration once the wasted re-runs are gone. First calls: v2-cov 4,143 ms (coverage selection), cached per origin revision afterwards.
+- `node --test tests/typed/mutate.test.mjs`: 9 of 9 after the fix.
+
+### What didn't work
+- The first version of the divergence rule wasted re-runs, as above.
+
+### What I learned
+- On the corpus, the gate's cost is linear in its cases and small next to a pass's own cost; doubling the cases is affordable. Coverage-guided selection adds nothing on the corpus because the default cases already reach every reachable block.
+
+### What was tricky to build
+- Passing information from the baseline's run to the subject's within `runDifferential`'s fixed interface: a `WeakMap` keyed by the case object, which both runs receive.
+
+### What warrants a second pair of eyes
+- The fix relies on `runDifferential` running a case's baseline before its subject (differential.ts:114–115). IRWB-004 is changing how contracts execute (caching, workers); if baseline and subject runs are separated or cached, `originFinished` must be filled another way (the fallback is safe: no re-run, the case stays no verdict).
+
+### What should be done in the future
+- Re-measure the strong gate's per-mutant time on the corpus with the fix (the Step 8 numbers include the wasted re-runs).
+
+### Code review instructions
+- `src/typed/cases-strong.ts` (`meaningKeptStrong`, `run`); the two scripts.
+
+### Technical details
+- Cases per all-project check: v1-40 2,800; v1-80 5,600; v1-100 7,000; v2 5,600.
