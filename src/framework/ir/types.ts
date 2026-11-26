@@ -205,6 +205,8 @@ export interface RedirectOptions extends Reason {
 export interface IREdit<T = unknown> {
   readonly base: Artifact<T>;
   readonly state: 'open' | 'preparing' | 'prepared' | 'committed' | 'rolled-back' | 'failed';
+  /** IRWB-004: the number of operations recorded so far (0: the edit is the identity). */
+  readonly operationCount: number;
   // IRWB-001 E2: every edit takes an optional Reason, recorded in the operation log.
   insert(entity: IREntity, reason?: Reason): IRRef;
   replace(target: EntityTarget, entity: IREntity, reason?: Reason): void;

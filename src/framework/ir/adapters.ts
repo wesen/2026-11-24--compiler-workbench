@@ -1,4 +1,12 @@
-import { canonical, fingerprint, immutable, isCanonical, sameCanonical } from '../core/data.js';
+import {
+  canonical,
+  fingerprint,
+  immutable,
+  isCanonical,
+  revisionOf,
+  sameCanonical,
+  validateOnce,
+} from '../core/data.js';
 import type { Artifact } from '../core/types.js';
 import type { AdapterDescriptor, Capability, IRAdapter, IREntity, IRGraph, IRRelation } from './types.js';
 import { compareText, IRError, requireRecord, requireText, synchronous, syncFunction } from './common.js';
@@ -121,18 +129,15 @@ export function createIRArtifact<T>(definition: IRAdapter<T>, id: string, value:
   const adapter = defineAdapter(definition);
   requireText(id, 'Artifact ID');
   const snapshot = immutable(value);
-  if (adapter.validate) synchronous(adapter.validate(snapshot), 'Adapter validation');
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot, r => synchronous(r, 'Adapter validation'), adapter);
   const artifact = immutable({
     id,
     kind: adapter.kind,
     schemaVersion: adapter.schemaVersion,
     value: snapshot,
     contentHash: fingerprint(snapshot),
-    revision: fingerprint({
-      kind: adapter.kind,
-      schemaVersion: adapter.schemaVersion,
-      value: snapshot,
-    }),
+    revision: revisionOf(adapter.kind, adapter.schemaVersion, snapshot),
   });
   project(adapter, artifact.value);
   VERIFIED.add(artifact);
@@ -147,16 +152,12 @@ export function validateIRArtifact<T>(definition: IRAdapter<T>, artifact: Artifa
   if (
     !VERIFIED.has(snapshot) &&
     (snapshot.contentHash !== fingerprint(snapshot.value) ||
-      snapshot.revision !==
-        fingerprint({
-          kind: snapshot.kind,
-          schemaVersion: snapshot.schemaVersion,
-          value: snapshot.value,
-        }))
+      snapshot.revision !== revisionOf(snapshot.kind, snapshot.schemaVersion, snapshot.value))
   )
     throw new IRError('ir.revision', 'Artifact content/revision hash does not match its value');
   VERIFIED.add(snapshot);
-  if (adapter.validate) synchronous(adapter.validate(snapshot.value), 'Adapter validation');
+  if (adapter.validate)
+    validateOnce(adapter.validate, snapshot.value, r => synchronous(r, 'Adapter validation'), adapter);
   return snapshot;
 }
 export function validateEntity(entity: IREntity): IREntity {
