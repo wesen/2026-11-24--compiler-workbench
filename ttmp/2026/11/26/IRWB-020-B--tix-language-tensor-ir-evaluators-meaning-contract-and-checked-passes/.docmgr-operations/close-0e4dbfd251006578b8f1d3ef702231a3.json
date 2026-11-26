@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "3b76a60a7e1056596dc77aaf4a6f5f1548b6d3376d91787db81472e600970f6e",
+  "request": {
+    "ticket": "IRWB-020-B",
+    "status": "complete",
+    "intent": "",
+    "entry": "Stage 1 complete. Recorded the synchronous native-pass change and passing tensor, framework and affected Typed tests."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-0e4dbfd251006578b8f1d3ef702231a3",
+    "state": "committed",
+    "created_at": "2026-11-26T18:57:25.337688407Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "3c84b5cd4cd18cd8d38d9f6e0373637dde8553fc5bba96e92c8e225814ce7d16",
+      "index.md": "e758f431c2c5a16b81d02a42d223486b95721e4224036aa177df92c28d72d7c3"
+    },
+    "after": {
+      "changelog.md": "10e6acb4cbde52f3a4237ac1130a57266d63419ac1ebf4a5450f151ea4c9879d",
+      "index.md": "5ba0a92f887e875448d3d38b4dd04c49d1a4e0aabae74e2eb11525ff1187ecc1"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "3c84b5cd4cd18cd8d38d9f6e0373637dde8553fc5bba96e92c8e225814ce7d16",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKUmVjb3JkZWQgdGhlIHN5bmNocm9ub3VzIHBhc3MtcnVubmVyIGZpbmRpbmcsIG51bWVyaWNhbCB3aXRuZXNzIGFuZCBzdGFnZS0xIGRlc2lnbiBmb3IgcmV2aWV3LgoKIyMgMjAyNi0xMS0yNgoKU3RhZ2UgMSBjb21wbGV0ZS4gUmVjb3JkZWQgdGhlIHN5bmNocm9ub3VzIG5hdGl2ZS1wYXNzIGNoYW5nZSBhbmQgcGFzc2luZyB0ZW5zb3IsIGZyYW1ld29yayBhbmQgYWZmZWN0ZWQgVHlwZWQgdGVzdHMuCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "e758f431c2c5a16b81d02a42d223486b95721e4224036aa177df92c28d72d7c3",
+      "after": "LS0tClRpdGxlOiBUaXggbGFuZ3VhZ2UsIHRlbnNvciBJUiwgZXZhbHVhdG9ycywgbWVhbmluZyBjb250cmFjdCBhbmQgY2hlY2tlZCBwYXNzZXMKVGlja2V0OiBJUldCLTAyMC1CClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBpcgogICAgLSB2ZXJpZmljYXRpb24KRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogIiIKTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjZUMTM6NTc6MjUuMzM3NjA4ODMyLTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIFRpeCBsYW5ndWFnZSwgdGVuc29yIElSLCBldmFsdWF0b3JzLCBtZWFuaW5nIGNvbnRyYWN0IGFuZCBjaGVja2VkIHBhc3NlcwoKVGhpcyB0aWNrZXQgaW50cm9kdWNlcyBUaXggYXMgdGhlIHNlY29uZCBkb21haW4gb24gdGhlIHY2IGZyYW1ld29yay4gU3RhZ2UgMSBpcyBpbXBsZW1lbnRlZCBhbmQgY2hlY2tlZC4gVGhlIGRpYXJ5IHJlY29yZHMgdGhlIGJ1aWxkLCBjb3JwdXMgY2hlY2tzLCBtdXRhdGlvbiB0ZXN0cyBhbmQgcmVncmVzc2lvbiBzdWl0ZSByZXN1bHRzLgoKLSBbRGVzaWduIGFuZCBmcmFtZXdvcmsgY2hhbmdlIGxlZGdlcl0oZGVzaWduLWRvYy8wMS10aXgtc2VtYW50aWNzLWFuZC1jaGVja2VkLXRlbnNvci1yZXdyaXRlcy5tZCkKLSBbRGlhcnkgYW5kIHByb2JlIHJlc3VsdHNdKHJlZmVyZW5jZS8wMS1pbXBsZW1lbnRhdGlvbi1kaWFyeS5tZCkKLSBbVGFza3NdKHRhc2tzLm1kKQotIFtDaGFuZ2Vsb2ddKGNoYW5nZWxvZy5tZCkK"
+    }
+  ]
+}
