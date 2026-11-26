@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "2752b879c042c840981d52a0d07d2258caeb039691a8f5930c6eea0f694eb334",
+  "request": {
+    "ticket": "IRWB-022-J",
+    "status": "complete",
+    "intent": "",
+    "entry": "Verified all 33 tensor tests and recorded the six full-size GB10 and Stage 1 interpreter timings"
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-11dbf3c8b2a45c2108226264812c688a",
+    "state": "committed",
+    "created_at": "2026-11-26T21:19:06.593296935Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "ac11b4792cc7695bc4d376fe2b8903d1cab6efc2cbea5ab89007c68f5a0ab8fa",
+      "index.md": "3dafa379c0f401cae78ac7c9079ac113ef1097a5d4cdecc4aefdfb8fef26b6e5"
+    },
+    "after": {
+      "changelog.md": "9e5773a5ab6d5299de25cbabff9e6c4e29530906a570a72b91c0fa22e5018d1d",
+      "index.md": "220f934bcb225f98246155528df9bcacda353f9530f2a1c44b07f1082dab538b"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "ac11b4792cc7695bc4d376fe2b8903d1cab6efc2cbea5ab89007c68f5a0ab8fa",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKRHJhZnRlZCB0aGUgY2hlY2tlZCBDVURBIGxvd2VyaW5nIGFuZCByZWNvcmRlZCB0aGUgR0IxMCBudW1lcmljIGFuZCBmcmFtZXdvcmsgcHJvYmVzCgojIyMgUmVsYXRlZCBGaWxlcwoKLSAvaG9tZS9tYW51ZWwvY29kZS93ZXNlbi8yMDI2LTExLTI0LS1jb21waWxlci13b3JrYmVuY2gvLmNsYXVkZS93b3JrdHJlZXMvdDItc20taXJ3Yi0wMjItai90dG1wLzIwMjYvMTEvMjYvSVJXQi0wMjItSi0tbG93ZXJpbmctdGl4LXRvLWN1ZGEtY2hlY2tlZC1vbi10aGUtZ3B1LW1hY2hpbmUvZGVzaWduLWRvYy8wMS1jaGVja2VkLXRpeC10by1jdWRhLWxvd2VyaW5nLm1kIOKAlCBEZXNpZ24gYW5kIG51bWVyaWMgY29udHJhY3QKLSAvaG9tZS9tYW51ZWwvY29kZS93ZXNlbi8yMDI2LTExLTI0LS1jb21waWxlci13b3JrYmVuY2gvLmNsYXVkZS93b3JrdHJlZXMvdDItc20taXJ3Yi0wMjItai90dG1wLzIwMjYvMTEvMjYvSVJXQi0wMjItSi0tbG93ZXJpbmctdGl4LXRvLWN1ZGEtY2hlY2tlZC1vbi10aGUtZ3B1LW1hY2hpbmUvcmVmZXJlbmNlLzAxLWRpYXJ5Lm1kIOKAlCBEZXNpZ24gY2hlY2twb2ludCBhbmQgdmFsaWRhdGlvbgoKIyMgMjAyNi0xMS0yNgoKSW5jb3Jwb3JhdGVkIGRlc2lnbiByZXZpZXcsIGluY2x1ZGluZyBleHBsaWNpdCB0b2xlcmFuY2UgcnVsZXMgYW5kIENVREEga2VybmVsIHByZWxvYWRpbmcgYmVmb3JlIGV2ZW50cwoKIyMgMjAyNi0xMS0yNgoKSW1wbGVtZW50ZWQgYW5kIGNoZWNrZWQgZGlyZWN0IENVREEgZW1pc3Npb24sIGJhdGNoZWQgdjYgdmVyaWZpY2F0aW9uIGFuZCBpc29sYXRlZCByZW1vdGUgYnVpbGRzCgojIyAyMDI2LTExLTI2CgpWZXJpZmllZCBhbGwgMzMgdGVuc29yIHRlc3RzIGFuZCByZWNvcmRlZCB0aGUgc2l4IGZ1bGwtc2l6ZSBHQjEwIGFuZCBTdGFnZSAxIGludGVycHJldGVyIHRpbWluZ3MK"
+    },
+    {
+      "path": "index.md",
+      "before": "3dafa379c0f401cae78ac7c9079ac113ef1097a5d4cdecc4aefdfb8fef26b6e5",
+      "after": "LS0tClRpdGxlOiBMb3dlcmluZyBUaXggdG8gQ1VEQSwgY2hlY2tlZCwgb24gdGhlIEdQVSBtYWNoaW5lClRpY2tldDogSVJXQi0wMjItSgpTdGF0dXM6IGNvbXBsZXRlClRvcGljczoKICAgIC0gY29tcGlsZXIKICAgIC0gaXIKICAgIC0gdmVyaWZpY2F0aW9uCiAgICAtIHBlcmZvcm1hbmNlCkRvY1R5cGU6IGluZGV4CkludGVudDogbG9uZy10ZXJtCk93bmVyczogW10KUmVsYXRlZEZpbGVzOiBbXQpFeHRlcm5hbFNvdXJjZXM6IFtdClN1bW1hcnk6ICIiCkxhc3RVcGRhdGVkOiAyMDI2LTExLTI2VDE2OjE5OjA2LjU5MzE1MTU2My0wNTowMApXaGF0Rm9yOiAiIgpXaGVuVG9Vc2U6ICIiCi0tLQoKIyBMb3dlcmluZyBUaXggdG8gQ1VEQSwgY2hlY2tlZCwgb24gdGhlIEdQVSBtYWNoaW5lCgojIyBPdmVydmlldwoKU3RhZ2UgMiBkZXNpZ24gZm9yIGNoZWNrZWQgQ1VEQSBsb3dlcmluZyBvZiBUaXggb24gdGhlIEdCMTAuIEltcGxlbWVudGF0aW9uIGFuZCBjb3JwdXMgbWVhc3VyZW1lbnRzIGZvbGxvdyByZXZpZXcuCgojIyBLZXkgTGlua3MKCi0gW0NoZWNrZWQgVGl4IHRvIENVREEgbG93ZXJpbmddKGRlc2lnbi1kb2MvMDEtY2hlY2tlZC10aXgtdG8tY3VkYS1sb3dlcmluZy5tZCkKLSBbRGlhcnldKHJlZmVyZW5jZS8wMS1kaWFyeS5tZCkKLSBbVmVyaWZpY2F0aW9uIGFuZCBjb3JwdXMgdGltaW5nc10ocmVmZXJlbmNlLzAyLWN1ZGEtdmVyaWZpY2F0aW9uLWFuZC1jb3JwdXMtdGltaW5ncy5tZCkKCi0gKipSZWxhdGVkIEZpbGVzKio6IFNlZSBmcm9udG1hdHRlciBSZWxhdGVkRmlsZXMgZmllbGQKLSAqKkV4dGVybmFsIFNvdXJjZXMqKjogU2VlIGZyb250bWF0dGVyIEV4dGVybmFsU291cmNlcyBmaWVsZAoKIyMgU3RhdHVzCgpDdXJyZW50IHN0YXR1czogKiphY3RpdmUqKgoKIyMgVG9waWNzCgotIGNvbXBpbGVyCi0gaXIKLSB2ZXJpZmljYXRpb24KLSBwZXJmb3JtYW5jZQoKIyMgVGFza3MKClNlZSBbdGFza3MubWRdKC4vdGFza3MubWQpIGZvciB0aGUgY3VycmVudCB0YXNrIGxpc3QuCgojIyBDaGFuZ2Vsb2cKClNlZSBbY2hhbmdlbG9nLm1kXSguL2NoYW5nZWxvZy5tZCkgZm9yIHJlY2VudCBjaGFuZ2VzIGFuZCBkZWNpc2lvbnMuCgojIyBTdHJ1Y3R1cmUKCi0gZGVzaWduLyAtIEFyY2hpdGVjdHVyZSBhbmQgZGVzaWduIGRvY3VtZW50cwotIHJlZmVyZW5jZS8gLSBQcm9tcHQgcGFja3MsIEFQSSBjb250cmFjdHMsIGNvbnRleHQgc3VtbWFyaWVzCi0gcGxheWJvb2tzLyAtIENvbW1hbmQgc2VxdWVuY2VzIGFuZCB0ZXN0IHByb2NlZHVyZXMKLSBzY3JpcHRzLyAtIFRlbXBvcmFyeSBjb2RlIGFuZCB0b29saW5nCi0gdmFyaW91cy8gLSBXb3JraW5nIG5vdGVzIGFuZCByZXNlYXJjaAotIGFyY2hpdmUvIC0gRGVwcmVjYXRlZCBvciByZWZlcmVuY2Utb25seSBhcnRpZmFjdHMK"
+    }
+  ]
+}

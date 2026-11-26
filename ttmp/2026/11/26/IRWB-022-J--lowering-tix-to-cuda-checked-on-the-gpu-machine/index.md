@@ -1,7 +1,7 @@
 ---
 Title: Lowering Tix to CUDA, checked, on the GPU machine
 Ticket: IRWB-022-J
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T15:11:42.572035918-05:00
+LastUpdated: 2026-11-26T16:19:06.593151563-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -22,19 +22,20 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 2 design for checked CUDA lowering of Tix on the GB10. Implementation and corpus measurements follow review.
+Checked CUDA lowering for Tix is implemented and verified on the GB10. The timing report records all six requested measurements.
 
 ## Key Links
 
 - [Checked Tix to CUDA lowering](design-doc/01-checked-tix-to-cuda-lowering.md)
 - [Diary](reference/01-diary.md)
+- [Verification and corpus timings](reference/02-cuda-verification-and-corpus-timings.md)
 
 - **Related Files**: See frontmatter RelatedFiles field
 - **External Sources**: See frontmatter ExternalSources field
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

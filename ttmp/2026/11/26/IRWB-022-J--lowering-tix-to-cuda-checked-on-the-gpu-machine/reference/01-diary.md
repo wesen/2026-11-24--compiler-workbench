@@ -199,3 +199,14 @@ Review the [design](../design-doc/01-checked-tix-to-cuda-lowering.md) alongside
 `src/tensor/cuda-source.ts`, `src/tensor/cuda-contract.ts` and `tools/cuda-remote.mjs`.
 The [benchmark driver](../scripts/03-benchmark.mjs) runs from the worktree root after the build.
 The remaining deliverables at this checkpoint are the final test result and the timing table.
+
+## Step 4 — Validate the final revision and finish measurement
+
+The final `node --test tests/tensor/*.test.mjs` run passed all 33 tests. It ran before the retained GPU
+benchmark so this ticket's untimed GPU checks would not overlap the recorded event intervals. The Node
+export probe resolved all six fixed Stage 1 and CUDA API functions from `dist/tensor/index.js`.
+
+All six GPU and local interpreter workloads finished at the requested sizes. The largest local run was
+MLP at 828 seconds. Conv2d finished at 394 seconds. Each of the GPU trials took under 1.2 ms for the
+kernel interval. The [verification and timing report](02-cuda-verification-and-corpus-timings.md) records
+the input seed, timing boundaries, full table and raw intervals for implementation commit `daa175f`.
