@@ -25,6 +25,8 @@ Stage 2 checks a direct CUDA lowering of Tix against the stage-1 meaning on the 
 
 ## Key Links
 
+- [Final report: what a checked CUDA lowering preserves](reference/02-report.md)
+
 - [Design: lowering, numerical relation and framework/tool ledger](design-doc/01-a-checked-tix-to-cuda-lowering-on-gb10.md)
 - [Diary: design checkpoint and probe reproduction](reference/01-design-and-implementation-diary.md)
 - [Predecessor: stage-1 report](../IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md)

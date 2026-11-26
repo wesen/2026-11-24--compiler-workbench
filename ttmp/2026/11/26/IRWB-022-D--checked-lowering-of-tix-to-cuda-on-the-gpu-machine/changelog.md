@@ -11,3 +11,7 @@ Proposed the lowering and acceptance boundary for review; measured ordinary GB10
 ## 2026-11-26
 
 Implemented and validated the reviewed lowering, with six full-size GB10 and interpreter measurements; no framework changes.
+
+## 2026-11-26
+
+Reported the independent evaluation and isolated the math-call discrepancies on GB10. The evaluated compiler and tool are unchanged.
