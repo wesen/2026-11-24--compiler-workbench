@@ -1,0 +1,68 @@
+Measurement 3: binding-time profile of cdlRenderSpan at r0, per pixel (stride 8), three specializer models
+ops: evaluator operations per pixel (value nodes except const/get/result/tuple/aaddr, plus stores and branches)
+bound = operations remaining after today's per-scene kernel / operations remaining after ideal specialization
+  (lo: every C operation counted as already folded today; hi: none of them); dce: residual = live X/D of the slice
+
+scene  px  ops/px  stmts/px  diff | M%   data(dce)   gen(dce)   control | oRow% | sections ops% static%
+B-01   400    3910     3139    0 | 51.2   2.66-3.04  2.21-2.47 1.12-1.21 |  35.2 |          0.7    61.2
+R-01   400    9940     7159    0 | 67.3   4.51-4.94  3.29-3.56 1.06-1.10 |  46.8 |          0.4    59.3
+L-03   400    2825     2355    0 | 45.7   2.36-2.77  2.08-2.38 1.52-1.68 |  26.9 |          0.7    64.6
+G-01   400    7592     5418    0 | 59.1   3.16-3.51  2.53-2.77 1.07-1.12 |  39.4 |          0.5    69.4
+E-02   400    3341     2408    0 | 67.2   4.31-4.80  3.20-3.53 1.08-1.14 |  44.5 |          2.4    65.0
+W-02   400   12196     8560    0 | 56.0   2.98-3.34  2.49-2.76 1.05-1.10 |  33.0 |          0.7    60.1
+F-01   400    4810     3706    0 | 55.6   2.91-3.26  2.39-2.63 1.11-1.18 |  41.0 |          0.9    51.9
+V-02   400   12838     9536    0 | 63.8   3.77-4.12  2.85-3.09 1.10-1.15 |  42.4 |          0.3    83.2
+G-02   400    7969     6094    0 | 44.3   2.10-2.35  1.78-1.97 1.12-1.19 |  24.9 |          8.3    30.4
+X-04   100    8544     7630    0 | 30.9   1.56-1.69  1.40-1.49 1.06-1.10 |  19.5 |         20.4     3.0
+S-02   100   12032     9272    0 | 55.4   2.87-3.16  2.17-2.35 1.07-1.12 |  38.4 |          3.0    23.2
+R-05   100   12798     9071    0 | 58.6   3.06-3.38  2.46-2.68 1.07-1.11 |  38.6 |          1.1    30.4
+V-03   100   29143    17276    0 |  7.4   1.09-1.15  1.08-1.13 1.02-1.06 |   4.6 |          0.9    11.1
+V-04   100   41355    24281    0 |  6.0   1.07-1.13  1.07-1.11 1.04-1.08 |   3.6 |          2.0     4.5
+R-08   100   33971    22049    0 | 13.1   1.17-1.23  1.08-1.14 1.01-1.05 |   5.1 |          9.7     7.2
+X-03   100  137984    82850    0 |  2.8   1.04-1.30  1.03-1.28 1.00-1.23 |   1.8 |          4.2    13.6
+R-04   100  271871   155319    0 |  1.7   1.02-1.20  1.01-1.18 1.00-1.17 |   0.5 |          0.9    24.6
+G-03   100  415316   233378    0 |  0.9   1.01-1.19  1.00-1.18 1.00-1.18 |   0.2 |          0.3    43.1
+
+geometric means over 18 scenes: data(dce) lo 2.08 hi 2.33; gen(dce) lo 1.79 hi 1.98; control lo 1.08 hi 1.16
+ranges: data(dce) lo 1.01-4.51; gen(dce) lo 1.00-3.29; control lo 1.00-1.52
+differing output floats in all scenes and modes: 0
+
+Per scene, data mode, by tag (operations per pixel), loads from constant memory by region, calls by their largest argument tag:
+B-01  C 485.2 K 7.3 M 2001.7 X 38.3 D 1377.9 live 1284.7 | loads M+X: K 91.1, U 82.7, BV 19.8, O 239.1, sky 25.5 | calls C 25.6 M 77.3 D 97.2 | identity candidates 213.3
+R-01  C 863.4 K 12.4 M 6688.5 X 0 D 2375.2 live 2010.1 | loads M+X: K 231.8, U 81.2, BV 151.2, O 809.2, LI 27.5 | calls C 37.6 M 258.9 D 153.9 | identity candidates 464.5
+L-03  C 418.8 K 4.8 M 1291.2 X 40.3 D 1070.4 live 1019.3 | loads M+X: K 63.0, U 79.1, O 132.4, BV 16.4, sky 26.9 | calls C 20.3 M 45 D 76.7 | identity candidates 138.8
+G-01  C 755.5 K 8.2 M 4489.5 X 34.2 D 2304.3 live 2159.1 | loads M+X: K 161.4, U 85.6, BV 113.3, sky 22.8, O 520.7 | calls C 27.7 M 161.2 D 139.6 | identity candidates 311.8
+E-02  C 340.5 K 18 M 2245.2 X 0 D 736.8 live 692.1 | loads M+X: K 73.4, U 35.0, BV 44.8, O 258.8 | calls C 9 M 90.3 D 47.4 | identity candidates 100.6
+W-02  C 1298.5 K 14.9 M 6832.6 X 29.9 D 4019.5 live 3646.8 | loads M+X: K 206.9, U 94.5, BV 308.6, O 699.9, LI 17.1, etab 0.0 | calls C 45.4 M 219.2 D 232.7 | identity candidates 553.8
+F-01  C 516.3 K 8 M 2672.9 X 36.5 D 1576 live 1474.6 | loads M+X: K 117.7, U 85.3, BV 21.6, sky 24.4, O 343.2 | calls C 26 M 108.7 D 111.3 | identity candidates 262.2
+V-02  C 1088.3 K 44.6 M 8189.3 X 50.4 D 3464.9 live 3102.9 | loads M+X: K 323.5, U 135.6, BV 133.6, O 947.4, LI 19.4, SD 94.0 | calls C 78 M 300 D 228.9 | identity candidates 525.4
+G-02  C 835.4 K 164.8 M 3534 X 0.7 D 3434.2 live 3314.2 | loads M+X: K 115.6, U 115.6, BV 63.2, O 344.6, etab 0.6 | calls C 34.1 M 131.9 D 274.2 | identity candidates 337.5
+X-04  C 628.9 K 158.7 M 2640.3 X 0 D 5115.7 live 4972.5 | loads M+X: K 94.9, U 97.8, BV 22.6, O 289.7 | calls C 30 M 92.3 D 364.5 | identity candidates 713.1
+S-02  C 1084.2 K 251.9 M 6666.4 X 30.6 D 3999.2 live 3732.8 | loads M+X: K 232.2, U 91.4, BV 95.0, O 803.6, LI 18.2 | calls C 48.5 M 260.6 D 327 | identity candidates 550.2
+R-05  C 1195.9 K 101.3 M 7498.7 X 31.4 D 3970.2 live 3756.8 | loads M+X: K 246.0, U 91.2, BV 216.3, O 859.2, LI 17.9, etab 1.0 | calls C 45.5 M 276.6 D 278.5 | identity candidates 468.6
+V-03  C 1419.8 K 92.1 M 2154.2 X 0 D 25477 live 25343.1 | loads M+X: K 86.6, U 98.5, BV 21.0, O 233.8, SD 14.9 | calls C 46 M 78 D 1406.1 | identity candidates 3690.3
+V-04  C 1856.5 K 128.3 M 2488.6 X 47.3 D 36834.5 live 36624.8 | loads M+X: K 117.0, U 98.9, O 260.7, BV 28.0, sky 31.6, SD 27.1 | calls C 60.1 M 88.3 D 1987 | identity candidates 5236.8
+R-08  C 1605.1 K 975.8 M 4456.3 X 34 D 26899.8 live 26808.3 | loads M+X: K 105.1, U 82.3, BV 58.8, O 301.2, sky 22.7 | calls C 24.7 M 92.5 D 1769.6 | identity candidates 2223.2
+X-03  C 26978.7 K 3515.2 M 3841.5 X 0 D 103648.6 live 103470.9 | loads M+X: K 146.1, U 88.9, BV 27.8, O 431.8, SD 31.5 | calls C 2261.8 M 141 D 7587.7 | identity candidates 9296.5
+R-04  C 39277.5 K 1674.5 M 4517.7 X 34.6 D 226367 live 225526.3 | loads M+X: K 88.0, U 81.1, O 233.4, BV 19.0, sky 23.0 | calls C 1388.4 M 73.4 D 13131.7 | identity candidates 32044.9
+G-03  C 62848 K 1654.1 M 3818.9 X 36.7 D 346958.5 live 346615.8 | loads M+X: K 62.5, U 81.4, BV 17.6, O 128.9, sky 24.5 | calls C 2267.5 M 41.8 D 20144 | identity candidates 51758.9
+
+Hand-staged scene sections (s<k>_...) against the fixed kernel, data mode, operations per pixel (C K M X D) and live X/D:
+B-01  sections C 13.3 K 0 M 2.8 X 0 D 10.2 live 7.3 | kernel C 471.9 K 7.3 M 1999 X 38.3 D 1367.7 live 1277.3
+R-01  sections C 21.4 K 0 M 4.2 X 0 D 17.6 live 12.4 | kernel C 842 K 12.4 M 6684.3 X 0 D 2357.6 live 1997.7
+L-03  sections C 9.1 K 0 M 3.1 X 0 D 6.7 live 4.8 | kernel C 409.6 K 4.8 M 1288.1 X 40.3 D 1063.7 live 1014.4
+G-01  sections C 14.4 K 0 M 11.9 X 0 D 11.6 live 8.2 | kernel C 741.1 K 8.2 M 4477.5 X 34.2 D 2292.7 live 2150.9
+E-02  sections C 25.3 K 0 M 26 X 0 D 27.6 live 20.7 | kernel C 315.2 K 18 M 2219.2 X 0 D 709.2 live 671.4
+W-02  sections C 25.8 K 0 M 24 X 0 D 33 live 26.2 | kernel C 1272.7 K 14.9 M 6808.6 X 29.9 D 3986.6 live 3620.6
+F-01  sections C 17.4 K 0 M 4.5 X 0 D 20.3 live 15.7 | kernel C 499 K 8 M 2668.4 X 36.5 D 1555.8 live 1458.9
+V-02  sections C 21.6 K 0 M 8.7 X 0 D 6.1 live 4.4 | kernel C 1066.7 K 44.6 M 8180.6 X 50.4 D 3458.7 live 3098.6
+G-02  sections C 72.4 K 0 M 128.1 X 0 D 458.1 live 455 | kernel C 763 K 164.8 M 3405.9 X 0.7 D 2976.2 live 2859.2
+X-04  sections C 15.6 K 0 M 36.5 X 0 D 1688.9 live 1685 | kernel C 613.4 K 158.7 M 2603.8 X 0 D 3426.8 live 3287.5
+S-02  sections C 23.1 K 0 M 59.6 X 0 D 273.1 live 269.4 | kernel C 1061.1 K 251.9 M 6606.8 X 30.6 D 3726.1 live 3463.3
+R-05  sections C 13.3 K 0 M 30.9 X 0 D 101.2 live 99.4 | kernel C 1182.6 K 101.3 M 7467.8 X 31.4 D 3869.1 live 3657.4
+V-03  sections C 26.7 K 0 M 2.9 X 0 D 237.7 live 235.8 | kernel C 1393.1 K 92.1 M 2151.3 X 0 D 25239.3 live 25107.2
+V-04  sections C 34.1 K 0 M 3 X 0 D 790.3 live 789 | kernel C 1822.4 K 128.3 M 2485.6 X 47.3 D 36044.2 live 35835.9
+R-08  sections C 11.3 K 0 M 226.7 X 0 D 3055.8 live 3052.8 | kernel C 1593.8 K 975.8 M 4229.6 X 34 D 23844 live 23755.5
+X-03  sections C 751.4 K 0 M 44.5 X 0 D 5060.6 live 5057.8 | kernel C 26227.2 K 3515.2 M 3797 X 0 D 98588 live 98413.1
+R-04  sections C 316.3 K 0 M 304.5 X 0 D 1900.2 live 1891.6 | kernel C 38961.2 K 1674.5 M 4213.2 X 34.6 D 224466.8 live 223634.8
+G-03  sections C 164.7 K 0 M 304.8 X 0 D 619 live 615.3 | kernel C 62683.3 K 1654.1 M 3514.1 X 36.7 D 346339.4 live 346000.6

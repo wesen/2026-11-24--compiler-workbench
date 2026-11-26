@@ -1,0 +1,2352 @@
+[
+ {
+  "index": 0,
+  "id": "B-01",
+  "title": "Hello, sphere",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 12,
+   "LI": 6,
+   "BV": 2,
+   "SD": 1
+  },
+  "words": 248,
+  "bytes": 992,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 2,
+   "nLights": 0,
+   "firstUnbounded": 2,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 2,
+  "types": {
+   "sphere": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 2,
+   "depth": 1,
+   "objectsInLeaves": 2
+  },
+  "materials": [
+   0,
+   1
+  ],
+  "identityTransforms": 2,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sphere",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -1,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "plane",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 1,
+  "id": "R-01",
+  "title": "The Cornell box",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 48,
+   "LI": 6,
+   "BV": 14,
+   "SD": 1
+  },
+  "words": 440,
+  "bytes": 1760,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 8,
+   "nLights": 1,
+   "firstUnbounded": 8,
+   "nNodes": 7,
+   "sunOn": false,
+   "envMode": 0,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 8,
+  "types": {
+   "rect": 6,
+   "box": 2
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 7,
+   "nNodesU": 7,
+   "leaves": 4,
+   "maxLeaf": 2,
+   "depth": 3,
+   "objectsInLeaves": 8
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "identityTransforms": 1,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "rect",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "box",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.24699515104293823,
+     -0.6000000238418579,
+     0.38922151923179626
+    ]
+   },
+   {
+    "i": 2,
+    "type": "rect",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     1,
+     1,
+     0
+    ]
+   },
+   {
+    "i": 3,
+    "type": "rect",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     2,
+     2.4492937051703357e-16
+    ]
+   },
+   {
+    "i": 4,
+    "type": "box",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.45110732316970825,
+     -0.30000001192092896,
+     -0.17579017579555511
+    ]
+   },
+   {
+    "i": 5,
+    "type": "rect",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     1,
+     1
+    ]
+   },
+   {
+    "i": 6,
+    "type": "rect",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -1,
+     1,
+     0
+    ]
+   },
+   {
+    "i": 7,
+    "type": "rect",
+    "mat": 3,
+    "lit": 0,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     1.9989999532699585,
+     2.448068948468165e-16
+    ]
+   }
+  ]
+ },
+ {
+  "index": 2,
+  "id": "L-03",
+  "title": "The sun and the sky",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 18,
+   "LI": 6,
+   "BV": 2,
+   "SD": 1
+  },
+  "words": 272,
+  "bytes": 1088,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 3,
+   "nLights": 0,
+   "firstUnbounded": 2,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 3,
+  "types": {
+   "box": 1,
+   "sphere": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 1,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 2,
+   "depth": 1,
+   "objectsInLeaves": 2
+  },
+  "materials": [
+   0,
+   1,
+   2
+  ],
+  "identityTransforms": 3,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "box",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -1.5,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sphere",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -1.7999999523162842,
+     -0.6000000238418579,
+     -0.800000011920929
+    ]
+   },
+   {
+    "i": 2,
+    "type": "plane",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 3,
+  "id": "G-01",
+  "title": "Analytic primitives",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 66,
+   "LI": 6,
+   "BV": 14,
+   "SD": 1
+  },
+  "words": 512,
+  "bytes": 2048,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 11,
+   "nLights": 0,
+   "firstUnbounded": 11,
+   "nNodes": 7,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 11,
+  "types": {
+   "sphere": 1,
+   "sdf6": 1,
+   "box": 1,
+   "sdf7": 1,
+   "cylinder": 1,
+   "sdf8": 1,
+   "plane": 1,
+   "disc": 1,
+   "sdf9": 1,
+   "rect": 1,
+   "sdf10": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 7,
+   "nNodesU": 7,
+   "leaves": 4,
+   "maxLeaf": 3,
+   "depth": 3,
+   "objectsInLeaves": 11
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "identityTransforms": 8,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sphere",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     1.7000000476837158,
+     -0.3400000035762787,
+     0.699999988079071
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sdf6",
+    "mat": 5,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     1.7000000476837158,
+     -0.3199999928474426,
+     -0.4000000059604645
+    ]
+   },
+   {
+    "i": 2,
+    "type": "box",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.8500000238418579,
+     -0.3400000035762787,
+     0.699999988079071
+    ]
+   },
+   {
+    "i": 3,
+    "type": "sdf7",
+    "mat": 5,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.8500000238418579,
+     -0.5064101815223694,
+     0.07712812721729279
+    ]
+   },
+   {
+    "i": 4,
+    "type": "cylinder",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -0.3400000035762787,
+     0.699999988079071
+    ]
+   },
+   {
+    "i": 5,
+    "type": "sdf8",
+    "mat": 5,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -0.3199999928474426,
+     -0.4000000059604645
+    ]
+   },
+   {
+    "i": 6,
+    "type": "plane",
+    "mat": 6,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 7,
+    "type": "disc",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.8500000238418579,
+     0.5414980053901672,
+     0.5589095950126648
+    ]
+   },
+   {
+    "i": 8,
+    "type": "sdf9",
+    "mat": 5,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.8500000238418579,
+     -0.3199999928474426,
+     -0.4000000059604645
+    ]
+   },
+   {
+    "i": 9,
+    "type": "rect",
+    "mat": 4,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -1.7000000476837158,
+     0.5414980053901672,
+     0.5589095950126648
+    ]
+   },
+   {
+    "i": 10,
+    "type": "sdf10",
+    "mat": 5,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -1.7000000476837158,
+     -0.3199999928474426,
+     -0.4000000059604645
+    ]
+   }
+  ]
+ },
+ {
+  "index": 4,
+  "id": "E-02",
+  "title": "A custom integrator: toon shading",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 24,
+   "LI": 6,
+   "BV": 6,
+   "SD": 1
+  },
+  "words": 312,
+  "bytes": 1248,
+  "u": {
+   "spp": 1,
+   "mode": 9,
+   "nObj": 4,
+   "nLights": 0,
+   "firstUnbounded": 4,
+   "nNodes": 3,
+   "sunOn": true,
+   "envMode": 0,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 4,
+  "types": {
+   "sphere": 1,
+   "plane": 1,
+   "sdf9": 1,
+   "sdf7": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 3,
+   "nNodesU": 3,
+   "leaves": 2,
+   "maxLeaf": 2,
+   "depth": 2,
+   "objectsInLeaves": 4
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "identityTransforms": 3,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sphere",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.6000000238418579,
+     -0.44999998807907104,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "plane",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "type": "sdf9",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.10000000149011612,
+     -0.3499999940395355,
+     0.800000011920929
+    ]
+   },
+   {
+    "i": 3,
+    "type": "sdf7",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.550000011920929,
+     -0.28660252690315247,
+     0.2964101731777191
+    ]
+   }
+  ]
+ },
+ {
+  "index": 5,
+  "id": "W-02",
+  "title": "Talk to the world",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 90,
+   "LI": 6,
+   "BV": 26,
+   "SD": 1
+  },
+  "words": 656,
+  "bytes": 2624,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 15,
+   "nLights": 1,
+   "firstUnbounded": 15,
+   "nNodes": 13,
+   "sunOn": false,
+   "envMode": 1,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 15,
+  "types": {
+   "cylinder": 7,
+   "sphere": 5,
+   "rect": 1,
+   "plane": 1,
+   "box": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 13,
+   "nNodesU": 13,
+   "leaves": 7,
+   "maxLeaf": 3,
+   "depth": 4,
+   "objectsInLeaves": 15
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8
+  ],
+  "identityTransforms": 14,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "cylinder",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.699999988079071,
+     -0.4000000059604645,
+     0.3499999940395355
+    ]
+   },
+   {
+    "i": 1,
+    "type": "cylinder",
+    "mat": 5,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.5,
+     -0.8349999785423279,
+     0.25
+    ]
+   },
+   {
+    "i": 2,
+    "type": "cylinder",
+    "mat": 5,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.5,
+     -1.059999942779541,
+     0.25
+    ]
+   },
+   {
+    "i": 3,
+    "type": "sphere",
+    "mat": 6,
+    "lit": 0,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.5,
+     -1.3300000429153442,
+     0.25
+    ]
+   },
+   {
+    "i": 4,
+    "type": "rect",
+    "mat": 7,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     1.2000000476837158,
+     1.5
+    ]
+   },
+   {
+    "i": 5,
+    "type": "sphere",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.18000000715255737,
+     -0.9399999976158142,
+     0.05999999865889549
+    ]
+   },
+   {
+    "i": 6,
+    "type": "cylinder",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.699999988079071,
+     -0.4000000059604645,
+     0.3499999940395355
+    ]
+   },
+   {
+    "i": 7,
+    "type": "plane",
+    "mat": 8,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 8,
+    "type": "cylinder",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.699999988079071,
+     -0.4000000059604645,
+     -0.3499999940395355
+    ]
+   },
+   {
+    "i": 9,
+    "type": "box",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -0.800000011920929,
+     0
+    ]
+   },
+   {
+    "i": 10,
+    "type": "sphere",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.44999998807907104,
+     -0.9399999976158142,
+     -0.20000000298023224
+    ]
+   },
+   {
+    "i": 11,
+    "type": "sphere",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.05000000074505806,
+     -0.9399999976158142,
+     -0.019999999552965164
+    ]
+   },
+   {
+    "i": 12,
+    "type": "cylinder",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.10000000149011612,
+     -0.8550000190734863,
+     0
+    ]
+   },
+   {
+    "i": 13,
+    "type": "sphere",
+    "mat": 4,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.11999999731779099,
+     -0.9300000071525574,
+     -0.10000000149011612
+    ]
+   },
+   {
+    "i": 14,
+    "type": "cylinder",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.699999988079071,
+     -0.4000000059604645,
+     -0.3499999940395355
+    ]
+   }
+  ]
+ },
+ {
+  "index": 6,
+  "id": "F-01",
+  "title": "Checker, stripes, ramps",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 18,
+   "LI": 6,
+   "BV": 2,
+   "SD": 1
+  },
+  "words": 272,
+  "bytes": 1088,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 3,
+   "nLights": 0,
+   "firstUnbounded": 3,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 3,
+  "types": {
+   "sphere": 2,
+   "plane": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 3,
+   "depth": 1,
+   "objectsInLeaves": 3
+  },
+  "materials": [
+   0,
+   1,
+   2
+  ],
+  "identityTransforms": 3,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sphere",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.6499999761581421,
+     -0.5,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sphere",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.6499999761581421,
+     -0.5,
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "type": "plane",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 7,
+  "id": "V-02",
+  "title": "Phase functions",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 30,
+   "LI": 6,
+   "BV": 6,
+   "SD": 9
+  },
+  "words": 368,
+  "bytes": 1472,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 5,
+   "nLights": 1,
+   "firstUnbounded": 5,
+   "nNodes": 3,
+   "sunOn": false,
+   "envMode": 1,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 5,
+  "types": {
+   "box": 3,
+   "rect": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 3,
+   "nNodesU": 3,
+   "leaves": 2,
+   "maxLeaf": 3,
+   "depth": 2,
+   "objectsInLeaves": 5
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "identityTransforms": 4,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "box",
+    "mat": 2,
+    "lit": -1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     1.100000023841858,
+     -0.6499999761581421,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "rect",
+    "mat": 0,
+    "lit": 0,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     2.200000047683716,
+     0.6000000238418579
+    ]
+   },
+   {
+    "i": 2,
+    "type": "plane",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 3,
+    "type": "box",
+    "mat": 3,
+    "lit": -1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -0.6499999761581421,
+     0
+    ]
+   },
+   {
+    "i": 4,
+    "type": "box",
+    "mat": 4,
+    "lit": -1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -1.100000023841858,
+     -0.6499999761581421,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 8,
+  "id": "G-02",
+  "title": "Your own distance field",
+  "size": "160x160",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 24,
+   "LI": 6,
+   "BV": 6,
+   "SD": 1
+  },
+  "words": 312,
+  "bytes": 1248,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 4,
+   "nLights": 0,
+   "firstUnbounded": 4,
+   "nNodes": 3,
+   "sunOn": false,
+   "envMode": 2,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 4,
+  "types": {
+   "sdf11": 3,
+   "plane": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 3,
+   "nNodesU": 3,
+   "leaves": 2,
+   "maxLeaf": 2,
+   "depth": 2,
+   "objectsInLeaves": 4
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "identityTransforms": 4,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sdf11",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     1.2000000476837158,
+     -0.4000000059604645,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sdf11",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -0.6200000047683716,
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "type": "plane",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 3,
+    "type": "sdf11",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -1.2000000476837158,
+     -0.46000000834465027,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 9,
+  "id": "X-04",
+  "title": "Menger sponge",
+  "size": "80x80",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 12,
+   "LI": 6,
+   "BV": 2,
+   "SD": 1
+  },
+  "words": 248,
+  "bytes": 992,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 2,
+   "nLights": 0,
+   "firstUnbounded": 2,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 3,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 2,
+  "types": {
+   "sdf11": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 2,
+   "depth": 1,
+   "objectsInLeaves": 2
+  },
+  "materials": [
+   0,
+   1
+  ],
+  "identityTransforms": 1,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sdf11",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     -0.6000000238418579,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "plane",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 10,
+  "id": "S-02",
+  "title": "Diamond fire",
+  "size": "80x80",
+  "spectral": true,
+  "rows": {
+   "U": 42,
+   "O": 30,
+   "LI": 12,
+   "BV": 6,
+   "SD": 1
+  },
+  "words": 364,
+  "bytes": 1456,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 5,
+   "nLights": 2,
+   "firstUnbounded": 5,
+   "nNodes": 3,
+   "sunOn": false,
+   "envMode": 2,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 5,
+  "types": {
+   "sphere": 2,
+   "sdf11": 1,
+   "cylinder": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 3,
+   "nNodesU": 3,
+   "leaves": 2,
+   "maxLeaf": 3,
+   "depth": 2,
+   "objectsInLeaves": 5
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "identityTransforms": 4,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sphere",
+    "mat": 3,
+    "lit": 0,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     1.2000000476837158,
+     -2.200000047683716,
+     -1
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sdf11",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     -0.12999999523162842,
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "type": "cylinder",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -0.019999999552965164,
+     0
+    ]
+   },
+   {
+    "i": 3,
+    "type": "plane",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 4,
+    "type": "sphere",
+    "mat": 4,
+    "lit": 1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -1.399999976158142,
+     -1.600000023841858,
+     -0.4000000059604645
+    ]
+   }
+  ]
+ },
+ {
+  "index": 11,
+  "id": "R-05",
+  "title": "Jewellery on velvet",
+  "size": "80x80",
+  "spectral": true,
+  "rows": {
+   "U": 42,
+   "O": 144,
+   "LI": 12,
+   "BV": 30,
+   "SD": 1
+  },
+  "words": 916,
+  "bytes": 3664,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 24,
+   "nLights": 2,
+   "firstUnbounded": 24,
+   "nNodes": 15,
+   "sunOn": false,
+   "envMode": 2,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 24,
+  "types": {
+   "sdf7": 19,
+   "sphere": 3,
+   "sdf11": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 15,
+   "nNodesU": 15,
+   "leaves": 8,
+   "maxLeaf": 3,
+   "depth": 4,
+   "objectsInLeaves": 24
+  },
+  "materials": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "identityTransforms": 5,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.018217280507087708,
+     -0.1850000023841858,
+     -0.2399757355451584
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.029440613463521004,
+     -0.004000000189989805,
+     -0.3258366286754608
+    ]
+   },
+   {
+    "i": 2,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.2543569505214691,
+     -0.2150000035762787,
+     -0.0866403579711914
+    ]
+   },
+   {
+    "i": 3,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.3271465599536896,
+     -0.004000000189989805,
+     -0.134788379073143
+    ]
+   },
+   {
+    "i": 4,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.1419055163860321,
+     -0.24500000476837158,
+     0.21727241575717926
+    ]
+   },
+   {
+    "i": 5,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.2435014545917511,
+     -0.004000000189989805,
+     0.25813084840774536
+    ]
+   },
+   {
+    "i": 6,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.14698708057403564,
+     -0.2750000059604645,
+     0.15954338014125824
+    ]
+   },
+   {
+    "i": 7,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.27159059047698975,
+     -0.004000000189989805,
+     -0.04137782007455826
+    ]
+   },
+   {
+    "i": 8,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.13181650638580322,
+     -0.004000000189989805,
+     0.3196599781513214
+    ]
+   },
+   {
+    "i": 9,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.18414710462093353,
+     -0.1550000011920929,
+     -0.033467430621385574
+    ]
+   },
+   {
+    "i": 10,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.1393873393535614,
+     -0.3050000071525574,
+     -0.07622063159942627
+    ]
+   },
+   {
+    "i": 11,
+    "type": "sphere",
+    "mat": 5,
+    "lit": 0,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.4000000059604645,
+     -0.6000000238418579,
+     -0.4000000059604645
+    ]
+   },
+   {
+    "i": 12,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.07248318195343018,
+     -0.0949999988079071,
+     0.06131789833307266
+    ]
+   },
+   {
+    "i": 13,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.1335851401090622,
+     -0.004000000189989805,
+     0.07819445431232452
+    ]
+   },
+   {
+    "i": 14,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.05563985928893089,
+     -0.125,
+     0.11824231594800949
+    ]
+   },
+   {
+    "i": 15,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.07092763483524323,
+     -0.004000000189989805,
+     0.19856302440166473
+    ]
+   },
+   {
+    "i": 16,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     -0.34565308690071106,
+     -0.004000000189989805,
+     0.01569279655814171
+    ]
+   },
+   {
+    "i": 17,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0.028298448771238327,
+     -0.33500000834465027,
+     -0.10599484294652939
+    ]
+   },
+   {
+    "i": 18,
+    "type": "sdf7",
+    "mat": 3,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0.09000000357627869,
+     -0.004000000189989805,
+     -0.07999999821186066
+    ]
+   },
+   {
+    "i": 19,
+    "type": "sdf7",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     1.787262936963477e-34,
+     -3.551475558168354e-18,
+     0.057999998331069946
+    ]
+   },
+   {
+    "i": 20,
+    "type": "sdf11",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": false,
+    "translation": [
+     0,
+     -0.15199999511241913,
+     0
+    ]
+   },
+   {
+    "i": 21,
+    "type": "plane",
+    "mat": 4,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 22,
+    "type": "sphere",
+    "mat": 2,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.10000000149011612,
+     -0.02199999988079071,
+     -0.07000000029802322
+    ]
+   },
+   {
+    "i": 23,
+    "type": "sphere",
+    "mat": 6,
+    "lit": 1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.5,
+     -0.4000000059604645,
+     -0.20000000298023224
+    ]
+   }
+  ]
+ },
+ {
+  "index": 12,
+  "id": "V-03",
+  "title": "Smoke: a heterogeneous volume",
+  "size": "80x80",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 12,
+   "LI": 6,
+   "BV": 2,
+   "SD": 3
+  },
+  "words": 256,
+  "bytes": 1024,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 2,
+   "nLights": 0,
+   "firstUnbounded": 2,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 3,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 2,
+  "types": {
+   "plane": 1,
+   "box": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 2,
+   "depth": 1,
+   "objectsInLeaves": 2
+  },
+  "materials": [
+   0,
+   1
+  ],
+  "identityTransforms": 2,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "plane",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "box",
+    "mat": 1,
+    "lit": -1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -0.8999999761581421,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 13,
+  "id": "V-04",
+  "title": "A cloud",
+  "size": "80x80",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 12,
+   "LI": 6,
+   "BV": 2,
+   "SD": 3
+  },
+  "words": 256,
+  "bytes": 1024,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 2,
+   "nLights": 0,
+   "firstUnbounded": 1,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 2,
+  "types": {
+   "box": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 1,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 1,
+   "depth": 1,
+   "objectsInLeaves": 1
+  },
+  "materials": [
+   0,
+   1
+  ],
+  "identityTransforms": 2,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "box",
+    "mat": 1,
+    "lit": -1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     -2,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "plane",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 14,
+  "id": "R-08",
+  "title": "Zen garden",
+  "size": "80x80",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 24,
+   "LI": 6,
+   "BV": 6,
+   "SD": 1
+  },
+  "words": 312,
+  "bytes": 1248,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 4,
+   "nLights": 0,
+   "firstUnbounded": 4,
+   "nNodes": 3,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 4,
+  "types": {
+   "sdf11": 3,
+   "sdf12": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 3,
+   "nNodesU": 3,
+   "leaves": 2,
+   "maxLeaf": 2,
+   "depth": 2,
+   "objectsInLeaves": 4
+  },
+  "materials": [
+   0,
+   1
+  ],
+  "identityTransforms": 4,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sdf11",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     1.2000000476837158,
+     -0.1574999988079071,
+     0.4000000059604645
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sdf12",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "type": "sdf11",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.30000001192092896,
+     -0.08749999850988388,
+     1.2999999523162842
+    ]
+   },
+   {
+    "i": 3,
+    "type": "sdf11",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     -0.8999999761581421,
+     -0.12250000238418579,
+     -0.30000001192092896
+    ]
+   }
+  ]
+ },
+ {
+  "index": 15,
+  "id": "X-03",
+  "title": "A procedural planet",
+  "size": "80x80",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 18,
+   "LI": 6,
+   "BV": 2,
+   "SD": 3
+  },
+  "words": 280,
+  "bytes": 1120,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 3,
+   "nLights": 0,
+   "firstUnbounded": 3,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 5,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 3,
+  "types": {
+   "sdf11": 1,
+   "sphere": 1,
+   "box": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 3,
+   "depth": 1,
+   "objectsInLeaves": 3
+  },
+  "materials": [
+   0,
+   1,
+   2
+  ],
+  "identityTransforms": 3,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sdf11",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "sphere",
+    "mat": 1,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "type": "box",
+    "mat": 2,
+    "lit": -1,
+    "flags": 1,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 16,
+  "id": "R-04",
+  "title": "Dunes at golden hour",
+  "size": "80x80",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 12,
+   "LI": 6,
+   "BV": 2,
+   "SD": 1
+  },
+  "words": 248,
+  "bytes": 992,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 2,
+   "nLights": 0,
+   "firstUnbounded": 1,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 2,
+  "types": {
+   "sdf12": 1,
+   "plane": 1
+  },
+  "linearLoopTrips": 1,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 1,
+   "depth": 1,
+   "objectsInLeaves": 1
+  },
+  "materials": [
+   0
+  ],
+  "identityTransforms": 2,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sdf12",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "i": 1,
+    "type": "plane",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ },
+ {
+  "index": 17,
+  "id": "G-03",
+  "title": "Heightfield terrain",
+  "size": "80x80",
+  "spectral": false,
+  "rows": {
+   "U": 41,
+   "O": 6,
+   "LI": 6,
+   "BV": 2,
+   "SD": 1
+  },
+  "words": 224,
+  "bytes": 896,
+  "u": {
+   "spp": 1,
+   "mode": 0,
+   "nObj": 1,
+   "nLights": 0,
+   "firstUnbounded": 1,
+   "nNodes": 1,
+   "sunOn": true,
+   "envMode": 4,
+   "mediaBase": 0,
+   "motionKeys": 0
+  },
+  "objects": 1,
+  "types": {
+   "sdf12": 1
+  },
+  "linearLoopTrips": 0,
+  "bvh": {
+   "nodes": 1,
+   "nNodesU": 1,
+   "leaves": 1,
+   "maxLeaf": 1,
+   "depth": 1,
+   "objectsInLeaves": 1
+  },
+  "materials": [
+   0
+  ],
+  "identityTransforms": 1,
+  "movingObjects": 0,
+  "objectList": [
+   {
+    "i": 0,
+    "type": "sdf12",
+    "mat": 0,
+    "lit": -1,
+    "flags": 0,
+    "motion": false,
+    "identityLinear": true,
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   }
+  ]
+ }
+]
