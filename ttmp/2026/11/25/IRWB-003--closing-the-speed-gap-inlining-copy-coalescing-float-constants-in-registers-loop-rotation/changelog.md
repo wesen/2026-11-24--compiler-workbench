@@ -30,3 +30,11 @@ inline pass (whole program, record results as locals, provenance to callee and c
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/src/typed/inline.ts — the inline pass
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/tests/typed/inline.test.mjs — inline tests
+
+## 2026-11-26
+
+Merged irwb-001/import-v6-prototype at 1f45c94 (IRWB-004, IRWB-006); gates identical on the merged tree; rules comparison extended to speed (792 steps, no difference). Candela per scene (speed with dfe after inline, three options): B-01 8,267.7 per pixel (kernel 8,501; O2+ 10,435), R-01 18,186.7 (kernel 15,655.9; O2+ 22,850.9), frames bit-identical. Machine failure at 01:39 cut off the first merged run; R-01 and the general program re-run under a 14G memory cap
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/scripts/08-candela-scene-speed.mjs — per-scene measurement

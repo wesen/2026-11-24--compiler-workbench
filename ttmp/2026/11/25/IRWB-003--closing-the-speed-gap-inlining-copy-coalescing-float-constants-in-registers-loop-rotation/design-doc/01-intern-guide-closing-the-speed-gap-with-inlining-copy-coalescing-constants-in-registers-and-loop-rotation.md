@@ -792,3 +792,19 @@ Corpus (44 projects, 6,986 decided cases, each agreeing with r0; no project slow
 Candela: see §22.4.
 
 Frozen checks: `scripts/08` of IRWB-001 prints the same 44 lines; `tools/parity.mjs` is identical; the `IRWB_FULL` suites are identical except for times; `npm test` passes with 15 more tests.
+
+### 22.4 Candela
+
+Per scene (stride 4, 1,600 pixels; `speed` with `dfe` after each `inline`, since a per-scene program has entries; frames compared float by float with the reference `kernel` frame):
+
+| instructions per pixel | B-01 | R-01 |
+|---|---:|---:|
+| reference `kernel` | 8,501 | 15,655.9 |
+| O2+ (book options) | 10,435 | 22,850.9 |
+| speed, default options | 8,749.1 | 19,314.3 |
+| speed + chains + coalesce + homes | 8,267.7 | 18,186.7 |
+| differing output floats | 0 | 0 |
+
+Every changed pass application on both scenes was accepted by the entry-only contract (146 of 146 cases each). Running `speed` without `dfe` between the `inline`s carries the dead originals of inlined callees through O2+ (B-01: 5,317 → 11,979 statements after one `inline`); §16.2's remark that the scripts add `dfe` after the pipeline is not enough on its own.
+
+The general program (all 332 functions, full contract; `speed` then 100 cases per function, `various/25-candela-general-images.txt`): our image with the three options executes 601.8 instructions per decided case against 727.3 for `kernel` (r0: 894.2; `speed` with the default options: 703.9); every image agrees on all decided cases. At O2, IRWB-001 measured 870.3 against 747.7 on its own set of decided cases. The image is 263,584 bytes, against 183,324 at r0 and 434,996 for `kernel`.

@@ -9,6 +9,7 @@
 - [x] homes option: constants in registers (src/typed/backend/homes.ts) with tests <!-- t:ci5w -->
 - [x] inline pass (src/typed/inline.ts): record results, zeroing, provenance, tests <!-- t:20ki -->
 - [x] O3 pipeline, presets, workbench options row <!-- t:bu6q -->
-- [ ] Measure: benchmarks, corpus under O3, Candela per case, per scene B-01 and R-01 (18 if time) <!-- t:vhn4 -->
-- [ ] Frozen checks diffed against various/01-04 <!-- t:78cr -->
+- [x] Measure: benchmarks, corpus under O3, Candela per case, per scene B-01 and R-01 (18 if time) <!-- t:vhn4 -->
+- [x] Frozen checks diffed against various/01-04 <!-- t:78cr -->
 - [ ] Vault report written and checked against the diary <!-- t:xuku -->
+- [ ] Per scene for the other 16 Candela scenes (not run: time) <!-- t:a979 -->

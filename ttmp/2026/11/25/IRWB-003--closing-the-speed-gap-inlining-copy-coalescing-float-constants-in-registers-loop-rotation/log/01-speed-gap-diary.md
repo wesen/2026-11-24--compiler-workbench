@@ -743,3 +743,55 @@ This step re-ran R-01, the scene that had not finished, under the coordinator's 
 
 ### Technical details
 - The general program's measurement follows in Step 15.
+
+## Step 15: The general Candela program under `speed`, per case against `kernel`
+
+This step ran the `speed` pipeline on the general Candela program (all 332 functions, full contract, no entries) and measured its images per case against the reference compiler's `kernel` image, both under the memory cap. Every pass application was accepted, the head agrees with r0 on all 33,183 decided cases of the final check, and every image agrees with its evaluator. With the three options, the general image executes 601.8 instructions per decided case against 727.3 for `kernel`: 17.3% fewer. At O2 (IRWB-001) it executed 16.4% more than `kernel`.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 and Step 13.
+**Assistant interpretation:** "Candela general image per case … vs `kernel`".
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit after this step.
+
+### What I did
+- `systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 /usr/bin/time -v node --max-old-space-size=10240 tools/candela-o2.mjs --pipeline speed --save <scratchpad>/candela-speed-head.json --json > various/24-candela-general-speed-pipeline.json 2> various/24-….log` (each pass checked on 40 cases per function, then a final check of the head against r0 on 100 cases per function, step limit 2e5).
+- `systemd-run … node --max-old-space-size=10240 scripts/09-candela-image-options.mjs --head <scratchpad>/candela-speed-head.json --json various/25-candela-general-images.json --table various/25-candela-general-images.tsv > various/25-….txt 2> various/25-….log`: our image of r0, our images of the head with the default options and with the three options, and the reference `kernel` image; 100 cases per function; each of our images judged by the evaluator of the program it was lowered from, `kernel` by r0's; instructions over the cases every image and evaluator finished.
+
+### Why
+- The per-case table is the measure IRWB-001 reported for the general program (870.3 at O2 against 747.7 for `kernel`).
+
+### What worked
+- Pipeline: `Exit status: 0`, `Elapsed 7:29.73`, `Maximum resident set size 9441112` KB; 18 revisions, none rejected; `inline` r1: 721 sites in 185 callers, r2: 388 sites in 81 callers; statements 12,358 → 39,189 after the two `inline`s → 28,688 at the end; `rotate`: 44 jumps to a loop header replaced by copies of its test, in 12 functions. Final check: `{"total":33200,"agree":33183,"disagree":0,"inconclusive":17}`.
+- Images: `Exit status: 0`, `Elapsed 33:16.26`, `Maximum resident set size 5382324` KB:
+
+  | image | bytes | per decided case | agree / disagree |
+  |---|---:|---:|---:|
+  | ours, r0 | 183,324 | 894.2 | 32,985 / 0 |
+  | ours, speed head, default options | 297,044 | 703.9 | 32,985 / 0 |
+  | ours, speed head, chains + coalesce + homes | 263,584 | **601.8** | 32,985 / 0 |
+  | reference `kernel` | 434,996 | 727.3 | 32,985 / 0 |
+
+  (32,984 decided cases; 215 inconclusive per image.)
+- Per function against `kernel` (instructions per case × decided cases): 283 functions faster, 36 slower, net −4,142,097 (IRWB-001's O2: net +4,043,187). `fbm3` 42,790.7 per case against 52,061.7 (r0 68,705.6); `cdlRenderSpan` 58,292 against 62,046.6; `noise3` 747.1 against 915.6. The largest remaining positive gaps: `skyL_wgsl` (+18,060), `hdriSample` (+13,090), `traceAll` (+12,190).
+
+### What didn't work
+- Nothing in these runs.
+
+### What I learned
+- Without entries nothing can be removed, so the general head is 2.3 times r0's statements and its image 1.44 times r0's bytes (with the options; 1.62 with the defaults), still 61% of `kernel`'s bytes.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- The decided set here (32,984 cases) is the one where r0, the head and all four images finish; IRWB-001's O2 table used its own set (32,985), so its 870.3 and 747.7 compare with each other, not with this table's numbers.
+
+### What should be done in the future
+- `skyL_wgsl`, `hdriSample`, `traceAll`: not investigated.
+
+### Code review instructions
+- `various/25-candela-general-images.txt` (totals), `.tsv` (per function).
+
+### Technical details
+- The saved head (39.6 MB) is in the scratchpad, not in the ticket.

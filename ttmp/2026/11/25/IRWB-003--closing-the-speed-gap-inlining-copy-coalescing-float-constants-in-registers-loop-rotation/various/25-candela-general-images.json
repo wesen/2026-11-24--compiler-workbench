@@ -1,0 +1,12003 @@
+{
+ "total": {
+  "options": {
+   "chains": true,
+   "coalesce": true,
+   "homes": true
+  },
+  "functions": 332,
+  "cases": 33200,
+  "decided": 32984,
+  "bytes": {
+   "r0": 183324,
+   "head": 297044,
+   "options": 263584,
+   "kernel": 434996
+  },
+  "agree": {
+   "r0": 32985,
+   "head": 32985,
+   "options": 32985,
+   "kernel": 32985
+  },
+  "disagree": {
+   "r0": 0,
+   "head": 0,
+   "options": 0,
+   "kernel": 0
+  },
+  "inconclusive": {
+   "r0": 215,
+   "head": 215,
+   "options": 215,
+   "kernel": 215
+  },
+  "insns": {
+   "r0": 29493555,
+   "head": 23217353,
+   "options": 19848650,
+   "kernel": 23990805
+  },
+  "perCase": {
+   "r0": 894.2,
+   "head": 703.9,
+   "options": 601.8,
+   "kernel": 727.3
+  },
+  "ms": 1922697
+ },
+ "rows": [
+  {
+   "fn": "pow2i",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 4
+   }
+  },
+  {
+   "fn": "ldexpf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2703,
+    "head": 977,
+    "options": 977,
+    "kernel": 1533
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 27,
+    "head": 9.8,
+    "options": 9.8,
+    "kernel": 15.3
+   }
+  },
+  {
+   "fn": "fract",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 973,
+    "head": 973,
+    "options": 973,
+    "kernel": 973
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 9.7,
+    "head": 9.7,
+    "options": 9.7,
+    "kernel": 9.7
+   }
+  },
+  {
+   "fn": "mix",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 4
+   }
+  },
+  {
+   "fn": "clamp",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 300,
+    "head": 300,
+    "options": 300,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 3,
+    "head": 3,
+    "options": 3,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "saturate",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 600,
+    "kernel": 1200
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 6,
+    "kernel": 12
+   }
+  },
+  {
+   "fn": "step",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 457,
+    "head": 457,
+    "options": 457,
+    "kernel": 514
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4.6,
+    "head": 4.6,
+    "options": 4.6,
+    "kernel": 5.1
+   }
+  },
+  {
+   "fn": "sign",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 778,
+    "head": 778,
+    "options": 737,
+    "kernel": 815
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 7.8,
+    "head": 7.8,
+    "options": 7.4,
+    "kernel": 8.2
+   }
+  },
+  {
+   "fn": "smoothstep",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2700,
+    "head": 1700,
+    "options": 1700,
+    "kernel": 2200
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 27,
+    "head": 17,
+    "options": 17,
+    "kernel": 22
+   }
+  },
+  {
+   "fn": "sinCosReduced",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2307,
+    "head": 2307,
+    "options": 2307,
+    "kernel": 2407
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 23.1,
+    "head": 23.1,
+    "options": 23.1,
+    "kernel": 24.1
+   }
+  },
+  {
+   "fn": "sinf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6939,
+    "head": 5809,
+    "options": 5718,
+    "kernel": 5831
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 69.4,
+    "head": 58.1,
+    "options": 57.2,
+    "kernel": 58.3
+   }
+  },
+  {
+   "fn": "cosf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 7344,
+    "head": 6229,
+    "options": 5965,
+    "kernel": 6160
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 73.4,
+    "head": 62.3,
+    "options": 59.6,
+    "kernel": 61.6
+   }
+  },
+  {
+   "fn": "tanf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15983,
+    "head": 12355,
+    "options": 11088,
+    "kernel": 10826
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 159.8,
+    "head": 123.5,
+    "options": 110.9,
+    "kernel": 108.3
+   }
+  },
+  {
+   "fn": "expf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 8322,
+    "head": 6076,
+    "options": 6076,
+    "kernel": 6586
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 83.2,
+    "head": 60.8,
+    "options": 60.8,
+    "kernel": 65.9
+   }
+  },
+  {
+   "fn": "exp2f",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 7344,
+    "head": 5052,
+    "options": 5051,
+    "kernel": 5658
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 73.4,
+    "head": 50.5,
+    "options": 50.5,
+    "kernel": 56.6
+   }
+  },
+  {
+   "fn": "logTail",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 5100,
+    "head": 5100,
+    "options": 5100,
+    "kernel": 5100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 51,
+    "head": 51,
+    "options": 51,
+    "kernel": 51
+   }
+  },
+  {
+   "fn": "logExponent",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2576,
+    "head": 2576,
+    "options": 2476,
+    "kernel": 2576
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 25.8,
+    "head": 25.8,
+    "options": 24.8,
+    "kernel": 25.8
+   }
+  },
+  {
+   "fn": "logFraction",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2279,
+    "head": 2279,
+    "options": 2179,
+    "kernel": 2235
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 22.8,
+    "head": 22.8,
+    "options": 21.8,
+    "kernel": 22.4
+   }
+  },
+  {
+   "fn": "logf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 8592,
+    "head": 6977,
+    "options": 6708,
+    "kernel": 6854
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 85.9,
+    "head": 69.8,
+    "options": 67.1,
+    "kernel": 68.5
+   }
+  },
+  {
+   "fn": "log2f",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 8706,
+    "head": 7091,
+    "options": 6822,
+    "kernel": 6926
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 87.1,
+    "head": 70.9,
+    "options": 68.2,
+    "kernel": 69.3
+   }
+  },
+  {
+   "fn": "powf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15413,
+    "head": 10837,
+    "options": 10416,
+    "kernel": 11352
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 154.1,
+    "head": 108.4,
+    "options": 104.2,
+    "kernel": 113.5
+   }
+  },
+  {
+   "fn": "atanPositive",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4116,
+    "head": 4014,
+    "options": 3889,
+    "kernel": 3890
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 41.2,
+    "head": 40.1,
+    "options": 38.9,
+    "kernel": 38.9
+   }
+  },
+  {
+   "fn": "atanf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 5664,
+    "head": 4532,
+    "options": 4385,
+    "kernel": 4499
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 56.6,
+    "head": 45.3,
+    "options": 43.9,
+    "kernel": 45
+   }
+  },
+  {
+   "fn": "atan2f",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 9392,
+    "head": 7243,
+    "options": 6606,
+    "kernel": 8917
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 93.9,
+    "head": 72.4,
+    "options": 66.1,
+    "kernel": 89.2
+   }
+  },
+  {
+   "fn": "asinPositive",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3764,
+    "head": 3764,
+    "options": 3670,
+    "kernel": 3764
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 37.6,
+    "head": 37.6,
+    "options": 36.7,
+    "kernel": 37.6
+   }
+  },
+  {
+   "fn": "asinf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3176,
+    "head": 2259,
+    "options": 2221,
+    "kernel": 2320
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 31.8,
+    "head": 22.6,
+    "options": 22.2,
+    "kernel": 23.2
+   }
+  },
+  {
+   "fn": "acosf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3432,
+    "head": 2565,
+    "options": 2571,
+    "kernel": 3747
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 34.3,
+    "head": 25.6,
+    "options": 25.7,
+    "kernel": 37.5
+   }
+  },
+  {
+   "fn": "q_floor",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1721,
+    "head": 1721,
+    "options": 1721,
+    "kernel": 1762
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 17.2,
+    "head": 17.2,
+    "options": 17.2,
+    "kernel": 17.6
+   }
+  },
+  {
+   "fn": "q_fract",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2921,
+    "head": 1969,
+    "options": 1776,
+    "kernel": 1969
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 29.2,
+    "head": 19.7,
+    "options": 17.8,
+    "kernel": 19.7
+   }
+  },
+  {
+   "fn": "q_sin",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 7709,
+    "head": 6409,
+    "options": 6376,
+    "kernel": 7291
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 77.1,
+    "head": 64.1,
+    "options": 63.8,
+    "kernel": 72.9
+   }
+  },
+  {
+   "fn": "q_cos",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 8772,
+    "head": 6805,
+    "options": 6520,
+    "kernel": 7586
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 87.7,
+    "head": 68,
+    "options": 65.2,
+    "kernel": 75.9
+   }
+  },
+  {
+   "fn": "q_exp",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6661,
+    "head": 5900,
+    "options": 5635,
+    "kernel": 6828
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 66.6,
+    "head": 59,
+    "options": 56.4,
+    "kernel": 68.3
+   }
+  },
+  {
+   "fn": "q_sign",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 778,
+    "head": 778,
+    "options": 737,
+    "kernel": 815
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 7.8,
+    "head": 7.8,
+    "options": 7.4,
+    "kernel": 8.2
+   }
+  },
+  {
+   "fn": "q_step",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 457,
+    "head": 457,
+    "options": 457,
+    "kernel": 514
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4.6,
+    "head": 4.6,
+    "options": 4.6,
+    "kernel": 5.1
+   }
+  },
+  {
+   "fn": "q_smoothstep",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1700,
+    "head": 1700,
+    "options": 1700,
+    "kernel": 2500
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 17,
+    "head": 17,
+    "options": 17,
+    "kernel": 25
+   }
+  },
+  {
+   "fn": "q_absi",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 256,
+    "head": 256,
+    "options": 256,
+    "kernel": 428
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2.6,
+    "head": 2.6,
+    "options": 2.6,
+    "kernel": 4.3
+   }
+  },
+  {
+   "fn": "pcgH",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1600,
+    "head": 1600,
+    "options": 1600,
+    "kernel": 2200
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 16,
+    "head": 16,
+    "options": 16,
+    "kernel": 22
+   }
+  },
+  {
+   "fn": "rnd",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3500,
+    "head": 2400,
+    "options": 2400,
+    "kernel": 4700
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 35,
+    "head": 24,
+    "options": 24,
+    "kernel": 47
+   }
+  },
+  {
+   "fn": "rnd2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 8900,
+    "head": 5100,
+    "options": 3900,
+    "kernel": 4700
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 89,
+    "head": 51,
+    "options": 39,
+    "kernel": 47
+   }
+  },
+  {
+   "fn": "fmodp",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3417,
+    "head": 2076,
+    "options": 2067,
+    "kernel": 2276
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 34.2,
+    "head": 20.8,
+    "options": 20.7,
+    "kernel": 22.8
+   }
+  },
+  {
+   "fn": "fmodp2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6502,
+    "head": 4041,
+    "options": 3717,
+    "kernel": 4341
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 65,
+    "head": 40.4,
+    "options": 37.2,
+    "kernel": 43.4
+   }
+  },
+  {
+   "fn": "fmodp3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 9524,
+    "head": 5900,
+    "options": 4742,
+    "kernel": 6200
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 95.2,
+    "head": 59,
+    "options": 47.4,
+    "kernel": 62
+   }
+  },
+  {
+   "fn": "fmodp4",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 12649,
+    "head": 7915,
+    "options": 6126,
+    "kernel": 8403
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 126.5,
+    "head": 79.2,
+    "options": 61.3,
+    "kernel": 84
+   }
+  },
+  {
+   "fn": "safeNorm",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2584,
+    "head": 1984,
+    "options": 1696,
+    "kernel": 2984
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 25.8,
+    "head": 19.8,
+    "options": 17,
+    "kernel": 29.8
+   }
+  },
+  {
+   "fn": "safeNorm2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2088,
+    "head": 1688,
+    "options": 1397,
+    "kernel": 2388
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 20.9,
+    "head": 16.9,
+    "options": 14,
+    "kernel": 23.9
+   }
+  },
+  {
+   "fn": "safeNorm4",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3080,
+    "head": 2280,
+    "options": 2095,
+    "kernel": 3580
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 30.8,
+    "head": 22.8,
+    "options": 20.9,
+    "kernel": 35.8
+   }
+  },
+  {
+   "fn": "maxc",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 300,
+    "head": 300,
+    "options": 300,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 3,
+    "head": 3,
+    "options": 3,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "safeInv",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3157,
+    "head": 3157,
+    "options": 1911,
+    "kernel": 3319
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 31.6,
+    "head": 31.6,
+    "options": 19.1,
+    "kernel": 33.2
+   }
+  },
+  {
+   "fn": "lum",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1500,
+    "head": 1500,
+    "options": 1500,
+    "kernel": 1500
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 15,
+    "head": 15,
+    "options": 15,
+    "kernel": 15
+   }
+  },
+  {
+   "fn": "sq",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 200
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 2
+   }
+  },
+  {
+   "fn": "gnoise",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 10400,
+    "head": 10500,
+    "options": 8900,
+    "kernel": 11000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 104,
+    "head": 105,
+    "options": 89,
+    "kernel": 110
+   }
+  },
+  {
+   "fn": "noise3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 119770,
+    "head": 97578,
+    "options": 74710,
+    "kernel": 91562
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1197.7,
+    "head": 975.8,
+    "options": 747.1,
+    "kernel": 915.6
+   }
+  },
+  {
+   "fn": "fbm3",
+   "cases": 100,
+   "decided": 94,
+   "agree": {
+    "r0": 95,
+    "head": 94,
+    "options": 94,
+    "kernel": 95
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 5,
+    "head": 6,
+    "options": 6,
+    "kernel": 5
+   },
+   "insns": {
+    "r0": 6458322,
+    "head": 5270868,
+    "options": 4022329,
+    "kernel": 4893802
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 68705.6,
+    "head": 56073.1,
+    "options": 42790.7,
+    "kernel": 52061.7
+   }
+  },
+  {
+   "fn": "voronoi3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 352714,
+    "head": 349482,
+    "options": 261552,
+    "kernel": 318106
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 3527.1,
+    "head": 3494.8,
+    "options": 2615.5,
+    "kernel": 3181.1
+   }
+  },
+  {
+   "fn": "voronoiVec3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 13935,
+    "head": 12589,
+    "options": 9200,
+    "kernel": 14227
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 139.3,
+    "head": 125.9,
+    "options": 92,
+    "kernel": 142.3
+   }
+  },
+  {
+   "fn": "frameOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4258,
+    "head": 3158,
+    "options": 3058,
+    "kernel": 7658
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 42.6,
+    "head": 31.6,
+    "options": 30.6,
+    "kernel": 76.6
+   }
+  },
+  {
+   "fn": "frameT",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 7200,
+    "head": 6200,
+    "options": 6200,
+    "kernel": 9300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 72,
+    "head": 62,
+    "options": 62,
+    "kernel": 93
+   }
+  },
+  {
+   "fn": "toLocal",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2000,
+    "head": 2000,
+    "options": 2000,
+    "kernel": 4400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 20,
+    "head": 20,
+    "options": 20,
+    "kernel": 44
+   }
+  },
+  {
+   "fn": "toWorld",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2000,
+    "head": 2000,
+    "options": 2000,
+    "kernel": 4400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 20,
+    "head": 20,
+    "options": 20,
+    "kernel": 44
+   }
+  },
+  {
+   "fn": "cosHemi",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 19853,
+    "head": 16223,
+    "options": 15791,
+    "kernel": 15742
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 198.5,
+    "head": 162.2,
+    "options": 157.9,
+    "kernel": 157.4
+   }
+  },
+  {
+   "fn": "uniformCone",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 20500,
+    "head": 16857,
+    "options": 16052,
+    "kernel": 17503
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 205,
+    "head": 168.6,
+    "options": 160.5,
+    "kernel": 175
+   }
+  },
+  {
+   "fn": "uniformConeOm",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 20100,
+    "head": 16457,
+    "options": 16052,
+    "kernel": 17503
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 201,
+    "head": 164.6,
+    "options": 160.5,
+    "kernel": 175
+   }
+  },
+  {
+   "fn": "oneMinusCosFromSin2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1100,
+    "head": 1100,
+    "options": 900,
+    "kernel": 900
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 11,
+    "head": 11,
+    "options": 9,
+    "kernel": 9
+   }
+  },
+  {
+   "fn": "misW",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 942,
+    "head": 942,
+    "options": 899,
+    "kernel": 1471
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 9.4,
+    "head": 9.4,
+    "options": 9,
+    "kernel": 14.7
+   }
+  },
+  {
+   "fn": "spBasis",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 7300,
+    "head": 4900,
+    "options": 3500,
+    "kernel": 4900
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 73,
+    "head": 49,
+    "options": 35,
+    "kernel": 49
+   }
+  },
+  {
+   "fn": "spec",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 5696,
+    "head": 3232,
+    "options": 3004,
+    "kernel": 4364
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 57,
+    "head": 32.3,
+    "options": 30,
+    "kernel": 43.6
+   }
+  },
+  {
+   "fn": "gfit",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 7214,
+    "head": 5745,
+    "options": 5546,
+    "kernel": 7028
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 72.1,
+    "head": 57.5,
+    "options": 55.5,
+    "kernel": 70.3
+   }
+  },
+  {
+   "fn": "cmfXYZ",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 44213,
+    "head": 32713,
+    "options": 29204,
+    "kernel": 30116
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 442.1,
+    "head": 327.1,
+    "options": 292,
+    "kernel": 301.2
+   }
+  },
+  {
+   "fn": "xyz2rgb",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4500,
+    "head": 4500,
+    "options": 4500,
+    "kernel": 4600
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 45,
+    "head": 45,
+    "options": 45,
+    "kernel": 46
+   }
+  },
+  {
+   "fn": "planckRel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 8252,
+    "head": 6438,
+    "options": 5986,
+    "kernel": 7586
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 82.5,
+    "head": 64.4,
+    "options": 59.9,
+    "kernel": 75.9
+   }
+  },
+  {
+   "fn": "sellmeier",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4700,
+    "head": 2100,
+    "options": 2100,
+    "kernel": 3900
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 47,
+    "head": 21,
+    "options": 21,
+    "kernel": 39
+   }
+  },
+  {
+   "fn": "ggxE",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 13600,
+    "head": 11500,
+    "options": 10100,
+    "kernel": 11341
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 136,
+    "head": 115,
+    "options": 101,
+    "kernel": 113.4
+   }
+  },
+  {
+   "fn": "noHit",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6000,
+    "head": 2900,
+    "options": 2700,
+    "kernel": 15700
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 60,
+    "head": 29,
+    "options": 27,
+    "kernel": 157
+   }
+  },
+  {
+   "fn": "lobeNone",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 9200,
+    "head": 4000,
+    "options": 3400,
+    "kernel": 20100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 92,
+    "head": 40,
+    "options": 34,
+    "kernel": 201
+   }
+  },
+  {
+   "fn": "hitAABB",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3200,
+    "head": 3200,
+    "options": 3200,
+    "kernel": 5100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 32,
+    "head": 32,
+    "options": 32,
+    "kernel": 51
+   }
+  },
+  {
+   "fn": "oRow",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2224,
+    "head": 1732,
+    "options": 1732,
+    "kernel": 1870
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 22.2,
+    "head": 17.3,
+    "options": 17.3,
+    "kernel": 18.7
+   }
+  },
+  {
+   "fn": "qrot",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4700,
+    "head": 4700,
+    "options": 4300,
+    "kernel": 4400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 47,
+    "head": 47,
+    "options": 43,
+    "kernel": 44
+   }
+  },
+  {
+   "fn": "poseQ",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15154,
+    "head": 12195,
+    "options": 11399,
+    "kernel": 11769
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 151.5,
+    "head": 122,
+    "options": 114,
+    "kernel": 117.7
+   }
+  },
+  {
+   "fn": "poseT",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 12364,
+    "head": 10427,
+    "options": 9827,
+    "kernel": 9061
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 123.6,
+    "head": 104.3,
+    "options": 98.3,
+    "kernel": 90.6
+   }
+  },
+  {
+   "fn": "mBase",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3416,
+    "head": 2340,
+    "options": 2340,
+    "kernel": 1696
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 34.2,
+    "head": 23.4,
+    "options": 23.4,
+    "kernel": 17
+   }
+  },
+  {
+   "fn": "xfP",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 17672,
+    "head": 14432,
+    "options": 13252,
+    "kernel": 9773
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 176.7,
+    "head": 144.3,
+    "options": 132.5,
+    "kernel": 97.7
+   }
+  },
+  {
+   "fn": "xfD",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 17549,
+    "head": 14285,
+    "options": 13054,
+    "kernel": 9313
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 175.5,
+    "head": 142.8,
+    "options": 130.5,
+    "kernel": 93.1
+   }
+  },
+  {
+   "fn": "xfN",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 14245,
+    "head": 10867,
+    "options": 10782,
+    "kernel": 7167
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 142.4,
+    "head": 108.7,
+    "options": 107.8,
+    "kernel": 71.7
+   }
+  },
+  {
+   "fn": "tangentWorld",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 23062,
+    "head": 18825,
+    "options": 18696,
+    "kernel": 16108
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 230.6,
+    "head": 188.3,
+    "options": 187,
+    "kernel": 161.1
+   }
+  },
+  {
+   "fn": "hitMesh",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 33614,
+    "head": 32181,
+    "options": 31695,
+    "kernel": 29277
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 336.1,
+    "head": 321.8,
+    "options": 316.9,
+    "kernel": 292.8
+   }
+  },
+  {
+   "fn": "sdBox",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2400,
+    "head": 2400,
+    "options": 2100,
+    "kernel": 3200
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 24,
+    "head": 24,
+    "options": 21,
+    "kernel": 32
+   }
+  },
+  {
+   "fn": "sdLocal",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 21342,
+    "head": 16931,
+    "options": 14196,
+    "kernel": 18909
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 213.4,
+    "head": 169.3,
+    "options": 142,
+    "kernel": 189.1
+   }
+  },
+  {
+   "fn": "sdNormal",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 108132,
+    "head": 85988,
+    "options": 72764,
+    "kernel": 82888
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1081.3,
+    "head": 859.9,
+    "options": 727.6,
+    "kernel": 828.9
+   }
+  },
+  {
+   "fn": "hitObj",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35695,
+    "head": 29245,
+    "options": 27534,
+    "kernel": 23061
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 356.9,
+    "head": 292.4,
+    "options": 275.3,
+    "kernel": 230.6
+   }
+  },
+  {
+   "fn": "finishHit",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 46825,
+    "head": 34563,
+    "options": 32378,
+    "kernel": 34715
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 468.3,
+    "head": 345.6,
+    "options": 323.8,
+    "kernel": 347.1
+   }
+  },
+  {
+   "fn": "traceAll",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 96518,
+    "head": 83189,
+    "options": 78388,
+    "kernel": 66203
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 965.2,
+    "head": 831.9,
+    "options": 783.9,
+    "kernel": 662
+   }
+  },
+  {
+   "fn": "traceScene",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 135911,
+    "head": 114951,
+    "options": 108460,
+    "kernel": 106676
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1359.1,
+    "head": 1149.5,
+    "options": 1084.6,
+    "kernel": 1066.8
+   }
+  },
+  {
+   "fn": "occluded",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 90616,
+    "head": 79098,
+    "options": 74724,
+    "kernel": 66518
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 906.2,
+    "head": 791,
+    "options": 747.2,
+    "kernel": 665.2
+   }
+  },
+  {
+   "fn": "ggxD",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1800,
+    "head": 1800,
+    "options": 1800,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 18,
+    "head": 18,
+    "options": 18,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "ggxLambda",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4500,
+    "head": 2200,
+    "options": 2200,
+    "kernel": 3300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 45,
+    "head": 22,
+    "options": 22,
+    "kernel": 33
+   }
+  },
+  {
+   "fn": "sampleVNDF",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 36339,
+    "head": 29270,
+    "options": 27746,
+    "kernel": 34404
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 363.4,
+    "head": 292.7,
+    "options": 277.5,
+    "kernel": 344
+   }
+  },
+  {
+   "fn": "fresnelDielectric",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4048,
+    "head": 3872,
+    "options": 3102,
+    "kernel": 3390
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 40.5,
+    "head": 38.7,
+    "options": 31,
+    "kernel": 33.9
+   }
+  },
+  {
+   "fn": "fresnelConductor",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 12600,
+    "head": 12600,
+    "options": 10100,
+    "kernel": 14100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 126,
+    "head": 126,
+    "options": 101,
+    "kernel": 141
+   }
+  },
+  {
+   "fn": "schlick3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2700,
+    "head": 2700,
+    "options": 1900,
+    "kernel": 2300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 27,
+    "head": 27,
+    "options": 19,
+    "kernel": 23
+   }
+  },
+  {
+   "fn": "airy1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18889,
+    "head": 16431,
+    "options": 15299,
+    "kernel": 15352
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188.9,
+    "head": 164.3,
+    "options": 153,
+    "kernel": 153.5
+   }
+  },
+  {
+   "fn": "filmR",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 41219,
+    "head": 36504,
+    "options": 34297,
+    "kernel": 29292
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 412.2,
+    "head": 365,
+    "options": 343,
+    "kernel": 292.9
+   }
+  },
+  {
+   "fn": "f0ToN",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4300,
+    "head": 4300,
+    "options": 2500,
+    "kernel": 3500
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 43,
+    "head": 43,
+    "options": 25,
+    "kernel": 35
+   }
+  },
+  {
+   "fn": "condF",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 31615,
+    "head": 27454,
+    "options": 25598,
+    "kernel": 24862
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 316.1,
+    "head": 274.5,
+    "options": 256,
+    "kernel": 248.6
+   }
+  },
+  {
+   "fn": "msComp",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 38113,
+    "head": 31757,
+    "options": 29282,
+    "kernel": 29131
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 381.1,
+    "head": 317.6,
+    "options": 292.8,
+    "kernel": 291.3
+   }
+  },
+  {
+   "fn": "bsNone",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2200,
+    "head": 1200,
+    "options": 1200,
+    "kernel": 5300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 22,
+    "head": 12,
+    "options": 12,
+    "kernel": 53
+   }
+  },
+  {
+   "fn": "isDeltaLobe",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1604,
+    "head": 1604,
+    "options": 1405,
+    "kernel": 2007
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 16,
+    "head": 16,
+    "options": 14.1,
+    "kernel": 20.1
+   }
+  },
+  {
+   "fn": "dielTrans",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6304,
+    "head": 6007,
+    "options": 6007,
+    "kernel": 5910
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 63,
+    "head": 60.1,
+    "options": 60.1,
+    "kernel": 59.1
+   }
+  },
+  {
+   "fn": "evalLobe",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 9279,
+    "head": 9095,
+    "options": 8804,
+    "kernel": 7044
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 92.8,
+    "head": 91,
+    "options": 88,
+    "kernel": 70.4
+   }
+  },
+  {
+   "fn": "pdfLobe",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6343,
+    "head": 5918,
+    "options": 5877,
+    "kernel": 4626
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 63.4,
+    "head": 59.2,
+    "options": 58.8,
+    "kernel": 46.3
+   }
+  },
+  {
+   "fn": "sampleLobe",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18271,
+    "head": 14309,
+    "options": 14040,
+    "kernel": 17546
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 182.7,
+    "head": 143.1,
+    "options": 140.4,
+    "kernel": 175.5
+   }
+  },
+  {
+   "fn": "lRow",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2224,
+    "head": 1732,
+    "options": 1732,
+    "kernel": 1870
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 22.2,
+    "head": 17.3,
+    "options": 17.3,
+    "kernel": 18.7
+   }
+  },
+  {
+   "fn": "lsNone",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2200,
+    "head": 1200,
+    "options": 1200,
+    "kernel": 5400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 22,
+    "head": 12,
+    "options": 12,
+    "kernel": 54
+   }
+  },
+  {
+   "fn": "lightSpec",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 5660,
+    "head": 5336,
+    "options": 5095,
+    "kernel": 3249
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 56.6,
+    "head": 53.4,
+    "options": 51,
+    "kernel": 32.5
+   }
+  },
+  {
+   "fn": "sampleSphereDir",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 36309,
+    "head": 29155,
+    "options": 26853,
+    "kernel": 29485
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 363.1,
+    "head": 291.6,
+    "options": 268.5,
+    "kernel": 294.9
+   }
+  },
+  {
+   "fn": "sampleLight",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 22727,
+    "head": 19472,
+    "options": 18841,
+    "kernel": 16044
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 227.3,
+    "head": 194.7,
+    "options": 188.4,
+    "kernel": 160.4
+   }
+  },
+  {
+   "fn": "lightPdfAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 9228,
+    "head": 5036,
+    "options": 4898,
+    "kernel": 3785
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 92.3,
+    "head": 50.4,
+    "options": 49,
+    "kernel": 37.9
+   }
+  },
+  {
+   "fn": "perez",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 44735,
+    "head": 36415,
+    "options": 34850,
+    "kernel": 40229
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 447.4,
+    "head": 364.1,
+    "options": 348.5,
+    "kernel": 402.3
+   }
+  },
+  {
+   "fn": "skyL_wgsl",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 199876,
+    "head": 154882,
+    "options": 147507,
+    "kernel": 129449
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1998.8,
+    "head": 1548.8,
+    "options": 1475.1,
+    "kernel": 1294.5
+   }
+  },
+  {
+   "fn": "studioL",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 71626,
+    "head": 54090,
+    "options": 50390,
+    "kernel": 61372
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 716.3,
+    "head": 540.9,
+    "options": 503.9,
+    "kernel": 613.7
+   }
+  },
+  {
+   "fn": "envRot",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 37148,
+    "head": 30402,
+    "options": 28182,
+    "kernel": 28432
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 371.5,
+    "head": 304,
+    "options": 281.8,
+    "kernel": 284.3
+   }
+  },
+  {
+   "fn": "hdriTexel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6256,
+    "head": 5283,
+    "options": 5061,
+    "kernel": 5600
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 62.6,
+    "head": 52.8,
+    "options": 50.6,
+    "kernel": 56
+   }
+  },
+  {
+   "fn": "hdriUV",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 58025,
+    "head": 46007,
+    "options": 44587,
+    "kernel": 43715
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 580.3,
+    "head": 460.1,
+    "options": 445.9,
+    "kernel": 437.1
+   }
+  },
+  {
+   "fn": "hdriL",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 94105,
+    "head": 78448,
+    "options": 72925,
+    "kernel": 79407
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 941,
+    "head": 784.5,
+    "options": 729.3,
+    "kernel": 794.1
+   }
+  },
+  {
+   "fn": "hdriPdf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 75138,
+    "head": 60314,
+    "options": 57147,
+    "kernel": 59857
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 751.4,
+    "head": 603.1,
+    "options": 571.5,
+    "kernel": 598.6
+   }
+  },
+  {
+   "fn": "hdriSample",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 61257,
+    "head": 49964,
+    "options": 48633,
+    "kernel": 35544
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 612.6,
+    "head": 499.6,
+    "options": 486.3,
+    "kernel": 355.4
+   }
+  },
+  {
+   "fn": "envL",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 31418,
+    "head": 24631,
+    "options": 23753,
+    "kernel": 24502
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 314.2,
+    "head": 246.3,
+    "options": 237.5,
+    "kernel": 245
+   }
+  },
+  {
+   "fn": "sunL",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 12350,
+    "head": 8611,
+    "options": 8098,
+    "kernel": 6597
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 123.5,
+    "head": 86.1,
+    "options": 81,
+    "kernel": 66
+   }
+  },
+  {
+   "fn": "nLightChoices",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4077,
+    "head": 3177,
+    "options": 2977,
+    "kernel": 4977
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 40.8,
+    "head": 31.8,
+    "options": 29.8,
+    "kernel": 49.8
+   }
+  },
+  {
+   "fn": "mRow",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 3504,
+    "head": 2772,
+    "options": 2772,
+    "kernel": 3220
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 35,
+    "head": 27.7,
+    "options": 27.7,
+    "kernel": 32.2
+   }
+  },
+  {
+   "fn": "hgPhase",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2800,
+    "head": 2400,
+    "options": 2200,
+    "kernel": 2700
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 28,
+    "head": 24,
+    "options": 22,
+    "kernel": 27
+   }
+  },
+  {
+   "fn": "sampleHG",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 34179,
+    "head": 28240,
+    "options": 25419,
+    "kernel": 28795
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 341.8,
+    "head": 282.4,
+    "options": 254.2,
+    "kernel": 287.9
+   }
+  },
+  {
+   "fn": "fogSeg",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6450,
+    "head": 5250,
+    "options": 5080,
+    "kernel": 6350
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 64.5,
+    "head": 52.5,
+    "options": 50.8,
+    "kernel": 63.5
+   }
+  },
+  {
+   "fn": "shadowTr",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 72585,
+    "head": 62228,
+    "options": 58269,
+    "kernel": 59410
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 725.9,
+    "head": 622.3,
+    "options": 582.7,
+    "kernel": 594.1
+   }
+  },
+  {
+   "fn": "metalAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2099,
+    "head": 1984,
+    "options": 1940,
+    "kernel": 3004
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 21,
+    "head": 19.8,
+    "options": 19.4,
+    "kernel": 30
+   }
+  },
+  {
+   "fn": "hitAlbedo",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 36336,
+    "head": 25700,
+    "options": 21342,
+    "kernel": 55298
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 363.4,
+    "head": 257,
+    "options": 213.4,
+    "kernel": 553
+   }
+  },
+  {
+   "fn": "hitEmission",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35321,
+    "head": 23885,
+    "options": 19527,
+    "kernel": 57480
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 353.2,
+    "head": 238.8,
+    "options": 195.3,
+    "kernel": 574.8
+   }
+  },
+  {
+   "fn": "neeAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 130249,
+    "head": 105539,
+    "options": 98725,
+    "kernel": 108343
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1302.5,
+    "head": 1055.4,
+    "options": 987.3,
+    "kernel": 1083.4
+   }
+  },
+  {
+   "fn": "tracePath",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 662766,
+    "head": 528208,
+    "options": 498398,
+    "kernel": 583995
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6627.7,
+    "head": 5282.1,
+    "options": 4984,
+    "kernel": 5839.9
+   }
+  },
+  {
+   "fn": "traceAOV",
+   "cases": 100,
+   "decided": 99,
+   "agree": {
+    "r0": 99,
+    "head": 99,
+    "options": 99,
+    "kernel": 99
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 1,
+    "head": 1,
+    "options": 1,
+    "kernel": 1
+   },
+   "insns": {
+    "r0": 150289,
+    "head": 123847,
+    "options": 115201,
+    "kernel": 106836
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1518.1,
+    "head": 1251,
+    "options": 1163.6,
+    "kernel": 1079.2
+   }
+  },
+  {
+   "fn": "cameraRay",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 91732,
+    "head": 63122,
+    "options": 58012,
+    "kernel": 78695
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 917.3,
+    "head": 631.2,
+    "options": 580.1,
+    "kernel": 787
+   }
+  },
+  {
+   "fn": "renderPixel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 744169,
+    "head": 589223,
+    "options": 565441,
+    "kernel": 594129
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 7441.7,
+    "head": 5892.2,
+    "options": 5654.4,
+    "kernel": 5941.3
+   }
+  },
+  {
+   "fn": "hash3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 6300,
+    "head": 6400,
+    "options": 4800,
+    "kernel": 6300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 63,
+    "head": 64,
+    "options": 48,
+    "kernel": 63
+   }
+  },
+  {
+   "fn": "hash13",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4800,
+    "head": 4100,
+    "options": 3300,
+    "kernel": 5000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 48,
+    "head": 41,
+    "options": 33,
+    "kernel": 50
+   }
+  },
+  {
+   "fn": "skyTexel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1613,
+    "head": 1019,
+    "options": 1019,
+    "kernel": 1613
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 16.1,
+    "head": 10.2,
+    "options": 10.2,
+    "kernel": 16.1
+   }
+  },
+  {
+   "fn": "skyL",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 113828,
+    "head": 88484,
+    "options": 84580,
+    "kernel": 75232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1138.3,
+    "head": 884.8,
+    "options": 845.8,
+    "kernel": 752.3
+   }
+  },
+  {
+   "fn": "skyBuild",
+   "cases": 100,
+   "decided": 0,
+   "agree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "insns": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "examples": [],
+   "perCase": {
+    "r0": null,
+    "head": null,
+    "options": null,
+    "kernel": null
+   }
+  },
+  {
+   "fn": "evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 30407,
+    "head": 21694,
+    "options": 17356,
+    "kernel": 43808
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 304.1,
+    "head": 216.9,
+    "options": 173.6,
+    "kernel": 438.1
+   }
+  },
+  {
+   "fn": "sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 9681,
+    "head": 9706,
+    "options": 8560,
+    "kernel": 8819
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 96.8,
+    "head": 97.1,
+    "options": 85.6,
+    "kernel": 88.2
+   }
+  },
+  {
+   "fn": "heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4181,
+    "head": 4272,
+    "options": 3862,
+    "kernel": 4629
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 41.8,
+    "head": 42.7,
+    "options": 38.6,
+    "kernel": 46.3
+   }
+  },
+  {
+   "fn": "densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4442,
+    "head": 3630,
+    "options": 3612,
+    "kernel": 4818
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 44.4,
+    "head": 36.3,
+    "options": 36.1,
+    "kernel": 48.2
+   }
+  },
+  {
+   "fn": "customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 31064,
+    "head": 27401,
+    "options": 25700,
+    "kernel": 26986
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 310.6,
+    "head": 274,
+    "options": 257,
+    "kernel": 269.9
+   }
+  },
+  {
+   "fn": "s0_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s0_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s0_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s0_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s0_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 16144,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 161.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s0_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 19186,
+    "head": 13197,
+    "options": 12707,
+    "kernel": 24349
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 191.9,
+    "head": 132,
+    "options": 127.1,
+    "kernel": 243.5
+   }
+  },
+  {
+   "fn": "s0_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s1_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s1_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s1_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s1_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15857,
+    "kernel": 33974
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 158.6,
+    "kernel": 339.7
+   }
+  },
+  {
+   "fn": "s1_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15857,
+    "kernel": 33974
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 158.6,
+    "kernel": 339.7
+   }
+  },
+  {
+   "fn": "s1_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15857,
+    "kernel": 33974
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 158.6,
+    "kernel": 339.7
+   }
+  },
+  {
+   "fn": "s1_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18800,
+    "head": 11300,
+    "options": 10400,
+    "kernel": 23000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188,
+    "head": 113,
+    "options": 104,
+    "kernel": 230
+   }
+  },
+  {
+   "fn": "s1_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 20122,
+    "head": 13885,
+    "options": 13527,
+    "kernel": 25700
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 201.2,
+    "head": 138.8,
+    "options": 135.3,
+    "kernel": 257
+   }
+  },
+  {
+   "fn": "s1_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s2_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s2_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s2_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s2_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s2_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16230,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 162.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s2_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s2_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 19650,
+    "head": 13472,
+    "options": 13136,
+    "kernel": 25318
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 196.5,
+    "head": 134.7,
+    "options": 131.4,
+    "kernel": 253.2
+   }
+  },
+  {
+   "fn": "s2_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s3_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s3_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s3_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s3_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s3_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s3_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s3_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s3_mat_4",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s3_mat_5",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s3_mat_6",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16230,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 162.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s3_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 21418,
+    "head": 14530,
+    "options": 14082,
+    "kernel": 27167
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 214.2,
+    "head": 145.3,
+    "options": 140.8,
+    "kernel": 271.7
+   }
+  },
+  {
+   "fn": "s3_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s4_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s4_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s4_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s4_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15943,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 159.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s4_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15943,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 159.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s4_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15943,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 159.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s4_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15943,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 159.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s4_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 20104,
+    "head": 13737,
+    "options": 13371,
+    "kernel": 25836
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 201,
+    "head": 137.4,
+    "options": 133.7,
+    "kernel": 258.4
+   }
+  },
+  {
+   "fn": "s4_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 304548,
+    "head": 249649,
+    "options": 230708,
+    "kernel": 241359
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 3045.5,
+    "head": 2496.5,
+    "options": 2307.1,
+    "kernel": 2413.6
+   }
+  },
+  {
+   "fn": "s5_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s5_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s5_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s5_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 689618,
+    "head": 558774,
+    "options": 439704,
+    "kernel": 535359
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6896.2,
+    "head": 5587.7,
+    "options": 4397,
+    "kernel": 5353.6
+   }
+  },
+  {
+   "fn": "s5_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 84988,
+    "head": 63526,
+    "options": 59810,
+    "kernel": 71614
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 849.9,
+    "head": 635.3,
+    "options": 598.1,
+    "kernel": 716.1
+   }
+  },
+  {
+   "fn": "s5_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 43902,
+    "head": 30922,
+    "options": 28754,
+    "kernel": 42346
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 439,
+    "head": 309.2,
+    "options": 287.5,
+    "kernel": 423.5
+   }
+  },
+  {
+   "fn": "s5_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 43902,
+    "head": 30922,
+    "options": 28754,
+    "kernel": 42346
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 439,
+    "head": 309.2,
+    "options": 287.5,
+    "kernel": 423.5
+   }
+  },
+  {
+   "fn": "s5_mat_4",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 43902,
+    "head": 30922,
+    "options": 28754,
+    "kernel": 42346
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 439,
+    "head": 309.2,
+    "options": 287.5,
+    "kernel": 423.5
+   }
+  },
+  {
+   "fn": "s5_mat_5",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 32174,
+    "head": 16632,
+    "options": 15016,
+    "kernel": 32766
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 321.7,
+    "head": 166.3,
+    "options": 150.2,
+    "kernel": 327.7
+   }
+  },
+  {
+   "fn": "s5_mat_6",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18800,
+    "head": 11300,
+    "options": 10400,
+    "kernel": 23000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188,
+    "head": 113,
+    "options": 104,
+    "kernel": 230
+   }
+  },
+  {
+   "fn": "s5_mat_7",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s5_mat_8",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s5_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 31180,
+    "head": 23613,
+    "options": 22710,
+    "kernel": 34896
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 311.8,
+    "head": 236.1,
+    "options": 227.1,
+    "kernel": 349
+   }
+  },
+  {
+   "fn": "s5_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s6_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s6_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s6_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s6_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 44081,
+    "head": 23766,
+    "options": 21237,
+    "kernel": 41156
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 440.8,
+    "head": 237.7,
+    "options": 212.4,
+    "kernel": 411.6
+   }
+  },
+  {
+   "fn": "s6_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 43620,
+    "head": 25359,
+    "options": 21802,
+    "kernel": 41790
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 436.2,
+    "head": 253.6,
+    "options": 218,
+    "kernel": 417.9
+   }
+  },
+  {
+   "fn": "s6_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 48634,
+    "head": 27668,
+    "options": 23747,
+    "kernel": 45496
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 486.3,
+    "head": 276.7,
+    "options": 237.5,
+    "kernel": 455
+   }
+  },
+  {
+   "fn": "s6_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 20321,
+    "head": 14325,
+    "options": 14116,
+    "kernel": 41230
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 203.2,
+    "head": 143.3,
+    "options": 141.2,
+    "kernel": 412.3
+   }
+  },
+  {
+   "fn": "s6_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s7_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s7_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s7_dens_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 300,
+    "head": 300,
+    "options": 300,
+    "kernel": 300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 3,
+    "head": 3,
+    "options": 3,
+    "kernel": 3
+   }
+  },
+  {
+   "fn": "s7_dens_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 300,
+    "head": 300,
+    "options": 300,
+    "kernel": 300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 3,
+    "head": 3,
+    "options": 3,
+    "kernel": 3
+   }
+  },
+  {
+   "fn": "s7_dens_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 300,
+    "head": 300,
+    "options": 300,
+    "kernel": 300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 3,
+    "head": 3,
+    "options": 3,
+    "kernel": 3
+   }
+  },
+  {
+   "fn": "s7_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1529,
+    "head": 699,
+    "options": 699,
+    "kernel": 1514
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 15.3,
+    "head": 7,
+    "options": 7,
+    "kernel": 15.1
+   }
+  },
+  {
+   "fn": "s7_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18800,
+    "head": 11300,
+    "options": 10400,
+    "kernel": 23000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188,
+    "head": 113,
+    "options": 104,
+    "kernel": 230
+   }
+  },
+  {
+   "fn": "s7_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16230,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 162.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s7_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15800,
+    "head": 9100,
+    "options": 8500,
+    "kernel": 21400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 158,
+    "head": 91,
+    "options": 85,
+    "kernel": 214
+   }
+  },
+  {
+   "fn": "s7_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15800,
+    "head": 9200,
+    "options": 8600,
+    "kernel": 21400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 158,
+    "head": 92,
+    "options": 86,
+    "kernel": 214
+   }
+  },
+  {
+   "fn": "s7_mat_4",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15800,
+    "head": 9200,
+    "options": 8600,
+    "kernel": 21400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 158,
+    "head": 92,
+    "options": 86,
+    "kernel": 214
+   }
+  },
+  {
+   "fn": "s7_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 19769,
+    "head": 13511,
+    "options": 12256,
+    "kernel": 25252
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 197.7,
+    "head": 135.1,
+    "options": 122.6,
+    "kernel": 252.5
+   }
+  },
+  {
+   "fn": "s7_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s8_sdf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 13200,
+    "head": 11300,
+    "options": 9300,
+    "kernel": 9000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 132,
+    "head": 113,
+    "options": 93,
+    "kernel": 90
+   }
+  },
+  {
+   "fn": "s8_sdf_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 23469,
+    "head": 19604,
+    "options": 19149,
+    "kernel": 18587
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 234.7,
+    "head": 196,
+    "options": 191.5,
+    "kernel": 185.9
+   }
+  },
+  {
+   "fn": "s8_sdf_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 57320,
+    "head": 47026,
+    "options": 42026,
+    "kernel": 41617
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 573.2,
+    "head": 470.3,
+    "options": 420.3,
+    "kernel": 416.2
+   }
+  },
+  {
+   "fn": "s8_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 4461,
+    "head": 5256,
+    "options": 5671,
+    "kernel": 3584
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 44.6,
+    "head": 52.6,
+    "options": 56.7,
+    "kernel": 35.8
+   }
+  },
+  {
+   "fn": "s8_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s8_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s8_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s8_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 31974,
+    "head": 16432,
+    "options": 14916,
+    "kernel": 32566
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 319.7,
+    "head": 164.3,
+    "options": 149.2,
+    "kernel": 325.7
+   }
+  },
+  {
+   "fn": "s8_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15943,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 159.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s8_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16230,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 162.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s8_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 20229,
+    "head": 13926,
+    "options": 13587,
+    "kernel": 25837
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 202.3,
+    "head": 139.3,
+    "options": 135.9,
+    "kernel": 258.4
+   }
+  },
+  {
+   "fn": "s8_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s9_sdf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 55774,
+    "head": 42131,
+    "options": 26060,
+    "kernel": 46360
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 557.7,
+    "head": 421.3,
+    "options": 260.6,
+    "kernel": 463.6
+   }
+  },
+  {
+   "fn": "s9_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1100,
+    "head": 1900,
+    "options": 4500,
+    "kernel": 1500
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 11,
+    "head": 19,
+    "options": 45,
+    "kernel": 15
+   }
+  },
+  {
+   "fn": "s9_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s9_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s9_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 15943,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 159.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s9_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16230,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 162.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s9_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 19188,
+    "head": 13199,
+    "options": 12709,
+    "kernel": 24351
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 191.9,
+    "head": 132,
+    "options": 127.1,
+    "kernel": 243.5
+   }
+  },
+  {
+   "fn": "s9_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s10_sdf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2400,
+    "head": 2400,
+    "options": 2300,
+    "kernel": 2800
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 24,
+    "head": 24,
+    "options": 23,
+    "kernel": 28
+   }
+  },
+  {
+   "fn": "s10_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1100,
+    "head": 500,
+    "options": 500,
+    "kernel": 1500
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 11,
+    "head": 5,
+    "options": 5,
+    "kernel": 15
+   }
+  },
+  {
+   "fn": "s10_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s10_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s10_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 32200,
+    "head": 15700,
+    "options": 13400,
+    "kernel": 29600
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 322,
+    "head": 157,
+    "options": 134,
+    "kernel": 296
+   }
+  },
+  {
+   "fn": "s10_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16230,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 162.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s10_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35204,
+    "head": 18015,
+    "options": 16144,
+    "kernel": 34146
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352,
+    "head": 180.2,
+    "options": 161.4,
+    "kernel": 341.5
+   }
+  },
+  {
+   "fn": "s10_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18800,
+    "head": 11300,
+    "options": 10400,
+    "kernel": 23000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188,
+    "head": 113,
+    "options": 104,
+    "kernel": 230
+   }
+  },
+  {
+   "fn": "s10_mat_4",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18800,
+    "head": 11300,
+    "options": 10400,
+    "kernel": 23000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188,
+    "head": 113,
+    "options": 104,
+    "kernel": 230
+   }
+  },
+  {
+   "fn": "s10_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 20378,
+    "head": 14283,
+    "options": 13618,
+    "kernel": 25505
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 203.8,
+    "head": 142.8,
+    "options": 136.2,
+    "kernel": 255.1
+   }
+  },
+  {
+   "fn": "s10_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s11_sdf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 2400,
+    "head": 2400,
+    "options": 2300,
+    "kernel": 2800
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 24,
+    "head": 24,
+    "options": 23,
+    "kernel": 28
+   }
+  },
+  {
+   "fn": "s11_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1100,
+    "head": 500,
+    "options": 500,
+    "kernel": 1500
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 11,
+    "head": 5,
+    "options": 5,
+    "kernel": 15
+   }
+  },
+  {
+   "fn": "s11_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s11_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s11_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 32174,
+    "head": 16632,
+    "options": 15016,
+    "kernel": 32766
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 321.7,
+    "head": 166.3,
+    "options": 150.2,
+    "kernel": 327.7
+   }
+  },
+  {
+   "fn": "s11_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 32200,
+    "head": 15700,
+    "options": 13400,
+    "kernel": 29600
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 322,
+    "head": 157,
+    "options": 134,
+    "kernel": 296
+   }
+  },
+  {
+   "fn": "s11_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 84986,
+    "head": 63524,
+    "options": 59808,
+    "kernel": 71612
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 849.9,
+    "head": 635.2,
+    "options": 598.1,
+    "kernel": 716.1
+   }
+  },
+  {
+   "fn": "s11_mat_3",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 32174,
+    "head": 16632,
+    "options": 15016,
+    "kernel": 32766
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 321.7,
+    "head": 166.3,
+    "options": 150.2,
+    "kernel": 327.7
+   }
+  },
+  {
+   "fn": "s11_mat_4",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 28415,
+    "head": 13672,
+    "options": 11772,
+    "kernel": 28901
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 284.1,
+    "head": 136.7,
+    "options": 117.7,
+    "kernel": 289
+   }
+  },
+  {
+   "fn": "s11_mat_5",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18800,
+    "head": 11300,
+    "options": 10400,
+    "kernel": 23000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188,
+    "head": 113,
+    "options": 104,
+    "kernel": 230
+   }
+  },
+  {
+   "fn": "s11_mat_6",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 18800,
+    "head": 11300,
+    "options": 10400,
+    "kernel": 23000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 188,
+    "head": 113,
+    "options": 104,
+    "kernel": 230
+   }
+  },
+  {
+   "fn": "s11_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 21031,
+    "head": 14974,
+    "options": 15098,
+    "kernel": 26728
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 210.3,
+    "head": 149.7,
+    "options": 151,
+    "kernel": 267.3
+   }
+  },
+  {
+   "fn": "s11_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s12_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s12_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s12_dens_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 629850,
+    "head": 514690,
+    "options": 397450,
+    "kernel": 481810
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6298.5,
+    "head": 5146.9,
+    "options": 3974.5,
+    "kernel": 4818.1
+   }
+  },
+  {
+   "fn": "s12_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 900,
+    "head": 1100,
+    "options": 2000,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 9,
+    "head": 11,
+    "options": 20,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s12_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16230,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 162.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s12_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15800,
+    "head": 9100,
+    "options": 8500,
+    "kernel": 21400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 158,
+    "head": 91,
+    "options": 85,
+    "kernel": 214
+   }
+  },
+  {
+   "fn": "s12_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 17903,
+    "head": 12556,
+    "options": 11722,
+    "kernel": 23970
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 179,
+    "head": 125.6,
+    "options": 117.2,
+    "kernel": 239.7
+   }
+  },
+  {
+   "fn": "s12_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s13_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s13_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s13_dens_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 630110,
+    "head": 517180,
+    "options": 400520,
+    "kernel": 484440
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6301.1,
+    "head": 5171.8,
+    "options": 4005.2,
+    "kernel": 4844.4
+   }
+  },
+  {
+   "fn": "s13_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 900,
+    "head": 1100,
+    "options": 1100,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 9,
+    "head": 11,
+    "options": 11,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s13_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s13_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15800,
+    "head": 9100,
+    "options": 8500,
+    "kernel": 21400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 158,
+    "head": 91,
+    "options": 85,
+    "kernel": 214
+   }
+  },
+  {
+   "fn": "s13_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 17903,
+    "head": 12556,
+    "options": 11722,
+    "kernel": 23970
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 179,
+    "head": 125.6,
+    "options": 117.2,
+    "kernel": 239.7
+   }
+  },
+  {
+   "fn": "s13_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s14_sdf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 496780,
+    "head": 407512,
+    "options": 315940,
+    "kernel": 380948
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4967.8,
+    "head": 4075.1,
+    "options": 3159.4,
+    "kernel": 3809.5
+   }
+  },
+  {
+   "fn": "s14_sdf_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 496780,
+    "head": 407512,
+    "options": 315940,
+    "kernel": 380948
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4967.8,
+    "head": 4075.1,
+    "options": 3159.4,
+    "kernel": 3809.5
+   }
+  },
+  {
+   "fn": "s14_sdf_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 496680,
+    "head": 407412,
+    "options": 315840,
+    "kernel": 380848
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4966.8,
+    "head": 4074.1,
+    "options": 3158.4,
+    "kernel": 3808.5
+   }
+  },
+  {
+   "fn": "s14_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 27451,
+    "head": 23535,
+    "options": 19819,
+    "kernel": 21111
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 274.5,
+    "head": 235.3,
+    "options": 198.2,
+    "kernel": 211.1
+   }
+  },
+  {
+   "fn": "s14_hf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 26408,
+    "head": 20999,
+    "options": 17665,
+    "kernel": 21495
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 264.1,
+    "head": 210,
+    "options": 176.7,
+    "kernel": 214.9
+   }
+  },
+  {
+   "fn": "s14_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1162,
+    "head": 1720,
+    "options": 1813,
+    "kernel": 1831
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 11.6,
+    "head": 17.2,
+    "options": 18.1,
+    "kernel": 18.3
+   }
+  },
+  {
+   "fn": "s14_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s14_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35290,
+    "head": 18101,
+    "options": 16029,
+    "kernel": 34232
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 352.9,
+    "head": 181,
+    "options": 160.3,
+    "kernel": 342.3
+   }
+  },
+  {
+   "fn": "s14_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 661130,
+    "head": 532389,
+    "options": 415749,
+    "kernel": 515245
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6611.3,
+    "head": 5323.9,
+    "options": 4157.5,
+    "kernel": 5152.4
+   }
+  },
+  {
+   "fn": "s14_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 38319,
+    "head": 28973,
+    "options": 25315,
+    "kernel": 54771
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 383.2,
+    "head": 289.7,
+    "options": 253.2,
+    "kernel": 547.7
+   }
+  },
+  {
+   "fn": "s14_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s15_sdf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 749852,
+    "head": 610848,
+    "options": 471836,
+    "kernel": 569548
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 7498.5,
+    "head": 6108.5,
+    "options": 4718.4,
+    "kernel": 5695.5
+   }
+  },
+  {
+   "fn": "s15_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 1100,
+    "head": 1300,
+    "options": 1600,
+    "kernel": 1500
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 11,
+    "head": 13,
+    "options": 16,
+    "kernel": 15
+   }
+  },
+  {
+   "fn": "s15_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 10
+   }
+  },
+  {
+   "fn": "s15_dens_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 23779,
+    "head": 19277,
+    "options": 18782,
+    "kernel": 17072
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 237.8,
+    "head": 192.8,
+    "options": 187.8,
+    "kernel": 170.7
+   }
+  },
+  {
+   "fn": "s15_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 900,
+    "head": 1100,
+    "options": 1100,
+    "kernel": 1400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 9,
+    "head": 11,
+    "options": 11,
+    "kernel": 14
+   }
+  },
+  {
+   "fn": "s15_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 48940,
+    "head": 30293,
+    "options": 26454,
+    "kernel": 47630
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 489.4,
+    "head": 302.9,
+    "options": 264.5,
+    "kernel": 476.3
+   }
+  },
+  {
+   "fn": "s15_mat_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 35390,
+    "head": 18244,
+    "options": 16129,
+    "kernel": 34332
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 353.9,
+    "head": 182.4,
+    "options": 161.3,
+    "kernel": 343.3
+   }
+  },
+  {
+   "fn": "s15_mat_2",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 15800,
+    "head": 9100,
+    "options": 8500,
+    "kernel": 21400
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 158,
+    "head": 91,
+    "options": 85,
+    "kernel": 214
+   }
+  },
+  {
+   "fn": "s15_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 19563,
+    "head": 13707,
+    "options": 13808,
+    "kernel": 40701
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 195.6,
+    "head": 137.1,
+    "options": 138.1,
+    "kernel": 407
+   }
+  },
+  {
+   "fn": "s15_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s16_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s16_hf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 409020,
+    "head": 332837,
+    "options": 263500,
+    "kernel": 315269
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4090.2,
+    "head": 3328.4,
+    "options": 2635,
+    "kernel": 3152.7
+   }
+  },
+  {
+   "fn": "s16_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 5013,
+    "head": 4448,
+    "options": 3764,
+    "kernel": 4382
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 50.1,
+    "head": 44.5,
+    "options": 37.6,
+    "kernel": 43.8
+   }
+  },
+  {
+   "fn": "s16_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s16_bumpH_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 131048,
+    "head": 107301,
+    "options": 84186,
+    "kernel": 99301
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 1310.5,
+    "head": 1073,
+    "options": 841.9,
+    "kernel": 993
+   }
+  },
+  {
+   "fn": "s16_bumpN_1",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 801500,
+    "head": 654416,
+    "options": 509594,
+    "kernel": 612726
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 8015,
+    "head": 6544.2,
+    "options": 5095.9,
+    "kernel": 6127.3
+   }
+  },
+  {
+   "fn": "s16_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 977356,
+    "head": 788489,
+    "options": 623281,
+    "kernel": 753571
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 9773.6,
+    "head": 7884.9,
+    "options": 6232.8,
+    "kernel": 7535.7
+   }
+  },
+  {
+   "fn": "s16_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 26606,
+    "head": 20297,
+    "options": 20749,
+    "kernel": 31734
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 266.1,
+    "head": 203,
+    "options": 207.5,
+    "kernel": 317.3
+   }
+  },
+  {
+   "fn": "s16_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "s17_sdUser",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 400,
+    "head": 400,
+    "options": 400,
+    "kernel": 1300
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 4,
+    "head": 4,
+    "options": 4,
+    "kernel": 13
+   }
+  },
+  {
+   "fn": "s17_hf_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 645796,
+    "head": 524445,
+    "options": 408882,
+    "kernel": 490793
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6458,
+    "head": 5244.4,
+    "options": 4088.8,
+    "kernel": 4907.9
+   }
+  },
+  {
+   "fn": "s17_heightAt",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 7391,
+    "head": 6168,
+    "options": 5021,
+    "kernel": 6134
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 73.9,
+    "head": 61.7,
+    "options": 50.2,
+    "kernel": 61.3
+   }
+  },
+  {
+   "fn": "s17_densityOf",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 200,
+    "head": 200,
+    "options": 200,
+    "kernel": 1100
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2,
+    "head": 2,
+    "options": 2,
+    "kernel": 11
+   }
+  },
+  {
+   "fn": "s17_mat_0",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 52260,
+    "head": 31210,
+    "options": 27556,
+    "kernel": 49720
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 522.6,
+    "head": 312.1,
+    "options": 275.6,
+    "kernel": 497.2
+   }
+  },
+  {
+   "fn": "s17_evalMaterial",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 17303,
+    "head": 12892,
+    "options": 12744,
+    "kernel": 24662
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 173,
+    "head": 128.9,
+    "options": 127.4,
+    "kernel": 246.6
+   }
+  },
+  {
+   "fn": "s17_customKernel",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 600,
+    "head": 600,
+    "options": 500,
+    "kernel": 2000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 6,
+    "head": 6,
+    "options": 5,
+    "kernel": 20
+   }
+  },
+  {
+   "fn": "cdlLayout",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 8900,
+    "head": 7600,
+    "options": 7400,
+    "kernel": 7800
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 89,
+    "head": 76,
+    "options": 74,
+    "kernel": 78
+   }
+  },
+  {
+   "fn": "cdlInit",
+   "cases": 100,
+   "decided": 100,
+   "agree": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "insns": {
+    "r0": 279400,
+    "head": 202700,
+    "options": 193900,
+    "kernel": 280000
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 2794,
+    "head": 2027,
+    "options": 1939,
+    "kernel": 2800
+   }
+  },
+  {
+   "fn": "cdlSky",
+   "cases": 100,
+   "decided": 0,
+   "agree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 100,
+    "head": 100,
+    "options": 100,
+    "kernel": 100
+   },
+   "insns": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "examples": [],
+   "perCase": {
+    "r0": null,
+    "head": null,
+    "options": null,
+    "kernel": null
+   }
+  },
+  {
+   "fn": "cdlRenderSpan",
+   "cases": 100,
+   "decided": 91,
+   "agree": {
+    "r0": 91,
+    "head": 92,
+    "options": 92,
+    "kernel": 91
+   },
+   "disagree": {
+    "r0": 0,
+    "head": 0,
+    "options": 0,
+    "kernel": 0
+   },
+   "inconclusive": {
+    "r0": 9,
+    "head": 8,
+    "options": 8,
+    "kernel": 9
+   },
+   "insns": {
+    "r0": 7022385,
+    "head": 5504264,
+    "options": 5304574,
+    "kernel": 5646243
+   },
+   "examples": [],
+   "perCase": {
+    "r0": 77169.1,
+    "head": 60486.4,
+    "options": 58292,
+    "kernel": 62046.6
+   }
+  }
+ ]
+}
