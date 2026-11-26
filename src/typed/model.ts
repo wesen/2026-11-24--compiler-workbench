@@ -17,6 +17,8 @@
  * the prototype's in-memory shapes (a function's `blocks` are block records), and `toNative` writes it back.
  */
 
+import { isCanonical } from '../framework/core/data.js';
+
 export type StmtOp = 'set' | 'store' | 'eval' | 'br' | 'br_if' | 'return' | 'trap' | 'zero';
 /**
  * Value operators. The i32 operators are Compiler Workbench's. The f32 operators have their own names, so a rule
@@ -216,7 +218,51 @@ export interface WorkFn extends FnRec {
   blocks: BlockRec[];
 }
 
-const clone = <T>(x: T): T => structuredClone(x);
+/**
+ * IRWB-004: a deep copy of JSON-shaped data (plain records, arrays, primitives, as every record here is). It gives
+ * what `structuredClone` gave for such data, at a fraction of its per-call cost on small records.
+ */
+export function copyJson<T>(x: T): T {
+  if (x === null || typeof x !== 'object') return x;
+  if (Array.isArray(x)) {
+    const n = x.length,
+      out = new Array(n);
+    for (let i = 0; i < n; i++) out[i] = copyJson(x[i]);
+    return out as T;
+  }
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(x)) {
+    const v = copyJson((x as Record<string, unknown>)[k]);
+    if (k === '__proto__') Object.defineProperty(out, k, { value: v, enumerable: true, writable: true, configurable: true });
+    else out[k] = v;
+  }
+  return out as T;
+}
+
+/**
+ * IRWB-004: whether two JSON-shaped values have the same canonical text: the same own keys, equal primitives (0 and
+ * -0 are equal, as `canonical` writes both as 0), and equal arrays and records, recursively. A property set to
+ * `undefined` is a key the other value must also have, so a record carrying one never equals a frozen record.
+ */
+export function sameJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a)) {
+    if (!Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!sameJson(a[i], b[i])) return false;
+    return true;
+  }
+  if (Array.isArray(b)) return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  for (const k of ka) {
+    if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+    if (!sameJson((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])) return false;
+  }
+  return true;
+}
+
+const clone = copyJson;
 
 /** The mutable working copy a pass, the lifter or the backend operates on. */
 export class Store {
@@ -224,6 +270,12 @@ export class Store {
   readonly counters = new Map<string, number>();
   readonly fns = new Map<string, WorkFn>();
   rev = 0;
+  /**
+   * IRWB-004: the frozen value this store was made from (when it is frozen). `toNative` gives back its records, not
+   * copies, wherever the working record still equals the original, so a pass's output shares every record it did
+   * not change with its input, and caches keyed on those frozen records keep working.
+   */
+  base?: TypedBlocks;
   constructor(
     readonly program: string,
     public frontEnd: FrontEndInfo = { wasmBytes: 0, records: null, enums: null, signatures: null },
@@ -253,6 +305,7 @@ export class Store {
   /** A working copy of a native revision; records are cloned, so the artifact stays immutable. */
   static from(native: TypedBlocks): Store {
     const st = new Store(native.program, clone(native.frontEnd));
+    if (isCanonical(native)) st.base = native; // deep-frozen by `immutable`: its records can be shared safely
     st.rev = native.rev;
     for (const [k, v] of Object.entries(native.counters)) st.counters.set(k, v);
     for (const o of Object.values(native.ops)) st.add(clone(o));
@@ -263,6 +316,29 @@ export class Store {
       const { blocks, ...rest } = clone(native.fns[name]);
       const work: WorkFn = { ...(rest as FnRec), blocks: blocks.map(id => st.get(id) as BlockRec) };
       st.add(work);
+      st.fns.set(name, work);
+    }
+    return st;
+  }
+
+  /**
+   * IRWB-004: a read-only store over a frozen native value, without copying its records: `get` returns the frozen
+   * records themselves (assigning to one throws), and each function is a new object whose `blocks` are the block
+   * records. For the evaluator, printing and queries, which never write.
+   */
+  static view(native: TypedBlocks): Store {
+    const st = new Store(native.program, native.frontEnd);
+    st.rev = native.rev;
+    st.base = isCanonical(native) ? native : undefined;
+    for (const [k, v] of Object.entries(native.counters)) st.counters.set(k, v);
+    for (const o of Object.values(native.ops)) st.ents.set(o.id, o);
+    for (const v of Object.values(native.values)) st.ents.set(v.id, v);
+    for (const s of Object.values(native.stmts)) st.ents.set(s.id, s);
+    for (const b of Object.values(native.blocks)) st.ents.set(b.id, b);
+    for (const name of native.fnOrder) {
+      const { blocks, ...rest } = native.fns[name];
+      const work: WorkFn = { ...(rest as FnRec), blocks: blocks.map(id => st.get(id) as BlockRec) };
+      st.ents.set(work.id, work);
       st.fns.set(name, work);
     }
     return st;
@@ -292,9 +368,18 @@ export class Store {
     return out;
   }
 
-  /** The native value of the current state: only live entities, ids sorted for a canonical encoding. */
+  /**
+   * The native value of the current state: only live entities, ids sorted for a canonical encoding. IRWB-004: a
+   * record equal to the base's record of the same id is the base's frozen record itself; every other record is a copy.
+   */
   toNative(): TypedBlocks {
     const live = this.liveIds();
+    const base = this.base;
+    // the base's record when it equals the working one, else a copy (`sameJson` is equality of canonical text)
+    const keep = <T>(table: Readonly<Record<string, T>> | undefined, id: string, w: T): T => {
+      const b = table && Object.prototype.hasOwnProperty.call(table, id) ? table[id] : undefined;
+      return b !== undefined && sameJson(w, b) ? b : clone(w);
+    };
     const fns: Record<string, FnRec & { blocks: string[] }> = {};
     const blocks: Record<string, BlockRec> = {},
       stmts: Record<string, StmtRec> = {},
@@ -303,28 +388,33 @@ export class Store {
     const sorted = <T>(m: Map<string, T>) => [...m].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
     for (const [name, f] of [...this.fns].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
       const { blocks: bs, ...rest } = f;
-      fns[name] = { ...clone(rest), blocks: bs.map(b => b.id) };
+      fns[name] = keep(
+        base?.fns as Readonly<Record<string, FnRec & { blocks: string[] }>> | undefined,
+        name,
+        { ...rest, blocks: bs.map(b => b.id) } as FnRec & { blocks: string[] },
+      );
     }
     for (const [id, e] of sorted(this.ents)) {
-      if (e.kind === 'op') ops[id] = clone(e);
+      if (e.kind === 'op') ops[id] = keep(base?.ops, id, e);
       else if (!live.has(id)) continue;
-      else if (e.kind === 'block') blocks[id] = clone(e);
-      else if (e.kind === 'stmt') stmts[id] = clone(e);
-      else if (e.kind === 'value') values[id] = clone(e);
+      else if (e.kind === 'block') blocks[id] = keep(base?.blocks, id, e);
+      else if (e.kind === 'stmt') stmts[id] = keep(base?.stmts, id, e);
+      else if (e.kind === 'value') values[id] = keep(base?.values, id, e);
     }
     const counters = Object.fromEntries([...this.counters].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+    const fnOrder = [...this.fns.keys()];
     return {
       formatVersion: 1,
       program: this.program,
       rev: this.rev,
-      counters,
-      fnOrder: [...this.fns.keys()],
+      counters: base && sameJson(counters, base.counters) ? base.counters : counters,
+      fnOrder: base && sameJson(fnOrder, base.fnOrder) ? base.fnOrder : fnOrder,
       fns,
       blocks,
       stmts,
       values,
       ops,
-      frontEnd: clone(this.frontEnd),
+      frontEnd: base && sameJson(this.frontEnd, base.frontEnd) ? base.frontEnd : clone(this.frontEnd),
     };
   }
 }

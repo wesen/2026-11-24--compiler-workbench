@@ -227,8 +227,9 @@ export async function applyPass<S, N extends Needs, P>(
     correspondence = makeCorrespondence(
       { artifact: before.id, revision: before.revision },
       { artifact: after.id, revision: after.revision },
-      view.entities().map(r => r.entity),
-      afterView.entities().map(r => r.entity),
+      // the projections' entity ids, in order (what `view.entities()` names, without a reference per entity)
+      view.graph().entities.map(e => e.id),
+      afterView.graph().entities.map(e => e.id),
       produced.correspondence ?? [],
     );
     edits = produced.edits ?? changes.entities.length;

@@ -15,6 +15,54 @@ const CANONICAL = new WeakSet<object>();
 const TEXT = new WeakMap<object, string>();
 const RECORD_MIN = 64;
 
+/**
+ * The keys of a canonical record in sorted order. `immutable` inserted them sorted, so `Object.keys` returns them in
+ * that order unless the record has integer-like keys (which every object enumerates first, numerically).
+ */
+function sortedKeys(v: object): string[] {
+  const keys = Object.keys(v);
+  for (let i = 1; i < keys.length; i++) if (keys[i - 1] > keys[i]) return keys.sort();
+  return keys;
+}
+/**
+ * The canonical text of a canonical value (one `immutable` built). Its subtree is canonical, frozen, acyclic and made
+ * of own data properties, so none of the checks of the general encoder can fail; this gives the same text faster.
+ */
+function encodeCanonical(v: object): string {
+  const cached = TEXT.get(v);
+  if (cached !== undefined) return cached;
+  let result: string;
+  if (Array.isArray(v)) {
+    let s = '[';
+    for (let i = 0; i < v.length; i++) {
+      if (i) s += ',';
+      const x = v[i];
+      s += x !== null && typeof x === 'object' ? encodeCanonical(x) : encodePrimitive(x);
+    }
+    result = s + ']';
+  } else {
+    let s = '{';
+    const keys = sortedKeys(v);
+    for (let i = 0; i < keys.length; i++) {
+      if (i) s += ',';
+      const x = (v as Record<string, unknown>)[keys[i]];
+      s += JSON.stringify(keys[i]) + ':' + (x !== null && typeof x === 'object' ? encodeCanonical(x) : encodePrimitive(x));
+    }
+    result = s + '}';
+  }
+  if (result.length >= RECORD_MIN) TEXT.set(v, result);
+  return result;
+}
+function encodePrimitive(v: unknown): string {
+  if (v === null) return 'null';
+  if (typeof v === 'string' || typeof v === 'boolean') return JSON.stringify(v);
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) throw new Error('IR data must contain only finite numbers');
+    return Object.is(v, -0) ? '0' : String(v);
+  }
+  throw new Error(`IR data cannot contain ${typeof v}`);
+}
+
 /** Canonical finite JSON. Rejects values that would make persistent keys ambiguous. */
 export function canonical(value: unknown): string {
   const ancestors = new Set<object>();
@@ -26,6 +74,7 @@ export function canonical(value: unknown): string {
       return Object.is(v, -0) ? '0' : String(v);
     }
     if (typeof v !== 'object') throw new Error(`IR data cannot contain ${typeof v}`);
+    if (CANONICAL.has(v)) return encodeCanonical(v); // IRWB-004: the same text, without re-checking a canonical value
     const cached = TEXT.get(v);
     if (cached !== undefined) return cached;
     if (ancestors.has(v)) throw new Error('IR data cannot contain cycles');
@@ -104,7 +153,7 @@ export function immutable<T>(value: T): T {
       if (Object.getOwnPropertySymbols(v).length) throw new Error('IR arrays cannot contain symbol keys');
       const items: unknown[] = new Array(v.length);
       for (let i = 0; i < v.length; i++) {
-        const descriptor = Object.getOwnPropertyDescriptor(v, String(i));
+        const descriptor = Object.getOwnPropertyDescriptor(v, i);
         if (!descriptor || !('value' in descriptor))
           throw new Error('IR arrays require own data elements without holes or accessors');
         items[i] = build(descriptor.value);
@@ -112,18 +161,17 @@ export function immutable<T>(value: T): T {
       out = items;
     } else {
       if (Object.getOwnPropertySymbols(v).length) throw new Error('IR data cannot contain symbol keys');
-      // JSON.parse gives a plain object with own data properties in text order (here: sorted); defineProperty
-      // keeps a "__proto__" key an own property, as JSON.parse does
+      // JSON.parse gives a plain object with own data properties in text order (here: sorted). Assignment creates
+      // exactly such a property on a fresh plain object (IRWB-004: much faster than defineProperty), except for a
+      // "__proto__" key, which would set the prototype; defineProperty keeps it an own property, as JSON.parse does
       const record: Record<string, unknown> = {};
       for (const k of Object.keys(v).sort()) {
         const descriptor = Object.getOwnPropertyDescriptor(v, k)!;
         if (!('value' in descriptor)) throw new Error('IR data cannot contain accessors');
-        Object.defineProperty(record, k, {
-          value: build(descriptor.value),
-          enumerable: true,
-          writable: true,
-          configurable: true,
-        });
+        const x = build(descriptor.value);
+        if (k === '__proto__')
+          Object.defineProperty(record, k, { value: x, enumerable: true, writable: true, configurable: true });
+        else record[k] = x;
       }
       out = record;
     }
