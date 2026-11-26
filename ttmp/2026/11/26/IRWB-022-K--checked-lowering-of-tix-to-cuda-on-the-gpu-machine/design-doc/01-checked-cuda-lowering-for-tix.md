@@ -1,7 +1,7 @@
 ---
 Title: Checked CUDA lowering for Tix
 Ticket: IRWB-022-K
-Status: review
+Status: complete
 Topics:
     - compiler
     - ir
@@ -30,6 +30,8 @@ WhenToUse: ""
 # Checked CUDA lowering for Tix
 
 Emit CUDA C directly from the selected function in `program.current`. Check the emitted translation unit by running it on the GB10 and comparing its returned tensor with the original Tix function evaluated in f64. The check is sampled. CUDA's single-precision transcendental functions can disagree with the stage-1 f32 evaluator by a bit even on small, finite inputs.
+
+**As built in c7824d4 and 6f94de2.** The sole framework source change is the batch-only specification in `src/framework/contracts/differential.ts`. A union parameter implements the planned async overload, with runtime guards for synchronous and worker-side evaluation. The runner uses a UUID-named private job and a per-key compile lock. Concurrent cold checks, a genuine split and a compiled dropped-tail mutant exercised these paths on the GB10. [Implementation and measurement report](../reference/02-cuda-lowering-results-and-framework-findings.md)
 
 ## Why this relation
 

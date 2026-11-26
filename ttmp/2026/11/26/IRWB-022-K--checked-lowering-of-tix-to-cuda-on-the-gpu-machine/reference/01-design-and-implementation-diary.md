@@ -1,7 +1,7 @@
 ---
 Title: Design and implementation diary
 Ticket: IRWB-022-K
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -215,3 +215,11 @@ Now do the following in this session:
 Review the actual postcondition in src/tensor/cuda-contract.ts alongside the dropped-tail test in tests/tensor/cuda-gpu.test.mjs. The comparator reports numerical failures. A tool or identity failure rejects the promise before the framework can cache the batch.
 
 The standalone runner probe forced two simultaneous compilations to contend for a fresh full-input key. For key a3ab8cb9c23a302a exactly one run compiled, the other reused the binary, and a third invocation also hit the cache. All three returned the original GB10 probe fingerprint. The checker records its target profile and translation digest with the evidence.
+
+## Step 5. Measure all six programs and close the ticket
+
+At implementation revision 6f94de2, the build and the final 29 tensor tests completed successfully. The final emitter passes only referenced tensor pointers and shape scalars to each kernel. The same final build produced a four-case timed batch for each original corpus program. The benchmark driver reports one warm-up and three subsequent CUDA event intervals. Each requested local interpreter call also finished. Across the six measured workloads the GB10 medians ranged from 0.1700 to 0.9924 ms. Interpreter calls on the shared host ranged from 15.317 to 812.828 seconds.
+
+The additional Typed differential consumers in evaluate-analyses, tape, specialize, f32, bytecode-vm and candela passed 22 tests. The suite skipped its opt-in Candela O2 workload. Combined with the previous Typed run, 59 passed and one skipped. Importing the built tensor entry point returned exactly checkLowering, compileTix, cudaSource, optimizeTix, runTix and runTixCuda.
+
+Reproduce the measurements from the repository root with the ticket's scripts/04-benchmark.mjs, passing cpu or gpu. Both modes construct the same seed-20 inputs. The CPU mode uses the stage-1 interpreter and can take many minutes. The raw results preserve all six shapes and all 18 measured GPU intervals. [Results, commands and framework findings](02-cuda-lowering-results-and-framework-findings.md)

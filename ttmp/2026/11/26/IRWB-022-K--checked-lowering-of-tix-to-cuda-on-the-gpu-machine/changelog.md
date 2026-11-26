@@ -7,3 +7,11 @@
 ## 2026-11-26
 
 Design checkpoint. The GB10 intrinsic probe falsified f32 word equality and measured the f64 tolerance. The design proposes a batch-only async contract type and isolated runner work directories.
+
+## 2026-11-26
+
+Applied the review in 7b3dc67, implemented direct CUDA emission and private runner jobs in c7824d4, and integrated and tested batch-only GPU postconditions in 6f94de2.
+
+## 2026-11-26
+
+Ticket closed
