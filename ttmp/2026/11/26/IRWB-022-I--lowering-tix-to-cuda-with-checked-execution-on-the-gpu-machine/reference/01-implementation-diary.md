@@ -164,3 +164,23 @@ The review in this session asks for the design revision and commit, followed by 
 - An inline Node probe used `differential` and `AnalysisManager.checkInvariant` with three cases and two subject keys. Four checks generated cases once and delegated two batches of three. Both true and false verdicts replayed. The Node little-endian unsigned 64-bit read/write round trip also passed.
 - The CUDA launch timing probe ran through `tools/cuda-remote.mjs <probe-dir> --timed`. GB10 event intervals were 0.060768 ms for a cold launch, 0.003584 ms for its repeat, and 0.003360 ms for the first launch of a second kernel after `cudaFuncGetAttributes`. Generated code will preload each launched kernel before the event interval.
 - The revised design uses the differential memo's existing lifetime and accepts duplicate concurrent cold checks. The remote per-invocation directory and compile lock handle those concurrent requests.
+
+## Step 3. Implement the CUDA backend and remote runner
+
+The emitter now turns the selected current Tix function into a standalone translation unit. Its expression walk generates one guarded row-major kernel per definition, evaluates affine indexing separately from f32 operations, and preserves both ordinary and split reduction folds. Generated code preloads each nonempty launch's kernel before recording CUDA events. The TypeScript wrapper uses a versioned batch file and a new local working directory for each call.
+
+### Implementation and framework findings
+
+- `src/tensor/cuda-source.ts` emits CUDA helpers, kernels, and the batch host program. `cuda-runtime.ts` encodes and decodes requests and invokes the remote tool asynchronously. `cuda-contract.ts` defines the heterogeneous pass and delegates via the existing differential invariant.
+- `src/tensor/contract.ts` shares the Stage 1 sampling recipe with the new check. CUDA includes empty shape assignments and keeps nonfinite f64 observations for classification. The Stage 1 optimizer's original recipe is unchanged.
+- `tools/cuda-remote.mjs` now accepts repeatable runtime-only files, uploads each job to a unique remote directory, and installs and links cached binaries under a compile lock. It propagates copy and fetch errors. The GPU lock is still specific to timed runs. No framework file changed.
+
+### Validation in progress
+
+The first standalone API smoke command raced the TypeScript build and imported the prior `dist` output. Node reported that `checkLowering` was missing. The build then completed, the export was present, and the focused test run started from the rebuilt output. The arithmetic replay also ran successfully through the revised remote tool.
+
+### Validation results
+
+- `npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed all 29 tests, including ten GB10 tests. All six corpus functions passed before and after their Stage 1 pass sequence. The same contract rejected the CUDA transposed-index and truncated-tail candidates.
+- The remote runner test issued simultaneous jobs with different runtime bytes and one build key. Exactly one compiled, both got their own responses, and a header change produced a new build key and output.
+- A final packet-allocation adjustment sizes f32 payloads from the number of four-byte words actually written. The subsequent build and the four network-free tensor test files passed all 19 tests. Full-size CPU and GPU runs use the same input recipe and run separately.

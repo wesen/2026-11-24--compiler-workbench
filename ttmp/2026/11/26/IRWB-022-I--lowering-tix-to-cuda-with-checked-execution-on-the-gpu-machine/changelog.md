@@ -16,3 +16,7 @@ Proposed direct CUDA emission and an async cross-kind contract using batched f64
 ## 2026-11-26
 
 Revised the design after review to use framework differential batching and evidence reuse, preload kernels before public timing, and keep runner changes focused on build reuse and per-request isolation.
+
+## 2026-11-26
+
+Implemented the checked CUDA backend and isolated remote binary reuse. Focused tensor tests verified original and optimized corpus programs, mutation rejection, and remote compile concurrency.

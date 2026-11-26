@@ -6,7 +6,8 @@ import {
   type CheckResult,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
-import { evaluate, OutsideSample, size, type Inputs, type BufferValue } from './evaluate.js';
+import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
+import type { CudaInputs } from './cuda-runtime.js';
 import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
@@ -15,27 +16,38 @@ interface Sample {
   fn: string;
   shapeValues: number[];
   stream: string;
-  inputs: Inputs;
+  inputs: CudaInputs;
   reference: BufferValue;
 }
-const seed = 20,
-  half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
-function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
+export const seed = 20;
+const half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
+function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, cuda = false): Sample[] {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
   ].sort();
   const seen = new Set<string>(),
     out: Sample[] = [];
-  for (const n of [1, 3, 4, 7, 'mixed'] as const) {
-    const shapeValues = symbols.map((_, i) => (n === 'mixed' ? [3, 5, 7][i % 3] : n));
+  const assignments = [1, 3, 4, 7, 'mixed'].map(n =>
+    symbols.map((_, i) => (typeof n === 'number' ? n : [3, 5, 7][i % 3])),
+  );
+  if (cuda) {
+    assignments.push(symbols.map(() => 0));
+    for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
+  }
+  for (const shapeValues of assignments) {
     const key = JSON.stringify(shapeValues);
     if (seen.has(key)) continue;
     seen.add(key);
     const dims = new Map(symbols.map((s, i) => [s, shapeValues[i]]));
     const shapes = fn.params.map(p => p.shape.map(d => value(d, dims)));
     if (shapes.some(s => s.some(x => x < 0) || size(s) > 4096)) continue;
-    for (const stream of ['signed', 'positive', 'half-ulp', ...(relation === 'exact' ? ['zero'] : [])]) {
-      const inputs: Inputs = Object.create(null);
+    for (const stream of [
+      'signed',
+      'positive',
+      'half-ulp',
+      ...(relation === 'exact' || cuda ? ['zero'] : []),
+    ]) {
+      const inputs: CudaInputs = Object.create(null);
       fn.params.forEach((p, j) => {
         const shape = shapes[j];
         const data = Float32Array.from({ length: size(shape) }, (_, i) => {
@@ -54,7 +66,7 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
       });
       try {
         const ref = evaluate(fn, inputs, relation === 'exact' ? 'f32' : 'f64', true);
-        if (relation === 'tolerance' && !ref.data.every(Number.isFinite)) continue;
+        if (relation === 'tolerance' && !cuda && !ref.data.every(Number.isFinite)) continue;
         out.push({
           fn: fn.name,
           shapeValues,
@@ -69,6 +81,19 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
   }
   return out;
 }
+export function cudaCases(fn: Fn, random: () => number): Sample[] {
+  return cases(fn, fn, 'tolerance', random, true);
+}
+
+export function coordinate(shape: number[], offset: number): number[] {
+  const coord = shape.map(() => 0);
+  for (let i = coord.length - 1; i >= 0; i--) {
+    coord[i] = offset % shape[i];
+    offset = Math.floor(offset / shape[i]);
+  }
+  return coord;
+}
+
 function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
   if (JSON.stringify(ref.shape) !== JSON.stringify(got.shape))
     return { ok: false, reason: 'Output shape differs' };
@@ -78,12 +103,7 @@ function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
   for (let i = 0; i < a.length; i++) {
     const allowed = 2e-6 + 2e-5 * Math.abs(a[i]);
     if (relation === 'exact' ? a[i] !== b[i] : !Number.isFinite(b[i]) || Math.abs(a[i] - b[i]) > allowed) {
-      let k = i;
-      const coord = ref.shape.map(() => 0);
-      for (let j = coord.length - 1; j >= 0; j--) {
-        coord[j] = k % ref.shape[j];
-        k = Math.floor(k / ref.shape[j]);
-      }
+      const coord = coordinate(ref.shape, i);
       return {
         ok: false,
         reason: `at [${coord}] expected ${a[i]}, got ${b[i]}, allowed ${relation === 'exact' ? 0 : allowed}`,
