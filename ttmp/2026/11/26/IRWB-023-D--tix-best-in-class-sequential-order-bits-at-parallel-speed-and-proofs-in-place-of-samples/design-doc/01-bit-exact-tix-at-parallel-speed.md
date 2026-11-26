@@ -9,9 +9,19 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/contract.ts
+      Note: Sampled gate whose case generator aliases shape symbols
+    - Path: repo://ttmp/2026/11/26/IRWB-023-D--tix-best-in-class-sequential-order-bits-at-parallel-speed-and-proofs-in-place-of-samples/scripts/01-binade-transducer.mjs
+      Note: Chunk summary and its correctness test
+    - Path: repo://ttmp/2026/11/26/IRWB-023-D--tix-best-in-class-sequential-order-bits-at-parallel-speed-and-proofs-in-place-of-samples/scripts/03-gpu-exact-sum/main.cu
+      Note: GB10 exact parallel fold
+    - Path: repo://ttmp/2026/11/26/IRWB-023-D--tix-best-in-class-sequential-order-bits-at-parallel-speed-and-proofs-in-place-of-samples/scripts/04-gpu-exact-matmul/main.cu
+      Note: Exact tiled matmul against cuBLAS
+    - Path: repo://ttmp/2026/11/26/IRWB-023-D--tix-best-in-class-sequential-order-bits-at-parallel-speed-and-proofs-in-place-of-samples/scripts/05-normal-form-proof.mjs
+      Note: Normal-form proofs and the mutant the sampled gate accepts
 ExternalSources: []
-Summary: "Research round: Tix as the fastest tensor compiler whose every output bit is specified, with passes accepted by proof. Three ranked proposals, seven experiments (four on the GB10), and what failed."
+Summary: 'Research round: Tix as the fastest tensor compiler whose every output bit is specified, with passes accepted by proof. Three ranked proposals, seven experiments (four on the GB10), and what failed.'
 LastUpdated: 2026-11-26T18:29:22.856951488-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -80,7 +90,7 @@ The new statement here is narrow and measured: for an f32 meaning with fixed fol
 ### Risks, and how success is measured
 
 - **The tiled kernel was written by hand.** A schedule language that can express it (tile sizes, outputs per thread, staging) is real design work, and autotuning it is more.
-- **Matmul is the friendliest case.** Softmax and layernorm are limited by memory traffic and double-precision `exp`; I did not measure exact schedules for them. The one data point I have: a sequential row sum over 4,096 × 1,024 f32 runs in 0.113 ms, which is 145 GB/s against the 244 GB/s streaming bound.
+- **Matmul is the friendliest case.** Softmax and layernorm are limited by memory traffic and double-precision `exp`; I did not measure exact schedules for them. The one data point I have: a sequential row sum over 4,096 × 1,024 f32 runs in 0.113 ms, which is 148 GB/s against the 244 GB/s streaming bound.
 - **Success:** price of exactness at most 2 against cuBLAS on matmul at 512 and 2048, at most 1.5 against the same schedule with FMA, and 0 differing words on every corpus program at stage-2 sizes.
 
 ### What it needs from `src/framework`
@@ -240,7 +250,7 @@ Three things follow.
 
 **Experiment 6 (GB10), two levels.** `scripts/06-gpu-exact-sum-two-level/main.cu`. Bit-identical again in all 18 configurations, and mostly a disappointment: 12.2 ms against 13.7 ms for the positive 2²⁴ sum, 52 ms against 78 ms for the signed one, and slower than one level wherever rows are short. The serial step count was 431,744 per row where experiment 2 predicted about 1,400.
 
-**Experiment 7 (Node), the reason.** `scripts/07-guess-drift.mjs`. The guess came from an f64 prefix sum. The sequential f32 sum of 2²⁴ values in [0.25, 1) is 10,905,589; the f64 sum is 10,486,622.7. They differ by 4.0 percent, because once the accumulator's grid is 0.5 or 1, rounding each term to the grid is biased for this distribution. Near a binade boundary the two disagree about the binade for a long stretch: 419,255 elements, 2.50 percent of the input, although the true accumulator changes binade only 25 times. That matches the 2.5 to 2.8 percent of failed chunks. Experiment 2 escaped it by accident (its guess is re-derived per node from a prefix that happens to be closer at small n), and the GPU sub-chunk guesses inherited the same wrong base.
+**Experiment 7 (Node), the reason.** `scripts/07-guess-drift.mjs`. The guess came from an f64 prefix sum. The sequential f32 sum of 2²⁴ values in [0.25, 1) is 10,905,589; the f64 sum is 10,486,622.7. They differ by 4.0 percent, because once the accumulator's grid is 0.5 or 1, rounding each term to the grid is biased for this distribution. Near a binade boundary the two disagree about the binade for a long stretch: 419,255 elements, 2.50 percent of the input, although the true accumulator changes binade only 25 times. That matches the 2.5 to 2.8 percent of failed chunks. Experiments 1 and 2 did not show it. Their sums stop at 2²⁰ elements, where the accumulator's grid is still fine compared with the terms; I believe that is why, and did not test it. On the GPU the sub-chunk guesses inherited the same wrong base as the top-level ones.
 
 So the estimator, not the summary, is the present limit on growing sums. The fix is to derive lower-level guesses from the *true* accumulator at the enclosing chunk's start (known after the top-level apply), or to summarize two adjacent binades per chunk. Neither is tested.
 
@@ -276,7 +286,7 @@ flowchart TD
 - **Stage B second** because it carries the performance metric. Its first milestone is the tiled matmul kernel generated from the IR and proved, with 0 differing words.
 - **Stage C** can run beside B. It replaces `2e-6 + 2e-5·|r|` with the proved term set and the `2·γ(n−1)·Σ|t|` budget.
 - **Stage D** waits for a program with a long, narrow reduction and for the estimator fix.
-- **Stage E** is a question for the language owner: whether an in-order FMA fold should be a second named meaning. It would cut 5 to 33 percent, and at one size it happened to match cuBLAS bit for bit. It must never be a silent contraction.
+- **Stage E** is a question for the language owner: whether an in-order FMA fold should be a second named meaning. It made the tiled kernel 1.05 to 1.33 times faster, and at one size it happened to match cuBLAS bit for bit. It must never be a silent contraction.
 
 ## What did not work
 
