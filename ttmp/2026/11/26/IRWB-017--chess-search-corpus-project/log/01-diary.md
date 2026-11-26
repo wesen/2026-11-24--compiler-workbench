@@ -178,3 +178,35 @@ The workbench regression opens only the chess project through the same project A
 - `docmgr doctor --ticket IRWB-017 --stale-after 30` passed.
 - `node --test --test-isolation=none tests/typed/chess-search.test.mjs` reported four passing named tests. Every changed inspector revision passed 80 out of 80 generated cases, and the final inspector checks passed 20 out of 20 per root with zero traps or limits.
 - The Scripts view prints plain YAML. Added clickable r0 search and ray-loop links to the first line of `notes.md`, which the Source view renders. A project-only workbench probe resolved the function and both ray-loop headers, and a Node probe of the site's inline renderer verified all four navigation links.
+
+## Step 8 — Fit the corpus files to the workbench tiles
+
+Integration found over-width lines in the Typed sources, inspector,
+metadata, and notes. I wrapped the sources and updated the focus to
+assembled line 17, which resolves to `main.typed:5`. Both ray loop block
+IDs still resolve, now at `position.typed:52` and `position.typed:55`.
+
+<details>
+<summary>Integration request</summary>
+
+> Integration of your branch found one problem in IRWB-017's project. The workbench shows each corpus file in a tile, and `tests/typed/format.test.mjs` requires every `.typed` and `.js` file of a corpus project to fit in 80 columns, and `project.json` and `notes.md` to fit in 73. Some files of your project are wider. `tools/format-corpus.mjs` formats `project.json` and `notes.md` (run it, then `node tools/format-corpus.mjs --check`). It mis-wraps list items that are already wrapped and then refuses the file with "renders differently"; in that case wrap `notes.md` by hand to 72 columns. Reformat the `.typed` and `.js` files by hand without changing their meaning. If lines move in a `.typed` file, update whatever refers to source lines (focus links, line numbers in `notes.md` or `project.json`).
+>
+> Then run `node --test tests/typed/format.test.mjs` and your own test, and commit with a message starting `IRWB-017:`. Corpus-wide test totals that changed because of the new projects are handled during integration and are not part of this task. Final message: the files you changed, the commands you ran with their results, and the commit hash.
+
+</details>
+
+### Evidence
+
+- The formatter reported `chess-search: notes.md renders differently`.
+  I used the generated JSON and wrapped Markdown manually. Both files
+  now fit in 72 columns.
+- `node tools/format-corpus.mjs` and its `--check` invocation both
+  reported zero changes. The existing fixed-point note is 73 columns,
+  which the format test allows.
+- A before-and-after probe compared the input specs and the r0 and
+  reference RV32 image bytes. All were identical. The workbench probe
+  resolved the wrapper focus, search function and both ray loop blocks.
+- `node --test tests/typed/format.test.mjs` passed all four tests after
+  rerunning outside the sandbox. The sandbox run failed with
+  `spawnSync …/bin/node EPERM` when the test called the formatter.
+- `node --test tests/typed/chess-search.test.mjs` passed.

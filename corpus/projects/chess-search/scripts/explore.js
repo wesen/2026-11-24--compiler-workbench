@@ -4,7 +4,9 @@ const search = p.fn('chessSearchStep');
 const attacks = p.fn('chessAttacked');
 return {
   revision: run.rev,
-  changedPasses: run.steps.filter(step => step.changed).map(({ pass, check }) => ({ pass, check })),
+  changedPasses: run.steps
+    .filter(step => step.changed)
+    .map(({ pass, check }) => ({ pass, check })),
   rejectedPasses: run.steps.filter(step => step.rejected),
   entries: p.check({ count: 20 }).fns,
   searchStep: search.id,

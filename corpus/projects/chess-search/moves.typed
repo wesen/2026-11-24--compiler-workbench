@@ -1,11 +1,14 @@
-// A frame reserves 512 moves. Sixteen pieces with at most 27 moves per piece fit.
-function chessAdd(board: buffer, list: i32, count: i32, from: i32, to: i32, promotion: i32): i32 {
+// A 512-move frame fits sixteen pieces with up to 27 moves each.
+function chessAdd(board: buffer, list: i32, count: i32, from: i32,
+                  to: i32, promotion: i32): i32 {
     board.setCharCodeAt(list + count, chessMove(from, to, promotion));
     return count + 1;
 }
 
-function chessPawnAdd(board: buffer, list: i32, count: i32, from: i32, to: i32): i32 {
-    if (to / 16 !== 0 && to / 16 !== 7) return chessAdd(board, list, count, from, to, 0);
+function chessPawnAdd(board: buffer, list: i32, count: i32,
+                      from: i32, to: i32): i32 {
+    if (to / 16 !== 0 && to / 16 !== 7)
+        return chessAdd(board, list, count, from, to, 0);
     let n = count;
     for (let promotion = 1; promotion < 5; promotion = promotion + 1) {
         n = chessAdd(board, list, n, from, to, promotion);
@@ -13,7 +16,8 @@ function chessPawnAdd(board: buffer, list: i32, count: i32, from: i32, to: i32):
     return n;
 }
 
-function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i32): i32 {
+function chessPawnMoves(board: buffer, list: i32, count: i32,
+                        from: i32, side: i32): i32 {
     let n = count;
     const step = chessPawnStep(side);
     const next = from + step;
@@ -30,8 +34,10 @@ function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i
     while (to <= next + 1) {
         if (chessOnBoard(to)) {
             const target = board.charCodeAt(to);
-            const enemy = target !== 0 && target / 8 !== side && target % 8 !== 6;
-            const passed = to === ep && target === 0 && board.charCodeAt(to - step) === 1 + (1 - side) * 8;
+            const enemy = target !== 0 && target / 8 !== side
+                && target % 8 !== 6;
+            const passed = to === ep && target === 0
+                && board.charCodeAt(to - step) === 1 + (1 - side) * 8;
             if (enemy || passed) { n = chessPawnAdd(board, list, n, from, to); }
         }
         to = to + 2;
@@ -39,29 +45,35 @@ function chessPawnMoves(board: buffer, list: i32, count: i32, from: i32, side: i
     return n;
 }
 
-function chessCastle(board: buffer, list: i32, count: i32, from: i32, side: i32): i32 {
+function chessCastle(board: buffer, list: i32, count: i32,
+                     from: i32, side: i32): i32 {
     const home = 116 - side * 112;
     if (from !== home) return count;
     const rights = board.charCodeAt(129);
     const mask = 1 + side * 3;
-    if (!chessRight(rights, mask) && !chessRight(rights, mask * 2)) return count;
+    if (!chessRight(rights, mask) && !chessRight(rights, mask * 2))
+        return count;
     if (chessAttacked(board, from, 1 - side)) return count;
     let n = count;
     const rook = 4 + side * 8;
     if (chessRight(rights, mask) && board.charCodeAt(from + 3) === rook
-            && board.charCodeAt(from + 1) === 0 && board.charCodeAt(from + 2) === 0
+            && board.charCodeAt(from + 1) === 0
+            && board.charCodeAt(from + 2) === 0
             && !chessAttacked(board, from + 1, 1 - side)) {
         n = chessAdd(board, list, n, from, from + 2, 0);
     }
     if (chessRight(rights, mask * 2) && board.charCodeAt(from - 4) === rook
-            && board.charCodeAt(from - 1) === 0 && board.charCodeAt(from - 2) === 0
-            && board.charCodeAt(from - 3) === 0 && !chessAttacked(board, from - 1, 1 - side)) {
+            && board.charCodeAt(from - 1) === 0
+            && board.charCodeAt(from - 2) === 0
+            && board.charCodeAt(from - 3) === 0
+            && !chessAttacked(board, from - 1, 1 - side)) {
         n = chessAdd(board, list, n, from, from - 2, 0);
     }
     return n;
 }
 
-function chessPieceMoves(board: buffer, list: i32, count: i32, from: i32, piece: i32): i32 {
+function chessPieceMoves(board: buffer, list: i32, count: i32,
+                         from: i32, piece: i32): i32 {
     const side = piece / 8;
     const kind = piece % 8;
     if (kind === 1) return chessPawnMoves(board, list, count, from, side);
@@ -152,7 +164,8 @@ function chessPerft(board: buffer, depth: i32): i32 {
         } else {
             ply = ply - 1;
             if (ply >= 0) {
-                chessUnmake(board, board.charCodeAt(163 + ply * 4), 256 + ply * 10);
+                chessUnmake(board, board.charCodeAt(163 + ply * 4),
+                            256 + ply * 10);
             }
         }
     }
