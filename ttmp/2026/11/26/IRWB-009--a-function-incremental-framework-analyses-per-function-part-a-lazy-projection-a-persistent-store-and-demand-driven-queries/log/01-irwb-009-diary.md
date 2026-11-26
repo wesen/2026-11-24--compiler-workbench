@@ -463,3 +463,46 @@ I applied all sixteen notes of Step 7 to the guide, then reread the changed pass
 
 ### Technical details
 - Task ids: `n6lg` measurements, `w95r` guide, `n28g` upload, `r3a5` P0, `c8gw` P1, `26kv` P2, `m8bh` P3, `z0z7` P4, `prcr` P5, `mz2q` P6, `ab2z` vault report (deferred).
+
+## Step 9: Upload to reMarkable, and the stop
+
+The guide went up as one PDF with a two-level table of contents, and the cloud listing shows it. This round stops here, as the brief says; no vault report is written (deferred to the implementation milestone, Step 1).
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Store in the ticket and then upload to remarkable"; verify with a listing; never `--force`.
+**Inferred user intent:** The guide readable on the device.
+**Commit (code):** `ae291fb` — "IRWB-009: intern guide for a function-incremental framework (design-doc 01) with its second pass; …" (the uploaded content).
+
+### What I did
+- `remarquee upload bundle ttmp/2026/11/26/IRWB-009--…/design-doc/01-intern-guide-a-function-incremental-framework-for-the-ir-workbench.md --name "IRWB-009 Intern Guide: A Function-Incremental Framework" --remote-dir "/ai/2026/11/26/IRWB-009" --toc-depth 2 --non-interactive`
+- `remarquee cloud ls /ai/2026/11/26/IRWB-009 --long --non-interactive`
+- `docmgr task check --ticket IRWB-009 --id n28g`
+
+### Why
+- The brief's delivery step and its verification.
+
+### What worked
+- `OK: uploaded IRWB-009 Intern Guide: A Function-Incremental Framework.pdf -> /ai/2026/11/26/IRWB-009`
+- Listing: `[f]	IRWB-009 Intern Guide: A Function-Incremental Framework`
+
+### What didn't work
+- No failures. No `--force` was used; the folder was new.
+
+### What I learned
+- Nothing new; the bundle path rendered the box-drawing diagrams without a local test render, as the remarkable-upload skill's defaults (DejaVu fonts) suggest.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- I did not inspect the rendered PDF; the upload result is cloud delivery, not a visual check.
+
+### What should be done in the future
+- Implementation, starting with P0 (the harness) and P1 (facts per part on demand); then the vault report.
+
+### Code review instructions
+- `remarquee cloud ls /ai/2026/11/26/IRWB-009 --long --non-interactive`.
+
+### Technical details
+- Commits of this round on the worktree branch: `0b57100` (measurements, diary 1–6), `ae291fb` (guide, bookkeeping, diary 7–8), and this step's commit.
