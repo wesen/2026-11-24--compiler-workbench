@@ -188,3 +188,68 @@ The tests use the binary decoder for malformed frames and the actual engine for 
 Against backend revision da01eb9, scripts/04-measure.mjs completed on both machines with seed 20. All six returned shape pairs matched their expected extents and both endpoint values agreed within the comparison allowance in each pair. The full table, timing boundaries and raw records are linked in the results document. The largest local run was MLP at 813.613 seconds. Each GPU entry is a three-interval median after preloading and warm-up.
 
 A separate GB10 pass through all six corpus programs after inline and split-sum accepted every lowering, including five changed revisions. The final export probe listed the original three functions and all three requested CUDA functions. Tests and live acceptance evidence are recorded at ba8474d. The remaining assumption for replay is the reviewed process-lifetime engine identity.
+
+## Step 6 — Attribute the independent results at 816012a
+
+I compared the reported differences with the operation table, the evaluator and the six corpus expressions at the evaluated revision. I also regenerated the matmul source excerpt from the public API and reran the comparator over the saved raw GB10 probe results. The original code still emits the float transcendental entry points. The coordinator's full binary32 sweep tested different calls.
+
+One new untimed GPU invocation, `node "$T/scripts/06-intrinsic-witnesses.mjs"` with T set to this ticket, reproduced all three differences through the public API. The script isolates exp, log and tanh in separate output lanes using finite inputs and one-hot masks. The pairs of CPU/GPU words were 3c981b6e/3c981b6f, c0259c53/c0259c54 and bf7fa098/bf7fa097 respectively. Each pair is one f32 step apart.
+
+| Independent comparison | Non-identical elements, original small / optimized small / full size | First source of GPU-versus-f32 discrepancy |
+|---|---:|---|
+| Softmax | 22 / 20 / 1,578,006 | corpus/tensor/softmax/main.tix:3 calls exp. src/tensor/cuda-source.ts:29 selects expf; src/tensor/evaluate.ts:15 and :80 select Math.exp then round. The row sum and normalized probabilities consume that changed numerator. |
+| Attention | 16 / 25 / 54,918 | corpus/tensor/attention/main.tix:4 calls exp on the shifted score. src/tensor/cuda-source.ts:29 selects expf. The normalized weights and final value contraction propagate the difference. The score scaling uses sqrtf at src/tensor/cuda-source.ts:32. |
+| MLP | 3 / 6 / 31,099 | corpus/tensor/mlp/main.tix:3 calls tanh inside GELU. src/tensor/cuda-source.ts:31 selects tanhf; src/tensor/evaluate.ts:18 and :80 use the rounded Math.tanh result. The product with the hidden unit and the next linear layer propagate it. The full-size 2.2e-5 is scaled error against f32, not the sampled origin-f64 budget. |
+| Random programs | 4 of 20 programs; maximum difference 1.2e-7 | Candidate differing primitives at src/tensor/cuda-source.ts:29 (expf), src/tensor/cuda-source.ts:30 (logf), src/tensor/cuda-source.ts:31 (tanhf). The coordinator supplied an aggregate with no sources, inputs or first differing nodes. Per-program assignment among these operations is undetermined. The log witness is independent of the six corpus functions. |
+
+Matmul, layernorm and conv2d have no observed GPU-versus-f32 differences at either reported original size. Optimized matmul also has none. Positive f64 distances for these runs record ordinary binary32 rounding, including the arithmetic table at src/tensor/cuda-source.ts:25 and sequential accumulation at src/tensor/cuda-source.ts:78, versus unrounded evaluation at src/tensor/evaluate.ts:26 and :85. For the other functions f64 differences combine intermediate rounding with the float transcendental results. The aggregate maxima do not identify an individual fold iteration or error contribution. Split-sum changes grouping at src/tensor/passes.ts:63, but each optimized f32 comparison executes the same grouped tree on both sides. The report gives the independent exact counts and both numerical distances.
+
+**Relation.** Among the two uniform relations in the brief, sampled tolerance against origin f64 is the strongest supported for the evaluated backend over the full language. All three emitted float transcendentals have concrete counterexamples to exact f32, even though an arithmetic-only function can agree exactly. The evidence does not establish the tightest tolerance constants or a universal forward-error bound. The coordinator's exhaustive GB10 result supports a stronger lowering of the current revision using double exp/log/tanh followed by explicit round-to-f32, treating NaNs as one class. That implementation was not evaluated here, and an upstream reassociation still needs its own comparison with the origin.
+
+The publication document is [02-report.md](02-report.md). Local and independent timings are separate columns. The previous results document's ticket index link now points to the final report. Source and test paths remain at the evaluated revision.
+
+### Publication request (verbatim)
+
+~~~~
+Stage 2 of IRWB-022-A has been evaluated independently, at your last commit. Your results:
+
+- **Stage-1 hidden suite:** 25/25 passed. The three API functions are exported.
+- **Corpus programs, small sizes, through `runTixCuda`:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.2e-7
+  - softmax: 54/76 elements bit-identical to the f32 meaning, largest difference 3.0e-8 (scaled by max(1, |r|)), largest difference from f64 5.3e-8
+  - layernorm: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 1.3e-7
+  - attention: 56/72 elements bit-identical to the f32 meaning, largest difference 6.0e-8 (scaled by max(1, |r|)), largest difference from f64 6.6e-8
+  - mlp: 21/24 elements bit-identical to the f32 meaning, largest difference 8.9e-8 (scaled by max(1, |r|)), largest difference from f64 3.6e-7
+  - conv: 160/160 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.1e-7
+- **After `optimizeTix(p, ['inline', 'split-sum'])`, compared with your own f32 run of the optimized program:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 2.2e-7
+  - softmax: 56/76 elements bit-identical to the f32 meaning, largest difference 3.0e-8 (scaled by max(1, |r|)), largest difference from f64 4.9e-8
+  - attention: 47/72 elements bit-identical to the f32 meaning, largest difference 3.0e-8 (scaled by max(1, |r|)), largest difference from f64 4.4e-8
+  - mlp: 18/24 elements bit-identical to the f32 meaning, largest difference 1.2e-7 (scaled by max(1, |r|)), largest difference from f64 3.4e-7
+- **20 random programs from the fixed core:** 16/20 bit-identical to the f32 meaning on every element; largest difference 1.2e-7.
+- **Corpus at the brief's sizes:**
+  - matmul: 262144/262144 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.255
+  - softmax: 2616298/4194304 elements bit-identical to the f32 meaning, largest difference 3.7e-9 (scaled by max(1, |r|)); your `gpuMs` 0.448
+  - layernorm: 4194304/4194304 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.480
+  - attention: 10618/65536 elements bit-identical to the f32 meaning, largest difference 3.7e-8 (scaled by max(1, |r|)); your `gpuMs` 1.394
+  - mlp: 231045/262144 elements bit-identical to the f32 meaning, largest difference 2.2e-5 (scaled by max(1, |r|)); your `gpuMs` 0.819
+  - conv: 984064/984064 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.351
+- **`checkLowering` on the six corpus programs and ten random ones:** accepted 16/16, relation tolerance, 6.0 s per check on average.
+- **Independently of your work,** the coordinator compared CUDA's double-precision `exp`, `log` and `tanh`, rounded to f32 (`__double2float_rn(exp((double)x))` and so on), with the f32 meaning's `Math.fround(Math.exp(x))` and so on, for all 2³² f32 inputs on the GB10. They agree on every input, with NaN compared as a class. In IEEE mode, `+ − * /` and `sqrtf` are correctly rounded, and the f32 meaning rounds each of them in the same way.
+
+In this turn, do not change any code under `src/`, `tests/`, `corpus/` or `tools/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every result above that is not bit-identical, find which operation in your emitted code causes the difference and state it with `file:line` in your diary. Reproduce it with a short script or GPU probe in your ticket's `scripts/` if that helps; keep GPU runs few and untimed. Then state, in one paragraph, whether the relation your contract checks is the strongest one your implementation and the evidence above support, and why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - the lowering and the emitted CUDA (with a short excerpt);
+   - the form you chose (kernel IR or direct emission) and why;
+   - the contract: relation, cases, batching and reuse, and the probe behind the relation;
+   - each framework and tool change and why it was needed;
+   - the timing method and the measured times;
+   - how you checked the work;
+   - the evaluation results above, including every difference and its cause;
+   - what you would do differently.
+
+   Write prose first, with at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-022-A:`). Final message: the report's path, the commit hash, one line per difference cause, and your one-paragraph answer on the relation.
+~~~~

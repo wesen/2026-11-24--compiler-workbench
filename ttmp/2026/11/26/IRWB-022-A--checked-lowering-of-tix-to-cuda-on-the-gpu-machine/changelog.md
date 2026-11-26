@@ -15,3 +15,7 @@ Accepted timing and engine-identity review revisions. Implemented direct CUDA em
 ## 2026-11-26
 
 Validated all 29 tensor tests, checked optimized corpus programs and recorded all six matched-size CPU/GPU timing pairs.
+
+## 2026-11-26
+
+Recorded the independent evaluation at 816012a, reproduced three intrinsic discrepancies in one untimed run, and completed the final report.
