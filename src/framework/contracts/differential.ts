@@ -73,6 +73,17 @@ export interface DifferentialSpec<P extends Ports, Case, Outcome> {
   ) => Promise<readonly Decided[]> | undefined;
 }
 
+/** A checker whose engine can execute only whole, asynchronous batches. */
+export type BatchDifferentialSpec<P extends Ports, Case> = Omit<
+  DifferentialSpec<P, Case, never>, 'run' | 'compare' | 'inconclusive' | 'decide'
+> & {
+  decide(inputs: PortValues<P>, cases: readonly Case[], todo: readonly number[]): Promise<readonly Decided[]>;
+};
+
+type AsyncSpec<P extends Ports, Case, Outcome> =
+  | DifferentialSpec<P, Case, Outcome>
+  | BatchDifferentialSpec<P, Case>;
+
 /** One decided case: what `compare` (or `inconclusive`) concluded. */
 export type Decided =
   | { readonly v: 'agree' }
@@ -164,7 +175,7 @@ export function differentialStats(reset = false): Readonly<typeof STATS> {
 }
 
 function prepare<P extends Ports, Case, Outcome>(
-  spec: DifferentialSpec<P, Case, Outcome>,
+  spec: AsyncSpec<P, Case, Outcome>,
   inputs: PortValues<P>,
   seed: number,
 ): { cases: readonly Case[]; reuse?: Reuse } {
@@ -198,6 +209,7 @@ export function decideCase<P extends Ports, Case, Outcome>(
   index: number,
   outcomes?: unknown[],
 ): Decided {
+  if (!('run' in spec)) throw new Error('Batch-only differential check requires async dispatch');
   let a = outcomes?.[index] as Outcome | undefined;
   if (a === undefined) {
     a = spec.run('baseline', inputs[spec.baseline] as PortValue<P[keyof P]>, kase, inputs);
@@ -214,7 +226,7 @@ export function decideCase<P extends Ports, Case, Outcome>(
 
 /** The evidence of decided cases, counted in case order (so counterexamples come in case order). */
 function tally<P extends Ports, Case, Outcome>(
-  spec: DifferentialSpec<P, Case, Outcome>,
+  spec: AsyncSpec<P, Case, Outcome>,
   seed: number,
   cases: readonly Case[],
   verdicts: readonly Decided[],
@@ -252,7 +264,7 @@ function tally<P extends Ports, Case, Outcome>(
 
 /** The memo keys of the cases (undefined where a case has no subject key or nothing is reused). */
 function memoKeys<P extends Ports, Case, Outcome>(
-  spec: DifferentialSpec<P, Case, Outcome>,
+  spec: AsyncSpec<P, Case, Outcome>,
   inputs: PortValues<P>,
   cases: readonly Case[],
   reuse: Reuse | undefined,
@@ -276,6 +288,7 @@ export function runDifferential<P extends Ports, Case, Outcome>(
   seed = spec.seed ?? 1,
   maxCounterexamples = spec.maxCounterexamples ?? 5,
 ): DifferentialEvidence {
+  if (!('run' in spec)) throw new Error('Batch-only differential check requires async dispatch');
   const { cases, reuse } = prepare(spec, inputs, seed);
   const keys = memoKeys(spec, inputs, cases, reuse);
   const verdicts: Decided[] = new Array(cases.length);
@@ -294,7 +307,7 @@ export function runDifferential<P extends Ports, Case, Outcome>(
 
 /** `runDifferential`, with the cases nobody decided yet handed to `spec.decide` (IRWB-004 F4). */
 export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
-  spec: DifferentialSpec<P, Case, Outcome>,
+  spec: AsyncSpec<P, Case, Outcome>,
   inputs: PortValues<P>,
   seed = spec.seed ?? 1,
   maxCounterexamples = spec.maxCounterexamples ?? 5,
@@ -316,7 +329,10 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
     if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
     todo.forEach((i, k) => (verdicts[i] = decided[k]));
     STATS.delegated += todo.length;
-  } else for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+  } else if (todo.length) {
+    if (!('run' in spec)) throw new Error('Batch-only differential check requires async dispatch');
+    for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+  }
   for (const i of todo) if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
   return tally(spec, seed, cases, verdicts, maxCounterexamples);
 }

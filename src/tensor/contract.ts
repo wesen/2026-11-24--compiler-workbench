@@ -6,21 +6,21 @@ import {
   type CheckResult,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
-import { evaluate, OutsideSample, size, type Inputs, type BufferValue } from './evaluate.js';
+import { evaluate, OutsideSample, size, type F32Inputs, type BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
 type Relation = 'exact' | 'tolerance';
-interface Sample {
+export interface Sample {
   fn: string;
   shapeValues: number[];
   stream: string;
-  inputs: Inputs;
+  inputs: F32Inputs;
   reference: BufferValue;
 }
 const seed = 20,
   half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
-function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
+export function meaningCases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
   ].sort();
@@ -35,7 +35,7 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
     const shapes = fn.params.map(p => p.shape.map(d => value(d, dims)));
     if (shapes.some(s => s.some(x => x < 0) || size(s) > 4096)) continue;
     for (const stream of ['signed', 'positive', 'half-ulp', ...(relation === 'exact' ? ['zero'] : [])]) {
-      const inputs: Inputs = Object.create(null);
+      const inputs: F32Inputs = Object.create(null);
       fn.params.forEach((p, j) => {
         const shape = shapes[j];
         const data = Float32Array.from({ length: size(shape) }, (_, i) => {
@@ -69,7 +69,7 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): 
   }
   return out;
 }
-function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
+export function compareMeaning(ref: BufferValue, got: BufferValue, relation: Relation) {
   if (JSON.stringify(ref.shape) !== JSON.stringify(got.shape))
     return { ok: false, reason: 'Output shape differs' };
   const words = (b: BufferValue) => new Uint32Array(b.data.buffer, b.data.byteOffset, b.data.length);
@@ -103,7 +103,7 @@ export function meaningGate(origin: Artifact<Module>, relation: Relation) {
     const samples: Sample[] = [];
     const random = seededRandom(seed);
     for (const [i, fn] of origin.value.functions.entries()) {
-      const group = cases(fn, baseline.value.functions[i], relation, random);
+      const group = meaningCases(fn, baseline.value.functions[i], relation, random);
       if (!group.length) return { ok: false, reason: 'No comparable case for ' + fn.name };
       samples.push(...group);
     }
@@ -122,7 +122,7 @@ export function meaningGate(origin: Artifact<Module>, relation: Relation) {
         side === 'baseline'
           ? s.reference
           : evaluate(artifact.value.functions.find(f => f.name === s.fn)!, s.inputs, 'f32'),
-      compare: (a, b) => compare(a, b, relation),
+      compare: (a, b) => compareMeaning(a, b, relation),
       describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
     });
     const evidence = runDifferential(differentialSpec(invariant), { baseline, subject: candidate });

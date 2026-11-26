@@ -1,18 +1,18 @@
 import type { TixProgram } from './index.js';
 import {
   plain,
-  visit,
   width,
   type Affine,
   type Expr,
   type Extent,
   type Fn,
+  type Module,
   type Statement,
 } from './model.js';
 import { cudaRuntime } from './cuda-runtime.js';
 
-export function functionNamed(program: TixProgram, name: string): Fn {
-  const fn = program.current.value.functions.find(f => f.name === name);
+export function functionNamed(module: Module, name: string): Fn {
+  const fn = module.functions.find(f => f.name === name);
   if (!fn) throw Error('Unknown function ' + name);
   return fn;
 }
@@ -55,23 +55,16 @@ export function emitCuda(fn: Fn): string {
     preloads: string[] = [];
 
   function kernel(s: Statement, number: number) {
-    const reads = new Set<string>();
-    visit(s.expr, e => {
-      if (e.kind === 'load') reads.add(e.name);
-    });
     const output = slots.get(s.name)!;
-    const params = ['long long count', `float *out`];
-    const args = [`t${output}.count`, `t${output}.device`];
-    for (const n of reads) {
-      const i = slots.get(n)!;
-      params.push(`const float *p${i}`);
-      args.push(`t${i}.device`);
-    }
-    for (const { id } of symbols.values()) {
-      params.push('long long ' + id);
-      args.push(id);
-    }
-    const lines = [`__global__ void kernel_${number}(${params.join(', ')}) {`];
+    const reads = new Set<number>();
+    const shapeArgs = new Set<string>();
+    const kernelSymbol = (name: string) => {
+      const id = symbol(name);
+      shapeArgs.add(id);
+      return id;
+    };
+    const kernelDim = (a: Affine) => affine(a, kernelSymbol);
+    const lines: string[] = [];
     let depth = 1,
       next = 0;
     const line = (code: string) => lines.push('  '.repeat(depth) + code);
@@ -81,7 +74,7 @@ export function emitCuda(fn: Fn): string {
       return binders.get(id)!;
     };
     const bound = (e: Extent): string => {
-      const n = dim(e.dim);
+      const n = kernelDim(e.dim);
       if (e.kind === 'blocks')
         return e.rounding === 'ceil' ? `((${n} + ${width - 1}LL) / ${width}LL)` : `(${n} / ${width}LL)`;
       if (e.kind === 'tail') return `min(${width}LL, ${n} - ${width}LL * ${binder(e.block)})`;
@@ -95,13 +88,14 @@ export function emitCuda(fn: Fn): string {
           return `__uint_as_float(0x${bits.toString(16)}u)`;
         }
         case 'shape':
-          return `__ll2float_rn(${symbol(e.name)})`;
+          return `__ll2float_rn(${kernelSymbol(e.name)})`;
         case 'load': {
           const slot = slots.get(e.name)!;
+          reads.add(slot);
           // Horner's rule for the row-major offset.
           const offset = e.indices
             .map(a => affine(a, binder))
-            .reduce((off, ix, j) => `(${off} * ${dim(tensors[slot].shape[j])} + ${ix})`);
+            .reduce((off, ix, j) => `(${off} * ${kernelDim(tensors[slot].shape[j])} + ${ix})`);
           return `p${slot}[${offset}]`;
         }
         case 'op': {
@@ -131,12 +125,23 @@ export function emitCuda(fn: Fn): string {
     line('if (offset >= count) return;');
     line('long long rem = offset;');
     for (let j = s.axes.length - 1; j >= 0; j--) {
-      line(`long long ${binder(s.axes[j].id)} = rem % ${dim(s.shape[j])};`);
-      if (j) line(`rem /= ${dim(s.shape[j])};`);
+      line(`long long ${binder(s.axes[j].id)} = rem % ${kernelDim(s.shape[j])};`);
+      if (j) line(`rem /= ${kernelDim(s.shape[j])};`);
     }
     const rhs = scalar(s.expr);
     line(`out[offset] = ${rhs};`);
     lines.push('}');
+    const params = ['long long count', 'float *out'];
+    const args = [`t${output}.count`, `t${output}.device`];
+    for (const i of reads) {
+      params.push(`const float *p${i}`);
+      args.push(`t${i}.device`);
+    }
+    for (const id of shapeArgs) {
+      params.push('long long ' + id);
+      args.push(id);
+    }
+    lines.unshift(`__global__ void kernel_${number}(${params.join(', ')}) {`);
     kernels.push(lines.join('\n'));
     preloads.push(`  CUDA(cudaFuncGetAttributes(&attr, kernel_${number}));`);
     launches.push(`    if (t${output}.count) {
@@ -203,5 +208,5 @@ ${launches.join('\n')}
 }
 
 export function cudaSource(program: TixProgram, fn: string): string {
-  return emitCuda(functionNamed(program, fn));
+  return emitCuda(functionNamed(program.current.value, fn));
 }

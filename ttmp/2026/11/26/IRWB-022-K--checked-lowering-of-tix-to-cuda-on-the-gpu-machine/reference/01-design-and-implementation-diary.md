@@ -158,6 +158,7 @@ The design's change ledger is the implementation worklist after review. Review t
 The reviewer measured 0.115 ms for a cold trivial launch and 0.003 ms on repeat. Querying kernel attributes first reduced the first interval to 0.004 ms. The revised driver preloads every kernel in the process recording events. Benchmarks run the warm-up and three measured sequences in that same process.
 
 The cold check compares the reported host, device name, compute capability and CUDA runtime version. The compiler build and flags belong to the versioned checker configuration. Concurrent cold checks on identical batch bytes motivate isolated runner directories. All review requests were accepted. Implementation starts from design checkpoint 160f768.
+
 ## Step 3. Emit and execute the current tensor IR
 
 Implemented direct CUDA emission, the generated binary main, the Node batch codec and the asynchronous runner. A public runTixCuda probe of a 2 × 3 row sum returned [6, 15], shape [2], with a 0.019616 ms event interval. All six benchmark programs then compiled and ran. Each kernel was preloaded in its own process and all four benchmark executions shared a single process and measurement lock. The first run of the TypeScript build found TS2345 on the Buffer array used for concatenation. An explicit Buffer[] accepts both ordinary and shared underlying array buffers.
@@ -165,3 +166,52 @@ Implemented direct CUDA emission, the generated binary main, the Node batch code
 The runner now creates a private remote job for each call and publishes the compiled binary under a per-key flock via rename. Compilation reuse and the full-input hash retain their existing semantics. Failed fetches throw. The previous shared out directory could race between simultaneous cold checks.
 
 The benchmark driver uses one sample per interpreter workload. The interpreter and GPU consume the same deterministic f32 arrays. Raw measurements and the comparison table will be recorded after the interpreter completes.
+
+## Step 4. Check the emitted source and exercise the rejection path
+
+The CUDA transformation now accepts the current and original Tix artifacts and the function name. Its body emits text. Its postcondition uses the exact text supplied on the output port as the remote main.cu. Each missing case group goes to the runner in one invocation. The stage-1 generator and comparison function are shared at their original precision and budget.
+
+### Review and implementation request (verbatim)
+
+~~~~text
+A reviewer has read your design for IRWB-022-K. The review:
+
+# Review of your design
+
+## Must change
+
+1. **Warm up inside the timed process, including in `runTixCuda`.** "Run an untimed warm-up, then three short measured GPU executions under `--timed` … A batch can carry the repetitions." For one-case runs: "Keep allocations, … process startup and context creation outside the events." Under CUDA 13's default lazy loading, the first launch of each kernel in a process loads its module inside the interval. In my probe on the GB10, a trivial kernel's first interval was 0.115 ms and its second 0.003 ms; after `cudaFuncGetAttributes` the first was 0.004 ms. Put the warm-up and the three intervals in one batch, and load the kernels before the start event in `runTixCuda`.
+2. **Say which tag you compare.** "verify its device/compiler tag on a cold batch before storing verdicts". The executable can report the device and the runtime version (13000), but not "nvcc 13.0.88", and the tool's JSON has no compiler identity. Name the fields you compare, and treat the rest as constants of the checker's version.
+
+## Cut
+
+Nothing material.
+
+## Framework and tool changes
+
+- Batch-only overload in `differential.ts`: a small, real finding. Keep it to a spec type with `decide` required, plus a guard on the sync and worker paths. That is the right place, and your focused test is right.
+- Per-invocation directory with a compile lock: with the full-input key kept, two runs collide only if they upload byte-identical directories at the same time, for example two concurrent `checkLowering` calls on one function. It is needed only for that case, and it is minimal. The justification "two legitimate calls with identical files and different program arguments" has no caller here.
+- No change missed.
+
+## Keep
+
+Keep the origin f64 reference with the unchanged stage-1 budget (on the stage-1 cases, the f32 meaning of every corpus program uses at most 25% of it; my local check), the fixed count of 15, and one `decide` batch per miss group. Also keep the word-level split witness and the dropped-tail mutant run through the real postcondition.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-022-K:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+~~~~
+
+### Findings and evidence
+
+- The sole framework edit is in src/framework/contracts/differential.ts. BatchDifferentialSpec requires decide and carries the same case and cache keys as a local spec. A union at the async entry point suffices for the proposed overload. Explicit guards reject a batch-only spec passed to sync evaluation or worker-side decideCase. The existing memo retains the baseline references in the generated cases and replays verdicts in case order.
+- The focused test exercised partial and full memo hits, a truncated response, a failed batch, retry of the same two missing indices and ordered counterexamples. The real checker accepted all six corpus functions before and after optimization. Concurrent cold checks succeeded. A repeat of the same function replayed its cases without a fresh dispatch.
+- The unsplit seven-element witness returned 0x3f800000, the split witness 0x3f800002. Replacing ceiling block count by floor in the emitted source triggered a postcondition rejection with a positive-stream counterexample. The other direct GPU checks cover empty sums/maxima, empty outputs, returned parameters, nested binder scope, transposed inlining, zero signs and NaN propagation.
+- The tensor command passed 29/29, the framework command passed 227/227 and the six selected Typed files (meaning-memo, parallel, passes, program, mutate and strategies) passed 37/37.
+- Git initially reported a read-only index lock while staging the emitter. The approved git add/commit commands completed the checkpoint as c7824d4. No source changes were lost. The reviewed design revision is 7b3dc67.
+
+Review the actual postcondition in src/tensor/cuda-contract.ts alongside the dropped-tail test in tests/tensor/cuda-gpu.test.mjs. The comparator reports numerical failures. A tool or identity failure rejects the promise before the framework can cache the batch.
+
+The standalone runner probe forced two simultaneous compilations to contend for a fresh full-input key. For key a3ab8cb9c23a302a exactly one run compiled, the other reused the binary, and a third invocation also hit the cache. All three returned the original GB10 probe fingerprint. The checker records its target profile and translation digest with the evidence.

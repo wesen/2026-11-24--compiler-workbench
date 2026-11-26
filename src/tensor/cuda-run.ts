@@ -83,13 +83,14 @@ export async function runCudaBatch(
     const { stdout } = await exec(process.execPath, args).catch(e => {
       throw Error(`CUDA runner failed: ${e.stdout || e.stderr || e.message}`, { cause: e });
     });
-    const receipt = JSON.parse(stdout);
+    const receipt: { host: string; exit: number; outputs: string[]; stderr: string; stdout: string } =
+      JSON.parse(stdout);
     if (receipt.exit !== 0 || !receipt.outputs.includes('results.bin'))
       throw Error('CUDA runner did not return results: ' + receipt.stderr);
     const [device, versions] = receipt.stdout.trim().split('\n');
     const [major, minor, runtime] = versions.split(' ').map(Number);
     const results = decodeBatch(await readFile(join(dir, 'out/results.bin')), fn.shape.length, cases.length);
-    return { results, engine: { host: String(receipt.host), device, major, minor, runtime } };
+    return { results, engine: { host: receipt.host, device, major, minor, runtime } };
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -101,7 +102,7 @@ export async function runTixCuda(
   inputs: F32Inputs,
   options?: { host?: string },
 ): Promise<CudaResult> {
-  const f = functionNamed(program, fn);
+  const f = functionNamed(program.current.value, fn);
   const batch = await runCudaBatch(emitCuda(f), f, [inputs], options);
   return batch.results[0];
 }
