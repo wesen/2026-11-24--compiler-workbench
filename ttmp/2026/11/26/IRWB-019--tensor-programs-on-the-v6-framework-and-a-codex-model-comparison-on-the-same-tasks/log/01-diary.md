@@ -364,3 +364,15 @@ The judge (Claude subagent, 171K tokens) scored the four v1 and four v2 Sol desi
   - **With `network_access=true`,** the command ran inside the sandbox without escalation, and printed `bling`.
   - **With `network_access=false`,** the agent requested `sandbox_permissions: "require_escalated"` on its first call, an approval-assessor sidecar approved it (the rollout `…ff3e…` contains "whose request action you are assessing"), and the command ran outside the sandbox.
   - So in this configuration the network setting decides whether an agent must ask, not whether it can reach the network. For T2, pass `--network` so that GPU runs stay sandboxed and need no approval.
+
+## Step 15: G and K; false rejections come from fixed tolerances
+
+- **G (Pi, Sol, high, `a989925`):** 25/25 frozen, 25/25 variant, cross-check 180/180 · 180/180, `inline` 60/60, `split-sum` 60/60.
+- **K (Pi, Sol, xhigh, `24f830a`):** 25/25 frozen, 25/25 variant, cross-check 180/180 · 180/180, `inline` 60/60, **`split-sum` 55/60**.
+  - The five rejected programs (31, 34, 43, 51, 54) are well conditioned on the generated cases: plain f32 is within 1.6e-7 of f64, scaled by max(1, |r|). E accepts all five.
+  - K's tolerance relation is a fixed bound, |c − r| ≤ 2e-6 + 2e-5·|r| (`src/tensor/meaning.ts:119`), applied on its own sampled cases. A correct reassociation in a deeper reduction exceeds it.
+  - The rejection reason exists internally ("cell i: f64 …, f32 …, bound …") but is not in `optimizeTix`'s steps.
+- **The pattern so far:**
+  - a bound derived from the computation (P's running error bound) accepts every correct `split-sum`;
+  - fixed bounds reject some (K 5/60, E 1/60);
+  - the review asked designs without a justified bound to justify it, and v2/v3 add "justify every numeric threshold by an error argument or a measurement".
