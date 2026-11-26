@@ -94,5 +94,13 @@
   "subagent_tokens": 202942,
   "tool_uses": 19,
   "minutes": 11.5
+ },
+ {
+  "item": "(judge t2)",
+  "cell": "opus/default",
+  "turn": "judge",
+  "subagent_tokens": 205388,
+  "tool_uses": 19,
+  "minutes": 11.7
  }
 ]

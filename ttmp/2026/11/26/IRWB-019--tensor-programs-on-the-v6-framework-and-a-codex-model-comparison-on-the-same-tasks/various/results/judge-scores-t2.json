@@ -1,0 +1,266 @@
+[
+  {
+    "doc": "doc-A.md",
+    "counts": {"R1": 0, "R2": 0, "R3": 1, "R4": 0, "R5": 1, "R6": 0, "R7": "no", "R8": 1},
+    "scores": {"A1": 5, "A2": 4, "A3": 5, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 2,
+    "fitness": 8,
+    "quotes": {
+      "R3": ["Add an `--identity` query and an optional `--expect-identity` on a run."],
+      "R5": ["Warm the GPU with one execution and report the median of five CUDA-event intervals in one short `--timed` job per program."],
+      "R8": ["The local runner also coalesces identical in-flight checks under the same keys and removes settled promises."],
+      "A2": [
+        "When `r` is also finite, require `abs(g - r) <= max(B(r), abs(s - r) + B(s)/8)`.",
+        "On 2,048 rows of 32 values, the proposed radius was used up to 96% by the sequential sum and up to 95% by the split sum."
+      ]
+    },
+    "notes": "Direct emission into a source artifact checked by defineTransformation with one decide batch; the hybrid f32-guard/f64-radius tolerance against the current revision rests on a real probe, but the B(s)/8 term is unexplained and the probe already uses up to 96% of it. Excess is an --identity/--expect-identity tool mode and in-flight check coalescing."
+  },
+  {
+    "doc": "doc-B.md",
+    "counts": {"R1": 1, "R2": 0, "R3": 2, "R4": 1, "R5": 2, "R6": 0, "R7": "no", "R8": 1},
+    "scores": {"A1": 5, "A2": 5, "A3": 5, "A4": 5, "A5": 4},
+    "relation": "tolerance",
+    "over_engineering": 3,
+    "fitness": 8,
+    "quotes": {
+      "R1": ["Count complete shape checks for empty results; report when these are the only observations."],
+      "R3": [
+        "Add a `--describe` target stamp and include the stamp for actual runs.",
+        "Use a shared GPU run lock for untimed runs and retain exclusive `--timed` for measurement; neither locks the copy or compile."
+      ],
+      "R4": ["a fake batch runner for case mapping, cold/warm counts and incomplete-result rejection"],
+      "R5": [
+        "run one warm-up, then a short group of repetitions of the entire function under `--timed`; record CUDA-event median and range",
+        "Check full-size outputs against current f32 and, for evidence about tolerance, origin f64 (record largest budget fraction and its coordinate; keep this work outside timers)."
+      ],
+      "R8": ["use an in-process single-flight map keyed by full check identity to coalesce concurrent cold checks and evict in-flight entries on completion."],
+      "A5": ["Emit one kernel for each **current** statement. Launch in statement order on one stream, using a fixed block size (e.g. 256) and a 64-bit flat thread index."]
+    },
+    "notes": "A clean terminal-transformation design with the stage-1 budget against origin f64, backed by a thorough probe that also notes the expf(89) overflow. Extras are a --describe stamp, a shared GPU lock mode, a single-flight map and full-size accuracy recording; kernel parameters are never specified."
+  },
+  {
+    "doc": "doc-C.md",
+    "counts": {"R1": 0, "R2": 0, "R3": 1, "R4": 1, "R5": 1, "R6": 0, "R7": "yes", "R8": 1},
+    "scores": {"A1": 5, "A2": 4, "A3": 4, "A4": 4, "A5": 4},
+    "relation": "tolerance",
+    "over_engineering": 2,
+    "fitness": 7,
+    "quotes": {
+      "R3": [
+        "expose engine fingerprint (host, device/arch, driver and nvcc version) in metadata with a lightweight profile query for evidence reuse.",
+        "Pin/verify the environment fingerprint at session creation through the tool"
+      ],
+      "R4": ["Use a counting mock batch engine: one invocation for many cases, warm reuse, changed candidate/input/profile misses, rejected mutation and failed run retried."],
+      "R5": ["one warmup then three event intervals for the full kernel sequence on resident inputs, report median plus range."],
+      "R7": ["Synchronous `runDifferential` is per case; batching belongs in the domain invariant, not an async copy of the entire pass runner."],
+      "R8": ["If concurrent callers share an outstanding invocation, coalesce only identical full keys and discard failed promises."],
+      "A2": [
+        "It sampled 16,384 exactly representable x values spaced by 1/1024 starting at −8. Log and sqrt used x+9.",
+        "The measurement supports the intrinsic choice on this sample; it does **not** bound cancellation or long sums."
+      ],
+      "A3": ["Invariant calls a versioned async `ctx.analysis` on the CUDA artifact, with canonical JSON parameters encoding the small packet (base64), function, protocol/engine profile and host."],
+      "A4": ["inline transpose and split tails (K=7) on real optimized programs. Check independent small corpus oracles and all six real gates."],
+      "A5": ["Emit one global kernel per current definition. A linear thread id below the result size decodes output coordinates by repeated division/remainder from last dimension to first."]
+    },
+    "notes": "Compact and correct on the mapping, but the probe covers only the four unary intrinsics (no arithmetic, contraction or reduction), and batching goes through ctx.analysis with base64 JSON parameters rather than the framework's differential decide. Block size, kernel parameters and an exact-word order witness are missing."
+  },
+  {
+    "doc": "doc-D.md",
+    "counts": {"R1": 2, "R2": 0, "R3": 1, "R4": 3, "R5": 1, "R6": 0, "R7": "no", "R8": 0},
+    "scores": {"A1": 5, "A2": 5, "A3": 5, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 3,
+    "fitness": 9,
+    "quotes": {
+      "R1": [
+        "Fail the batch before memoizing any of it; return nonacceptance with the failing stage.",
+        "Guard sync execution/extraction for local workers and no-delegate fallback on a batch-only spec with an explicit unsupported-mode error."
+      ],
+      "R3": ["Add identity-only `--describe [--host …] [--arch …]` and include the same stamp in normal run JSON."],
+      "R4": [
+        "mock malformed/reordered/failing replies",
+        "rejection on missing/wrong length or thrown batch, no sync fallback; retry after failed batch."
+      ],
+      "R5": ["launch a warm-up sequence then three measured sequences using the same allocated buffers, report individual CUDA-event intervals and median"]
+    },
+    "notes": "The most thorough design: a full scalar table, a platform probe (FMA witness, subnormals), the origin-f64 budget, and the one real framework finding (a batch-only DifferentialSpec variant with no sync run/compare) with its tests. Excess is mostly guard tests, stage/unsupported-mode diagnostics and a --describe mode."
+  },
+  {
+    "doc": "doc-E.md",
+    "counts": {"R1": 0, "R2": 0, "R3": 0, "R4": 1, "R5": 1, "R6": 0, "R7": "no", "R8": 0},
+    "scores": {"A1": 5, "A2": 5, "A3": 5, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 1,
+    "fitness": 9,
+    "quotes": {
+      "R4": ["A failed compile must be retryable."],
+      "R5": ["On the GPU, warm once and record three individual event intervals for the complete sequence of statement kernels in one short locked run per function. Report the median and retain the samples."]
+    },
+    "notes": "Lean and complete: correct scalar choices, the stage-1 budget against origin f64 measured on the GB10, an unchanged framework confirmed by a probe, and one justified tool isolation change. Little excess beyond repeated timing samples and a compile-retry test."
+  },
+  {
+    "doc": "doc-F.md",
+    "counts": {"R1": 2, "R2": 0, "R3": 2, "R4": 3, "R5": 1, "R6": 0, "R7": "yes", "R8": 2},
+    "scores": {"A1": 5, "A2": 4, "A3": 3, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 4,
+    "fitness": 6,
+    "quotes": {
+      "R1": [
+        "Include execution identity in results and surface upload/compile/run/fetch failure to the caller.",
+        "Verify the reported engine profile on fresh runs and start a new session when it changes."
+      ],
+      "R3": [
+        "Allow a pinned `--nvcc` path for the contract.",
+        "Take a shared GPU lock for ordinary runs and an exclusive lock for `--timed`."
+      ],
+      "R4": [
+        "Use a fake batch engine to verify one batch, repeat/concurrent evidence reuse, failure retry and cache-key changes.",
+        "isolation for simultaneous runs and the two lock modes after implementing the runner changes."
+      ],
+      "R5": ["On the GB10 use one short `--timed` invocation per function, with one warmup and three kernel timings in the same executable."],
+      "R7": ["Putting the GPU batch and its memo in the tensor invariant avoids modifying the generic differential loop that Stage 1 uses per case."],
+      "R8": [
+        "Model the pinned device/compiler configuration as a versioned read-only resource in `MemoryResources`.",
+        "Retain a bounded process-local memo of completed semantic verdicts and share one in-flight Promise per identical check."
+      ],
+      "A2": [
+        "Zero non-NaN word mismatches against the JS f32 reference.",
+        "The NaN word differences make strict bit equality unsuitable for the whole domain with these operations."
+      ],
+      "A3": [
+        "Putting the GPU batch and its memo in the tensor invariant avoids modifying the generic differential loop that Stage 1 uses per case.",
+        "Retain a bounded process-local memo of completed semantic verdicts"
+      ]
+    },
+    "notes": "Uses double-precision CUDA transcendentals (zero non-NaN mismatches) yet rules out exactness only because NaN encodings differ, and the f32 meaning does not define NaN encodings. It then builds its own tensor-local verdict memo instead of using or changing the framework's differential reuse, and adds a pinned --nvcc option, shared/exclusive locks and a MemoryResources profile."
+  },
+  {
+    "doc": "doc-G.md",
+    "counts": {"R1": 1, "R2": 0, "R3": 0, "R4": 1, "R5": 1, "R6": 0, "R7": "no", "R8": 0},
+    "scores": {"A1": 5, "A2": 5, "A3": 5, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 1,
+    "fitness": 9,
+    "quotes": {
+      "R1": ["Run errors should identify the failing engine step."],
+      "R4": ["Test the actual async gate with a fake batch runner for partial/missing results"],
+      "R5": ["On the GB10 use the tool's --timed mode for a short warm-up and three event-timed repetitions in one process, report the median."]
+    },
+    "notes": "A lean, concrete design that matches the brief: one-statement kernels with a 256-thread launch, a measured stage-1 budget against origin f64, decide batching with baseline/subject keys, and a single tool isolation change. Minimal excess."
+  },
+  {
+    "doc": "doc-H.md",
+    "counts": {"R1": 1, "R2": 0, "R3": 1, "R4": 2, "R5": 2, "R6": 0, "R7": "yes", "R8": 0},
+    "scores": {"A1": 5, "A2": 5, "A3": 4, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 2,
+    "fitness": 8,
+    "quotes": {
+      "R1": ["Check framing, multiplication/length limits, completeness, exact expected shape/word count and finite nonnegative time on receipt."],
+      "R3": ["For the fixed machine, identify a profile once per verification session via a tiny tool-run identity probe; verify cold batch metadata matches it."],
+      "R4": [
+        "Test this with an injected counting batch runner, real tensor cases, changed candidate, malformed/failed batch and retry.",
+        "async batching/replay/transport failure"
+      ],
+      "R5": [
+        "e.g. one warm chain and three event samples, report median and samples in ms",
+        "Compare returned arrays outside the timers and record maximum deviation and coordinate"
+      ],
+      "R7": ["The sync `run` path for the GPU is unavailable (throw on accidental use)."],
+      "A3": [
+        "The sync `run` path for the GPU is unavailable (throw on accidental use).",
+        "**No change.** `DifferentialSpec.decide` already batches pending indices asynchronously"
+      ]
+    },
+    "notes": "A concrete emitter and protocol, with a well-argued origin-f64 tolerance and probe; it adds an identity-probe session and receipt checks. It reports no framework change while needing a throwing sync run stub, the gap that D and J propose to fix."
+  },
+  {
+    "doc": "doc-I.md",
+    "counts": {"R1": 2, "R2": 0, "R3": 1, "R4": 2, "R5": 3, "R6": 0, "R7": "no", "R8": 1},
+    "scores": {"A1": 5, "A2": 4, "A3": 5, "A4": 5, "A5": 4},
+    "relation": "tolerance",
+    "over_engineering": 4,
+    "fitness": 7,
+    "quotes": {
+      "R1": [
+        "Surface copy, compile, execution and fetch failures with the phase and diagnostic.",
+        "A shape-only empty-result case has no element comparisons and is identifiable in evidence."
+      ],
+      "R3": ["Give ordinary executable runs a shared GPU lock and retain exclusive `--timed` for benchmark executions."],
+      "R4": [
+        "Test duplicate verdict reuse and interrupted batch retries.",
+        "missing output/fetch failure handling after the tool change."
+      ],
+      "R5": [
+        "run one untimed warmup and five event intervals per case in one short `--timed` invocation, with buffers and inputs reused. Report the median and range.",
+        "take three full-size trials on this machine in tmux",
+        "the comparison's maximum errors and coverage. Record the raw trials and case generation in this ticket."
+      ],
+      "R8": ["Use a process-local map of active verdict promises to coalesce concurrent calls for the same revision/function/source/session."],
+      "A2": [
+        "The evidence supports the proposed operation choices and rules out claiming bit identity for those choices.",
+        "The half-budget threshold leaves room for CUDA/V8 differences. The constants are an empirical sampled comparison budget, using the probe and the Stage 1 budget as anchors."
+      ],
+      "A5": ["Emit one kernel per statement. A thread checks its flat index against the result size, decodes it from the last dimension backward and stores one value."]
+    },
+    "notes": "Implements division and the transcendentals through double precision and observes zero non-NaN mismatches, but rejects bit identity on NaN payloads and substitutes an ad hoc two-reference rule with a half-budget threshold. It adds phase diagnostics, a shared lock, CPU trials and full-size error reporting, and leaves block size and kernel parameters unspecified."
+  },
+  {
+    "doc": "doc-J.md",
+    "counts": {"R1": 1, "R2": 0, "R3": 0, "R4": 2, "R5": 1, "R6": 0, "R7": "no", "R8": 0},
+    "scores": {"A1": 5, "A2": 5, "A3": 5, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 2,
+    "fitness": 9,
+    "quotes": {
+      "R1": ["Pin the checked engine to this configuration and verify its device/compiler tag on a cold batch before storing verdicts."],
+      "R4": ["Test full and partial replay, failed batch retry, result-count mismatch and ordered counterexample reporting in a focused framework test."],
+      "R5": ["Run an untimed warm-up, then three short measured GPU executions under `--timed` and report the median CUDA-event time."]
+    },
+    "notes": "Lean and accurate: a thorough probe, the stage-1 budget against origin f64, a 256-thread mapping with an explicit kernel signature, and the batch-only differential overload proposed as a framework change with its reason and tests. Small excess in guard tests and identity verification."
+  },
+  {
+    "doc": "doc-K.md",
+    "counts": {"R1": 0, "R2": 0, "R3": 0, "R4": 3, "R5": 2, "R6": 0, "R7": "yes", "R8": 2},
+    "scores": {"A1": 5, "A2": 5, "A3": 5, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 3,
+    "fitness": 8,
+    "quotes": {
+      "R4": ["Use a fake transport for batched cases, wrong/missing records, reuse, in-flight coalescing, retry after transport failure and cache misses after changing a candidate or engine epoch."],
+      "R5": [
+        "Warm up once, then take three short repetitions for each function (report samples and median).",
+        "Compute full-size f64 comparison errors outside timing."
+      ],
+      "R7": ["The generic manager does not model remote host drift; record that assumption explicitly at the domain boundary."],
+      "R8": [
+        "Coalesce identical in-flight checks in the tensor layer and clear on settlement.",
+        "a short-lived process-local engine epoch under the fixed GB10/13.0 environment assumption."
+      ]
+    },
+    "notes": "Accurate scalar choices and probe; tolerance is measured against the current revision's f64, with an f32 fallback for nonfinite cells, and emission and the opt-in source-cache tool mode are concrete. Excess is engine-epoch machinery, in-flight coalescing, guard tests and full-size error measurement; it notes host drift as a framework limitation without proposing a change."
+  },
+  {
+    "doc": "doc-L.md",
+    "counts": {"R1": 0, "R2": 0, "R3": 0, "R4": 2, "R5": 3, "R6": 0, "R7": "no", "R8": 2},
+    "scores": {"A1": 5, "A2": 5, "A3": 5, "A4": 5, "A5": 5},
+    "relation": "tolerance",
+    "over_engineering": 3,
+    "fitness": 8,
+    "quotes": {
+      "R4": ["Exercise cold, warm, concurrent and failed check paths and record their batch counts."],
+      "R5": [
+        "Run one warmup and a few repeats, report sample count and median (or fewer CPU repeats with count noted if the interpreter is slow).",
+        "Compare the outputs to the f32 interpreter at the measured sizes and record the largest deltas rather than assuming acceptance from the small cases."
+      ],
+      "R8": [
+        "Capture the configured host, architecture, nvcc path/flags and tool revision in a versioned read-only engine profile (`MemoryResources`, declared read in the invariant and transformation).",
+        "A small in-flight map keyed by the same complete pass identity shares concurrent identical checks; delete the entry on settlement."
+      ]
+    },
+    "notes": "The strongest numerical argument: double-path transcendentals with zero mismatches, explicitly not taken as a guarantee; a budget explained as about 336 unit roundoffs; and an f32 secondary oracle, all on a clean defineTransformation and runDifferentialAsync design. Excess is a MemoryResources engine profile, an in-flight map, and benchmark repeats with accuracy recording."
+  }
+]

@@ -519,3 +519,45 @@ A judge (Claude subagent, 203K tokens) scored the twelve Sol designs (four cells
   - `gpuMs` and bit agreement at the brief's sizes.
   
   A plumbing run on B (no CUDA API) reported every step as missing and cached the large f32 references. Their first computation took 547 s in the stage-1 interpreter.
+
+## Step 21: stage-2 designs scored; every design chose tolerance
+
+A blind judge (Claude subagent, 205K tokens) scored the twelve T2 designs with `scripts/17-judge-rubric-t2.md`. Its quotes verify, 84 of 84. Scores are in `results/judge-scores-t2.json`.
+
+| cell | doc | words | excess | R7 | over-eng. | fitness |
+|---|---|---:|---:|---|---:|---:|
+| Codex Astra medium (A) | G | 2,079 | 3 | no | 1 | 9 |
+| Codex Astra high (K) | J | 2,645 | 4 | no | 2 | 9 |
+| Codex Astra xhigh (L) | E | 2,539 | 2 | no | 1 | 9 |
+| Codex Sol medium (J) | I | 2,489 | 9 | no | 4 | 7 |
+| Codex Sol high (I) | F | 2,296 | 10 | yes | 4 | 6 |
+| Codex Sol xhigh (B) | A | 2,421 | 3 | no | 2 | 8 |
+| Pi Astra medium (H) | C | 1,670 | 4 | yes | 2 | 7 |
+| Pi Astra high (D) | H | 2,574 | 6 | yes | 2 | 8 |
+| Pi Astra xhigh (G) | D | 3,398 | 7 | no | 3 | 9 |
+| Pi Sol medium (F) | K | 2,441 | 7 | yes | 3 | 8 |
+| Pi Sol high (E) | B | 2,619 | 7 | no | 3 | 8 |
+| Pi Sol xhigh (C) | L | 2,753 | 7 | no | 3 | 8 |
+
+Means (over-engineering / fitness / excess):
+- **Harness × model:** Codex Astra 1.33 / 9.00 / 3.0, Codex Sol 3.33 / 7.00 / 7.3, Pi Astra 2.33 / 8.00 / 5.7, Pi Sol 3.00 / 8.00 / 7.0.
+- **Model:** Astra 1.83 / 8.50, Sol 3.17 / 7.50.
+- **Effort:** no consistent effect.
+
+Readings:
+- **Astra over-engineers less than Sol in both harnesses, as in T1.** Codex Astra is the best cell in both stages.
+- **The harness effect from T1 does not hold for Sol.** Codex Sol is now the weakest group, below Pi Sol. T1's "Codex restrains the model's defaults" holds for Astra only. With one run per cell, the Sol difference between harnesses is within the judge variation measured in step 13.
+- **Every design chose the tolerance relation, and the judge finds the arithmetic claims sound:**
+  - under the default flags nvcc contracts a·b + c into an FMA;
+  - `__fadd_rn`, `__fmul_rn` and `__fdiv_rn`, and `sqrtf` under the default `-prec-sqrt=true`, are correctly rounded and equal `Math.fround` of the double result;
+  - `expf`, `logf` and `tanhf` differ from the rounded JS functions on about 20–30% of inputs.
+- **Four designs (A, F, I, L) probed double-precision `exp`, `log` and `tanh` rounded to f32 and found no mismatch apart from NaN bit patterns.** That is the evidence for an exact lowering, and none of them took it:
+  - A and L treat it as sampled evidence only;
+  - F and I reject exactness because NaN payloads differ, which the f32 meaning does not define;
+  - no design argued for exactness up to NaN class, which an exhaustive check over all 2³² f32 inputs could establish for the unary functions.
+  
+  The evaluation measures bit-exactness regardless of the relation each design claims.
+- **The common excess:** repeated timed runs with median and range (all 12), tests of failure, retry and malformed-reply paths (11), and merging concurrent identical checks onto one in-flight promise (7).
+- **Framework and tool changes:**
+  - **tool:** a private remote working directory per call, with a per-key compile lock and atomic publishing of the binary;
+  - **framework:** ten designs leave `src/framework` unchanged and use `defineTransformation` with `differential.decide`. D and J propose a batch-only differential spec without the synchronous run/compare, and H works around the same gap with a throwing stub.
