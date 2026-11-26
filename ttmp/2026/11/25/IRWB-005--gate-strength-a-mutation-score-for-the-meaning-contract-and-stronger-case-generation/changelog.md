@@ -30,3 +30,12 @@ f32 fixture (61 mutants, default 96.7 %, v2 100 %); C5 src/typed/facts-check.ts 
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a6abc74d4c978a51f/src/typed/facts-check.ts — typed.ranges checked against executions
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a6abc74d4c978a51f/ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/various/18-freeze-diff.txt — frozen-default comparison
+
+## 2026-11-26
+
+Held-out base r0 (96.2 % / 99.9 %); C5 range facts hold on 149M checks; NaN-payload class from IRWB-006 measured (v1 accepts x + -0 -> x, v2 rejects); merged 1f45c94 (IRWB-004/006): gates identical, 396/396 sample mutants identical; machine failure at 01:39 cut the Candela run (14 of 18 functions kept) and killed the deep search before it wrote; both resumed (Candela under a 14G memory cap)
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a6abc74d4c978a51f/ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/log/01-gate-strength-diary.md — steps 12-17
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a6abc74d4c978a51f/ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation/various/18-freeze-diff-merged.txt — gates on the merged branch

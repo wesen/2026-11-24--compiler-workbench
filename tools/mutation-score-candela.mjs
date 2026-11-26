@@ -15,7 +15,8 @@
 // this is the full gate's verdict. Where nothing calls f (A = [f]) the framework's own gate (checkInvariant of
 // meaningKept on the small program) is run as well, and the two verdicts are compared.
 //
-//   node --max-old-space-size=12288 tools/mutation-score-candela.mjs [--count 30] [--bcm 6] [--max-steps 2000]
+//   systemd-run --user --scope --quiet -p MemoryMax=14G -p MemorySwapMax=0 \
+//     node --max-old-space-size=10240 --expose-gc tools/mutation-score-candela.mjs [--count 30] [--bcm 6] [--max-steps 2000]
 //        [--functions a,b] [--gates default,check100,strong,strong-cases,default+div] [--sample 400]
 //        [--caller-sample 100] [--fn-budget 900 (s per function; later sites are counted as skipped)]
 //        [--skip-done previous.jsonl (same selection, without functions that run finished)]
@@ -204,9 +205,11 @@ for (const f of chosen) {
     times.classify += performance.now() - tb;
     records.push(rec);
   }
-  // memory: what the process holds after the function (before releasing its cases), and the peak so far
+  // memory: what the process holds after the function (before releasing its cases), and the peak so far; with
+  // --expose-gc, a full collection first, so heapMB is what is live rather than what has not been collected yet
+  if (globalThis.gc) globalThis.gc();
   const mu = process.memoryUsage(), mb = x => Math.round(x / 2 ** 20);
-  const mem = { rssMB: mb(mu.rss), heapMB: mb(mu.heapUsed), peakRssMB: Math.round(process.resourceUsage().maxRSS / 1024) };
+  const mem = { rssMB: mb(mu.rss), heapMB: mb(mu.heapUsed), peakRssMB: Math.round(process.resourceUsage().maxRSS / 1024), afterGc: !!globalThis.gc };
   perFn[f] = { affected: A.length, sites: sites.length, judged: sites.length - skipped, skipped, ms: Object.fromEntries(Object.entries(times).map(([k, v]) => [k, Math.round(v)])), mem };
   gateCases.clear(); // release this function's gate cases and r0 runs before the next function
   if (jsonl) appendFileSync(jsonl, records.filter(r => r.fn === f).map(r => JSON.stringify(r)).join('\n') + (records.some(r => r.fn === f) ? '\n' : ''));
