@@ -441,7 +441,7 @@ I applied all sixteen notes of Step 7 to the guide, then reread the changed pass
 - The second pass is the brief's requirement and the writing guidance's; the tasks are how the next person finds the phases.
 
 ### What worked
-- The guide is 1,003 lines (101,487 bytes) before these edits and slightly longer after; every number cites a `various/` file, an IRWB-004 file or a diary step.
+- The revised guide is about 1,000 lines and 101 KB (`wc` gave 1,003 lines and 101,487 bytes after all but the last two edits); every number cites a `various/` file, an IRWB-004 file or a diary step.
 
 ### What didn't work
 - No failures.
