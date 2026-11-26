@@ -607,3 +607,40 @@ Readings:
 - **An evaluator bug, mine:** `withTimeout` left its 5- and 10-minute timers pending, so a finished worker stayed alive until the last timer fired. That cost time only; no result changed.
   - The fix: clear and `unref` the timers, and exit after writing stdout (sha256 now `88cc4659…`).
   - A, B and J ran with the old exit; the remaining nine with the new.
+
+## Step 25: all twelve stage-2 implementations evaluated; the stage-3 base
+
+All twelve pass the frozen stage-1 suite (25/25) and export the full stage-2 API. The evaluation (`scratchpad/t2-eval/t2-eval.mjs`, results in `results/eval-t2.json`) gives:
+
+| item | cell | corpus exact | after passes | random | full size | checkLowering | s/check | matmul ms | attention ms | mlp ms |
+|---|---|---|---|---|---|---|---:|---:|---:|---:|
+| K | codex · astra · high | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 4.0 | 0.26 | 1.51 | 1.02 |
+| A | codex · astra · medium | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 6.0 | 0.26 | 1.39 | 0.82 |
+| L | codex · astra · xhigh | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 4.0 | 0.23 | 1.41 | 0.98 |
+| I | codex · sol · high | 6/6 | 4/4 | 20/20 | 6/6 | 16/16 tolerance | 2.5 | 0.20 | 1.81 | 1.05 |
+| J | codex · sol · medium | 6/6 | 4/4 | 20/20 | 6/6 | 16/16 tolerance | 3.1 | 0.23 | 7.31 | 1.03 |
+| B | codex · sol · xhigh | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 4.9 | 0.24 | 1.58 | 1.00 |
+| D | pi · astra · high | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 3.8 | 0.17 | 1.74 | 0.78 |
+| H | pi · astra · medium | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 3.0 | 0.20 | 1.43 | 1.01 |
+| G | pi · astra · xhigh | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 3.2 | 0.25 | 1.57 | 1.00 |
+| E | pi · sol · high | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 3.1 | 0.20 | 1.75 | 0.83 |
+| F | pi · sol · medium | 3/6 | 1/4 | 16/20 | 3/6 | 16/16 tolerance | 3.1 | 0.22 | 1.83 | 0.95 |
+| C | pi · sol · xhigh | 6/6 | 4/4 | 20/20 | 6/6 | 16/16 tolerance | 3.9 | 0.21 | 1.48 | 1.15 |
+
+- **Correctness is uniform again.** Every lowering computes the program, and every `checkLowering` accepts all 16 programs under tolerance, at 2.5–6.0 s per check (remote).
+- **Three are bit-exact with the f32 meaning on every measured case** (J, C, I: all Sol). They use round-to-nearest intrinsics (`__fadd_rn`, `__fmul_rn`), so nothing contracts, and `exp`, `log` and `tanh` in double, rounded. Step 23 proved that construction equal to the f32 meaning on all 2³² inputs.
+- **The other nine are bit-exact except where `exp` or `tanh` appear.** They use the single-precision intrinsics, about 1 ulp off, and up to 2.2e-5 scaled at full size in mlp.
+- **No implementation claims the exact relation.** J, C and I are exact by construction and check themselves under tolerance.
+- **Model:** Sol built the exact backends (3 of 6 Sol cells, 0 of 6 Astra cells). Astra wrote less code: +391–498 lines of tensor source against Sol's +607–744.
+- **Framework:** ten change nothing in `src/framework`. K and G add a batch differential (+21/−5 and +30/−10, with a new framework test).
+- **Tool:** eleven change `tools/cuda-remote.mjs`, by +16/−12 (L) up to +133/−92 (B), mostly private run directories and compile locks. H leaves it unchanged.
+- **Kernel times are close across cells:** matmul 512³ 0.17–0.26 ms; attention 1.4–1.8 ms, except J at 7.3 ms; mlp 0.8–1.15 ms.
+
+### The stage-3 base: IRWB-022-I (Codex, Sol, high)
+All twelve pass every check the brief stated. Stage 3 (fusion) gains most from a base whose lowering is bit-exact, because then fused kernels can be checked under the exact relation. So the criteria are, in order:
+1. bit-exact with the f32 meaning on every measured case (J, C, I);
+2. the smallest framework change (none for all three);
+3. the smallest tool change (I: +104/−80, against C +116/−86 and J +126/−79);
+4. the smallest tensor source (I: +607, against J +633 and C +708).
+
+I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineering 4, fitness 6, R7 yes), so design scores did not predict implementation quality, as in stage 1. I's tool change is read before the merge, because the tool is shared.
