@@ -312,3 +312,63 @@ See Steps 1 and 2. Framework implementation and regressions are in `5e8fbd5`.
 commands and results are in Step 3; no further framework changes. Start at `src/tensor/index.ts` for the public
 API, `meaning.ts` for the sampling and thresholds, and `tests/tensor/optimize.test.mjs` for gate evidence. No
 CUDA work was attempted and `npm test` was not run.
+
+## Step 5: Record independent evaluation and publish the report
+
+Every result supplied for `a989925` passed. I separated those independent results from the intentional local
+negative controls and inspected the gate and publication code for the distinction between acceptance and a
+changed revision. There was no independent failure to reproduce or assign a cause to.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+````text
+Stage 1 of IRWB-020-G has been evaluated independently. Your results:
+
+- **Hidden acceptance suite** (25 tests of the fixed core and API, written from the brief before any implementation existed; revision `a989925`): 25/25 passed.
+- **Differential cross-check:** 60 random programs in the fixed core, 3 inputs each, compared with an independent reference evaluation. f32 results bit-identical in 180/180 cases; `precision: 'f64'` results within 1e-9 (relative to max(1, |r|)) in 180/180.
+- **`optimizeTix(p, ['inline'])`** on the same 60 programs: accepted on 60, and every accepted result is bit-identical to the original.
+- **`optimizeTix(p, ['split-sum'])`:** accepted on 60/60, and every accepted result computes the same function (f64 run within 1e-9).
+
+In this turn, do not change any code under `src/`, `tests/` or `corpus/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every failure or rejection listed above, find its cause in your code and state it with `file:line` in your diary. Reproduce it with a script in your ticket's `scripts/` if that helps. If you think a result is wrong, say why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - Tix;
+   - the IR you chose and why;
+   - the evaluators;
+   - the meaning contract: relations, cases, the tolerance and how you justified it;
+   - the two passes;
+   - each framework change and why it was needed;
+   - how you checked the work;
+   - the evaluation results above, including every failure and its cause;
+   - what you would do differently.
+
+   Write prose first, with short code excerpts and at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-020-G:`). Final message: the report's path, the commit hash, and one line per failure cause.
+````
+
+### Diagnosis
+
+- **Hidden suite:** 25/25 passed. **Independent cross-check:** 180/180 in f32 and 180/180 in f64 under the
+  stated comparisons. **Inline and split-sum:** 60/60 accepted apiece, with no reported mismatches among the
+  accepted outputs. There are no independent failure causes or results I dispute.
+- An accepted step is not necessarily a rewrite. `src/framework/passes/define-pass.ts:270` returns an
+  identity when a pass produces no candidate, and `src/tensor/optimize.ts:27` reports it as accepted. The
+  independent aggregate does not specify how many artifact revisions changed.
+- For contrast, the local length-eight witness changes the f32 word because of the extra accumulation at
+  `src/tensor/evaluate.ts:154` and `:156`; exact comparison rejects the different word at
+  `src/tensor/meaning.ts:87`. The independent f64 observation is consistent with this roundoff difference.
+- The local mutants at `tests/tensor/optimize.test.mjs:110` and `:140` intentionally change the producer's
+  operation or double the sum, respectively; they fail the exact check at `src/tensor/meaning.ts:87` or the
+  tolerance check at `:94`. Missing coverage is deliberately reported at `src/tensor/meaning.ts:120`.
+  These are not independent failures and the existing tests reproduce them without a new script.
+
+### Evidence and review instructions
+
+Created [the Stage 1 report](./02-report.md). On Node v24.18.0 `npm run build && node --test
+--test-reporter=spec tests/tensor/*.test.mjs` succeeded (32/32 local tests). The independent aggregates are
+reported as supplied, not rerun locally. `git diff --quiet a989925 -- src tests corpus` confirmed the
+protected trees are unchanged. A short `functions.edit` of the generated report scaffold did not match
+(`Could not find the exact text`); replaced the new scaffold with the complete report.

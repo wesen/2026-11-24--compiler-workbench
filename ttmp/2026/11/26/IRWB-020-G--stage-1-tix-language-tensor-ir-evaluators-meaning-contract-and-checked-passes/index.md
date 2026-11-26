@@ -28,6 +28,7 @@ limitation found during implementation. CUDA work remains out of scope.
 
 ## Key Links
 
+- [Final report and independent evaluation](./reference/02-report.md)
 - [Tix Stage 1 Design](./design-doc/01-tix-stage-1-design.md)
 - [Diary](./reference/01-diary.md)
 
