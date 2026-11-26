@@ -1,7 +1,7 @@
 ---
 Title: Checking Tix CUDA lowering on the GB10
 Ticket: IRWB-022-L
-Status: review
+Status: complete
 Topics:
     - compiler
     - ir
@@ -22,7 +22,7 @@ RelatedFiles:
       Note: Remote execution, compile reuse and shared run-directory finding
 ExternalSources: []
 Summary: Direct CUDA emission, the measured numerical relation and the remote acceptance gate.
-LastUpdated: 2026-11-26T15:20:53.027308001-05:00
+LastUpdated: 2026-11-26T16:34:37.021095812-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -90,6 +90,8 @@ The Node parent stages each call privately and asynchronously invokes `node tool
 A local promise map would only protect calls in one process. Giving every input batch a unique file in its hash would avoid collisions by throwing away compile reuse. Keep the current all-input compile key for the fixed target installation. Different payloads can cause a recompile, but batching pays that cost once per group. A source-only cache would need rules for additional compile inputs that this stage does not require.
 
 ## Verification and measurements after review
+
+**As built.** Commit `4546491` implements this ledger. Commit `ad1502a` exercises delegation and replay with the framework counters during a real GPU check. The six-program timings, test results and verification detail are in the [implementation report](../reference/02-cuda-lowering-results-and-corpus-timings.md).
 
 Local tensor tests will cover the three exports, code generation from both optimized revisions, binary round-trips, subarray offsets, returned parameters, empty outputs, zero-case evidence, and cold/warm/changed-source behavior with a counting batch runner. A dedicated `tests/tensor/cuda-gpu.test.mjs` will run all six small corpus fixtures and focused cases through the real tool. Include a shadowed reduction and colliding tensor/index names, affine/transposed reads, nonfinite min/max, signed zeros, a contraction-sensitive multiply/subtract, an empty sum/max, and a split tail. Feed a compilable candidate dropping that tail to the same checked pass. It must be rejected on positive data after a passing check of the correct bytes. Run the build, explicit network-free tensor test files, and the GPU file separately.
 

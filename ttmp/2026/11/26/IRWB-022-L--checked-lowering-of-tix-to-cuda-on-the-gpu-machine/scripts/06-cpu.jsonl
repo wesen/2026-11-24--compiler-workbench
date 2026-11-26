@@ -1,0 +1,6 @@
+{"name":"matmul","mode":"cpu","ms":[813945.9800209999],"shape":[512,512],"first":-10.697467803955078,"inputs":"cd0fddab92cb8f50f21b17fb0d27da60c1495eb6b5d95c57e0d1905825bad0e5"}
+{"name":"softmax","mode":"cpu","ms":[84049.19307899999],"shape":[4096,1024],"first":0.00106411287561059,"inputs":"ec475e031c444c369ce1e31105abf8cb9fbaf0033259546e538f2762a5c22edf"}
+{"name":"layernorm","mode":"cpu","ms":[98367.16078299994],"shape":[4096,1024],"first":0.7155193090438843,"inputs":"fffbf3e8374ffac963ef0733c6e463c40735fde2c0d513df248fee98176d5286"}
+{"name":"attention","mode":"cpu","ms":[627406.5148430001],"shape":[1024,64],"first":0.022675348445773125,"inputs":"6d2a8757d34117d0850d3faf84ac4135bc8fd59679c7c1e3c1f3240c3570b31e"}
+{"name":"mlp","mode":"cpu","ms":[1162684.6276940003],"shape":[1024,256],"first":-72.65203094482422,"inputs":"c91ca8368100e8909663d49d30ee16dad10c553501640bd47be36313672442ab"}
+{"name":"conv2d","mode":"cpu","ms":[281866.7971640001],"shape":[8,32,62,62],"first":-5.1969218254089355,"inputs":"f9d5a627d94ac602e5f1865df32b0f30309458be32c089d89d2c356f413f3810"}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "536fd985b4d329dc6aad510171025e5ea317d0e08657da66ed48474cb3378c92",
+  "request": {
+    "ticket": "IRWB-022-L",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the reviewed CUDA backend, verified 29 tensor tests, and reconciled all six GPU and interpreter timing pairs."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-deba131234a8a52822e49fdfbe0d3c9d",
+    "state": "committed",
+    "created_at": "2026-11-26T21:37:37.945476589Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "a7a34685bfc1bbec593c83fdb6ad2426cf3a7f4e05d2a582efe25cc9a2381dcd",
+      "index.md": "faaeb9475215a73cec2f2c6ed42a57f8b9ff9e46a216d41fd92a7b46414f9e89"
+    },
+    "after": {
+      "changelog.md": "47f946f4fb96b48be775675cabc18ddfba9f2de3fd0b678c1fbb91c2f8723fe7",
+      "index.md": "73b61d7362d9f0437d883f0baa778eaafc4e47fbb52cf12f450e574bf78f46f3"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "a7a34685bfc1bbec593c83fdb6ad2426cf3a7f4e05d2a582efe25cc9a2381dcd",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKU3VibWl0dGVkIHRoZSBkZXNpZ24gd2l0aCBhIEdCMTAgY291bnRlcmV4YW1wbGUgdG8gZXhhY3QgZjMyIGFncmVlbWVudCBhbmQgYSBjb2xkL3dhcm0gZnJhbWV3b3JrIGJhdGNoaW5nIHByb2JlLgoKIyMgMjAyNi0xMS0yNgoKSW1wbGVtZW50ZWQgZGlyZWN0IENVREEgbG93ZXJpbmcsIGJpbmFyeSBleGVjdXRpb24sIHRoZSBvcmlnaW4tZjY0IGd1YXJhbnRlZSBhbmQgaXNvbGF0ZWQgd29ya3NwYWNlcyBpbiA0NTQ2NDkxLiBUaGUgZnJhbWV3b3JrIHJlcXVpcmVkIG5vIGVkaXRzLgoKIyMgMjAyNi0xMS0yNgoKQ29tcGxldGVkIHRoZSByZXZpZXdlZCBDVURBIGJhY2tlbmQsIHZlcmlmaWVkIDI5IHRlbnNvciB0ZXN0cywgYW5kIHJlY29uY2lsZWQgYWxsIHNpeCBHUFUgYW5kIGludGVycHJldGVyIHRpbWluZyBwYWlycy4K"
+    },
+    {
+      "path": "index.md",
+      "before": "faaeb9475215a73cec2f2c6ed42a57f8b9ff9e46a216d41fd92a7b46414f9e89",
+      "after": "LS0tClRpdGxlOiBDaGVja2VkIGxvd2VyaW5nIG9mIFRpeCB0byBDVURBIG9uIHRoZSBHUFUgbWFjaGluZQpUaWNrZXQ6IElSV0ItMDIyLUwKU3RhdHVzOiBjb21wbGV0ZQpUb3BpY3M6CiAgICAtIGNvbXBpbGVyCiAgICAtIGlyCiAgICAtIHZlcmlmaWNhdGlvbgpEb2NUeXBlOiBpbmRleApJbnRlbnQ6IGxvbmctdGVybQpPd25lcnM6IFtdClJlbGF0ZWRGaWxlczogW10KRXh0ZXJuYWxTb3VyY2VzOiBbXQpTdW1tYXJ5OiBEZXNpZ24gYW5kIEdCMTAgZXZpZGVuY2UgZm9yIGEgY2hlY2tlZCBUaXgtdG8tQ1VEQSBiYWNrZW5kLgpMYXN0VXBkYXRlZDogMjAyNi0xMS0yNlQxNjozNzozNy45NDUwNDQ1ODUtMDU6MDAKV2hhdEZvcjogIiIKV2hlblRvVXNlOiAiIgotLS0KCiMgQ2hlY2tlZCBsb3dlcmluZyBvZiBUaXggdG8gQ1VEQSBvbiB0aGUgR1BVIG1hY2hpbmUKClRoZSBDVURBIGJhY2tlbmQgZW1pdHMgZGlyZWN0bHkgZnJvbSBUaXgsIGJhdGNoZXMgY29ycmVjdG5lc3MgY2hlY2tzIG9uIHRoZSBHQjEwIGFuZCBjb21wYXJlcyBlYWNoIHJlc3VsdCB3aXRoIHRoZSBvcmlnaW5hbCBwcm9ncmFtJ3MgZjY0IGV2YWx1YXRpb24uCgotIFtEZXNpZ24gYW5kIGNoYW5nZSBsZWRnZXJdKGRlc2lnbi1kb2MvMDEtY2hlY2tpbmctdGl4LWN1ZGEtbG93ZXJpbmctb24tdGhlLWdiMTAubWQpCi0gW0ltcGxlbWVudGF0aW9uIHJlc3VsdHMgYW5kIGNvcnB1cyB0aW1pbmdzXShyZWZlcmVuY2UvMDItY3VkYS1sb3dlcmluZy1yZXN1bHRzLWFuZC1jb3JwdXMtdGltaW5ncy5tZCkKLSBbRGlhcnkgYW5kIHByb2JlIHJlcHJvZHVjdGlvbiBjb21tYW5kc10ocmVmZXJlbmNlLzAxLWRlc2lnbi1hbmQtaW1wbGVtZW50YXRpb24tZGlhcnkubWQpCi0gW0dCMTAgbWVhc3VyZW1lbnRzIGFuZCBmaXJzdCBkaWZmZXJpbmcgd29yZHNdKHNjcmlwdHMvMDQtcHJvYmUtcmVzdWx0Lmpzb24pCi0gW1Rhc2tzXSh0YXNrcy5tZCkgwrcgW0NoYW5nZWxvZ10oY2hhbmdlbG9nLm1kKQoKU3RhZ2UgMSBzdXBwbGllcyB0aGUgaW5wdXQgc2VtYW50aWNzIGFuZCB0aGUgdG9sZXJhbmNlIGJ1ZGdldC4gW1N0YWdlLTEgZGVzaWduXSguLi9JUldCLTAyMC1CLS10aXgtbGFuZ3VhZ2UtdGVuc29yLWlyLWV2YWx1YXRvcnMtbWVhbmluZy1jb250cmFjdC1hbmQtY2hlY2tlZC1wYXNzZXMvZGVzaWduLWRvYy8wMS10aXgtc2VtYW50aWNzLWFuZC1jaGVja2VkLXRlbnNvci1yZXdyaXRlcy5tZCkgwrcgW1N0YWdlLTEgcmVwb3J0XSguLi9JUldCLTAyMC1CLS10aXgtbGFuZ3VhZ2UtdGVuc29yLWlyLWV2YWx1YXRvcnMtbWVhbmluZy1jb250cmFjdC1hbmQtY2hlY2tlZC1wYXNzZXMvcmVmZXJlbmNlLzAyLXJlcG9ydC5tZCkK"
+    }
+  ]
+}

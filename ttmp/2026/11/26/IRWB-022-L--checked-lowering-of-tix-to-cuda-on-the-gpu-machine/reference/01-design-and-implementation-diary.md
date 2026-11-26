@@ -1,7 +1,7 @@
 ---
 Title: Design and implementation diary
 Ticket: IRWB-022-L
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: Probe configuration, observations and review handoff.
-LastUpdated: 2026-11-26T15:12:25.834050174-05:00
+LastUpdated: 2026-11-26T16:37:37.337107025-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -213,3 +213,4 @@ The corrected `node --test tests/tensor/*.test.mjs` run passed all 29 tests with
 
 The GB10 regression commit is `ad1502a`. The benchmark script uses the encoded repetition count three and the runner's exclusive timing lock, and stores each event interval, input digest and output shape. All six GPU measurements completed. Their medians span 0.166208 ms for conv2d to 0.988288 ms for MLP. The host uses the stage-1 f32 interpreter at the exact same input sizes, with no extrapolation. The first host row (512³ matmul) took 813945.980 ms. [Benchmark harness](../scripts/05-benchmark.mjs) · [Device observations](../scripts/07-gpu.jsonl)
 
+The timing harness and device observations are committed at `1971375`. The interpreter completed all six sizes. I verified the paired input SHA-256 digests, expected result shapes, one positive finite local interval and three positive finite device intervals per function. I recomputed the medians and checked the rounded timings against the published table. Conv2d, the last case, returned [8,32,62,62] in 281866.797 ms on the interpreter. The built barrel contains exactly the three stage-1 and three requested stage-2 functions. [Results and timings](02-cuda-lowering-results-and-corpus-timings.md)
