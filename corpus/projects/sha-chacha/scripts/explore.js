@@ -3,7 +3,10 @@ const options = { coalesce: true, chains: true, homes: true };
 const { inputs } = JSON.parse(project.files.read('project.json'));
 const cases = {
   sha256Block: [
-    Array.from('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012', ch => ch.charCodeAt(0)),
+    Array.from(
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012',
+      ch => ch.charCodeAt(0),
+    ),
     inputs.sha256Block.roundK.cells,
     Array(16).fill(0),
   ],
@@ -22,12 +25,22 @@ function measure(revision) {
     const { steps, trap, hottest } = image.heat(fn, args);
     if (trap) throw new Error(`${revision} ${fn}: ${trap}`);
     const { frame, spills } = image.fns[fn];
-    return { revision, fn, instructions: steps, instructionsPerByte: steps / 64, frame, spills, hottest };
+    return {
+      revision,
+      fn,
+      instructions: steps,
+      instructionsPerByte: steps / 64,
+      frame,
+      spills,
+      hottest,
+    };
   });
 }
 
 const baseline = measure('r0');
 const speed = p.pipeline('speed');
 const rejected = speed.steps.filter(step => step.rejected);
-if (rejected.length) throw new Error(rejected.map(step => step.rejected).join('\n'));
+if (rejected.length) {
+  throw new Error(rejected.map(step => step.rejected).join('\n'));
+}
 return { options, measurements: [...baseline, ...measure(speed.rev)] };

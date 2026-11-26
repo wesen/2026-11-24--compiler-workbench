@@ -51,7 +51,8 @@ function sha256Block(message: buffer, roundK: buffer, out: buffer): i32 {
         const sum1 = e6 ^ e11 ^ e25;
         const choice = (e & f) ^ ((e ^ -1) & g);
         const majority = (a & b) ^ (a & c) ^ (b & c);
-        const k = roundK.charCodeAt(2 * t) | (roundK.charCodeAt(2 * t + 1) << 16);
+        const k = roundK.charCodeAt(2 * t)
+            | (roundK.charCodeAt(2 * t + 1) << 16);
         const t1 = h + sum1 + choice + k + w[t];
         const t2 = sum0 + majority;
 
@@ -112,7 +113,9 @@ function quarter(a: i32, b: i32, c: i32, d: i32): Quarter {
     return Quarter(qa, qb, qc, qd);
 }
 
-function chacha20Block(key: buffer, counter: i32, nonce: buffer, out: buffer): i32 {
+function chacha20Block(
+    key: buffer, counter: i32, nonce: buffer, out: buffer
+): i32 {
     const initial0 = 0x61707865;
     const initial1 = 0x3320646e;
     const initial2 = 0x79622d32;
