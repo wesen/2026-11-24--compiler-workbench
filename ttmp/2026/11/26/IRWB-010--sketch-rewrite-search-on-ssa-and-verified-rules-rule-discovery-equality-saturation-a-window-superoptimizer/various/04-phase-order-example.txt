@@ -1,0 +1,72 @@
+== nested
+function f(x: i32): i32
+bb:f.0  -> []
+    s:f.0        return ((x << 1) * 3)
+revisions 1; machine code (4 instructions):
+  slli t0, a0, 1
+  addi t1, zero, 3
+  mul a0, t0, t1
+  ret
+
+== folded
+function f(x: i32): i32
+bb:f.0  -> []
+    s:f.0        return (x * 6)
+revisions 0; machine code (3 instructions):
+  addi t0, zero, 6
+  mul a0, a0, t0
+  ret
+
+== shifts
+function f(x: i32): i32
+bb:f.0  -> []
+    s:f.0        return ((x << 2) + (x << 1))
+revisions 0; machine code (4 instructions):
+  slli t0, a0, 2
+  slli t1, a0, 1
+  add a0, t0, t1
+  ret
+
+== f32Times2
+function f(x: f32): f32
+bb:f.0  -> []
+    s:f.0        return (x *. 2f)
+revisions 0; machine code (4 instructions):
+  lui t0, 0x40000
+  fmv.w.x ft0, t0
+  fmul.s fa0, fa0, ft0, rne
+  ret
+
+== f32PlusSelf
+function f(x: f32): f32
+bb:f.0  -> []
+    s:f.0        return (x +. x)
+revisions 0; machine code (2 instructions):
+  fadd.s fa0, fa0, fa0, rne
+  ret
+
+== smooth
+function f(x: f32): f32
+bb:f.0  -> []
+    s:f.0        return ((x *. x) *. (3f -. (2f *. x)))
+revisions 0; machine code (9 instructions):
+  fmul.s ft0, fa0, fa0, rne
+  lui t0, 0x40400
+  fmv.w.x ft1, t0
+  lui t0, 0x40000
+  fmv.w.x ft2, t0
+  fmul.s ft2, ft2, fa0, rne
+  fsub.s ft1, ft1, ft2, rne
+  fmul.s fa0, ft0, ft1, rne
+  ret
+
+== lerp
+function f(a: f32, b: f32, t: f32): f32
+bb:f.0  -> []
+    s:f.0        return (a +. ((b -. a) *. t))
+revisions 0; machine code (4 instructions):
+  fsub.s ft0, fa1, fa0, rne
+  fmul.s ft0, ft0, fa2, rne
+  fadd.s fa0, fa0, ft0, rne
+  ret
+

@@ -1,0 +1,201 @@
+==== noise3 at r0
+function noise3(x__x: f32, x__y: f32, x__z: f32): f32
+bb:noise3.0  -> []
+    s:noise3.0   t21 = q_floor(x__x)
+    s:noise3.1   t22 = q_floor(x__y)
+    s:noise3.2   t23 = q_floor(x__z)
+    s:noise3.3   t5 = t23
+    s:noise3.4   t4 = t22
+    s:noise3.5   t3 = t21
+    s:noise3.6   t24 = q_fract(x__x)
+    s:noise3.7   t25 = q_fract(x__y)
+    s:noise3.8   t26 = q_fract(x__z)
+    s:noise3.9   t8 = t26
+    s:noise3.10  t7 = t25
+    s:noise3.11  t6 = t24
+    s:noise3.12  t11 = ((t8 *. t8) *. (3f -. (2f *. t8)))
+    s:noise3.13  t10 = ((t7 *. t7) *. (3f -. (2f *. t7)))
+    s:noise3.14  t9 = ((t6 *. t6) *. (3f -. (2f *. t6)))
+    s:noise3.15  t27 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 0f, 0f)
+    s:noise3.16  q_t0 = t27
+    s:noise3.17  t28 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 0f, 0f)
+    s:noise3.18  a = (q_t0 +. ((t28 -. q_t0) *. t9))
+    s:noise3.19  t29 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 1f, 0f)
+    s:noise3.20  q_t1 = t29
+    s:noise3.21  t30 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 1f, 0f)
+    s:noise3.22  b = (q_t1 +. ((t30 -. q_t1) *. t9))
+    s:noise3.23  t31 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 0f, 1f)
+    s:noise3.24  q_t2 = t31
+    s:noise3.25  t32 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 0f, 1f)
+    s:noise3.26  c = (q_t2 +. ((t32 -. q_t2) *. t9))
+    s:noise3.27  t33 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 1f, 1f)
+    s:noise3.28  q_t3 = t33
+    s:noise3.29  t34 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 1f, 1f)
+    s:noise3.30  d = (q_t3 +. ((t34 -. q_t3) *. t9))
+    s:noise3.31  q_t4 = (a +. ((b -. a) *. t10))
+    s:noise3.32  return (q_t4 +. (((c +. ((d -. c) *. t10)) -. q_t4) *. t11))
+==== fbm3 at r0
+function fbm3(p__x: f32, p__y: f32, p__z: f32, oct: i32, lac: f32, gain: f32, mode: i32): f32
+bb:fbm3.0  -> [.1]
+    s:fbm3.0     s = 0f
+    s:fbm3.1     a = 0.5f
+    s:fbm3.2     t11 = p__z
+    s:fbm3.3     t10 = p__y
+    s:fbm3.4     t9 = p__x
+    s:fbm3.5     k = 0
+    s:fbm3.6     goto .1
+bb:fbm3.1  -> [.2, .3]
+    s:fbm3.7     if !((k < oct)) goto .2 else .3
+bb:fbm3.2  -> []
+    s:fbm3.27    return s
+bb:fbm3.3  -> [.4, .5]
+    s:fbm3.8     t14 = noise3(t9, t10, t11)
+    s:fbm3.9     n = t14
+    s:fbm3.10    if (mode == 1) goto .4 else .5
+bb:fbm3.4  -> [.6]
+    s:fbm3.11    t15 = sq((1f -. fabs(n)))
+    s:fbm3.12    n = t15
+    s:fbm3.13    goto .6
+bb:fbm3.5  -> [.6]
+    s:fbm3.14    goto .6
+bb:fbm3.6  -> [.7, .8]
+    s:fbm3.15    if (mode == 2) goto .7 else .8
+bb:fbm3.7  -> [.9]
+    s:fbm3.16    n = fabs(n)
+    s:fbm3.17    goto .9
+bb:fbm3.8  -> [.9]
+    s:fbm3.18    goto .9
+bb:fbm3.9  -> [.1]
+    s:fbm3.19    s = (s +. (n *. a))
+    s:fbm3.20    a = (a *. gain)
+    s:fbm3.21    t11 = (t11 *. lac)
+    s:fbm3.22    t10 = (t10 *. lac)
+    s:fbm3.23    t9 = (t9 *. lac)
+    s:fbm3.24    k = (k + 1)
+    s:fbm3.25    goto .1
+==== gnoise at r0
+function gnoise(i__x: f32, i__y: f32, i__z: f32, f__x: f32, f__y: f32, f__z: f32, o__x: f32, o__y: f32, o__z: f32): f32
+bb:gnoise.0  -> []
+    s:gnoise.0   hash3((i__x +. o__x), (i__y +. o__y), (i__z +. o__z))
+    s:gnoise.1   t11 = result#2
+    s:gnoise.2   t10 = result#1
+    s:gnoise.3   t9 = result#0
+    s:gnoise.4   return (((t9 *. (f__x -. o__x)) +. (t10 *. (f__y -. o__y))) +. (t11 *. (f__z -. o__z)))
+==== hash3 at r0
+function hash3(p__x: f32, p__y: f32, p__z: f32): V3f
+bb:hash3.0  -> []
+    s:hash3.0    x = f2bits(p__x)
+    s:hash3.1    y = f2bits(p__y)
+    s:hash3.2    z = f2bits(p__z)
+    s:hash3.3    x = ((x * 1664525) + 1013904223)
+    s:hash3.4    y = ((y * 1664525) + 1013904223)
+    s:hash3.5    z = ((z * 1664525) + 1013904223)
+    s:hash3.6    x = (x + (y * z))
+    s:hash3.7    y = (y + (z * x))
+    s:hash3.8    z = (z + (x * y))
+    s:hash3.9    x = (x ^ (x >>> 16))
+    s:hash3.10   y = (y ^ (y >>> 16))
+    s:hash3.11   z = (z ^ (z >>> 16))
+    s:hash3.12   x = (x + (y * z))
+    s:hash3.13   y = (y + (z * x))
+    s:hash3.14   z = (z + (x * y))
+    s:hash3.15   k = (2f /. 16777216f)
+    s:hash3.16   return (((u2f((x >>> 8)) *. k) -. 1f), ((u2f((y >>> 8)) *. k) -. 1f), ((u2f((z >>> 8)) *. k) -. 1f))
+==== noise3 at O2
+function noise3(x__x: f32, x__y: f32, x__z: f32): f32
+bb:noise3.0  -> []
+    s:noise3.0   t21 = q_floor(x__x)
+    s:noise3.1   t22 = q_floor(x__y)
+    s:noise3.2   t23 = q_floor(x__z)
+    s:noise3.3   t5 = t23
+    s:noise3.4   t4 = t22
+    s:noise3.5   t3 = t21
+    s:noise3.6   t24 = q_fract(x__x)
+    s:noise3.7   t25 = q_fract(x__y)
+    s:noise3.8   t26 = q_fract(x__z)
+    s:noise3.9   t8 = t26
+    s:noise3.10  t7 = t25
+    s:noise3.11  t6 = t24
+    s:noise3.13  t10 = ((t7 *. t7) *. (3f -. (2f *. t7)))
+    s:noise3.14  t9 = ((t6 *. t6) *. (3f -. (2f *. t6)))
+    s:noise3.15  t27 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 0f, 0f)
+    s:noise3.16  q_t0 = t27
+    s:noise3.17  t28 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 0f, 0f)
+    s:noise3.18  a = (q_t0 +. ((t28 -. q_t0) *. t9))
+    s:noise3.19  t29 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 1f, 0f)
+    s:noise3.20  q_t1 = t29
+    s:noise3.21  t30 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 1f, 0f)
+    s:noise3.23  t31 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 0f, 1f)
+    s:noise3.24  q_t2 = t31
+    s:noise3.25  t32 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 0f, 1f)
+    s:noise3.26  c = (q_t2 +. ((t32 -. q_t2) *. t9))
+    s:noise3.27  t33 = gnoise(t3, t4, t5, t6, t7, t8, 0f, 1f, 1f)
+    s:noise3.28  q_t3 = t33
+    s:noise3.29  t34 = gnoise(t3, t4, t5, t6, t7, t8, 1f, 1f, 1f)
+    s:noise3.30  d = (q_t3 +. ((t34 -. q_t3) *. t9))
+    s:noise3.31  q_t4 = (a +. (((q_t1 +. ((t30 -. q_t1) *. t9)) -. a) *. t10))
+    s:noise3.32  return (q_t4 +. (((c +. ((d -. c) *. t10)) -. q_t4) *. ((t8 *. t8) *. (3f -. (2f *. t8)))))
+==== fbm3 at O2
+function fbm3(p__x: f32, p__y: f32, p__z: f32, oct: i32, lac: f32, gain: f32, mode: i32): f32
+bb:fbm3.0  -> [.1]
+    s:fbm3.0     s = 0f
+    s:fbm3.1     a = 0.5f
+    s:fbm3.2     t11 = p__z
+    s:fbm3.3     t10 = p__y
+    s:fbm3.4     t9 = p__x
+    s:fbm3.5     k = 0
+    s:fbm3.28    inv = (mode == 2)
+    s:fbm3.29    inv1 = (mode == 1)
+    s:fbm3.6     goto .1
+bb:fbm3.1  -> [.2, .3]
+    s:fbm3.7     if (k >= oct) goto .2 else .3
+bb:fbm3.2  -> []
+    s:fbm3.27    return s
+bb:fbm3.3  -> [.4, .6]
+    s:fbm3.8     t14 = noise3(t9, t10, t11)
+    s:fbm3.9     n = t14
+    s:fbm3.10    if inv1 goto .4 else .6
+bb:fbm3.4  -> [.6]
+    s:fbm3.11    t15 = sq((1f -. fabs(n)))
+    s:fbm3.12    n = t15
+    s:fbm3.13    goto .6
+bb:fbm3.6  -> [.7, .9]
+    s:fbm3.15    if inv goto .7 else .9
+bb:fbm3.7  -> [.9]
+    s:fbm3.16    n = fabs(n)
+    s:fbm3.17    goto .9
+bb:fbm3.9  -> [.1]
+    s:fbm3.19    s = (s +. (n *. a))
+    s:fbm3.20    a = (a *. gain)
+    s:fbm3.21    t11 = (t11 *. lac)
+    s:fbm3.22    t10 = (t10 *. lac)
+    s:fbm3.23    t9 = (t9 *. lac)
+    s:fbm3.24    k = (k + 1)
+    s:fbm3.25    goto .1
+==== gnoise at O2
+function gnoise(i__x: f32, i__y: f32, i__z: f32, f__x: f32, f__y: f32, f__z: f32, o__x: f32, o__y: f32, o__z: f32): f32
+bb:gnoise.0  -> []
+    s:gnoise.0   hash3((i__x +. o__x), (i__y +. o__y), (i__z +. o__z))
+    s:gnoise.1   t11 = result#2
+    s:gnoise.2   t10 = result#1
+    s:gnoise.3   t9 = result#0
+    s:gnoise.4   return (((t9 *. (f__x -. o__x)) +. (t10 *. (f__y -. o__y))) +. (t11 *. (f__z -. o__z)))
+==== hash3 at O2
+function hash3(p__x: f32, p__y: f32, p__z: f32): V3f
+bb:hash3.0  -> []
+    s:hash3.0    x = f2bits(p__x)
+    s:hash3.1    y = f2bits(p__y)
+    s:hash3.2    z = f2bits(p__z)
+    s:hash3.3    x = ((x * 1664525) + 1013904223)
+    s:hash3.4    y = ((y * 1664525) + 1013904223)
+    s:hash3.5    z = ((z * 1664525) + 1013904223)
+    s:hash3.6    x = (x + (y * z))
+    s:hash3.7    y = (y + (z * x))
+    s:hash3.8    z = (z + (x * y))
+    s:hash3.9    x = (x ^ (x >>> 16))
+    s:hash3.10   y = (y ^ (y >>> 16))
+    s:hash3.11   z = (z ^ (z >>> 16))
+    s:hash3.12   x = (x + (y * z))
+    s:hash3.13   y = (y + (z * x))
+    s:hash3.14   z = (z + (x * y))
+    s:hash3.16   return (((u2f((x >>> 8)) *. 1.1920929e-7f) -. 1f), ((u2f((y >>> 8)) *. 1.1920929e-7f) -. 1f), ((u2f((z >>> 8)) *. 1.1920929e-7f) -. 1f))

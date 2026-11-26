@@ -1,0 +1,8 @@
+{"scene":"B-01","stride":8,"size":[20,20],"passes":32,"bindMs":1752,"msTotal":21890,"stepsPass0":3430936,"nonFinite":0}
+{"scene":"R-01","stride":8,"size":[20,20],"passes":32,"bindMs":1082,"msTotal":33209,"stepsPass0":6564752,"nonFinite":0}
+{"scene":"L-03","stride":8,"size":[20,20],"passes":32,"bindMs":1670,"msTotal":24346,"stepsPass0":2657652,"nonFinite":0}
+{"scene":"G-01","stride":8,"size":[20,20],"passes":32,"bindMs":2072,"msTotal":40509,"stepsPass0":5253890,"nonFinite":0}
+{"scene":"V-02","stride":8,"size":[20,20],"passes":32,"bindMs":1265,"msTotal":49941,"stepsPass0":9146151,"nonFinite":0}
+{"scene":"S-02","stride":4,"size":[20,20],"passes":32,"bindMs":1291,"msTotal":59920,"stepsPass0":10400281,"nonFinite":0}
+{"scene":"V-04","stride":4,"size":[20,20],"passes":32,"bindMs":1921,"msTotal":273779,"stepsPass0":33997576,"nonFinite":0}
+{"scene":"X-03","stride":4,"size":[20,20],"passes":16,"bindMs":991,"msTotal":323077,"stepsPass0":121148536,"nonFinite":0}

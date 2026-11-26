@@ -1,0 +1,20 @@
+r0: 332 functions
+O2: 332 functions
+--- r0
+noise3   blocks 1 stmts 33 values 177 calls 14 f32 consts 4/30 depth max 7 size max 13 patterns {"contract: fsub(c, fmul(a, b)) -> fnmsub":3,"exact: fmul(x, 2.0) -> fadd(x, x)":3,"contract: fadd(fmul(a, b), c) -> fmadd":7}
+fbm3     blocks 10 stmts 27 values 50 calls 2 f32 consts 3/3 depth max 4 size max 5 patterns {"contract: fadd(fmul(a, b), c) -> fmadd":1}
+gnoise   blocks 1 stmts 5 values 30 calls 1 f32 consts 0/0 depth max 5 size max 17 patterns {"contract: fadd(fmul(a, b), c) -> fmadd":2,"reassoc f32: any fadd(fadd(a, b), c)":1}
+hash3    blocks 1 stmts 17 values 94 calls 0 f32 consts 3/5 depth max 6 size max 25 patterns {"reciprocal: fdiv(x, 2^k) -> fmul (exact)":1,"contract: fsub(fmul(a, b), c) -> fmsub":3}
+q_floor  blocks 10 stmts 13 values 20 calls 0 f32 consts 3/3 depth max 3 size max 3 patterns {}
+q_fract  blocks 1 stmts 2 values 5 calls 1 f32 consts 0/0 depth max 2 size max 3 patterns {}
+sq       blocks 1 stmts 1 values 3 calls 0 f32 consts 0/0 depth max 2 size max 3 patterns {}
+candela {"contract: fadd(fmul(a, b), c) -> fmadd":709,"contract: fsub(c, fmul(a, b)) -> fnmsub":84,"exact: fmul(x, 2.0) -> fadd(x, x)":41,"contract: fsub(fmul(a, b), c) -> fmsub":64,"real-only: fsub(x, x) -> 0":12,"reassoc f32: any fadd(fadd(a, b), c)":233,"reciprocal: fdiv(x, c) -> fmul(x, 1/c) (inexact)":26,"reassoc f32: fadd(fadd(x, c1), c2)":1,"reciprocal: fdiv(x, 2^k) -> fmul (exact)":13,"reassoc i32: mul(mul(x, c1), c2)":1,"payload: fmul(x, 1.0) -> x":25,"reassoc f32: fmul(fmul(x, c1), c2)":8,"real-only: fmul(x, 0.0) -> 0":7,"real-only: fadd(x, +0.0) -> x":9,"payload: fdiv(x, 1.0) -> x":5}
+--- O2
+noise3   blocks 1 stmts 31 values 175 calls 14 f32 consts 4/30 depth max 7 size max 21 patterns {"contract: fsub(c, fmul(a, b)) -> fnmsub":3,"exact: fmul(x, 2.0) -> fadd(x, x)":3,"contract: fadd(fmul(a, b), c) -> fmadd":7}
+fbm3     blocks 8 stmts 27 values 51 calls 2 f32 consts 3/3 depth max 4 size max 5 patterns {"contract: fadd(fmul(a, b), c) -> fmadd":1}
+gnoise   blocks 1 stmts 5 values 30 calls 1 f32 consts 0/0 depth max 5 size max 17 patterns {"contract: fadd(fmul(a, b), c) -> fmadd":2,"reassoc f32: any fadd(fadd(a, b), c)":1}
+hash3    blocks 1 stmts 16 values 91 calls 0 f32 consts 2/6 depth max 6 size max 25 patterns {"contract: fsub(fmul(a, b), c) -> fmsub":3}
+q_floor  blocks 8 stmts 11 values 20 calls 0 f32 consts 3/3 depth max 3 size max 3 patterns {}
+q_fract  blocks 1 stmts 2 values 5 calls 1 f32 consts 0/0 depth max 2 size max 3 patterns {}
+sq       blocks 1 stmts 1 values 3 calls 0 f32 consts 0/0 depth max 2 size max 3 patterns {}
+candela {"contract: fadd(fmul(a, b), c) -> fmadd":678,"contract: fsub(c, fmul(a, b)) -> fnmsub":81,"exact: fmul(x, 2.0) -> fadd(x, x)":38,"contract: fsub(fmul(a, b), c) -> fmsub":61,"real-only: fsub(x, x) -> 0":6,"reassoc f32: any fadd(fadd(a, b), c)":227,"reassoc f32: fadd(fadd(x, c1), c2)":1,"reciprocal: fdiv(x, 2^k) -> fmul (exact)":15,"payload: fmul(x, 1.0) -> x":197,"real-only: fmul(x, 0.0) -> 0":5,"reciprocal: fdiv(x, c) -> fmul(x, 1/c) (inexact)":22,"reassoc f32: fmul(fmul(x, c1), c2)":9,"real-only: fadd(x, +0.0) -> x":7,"payload: fdiv(x, 1.0) -> x":5}

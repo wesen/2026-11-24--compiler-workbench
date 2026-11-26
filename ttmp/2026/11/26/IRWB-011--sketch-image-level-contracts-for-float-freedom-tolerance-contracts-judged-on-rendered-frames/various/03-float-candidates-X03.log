@@ -1,0 +1,24 @@
+images ready in 29896 ms: {"exact":0,"fma":834,"recip":23,"reassoc":9}
+	Command being timed: "node --max-old-space-size=10240 scripts/03-float-candidates.mjs --scenes X-03 --zpasses 8 --json various/03-float-candidates-X03.json"
+	User time (seconds): 338.05
+	System time (seconds): 1.73
+	Percent of CPU this job got: 103%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 5:29.61
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 2453540
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 838579
+	Voluntary context switches: 14812
+	Involuntary context switches: 12786
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 24
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

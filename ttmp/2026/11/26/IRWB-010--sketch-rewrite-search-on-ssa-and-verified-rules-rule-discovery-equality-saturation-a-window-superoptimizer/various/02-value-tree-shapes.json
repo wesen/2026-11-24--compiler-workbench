@@ -1,0 +1,528 @@
+{
+ "r0": {
+  "focus": {
+   "noise3": {
+    "blocks": 1,
+    "stmts": 33,
+    "values": 177,
+    "calls": 14,
+    "f32Constants": {
+     "distinct": 4,
+     "uses": 30,
+     "list": {
+      "0": 12,
+      "1": 12,
+      "2": 3,
+      "3": 3
+     }
+    },
+    "depth": {
+     "max": 7,
+     "histogram": {
+      "1": 10,
+      "2": 14,
+      "4": 8,
+      "7": 1
+     }
+    },
+    "maxTreeSize": 13,
+    "ops": {
+     "get": 100,
+     "const": 30,
+     "fmul": 16,
+     "call": 14,
+     "fsub": 10,
+     "fadd": 7
+    },
+    "patterns": {
+     "contract: fsub(c, fmul(a, b)) -> fnmsub": 3,
+     "exact: fmul(x, 2.0) -> fadd(x, x)": 3,
+     "contract: fadd(fmul(a, b), c) -> fmadd": 7
+    }
+   },
+   "fbm3": {
+    "blocks": 10,
+    "stmts": 27,
+    "values": 50,
+    "calls": 2,
+    "f32Constants": {
+     "distinct": 3,
+     "uses": 3,
+     "list": {
+      "0": 1,
+      "1": 1,
+      "0.5": 1
+     }
+    },
+    "depth": {
+     "max": 4,
+     "histogram": {
+      "1": 9,
+      "2": 9,
+      "3": 2,
+      "4": 1
+     }
+    },
+    "maxTreeSize": 5,
+    "ops": {
+     "get": 27,
+     "const": 7,
+     "fmul": 5,
+     "call": 2,
+     "eq": 2,
+     "fabs": 2,
+     "eqz": 1,
+     "lt": 1,
+     "fsub": 1,
+     "fadd": 1,
+     "add": 1
+    },
+    "patterns": {
+     "contract: fadd(fmul(a, b), c) -> fmadd": 1
+    }
+   },
+   "gnoise": {
+    "blocks": 1,
+    "stmts": 5,
+    "values": 30,
+    "calls": 1,
+    "f32Constants": {
+     "distinct": 0,
+     "uses": 0,
+     "list": {}
+    },
+    "depth": {
+     "max": 5,
+     "histogram": {
+      "1": 3,
+      "3": 1,
+      "5": 1
+     }
+    },
+    "maxTreeSize": 17,
+    "ops": {
+     "get": 15,
+     "fadd": 5,
+     "result": 3,
+     "fmul": 3,
+     "fsub": 3,
+     "call": 1
+    },
+    "patterns": {
+     "contract: fadd(fmul(a, b), c) -> fmadd": 2,
+     "reassoc f32: any fadd(fadd(a, b), c)": 1
+    }
+   },
+   "hash3": {
+    "blocks": 1,
+    "stmts": 17,
+    "values": 94,
+    "calls": 0,
+    "f32Constants": {
+     "distinct": 3,
+     "uses": 5,
+     "list": {
+      "1": 3,
+      "2": 1,
+      "16777216": 1
+     }
+    },
+    "depth": {
+     "max": 6,
+     "histogram": {
+      "2": 4,
+      "3": 12,
+      "6": 1
+     }
+    },
+    "maxTreeSize": 25,
+    "ops": {
+     "get": 36,
+     "const": 17,
+     "add": 9,
+     "mul": 9,
+     "shru": 6,
+     "f2bits": 3,
+     "xor": 3,
+     "fsub": 3,
+     "fmul": 3,
+     "u2f": 3,
+     "fdiv": 1,
+     "tuple": 1
+    },
+    "patterns": {
+     "reciprocal: fdiv(x, 2^k) -> fmul (exact)": 1,
+     "contract: fsub(fmul(a, b), c) -> fmsub": 3
+    }
+   },
+   "q_floor": {
+    "blocks": 10,
+    "stmts": 13,
+    "values": 20,
+    "calls": 0,
+    "f32Constants": {
+     "distinct": 3,
+     "uses": 3,
+     "list": {
+      "1": 1,
+      "2100000000": 1,
+      "-2100000000": 1
+     }
+    },
+    "depth": {
+     "max": 3,
+     "histogram": {
+      "1": 3,
+      "2": 5,
+      "3": 1
+     }
+    },
+    "maxTreeSize": 3,
+    "ops": {
+     "get": 9,
+     "const": 4,
+     "fgt": 2,
+     "flt": 1,
+     "eqz": 1,
+     "i2f": 1,
+     "f2i": 1,
+     "fsub": 1
+    },
+    "patterns": {}
+   },
+   "q_fract": {
+    "blocks": 1,
+    "stmts": 2,
+    "values": 5,
+    "calls": 1,
+    "f32Constants": {
+     "distinct": 0,
+     "uses": 0,
+     "list": {}
+    },
+    "depth": {
+     "max": 2,
+     "histogram": {
+      "2": 2
+     }
+    },
+    "maxTreeSize": 3,
+    "ops": {
+     "get": 3,
+     "call": 1,
+     "fsub": 1
+    },
+    "patterns": {}
+   },
+   "sq": {
+    "blocks": 1,
+    "stmts": 1,
+    "values": 3,
+    "calls": 0,
+    "f32Constants": {
+     "distinct": 0,
+     "uses": 0,
+     "list": {}
+    },
+    "depth": {
+     "max": 2,
+     "histogram": {
+      "2": 1
+     }
+    },
+    "maxTreeSize": 3,
+    "ops": {
+     "get": 2,
+     "fmul": 1
+    },
+    "patterns": {}
+   }
+  },
+  "focusPatterns": {
+   "contract: fsub(c, fmul(a, b)) -> fnmsub": 3,
+   "exact: fmul(x, 2.0) -> fadd(x, x)": 3,
+   "contract: fadd(fmul(a, b), c) -> fmadd": 10,
+   "reassoc f32: any fadd(fadd(a, b), c)": 1,
+   "reciprocal: fdiv(x, 2^k) -> fmul (exact)": 1,
+   "contract: fsub(fmul(a, b), c) -> fmsub": 3
+  },
+  "candelaPatterns": {
+   "contract: fadd(fmul(a, b), c) -> fmadd": 709,
+   "contract: fsub(c, fmul(a, b)) -> fnmsub": 84,
+   "exact: fmul(x, 2.0) -> fadd(x, x)": 41,
+   "contract: fsub(fmul(a, b), c) -> fmsub": 64,
+   "real-only: fsub(x, x) -> 0": 12,
+   "reassoc f32: any fadd(fadd(a, b), c)": 233,
+   "reciprocal: fdiv(x, c) -> fmul(x, 1/c) (inexact)": 26,
+   "reassoc f32: fadd(fadd(x, c1), c2)": 1,
+   "reciprocal: fdiv(x, 2^k) -> fmul (exact)": 13,
+   "reassoc i32: mul(mul(x, c1), c2)": 1,
+   "payload: fmul(x, 1.0) -> x": 25,
+   "reassoc f32: fmul(fmul(x, c1), c2)": 8,
+   "real-only: fmul(x, 0.0) -> 0": 7,
+   "real-only: fadd(x, +0.0) -> x": 9,
+   "payload: fdiv(x, 1.0) -> x": 5
+  },
+  "candelaFns": 332
+ },
+ "O2": {
+  "focus": {
+   "noise3": {
+    "blocks": 1,
+    "stmts": 31,
+    "values": 175,
+    "calls": 14,
+    "f32Constants": {
+     "distinct": 4,
+     "uses": 30,
+     "list": {
+      "0": 12,
+      "1": 12,
+      "2": 3,
+      "3": 3
+     }
+    },
+    "depth": {
+     "max": 7,
+     "histogram": {
+      "1": 10,
+      "2": 14,
+      "4": 5,
+      "7": 2
+     }
+    },
+    "maxTreeSize": 21,
+    "ops": {
+     "get": 98,
+     "const": 30,
+     "fmul": 16,
+     "call": 14,
+     "fsub": 10,
+     "fadd": 7
+    },
+    "patterns": {
+     "contract: fsub(c, fmul(a, b)) -> fnmsub": 3,
+     "exact: fmul(x, 2.0) -> fadd(x, x)": 3,
+     "contract: fadd(fmul(a, b), c) -> fmadd": 7
+    }
+   },
+   "fbm3": {
+    "blocks": 8,
+    "stmts": 27,
+    "values": 51,
+    "calls": 2,
+    "f32Constants": {
+     "distinct": 3,
+     "uses": 3,
+     "list": {
+      "0": 1,
+      "1": 1,
+      "0.5": 1
+     }
+    },
+    "depth": {
+     "max": 4,
+     "histogram": {
+      "1": 11,
+      "2": 10,
+      "3": 1,
+      "4": 1
+     }
+    },
+    "maxTreeSize": 5,
+    "ops": {
+     "get": 29,
+     "const": 7,
+     "fmul": 5,
+     "eq": 2,
+     "call": 2,
+     "fabs": 2,
+     "ge": 1,
+     "fsub": 1,
+     "fadd": 1,
+     "add": 1
+    },
+    "patterns": {
+     "contract: fadd(fmul(a, b), c) -> fmadd": 1
+    }
+   },
+   "gnoise": {
+    "blocks": 1,
+    "stmts": 5,
+    "values": 30,
+    "calls": 1,
+    "f32Constants": {
+     "distinct": 0,
+     "uses": 0,
+     "list": {}
+    },
+    "depth": {
+     "max": 5,
+     "histogram": {
+      "1": 3,
+      "3": 1,
+      "5": 1
+     }
+    },
+    "maxTreeSize": 17,
+    "ops": {
+     "get": 15,
+     "fadd": 5,
+     "result": 3,
+     "fmul": 3,
+     "fsub": 3,
+     "call": 1
+    },
+    "patterns": {
+     "contract: fadd(fmul(a, b), c) -> fmadd": 2,
+     "reassoc f32: any fadd(fadd(a, b), c)": 1
+    }
+   },
+   "hash3": {
+    "blocks": 1,
+    "stmts": 16,
+    "values": 91,
+    "calls": 0,
+    "f32Constants": {
+     "distinct": 2,
+     "uses": 6,
+     "list": {
+      "1": 3,
+      "1.1920929e-7": 3
+     }
+    },
+    "depth": {
+     "max": 6,
+     "histogram": {
+      "2": 3,
+      "3": 12,
+      "6": 1
+     }
+    },
+    "maxTreeSize": 25,
+    "ops": {
+     "get": 33,
+     "const": 18,
+     "add": 9,
+     "mul": 9,
+     "shru": 6,
+     "f2bits": 3,
+     "xor": 3,
+     "fsub": 3,
+     "fmul": 3,
+     "u2f": 3,
+     "tuple": 1
+    },
+    "patterns": {
+     "contract: fsub(fmul(a, b), c) -> fmsub": 3
+    }
+   },
+   "q_floor": {
+    "blocks": 8,
+    "stmts": 11,
+    "values": 20,
+    "calls": 0,
+    "f32Constants": {
+     "distinct": 3,
+     "uses": 3,
+     "list": {
+      "1": 1,
+      "2100000000": 1,
+      "-2100000000": 1
+     }
+    },
+    "depth": {
+     "max": 3,
+     "histogram": {
+      "1": 3,
+      "2": 5,
+      "3": 1
+     }
+    },
+    "maxTreeSize": 3,
+    "ops": {
+     "get": 9,
+     "const": 4,
+     "fgt": 2,
+     "flt": 1,
+     "eqz": 1,
+     "i2f": 1,
+     "f2i": 1,
+     "fsub": 1
+    },
+    "patterns": {}
+   },
+   "q_fract": {
+    "blocks": 1,
+    "stmts": 2,
+    "values": 5,
+    "calls": 1,
+    "f32Constants": {
+     "distinct": 0,
+     "uses": 0,
+     "list": {}
+    },
+    "depth": {
+     "max": 2,
+     "histogram": {
+      "2": 2
+     }
+    },
+    "maxTreeSize": 3,
+    "ops": {
+     "get": 3,
+     "call": 1,
+     "fsub": 1
+    },
+    "patterns": {}
+   },
+   "sq": {
+    "blocks": 1,
+    "stmts": 1,
+    "values": 3,
+    "calls": 0,
+    "f32Constants": {
+     "distinct": 0,
+     "uses": 0,
+     "list": {}
+    },
+    "depth": {
+     "max": 2,
+     "histogram": {
+      "2": 1
+     }
+    },
+    "maxTreeSize": 3,
+    "ops": {
+     "get": 2,
+     "fmul": 1
+    },
+    "patterns": {}
+   }
+  },
+  "focusPatterns": {
+   "contract: fsub(c, fmul(a, b)) -> fnmsub": 3,
+   "exact: fmul(x, 2.0) -> fadd(x, x)": 3,
+   "contract: fadd(fmul(a, b), c) -> fmadd": 10,
+   "reassoc f32: any fadd(fadd(a, b), c)": 1,
+   "contract: fsub(fmul(a, b), c) -> fmsub": 3
+  },
+  "candelaPatterns": {
+   "contract: fadd(fmul(a, b), c) -> fmadd": 678,
+   "contract: fsub(c, fmul(a, b)) -> fnmsub": 81,
+   "exact: fmul(x, 2.0) -> fadd(x, x)": 38,
+   "contract: fsub(fmul(a, b), c) -> fmsub": 61,
+   "real-only: fsub(x, x) -> 0": 6,
+   "reassoc f32: any fadd(fadd(a, b), c)": 227,
+   "reassoc f32: fadd(fadd(x, c1), c2)": 1,
+   "reciprocal: fdiv(x, 2^k) -> fmul (exact)": 15,
+   "payload: fmul(x, 1.0) -> x": 197,
+   "real-only: fmul(x, 0.0) -> 0": 5,
+   "reciprocal: fdiv(x, c) -> fmul(x, 1/c) (inexact)": 22,
+   "reassoc f32: fmul(fmul(x, c1), c2)": 9,
+   "real-only: fadd(x, +0.0) -> x": 7,
+   "payload: fdiv(x, 1.0) -> x": 5
+  },
+  "candelaFns": 332
+ }
+}
