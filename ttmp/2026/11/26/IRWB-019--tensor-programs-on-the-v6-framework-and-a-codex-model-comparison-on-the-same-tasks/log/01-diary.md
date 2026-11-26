@@ -593,3 +593,17 @@ Readings:
   - **Random programs:** 16/20 bit-exact.
   - **`checkLowering`:** accepted 16/16 (tolerance), about 6 s each.
   - **`gpuMs` at full size:** matmul 0.255 ms, softmax 0.448, layernorm 0.480, attention 1.394, mlp 0.819, conv 0.351.
+
+## Step 24: stage-2 evaluations of B and J; an exact backend checked as tolerance; an evaluator exit bug
+
+- **All twelve stage-2 implementations pass the frozen stage-1 suite** (25/25) and export the three new functions.
+- **B (Codex, Sol, xhigh)** has the same pattern as A: bit-exact on the corpus programs without transcendentals (3/6, and 3/6 at full size), 16/20 random programs, `checkLowering` 16/16 (tolerance).
+- **J (Codex, Sol, medium) is bit-exact everywhere measured:** corpus 6/6, after `inline` + `split-sum` 4/4, random 20/20, and every element at full size (6/6). Its `cudaSource` shows why:
+  - explicit `__fadd_rn`, `__fmul_rn` and `__fsub_rn`, so nothing can contract;
+  - `tix_exp`, `tix_log` and `tix_tanh` as `__double2float_rn(exp((double)x))` etc., exactly the construction step 23 proved equal to the f32 meaning on all 2³² inputs;
+  - its own `tix_max`.
+  
+  Yet its `checkLowering` reports `tolerance`, a two-rule bound against f64. **The implementation is exact; the relation it claims and checks is the weaker one.**
+- **An evaluator bug, mine:** `withTimeout` left its 5- and 10-minute timers pending, so a finished worker stayed alive until the last timer fired. That cost time only; no result changed.
+  - The fix: clear and `unref` the timers, and exit after writing stdout (sha256 now `88cc4659…`).
+  - A, B and J ran with the old exit; the remaining nine with the new.
