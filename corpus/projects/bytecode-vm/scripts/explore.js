@@ -16,6 +16,10 @@ return {
   rejected: pipeline.steps.filter(step => step.rejected).map(step => step.pass),
   fixtures: entry.oneOf.map(offset => {
     const input = [code.cells, offset, 12, 8];
-    return { entry: offset, r0: measure(r0, input), speed: measure(speed, input) };
+    return {
+      entry: offset,
+      r0: measure(r0, input),
+      speed: measure(speed, input),
+    };
   }),
 };
