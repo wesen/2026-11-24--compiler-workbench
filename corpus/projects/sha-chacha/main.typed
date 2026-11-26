@@ -1,0 +1,245 @@
+value record Quarter {
+    a: i32;
+    b: i32;
+    c: i32;
+    d: i32;
+}
+
+function rotr(x: i32, n: i32): i32 {
+    return (x >>> n) | (x << (32 - n));
+}
+
+function sha256Block(message: buffer, roundK: buffer, out: buffer): i32 {
+    const w = new Int32Array(64);
+    const length = message.length;
+    for (let i = 0; i < length; i = i + 1) {
+        const word = i / 4;
+        w[word] = w[word] | (message.charCodeAt(i) << ((3 - (i & 3)) * 8));
+    }
+    const padWord = length / 4;
+    w[padWord] = w[padWord] | (0x80 << ((3 - (length & 3)) * 8));
+    w[15] = length * 8;
+
+    for (let t = 16; t < 64; t = t + 1) {
+        const x = w[t - 15];
+        const y = w[t - 2];
+        const x7 = rotr(x, 7);
+        const x18 = rotr(x, 18);
+        const y17 = rotr(y, 17);
+        const y19 = rotr(y, 19);
+        const s0 = x7 ^ x18 ^ (x >>> 3);
+        const s1 = y17 ^ y19 ^ (y >>> 10);
+        w[t] = w[t - 16] + s0 + w[t - 7] + s1;
+    }
+
+    let a = 0x6a09e667;
+    let b = 0xbb67ae85;
+    let c = 0x3c6ef372;
+    let d = 0xa54ff53a;
+    let e = 0x510e527f;
+    let f = 0x9b05688c;
+    let g = 0x1f83d9ab;
+    let h = 0x5be0cd19;
+    for (let t = 0; t < 64; t = t + 1) {
+        const a2 = rotr(a, 2);
+        const a13 = rotr(a, 13);
+        const a22 = rotr(a, 22);
+        const e6 = rotr(e, 6);
+        const e11 = rotr(e, 11);
+        const e25 = rotr(e, 25);
+        const sum0 = a2 ^ a13 ^ a22;
+        const sum1 = e6 ^ e11 ^ e25;
+        const choice = (e & f) ^ ((e ^ -1) & g);
+        const majority = (a & b) ^ (a & c) ^ (b & c);
+        const k = roundK.charCodeAt(2 * t) | (roundK.charCodeAt(2 * t + 1) << 16);
+        const t1 = h + sum1 + choice + k + w[t];
+        const t2 = sum0 + majority;
+
+        h = g;
+        g = f;
+        f = e;
+        e = d + t1;
+        d = c;
+        c = b;
+        b = a;
+        a = t1 + t2;
+    }
+
+    a = a + 0x6a09e667;
+    b = b + 0xbb67ae85;
+    c = c + 0x3c6ef372;
+    d = d + 0xa54ff53a;
+    e = e + 0x510e527f;
+    f = f + 0x9b05688c;
+    g = g + 0x1f83d9ab;
+    h = h + 0x5be0cd19;
+    out.setCharCodeAt(0, a & 65535);
+    out.setCharCodeAt(1, a >>> 16);
+    out.setCharCodeAt(2, b & 65535);
+    out.setCharCodeAt(3, b >>> 16);
+    out.setCharCodeAt(4, c & 65535);
+    out.setCharCodeAt(5, c >>> 16);
+    out.setCharCodeAt(6, d & 65535);
+    out.setCharCodeAt(7, d >>> 16);
+    out.setCharCodeAt(8, e & 65535);
+    out.setCharCodeAt(9, e >>> 16);
+    out.setCharCodeAt(10, f & 65535);
+    out.setCharCodeAt(11, f >>> 16);
+    out.setCharCodeAt(12, g & 65535);
+    out.setCharCodeAt(13, g >>> 16);
+    out.setCharCodeAt(14, h & 65535);
+    out.setCharCodeAt(15, h >>> 16);
+    return a;
+}
+
+function rotl(x: i32, n: i32): i32 {
+    return (x << n) | (x >>> (32 - n));
+}
+
+function quarter(a: i32, b: i32, c: i32, d: i32): Quarter {
+    let qa = a;
+    let qb = b;
+    let qc = c;
+    let qd = d;
+    qa = qa + qb;
+    qd = rotl(qd ^ qa, 16);
+    qc = qc + qd;
+    qb = rotl(qb ^ qc, 12);
+    qa = qa + qb;
+    qd = rotl(qd ^ qa, 8);
+    qc = qc + qd;
+    qb = rotl(qb ^ qc, 7);
+    return Quarter(qa, qb, qc, qd);
+}
+
+function chacha20Block(key: buffer, counter: i32, nonce: buffer, out: buffer): i32 {
+    const initial0 = 0x61707865;
+    const initial1 = 0x3320646e;
+    const initial2 = 0x79622d32;
+    const initial3 = 0x6b206574;
+    const initial4 = key.charCodeAt(0) | (key.charCodeAt(1) << 16);
+    const initial5 = key.charCodeAt(2) | (key.charCodeAt(3) << 16);
+    const initial6 = key.charCodeAt(4) | (key.charCodeAt(5) << 16);
+    const initial7 = key.charCodeAt(6) | (key.charCodeAt(7) << 16);
+    const initial8 = key.charCodeAt(8) | (key.charCodeAt(9) << 16);
+    const initial9 = key.charCodeAt(10) | (key.charCodeAt(11) << 16);
+    const initial10 = key.charCodeAt(12) | (key.charCodeAt(13) << 16);
+    const initial11 = key.charCodeAt(14) | (key.charCodeAt(15) << 16);
+    const initial12 = counter;
+    const initial13 = nonce.charCodeAt(0) | (nonce.charCodeAt(1) << 16);
+    const initial14 = nonce.charCodeAt(2) | (nonce.charCodeAt(3) << 16);
+    const initial15 = nonce.charCodeAt(4) | (nonce.charCodeAt(5) << 16);
+
+    let x0 = initial0;
+    let x1 = initial1;
+    let x2 = initial2;
+    let x3 = initial3;
+    let x4 = initial4;
+    let x5 = initial5;
+    let x6 = initial6;
+    let x7 = initial7;
+    let x8 = initial8;
+    let x9 = initial9;
+    let x10 = initial10;
+    let x11 = initial11;
+    let x12 = initial12;
+    let x13 = initial13;
+    let x14 = initial14;
+    let x15 = initial15;
+
+    for (let round = 0; round < 10; round = round + 1) {
+        // Columns.
+        const q0 = quarter(x0, x4, x8, x12);
+        x0 = q0.a;
+        x4 = q0.b;
+        x8 = q0.c;
+        x12 = q0.d;
+        const q1 = quarter(x1, x5, x9, x13);
+        x1 = q1.a;
+        x5 = q1.b;
+        x9 = q1.c;
+        x13 = q1.d;
+        const q2 = quarter(x2, x6, x10, x14);
+        x2 = q2.a;
+        x6 = q2.b;
+        x10 = q2.c;
+        x14 = q2.d;
+        const q3 = quarter(x3, x7, x11, x15);
+        x3 = q3.a;
+        x7 = q3.b;
+        x11 = q3.c;
+        x15 = q3.d;
+
+        // Diagonals.
+        const q4 = quarter(x0, x5, x10, x15);
+        x0 = q4.a;
+        x5 = q4.b;
+        x10 = q4.c;
+        x15 = q4.d;
+        const q5 = quarter(x1, x6, x11, x12);
+        x1 = q5.a;
+        x6 = q5.b;
+        x11 = q5.c;
+        x12 = q5.d;
+        const q6 = quarter(x2, x7, x8, x13);
+        x2 = q6.a;
+        x7 = q6.b;
+        x8 = q6.c;
+        x13 = q6.d;
+        const q7 = quarter(x3, x4, x9, x14);
+        x3 = q7.a;
+        x4 = q7.b;
+        x9 = q7.c;
+        x14 = q7.d;
+    }
+
+    x0 = x0 + initial0;
+    out.setCharCodeAt(0, x0 & 65535);
+    out.setCharCodeAt(1, x0 >>> 16);
+    x1 = x1 + initial1;
+    out.setCharCodeAt(2, x1 & 65535);
+    out.setCharCodeAt(3, x1 >>> 16);
+    x2 = x2 + initial2;
+    out.setCharCodeAt(4, x2 & 65535);
+    out.setCharCodeAt(5, x2 >>> 16);
+    x3 = x3 + initial3;
+    out.setCharCodeAt(6, x3 & 65535);
+    out.setCharCodeAt(7, x3 >>> 16);
+    x4 = x4 + initial4;
+    out.setCharCodeAt(8, x4 & 65535);
+    out.setCharCodeAt(9, x4 >>> 16);
+    x5 = x5 + initial5;
+    out.setCharCodeAt(10, x5 & 65535);
+    out.setCharCodeAt(11, x5 >>> 16);
+    x6 = x6 + initial6;
+    out.setCharCodeAt(12, x6 & 65535);
+    out.setCharCodeAt(13, x6 >>> 16);
+    x7 = x7 + initial7;
+    out.setCharCodeAt(14, x7 & 65535);
+    out.setCharCodeAt(15, x7 >>> 16);
+    x8 = x8 + initial8;
+    out.setCharCodeAt(16, x8 & 65535);
+    out.setCharCodeAt(17, x8 >>> 16);
+    x9 = x9 + initial9;
+    out.setCharCodeAt(18, x9 & 65535);
+    out.setCharCodeAt(19, x9 >>> 16);
+    x10 = x10 + initial10;
+    out.setCharCodeAt(20, x10 & 65535);
+    out.setCharCodeAt(21, x10 >>> 16);
+    x11 = x11 + initial11;
+    out.setCharCodeAt(22, x11 & 65535);
+    out.setCharCodeAt(23, x11 >>> 16);
+    x12 = x12 + initial12;
+    out.setCharCodeAt(24, x12 & 65535);
+    out.setCharCodeAt(25, x12 >>> 16);
+    x13 = x13 + initial13;
+    out.setCharCodeAt(26, x13 & 65535);
+    out.setCharCodeAt(27, x13 >>> 16);
+    x14 = x14 + initial14;
+    out.setCharCodeAt(28, x14 & 65535);
+    out.setCharCodeAt(29, x14 >>> 16);
+    x15 = x15 + initial15;
+    out.setCharCodeAt(30, x15 & 65535);
+    out.setCharCodeAt(31, x15 >>> 16);
+    return x0;
+}
