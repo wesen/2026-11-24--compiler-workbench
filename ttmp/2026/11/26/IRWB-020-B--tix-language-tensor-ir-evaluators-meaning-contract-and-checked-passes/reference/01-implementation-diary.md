@@ -140,3 +140,59 @@ Extracted native preparation and write enforcement from applyPass and reused the
 Added the public API, contract selection and both native rewrites. The generator checks coverage per function and screens on the origin. The exact and tolerance checks use the same framework differential machinery with different baselines. Identity-order substitution and floor block count are test-only kernels submitted to the normal checked pass entry.
 
 Added six independent numerical corpus fixtures and checks for both precisions before and after optimization. A probe showed that our first two reduction-precedence examples rounded to the same f32 result. Replacing [1,1,16777216] with [1,2,4] distinguishes an in-body division (2.3333334922790527) from division after the fold (2.3333332538604736). The static address checks use all inferred extents after parsing the RHS.
+
+## Step 5. Verify the implementation
+
+At `69bb106`, the Node 24 build exports exactly compileTix, optimizeTix and runTix. The six corpus cases passed independent numerical checks in both precisions before and after optimization. The genuine split fails exact and passes tolerance. Both valid changed mutants fail through applyNativePassSync. A third mutant checks that exact comparison distinguishes the signs of zero.
+
+- `npm run build` exited 0.
+- `node --test tests/tensor/*.test.mjs` passed all three files. With `--test-isolation=none`, Node reported 16 passing individual tests.
+- `node --test tests/framework/*.test.mjs` passed all 18 files.
+- `node --test tests/typed/{passes,program,mutate,strategies}.test.mjs` passed all four files.
+- Prettier's check of the changed TypeScript and test files passed.
+
+The actual framework change is recorded in the design ledger. Actual work metering includes loop iterations as well as scalar visits. No call-time shape-error protocol or solver was added. The public optimizer returns an accepted identity step without invoking its semantic gate. The implementation commits are `1a99a16` and `69bb106`, following reviewed design revision `4e0b7eb`.
+
+### Review request (verbatim, Step 2)
+
+~~~~text
+A reviewer has read your design for IRWB-020-B. The review:
+
+# Review of your design
+
+## Must change
+
+None found. The domain, observation, both relations and their baselines are specified closely enough to implement without guessing:
+
+- the deterministic shape schedule;
+- the three value streams;
+- finite-reference screening "chosen from the origin alone";
+- declining a function with no comparable case.
+
+The K = 7 pattern makes the exact rejection deterministic (blocked result `1.000000238418579`, f64 reference `1.0000001788139343`, verified).
+
+## Cut
+
+1. "While the pipeline has only exact steps, also require exact origin-to-candidate equality. Once a changed split has been accepted, keep the origin tolerance requirement for the remaining pipeline, including across repeated optimize calls". Inline's exact check against its immediate input, on the same origin-derived cases, already implies the origin check. The extra check and the carried state can go.
+2. "Precompute an independent set of equations at compile time, checking full column rank … At call time solve over exact rationals". No corpus program needs this solver.
+3. "carry symbolic shape-dependent validity conditions to specialization (e.g. `H-2 >= 0`)". This is a call-time error contract beyond compile errors with `line:col`.
+4. "Check identity candidates too, so every reported step has a verdict". A pass that makes no change needs no check.
+
+## Framework changes
+
+- **A synchronous native-pass entry with shared preparation and write enforcement:** needed, because the fixed `optimizeTix` is synchronous and `applyPass` is async. It belongs in `define-pass.ts`.
+- **Not minimal as specified:**
+  - "a versioned descriptor (IR, adapter, writes, synchronous native kernel and required synchronous check)" duplicates `definePass`. Take a `Pass` and refuse `needs` and `preserves`.
+  - "call the gate with origin, current and candidate" puts the tensor domain's origin policy into a framework signature. A `(before, candidate) => CheckResult` gate can close over the origin.
+- No missed change: nothing calls the async `applyPass` on the read-only adapter.
+
+## Keep
+
+Keep the shape and value schedule, with the half-ULP sequence in storage order. Keep the decision that a nonfinite candidate fails against a finite reference. Keep the mutants (identity-order substitution, `floor(K/4)`), which must produce valid changed artifacts and fail through the actual gate.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-020-B:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+~~~~
