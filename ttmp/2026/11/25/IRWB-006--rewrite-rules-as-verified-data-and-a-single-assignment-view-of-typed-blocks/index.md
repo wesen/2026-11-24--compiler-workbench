@@ -9,7 +9,15 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/ir/rewrites.ts
+      Note: the framework rule engine, evaluated
+    - Path: repo://src/typed/analyses.ts
+      Note: dominators and reaching definitions the SSA view is checked against
+    - Path: repo://src/typed/passes.ts
+      Note: simplify and fold, the passes turned into rule tables
+    - Path: repo://src/typed/tx.ts
+      Note: Tx.rewrite, the only way a rule changes a program
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-25T23:07:55.075945358-05:00
