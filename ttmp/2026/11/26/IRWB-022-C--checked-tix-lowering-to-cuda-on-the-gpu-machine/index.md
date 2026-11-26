@@ -27,6 +27,7 @@ Stage 2 lowers the stage-1 Tix IR to CUDA and checks the candidate remotely on G
 ## Key links
 
 - [Reviewed design](design-doc/01-checked-tix-to-cuda-lowering.md)
+- [Final report and independent evaluation](reference/02-report.md)
 - [Validation and workload results](reference/02-cuda-lowering-results.md)
 - [Implementation diary](reference/01-implementation-diary.md)
 - [GB10 math probe](scripts/01-probe-gb10-math.mjs) and [local framework probe](scripts/02-probe-contract.mjs)

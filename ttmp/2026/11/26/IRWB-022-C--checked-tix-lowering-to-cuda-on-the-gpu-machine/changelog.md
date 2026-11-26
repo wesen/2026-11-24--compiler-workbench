@@ -23,3 +23,11 @@ Implemented and verified checked CUDA emission and isolated remote builds. Recor
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sx-irwb-022-c/ttmp/2026/11/26/IRWB-022-C--checked-tix-lowering-to-cuda-on-the-gpu-machine/reference/02-cuda-lowering-results.md — Verification evidence and measurements
+
+## 2026-11-26
+
+Published the final report in the ticket and diagnosed the independent results at 30a13b4. No f32 mismatches; the f64 deltas reflect intentional rounding. The evaluated backend is unchanged.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sx-irwb-022-c/ttmp/2026/11/26/IRWB-022-C--checked-tix-lowering-to-cuda-on-the-gpu-machine/reference/02-report.md — Independent evaluation, numerical diagnosis and final report
