@@ -194,3 +194,29 @@ The report is written, its claims are checked, and it is pushed. While I worked,
 ### Corrections ledger
 - **Diary step 4** said round 2 wrote "seven approval sidecars". With sidecars assigned by time window, round 2 had 5 and round 3 had 2. The round-3 resumes started in the same minute, in other worktrees.
 - **The playbook's first draft** said Claude Code subagents live inside the parent transcript. They have their own `<session>/subagents/agent-<id>.jsonl`. Fixed before commit.
+
+## Step 7: the transcript-doc-friction-analysis skill updated from the go-minitrace repo
+
+The user asked: "update the analysis skill, i think there should be an upated on in ~/code/wesen/go-go-golems/go-minitrace".
+
+### What I did
+- **Found the newer copy.** `go-minitrace/skills/transcript-doc-friction-analysis` was last changed in `395d27a` (2026-11-18), in "Cut over query execution and publish the local JS API". Its verbs use `mt.sources().runtimeArchives()` and `db.execute(mt.sql\`…\`)`. All five verbs run on the installed binary (built 2026-11-24) over the IRWB-018 archives, with no errors.
+- **Merged instead of copying.** The installed copy (2026-09-10) had refinements the repo lacks:
+  - version-aware help checks;
+  - sideloads and probes treated as candidates, not proof;
+  - "An opinion/report request does not authorize edits";
+  - caveats on compaction and on Codex adapter observations;
+  - the September content-quality finding.
+
+  The merge keeps the repo's API, `unknown_outcomes` and completeness content, and re-applies those refinements.
+- **Added what this ticket verified:**
+  - the Codex resume trap (turns appended to one rollout; sidecars assigned by time window);
+  - a pointer to the go-go-parc agent-design-review playbook for instruction experiments;
+  - interpretation item 8: Codex injects AGENTS.md as the first user message, which `episodes` opens as an empty first episode, and Codex reasoning is encrypted.
+- **Installed it** in `~/.claude/skills` and `~/.codex/skills` (backups in the scratchpad). The standard profile runs from the installed path: 5 of 5 verbs, 0 errors.
+
+### What should be done next
+- **Not changed, with the user's agreement pending:**
+  - the go-minitrace repo's own copy, which would need the merged refinements as a change there;
+  - `go-minitrace-transcript-analysis` (3 files differ);
+  - `daily-log` (8 files differ).
