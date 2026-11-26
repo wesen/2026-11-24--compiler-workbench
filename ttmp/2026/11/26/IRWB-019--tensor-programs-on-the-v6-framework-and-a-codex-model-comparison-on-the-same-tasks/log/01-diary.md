@@ -644,3 +644,40 @@ All twelve pass every check the brief stated. Stage 3 (fusion) gains most from a
 4. the smallest tensor source (I: +607, against J +633 and C +708).
 
 I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineering 4, fitness 6, R7 yes), so design scores did not predict implementation quality, as in stage 1. I's tool change is read before the merge, because the tool is shared.
+
+## Step 26: the stage-2 report turn; I merged; how efficient the generated code is
+
+- **The report turn** (`prompts/t2/turn3.md`, per-item results from `scripts/19-t2-results.mjs`) ran in all twelve cells.
+  - Every cell committed exactly one report commit and touched no path outside its ticket.
+  - Every report exists: 2,750 to 3,260 words, each with a Mermaid diagram.
+- **The relation question, every answer correct:**
+  - **The three exact cells** (C, I, J) each said their tolerance is *not* the strongest relation their evidence supports, and that exact f32, with NaN compared as a class, is.
+    - I found why "as a class" is needed: `__fsqrt_rn(-2⁻¹⁴⁹)` gives `0x7fffffff` on the GB10 and `0xffc00000` in Node. Both are NaN.
+  - **The nine single-precision cells** each said tolerance is the strongest relation for the emitter they shipped, because `expf` and `tanhf` differ. Most noted that my exhaustive result supports exact for a double-precision emitter.
+    - D, G and F each ran one untimed probe that swapped in the double call, and saw every mismatch disappear.
+    - K and L proposed a conditional contract: exact where only matching operations occur.
+- **Merge:** `2e035c6` merges IRWB-022-I. `tools/cuda-remote.mjs` conflicted add/add with the copy on this branch, and I resolved it to I's version.
+  - `1534fad` restores the header lines on the Tailscale host and the sandbox, which I's version had dropped.
+  - `npm test`: 427 tests, 424 pass, 0 fail, 3 skipped.
+  - I's report is published as vault report 13, with a provenance note.
+- **A mistake of mine:** looking for a kit script, I ran `find / -name …`, which scanned the disk for two minutes until I stopped it. The user objected; it's now a memory rule (search only known directories).
+- **Efficiency** (`various/eff-probe/main.cu`; cuBLAS in pedantic FP32 math, no TF32; median of 20 event-timed runs; under the GPU lock):
+
+  | Reference | Measured |
+  |---|---|
+  | cuBLAS SGEMM, matmul 512³ | 0.0329 ms (8.15 TFLOP/s) |
+  | cuBLAS, attention's two GEMMs | 0.0177 + 0.0216 ms |
+  | cuBLAS, mlp's two GEMMs | 0.0423 + 0.0475 ms |
+  | cuBLAS SGEMM 4096³ | 19.2 TFLOP/s (practical FP32 peak) |
+  | streaming `y = 2x`, 64 MB in and out | 244 GB/s |
+  | streaming `y = 2x`, at the softmax size (32 MB moved) | 0.143 ms |
+
+  Set against the merged base I's kernels (the evaluator's single runs):
+  - **matmul:** 0.197 ms, so 1.36 TFLOP/s: 6.0× cuBLAS, 7% of the practical peak.
+  - **mlp:** 1.051 ms, so 1.02 TFLOP/s: 11.7× cuBLAS's two GEMMs.
+  - **attention:** 1.81 ms (I's own warm median 1.05) against 0.039 ms for cuBLAS's two GEMMs.
+  - **conv:** 0.83 TFLOP/s.
+  - **softmax and layernorm:** 0.785 and 0.563 ms. One kernel per statement moves about 100 MB, a bound of 0.41 ms; a fused single pass moves 32 MB, a bound of 0.143 ms.
+  - **The nine single-precision backends** are at a median 0.475 ms for softmax, 1.16× the unfused bound.
+  - **What exactness costs:** the double transcendentals make softmax about 1.65× slower (medians 0.785 against 0.475) and mlp and attention 7–15% slower. matmul, conv and layernorm show no consistent difference.
+  - **Caveat:** the evaluator's `gpuMs` are single runs in fresh processes, and differ from I's warm medians by up to 2× (attention, conv).
