@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "84a6377ea46ea00473a40d03fa441a7b10de3755959fa933a2ea3df1c988b5df",
+  "request": {
+    "ticket": "IRWB-021-J",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the six-rule real derivation, bounded f32 check protocol and falsifiable GB10 experiment design. Verified the generic framework hooks and scalar controls."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-bc740167e5f03cdec03482c3678a4e70",
+    "state": "committed",
+    "created_at": "2026-11-26T18:02:56.153080242Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "index.md": "e8bf167094868f1720f5a51bcd8bb8f2b66a677409d671046ca083fcd3ac6127"
+    },
+    "after": {
+      "changelog.md": "48f07053991ae102d4654d718b2a11ebe7b62eddf34e6efa0f054b6496d3ce60",
+      "index.md": "ed6bd84b59feb0c921f2be391f38f54f507d942fbf4a7f40989afd5da3fbbf40"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKQ29tcGxldGVkIHRoZSBzaXgtcnVsZSByZWFsIGRlcml2YXRpb24sIGJvdW5kZWQgZjMyIGNoZWNrIHByb3RvY29sIGFuZCBmYWxzaWZpYWJsZSBHQjEwIGV4cGVyaW1lbnQgZGVzaWduLiBWZXJpZmllZCB0aGUgZ2VuZXJpYyBmcmFtZXdvcmsgaG9va3MgYW5kIHNjYWxhciBjb250cm9scy4K"
+    },
+    {
+      "path": "index.md",
+      "before": "e8bf167094868f1720f5a51bcd8bb8f2b66a677409d671046ca083fcd3ac6127",
+      "after": "LS0tClRpdGxlOiBEZXJpdmluZyBzdHJlYW1pbmcgYXR0ZW50aW9uIGJ5IGNoZWNrZWQgcmV3cml0ZXMKVGlja2V0OiBJUldCLTAyMS1KClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSByZXNlYXJjaAogICAgLSBjb21waWxlcgogICAgLSBpcgogICAgLSB2ZXJpZmljYXRpb24KICAgIC0gcGVyZm9ybWFuY2UKRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogUmVzZWFyY2ggZGVzaWduIGZvciBkZXJpdmluZyBibG9jay1zdHJlYW1pbmcgYXR0ZW50aW9uIGZyb20gVGl4IHVzaW5nIHNpeCBsb2NhbGx5IGNoZWNrZWQgcmV3cml0ZXMuCkxhc3RVcGRhdGVkOiAyMDI2LTExLTI2VDEzOjAyOjU2LjE1MzAyNzU1MS0wNTowMApXaGF0Rm9yOiAiIgpXaGVuVG9Vc2U6ICIiCi0tLQoKIyBEZXJpdmluZyBzdHJlYW1pbmcgYXR0ZW50aW9uIGJ5IGNoZWNrZWQgcmV3cml0ZXMKCioqSVJXQi0wMjEtSioqIGFza3Mgd2hldGhlciBhIGNvbXBpbGVyIGNhbiB0dXJuIHBsYWluIFRpeCBhdHRlbnRpb24gaW50byBhIHNpbmdsZSBwYXNzIG92ZXIgYmxvY2tzIG9mIGtleXMsIHdpdGggYSBtZWNoYW5pY2FsIGNoZWNrIGFmdGVyIGV2ZXJ5IHJld3JpdGUuIFRoZSBkZXNpZ24gZGVyaXZlcyB0aGUgcnVubmluZyBzdGF0ZSwgc3BlY2lmaWVzIHRoZSBmMzIgY29udHJhY3QgYW5kIHNldHMgdGhlIGNvbmRpdGlvbnMgZm9yIGEgR0IxMCBleHBlcmltZW50LgoKLSBbUmVzZWFyY2ggZGVzaWduXShkZXNpZ24tZG9jLzAxLWZyb20tbWF0ZXJpYWxpemVkLXNjb3Jlcy10by1hLWNoZWNrZWQtc3RyZWFtaW5nLWZvbGQubWQpIOKAlCBzaXggcmV3cml0ZSBzY2hlbWFzLCB0aGVpciB3b3JrZWQgZGVyaXZhdGlvbiwgYW5kIHRoZSB0aHJlZS13YXkgaGFyZHdhcmUgY29tcGFyaXNvbi4KLSBbUmVzZWFyY2ggZGlhcnldKHJlZmVyZW5jZS8wMS1yZXNlYXJjaC1kaWFyeS5tZCkg4oCUIGZyYW1ld29yayBwcm9iZXMsIG51bWVyaWNhbCBjb3VudGVyZXhhbXBsZXMgYW5kIHJldmlldyBub3Rlcy4KLSBbVGFza3NdKHRhc2tzLm1kKSBhbmQgW2NoYW5nZWxvZ10oY2hhbmdlbG9nLm1kKS4K"
+    }
+  ]
+}
