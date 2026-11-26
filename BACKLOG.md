@@ -19,13 +19,17 @@ Keep it current: update an entry when a round finishes, move items between statu
 |---|---|---|---|
 | T1 | Tix front end, IR, evaluators, contract, two passes | done (IRWB-020-B merged, `98b04da`) | M |
 | R1 | research: derive streaming attention by checked rewrites | done (design only; a ceiling) | M |
-| T2 | CUDA lowering, one kernel per statement, run on the GB10 | ready | M |
-| T3 | checked fusion | idea | M |
-| T4 | tolerance calibration with mutants | idea | M |
-| T5 | implement the streaming-attention derivation | idea | L |
-| T6 | tiled contractions against cuBLAS | idea | M |
-| T7 | autotuning under noisy GPU cost | idea | M |
+| T2 | CUDA lowering, one kernel per statement, run on the GB10 | done (IRWB-022-I merged, `2e035c6`) | M |
+| T3 | checked fusion | **ready, queued 1st** (base `2e035c6`) | M |
+| T4 | tolerance calibration with mutants | queued 4th (before the tolerance-checked stages) | M |
+| T5 | implement the streaming-attention derivation | queued 8th | L |
+| T6 | exact tiled contractions with a schedule IR, against cuBLAS | queued 3rd | M–L |
+| T7 | autotuning under noisy GPU cost | queued 7th | M |
 | T8 | ONNX importer into Tix | idea | M |
+| T9 | a GPU timing protocol | prep, queued 2nd (coordinator, during T3) | S |
+| T10 | parallel reductions and split-K, by lowering split-sum programs | queued 5th | M |
+| T11 | checked FMA contraction | queued 6th | M |
+| T12 | tensor cores as a checked precision change | queued 9th (last) | L |
 | D1 | why `speed` slows the bytecode VM | ready | S–M |
 | D2 | missed optimizations from provenance | ready | M |
 | B1 | specialize the VM on its bytecode | ready | M–L |
@@ -34,7 +38,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | A1 | e-graph over value trees with verified rules | decision | L |
 | C1 | calibrated gate | prep | M |
 | E1 | incremental checking per function | prep | L |
-| F1–F16 | framework and workbench fixes found by agents | mostly ready | S each |
+| F1–F20 | framework and workbench fixes found by agents | mostly ready | S each |
 | M1–M5 | agent methodology | running / ready | — |
 
 ---
@@ -49,6 +53,23 @@ Shared facts:
   - A sandboxed Codex agent needs `-c sandbox_workspace_write.network_access=true` to reach the machine.
 - **The language,** Tix, fixed in the T1 brief: five constructs (shaped parameters, pointwise expressions, `sum` and `max` over named indices, single assignment, affine indices). Its f32 meaning is exact: every operation is rounded, and reductions accumulate in lexicographic index order.
 - **The structure Tix exposes:** `torch.export` of a transformer block gives 40 Core ATen nodes, 26 of which are `view`, `permute` or `expand`. In Tix these are index renamings and do not appear.
+- **Reference speeds on the GB10** (IRWB-019 diary step 26, `various/eff-probe/main.cu`; median of 20 event-timed runs under the lock):
+  - cuBLAS SGEMM in FP32 math (pedantic, so no TF32): 0.0329 ms at 512³ (8.15 TFLOP/s), and 19.2 TFLOP/s at 4096³;
+  - streaming bandwidth: 244 GB/s.
+
+### Queue (tensor track, in order)
+The path from T2's naive kernels toward library speed. Each step is a stage for the agent matrix unless marked as coordinator work. Every transformation that changes results is an explicit IR pass checked under tolerance, so the lowering stays exact against the program it receives. Speed and the strength of the claim are both measured.
+1. **T3, checked fusion** (ready now, base `2e035c6`): softmax and layernorm toward the bandwidth bound, exact where the order is kept.
+2. **T9, a GPU timing protocol** (the coordinator, while T3 runs): needed before any speed comparison is trusted.
+3. **T6, exact tiled contractions with a schedule IR:** shared-memory and register tiling, vector loads, double buffering. Order-preserving, so bit-exact; against cuBLAS.
+4. **T4, tolerance calibration with mutants,** with F15's derived bound: T10–T12 all rest on tolerance, which must still reject real bugs.
+5. **T10, parallel reductions and split-K:** lowering `split-sum` programs to block- and warp-parallel sums.
+6. **T11, checked FMA contraction:** the last factor of about 2 to cuBLAS on large matrices.
+7. **T7, autotuning** of T6's tile sizes under noisy cost.
+8. **T5, streaming attention** (R1's derivation), on T3's fusion and T6's tiles.
+9. **T12, tensor cores** (TF32, BF16) as a checked precision change.
+
+T8 (ONNX) is not queued.
 
 ### T1: Tix front end, IR as a v6 artifact, evaluators, contract, `inline` and `split-sum` *(done: IRWB-020)*
 - **Result:** fourteen independent implementations (twelve Codex and Pi cells, two Claude cells), all correct.
@@ -78,56 +99,115 @@ Shared facts:
 - **Measure:** the rubric (mathematical correctness, derivation completeness, the new construct, checking, generality, experiment, insight).
 - **Depends on:** nothing.
 
-### T2: lowering to CUDA, one kernel per statement, run on the GB10 *(ready; base `98b04da`)*
-- **What we know:** the remote path works end to end, with a 0.5 s compile, cached reruns, correct outputs and the lock. Context start-up dominates a small run (about 370 ms, against 1.3 ms of kernel time).
-- **What we know (from T1):** the base's tolerance is a fixed bound chosen without an error argument (F15). The host is `manuel@bling` over Tailscale. Codex agents need `--network` so that their `ssh` runs inside the sandbox; without it they escalate, and the approval sidecar grants it.
-- **A sharper question:** CUDA's `+ − * /` and `sqrt` are correctly rounded in IEEE mode. With contraction off (`-fmad=false`) and the transcendentals computed in double, a one-thread-per-element backend could be bit-exact with the f32 meaning, and its lowering could be checked under the *exact* relation. Is that true on the GB10, and what does it cost?
+### T2: lowering to CUDA, one kernel per statement, run on the GB10 *(done: IRWB-022; I merged at `2e035c6`)*
+- **Result:** all twelve lowerings are correct, and every `checkLowering` accepts all 16 test programs (2.5–6 s per check, remote).
+  - **Three are bit-exact with the f32 meaning on every measured case:** C, I and J, all Sol. They use round-to-nearest intrinsics, so nothing contracts, and compute `exp`, `log` and `tanh` in double, rounded. An exhaustive check over all 2³² inputs confirmed that construction (`various/exact-probe/`).
+  - **The other nine are about 1 ulp off** where `expf` or `tanhf` appear.
+  - **Every implementation checks under tolerance.** In the report turn, the three exact ones said the exact relation (NaN compared as a class) is the stronger one their evidence supports (F17).
+- **Framework:** ten of twelve changed nothing. K and G added a batch-only differential spec (F18). Eleven changed `tools/cuda-remote.mjs` (private run directories, a locked compile cache); I's version is merged.
+- **Efficiency of the merged base,** against the reference speeds above:
+  - matmul: 0.197 ms, 6.0× cuBLAS and 7% of FP32 peak;
+  - mlp: 11.7× cuBLAS's two GEMMs;
+  - softmax: 0.785 ms and layernorm 0.563 ms, against 0.41 ms for one kernel per statement (about 100 MB moved) and 0.143 ms for one fused pass (32 MB).
+  - The double transcendentals cost about 1.65× on softmax and 7–15% on mlp and attention. matmul, conv and layernorm show no consistent difference.
+- **Reports:** vault report 11, §9 (the comparison); report 13 (I's own).
+
+### T3: checked fusion *(ready; base `2e035c6`; queued first)*
+- **What we know:**
+  - **Fusion legality is visible in index notation** (shared iteration domains, reductions that separate statements). The framework's correspondence must then express many-to-one mappings.
+  - **The base is bit-exact,** so a fusion that keeps each output's evaluation order can be checked under the exact relation: bits are compared, with no tolerance to justify.
+  - **The gap it targets** (diary step 26): softmax at 0.785 ms and layernorm at 0.563 ms, against 0.41 ms for one kernel per statement and 0.143 ms for a fused single pass.
+  - **The row reductions run one thread per row:** only 4,096 threads, and a warp's reads are 4 KB apart, so they are not coalesced. Staging rows through shared memory coalesces the loads and keeps each thread's order.
+  - **mlp's bias and GELU** can fuse into the second contraction's epilogue.
 - **What we don't know:**
-  - How a contract should consume an expensive, remote, asynchronous engine: caching evidence by content hash, batching cases into one launch.
-  - What tolerance GPU math (`expf`, fused multiply-add contraction, a different reduction order) needs against the f64 reference.
-  - What framework changes a remote engine forces.
-- **Approach:** a kernel IR as a second v6 artifact, a CUDA C emitter, a GPU-vs-f64 invariant, the same 12-cell matrix (or the best cells from T1).
-- **Measure:** GPU results within tolerance on the corpus; cost per checked pass; the framework changes.
-- **Depends on:** T1.
+  - whether correspondence handles many-to-one as is;
+  - how close exact fusion gets to the bandwidth bound;
+  - whether legality and exactness can be decided from the IR alone, or need the GPU check.
+- **Approach:** elementwise and epilogue fusion first, then reductions (softmax, layernorm). Check every fusion with the T2 contract, under the exact relation where order is kept. The thread mapping may change where fusion needs it, with each change recorded with its reason.
+- **Measure:** kernel count, bytes moved and GPU time (T9's protocol) against T2 and the bandwidth bound; the relation achieved per fused program.
+- **Depends on:** T2 (done); T9 for timing.
 
-### T3: checked fusion *(idea)*
-- **What we know:** fusion legality is visible in index notation (shared iteration domains, reductions that separate statements). The framework's correspondence must then express many-to-one mappings.
-- **What we don't know:** whether correspondence handles many-to-one as is; how much the kernel count and GPU time fall on the corpus.
-- **Approach:** elementwise and epilogue fusion first, then reductions (softmax, layernorm); every fusion checked by the T1/T2 contract.
-- **Measure:** kernels and GPU time against T2.
-- **Depends on:** T2.
-
-### T4: tolerance calibration with mutants *(idea)*
+### T4: tolerance calibration with mutants *(queued fourth; with F15)*
 - **What we know:** C1's question in floating point. A tolerance accepts reassociation, and must still reject real bugs.
 - **What we don't know:** which bug classes hide inside any tolerance loose enough to accept legal reassociation.
 - **Approach:** mutants of the Tix passes; miss rate against the tolerance and the number of cases.
 - **Measure:** miss rate per mutant class.
 - **Depends on:** T1.
 
-### T5: implement R1's derivation *(idea)*
+### T5: implement R1's derivation *(queued eighth)*
 - **What we know:** depends on R1's results.
 - **What we don't know:** whether a derived streaming kernel comes close to a hand-written one on the GB10.
 - **Approach:** the rules as checked passes, plus the tuple-state reduction construct in the IR.
 - **Measure:** GPU time and bytes moved against T2's unfused attention and a hand-written streaming kernel.
-- **Depends on:** R1, T2, T3.
+- **Depends on:** R1, T3, T6.
 
-### T6: tiled contractions against cuBLAS *(idea)*
-- **What we know:** cuBLAS ships with the CUDA toolkit on bling, so a strong baseline exists.
-- **What we don't know:** how close strategy-driven tiling (shared memory, thread mapping as checked data) gets on the GB10.
-- **Approach:** tiling as a strategy in `src/framework/strategy`.
-- **Measure:** matmul GFLOP/s against cuBLAS.
-- **Depends on:** T2.
+### T6: exact tiled contractions with a schedule IR, against cuBLAS *(queued third)*
+- **What we know:**
+  - **The gap:** cuBLAS SGEMM takes 0.0329 ms at 512³. T2's naive matmul takes 0.197 ms (6.0×), and mlp's two contractions are 11.7× slower.
+  - **The cause is mostly data reuse:** the naive kernel loads two floats per multiply-add, so memory, not arithmetic, limits it.
+  - **The order-preserving steps:** shared-memory tiling, register tiling (each thread an 8×8 patch), vector and coalesced loads, a transposed A tile, double buffering, and per-shape tile sizes. All keep each output's additions in the order k = 0, 1, … and so stay bit-exact. Expert hand-written SGEMMs reach 80–95% of cuBLAS with these steps alone.
+  - **The ceiling:** the f32 meaning rounds the product and the sum separately, so an exact kernel issues two instructions per multiply-add. Its ceiling is about half of cuBLAS on large matrices, around 9.6 TFLOP/s; T11 covers the rest.
+  - **What cuBLAS adds beyond these steps:** a kernel chosen per shape from many variants, plus low-level tuning (register allocation, instruction scheduling, software pipelining). CUTLASS shows the approach in the open: templates over tile shapes and pipeline depth.
+- **Hypothesis:** an exact tiled kernel matches cuBLAS at 512³, where cuBLAS reaches only 8.15 TFLOP/s. A hand-written probe can test this before the stage is briefed.
+- **What we don't know:**
+  - how close a *generated* exact kernel gets;
+  - what the schedule IR must express;
+  - whether `src/framework/strategy` fits schedule search.
+- **Approach:** a schedule (kernel) IR as a v6 artifact, following the Halide/TVM split between algorithm and schedule: tile, split, reorder, bind to block or thread, stage in shared memory. Check order-preserving schedule changes under the exact relation; reassociating ones belong to T10.
+- **Measure:** TFLOP/s against cuBLAS at matmul 512³, the attention and mlp shapes, and 4096³; bit-exactness; the framework changes.
+- **Depends on:** T2, T9; T3 for the epilogue.
 
-### T7: autotuning under noisy cost *(idea)*
+### T7: autotuning under noisy cost *(queued seventh)*
 - **What we know:** GPU timings vary between runs. The lock removes interference from other agents, but not the noise itself.
+- **What we know (T2):** a remote check costs 2.5 s, most of it the round trip, so a search over many tile configurations must batch candidates into one compile and one run, with checked evidence cached by content. The differential contract's `decide` hook already batches cases.
 - **What we don't know:** how the strategy search should treat a noisy objective (repeats, confidence, early stopping).
 - **Measure:** regret against an exhaustive search; repeatability of the chosen schedule.
-- **Depends on:** T6.
+- **Depends on:** T6, T9.
 
 ### T8: ONNX importer into Tix *(idea, optional)*
 - **What we know:** ONNX is a protobuf file that can be read without Python. Its operator set is large (about 190).
 - **What we don't know:** how many operators real models need once views and broadcasts disappear into indices.
 - **Depends on:** T1.
+
+### T9: a GPU timing protocol *(prep, S; the coordinator, during T3)*
+- **What we know:**
+  - T2's `gpuMs` is one event interval per process. The evaluator's single runs and I's warm medians differ by up to 2× (attention 1.81 against 1.05 ms; conv 0.341 against 0.164).
+  - Lazy module loading inflates the first launch (0.06 against 0.004 ms) unless kernels are preloaded.
+  - The SM clock reads 2.4 GHz at idle, against a 3.0 GHz maximum.
+- **What we don't know:** the run-to-run spread with warmup and repeats, and how many repeats give a stable median at these kernel lengths (0.03–2 ms).
+- **Approach:** a mode in the runner or the generated host code that warms up, runs N timed repeats in one process, reports every interval, and records the clock state.
+- **Measure:** coefficient of variation per corpus program; agreement between two sessions.
+- **Depends on:** nothing.
+
+### T10: parallel reductions and split-K, by lowering split-sum programs *(queued fifth)*
+- **What we know:** `split-sum` already reassociates a sum explicitly, checked under tolerance.
+  - A split-K GEMM is a split-sum program lowered with one block per partial sum. A warp-parallel tree reduction is a nested split.
+  - The lowering of a split program can stay exact against that program.
+- **What we don't know:**
+  - whether the lowering can choose the mapping from the split structure alone;
+  - how much the skinny GEMMs (attention's 1024×64×1024) and the row reductions gain.
+- **Approach:** lower split programs to block- and warp-level parallel reductions. Check the lowering as exact against the split program, and the split against the origin under tolerance.
+- **Measure:** GPU time on the skinny GEMMs and the reductions; whether both relations hold.
+- **Depends on:** T6; T4 and F15 (the tolerance must still reject real bugs).
+
+### T11: checked FMA contraction *(queued sixth)*
+- **What we know:** fused multiply-add halves the instruction count of a multiply-add, and is the last factor of about 2 between an exact kernel and cuBLAS on large matrices. It rounds once where the f32 meaning rounds twice, so it changes results.
+- **What we don't know:**
+  - the error it introduces on the corpus;
+  - how the f32 reference computes a fused multiply-add exactly in JavaScript. The product of two f32 values is exact in double, but adding a third value rounds to double and then to f32, which can round twice. An exact emulation needs an error-free transformation.
+- **Approach:**
+  - a `contract` pass in the IR that marks multiply-add pairs as fused, checked under tolerance;
+  - an f32 meaning for the fused operation;
+  - a lowering that emits `__fmaf_rn` exactly where marked, so it stays exact against the contracted program.
+- **Measure:** TFLOP/s gained on T6's kernels; error against f64 and against the uncontracted f32 meaning.
+- **Depends on:** T6, T4.
+
+### T12: tensor cores as a checked precision change *(queued ninth, last; L)*
+- **What we know:** TF32 or BF16 tensor cores are 4× or more beyond CUDA-core FP32. The cuBLAS reference speeds above use none (pedantic FP32 math). Inputs lose mantissa bits, so only a tolerance relation can hold.
+- **What we don't know:** which warp-level matrix instructions sm_121 offers and through which CUDA interface; the error on the corpus.
+- **Approach:** a precision-change pass in the IR (inputs rounded to TF32 or BF16, accumulation in f32), checked under tolerance, and a lowering to warp-level matrix instructions.
+- **Measure:** TFLOP/s against cuBLAS with tensor cores enabled; error against f64.
+- **Depends on:** T6, T11, T4.
 
 ---
 
@@ -263,7 +343,19 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
   - *Needed:* a bound derived from the computation, or the inconclusive rule; treat identical non-finite values as agreeing.
 - **F16: unspecified rules in the Tix core** *(ready, S; brief)*.
   - *Known:* fourteen implementations divided on whether an index may share a tensor's name (the Claude cells said no). The brief is also silent on shadowing (`sum(j) a[i, j] + sum(j) b[i, j]` parses as a nested reduction rebinding `j`) and on zero-size extents.
-  - *Needed:* state all three in the T2 brief's fixed core, and test them.
+  - *Needed:* state all three in the T2 brief's fixed core, and test them. *(Done in the T2 brief; all twelve T2 implementations implement them.)*
+- **F17: the lowering's relation should be exact for an exact emitter** *(ready, S; before or with T3)*.
+  - *Known:* the merged base (I) is bit-exact by construction but checks under tolerance against f64. NaN words differ between the GPU and Node: `__fsqrt_rn(-2⁻¹⁴⁹)` gives `0x7fffffff` on the GB10 and `0xffc00000` in Node (I's report).
+  - *Needed:* compare f32 words exactly against the current revision, with NaN as a class. Keep the f64 tolerance as a separate numerical check. This makes T3's exact fusion checks direct.
+- **F18: a batch-only differential spec** *(idea, S)*.
+  - *Known:* K and G each added one to `src/framework/contracts`. Ten others batched through `decide` without a framework change.
+  - *Needed:* decide whether the framework should offer it.
+- **F19: concurrent cold checks both issue a batch** *(idea, S)*.
+  - *Known:* the differential memo records verdicts only after a batch completes (I's report).
+  - *Needed:* share an in-flight batch per key.
+- **F20: `tools/cuda-remote.mjs` cannot link libraries** *(ready, S)*.
+  - *Known:* the cuBLAS baseline needed `-lcublas`, so I ran it over `ssh` directly, outside the tool's lock and cache.
+  - *Needed:* a `--link` option that is part of the build key, so baselines go through the tool.
 
 ## 4. Agent methodology
 
