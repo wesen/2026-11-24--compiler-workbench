@@ -48,6 +48,8 @@ const GATE_SPEC = {
   strong: { v: 2, count: 40, extra: 40, divergence: 10 },
   'strong-cases': { v: 2, count: 40, extra: 40, divergence: 0 },
   'default+div': { v: 2, count: 40, extra: 0, divergence: 10 },
+  'strong-cov': { v: 2, count: 40, extra: 40, divergence: 10, coverage: true },
+  default400: { v: 1, count: 400 },
 };
 
 const t0 = performance.now();
@@ -67,7 +69,7 @@ function casesOf(g, fn) {
     const G = GATE_SPEC[g], spec = inputs[fn] ?? {};
     const cases = G.v === 1
       ? casesFrom(r0st, fn, { count: G.count, seed: 7, inputs: spec })
-      : S.strongCasesFrom(r0st, fn, { count: G.count, extra: G.extra, seed: 7, inputs: spec });
+      : S.strongCasesFrom(r0st, fn, { count: G.count, extra: G.extra, seed: 7, inputs: spec, coverage: !!G.coverage });
     x = { cases, runs: cases.map(c => evaluate(r0st, fn, c.args, c.memory, { limit: 2e4 })) };
     gateCases.set(key, x);
   }
