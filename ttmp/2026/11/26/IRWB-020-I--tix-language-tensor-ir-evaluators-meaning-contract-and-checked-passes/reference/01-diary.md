@@ -198,3 +198,9 @@ A locked offline install initially failed during esbuild's version check with `s
 The scanner and precedence parser resolve tensor reads and lexical index binders while constructing the IR. A second traversal validates the artifact and diagnoses impossible affine bounds. The same validator checks native rewrite results. The evaluator binds each expression to its inputs and loops, with f32 rounding at each operation and reduction step.
 
 `npm run build` and the five tests in `node tests/tensor/language.test.mjs` passed. These checks include an affine transpose, two valid readings of `max(A,B) - …`, reduction order visible in f32, empty reductions, and diagnostics after a line comment. Commit `ecf9a93` contains the preceding framework change.
+
+## Step 5 — Check transformed artifacts against the two baselines
+
+The built index exports exactly `compileTix`, `optimizeTix` and `runTix`. The origin determines the per-function case list for both contracts. A changed inline compares to its input at f32. A changed split compares to the f64 origin. The same driver accepted both pass orders in the smoke probe.
+
+`node tests/tensor/passes.test.mjs` passed five tests. The eight-term reduction produced the two predicted adjacent f32 words. A changed candidate omitting the ninth term failed tolerance with reference 9 and candidate 8. An inline losing negation failed in the second function, and the following honest pass used the last accepted artifact. The preceding parser/evaluator checkpoint is `d73d247`.

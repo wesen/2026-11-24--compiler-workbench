@@ -23,3 +23,5 @@ export function runTix(
   if (!entry) throw new Error(`unknown Tix function ${fn}`);
   return evaluate(entry, inputs, options?.precision ?? 'f32');
 }
+
+export { optimizeTix } from './passes.js';
