@@ -135,3 +135,7 @@ Accepted every review item. The contract now enumerates concrete bindings in ord
 ## Step 3: Checked indexed representation and execution
 
 Implemented lexical binder IDs, affine composition and bounds checks on each revision, a read-only v6 projection, and precision-parametric row-major evaluation. `npm run build` passed after installing locked dependencies. No source translation via Typed. Next wire the sampled gate and run independent oracles.
+
+## Step 4: Synchronous native acceptance
+
+At front-end checkpoint `e0e2556`, the read-only adapter fit the native-result path but not the async edit lifecycle. Shared candidate preparation and write enforcement in `define-pass.ts`; the synchronous caller supplies the semantics callback. The expression fixture exercises rejection before publication, unsupported clauses and async checks. `node --test tests/framework/*.test.mjs` passed 226/226; `node --test tests/typed/{passes,inline,meaning-memo,strategies}.test.mjs` passed 26/26. No escalation required.

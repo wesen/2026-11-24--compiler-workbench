@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AnalysisManager, createArtifact, defineAnalysis, defineType } from '../../dist/framework/contracts/index.js';
-import { definePass, applyPass, PassError, passAlgorithm, analysisAlgorithm } from '../../dist/framework/passes/index.js';
+import { definePass, applyPass, applyNativePassSync, PassError, passAlgorithm, analysisAlgorithm } from '../../dist/framework/passes/index.js';
 import { AlgorithmRegistry, plan, sequence, apply, algorithm, executeOrThrow } from '../../dist/framework/strategy/index.js';
 import { ExpressionIR, expressionAdapter, exampleExpression, evaluateExpression } from '../../dist/labs/expressions.js';
 import { expressionContract } from '../../dist/labs/contracts.js';
@@ -87,6 +87,22 @@ test('E3: a native-style pass is diffed, checked against its contract and publis
   const again = await applyPass(cseNative, r.artifact, { manager });
   assert.equal(again.changed, false);
   assert.equal(again.artifact, r.artifact);
+});
+
+test('synchronous native gate checks writes before semantics and refuses manager clauses', () => {
+  const before = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const check = candidate => ({ ok: evaluateExpression(candidate.value, env) === evaluateExpression(before.value, env) });
+  const plain = pass => definePass({ ...pass, contract: undefined });
+  const result = applyNativePassSync(plain(cseNative), before, check);
+  assert.equal(result.changed, true);
+  assert.ok(result.correspondence.entries.some(e => e.relation === 'cse'));
+  assert.throws(() => applyNativePassSync(plain(wrongPass), before, check), { code: 'contractRejected' });
+  assert.throws(() => applyNativePassSync(sneaky, before, () => assert.fail('undeclared write reached check')), { code: 'undeclaredWrite' });
+  for (const clauses of [{ contract: expressionContract }, { needs: { count: nodeCount } }, { preserves: [nodeCount] }]) {
+    assert.throws(() => applyNativePassSync(definePass({ ...plain(cseNative), ...clauses }), before, check), { code: 'badResult' });
+  }
+  assert.throws(() => applyNativePassSync(plain(cseEdit), before, check), { code: 'badResult' });
+  assert.throws(() => applyNativePassSync(plain(cseNative), before, async () => ({ ok: true })), /synchronous/);
 });
 
 test('E3: an edit-style pass produces the same revision as the native one', async () => {

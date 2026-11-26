@@ -25,7 +25,7 @@ WhenToUse: ""
 
 # Stage 1: from index notation to checked tensor revisions
 
-**Decision for review:** keep tensors as immutable definitions over explicit index domains, not a CFG. Borrow the artifact, projection, pass and differential machinery, not Typed's evaluator or project format. There is one proposed framework change: a synchronous entry point for a native pass checked by a sampled invariant. No implementation has landed.
+**Reviewed decision:** keep tensors as immutable definitions over explicit index domains, not a CFG. Borrow the artifact, projection, pass and differential machinery, not Typed's evaluator or project format. There is one proposed framework change: a synchronous entry point for a native pass checked by a sampled invariant. Stage 1 implements that entry point and checks the six-program corpus.
 
 ## Framework change ledger
 
@@ -37,6 +37,10 @@ WhenToUse: ""
 | `framework/dataflow`, `strategy` | No change or use in this stage. | Ordered definitions and a caller-provided sequence need neither CFG analysis nor async strategy search. |
 
 The new path has **no store, manager effects, fact dependencies, preservation claims, edit API or async guarantees**. Take a `definePass` Pass; refuse declared needs, preserves or manager contract. Supply the view but not edit authority; do not silently skip clauses of an ordinary transformation. Prepare without publication, run required relation(s) on validated artifacts, return the candidate only on success. Record differential evidence on rejection. Keep the existing async API and defaults intact. Test shared preparation on a non-tensor fixture, including an undeclared write and a semantic rejection. Do not implement a synchronous AnalysisManager. Record actual changed framework files/reasons and any deviations here before implementation signoff.
+
+### Actual framework delta
+
+Only `src/framework/passes/define-pass.ts` changed. `prepareNative` and `enforceWrites` are shared between the existing async path and `applyNativePassSync`. The latter checks the input view and candidate through the adapter, requires a native result, rejects thenables, and returns only after write and semantic checks pass. The existing wildcard export sufficed. Implementation detail vs plan: the gate takes a synchronous check callback rather than depending directly on a differential invariant. `src/tensor/contract.ts` supplies that callback using the framework's two versioned differential invariants. This keeps case generation and precision policy out of the pass layer. No other framework source or Typed source changed.
 
 ## Source and checked IR (`src/tensor`)
 
