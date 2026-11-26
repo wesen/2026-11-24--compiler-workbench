@@ -89,3 +89,38 @@ The user asked: "oh, also compare how running gpt-6.2 sol/astra in the pi coding
 - Every agent made one commit, inside its own ticket.
 - Astra read no skill file in three of four cells; Sol read them in all four.
 - Judging and reviewing wait for the Pi cells, so that all eight documents of a task are scored and reviewed together.
+
+## Step 3: the Pi designs, xhigh added (12 cells), the backlog and the playbook draft
+
+### Pi design results (turn 1)
+
+| round | item | minutes | tool calls (read / bash / edit / write) | skill files read | design words |
+|---|---|---:|---|---|---:|
+| t1-pi-sm | IRWB-020-F | 6.0 | 50 (21 / 10 / 17 / 2) | docmgr, diary, git-commit-instructions, … | 2,832 |
+| t1-pi-sh | IRWB-020-G | 6.1 | 44 (25 / 9 / 10 / 0) | docmgr, diary, git-commit-instructions, … | 2,827 |
+| t1-pi-am | IRWB-020-E | 3.4 | 19 (12 / 6 / 1 / 0) | diary, docmgr, git-commit-instructions, … | 1,815 |
+| t1-pi-ah | IRWB-020-H | 5.0 | 32 (24 / 5 / 0 / 3) | docmgr, diary, investigation-entry, git-commit-… | 2,937 |
+| r1-pi-sm | IRWB-021-H | 4.8 | 31 | docmgr, diary, git-commit-instructions, … | |
+| r1-pi-sh | IRWB-021-G | 6.3 | 42 | docmgr, diary, investigation-entry | |
+| r1-pi-am | IRWB-021-F | 3.4 | 14 | docmgr, diary, investigation-entry | |
+| r1-pi-ah | IRWB-021-E | 4.9 | 20 | docmgr, diary, investigation-entry | |
+
+- **Skills: a harness × model interaction.** Under Codex, Astra read no skill file in three of four cells. Under Pi, Astra read docmgr and diary in all four. Pi's catalogue tells the model to "Use the read tool to load a skill's file when the task matches its description". The harness's instruction appears to matter more than the model here.
+- **Pi agents read through the `read` tool** (12 to 25 reads) and run few shell commands (5 to 11). Codex agents run everything through shell commands. Three of four Pi stage-1 agents also loaded `git-commit-instructions`, which no Codex agent read.
+- **Every Pi agent made exactly one commit, inside its ticket.** Pi has no sandbox, so this is the isolation line alone.
+- **The first attempt failed without effect** (the glob in an assignment, step 2). The relaunch ran all eight.
+
+### xhigh
+The user asked: "ok, add xhigh to the matrix". There are four new cells per task: Codex and Pi, each with Sol and Astra at xhigh. The tickets are I to L, assigned at random:
+- t1: L = Codex Sol, I = Codex Astra, K = Pi Sol, J = Pi Astra;
+- r1: I = Codex Sol, J = Codex Astra, K = Pi Sol, L = Pi Astra.
+
+`scripts/07-launch-xhigh-design.sh` (`9484654`) runs them with `AGENT_TIMEOUT=7200`. All eight started with the intended settings (log headers and session `thinking_level_change`). Judging and review wait for them, so that each task's twelve designs are scored together.
+
+### The backlog and the playbook draft
+- The user asked for the research tasks in "some kind of 'things we can work on' file, for the v6 framework/workbench", and then for "information on what is meant to explain wat you currently know, what research is needed, etc...".
+  - `BACKLOG.md` at the repository root (`1e5a236`, restructured in `6694039`) has an index, then one entry per item: what we know (measurements and sources), what we don't know, approach, measure, dependencies.
+  - It covers the tensor stages T1 to T8, Typed research D1, D2, B1, B2, A0, A1, C1 and E1, twelve framework fixes (F1 to F12), and methodology (M1 to M5).
+- The user asked: "also keep a playbook draft as you go, updating it as you refine or extend your techniques".
+  - Vault `e6fc169`: `Research/playbooks/agents/PLAYBOOK - Comparing Coding-Agent Configurations on the Same Design-and-Implement Tasks.md` (`status: draft`).
+  - The preference is recorded in memory, alongside the diary and report cadence.
