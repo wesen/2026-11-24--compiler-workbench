@@ -1,0 +1,728 @@
+{
+ "revisions": 168,
+ "runs": 220800,
+ "checked": 149381636,
+ "claims": 12888,
+ "violations": [],
+ "seeded": {
+  "sites": 2456,
+  "detected": 1185,
+  "lo": {
+   "sites": 1228,
+   "detected": 936
+  },
+  "hi": {
+   "sites": 1228,
+   "detected": 249
+  },
+  "missed": [
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.1",
+    "local": "i",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.1",
+    "local": "t7",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.2",
+    "local": "i",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.2",
+    "local": "t7",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.3",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.3",
+    "local": "t7",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.4",
+    "local": "n",
+    "range": [
+     1,
+     2147483647
+    ],
+    "end": "lo"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.4",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.4",
+    "local": "t7",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.5",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.5",
+    "local": "t7",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.7",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "blend",
+    "fn": "blend",
+    "block": "bb:blend.7",
+    "local": "t7",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.1",
+    "local": "i",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.1",
+    "local": "t4",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.1",
+    "local": "t5",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.1",
+    "local": "t6",
+    "range": [
+     0,
+     65535
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.11",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.11",
+    "local": "t4",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.11",
+    "local": "t5",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.11",
+    "local": "t6",
+    "range": [
+     0,
+     65535
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.2",
+    "local": "i",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.2",
+    "local": "t4",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.2",
+    "local": "t5",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.2",
+    "local": "t6",
+    "range": [
+     0,
+     65535
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.3",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.3",
+    "local": "t4",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.3",
+    "local": "t5",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.3",
+    "local": "t6",
+    "range": [
+     0,
+     65535
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "lo"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "t4",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "lo"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "t4",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "t5",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "lo"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "t5",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "t6",
+    "range": [
+     0,
+     65535
+    ],
+    "end": "lo"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.4",
+    "local": "t6",
+    "range": [
+     0,
+     65535
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.5",
+    "local": "i",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.5",
+    "local": "t4",
+    "range": [
+     0,
+     2147483646
+    ],
+    "end": "hi"
+   },
+   {
+    "project": "bounds-lab",
+    "fn": "pairs",
+    "block": "bb:pairs.5",
+    "local": "t5",
+    "range": [
+     0,
+     2147483647
+    ],
+    "end": "hi"
+   }
+  ]
+ },
+ "perProject": {
+  "across-calls": {
+   "revisions": 3,
+   "checked": 85600,
+   "claims": 107,
+   "violated": 0
+  },
+  "algebra": {
+   "revisions": 5,
+   "checked": 27200,
+   "claims": 34,
+   "violated": 0
+  },
+  "blend": {
+   "revisions": 7,
+   "checked": 2151324,
+   "claims": 325,
+   "violated": 0
+  },
+  "bounds-lab": {
+   "revisions": 5,
+   "checked": 5000845,
+   "claims": 800,
+   "violated": 0
+  },
+  "bounds-offset": {
+   "revisions": 3,
+   "checked": 414900,
+   "claims": 84,
+   "violated": 0
+  },
+  "bounds-param": {
+   "revisions": 3,
+   "checked": 415938,
+   "claims": 96,
+   "violated": 0
+  },
+  "bounds-two": {
+   "revisions": 5,
+   "checked": 1433924,
+   "claims": 299,
+   "violated": 0
+  },
+  "branches": {
+   "revisions": 4,
+   "checked": 40415,
+   "claims": 113,
+   "violated": 0
+  },
+  "call-chain": {
+   "revisions": 2,
+   "checked": 19200,
+   "claims": 12,
+   "violated": 0
+  },
+  "calls": {
+   "revisions": 2,
+   "checked": 128200,
+   "claims": 116,
+   "violated": 0
+  },
+  "checksum": {
+   "revisions": 5,
+   "checked": 1039480,
+   "claims": 115,
+   "violated": 0
+  },
+  "collatz": {
+   "revisions": 1,
+   "checked": 453453,
+   "claims": 26,
+   "violated": 0
+  },
+  "constants": {
+   "revisions": 5,
+   "checked": 45600,
+   "claims": 57,
+   "violated": 0
+  },
+  "dead-code": {
+   "revisions": 7,
+   "checked": 87200,
+   "claims": 109,
+   "violated": 0
+  },
+  "diagnostics": {
+   "revisions": 1,
+   "checked": 800,
+   "claims": 1,
+   "violated": 0
+  },
+  "distinct": {
+   "revisions": 1,
+   "checked": 4800,
+   "claims": 6,
+   "violated": 0
+  },
+  "div-checks": {
+   "revisions": 3,
+   "checked": 172000,
+   "claims": 293,
+   "violated": 0
+  },
+  "div-magic": {
+   "revisions": 3,
+   "checked": 83325,
+   "claims": 105,
+   "violated": 0
+  },
+  "early-exit": {
+   "revisions": 6,
+   "checked": 1253514,
+   "claims": 219,
+   "violated": 0
+  },
+  "first-steps": {
+   "revisions": 5,
+   "checked": 33600,
+   "claims": 24,
+   "violated": 0
+  },
+  "fixed-point": {
+   "revisions": 5,
+   "checked": 552800,
+   "claims": 472,
+   "violated": 0
+  },
+  "fragments": {
+   "revisions": 7,
+   "checked": 2144229,
+   "claims": 325,
+   "violated": 0
+  },
+  "gcd": {
+   "revisions": 2,
+   "checked": 9600,
+   "claims": 12,
+   "violated": 0
+  },
+  "heat-lab": {
+   "revisions": 3,
+   "checked": 30581254,
+   "claims": 665,
+   "violated": 0
+  },
+  "histogram": {
+   "revisions": 5,
+   "checked": 8364330,
+   "claims": 1395,
+   "violated": 0
+  },
+  "licm-nested": {
+   "revisions": 3,
+   "checked": 9736571,
+   "claims": 99,
+   "violated": 0
+  },
+  "licm-traps": {
+   "revisions": 2,
+   "checked": 1352668,
+   "claims": 28,
+   "violated": 0
+  },
+  "match-enum": {
+   "revisions": 3,
+   "checked": 133454,
+   "claims": 218,
+   "violated": 0
+  },
+  "my-analysis": {
+   "revisions": 1,
+   "checked": 3631848,
+   "claims": 26,
+   "violated": 0
+  },
+  "my-first-pass": {
+   "revisions": 1,
+   "checked": 2400,
+   "claims": 3,
+   "violated": 0
+  },
+  "nested-loops": {
+   "revisions": 3,
+   "checked": 10601333,
+   "claims": 84,
+   "violated": 0
+  },
+  "orders": {
+   "revisions": 11,
+   "checked": 2686062,
+   "claims": 857,
+   "violated": 0
+  },
+  "params-demo": {
+   "revisions": 1,
+   "checked": 348179,
+   "claims": 50,
+   "violated": 0
+  },
+  "pressure": {
+   "revisions": 1,
+   "checked": 44000,
+   "claims": 55,
+   "violated": 0
+  },
+  "ramp": {
+   "revisions": 7,
+   "checked": 4443502,
+   "claims": 611,
+   "violated": 0
+  },
+  "records": {
+   "revisions": 1,
+   "checked": 39090,
+   "claims": 62,
+   "violated": 0
+  },
+  "regalloc-lab": {
+   "revisions": 4,
+   "checked": 1723520,
+   "claims": 549,
+   "violated": 0
+  },
+  "sort": {
+   "revisions": 3,
+   "checked": 26846130,
+   "claims": 665,
+   "violated": 0
+  },
+  "start-here": {
+   "revisions": 6,
+   "checked": 4943352,
+   "claims": 993,
+   "violated": 0
+  },
+  "strength": {
+   "revisions": 8,
+   "checked": 7384584,
+   "claims": 792,
+   "violated": 0
+  },
+  "strings": {
+   "revisions": 5,
+   "checked": 16855954,
+   "claims": 1556,
+   "violated": 0
+  },
+  "ui-gallery": {
+   "revisions": 6,
+   "checked": 1495667,
+   "claims": 358,
+   "violated": 0
+  },
+  "value-numbering": {
+   "revisions": 3,
+   "checked": 2328979,
+   "claims": 47,
+   "violated": 0
+  },
+  "wrong-shift": {
+   "revisions": 1,
+   "checked": 240812,
+   "claims": 25,
+   "violated": 0
+  }
+ },
+ "ms": 726260
+}

@@ -587,3 +587,46 @@ The corpus measurement of Step 8 mutates each project's pipeline head. To see wh
 
 ### Technical details
 - Per operator at r0 (default; mutants, killed, wrong, equivalent): swap 226 219 0 7; const 542 470 36 36; cmp-flip 119 119 0 0; cmp-weaken 162 61 1 100; drop-check 43 4 0 39; check-range 42 3 1 38; shift 87 87 0 0; hoist-trap 2 1 0 1; drop-store 8 8 0 0.
+
+## Step 13: C5, the range facts checked against executions
+
+`typed.ranges` claims an interval for every i32 local before every statement, and bce and strength reduction act on those claims. C5 checks the claims on executions. `src/typed/facts-check.ts` runs cases with a new `observe` option of `evaluate` (called before each executed statement with the frame's locals; nine lines added to evaluate.ts, Step 11) and compares every claim narrower than the full i32 range with the local's value. Over every revision of every corpus pipeline, 149 million claim checks found no violation. To test the checker, every finite block-entry interval at r0 was narrowed by one at each end and checked at the block's first statement: 1,185 of 2,456 narrowed facts were reported. The other 1,271 cannot be reported by any checker on these cases: the original bound is never attained, so the narrowed fact is still true on every run. The experiment therefore measures how tight the analysis is on real executions (lower bounds 76 % attained, upper bounds 20 %), and it confirms that the hook reports on the right statement and local.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** C5 (optional): "check typed.ranges facts against executions".
+**Inferred user intent:** The facts that passes rely on are tested, not assumed.
+**Commit (code):** bddeabf — "IRWB-005 C5: typed.ranges checked against executions (src/typed/facts-check.ts), additive observe hook in evaluate; tests"; 96acefd (evaluate.ts edit kept additive); 8ee1b7a (targeted seeded check).
+
+### What I did
+- `rangesHold(st, facts, cases, { limit, maxViolations, only, stopAtFirst })`, `rangeSites(facts)`, `perturbRanges(facts, site, 'lo' | 'hi')`; tests in `tests/typed/facts-check.test.mjs` (Blend's facts hold at every O2 revision; the loop counter's entry interval narrowed at its lower end is reported with value 0; observing a run changes nothing in it and the callback runs once per step).
+- `scripts/12-ranges-hold.mjs`: per project, every revision r0..rN: `typed.ranges` through the manager, 400 specified (seed 201) and 400 unconstrained (seed 202) cases per function, records at their offsets; at r0 the seeded facts. Output `various/12-ranges-hold.{txt,json}`; 12 min 6 s.
+
+### Why
+- A wrong range fact would let bce drop a check that matters only on rare inputs, the kind of error the gate is weakest at.
+
+### What worked
+- 44 projects, 168 revisions, 220,800 case runs, 149,381,636 claim checks, 12,888 distinct (statement, local) claims exercised, 0 violations.
+- Seeded: 2,456 narrowed facts (1,228 per end), 1,185 reported: lower ends 936 of 1,228, upper ends 249 of 1,228. Of the first 40 unreported ones listed, 35 are upper ends and 30 of those are counters or indices whose claimed upper bound is 2³¹−1 or 2³¹−2.
+
+### What didn't work
+- The first full run checked each narrowed fact by running every claim of the function on all its cases, without stopping: it was still in `heat-lab`'s seeded facts after more than 15 minutes (killed, PID 3995969, exit 143). The first trial run had been cut by `timeout 600` at `gcd`. Fixed with `only: { stmt, local }` (check just the narrowed claim) and `stopAtFirst`; the whole run then took 12 minutes.
+
+### What I learned
+- No range fact of any corpus revision is contradicted by 800 cases per function, including unconstrained ones.
+- A seeded wrong fact is a fair test only if the original bound is attained; narrowing a bound no execution reaches yields a fact that is still true. 48 % of finite block-entry bounds are attained on these cases.
+
+### What was tricky to build
+- Reading locals without changing the evaluator's behaviour: the hook receives the frame's `Int32Array` itself and must not write it; the test checks result, trap, steps and memory are identical with and without the hook.
+
+### What warrants a second pair of eyes
+- f32 locals are skipped (their facts are always the full range); claims are checked only where they are narrower than the full i32 range.
+
+### What should be done in the future
+- A stronger seeded test would move a bound *into* the observed range of values (e.g. to the median observed value), which is wrong on the cases by construction, and check that each such fact is reported.
+
+### Code review instructions
+- `src/typed/facts-check.ts`, `tests/typed/facts-check.test.mjs`, `scripts/12-ranges-hold.mjs`.
+
+### Technical details
+- Largest projects by checks: heat-lab 30,581,254 (665 claims), sort 26,846,130 (665), strings 16,855,954 (1,556), nested-loops 10,601,333, licm-nested 9,736,571.
