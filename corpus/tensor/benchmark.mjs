@@ -1,4 +1,4 @@
-// After npm run build: node corpus/tensor/benchmark.mjs [program ...]
+// After npm run build: node corpus/tensor/benchmark.mjs [--gpu-only] [program ...]
 import { readFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { seededRandom } from '../../dist/framework/contracts/index.js';
@@ -14,7 +14,9 @@ const bindings = {
   mlp: { N: 1024, D: 256, H: 1024, O: 256 },
   conv2d: { N: 8, C: 16, H: 64, W: 64, O: 32 },
 };
-const selected = process.argv.slice(2);
+const args = process.argv.slice(2);
+const gpuOnly = args.includes('--gpu-only');
+const selected = args.filter(arg => arg !== '--gpu-only');
 const seed = 20;
 console.log(
   JSON.stringify({ node: process.version, cpu: cpus()[0]?.model, seed, flags: '-O3 -arch=sm_121' }),
@@ -39,6 +41,20 @@ for (const name of selected.length ? selected : Object.keys(bindings)) {
     report,
     cases: [gpu],
   } = await runCudaBatch(fn, cudaSource(program, name), [inputs], engine(), true);
+  const sorted = [...gpu.times].sort((a, b) => a - b);
+  const timing = {
+    name,
+    dims,
+    gpuMs: gpu.times,
+    gpuMedian: sorted[2],
+    build: report.hash,
+    engine: report.stdout.trim(),
+    host: report.host,
+  };
+  if (gpuOnly) {
+    console.log(JSON.stringify(timing));
+    continue;
+  }
   const start = performance.now();
   const cpu = runTix(program, name, inputs);
   const cpuMs = performance.now() - start;
@@ -50,20 +66,5 @@ for (const name of selected.length ? selected : Object.keys(bindings)) {
     maxAbs = Math.max(maxAbs, Math.abs(cpu.data[i] - gpu.data[i]));
     if (!Object.is(cpu.data[i], gpu.data[i])) different++;
   }
-  const sorted = [...gpu.times].sort((a, b) => a - b);
-  console.log(
-    JSON.stringify({
-      name,
-      dims,
-      cpuMs,
-      gpuMs: gpu.times,
-      gpuMedian: sorted[2],
-      ratio: cpuMs / sorted[2],
-      different,
-      maxAbs,
-      build: report.hash,
-      engine: report.stdout.trim(),
-      host: report.host,
-    }),
-  );
+  console.log(JSON.stringify({ ...timing, cpuMs, ratio: cpuMs / sorted[2], different, maxAbs }));
 }

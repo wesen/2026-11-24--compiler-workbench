@@ -22,11 +22,12 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 2 lowers the stage-1 Tix IR to CUDA and checks the candidate remotely on GB10. The design and math/contract probes are ready for review. Backend implementation and workload measurements follow the review.
+Stage 2 lowers the stage-1 Tix IR to CUDA and checks the candidate remotely on GB10. The reviewed design is implemented; see the results for validation and workload measurements.
 
 ## Key links
 
-- [Design for review](design-doc/01-checked-tix-to-cuda-lowering.md)
+- [Reviewed design](design-doc/01-checked-tix-to-cuda-lowering.md)
+- [Validation and workload results](reference/02-cuda-lowering-results.md)
 - [Implementation diary](reference/01-implementation-diary.md)
 - [GB10 math probe](scripts/01-probe-gb10-math.mjs) and [local framework probe](scripts/02-probe-contract.mjs)
 

@@ -15,3 +15,11 @@ Design ready for review: probed GB10 math and framework async reuse; proposed di
 ## 2026-11-26
 
 Accepted review: fixed 128-thread blocks, preload kernels before timing and use one in-process warm-up and five repeats. Removed revisioned engine resource and concurrent check coalescing.
+
+## 2026-11-26
+
+Implemented and verified checked CUDA emission and isolated remote builds. Recorded all six GPU and interpreter measurements; each full-size output matched f32. No framework changes.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-pi-sx-irwb-022-c/ttmp/2026/11/26/IRWB-022-C--checked-tix-lowering-to-cuda-on-the-gpu-machine/reference/02-cuda-lowering-results.md — Verification evidence and measurements

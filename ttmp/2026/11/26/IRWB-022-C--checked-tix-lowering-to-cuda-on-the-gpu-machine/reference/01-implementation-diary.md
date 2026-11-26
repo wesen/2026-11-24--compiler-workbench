@@ -206,3 +206,12 @@ The lowering now emits runnable, shape-generic CUDA from the current Tix revisio
 ### Next checkpoint
 
 Capture six corpus check summaries, rerun the repaired opt-in tests, and report benchmark measurements from `node corpus/tensor/benchmark.mjs`. The benchmark runs the unchanged stage-1 f32 evaluator, so the large reduction workloads can take substantially longer than the remote launches.
+
+## Step 4: Verify the gate and measure baseline workloads
+
+The revised opt-in suite passed on GB10, including the NaN-class witness. The GPU-only timing run produced all six event spans while the full-size stage-1 interpreter runs continued on the shared CPU. The [results](02-cuda-lowering-results.md) distinguish measured CPU/GPU ratios from checks at small sizes.
+
+- Implementation checkpoint: `214fb75` — `IRWB-022-C: Implement checked CUDA emission and remote batches`.
+- `npm run build` passed; `node --test tests/tensor/*.test.mjs` passed 19, skipped the six network tests; `TIX_TEST_GPU=1 node --test tests/tensor/cuda-gpu.test.mjs` passed all six. No `src/framework/` changes, so no framework or Typed regression command was required. The full suite did not run.
+- The design probe also reproduced both the intrinsic comparisons and event calls with the rewritten tool's default (full-input-keyed) mode, hash `99fcf9fe1919ccedd2fa4578b07632fdc9ecd8b46a4a3a2f2f5ad09979850d67`. The tool test confirmed independent outputs for two concurrent runs sharing a build, one compile for their identical source in `--cache-main` mode, and separate default builds for different input files.
+- The implementation follows the reviewed timing, emission and checking design. The benchmark adds a `--gpu-only` mode to collect all device samples without waiting for the interpreter. Distinct corpus shape runs use the same seeded f32 inputs in either mode; the unchanged interpreter runs at the full shapes, with no work reduction or extrapolation. The initial CPU run was split after the attention row to avoid rerunning the already-started MLP and convolution measurements.
