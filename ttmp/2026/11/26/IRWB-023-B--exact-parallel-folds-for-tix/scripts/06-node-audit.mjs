@@ -22,8 +22,8 @@ const sha256=hash.digest('hex');
 if(receipt) {
   const report=JSON.parse(readFileSync(receipt,'utf8'));
   assert.equal(report.exit,0);
-  const interval='audit ['+lo.padStart(8,'0')+','+hi.padStart(8,'0')+') words='+(end-first)+' cubic-quartic-diff=0';
-  assert(report.stdout.includes(interval));
+  const interval='audit ['+lo.padStart(8,'0')+','+hi.padStart(8,'0')+') words='+(end-first);
+  assert(report.stdout.split('\n').some(line=>line===interval+' cubic-quartic-diff=0'||line===interval+' selected=quadratic'));
   assert.equal(report.stdout.match(/^([0-9a-f]{64})  -$/m)?.[1],sha256);
 }
 console.log(JSON.stringify({first:lo,end:hi,words:end-first,sha256,node:process.version,v8:process.versions.v8,ms:performance.now()-started,matched:!!receipt}));

@@ -1,0 +1,12 @@
+{"name":"valid","accepted":true}
+{"name":"alpha-renamed","accepted":true}
+{"name":"square transpose","accepted":false,"reason":"ticket023.row-meaning: maximum must cover this parameter row"}
+{"name":"wrong broadcast","accepted":false,"reason":"ticket023.row-meaning: shift lacks its same-row maximum"}
+{"name":"positive argument possible","accepted":false,"reason":"ticket023.row-meaning: shift lacks its same-row maximum"}
+{"name":"already split","accepted":false,"reason":"ticket023.row-meaning: sum has different fold tree or index map"}
+{"name":"tree schedule","accepted":false,"reason":"ticket023.row-meaning: unsupported plan sum"}
+{"name":"lost tail","accepted":false,"reason":"ticket023.row-meaning: unsupported plan tail"}
+{"name":"stale binary","accepted":false,"reason":"ticket023.row-meaning: execution identity differs"}
+{"name":"missing interval","accepted":false,"reason":"ticket023.row-meaning: discontinuous or unequal domain"}
+{"name":"reference disagreement","accepted":false,"reason":"ticket023.row-meaning: outputs differ"}
+{"name":"different oracle","accepted":false,"reason":"ticket023.row-meaning: execution identity differs"}

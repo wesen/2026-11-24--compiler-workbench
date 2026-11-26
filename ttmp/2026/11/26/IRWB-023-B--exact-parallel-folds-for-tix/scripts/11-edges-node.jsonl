@@ -1,0 +1,12 @@
+{"rows":7,"cols":0,"spread":0,"route":"generated","words":0,"sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","ms":0.7441170000000028,"matched":true}
+{"rows":7,"cols":1,"spread":0,"route":"fused","words":7,"sha256":"6f3a1a9d59ae648b4f66e10802905ef54f901e2409b9e01e653a05fd7c4ff786","ms":0.15238400000000496,"matched":true}
+{"rows":7,"cols":2,"spread":0,"route":"fused","words":14,"sha256":"7d00dc21b733e3300e4873f5ab9dfcf8b50e0aa329f2afdba8f9052b2452f44d","ms":0.12659299999999973,"matched":true}
+{"rows":7,"cols":7,"spread":0,"route":"fused","words":49,"sha256":"d578bdd7890f29309bb0cde40b8b568c8687ae24a1e6a0eb440f6b86b916f5ca","ms":0.3434600000000003,"matched":true}
+{"rows":7,"cols":31,"spread":0,"route":"fused","words":217,"sha256":"05894a8ae347ace439f483e775cfc79840691d3a72f24d3173efb68bc1e0fad1","ms":1.0904079999999965,"matched":true}
+{"rows":7,"cols":32,"spread":0,"route":"fused","words":224,"sha256":"407612c2ea64cdf2847c44d88dfd8a8292742ee0b0a2f90c51fd4315f316693b","ms":0.372954,"matched":true}
+{"rows":7,"cols":33,"spread":0,"route":"fused","words":231,"sha256":"c064bf27d86415efa204f27066912fccd28a92d98094b4f04643263806935131","ms":0.46915900000000477,"matched":true}
+{"rows":7,"cols":997,"spread":0,"route":"fused","words":6979,"sha256":"55ca859e303d0b7685ab444c75890cef341b3571ff630938573055c58c1c41f7","ms":8.147097999999993,"matched":true}
+{"rows":7,"cols":1023,"spread":0,"route":"fused","words":7161,"sha256":"7605e63e74617c49d9abc86bbd18901d6a5955a8937b9dbe97b4f7b6ad0bb090","ms":6.681843999999998,"matched":true}
+{"rows":7,"cols":1024,"spread":0,"route":"fused","words":7168,"sha256":"c6498c39dc74ecca9f679d970a27a9a66420c935b6e0920e7ca1759f11a3c0f5","ms":5.853279000000001,"matched":true}
+{"rows":7,"cols":1025,"spread":0,"route":"generated","words":7175,"sha256":"0e04c4b5f8e2699a5ed343b1cc1f88616500e1770a67abc43694f1e3cd0b9302","ms":5.671858,"matched":true}
+{"rows":0,"cols":17,"spread":0,"route":"generated","words":0,"sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","ms":0.02429100000000517,"matched":true}
