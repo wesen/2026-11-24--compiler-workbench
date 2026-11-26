@@ -1,7 +1,7 @@
 ---
 Title: Checked CUDA lowering for Tix
 Ticket: IRWB-022-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -103,3 +103,5 @@ Measure the original corpus functions on identical deterministic finite f32 inpu
 | conv2d | N = 8, C = 16, H = W = 64, O = 32, 3 × 3 kernel |
 
 Implement emission and local checks first, then remote isolation and the shared harness, then the lowering invariant and GPU tests. Run the corpus timings once the checked path works. Leave a general kernel IR, persistent verdict storage and further scheduling optimizations outside this stage because the fixed mapping and process-local evidence cover the requested backend.
+
+The implementation and measurements follow this design. [Verification and results](../reference/02-cuda-verification-and-corpus-timings.md)

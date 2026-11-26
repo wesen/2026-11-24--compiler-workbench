@@ -15,3 +15,7 @@ Revised the design after review and calibrated the direct f64 tolerance on the c
 ## 2026-11-26
 
 Implemented the Tix CUDA API, remote batching and process-local evidence reuse; all tensor tests pass
+
+## 2026-11-26
+
+Verified the direct f64 contract and recorded full-size GPU and interpreter measurements for the six corpus programs

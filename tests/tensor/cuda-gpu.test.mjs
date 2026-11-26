@@ -138,6 +138,20 @@ test('GPU check replays decisions and rejects changed kernel code', async () => 
   );
 });
 
+test('GPU check rejects a lowering outside the f64 budget even when f32 rounds the same way', async () => {
+  const program = compileTix(`
+    fn cancellation(x: f32[N]): f32[N] {
+      y[i] = (16777216 + 1) - 16777216 + x[i] * 0;
+      return y;
+    }
+  `);
+  assert.deepEqual([...runTix(program, 'cancellation', { x: tensor([1], 3) }).data], [0]);
+  const result = await checkLowering(program, 'cancellation');
+  assert.equal(result.accepted, false);
+  assert.equal(result.relation, 'tolerance');
+  assert.match(result.reason, /f64 expected 1, GPU got 0/);
+});
+
 test('remote work directories isolate concurrent jobs using the same binary', async () => {
   const program = compileTix('fn isolated(x:f32[N]):f32[N] { out[i] = x[i] + 107; return out; }');
   const [fn] = program.current.value.functions;

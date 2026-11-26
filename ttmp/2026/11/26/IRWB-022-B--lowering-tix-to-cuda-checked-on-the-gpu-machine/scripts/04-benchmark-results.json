@@ -1,0 +1,217 @@
+{
+  "implementation": "aafb9f6",
+  "cpu": {
+    "model": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+    "arch": "x64",
+    "node": "v24.18.0"
+  },
+  "gpu": {
+    "host": "manuel@bling",
+    "model": "NVIDIA GB10",
+    "arch": "sm_121",
+    "nvcc": "13.0.88",
+    "driver": "580.178.04"
+  },
+  "programs": [
+    {
+      "program": "matmul",
+      "dimensions": {
+        "M": 512,
+        "K": 512,
+        "N": 512
+      },
+      "seed": 20,
+      "cpuMs": 176436.10165300002,
+      "gpuMs": 0.24243199825286865,
+      "gpuSamplesMs": [
+        0.32227200269699097,
+        0.21622399985790253,
+        0.2157759964466095,
+        0.33616000413894653,
+        0.26607999205589294,
+        0.24243199825286865
+      ],
+      "maxAbsDifference": 0,
+      "remote": {
+        "host": "manuel@bling",
+        "hash": "bb55fb21fee8d6ff",
+        "compiled": false,
+        "compileMs": 1,
+        "runMs": 507,
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "outputs": [
+          "results.bin"
+        ]
+      }
+    },
+    {
+      "program": "softmax",
+      "dimensions": {
+        "N": 4096,
+        "C": 1024
+      },
+      "seed": 20,
+      "cpuMs": 15210.702380000002,
+      "gpuMs": 0.9062719941139221,
+      "gpuSamplesMs": [
+        0.6399999856948853,
+        0.5497279763221741,
+        0.813152015209198,
+        0.9342719912528992,
+        1.0380159616470337,
+        0.9062719941139221
+      ],
+      "maxAbsDifference": 4.656612873077393e-10,
+      "remote": {
+        "host": "manuel@bling",
+        "hash": "43ebb009cc477319",
+        "compiled": false,
+        "compileMs": 1,
+        "runMs": 509,
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "outputs": [
+          "results.bin"
+        ]
+      }
+    },
+    {
+      "program": "layernorm",
+      "dimensions": {
+        "N": 4096,
+        "D": 1024
+      },
+      "seed": 20,
+      "cpuMs": 25441.882555999997,
+      "gpuMs": 0.6807680130004883,
+      "gpuSamplesMs": [
+        0.5318719744682312,
+        0.49558401107788086,
+        0.5608320236206055,
+        0.6807680130004883,
+        0.7593280076980591,
+        0.8544319868087769
+      ],
+      "maxAbsDifference": 0,
+      "remote": {
+        "host": "manuel@bling",
+        "hash": "1c250db5a2136522",
+        "compiled": false,
+        "compileMs": 2,
+        "runMs": 706,
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "outputs": [
+          "results.bin"
+        ]
+      }
+    },
+    {
+      "program": "attention",
+      "dimensions": {
+        "Q": 1024,
+        "K": 1024,
+        "D": 64,
+        "V": 64
+      },
+      "seed": 20,
+      "cpuMs": 197901.91480099998,
+      "gpuMs": 0.877951979637146,
+      "gpuSamplesMs": [
+        0.896448016166687,
+        0.8864960074424744,
+        0.877951979637146,
+        0.8768320083618164,
+        0.8769919872283936,
+        0.8798400163650513
+      ],
+      "maxAbsDifference": 8.381903171539307e-09,
+      "remote": {
+        "host": "manuel@bling",
+        "hash": "6d70f0d211afb561",
+        "compiled": false,
+        "compileMs": 2,
+        "runMs": 285,
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "outputs": [
+          "results.bin"
+        ]
+      }
+    },
+    {
+      "program": "mlp",
+      "dimensions": {
+        "N": 1024,
+        "D": 256,
+        "H": 1024,
+        "O": 256
+      },
+      "seed": 20,
+      "cpuMs": 819715.8070089999,
+      "gpuMs": 0.9791359901428223,
+      "gpuSamplesMs": [
+        0.9987519979476929,
+        0.9807360172271729,
+        0.9791359901428223,
+        0.9804800152778625,
+        0.972000002861023,
+        0.972000002861023
+      ],
+      "maxAbsDifference": 1.430511474609375e-06,
+      "remote": {
+        "host": "manuel@bling",
+        "hash": "d1152611092ff235",
+        "compiled": false,
+        "compileMs": 1,
+        "runMs": 305,
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "outputs": [
+          "results.bin"
+        ]
+      }
+    },
+    {
+      "program": "conv2d",
+      "dimensions": {
+        "N": 8,
+        "C": 16,
+        "H": 64,
+        "W": 64,
+        "O": 32
+      },
+      "seed": 20,
+      "cpuMs": 390126.0291220001,
+      "gpuMs": 0.20105600357055664,
+      "gpuSamplesMs": [
+        0.22195200622081757,
+        0.20105600357055664,
+        0.17398400604724884,
+        0.16371199488639832,
+        0.20815999805927277,
+        0.20870399475097656
+      ],
+      "maxAbsDifference": 0,
+      "remote": {
+        "host": "manuel@bling",
+        "hash": "70ef86ff2919dfb5",
+        "compiled": false,
+        "compileMs": 2,
+        "runMs": 418,
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "outputs": [
+          "results.bin"
+        ]
+      }
+    }
+  ]
+}

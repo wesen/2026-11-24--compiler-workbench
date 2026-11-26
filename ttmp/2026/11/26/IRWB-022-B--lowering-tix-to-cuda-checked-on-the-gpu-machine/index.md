@@ -1,7 +1,7 @@
 ---
 Title: Lowering Tix to CUDA, checked, on the GPU machine
 Ticket: IRWB-022-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -22,17 +22,18 @@ WhenToUse: ""
 
 ## Overview
 
-Stage 2 lowers each Tix statement to a CUDA kernel and checks the selected function against the Stage 1 f64 evaluator. The design incorporates the review and is ready for implementation.
+Stage 2 lowers each Tix statement to a CUDA kernel and checks the selected function against the Stage 1 f64 evaluator. The reviewed design is implemented and the six original corpus programs have measured GPU and interpreter times.
 
 ## Key Links
 
 - [Checked CUDA lowering for Tix](design-doc/01-checked-cuda-lowering-for-tix.md)
+- [CUDA verification and corpus timings](reference/02-cuda-verification-and-corpus-timings.md)
 - [Implementation diary](reference/01-implementation-diary.md)
 - [GB10 probe observations](scripts/01-gb10-probe/observed.json)
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

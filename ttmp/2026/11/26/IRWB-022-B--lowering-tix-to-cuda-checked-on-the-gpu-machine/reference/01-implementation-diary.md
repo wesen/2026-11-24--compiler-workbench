@@ -1,7 +1,7 @@
 ---
 Title: Implementation diary
 Ticket: IRWB-022-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -186,3 +186,13 @@ The checked transformation uses `AnalysisManager.execute` and the existing diffe
 `npm run build` initially reported TS2339 for `axes`, `body` and `op` inside the emitter's nested loop function and for `revision` on the differential framework's union of port values. I captured the narrowed reduction fields before defining the nested function and read the typed `subject` input inside `subjectKey`. The next build and the three local CUDA tests passed.
 
 The CPU timing job runs in tmux with one measured Stage 1 f32 execution per shape. `node --test tests/tensor/*.test.mjs` passed all 25 tests, including original and optimized corpus lowerings, semantic witnesses, an altered kernel's rejection, memo replay, and isolation between jobs sharing a compile key.
+
+Implementation checkpoint `aafb9f6` — `IRWB-022-B: Implement checked Tix CUDA lowering`.
+
+## Step 4 — Verify the f64 boundary and measure the corpus
+
+I added a cancellation witness whose Stage 1 f32 result and GPU result are both zero while the f64 reference is one. The public check rejected the result with the coordinate and f64 comparison in its reason. This covers the review's concern that an f32 guard could inadvertently become the governing relation.
+
+The final rerun of `node --test tests/tensor/*.test.mjs` passed all 26 tests. The implemented case generator reproduced the earlier CPU calibration exactly. The GB10 calibration exercised all six original functions and four pass sequences, with a worst error of 24.67% of the tolerance on conv2d. [Verification and timings](02-cuda-verification-and-corpus-timings.md)
+
+The timed GB10 jobs and local interpreter finished for all six requested shapes. The comparison command checked every output element against the corresponding interpreter output. Matmul, layernorm and conv2d matched numerically at every coordinate. The largest absolute difference was about 1.43e-6 on MLP. [Raw timings](../scripts/04-benchmark-results.json)
