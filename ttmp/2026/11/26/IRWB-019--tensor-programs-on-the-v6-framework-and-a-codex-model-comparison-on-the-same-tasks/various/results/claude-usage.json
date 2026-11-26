@@ -22,5 +22,21 @@
   "subagent_tokens": 261486,
   "tool_uses": 43,
   "minutes": 22.3
+ },
+ {
+  "item": "IRWB-020-O",
+  "cell": "fable/xhigh",
+  "turn": "design",
+  "subagent_tokens": 331186,
+  "tool_uses": 52,
+  "minutes": 27.5
+ },
+ {
+  "item": "(judge t1)",
+  "cell": "opus/default",
+  "turn": "judge",
+  "subagent_tokens": 274067,
+  "tool_uses": 27,
+  "minutes": 14.6
  }
 ]

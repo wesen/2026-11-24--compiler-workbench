@@ -210,3 +210,46 @@ A blind judge (Claude subagent, 202K tokens) scored the twelve r1 designs with `
   Its transcript shows one Write of the design (18:19:55, 528 lines, 112 bullet lines). At 18:20:12 it ran its own Python replacement of three passages, and the harness then reported "changed on disk". The committed file has 530 lines and 112 bullet lines, a 99% line match with that Write. **Nothing external changed the file.** The agent misread the notice its own edit caused, and wrote the misreading into its diary as fact. Its review will ask it to correct the diary.
 - **The bug in my brief it found:** `node --test tests/framework/` fails on Node 24.18 ("Cannot find module '.../tests/framework'"); `node --test tests/framework/*.test.mjs` works. I gave all twelve OpenAI cells that command. `prompts/t1/turn2.md` now says `tests/tensor/*.test.mjs` and `tests/framework/*.test.mjs`, with the reason.
 - **Claude usage so far (design turns):** 136K (Opus medium), 169K (Fable medium), 261K (Opus xhigh); Fable xhigh is still running.
+
+## Step 8: stage-1 designs scored (16 designs, blind)
+
+A blind judge (Claude subagent, 274K tokens) scored the sixteen t1 designs with `scripts/03-judge-rubric-t1.md`. I re-verified its quotes independently: 192 of 192. Scores are in `various/results/judge-scores-t1.json`, and the key in `blind-key-t1.json`.
+
+| cell | doc | words | excess (R1–R6, R8) | over-eng. | fitness | A1 | A2 | A3 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Claude Fable medium | A | 4,940 | 13 | 3 | 9 | 5 | 5 | 5 |
+| Claude Fable xhigh | I | 5,738 | 10 | 2 | 9 | 5 | 5 | 5 |
+| Claude Opus medium | P | 4,052 | 10 | 2 | 8 | 5 | 5 | 5 |
+| Claude Opus xhigh | L | 5,230 | 16 | 4 | 8 | 4 | 5 | 4 |
+| Codex Astra medium | K | 2,509 | 5 | 2 | 8 | 5 | 4 | 5 |
+| Codex Astra high | N | 2,670 | 7 | 2 | 8 | 5 | 4 | 5 |
+| Codex Astra xhigh | D | 2,701 | 5 | 2 | 8 | 5 | 4 | 5 |
+| Codex Sol medium | E | 2,510 | 8 | 3 | 7 | 4 | 4 | 5 |
+| Codex Sol high | B | 2,764 | 7 | 4 | 7 | 5 | 4 | 5 |
+| Codex Sol xhigh | O | 2,310 | 6 | 2 | 7 | 5 | 4 | 5 |
+| Pi Astra medium | G | 1,747 | 6 | 3 | 7 | 5 | 4 | 5 |
+| Pi Astra high | H | 2,836 | 11 | 4 | 8 | 5 | 4 | 5 |
+| Pi Astra xhigh | M | 3,160 | 16 | 5 | 6 | 5 | 4 | 5 |
+| Pi Sol medium | F | 2,748 | 14 | 5 | 7 | 5 | 4 | 4 |
+| Pi Sol high | J | 2,739 | 13 | 5 | 6 | 5 | 3 | 4 |
+| Pi Sol xhigh | C | 2,418 | 12 | 5 | 6 | 5 | 3 | 4 |
+
+Means:
+- **By harness:** Claude 2.75 / 8.50 (over-engineering / fitness), Codex 2.50 / 7.50, Pi 4.50 / 6.67.
+- **By harness × model:** Codex Astra 2.00 / 8.00, Codex Sol 3.00 / 7.00, Pi Astra 4.00 / 7.00, Pi Sol 5.00 / 6.33.
+- **By effort:** no consistent effect (medium 7.67, high 7.25, xhigh 7.33 fitness).
+
+What the judge reported:
+- **Semantic deviations were rare.** L's `max` rule rejects the valid `max(j) -x[i, j]`. E lets `x[i+0]` supply an extent.
+- **The common contract weakness:** an abs+rel tolerance justified only as a heuristic. Only A, I, L and P justify their bound by an error argument or a measurement. C and J would let a correct `split-sum` on layernorm be rejected, because sampled eps ≤ 0 gives non-finite outputs.
+- **The most common excess,** in 12 of 16: a general rational or linear shape solver for shape binding, which the corpus never needs. My brief's grammar allows affine dims in parameter types ("dim := affine expression of shape names and integers"), which invites a solver. The policy's "keep the input domain narrow" did not override the grammar. Other excess: coverage and budget failure rules, detailed counterexample evidence, NaN canonicalization, and in C, F and J a second synchronous contract verifier.
+- **All 16 agree on the two framework gaps:** a synchronous entry point in `passes/define-pass.ts`, and the eager `beginEdit()`. Most found that `differential`/`runDifferential` carry both relations without change.
+
+### Readings (one run per cell; suggestive)
+1. **With the policy present, Pi over-engineers more than Codex** (excess 12.0 against 6.3; error conditions R1 4.7 against 3.0), although Pi lacks Codex's coding rule "handle the full range of supported inputs". The defensive defaults are partly the model's own. Something in Codex's context restrains them, plausibly the policy's rank as a developer message, or restraint elsewhere in Codex's prompt. This refines IRWB-018's attribution, which was measured without a policy.
+2. **Sol is the weakest model in both harnesses.** This is the target for the prompting work (step 9).
+3. **Claude designs are about twice as long, and score highest on fitness.** Their excess counts match Pi's, not Codex's.
+4. **Unlike r1, this task separates configurations** (fitness 6 to 9). The fixed surface plus open choices (IR, contract, framework changes) left room for judgement.
+
+### Claude implementations (usage restraint)
+Only the two medium Claude cells implement: Opus N and Fable P. Medium is cheaper, and choosing by effort, not by score, avoids a best-of-two selection bias. The four Claude design turns cost 898K subagent tokens, and the judge 274K.
