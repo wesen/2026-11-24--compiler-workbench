@@ -551,3 +551,46 @@ This step measured what each backend option buys on top of the `speed` pipeline,
 
 ### Technical details
 - Parity line: `{"projects":44,"functions":70,"cases":7000,"decided":6986,"agree":6986,"inconclusive":14,"failures":0}`.
+
+## Step 11: Candela per scene, first attempt: the frozen O2+ reproduces; inlining without dfe doubles the program
+
+This step ran the per-scene measurement (`scripts/08-candela-scene-speed.mjs`, IRWB-001's script 13 extended) on B-01 and R-01 with `--base`. The O2+ row for B-01 reproduced IRWB-001's numbers exactly, but the `speed` pipeline would have carried the originals of every inlined callee through all of O2+: one `inline` took the scene program from 4,786 to 11,979 statements. I stopped the run after 25 minutes and restarted it with `dfe` after each `inline`, which is what a program with entries allows.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** "Candela … per-scene per pixel vs `kernel` for B-01 and R-01 …, frames bit-identical (scripts 11 and 13)"; one Candela-scale process at a time, heap ≤ 12 GB.
+**Inferred user intent:** See Step 1.
+**Commit (code):** the commit after this step.
+
+### What I did
+- `/usr/bin/time -v node --max-old-space-size=12288 scripts/08-candela-scene-speed.mjs B-01 R-01 --base > various/11-… 2> various/11-….log` (the machine's load average was about 12 on 8 cores, from other agents).
+- After the first `inline` line: `kill 3944567` (the node process's PID); the log is kept as `various/11a-candela-scenes-speed-first-run.log`.
+- Added `--dfe-after-inline` to script 08: after each `inline`, `dfe` with the gallery entries; restarted with `B-01 R-01 --dfe-after-inline` (no `--base`: B-01's O2+ row had already reproduced IRWB-001's).
+
+### Why
+- With entries, a callee inlined at its only call site is dead at once. Keeping it until the end makes every later pass analyse and check it; on B-01 that is more than half of the program.
+
+### What worked
+- B-01, O2+ on the scene program (same build): `{"ms":670914,"fns":135,"stmts":4786,"check":{"agree":2699,"disagree":0,"inconclusive":1},"bytes":74044,"perPixel":10435,"differentBits":0}` — IRWB-001's `08-candela-per-scene-o2.json` has the same `stmts`, `bytes`, `perPixel` and `differentBits` (its `ms` was 212,264 on an idle machine).
+- B-01 `inline` (first application): `{"changed":true,"check":"146/146","ms":62348,"stmts":11979}`.
+
+### What didn't work
+- Running the pipeline as written on an entry-only program: 4,786 → 11,979 statements after one `inline`, with 19 passes still to go. `/usr/bin/time`: `Command terminated by signal 15`, `Elapsed 25:14.48`, `Maximum resident set size 7735912` KB.
+
+### What I learned
+- The `speed` pipeline is written for programs without entries, where nothing can be removed. A program with entries should interleave `dfe`.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- With `dfe` between the two `inline`s, the second `inline` counts call sites in a program without the dead originals, so more callees qualify as single-site. That is a different (and legitimate) pipeline from `speed` followed by `dfe`; the results state which one was measured.
+
+### What should be done in the future
+- A pipeline variant with `dfe` for programs with entries, once pipelines can carry pass parameters.
+
+### Code review instructions
+- `scripts/08-candela-scene-speed.mjs` (`--dfe-after-inline`).
+
+### Technical details
+- See Step 12 for the results of the restarted run.

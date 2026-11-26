@@ -19,15 +19,21 @@ RelatedFiles:
       Note: 'linear scan with one interval per virtual register: where coalescing feeds in'
     - Path: repo://src/typed/backend/select.ts
       Note: 'block order, constants at every use, target-directed copies: what layout, homes and coalescing change'
+    - Path: repo://src/typed/backend/variants.ts
+      Note: per-function choice of options by the estimate
     - Path: repo://src/typed/evaluate.ts
       Note: 'evaluate and meaningKept: the semantics inlining must preserve (fresh zero locals, result leaves)'
+    - Path: repo://src/typed/inline.ts
+      Note: the inline pass as built (section 22)
     - Path: repo://src/typed/passes.ts
       Note: typedPass, dfe (the model for a program pass), PASSES and PIPELINES where inline, rotate and O3 register
+    - Path: repo://src/typed/rotate.ts
+      Note: the rotate pass as built
     - Path: repo://src/typed/tx.ts
       Note: 'Tx: origins, declared writes, commit; every edit of inline and rotate goes through it'
 ExternalSources: []
 Summary: 'For a new intern: the parts of the Typed to RV32 compiler that decide how many instructions a program executes, the measured gap to the reference compiler and its causes, and the design of the four changes that close it: an inlining pass, loop rotation with a block layout, copy coalescing and constant homes in the backend, behind a new O3 pipeline and default-off backend options.'
-LastUpdated: 2026-11-25T23:59:00-05:00
+LastUpdated: 2026-11-26T01:10:00-05:00
 WhatFor: Understanding and implementing IRWB-003, and reviewing it.
 WhenToUse: Before changing src/typed/inline.ts, src/typed/rotate.ts, src/typed/backend/{coalesce,homes,layout,estimate}.ts, or the O3 pipeline.
 ---

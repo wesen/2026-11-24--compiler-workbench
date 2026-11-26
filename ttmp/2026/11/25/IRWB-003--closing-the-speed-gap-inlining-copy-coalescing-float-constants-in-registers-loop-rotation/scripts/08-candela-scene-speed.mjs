@@ -7,6 +7,7 @@
 // reference kernel's frame.
 //   node --max-old-space-size=12288 08-candela-scene-speed.mjs [scene ids…] [--stride N] [--base] [--pipeline speed]
 // --base: also run O2+ on the scene program (IRWB-001's --o2 row), for a same-build comparison.
+// --dfe-after-inline: run dfe after each inline (the program has entries), not only at the end.
 const root = new URL('../../../../../../', import.meta.url).pathname;
 const { installVendor } = await import(root + 'tools/node-vendor.mjs');
 await installVendor({ reference: true });
@@ -24,7 +25,8 @@ const args = process.argv.slice(2);
 const flag = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const stride = +flag('--stride', 4),
   pipeline = flag('--pipeline', 'speed'),
-  base = args.includes('--base');
+  base = args.includes('--base'),
+  dfeAfterInline = args.includes('--dfe-after-inline');
 const want = args.filter((a, i) => !a.startsWith('--') && !['--stride', '--pipeline'].includes(args[i - 1]));
 const ENTRIES = ['cdlLayout', 'cdlInit', 'cdlSky', 'cdlRenderSpan'];
 const OPTIONS = { chains: true, coalesce: true, homes: true };
@@ -118,6 +120,13 @@ for (const s of want.map(w => scenes.find(x => x.id === w || String(x.index) ===
     const r = await p.apply(name);
     steps.push({ pass: name, changed: r.changed, check: r.check, ms: Math.round(performance.now() - t), stmts: stmts(p) });
     console.error(JSON.stringify(steps.at(-1)));
+    // --dfe-after-inline: with entries, the originals of callees inlined at their only call site are dead; removing
+    // them at once keeps the following passes from analysing and checking them
+    if (name === 'inline' && dfeAfterInline) {
+      const d = await p.apply('dfe', { params: { roots: ENTRIES } });
+      steps.push({ pass: 'dfe', changed: d.changed, check: d.check, fns: p.fns().length, stmts: stmts(p) });
+      console.error(JSON.stringify(steps.at(-1)));
+    }
   }
   const d = await p.apply('dfe', { params: { roots: ENTRIES } });
   steps.push({ pass: 'dfe', changed: d.changed, stmts: stmts(p) });
