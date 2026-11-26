@@ -112,3 +112,7 @@ Each row is one `corpus/tensor/<name>/main.tix`. Check against an independent sm
 
 - CUDA lowering and GPU execution belong to the backend stage.
 - Fusion, contraction tiling and attention-specific rewrites belong to later optimization stages.
+
+## Implemented framework change
+
+In `src/framework/passes/define-pass.ts`, `applyNativePassSync` uses `prepareNative` and `checkWrites` shared with `applyPass`. This supports immediate checked results from a read-only tensor adapter. The existing pass declaration and barrel export suffice. The regression is `tests/framework/native-pass-sync.test.mjs`.
