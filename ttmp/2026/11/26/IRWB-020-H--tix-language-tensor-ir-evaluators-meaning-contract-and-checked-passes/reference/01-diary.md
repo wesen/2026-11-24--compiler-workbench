@@ -173,3 +173,9 @@ Now do the following in this session:
 ````
 
 The revised sample order fixes the number of RNG draws before implementation. Removed the second inline comparison, shape equation solver and per-test error measurement. No outstanding disagreement. Review the sample definition alongside the eventual generator and replay fixtures.
+
+## Step 3: Checked language and reference execution
+
+Implemented the parser, normalized affine maps, explicit binder scopes, validated v6 projection and two-precision loop interpreter. Sticky lexer probe on Node 24 matched `x` at lastIndex 1. `npm ci --offline --no-audit --no-fund` installed the locked dependencies.
+
+`npm run build && node --test tests/tensor/language.test.mjs` first reported `AssertionError: y[i]:f32[Q]=0;` (return shape mismatch before unknown annotation). Moved shape-name lookup to the annotation token. Rerun passed 4/4, including f32 vs f64, lexicographic accumulation, affine extents and signed zero. Review `parse.ts` and `ir.ts` separately: inference is source-only, whereas validation also applies after substitution.
