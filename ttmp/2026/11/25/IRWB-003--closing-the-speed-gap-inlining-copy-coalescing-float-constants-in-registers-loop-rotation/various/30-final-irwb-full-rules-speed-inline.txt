@@ -1,0 +1,32 @@
+✔ inline: a whole-program pass, registered, in the speed pipeline twice, and not scoped per function (2.297736ms)
+✔ inline on calls: energy calls nothing afterwards, the check agrees, and why reaches callee and call (128.059799ms)
+✔ inline: record results become locals; leaf reads read them; f32 code stays correct through the backend (1499.626701ms)
+✔ inline: limits and refusals (44.017887ms)
+✔ inline under an entry-only contract, then dfe: the inlined callees disappear (194.192878ms)
+✔ inline: a callee local read before written starts at 0 at every inlined call (198.927729ms)
+✔ speed on every corpus project agrees with r0 under the default and the new backend options (IRWB_FULL) (7459.377647ms)
+✔ B1: the tables give the hand-written passes' revisions, edits and correspondences (all projects) (14122.415311ms)
+✔ B1: the comparison sees a one-rule difference (a rule with another note changes the revision) (263.566045ms)
+✔ B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework (1.140107ms)
+✔ B2: binopW at 32 bits is the evaluator's binop (boundary values crossed, every i32 operator) (13.54688ms)
+✔ B2: every table rule has recorded evidence for its current version, and it says sound (1.808885ms)
+✔ B2: the fast methods, re-run, agree with the recorded evidence (998.873407ms)
+✔ B2: deliberately unsound rules are rejected, each with a counterexample or a structural reason (2.118044ms)
+✔ B2: x + (-0) -> x passes the meaning check's f32 edge values and is refuted by NaN payloads (10.187925ms)
+✔ workbench: the rules listing fits 72 columns and shows every rule with its evidence (3.790909ms)
+✔ IRWB-003 options: extras are absent at their defaults, validated, and recorded when on (108.479907ms)
+✔ IRWB-003 frequencies and chains: rotated Blend runs its loop 7.33 times per call and ends it in one branch (209.353004ms)
+✔ IRWB-003 coalesce: the copy t7 = i in Blend disappears, and Blend runs in 370 with rotation (138.378988ms)
+✔ IRWB-003 homes: Collatz builds 1, 2 and 3 once, outside its loop (53.013443ms)
+✔ IRWB-003 rotate: Blend's header is duplicated into the preheader and the latch, checked, with provenance (141.935033ms)
+✔ IRWB-003 rotate: a header that is not the exit test (Collatz) gives a two-entry loop, still checked and analysable (163.292215ms)
+✔ IRWB-003: the benchmarks under O2+, rotate, cfg and all three options (736.206826ms)
+✔ IRWB-003: every corpus project agrees with r0 under each option alone and all together (IRWB_FULL) (8655.365113ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15659.592626

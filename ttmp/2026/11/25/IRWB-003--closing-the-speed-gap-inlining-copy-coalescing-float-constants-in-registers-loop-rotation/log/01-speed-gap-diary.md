@@ -795,3 +795,44 @@ This step ran the `speed` pipeline on the general Candela program (all 332 funct
 
 ### Technical details
 - The saved head (39.6 MB) is in the scratchpad, not in the ticket.
+
+## Step 16: Final gates, and the vault report
+
+This step ran the final gates on the last code state (unchanged since the merge commit's follow-up, 292845a; only ticket files changed since) and finished the vault report. Everything frozen is identical to the baseline of Step 1.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1 and Step 13.
+**Assistant interpretation:** Diff every frozen output against `various/01–04`; write the report and check it against this diary.
+**Inferred user intent:** See Step 1.
+**Commit (code):** this step's commit.
+
+### What I did
+- `npx tsc`; `scripts/08 > various/26-final-corpus-revisions.txt` and `diff` with `various/01-…`; `npm test > various/27-final-npm-test.txt`; `tools/parity.mjs > various/28-final-parity.txt` and `diff` with `various/03-…`; `IRWB_FULL=1 node --test tests/typed/passes.test.mjs tests/typed/backend.test.mjs > various/29-…`, diffed with `various/04-…` without times; `IRWB_FULL=1 node --test tests/typed/rules.test.mjs tests/typed/speed.test.mjs tests/typed/inline.test.mjs > various/30-…`.
+- The vault report `Projects/2026/11/25/PROJECT REPORT - IR Workbench - Closing the Speed Gap - … .md`, figures `_assets/irwb003-{benchmarks,corpus-ablation,corpus-projects,candela-scenes,rv32-options-row}.png`; reread against Steps 1–15: every number in it was checked against the diary or the `various/` file it came from. Corrections made during the reread: Blend's measured difference (80 = two instructions per iteration and the return copy, less the jump the plain code's last iteration skips; first written as 81), the sort explanation (six capacity checks per swapping iteration, for two positions; first written as an unmeasured comparison with the reference), the image-size remark (`calls` 212 → 108 bytes; first written as an unmeasured cause), B-01's input size (5,317 statements, not 4,786), the number of checked applications (18 per scene), and the `kernel`/`stock` size ratio (1.39, first written as 2.4). The vault is not committed.
+
+### Why
+- The freeze is the milestone's main constraint; the report is the milestone's account.
+
+### What worked
+- `REVISIONS-IDENTICAL`; `npm test`: `tests 365`, `pass 362`, `fail 0`, `skipped 3`; `PARITY-IDENTICAL`; `IRWB-FULL-IDENTICAL` (21 of 21); rules, speed and inline with `IRWB_FULL=1`: 24 of 24.
+
+### What didn't work
+- Nothing.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- Nothing.
+
+### What warrants a second pair of eyes
+- `npm test` grew from 325 to 365 tests: 15 are this milestone's, the rest came with the merge.
+
+### What should be done in the future
+- See the report's section 9 and the open task "Per scene for the other 16 Candela scenes".
+
+### Code review instructions
+- `various/26-…` to `various/30-…`.
+
+### Technical details
+- N/A.

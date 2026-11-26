@@ -11,5 +11,5 @@
 - [x] O3 pipeline, presets, workbench options row <!-- t:bu6q -->
 - [x] Measure: benchmarks, corpus under O3, Candela per case, per scene B-01 and R-01 (18 if time) <!-- t:vhn4 -->
 - [x] Frozen checks diffed against various/01-04 <!-- t:78cr -->
-- [ ] Vault report written and checked against the diary <!-- t:xuku -->
+- [x] Vault report written and checked against the diary <!-- t:xuku -->
 - [ ] Per scene for the other 16 Candela scenes (not run: time) <!-- t:a979 -->

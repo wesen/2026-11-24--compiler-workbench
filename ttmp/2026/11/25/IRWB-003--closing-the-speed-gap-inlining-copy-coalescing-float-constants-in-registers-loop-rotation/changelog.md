@@ -38,3 +38,7 @@ Merged irwb-001/import-v6-prototype at 1f45c94 (IRWB-004, IRWB-006); gates ident
 ### Related Files
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/agent-a5888d4d3c671b653/ttmp/2026/11/25/IRWB-003--closing-the-speed-gap-inlining-copy-coalescing-float-constants-in-registers-loop-rotation/scripts/08-candela-scene-speed.mjs — per-scene measurement
+
+## 2026-11-26
+
+General Candela under speed with the three options: 601.8 instructions per case against kernel's 727.3 (r0 894.2), every image agreeing. Final gates identical to the baseline (revisions, parity, IRWB_FULL; npm test 365/362/0/3). Vault report written (not committed)
