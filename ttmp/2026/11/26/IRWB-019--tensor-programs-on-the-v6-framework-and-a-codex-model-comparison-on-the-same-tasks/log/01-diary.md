@@ -455,3 +455,31 @@ Nine cells meet (1): A, B, C, D, F, G, I, J, L. B and D tie on (2), at +85/−27
     - The brief says inputs are finite but is silent on zero extents.
     - K diagnosed two of five and said, correctly, that the other three had no source or counterexample: I had included only two sources.
 - **Claude usage:** the two report turns took 300K (P) and 258K (N), most of it reading the long context. Total Claude subagent tokens so far: about 2.84M.
+
+## Step 18: Sol policies v1, v2 and v3 in one session; the hidden material released
+
+A judge (Claude subagent, 203K tokens) scored the twelve Sol designs (four cells × three policies) blind in one session. Its quotes verify, 123 of 123. Scores are in `results/judge-scores-t1-v3.json`, the key in `blind-key-t1-v3.json`.
+
+| Sol cell | excess v1 / v2 / v3 | over-eng. | fitness | A1 (fidelity) |
+|---|---|---|---|---|
+| Codex medium | 6 / 4 / 5 | 3 / 2 / 3 | 8 / 7 / 8 | 4 / 3 / 4 |
+| Codex high | 7 / 3 / 6 | 4 / 2 / 3 | 9 / 7 / 7 | 5 / 2 / 4 |
+| Pi medium | 8 / 6 / 6 | 4 / 3 / 3 | 8 / 6 / 8 | 5 / 2 / 4 |
+| Pi high | 7 / 7 / 6 | 4 / 4 / 3 | 8 / 6 / 8 | 5 / 2 / 4 |
+| **mean** | **7.00 / 5.00 / 5.75** | **3.75 / 2.75 / 3.00** | **8.25 / 6.50 / 7.75** | 4.75 / 2.25 / 4.00 |
+
+- **v2 removes the most excess and costs the most fidelity.** It narrows the fixed grammar (bare-name parameter dimensions), and A1 falls by 2.5 points.
+- **v3 keeps most of the reduction and recovers most of the fidelity.**
+  - Excess falls by one or two items in every cell against v1. Over-engineering falls by one point in three of four cells.
+  - Fitness is within 0.5 of v1 on average, and equal in three of the four cells.
+  - v3 is the best trade-off of the three, but its gain over v1 is small: about one rubric point of over-engineering, with one run per cell.
+- **What no policy wording removed:** contract statuses and evidence formats nobody asked for ("a function with no sampled case cannot be accepted", in 11 of 12), and non-finite handling.
+  - R2 is 1 in all twelve documents: v3's "rely on the stated input assumptions" did not remove it.
+  - That is partly my rubric instruction "count each kind at most once per document", which made R2 binary and removed its sensitivity. The previous session, with uncapped counts, showed R2 falling from 5.25 to 3.75 under v2.
+- **The direction agrees across the two sessions** (v2 below v1 in excess and in fitness), and the magnitudes differ. In-session comparison is the only sound one.
+- **The global Codex policy** (`~/.codex/config.toml`) stays at v1. v3's evidence is small and the change would affect every Codex session; this is the user's call.
+- **The hidden material is now in the ticket** (`various/hidden-t1/`):
+  - the frozen suite (sha256 `ca81276f0939aade…`), its invalid v1, the name-reuse variant, `crosscheck.mjs` and `programs.json`;
+  - the results (`results/acceptance-t1*.json`, `crosscheck-t1.json`, `crosscheck-applicable.json`).
+- **All fourteen reports are written** (2,456–4,072 words, each with a Mermaid diagram), and no agent changed evaluated code. Each report states its own results, including failures. K, for example: "This is a false rejection of those rewrites if the goal is to preserve the program's behavior".
+- **Claude usage:** total Claude subagent tokens in IRWB-019, about 2.97M.
