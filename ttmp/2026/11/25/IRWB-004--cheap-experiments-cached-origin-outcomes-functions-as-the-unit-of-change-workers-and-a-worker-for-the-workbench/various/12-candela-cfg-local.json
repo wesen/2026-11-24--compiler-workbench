@@ -1,0 +1,36 @@
+{
+ "pipeline": "O2",
+ "node": "v24.18.0",
+ "r0": "cd36346ea7c4f175d7db025afe953e89f078902ef1ee44beaf15a7906b140456",
+ "openMs": 11910,
+ "head": "4aea7e81dd046901b550627db94bd36074be8797e59d9a75323c68e03472b1a3",
+ "steps": [
+  {
+   "pass": "cfg",
+   "ms": 51436,
+   "changed": true,
+   "rev": 1,
+   "revision": "4aea7e81dd046901b550627db94bd36074be8797e59d9a75323c68e03472b1a3",
+   "fns": 110,
+   "edits": 974,
+   "checks": [
+    [
+     13280,
+     13258,
+     0,
+     22,
+     0
+    ]
+   ],
+   "rssMB": 1121
+  }
+ ],
+ "totalMs": 63348,
+ "passesMs": 51436,
+ "differential": {
+  "baselineRuns": 13280,
+  "subjectRuns": 13280,
+  "replayed": 0,
+  "delegated": 0
+ }
+}

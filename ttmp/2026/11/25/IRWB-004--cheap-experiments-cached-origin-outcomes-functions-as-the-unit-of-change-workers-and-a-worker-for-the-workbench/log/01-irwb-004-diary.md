@@ -308,3 +308,108 @@ The guide (`$T/design-doc/01-intern-guide-cheap-experiments-in-the-ir-workbench.
 
 ### Technical details
 - Guide: about 750 lines; diagrams in `text` blocks; API sketches marked **Proposed**.
+
+## Step 6: Increment 1, the fixes that keep the definition (A1–A7)
+
+The seven fixes of the guide's §13 are in, each behind the same identity: an empty edit returns its input, a revision is hashed once per frozen value (`revisionOf`), a frozen value is validated once per validator (`validateOnce`), the invariant's cycle key names revisions instead of encoding two programs, correspondence entries are sorted by keys computed once, and SHA-256 streams its input (and uses `node:crypto` in Node). The no-change pass on Candela r0 went from 13.3 s to 4.2 s on a machine at load 9.75, with the same revision. Every corpus revision is identical.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Guide §19, increment 1.
+**Inferred user intent:** Remove the work that recomputes known facts, without changing a hash.
+**Commit (code):** `9d3ea30` — "IRWB-004 A1-A7: the empty edit is the identity, revisions hashed once per value, …"
+
+### What I did
+- `src/framework/core/sha256.ts` (new): `Sha256` (streaming, portable: `TextEncoder.encodeInto` into a 64 KiB buffer, compression on `Int32Array`), `sha256Parts(parts)` (node:crypto through `process.getBuiltinModule('node:crypto')` when present), `sha256Portable`, `sha256Implementation`.
+- `src/framework/core/data.ts`: `sha256` delegates to `sha256Parts`; new `revisionOf(kind, schemaVersion, value)` and `validateOnce(validator, value, check?, thisArg?)`; `TEXT` now also keeps texts of canonical objects of 64 characters or more (`RECORD_MIN`).
+- `src/framework/ir/adapters.ts`: `createIRArtifact` and `validateIRArtifact` use `revisionOf` and `validateOnce`.
+- `src/framework/ir/store.ts`: `#snapshot` uses `revisionOf`; `retain` and `assertHead` compare artifacts by identity before encoding them (`sameText`).
+- `src/framework/ir/view.ts`, `diff.ts`: identity before encoding.
+- `src/framework/contracts/definitions.ts` `validateArtifact`: `validateOnce`, `revisionOf`, and no `canonical(a)` for an artifact `immutable` built.
+- `src/framework/contracts/analysis-manager.ts` `invariantInternal`: the cycle key replaces each IR port's artifact by `{ id, kind, schemaVersion, revision }`.
+- `src/framework/ir/correspondence.ts` `validateCorrespondence`: sorts `[key, entry]` pairs by the key computed for the dedup map.
+- `src/framework/ir/transactions.ts` `Edit.operationCount`, `src/framework/ir/types.ts` `IREdit.operationCount`; `src/framework/passes/define-pass.ts` `applyPass` returns `{ changed: false, artifact: before }` for an edit with no operations.
+- `tests/framework/identity-caches.test.mjs` (new): the original SHA-256 kept in the test as the reference; 300 random texts (alphabet with lone surrogates and astral characters) whole, in random pieces, and through both paths; `revisionOf` against `fingerprint` on 400 random values, plain and frozen; `validateOnce` call counts; the empty edit on Blend returns the input object.
+
+### Why
+- Each of these recomputed a fact about a frozen object: its hash, its validity, its encodability, its text. A frozen object cannot change, so the first answer is the answer.
+
+### What worked
+- `node --test tests/framework/identity-caches.test.mjs`: 4 of 4.
+- Corpus revisions: `diff` against `various/01-corpus-revisions-baseline.txt`, no output (`IDENTICAL-44`).
+- `npm test`: 329 tests, 326 pass, 3 skipped (4 new). Parity unchanged (`"agree":6986,"inconclusive":14,"failures":0`). `IRWB_FULL`: 21 of 21 in 15.9 s (30.2 s at the base).
+- `various/07-framework-cost-inc1.json` (load average 9.75): `strength` 4,215 ms, revision `cd36346e…` (13,265 ms at the base); `sha256` of the 18 MB text 34 ms (535 MB/s, node:crypto); `cfg` 29,493 ms, revision `4aea7e81…`, check 13,280 / 13,258 / 0 / 22.
+
+### What didn't work
+- `cfg` measured slower (29.5 s) than at the base (25.2 s). The same run measured the evaluator at 7.7 s against 3.4 s at the base, on unchanged evaluator code, so the machine (load 9.75, other agents' test runs) explains it; I stopped comparing absolute `cfg` times across runs made at different loads.
+- My first `data.ts` edit was a Python heredoc, refused by the worktree guard; I made the edits with the editor.
+
+### What I learned
+- After A1, the no-change pass's remainder is the `ranges` analysis (2.4 s under load) and `Store.from` (0.3 s); the framework's share is gone.
+
+### What was tricky to build
+- **Pieces of a text and surrogate pairs.** `node:crypto` encodes each `update` separately, so a surrogate pair split between two pieces would hash as two U+FFFD instead of one code point. `sha256Parts` joins the pieces in that case; the portable `Sha256` keeps a trailing high surrogate back until the next piece. The test cuts texts at random positions to exercise both.
+- **`validateOnce` and `this`.** An adapter's `validate` is called as a method; a memo keyed on the function identity must not wrap it in a closure, so `validateOnce` takes the owner as `thisArg`.
+
+### What warrants a second pair of eyes
+- A1 assumes the projection–rebuild round trip is exact for every adapter that uses `applyPass` with logical edits. For `typed.blocks` it is tested; a lossy adapter would previously have published a spurious revision for a pass that edited nothing, and now reports no change.
+
+### What should be done in the future
+- Increment 2 (records keep their identity).
+
+### Code review instructions
+- `src/framework/core/data.ts` (`revisionOf`, `validateOnce`), `src/framework/core/sha256.ts`, `src/framework/passes/define-pass.ts` (the `operationCount === 0` branch); `node --test tests/framework/identity-caches.test.mjs`.
+
+### Technical details
+- `revisionOf` hashes `['{"kind":' + JSON(kind) + ',"schemaVersion":' + JSON(schemaVersion) + ',"value":', canonical(value), '}']`, which is `canonical({ kind, schemaVersion, value })` in three pieces.
+
+## Step 7: Increment 2, records keep their identity across a pass
+
+`toNative` now gives back the frozen base record wherever the working record still equals it (`sameJson`), so a pass's output shares every record it did not change with its input, and every cache keyed on frozen objects starts to hit. Around that: `Store.from` copies with a plain JSON copy instead of `structuredClone`; `storeOf` shares a frozen value's records instead of copying them (`Store.view`); the adapter's entities and relations are cached per frozen record; graph validation and `diff` skip objects they have seen; and `immutable` and `canonical` are faster with identical output. On Candela, `Store.from` went from 468 to 208 ms and `storeOf` from 403 to 121 ms, and the contract's bookkeeping (key, port validation) dropped out of the profile.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Guide §19, increment 2 (§14.1 and §14.2).
+**Inferred user intent:** A pass that changes a few functions should cost about that much.
+**Commit (code):** `8e81345` — "IRWB-004 F1 (records): a pass's output shares every record it did not change with its input …"
+
+### What I did
+- `src/typed/model.ts`: `copyJson` (replaces `structuredClone`; `__proto__` keys kept as own properties), `sameJson` (equality of canonical text, `0 === -0`), `Store.base` (set by `Store.from` when the input is canonical), `toNative` reusing base records (`keep`) for functions, blocks, statements, values, operations, and for `counters`, `fnOrder`, `frontEnd`; `Store.view(native)`, a read-only store over frozen records.
+- `src/typed/ir.ts`: `storeOf` uses `Store.view` for frozen values; `entityIdSet(v)`; `blocksEntities`/`blocksRelations` built from per-record frozen arrays (`RECORD_ENTITIES`, `RECORD_RELATIONS`), generated in id-prefix order before the final sort.
+- `src/typed/passes.ts` `revisionCorrespondence`: `entityIdSet` instead of projecting both revisions (two lines).
+- `src/framework/ir/adapters.ts` `validateGraph`: `VALID_ENTITIES`, and per captured adapter `VALID_RELATIONS`; graph-wide checks (dangling ends, duplicates, roots) still run every time, in the original order of checks.
+- `src/framework/passes/define-pass.ts`: correspondence ids from `view.graph().entities` instead of `view.entities()` (which builds a frozen reference per entity).
+- `src/framework/core/data.ts`: `encodeCanonical` for canonical values (no re-checks, keys already sorted unless integer-like); `immutable` assigns properties instead of `defineProperty` (except `__proto__`), and reads array descriptors by index.
+- `$T/scripts/07-immutable-bench.mjs`: old (`IRWB_BASE`) against new `immutable` and `canonical` on Candela's value and its ranges result.
+
+### Why
+- `structuredClone` and the copy in `toNative` made every record of every revision a new object; every identity cache missed. Copying is still needed at the start (pass bodies mutate records), but the end can give back what did not change.
+
+### What worked
+- Tests: `npm test` 326 of 329 pass, 3 skipped (36.3 s); parity unchanged; `IRWB_FULL` 21 of 21 in 5.5 s; corpus revisions `IDENTICAL-44`.
+- `various/09-immutable-bench.json` (load 4.75): `immutable` 1,405 → 931 ms on Candela's native value, `canonical` 925 → 615 ms (0 ms when cached), the ranges result 1,283 → 1,035 ms; `sameJson`, `sameText`, `rangesSameJson`, `rangesSameText` all `true`.
+- `various/08-framework-cost-inc2.json` (load ~7.4): `Store.from` 208 ms, `storeOf` 121 ms, `strength` 4,567 ms (same revision), `cfg` 19,211 ms (same revision, same evidence 13,280 / 13,258 / 0 / 22).
+- Profile `08-inc2-strength-cfg.cpuprofile`, under `verify`: 9.5 s, of which evaluation 7.4 s and `casesFrom` 1.6 s; `fingerprint` and `validatePorts` no longer appear.
+
+### What didn't work
+- The no-change pass is still above 4 s. Profile `08-inc2-strength.cpuprofile` (4.0 s under `applyPass`): the `ranges` analysis 3.3 s, of which `immutable` of its result 2.2 s and the solver 0.9 s; `typedPass.run` 0.6 s. The framework's own share is below 0.2 s.
+
+### What I learned
+- `storeOf` sharing frozen records broke no test: no consumer (the evaluator, listing, analyses, the backend, the workbench) writes to the store it gets.
+- `immutable`'s remaining cost is per object (a descriptor per key, a key sort, a set of ancestors, a freeze), so a result made of many small arrays, like a dataflow result, stays expensive.
+
+### What was tricky to build
+- **Which base record to compare with.** A record is compared with the base record of the same id; a removed-and-recreated id with new content is not equal and is copied. `Store.from` sets `base` only for a canonical input, because sharing records of a value that is not deep-frozen would let a later mutation of one reach the other.
+- **Error precedence in `validateGraph`.** Relation checks are split into the shape part (cached per relation object) and the graph part (always), and kept in the original order, so an invalid graph reports the same first error as before.
+
+### What warrants a second pair of eyes
+- `Store.view` returns frozen records from `get`; a future consumer of `storeOf` that writes to it now throws a `TypeError` instead of silently mutating a cached store.
+
+### What should be done in the future
+- D1 next: the contract is now the largest share of a changing pass.
+
+### Code review instructions
+- `src/typed/model.ts` (`toNative`, `keep`), `src/typed/ir.ts` (`perRecord`), `src/framework/ir/adapters.ts` (`validateGraph`); `IRWB_BASE=<snapshot>/ node … $T/scripts/07-immutable-bench.mjs`.
+
+### Technical details
+- `sameJson(a, b)`: `a === b`, else both arrays of equal length with equal items, or both plain records with the same own key count, every key of `a` own in `b`, and equal values.

@@ -17,6 +17,17 @@ const args = process.argv.slice(2);
 const flag = (name, d) => (args.includes(name) ? args[args.indexOf(name) + 1] : d);
 const pipeline = flag('--pipeline', 'O2');
 const names = flag('--passes', null)?.split(',') ?? PIPELINES[pipeline];
+// IRWB-004: --threads N decides the meaning check's cases on N worker threads; --no-reuse turns D1's reuse off
+const threads = +flag('--threads', '0');
+let pool;
+const C = await import(root + 'dist/framework/contracts/index.js');
+if (args.includes('--no-reuse')) C.setDifferentialReuse(false);
+if (threads > 0) {
+  const { startMeaningPool } = await import(root + 'dist/typed/parallel/node-pool.js');
+  const { setMeaningExecutor } = await import(root + 'dist/typed/meaning-exec.js');
+  pool = startMeaningPool({ threads });
+  setMeaningExecutor(pool);
+}
 const t0 = performance.now();
 const st = ingest('candela', candelaSource(), { tape: true, maxSourceLength: MAX_SOURCE });
 const r0 = createIRArtifact(blocksAdapter, 'candela', st.toNative());
@@ -59,5 +70,8 @@ const out = {
   steps,
   totalMs: Math.round(performance.now() - t0),
   passesMs: steps.reduce((n, s) => n + s.ms, 0),
+  ...(pool ? { threads, pool: pool.stats } : {}),
+  ...(C.differentialStats ? { differential: C.differentialStats() } : {}),
 };
 console.log(JSON.stringify(out, null, 1));
+if (pool) await pool.close();
