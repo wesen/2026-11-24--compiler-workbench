@@ -80,3 +80,54 @@ extensions of the verifier so the rules are proofs rather than samples.
 
 ### What worked
 - With both fixes, all three rules: sound, proof (symbolic-linear; `shl-add-const` over 32 instances of `k`).
+
+## Step 3: The first bce condition was too strong; lvn crashed when placed late
+
+The first regex run with the new bce gave -90 instead of the -346 the hot view predicted. The checks of `state` in
+the last loop stayed: my "every definition reaching the second check runs before the first" rejects the loop's
+own increment at the latch, which reaches both checks but cannot run between them. I replaced it with the path
+condition (no assignment on any path from the first check to the second that does not pass the first again,
+computed as the blocks forward-reachable from the first and backward-reachable from the second, both without
+entering the first's block). Regex then fell by exactly 346, to 6,628, the reference's count.
+
+**Commit (code):** 8526358 — "IRWB-037-F: bce on a dominating check of the same index, the reassoc rules (proved), lvn's stale entries, speed with bcm, reassoc, simplify, lvn; hot statements in the attribution"
+
+### What didn't work
+- `sh scripts/07-corpus-variants.sh`: the variant with lvn after reassoc failed on regex-nfa:
+  `TxError: [absent] v:regexMatch.559 is not used in regexMatch at this revision` at `Tx.replace` from lvn.
+  `scripts/09-debug-shared-values.mjs` showed no shared value nodes at any revision, so the rules were not the
+  cause. lvn keeps a map of the trees it has seen; after a replacement it rebuilt the trees of both statements with
+  new ids, and an entry for an enclosing tree of the first occurrence still named the old id. Fixed by dropping the
+  entries of both statements after a replacement (a pre-existing defect, exposed by running lvn after subst).
+
+### What worked
+- Corpus variants (`various/variants-corpus.txt`, speed, default/tuned): base 832,132/764,672 (projects without
+  the crash); bce 829,241/762,689; +bcm 828,661/760,506; +reassoc,simplify 826,130/757,985; +lvn 824,746/756,601.
+  Each step lowered the total and no project rose, so all four went into `speed`.
+- Round 1 measured (`various/corpus-after.json`, `bench-after.json`): speed 867,770 -> 858,456 default,
+  792,800 -> 783,617 tuned; O2 1,090,271 -> 1,086,239; regex 6,933 -> 6,523, LZ tuned 156,782 -> 140,105.
+
+### What warrants a second pair of eyes
+- `sameDefs` in bce (`src/typed/passes.ts`): the path argument, and that a block reachable both ways is counted
+  whole (conservative).
+
+## Step 4: Round two from the gap list: buffer lengths, offset indices, SHA's choice and majority
+
+Projects still above the reference with tuned options: bounds-offset, sort, heat-lab, f32-dsp, bounds-lab. The hot
+view of bounds-offset shows `lw t3, 0(a0)` (the buffer's length) before each of three checks per iteration; the
+reference keeps the length in a register. In sort, `work[j - 1]` is checked twice through two temporaries
+`t = j - 1`, which bce's index identity (a local) did not equate. The census showed SHA's choice and majority.
+
+### What I did
+- licm hoists `load32[b+0]` for a buffer local b the loop does not assign (`lengths: false` turns it off).
+- bce sees through the hoisted length (`lengthBuf`: a local whose one reaching definition is the length load);
+  an index is a local plus a constant (`resolve`), so `t = j - 1` twice is one index.
+- `src/typed/rules/bitwise.ts` (`choice`, `majority`, proved at width 1), pass `typed.bitwise`.
+
+### What worked
+- Probes: bounds-offset 342 -> 284 (default, one case), sort 2,022 -> 1,571 under speed (reference 1,533).
+
+### What didn't work
+- `x + c < length` proving the check of `x + c`: does not fire on bounds-offset, correctly: the range of `i + 1`
+  includes the overflow at `i = MAX`, where the check must trap.
+- A waiting loop `until ! pgrep -f "10-rule-firings.mjs O2"` matched its own command line and never ended; killed.

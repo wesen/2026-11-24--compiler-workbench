@@ -12,6 +12,7 @@ const { benchCase } = await import('../../dist/typed/evaluate.js');
 const { lowerToImage, runImage } = await import('../../dist/typed/backend/index.js');
 const { hotSites } = await import('../../dist/typed/attribute.js');
 const { REASSOC_RULES } = await import('../../dist/typed/rules/reassoc.js');
+const { BITWISE_RULES } = await import('../../dist/typed/rules/bitwise.js');
 const { RULE_EVIDENCE } = await import('../../dist/typed/rules/evidence.js');
 const { rule, op, v, kv, c } = await import('../../dist/typed/rules/form.js');
 const { verifyRule, ruleFingerprint } = await import('../../dist/typed/rules/verify.js');
@@ -57,6 +58,9 @@ function bumpInLoop(n: i32, c: i32): i32 {
     }
     return s;
 }
+function choose(e: i32, f: i32, g: i32): i32 {
+    return ((e & f) ^ ((e ^ -1) & g)) + ((e & f) ^ (e & g) ^ (f & g));
+}
 function offsets(x: i32): i32 {
     return ((x + 3) + 4) + ((x + 1) << 2);
 }
@@ -67,6 +71,7 @@ const inputs = {
   copyLoop: { n: [0, 8] },
   bumpInLoop: { n: [0, 8], c: [-3, 3] },
   offsets: { x: [-100, 100] },
+  choose: { e: [-50, 50], f: [-50, 50], g: [-50, 50] },
 };
 const open = () =>
   Program.fromProject(
@@ -133,6 +138,22 @@ test('reassoc: the pass moves constants outwards under the meaning check', async
   const text = p.listing('offsets');
   // (x + 3) + 4 is x + 7; (x + 1) << 2 is (x << 2) + 4, whose 4 then moves out of the sum
   assert.match(text, /return \(\(\(x \+ 7\) \+ \(x << 2\)\) \+ 4\)/);
+  assert.equal(p.check({ count: 200 }).status, 'agree');
+});
+
+test('bitwise: choice and majority are proofs at width 1, and the pass removes one operator from each', async () => {
+  for (const r of BITWISE_RULES.rules) {
+    const e = RULE_EVIDENCE[r.name];
+    assert.equal(e.fingerprint, ruleFingerprint(r), r.name);
+    assert.equal(e.strength, 'proof', r.name);
+    assert.ok(e.methods.some(m => m.method === 'bitwise-w1' && m.verdict === 'pass'), r.name);
+  }
+  const p = open();
+  const ops = () => (p.listing('choose').match(/ [&^|] /g) || []).length;
+  assert.equal(ops(), 9);
+  const r = await p.apply('bitwise', { count: 40 });
+  assert.equal(r.changed, true);
+  assert.equal(ops(), 7);
   assert.equal(p.check({ count: 200 }).status, 'agree');
 });
 

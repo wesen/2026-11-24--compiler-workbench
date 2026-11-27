@@ -4,8 +4,8 @@
  * the rule's version and the fingerprint (SHA-256 of its canonical data) it was computed for; a test fails when a
  * rule no longer matches its record, so an edited rule must be verified again.
  *
- * The reassoc table's records (IRWB-037-F) were added by ttmp/2026/11/27/IRWB-037-F--…/scripts/06-record-evidence.mjs
- * with the same options in 103495 ms.
+ * The reassoc and bitwise tables' records (IRWB-037-F) were added by
+ * ttmp/2026/11/27/IRWB-037-F--…/scripts/06-record-evidence.mjs with the same options.
  */
 import type { RuleEvidence } from './verify.js';
 
@@ -2185,6 +2185,74 @@ export const RULE_EVIDENCE: Readonly<Record<string, RuleEvidence>> = {
         cases: 1110592,
         detail: 'boundary values crossed (110592), then random',
         ms: 413,
+      },
+    ],
+  },
+  choice: {
+    rule: 'choice',
+    version: '1',
+    fingerprint: 'f4741bdf385323dc65fa7eb17e516ddcbe1cc097415fe902221bdeb6cd4a72d9',
+    verdict: 'sound',
+    strength: 'proof',
+    methods: [
+      {
+        method: 'structural',
+        verdict: 'pass',
+        ms: 1,
+      },
+      {
+        method: 'bitwise-w1',
+        verdict: 'pass',
+        cases: 8,
+        detail: 'each result bit depends only on the same bit of each operand',
+        ms: 0,
+      },
+      {
+        method: 'exhaustive-w8',
+        verdict: 'pass',
+        cases: 16777216,
+        ms: 17331,
+      },
+      {
+        method: 'random-32',
+        verdict: 'pass',
+        cases: 1110592,
+        detail: 'boundary values crossed (110592), then random',
+        ms: 708,
+      },
+    ],
+  },
+  majority: {
+    rule: 'majority',
+    version: '1',
+    fingerprint: 'f8f23921ca5ac5313587ed0bdddaf712b17a7de9ee3f5df6de55ee15e2880273',
+    verdict: 'sound',
+    strength: 'proof',
+    methods: [
+      {
+        method: 'structural',
+        verdict: 'pass',
+        ms: 0,
+      },
+      {
+        method: 'bitwise-w1',
+        verdict: 'pass',
+        cases: 8,
+        detail: 'each result bit depends only on the same bit of each operand',
+        ms: 0,
+      },
+      {
+        method: 'exhaustive-w8',
+        verdict: 'pass',
+        cases: 16777216,
+        ms: 21997,
+      },
+      {
+        method: 'random-32',
+        verdict: 'pass',
+        cases: 1110592,
+        detail: 'boundary values crossed (110592), then random',
+        ms: 936,
       },
     ],
   },

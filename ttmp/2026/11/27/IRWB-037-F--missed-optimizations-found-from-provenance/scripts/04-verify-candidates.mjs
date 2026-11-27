@@ -6,10 +6,11 @@ const root = new URL('../../../../../../', import.meta.url);
 const { verifyRule } = await import(new URL('dist/typed/rules/verify.js', root));
 const { ruleText } = await import(new URL('dist/typed/rules/form.js', root));
 const { REASSOC_RULES } = await import(new URL('dist/typed/rules/reassoc.js', root));
+const { BITWISE_RULES } = await import(new URL('dist/typed/rules/bitwise.js', root));
 const argv = process.argv.slice(2);
 const random = argv.includes('--random') ? +argv[argv.indexOf('--random') + 1] : 1e6;
 const out = {};
-for (const r of REASSOC_RULES.rules) {
+for (const r of [...REASSOC_RULES.rules, ...BITWISE_RULES.rules]) {
   const t = performance.now();
   const e = verifyRule(r, { random, seed: 7, exhaustive32: true });
   out[r.name] = e;

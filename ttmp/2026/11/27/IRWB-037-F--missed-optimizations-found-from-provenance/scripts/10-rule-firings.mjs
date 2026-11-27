@@ -1,4 +1,4 @@
-// Rule firings over the corpus: run a pipeline on every project with simplify, fold and reassoc replaced by their
+// Rule firings over the corpus: run a pipeline on every project with simplify, fold, reassoc and bitwise replaced by their
 // table passes counting firings (rules/compile.ts `Firings`), and print, per rule, the firings and the projects.
 // usage: node 10-rule-firings.mjs [pipeline or a,b,c] [--json out.json]
 import { writeFileSync } from 'node:fs';
@@ -9,12 +9,13 @@ await installVendor();
 const D = new URL('dist/typed/', root);
 const { Program } = await import(new URL('program.js', D));
 const { projectSource } = await import(new URL('project.js', D));
-const { PIPELINES, reassoc, typedPass } = await import(new URL('passes.js', D));
+const { PIPELINES, reassoc, bitwise, typedPass } = await import(new URL('passes.js', D));
 const { tablePass } = await import(new URL('rules/passes.js', D));
 const { tableBody } = await import(new URL('rules/compile.js', D));
 const { SIMPLIFY_RULES } = await import(new URL('rules/simplify.js', D));
 const { FOLD_RULES } = await import(new URL('rules/fold.js', D));
 const { REASSOC_RULES } = await import(new URL('rules/reassoc.js', D));
+const { BITWISE_RULES } = await import(new URL('rules/bitwise.js', D));
 const argv = process.argv.slice(2);
 const spec = argv.find((a, i) => !a.startsWith('--') && argv[i - 1] !== '--json') ?? 'speed';
 const names = spec.includes(',') ? spec.split(',') : PIPELINES[spec];
@@ -27,6 +28,7 @@ for (const id of projectIds()) {
     simplify: tablePass('simplify', local),
     fold: tablePass('fold', local),
     reassoc: typedPass({ ...reassoc.typed, body: tableBody(REASSOC_RULES.rules, local) }),
+    bitwise: typedPass({ ...bitwise.typed, body: tableBody(BITWISE_RULES.rules, local) }),
   };
   for (const n of names) {
     try { await p.apply(passes[n] ?? n, { count: 5 }); } catch (e) { if (e.code !== 'contractRejected') throw e; }
@@ -36,7 +38,7 @@ for (const id of projectIds()) {
     (where.get(r) ?? where.set(r, []).get(r)).push(`${id} ${n}`);
   }
 }
-const sets = { simplify: SIMPLIFY_RULES, fold: FOLD_RULES, reassoc: REASSOC_RULES };
+const sets = { simplify: SIMPLIFY_RULES, fold: FOLD_RULES, reassoc: REASSOC_RULES, bitwise: BITWISE_RULES };
 const out = {};
 for (const [s, set] of Object.entries(sets)) {
   const never = set.rules.filter(r => !firings.get(r.name)).map(r => r.name);

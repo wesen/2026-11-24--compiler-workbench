@@ -35,6 +35,7 @@ import { BlocksIR, blocksAdapter, blocksEntities, entityIdSet } from './ir.js';
 import { hash, meaningKept, type MeaningParams } from './evaluate.js';
 import { tableBody } from './rules/compile.js';
 import { FOLD_RULES } from './rules/fold.js';
+import { BITWISE_RULES } from './rules/bitwise.js';
 import { REASSOC_RULES } from './rules/reassoc.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
 import {
@@ -302,6 +303,15 @@ export const reassoc = typedPass({
   body: tableBody(REASSOC_RULES.rules),
 });
 
+/** IRWB-037-F: the rule table BITWISE_RULES (rules/bitwise.ts): choice and majority with one operator fewer. */
+export const bitwise = typedPass({
+  name: 'bitwise',
+  about: 'bitwise identities: (x & y) ^ (~x & z) and (x & y) ^ (x & z) ^ (y & z) with one operator fewer',
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body: tableBody(BITWISE_RULES.rules),
+});
+
 export const constprop = typedPass({
   name: 'constprop',
   about:
@@ -483,8 +493,41 @@ export const licm = typedPass({
         ...F32_RESULT,
         'aaddr',
       ];
+      // IRWB-037-F: a buffer's length, `load32[b+0]` for a buffer local b the loop does not assign. No statement
+      // writes a length word: stores into a buffer go through positions checked against the length (offset 4 and
+      // up), and a buffer local holds a buffer, so the load cannot trap. `lengths: false` turns it off.
+      // Only an outermost loop hoists a length: its body holds the inner loops' lengths too, so each is loaded
+      // once per call instead of once per entry of an inner loop.
+      const outermost = !facts.loops!.some(M => M !== L && M.body.includes(L.head));
+      const lengths = params.lengths !== false && outermost;
+      const lengthLocal = (v: ValueRec): number | undefined => {
+        if (v.op !== 'load' || v.imm !== 0) return undefined;
+        const b = st.get(v.args[0]) as ValueRec;
+        return b.op === 'get' && f.locals[b.imm as number].type === 'buffer' ? (b.imm as number) : undefined;
+      };
+      // a length read once per iteration saves one load per iteration and holds a register across the loop; with
+      // two reads or more it saves at least two (measured on chess-search: one read lost under the tuned options)
+      const reads = new Map<number, number>();
+      const countReads = (id: string): void => {
+        const v = st.get(id) as ValueRec;
+        const b = lengthLocal(v);
+        if (b !== undefined) reads.set(b, (reads.get(b) ?? 0) + 1);
+        v.args.forEach(countReads);
+      };
+      if (lengths)
+        for (const bid of L.body)
+          for (const sid of (st.get(bid) as BlockRec).stmts)
+            for (const k of ['value', 'cond', 'addr'] as const) {
+              const x = (st.get(sid) as StmtRec)[k];
+              if (x) countReads(x);
+            }
+      const isLengthOf = (v: ValueRec) => {
+        const b = lengths ? lengthLocal(v) : undefined;
+        return b !== undefined && (reads.get(b) ?? 0) >= 2;
+      };
       const inv = (id: string): boolean => {
         const v = st.get(id) as ValueRec;
+        if (isLengthOf(v)) return v.args.every(inv);
         if (!INV.includes(v.op)) return false;
         if (v.op === 'get') return !assigned.has(v.imm as number);
         return v.args.every(inv);
@@ -631,29 +674,56 @@ export const bce = typedPass({
     const dom = facts.dom!,
       reach = facts.reach!,
       ranges = facts.ranges!;
-    // resolve a read through single copies: t = x  ->  x (when t has one definition)
+    /**
+     * An index as a local plus a constant (IRWB-037-F: the constant; before, a local alone): `x`, `x + c`, `x - c`,
+     * or a local t whose one reaching definition is `t = x`, `t = x + c` or `t = x - c`. `sid` is the statement where
+     * x is read; the index's value is wrap(x + offset) with x's value there.
+     */
     const resolve = (
       sid: string,
       id: string,
-    ): { id: string; local: number | null; sid: string; via?: string } => {
+    ): { id: string; local: number | null; offset: number; sid: string } => {
+      const linear = (vid: string): { local: number; offset: number } | undefined => {
+        const v = st.get(vid) as ValueRec;
+        if (v.op === 'get') return { local: v.imm as number, offset: 0 };
+        if (v.op !== 'add' && v.op !== 'sub') return undefined;
+        const [x, k] = v.args.map(a => st.get(a) as ValueRec);
+        if (x.op !== 'get' || k.op !== 'const') return undefined;
+        return { local: x.imm as number, offset: v.op === 'add' ? (k.imm as number) : -(k.imm as number) };
+      };
       const v = st.get(id) as ValueRec;
-      if (v.op !== 'get') return { id, local: null, sid };
-      const defs = reach.reachingAt(sid, v.imm as number);
-      if (defs.length === 1 && defs[0].startsWith('s:')) {
-        const d = st.get(defs[0]) as StmtRec,
-          dv = st.get(d.value!) as ValueRec;
-        if (dv.op === 'get') return { id: d.value!, local: dv.imm as number, sid: d.id, via: d.id };
+      if (v.op === 'get') {
+        const defs = reach.reachingAt(sid, v.imm as number);
+        if (defs.length === 1 && defs[0].startsWith('s:')) {
+          const d = st.get(defs[0]) as StmtRec;
+          const l = linear(d.value!);
+          if (l) return { id: d.value!, ...l, sid: d.id };
+        }
+        return { id, local: v.imm as number, offset: 0, sid };
       }
-      return { id, local: v.imm as number, sid };
+      const l = linear(id);
+      return l ? { id, ...l, sid } : { id, local: null, offset: 0, sid };
     };
-    const isLength = (id: string, buf?: number) => {
+    /**
+     * The buffer local whose length the value at statement sid is: `load32[b+0]`, or (IRWB-037-F) a local whose one
+     * reaching definition is `t = load32[b+0]` with b unchanged since, the form licm leaves when it hoists a length.
+     */
+    const lengthBuf = (sid: string, id: string): number | undefined => {
+      const isLoad = (x: string) => {
+        const v = st.get(x) as ValueRec;
+        return v.op === 'load' && v.imm === 0 && (st.get(v.args[0]) as ValueRec).op === 'get'
+          ? ((st.get(v.args[0]) as ValueRec).imm as number)
+          : undefined;
+      };
+      const direct = isLoad(id);
+      if (direct !== undefined) return direct;
       const v = st.get(id) as ValueRec;
-      return (
-        v.op === 'load' &&
-        v.imm === 0 &&
-        (st.get(v.args[0]) as ValueRec).op === 'get' &&
-        (buf === undefined || (st.get(v.args[0]) as ValueRec).imm === buf)
-      );
+      if (v.op !== 'get') return undefined;
+      const defs = reach.reachingAt(sid, v.imm as number);
+      if (defs.length !== 1 || !defs[0].startsWith('s:')) return undefined;
+      const d = st.get(defs[0]) as StmtRec;
+      const b = isLoad(d.value!);
+      return b !== undefined && sameDefs(b, d.id, sid) ? b : undefined;
     };
     // a bounds check: `if (i >=u bound) trap`, the bound a constant (a frame array) or a buffer's length
     const checkOf = (s: StmtRec | undefined) => {
@@ -661,14 +731,13 @@ export const bce = typedPass({
       const c = st.get(s.cond!) as ValueRec;
       if (c.op !== 'geu') return undefined;
       const bound = st.get(c.args[1]) as ValueRec;
-      if (bound.op !== 'const' && !isLength(c.args[1])) return undefined;
+      const buf = bound.op === 'const' ? undefined : lengthBuf(s.id, c.args[1]);
+      if (bound.op !== 'const' && buf === undefined) return undefined;
       const trapB = st.get(s.then!) as BlockRec;
       if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') return undefined;
       const idx = resolve(s.id, c.args[0]);
       if (idx.local === null) return undefined;
-      return bound.op === 'const'
-        ? { idx, k: (bound.imm as number) >>> 0 }
-        : { idx, buf: (st.get(bound.args[0]) as ValueRec).imm as number };
+      return bound.op === 'const' ? { idx, k: (bound.imm as number) >>> 0 } : { idx, buf };
     };
     type Check = NonNullable<ReturnType<typeof checkOf>>;
     const where = new Map<string, { block: string; index: number }>();
@@ -726,7 +795,7 @@ export const bce = typedPass({
         const t = lastStmt(st, st.get(d) as BlockRec);
         const there = checkOf(t);
         if (!there || !dom.dominates(t!.else!, b.id)) continue;
-        if (there.idx.local !== here.idx.local) continue;
+        if (there.idx.local !== here.idx.local || there.idx.offset !== here.idx.offset) continue;
         if (!sameDefs(here.idx.local!, there.idx.sid, here.idx.sid)) continue;
         if ('k' in here ? !('k' in there) || there.k! > here.k! : !('buf' in there) || there.buf !== here.buf)
           continue;
@@ -736,7 +805,7 @@ export const bce = typedPass({
           { op: 'br', to: last.else },
           {
             because: [t!.id],
-            note: `${t!.id} already checked ${f.locals[here.idx.local!].name} against a bound no larger`,
+            note: `${t!.id} already checked ${f.locals[here.idx.local!].name}${here.idx.offset ? ` + ${here.idx.offset}` : ''} against a bound no larger`,
           },
         );
         return true;
@@ -750,7 +819,7 @@ export const bce = typedPass({
       if (dominatingCheck(b, last, check)) continue;
       if (!('buf' in check)) continue;
       const c = st.get(last.cond!) as ValueRec;
-      const idx = check.idx,
+      const idx = check.idx as typeof check.idx & { local: number },
         buf = check.buf!;
       // walk up the dominator tree for a branch whose taken edge proves idx < buf.length
       for (let d = dom.idom.get(b.id), child = b.id; d && d !== child; child = d, d = dom.idom.get(d)) {
@@ -767,22 +836,32 @@ export const bce = typedPass({
         else if (cond.op !== 'lt') continue;
         const arm = onTrue ? t.then! : t.else!;
         if (!dom.dominates(arm, b.id)) continue;
-        const x = st.get(cond.args[0]) as ValueRec;
-        if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
+        if (lengthBuf(t.id, cond.args[1]) !== buf) continue;
         // the index and the buffer are the same values at the branch and at the check
         const same = (l: number) => {
           const a = reach.reachingAt(t.id, l).sort().join(),
             z = reach.reachingAt(idx.sid, l).sort().join();
           return a === z;
         };
-        if (!same(idx.local) || !same(buf)) continue;
-        if (ranges.at(t.id, idx.local)[0] < 0) continue;
+        const x = st.get(cond.args[0]) as ValueRec;
+        if (idx.offset === 0) {
+          if (x.op !== 'get' || x.imm !== idx.local) continue;
+          if (!same(idx.local) || !same(buf)) continue;
+          if (ranges.at(t.id, idx.local)[0] < 0) continue;
+        } else {
+          // IRWB-037-F: `x + c < length` proves the index `x + c` (the same local and constant, x unchanged
+          // between where the two read it) when the range of x + c at the branch is not negative
+          const ci = resolve(t.id, cond.args[0]);
+          if (ci.local !== idx.local || ci.offset !== idx.offset) continue;
+          if (!sameDefs(idx.local, ci.sid, idx.sid) || !sameDefs(buf, t.id, last.id)) continue;
+          if (ranges.of(t.id, cond.args[0])[0] < 0) continue;
+        }
         tx.replaceStmt(
           last.id,
           { op: 'br', to: last.else },
           {
             because: [t.id, `fact:ranges(${f.name}): ${f.locals[idx.local].name} ≥ 0`],
-            note: `${t.id} already proved ${f.locals[idx.local].name} < length`,
+            note: `${t.id} already proved ${f.locals[idx.local].name}${idx.offset ? ` + ${idx.offset}` : ''} < length`,
           },
         );
         break;
@@ -1167,6 +1246,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   rotate,
   inline,
   reassoc,
+  bitwise,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */
@@ -1219,7 +1299,8 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
    * IRWB-003: two levels of inlining, then O2+, then loop rotation and a cfg to merge what rotation leaves in a
    * line. Meant for the backend options chains, coalesce and homes. No dfe: it needs the program's entries.
    * IRWB-037-F: bcm after bce merges the checked text addresses inlining puts in one block; after the last subst
-   * has built the trees, reassoc moves constants out to address offsets, simplify takes the `x + 0` it leaves,
+   * has built the trees, reassoc moves constants out to address offsets, bitwise rewrites SHA's choice and
+   * majority, simplify takes the `x + 0` reassoc leaves,
    * and lvn shares the subtrees the substitutions duplicated. Each placement measured on the corpus (ticket).
    */
   speed: [
@@ -1244,6 +1325,7 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'cfg',
     'subst',
     'reassoc',
+    'bitwise',
     'simplify',
     'lvn',
     'rotate',

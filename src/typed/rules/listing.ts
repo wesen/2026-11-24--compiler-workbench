@@ -6,6 +6,7 @@ import { TILE_WIDTH } from '../format.js';
 import { RULE_EVIDENCE } from './evidence.js';
 import { FOLD_RULES } from './fold.js';
 import { ruleText, type RuleSet } from './form.js';
+import { BITWISE_RULES } from './bitwise.js';
 import { REASSOC_RULES } from './reassoc.js';
 import { SIMPLIFY_RULES } from './simplify.js';
 import { ruleFingerprint, type RuleEvidence, type Strength } from './verify.js';
@@ -14,6 +15,7 @@ export const RULE_SETS: Readonly<Record<string, RuleSet>> = Object.freeze({
   simplify: SIMPLIFY_RULES,
   fold: FOLD_RULES,
   reassoc: REASSOC_RULES,
+  bitwise: BITWISE_RULES,
 });
 
 const SHORT: Record<Strength, string> = {
