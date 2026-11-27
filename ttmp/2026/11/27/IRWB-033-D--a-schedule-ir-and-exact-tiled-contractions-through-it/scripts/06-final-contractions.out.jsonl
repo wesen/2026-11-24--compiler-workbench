@@ -1,0 +1,1 @@
+{"name":"attention-score","shapes":{"q":[1024,64],"k":[1024,64]},"kernels":1,"identical":true,"digests":["6944a1362df82281"],"fused":{"median":0.032,"calls":[0.0319,0.0338,0.0318,0.0336,0.032]},"unfused":{"median":0.6176,"calls":[0.622,0.6176,0.6177,0.6176,0.6174]}}
