@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { AnalysisManager } from '../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js';
-import { takesGate } from '../../dist/tensor/cuda-source.js';
+import { emitCuda, takesGate } from '../../dist/tensor/cuda-source.js';
 import { createCudaLowering } from '../../dist/tensor/cuda-contract.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
 import { gate, planFusion } from '../../dist/tensor/fusion.js';
@@ -29,7 +29,9 @@ test('every corpus program is one kernel; the row programs run one block per row
     const p = planFusion(program.current.value.functions[0]);
     assert.deepEqual(summary(p), groups, name);
     assert.deepEqual(p.refusals, [], name);
-    assert.equal(kernels(cudaSource(program, name)), 1, name);
+    // IRWB-033-D: the schedule takes the tileable contractions out of block mode (attention: score; the row
+    // kernel; out. mlp: h with g as its epilogue; y).
+    assert.equal(kernels(cudaSource(program, name)), { attention: 3, mlp: 2 }[name] ?? 1, name);
   }
   const softmax = planFusion(corpus('softmax').current.value.functions[0]).groups[0];
   assert.deepEqual([softmax.buffered, softmax.staged], [['m', 'e', 's'], ['x']]);
@@ -53,9 +55,11 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
     assert.equal(sha(cudaSource(optimized, name, { fuse: false })), digests[name + '+inline+split'], name);
   }
+  // IRWB-033-D: a one-statement contraction is now a tiled kernel when fused, and stage 2's when not.
   for (const name of ['matmul', 'conv2d']) {
     const program = corpus(name);
-    assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
+    assert.notEqual(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
+    assert.match(cudaSource(program, name), /template <int V>\n__global__ void k0/);
   }
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
 });
@@ -315,7 +319,9 @@ test('a member is written over the row it is computed from when nothing reads th
   assert.deepEqual(inPlace('softmax'), [{ statement: 'e', over: 'x' }]);
   assert.deepEqual(inPlace('layernorm'), [{ statement: 'centered', over: 'x' }]);
   assert.deepEqual(inPlace('mlp'), [{ statement: 'g', over: 'h' }]);
-  const source = cudaSource(corpus('attention'), 'attention');
+  // stage 3b's single block-mode kernel, printed from the plan (the schedule now isolates score and out)
+  const fn = corpus('attention').current.value.functions[0];
+  const source = emitCuda(fn, planFusion(fn));
   // score, e and weight share one row; the block's row area is q, that row and the two scalars
   assert.match(source, /float\* const r5 = r3;/);
   assert.match(source, /float\* const r7 = r5;/);

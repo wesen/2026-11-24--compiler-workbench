@@ -8,7 +8,7 @@ for (const name of names) {
   const program = compileTix(readFileSync(new URL(`${name}/main.tix`, root), 'utf8'));
   const fn = program.current.value.functions[0].name;
   const source = cudaSource(program, fn);
-  const kernels = [...source.matchAll(/__global__ void (k\d+)/g)].map(m => m[1]);
+  const kernels = [...source.matchAll(/__global__ void (?:__launch_bounds__\([^)]*\) )?(k\d+)/g)].map(m => m[1]);
   for (const fuse of [true, false]) {
     const t = performance.now();
     const verdict = await checkLowering(program, fn, { fuse });
