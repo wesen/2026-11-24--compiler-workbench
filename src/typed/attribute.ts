@@ -67,6 +67,16 @@ export interface Attribution {
   readonly rows: readonly AttributionRow[];
   /** The rows summed by decision, largest cost first. */
   readonly decisions: readonly DecisionRow[];
+  /** Hot sites in the last image, including sites with no step row. */
+  readonly residual: readonly ResidualSite[];
+}
+
+export interface ResidualSite {
+  readonly id: string;
+  readonly text: string;
+  readonly instructions: number;
+  /** Step rows naming this exact site that reduced its group's dynamic cost. */
+  readonly reductions: readonly string[];
 }
 
 const FRAME = 'frame',
@@ -209,7 +219,24 @@ export function attributeSteps(
   const decisions = [...byDecision]
     .map(([decision, d]) => ({ decision, ...d }))
     .sort((a, b) => b.delta - a.delta || (a.decision < b.decision ? -1 : 1));
-  return { call: { fn: call.fn, args: [...call.args] }, totals, rows, decisions };
+  const reductions = new Map<string, string[]>();
+  for (const r of rows) {
+    if (r.delta >= 0) continue;
+    for (const s of r.sites) {
+      const list = reductions.get(s.id) ?? [];
+      list.push(`r${r.rev} ${r.decision}`);
+      reductions.set(s.id, list);
+    }
+  }
+  const residual = [...prev.bySite]
+    .map(([id, instructions]) => ({
+      id,
+      text: isStmt(prev.st, id) ? showStmt(prev.st, id) : id,
+      instructions,
+      reductions: reductions.get(id) ?? [],
+    }))
+    .sort((a, b) => b.instructions - a.instructions || a.id.localeCompare(b.id));
+  return { call: { fn: call.fn, args: [...call.args] }, totals, rows, decisions, residual };
 }
 
 /** The totals per revision and the decisions table, as text. */

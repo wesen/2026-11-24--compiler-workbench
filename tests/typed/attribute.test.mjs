@@ -41,6 +41,8 @@ const open = () =>
 
 /** Every step's rows sum to the emulator's difference for the step, and the steps to the whole difference. */
 function assertExact(a) {
+  assert.equal(a.residual.reduce((n, site) => n + site.instructions, 0), a.totals.at(-1).instructions);
+  assert.ok(a.residual.every((s, i) => !i || s.instructions <= a.residual[i - 1].instructions));
   for (let i = 1; i < a.totals.length; i++) {
     const step = a.totals[i];
     const sum = a.rows.filter(r => r.rev === step.rev).reduce((n, r) => n + r.delta, 0);

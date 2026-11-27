@@ -35,7 +35,7 @@ import { deserialize } from '../framework/strategy/serialization.js';
 import { assertValid } from '../framework/strategy/validation.js';
 import { formatJson, joinText, TILE_WIDTH } from './format.js';
 import { lowerToImage, runImage } from './backend/index.js';
-import { USER_PASSES } from './builder.js';
+import { findPass, USER_PASSES } from './builder.js';
 import { casesFrom } from './evaluate.js';
 import { storeOf } from './ir.js';
 import type { TypedBlocks } from './model.js';
@@ -159,8 +159,11 @@ export function strategyRegistry(
 }
 
 // ---------- plan shapes ----------
-const passNode = (prefix: string, name: string, i: number) =>
-  apply(`${prefix}/${i}:${name}`, algorithm(`typed.${name}`, '1'));
+const passNode = (prefix: string, name: string, i: number, fn?: string) =>
+  apply(
+    `${prefix}/${i}:${name}`,
+    algorithm(`typed.${name}${fn === undefined ? '' : '@' + fn}`, findPass(name)?.version ?? '1'),
+  );
 
 /** A sequence of passes (a pipeline by name or a list of pass names). */
 export function passesNode(id: string, passes: string | readonly string[]): StrategyNode {
@@ -347,7 +350,7 @@ export function searchPlan(
         strategy: names.length
           ? sequence(
               `${fn}:${n}`,
-              ...names.map((x, i) => apply(`${fn}:${n}/${i}:${x}`, algorithm(`typed.${x}@${fn}`, '1'))),
+              ...names.map((x, i) => passNode(`${fn}:${n}`, x, i, fn)),
             )
           : apply(`${fn}:${n}/keep`, algorithm('typed.keep', '1')),
       };

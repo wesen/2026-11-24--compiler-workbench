@@ -1,5 +1,5 @@
 // Credit the change in executed RV32 instructions along a pipeline to the passes' decisions, for one call.
-// node tools/attribute.mjs <project> <pipeline> <fn> [--input '{"n":12}'] [--backend '{"coalesce":true}'] [--rows] [--json]
+// node tools/attribute.mjs <project> <pipeline> <fn> [--input '{"n":12}'] [--backend '{"coalesce":true}'] [--rows] [--hot] [--json]
 // --coalesce is short for --backend '{"coalesce":true}'.
 // Parameters not in --input take the project's own input when that is a fixed value (a buffer's cells), else 0.
 import { installVendor } from './node-vendor.mjs';
@@ -20,7 +20,7 @@ const [id, pipeline, fn] = argv.filter(
 );
 if (!id || !pipeline || !fn) {
   console.error(
-    'usage: node tools/attribute.mjs <project> <pipeline> <fn> [--input JSON] [--backend JSON] [--coalesce] [--rows] [--json]',
+    'usage: node tools/attribute.mjs <project> <pipeline> <fn> [--input JSON] [--backend JSON] [--coalesce] [--rows] [--hot] [--json]',
   );
   process.exit(2);
 }
@@ -43,6 +43,9 @@ const a = attributeSteps(p.revisions, call, { backend });
 if (flag('--json')) console.log(JSON.stringify(a, null, 1));
 else {
   console.log(formatAttribution(a));
+  if (flag('--hot'))
+    for (const s of a.residual)
+      console.log(`${String(s.instructions).padStart(8)}  ${s.id}  ${s.text}  [${s.reductions.join(', ') || 'no recorded reduction'}]`);
   if (flag('--rows'))
     for (const r of a.rows.filter(r => r.delta))
       console.log(

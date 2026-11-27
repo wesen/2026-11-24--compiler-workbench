@@ -116,3 +116,25 @@ test('P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline ru
   const tolerated = await executeOrThrow(pipelinePlan('broken', undefined, { tolerate: ['div-to-shift'] }), wreg, w0);
   assert.equal(tolerated.value.revision, w0.revision);
 });
+
+test('fixed-array bce reuses a successful check and loses the fact at a join', async () => {
+  const source = `function at(input: i32, change: i32): i32 {
+    let i = input;
+    const a = new Int32Array(4);
+    a[i] = 3;
+    const first = a[i];
+    if (change === 1) { i = i + 1; }
+    return first + a[i];
+  }`;
+  const { Program } = await import('../../dist/typed/program.js');
+  const p = new Program('repeated-index', source, { ingest: { tape: true }, inputs: { at: { input: [-1, 4], change: [0, 1] } } });
+  await p.apply('cfg');
+  const checks = () => (p.listing('at').match(/>=u 4/g) ?? []).length;
+  assert.equal(checks(), 3);
+  await p.apply('bce');
+  assert.equal(checks(), 2);
+  assert.equal(p.exec('at', [3, 0]).result, 6);
+  assert.ok(p.exec('at', [-1, 0]).trap);
+  assert.ok(p.exec('at', [3, 1]).trap);
+  assert.equal(p.check({ count: 100 }).status, 'agree');
+});

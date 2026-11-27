@@ -1,0 +1,20 @@
+// Inspect a concrete member of the original LZ experiment with the production residual-site query.
+import { installVendor } from '../../../../../../tools/node-vendor.mjs';
+import { projectFiles } from '../../../../../../tools/corpus.mjs';
+await installVendor();
+const D = '../../../../../../dist/typed/';
+const { Program } = await import(D + 'program.js');
+const { projectSource } = await import(D + 'project.js');
+const { storeOf } = await import(D + 'ir.js');
+const { casesFrom } = await import(D + 'evaluate.js');
+const { attributeSteps } = await import(D + 'attribute.js');
+const fn = 'roundTrip';
+const p = Program.fromProject(projectSource('lz-roundtrip', projectFiles('lz-roundtrip')));
+const cases = casesFrom(storeOf(p.origin.value), fn, { count:100, seed:7, inputs:p.inputs[fn] });
+await p.pipeline('speed');
+const backend = { chains:true, coalesce:true, homes:true };
+const longest = cases.reduce((a,b) => b.items[0].length > a.items[0].length ? b : a);
+const selected = process.argv.includes('--first') ? cases[0] : longest;
+const a = attributeSteps(p.revisions, selected, {backend});
+console.log(JSON.stringify({sampleIndex:selected.n, length:selected.items[0].length, totals:a.totals, bce:a.rows.filter(r=>r.pass==="bce" && r.delta)}));
+for (const r of a.residual) console.log(JSON.stringify(r));

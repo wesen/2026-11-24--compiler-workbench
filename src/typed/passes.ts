@@ -69,6 +69,7 @@ interface BodyContext {
 
 export interface TypedPassSpec {
   readonly name: string;
+  readonly version?: string;
   readonly about: string;
   readonly needs?: Readonly<Record<string, AnalysisName>>;
   readonly writes: readonly WriteKind[];
@@ -176,7 +177,7 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
   }
   const pass = definePass<TypedBlocks, Record<string, any>, Record<string, unknown>>({
     id: `typed.${spec.name}`,
-    version: '1',
+    version: spec.version ?? '1',
     description: spec.about,
     ir: BlocksIR,
     adapter: blocksAdapter,
@@ -605,8 +606,9 @@ export const divToShift = typedPass({
 
 export const bce = typedPass({
   name: 'bce',
+  version: '2',
   about:
-    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
+    'bounds-check elimination using index ranges for fixed arrays and dominating length tests for buffers',
   needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
   writes: ['stmts', 'cfg'],
   preserves: [],
@@ -642,9 +644,30 @@ export const bce = typedPass({
       const last = lastStmt(st, b);
       if (!last || last.op !== 'br_if') continue;
       const c = st.get(last.cond!) as ValueRec;
-      if (c.op !== 'geu' || !isLength(c.args[1])) continue;
+      if (c.op !== 'geu') continue;
       const trapB = st.get(last.then!) as BlockRec;
       if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') continue;
+      const bound = st.get(c.args[1]) as ValueRec;
+      if (bound.op === 'const') {
+        const index = st.get(c.args[0]) as ValueRec;
+        // Dropping an index expression could also drop its trap or effects. A local read is safe.
+        if (index.op === 'get') {
+          const [lo, hi] = ranges.at(last.id, index.imm as number);
+          if (lo >= 0 && hi < (bound.imm as number))
+            tx.replaceStmt(
+              last.id,
+              { op: 'br', to: last.else },
+              {
+                because: [
+                  `fact:ranges(${f.name})@r${tx.rev - 1}: ${f.locals[index.imm as number].name} in [${lo}, ${hi}]`,
+                ],
+                note: `index is within the fixed bound ${bound.imm}`,
+              },
+            );
+        }
+        continue;
+      }
+      if (!isLength(c.args[1])) continue;
       const idx = resolve(last.id, c.args[0]),
         buf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number;
       if (idx.local === null) continue;

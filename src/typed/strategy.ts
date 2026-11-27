@@ -1,6 +1,6 @@
 /**
  * Pipelines as Strategy IR plans (E6). A named pipeline becomes a `sequence` of `apply` nodes, one per pass, each
- * an algorithm `typed.<pass>@1` registered through `passAlgorithm`. The interpreter records the plan's execution
+ * a versioned algorithm registered through `passAlgorithm`. The interpreter records the plan's execution
  * (nodes, values, events); every pass application is gated by the optimization contract against r0, and the pass
  * results are handed to `onResult`, which is where a host keeps its revision timeline. A contract rejection is a
  * strategy rejection, so plans can use `attempt` or `fork` around a risky pass.
@@ -24,7 +24,7 @@ export function pipelinePlan(
   if (!passes) throw new Error(`unknownPipeline: no pipeline "${name}"`);
   const steps: StrategyNode[] = passes.map((p, i) => {
     if (!PASSES[p]) throw new Error(`unknownPass: no pass named "${p}"`);
-    const node = apply(`${name}/${i}:${p}`, algorithm(`typed.${p}`, '1'));
+    const node = apply(`${name}/${i}:${p}`, algorithm(PASSES[p].id, PASSES[p].version));
     // a pass whose rejection the plan tolerates: the program stays as it was and the plan goes on
     return options.tolerate?.includes(p)
       ? attempt(`${name}/${i}:${p}?`, node, apply(`${name}/${i}:${p}/keep`, algorithm('typed.keep', '1')), {
