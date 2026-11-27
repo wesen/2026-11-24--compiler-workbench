@@ -1,0 +1,6 @@
+{"name":"matmul","scheduleAndEmitMs":88.40267899999998,"firstMs":6514.279595,"repeatMs":291.905033,"batches":2}
+{"name":"softmax","scheduleAndEmitMs":30.40118700000039,"firstMs":6220.6620379999995,"repeatMs":287.74825599999895,"batches":2}
+{"name":"layernorm","scheduleAndEmitMs":9.43782199999987,"firstMs":6949.587532000001,"repeatMs":358.45895700000256,"batches":2}
+{"name":"attention","scheduleAndEmitMs":92.79775399999926,"firstMs":7975.584823999998,"repeatMs":622.0758340000029,"batches":3}
+{"name":"mlp","scheduleAndEmitMs":17.367286000000604,"firstMs":6302.221766000002,"repeatMs":499.1733430000022,"batches":3}
+{"name":"conv2d","scheduleAndEmitMs":8.443419000002905,"firstMs":10226.403812000004,"repeatMs":7113.668269999995,"batches":2}

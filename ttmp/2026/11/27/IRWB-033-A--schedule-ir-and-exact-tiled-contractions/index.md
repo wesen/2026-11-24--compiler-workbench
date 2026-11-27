@@ -1,7 +1,7 @@
 ---
 Title: Schedule IR and exact tiled contractions
 Ticket: IRWB-033-A
-Status: active
+Status: complete
 Topics:
     - tensor
     - gpu
@@ -11,8 +11,8 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-27T10:04:01.05044099-05:00
+Summary: Checked CUDA schedule pipeline with exact tiled contractions, fusion and GB10 measurements.
+LastUpdated: 2026-11-27T10:54:25.154321187-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -21,22 +21,14 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Stage 6 introduces the v6 schedule artifact and checks its rewrites before CUDA emission.
 
-## Key Links
+## Documents
 
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- tensor
-- gpu
-- verification
+- [Design](design-doc/01-schedule-ir-and-ordered-cuda-tiles.md)
+- [Final report](reference/02-final-report.md)
+- [Implementation diary](reference/01-implementation-diary.md)
+- [Replay scripts and raw GPU evidence](scripts/)
 
 ## Tasks
 

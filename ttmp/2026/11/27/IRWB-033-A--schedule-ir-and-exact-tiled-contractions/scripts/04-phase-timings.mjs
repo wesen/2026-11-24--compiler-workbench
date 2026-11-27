@@ -33,8 +33,8 @@ function instrumentPhases(source, fused, count) {
   if (cursor !== count) throw Error('Expected ' + count + ' phase launches, got ' + cursor);
   // The observer variant is invoked once after synchronization per measured iteration.
   const observed = preamble.replace(
-    'const Launch& launch, bool benchmark)',
-    'const Launch& launch, bool benchmark, const auto& observe)',
+    'template <class Launch> static double time_kernels(const Launch& launch, bool benchmark)',
+    'template <class Launch, class Observe> static double time_kernels(const Launch& launch, bool benchmark, const Observe& observe)',
   ).replace('    check(cudaEventElapsedTime(&ms[i], start.handle, stop.handle));',
     '    check(cudaEventElapsedTime(&ms[i], start.handle, stop.handle));\n    observe();');
   const work = observed.lastIndexOf('  if (');
@@ -79,6 +79,7 @@ for (const key of requested.length ? requested : Object.keys(programs)) {
         (((i + 1) * (257 + 2 * j)) % 8191 - 4095) / 2 ** 18),
     }];
   }));
+  const fusedPhases = name === 'mlp' ? 2 : 3;
   const paths = new Map();
   try {
     for (const fuse of [true, false]) {
@@ -86,7 +87,7 @@ for (const key of requested.length ? requested : Object.keys(programs)) {
       paths.set(fuse, path);
       const source = cudaSource(program, name, { fuse });
       const instrumented = key === 'large' ? instrumentClock(source) :
-        instrumentPhases(source, fuse, fuse ? 3 : fn.statements.length);
+        instrumentPhases(source, fuse, fuse ? fusedPhases : fn.statements.length);
       await writeFile(join(path, 'main.cu'), instrumented);
       await writeFile(join(path, 'inputs.bin'), encodeCudaCases(fn, [inputs]));
     }
@@ -98,7 +99,7 @@ for (const key of requested.length ? requested : Object.keys(programs)) {
         const samples = {};
         for (const match of evidence.matchAll(/^phase (\d+) ([.\d]+)$/gm))
           (samples[match[1]] ??= []).push(Number(match[2]));
-        if (key !== 'large' && Object.keys(samples).length !== (fuse ? 3 : fn.statements.length))
+        if (key !== 'large' && Object.keys(samples).length !== (fuse ? fusedPhases : fn.statements.length))
           throw Error('Missing timing samples: ' + evidence);
         const medians = Object.fromEntries(Object.entries(samples).map(([phase, all]) =>
           [phase, all.sort((a,b) => a-b)[1]]));

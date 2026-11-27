@@ -9,7 +9,9 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/schedule.ts
+      Note: Schedule artifact and checked strategy
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T10:04:31.021589723-05:00
@@ -48,3 +50,9 @@ Capture the base from this checkout before editing. Use alternating benchmark ca
 - Reassociated accumulation, FMA and tensor cores each need new arithmetic kinds and contracts.
 - A general schedule interpreter or affine dependence solver needs broader consumers.
 - Double buffering and vector loads need a measured bottleneck to justify extra layout and tail machinery.
+
+## As built
+
+The row-local register patch failed the numerical and performance experiment. The third pass, `tensor.partition-contractions`, instead adds alternate launch phases to legal row groups, with explicit materialization of cross-phase tensors. It keeps the row schedule available and can include same-element epilogues in the first contraction phase. Each phase uses the ordinary grid coverage rule to decide whether to tile. The GPU check now forces three paths for a group with phases.
+
+The tile covers 32 × 64 outputs in 16-term stripes with 128 lanes and 16 accumulators per lane. Full tiles use an aligned specialization. The strategy requires at least one wave of blocks on the GB10, and the phase selector also accounts for the cost of intermediate traffic and the available device bytes. Measurements and their limits are in the [final report](../reference/02-final-report.md).
