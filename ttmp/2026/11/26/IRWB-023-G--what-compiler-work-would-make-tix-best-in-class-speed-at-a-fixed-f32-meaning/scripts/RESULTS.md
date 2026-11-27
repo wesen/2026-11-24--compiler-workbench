@@ -1,3 +1,22 @@
+---
+Title: Measured results, IRWB-023-G
+Ticket: IRWB-023-G
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: Every number this round measured, with the script that produced it.
+LastUpdated: 2026-11-26T22:25:00-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
 # Measured results, IRWB-023-G
 
 All numbers on the NVIDIA GB10 (sm_121, 48 SMs) through `tools/cuda-remote.mjs --timed`, CUDA 13.0,
