@@ -28,13 +28,18 @@ const neutral = (text, item, letter) => text
   .replace(/r2-(sh|ah|op|fa)(-irwb-023-[a-d]|\/irwb-023-[a-d])?/g, 'r2-branch')
   .replace(/\.claude\/worktrees\/[\w.-]+/g, 'WORKTREE')
   .replace(NAMES, 'AGENT');
-const TEXT = /\.(md|mjs|js|ts|cu|cuh|json|txt|py|sh|csv|tsv|log)$/i;
+const skipped = [];
 const copy = (src, dst, item, letter) => {
   fs.mkdirSync(dst, { recursive: true });
   for (const e of fs.readdirSync(src, { withFileTypes: true })) {
     const from = path.join(src, e.name), name = neutral(e.name, item, letter), to = path.join(dst, name);
     if (e.isDirectory()) copy(from, to, item, letter);
-    else if (TEXT.test(e.name) && fs.statSync(from).size < 2e6) fs.writeFileSync(to, neutral(fs.readFileSync(from, 'utf8'), item, letter));
+    else {
+      // any text file, whatever its extension (the first version matched extensions and dropped every .jsonl log)
+      const buf = fs.readFileSync(from);
+      if (buf.length < 5e6 && !buf.includes(0)) fs.writeFileSync(to, neutral(buf.toString('utf8'), item, letter));
+      else skipped.push(path.relative(src, from));
+    }
   }
 };
 fs.rmSync(out, { recursive: true, force: true });
@@ -54,4 +59,4 @@ fs.writeFileSync(path.join(T, 'various/results/blind-key-r2.json'), JSON.stringi
 const leaks = [];
 const scan = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) scan(p); else { const t = fs.readFileSync(p, 'utf8'); const m = t.match(/IRWB-023|claude|anthropic|openai|codex|\bsol\b|astra|opus|fable/i); if (m) leaks.push(`${path.relative(out, p)}: ${m[0]}`); } } };
 scan(out);
-console.log('packed', blind.map(b => `${b.name}`).join(' '), '| leaks:', leaks.length ? leaks.slice(0, 20).join('; ') : 'none');
+console.log('packed', blind.map(b => `${b.name}`).join(' '), '| skipped (binary or over 5 MB):', skipped.length ? skipped.join(', ') : 'none', '| leaks:', leaks.length ? leaks.slice(0, 20).join('; ') : 'none');

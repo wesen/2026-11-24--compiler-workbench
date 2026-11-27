@@ -758,3 +758,28 @@ I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineerin
   - An exact tiled 512³ matmul takes 0.054–0.058 ms in three independent cells, 1.6–1.75× cuBLAS. My hypothesis of exact parity with cuBLAS at 512³ is refuted.
   - cuBLAS at 4096³ equals a sequential FMA fold bit for bit (Fable and Opus).
   - A parallel fold that stays bit-identical to the sequential one (Fable's parity transducer; Astra's even-translation certificate) was found by two cells. The judge found no published version.
+
+## Step 30: the Codex judge reverses the Claude judge; a pack bug of mine; both judges rerun
+
+- **The Codex judge** (Sol, high; `results/r2-judges/run1-codex-sol.md`), mapped through the key:
+
+  | model | Claude judge, run 1 | Codex judge, run 1 | Codex judge's errors | Claude judge's errors |
+  |---|---|---|---|---|
+  | Astra | 7 | **9** | 1 | 0 |
+  | Sol | 6 | 8 | 3 | 0 |
+  | Fable | 8 | 7 | 7 | 4 |
+  | Opus | **9** | 6 | 12 | 3 |
+
+  - **Each judge ranks its own family's two documents first and second,** a complete reversal.
+  - **Within each family, the two judges agree:** Opus over Fable under the Claude judge, Astra over Sol under the Codex judge. Across families, each judge ranks the other family's documents in the same order (Claude judge: Astra over Sol; Codex judge: Fable over Opus).
+  - **Correctness is where they agree** in direction. Both find the Codex documents more correct (Claude judge 9 and 9 against 7 and 7; Codex judge 9 and 8 against 4 and 5). The Codex judge found 23 errors against the Claude judge's 7, and many look substantive and checkable. For example:
+    - Fable's normalizer collapses the literals `0` and `-0`;
+    - Fable's "2.49× over the fixed tolerance" compares against the sequential f32 fold where the gate uses the f64 origin;
+    - Opus's batch invariance fails for `y[i,j] = x[i,j] + M`;
+    - Opus's residue recipe in the document differs from its code;
+    - Opus's "three kernels" for attention omits a transpose launch.
+- **A pack bug, mine.** `23-pack-r2.mjs` copied files by an extension list that matched `.json` but not `.jsonl`. It dropped 8 result logs each from Sol and Astra and 5 from Opus, and none from Fable. The Codex judge deducted for "cited results missing" (Sol #3, Opus #12, Astra #1), so the error was not neutral across documents.
+  - The fix: copy any file without NUL bytes, under 5 MB. Repacked with seed 13 (same letters); file counts now equal the tickets (16, 26, 55, 90); no leaks.
+  - Both judges are rerunning fresh on the complete pack (`claude-2.md`, `codex-sol-2.md`).
+  - Run 1 stays as a record. The family reversal appears even with the bug: the Codex judge ranked Sol second although Sol lost logs and Fable lost none. With run 2, it also gives each judge's run-to-run variance.
+- **For the playbook:** a blind pack must be checked for completeness (file counts against the source), not only for leaks. And a cross-family judge pair is necessary: a single-family judge would have produced a confident ranking that the other family reverses.
