@@ -87,3 +87,18 @@ Correction while writing: attention's "max budget fraction 5.64e-2" means the wo
 - P. Tillet, H. T. Kung, D. Cox, "Triton: An Intermediate Language and Compiler for Tiled Neural Network Computations", MAPL 2019. https://dl.acm.org/doi/10.1145/3315508.3329973
 - T. Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", NeurIPS 2022 — online-softmax reordering as the contrast case for exact fusion.
 - J. Demmel, Y. Hida, "Accurate and Efficient Floating Point Summation" (2004) — compensated/cascade summation with input-size-independent error bounds.
+
+## 4. Design document written (2026-11-26)
+
+The design document `design-doc/01-best-in-class-for-tix-trustworthy-speed.md` (~4,900 words)
+defines best in class as **trustworthy speed** (bit-exact or certified transformations,
+performance near vendor libraries, checks that run at deployment shapes) and ranks three
+proposals: (1) meaning-preserving tiling and fusion as checked passes, with the order-
+sensitivity classification derived from the IR's free-vs-fold binder distinction; (2) certified
+error budgets replacing sampled tolerance for reassociation, with magnitude-aware budgets;
+(3) the deployment-scale f64 oracle. Staged plan: see-the-truth first, then tile, then fuse,
+then certificates, then autotuning. "What did not work" records the 12 ms fused-exact softmax
+(serial transcendental in the fold chain), the 1.08x first tiling, the harness index-decode bug,
+the oracle literal-fidelity bug, and the non-transferability of sampled gate evidence.
+
+Ticket marked complete; changelog and index updated. Commits 8bfb23a, 438db80, e21dfd0.
