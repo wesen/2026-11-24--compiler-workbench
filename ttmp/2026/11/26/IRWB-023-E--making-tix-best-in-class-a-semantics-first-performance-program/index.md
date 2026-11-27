@@ -11,7 +11,13 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: abs:///home/manuel/code/wesen/2026-11-24--compiler-workbench/src/tensor/contract.ts
+      Note: Sampled case recipe and the 2e-6+2e-5|r| budget under audit
+    - Path: abs:///home/manuel/code/wesen/2026-11-24--compiler-workbench/src/tensor/cuda-source.ts
+      Note: One kernel per statement, one thread per element, no contraction
+    - Path: abs:///home/manuel/code/wesen/2026-11-24--compiler-workbench/src/tensor/evaluate.ts
+      Note: The exact f32 meaning every pass is judged against
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T21:36:12.096934514-05:00

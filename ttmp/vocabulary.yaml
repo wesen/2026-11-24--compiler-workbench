@@ -21,6 +21,10 @@ topics:
       description: Meaning checks, oracles, mutation testing and proofs of passes and rules
     - slug: research
       description: Research-grade directions, sketch tickets and design spaces
+    - slug: tensor
+      description: Tensor programs and index-notation languages
+    - slug: numerics
+      description: Floating-point semantics, error analysis and reproducibility
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
