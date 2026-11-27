@@ -772,7 +772,15 @@ annotations on the statement, which the checker verifies:
 | `commute` | split-K, tree reductions, parallel `j` | `combine(A,B) = combine(B,A)` | a real identity (holds: max and `+` commute), but *not* exact in f32, and not needed for §13 |
 
 For attention's combine, all three have one-line real proofs *because the combine is the union
-operation* (Fact 2), and `identity` is exact in f32 too. `assoc` is exact over ℝ and not in f32.
+operation* (Fact 2), and `identity` is exact in f32 too — with one edge case that any
+implementation must know about. `combine(from, from)` is `(−∞, exp(−∞ − (−∞)), …)`, i.e. `exp(NaN)`:
+**two empty states do not combine**. Over ℝ the expression is `0·0` written as `exp(−∞)·0` and the
+convention saves it; in f32 `−∞ − (−∞)` is NaN and carries. A left fold never does this, because its
+first combine has a finite element on one side (inputs are finite), and a blocked fold does not
+either, because every block has at least one index. A *parallel* combine of two partial folds can,
+if the `j` axis is shorter than the number of workers — which is one more reason §19 puts split-K
+behind `commute` and a partition that keeps every part non-empty. `assoc` is exact over ℝ and not
+in f32.
 `commute` over ℝ holds (max and addition commute), which is why a split-K version is
 *mathematically* available even though §13 does not need it — and, since it is not exact in f32,
 that version would need its own evidence record rather than inheriting R5's.
@@ -1542,7 +1550,7 @@ a stricter policy is computable later.
 
 - A blocked index axis in Tix as a first-class shape (E2 today is an annotation).
 - Masks as range predicates on reductions (`where`), instead of additive score terms.
-- Split-K / tree reductions, which need `commute` (§11.4) and a parallel lowering.
+- Split-K / tree reductions, which need `commute` (§11.4), a partition with no empty part, and a parallel lowering.
 - A second-pass "recompute" rule, which is what one-pass softmax needs (§15.2 item 2).
 - Rule selection as a strategy (IRWB-010's search over the same table, with the sequence as a certificate).
 - The backward pass (three more programs with the same shape; not designed here).
