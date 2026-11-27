@@ -992,11 +992,12 @@ The user set the cells for implementation tasks from now on, and asked to start 
 
 ## Step 38: T3's first cells finish; one Pi cell relaunched
 
-- **Codex cells**, all done within about an hour and a half of launch, with small diffs to `src/`, `tests/` and `tools/`:
+- **Codex cells** (T3 launched at 04:00:50Z): all done within 16 minutes, with small diffs to `src/`, `tests/` and `tools/`. Terra low took 4 minutes, Astra medium 10, Sol medium 15 (from the last-message times):
   - Sol medium (A): +386 −37. Fused kernels softmax 1, layernorm 1, attention 2, mlp 2.
   - Astra medium (B): +264 −39. Fused kernels softmax 1, layernorm 1, attention 3, mlp 2.
   - Terra low (C): +69 −12. It reports itself incomplete: only pointwise chains and some epilogues are fused, softmax and layernorm still have 4 kernels each, and per-kernel bytes are missing.
 - **Fable (E)**: +1114 −88. It adds a kernel-plan artifact (`tensor.kernels`) between Tix and CUDA, with legality as that IR's validator, row kernels with a shared-memory or global-scratch path, and new contract cases (long rows, a spilled run) shown necessary by mutants. Every program fuses to 1 kernel. It reports six framework findings.
 - **Kernel counts differ in the reports.** Every agent counts 6 unfused kernels for attention. The hidden evaluator counts 5 `__global__` definitions on `t3-base`, perhaps because the agents count launches. The evaluator counts the same way for every cell, so this changes how the report reads, not which cell ranks higher.
-- **Cell J (GLM 5.3 Flash max) failed at launch.** LunaRoute returned "the upstream stream failed before completion" within seconds, with no commits. Its first attempt is kept in `kit/t3-gf-max/attempt-1/`. It was relaunched alone with `scripts/41-relaunch-t3-j.sh`, a new file because 33- is still running. J starts about 5.5 hours after the others, so the GPU will be quieter for it and its wall-clock time is not comparable.
+- **Cell J (GLM 5.3 Flash max) failed.** After 21 minutes of work (session 04:00:51Z to 04:21:59Z), LunaRoute returned "the upstream stream failed before completion". It had made no commits. Its first attempt is kept in `kit/t3-gf-max/attempt-1/`. It was relaunched alone with `scripts/41-relaunch-t3-j.sh`, a new file because 33- is still running. The relaunch started at about 04:50Z, 50 minutes after the others, so J shares the GPU with fewer cells and its wall-clock time is not comparable.
+- **Correction:** an earlier draft of this step said the Codex cells took "about an hour and a half", J failed "within seconds", and J restarted "5.5 hours" after the others. I wrote all three without checking the timestamps; this step now gives the checked times.
 - **Evaluation waits for all ten cells,** then runs one cell at a time so benchmark times are not perturbed.
