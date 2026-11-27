@@ -1,27 +1,34 @@
 ---
 Title: 'F34: honest evidence for recorded checks'
 Ticket: IRWB-040-C
-Status: active
+Status: complete
 Topics:
-    - framework
-    - refactor
-    - contracts
+    - compiler
+    - verification
+    - ir
 DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
+Summary: "F34 done: a recorded check carries checked-sampled, checked-exact or plain checked, decided from its evidence."
 LastUpdated: 2026-11-27T17:54:31.591378083-05:00
-WhatFor: ""
-WhenToUse: ""
+WhatFor: "Reviewing step F34 of IRWB-039"
+WhenToUse: "Before merging this branch, or when a later step maps its own method names to assurance"
 ---
 
 # F34: honest evidence for recorded checks
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Step F34 of the IRWB-039 framework refactor (design-doc row F34): `AnalysisManager.invariantInternal` stamped every
+invariant check `assurance: 'checked'`, and `assuranceOf` called anything that was not `sampled` exact, including no
+evidence and a misspelled method. Now a check records `checked-sampled` for sampled differential evidence,
+`checked-exact` for `exhaustive`, `exhaustive-32` or `proof`, and plain `checked` for anything else — never exact.
+
+- Diary: [reference/01-implementation-diary-f34-honest-evidence.md](./reference/01-implementation-diary-f34-honest-evidence.md)
+- Report: [reference/02-report-f34-honest-evidence-for-recorded-checks.md](./reference/02-report-f34-honest-evidence-for-recorded-checks.md)
+- Probe: `scripts/01-assurance-mapping.mjs`
 
 ## Key Links
 
@@ -30,7 +37,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 
