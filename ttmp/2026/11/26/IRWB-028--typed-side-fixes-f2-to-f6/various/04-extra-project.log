@@ -1,0 +1,18 @@
+Missing-row diagnostic verified.
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (6356.572289ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (22765.482778ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 8286 decided cases (14 at the step limit) (4781.590965ms)
+✔ P2.6: corpus parity (all projects) (49455.118441ms)
+✔ A1: on every corpus function at r0, SSA def-use agrees with reaching definitions (3206.025085ms)
+✔ P4.2: the corpus lifted from the tape gives the inspection path's tables, or the same meaning where a checked address differs (4513.675964ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49851.430464
+ 
+
+exit=0

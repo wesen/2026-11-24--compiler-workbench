@@ -1,6 +1,7 @@
 // IRWB-001 P4.2 (inventory step 2): lifting from the front end's tape. Candela lifts whole; the Compiler Workbench
 // corpus lifted from the tape gives the tables the inspection path gives, except where the Wasm encoding expands a
 // tape pseudo-op (a checked address), and there the two mean the same.
+import { expectation } from './corpus-expectations.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installVendor } from '../../tools/node-vendor.mjs';
@@ -74,15 +75,15 @@ test('P4.2: local types inferred from the tape agree with the front end\'s local
 });
 
 test('P4.2: the corpus lifted from the tape gives the inspection path\'s tables, or the same meaning where a checked address differs', async () => {
-  let identical = 0, checked = 0;
   const manager = new AnalysisManager();
   for (const id of projectIds()) {
+    const expected = expectation(id);
     const p = projectSource(id, projectFiles(id));
     let wasm;
     try {
       wasm = ingest(p.name, p.source).toNative();
     } catch (e) {
-      if (e instanceof LiftError) continue;
+      if (e instanceof LiftError) { assert.equal(expected.tape, 'skipped', id); continue; }
       throw e;
     }
     const tape = ingest(p.name, p.source, { tape: true }).toNative();
@@ -91,7 +92,7 @@ test('P4.2: the corpus lifted from the tape gives the inspection path\'s tables,
     const noBytes = v => ({ ...v, frontEnd: { ...v.frontEnd, wasmBytes: 0 } });
     if (!Object.values(tape.ops).some(o => o.op.startsWith('text.') || o.op.startsWith('array.'))) {
       assert.equal(canonical(noBytes(tape)), canonical(noBytes(wasm)), `${id}: identical, source positions included`);
-      identical++;
+      assert.equal(expected.tape, 'identical', id);
       continue;
     }
     // a checked address is one value caddr(receiver, position) on the tape; the Wasm encoding expands it into a
@@ -105,7 +106,6 @@ test('P4.2: the corpus lifted from the tape gives the inspection path\'s tables,
       })
     ).evidence;
     assert.equal(ev.disagree, 0, `${id}: ${JSON.stringify(ev.counterexamples)}`);
-    checked++;
+    assert.equal(expected.tape, 'checked', id);
   }
-  assert.ok(identical > 0 && checked > 0);
 });

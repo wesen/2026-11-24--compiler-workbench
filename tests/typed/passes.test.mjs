@@ -1,4 +1,5 @@
 // P2.4 passes and P2.6 O2: the built-in passes on the framework, gated by the meaning check, with provenance.
+import { expectation, bookProjects } from './corpus-expectations.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installVendor } from '../../tools/node-vendor.mjs';
@@ -81,16 +82,20 @@ test(`P2.6: corpus parity (${FULL ? 'all projects' : 'subset'})`, { timeout: 600
   const ids = FULL ? projectIds() : SUBSET;
   let fns = 0, total = 0, agree = 0, inconclusive = 0;
   for (const id of ids) {
+    const expected = expectation(id);
     const p = project(id), r0 = ingestProject(p), manager = new AnalysisManager();
     const run = await runPipeline(r0, p.meta.pipeline, { manager, inputs: p.meta.inputs });
     const rejected = run.steps.filter(s => s.rejected).map(s => s.pass);
     assert.deepEqual(rejected, p.meta.pipeline === 'broken' ? ['div-to-shift'] : [], id);
     const ev = (await manager.checkInvariant(meaningKept({ inputs: p.meta.inputs, count: 100 }), { origin: r0, candidate: run.artifact })).evidence;
     assert.equal(ev.disagree, 0, `${id}: ${JSON.stringify(ev.counterexamples)}`);
-    fns += Object.keys(r0.value.fns).length; total += ev.total; agree += ev.agree; inconclusive += ev.inconclusive;
+    const actual = { fns: Object.keys(r0.value.fns).length, total: ev.total, agree: ev.agree, inconclusive: ev.inconclusive };
+    assert.deepEqual(actual, expected.parity, `${id}: pipeline cases`);
+    if (bookProjects.includes(id)) { fns += actual.fns; total += actual.total; agree += actual.agree; inconclusive += actual.inconclusive; }
   }
   assert.equal(total, fns * 100);
   assert.equal(agree + inconclusive, total);
+  if (FULL) assert.deepEqual({ fns, total, agree, inconclusive }, { fns: 70, total: 7000, agree: 6986, inconclusive: 14 });
 });
 
 test('P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner', async () => {
