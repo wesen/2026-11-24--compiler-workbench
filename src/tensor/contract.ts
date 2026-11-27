@@ -27,13 +27,15 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, c
   ].sort();
   const seen = new Set<string>(),
     out: Sample[] = [];
+  // 'mixed' gives every shape symbol a different size, so a pass that confuses two symbols changes some case
+  // (a cycle of three sizes made symbols three apart equal in every case: IRWB-019 F21). The zero cases cover
+  // empty extents.
+  const distinct = [3, 5, 7, 2, 6, 4, 9, 8, 10, 11];
   const assignments = [1, 3, 4, 7, 'mixed'].map(n =>
-    symbols.map((_, i) => (typeof n === 'number' ? n : [3, 5, 7][i % 3])),
+    symbols.map((_, i) => (typeof n === 'number' ? n : (distinct[i] ?? i + 3))),
   );
-  if (cuda) {
-    assignments.push(symbols.map(() => 0));
-    for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
-  }
+  assignments.push(symbols.map(() => 0));
+  for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
   for (const shapeValues of assignments) {
     const key = JSON.stringify(shapeValues);
     if (seen.has(key)) continue;
@@ -124,7 +126,9 @@ export function meaningGate(origin: Artifact<Module>, relation: Relation) {
     const random = seededRandom(seed);
     for (const [i, fn] of origin.value.functions.entries()) {
       const group = cases(fn, baseline.value.functions[i], relation, random);
-      if (!group.length) return { ok: false, reason: 'No comparable case for ' + fn.name };
+      // empty-extent cases are compared, but only a case with every extent nonempty counts as coverage
+      if (!group.some(c => c.shapeValues.every(v => v > 0)))
+        return { ok: false, reason: 'No comparable case for ' + fn.name };
       samples.push(...group);
     }
     const ports = { baseline: TixIR, subject: TixIR };

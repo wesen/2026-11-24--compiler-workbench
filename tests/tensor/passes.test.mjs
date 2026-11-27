@@ -80,3 +80,33 @@ test('exact comparison detects a changed zero sign', () => {
     e => rejected(e) && e.evidence.counterexamples.some(c => c.reason.includes('2147483648')),
   );
 });
+
+test('the meaning gate tells every pair of shape symbols apart (IRWB-019 F21)', () => {
+  // inline on mlp, plus a mutation that sums the first contraction over extent O instead of D. The sampled
+  // sizes used to make D = O in every case, so the gate accepted it.
+  const mlp =
+    compileTix(`fn mlp(x: f32[N, D], w: f32[D, H], bias: f32[H], v: f32[H, O], outBias: f32[O]): f32[N, O] {
+  h[i, j] = (sum(d) x[i, d] * w[d, j]) + bias[j];
+  g[i, j] = 0.5 * h[i, j] * (1 + tanh(0.79788456 * (h[i, j] + 0.044715 * h[i, j] * h[i, j] * h[i, j])));
+  y[i, j] = (sum(k) g[i, k] * v[k, j]) + outBias[j];
+  return y;
+}`);
+  const isD = dim => JSON.stringify(dim) === JSON.stringify({ constant: 0, terms: [['D', 1]] });
+  const shorten = e => {
+    if (!e || typeof e !== 'object') return;
+    if (e.kind === 'reduce')
+      for (const a of e.axes)
+        if (a.extent?.kind === 'dim' && isD(a.extent.dim)) a.extent.dim = { constant: 0, terms: [['O', 1]] };
+    for (const v of Object.values(e)) if (v && typeof v === 'object') shorten(v);
+  };
+  const alias = {
+    ...inlinePass,
+    run(ctx) {
+      const native = structuredClone(inlinePass.run(ctx).native);
+      for (const s of native.functions[0].statements) shorten(s.expr);
+      return { native };
+    },
+  };
+  assert.throws(() => checked(mlp, alias, 'exact'), rejected);
+  assert.doesNotThrow(() => checked(mlp, inlinePass, 'exact'));
+});
