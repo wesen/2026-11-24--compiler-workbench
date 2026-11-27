@@ -8,7 +8,8 @@
  * first counterexamples. Inconclusive cases (for example a step limit hit by either side) are counted and never
  * treated as a verdict; a check with no decided case fails, because it has established nothing.
  */
-import { isDeepStrictEqual } from 'node:util';
+import { fingerprint } from '../core/data.js';
+import { ContractError } from './analysis-manager.js';
 import { defineInvariant } from './definitions.js';
 import type { CheckResult, InvariantDefinition, PortValue, PortValues, Ports } from './types.js';
 
@@ -146,6 +147,7 @@ export function differentialSpec<P extends Ports>(inv: DifferentialInvariant<P>)
 interface Reuse {
   readonly key: string;
   readonly cases: readonly unknown[];
+  readonly caseDigest: string;
   readonly outcomes: unknown[];
   readonly verdicts: Map<string, Decided>;
 }
@@ -170,6 +172,31 @@ export function differentialStats(reset = false): Readonly<typeof STATS> {
   return out;
 }
 
+/** Encode case values as canonical plain data, preserving typed-array bytes and special numbers. */
+function caseDigest(cases: readonly unknown[]): string {
+  function encode(value: unknown): unknown {
+    if (value === null) return ['null'];
+    if (typeof value === 'number')
+      return ['number', Object.is(value, -0) ? '-0' : String(value)];
+    if (typeof value === 'string' || typeof value === 'boolean' || typeof value === 'bigint' || value === undefined)
+      return [typeof value, String(value)];
+    if (ArrayBuffer.isView(value)) {
+      const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+      return ['view', Object.getPrototypeOf(value).constructor.name, Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')];
+    }
+    if (value instanceof ArrayBuffer)
+      return ['buffer', Array.from(new Uint8Array(value), b => b.toString(16).padStart(2, '0')).join('')];
+    if (Array.isArray(value)) return ['array', value.map(encode)];
+    if (value instanceof Date) return ['date', String(value.getTime())];
+    if (value instanceof Map) return ['map', [...value].map(([k, v]) => [encode(k), encode(v)])];
+    if (value instanceof Set) return ['set', [...value].map(encode)];
+    if (typeof value === 'object')
+      return ['object', Object.keys(value).sort().map(k => [k, encode((value as Record<string, unknown>)[k])])];
+    throw new Error('Unsupported differential case value');
+  }
+  return fingerprint(encode(cases));
+}
+
 function prepare<P extends Ports, Case, Outcome>(
   spec: DifferentialSpec<P, Case, Outcome>,
   inputs: PortValues<P>,
@@ -181,16 +208,20 @@ function prepare<P extends Ports, Case, Outcome>(
   let reuse = REUSE.get(key);
   if (reuse) {
     const current = spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count);
-    if (!isDeepStrictEqual(reuse.cases, current)) throw new Error(`Differential baseline key ${bk} produced different cases`);
+    if (reuse.caseDigest !== caseDigest(current))
+      throw new ContractError('baseline-key', `Differential baseline key ${bk} produced different cases`);
     REUSE.delete(key);
   }
-  else
+  else {
+    const cases = spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count);
     reuse = {
       key,
-      cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),
+      cases,
+      caseDigest: caseDigest(cases),
       outcomes: [],
       verdicts: new Map(),
     };
+  }
   REUSE.set(key, reuse);
   while (REUSE.size > REUSE_MAX) REUSE.delete(REUSE.keys().next().value!);
   return { cases: reuse.cases as readonly Case[], reuse };
