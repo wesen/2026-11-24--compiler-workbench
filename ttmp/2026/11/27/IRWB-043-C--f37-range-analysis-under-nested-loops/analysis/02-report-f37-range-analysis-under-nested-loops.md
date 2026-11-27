@@ -66,7 +66,8 @@ and a head the loop analysis does not know (irreducible, as `rotate` can make) f
   `dense / 8 → dense >> 3`, `.161` `from / 16 → from >> 4`) are now made earlier by `strength`, which makes them
   now that the ranges know `dense ≥ 0`; total edits are equal (62), the instruction counts at both seeds (10 cases
   seed 7; 20 cases seed 1103) and the image size are **unchanged**, so no project is slower.
-  `tools/parity.mjs`: 50 projects, 135 functions, 8300 cases, 8286 decided, 0 failures.
+  `tools/parity.mjs`: 50 projects, 135 functions, 8300 cases, 8286 decided, 0 failures. Re-run on the last commit
+  (`76e55d8`'s parent, code unchanged since), same three lines, exit code 1 for that one allowed difference.
 * **Suites**: typed 188 tests, 184 pass, 0 fail, 2 todo (F36, F38 — other steps), 2 skipped; framework 242 tests,
   238 pass, 0 fail, 4 todo; workbench 25 tests, 24 pass, 0 fail, 1 skipped (`IRWB_FULL=1`); tensor (without
   `*-gpu`) 45 tests, 44 pass, 0 fail, 1 todo.
