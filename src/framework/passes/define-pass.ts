@@ -168,7 +168,11 @@ function checkLegal<S, P>(
   if (!pass.legal) return;
   const verdict = pass.legal({ before, view, params });
   if (verdict?.ok !== true)
-    throw new PassError('illegal', `Pass ${pass.id}: ${verdict?.reason ?? 'not applicable'}`, verdict?.evidence);
+    throw new PassError(
+      'illegal',
+      `Pass ${pass.id}: ${verdict?.reason ?? 'not applicable'}`,
+      verdict?.evidence,
+    );
 }
 
 const glob = (patterns: readonly string[], kind: string) =>

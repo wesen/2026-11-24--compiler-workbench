@@ -67,7 +67,8 @@ export function variantForm(v: Variant): 'plain' | TiledForm | string {
   const stage = (o: 'm' | 'n') => v.stages.find(s => s.operand === o && s.at === 'r.0');
   const sm = stage('m'),
     sn = stage('n');
-  if (!sm || !sn || v.stages.length !== 2) return 'schedule not printable: both operands must be staged at r.0';
+  if (!sm || !sn || v.stages.length !== 2)
+    return 'schedule not printable: both operands must be staged at r.0';
   const f = (id: string) => at(id)!.factor!;
   if (at('m.0')!.bind === at('n.0')!.bind) return 'schedule not printable: m.0 and n.0 share a block index';
   return {
@@ -139,7 +140,11 @@ export function emitContraction(
       .join('')}256) ${name}(${params.join(', ')}) {`,
   ];
   // Members after the accumulator: in order, a member read later is a register, the stored ones are written.
-  const epilogue = (w: Writer, registers: Map<string, string>, store: (m: Statement, value: string) => void) => {
+  const epilogue = (
+    w: Writer,
+    registers: Map<string, string>,
+    store: (m: Statement, value: string) => void,
+  ) => {
     for (const m of members) {
       m.axes.forEach((a, p) => w.alias(a.id, `o${p}`));
       const value = w.scalar(m.expr);
@@ -147,8 +152,10 @@ export function emitContraction(
       if (stored.has(m.name)) store(m, value);
     }
   };
-  const memberLoad = (registers: Map<string, string>) => (e: Extract<Statement['expr'], { kind: 'load' }>, offset: Writer['offset']) =>
-    inGroup.has(e.name) ? registers.get(e.name)! : global(e, offset);
+  const memberLoad =
+    (registers: Map<string, string>) =>
+    (e: Extract<Statement['expr'], { kind: 'load' }>, offset: Writer['offset']) =>
+      inGroup.has(e.name) ? registers.get(e.name)! : global(e, offset);
   forms.forEach((form, v) => {
     lines.push(`  ${v ? 'else ' : ''}if constexpr (V == ${v}) {`);
     const registers = new Map<string, string>();
@@ -177,7 +184,9 @@ export function emitContraction(
       w.line('constexpr int TX = BN / TN, T = (BM / TM) * TX;');
       w.line('__shared__ __align__(16) float As[BK][BM + 4];');
       w.line('__shared__ __align__(16) float Bs[BK][BN + 4];');
-      w.line(`const U extent_m = ${product(sizes('m'))}, extent_n = ${product(sizes('n'))}, extent_r = ${product(sizes('r'))};`);
+      w.line(
+        `const U extent_m = ${product(sizes('m'))}, extent_n = ${product(sizes('n'))}, extent_r = ${product(sizes('r'))};`,
+      );
       w.line('const int tx = threadIdx.x % TX, ty = threadIdx.x / TX;');
       const [mx, nx] = f.gridX === 'm' ? ['x', 'y'] : ['y', 'x'];
       w.line(`const U m0 = static_cast<U>(blockIdx.${mx}) * BM, n0 = static_cast<U>(blockIdx.${nx}) * BN;`);
@@ -191,7 +200,9 @@ export function emitContraction(
         }
         w.line(`U ${prefix}rest = ${value};`);
         for (let i = axes.length - 1; i >= 0; --i) {
-          w.line(`const I ${prefix}${i} = static_cast<I>(${i ? `${prefix}rest % static_cast<U>(${w.dim(extent.get(axes[i])!)})` : `${prefix}rest`});`);
+          w.line(
+            `const I ${prefix}${i} = static_cast<I>(${i ? `${prefix}rest % static_cast<U>(${w.dim(extent.get(axes[i])!)})` : `${prefix}rest`});`,
+          );
           if (i) w.line(`${prefix}rest /= static_cast<U>(${w.dim(extent.get(axes[i])!)});`);
           w.alias(axes[i], `${prefix}${i}`);
         }
@@ -269,7 +280,9 @@ export function emitContraction(
       // The members' axes are the contraction's output axes, by position.
       for (const id of [...k.dims.b, ...k.dims.m, ...k.dims.n]) {
         const p = position.get(id)!;
-        w.line(`const I o${p} = ${k.dims.b.includes(id) ? `bz${k.dims.b.indexOf(id)}` : k.dims.m.includes(id) ? `om${k.dims.m.indexOf(id)}` : `on${k.dims.n.indexOf(id)}`};`);
+        w.line(
+          `const I o${p} = ${k.dims.b.includes(id) ? `bz${k.dims.b.indexOf(id)}` : k.dims.m.includes(id) ? `om${k.dims.m.indexOf(id)}` : `on${k.dims.n.indexOf(id)}`};`,
+        );
       }
       acc = 'acc[i][j]';
       epilogue(w, registers, (m, value) => {
@@ -311,12 +324,18 @@ export function emitContraction(
     )
     .join('');
   host.push(
-    `  const int variant_${name} = variant_mode >= 0 && variant_mode < ${k.variants.length} && (variant_mode == 0 || ${forms
-      .map((f, v) => (v && f !== 'plain' ? `(variant_mode == ${v} && fits_${name}_${v})` : ''))
-      .filter(Boolean)
-      .join(' || ') || 'false'}) ? variant_mode : ${rule.endsWith(': ') ? rule + '0' : rule};`,
+    `  const int variant_${name} = variant_mode >= 0 && variant_mode < ${k.variants.length} && (variant_mode == 0 || ${
+      forms
+        .map((f, v) => (v && f !== 'plain' ? `(variant_mode == ${v} && fits_${name}_${v})` : ''))
+        .filter(Boolean)
+        .join(' || ') || 'false'
+    }) ? variant_mode : ${rule.endsWith(': ') ? rule + '0' : rule};`,
   );
-  const args = [...dimensions.values(), ...Array.from(reads, t => tensorName(t) + '.ptr'), ...outputs.map(t => t + '.ptr')].join(', ');
+  const args = [
+    ...dimensions.values(),
+    ...Array.from(reads, t => tensorName(t) + '.ptr'),
+    ...outputs.map(t => t + '.ptr'),
+  ].join(', ');
   const launches = forms.map((f, v) => {
     if (f === 'plain')
       return `      if (variant_${name} == ${v}) ${name}<${v}><<<(count_${name} - 1) / 256 + 1, 256>>>(${args});`;

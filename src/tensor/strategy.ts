@@ -94,7 +94,11 @@ function schedule(fn: Fn, plan: FusionPlan, fuse: boolean) {
     if (c.kind !== 'contraction') continue;
     for (const t of tiles) {
       apply(variantPass, { kernel: k.name });
-      const v = { kernel: k.name, variant: (current.value.kernels.find(x => x.name === k.name) as ContractionKernel).variants.length - 1 };
+      const v = {
+        kernel: k.name,
+        variant:
+          (current.value.kernels.find(x => x.name === k.name) as ContractionKernel).variants.length - 1,
+      };
       apply(splitPass, { ...v, loop: 'm.0', factor: t.tm });
       apply(splitPass, { ...v, loop: 'm.0', factor: t.bm / t.tm });
       apply(splitPass, { ...v, loop: 'n.0', factor: t.tn });

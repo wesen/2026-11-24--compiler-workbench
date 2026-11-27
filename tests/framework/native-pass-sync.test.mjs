@@ -101,7 +101,12 @@ test('applyPass opens its edit only when the pass reads it (IRWB-019 F13)', asyn
 });
 
 test('a pass refuses an inapplicable step before run, in both apply functions (IRWB-033-D)', async () => {
-  const ir = defineIR({ id: 'probe.legal', version: '1', description: 'test', validate: v => assert.ok(Number.isInteger(v.n)) });
+  const ir = defineIR({
+    id: 'probe.legal',
+    version: '1',
+    description: 'test',
+    validate: v => assert.ok(Number.isInteger(v.n)),
+  });
   const entity = v => ({ id: 'n', kind: 'number', attributes: v });
   const adapter = defineAdapter({
     id: 'probe.legal.adapter',
@@ -128,7 +133,10 @@ test('a pass refuses an inapplicable step before run, in both apply functions (I
     run: ({ before }) => (ran++, { native: { n: before.value.n / 2 } }),
   });
   const odd = createIRArtifact(adapter, 'test', { n: 3 });
-  assert.throws(() => applyNativePassSync(pass, odd, () => ({ ok: true })), { code: 'illegal', message: /odd/ });
+  assert.throws(() => applyNativePassSync(pass, odd, () => ({ ok: true })), {
+    code: 'illegal',
+    message: /odd/,
+  });
   await assert.rejects(applyPass(pass, odd, { manager: new AnalysisManager() }), { code: 'illegal' });
   assert.equal(ran, 0);
   const even = createIRArtifact(adapter, 'test', { n: 4 });
