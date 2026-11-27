@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { checkLowering, compileTix, cudaSource, runTixCuda } from '../../dist/tensor/index.js';
-import { CudaIR, cudaArtifact, createCudaLowering, kernelCorrespondence } from '../../dist/tensor/cuda-contract.js';
+import {
+  CudaIR,
+  cudaArtifact,
+  createCudaLowering,
+  kernelCorrespondence,
+} from '../../dist/tensor/cuda-contract.js';
 import { decodeCudaCases, encodeCudaCases } from '../../dist/tensor/cuda-runtime.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
 
@@ -130,7 +135,8 @@ test('the lowering relation is exact: one ulp is rejected, a different NaN word 
 });
 
 test('lowering rejects statement IDs absent from the Tix artifact', async () => {
-  const engine = async (_source, f, cases) => cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
+  const engine = async (_source, f, cases) =>
+    cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
   const check = createCudaLowering('entity-test', engine);
   const candidate = cudaArtifact('f', 'source', [{ name: 'k0', mapping: 'thread', statements: ['missing'] }]);
   const result = await check(p.current, 'f', candidate);
@@ -138,26 +144,41 @@ test('lowering rejects statement IDs absent from the Tix artifact', async () => 
   assert.match(result.reason, /missing/);
 });
 
-
 test('kernel inventories reject invented and omitted CUDA kernels', async () => {
   const { AnalysisManager, defineTransformation } = await import('../../dist/framework/contracts/index.js');
   const { TixIR } = await import('../../dist/tensor/ir.js');
   const subject = cudaArtifact('f', 'source', [{ name: 'k0', mapping: 'thread', statements: ['y'] }]);
-  const pass = defineTransformation({ id: 'test.kernel-inventory', version: '1', description: 'kernel correspondence', inputs: { baseline: TixIR }, outputs: { subject: CudaIR }, correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject' }] });
+  const pass = defineTransformation({
+    id: 'test.kernel-inventory',
+    version: '1',
+    description: 'kernel correspondence',
+    inputs: { baseline: TixIR },
+    outputs: { subject: CudaIR },
+    correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject' }],
+  });
   const correspondence = kernelCorrespondence(p.current, subject);
   for (const targetEntities of [[], ['k0', 'invented']])
-    await assert.rejects(new AnalysisManager().verifyTransformation({ baseline: p.current }, { subject }, pass, [{ ...correspondence, targetEntities }]), /entity mismatch/);
+    await assert.rejects(
+      new AnalysisManager().verifyTransformation({ baseline: p.current }, { subject }, pass, [
+        { ...correspondence, targetEntities },
+      ]),
+      /entity mismatch/,
+    );
 });
 
 test('every corpus lowering validates fused and unfused without a GPU', async () => {
   const { readdirSync, readFileSync } = await import('node:fs');
-  const engine = async (_source, f, cases) => cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
+  const engine = async (_source, f, cases) =>
+    cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
   const check = createCudaLowering('corpus-local', engine);
   for (const name of readdirSync(new URL('../../corpus/tensor/', import.meta.url))) {
-    const program = compileTix(readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'));
-    for (const fn of program.current.value.functions) for (const fuse of [true, false]) {
-      const result = await check(program.current, fn.name, undefined, { fuse });
-      assert.equal(result.accepted, true, `${name}/${fn.name} fuse=${fuse}: ${result.reason}`);
-    }
+    const program = compileTix(
+      readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'),
+    );
+    for (const fn of program.current.value.functions)
+      for (const fuse of [true, false]) {
+        const result = await check(program.current, fn.name, undefined, { fuse });
+        assert.equal(result.accepted, true, `${name}/${fn.name} fuse=${fuse}: ${result.reason}`);
+      }
   }
 });
