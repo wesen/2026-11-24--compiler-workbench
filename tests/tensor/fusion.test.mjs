@@ -283,3 +283,33 @@ test('the check runs every sample on both sides of the gate and names the side t
   }
 });
 
+
+test('a member is written over the row it is computed from when nothing reads that row afterwards', () => {
+  const inPlace = name => planFusion(corpus(name).current.value.functions[0]).groups[0].inPlace;
+  assert.deepEqual(inPlace('attention'), [
+    { statement: 'e', over: 'score' },
+    { statement: 'weight', over: 'e' },
+  ]);
+  assert.deepEqual(inPlace('softmax'), [{ statement: 'e', over: 'x' }]);
+  assert.deepEqual(inPlace('layernorm'), [{ statement: 'centered', over: 'x' }]);
+  assert.deepEqual(inPlace('mlp'), [{ statement: 'g', over: 'h' }]);
+  const source = cudaSource(corpus('attention'), 'attention');
+  // score, e and weight share one row; the block's row area is q, that row and the two scalars
+  assert.match(source, /float\* const r5 = r3;/);
+  assert.match(source, /float\* const r7 = r5;/);
+  assert.match(source, /scratch \+ point \* \(n0 \+ n3 \+ n4 \+ n6\);/);
+  // refused: x is read again by y; e is read at another element; the rows have different extents
+  const none = source => planFusion(fnOf(source)).groups[0].inPlace;
+  assert.deepEqual(
+    none('fn f(x:f32[N,C]):f32[N,C] { e[i,j] = x[i,j] * 2; m[i] = max(j) e[i,j]; y[i,j] = e[i,j] - m[i] + x[i,j]; return y; }'),
+    [],
+  );
+  for (const read of ['e[i,j+1]', 'e[i,j+0]'])
+    assert.deepEqual(
+      none(`fn f(x:f32[N,C]):f32[N,C-1] {
+        e[i,j] = x[i,j] * 2; m[i] = max(j) x[i,j]; d[i,j]: f32[N,C-1] = ${read} * m[i]; t[i] = max(j) d[i,j];
+        y[i,j]: f32[N,C-1] = d[i,j] - t[i]; return y; }`),
+      [],
+      read,
+    );
+});

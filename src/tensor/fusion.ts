@@ -30,6 +30,11 @@ export interface FusionGroup {
    * preorder (`outerReductions`).
    */
   terms: { statement: string; reduction: number }[];
+  /**
+   * Block mode (IRWB-030-E): `statement`'s row is stored in the row buffer of `over`, element by element. Each
+   * thread reads `over` only at the element it then writes, and nothing reads `over` afterwards.
+   */
+  inPlace: { statement: string; over: string }[];
   /** Block mode: the host decides at launch (`gateRule`) between this kernel and the members one by one. */
   gated: boolean;
   /** Why the statements share this kernel, and what changed in the thread mapping. */
@@ -181,6 +186,29 @@ export function planFusion(fn: Fn): FusionPlan {
           terms.push({ statement: m.name, reduction });
         });
       }
+    // Writing a member over the row it is computed from (IRWB-030-E script 08: attention with the division inside
+    // 1.41 to 1.15 ms, mlp 0.727 to 0.628, because more blocks fit in an SM's shared memory). B takes A's buffer
+    // when both rows have the same extents, every read of A in B is at B's own element, and no later member
+    // reads A. A may be a staged row or an earlier member, itself possibly in place.
+    const inPlace: FusionGroup['inPlace'] = [];
+    if (block)
+      members.forEach((b, at) => {
+        if (b.axes.length === depth || !rowBuffers.has(b.name)) return;
+        const own = (e: Load) => e.indices.length === b.axes.length && e.indices.every((a, p) => plain(a) === b.axes[p].id);
+        const over = [...rowBuffers].find(a => {
+          const reads = loads(b).filter(e => e.name === a);
+          const rest = tensors.get(a)!.shape.slice(depth);
+          return (
+            a !== b.name &&
+            reads.length > 0 &&
+            reads.every(own) &&
+            rest.length === b.shape.length - depth &&
+            rest.every((d, p) => same(d, b.shape[depth + p])) &&
+            !members.slice(at + 1).some(m => loads(m).some(e => e.name === a))
+          );
+        });
+        if (over) inPlace.push({ statement: b.name, over });
+      });
     const axes = members[0].shape.slice(0, depth).map(text).join(', ');
     const why = single
       ? []
@@ -192,6 +220,7 @@ export function planFusion(fn: Fn): FusionPlan {
               .filter(m => m.axes.length === depth)
               .map(m => `thread 0 computes ${m.name} (one element per row) in the meaning's order`),
             ...(staged.size ? [`rows of ${[...staged].join(', ')} are staged in the row buffer`] : []),
+            ...inPlace.map(p => `${p.statement} is written over the row of ${p.over}`),
             ...terms.map(
               t => `all threads compute the terms of ${t.statement}'s reduction ${t.reduction}; thread 0 folds them in order`,
             ),
@@ -208,6 +237,7 @@ export function planFusion(fn: Fn): FusionPlan {
       buffered: buffered.map(m => m.name),
       staged: [...staged],
       terms,
+      inPlace,
       gated: block,
       reasons: [...why, ...reasons],
     };
@@ -228,6 +258,7 @@ export function unfusedPlan(fn: Fn): FusionPlan {
       buffered: [],
       staged: [],
       terms: [],
+      inPlace: [],
       gated: false,
       reasons: [],
     })),
