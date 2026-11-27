@@ -1,0 +1,425 @@
+✔ v6 guide tutorial 01-runtime runs and asserts its documented results (201.599829ms)
+✔ v6 guide tutorial 02-ir-manipulation runs and asserts its documented results (995.562191ms)
+✔ v6 guide tutorial 03-strategy-contracts runs and asserts its documented results (1586.197102ms)
+✔ v6 guide tutorial 05-custom-adapter runs and asserts its documented results (621.407577ms)
+✔ typed definitions, exact registry versions, immutable manifests and artifacts are reusable (148.310563ms)
+✔ analyses reuse exact revision+params and explicit invalidation reaches dependent analyses and properties (43.699497ms)
+✔ declared claims cannot satisfy preconditions and checked property facts identify exact revisions (48.8006ms)
+✔ relational invariants enforce numeric parameters and named input/output guarantees (34.546907ms)
+✔ preserves check and establishes run real property checkers before outputs become accepted (34.884154ms)
+✔ analysis and property transfer require exact correspondence and a versioned executable justification (46.490766ms)
+✔ unauthorized or stale source results cannot be transferred (13.940618ms)
+✔ effect declarations enforce transitive reads even when a nested analysis was already cached (62.837482ms)
+✔ resource writes require cache never and rejected outputs publish no resource writes or facts (9.474537ms)
+✔ a caught missing resource read is tracked so later resource creation invalidates cached fallback (7.10784ms)
+✔ analysis/property cycles are diagnosed and malformed truthy checker values are rejected (2.685552ms)
+✔ parallel transactions checking the same immutable source commit without false stale evidence (17.317738ms)
+✔ late context calls and unawaited nested invariant work cannot escape contract lifetime (65.978094ms)
+✔ objectives execute their declared analysis and preserve exact metric evidence (8.508161ms)
+✔ proof assurance requires a property-specific checked certificate and never accepts a free assurance label (5.255827ms)
+✔ typed input and output failures are inspectable and never accept forged artifacts (18.351265ms)
+✔ verification is single flight, snapshots values before waiting, and committed history cannot be failed retroactively (4.524666ms)
+✔ preconditions read the original resource and postconditions read the staged revision of the same subject (13.125073ms)
+✔ standalone invariant queries return evidence for true and false results and enforce effects in nested queries (12.114394ms)
+✔ a throwing transformation drains already-started semantic work before reporting failure (60.113645ms)
+✔ invalidation during an in-flight checker prevents its late result from authorizing a transformation (11.161876ms)
+✔ asynchronous property queries pin the checked artifact and reject forged introspection subjects (9.754952ms)
+✔ proof certificate and transfer correspondence evidence equal their captured verifier inputs (47.002047ms)
+✔ asynchronous resource commits cannot publish accepted outputs or hide rejected promises (25.557249ms)
+✔ manual rollback immediately closes every descendant and prevents late trace or fact publication (46.33957ms)
+✔ cache validation stops before replaying a child parameterized by a changed artifact (77.817055ms)
+✔ run failure drains concurrent work, preserves the original error, and closes the registry (63.402405ms)
+✔ a fallback after a failed dependency cannot remain cached after the dependency is repaired (26.650262ms)
+✔ a fallback after an absent input cannot hide a subsequently supplied value (1.117991ms)
+✔ a dependency failure during cache validation lets the current parent execute its fallback (40.555723ms)
+✔ a rejected run callback is recorded as a failed run even after successful tasks (0.97732ms)
+✔ an unawaited failed requirement is reported without an orphaned promise rejection (49.194648ms)
+✔ task dependency manifests snapshot the request at require time (10.984832ms)
+✔ query differences distinguish absent fields and inputs from explicit null (23.430372ms)
+✔ canonical arrays reject accessors, symbol keys, and sparse arrays with spoofed key counts (0.891633ms)
+✔ an exposed run record cannot replace the immutable input snapshot (0.780712ms)
+✔ portable SHA-256 agrees with the platform for ASCII, Unicode and multi-block data (19.848466ms)
+✔ run snapshots and artifacts are immutable and isolated from host mutation (28.518058ms)
+✔ dynamic dependencies explain exact edits and ignore unread inputs (19.629954ms)
+✔ diamond dependency deduplication and content-based downstream reuse (12.559914ms)
+✔ conditional reads are tracked and historical cache variants can be reused (19.66212ms)
+✔ transitive algorithm version changes are checked even under a cached parent (16.231094ms)
+✔ parameter changes never validate stale child requests (10.650286ms)
+✔ failed validation and failed dependencies are recorded but never cached (19.385851ms)
+✔ dependency cycles including independently scheduled roots fail without deadlock (1.659281ms)
+✔ conflicting task identity is rejected, registry is immutable during a run (12.050889ms)
+✔ LRU eviction is explained distinctly from changed input (16.056523ms)
+✔ full checkpoints are not invented from summary-only cache entries (1.359378ms)
+✔ analysis caches belong to exact artifact revisions; query diffs retain run history (32.901334ms)
+✔ enumerated correspondence rejects a made-up source ID (79.29573ms)
+✔ enumerated correspondence rejects a made-up target ID (2.010659ms)
+✔ enumerated correspondence rejects omitted real IDs (26.850388ms)
+✔ types without enumeration retain self-declared correspondence behavior (28.994735ms)
+✔ direct correspondences reject unknown entry IDs on enumerated sides (1.751294ms)
+✔ E1: an adapter may declare control relations; flow helpers follow only them (40.442619ms)
+✔ E1: an unknown category is still rejected (1.013989ms)
+✔ E2: reasons are recorded on operations and on correspondence entries (78.171099ms)
+✔ E2: reasons survive composition and whyEntity explains a change across revisions (66.660773ms)
+✔ E2: malformed reasons are refused (14.522641ms)
+✔ E3: a native-style pass is diffed, checked against its contract and published with correspondence (251.889975ms)
+✔ E3: an edit-style pass produces the same revision as the native one (173.007704ms)
+✔ E3: a semantically wrong pass is rejected by its contract; nothing is published (33.827683ms)
+✔ E3: a change outside the declared writes is undeclaredWrite (20.483116ms)
+✔ E3: preservation claims are checked: confirmed by recompute, or preserveViolated (77.313784ms)
+✔ E6: passes run as Strategy IR transforms; results are reported to the host (29.978044ms)
+✔ E6: a contract rejection inside a strategy is a recoverable rejection, not a crash (61.316179ms)
+✔ E4: the backward set lattice solves liveness around a loop (63.54241ms)
+✔ E4: an interval lattice without widening is refused with noWidening (8.659894ms)
+✔ E4: widening at loop heads reaches a fixpoint; the counter widens to [0, MAX] (13.51326ms)
+✔ E4: dataflow facts are v6 analyses cached per exact revision (74.532172ms)
+✔ E4: transfer is accepted for an unrelated change and rejected when a read kind changes (64.334746ms)
+✔ E5: the seeded generator is deterministic (23.839499ms)
+✔ E5: a correct rewrite agrees on every sampled case; a wrong one yields counterexamples (50.858051ms)
+✔ E5: inconclusive cases are counted, never a verdict; all-inconclusive fails (1.184689ms)
+✔ E5: a transformation contract can ensure a differential invariant (89.536167ms)
+✔ baseline key rejects cases that change outside the key (6.073508ms)
+✔ baseline key checks typed arrays and signed zero using a stored snapshot (4.460033ms)
+✔ IRWB-004 A6: sha256, the portable streaming SHA-256 and pieces equal the original implementation (5416.860091ms)
+✔ IRWB-004 A2: revisionOf equals fingerprint of { kind, schemaVersion, value }, canonical or not (631.081258ms)
+✔ IRWB-004 A3: validateOnce validates a canonical value once per validator, and a failed one again (0.804891ms)
+✔ IRWB-004 A1: a pass whose edit records nothing returns its input, unchanged (405.04824ms)
+✔ expressions: native storage round-trips without an implicit format conversion (172.052949ms)
+✔ expressions: actual strategy, runtime, semantic checks and generic edits compose (735.80616ms)
+✔ scenes: native storage round-trips without an implicit format conversion (4.950422ms)
+✔ scenes: actual strategy, runtime, semantic checks and generic edits compose (80.366248ms)
+✔ meshes: native storage round-trips without an implicit format conversion (27.173458ms)
+✔ meshes: actual strategy, runtime, semantic checks and generic edits compose (365.62096ms)
+✔ constraints: native storage round-trips without an implicit format conversion (33.969078ms)
+✔ constraints: actual strategy, runtime, semantic checks and generic edits compose (191.626587ms)
+✔ Expression CSE and algebraic rewrites are backed by exact semantic checks (9.299905ms)
+✔ Polynomial coefficients use exact BigInt intermediates instead of silently rounded arithmetic (4.601068ms)
+✔ Polynomial expansion has an explicit degree budget (2.564686ms)
+✔ A long expression arena validates and evaluates without recursive stack overflow (654.779737ms)
+✔ The expression summary derives its environment from edited source variables (750.94617ms)
+✔ Scene sharing redirects bindings while retaining named world placements (0.700939ms)
+✔ Scene queries remain valid when the first supplied definition is the one merged away (78.399686ms)
+✔ Mesh objective chooses actual checked candidates under a changed approximation bound (80.278115ms)
+✔ Edited odd boundary fans expose only feasible construction alternatives (52.415257ms)
+✔ Global convexity rejects a twice-winding star even when all local turns are positive (0.712273ms)
+✔ The mesh distance routine rejects unrelated or translated contours (0.635347ms)
+✔ Constraints use dependency decomposition and actual independent component solves (0.440587ms)
+✔ Constraint pattern checks coefficients rather than matching equal right-hand sides alone (9.237548ms)
+✔ Numerical constraints reject inconsistent, underdetermined and non-finite elimination results (0.858153ms)
+✔ Each original equation is checked against the computed numerical solution (1.413551ms)
+✔ expressions: semantic failure rejects the transaction without publishing the edited revision (51.284742ms)
+✔ scenes: semantic failure rejects the transaction without publishing the edited revision (26.993489ms)
+✔ meshes: semantic failure rejects the transaction without publishing the edited revision (31.169298ms)
+✔ constraints: semantic failure rejects the transaction without publishing the edited revision (45.170394ms)
+✔ expressions: a warm run reuses real compiler outputs and reruns semantic acceptance (288.384318ms)
+✔ scenes: a warm run reuses real compiler outputs and reruns semantic acceptance (113.785517ms)
+✔ meshes: a warm run reuses real compiler outputs and reruns semantic acceptance (115.009038ms)
+✔ constraints: a warm run reuses real compiler outputs and reruns semantic acceptance (259.535907ms)
+✔ adapter metadata, callbacks and exact versions are captured; registry rejects redefinition (4.578468ms)
+✔ adapter capability validation requires paired serializers and native validation for edits (0.580948ms)
+✔ projection rejects duplicate, dangling, mistyped and inconsistent native projections (45.023142ms)
+✔ artifacts verify native type and content-addressed revisions; graph and native values are frozen (6.435704ms)
+✔ navigation distinguishes containment, dependencies, binding and adjacency (14.920714ms)
+✔ pre/post/breadth traversal is deterministic, cycle-safe and covers disconnected components by default (31.554798ms)
+✔ navigation budgets fail explicitly, including depth, instead of silently returning partial results (8.081022ms)
+✔ induced subgraphs and dependency/connected closures retain only selected typed relationships (7.448029ms)
+✔ commits preserve immutable revisions and emit actual changes, operation log and total correspondence (27.250417ms)
+✔ insert, replace, connect, disconnect and removal have explicit identities and atomic validation (19.181859ms)
+✔ reference redirection defaults to incoming binding/dependency, preserving containment and stable edge IDs (6.272085ms)
+✔ invalid native edits and lossy adapter rebuilds never advance the published head (10.636933ms)
+✔ stale concurrent, no-op and ABA drafts are rejected by head generation, not just content hash (64.810419ms)
+✔ semantic verification rejects provisional edits without accepting effects or native revisions (2.398506ms)
+✔ semantic acceptance and IR publication share a synchronous CAS boundary (25.561884ms)
+✔ async acceptance and reentrant publication are rejected before an IR revision is visible (23.74917ms)
+✔ rollback and concurrent commit guards seal pending edits and clean provisional acceptance (1.799196ms)
+✔ edit references, identifiers, undeclared edges and stale draft objects fail before mutation (22.262057ms)
+✔ read-only adapters support queries/diff but clearly reject unsupported optional capabilities (1.26179ms)
+✔ many-to-one and one-to-many correspondences compose, invert and trace across representation types (22.266182ms)
+✔ correspondence validates exact intermediate universes, endpoints, coverage and explicit budgets (9.908236ms)
+✔ root-only topology changes remain visible in diffs and affected exact entity references (5.637468ms)
+✔ Acceptance cannot successfully roll back its draft during synchronous publication and then publish it anyway (17.160836ms)
+✔ Adapter registration never accepts inherited callbacks and then silently drops them (1.012765ms)
+✔ IR correspondence additions and removals do not become whole-artifact lineage edges (322.638488ms)
+✔ operation matching enforces exact name, arity, order and captured entity identity (119.005158ms)
+✔ forward identity constraints unify declared captures without leaking failed candidates (39.627119ms)
+✔ typed graph conditions and content conditions compose with exact evidence (22.556242ms)
+✔ equalContent includes ordered operand identities without pretending to prove recursive equivalence (18.660376ms)
+✔ pattern serialization is finite, immutable, and semantically reusable (19.353354ms)
+✔ pattern queries cover disconnected entities and explicit roots reject stale references (33.915542ms)
+✔ versioned predicates are snapshotted and delimiter-safe, with reason evidence (12.017185ms)
+✔ predicate callbacks cannot substitute promises, throw away bugs, or mutate query snapshots (7.470196ms)
+✔ matching budgets never return a truncated successful enumeration (16.276679ms)
+✔ special capture names are data and malformed patterns are rejected (6.069513ms)
+✔ one rewrite commits exact revision changes while keeping the original view immutable (8.576407ms)
+✔ all applies the initial match frontier, revalidating overlaps after each accepted edit (23.096013ms)
+✔ top-down and bottom-up are single sweeps with observably different dependency order (36.647799ms)
+✔ innermost and outermost normalize with real post-order versus pre-order scheduling (49.868081ms)
+✔ newly introduced matches are outside a sweep but included by normalization (48.028192ms)
+✔ saturation detects a directed cycle before publishing its repeated candidate (9.643461ms)
+✔ application budget distinguishes an uncommitted candidate from established convergence (20.824523ms)
+✔ matching and attempt budgets apply across the entire schedule (8.983346ms)
+✔ no-op rules terminate without publishing revisions or claiming semantic verification (14.224005ms)
+✔ semantic acceptance runs before publication and is separately identified from declarations (9.499204ms)
+✔ semantic rejection rolls back atomically and retains its provisional edit as evidence (27.297142ms)
+✔ unexpected errors remain fatal while an explicit host classifier can recognize rejection (13.368867ms)
+✔ native invalid edits and stale views fail without publishing artifacts (10.922695ms)
+✔ an awaited gate cannot publish over a concurrently committed revision (15.106291ms)
+✔ cancellation before a schedule or during its semantic gate never publishes its draft (4.085982ms)
+✔ async acceptance callbacks are never masked by the cancellation wrapper (9.284162ms)
+✔ rule definitions and callback protocols are immutable and fail closed (17.947961ms)
+✔ rewrite registries use version tuples and reusable schedules expose plain descriptors (83.670145ms)
+✔ replacement callbacks cannot publish early or bypass scheduler budgets through their view (23.148594ms)
+✔ edit capabilities expire before asynchronous verification, including retained callback references (16.876713ms)
+✔ custom predicates and rule guards receive read-only observation capabilities (11.347371ms)
+✔ selected dependency relationships give nested expressions actual inner and outer order (92.753415ms)
+✔ explicit ordering relation cycles and disconnected components are visited once (9.465609ms)
+✔ native expression rewrite order follows explicitly selected operand dependencies (127.47498ms)
+✔ framework sources import nothing outside src/framework (163.259105ms)
+✔ strategy, contracts and ir use only core/data and core/types from core (43.147561ms)
+✔ the core runtime imports no higher framework layer (1.254857ms)
+✔ synchronous native passes share validation and write checks, and skip the gate on identity (165.891598ms)
+✔ applyPass opens its edit only when the pass reads it (IRWB-019 F13) (47.873284ms)
+✔ a pass refuses an inapplicable step before run, in both apply functions (IRWB-033-D) (70.353463ms)
+✔ acceptance hooks enclose actual execution and cache reuse with provisional publication (66.277261ms)
+✔ preconditions reject before algorithm execution or cache lookup and retain failure state (11.947367ms)
+✔ postcondition failure publishes no artifact, commits no policy state and creates no cache entry (17.4056ms)
+✔ a stricter policy version gates a preexisting cached artifact (21.16515ms)
+✔ fresh policy observations are tracked without replaying old checks or invalidating pure algorithm output (13.545722ms)
+✔ policy-required task revisions are fresh and distinct from computation dependencies (31.086031ms)
+✔ rejected child policy prevents accepting a cached ancestor (18.126765ms)
+✔ commit failure rejects publication and a failed cleanup hook cannot mask the original error (14.047664ms)
+✔ policy registry snapshots reject mutation during runs and reused version identities (1.44683ms)
+✔ policies governing repeated effects can force real execution on every run (13.522873ms)
+✔ unawaited hook requirements are drained and fail without accepting the output (50.236144ms)
+✔ postcondition error diagnostics prevent commit even when the checker returns normally (25.157791ms)
+✔ extension-owned computation dependencies can reject cache reuse and force recomputation (1.390314ms)
+✔ asynchronous policy failure cleanup drains before the run releases its registry (12.97756ms)
+⚠ F34: sampled and exhaustive checks record different assurance; unknown evidence is never exact (9.717025ms) # F34
+⚠ F33: a candidate the contract rejects does not become a store head (26.546893ms) # F33
+⚠ F33: no accepted execution or fact survives a later preservation failure (123.429671ms) # F33
+⚠ F35: zero mapping groups and a false group are rejected; the honest mapping is accepted (83.477318ms) # F35
+✔ execution-layer evidence is a captured immutable snapshot with a single-assignment namespace (18.51479ms)
+✔ failure evidence survives a thrown callback and run closure (24.212957ms)
+✔ evidence rejects executable data without consuming the namespace (0.787626ms)
+✔ narrow runtime inspection separates current registrations from historical artifact revisions (59.18785ms)
+✔ ScopedMap: close undoes the writes since the matching open, overwrites and new keys alike (9.485323ms)
+✔ walkDominatorTree: preorder, children in the given order, each node sees exactly its ancestors' facts (14.453042ms)
+✔ walkDominatorTree does not recurse: a chain of 100000 nodes (116.102202ms)
+✔ all 13 node kinds execute in a nested serializable plan with bindings and observations (159.402938ms)
+✔ algorithm inputs, arguments, plans, observer events and returned results are immutable snapshots (13.302858ms)
+✔ late context writes are rejected and cannot mutate a completed trace (14.701125ms)
+✔ observer failures are retained as evidence, disable the observer, and do not change compiler semantics (3.538852ms)
+✔ registry version pinning and snapshot prevent hot mutation from changing an active execution (15.033038ms)
+✔ global algorithm concurrency stays bounded across nested groups and ordering follows source, not completion (178.952768ms)
+✔ parallel failure drains started siblings and never schedules queued work (16.364691ms)
+✔ fork isolates bindings and turns only explicit rejections into candidate outcomes (31.41225ms)
+✔ chooseBest keeps all constraint/rejection evidence and resolves equal objectives lexicographically (30.79828ms)
+✔ all constraint operators and max objectives are evaluated, including zero (6.321812ms)
+✔ no feasible candidate is a recoverable rejection; malformed metrics are a fatal algorithm error (29.696606ms)
+✔ attempt code filters and fatal bugs cannot silently activate fallback (35.032252ms)
+✔ attempt fallback receives original data, with rejected branch bindings discarded (1.593151ms)
+✔ repeat converges on semantic artifact revision, ignores logical id, and includes schema/kind (13.069655ms)
+✔ repeat detects cycles, rejects nonconvergence, exposes iteration refs, and custom identity works (60.241682ms)
+✔ forEach selectors, item/index refs, empty sets and bounds are explicit (13.539548ms)
+✔ require leaves current unchanged, analysis binding is lexical, and scopes do not leak (9.219607ms)
+✔ verify false records proof evidence and verification failure is recoverable (10.458486ms)
+✔ malformed predicate, invariant and algorithm undefined results are fatal (7.856917ms)
+✔ cancellation before execution and during work has terminal immutable records and never runs fallback (20.284764ms)
+✔ cancellation releases queued semaphore callers without deadlocks (11.778491ms)
+✔ dynamic step and nesting budgets fail explicitly; attempts cannot swallow budgets (2.195104ms)
+✔ executeOrThrow carries the complete failed execution (11.695909ms)
+✔ reference resolution is own-key only and literal() escapes reserved reference data (1.660424ms)
+✔ validation rejects unknown nodes, fields, duplicate ids, invalid algorithm roles and dangling bindings (4.268311ms)
+✔ validation rejects illegal iteration/item references, ambiguous selectors, bounds and duplicate candidate names (0.782541ms)
+✔ walk/find cover every child position and immutable edits preserve unrelated nodes (35.483193ms)
+✔ insertion can wrap a required child and edits reject dangling bindings, duplicate ids and invalid removal (1.955477ms)
+✔ serialization is deterministic, rejects malformed input, and round-trips exact plan revision (9.354863ms)
+✔ a parallel rejection cannot hide a simultaneously failing implementation behind attempt fallback (7.424628ms)
+✔ cancellation between acquired permits and algorithm starts avoids starting subsequent algorithms (12.752641ms)
+✔ node budget includes skipped subtrees and bounds trace allocation during repeated branches (42.370004ms)
+✔ cooperatively aborted host algorithms retain completed-task links and report cancellation (6.185596ms)
+✔ plan requirements pin hidden host dependencies independently of directly edited call nodes (1.605489ms)
+✔ walk visitor and find predicate expose typed traversal context without modifying the plan (3.433717ms)
+✔ choice evidence bindings retain exact earlier decisions across later scoring of the same candidates (19.737184ms)
+ℹ tests 242
+ℹ suites 0
+ℹ pass 238
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 4
+ℹ duration_ms 7689.371774
+
+✖ failing tests:
+
+test at tests/framework/r3-defects.test.mjs:21:1
+⚠ F34: sampled and exhaustive checks record different assurance; unknown evidence is never exact (9.717025ms) # F34
+  AssertionError [ERR_ASSERTION]: a 5-case sample and a 256-case exhaustion record the same assurance
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-g-h-irwb-042-b/tests/framework/r3-defects.test.mjs:60:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'checked',
+    expected: 'checked',
+    operator: 'notDeepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/framework/r3-defects.test.mjs:75:1
+⚠ F33: a candidate the contract rejects does not become a store head (26.546893ms) # F33
+  AssertionError [ERR_ASSERTION]: the rejected candidate is the head of the caller-supplied store
+  + actual - expected
+  
+  + {
+  +   contentHash: '8990336ff2fcc3262f722fc106917dc7f397768a42ac17e603db9f2fabd8e0c0',
+  +   id: 'candidate',
+  +   kind: 'tensor.tix',
+  +   revision: '27c9301c1a75ca67f93aeb191361d85328ed6af75aed87d810a1cb52a8d4e1d8',
+  +   schemaVersion: '1',
+  +   value: {
+  +     functions: [
+  +       {
+  +         name: 'f',
+  +         params: [
+  +           {
+  +             name: 'x',
+  +             shape: [
+  +               {
+  +                 constant: 0,
+  +                 terms: [
+  +                   [
+  +                     'N',
+  +                     1
+  +                   ]
+  +                 ]
+  +               }
+  +             ]
+  +           }
+  +         ],
+  +         result: 'z',
+  +         shape: [
+  +           {
+  +             constant: 0,
+  +             terms: [
+  +               [
+  +                 'N',
+  +                 1
+  +               ]
+  +             ]
+  +           }
+  +         ],
+  +         statements: [
+  +           {
+  +             axes: [
+  +               {
+  +                 extent: {
+  +                   dim: {
+  +                     constant: 0,
+  +                     terms: [
+  +                       [
+  +                         'N',
+  +                         1
+  +                       ]
+  +                     ]
+  +                   },
+  +                   kind: 'dim'
+  +                 },
+  +                 id: 'i1'
+  +               }
+  +             ],
+  +             expr: {
+  +               args: [
+  +                 {
+  +                   args: [
+  +                     {
+  +                       indices: [
+  +                         {
+  +                           constant: 0,
+  +                           terms: [
+  +                             [
+  +                               'i1',
+  +                               1
+  +                             ]
+  +                           ]
+  +                         }
+  +                       ],
+  +                       kind: 'load',
+  +                       name: 'x'
+  +                     },
+  +                     {
+  +                       kind: 'literal',
+  +                       text: '2'
+  +                     }
+  +                   ],
+  +                   kind: 'op',
+  +                   op: '*'
+  +                 },
+  +                 {
+  +                   kind: 'literal',
+  +                   text: '1'
+  +                 }
+  +               ],
+  +               kind: 'op',
+  +               op: '+'
+  +             },
+  +             name: 'z',
+  +             shape: [
+  +               {
+  +                 constant: 0,
+  +                 terms: [
+  +                   [
+  +                     'N',
+  +                     1
+  +                   ]
+  +                 ]
+  +               }
+  +             ]
+  +           }
+  +         ]
+  +       }
+  +     ]
+  +   }
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-g-h-irwb-042-b/tests/framework/r3-defects.test.mjs:108:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { contentHash: '8990336ff2fcc3262f722fc106917dc7f397768a42ac17e603db9f2fabd8e0c0', id: 'candidate', kind: 'tensor.tix', revision: '27c9301c1a75ca67f93aeb191361d85328ed6af75aed87d810a1cb52a8d4e1d8', schemaVersion: '1', value: { functions: [Array] } },
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/framework/r3-defects.test.mjs:111:1
+⚠ F33: no accepted execution or fact survives a later preservation failure (123.429671ms) # F33
+  AssertionError [ERR_ASSERTION]: a fact about the rejected candidate is visible
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-g-h-irwb-042-b/tests/framework/r3-defects.test.mjs:158:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/framework/r3-defects.test.mjs:168:1
+⚠ F35: zero mapping groups and a false group are rejected; the honest mapping is accepted (83.477318ms) # F35
+  AssertionError [ERR_ASSERTION]: Missing expected rejection: zero mapping groups were accepted
+      at async TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-g-h-irwb-042-b/tests/framework/r3-defects.test.mjs:196:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

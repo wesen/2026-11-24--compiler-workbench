@@ -1,0 +1,4 @@
+reaching defs of i at the guard (s:walk.3): s:walk.0 s:walk.5
+reaching defs of i at the copy  (s:walk.8): s:walk.0 s:walk.5
+SSA name of i at the guard:                    i.2
+SSA name of the check's index (t4 = i):        i.4
