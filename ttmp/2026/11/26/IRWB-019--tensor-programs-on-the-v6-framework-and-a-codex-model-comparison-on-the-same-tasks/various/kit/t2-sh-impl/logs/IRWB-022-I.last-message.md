@@ -1,9 +1,0 @@
-Implemented IRWB-022-I. The [Tix API](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/src/tensor/index.ts) now exports `cudaSource`, `runTixCuda`, and `checkLowering`. The backend lowers both original and optimized Tix IR, preloads kernels before timing, and checks the GPU output against the f64 reference in a single batch.
-
-**Framework changes:** none. The pass uses the existing transformation and differential APIs for batching and evidence reuse. The [remote runner](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/tools/cuda-remote.mjs) now isolates each invocation and reuses compiled binaries when only runtime inputs change.
-
-`npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed all **29 tests**, including rejection of the transposed-index and dropped-tail CUDA mutants. All six full-size CPU and GPU output digests matched. GB10 kernel medians ranged from **0.164 to 1.050 ms**. The [timing report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md) records every CPU and GPU timing.
-
-The backend followed the revised design. Some interpreter measurements overlapped on the shared host, so the report identifies them as observed wall times.
-
-Local commits are `31c3b33` for the design revision, `be85ba9` for implementation and tests, and `dd8b7b6` for verification and timings. The worktree is clean.

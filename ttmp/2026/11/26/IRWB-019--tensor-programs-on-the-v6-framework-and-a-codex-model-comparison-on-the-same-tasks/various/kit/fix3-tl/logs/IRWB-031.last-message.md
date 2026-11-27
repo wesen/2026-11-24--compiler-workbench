@@ -1,9 +1,0 @@
-Implemented and committed as `fc39478` (`IRWB-031: check correspondence entities against artifacts`). No push was made.
-
-Before the fix, three regression tests failed with **“Missing expected rejection”**: the manager accepted a made-up source ID, a made-up target ID, and an omitted source entity. The test for a type without enumeration passed.
-
-[IRType](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix3-tl-irwb-031/src/framework/contracts/types.ts) now supports an optional `entities(value)` enumerator. The check happens in [analysis-manager.ts](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix3-tl-irwb-031/src/framework/contracts/analysis-manager.ts), where transformations and analysis transfers have both the artifact values and their IR types. [semanticCorrespondence](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix3-tl-irwb-031/src/framework/passes/define-pass.ts) carries the declared lists into that check. The commit also includes the regression tests, contract documentation, and [ticket diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix3-tl-irwb-031/ttmp/2026/11/27/IRWB-031--f23-check-correspondence-entity-lists-against-the-artifacts/reference/01-implementation-diary.md).
-
-A tensor CUDA artifact can opt in by declaring `entities(value)` on its `defineIR` definition and returning its kernel IDs; its correspondence must list those IDs in `targetEntities`.
-
-The build passed. The final requested test run reported **411 tests: 409 passed, 2 skipped, 0 failed**. Prettier was unavailable in the worktree, so it was not run.

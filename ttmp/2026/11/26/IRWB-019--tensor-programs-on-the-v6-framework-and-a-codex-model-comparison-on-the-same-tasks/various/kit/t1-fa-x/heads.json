@@ -1,9 +1,0 @@
-{
- "IRWB-020-O": {
-  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-fa-x-irwb-020-o",
-  "branch": "t1-fa-x/irwb-020-o",
-  "base": "19ad269",
-  "rev": "1bd9431",
-  "harness": "claude-code-subagent"
- }
-}

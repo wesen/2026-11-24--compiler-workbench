@@ -1,9 +1,0 @@
-IRWB-020-U is ready for design review. No implementation changes were made.
-
-- [Ticket](ttmp/2026/11/26/IRWB-020-U--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md)
-- [Design](ttmp/2026/11/26/IRWB-020-U--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design-tix-and-checked-tensor-passes.md)
-- [Diary](ttmp/2026/11/26/IRWB-020-U--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md)
-
-**Proposed framework change:** Add a native-only synchronous pass entry point that shares candidate preparation and write validation with `applyPass`. The existing differential checker already supports both relations, so no contract-engine changes are proposed.
-
-`docmgr doctor` passed. Commit: `9396ddfa9fca4e67c66a865b612b036e3c499d65`.

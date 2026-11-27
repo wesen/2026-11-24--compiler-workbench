@@ -1,9 +1,0 @@
-{
- "IRWB-029-J": {
-  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3-gf-max-irwb-029-j",
-  "branch": "t3-gf-max/irwb-029-j",
-  "base": "f706115",
-  "harness": "pi",
-  "rev": "f706115"
- }
-}
