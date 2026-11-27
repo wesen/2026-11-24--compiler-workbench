@@ -70,7 +70,7 @@ A tensor compiler can be compared on many axes, and the ones that are easy to me
 
 The axes conflict, which is the point: the deliverable is a frontier, and the compiler work that matters is the work that moves the frontier rather than sliding along it. The rest of this document is an argument that Tix's frontier is much further out than stage 2's position suggests, with three of the four axes measured.
 
-**Measurement protocol.** Every number below comes from `tools/cuda-remote.mjs --timed` on the GB10 (sm_121, 48 SMs, CUDA 13.0, `nvcc -O3`), as the median of CUDA-event timings inside one process; the exact number of repeats is in `scripts/RESULTS.md`. Where the coordinator published a number for the same workload I reproduce it within a few percent (cuBLAS 512³ 8.34 vs 8.15 TFLOP/s; stage-2 softmax 0.804 vs 0.785 ms; stage-2 layernorm 0.511 vs 0.563 ms), which is the only calibration available for a shared machine and is the reason I trust the comparisons that follow.
+**Measurement protocol.** Every number below comes from `tools/cuda-remote.mjs --timed` on the GB10 (sm_121, 48 SMs, CUDA 13.0, `nvcc -O3`), as the median of CUDA-event timings inside one process; the exact number of repeats is in `scripts/00-results.md`. Where the coordinator published a number for the same workload I reproduce it within a few percent (cuBLAS 512³ 8.34 vs 8.15 TFLOP/s; stage-2 softmax 0.804 vs 0.785 ms; stage-2 layernorm 0.511 vs 0.563 ms), which is the only calibration available for a shared machine and is the reason I trust the comparisons that follow.
 
 ## 3. The theory: what the meaning actually constrains
 
@@ -137,7 +137,7 @@ That framing is also the answer to the only objection that matters for a new lan
 
 ## 4. What I measured
 
-Seven experiments, all replayable; the raw tables are in `scripts/RESULTS.md`.
+Seven experiments, all replayable; the raw tables are in `scripts/00-results.md`.
 
 ### 4.1 The tolerance gate, tested on the identity
 

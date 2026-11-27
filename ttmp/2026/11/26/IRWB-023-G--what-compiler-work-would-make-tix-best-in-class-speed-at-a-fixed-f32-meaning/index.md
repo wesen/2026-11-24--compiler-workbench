@@ -20,7 +20,7 @@ RelatedFiles:
       Note: 'The design document: definition, theory, proposals, plan'
     - Path: repo://ttmp/2026/11/26/IRWB-023-G--what-compiler-work-would-make-tix-best-in-class-speed-at-a-fixed-f32-meaning/reference/01-research-diary.md
       Note: Chronological research record including the refuted hypotheses
-    - Path: repo://ttmp/2026/11/26/IRWB-023-G--what-compiler-work-would-make-tix-best-in-class-speed-at-a-fixed-f32-meaning/scripts/RESULTS.md
+    - Path: repo://ttmp/2026/11/26/IRWB-023-G--what-compiler-work-would-make-tix-best-in-class-speed-at-a-fixed-f32-meaning/scripts/00-results.md
       Note: All measured numbers with the script that produced each
 ExternalSources: []
 Summary: ""
@@ -59,7 +59,7 @@ rewrite-induced error from the program's own conditioning.
 
 - `design-doc/01-speed-at-a-fixed-meaning.md` - the design document.
 - `reference/01-research-diary.md` - chronological research record, failures included.
-- `scripts/RESULTS.md` - every measured number with the script that produced it.
+- `scripts/00-results.md` - every measured number with the script that produced it.
 - `scripts/01..08` - the seven experiments (four GPU programs, three CPU scripts).
 
 ## Key Links
