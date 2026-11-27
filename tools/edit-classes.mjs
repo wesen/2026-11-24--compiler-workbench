@@ -28,6 +28,7 @@ export async function census(ids = projectIds(), pipelines = ['O2', 'speed'], op
         continue;
       }
       const run = await p.pipeline(pipeline);
+      if (opts.progress) process.stderr.write(`${id} ${pipeline}\n`);
       for (const s of run.steps) if (s.rejected) rejected.push(`${id} ${pipeline} ${s.pass}: ${s.rejected}`);
       const c = classifyRevisions(p.revisions, { weights: opts.weights, inputs: p.inputs });
       for (const r of c.rows) rows.push({ project: id, pipeline, ...r });
@@ -88,6 +89,34 @@ function report(c, pipelines) {
     L.push(shareTable(`== ${pl}: per project`, tally(sel, r => r.project)));
     L.push('');
   }
+  // the record kinds inside each sub-class (a block merge is one merge, one remove and a move per statement)
+  for (const pl of pipelines) {
+    const k = tally(rows.filter(r => r.pipeline === pl), r => `${r.class}/${r.sub}`, r => r.kind);
+    L.push(`== ${pl}: record kinds per sub-class (edits)`);
+    for (const [sub, kinds] of Object.entries(k))
+      L.push(`${sub.padEnd(26)} ${Object.entries(kinds).sort((a, b) => b[1].edits - a[1].edits).map(([n, t]) => `${n} ${t.edits}`).join(', ')}`);
+    L.push('');
+  }
+  // functions: what keeps a changed function from being all local rewrites
+  for (const pl of pipelines) {
+    const fns = new Map();
+    for (const r of rows.filter(x => x.pipeline === pl)) {
+      const k = `${r.project}/${r.fn}`;
+      const f = fns.get(k) ?? new Set();
+      if (r.class !== 'local') f.add(`${r.class}/${r.sub}`);
+      fns.set(k, f);
+    }
+    const only = {}, any = {};
+    for (const f of fns.values()) {
+      const key = f.size === 0 ? '(none: all local)' : f.size === 1 ? [...f][0] : '(two or more)';
+      only[key] = (only[key] ?? 0) + 1;
+      for (const x of f) any[x] = (any[x] ?? 0) + 1;
+    }
+    const sorted = o => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([n, k]) => `${n} ${k}`).join(', ');
+    L.push(`== ${pl}: changed functions by their only non-local sub-class: ${sorted(only)}`);
+    L.push(`== ${pl}: changed functions containing each non-local sub-class: ${sorted(any)}`);
+  }
+  L.push('');
   // functions: every edit of the function local / local-verified
   for (const pl of pipelines) {
     const fns = new Map();
@@ -128,7 +157,7 @@ function report(c, pipelines) {
     );
     const by = new Map();
     for (const r of rest)
-      for (const s of r.shapes?.length ? r.shapes : ['(no window)']) {
+      for (const s of r.shapes?.length ? r.shapes : ['(several records on one field)']) {
         const k = `${r.class}/${r.sub} ${r.pass}: ${s}`;
         const t = by.get(k) ?? { edits: 0, executed: 0 };
         t.edits++;
@@ -157,7 +186,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const pipelines = (opt('--pipelines') ?? 'O2,speed').split(',');
   const ids = opt('--projects') ? opt('--projects').split(',') : projectIds();
   const t0 = performance.now();
-  const c = await census(ids, pipelines, { weights: !argv.includes('--no-weights') });
+  const c = await census(ids, pipelines, { weights: !argv.includes('--no-weights'), progress: true });
   console.log(report(c, pipelines));
   console.log(`${Math.round(performance.now() - t0)} ms`);
   if (opt('--json')) writeFileSync(opt('--json'), JSON.stringify(c) + '\n');

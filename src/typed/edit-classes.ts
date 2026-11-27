@@ -209,20 +209,26 @@ const isPow2 = (n: unknown) => typeof n === 'number' && n > 0 && (n & (n - 1)) =
 const becauseOf = (t: Tree): readonly string[] => t.origin?.[0]?.because ?? [];
 const citesRange = (t: Tree) => becauseOf(t).some(b => b.startsWith('fact:ranges'));
 
-/** The fact-guarded catalog: the shape's name, or undefined. */
-export function factShape([x, y]: [Tree, Tree]): string | undefined {
-  if (x.op === 'get' && y.op === 'const' && becauseOf(y).length) return 'const-read';
+/**
+ * The fact-guarded catalog: the shapes that rewrite the window, outermost first, or undefined. A shape's operand may
+ * itself be rewritten by a catalog shape (strength rewrites `(x / 2^j) % 2^k` in one tree: rem-pow2 over div-pow2).
+ */
+export function factShape([x, y]: [Tree, Tree]): string[] | undefined {
+  if (x.op === 'get' && y.op === 'const' && becauseOf(y).length) return ['const-read'];
   if (
     (x.op === 'div' || x.op === 'rem') &&
     x.args[1].op === 'const' &&
     isPow2(x.args[1].imm) &&
-    sameTree(y.args[0] ?? y, x.args[0]) &&
-    y.args[1]?.op === 'const' &&
+    y.args.length === 2 &&
+    y.args[1].op === 'const' &&
     citesRange(y)
   ) {
+    const inner = sameTree(y.args[0], x.args[0]) ? [] : factShape([x.args[0], y.args[0]]);
+    if (!inner) return undefined;
     const k = x.args[1].imm as number;
-    if (x.op === 'div' && y.op === 'shr' && y.args[1].imm === 31 - Math.clz32(k)) return 'div-pow2';
-    if (x.op === 'rem' && y.op === 'and' && y.args[1].imm === k - 1) return 'rem-pow2';
+    if (x.op === 'div' && y.op === 'shr' && y.args[1].imm === 31 - Math.clz32(k))
+      return ['div-pow2', ...inner];
+    if (x.op === 'rem' && y.op === 'and' && y.args[1].imm === k - 1) return ['rem-pow2', ...inner];
   }
   return undefined;
 }
@@ -312,7 +318,7 @@ export function classifyApplication(
       if (r) return row('local', 'verified', 'D3b', { ...r, shapes });
       const facts = ws.map(factShape);
       if (ws.length && facts.every(Boolean))
-        return row('local', 'fact-guarded', 'D3c', { shapes: facts as string[] });
+        return row('local', 'fact-guarded', 'D3c', { shapes: facts.flatMap(f => f!) });
       return row('other', 'unmatched-value', 'D3d', { shapes });
     }
     if (e.kind === 'remove') return row('other', 'remove', 'D4');

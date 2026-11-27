@@ -84,4 +84,10 @@ test('windows and shapes', () => {
   assert.deepEqual(EC.windows(before, before), []);
   assert.equal(EC.windows(t('add', [x, t('get', [], 2)]), t('add', [x, t('const', [], 3)])).length, 1);
   assert.equal(EC.shapeOf([before, after]), 'caddr(a, b) → add(a, shl(b, #))');
+  // strength rewrites (x / 8) % 4 in one tree: two catalog shapes, each citing its range fact
+  const why = { origin: [{ from: '', via: 'strength', kind: 'recorded', because: ['fact:ranges(f)@r1: x in [0, 9]'] }] };
+  const rem = t('rem', [t('div', [x, t('const', [], 8)]), t('const', [], 4)]);
+  const and = { ...t('and', [{ ...t('shr', [x, t('const', [], 3)]), ...why }, t('const', [], 3)]), ...why };
+  assert.deepEqual(EC.factShape([rem, and]), ['rem-pow2', 'div-pow2']);
+  assert.equal(EC.factShape([rem, { ...and, origin: [] }]), undefined, 'no cited range fact, no shape');
 });
