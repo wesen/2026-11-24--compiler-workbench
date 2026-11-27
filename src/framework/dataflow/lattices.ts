@@ -62,10 +62,17 @@ export const I32_MAX = 2147483647;
 /** A closed integer interval [lo, hi] within i32, or null (bottom: no value reaches here). */
 export type Interval = readonly [number, number] | null;
 
-/** Integer intervals within i32. Infinite height in principle (as in CW), so solving requires widening. */
+/**
+ * Integer intervals within i32. Infinite height in principle (as in CW), so solving requires widening.
+ * `thresholds` (all within [min, max]) switches the widening to widening up-to (Cousot/Halbwachs): a moved
+ * bound jumps to the nearest threshold instead of the extreme, which keeps precision near small values;
+ * the set is finite, so widening sequences still terminate, and a bound already past every threshold still
+ * jumps to the extreme in one step.
+ */
 export function intervalLattice(
   min = I32_MIN,
   max = I32_MAX,
+  thresholds: readonly number[] = [],
 ): Lattice<Interval> & {
   readonly top: readonly [number, number];
   widen(old: Interval, next: Interval): Interval;
@@ -80,11 +87,21 @@ export function intervalLattice(
     equal: (a, b) => a === b || (!!a && !!b && a[0] === b[0] && a[1] === b[1]),
     encode: v => (v ? [v[0], v[1]] : null),
     decode: j => (j === null ? null : [(j as number[])[0], (j as number[])[1]]),
-    /** Standard widening: a bound that moved jumps to the extreme of the domain. */
+    /** Standard widening: a bound that moved jumps to the nearest threshold (the extreme without thresholds). */
     widen(old, next) {
       if (!old) return next;
       if (!next) return old;
-      return [next[0] < old[0] ? min : old[0], next[1] > old[1] ? max : old[1]];
+      const down = (n: number) => {
+        let best = min;
+        for (const t of thresholds) if (t <= n && t > best) best = t;
+        return best;
+      };
+      const up = (n: number) => {
+        let best = max;
+        for (const t of thresholds) if (t >= n && t < best) best = t;
+        return best;
+      };
+      return [next[0] < old[0] ? down(next[0]) : old[0], next[1] > old[1] ? up(next[1]) : old[1]];
     },
   };
 }
