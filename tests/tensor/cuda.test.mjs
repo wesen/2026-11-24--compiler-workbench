@@ -69,7 +69,9 @@ test('the lowering pass delegates one batch, replays verdicts and retries transp
     });
   };
   const check = createCudaLowering('tensor-test-engine-1', engine);
-  const first = await check(p.current, 'f');
+  const [first, concurrent] = await Promise.all([check(p.current, 'f'), check(p.current, 'f')]);
+  assert.equal(batches.length, 1);
+  assert.deepEqual(concurrent, first);
   assert.equal(first.accepted, false);
   assert.match(first.reason, /simulated transport failure/);
   assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'exact' });

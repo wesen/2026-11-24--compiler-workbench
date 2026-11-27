@@ -146,6 +146,7 @@ interface Reuse {
   readonly cases: readonly unknown[];
   readonly outcomes: unknown[];
   readonly verdicts: Map<string, Decided>;
+  readonly pending: Map<string, Promise<readonly Decided[]>>;
 }
 const REUSE = new Map<string, Reuse>();
 const REUSE_MAX = 4;
@@ -178,6 +179,7 @@ function prepare<P extends Ports, Case, Outcome>(
       cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),
       outcomes: [],
       verdicts: new Map(),
+      pending: new Map(),
     };
   REUSE.set(key, reuse);
   while (REUSE.size > REUSE_MAX) REUSE.delete(REUSE.keys().next().value!);
@@ -310,12 +312,22 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
       STATS.replayed++;
     } else todo.push(i);
   }
-  const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
+  const batchKey = reuse && todo.length && todo.every(i => keys[i] !== undefined)
+    ? JSON.stringify(todo.map(i => keys[i]))
+    : undefined;
+  const pending = batchKey === undefined ? undefined : reuse!.pending.get(batchKey);
+  const elsewhere = pending ?? (todo.length ? spec.decide?.(inputs, cases, todo) : undefined);
   if (elsewhere) {
-    const decided = await elsewhere;
+    if (!pending && batchKey !== undefined) reuse!.pending.set(batchKey, elsewhere);
+    let decided: readonly Decided[];
+    try {
+      decided = await elsewhere;
+    } finally {
+      if (!pending && batchKey !== undefined) reuse!.pending.delete(batchKey);
+    }
     if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
     todo.forEach((i, k) => (verdicts[i] = decided[k]));
-    STATS.delegated += todo.length;
+    if (!pending) STATS.delegated += todo.length;
   } else for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
   for (const i of todo) if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
   return tally(spec, seed, cases, verdicts, maxCounterexamples);
