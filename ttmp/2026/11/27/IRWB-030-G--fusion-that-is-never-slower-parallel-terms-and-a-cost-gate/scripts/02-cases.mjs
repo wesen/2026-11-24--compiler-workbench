@@ -24,6 +24,10 @@ const main = cases.length;
 add(here + '01-softmax-exp-in-sum.tix', { N: 4096, C: 1024 }, { fn: 'softmax_exp_in_sum' });
 // short rows: the same 2M elements in rows of 4 to 64
 for (const c of [4, 8, 16, 32, 64]) add('softmax', { N: 2 ** 21 / c, C: c });
+// short rows with an expensive term, which staging spreads over the block's lanes
+for (const c of [4, 8, 16, 32]) add(here + '01-softmax-exp-in-sum.tix', { N: 2 ** 21 / c, C: c }, { fn: 'softmax_exp_in_sum' });
+// short rows whose reduction is long enough to be staged, and whose row is not
+for (const d of [8, 16, 32, 64]) add(here + '01-layernorm-inside.tix', { N: 2 ** 21 / d, D: d }, { fn: 'layernorm_inside' });
 // few rows: the same 1024-wide rows, in 8 to 4096 of them
 for (const n of [8, 64, 512]) add('softmax', { N: n, C: 1024 });
 // one long row and a few long rows

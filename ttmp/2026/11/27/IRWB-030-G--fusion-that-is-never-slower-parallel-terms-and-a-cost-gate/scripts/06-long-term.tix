@@ -1,0 +1,7 @@
+// IRWB-030-G: a block-mode group whose rows are short but whose staged reduction is long, so the block's lanes are
+// filled by the term array rather than by the row. The cost gate measures the wider of the two.
+fn longterm(x: f32[N,D], z: f32[N,C]): f32[N,C] {
+  s[i] = sum(j) x[i,j] / D;
+  e[i,j]: f32[N,C] = z[i,j] - s[i];
+  return e;
+}

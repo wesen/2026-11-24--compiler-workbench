@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { seededRandom } from '../../../../../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, runTixCuda } from '../../../../../../dist/tensor/index.js';
-import { value } from '../../../../../../dist/tensor/model.js';
+import { plain, value } from '../../../../../../dist/tensor/model.js';
 
 export const corpusSizes = {
   matmul: { M: 512, K: 512, N: 512 },
@@ -59,9 +59,21 @@ const digest = ({ data }) =>
 const median = xs => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 const kernels = source => (source.match(/__global__ void/g) ?? []).length;
 
+/** The shape symbol values the inputs fix, so the source counted here is the plan `runTixCuda` runs. */
+export function sizesOf(program, fn, inputs) {
+  const f = program.current.value.functions.find(x => x.name === fn);
+  const values = {};
+  for (const p of f.params)
+    for (const [i, dim] of p.shape.entries()) {
+      const key = plain(dim);
+      if (key !== undefined && inputs[p.name]) values[key] = inputs[p.name].shape[i];
+    }
+  return values;
+}
+
 /** Times `runs` benchmark calls of one lowering; each call is a warm-up plus the median of three launches. */
 export async function bench(program, fn, inputs, fuse, runs) {
-  const source = cudaSource(program, fn, { fuse });
+  const source = cudaSource(program, fn, { fuse, sizes: sizesOf(program, fn, inputs) });
   const samples = [];
   let result;
   for (let i = 0; i < runs; i++) {

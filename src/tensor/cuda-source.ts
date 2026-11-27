@@ -1,4 +1,4 @@
-import { unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
+import { termArrays, unfusedPlan, type FusionGroup, type FusionPlan, type TermArray } from './fusion.js';
 import {
   plain,
   visit,
@@ -136,7 +136,16 @@ function literal(text: string): string {
 }
 
 type Load = Extract<Expr, { kind: 'load' }>;
+type Reduce = Extract<Expr, { kind: 'reduce' }>;
 type Offset = (indices: readonly Affine[], shape: readonly Affine[]) => string;
+
+// The terms of a reduction the emitter stages for one member: the array holding them and the counter that names a
+// term's position in the fold (IRWB-030-G). A staged term is read instead of computed in the fold.
+interface StagedTerm {
+  reduction: Reduce;
+  array: string;
+  counter: string;
+}
 
 // The scalar code of one kernel: index names, temporaries and the tree walk shared by stage 2's one-statement
 // kernels and stage 3's fused kernels, so every element is computed by the same code either way.
@@ -144,6 +153,7 @@ function kernelWriter(
   dimensions: ReadonlyMap<string, string>,
   load: (e: Load, offset: Offset) => string,
   maxFold = 'minmax(ACC, VALUE, true)',
+  staged: (e: Reduce) => StagedTerm | undefined = () => undefined,
 ) {
   const lines: string[] = [];
   let indent = '  ',
@@ -151,8 +161,11 @@ function kernelWriter(
   const line = (code: string) => lines.push(indent + code);
   const dim = (a: Affine) => affine(a, n => dimensions.get(n)!);
   const indices = new Map<string, string>();
+  // Index names come from a counter, not from the map's size: a staging loop binds a reduction's axes before the
+  // fold binds them again (IRWB-030-G), and the second binding needs a name of its own.
+  let indexNames = 0;
   const bind = (id: string) => {
-    const name = `i${indices.size}`;
+    const name = `i${indexNames++}`;
     indices.set(id, name);
     return name;
   };
@@ -202,6 +215,8 @@ function kernelWriter(
       }
       case 'reduce': {
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
+        const term = staged(e);
+        if (term) line(`U ${term.counter} = 0;`);
         for (const { id, extent } of e.axes) {
           const axis = bind(id),
             n = dim(extent.dim);
@@ -218,9 +233,10 @@ function kernelWriter(
           line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
           indent += '  ';
         }
-        const value = scalar(e.body);
+        const value = term ? `${term.array}[${term.counter}]` : scalar(e.body);
         const fold = maxFold.replace('ACC', acc).replace('VALUE', value);
         line(`${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : fold};`);
+        if (term) line(`++${term.counter};`);
         for (const _axis of e.axes) {
           indent = indent.slice(2);
           line('}');
@@ -340,8 +356,10 @@ function emitGroup(
   ];
   const suffix = (name: string) => tensorName(name).slice(1);
   const rowBuffers = [...group.staged, ...group.buffered];
+  const terms: TermArray[] = block ? termArrays(group, members) : [];
   const registers = new Map<string, string>();
   let current = members[0];
+  let currentTerms: TermArray[] = [];
   const operands = (e: Expr, inReduction: boolean): boolean =>
     e.kind === 'load'
       ? inReduction && !rowBuffers.includes(e.name)
@@ -361,6 +379,10 @@ function emitGroup(
       return `${tensorName(e.name)}[${offset(e.indices, shape)}]`;
     },
     'max_nan(ACC, VALUE)',
+    (e: Reduce) => {
+      const t = currentTerms.find(x => x.reduction === e);
+      return t && { reduction: e, array: t.array, counter: 'f' + t.array.slice(1) };
+    },
   );
   w.lines.push(`// ${kernel}: ${group.statements.join(', ')}; ${group.reasons.join('; ')}`);
   // Block mode is a template on where the rows live, so that shared-memory rows are addressed as shared memory
@@ -390,12 +412,17 @@ function emitGroup(
   if (block) {
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
-    const row = rowBuffers.map(n => `n${suffix(n)}`).join(' + ');
+    // The row buffer, then one array per staged reduction (IRWB-030-G).
+    const layout = rowBuffers.map(n => ({ pointer: `r${suffix(n)}`, length: `n${suffix(n)}` }));
+    for (const t of terms) {
+      const i = t.array.slice(1);
+      w.line(`const U na${i} = ${product(t.reduction.axes.map(a => w.dim(a.extent.dim)))};`);
+      layout.push({ pointer: t.array, length: `na${i}` });
+    }
+    const row = layout.map(l => l.length).join(' + ');
     w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
-    rowBuffers.forEach((name, i) =>
-      w.line(
-        `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
-      ),
+    layout.forEach((l, i) =>
+      w.line(`float* const ${l.pointer} = ${i ? `${layout[i - 1].pointer} + ${layout[i - 1].length}` : 'base'};`),
     );
     for (const name of group.staged) {
       const s = suffix(name);
@@ -405,6 +432,28 @@ function emitGroup(
     members.forEach((m, j) => {
       current = m;
       const s = suffix(m.name);
+      currentTerms = terms.filter(t => t.member === m);
+      // A rank-depth member has one element per block point, so thread 0 evaluates every term of its reductions.
+      // The whole block computes the terms instead, into the term array, before thread 0 folds them in order.
+      for (const t of currentTerms) {
+        const i = t.array.slice(1),
+          q = `q${i}`;
+        w.line(`for (U ${q} = threadIdx.x; ${q} < na${i}; ${q} += blockDim.x) {`);
+        w.enter();
+        const axes = t.reduction.axes;
+        if (axes.length > 1) w.line(`U at${i} = ${q};`);
+        for (let p = axes.length - 1; p >= 0; --p) {
+          const axis = w.bind(axes[p].id),
+            d = w.dim(axes[p].extent.dim);
+          if (axes.length === 1) w.line(`const I ${axis} = ${q};`);
+          else w.line(`const I ${axis} = at${i} % ${d};`);
+          if (axes.length > 1 && p > 0) w.line(`at${i} /= ${d};`);
+        }
+        w.line(`${t.array}[${q}] = ${w.scalar(t.reduction.body)};`);
+        w.leave();
+        w.line('}');
+      }
+      if (currentTerms.length) w.line('__syncthreads();');
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
       if (m.axes.length > depth) w.line('U rest = e;');
@@ -423,13 +472,19 @@ function emitGroup(
     // The host computes the same lengths from the same shape values.
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
-    const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
+    const hostRow = [
+      ...rowBuffers.map(n => lengthOf(n, hostDim)),
+      ...terms.map(t => product(t.reduction.axes.map(a => hostDim(a.extent.dim)))),
+    ].join(' + ');
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
-      `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
+      `  const U longest_${kernel} = std::max<U>({${[
+        ...lengths,
+        ...terms.map(t => product(t.reduction.axes.map(a => hostDim(a.extent.dim)))),
+      ].join(', ')}, static_cast<U>(1)});`,
       `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
     );
     hasWork = `grid_${kernel}`;
