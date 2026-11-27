@@ -1,7 +1,7 @@
 ---
 Title: 'Liveness in the standard library: interface, scope decision, layout'
 Ticket: IRWB-046-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir

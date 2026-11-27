@@ -9,7 +9,15 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/stdlib/flow/liveness.ts
+      Note: the liveness primitive, with the required scope and the unreachable-block semantics
+    - Path: repo://src/stdlib/index.ts
+      Note: 'the library index: layering rule and one line per later module'
+    - Path: repo://src/typed/backend/coalesce.ts
+      Note: second client, the sweep deleted
+    - Path: repo://src/typed/backend/regalloc.ts
+      Note: first client, intervals() now calls the primitive under all-blocks
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T18:34:32.305352142-05:00
