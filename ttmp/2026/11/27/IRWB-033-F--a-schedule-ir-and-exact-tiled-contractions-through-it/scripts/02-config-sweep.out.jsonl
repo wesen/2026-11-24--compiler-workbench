@@ -1,0 +1,58 @@
+{"config":"{\"bm\":64,\"bn\":64,\"bk\":32,\"tm\":4,\"tn\":4}","threads":256,"verdict":"equal","ms512":0.08316799998283386,"ms4096":45.175743103027344}
+{"config":"{\"bm\":64,\"bn\":64,\"bk\":32,\"tm\":4,\"tn\":4,\"double\":false}","threads":256,"verdict":"equal","ms512":0.07955200225114822,"ms4096":21.28816032409668}
+{"config":"{\"bm\":64,\"bn\":64,\"bk\":16,\"tm\":4,\"tn\":4}","threads":256,"verdict":"equal","ms512":0.07414399832487106,"ms4096":21.094432830810547}
+{"config":"{\"bm\":64,\"bn\":64,\"bk\":64,\"tm\":4,\"tn\":4}","threads":256,"verdict":"equal","ms512":0.1194240003824234,"ms4096":77.52355194091797}
+{"config":"{\"bm\":128,\"bn\":64,\"bk\":32,\"tm\":4,\"tn\":4}","threads":512,"verdict":"equal","ms512":0.0822720006108284,"ms4096":39.500545501708984}
+{"config":"{\"bm\":64,\"bn\":128,\"bk\":32,\"tm\":4,\"tn\":4}","threads":512,"verdict":"equal","ms512":0.07209599763154984,"ms4096":33.87535858154297}
+{"config":"{\"bm\":128,\"bn\":128,\"bk\":32,\"tm\":8,\"tn\":4}","threads":512,"verdict":"equal","ms512":0.12111999839544296,"ms4096":29.317279815673828}
+{"config":"{\"bm\":128,\"bn\":128,\"bk\":32,\"tm\":8,\"tn\":4,\"double\":false}","threads":512,"verdict":"equal","ms512":0.12332800030708313,"ms4096":20.021760940551758}
+{"config":"{\"bm\":256,\"bn\":128,\"bk\":32,\"tm\":8,\"tn\":4}","threads":1024,"verdict":"equal","ms512":0.19494399428367615,"ms4096":19.667007446289062}
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-h-irwb-033-f/dist/tensor/cuda-runtime.js:126
+            throw new Error(diagnostic || failure.message, { cause: error });
+                  ^
+
+Error: main.cu(227): warning #177-D: variable "sm_shared" was declared but never referenced
+    const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;
+            ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+main.cu(227): warning #177-D: variable "sm_blocks" was declared but never referenced
+    const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;
+                                         ^
+
+main.cu(227): warning #177-D: variable "sm_threads" was declared but never referenced
+    const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;
+                                                                     ^
+
+main.cu(230): warning #177-D: variable "K_k0" was declared but never referenced
+    const I M_k0 = (d0), N_k0 = (d2), K_k0 = (d1);
+                                      ^
+
+main.cu(20): warning #177-D: function "minmax" was declared but never referenced
+  __attribute__((device)) static float minmax(float a, float b, bool maximum) {
+                                       ^
+
+too many resources requested for launch
+    at Module.runCudaBatch (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-h-irwb-033-f/dist/tensor/cuda-runtime.js:126:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Promise.all (index 0)
+    at async file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-h-irwb-033-f/ttmp/2026/11/27/IRWB-033-F--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/02-config-sweep.mjs:51:26 {
+  [cause]: Error: Command failed: /home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-h-irwb-033-f/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-cIx1As --runtime-input inputs.bin -- --gate=fused
+  
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:509:28)
+      at maybeClose (node:internal/child_process:1124:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-h-irwb-033-f/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-cIx1As --runtime-input inputs.bin -- --gate=fused',
+    stdout: '{"host":"manuel@bling","hash":"8b6d7ec92f5f372d0031c279c1869e82e09bcd623b380cd284dd46aa6a2e93ff","compiled":true,"compileMs":1099,"runMs":532,"exit":1,"stdout":"","stderr":"main.cu(227): warning #177-D: variable \\"sm_shared\\" was declared but never referenced\\n    const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;\\n            ^\\n\\nRemark: The warnings can be suppressed with \\"-diag-suppress <warning-number>\\"\\n\\nmain.cu(227): warning #177-D: variable \\"sm_blocks\\" was declared but never referenced\\n    const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;\\n                                         ^\\n\\nmain.cu(227): warning #177-D: variable \\"sm_threads\\" was declared but never referenced\\n    const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;\\n                                                                     ^\\n\\nmain.cu(230): warning #177-D: variable \\"K_k0\\" was declared but never referenced\\n    const I M_k0 = (d0), N_k0 = (d2), K_k0 = (d1);\\n                                      ^\\n\\nmain.cu(20): warning #177-D: function \\"minmax\\" was declared but never referenced\\n  __attribute__((device)) static float minmax(float a, float b, bool maximum) {\\n                                       ^\\n\\ntoo many resources requested for launch\\n","outputs":["results.bin"]}\n',
+    stderr: ''
+  }
+}
+
+Node.js v24.18.0

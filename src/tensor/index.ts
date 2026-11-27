@@ -9,7 +9,7 @@ import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { lowerSchedule } from './schedule.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -65,7 +65,8 @@ export interface LoweringOptions {
 }
 function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  // The compiler: fusion plan -> schedule artifact -> checked scheduling passes (schedule.ts) -> CUDA.
+  return { f, source: emitCuda(f, lowerSchedule(f, options?.fuse !== false)) };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {

@@ -14,17 +14,19 @@ import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitCuda, takesGate } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
+import { lowerSchedule, ScheduleIR, ScheduleOrdered, type ScheduleUnit } from './schedule.js';
 
 interface CudaKernel {
   name: string;
-  mapping: 'thread' | 'block';
+  mapping: 'thread' | 'block' | 'tile';
   statements: string[];
   /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
   gated?: boolean;
+  /** The tile configurations of a tiled contraction, and whether they double-buffer (IRWB-033-F). */
+  tile?: { configs: number[][]; double: boolean };
 }
 interface CudaUnit {
   fn: string;
@@ -35,7 +37,7 @@ interface CudaUnit {
 
 export const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '2',
+  version: '3',
   description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
   entities: unit => unit.kernels.map(k => k.name),
   validate(value) {
@@ -47,11 +49,17 @@ export const CudaIR = defineIR<CudaUnit>({
       unit.kernels.some(
         k =>
           typeof k?.name !== 'string' ||
-          !['thread', 'block'].includes(k.mapping) ||
+          !['thread', 'block', 'tile'].includes(k.mapping) ||
           !['boolean', 'undefined'].includes(typeof k.gated) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
-          k.statements.some(s => typeof s !== 'string'),
+          k.statements.some(s => typeof s !== 'string') ||
+          (k.tile !== undefined &&
+            (!Array.isArray(k.tile.configs) ||
+              typeof k.tile.double !== 'boolean' ||
+              !k.tile.configs.every(
+                c => Array.isArray(c) && c.length === 5 && c.every(x => typeof x === 'number'),
+              ))),
       )
     )
       throw Error('Invalid CUDA kernel list');
@@ -97,6 +105,28 @@ export function kernelCorrespondence(
   };
 }
 
+/** The schedule as a framework correspondence: each schedule kernel and the statements it computes. The manager
+ * checks both entity lists against the artifacts, because TixIR and ScheduleIR both enumerate entities. */
+export function scheduleCorrespondence(
+  baseline: Artifact<Module>,
+  schedule: Artifact<ScheduleUnit>,
+): Correspondence {
+  const { fn, kernels } = schedule.value;
+  return {
+    id: 'schedule',
+    from: { artifact: baseline.id, revision: baseline.revision },
+    to: { artifact: schedule.id, revision: schedule.revision },
+    relation: 'statements-to-schedule',
+    sourceEntities: baseline.value.functions.flatMap(f => f.statements.map(s => f.name + '/' + s.name)),
+    targetEntities: kernels.map(k => k.kernel),
+    entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.kernel] })),
+    evidence: {
+      scheduled: kernels.map(k => (k.tile ? 'tile' : k.mapping)),
+      refusals: schedule.value.refusals.map(r => `${r.kernel}: ${r.reason}`),
+    },
+  };
+}
+
 // The relation is exact: the lowered function must give the current revision's f32 meaning bit for bit, signed
 // zeros and infinities included (IRWB-019 F17). The emitter makes that possible: explicit round-to-nearest
 // arithmetic, so nothing contracts, and exp, log and tanh in double, rounded, which equal Math.fround(Math.exp(x))
@@ -130,8 +160,10 @@ type CudaSample = ReturnType<typeof cudaCases>[number] & { gate?: Gate };
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
   const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
-  const outputs = { subject: CudaIR };
-  const ports = { baseline: TixIR, fn: FunctionName, ...outputs };
+  const outputs = { subject: CudaIR, schedule: ScheduleIR };
+  // The meaning invariant compares the Tix baseline with the CUDA subject; the schedule output is checked by
+  // the order property instead.
+  const ports = { baseline: TixIR, fn: FunctionName, subject: CudaIR };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
     id: 'tensor.cuda-meaning',
     version: '2',
@@ -202,12 +234,16 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
-    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
+    version: '3',
+    description:
+      'Lower a Tix function through its schedule to CUDA, fused or one kernel per statement, and check it on the GPU',
     inputs,
-    outputs,
+    outputs: { subject: CudaIR, schedule: ScheduleIR },
     cache: 'never',
-    correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' }],
+    correspondence: [
+      { id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' },
+      { id: 'schedule', from: 'baseline', to: 'schedule', relation: 'statements-to-schedule' },
+    ],
     ensures: [
       {
         invariant,
@@ -217,18 +253,32 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
           subject: { from: 'outputs', port: 'subject' },
         },
       },
+      // The schedule itself is checked against the algorithm: every reduction folds ascending, one rounded
+      // term at a time (schedule.ts). What this cannot cover — the emitter's realization of the schedule — is
+      // what the exact differential above runs on both sides of every gate.
+      { property: ScheduleOrdered, subject: { from: 'outputs', port: 'schedule' } },
     ],
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
-      const kernels = plan.groups.map(g => ({
+      const schedule = lowerSchedule(f, fuse);
+      const kernels = schedule.kernels.map(g => ({
         name: g.kernel,
-        mapping: g.mapping,
+        mapping: g.tile ? ('tile' as const) : g.mapping,
         statements: g.statements,
         ...(g.gated && { gated: true }),
+        ...(g.tile && {
+          tile: {
+            configs: g.tile.configs.map(c => [c.bm, c.bn, c.bk, c.tm, c.tn]),
+            double: g.tile.double,
+          },
+        }),
       }));
-      const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
-      return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
+      const subject = cudaArtifact(fn, emitCuda(f, schedule), kernels);
+      const planned = createArtifact(ScheduleIR, 'tix-schedule/' + fn, schedule);
+      return {
+        outputs: { subject, schedule: planned },
+        correspondence: [kernelCorrespondence(baseline, subject), scheduleCorrespondence(baseline, planned)],
+      };
     },
   });
 
@@ -242,11 +292,18 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     const manager = options?.manager ?? new AnalysisManager();
     const fuse = options?.fuse !== false;
     try {
-      if (candidate)
-        await manager.verifyTransformation({ baseline, fn, fuse }, { subject: candidate }, pass, [
-          kernelCorrespondence(baseline, candidate),
-        ]);
-      else await manager.execute(pass, { baseline, fn, fuse });
+      if (candidate) {
+        // A supplied candidate is checked against the schedule the pipeline would produce, so the schedule
+        // correspondence and the order property have an artifact to name.
+        const f = selectFunction(baseline.value, fn);
+        const planned = createArtifact(ScheduleIR, 'tix-schedule/' + fn, lowerSchedule(f, fuse));
+        await manager.verifyTransformation(
+          { baseline, fn, fuse },
+          { subject: candidate, schedule: planned },
+          pass,
+          [kernelCorrespondence(baseline, candidate), scheduleCorrespondence(baseline, planned)],
+        );
+      } else await manager.execute(pass, { baseline, fn, fuse });
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

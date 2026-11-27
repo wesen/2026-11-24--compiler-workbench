@@ -228,7 +228,7 @@ export function applyNativePassSync<S, P>(
   gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
   params?: P,
 ): PassResult<S> {
-  if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
+  if (Object.keys(pass.needs ?? {}).length || pass.contract)
     throw new PassError('badResult', 'This pass requires the asynchronous analysis manager');
   const view = openIR(before, pass.adapter);
   const produced = pass.run({
@@ -245,13 +245,34 @@ export function applyNativePassSync<S, P>(
     if (produced instanceof Promise) void produced.catch(() => {});
     throw new PassError('badResult', 'Expected a synchronous native result');
   }
-  const base = { pass: { id: pass.id, version: pass.version }, before, preserved: [] };
+  const base = { pass: { id: pass.id, version: pass.version }, before, preserved: [] as PreservationOutcome[] };
   const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
   if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
   enforceWrites(pass, changes);
   const contract = gate(before, after);
   if (contract?.ok !== true)
     throw new PassError('contractRejected', contract?.reason ?? 'Candidate rejected', contract?.evidence);
+  // IRWB-033-F: a fixed synchronous API (the tensor domain's cudaSource) must run checked passes inside a pure
+  // function, which the asynchronous analysis manager cannot serve. For such passes, `preserves` is checked here
+  // by recomputing each preserved analysis on both revisions and comparing canonical values. Only analyses that
+  // declare no effects and do not use the contract context may be preserved this way; anything else needs the
+  // manager, as before.
+  for (const definition of pass.preserves ?? []) {
+    if (definition.effects?.length)
+      throw new PassError(
+        'badResult',
+        `Pass ${pass.id} preserves ${definition.id}, which declares effects; use the asynchronous manager`,
+      );
+    const recompute = (artifact: Artifact<S>) =>
+      definition.run(undefined as never, artifact, undefined);
+    if (canonical(recompute(before)) !== canonical(recompute(after)))
+      throw new PassError(
+        'preserveViolated',
+        `Pass ${pass.id} claims to preserve ${definition.id}, but it changed`,
+        { analysis: definition.id },
+      );
+    base.preserved.push({ analysis: definition.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+  }
   return {
     ...base,
     changed: true,
