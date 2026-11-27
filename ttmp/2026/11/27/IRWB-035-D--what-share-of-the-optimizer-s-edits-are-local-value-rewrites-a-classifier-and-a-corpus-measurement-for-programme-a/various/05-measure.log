@@ -1,0 +1,223 @@
+{
+  "checks": {
+    "projects": 100,
+    "runs": 100,
+    "records": 11757,
+    "classifiedRecords": 11757,
+    "findings": 11751,
+    "otherFindings": 0
+  },
+  "perPipeline": {
+    "O2": {
+      "findings": {
+        "local": 395,
+        "structural": 1623,
+        "other": 0
+      },
+      "records": {
+        "local": 395,
+        "structural": 1626,
+        "other": 0
+      },
+      "weight": {
+        "local": 102332,
+        "structural": 1087062,
+        "other": 0
+      },
+      "verified": 183,
+      "facts": 212,
+      "strengths": {
+        "proof": 75,
+        "by-construction": 45,
+        "reduced-width+argument": 69
+      },
+      "final": 755433
+    },
+    "speed": {
+      "findings": {
+        "local": 997,
+        "structural": 8736,
+        "other": 0
+      },
+      "records": {
+        "local": 997,
+        "structural": 8739,
+        "other": 0
+      },
+      "weight": {
+        "local": 133987,
+        "structural": 4820905,
+        "other": 0
+      },
+      "verified": 362,
+      "facts": 635,
+      "strengths": {
+        "proof": 178,
+        "by-construction": 116,
+        "reduced-width+argument": 83,
+        "exhaustive": 1
+      },
+      "final": 690157
+    }
+  },
+  "ruleCounts": {
+    "O2": {
+      "add-zero": 4,
+      "mul-one": 2,
+      "sub-zero": 1,
+      "mul-zero": 2,
+      "sub-self": 1,
+      "fold-mul": 9,
+      "not-lt": 62,
+      "fold-sub": 13,
+      "fold-eqz": 2,
+      "mul-pow2": 46,
+      "not-le": 2,
+      "not-ge": 1,
+      "pow2-mul": 19,
+      "not-gt": 3,
+      "fold-shl": 19,
+      "fold-add": 1,
+      "fold-gt": 1,
+      "not-ne": 1
+    },
+    "speed": {
+      "add-zero": 4,
+      "mul-one": 2,
+      "sub-zero": 1,
+      "mul-zero": 2,
+      "sub-self": 1,
+      "fold-mul": 15,
+      "not-lt": 72,
+      "fold-sub": 33,
+      "fold-eqz": 2,
+      "mul-pow2": 131,
+      "not-le": 4,
+      "not-ge": 1,
+      "pow2-mul": 28,
+      "not-gt": 5,
+      "fold-add": 11,
+      "fold-shl": 54,
+      "div-one": 1,
+      "zero-add": 9,
+      "fold-gt": 1,
+      "not-ne": 1
+    }
+  },
+  "shapeCounts": {
+    "O2": {
+      "read-to-single-definition": 51,
+      "read-to-constant": 141,
+      "div-pow2-to-shr": 10,
+      "rem-pow2-to-and": 13
+    },
+    "speed": {
+      "read-to-single-definition": 325,
+      "read-to-constant": 264,
+      "div-pow2-to-shr": 22,
+      "rem-pow2-to-and": 27
+    }
+  },
+  "structuralByKind": {
+    "O2": {
+      "remove": {
+        "findings": 191,
+        "records": 191,
+        "instructions": 32898
+      },
+      "retarget": {
+        "findings": 517,
+        "records": 517,
+        "instructions": 674585
+      },
+      "unreachable": {
+        "findings": 472,
+        "records": 472,
+        "instructions": 0
+      },
+      "local": {
+        "findings": 100,
+        "records": 100,
+        "instructions": 0
+      },
+      "insert": {
+        "findings": 116,
+        "records": 116,
+        "instructions": 120866
+      },
+      "replaceStmt": {
+        "findings": 17,
+        "records": 17,
+        "instructions": 0
+      },
+      "move": {
+        "findings": 65,
+        "records": 65,
+        "instructions": 41848
+      },
+      "merge": {
+        "findings": 22,
+        "records": 22,
+        "instructions": 0
+      },
+      "block": {
+        "findings": 16,
+        "records": 16,
+        "instructions": 0
+      }
+    },
+    "speed": {
+      "local": {
+        "findings": 1162,
+        "records": 1162,
+        "instructions": 0
+      },
+      "block": {
+        "findings": 1682,
+        "records": 1682,
+        "instructions": 0
+      },
+      "remove": {
+        "findings": 1300,
+        "records": 1300,
+        "instructions": 337029
+      },
+      "inline": {
+        "findings": 235,
+        "records": 235,
+        "instructions": 0
+      },
+      "move": {
+        "findings": 1148,
+        "records": 1148,
+        "instructions": 2672212
+      },
+      "merge": {
+        "findings": 518,
+        "records": 518,
+        "instructions": 0
+      },
+      "unreachable": {
+        "findings": 1348,
+        "records": 1348,
+        "instructions": 0
+      },
+      "retarget": {
+        "findings": 847,
+        "records": 847,
+        "instructions": 772444
+      },
+      "insert": {
+        "findings": 149,
+        "records": 149,
+        "instructions": 98047
+      },
+      "replaceStmt": {
+        "findings": 209,
+        "records": 209,
+        "instructions": 724866
+      }
+    }
+  },
+  "unexplained": 0
+}

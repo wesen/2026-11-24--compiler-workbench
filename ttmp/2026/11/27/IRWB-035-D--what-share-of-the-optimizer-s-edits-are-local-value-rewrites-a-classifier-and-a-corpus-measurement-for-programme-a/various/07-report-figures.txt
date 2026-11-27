@@ -1,0 +1,40 @@
+## Instruction weight by group
+
+| pipeline | group | findings | weight | share of weight |
+| --- | --- | --- | --- | --- |
+| O2 | local | 395 | 102,332 | 10.5 % |
+| O2 | content: statements created, removed or replaced | 324 | 153,764 | 15.8 % |
+| O2 | bookkeeping: branch targets, block moves/merges/prunes, locals, inlined calls | 1,192 | 716,433 | 73.7 % |
+| speed | local | 997 | 133,987 | 2.8 % |
+| speed | content: statements created, removed or replaced | 1,658 | 1,159,942 | 24.5 % |
+| speed | bookkeeping: branch targets, block moves/merges/prunes, locals, inlined calls | 6,940 | 3,444,656 | 72.7 % |
+
+Each class sums the weights of its edits, and an instruction counts once per edit that touches it, so the weight total exceeds the program: O2 1,189,394 versus 755,433 executed instructions of the head revisions (1.57x); speed 4,954,892 versus 690,157 (7.18x).
+
+Among the edits that change the program content (a replaced value; a statement created, removed or replaced), the instruction weight splits:
+
+| pipeline | local weight | content structural weight | local share of content weight |
+| --- | --- | --- | --- |
+| O2 | 102,332 | 153,764 | 40.0 % |
+| speed | 133,987 | 1,159,942 | 10.4 % |
+
+## Local share per project
+
+O2: 47 projects with edits; median local share 25.0 %, min 0.0 %, max 100.0 %; 11 projects above 50 %.
+
+speed: 49 projects with edits; median local share 16.7 %, min 0.0 %, max 75.0 %; 4 projects above 50 %.
+
+## Coverage and what would raise it
+
+| pipeline | local findings | verified | fact-guarded | read-to-constant | read-to-single-definition | div/rem-pow2 |
+| --- | --- | --- | --- | --- | --- | --- |
+| O2 | 395 | 183 (46.3 %) | 212 (53.7 %) | 141 | 51 | 23 |
+| speed | 997 | 362 (36.3 %) | 635 (63.7 %) | 264 | 325 | 49 |
+
+## Sensitivity of the local share
+
+| pipeline | local findings | local share | subst local rewrites | local share without subst | local records | records share |
+| --- | --- | --- | --- | --- | --- | --- |
+| O2 | 395 | 19.6 % | 51 | 17.0 % | 395 / 2,021 | 19.5 % |
+| speed | 997 | 10.2 % | 331 | 6.8 % | 997 / 9,736 | 10.2 % |
+

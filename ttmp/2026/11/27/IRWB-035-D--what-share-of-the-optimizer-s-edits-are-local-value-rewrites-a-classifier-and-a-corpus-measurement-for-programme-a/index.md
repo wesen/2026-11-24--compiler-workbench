@@ -6,11 +6,16 @@ Topics:
     - compiler
     - ir
     - verification
-    - measurement
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/edit-classes.ts
+      Note: the classifier tool (IRWB-035-D)
+    - Path: repo://tests/typed/edit-classes.test.mjs
+      Note: the classifier test
+    - Path: repo://ttmp/2026/11/27/IRWB-035-D--what-share-of-the-optimizer-s-edits-are-local-value-rewrites-a-classifier-and-a-corpus-measurement-for-programme-a/design-doc/02-report-what-share-of-o2-and-speed-s-edits-are-local-value-rewrites.md
+      Note: the report
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T09:44:52.499618896-05:00
@@ -38,7 +43,6 @@ Current status: **active**
 - compiler
 - ir
 - verification
-- measurement
 
 ## Tasks
 

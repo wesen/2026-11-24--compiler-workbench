@@ -248,18 +248,23 @@ function definesAs(ctx: Context, sid: string, fn: string, local: string, tree: V
  * The fact-guarded rule shapes, checked recursively: the produced tree must be the consumed tree rewritten at
  * positions the shapes explain, and every made value must cite its premise. Returns the shape names, or a reason.
  */
-function explainFact(ctx: Context, fn: string, before: ValueTree, after: ValueTree): { shapes: string[] } | {
-  reason: string;
-} {
+function explainFact(
+  ctx: Context,
+  fn: string,
+  before: ValueTree,
+  after: ValueTree,
+):
+  | { shapes: string[] }
+  | {
+      reason: string;
+    } {
   const shapes: string[] = [];
   const walk = (b: ValueTree, a: ValueTree): string | null => {
     if (sameValueTree(b, a)) return null; // untouched subtree
     // read -> constant: the citation names a definition of that local that assigns this constant
     if (b.op === 'get' && a.op === 'const') {
       const local = localName(ctx.before, fn, Number(b.imm));
-      const cited = ctx
-        .citations(a)
-        .some(c => c.startsWith('local:') || definesAs(ctx, c, fn, local, a));
+      const cited = ctx.citations(a).some(c => c.startsWith('local:') || definesAs(ctx, c, fn, local, a));
       if (cited) shapes.push('read-to-constant');
       return cited ? null : `read-to-constant without a constant definition of ${local}`;
     }
@@ -289,12 +294,7 @@ function explainFact(ctx: Context, fn: string, before: ValueTree, after: ValueTr
       }
       return `read of ${local} replaced by a tree that is not its definition`;
     }
-    if (
-      b.op === a.op &&
-      b.imm === a.imm &&
-      typeOf(b) === typeOf(a) &&
-      b.args.length === a.args.length
-    ) {
+    if (b.op === a.op && b.imm === a.imm && typeOf(b) === typeOf(a) && b.args.length === a.args.length) {
       for (let i = 0; i < b.args.length; i++) {
         const bad = walk(b.args[i], a.args[i]);
         if (bad) return bad;
@@ -345,7 +345,8 @@ function classifyChain(ctx: Context, c: Chain): ClassifiedEdit {
     return { ...base, cls: 'other', how: 'unexplained', reason: 'chain endpoint not in its revision' };
   const before = valueTree(ctx.before, c.from);
   const after = valueTree(ctx.after, c.to);
-  if (sameValueTree(before, after)) return { ...base, cls: 'other', how: 'no-op', reason: 'rebuilt, same tree' };
+  if (sameValueTree(before, after))
+    return { ...base, cls: 'other', how: 'no-op', reason: 'rebuilt, same tree' };
   const table = PASS_RULES[c.pass];
   if (table) {
     const derived = deriveWith(table, before);
@@ -470,13 +471,14 @@ export function affectedEntities(
       // `local`, `note`, `inline`: no machine instruction names the entity itself
       return { side: 'after', entities: after };
   }
-};
+}
 
 /** Executed instructions of one revision whose `covers` intersect `entities` (each instruction once). */
 function weightOf(heat: RevisionHeat, entities: ReadonlySet<string>): number {
   if (!entities.size) return 0;
   let n = 0;
-  for (const ins of heat.image.insns) if (ins.covers.some(c => entities.has(c))) n += heat.counts[ins.offset >>> 2];
+  for (const ins of heat.image.insns)
+    if (ins.covers.some(c => entities.has(c))) n += heat.counts[ins.offset >>> 2];
   return n;
 }
 
@@ -536,7 +538,9 @@ export function classifySteps(
 }
 
 /** The classes' edit-record counts and instruction weights, per class. */
-export function totals(edits: readonly ClassifiedEdit[]): Record<EditClass, { edits: number; records: number; instructions: number }> {
+export function totals(
+  edits: readonly ClassifiedEdit[],
+): Record<EditClass, { edits: number; records: number; instructions: number }> {
   const out = {
     local: { edits: 0, records: 0, instructions: 0 },
     structural: { edits: 0, records: 0, instructions: 0 },
@@ -551,9 +555,11 @@ export function totals(edits: readonly ClassifiedEdit[]): Record<EditClass, { ed
 }
 
 /** The rules a set of local rewrites cited, with their recorded evidence strength. */
-export function ruleCoverage(
-  edits: readonly ClassifiedEdit[],
-): { readonly verified: number; readonly facts: number; readonly byRule: Record<string, number> } {
+export function ruleCoverage(edits: readonly ClassifiedEdit[]): {
+  readonly verified: number;
+  readonly facts: number;
+  readonly byRule: Record<string, number>;
+} {
   let verified = 0,
     facts = 0;
   const byRule: Record<string, number> = {};

@@ -1,0 +1,17 @@
+{"id":"blend","pipeline":"O2","low":1,"high":40,"same":true,"heads":["707852c20def","707852c20def"]}
+{"id":"blend","pipeline":"speed","low":1,"high":40,"same":true,"heads":["842428b36077","842428b36077"]}
+{"id":"bounds-lab","pipeline":"O2","low":1,"high":40,"same":true,"heads":["79d66cea84c5","79d66cea84c5"]}
+{"id":"bounds-lab","pipeline":"speed","low":1,"high":40,"same":true,"heads":["afb587a24f2c","afb587a24f2c"]}
+{"id":"bytecode-vm","pipeline":"O2","low":1,"high":40,"same":true,"heads":["06ababd745ac","06ababd745ac"]}
+{"id":"bytecode-vm","pipeline":"speed","low":1,"high":40,"same":true,"heads":["06ababd745ac","06ababd745ac"]}
+{"id":"call-chain","pipeline":"O2","low":1,"high":40,"same":true,"heads":["faa806bad04a","faa806bad04a"]}
+{"id":"call-chain","pipeline":"speed","low":1,"high":40,"same":true,"heads":["ab1fa2087397","ab1fa2087397"]}
+{"id":"f32-dsp","pipeline":"O2","low":1,"high":40,"same":true,"heads":["16ddeb35b5b4","16ddeb35b5b4"]}
+{"id":"f32-dsp","pipeline":"speed","low":1,"high":40,"same":true,"heads":["7dd31a23a802","7dd31a23a802"]}
+{"id":"lz-roundtrip","pipeline":"O2","low":1,"high":40,"same":true,"heads":["8dbd38c8169b","8dbd38c8169b"]}
+{"id":"lz-roundtrip","pipeline":"speed","low":1,"high":40,"same":true,"heads":["9c3dadbf203f","9c3dadbf203f"]}
+{"id":"orders","pipeline":"O2","low":1,"high":40,"same":true,"heads":["f6f6a51ae9a0","f6f6a51ae9a0"]}
+{"id":"orders","pipeline":"speed","low":1,"high":40,"same":true,"heads":["ff8d6d4abae5","ff8d6d4abae5"]}
+{"id":"regex-nfa","pipeline":"O2","low":1,"high":40,"same":true,"heads":["c342b4b4ccbd","c342b4b4ccbd"]}
+{"id":"regex-nfa","pipeline":"speed","low":1,"high":40,"same":true,"heads":["e679c4bf8f60","e679c4bf8f60"]}
+{"projects":8,"low":1,"high":40,"same":16,"differ":0}

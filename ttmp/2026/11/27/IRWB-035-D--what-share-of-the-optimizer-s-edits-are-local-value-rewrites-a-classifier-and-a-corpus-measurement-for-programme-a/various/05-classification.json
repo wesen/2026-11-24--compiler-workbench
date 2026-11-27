@@ -1,0 +1,2644 @@
+{
+  "inputs": {
+    "projects": [
+      "across-calls",
+      "algebra",
+      "blend",
+      "bounds-lab",
+      "bounds-offset",
+      "bounds-param",
+      "bounds-two",
+      "branches",
+      "bytecode-vm",
+      "call-chain",
+      "calls",
+      "checksum",
+      "chess-search",
+      "collatz",
+      "constants",
+      "dead-code",
+      "diagnostics",
+      "distinct",
+      "div-checks",
+      "div-magic",
+      "early-exit",
+      "f32-dsp",
+      "first-steps",
+      "fixed-point",
+      "fragments",
+      "gcd",
+      "heat-lab",
+      "histogram",
+      "licm-nested",
+      "licm-traps",
+      "lz-roundtrip",
+      "match-enum",
+      "my-analysis",
+      "my-first-pass",
+      "nested-loops",
+      "orders",
+      "params-demo",
+      "pressure",
+      "ramp",
+      "records",
+      "regalloc-lab",
+      "regex-nfa",
+      "sha-chacha",
+      "sort",
+      "start-here",
+      "strength",
+      "strings",
+      "ui-gallery",
+      "value-numbering",
+      "wrong-shift"
+    ],
+    "count": 1,
+    "weightCount": 10,
+    "seed": 7
+  },
+  "checks": {
+    "projects": 100,
+    "runs": 100,
+    "records": 11757,
+    "classifiedRecords": 11757,
+    "findings": 11751,
+    "otherFindings": 0
+  },
+  "perPipeline": {
+    "O2": {
+      "findings": {
+        "local": 395,
+        "structural": 1623,
+        "other": 0
+      },
+      "records": {
+        "local": 395,
+        "structural": 1626,
+        "other": 0
+      },
+      "weight": {
+        "local": 102332,
+        "structural": 1087062,
+        "other": 0
+      },
+      "verified": 183,
+      "facts": 212,
+      "strengths": {
+        "proof": 75,
+        "by-construction": 45,
+        "reduced-width+argument": 69
+      },
+      "final": 755433
+    },
+    "speed": {
+      "findings": {
+        "local": 997,
+        "structural": 8736,
+        "other": 0
+      },
+      "records": {
+        "local": 997,
+        "structural": 8739,
+        "other": 0
+      },
+      "weight": {
+        "local": 133987,
+        "structural": 4820905,
+        "other": 0
+      },
+      "verified": 362,
+      "facts": 635,
+      "strengths": {
+        "proof": 178,
+        "by-construction": 116,
+        "reduced-width+argument": 83,
+        "exhaustive": 1
+      },
+      "final": 690157
+    }
+  },
+  "perPass": {
+    "O2|subst": {
+      "pass": "subst",
+      "records": 102,
+      "findings": 102,
+      "findingsByClass": {
+        "local": 51,
+        "structural": 51,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 51,
+        "structural": 51,
+        "other": 0
+      },
+      "weight": {
+        "local": 32379,
+        "structural": 14179,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {
+        "read-to-single-definition": 51
+      }
+    },
+    "speed|inline": {
+      "pass": "inline",
+      "records": 3165,
+      "findings": 3165,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 3165,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 3165,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 210874,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "speed|cfg": {
+      "pass": "cfg",
+      "records": 4234,
+      "findings": 4234,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 4234,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 4234,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 3439462,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "speed|subst": {
+      "pass": "subst",
+      "records": 662,
+      "findings": 662,
+      "findingsByClass": {
+        "local": 331,
+        "structural": 331,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 331,
+        "structural": 331,
+        "other": 0
+      },
+      "weight": {
+        "local": 33737,
+        "structural": 33726,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {
+        "read-to-single-definition": 325,
+        "read-to-constant": 6
+      }
+    },
+    "O2|simplify": {
+      "pass": "simplify",
+      "records": 140,
+      "findings": 140,
+      "findingsByClass": {
+        "local": 140,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 140,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 61353,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {
+        "not-lt": 62,
+        "mul-pow2": 46,
+        "pow2-mul": 19,
+        "add-zero": 4,
+        "not-gt": 3,
+        "mul-one": 2,
+        "mul-zero": 2,
+        "not-le": 2,
+        "not-ge": 1,
+        "not-ne": 1,
+        "sub-self": 1,
+        "sub-zero": 1
+      },
+      "shapes": {}
+    },
+    "O2|constprop": {
+      "pass": "constprop",
+      "records": 141,
+      "findings": 141,
+      "findingsByClass": {
+        "local": 141,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 141,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 6556,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {
+        "read-to-constant": 141
+      }
+    },
+    "O2|dce": {
+      "pass": "dce",
+      "records": 118,
+      "findings": 118,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 118,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 118,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 18719,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "speed|simplify": {
+      "pass": "simplify",
+      "records": 258,
+      "findings": 258,
+      "findingsByClass": {
+        "local": 258,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 258,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 60053,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {
+        "mul-pow2": 131,
+        "not-lt": 72,
+        "pow2-mul": 28,
+        "zero-add": 9,
+        "not-gt": 5,
+        "add-zero": 4,
+        "not-le": 4,
+        "mul-one": 2,
+        "mul-zero": 2,
+        "div-one": 1,
+        "not-ge": 1,
+        "not-ne": 1,
+        "sub-self": 1,
+        "sub-zero": 1
+      },
+      "shapes": {}
+    },
+    "speed|constprop": {
+      "pass": "constprop",
+      "records": 258,
+      "findings": 258,
+      "findingsByClass": {
+        "local": 258,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 258,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 26273,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {
+        "read-to-constant": 258
+      }
+    },
+    "speed|dce": {
+      "pass": "dce",
+      "records": 216,
+      "findings": 216,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 216,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 216,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 92365,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "O2|cfg": {
+      "pass": "cfg",
+      "records": 1058,
+      "findings": 1058,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 1058,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 1058,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 711175,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "O2|fold": {
+      "pass": "fold",
+      "records": 43,
+      "findings": 43,
+      "findingsByClass": {
+        "local": 43,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 43,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 1141,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {
+        "fold-shl": 19,
+        "fold-sub": 13,
+        "fold-mul": 9,
+        "fold-eqz": 2,
+        "fold-add": 1,
+        "fold-gt": 1
+      },
+      "shapes": {}
+    },
+    "O2|licm": {
+      "pass": "licm",
+      "records": 329,
+      "findings": 328,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 328,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 329,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 327506,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "speed|fold": {
+      "pass": "fold",
+      "records": 104,
+      "findings": 104,
+      "findingsByClass": {
+        "local": 104,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 104,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 12900,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {
+        "fold-shl": 54,
+        "fold-sub": 33,
+        "fold-mul": 15,
+        "fold-add": 11,
+        "fold-eqz": 2,
+        "fold-gt": 1
+      },
+      "shapes": {}
+    },
+    "speed|licm": {
+      "pass": "licm",
+      "records": 422,
+      "findings": 421,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 421,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 422,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 304241,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "speed|rotate": {
+      "pass": "rotate",
+      "records": 281,
+      "findings": 281,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 281,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 281,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 724866,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "O2|bce": {
+      "pass": "bce",
+      "records": 26,
+      "findings": 26,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 26,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 26,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "speed|bce": {
+      "pass": "bce",
+      "records": 26,
+      "findings": 26,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 26,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 26,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "O2|lvn": {
+      "pass": "lvn",
+      "records": 44,
+      "findings": 42,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 42,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 44,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 15483,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "O2|strength": {
+      "pass": "strength",
+      "records": 20,
+      "findings": 20,
+      "findingsByClass": {
+        "local": 20,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 20,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 903,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {
+        "rem-pow2-to-and": 13,
+        "div-pow2-to-shr": 10
+      }
+    },
+    "speed|lvn": {
+      "pass": "lvn",
+      "records": 64,
+      "findings": 62,
+      "findingsByClass": {
+        "local": 0,
+        "structural": 62,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 0,
+        "structural": 64,
+        "other": 0
+      },
+      "weight": {
+        "local": 0,
+        "structural": 15371,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {}
+    },
+    "speed|strength": {
+      "pass": "strength",
+      "records": 46,
+      "findings": 46,
+      "findingsByClass": {
+        "local": 46,
+        "structural": 0,
+        "other": 0
+      },
+      "recordsByClass": {
+        "local": 46,
+        "structural": 0,
+        "other": 0
+      },
+      "weight": {
+        "local": 1024,
+        "structural": 0,
+        "other": 0
+      },
+      "rules": {},
+      "shapes": {
+        "rem-pow2-to-and": 27,
+        "div-pow2-to-shr": 22
+      }
+    }
+  },
+  "perProject": {
+    "across-calls|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 160
+      },
+      "structural": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 20
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "across-calls|speed": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 160
+      },
+      "structural": {
+        "edits": 66,
+        "records": 66,
+        "instructions": 4730
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "algebra|O2": {
+      "local": {
+        "edits": 8,
+        "records": 8,
+        "instructions": 100
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 30
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "algebra|speed": {
+      "local": {
+        "edits": 8,
+        "records": 8,
+        "instructions": 100
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 30
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "blend|O2": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1140
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 1022
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "blend|speed": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1140
+      },
+      "structural": {
+        "edits": 9,
+        "records": 9,
+        "instructions": 1596
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-lab|O2": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 894
+      },
+      "structural": {
+        "edits": 36,
+        "records": 36,
+        "instructions": 10041
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-lab|speed": {
+      "local": {
+        "edits": 7,
+        "records": 7,
+        "instructions": 2391
+      },
+      "structural": {
+        "edits": 51,
+        "records": 51,
+        "instructions": 13033
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-offset|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 453
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 3384
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-offset|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 453
+      },
+      "structural": {
+        "edits": 9,
+        "records": 9,
+        "instructions": 4554
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-param|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 38
+      },
+      "structural": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 66
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-param|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 38
+      },
+      "structural": {
+        "edits": 5,
+        "records": 5,
+        "instructions": 194
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-two|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 234
+      },
+      "structural": {
+        "edits": 12,
+        "records": 12,
+        "instructions": 2886
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bounds-two|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 567
+      },
+      "structural": {
+        "edits": 16,
+        "records": 16,
+        "instructions": 3669
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "branches|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 8
+      },
+      "structural": {
+        "edits": 11,
+        "records": 11,
+        "instructions": 74
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "branches|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 8
+      },
+      "structural": {
+        "edits": 11,
+        "records": 11,
+        "instructions": 74
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bytecode-vm|O2": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 64
+      },
+      "structural": {
+        "edits": 202,
+        "records": 202,
+        "instructions": 8300
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "bytecode-vm|speed": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 64
+      },
+      "structural": {
+        "edits": 202,
+        "records": 202,
+        "instructions": 8300
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "call-chain|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 30
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "call-chain|speed": {
+      "local": {
+        "edits": 7,
+        "records": 7,
+        "instructions": 240
+      },
+      "structural": {
+        "edits": 128,
+        "records": 128,
+        "instructions": 6610
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "calls|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 90
+      },
+      "structural": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 20
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "calls|speed": {
+      "local": {
+        "edits": 10,
+        "records": 10,
+        "instructions": 234
+      },
+      "structural": {
+        "edits": 86,
+        "records": 86,
+        "instructions": 3720
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "checksum|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 320
+      },
+      "structural": {
+        "edits": 10,
+        "records": 10,
+        "instructions": 3000
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "checksum|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 920
+      },
+      "structural": {
+        "edits": 14,
+        "records": 14,
+        "instructions": 4072
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "chess-search|O2": {
+      "local": {
+        "edits": 138,
+        "records": 138,
+        "instructions": 5050
+      },
+      "structural": {
+        "edits": 626,
+        "records": 626,
+        "instructions": 37694
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "chess-search|speed": {
+      "local": {
+        "edits": 626,
+        "records": 626,
+        "instructions": 6068
+      },
+      "structural": {
+        "edits": 6634,
+        "records": 6634,
+        "instructions": 305212
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "collatz|O2": {
+      "local": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "collatz|speed": {
+      "local": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1028
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "constants|O2": {
+      "local": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 220
+      },
+      "structural": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 20
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "constants|speed": {
+      "local": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 220
+      },
+      "structural": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 20
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "dead-code|O2": {
+      "local": {
+        "edits": 5,
+        "records": 5,
+        "instructions": 50
+      },
+      "structural": {
+        "edits": 19,
+        "records": 19,
+        "instructions": 220
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "dead-code|speed": {
+      "local": {
+        "edits": 5,
+        "records": 5,
+        "instructions": 50
+      },
+      "structural": {
+        "edits": 19,
+        "records": 19,
+        "instructions": 220
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "diagnostics|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 30
+      },
+      "structural": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 10
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "diagnostics|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 30
+      },
+      "structural": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 10
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "distinct|O2": {
+      "local": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "distinct|speed": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 30
+      },
+      "structural": {
+        "edits": 52,
+        "records": 52,
+        "instructions": 1040
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "div-checks|O2": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 50
+      },
+      "structural": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 40
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "div-checks|speed": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 50
+      },
+      "structural": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 40
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "div-magic|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 172
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "div-magic|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 172
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 88
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "early-exit|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 256
+      },
+      "structural": {
+        "edits": 10,
+        "records": 10,
+        "instructions": 1840
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "early-exit|speed": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 716
+      },
+      "structural": {
+        "edits": 14,
+        "records": 14,
+        "instructions": 2661
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "f32-dsp|O2": {
+      "local": {
+        "edits": 22,
+        "records": 22,
+        "instructions": 855
+      },
+      "structural": {
+        "edits": 60,
+        "records": 60,
+        "instructions": 3054
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "f32-dsp|speed": {
+      "local": {
+        "edits": 24,
+        "records": 24,
+        "instructions": 1438
+      },
+      "structural": {
+        "edits": 105,
+        "records": 105,
+        "instructions": 10799
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "first-steps|O2": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 150
+      },
+      "structural": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 30
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "first-steps|speed": {
+      "local": {
+        "edits": 12,
+        "records": 12,
+        "instructions": 230
+      },
+      "structural": {
+        "edits": 39,
+        "records": 39,
+        "instructions": 940
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "fixed-point|O2": {
+      "local": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 180
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 160
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "fixed-point|speed": {
+      "local": {
+        "edits": 15,
+        "records": 15,
+        "instructions": 260
+      },
+      "structural": {
+        "edits": 40,
+        "records": 40,
+        "instructions": 790
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "fragments|O2": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1140
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 1022
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "fragments|speed": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1140
+      },
+      "structural": {
+        "edits": 9,
+        "records": 9,
+        "instructions": 1596
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "gcd|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 52
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "gcd|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 52
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 168
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "heat-lab|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 302
+      },
+      "structural": {
+        "edits": 12,
+        "records": 12,
+        "instructions": 68934
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "heat-lab|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 302
+      },
+      "structural": {
+        "edits": 18,
+        "records": 18,
+        "instructions": 74674
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "histogram|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 122
+      },
+      "structural": {
+        "edits": 16,
+        "records": 16,
+        "instructions": 3780
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "histogram|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 635
+      },
+      "structural": {
+        "edits": 20,
+        "records": 20,
+        "instructions": 4177
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "licm-nested|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 14014
+      },
+      "structural": {
+        "edits": 7,
+        "records": 8,
+        "instructions": 105088
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "licm-nested|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 14014
+      },
+      "structural": {
+        "edits": 13,
+        "records": 14,
+        "instructions": 518856
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "licm-traps|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 346
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "licm-traps|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 346
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1354
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "lz-roundtrip|O2": {
+      "local": {
+        "edits": 19,
+        "records": 19,
+        "instructions": 25202
+      },
+      "structural": {
+        "edits": 60,
+        "records": 60,
+        "instructions": 47686
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "lz-roundtrip|speed": {
+      "local": {
+        "edits": 28,
+        "records": 28,
+        "instructions": 9941
+      },
+      "structural": {
+        "edits": 164,
+        "records": 164,
+        "instructions": 93623
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "match-enum|O2": {
+      "local": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 28
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "match-enum|speed": {
+      "local": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 28
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "my-analysis|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 381
+      },
+      "structural": {
+        "edits": 10,
+        "records": 10,
+        "instructions": 39
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "my-analysis|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 381
+      },
+      "structural": {
+        "edits": 14,
+        "records": 14,
+        "instructions": 1695
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "my-first-pass|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 50
+      },
+      "structural": {
+        "edits": 5,
+        "records": 6,
+        "instructions": 40
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "my-first-pass|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 50
+      },
+      "structural": {
+        "edits": 5,
+        "records": 6,
+        "instructions": 40
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "nested-loops|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 26479
+      },
+      "structural": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 77682
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "nested-loops|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 26479
+      },
+      "structural": {
+        "edits": 9,
+        "records": 9,
+        "instructions": 286690
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "orders|O2": {
+      "local": {
+        "edits": 16,
+        "records": 16,
+        "instructions": 1379
+      },
+      "structural": {
+        "edits": 20,
+        "records": 20,
+        "instructions": 678
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "orders|speed": {
+      "local": {
+        "edits": 16,
+        "records": 16,
+        "instructions": 1379
+      },
+      "structural": {
+        "edits": 23,
+        "records": 23,
+        "instructions": 1174
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "params-demo|O2": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1140
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 1022
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "params-demo|speed": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 1140
+      },
+      "structural": {
+        "edits": 9,
+        "records": 9,
+        "instructions": 1596
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "pressure|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 270
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 160
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "pressure|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 270
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 160
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "ramp|O2": {
+      "local": {
+        "edits": 3,
+        "records": 3,
+        "instructions": 805
+      },
+      "structural": {
+        "edits": 11,
+        "records": 11,
+        "instructions": 3454
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "ramp|speed": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 1119
+      },
+      "structural": {
+        "edits": 15,
+        "records": 15,
+        "instructions": 4577
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "records|O2": {
+      "local": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "records|speed": {
+      "local": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "structural": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "regalloc-lab|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 83
+      },
+      "structural": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 226
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "regalloc-lab|speed": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 279
+      },
+      "structural": {
+        "edits": 29,
+        "records": 29,
+        "instructions": 2902
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "regex-nfa|O2": {
+      "local": {
+        "edits": 16,
+        "records": 16,
+        "instructions": 3402
+      },
+      "structural": {
+        "edits": 236,
+        "records": 236,
+        "instructions": 539409
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "regex-nfa|speed": {
+      "local": {
+        "edits": 18,
+        "records": 18,
+        "instructions": 3408
+      },
+      "structural": {
+        "edits": 270,
+        "records": 270,
+        "instructions": 554394
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "sha-chacha|O2": {
+      "local": {
+        "edits": 83,
+        "records": 83,
+        "instructions": 12195
+      },
+      "structural": {
+        "edits": 123,
+        "records": 123,
+        "instructions": 70392
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "sha-chacha|speed": {
+      "local": {
+        "edits": 116,
+        "records": 116,
+        "instructions": 49789
+      },
+      "structural": {
+        "edits": 425,
+        "records": 425,
+        "instructions": 2776366
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "sort|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 302
+      },
+      "structural": {
+        "edits": 12,
+        "records": 12,
+        "instructions": 68934
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "sort|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 302
+      },
+      "structural": {
+        "edits": 18,
+        "records": 18,
+        "instructions": 74674
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "start-here|O2": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 965
+      },
+      "structural": {
+        "edits": 13,
+        "records": 13,
+        "instructions": 2354
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "start-here|speed": {
+      "local": {
+        "edits": 16,
+        "records": 16,
+        "instructions": 2147
+      },
+      "structural": {
+        "edits": 73,
+        "records": 73,
+        "instructions": 14784
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "strength|O2": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 758
+      },
+      "structural": {
+        "edits": 10,
+        "records": 10,
+        "instructions": 2250
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "strength|speed": {
+      "local": {
+        "edits": 5,
+        "records": 5,
+        "instructions": 1358
+      },
+      "structural": {
+        "edits": 14,
+        "records": 14,
+        "instructions": 3322
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "strings|O2": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 524
+      },
+      "structural": {
+        "edits": 22,
+        "records": 22,
+        "instructions": 3872
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "strings|speed": {
+      "local": {
+        "edits": 4,
+        "records": 4,
+        "instructions": 1250
+      },
+      "structural": {
+        "edits": 30,
+        "records": 30,
+        "instructions": 5610
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "ui-gallery|O2": {
+      "local": {
+        "edits": 6,
+        "records": 6,
+        "instructions": 228
+      },
+      "structural": {
+        "edits": 5,
+        "records": 5,
+        "instructions": 142
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "ui-gallery|speed": {
+      "local": {
+        "edits": 11,
+        "records": 11,
+        "instructions": 228
+      },
+      "structural": {
+        "edits": 26,
+        "records": 26,
+        "instructions": 700
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "value-numbering|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 1329
+      },
+      "structural": {
+        "edits": 3,
+        "records": 4,
+        "instructions": 14509
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "value-numbering|speed": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 1329
+      },
+      "structural": {
+        "edits": 6,
+        "records": 7,
+        "instructions": 19793
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "wrong-shift|O2": {
+      "local": {
+        "edits": 1,
+        "records": 1,
+        "instructions": 320
+      },
+      "structural": {
+        "edits": 10,
+        "records": 10,
+        "instructions": 3450
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    },
+    "wrong-shift|speed": {
+      "local": {
+        "edits": 2,
+        "records": 2,
+        "instructions": 1070
+      },
+      "structural": {
+        "edits": 14,
+        "records": 14,
+        "instructions": 4522
+      },
+      "other": {
+        "edits": 0,
+        "records": 0,
+        "instructions": 0
+      }
+    }
+  },
+  "ruleCounts": {
+    "O2": {
+      "add-zero": 4,
+      "mul-one": 2,
+      "sub-zero": 1,
+      "mul-zero": 2,
+      "sub-self": 1,
+      "fold-mul": 9,
+      "not-lt": 62,
+      "fold-sub": 13,
+      "fold-eqz": 2,
+      "mul-pow2": 46,
+      "not-le": 2,
+      "not-ge": 1,
+      "pow2-mul": 19,
+      "not-gt": 3,
+      "fold-shl": 19,
+      "fold-add": 1,
+      "fold-gt": 1,
+      "not-ne": 1
+    },
+    "speed": {
+      "add-zero": 4,
+      "mul-one": 2,
+      "sub-zero": 1,
+      "mul-zero": 2,
+      "sub-self": 1,
+      "fold-mul": 15,
+      "not-lt": 72,
+      "fold-sub": 33,
+      "fold-eqz": 2,
+      "mul-pow2": 131,
+      "not-le": 4,
+      "not-ge": 1,
+      "pow2-mul": 28,
+      "not-gt": 5,
+      "fold-add": 11,
+      "fold-shl": 54,
+      "div-one": 1,
+      "zero-add": 9,
+      "fold-gt": 1,
+      "not-ne": 1
+    }
+  },
+  "ruleStrengths": {
+    "O2": {
+      "proof": 75,
+      "by-construction": 45,
+      "reduced-width+argument": 69
+    },
+    "speed": {
+      "proof": 178,
+      "by-construction": 116,
+      "reduced-width+argument": 83,
+      "exhaustive": 1
+    }
+  },
+  "shapeCounts": {
+    "O2": {
+      "read-to-single-definition": 51,
+      "read-to-constant": 141,
+      "div-pow2-to-shr": 10,
+      "rem-pow2-to-and": 13
+    },
+    "speed": {
+      "read-to-single-definition": 325,
+      "read-to-constant": 264,
+      "div-pow2-to-shr": 22,
+      "rem-pow2-to-and": 27
+    }
+  },
+  "structuralByKind": {
+    "O2": {
+      "remove": {
+        "findings": 191,
+        "records": 191,
+        "instructions": 32898
+      },
+      "retarget": {
+        "findings": 517,
+        "records": 517,
+        "instructions": 674585
+      },
+      "unreachable": {
+        "findings": 472,
+        "records": 472,
+        "instructions": 0
+      },
+      "local": {
+        "findings": 100,
+        "records": 100,
+        "instructions": 0
+      },
+      "insert": {
+        "findings": 116,
+        "records": 116,
+        "instructions": 120866
+      },
+      "replaceStmt": {
+        "findings": 17,
+        "records": 17,
+        "instructions": 0
+      },
+      "move": {
+        "findings": 65,
+        "records": 65,
+        "instructions": 41848
+      },
+      "merge": {
+        "findings": 22,
+        "records": 22,
+        "instructions": 0
+      },
+      "block": {
+        "findings": 16,
+        "records": 16,
+        "instructions": 0
+      }
+    },
+    "speed": {
+      "local": {
+        "findings": 1162,
+        "records": 1162,
+        "instructions": 0
+      },
+      "block": {
+        "findings": 1682,
+        "records": 1682,
+        "instructions": 0
+      },
+      "remove": {
+        "findings": 1300,
+        "records": 1300,
+        "instructions": 337029
+      },
+      "inline": {
+        "findings": 235,
+        "records": 235,
+        "instructions": 0
+      },
+      "move": {
+        "findings": 1148,
+        "records": 1148,
+        "instructions": 2672212
+      },
+      "merge": {
+        "findings": 518,
+        "records": 518,
+        "instructions": 0
+      },
+      "unreachable": {
+        "findings": 1348,
+        "records": 1348,
+        "instructions": 0
+      },
+      "retarget": {
+        "findings": 847,
+        "records": 847,
+        "instructions": 772444
+      },
+      "insert": {
+        "findings": 149,
+        "records": 149,
+        "instructions": 98047
+      },
+      "replaceStmt": {
+        "findings": 209,
+        "records": 209,
+        "instructions": 724866
+      }
+    }
+  },
+  "unexplained": [],
+  "revisions": {
+    "O2": {
+      "across-calls": "d267fe99f31542a6feeda6b27a7cc0b79885bc741c6c12d3289f61d8228b0f58",
+      "algebra": "a7eb3b0f13e3ea999e805631279a769324763c9ba78bd248f2483494249a4d53",
+      "blend": "707852c20deff0b7013726b40d08a8d5a3c1f557ef8a7c473d888d014636b9cc",
+      "bounds-lab": "79d66cea84c5391557d7f16f30b81fe2c24d8b0800fc0d3d853c77ab9cdadcce",
+      "bounds-offset": "379feb31735f9ae64cf624f28b681f4d947e2828d33ec7fe902b452b72bd8ad8",
+      "bounds-param": "cf37427e0ae080c6fcf643f5cd09cd4881ac81c66d91f5ffaf99eb916f4c16d7",
+      "bounds-two": "a8f4e64f94127d7555f6ebabcc64b2b358e94105c6f6d2b512667f9bcd8f4f10",
+      "branches": "3de7685c9e453f94f55725503e6daf583bd6b23f11424592a33127ce37f98b29",
+      "bytecode-vm": "06ababd745ac7eee907c2b6289504cd35278664b60c3be38ce5ec69a100b77c3",
+      "call-chain": "faa806bad04a6b4804efeea354230087b58aa936027eb3e15ad0da08b7954328",
+      "calls": "e18ce8488dc3aad3b536999247a486fff1ecfcba721cea64d59951cd1b7acc35",
+      "checksum": "ed2569f49d1c628174f0362e5bb3ce957fce55e296769bbaecf8d3b9ab5690c6",
+      "chess-search": "f0f842af8512f12257a92b1f11d468134775b8b17da0dfd0fa74be2de68d5c19",
+      "collatz": "c8dd9fd3fff0fc00591af85030a689f19b4fbea8b6f6647385daed12eba4333e",
+      "constants": "46340ec598459a3add4f077f21a6ab83a529ae311b00155c435b2f7aa537ab63",
+      "dead-code": "f7d232fb9b64b77190cf6320c98fa9405f9b9ff9a392c8d539c9b1f6941d2976",
+      "diagnostics": "1e299ae16b30becfd9f0d469d127a86b0339f0b0cef7913960e56aaf9721b412",
+      "distinct": "f127821f0f33a1cfb570401939f959d1c843b6007d9b8251750a2128ca294994",
+      "div-checks": "f7504040e21fe8228c95994f48638d468fc302cbd32520ec4df1bb98b576ce2b",
+      "div-magic": "b4ef9a4456aa03794b7a88bc1f5529d7c9ea7909465906fa89da8334d596edb7",
+      "early-exit": "24981342f17adb55a91c3af1a8cb329f9f212857bd8cbf2144dbb21f5fb7843b",
+      "f32-dsp": "16ddeb35b5b4a391f6f4289a7627a18aa054ec6e4ce55f61e697447893ad1cf7",
+      "first-steps": "216f5d88f7710fdc49574b1b6c75aad5e89590d3b623d7c691b0adad6fbd8547",
+      "fixed-point": "e2bca93ff678b28a7513ed42bbbc66c120e83370f88d6dce80284622614a0a18",
+      "fragments": "a255d13318f53c3172971a8508d864bd43f54f3d3176d5a95e1299772d1ec920",
+      "gcd": "8af31a0dd3e03bae1bf90a941ce36edb3390c3fa20b0196362053a6e7a836b4c",
+      "heat-lab": "d4b722eca82ac9331e491d750e47650b331100e3c8cdb9d5dcda153857385285",
+      "histogram": "389808d9b4ff39d5190c44b7788908b856d724394ce9b11785bd9ff45253e3e5",
+      "licm-nested": "25f9e36af7c52165ca4cf18bf4074a358db844e11d3655812fc6ef64ed5ad5bf",
+      "licm-traps": "ceebd55ecbb988fcec78e0bc8eb56092c3abc3eda7288394ab7a1defbbd47e3e",
+      "lz-roundtrip": "8dbd38c8169b109a1d894d98a532c9985914b4a51a10b8fa1ca8312189889c59",
+      "match-enum": "4643f8acffbe9e5d4374dd2e4f750469b9643c9b73b9133e36898e374f85118a",
+      "my-analysis": "b965631034715458f0327c6ff28f4fcee2e318777809cfd727859c1e5b031c0c",
+      "my-first-pass": "8588f4bb0146aaee8c99660e82441fcbc678de2ab08729be24b09b4965569a4b",
+      "nested-loops": "0c408dd328878a8386a9aee51205299ac6df455c55006a9a98c1939d3279ba50",
+      "orders": "f6f6a51ae9a01d10544754c9c186852e77fd091db6de5ae266ced5281c9da2b2",
+      "params-demo": "ed89ba4c31a1725bf12d511907850543634fde32fc6c1726d2b3f310f9dd2780",
+      "pressure": "096dcd4b43b253ed793e565bc3b515dec6e0e38ebcfbc9e0275d0645de678400",
+      "ramp": "98608d35a276a55b208207cf27c2c3b7fc816768c16ca8030c21768edbe13db2",
+      "records": "305d09400d8e23a4acbc2d1eb7fdb3ba6e7fe37ffbda9e6a84cb8851296e9c7a",
+      "regalloc-lab": "1b3d5a5de403ee5ee5bdda544bb1e8e7a095b772bd2574d5628ac91fe518fef0",
+      "regex-nfa": "c342b4b4ccbddd60d0570790289879792f9335622fb0590e277808ab7a88ef47",
+      "sha-chacha": "b9ae237b52ae4c87b900477c38d817f0164825562ec3fce4ee6b62f464e97b3a",
+      "sort": "3a56a2bca3e6b4ca521640a1aaa6d951ced56b9302e0ac1dfb964e0381004e7b",
+      "start-here": "5da50f3201db8d42b9ce7936eba9cc1ecdf866034ceba86f1089bf836dab31db",
+      "strength": "f430042ec8adfd33bffb512724ba73704e339b5e2e47cfbf37700961c4e856d5",
+      "strings": "a01f8a26f7ce52eec556179e16f9c082250120308f422b7092e60269976ac2c4",
+      "ui-gallery": "a55caf4c79d265cfd230f06554651db2c31df8ffa9c55bcccaf6d9773b604d79",
+      "value-numbering": "727068ea6e37615a9044efe7cd916ae1803cbadb306e40b6bf77aeb87da090df",
+      "wrong-shift": "b053cf46a8a1fbd850ec438ad81816768e907d9febff6c371244ec285384a8d5"
+    },
+    "speed": {
+      "across-calls": "16f4147648a7169bbe1e1aa01790587bca876c5bcd6d85bfc0e24d7a59692859",
+      "algebra": "a7eb3b0f13e3ea999e805631279a769324763c9ba78bd248f2483494249a4d53",
+      "blend": "842428b36077b41dcda9e4cb376ff11fa5f99a542e8d808c04a8bba33d93352f",
+      "bounds-lab": "afb587a24f2cf7841c99edb41eb5d550cd115d75431d76f75e63524d0eb49a9f",
+      "bounds-offset": "6088bd98e2620c1fd06b44a0a1626c195d985ecc6adc5baeb6deb24e4292ef3b",
+      "bounds-param": "71d6f3870bdfdb0debfe031ef7c998e8a2ff672d6726f5008ea118db3df664fb",
+      "bounds-two": "25522e63d11933e6a51d8c1e3979ee43efbd7ff89792a7e2d77ccef83e3bb1a9",
+      "branches": "3de7685c9e453f94f55725503e6daf583bd6b23f11424592a33127ce37f98b29",
+      "bytecode-vm": "06ababd745ac7eee907c2b6289504cd35278664b60c3be38ce5ec69a100b77c3",
+      "call-chain": "ab1fa2087397c50040513826e4c821b04354e2df2da08d66ae1cd2dbf194e6f7",
+      "calls": "76b659bf8665705bdeddb3d9f0ca2da00e8dd9238b707a6784bedba348ea0ad8",
+      "checksum": "c7074919bb5d75642fa5e99edd98580659d0e770193a3f2a2782ce5bafede3cb",
+      "chess-search": "3aa87deee2428126e242d01d086cd1bc0b56e8e65c0813407e58e47fd6c8ebc9",
+      "collatz": "1364f17b0ca245771fadfa1cdfea4dbbe4b3a96b2605ae07d31677591aec03ef",
+      "constants": "46340ec598459a3add4f077f21a6ab83a529ae311b00155c435b2f7aa537ab63",
+      "dead-code": "f7d232fb9b64b77190cf6320c98fa9405f9b9ff9a392c8d539c9b1f6941d2976",
+      "diagnostics": "1e299ae16b30becfd9f0d469d127a86b0339f0b0cef7913960e56aaf9721b412",
+      "distinct": "0cf43827987fa945478a9ccf5df3bfb6bfe3d05e3a426f2bb66c0059c620f9c0",
+      "div-checks": "f7504040e21fe8228c95994f48638d468fc302cbd32520ec4df1bb98b576ce2b",
+      "div-magic": "2e0c9e83ef4f7d5d6e26765cb0b6faf8d934299bfec7ec32f9956a30bab53ebb",
+      "early-exit": "80b8da97a6823675f69213dbcf9e31b3a414ebe548aefeef9d4aee99bd2177ef",
+      "f32-dsp": "7dd31a23a802e17cc04abee379456422daae94eeec5a3c6b1ef372576c854d4c",
+      "first-steps": "b96b56413acab355dc751ca787c1893ed4fbab08de197ca2d3a097cd21a6c773",
+      "fixed-point": "5891172b0a968e2491ca23acfc40437e07f94dfb13b81261ce4ff95a486e2e2a",
+      "fragments": "dae653ff74d9d7bc3ab9ec8783603d50d98cb00885fcd2eececf723e659a5bcd",
+      "gcd": "e7778d8d00c46ca99a3365a9369f88c7757394f78f5f8d880f93e3c5bf2cb3fa",
+      "heat-lab": "dd26283b92708acead1319a39052218526795d44d9836e74e9fdb7ab1881e5be",
+      "histogram": "cdefb97353d478a3bb861f4af1ca0a8f47c119faab5e0206eb53442b51c81747",
+      "licm-nested": "d5034ba6f94539f8ddc537652feacce96eeb4e0114b729dea9d9a9bb0607f5ea",
+      "licm-traps": "05dcad995f17420df4967f08e50ca7741f726d78742bc9b2054fa36b16042242",
+      "lz-roundtrip": "9c3dadbf203f65bf0d27a95e1330ff201d579e2de65340d6d11b8645a301e20c",
+      "match-enum": "4643f8acffbe9e5d4374dd2e4f750469b9643c9b73b9133e36898e374f85118a",
+      "my-analysis": "0b9b03451e0ace6547dbeccbaaf2897fbcc1ff7465575da84b4f5759c71d906d",
+      "my-first-pass": "8588f4bb0146aaee8c99660e82441fcbc678de2ab08729be24b09b4965569a4b",
+      "nested-loops": "091333e7e4b63c844db246c5ee762d79c0d57bfffc41e7ece7a81f990dd9d170",
+      "orders": "ff8d6d4abae5adc41e3c75143fbce97216712ed7b654cade9014330bf06192d1",
+      "params-demo": "8c16fd54aa0a7033d4ba59fee4e18d4fdbbe6ecf76e2b4367b7186340b76d7db",
+      "pressure": "096dcd4b43b253ed793e565bc3b515dec6e0e38ebcfbc9e0275d0645de678400",
+      "ramp": "c33523e40473ba7d69018139a22a81659835787d01be54d5ca0e911814531d3b",
+      "records": "305d09400d8e23a4acbc2d1eb7fdb3ba6e7fe37ffbda9e6a84cb8851296e9c7a",
+      "regalloc-lab": "8a232c4acab3309ba66fd00e5c1a2d6a30b22e030567616972b69c638adad55d",
+      "regex-nfa": "e679c4bf8f600942b7e037d99002e3cc407a912eb30114f34727eb7c0927da40",
+      "sha-chacha": "80babcd4163c96760d0595063358965b6dd9b15ea12ea62e29e46b76ee383321",
+      "sort": "c340a7a66dc6170a2750d5ad70859514f85981014d0c27bc7eb0a62f0d7ae43a",
+      "start-here": "fd79ebd582c1d2e4e0765b3c24cb191d1f5eb86d09f22887d71657bd4ca4ef43",
+      "strength": "62126723123eaf0a55645095998d34485828c00f58c53d780a46e02c4d31347b",
+      "strings": "9652fc70b2cb166f05baa7ffd43c2a2b6431b688ea2ec106de7d360af4302bb3",
+      "ui-gallery": "8331e9d5bd8e10500a6439623dae072821e2cf86d241e847857c7a33aeb093fa",
+      "value-numbering": "3dc02fc81d93731e84687ff1635625f45c0bc5285c67ccc7012b950d4f727452",
+      "wrong-shift": "9d0570fe24931ba56e0413d85dad89d7836e157cf09140ce17411c2ca0651385"
+    }
+  }
+}

@@ -6,7 +6,6 @@ Topics:
     - compiler
     - ir
     - verification
-    - measurement
 DocType: design-doc
 Intent: long-term
 Owners: []

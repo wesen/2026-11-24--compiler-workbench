@@ -1,0 +1,924 @@
+O2	bce	replaceStmt	13
+O2	bce	unreachable	13
+O2	cfg	merge	22
+O2	cfg	move	65
+O2	cfg	remove	22
+O2	cfg	replaceStmt	4
+O2	cfg	retarget	486
+O2	cfg	unreachable	459
+O2	constprop	replace	141
+O2	dce	remove	118
+O2	fold	replace	43
+O2	licm	block	16
+O2	licm	insert	105
+O2	licm	local	89
+O2	licm	replace	88
+O2	licm	retarget	31
+O2	lvn	insert	11
+O2	lvn	local	11
+O2	lvn	replace	22
+O2	simplify	replace	140
+O2	strength	replace	20
+O2	subst	remove	51
+O2	subst	replace	51
+speed	bce	replaceStmt	13
+speed	bce	unreachable	13
+speed	cfg	merge	518
+speed	cfg	move	1148
+speed	cfg	remove	518
+speed	cfg	replaceStmt	4
+speed	cfg	retarget	800
+speed	cfg	unreachable	1246
+speed	constprop	replace	258
+speed	dce	remove	216
+speed	fold	replace	104
+speed	inline	block	1659
+speed	inline	inline	235
+speed	inline	local	1036
+speed	inline	remove	235
+speed	licm	block	23
+speed	licm	insert	133
+speed	licm	local	110
+speed	licm	replace	109
+speed	licm	retarget	47
+speed	lvn	insert	16
+speed	lvn	local	16
+speed	lvn	replace	32
+speed	rotate	replaceStmt	192
+speed	rotate	unreachable	89
+speed	simplify	replace	258
+speed	strength	replace	46
+speed	subst	remove	331
+speed	subst	replace	331
+{
+  "projects": 50,
+  "failures": 0,
+  "rejects": [],
+  "perProject": [
+    {
+      "id": "across-calls",
+      "O2": {
+        "subst": 4
+      },
+      "speed": {
+        "inline": 20,
+        "cfg": 43,
+        "subst": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "algebra",
+      "O2": {
+        "simplify": 5,
+        "constprop": 1,
+        "dce": 1,
+        "subst": 4
+      },
+      "speed": {
+        "simplify": 5,
+        "constprop": 1,
+        "dce": 1,
+        "subst": 4
+      },
+      "rejects": []
+    },
+    {
+      "id": "blend",
+      "O2": {
+        "cfg": 2,
+        "fold": 1,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 1,
+        "licm": 3
+      },
+      "speed": {
+        "cfg": 2,
+        "fold": 1,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 1,
+        "licm": 3,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "bounds-lab",
+      "O2": {
+        "cfg": 30,
+        "simplify": 4,
+        "bce": 6
+      },
+      "speed": {
+        "cfg": 30,
+        "simplify": 4,
+        "bce": 6,
+        "subst": 6,
+        "rotate": 12
+      },
+      "rejects": []
+    },
+    {
+      "id": "bounds-offset",
+      "O2": {
+        "cfg": 6,
+        "simplify": 1
+      },
+      "speed": {
+        "cfg": 6,
+        "simplify": 1,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "bounds-param",
+      "O2": {
+        "cfg": 2,
+        "simplify": 1
+      },
+      "speed": {
+        "cfg": 2,
+        "simplify": 1,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "bounds-two",
+      "O2": {
+        "cfg": 10,
+        "simplify": 1,
+        "bce": 2
+      },
+      "speed": {
+        "cfg": 10,
+        "simplify": 1,
+        "bce": 2,
+        "subst": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "branches",
+      "O2": {
+        "cfg": 10,
+        "fold": 1,
+        "dce": 1
+      },
+      "speed": {
+        "cfg": 10,
+        "fold": 1,
+        "dce": 1
+      },
+      "rejects": []
+    },
+    {
+      "id": "bytecode-vm",
+      "O2": {
+        "cfg": 119,
+        "fold": 1,
+        "licm": 81,
+        "subst": 4
+      },
+      "speed": {
+        "cfg": 119,
+        "fold": 1,
+        "licm": 81,
+        "subst": 4
+      },
+      "rejects": []
+    },
+    {
+      "id": "call-chain",
+      "O2": {
+        "simplify": 1
+      },
+      "speed": {
+        "inline": 44,
+        "cfg": 78,
+        "simplify": 1,
+        "subst": 12
+      },
+      "rejects": []
+    },
+    {
+      "id": "calls",
+      "O2": {
+        "subst": 2
+      },
+      "speed": {
+        "inline": 34,
+        "cfg": 44,
+        "constprop": 6,
+        "dce": 4,
+        "subst": 8
+      },
+      "rejects": []
+    },
+    {
+      "id": "checksum",
+      "O2": {
+        "cfg": 8,
+        "simplify": 1,
+        "bce": 2
+      },
+      "speed": {
+        "cfg": 8,
+        "simplify": 1,
+        "bce": 2,
+        "subst": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "chess-search",
+      "O2": {
+        "cfg": 534,
+        "fold": 24,
+        "simplify": 46,
+        "constprop": 42,
+        "dce": 21,
+        "licm": 51,
+        "lvn": 12,
+        "strength": 18,
+        "subst": 16
+      },
+      "speed": {
+        "inline": 2833,
+        "cfg": 3200,
+        "fold": 66,
+        "simplify": 157,
+        "constprop": 125,
+        "dce": 92,
+        "licm": 144,
+        "lvn": 32,
+        "strength": 44,
+        "subst": 468,
+        "rotate": 99
+      },
+      "rejects": []
+    },
+    {
+      "id": "collatz",
+      "O2": {},
+      "speed": {
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "constants",
+      "O2": {
+        "simplify": 1,
+        "constprop": 2,
+        "fold": 2,
+        "dce": 1,
+        "subst": 2
+      },
+      "speed": {
+        "simplify": 1,
+        "constprop": 2,
+        "fold": 2,
+        "dce": 1,
+        "subst": 2
+      },
+      "rejects": []
+    },
+    {
+      "id": "dead-code",
+      "O2": {
+        "cfg": 15,
+        "fold": 2,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 3,
+        "subst": 2
+      },
+      "speed": {
+        "cfg": 15,
+        "fold": 2,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 3,
+        "subst": 2
+      },
+      "rejects": []
+    },
+    {
+      "id": "diagnostics",
+      "O2": {
+        "simplify": 1,
+        "subst": 2
+      },
+      "speed": {
+        "simplify": 1,
+        "subst": 2
+      },
+      "rejects": []
+    },
+    {
+      "id": "distinct",
+      "O2": {},
+      "speed": {
+        "inline": 18,
+        "cfg": 31,
+        "subst": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "div-checks",
+      "O2": {
+        "constprop": 4,
+        "dce": 2
+      },
+      "speed": {
+        "constprop": 4,
+        "dce": 2
+      },
+      "rejects": []
+    },
+    {
+      "id": "div-magic",
+      "O2": {
+        "fold": 1,
+        "simplify": 1
+      },
+      "speed": {
+        "fold": 1,
+        "simplify": 1,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "early-exit",
+      "O2": {
+        "cfg": 8,
+        "fold": 1,
+        "simplify": 1,
+        "bce": 2
+      },
+      "speed": {
+        "cfg": 8,
+        "fold": 1,
+        "simplify": 1,
+        "bce": 2,
+        "subst": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "f32-dsp",
+      "O2": {
+        "cfg": 52,
+        "simplify": 21,
+        "licm": 3,
+        "lvn": 4,
+        "subst": 2
+      },
+      "speed": {
+        "inline": 10,
+        "cfg": 64,
+        "simplify": 21,
+        "licm": 3,
+        "lvn": 4,
+        "subst": 6,
+        "rotate": 21
+      },
+      "rejects": []
+    },
+    {
+      "id": "first-steps",
+      "O2": {
+        "fold": 1,
+        "constprop": 1,
+        "simplify": 1,
+        "dce": 1
+      },
+      "speed": {
+        "inline": 12,
+        "cfg": 21,
+        "fold": 3,
+        "constprop": 3,
+        "simplify": 3,
+        "dce": 3,
+        "subst": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "fixed-point",
+      "O2": {
+        "fold": 1,
+        "constprop": 4,
+        "dce": 2,
+        "subst": 2
+      },
+      "speed": {
+        "inline": 19,
+        "cfg": 12,
+        "fold": 2,
+        "constprop": 8,
+        "dce": 4,
+        "subst": 10
+      },
+      "rejects": []
+    },
+    {
+      "id": "fragments",
+      "O2": {
+        "cfg": 2,
+        "fold": 1,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 1,
+        "licm": 3
+      },
+      "speed": {
+        "cfg": 2,
+        "fold": 1,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 1,
+        "licm": 3,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "gcd",
+      "O2": {
+        "simplify": 1
+      },
+      "speed": {
+        "simplify": 1,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "heat-lab",
+      "O2": {
+        "cfg": 12,
+        "simplify": 1
+      },
+      "speed": {
+        "cfg": 12,
+        "simplify": 1,
+        "rotate": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "histogram",
+      "O2": {
+        "cfg": 14,
+        "simplify": 1,
+        "bce": 2
+      },
+      "speed": {
+        "cfg": 14,
+        "simplify": 1,
+        "bce": 2,
+        "subst": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "licm-nested",
+      "O2": {
+        "simplify": 2,
+        "licm": 8
+      },
+      "speed": {
+        "simplify": 2,
+        "licm": 8,
+        "rotate": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "licm-traps",
+      "O2": {
+        "simplify": 1
+      },
+      "speed": {
+        "simplify": 1,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "lz-roundtrip",
+      "O2": {
+        "cfg": 24,
+        "simplify": 4,
+        "licm": 21,
+        "subst": 30
+      },
+      "speed": {
+        "inline": 41,
+        "cfg": 56,
+        "simplify": 6,
+        "licm": 21,
+        "subst": 44,
+        "rotate": 24
+      },
+      "rejects": []
+    },
+    {
+      "id": "match-enum",
+      "O2": {
+        "cfg": 5,
+        "dce": 1
+      },
+      "speed": {
+        "cfg": 5,
+        "dce": 1
+      },
+      "rejects": []
+    },
+    {
+      "id": "my-analysis",
+      "O2": {
+        "cfg": 6,
+        "simplify": 2,
+        "licm": 4
+      },
+      "speed": {
+        "cfg": 6,
+        "simplify": 2,
+        "licm": 4,
+        "rotate": 4
+      },
+      "rejects": []
+    },
+    {
+      "id": "my-first-pass",
+      "O2": {
+        "lvn": 4,
+        "subst": 4
+      },
+      "speed": {
+        "lvn": 4,
+        "subst": 4
+      },
+      "rejects": []
+    },
+    {
+      "id": "nested-loops",
+      "O2": {
+        "simplify": 2,
+        "licm": 3
+      },
+      "speed": {
+        "simplify": 2,
+        "licm": 3,
+        "rotate": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "orders",
+      "O2": {
+        "cfg": 2,
+        "fold": 2,
+        "simplify": 7,
+        "constprop": 5,
+        "dce": 2,
+        "licm": 6,
+        "lvn": 8,
+        "subst": 4
+      },
+      "speed": {
+        "cfg": 2,
+        "fold": 2,
+        "simplify": 7,
+        "constprop": 5,
+        "dce": 2,
+        "licm": 6,
+        "lvn": 8,
+        "subst": 4,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "params-demo",
+      "O2": {
+        "cfg": 2,
+        "fold": 1,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 1,
+        "licm": 3
+      },
+      "speed": {
+        "cfg": 2,
+        "fold": 1,
+        "simplify": 1,
+        "constprop": 1,
+        "dce": 1,
+        "licm": 3,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "pressure",
+      "O2": {
+        "lvn": 4,
+        "subst": 4
+      },
+      "speed": {
+        "lvn": 4,
+        "subst": 4
+      },
+      "rejects": []
+    },
+    {
+      "id": "ramp",
+      "O2": {
+        "cfg": 8,
+        "simplify": 1,
+        "constprop": 2,
+        "dce": 1,
+        "bce": 2
+      },
+      "speed": {
+        "cfg": 8,
+        "simplify": 1,
+        "constprop": 2,
+        "dce": 1,
+        "bce": 2,
+        "subst": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "records",
+      "O2": {},
+      "speed": {},
+      "rejects": []
+    },
+    {
+      "id": "regalloc-lab",
+      "O2": {
+        "cfg": 2,
+        "simplify": 2,
+        "lvn": 4
+      },
+      "speed": {
+        "inline": 5,
+        "cfg": 15,
+        "simplify": 2,
+        "lvn": 4,
+        "subst": 4,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "regex-nfa",
+      "O2": {
+        "cfg": 109,
+        "fold": 1,
+        "simplify": 5,
+        "constprop": 5,
+        "dce": 3,
+        "licm": 119,
+        "subst": 10
+      },
+      "speed": {
+        "inline": 11,
+        "cfg": 117,
+        "fold": 1,
+        "simplify": 5,
+        "constprop": 5,
+        "dce": 3,
+        "licm": 119,
+        "subst": 14,
+        "rotate": 13
+      },
+      "rejects": []
+    },
+    {
+      "id": "sha-chacha",
+      "O2": {
+        "cfg": 16,
+        "fold": 1,
+        "simplify": 9,
+        "constprop": 67,
+        "dce": 74,
+        "licm": 24,
+        "lvn": 4,
+        "strength": 1,
+        "subst": 10
+      },
+      "speed": {
+        "inline": 84,
+        "cfg": 203,
+        "fold": 15,
+        "simplify": 9,
+        "constprop": 81,
+        "dce": 88,
+        "licm": 24,
+        "lvn": 4,
+        "strength": 1,
+        "subst": 20,
+        "rotate": 12
+      },
+      "rejects": []
+    },
+    {
+      "id": "sort",
+      "O2": {
+        "cfg": 12,
+        "simplify": 1
+      },
+      "speed": {
+        "cfg": 12,
+        "simplify": 1,
+        "rotate": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "start-here",
+      "O2": {
+        "cfg": 11,
+        "fold": 1,
+        "simplify": 3,
+        "bce": 2
+      },
+      "speed": {
+        "inline": 24,
+        "cfg": 33,
+        "fold": 2,
+        "simplify": 4,
+        "constprop": 6,
+        "dce": 4,
+        "bce": 2,
+        "subst": 8,
+        "rotate": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "strength",
+      "O2": {
+        "cfg": 7,
+        "simplify": 1,
+        "constprop": 2,
+        "dce": 1,
+        "strength": 1,
+        "bce": 2
+      },
+      "speed": {
+        "cfg": 7,
+        "simplify": 1,
+        "constprop": 2,
+        "dce": 1,
+        "strength": 1,
+        "bce": 2,
+        "subst": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "strings",
+      "O2": {
+        "cfg": 18,
+        "simplify": 2,
+        "bce": 4
+      },
+      "speed": {
+        "cfg": 18,
+        "simplify": 2,
+        "bce": 4,
+        "subst": 4,
+        "rotate": 6
+      },
+      "rejects": []
+    },
+    {
+      "id": "ui-gallery",
+      "O2": {
+        "cfg": 4,
+        "fold": 1,
+        "simplify": 3,
+        "constprop": 2,
+        "dce": 1
+      },
+      "speed": {
+        "inline": 10,
+        "cfg": 11,
+        "fold": 2,
+        "simplify": 5,
+        "constprop": 4,
+        "dce": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "value-numbering",
+      "O2": {
+        "simplify": 1,
+        "lvn": 4
+      },
+      "speed": {
+        "simplify": 1,
+        "lvn": 4,
+        "rotate": 3
+      },
+      "rejects": []
+    },
+    {
+      "id": "wrong-shift",
+      "O2": {
+        "cfg": 8,
+        "simplify": 1,
+        "bce": 2
+      },
+      "speed": {
+        "cfg": 8,
+        "simplify": 1,
+        "bce": 2,
+        "subst": 2,
+        "rotate": 3
+      },
+      "rejects": []
+    }
+  ]
+}
+
+# samples
+bce	replaceStmt	bounds-lab/total replaceStmt : s:total.5 -> s:total.14  []
+bce	replaceStmt	bounds-lab/pairs replaceStmt : s:pairs.5 -> s:pairs.20  []
+bce	unreachable	bounds-lab/total unreachable {"kind":"unreachable","block":"bb:total.4","because":["cfg"]}
+bce	unreachable	bounds-lab/pairs unreachable {"kind":"unreachable","block":"bb:pairs.4","because":["cfg"]}
+cfg	merge	across-calls/keep merge {"kind":"merge","block":"bb:keep.n1","into":"bb:keep.0"}
+cfg	merge	across-calls/keep merge {"kind":"merge","block":"bb:keep.n0","into":"bb:keep.0"}
+cfg	move	across-calls/keep move {"kind":"move","stmt":"s:keep.11","from":"bb:keep.n1","to":"bb:keep.0","because":["s:keep.10"]}
+cfg	move	across-calls/keep move {"kind":"move","stmt":"s:keep.12","from":"bb:keep.n1","to":"bb:keep.0","because":["s:keep.10"]}
+cfg	remove	across-calls/keep remove goto .n1
+cfg	remove	across-calls/keep remove goto .n0
+cfg	replaceStmt	bytecode-vm/runVm replaceStmt : s:runVm.7 -> s:runVm.142  []
+cfg	replaceStmt	bytecode-vm/runVm replaceStmt : s:runVm.7 -> s:runVm.142  []
+cfg	retarget	blend/blend retarget else: bb:blend.5 -> bb:blend.7  []
+cfg	retarget	blend/blend retarget else: bb:blend.5 -> bb:blend.7  []
+cfg	unreachable	across-calls/keep unreachable {"kind":"unreachable","block":"bb:keep.n1","because":["cfg"]}
+cfg	unreachable	across-calls/keep unreachable {"kind":"unreachable","block":"bb:keep.n0","because":["cfg"]}
+constprop	replace	algebra/tidy replace value: ((a + b) + z)  ->  ((a + b) + 0)   []
+constprop	replace	algebra/tidy replace value: ((a + b) + z)  ->  ((a + b) + 0)   []
+dce	remove	algebra/tidy remove z = 0
+dce	remove	algebra/tidy remove z = 0
+fold	replace	blend/blend replace value: (4 * 16)  ->  64   []
+fold	replace	blend/blend replace value: (4 * 16)  ->  64   []
+inline	block	across-calls/keep block {"kind":"block","block":"bb:keep.n0","because":["v:keep.1"]}
+inline	block	across-calls/keep block {"kind":"block","block":"bb:keep.n1","because":["v:keep.1","s:keep.0"]}
+inline	inline	across-calls/keep inline {"kind":"inline","stmt":"s:keep.0","callee":"w","block":"bb:keep.0","statements":1,"because":["v:keep.1","fn:w"]}
+inline	inline	across-calls/keep inline {"kind":"inline","stmt":"s:keep.2","callee":"w","block":"bb:keep.n0","statements":1,"because":["v:keep.4","fn:w"]}
+inline	local	across-calls/keep local {"kind":"local","local":"local:keep/w_x","name":"w_x","because":["v:keep.1"]}
+inline	local	across-calls/keep local {"kind":"local","local":"local:keep/w_x1","name":"w_x1","because":["v:keep.4"]}
+inline	remove	across-calls/keep remove t8 = w(a)
+inline	remove	across-calls/keep remove t9 = w(b)
+licm	block	bytecode-vm/runVm block {"kind":"block","block":"bb:runVm.n0","because":["loop:runVm@bb:runVm.3"]}
+licm	block	bytecode-vm/runVm block {"kind":"block","block":"bb:runVm.n1","because":["loop:runVm@bb:runVm.3"]}
+licm	insert	blend/blend insert {"kind":"insert","stmt":"s:blend.15","block":"bb:blend.0","at":2,"because":["loop:blend@bb:blend.1"]}
+licm	insert	blend/blend insert {"kind":"insert","stmt":"s:blend.15","block":"bb:blend.0","at":2,"because":["loop:blend@bb:blend.1"]}
+licm	local	blend/blend local {"kind":"local","local":"local:blend/inv","name":"inv","because":["loop:blend@bb:blend.1"]}
+licm	local	blend/blend local {"kind":"local","local":"local:blend/inv","name":"inv","because":["loop:blend@bb:blend.1"]}
+licm	replace	blend/blend replace value: (s + (load16[(work + (t7 << 1))+4] * ((a * b) + 64)))  ->  (s + (load16[(work + (t7 << 1))+4] * inv))   []
+licm	replace	blend/blend replace value: (s + (load16[(work + (t7 << 1))+4] * ((a * b) + 64)))  ->  (s + (load16[(work + (t7 << 1))+4] * inv))   []
+licm	retarget	bytecode-vm/runVm retarget to: bb:runVm.3 -> bb:runVm.n0  []
+licm	retarget	bytecode-vm/runVm retarget to: bb:runVm.3 -> bb:runVm.n0  []
+lvn	insert	chess-search/chessPieceMoves insert {"kind":"insert","stmt":"s:chessPieceMoves.82","block":"bb:chessPieceMoves.10","at":3,"because":["v:chessPieceMoves.90","v:chessPieceMoves.37"]}
+lvn	insert	chess-search/chessOrder insert {"kind":"insert","stmt":"s:chessOrder.74","block":"bb:chessOrder.0","at":1,"because":["v:chessOrder.127","v:chessOrder.93"]}
+lvn	local	chess-search/chessPieceMoves local {"kind":"local","local":"local:chessPieceMoves/vn","name":"vn","because":["v:chessPieceMoves.90"]}
+lvn	local	chess-search/chessOrder local {"kind":"local","local":"local:chessOrder/vn","name":"vn","because":["v:chessOrder.127"]}
+lvn	replace	chess-search/chessPieceMoves replace value: (kind == 2)  ->  vn   []
+lvn	replace	chess-search/chessPieceMoves replace value: (kind == 2)  ->  vn   []
+rotate	replaceStmt	blend/blend replaceStmt : s:blend.3 -> s:blend.16  []
+rotate	replaceStmt	blend/blend replaceStmt : s:blend.12 -> s:blend.17  []
+rotate	unreachable	blend/blend unreachable {"kind":"unreachable","block":"bb:blend.1","because":["cfg"]}
+rotate	unreachable	bounds-lab/total unreachable {"kind":"unreachable","block":"bb:total.1","because":["cfg"]}
+simplify	replace	algebra/tidy replace value: ((x * 1) + 0)  ->  x   []
+simplify	replace	algebra/tidy replace value: ((y - 0) * 1)  ->  y   []
+strength	replace	chess-search/chessAttacked replace cond: ((piece / 8) == side)  ->  ((piece >> 3) == side)   []
+strength	replace	chess-search/chessAttacked replace value: (piece % 8)  ->  (piece & 7)   []
+subst	remove	across-calls/keep remove p = t8
+subst	remove	across-calls/keep remove q = t9
+subst	replace	across-calls/keep replace value: ((((((p * q) + (r * s)) + a) + b) + c) + d)  ->  ((((((t8 * q) + (r * s)) + a) + b) + c) + d)   []
+subst	replace	across-calls/keep replace value: ((((((t8 * q) + (r * s)) + a) + b) + c) + d)  ->  ((((((t8 * t9) + (r * s)) + a) + b) + c) + d)   []
