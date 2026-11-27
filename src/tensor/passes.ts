@@ -1,4 +1,5 @@
-import { definePass } from '../framework/passes/index.js';
+import { definePass, type Pass } from '../framework/passes/index.js';
+import type { Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
 import {
   add,
@@ -12,6 +13,9 @@ import {
   type Fn,
   type Module,
 } from './model.js';
+
+/** A Tix pass: an ordinary pass that also declares the relation its output has to its program's meaning. */
+export type TixPass = Pass<Module, {}> & { readonly relation: Relation };
 
 function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
   return mapExpr(expr, e =>
@@ -79,8 +83,8 @@ function split(fn: Fn): Fn {
     })),
   };
 }
-function pass(name: string, transform: (fn: Fn) => Fn) {
-  return definePass<Module>({
+function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixPass {
+  const definition = definePass<Module>({
     id: 'tensor.' + name,
     version: '1',
     description: name,
@@ -89,6 +93,9 @@ function pass(name: string, transform: (fn: Fn) => Fn) {
     writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
     run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
   });
+  return Object.freeze({ ...definition, relation });
 }
-export const inlinePass = pass('inline', inline),
-  splitPass = pass('split-sum', split);
+// IRWB-041-C: each pass declares the relation its output has to its program's meaning, instead of a caller choosing
+// it by the pass's name. `optimizeTix` gates with the declared relation, and `tixAlgorithm` wraps it as a contract.
+export const inlinePass = pass('inline', 'exact', inline),
+  splitPass = pass('split-sum', 'tolerance', split);

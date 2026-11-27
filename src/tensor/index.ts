@@ -1,8 +1,16 @@
 import type { DifferentialEvidence } from '../framework/contracts/index.js';
+import { AnalysisManager } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
 import { createIRArtifact } from '../framework/ir/index.js';
-import { applyNativePassSync, PassError } from '../framework/passes/index.js';
-import { meaningGate } from './contract.js';
+import {
+  applyNativePassSync,
+  passAlgorithm,
+  PassError,
+  type Pass,
+  type PassResult,
+} from '../framework/passes/index.js';
+import type { StrategyAlgorithm } from '../framework/strategy/ir.js';
+import { meaningGate, meaningGateContract, type Relation } from './contract.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -36,11 +44,7 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
     if (!definition) throw Error('Unknown pass ' + pass);
     try {
-      const result = applyNativePassSync(
-        definition,
-        current,
-        meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'),
-      );
+      const result = applyNativePassSync(definition, current, meaningGate(origin, definition.relation));
       current = result.artifact;
       return { pass, accepted: true, changed: result.changed };
     } catch (error) {
@@ -57,6 +61,33 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     }
   });
   return { program: { origin, current }, steps };
+}
+
+export interface TixAlgorithmOptions {
+  /** The program's origin (r0): a pass's output is checked against the meaning of the program it started from. */
+  readonly origin: Artifact<Module>;
+  readonly manager?: AnalysisManager;
+  readonly onResult?: (result: PassResult<Module>) => void;
+}
+/**
+ * IRWB-041-C: a Tix pass as a strategy algorithm whose meaning gate is a contract, so a plan checks it.
+ *
+ * The pass's own declared relation decides the gate; a pass that declares none cannot be planned, rather than being
+ * gated by a default nobody stated. The gate goes in through the bridge's `contract` and `contractInputs` options,
+ * which every application of the algorithm then checks (see `meaningGateContract`).
+ */
+export function tixAlgorithm(
+  pass: Pass<Module, any, any> & { readonly relation?: Relation },
+  options: TixAlgorithmOptions,
+): StrategyAlgorithm {
+  const { relation } = pass;
+  if (!relation) throw Error(`Tix pass ${pass.id} declares no meaning relation`);
+  return passAlgorithm(pass, {
+    manager: options.manager ?? new AnalysisManager(),
+    contract: meaningGateContract(relation),
+    contractInputs: () => ({ origin: options.origin }),
+    onResult: options.onResult,
+  });
 }
 
 export interface LoweringOptions {

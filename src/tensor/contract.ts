@@ -1,9 +1,13 @@
 import {
+  defineInvariant,
+  defineTransformation,
   differential,
   differentialSpec,
   runDifferential,
   seededRandom,
   type CheckResult,
+  type Ports,
+  type TransformationDefinition,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
 import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
@@ -11,7 +15,8 @@ import type { CudaInputs } from './cuda-runtime.js';
 import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
-type Relation = 'exact' | 'tolerance';
+/** How a Tix pass's output relates to its program's meaning: bit-identical, or within the f32 tolerance. */
+export type Relation = 'exact' | 'tolerance';
 interface Sample {
   fn: string;
   shapeValues: number[];
@@ -153,4 +158,51 @@ export function meaningGate(origin: Artifact<Module>, relation: Relation) {
     const evidence = runDifferential(differentialSpec(invariant), { baseline, subject: candidate });
     return { ok: evidence.status === 'agree', reason: evidence.counterexamples[0]?.reason, evidence };
   };
+}
+
+const gated = new Map<Relation, TransformationDefinition<Ports, Ports>>();
+/**
+ * IRWB-041-C: the meaning gate as a v6 contract, so it survives the strategy bridge.
+ *
+ * `applyNativePassSync` takes the gate as an argument, and a strategy plan applies passes through `passAlgorithm`,
+ * which knows nothing of that argument, so a plan that runs a Tix pass checked nothing (R3 probe 02). Written as an
+ * `ensures` invariant over the input, the origin and the output, the same gate travels with the pass as a contract,
+ * and the bridge's existing `contract` / `contractInputs` options carry it.
+ */
+export function meaningGateContract(relation: Relation): TransformationDefinition<Ports, Ports> {
+  const cached = gated.get(relation);
+  if (cached) return cached;
+  const invariant = defineInvariant({
+    id: 'tensor.meaning-gate.' + relation,
+    version: '1',
+    description: 'The Tix meaning gate (' + relation + ') over the input, the origin and the output',
+    inputs: { before: TixIR, origin: TixIR, after: TixIR },
+    check: (_ctx, { before, origin, after }) => {
+      const result = meaningGate(origin, relation)(before, after);
+      // the gate's evidence has an `undefined` field, which the analysis manager refuses to record ("IR data cannot
+      // contain undefined"), so it is passed through a JSON round trip: the one adaptation the gate needed
+      return result.ok
+        ? { ok: true, evidence: JSON.parse(JSON.stringify(result.evidence ?? null)) }
+        : { ok: false, reason: result.reason };
+    },
+  });
+  const contract = defineTransformation({
+    id: 'tensor.gated.' + relation,
+    version: '1',
+    description: 'a Tix pass under its meaning gate (' + relation + ')',
+    inputs: { input: TixIR, origin: TixIR },
+    outputs: { output: TixIR },
+    ensures: [
+      {
+        invariant,
+        bindings: {
+          before: { from: 'inputs', port: 'input' },
+          origin: { from: 'inputs', port: 'origin' },
+          after: { from: 'outputs', port: 'output' },
+        },
+      },
+    ],
+  });
+  gated.set(relation, contract);
+  return contract;
 }
