@@ -143,8 +143,11 @@ const main = (rows: boolean) =>
     '__SPILL__',
     rows ? '    spill_all = argc == 2 && strcmp(argv[1], "--spill") == 0;\n' : '',
   );
-/** Threads per block of a row kernel: the fastest of 64, 128 and 256 over the fused corpus (ticket report). */
-export const rowThreads = 128;
+/**
+ * Threads per block of a row kernel. Measured on the four fused corpus programs at 32, 64, 128, 256 and 512
+ * (ticket report): 64 is the fastest or within 6% of the fastest for each; 128 lost 8% on softmax and more on mlp.
+ */
+export const rowThreads = 64;
 /** Staged bytes per row above this go to global scratch: the launch limit without opting in (ticket probe 03). */
 const sharedLimit = 48 * 1024;
 

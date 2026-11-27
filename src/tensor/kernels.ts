@@ -89,14 +89,22 @@ function rowRefusal(run: Statement[], outer: number, t: Statement, expanded: Exp
   if (!run.length) return undefined;
   if (!same(t.shape.slice(0, outer), run[0].shape.slice(0, outer))) return 'its rows differ from the run’s';
   const names = new Set(run.map(s => s.name));
-  let reads = 0;
-  for (const { load } of loads(expanded)) {
-    if (!names.has(load.name)) continue;
-    reads++;
-    if (!load.indices.slice(0, outer).every((a, k) => plain(a) === t.axes[k].id))
+  for (const { load } of loads(expanded))
+    if (names.has(load.name) && !load.indices.slice(0, outer).every((a, k) => plain(a) === t.axes[k].id))
       return `it reads another row of ${load.name}`;
-  }
-  return reads ? undefined : 'it reads no statement of the run';
+  return undefined;
+}
+
+/** Whether reads among the run's statements connect all of them (the planner's choice, not a legality rule). */
+function connected(run: Statement[], expanded: ReadonlyMap<string, Expr>) {
+  const group = new Map(run.map((s, i) => [s.name, i]));
+  for (const s of run)
+    for (const { load } of loads(expanded.get(s.name)!)) {
+      const a = group.get(load.name),
+        b = group.get(s.name)!;
+      if (a !== undefined && a !== b) for (const [n, g] of group) if (g === b) group.set(n, a);
+    }
+  return new Set(group.values()).size === 1;
 }
 
 function fail(reason: string): never {
@@ -180,6 +188,11 @@ export function planKernels(fn: Fn): { plan: KernelPlan; refused: Refusal[] } {
       for (let j = i; j < rest.length && !reason; j++) {
         reason = rowRefusal(run, outer, rest[j], expanded.get(rest[j].name)!);
         if (!reason) run.push(rest[j]);
+      }
+      // a kernel is for statements that pass values to each other: drop a tail that only shares the rows
+      while (run.length > 1 && !connected(run, expanded)) {
+        reason = `no read connects it to ${run.length > 2 ? 'all of ' : ''}${run.slice(0, -1).map(s => s.name)}`;
+        run.pop();
       }
       if (run.length > best.run.length || (run.length === best.run.length && !best.outer))
         best = { outer, run, reason };
