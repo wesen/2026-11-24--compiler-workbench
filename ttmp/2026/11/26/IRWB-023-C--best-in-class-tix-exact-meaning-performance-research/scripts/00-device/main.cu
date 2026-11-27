@@ -5,7 +5,14 @@ int main() {
   cudaDeviceProp p; cudaGetDeviceProperties(&p, 0);
   int clk = 0, memclk = 0; cudaDeviceGetAttribute(&clk, cudaDevAttrClockRate, 0);
   cudaDeviceGetAttribute(&memclk, cudaDevAttrMemoryClockRate, 0);
-  printf("{\"name\":\"%s\",\"sm\":\"%d.%d\",\"sms\":%d,\"clockKHz\":%d,\"memClockKHz\":%d,\"busWidth\":%d,\"smemPerBlockOptin\":%zu,\"regsPerSM\":%d,\"l2\":%d}\n",
-    p.name, p.major, p.minor, p.multiProcessorCount, clk, memclk, p.memoryBusWidth, p.sharedMemPerBlockOptin, p.regsPerMultiprocessor, p.l2CacheSize);
+#if defined(__aarch64__)
+  const char* host = "aarch64";
+#elif defined(__x86_64__)
+  const char* host = "x86_64";
+#else
+  const char* host = "other";
+#endif
+  printf("{\"host\":\"%s\",\"name\":\"%s\",\"sm\":\"%d.%d\",\"sms\":%d,\"clockKHz\":%d,\"memClockKHz\":%d,\"busWidth\":%d,\"smemPerBlockOptin\":%zu,\"regsPerSM\":%d,\"l2\":%d}\n",
+    host, p.name, p.major, p.minor, p.multiProcessorCount, clk, memclk, p.memoryBusWidth, p.sharedMemPerBlockOptin, p.regsPerMultiprocessor, p.l2CacheSize);
   return 0;
 }

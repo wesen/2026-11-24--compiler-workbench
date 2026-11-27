@@ -472,6 +472,7 @@ The standing instructions require a minimal probe before relying on a feature no
 | Feature | Probe | Result |
 |---|---|---|
 | `npm run build` in this worktree | Step 1 | exit 0 |
+| GPU host CPU architecture | `scripts/00-device` (`__aarch64__` check), Step 18 | `aarch64`; the 64-entry exp table is built with `exp2l` on that host |
 | `tools/cuda-remote.mjs` to the GB10 | `scripts/00-device` | Compiled in 431 ms, ran, printed device JSON |
 | cuBLAS without link flags | `dlopen("libcublas.so.13")` + `cublasCreate_v2` in experiment 01 | Loaded; SGEMM results agree with the meaning to 3.6e-5 relative |
 | `cudaMemcpyToSymbol` into initialized `__constant__` | `exhaust b` bound sweep in experiment 02 | Fallback and mismatch counts change with b as expected |
