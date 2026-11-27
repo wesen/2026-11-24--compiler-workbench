@@ -1,4 +1,0 @@
-IRWB-028 changed tests: tests/typed/backend.test.mjs tests/typed/bytecode-vm.test.mjs tests/typed/f32-backend.test.mjs tests/typed/format.test.mjs tests/typed/lz-roundtrip.test.mjs tests/typed/passes.test.mjs tests/typed/reference-check.test.mjs tests/typed/regex-nfa.test.mjs tests/typed/ssa.test.mjs tests/typed/tape.test.mjs tests/workbench/wb.test.mjs
-  old code + new tests: tests 60  pass 55  fail 4    failing: ✖ failing tests:;✖ format: already wrapped list continuations remain indented and idempotent;✖ projects: shared metadata parser matches workbench metadata across the corpus;✖ reference check selects projects and rejects unknown ids;✖ reference images require signatures;
-  new code + new tests: tests 60  pass 59  fail 0  
-  all typed, workbench and framework tests: tests 403  pass 400  fail 0  

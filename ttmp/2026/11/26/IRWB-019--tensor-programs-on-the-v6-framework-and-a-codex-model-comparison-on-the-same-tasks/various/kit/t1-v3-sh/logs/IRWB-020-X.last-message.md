@@ -1,7 +1,0 @@
-[IRWB-020-X ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v3-sh-irwb-020-x/ttmp/2026/11/26/IRWB-020-X--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md), [stage 1 design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v3-sh-irwb-020-x/ttmp/2026/11/26/IRWB-020-X--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-tix-design.md), and [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v3-sh-irwb-020-x/ttmp/2026/11/26/IRWB-020-X--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md) are ready for review.
-
-**Proposed framework change.** Extract synchronous native pass candidate preparation from `applyPass`. Typed and Tix would share artifact validation, diffing, correspondence, and write checks. Tix would use the existing synchronous differential checker for the verdict.
-
-The Node 24 probe produced different f32 bits for serial and blocked sums. The blocked result passed the proposed f64 tolerance. The design requires each shape name to bind directly to an input dimension and defers solving general affine equations.
-
-**Commit** `ef2995d038a757372d32fbb0e6a7df9dc54c0aa3`. The worktree is clean. Implementation awaits review.
