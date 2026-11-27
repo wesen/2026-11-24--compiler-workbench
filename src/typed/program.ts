@@ -61,8 +61,11 @@ export interface Revision {
   readonly fns?: readonly string[];
   readonly note?: string;
   /** The assumptions in force when this revision was made (see `Program.assume`). */
-  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
+  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, Assumed>>>>;
 }
+
+/** An assumed parameter value: an integer, or a buffer's exact cells (IRWB-036-F). */
+export type Assumed = number | { readonly cells: readonly number[] };
 
 export interface ApplyResult {
   readonly pass: string;
@@ -143,7 +146,7 @@ export class Program {
     return `prog:${this.name}`;
   }
   /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
-  readonly assumptions: Record<string, Record<string, number>> = {};
+  readonly assumptions: Record<string, Record<string, Assumed>> = {};
   /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
   get inputs(): ProgramInputs {
     const base = this.options.inputs ?? {};
@@ -170,8 +173,15 @@ export class Program {
    * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
    */
   assume(
-    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
-  ): Record<string, Record<string, number>> {
+    bindings: readonly {
+      fn?: string;
+      param?: string;
+      record?: string;
+      field?: string;
+      value?: number;
+      cells?: readonly number[];
+    }[],
+  ): Record<string, Record<string, Assumed>> {
     const previous = JSON.parse(JSON.stringify(this.assumptions));
     for (const b of bindings) {
       if (b.record && b.field) {
@@ -179,12 +189,12 @@ export class Program {
         const st = storeOf(this.head.value);
         for (const f of st.fns.values())
           f.params.forEach((t, i) => {
-            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value;
+            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
           });
         continue;
       }
       this.fname(b.fn!);
-      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value;
+      (this.assumptions[b.fn!] ??= {})[b.param!] = b.cells ? { cells: [...b.cells] } : b.value!;
     }
     return previous;
   }

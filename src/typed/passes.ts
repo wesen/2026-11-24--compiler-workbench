@@ -48,6 +48,8 @@ import {
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { rotateSpec } from './rotate.js';
+import { promoteSpec } from './promote.js';
+import { websSpec } from './webs.js';
 import { makeInline } from './inline.js';
 import { copyReads, guardPlan, threadTests } from './guards.js';
 import { ssaAnalysis, type SsaFn } from './ssa.js';
@@ -96,6 +98,7 @@ const ENTITY_WRITES: Record<WriteKind, { entities: string[]; relations: string[]
     entities: ['block', 'stmt.*', 'value.*'],
     relations: ['succ', 'jump', 'contains', 'uses', 'operand', 'reads'],
   },
+  frame: { entities: ['fn'], relations: [] },
 };
 
 export interface RevisionReport {
@@ -1145,6 +1148,10 @@ export const substMem = typedPass({
 
 /** IRWB-003: loop rotation by header duplication (src/typed/rotate.ts). */
 export const rotate = typedPass(rotateSpec);
+/** IRWB-036-F: frame-array promotion (src/typed/promote.ts). */
+export const promote = typedPass(promoteSpec);
+/** IRWB-036-F: live-range splitting (src/typed/webs.ts). */
+export const webs = typedPass(websSpec);
 /** IRWB-003: inlining, a whole-program pass like dfe (src/typed/inline.ts). */
 export const inline = makeInline(revisionCorrespondence);
 
@@ -1169,6 +1176,8 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   copies,
   'subst-mem': substMem,
   identities,
+  promote,
+  webs,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */

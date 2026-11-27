@@ -24,8 +24,9 @@ import {
   type WorkFn,
 } from './model.js';
 
-export type WriteKind = 'values' | 'stmts' | 'locals' | 'cfg';
-export const WRITE_KINDS: readonly WriteKind[] = ['values', 'stmts', 'locals', 'cfg'];
+/** `frame`: the function record's frame array area (`arrayBytes`), IRWB-036-F. */
+export type WriteKind = 'values' | 'stmts' | 'locals' | 'cfg' | 'frame';
+export const WRITE_KINDS: readonly WriteKind[] = ['values', 'stmts', 'locals', 'cfg', 'frame'];
 
 export class TxError extends Error {
   constructor(
