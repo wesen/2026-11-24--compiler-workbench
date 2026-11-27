@@ -1,0 +1,3 @@
+✔ GB10 checks matmul before and after optimization (5126.076135ms)
+✔ GB10 checks softmax before and after optimization (11306.203058ms)
+✔ GB10 checks layernorm before and after optimization (15312.1899ms)

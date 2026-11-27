@@ -1,0 +1,12 @@
+{"label":"attention-inside","mode":"serial","gpuMs":1.4122240543365479}
+{"label":"attention-inside","mode":"serial","gpuMs":1.4122240543365479}
+{"label":"attention-inside","mode":"serial","gpuMs":1.412160038948059}
+{"label":"attention-inside","mode":"scoreSeparate","gpuMs":1.619968056678772}
+{"label":"attention-inside","mode":"scoreSeparate","gpuMs":1.6342719793319702}
+{"label":"attention-inside","mode":"scoreSeparate","gpuMs":1.6172159910202026}
+{"label":"layernorm-inside","mode":"serial","gpuMs":0.6062719821929932}
+{"label":"layernorm-inside","mode":"serial","gpuMs":0.5817919969558716}
+{"label":"layernorm-inside","mode":"serial","gpuMs":0.5798079967498779}
+{"label":"layernorm","mode":"serial","gpuMs":0.19913600385189056}
+{"label":"layernorm","mode":"serial","gpuMs":0.20102399587631226}
+{"label":"layernorm","mode":"serial","gpuMs":0.19392000138759613}

@@ -1,0 +1,87 @@
+✔ matmul agrees with the numerical oracle before and after optimization (24.693049ms)
+✔ softmax agrees with the numerical oracle before and after optimization (8.543959ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (12.560973ms)
+✔ attention agrees with the numerical oracle before and after optimization (31.516139ms)
+✔ mlp agrees with the numerical oracle before and after optimization (34.805942ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (2.751094ms)
+✔ GB10 checks matmul before and after optimization (5640.28851ms)
+✖ GB10 checks softmax before and after optimization (9229.947139ms)
+✔ GB10 checks layernorm before and after optimization (16737.914525ms)
+✔ GB10 checks attention before and after optimization (12406.410305ms)
+✔ GB10 checks mlp before and after optimization (12877.889865ms)
+✔ GB10 checks conv2d before and after optimization (4949.334157ms)
+✔ GB10 preserves split rounding and a partial final block (9504.174428ms)
+✔ GB10 checks composed inline addresses and rejects a valid index mutant (6742.084162ms)
+✔ GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns (21756.55116ms)
+✔ remote runner links repeated libraries and keys the build by their order (6660.289232ms)
+✔ remote runner shares a compile across isolated jobs and invalidates on build input changes (7210.405723ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (29.990251ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (7.476564ms)
+✔ concurrent lowering checks share a batch, retry transport failures and replay verdicts (120.212033ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (24.480067ms)
+✔ GB10: fused lowerings of block domains, stencils, shadowing, reuse and epilogues are exact (31307.192194ms)
+✔ GB10: fusion after inline and split-sum keeps the generated bounds and the half-ulp witness (5278.366028ms)
+✔ GB10: rows beyond the default and the opt-in shared-memory limit run through the same kernel (6478.528945ms)
+✔ GB10: the exact check rejects a fused kernel that reverses a serial sum or reads another row (8638.595009ms)
+✔ GB10: benchmark mode times warm launches and returns the same words (5802.091368ms)
+✔ GB10: ordered staged sum and max share space, including tails, empties and scratch (18691.982886ms)
+✔ every corpus program is one kernel; the row programs run one block per row (19.335957ms)
+✔ fuse: false is stage 2 byte for byte, and a one-statement program is the same either way (77.476786ms)
+✔ elementwise chains and epilogues share one thread per element (1.491898ms)
+✔ a statement that needs another row, other extents or nothing from the kernel starts a new one (1.453028ms)
+✔ a stencil narrows the block domain to the axes it reads plainly; middle members are stored when read later (1.977615ms)
+✔ a staged row needs the block domain as its leading extents, not just a plain address (0.938545ms)
+✔ the lowering records which statements each kernel computes, and fused and unfused share their cases (17.814067ms)
+✔ ordered staging is local to the body of a row-scalar reduction (0.77983ms)
+✔ a divided cross-row contraction leaves the block and keeps both live inputs (0.860247ms)
+✔ every operation, input and literal rounds at the selected precision (7.417569ms)
+✔ lexicographic reductions, explicit grouping and nested binder scope (4.496269ms)
+✔ zero extents, empty reductions and shape values (0.790641ms)
+✔ affine shape normalization, annotations and multiple functions (0.563689ms)
+✔ invalid programs give source coordinates (1.272027ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (10.860325ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (5.498991ms)
+✔ passes compose across calls and preserve the source baseline (3.23749ms)
+✔ a rejected optimization step reports the first counterexample and leaves the program unchanged (2.369939ms)
+✔ coverage required per function and screening is origin-only (4.456985ms)
+✔ exact comparison detects a changed zero sign (1.621762ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (38.09122ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 47
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 191807.420281
+
+✖ failing tests:
+
+test at tests/tensor/cuda-gpu.test.mjs:24:3
+✖ GB10 checks softmax before and after optimization (9229.947139ms)
+  AssertionError [ERR_ASSERTION]: CUDA evidence unavailable: file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-am-irwb-030-b/tools/cuda-remote.mjs:74
+    if (put.status !== 0) throw new Error('ssh copy: ' + (put.error ?? put.stderr));
+                                ^
+
+  Error: ssh copy: kex_exchange_identification: read: Connection reset by peer
+  Connection reset by 100.117.186.55 port 22
+
+      at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-am-irwb-030-b/tools/cuda-remote.mjs:74:31
+      at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+      at async node:internal/modules/esm/loader:643:26
+      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+  Node.js v24.18.0
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-am-irwb-030-b/tests/tensor/cuda-gpu.test.mjs:36:16)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

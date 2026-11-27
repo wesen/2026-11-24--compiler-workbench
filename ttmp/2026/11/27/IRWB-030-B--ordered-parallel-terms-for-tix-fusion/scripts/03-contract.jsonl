@@ -1,0 +1,16 @@
+{"label":"matmul","call":"cold","cases":36,"wallMs":2787.866686,"accepted":true,"relation":"exact"}
+{"label":"matmul","call":"replay","cases":36,"wallMs":0.9469720000001871,"accepted":true,"relation":"exact"}
+{"label":"softmax","call":"cold","cases":32,"wallMs":2769.7490199999997,"accepted":true,"relation":"exact"}
+{"label":"softmax","call":"replay","cases":32,"wallMs":1.7688510000007227,"accepted":true,"relation":"exact"}
+{"label":"layernorm","call":"cold","cases":32,"wallMs":2650.0858900000003,"accepted":true,"relation":"exact"}
+{"label":"layernorm","call":"replay","cases":32,"wallMs":0.9292400000013004,"accepted":true,"relation":"exact"}
+{"label":"attention","call":"cold","cases":40,"wallMs":2512.2260210000004,"accepted":true,"relation":"exact"}
+{"label":"attention","call":"replay","cases":40,"wallMs":1.3261490000004414,"accepted":true,"relation":"exact"}
+{"label":"mlp","call":"cold","cases":40,"wallMs":3008.3428559999993,"accepted":true,"relation":"exact"}
+{"label":"mlp","call":"replay","cases":40,"wallMs":1.9350070000000414,"accepted":true,"relation":"exact"}
+{"label":"conv2d","call":"cold","cases":28,"wallMs":4252.456277999998,"accepted":true,"relation":"exact"}
+{"label":"conv2d","call":"replay","cases":28,"wallMs":0.6501319999988482,"accepted":true,"relation":"exact"}
+{"label":"layernorm-inside","call":"cold","cases":32,"wallMs":4031.2489720000012,"accepted":true,"relation":"exact"}
+{"label":"layernorm-inside","call":"replay","cases":32,"wallMs":1.647848000000522,"accepted":true,"relation":"exact"}
+{"label":"attention-inside","call":"cold","cases":40,"wallMs":4695.28917,"accepted":true,"relation":"exact"}
+{"label":"attention-inside","call":"replay","cases":40,"wallMs":4.730201999998826,"accepted":true,"relation":"exact"}

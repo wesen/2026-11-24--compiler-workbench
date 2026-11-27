@@ -1,0 +1,10 @@
+✔ GB10 checks softmax before and after optimization (10308.186372ms)
+✔ GB10: ordered staged sum and max share space, including tails, empties and scratch (15726.933449ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26185.338096

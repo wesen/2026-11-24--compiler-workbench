@@ -1,0 +1,10 @@
+{"label":"matmul","call":"cold","cases":36,"wallMs":3079.426572,"accepted":true,"relation":"exact"}
+{"label":"matmul","call":"replay","cases":36,"wallMs":1.6503710000001774,"accepted":true,"relation":"exact"}
+{"label":"softmax","call":"cold","cases":32,"wallMs":2444.6347650000002,"accepted":true,"relation":"exact"}
+{"label":"softmax","call":"replay","cases":32,"wallMs":2.335874000000331,"accepted":true,"relation":"exact"}
+{"label":"layernorm","call":"cold","cases":32,"wallMs":2800.4654840000003,"accepted":true,"relation":"exact"}
+{"label":"layernorm","call":"replay","cases":32,"wallMs":1.9623570000003383,"accepted":true,"relation":"exact"}
+{"label":"attention","call":"cold","cases":40,"wallMs":4285.806458000001,"accepted":true,"relation":"exact"}
+{"label":"attention","call":"replay","cases":40,"wallMs":6.27767700000004,"accepted":true,"relation":"exact"}
+{"label":"mlp","call":"cold","cases":40,"wallMs":4660.98768,"accepted":true,"relation":"exact"}
+{"label":"mlp","call":"replay","cases":40,"wallMs":7.78602200000023,"accepted":true,"relation":"exact"}

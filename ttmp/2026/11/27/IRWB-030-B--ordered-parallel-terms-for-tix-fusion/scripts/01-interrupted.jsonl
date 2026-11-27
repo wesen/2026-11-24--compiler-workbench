@@ -1,0 +1,13 @@
+{"label":"matmul","rep":0,"fuse":true,"kernels":1,"gpuMs":0.21529600024223328,"digest":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","rep":0,"fuse":false,"kernels":1,"gpuMs":0.21619200706481934,"digest":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","rep":1,"fuse":true,"kernels":1,"gpuMs":0.21385599672794342,"digest":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","rep":1,"fuse":false,"kernels":1,"gpuMs":0.21753600239753723,"digest":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","rep":2,"fuse":true,"kernels":1,"gpuMs":0.20844799280166626,"digest":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","rep":2,"fuse":false,"kernels":1,"gpuMs":0.21625599265098572,"digest":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"softmax","rep":0,"fuse":true,"kernels":1,"gpuMs":0.3861759901046753,"digest":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"label":"softmax","rep":0,"fuse":false,"kernels":4,"gpuMs":0.8015999794006348,"digest":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"label":"softmax","rep":1,"fuse":true,"kernels":1,"gpuMs":0.3863680064678192,"digest":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"label":"softmax","rep":1,"fuse":false,"kernels":4,"gpuMs":0.7947520017623901,"digest":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"label":"softmax","rep":2,"fuse":true,"kernels":1,"gpuMs":0.3875519931316376,"digest":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"label":"softmax","rep":2,"fuse":false,"kernels":4,"gpuMs":0.8032000064849854,"digest":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"label":"layernorm","rep":0,"fuse":true,"kernels":1,"gpuMs":0.16659200191497803,"digest":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}

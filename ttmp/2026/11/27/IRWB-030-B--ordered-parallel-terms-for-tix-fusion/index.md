@@ -1,7 +1,7 @@
 ---
 Title: Ordered parallel terms for Tix fusion
 Ticket: IRWB-030-B
-Status: active
+Status: complete
 Topics:
     - tensor
     - gpu
@@ -9,48 +9,25 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Shared term buffer and ordered fold
+    - Path: repo://src/tensor/fusion.ts
+      Note: IR legality and schedule selection
+    - Path: repo://tests/tensor/fusion-gpu.test.mjs
+      Note: Exact stage and fallback regressions
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T01:22:48.273920208-05:00
+LastUpdated: 2026-11-27T01:37:22.714051485-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Ordered parallel terms for Tix fusion
 
-## Overview
+The ticket implements exact ordered term staging for costly row reductions and an IR-based group cut for divided contractions. All results use the GB10 and the public lowering API.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
-
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- tensor
-- gpu
-- verification
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design](design-doc/01-ordered-term-staging-and-fusion-selection.md)
+- [GB10 results and framework findings](reference/02-gb10-results-for-ordered-term-staging-and-fusion-cuts.md)
+- [Implementation diary](reference/01-implementation-diary.md)
+- [Replay and raw measurements](scripts/)
