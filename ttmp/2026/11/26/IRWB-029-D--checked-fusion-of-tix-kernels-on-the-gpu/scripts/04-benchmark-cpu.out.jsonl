@@ -1,0 +1,3 @@
+{"name":"softmax","mode":"cpu","ms":4048.4816160000005,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"name":"layernorm","mode":"cpu","ms":7792.935225,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+{"name":"attention","mode":"cpu","ms":59179.942677,"shape":[1024,64],"outputSha256":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
