@@ -7,8 +7,11 @@ const { Program } = await import('../dist/typed/program.js');
 const { projectSource } = await import('../dist/typed/project.js');
 const B = await import('../dist/typed/backend/index.js');
 const o2 = process.argv.includes('--o2');
+const available = projectIds();
+const requested = process.argv.slice(2).filter(arg => arg !== '--o2');
+for (const id of requested) if (!available.includes(id)) throw new Error(`unknown project: ${id}`);
 let fns = 0, agree = 0, decided = 0, inconclusive = 0; const bad = [];
-for (const id of projectIds()) {
+for (const id of requested.length ? requested : available) {
   const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
   let image;
   if (o2) { await p.pipeline('O2'); image = B.lowerToImage(p.head).image; }       // our O2 image vs the evaluator
