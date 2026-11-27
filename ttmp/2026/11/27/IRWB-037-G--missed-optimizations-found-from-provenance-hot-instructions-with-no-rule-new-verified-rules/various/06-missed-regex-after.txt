@@ -1,0 +1,151 @@
+6052 instructions; 1931 (31.9%) at statements no pass touched; 21 frame and backend
+
+statement shapes
+   instr  share untouched sites shape
+    1068  17.6%      1065    22 if geu(x, #)
+                                 ingest 1065, copies 3;  s:regexMatch.98: if (state >=u 9) goto .52 else .55
+     960  15.9%         0     3 if eq(load(add(x, shl(x, #))), 1)
+                                 licm 680, subst-mem+thread 280;  s:regexMatch.102: if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62
+     539   8.9%         0    10 if ge(x, x)
+                                 rotate 464, simplify 43, copies+inline 32;  s:regexMatch.306: if (state >= stateCount) goto .n5 else .51
+     384   6.3%         0     1 store[add(x, shl(x, #))] = load(add(x, shl(x, #)))
+                                 licm+subst-mem 384;  s:regexMatch.246: store32[(inv10 + (state << 2))+0] = load32[(inv11 + (state << 2))+0]
+     353   5.8%       352    15 x = add(x, 1)
+                                 ingest 352, copies 1;  s:regexMatch.111: state = (state + 1)
+     310   5.1%         0     1 if eq(load(add(x, shl(x, #))), #)
+                                 constprop+licm 310;  s:regexMatch.126: if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64
+     310   5.1%         0     1 x = mul(#, load(add(x, shl(x, #))))
+                                 licm 310;  s:regexMatch.120: row = (5 * load32[(inv3 + (head << 2))+0])
+     260   4.3%         0     4 store[add(x, shl(x, #))] = 1
+                                 licm 244, constprop+licm 16;  s:regexMatch.148: store32[(inv4 + (first << 2))+0] = 1
+     252   4.2%         0     3 x = load(add(x, shl(x, #)))
+                                 licm 156, inline+licm 96;  s:regexMatch.265: inRange_high = load32[(inv7 + (t38 << 2))+0]
+     222   3.7%         0     6 store[add(x, shl(x, #))] = x
+                                 licm 222;  s:regexMatch.153: store32[(inv3 + (tail << 2))+0] = first
+     208   3.4%         0     2 if eq(load(add(x, shl(x, #))), 0)
+                                 licm 208;  s:regexMatch.143: if (load32[(inv4 + (first << 2))+0] == 0) goto .94 else .99
+     192   3.2%         0     1 store[add(x, shl(x, #))] = 0
+                                 licm 192;  s:regexMatch.251: store32[(inv11 + (state << 2))+0] = 0
+     164   2.7%       164     4 zero
+                                 ingest 164;  s:regexMatch.3: zero frame+0, 180 bytes
+     144   2.4%       142     4 x = mul(#, x)
+                                 ingest 142, copies 2;  s:regexMatch.188: row = (5 * state)
+     128   2.1%         0     1 x = load(add(x, shl(add(x, 1), #)))
+                                 licm+subst-mem 128;  s:regexMatch.209: t44 = load32[(inv7 + ((row + 1) << 2))+0]
+     100   1.7%       100     8 x = add(x, #)
+                                 ingest 100;  s:regexMatch.208: t38 = (row + 2)
+      64   1.1%         0     1 x = load(add(x, shl(add(x, #), #)))
+                                 licm+subst-mem 64;  s:regexMatch.221: t40 = load32[(inv7 + ((row + 3) << 2))+0]
+      60   1.0%         0     2 x = load16u(caddr(x, x))
+                                 copies 60;  s:regexMatch.184: code = load16[caddr(text, i)+4]
+      49   0.8%         7     7 x = x
+                                 licm 42, ingest 7;  s:regexMatch.280: inv1 = inv9
+      46   0.8%        46     8 x = 0
+                                 ingest 46;  s:regexMatch.93: head = 0
+      32   0.5%         0     8 x = frame
+                                 licm 32;  s:regexMatch.283: inv3 = frame+252
+      26   0.4%        26     1 if eq(x, load(x))
+                                 ingest 26;  s:regexMatch.179: if (i == load32[text+0]) goto .47 else .120
+      23   0.4%         0     1 if le(x, x)
+                                 subst-mem+thread 23;  s:regexMatch.293: if (code <= inRange_high) goto .145 else .156
+      21   0.3%         0     1 x = eq(load16u(caddr(x, x)), #)
+                                 copies 21;  s:regexMatch.23: t42 = (load16[caddr(pattern, p)+4] == 42)
+      13   0.2%         0     2 if ge(x, load(x))
+                                 rotate 13;  s:regexMatch.304: if (p >= load32[pattern+0]) goto .2 else .3
+      12   0.2%         0     1 store[add(x, shl(x, #))] = #
+                                 constprop+licm 12;  s:regexMatch.33: store32[(inv + (split << 2))+0] = 2
+      12   0.2%         0     1 store[add(x, shl(x, #))] = add(x, #)
+                                 licm 12;  s:regexMatch.45: store32[(inv + (t16 << 2))+0] = (s + 2)
+      12   0.2%         0     1 store[add(x, shl(x, #))] = add(x, 1)
+                                 licm 12;  s:regexMatch.39: store32[(inv + (t15 << 2))+0] = (s + 1)
+      12   0.2%         0     1 x = load16u(caddr(x, add(x, #)))
+                                 subst-mem 12;  s:regexMatch.15: high = load16[caddr(pattern, (p + 3))+4]
+      12   0.2%         0     1 x = load16u(caddr(x, add(x, 1)))
+                                 subst-mem 12;  s:regexMatch.13: low = load16[caddr(pattern, (p + 1))+4]
+      11   0.2%        11     3 br
+                                 ingest 11;  s:regexMatch.256: goto .48
+       8   0.1%         8     1 if eq(x, #)
+                                 ingest 8;  s:regexMatch.11: if (low == 91) goto .4 else .5
+       8   0.1%         8     1 if lt(x, load(x))
+                                 ingest 8;  s:regexMatch.21: if (p < load32[pattern+0]) goto .7 else .24
+       6   0.1%         0     1 return load(add(frame, shl(x, #)))
+                                 copies 6;  s:regexMatch.262: return load32[(frame+180 + (s << 2))+0]
+       5   0.1%         0     1 store[add(frame, shl(x, #))] = #
+                                 constprop 5;  s:regexMatch.84: store32[(frame+0 + (t22 << 2))+0] = 3
+       3   0.0%         0     1 if x
+                                 thread 3;  s:regexMatch.274: if t42 goto .10 else .24
+       2   0.0%         2     1 store[frame] = 1
+                                 ingest 2;  s:regexMatch.89: store32[frame+180+0] = 1
+
+node patterns (what a rule would match)
+   instr  share untouched sites rules shape
+    1068  17.6%      1065    22     1 if geu(x, #)
+                                       ingest 1065, copies 3;  v:regexMatch.183: if (state >=u 9) goto .52 else .55
+     840  13.9%         0    28     3 add(x, shl)
+                                       licm 507, licm+subst-mem 176, constprop+licm 69, subst-mem+thread 56, inline+licm 32;  v:regexMatch.530: if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62
+     794  13.1%         0    28     2 shl(x, #)
+                                       licm 507, licm+subst-mem 128, constprop+licm 69, subst-mem+thread 56, inline+licm 32, constprop 1, copies 1;  v:regexMatch.187: if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62
+     630  10.4%         0    14     0 load(add)
+                                       licm 302, licm+subst-mem 176, constprop+licm 62, subst-mem+thread 56, inline+licm 32, copies 2;  v:regexMatch.588: store32[(inv10 + (state << 2))+0] = load32[(inv11 + (state << 2))+0]
+     539   8.9%         0    10     1 if ge(x, x)
+                                       rotate 464, simplify 43, copies+inline 32;  v:regexMatch.646: if (state >= stateCount) goto .n5 else .51
+     393   6.5%       352    18     3 add(x, 1)
+                                       ingest 352, licm+subst-mem 32, licm 6, subst-mem 2, copies 1;  v:regexMatch.206: state = (state + 1)
+     384   6.3%         0     3     1 if eq(load, 1)
+                                       licm 272, subst-mem+thread 112;  v:regexMatch.532: if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62
+     164   2.7%       164     4     0 zero
+                                       ingest 164;  s:regexMatch.3: zero frame+0, 180 bytes
+     144   2.4%       142     4     7 mul(#, x)
+                                       ingest 142, copies 2;  v:regexMatch.340: row = (5 * state)
+     132   2.2%         2     5     0 store 1
+                                       licm 122, constprop+licm 8, ingest 2;  s:regexMatch.148: store32[(inv4 + (first << 2))+0] = 1
+     124   2.0%       100    11     3 add(x, #)
+                                       ingest 100, licm+subst-mem 16, licm 6, subst-mem 2;  v:regexMatch.380: t38 = (row + 2)
+     124   2.0%         0     1     1 if eq(load, #)
+                                       constprop+licm 124;  v:regexMatch.558: if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64
+     124   2.0%         0     1     7 mul(#, load)
+                                       licm 124;  v:regexMatch.562: row = (5 * load32[(inv3 + (head << 2))+0])
+      74   1.2%         0     6     0 store x
+                                       licm 74;  s:regexMatch.153: store32[(inv3 + (tail << 2))+0] = first
+      64   1.1%         0     1     0 store 0
+                                       licm 64;  s:regexMatch.251: store32[(inv11 + (state << 2))+0] = 0
+      60   1.0%         0     3     0 caddr(x, x)
+                                       copies 60;  v:regexMatch.501: code = load16[caddr(text, i)+4]
+      52   0.9%         0     2     1 if eq(load, 0)
+                                       licm 52;  v:regexMatch.540: if (load32[(inv4 + (second << 2))+0] == 0) goto .109 else .64
+      49   0.8%         7     7     0 set x
+                                       licm 42, ingest 7;  s:regexMatch.280: inv1 = inv9
+      48   0.8%         0     2     2 shl(add, #)
+                                       licm+subst-mem 48;  v:regexMatch.616: t44 = load32[(inv7 + ((row + 1) << 2))+0]
+      46   0.8%        46     8     0 set 0
+                                       ingest 46;  s:regexMatch.93: head = 0
+      34   0.6%         0    10     0 aaddr()
+                                       licm 32, constprop 1, copies 1;  v:regexMatch.254: inv5 = frame+0
+      23   0.4%         0     1     1 if le(x, x)
+                                       subst-mem+thread 23;  v:regexMatch.621: if (code <= inRange_high) goto .145 else .156
+      19   0.3%         0     5     0 load16u(caddr)
+                                       copies 15, subst-mem 4;  v:regexMatch.502: code = load16[caddr(text, i)+4]
+      18   0.3%        13     4     0 load(x)
+                                       ingest 13, rotate 5;  v:regexMatch.326: if (i == load32[text+0]) goto .47 else .120
+      17   0.3%        17     1     1 if eq(x, load)
+                                       ingest 17;  v:regexMatch.327: if (i == load32[text+0]) goto .47 else .120
+      16   0.3%         0     2     0 caddr(x, add)
+                                       subst-mem 16;  v:regexMatch.598: low = load16[caddr(pattern, (p + 1))+4]
+      11   0.2%        11     3     0 br
+                                       ingest 11;  s:regexMatch.256: goto .48
+       8   0.1%         8     1     1 if eq(x, #)
+                                       ingest 8;  v:regexMatch.18: if (low == 91) goto .4 else .5
+       8   0.1%         0     2     1 if ge(x, load)
+                                       rotate 8;  v:regexMatch.640: if (p >= load32[pattern+0]) goto .2 else .3
+       8   0.1%         0     2     0 store #
+                                       constprop+licm 6, constprop 2;  s:regexMatch.33: store32[(inv + (split << 2))+0] = 2
+       6   0.1%         0     1     1 eq(load16u, #)
+                                       copies 6;  v:regexMatch.495: t42 = (load16[caddr(pattern, p)+4] == 42)
+       4   0.1%         4     1     1 if lt(x, load)
+                                       ingest 4;  v:regexMatch.45: if (p < load32[pattern+0]) goto .7 else .24
+       3   0.0%         0     1     0 br_if x
+                                       thread 3;  s:regexMatch.274: if t42 goto .10 else .24
+       2   0.0%         0     2     3 add(aaddr, shl)
+                                       constprop 1, copies 1;  v:regexMatch.164: store32[(frame+0 + (t22 << 2))+0] = 3
+       1   0.0%         0     1     0 return
+                                       copies 1;  s:regexMatch.262: return load32[(frame+180 + (s << 2))+0]

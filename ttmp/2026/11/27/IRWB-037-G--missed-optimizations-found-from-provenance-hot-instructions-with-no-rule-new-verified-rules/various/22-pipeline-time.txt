@@ -1,0 +1,18 @@
+regex-nfa {
+ "old": "3108 ms, 11 of 21 passes changed the program",
+ "new": "5887 ms, 18 of 26 passes changed the program",
+ "old again": "1823 ms, 11 of 21 passes changed the program",
+ "new again": "3761 ms, 18 of 26 passes changed the program"
+}
+lz-roundtrip {
+ "old": "1378 ms, 8 of 21 passes changed the program",
+ "new": "1340 ms, 14 of 26 passes changed the program",
+ "old again": "1033 ms, 8 of 21 passes changed the program",
+ "new again": "1691 ms, 14 of 26 passes changed the program"
+}
+sha-chacha {
+ "old": "3413 ms, 14 of 21 passes changed the program",
+ "new": "4431 ms, 17 of 26 passes changed the program",
+ "old again": "3762 ms, 14 of 21 passes changed the program",
+ "new again": "4591 ms, 17 of 26 passes changed the program"
+}
