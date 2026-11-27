@@ -30,3 +30,17 @@ test('types without enumeration retain self-declared correspondence behavior', a
   await fixture(false).verify(['invented'], []);
   await fixture().verify(['s2', 's1'], ['t2', 't1']);
 });
+
+test('direct correspondences reject unknown entry IDs on enumerated sides', async () => {
+  const type = defineIR({ id: 'direct-entities', version: '1', description: 'Entity list', validate() {}, entities: value => value });
+  const from = createArtifact(type, 'source', ['s1', 's2']);
+  const to = createArtifact(type, 'target', ['t1', 't2']);
+  const contract = defineTransformation({ id: 'direct-mapping', version: '1', description: 'Mapping', inputs: { from: type }, outputs: { to: type }, correspondence: [{ id: 'entities', from: 'from', to: 'to' }] });
+  const verify = (source, target) => new AnalysisManager().verifyTransformation({ from }, { to }, contract, [{
+    id: 'entities', from: { artifact: from.id, revision: from.revision }, to: { artifact: to.id, revision: to.revision },
+    relation: 'lowering', sourceEntities: ['s1', 's2'], targetEntities: ['t1', 't2'],
+    entities: [{ from: source, to: target }], evidence: {},
+  }]);
+  await assert.rejects(verify(['made-up-source'], ['t1']), /made-up-source/);
+  await assert.rejects(verify(['s1'], ['made-up-target']), /made-up-target/);
+});

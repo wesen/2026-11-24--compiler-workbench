@@ -51,3 +51,9 @@ The contract manager already checks correspondences against artifact revisions a
 `npm run build` passed. The focused regression run passed all 4 tests. The requested combined framework, Typed, and tensor non-GPU test run passed: 411 tests, 409 passed, 2 skipped, 0 failed. The first attempt to select non-GPU files used a zsh pattern without extended globbing and selected no files; a Bash array with a filename filter ran the intended set. `git diff --check` passed. Prettier was not installed in the worktree or available as a command, so no Prettier invocation was made; the TypeScript edits follow the surrounding style.
 
 A CUDA artifact can opt in by adding `entities(value)` to its `defineIR` declaration and returning the kernel IDs for that value. Its semantic correspondence must supply the same IDs in `targetEntities`.
+
+## 4. Direct correspondence entry regression
+
+Review identified that a directly constructed `Correspondence` could have correct entity lists but an entry containing an unknown ID. Before changing the implementation, ran `npm run build` and `node --test tests/framework/correspondence-entities.test.mjs` on `fc39478`. The build passed; the new direct-correspondence test failed with `Missing expected rejection` for `made-up-source` (4 passed, 1 failed). The subsequent target assertion was not reached. The fix checks entry IDs against the same artifact enumeration already used for list checks, only on enumerated sides.
+
+After the fix, `npm run build` passed and the requested framework, Typed, and non-GPU tensor test selection reported 412 tests: 410 passed, 2 skipped, 0 failed. Both source and target direct-entry assertions passed. `git diff --check` passed.
