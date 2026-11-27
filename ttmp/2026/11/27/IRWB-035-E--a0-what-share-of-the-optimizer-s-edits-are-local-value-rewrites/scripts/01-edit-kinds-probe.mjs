@@ -20,8 +20,8 @@ const opt = n => {
 const ids = opt('--projects') ? opt('--projects').split(',') : projectIds();
 const pipes = opt('--pipeline') ? [opt('--pipeline')] : ['O2', 'speed'];
 
-const seen = new Map(); // "pass kind" -> example edit
-const counts = {}; // pass -> kind -> n
+const seen = new Map(); // "pipeline pass kind" -> example edit
+const counts = {}; // pipeline -> pass -> kind -> n
 for (const id of ids) {
   const p = projectSource(id, projectFiles(id));
   const r0 = ingestProject(p);
@@ -32,10 +32,10 @@ for (const id of ids) {
       const r = await applyPass(PASSES[name], cur, { manager });
       if (!r.changed) continue;
       const edits = r.report?.edits ?? [];
-      const byKind = (counts[name] ??= {});
+      const byKind = ((counts[pl] ??= {})[name] ??= {});
       for (const e of edits) {
         byKind[e.kind] = (byKind[e.kind] ?? 0) + 1;
-        const k = `${name} ${e.kind}`;
+        const k = `${pl} ${name} ${e.kind}`;
         if (!seen.has(k)) seen.set(k, e);
       }
       cur = r.artifact;
@@ -43,8 +43,11 @@ for (const id of ids) {
   }
 }
 const lines = [`projects ${ids.length}, pipelines ${pipes.join(' ')}`];
-for (const [pass, byKind] of Object.entries(counts))
-  lines.push(`${pass}: ${JSON.stringify(byKind)}`);
+for (const pl of pipes) {
+  lines.push('');
+  for (const [pass, byKind] of Object.entries(counts[pl]))
+    lines.push(`${pl} ${pass}: ${JSON.stringify(byKind)}`);
+}
 lines.push('');
 for (const [k, e] of [...seen].sort())
   lines.push(`${k}: ${JSON.stringify(e)}`);

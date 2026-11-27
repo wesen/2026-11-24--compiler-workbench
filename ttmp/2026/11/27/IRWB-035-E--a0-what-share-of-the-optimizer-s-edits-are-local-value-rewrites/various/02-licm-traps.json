@@ -1,0 +1,167 @@
+{
+ "project": "licm-traps",
+ "fns": 1,
+ "pipelines": {
+  "O2": {
+   "applications": 1,
+   "changed": 1,
+   "byPass": {
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 1,
+       "dropped": 1
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    }
+   },
+   "edits": 1,
+   "cls": {
+    "local": 1,
+    "structural": 0,
+    "other": 0
+   },
+   "wcls": {
+    "local": {
+     "owned": 1,
+     "dropped": 1
+    },
+    "structural": {
+     "owned": 0,
+     "dropped": 0
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 0
+    }
+   },
+   "images": {
+    "r0": 17,
+    "head": 17
+   }
+  },
+  "speed": {
+   "applications": 2,
+   "changed": 2,
+   "byPass": {
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 1,
+       "dropped": 1
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    },
+    "rotate": {
+     "edits": 3,
+     "cls": {
+      "local": 0,
+      "structural": 3,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 3,
+       "dropped": 2
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 2
+    }
+   },
+   "edits": 4,
+   "cls": {
+    "local": 1,
+    "structural": 3,
+    "other": 0
+   },
+   "wcls": {
+    "local": {
+     "owned": 1,
+     "dropped": 1
+    },
+    "structural": {
+     "owned": 3,
+     "dropped": 2
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 0
+    }
+   },
+   "images": {
+    "r0": 17,
+    "head": 18
+   }
+  }
+ },
+ "ms": 145
+}

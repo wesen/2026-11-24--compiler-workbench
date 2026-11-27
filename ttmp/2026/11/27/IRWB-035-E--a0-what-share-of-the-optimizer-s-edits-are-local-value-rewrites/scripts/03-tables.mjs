@@ -144,6 +144,16 @@ const skip = {
   w: { local: 0, structural: 0, other: 0 },
   weight: 0,
 };
+const skipPipe = {};
+for (const pl of pipelines)
+  skipPipe[pl] = {
+    edits: 0,
+    local: 0,
+    structural: 0,
+    other: 0,
+    w: { local: 0, structural: 0, other: 0 },
+    weight: 0,
+  };
 for (const id of projectList) {
   if (id === SKIP) continue;
   const rec = data.byProject[id];
@@ -151,23 +161,30 @@ for (const id of projectList) {
   for (const pl of pipelines) {
     const pipe = rec.pipelines[pl];
     if (!pipe) continue;
+    const s = skipPipe[pl];
     skip.edits += pipe.edits;
+    s.edits += pipe.edits;
     for (const c of ['local', 'structural', 'other']) {
       skip[c] += pipe.cls[c];
-      skip.w[c] += pipe.wcls[c].owned + pipe.wcls[c].dropped;
-      skip.weight += pipe.wcls[c].owned + pipe.wcls[c].dropped;
+      s[c] += pipe.cls[c];
+      const w = pipe.wcls[c].owned + pipe.wcls[c].dropped;
+      skip.w[c] += w;
+      s.w[c] += w;
+      skip.weight += w;
+      s.weight += w;
     }
   }
 }
-L(
-  `no-chess  ${pad(skip.edits, 6)} ${pad(pct(skip.local, skip.edits), 6)} ${pad(pct(skip.structural, skip.edits), 6)} ${pad(
-    pct(skip.other, skip.edits),
+const row = t =>
+  `${pad(t.edits, 6)} ${pad(pct(t.local, t.edits), 6)} ${pad(pct(t.structural, t.edits), 6)} ${pad(
+    pct(t.other, t.edits),
     5,
-  )} | ${pad(skip.weight, 6)} ${pad(pct(skip.w.local, skip.weight), 6)} ${pad(
-    pct(skip.w.structural, skip.weight),
+  )} | ${pad(t.weight, 6)} ${pad(pct(t.w.local, t.weight), 6)} ${pad(
+    pct(t.w.structural, t.weight),
     6,
-  )} ${pad(pct(skip.w.other, skip.weight), 5)}`,
-);
+  )} ${pad(pct(t.w.other, t.weight), 5)}`;
+for (const pl of pipelines) L(`${'no-chess/'.concat(pl).padEnd(9)}${row(skipPipe[pl])}`);
+L(`no-chess  ${row(skip)}`);
 
 // ---------- per pass ----------
 for (const pl of pipelines) {

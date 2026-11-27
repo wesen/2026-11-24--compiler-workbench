@@ -1,0 +1,78 @@
+projects 50, pipelines O2 speed
+
+O2 subst: {"replace":51,"remove":51}
+O2 simplify: {"replace":140}
+O2 constprop: {"replace":141}
+O2 dce: {"remove":118}
+O2 cfg: {"retarget":486,"unreachable":459,"remove":22,"move":65,"merge":22,"replaceStmt":4}
+O2 fold: {"replace":43}
+O2 licm: {"local":89,"insert":105,"replace":88,"block":16,"retarget":31}
+O2 bce: {"replaceStmt":13,"unreachable":13}
+O2 lvn: {"local":11,"replace":22,"insert":11}
+O2 strength: {"replace":20}
+
+speed inline: {"local":1036,"block":1659,"remove":235,"inline":235}
+speed cfg: {"remove":518,"move":1148,"merge":518,"unreachable":1246,"retarget":800,"replaceStmt":4}
+speed subst: {"replace":331,"remove":331}
+speed simplify: {"replace":258}
+speed constprop: {"replace":258}
+speed dce: {"remove":216}
+speed fold: {"replace":104}
+speed licm: {"local":110,"insert":133,"replace":109,"block":23,"retarget":47}
+speed rotate: {"replaceStmt":192,"unreachable":89}
+speed bce: {"replaceStmt":13,"unreachable":13}
+speed lvn: {"local":16,"replace":32,"insert":16}
+speed strength: {"replace":46}
+
+O2 bce replaceStmt: {"id":"edit:r3.0","rev":3,"pass":"bce","fn":"total","kind":"replaceStmt","from":"s:total.5","to":"s:total.14","block":"bb:total.3","text":"goto .7","because":["s:total.3","fact:ranges(total): i ≥ 0"]}
+O2 bce unreachable: {"id":"edit:r3.1","rev":3,"pass":"bce","fn":"total","kind":"unreachable","block":"bb:total.4","because":["cfg"]}
+O2 cfg merge: {"id":"edit:r4.4","rev":4,"pass":"cfg","fn":"total","kind":"merge","block":"bb:total.7","into":"bb:total.3"}
+O2 cfg move: {"id":"edit:r4.1","rev":4,"pass":"cfg","fn":"total","kind":"move","stmt":"s:total.9","from":"bb:total.7","to":"bb:total.3","because":["s:total.14"]}
+O2 cfg remove: {"id":"edit:r4.0","rev":4,"pass":"cfg","fn":"total","kind":"remove","stmt":"s:total.14","block":"bb:total.3","text":"goto .7","because":["bb:total.7"],"note":"merged with its only successor"}
+O2 cfg replaceStmt: {"id":"edit:r3.0","rev":3,"pass":"cfg","fn":"runVm","kind":"replaceStmt","from":"s:runVm.7","to":"s:runVm.142","block":"bb:runVm.1","text":"goto .3","because":["v:runVm.247"]}
+O2 cfg retarget: {"id":"edit:r1.0","rev":1,"pass":"cfg","fn":"blend","kind":"retarget","stmt":"s:blend.6","field":"else","from":"bb:blend.5","to":"bb:blend.7","because":["bb:blend.5"]}
+O2 cfg unreachable: {"id":"edit:r1.1","rev":1,"pass":"cfg","fn":"blend","kind":"unreachable","block":"bb:blend.5","because":["cfg"]}
+O2 constprop replace: {"id":"edit:r2.0","rev":2,"pass":"constprop","fn":"tidy","kind":"replace","stmt":"s:tidy.3","field":"value","from":"v:tidy.17","to":"v:tidy.28","text":"((a + b) + 0)","because":[]}
+O2 dce remove: {"id":"edit:r4.0","rev":4,"pass":"dce","fn":"tidy","kind":"remove","stmt":"s:tidy.2","block":"bb:tidy.0","text":"z = 0","because":["fact:liveness(tidy)@r3"]}
+O2 fold replace: {"id":"edit:r2.0","rev":2,"pass":"fold","fn":"blend","kind":"replace","stmt":"s:blend.0","field":"value","from":"v:blend.2","to":"v:blend.34","text":"64","because":[]}
+O2 licm block: {"id":"edit:r4.0","rev":4,"pass":"licm","fn":"runVm","kind":"block","block":"bb:runVm.n0","because":["loop:runVm@bb:runVm.3"]}
+O2 licm insert: {"id":"edit:r6.1","rev":6,"pass":"licm","fn":"blend","kind":"insert","stmt":"s:blend.15","block":"bb:blend.0","at":2,"because":["loop:blend@bb:blend.1"]}
+O2 licm local: {"id":"edit:r6.0","rev":6,"pass":"licm","fn":"blend","kind":"local","local":"local:blend/inv","name":"inv","because":["loop:blend@bb:blend.1"]}
+O2 licm replace: {"id":"edit:r6.2","rev":6,"pass":"licm","fn":"blend","kind":"replace","stmt":"s:blend.10","field":"value","from":"v:blend.39","to":"v:blend.42","because":["loop:blend@bb:blend.1"]}
+O2 licm retarget: {"id":"edit:r4.2","rev":4,"pass":"licm","fn":"runVm","kind":"retarget","stmt":"s:runVm.6","field":"to","from":"bb:runVm.3","to":"bb:runVm.n0","because":["loop:runVm@bb:runVm.3"]}
+O2 lvn insert: {"id":"edit:r8.3","rev":8,"pass":"lvn","fn":"chessPieceMoves","kind":"insert","stmt":"s:chessPieceMoves.82","block":"bb:chessPieceMoves.10","at":3,"because":["v:chessPieceMoves.90","v:chessPieceMoves.37"]}
+O2 lvn local: {"id":"edit:r8.0","rev":8,"pass":"lvn","fn":"chessPieceMoves","kind":"local","local":"local:chessPieceMoves/vn","name":"vn","because":["v:chessPieceMoves.90"]}
+O2 lvn replace: {"id":"edit:r8.1","rev":8,"pass":"lvn","fn":"chessPieceMoves","kind":"replace","stmt":"s:chessPieceMoves.80","field":"value","from":"v:chessPieceMoves.90","to":"v:chessPieceMoves.118","text":"vn","because":[]}
+O2 simplify replace: {"id":"edit:r1.0","rev":1,"pass":"simplify","fn":"tidy","kind":"replace","stmt":"s:tidy.0","field":"value","from":"v:tidy.4","to":"v:tidy.0","text":"x","because":[]}
+O2 strength replace: {"id":"edit:r9.0","rev":9,"pass":"strength","fn":"chessAttacked","kind":"replace","stmt":"s:chessAttacked.42","field":"cond","from":"v:chessAttacked.82","to":"v:chessAttacked.136","text":"((piece >> 3) == side)","because":[]}
+O2 subst remove: {"id":"edit:r1.1","rev":1,"pass":"subst","fn":"keep","kind":"remove","stmt":"s:keep.1","block":"bb:keep.0","text":"p = t8","because":["s:keep.8"],"note":"substituted into its only reader"}
+O2 subst replace: {"id":"edit:r1.0","rev":1,"pass":"subst","fn":"keep","kind":"replace","stmt":"s:keep.8","field":"value","from":"v:keep.26","to":"v:keep.33","text":"((((((t8 * q) + (r * s)) + a) + b) + c) + d)","because":[]}
+speed bce replaceStmt: {"id":"edit:r3.0","rev":3,"pass":"bce","fn":"total","kind":"replaceStmt","from":"s:total.5","to":"s:total.14","block":"bb:total.3","text":"goto .7","because":["s:total.3","fact:ranges(total): i ≥ 0"]}
+speed bce unreachable: {"id":"edit:r3.1","rev":3,"pass":"bce","fn":"total","kind":"unreachable","block":"bb:total.4","because":["cfg"]}
+speed cfg merge: {"id":"edit:r2.3","rev":2,"pass":"cfg","fn":"keep","kind":"merge","block":"bb:keep.n1","into":"bb:keep.0"}
+speed cfg move: {"id":"edit:r2.1","rev":2,"pass":"cfg","fn":"keep","kind":"move","stmt":"s:keep.11","from":"bb:keep.n1","to":"bb:keep.0","because":["s:keep.10"]}
+speed cfg remove: {"id":"edit:r2.0","rev":2,"pass":"cfg","fn":"keep","kind":"remove","stmt":"s:keep.10","block":"bb:keep.0","text":"goto .n1","because":["bb:keep.n1"],"note":"merged with its only successor"}
+speed cfg replaceStmt: {"id":"edit:r3.0","rev":3,"pass":"cfg","fn":"runVm","kind":"replaceStmt","from":"s:runVm.7","to":"s:runVm.142","block":"bb:runVm.1","text":"goto .3","because":["v:runVm.247"]}
+speed cfg retarget: {"id":"edit:r1.0","rev":1,"pass":"cfg","fn":"blend","kind":"retarget","stmt":"s:blend.6","field":"else","from":"bb:blend.5","to":"bb:blend.7","because":["bb:blend.5"]}
+speed cfg unreachable: {"id":"edit:r2.4","rev":2,"pass":"cfg","fn":"keep","kind":"unreachable","block":"bb:keep.n1","because":["cfg"]}
+speed constprop replace: {"id":"edit:r2.0","rev":2,"pass":"constprop","fn":"tidy","kind":"replace","stmt":"s:tidy.3","field":"value","from":"v:tidy.17","to":"v:tidy.28","text":"((a + b) + 0)","because":[]}
+speed dce remove: {"id":"edit:r4.0","rev":4,"pass":"dce","fn":"tidy","kind":"remove","stmt":"s:tidy.2","block":"bb:tidy.0","text":"z = 0","because":["fact:liveness(tidy)@r3"]}
+speed fold replace: {"id":"edit:r2.0","rev":2,"pass":"fold","fn":"blend","kind":"replace","stmt":"s:blend.0","field":"value","from":"v:blend.2","to":"v:blend.34","text":"64","because":[]}
+speed inline block: {"id":"edit:r1.1","rev":1,"pass":"inline","fn":"keep","kind":"block","block":"bb:keep.n0","because":["v:keep.1"]}
+speed inline inline: {"id":"edit:r1.4","rev":1,"pass":"inline","fn":"keep","kind":"inline","stmt":"s:keep.0","callee":"w","block":"bb:keep.0","statements":1,"because":["v:keep.1","fn:w"]}
+speed inline local: {"id":"edit:r1.0","rev":1,"pass":"inline","fn":"keep","kind":"local","local":"local:keep/w_x","name":"w_x","because":["v:keep.1"]}
+speed inline remove: {"id":"edit:r1.2","rev":1,"pass":"inline","fn":"keep","kind":"remove","stmt":"s:keep.0","block":"bb:keep.0","because":["v:keep.1","fn:w"],"note":"the call to w, inlined"}
+speed licm block: {"id":"edit:r4.0","rev":4,"pass":"licm","fn":"runVm","kind":"block","block":"bb:runVm.n0","because":["loop:runVm@bb:runVm.3"]}
+speed licm insert: {"id":"edit:r6.1","rev":6,"pass":"licm","fn":"blend","kind":"insert","stmt":"s:blend.15","block":"bb:blend.0","at":2,"because":["loop:blend@bb:blend.1"]}
+speed licm local: {"id":"edit:r6.0","rev":6,"pass":"licm","fn":"blend","kind":"local","local":"local:blend/inv","name":"inv","because":["loop:blend@bb:blend.1"]}
+speed licm replace: {"id":"edit:r6.2","rev":6,"pass":"licm","fn":"blend","kind":"replace","stmt":"s:blend.10","field":"value","from":"v:blend.39","to":"v:blend.42","because":["loop:blend@bb:blend.1"]}
+speed licm retarget: {"id":"edit:r4.2","rev":4,"pass":"licm","fn":"runVm","kind":"retarget","stmt":"s:runVm.6","field":"to","from":"bb:runVm.3","to":"bb:runVm.n0","because":["loop:runVm@bb:runVm.3"]}
+speed lvn insert: {"id":"edit:r12.3","rev":12,"pass":"lvn","fn":"chessPieceMoves","kind":"insert","stmt":"s:chessPieceMoves.497","block":"bb:chessPieceMoves.10","at":3,"because":["v:chessPieceMoves.90","v:chessPieceMoves.37"]}
+speed lvn local: {"id":"edit:r12.0","rev":12,"pass":"lvn","fn":"chessPieceMoves","kind":"local","local":"local:chessPieceMoves/vn","name":"vn","because":["v:chessPieceMoves.90"]}
+speed lvn replace: {"id":"edit:r12.1","rev":12,"pass":"lvn","fn":"chessPieceMoves","kind":"replace","stmt":"s:chessPieceMoves.495","field":"value","from":"v:chessPieceMoves.90","to":"v:chessPieceMoves.910","text":"vn","because":[]}
+speed rotate replaceStmt: {"id":"edit:r7.0","rev":7,"pass":"rotate","fn":"blend","kind":"replaceStmt","from":"s:blend.3","to":"s:blend.16","block":"bb:blend.0","text":"if (i >= n) goto .2 else .3","because":["loop:blend@bb:blend.1","bb:blend.1"]}
+speed rotate unreachable: {"id":"edit:r7.2","rev":7,"pass":"rotate","fn":"blend","kind":"unreachable","block":"bb:blend.1","because":["cfg"]}
+speed simplify replace: {"id":"edit:r1.0","rev":1,"pass":"simplify","fn":"tidy","kind":"replace","stmt":"s:tidy.0","field":"value","from":"v:tidy.4","to":"v:tidy.0","text":"x","because":[]}
+speed strength replace: {"id":"edit:r13.0","rev":13,"pass":"strength","fn":"chessAttacked","kind":"replace","stmt":"s:chessAttacked.42","field":"cond","from":"v:chessAttacked.82","to":"v:chessAttacked.333","text":"((piece >> 3) == side)","because":[]}
+speed subst remove: {"id":"edit:r3.1","rev":3,"pass":"subst","fn":"keep","kind":"remove","stmt":"s:keep.9","block":"bb:keep.0","text":"w_x = a","because":["s:keep.11"],"note":"substituted into its only reader"}
+speed subst replace: {"id":"edit:r3.0","rev":3,"pass":"subst","fn":"keep","kind":"replace","stmt":"s:keep.11","field":"value","from":"v:keep.31","to":"v:keep.49","text":"((a * 5) - 3)","because":[]}

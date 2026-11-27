@@ -57,3 +57,33 @@ per-class instruction weights (the first run recorded owned/dropped per pass onl
 
 Early sanity: no local rewrite is justification `none` anywhere on the corpus, and every fold/simplify replace
 re-derives — the classifier agrees with IRWB-008's 394-of-394 measurement on the O2-family pipelines.
+
+## Step 3: the census, the tables, and the report (2026-11-27)
+
+The second census run (with per-class instruction weights) completed over all 50 projects x O2/speed in 594 s.
+Probe 01, extended to per-pipeline kind counts, cross-checks the census exactly: O2 2,021 edits, speed 9,736,
+the same per-pass kind mixes (e.g. O2 cfg: 486 retarget, 459 unreachable, 65 move, 22 remove, 22 merge,
+4 replaceStmt).
+
+Results (03-tables.mjs over the per-project JSONs; full tables in various/03-tables.txt):
+- O2: local 19.5 % of edits, structural 72.1 %, other 8.4 %; by instruction weight local 48.1 %, structural
+  48.5 %, other 3.4 %.
+- speed: local 10.2 % / structural 84.1 % / other 5.6 % by count; 26.5 / 70.4 / 3.1 by weight (chess-search is
+  75 % of speed's edits; without it: 15.0 / 76.1 / 8.9 and 39.1 / 56.5 / 4.4).
+- Value edits (replace records): 505 on O2, 1,138 on speed; local = 78.2 % and 87.6 % of them; the rest is
+  licm/lvn motion bookkeeping.
+- Verified-rule coverage of local rewrites: O2 183/395 (46.3 %), speed 362/997 (36.3 %); justification `none` is
+  empty everywhere. The rest is exactly three fact shapes: constprop's reaching-constant (399), subst's
+  single-use copy (382), strength's non-negative range (66).
+
+The final report (design-doc/02) states the method, the tables, the coverage, the meaning for programme A and
+the limits. Framework changes: none were needed. Validation for the last commit: node --test tests/typed
+tests/framework tests/workbench (the diary's next step records their result).
+
+## Step 4: validation for the last commit (2026-11-27)
+
+`node --test tests/typed/*.test.mjs`: 156 tests, 154 pass, 0 fail, 2 skipped (the pre-existing conditional
+skips). `node --test tests/framework/*.test.mjs`: 234 pass, 0 fail. `node --test tests/workbench/*.test.mjs`:
+25 tests, 24 pass, 0 fail, 1 skipped. The new suite `tests/typed/edit-class.test.mjs` is among them (5 pass).
+`src/framework/` and `src/workbench/` are untouched, so the site bundle check does not apply; `npm run build`
+(tsc) is clean; prettier was run on every file this ticket created or changed.

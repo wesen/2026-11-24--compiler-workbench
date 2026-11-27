@@ -1,0 +1,465 @@
+{
+ "project": "ui-gallery",
+ "fns": 2,
+ "pipelines": {
+  "O2": {
+   "applications": 5,
+   "changed": 5,
+   "byPass": {
+    "cfg": {
+     "edits": 4,
+     "cls": {
+      "local": 0,
+      "structural": 4,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 3,
+       "dropped": 3
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 3
+    },
+    "fold": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 1,
+       "dropped": 3
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "fold-mul": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 3
+    },
+    "simplify": {
+     "edits": 3,
+     "cls": {
+      "local": 3,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 5,
+       "dropped": 5
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 3,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-pow2": 2,
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 5,
+     "dropped": 5
+    },
+    "constprop": {
+     "edits": 2,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 2,
+       "dropped": 2
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 2,
+      "none": 0
+     },
+     "facts": {
+      "constprop: every reaching definition of the read assigns this constant": 2
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 2
+    },
+    "dce": {
+     "edits": 1,
+     "cls": {
+      "local": 0,
+      "structural": 0,
+      "other": 1
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 1
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 1
+    }
+   },
+   "edits": 11,
+   "cls": {
+    "local": 6,
+    "structural": 4,
+    "other": 1
+   },
+   "wcls": {
+    "local": {
+     "owned": 8,
+     "dropped": 10
+    },
+    "structural": {
+     "owned": 3,
+     "dropped": 3
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 1
+    }
+   },
+   "images": {
+    "r0": 47,
+    "head": 44
+   }
+  },
+  "speed": {
+   "applications": 7,
+   "changed": 7,
+   "byPass": {
+    "inline": {
+     "edits": 10,
+     "cls": {
+      "local": 0,
+      "structural": 10,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 11,
+       "dropped": 8
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 11,
+     "dropped": 8
+    },
+    "cfg": {
+     "edits": 11,
+     "cls": {
+      "local": 0,
+      "structural": 11,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 8,
+       "dropped": 8
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 8,
+     "dropped": 8
+    },
+    "fold": {
+     "edits": 2,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 2,
+       "dropped": 6
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 2,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "fold-mul": 2
+     },
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 6
+    },
+    "simplify": {
+     "edits": 5,
+     "cls": {
+      "local": 5,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 9,
+       "dropped": 9
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 5,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-pow2": 4,
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 9,
+     "dropped": 9
+    },
+    "constprop": {
+     "edits": 4,
+     "cls": {
+      "local": 4,
+      "structural": 0,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 4,
+       "dropped": 4
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 4,
+      "none": 0
+     },
+     "facts": {
+      "constprop: every reaching definition of the read assigns this constant": 4
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 4,
+     "dropped": 4
+    },
+    "dce": {
+     "edits": 2,
+     "cls": {
+      "local": 0,
+      "structural": 0,
+      "other": 2
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 2
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 2
+    },
+    "rotate": {
+     "edits": 3,
+     "cls": {
+      "local": 0,
+      "structural": 3,
+      "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 3,
+       "dropped": 2
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 2
+    }
+   },
+   "edits": 37,
+   "cls": {
+    "local": 11,
+    "structural": 24,
+    "other": 2
+   },
+   "wcls": {
+    "local": {
+     "owned": 15,
+     "dropped": 19
+    },
+    "structural": {
+     "owned": 22,
+     "dropped": 18
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 2
+    }
+   },
+   "images": {
+    "r0": 47,
+    "head": 32
+   }
+  }
+ },
+ "ms": 1017
+}
