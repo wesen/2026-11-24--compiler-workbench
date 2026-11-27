@@ -99,3 +99,39 @@ test('applyPass opens its edit only when the pass reads it (IRWB-019 F13)', asyn
     e => e.code === 'ir.capability',
   );
 });
+
+test('a pass refuses an inapplicable step before run, in both apply functions (IRWB-033-D)', async () => {
+  const ir = defineIR({ id: 'probe.legal', version: '1', description: 'test', validate: v => assert.ok(Number.isInteger(v.n)) });
+  const entity = v => ({ id: 'n', kind: 'number', attributes: v });
+  const adapter = defineAdapter({
+    id: 'probe.legal.adapter',
+    version: '1',
+    kind: ir.id,
+    schemaVersion: ir.version,
+    description: 'test',
+    relationKinds: {},
+    entities: v => [entity(v)],
+    relations: () => [],
+    resolve: entity,
+    describe: () => ({ label: 'n' }),
+    validate: ir.validate,
+  });
+  let ran = 0;
+  const pass = definePass({
+    id: 'halve',
+    version: '1',
+    ir,
+    adapter,
+    description: 'test',
+    writes: { entities: ['number'], relations: [] },
+    legal: ({ before }) => (before.value.n % 2 ? { ok: false, reason: 'odd' } : { ok: true }),
+    run: ({ before }) => (ran++, { native: { n: before.value.n / 2 } }),
+  });
+  const odd = createIRArtifact(adapter, 'test', { n: 3 });
+  assert.throws(() => applyNativePassSync(pass, odd, () => ({ ok: true })), { code: 'illegal', message: /odd/ });
+  await assert.rejects(applyPass(pass, odd, { manager: new AnalysisManager() }), { code: 'illegal' });
+  assert.equal(ran, 0);
+  const even = createIRArtifact(adapter, 'test', { n: 4 });
+  assert.equal(applyNativePassSync(pass, even, () => ({ ok: true })).artifact.value.n, 2);
+  assert.throws(() => definePass({ ...pass, id: 'bad', legal: 1 }), /legal must be a function/);
+});

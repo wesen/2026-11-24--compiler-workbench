@@ -107,8 +107,11 @@ export async function runCudaBatch(
   source: string,
   fn: Fn,
   cases: readonly CudaInputs[],
-  /** `gate` forces every gated kernel of the source to one side; only for sources that take it (`takesGate`). */
-  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused' },
+  /**
+   * `gate` forces every gated kernel of the source to one side; only for sources that take it (`takesGate`).
+   * `variant` forces every contraction kernel to that variant (`takesVariant`, IRWB-033-D).
+   */
+  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused'; variant?: number },
 ): Promise<CudaResult[]> {
   const request = encodeCudaCases(fn, cases);
   const dir = await mkdtemp(join(tmpdir(), 'irwb-tix-cuda-'));
@@ -120,6 +123,7 @@ export async function runCudaBatch(
     const program = [
       ...(options?.benchmark ? ['--benchmark'] : []),
       ...(options?.gate ? ['--gate=' + options.gate] : []),
+      ...(options?.variant !== undefined ? ['--variant=' + options.variant] : []),
     ];
     if (program.length) args.push('--', ...program);
     try {

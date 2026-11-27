@@ -42,7 +42,13 @@ import type { AnalysisManager } from '../contracts/analysis-manager.js';
 
 export class PassError extends Error {
   constructor(
-    readonly code: 'undeclaredWrite' | 'preserveViolated' | 'contractRejected' | 'badResult' | 'passFailed',
+    readonly code:
+      | 'undeclaredWrite'
+      | 'preserveViolated'
+      | 'contractRejected'
+      | 'badResult'
+      | 'passFailed'
+      | 'illegal',
     message: string,
     readonly evidence?: unknown,
   ) {
@@ -87,6 +93,12 @@ export interface PassSpec<S, N extends Needs, P = unknown> {
   readonly writes: { readonly entities: readonly string[]; readonly relations: readonly string[] };
   readonly preserves?: readonly AnalysisDefinition<any, any>[];
   readonly contract?: TransformationDefinition<Ports, Ports>;
+  /**
+   * IRWB-033-D: whether the pass may be applied to this revision with these parameters, decided from the IR before
+   * `run`. A refusal is `PassError('illegal', reason)` and nothing runs, so a caller can tell a step that does not
+   * apply from a pass that failed or a candidate that a contract rejected.
+   */
+  legal?(ctx: { readonly before: Artifact<S>; readonly view: IRView<S>; readonly params: P }): CheckResult;
   /** Extra contract inputs beyond `input` (e.g. `origin`: r0), supplied by the caller per application. */
   run(ctx: PassRunContext<S, N, P>): void | NativeResult<S> | Promise<void | NativeResult<S>>;
 }
@@ -98,6 +110,8 @@ export type Pass<S, N extends Needs = Needs, P = unknown> = Readonly<PassSpec<S,
 export function definePass<S, N extends Needs = {}, P = unknown>(spec: PassSpec<S, N, P>): Pass<S, N, P> {
   if (!spec.id || !spec.version) throw new Error('A pass needs an id and a version');
   if (typeof spec.run !== 'function') throw new Error(`Pass ${spec.id} needs run`);
+  if (spec.legal !== undefined && typeof spec.legal !== 'function')
+    throw new Error(`Pass ${spec.id}: legal must be a function`);
   if (!spec.writes || !Array.isArray(spec.writes.entities) || !Array.isArray(spec.writes.relations))
     throw new Error(`Pass ${spec.id} must declare writes { entities, relations }`);
   return Object.freeze({
@@ -143,6 +157,18 @@ export interface PassResult<S> {
   readonly preserved: readonly PreservationOutcome[];
   readonly contract?: unknown;
   readonly report?: unknown;
+}
+
+function checkLegal<S, P>(
+  pass: Pick<PassSpec<S, any, P>, 'id' | 'legal'>,
+  before: Artifact<S>,
+  view: IRView<S>,
+  params: P,
+) {
+  if (!pass.legal) return;
+  const verdict = pass.legal({ before, view, params });
+  if (verdict?.ok !== true)
+    throw new PassError('illegal', `Pass ${pass.id}: ${verdict?.reason ?? 'not applicable'}`, verdict?.evidence);
 }
 
 const glob = (patterns: readonly string[], kind: string) =>
@@ -231,6 +257,7 @@ export function applyNativePassSync<S, P>(
   if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
     throw new PassError('badResult', 'This pass requires the asynchronous analysis manager');
   const view = openIR(before, pass.adapter);
+  checkLegal(pass, before, view, params as P);
   const produced = pass.run({
     before,
     view,
@@ -271,6 +298,7 @@ export async function applyPass<S, N extends Needs, P>(
 ): Promise<PassResult<S>> {
   const { manager } = options;
   const view = openIR(before, pass.adapter, options.store);
+  checkLegal(pass, before, view, options.params as P);
   const facts: Record<string, unknown> = {},
     records: Record<string, AnalysisRecord<unknown>> = {};
   for (const [name, def] of Object.entries(pass.needs ?? {})) {

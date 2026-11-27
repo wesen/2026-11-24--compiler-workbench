@@ -139,14 +139,34 @@ export function gateRule(v: { grid: string; longest: string; lanes: string[]; sl
   return [rows, ...v.lanes.map(l => `${l} * ${d} >= ${n} * ${v.slots}`)].join(' && ');
 }
 
-export function planFusion(fn: Fn): FusionPlan {
+export interface FusionOptions {
+  /**
+   * IRWB-033-D: statements that must not be computed in block mode (the schedule's tileable contractions). Such a
+   * statement starts its own kernel, and a later statement joins that kernel only if it stays thread mode.
+   */
+  noBlock?: ReadonlySet<string>;
+}
+export function planFusion(fn: Fn, options: FusionOptions = {}): FusionPlan {
+  const noBlock = options.noBlock ?? new Set<string>();
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
   const refusals: FusionRefusal[] = [],
     termRefusals: FusionRefusal[] = [];
   for (const s of fn.statements) {
     const current = runs.at(-1);
-    if (current) {
+    if (current && noBlock.has(s.name))
+      refusals.push({
+        statement: s.name,
+        kernel: 'k' + (runs.length - 1),
+        reason: 'it is a tileable contraction, which starts its own kernel',
+      });
+    else if (current) {
       const join = joinDepth(s, current.members, current.depth);
+      const locked = current.members.find(m => noBlock.has(m.name));
+      if (locked && join.depth > 0 && (join.depth < current.depth || s.axes.length > join.depth))
+        Object.assign(join, {
+          depth: 0,
+          reason: `it would put the tileable contraction ${locked.name} in block mode`,
+        });
       if (join.depth > 0) {
         if (join.depth < current.depth)
           current.reasons.push(

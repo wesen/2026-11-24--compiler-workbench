@@ -17,6 +17,8 @@ import {
   type Statement,
   type Tensor,
 } from './model.js';
+import { emitContraction } from './cuda-contraction.js';
+import type { ContractionKernel, Schedule } from './schedule.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -147,6 +149,21 @@ const gateSupport = '\nstatic int gate_mode = 0;';
 /** Whether a generated program has a gated kernel, and so takes --gate=fused|unfused. */
 export const takesGate = (source: string) => source.includes(gateSupport);
 
+// IRWB-033-D: a source with contraction kernels also takes --variant=N, which forces every contraction kernel to its
+// variant N where that variant can launch (the contract); --gate=* as for gated kernels.
+const variantSupport = '\nstatic int variant_mode = -1;';
+const variantMain = gatedMain.replace(
+  '      else throw std::runtime_error("unknown argument");',
+  String.raw`      else if (!strncmp(argv[a], "--variant=", 10)) variant_mode = atoi(argv[a] + 10);
+      else throw std::runtime_error("unknown argument");`,
+);
+if (variantMain === gatedMain) throw Error('The gated CUDA main no longer has the unknown-argument line');
+/** Whether a generated program has a contraction kernel, and so takes --variant=N. */
+export const takesVariant = (source: string) => source.includes(variantSupport);
+/** The number of variants of the source's contraction kernels (the largest), or 0 without one. */
+export const variantCount = (source: string) =>
+  takesVariant(source) ? Math.max(...[...source.matchAll(/if constexpr \(V == (\d+)\)/g)].map(m => +m[1])) + 1 : 0;
+
 function affine(a: Affine, name: (key: string) => string): string {
   const terms = a.terms.map(([key, coefficient]) =>
     coefficient === 1 ? name(key) : `${coefficient}LL * ${name(key)}`,
@@ -172,6 +189,8 @@ function kernelWriter(
   maxFold = 'minmax(ACC, VALUE, true)',
   /** A reduction whose terms are already in a buffer: its count and pointer (IRWB-030-E). */
   stagedTerms: (e: Reduce) => { count: string; terms: string } | undefined = () => undefined,
+  /** A reduction whose value is already computed, e.g. a tiled contraction's accumulator (IRWB-033-D). */
+  reduced: (e: Reduce) => string | undefined = () => undefined,
 ) {
   const lines: string[] = [];
   let indent = '  ',
@@ -239,6 +258,8 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const done = reduced(e);
+        if (done !== undefined) return done;
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         const step = (value: string) =>
           line(
@@ -274,6 +295,7 @@ function kernelWriter(
     dim,
     bound,
     bind,
+    offset,
     alias: (id: string, name: string) => void indices.set(id, name),
     scalar,
     enter: () => void (indent += '  '),
@@ -636,7 +658,12 @@ ${members
 }
 
 /** The CUDA translation unit for `fn`, one kernel per group of `plan` (default: stage 2, one per statement). */
-export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
+export function emitCuda(
+  fn: Fn,
+  plan: FusionPlan = unfusedPlan(fn),
+  /** IRWB-033-D: the schedule's contraction kernels, printed from their variants. */
+  contractions: ReadonlyMap<string, ContractionKernel> = new Map(),
+): string {
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -653,7 +680,11 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     }
   }
   const kernels = plan.groups.map(g =>
-    g.statements.length === 1
+    contractions.has(g.kernel)
+      ? emitContraction(contractions.get(g.kernel)!, fn, dims, tensors, name, (load, reduced) =>
+          kernelWriter(dims, load, undefined, undefined, reduced),
+        )
+      : g.statements.length === 1
       ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
       : emitGroup(g, dims, tensors, name),
   );
@@ -696,6 +727,11 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
         '  const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;',
         '  const U sm_reserved = std::max(reserved_bytes, 1);',
       );
+    if (contractions.size)
+      host.push(
+        '  int sm_count = 0;',
+        '  check(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, 0));',
+      );
     host.push(
       ...kernels.flatMap(k => k.host),
       '  cudaFuncAttributes attributes;',
@@ -721,7 +757,29 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
   const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
   const gated = plan.groups.some(g => g.statements.length > 1 && g.mapping === 'block');
   if (gated) fused.push(gateSupport);
-  return [support, ...fused, ...kernels.map(k => k.code), host.join('\n'), gated ? gatedMain : main].join(
+  if (contractions.size) fused.push(variantSupport);
+  if (contractions.size && !gated) fused.push('\nstatic int gate_mode{0};');
+  return [
+    support,
+    ...fused,
+    ...kernels.map(k => k.code),
+    host.join('\n'),
+    contractions.size ? variantMain : gated ? gatedMain : main,
+  ].join(
     '\n\n',
   );
+}
+
+/** IRWB-033-D: print a schedule. With no contraction kernel this is `emitCuda` of the schedule's fusion plan. */
+export function emitSchedule(schedule: Schedule): string {
+  const plan: FusionPlan = {
+    fn: schedule.fn.name,
+    groups: schedule.kernels.map(k => k.group),
+    refusals: [],
+    termRefusals: [],
+  };
+  const contractions = new Map(
+    schedule.kernels.flatMap(k => (k.kind === 'contraction' ? [[k.name, k] as const] : [])),
+  );
+  return emitCuda(schedule.fn, plan, contractions);
 }
