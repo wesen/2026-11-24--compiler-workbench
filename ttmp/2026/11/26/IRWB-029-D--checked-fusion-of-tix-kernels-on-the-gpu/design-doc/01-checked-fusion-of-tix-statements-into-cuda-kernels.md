@@ -10,14 +10,16 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: repo://src/tensor/cuda-source.ts
-      Note: Stage-2 emitter; gains a group emitter for fused kernels
-    - Path: repo://src/tensor/cuda-contract.ts
-      Note: Lowering transformation; gains the fuse port and a statements-to-kernels correspondence
-    - Path: repo://src/tensor/model.ts
-      Note: Tix IR the legality analysis reads
     - Path: repo://src/framework/contracts/analysis-manager.ts
       Note: Validates the correspondence records a transformation returns
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: Lowering transformation; gains the fuse port and a statements-to-kernels correspondence
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Stage-2 emitter; gains a group emitter for fused kernels
+    - Path: repo://src/tensor/fusion.ts
+      Note: Legality analysis (planFusion)
+    - Path: repo://src/tensor/model.ts
+      Note: Tix IR the legality analysis reads
 ExternalSources: []
 Summary: Fusion as a legality analysis on the Tix IR plus a group emitter; thread and block mappings; exact GPU check; a many-to-one correspondence.
 LastUpdated: 2026-11-26T23:30:00-05:00
@@ -104,3 +106,12 @@ No change is planned: the transformation contract already takes a cross-kind out
 - Checking correspondence entity IDs against the artifacts (needs an entity projection for CUDA units, or a domain check).
 - A run-time choice between block and thread mode for few, long rows; several rows per block.
 - Reusing dead row buffers to raise occupancy; horizontal fusion; statement reordering.
+
+## As built
+
+The implementation follows this design. It differs in four points, each measured (diary steps 3 and 4) and described in the report:
+
+- Block-mode kernels are `template <bool Shared>`, so that rows in shared memory are addressed as shared memory. Going through the generic pointer to shared memory or scratch cost 25% on a row max. The host launches the instantiation that fits.
+- Fused kernels fold max with PTX `max.NaN.f32` rather than `minmax`. Probe 07 found the two equal on 324 pairs of special words. The block mapping makes the fold's latency the critical path.
+- Threads per block in block mode are capped at 128, or at 64 when a member's reduction reads a tensor from global memory (measured at 64, 128 and 256).
+- `createCudaLowering(...)` returns `(baseline, fn, candidate?, { fuse, manager }?)`; the `manager` option lets tests read the recorded correspondence.
