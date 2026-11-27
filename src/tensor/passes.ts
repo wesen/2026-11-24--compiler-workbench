@@ -1,4 +1,4 @@
-import { definePass } from '../framework/passes/index.js';
+import { definePass, type Pass } from '../framework/passes/index.js';
 import { adapter, TixIR } from './ir.js';
 import {
   add,
@@ -79,16 +79,26 @@ function split(fn: Fn): Fn {
     })),
   };
 }
-function pass(name: string, transform: (fn: Fn) => Fn) {
-  return definePass<Module>({
-    id: 'tensor.' + name,
-    version: '1',
-    description: name,
-    ir: TixIR,
-    adapter,
-    writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
-    run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
+function pass(name: string, relation: TixPass['relation'], transform: (fn: Fn) => Fn) {
+  return Object.freeze({
+    ...definePass<Module>({
+      id: 'tensor.' + name,
+      version: '1',
+      description: name,
+      ir: TixIR,
+      adapter,
+      writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
+      run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
+    }),
+    relation,
   });
 }
-export const inlinePass = pass('inline', inline),
-  splitPass = pass('split-sum', split);
+
+/** A Tix pass, with the meaning relation its output bears to its input, checked by the meaning gate. */
+export interface TixPass extends Pass<Module> {
+  /** `exact`: bit-identical f32 results; `tolerance`: within the gate's relative bound. */
+  readonly relation: 'exact' | 'tolerance';
+}
+
+export const inlinePass = pass('inline', 'exact', inline),
+  splitPass = pass('split-sum', 'tolerance', split);

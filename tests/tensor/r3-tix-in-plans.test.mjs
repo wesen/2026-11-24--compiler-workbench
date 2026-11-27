@@ -20,10 +20,7 @@ const wrong = definePass({
   run: () => ({ native: parse('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k] * 3; return y; }') }),
 });
 
-test(
-  'F27: a wrong Tix pass is rejected inside a strategy plan; correct passes are accepted',
-  { todo: 'F27' },
-  async () => {
+test('F27: a wrong Tix pass is rejected inside a strategy plan; correct passes are accepted', async () => {
     assert.equal(typeof T.tixAlgorithm, 'function', 'src/tensor exports tixAlgorithm(pass, { origin })');
     const p = T.compileTix(src);
     const keep = { id: 'keep', version: '1', kind: 'transform', description: 'identity', run: (_c, a) => a };

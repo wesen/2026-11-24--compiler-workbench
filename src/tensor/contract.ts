@@ -1,9 +1,12 @@
 import {
+  defineInvariant,
+  defineTransformation,
   differential,
   differentialSpec,
   runDifferential,
   seededRandom,
   type CheckResult,
+  type TransformationDefinition,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
 import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
@@ -153,4 +156,43 @@ export function meaningGate(origin: Artifact<Module>, relation: Relation) {
     const evidence = runDifferential(differentialSpec(invariant), { baseline, subject: candidate });
     return { ok: evidence.status === 'agree', reason: evidence.counterexamples[0]?.reason, evidence };
   };
+}
+
+/**
+ * IRWB-041-B: the meaning gate as a transformation contract, so a strategy plan checks it through the bridge's
+ * `contract` and `contractInputs` options instead of dropping it. The pass's input, the origin (r0) and the output
+ * are bound into one `ensures` invariant that runs the gate; the caller supplies `origin` per application.
+ */
+export function gateContract(relation: Relation): TransformationDefinition<any, any> {
+  const invariant = defineInvariant({
+    id: 'tensor.meaning-gate.' + relation,
+    version: '1',
+    description: 'The Tix meaning gate (' + relation + ') over the input, the origin and the output',
+    inputs: { before: TixIR, origin: TixIR, after: TixIR },
+    check: (_ctx, { before, origin, after }) => {
+      const result = meaningGate(origin, relation)(before, after);
+      // The gate's differential evidence carries an `undefined` field, which the manager's canonical encoder
+      // refuses ('IR data cannot contain undefined'); a JSON round trip drops it (the one adaptation needed).
+      return result.ok
+        ? { ok: true, evidence: JSON.parse(JSON.stringify(result.evidence ?? null)) }
+        : { ok: false, reason: result.reason };
+    },
+  });
+  return defineTransformation({
+    id: 'tensor.gated.' + relation,
+    version: '1',
+    description: 'A Tix pass under its meaning gate (' + relation + ')',
+    inputs: { input: TixIR, origin: TixIR },
+    outputs: { output: TixIR },
+    ensures: [
+      {
+        invariant,
+        bindings: {
+          before: { from: 'inputs', port: 'input' },
+          origin: { from: 'inputs', port: 'origin' },
+          after: { from: 'outputs', port: 'output' },
+        },
+      },
+    ],
+  });
 }
