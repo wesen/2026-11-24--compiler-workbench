@@ -1,0 +1,6 @@
+default  r0     fib 7863 (=1152)  checksum 7035 (=1298667478)  saved 0 spills 0 rejected 0
+default  O2     fib 9287 (=1152)  checksum 8219 (=1298667478)  saved 10 spills 0 rejected 0
+default  speed  fib 9287 (=1152)  checksum 8219 (=1298667478)  saved 10 spills 0 rejected 0
+coalesce r0     fib 7678 (=1152)  checksum 6874 (=1298667478)  saved 0 spills 0 rejected 0
+coalesce O2     fib 9286 (=1152)  checksum 8218 (=1298667478)  saved 10 spills 0 rejected 0
+coalesce speed  fib 9286 (=1152)  checksum 8218 (=1298667478)  saved 10 spills 0 rejected 0

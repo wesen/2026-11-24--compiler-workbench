@@ -158,6 +158,7 @@ test('generated and exhaustive VM cases agree across evaluators and RV32 compile
   const scalarImage = lowerToImage(specialized.head, backendOptions).image;
 
   const maxSteps = { 0: { r0: 0, speed: 0 }, 34: { r0: 0, speed: 0 } };
+  const slower = [];
   function checkVm(c) {
     const [codeAddress, entry, n, seed] = c.args;
     const label = `entry=${entry}, n=${n}, seed=${seed}`;
@@ -181,6 +182,7 @@ test('generated and exhaustive VM cases agree across evaluators and RV32 compile
     checkRun(runImage(referenceImage, c.fn, c.args, c.memory, { counts: false }),
       oracle.result, inputBytes, `reference RV32, ${label}`);
     assert.deepEqual(c.memory, inputBytes, `caller memory, ${label}`);
+    if (speedRun.steps > r0Run.steps) slower.push({ entry, n, seed, r0: r0Run.steps, speed: speedRun.steps });
     return { oracle, r0Run, speedRun };
   }
 
@@ -208,6 +210,11 @@ test('generated and exhaustive VM cases agree across evaluators and RV32 compile
     }
   }
   assert.equal(cases, 442);
+  // IRWB-034-F: licm hoists out of the dispatch loop once per call. That costs a fixed prologue (the hoisted
+  // frame addresses and the callee-saved registers they occupy), which only the n = 0 fixtures (four dispatches)
+  // do not earn back; every other call runs fewer instructions under speed than at r0.
+  t.diagnostic(`speed slower than r0: ${JSON.stringify(slower.slice(0, 3))} (${slower.length} calls)`);
+  assert.deepEqual([...new Set(slower.map(x => x.n))], [0]);
   t.diagnostic(`maximum evaluator statements by entry: ${JSON.stringify(maxSteps)}`);
 });
 

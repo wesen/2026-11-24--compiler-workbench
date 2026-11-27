@@ -1,0 +1,12 @@
+{"id":"across-calls","sharedHeads":0,"r0":{"default":660,"coalesce":630},"O2":{"default":640,"coalesce":630},"speed":{"default":270,"coalesce":240},"rejected":{"O2":[],"speed":[]}}
+{"id":"algebra","sharedHeads":0,"r0":{"default":100,"coalesce":100},"O2":{"default":20,"coalesce":20},"speed":{"default":20,"coalesce":20},"rejected":{"O2":[],"speed":[]}}
+{"id":"blend","sharedHeads":0,"r0":{"default":2255,"coalesce":2090},"O2":{"default":1925,"coalesce":1760},"speed":{"default":1915,"coalesce":1750},"rejected":{"O2":[],"speed":[]}}
+{"id":"bounds-lab","sharedHeads":0,"r0":{"default":5923,"coalesce":5495},"O2":{"default":5333,"coalesce":4905},"speed":{"default":5012,"coalesce":4817},"rejected":{"O2":[],"speed":[]}}
+{"id":"bounds-offset","sharedHeads":0,"r0":{"default":1364,"coalesce":1294},"O2":{"default":1364,"coalesce":1294},"speed":{"default":1355,"coalesce":1285},"rejected":{"O2":[],"speed":[]}}
+{"id":"bounds-param","sharedHeads":0,"r0":{"default":502,"coalesce":452},"O2":{"default":502,"coalesce":452},"speed":{"default":499,"coalesce":449},"rejected":{"O2":[],"speed":[]}}
+{"id":"bounds-two","sharedHeads":0,"r0":{"default":910,"coalesce":860},"O2":{"default":810,"coalesce":760},"speed":{"default":756,"coalesce":706},"rejected":{"O2":[],"speed":[]}}
+{"id":"branches","sharedHeads":0,"r0":{"default":165,"coalesce":165},"O2":{"default":139,"coalesce":139},"speed":{"default":139,"coalesce":139},"rejected":{"O2":[],"speed":[]}}
+{"id":"bytecode-vm","sharedHeads":1,"r0":{"default":39954,"coalesce":39021},"O2":{"default":32625,"coalesce":32615},"speed":{"default":32625,"coalesce":32615},"rejected":{"O2":[],"speed":[]}}
+{"id":"call-chain","sharedHeads":0,"r0":{"default":1050,"coalesce":1050},"O2":{"default":1050,"coalesce":1050},"speed":{"default":350,"coalesce":330},"rejected":{"O2":[],"speed":[]}}
+{"id":"calls","sharedHeads":0,"r0":{"default":651,"coalesce":580},"O2":{"default":651,"coalesce":580},"speed":{"default":288,"coalesce":227},"rejected":{"O2":[],"speed":[]}}
+{"id":"checksum","sharedHeads":0,"r0":{"default":1710,"coalesce":1560},"O2":{"default":1410,"coalesce":1260},"speed":{"default":1251,"coalesce":1251},"rejected":{"O2":[],"speed":[]}}

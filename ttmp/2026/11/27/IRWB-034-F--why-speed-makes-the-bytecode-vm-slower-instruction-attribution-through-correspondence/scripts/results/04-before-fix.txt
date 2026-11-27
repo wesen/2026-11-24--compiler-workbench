@@ -1,0 +1,123 @@
+r0 14552 -> r7 17504: difference 2952
+sum of nets 2952
+
+    net  credit   debit   insns  decision {kinds}
+  -1504       0    1504     0/9  r1 cfg  {removed}
+   -688       0     688     0/2  r2 fold  {removed,replace}
+    344     344       0     1/0  r4 licm [loop:runVm@bb:runVm.3, s:runVm.164]  {licm}
+    344    2064    1720     6/5  r6 subst  {replace,subst}
+   -344       0     344     0/1  r6 subst [s:runVm.10]  {subst}
+    342    1030     688     3/2  r7 cfg [s:runVm.163]  {move}
+    332     344      12     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.160]  {licm}
+    332     344      12     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.161]  {licm}
+    332     344      12     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.162]  {licm}
+    320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.152]  {licm}
+    320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.153]  {licm}
+    320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.154]  {licm}
+    320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.156]  {licm}
+    320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.157]  {licm}
+    320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.158]  {licm}
+    272     308      36     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.144]  {licm}
+    272     344      72     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.149]  {licm}
+    272     344      72     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.150]  {licm}
+    220     344     124     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.146]  {licm}
+    220     344     124     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.147]  {licm}
+    124     124       0     1/0  r1 cfg [bb:runVm.29]  {retarget}
+     72      72       0     1/0  r1 cfg [bb:runVm.40]  {retarget}
+     40      46       6    23/3  frame runVm  {}
+     36      36       0     1/0  r1 cfg [bb:runVm.18]  {retarget}
+    -26     104     130     4/5  r1 cfg [bb:runVm.93]  {retarget}
+     24      24       0     1/0  r1 cfg [bb:runVm.55]  {retarget}
+     24      24       0     1/0  r1 cfg [bb:runVm.70]  {retarget}
+    -24       0      24     0/1  r1 cfg [bb:runVm.98]  {retarget}
+     12      12       0     1/0  r1 cfg [bb:runVm.85]  {retarget}
+      2       2       0     1/0  r1 cfg [bb:runVm.94]  {retarget}
+      2       2       0     1/0  r3 cfg [bb:runVm.1]  {retarget}
+      0     108     108     3/3  r1 cfg [bb:runVm.15]  {retarget}
+      0     372     372     3/3  r1 cfg [bb:runVm.22]  {retarget}
+      0     248     248     2/2  r1 cfg [bb:runVm.26]  {retarget}
+      0     216     216     3/3  r1 cfg [bb:runVm.33]  {retarget}
+      0     144     144     2/2  r1 cfg [bb:runVm.37]  {retarget}
+      0      72      72     3/3  r1 cfg [bb:runVm.44]  {retarget}
+      0      48      48     2/2  r1 cfg [bb:runVm.48]  {retarget}
+      0      48      48     2/2  r1 cfg [bb:runVm.52]  {retarget}
+      0      72      72     3/3  r1 cfg [bb:runVm.59]  {retarget}
+      0      48      48     2/2  r1 cfg [bb:runVm.63]  {retarget}
+      0      48      48     2/2  r1 cfg [bb:runVm.67]  {retarget}
+      0      36      36     3/3  r1 cfg [bb:runVm.74]  {retarget}
+      0      24      24     2/2  r1 cfg [bb:runVm.78]  {retarget}
+      0       6       6     3/3  r1 cfg [bb:runVm.7]  {retarget}
+      0      24      24     2/2  r1 cfg [bb:runVm.82]  {retarget}
+      0      78      78     3/3  r1 cfg [bb:runVm.89]  {retarget}
+      0      48      48     2/2  r1 cfg [bb:runVm.97]  {retarget}
+      0    1120    1120   24/24  r4 licm  {licm}
+      0     764     764   21/21  r4 licm [loop:runVm@bb:runVm.3]  {replace}
+      0    1720    1720     5/5  r5 subst  {replace,subst}
+      0    3596    3596   54/54  unchanged  {}
+
+per pass
+   4516    7008    2492   60/59  r4 licm  {licm,replace}
+  -1260    2038    3298   53/57  r1 cfg  {removed,retarget}
+   -688       0     688     0/2  r2 fold  {removed,replace}
+    342    1030     688     3/2  r7 cfg  {move}
+     40      46       6    23/3  frame runVm  {}
+      2       2       0     1/0  r3 cfg  {retarget}
+      0    1720    1720     5/5  r5 subst  {replace,subst}
+      0    2064    2064     6/6  r6 subst  {replace,subst}
+      0    3596    3596   54/54  unchanged  {}
+
+replay: per revision, the image minus the one before (both fixtures)
+r1 cfg        replay  -1210  attribution  -1260
+r2 fold       replay   -344  attribution   -688
+r3 cfg        replay   -342  attribution      2
+r4 licm       replay   4850  attribution   4516
+r5 subst      replay      0  attribution      0
+r6 subst      replay      0  attribution      0
+r7 cfg        replay     -2  attribution    342
+
+step by step (attributeSteps): per revision, its decisions with |net| >= 10, and the sum of the rest
+r1 cfg: 14552 -> 13342, difference -1210
+    -1504       0    1504     0/9  r1 cfg  {removed}
+      124     124       0     1/0  r1 cfg [bb:runVm.29]  {retarget}
+       72      72       0     1/0  r1 cfg [bb:runVm.40]  {retarget}
+       36      36       0     1/0  r1 cfg [bb:runVm.18]  {retarget}
+       24      24       0     1/0  r1 cfg [bb:runVm.55]  {retarget}
+       24      24       0     1/0  r1 cfg [bb:runVm.70]  {retarget}
+       12      12       0     1/0  r1 cfg [bb:runVm.85]  {retarget}
+        2  (22 more decisions)
+r2 fold: 13342 -> 12998, difference -344
+     -344     344     688     1/2  r2 fold  {removed,replace}
+        0  (2 more decisions)
+r3 cfg: 12998 -> 12656, difference -342
+     -344       0     344     0/1  r3 cfg  {removed}
+        2  (3 more decisions)
+r4 licm: 12656 -> 17506, difference 4850
+      344    1542    1198   28/27  r4 licm  {inserted,licm}
+      332     344      12     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.160]  {licm}
+      332     344      12     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.161]  {licm}
+      332     344      12     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.162]  {licm}
+      320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.152]  {licm}
+      320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.153]  {licm}
+      320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.154]  {licm}
+      320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.156]  {licm}
+      320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.157]  {licm}
+      320     344      24     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.158]  {licm}
+      318     344      26     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.164]  {licm}
+      272     308      36     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.144]  {licm}
+      272     344      72     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.149]  {licm}
+      272     344      72     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.150]  {licm}
+      220     344     124     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.146]  {licm}
+      220     344     124     1/1  r4 licm [loop:runVm@bb:runVm.3, s:runVm.147]  {licm}
+       40      46       6    23/3  frame runVm  {}
+      -24    1086    1110   30/31  r4 licm [loop:runVm@bb:runVm.3]  {replace,retarget}
+        0  (1 more decisions)
+r5 subst: 17506 -> 17506, difference 0
+        0  (3 more decisions)
+r6 subst: 17506 -> 17506, difference 0
+      344    2064    1720     6/5  r6 subst  {replace,subst}
+     -344       0     344     0/1  r6 subst [s:runVm.10]  {subst}
+        0  (2 more decisions)
+r7 cfg: 17506 -> 17504, difference -2
+     -344       0     344     0/1  r7 cfg  {removed}
+      342    4814    4472   14/13  r7 cfg [s:runVm.163]  {move}
+        0  (7 more decisions)

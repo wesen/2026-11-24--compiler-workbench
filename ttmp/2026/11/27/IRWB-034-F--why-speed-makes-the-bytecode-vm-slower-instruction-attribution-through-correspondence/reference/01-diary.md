@@ -56,7 +56,7 @@ two probes before writing the design, so the design could say what the attributi
   jump, 184 executions per Fibonacci run.
 - `scripts/03-corpus-measure.mjs`: per-project instructions under r0, O2, speed (10 cases per function, seed 7,
   from r0), default backend and `coalesce: true`, plus a count of loop heads shared by several back edges at
-  licm's input. Baseline run started in the background into `scripts/out/03-baseline.{log,json}`.
+  licm's input. Baseline run started in the background into `scripts/results/03-baseline.{log,json}`.
 - Design doc written: attribution by lineage through correspondence plus edit logs, earliest-decision credit and
   debit, exact sum identity; fix = licm merges loops by head.
 

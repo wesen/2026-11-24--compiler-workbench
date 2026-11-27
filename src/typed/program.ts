@@ -14,6 +14,8 @@ import type { EntityCorrespondence } from '../framework/ir/types.js';
 import { whyEntity, type WhyNode } from '../framework/ir/correspondence.js';
 import { applyPass } from '../framework/passes/define-pass.js';
 import { ANALYSES } from './analyses.js';
+import { attributeInstructions, attributeSteps, type Attribution } from './attribution.js';
+import type { BackendOptionsInput } from './backend/index.js';
 import {
   agrees,
   benchCase,
@@ -22,6 +24,7 @@ import {
   meaningKept,
   outcome,
   readBuffer,
+  type Case,
   type ProgramInputs,
   type RunResult,
 } from './evaluate.js';
@@ -493,6 +496,33 @@ export class Program {
       .map(r => r.correspondence!)
       .filter(Boolean);
     return whyEntity({ artifact: this.head.id, revision: this.head.revision, entity: id }, chain);
+  }
+  /**
+   * Which decisions of revisions `from`+1 to `to` the instruction difference between their images comes from, on
+   * `cases` (IRWB-034-F; see attribution.ts). With `steps: true`, one attribution per revision after `from`.
+   */
+  attribute(
+    cases: readonly Case[],
+    opts?: { from?: number | string; to?: number | string; backend?: BackendOptionsInput; steps?: false },
+  ): Attribution;
+  attribute(
+    cases: readonly Case[],
+    opts: { from?: number | string; to?: number | string; backend?: BackendOptionsInput; steps: true },
+  ): readonly Attribution[];
+  attribute(
+    cases: readonly Case[],
+    opts: { from?: number | string; to?: number | string; backend?: BackendOptionsInput; steps?: boolean } = {},
+  ): Attribution | readonly Attribution[] {
+    this.requireOk();
+    const a = revNumber(opts.from ?? 0),
+      b = revNumber(opts.to ?? this.rev);
+    this.artifact(a);
+    this.artifact(b);
+    if (a > b) fail('badArgument', `attribute: from r${a} is after to r${b}`);
+    const chain = this.revisions.slice(a, b + 1);
+    return opts.steps
+      ? attributeSteps(chain, cases, opts.backend ?? {})
+      : attributeInstructions(chain, cases, opts.backend ?? {});
   }
   /** Edits that mention an entity, across revisions. */
   history(id: string): Edit[] {

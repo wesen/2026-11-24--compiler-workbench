@@ -420,6 +420,31 @@ export const cfg = typedPass({
   },
 });
 
+/**
+ * IRWB-034-F: the loops fact has one natural loop per back edge, so a head with several back edges (a dispatch
+ * loop whose every arm jumps back) appears several times with partial bodies. licm treats each head once, as the
+ * union of those loops: one body, one set of assigned locals, one preheader outside all of them. Treated one
+ * back edge at a time, each loop's preheader received the other back edges, and the hoisted code ran on every
+ * iteration. A head with one back edge is passed through as the fact has it.
+ */
+function loopsByHead(loops: readonly Loop[], f: WorkFn): Loop[] {
+  const heads = new Map<string, Loop[]>();
+  for (const L of loops) heads.set(L.head, [...(heads.get(L.head) ?? []), L]);
+  return [...heads.values()].map(group => {
+    if (group.length === 1) return group[0];
+    const body = [...new Set(group.flatMap(L => L.body))];
+    const inside = new Set(body);
+    const outside = f.blocks.filter(b => !inside.has(b.id) && b.succ.includes(group[0].head));
+    return {
+      ...group[0],
+      body,
+      preheader: outside.length === 1 && outside[0].succ.length === 1 ? outside[0].id : null,
+      exits: [...new Set(group.flatMap(L => L.exits))].filter(x => !inside.has(x)),
+      assigned: [...new Set(group.flatMap(L => L.assigned))],
+    };
+  });
+}
+
 export const licm = typedPass({
   name: 'licm',
   about:
@@ -428,7 +453,7 @@ export const licm = typedPass({
   writes: ['stmts', 'values', 'locals', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts }) {
-    for (const L of facts.loops!) {
+    for (const L of loopsByHead(facts.loops!, f)) {
       let pre = L.preheader;
       if (!pre) {
         pre = tx.block({ because: [L.id], note: 'preheader' });
