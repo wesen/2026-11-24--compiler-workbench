@@ -46,6 +46,7 @@ import {
   type WorkFn,
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
+import { splitRangesSpec } from './split-ranges.js';
 import { rotateSpec } from './rotate.js';
 import { makeInline } from './inline.js';
 
@@ -146,12 +147,18 @@ export function revisionCorrespondence(
       for (const b of o.because ?? []) g.because.add(b);
       if (o.note) g.notes.push(o.note);
     }
-  for (const e of edits)
+  for (const e of edits) {
+    if (e.kind === 'local' && src.has(e.from as string) && dst.has(e.to as string)) {
+      const g = group(e.from as string, e.pass);
+      g.to.add(e.to as string);
+      for (const b of (e.because as string[]) ?? []) g.because.add(b);
+    }
     if (e.kind === 'remove' && src.has(e.stmt as string) && !dst.has(e.stmt as string)) {
       const g = group(e.stmt as string, e.pass);
       for (const b of (e.because as string[]) ?? []) g.because.add(b);
       if (e.note) g.notes.push(e.note as string);
     }
+  }
   return [...groups].map(([from, g]) => ({
     from: [from],
     to: [...g.to].sort(),
@@ -1043,6 +1050,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   lvn,
   strength,
   'div-to-shift': divToShift,
+  'split-local-ranges': typedPass(splitRangesSpec),
   bce,
   subst,
   bcm,

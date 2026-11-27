@@ -1,0 +1,46 @@
+function runVm(code: buffer, entry: i32, n: i32, seed: i32): i32
+bb:runVm.n0  -> [.n9]
+    s:runVm.148  frameWord6 = 0
+    s:runVm.150  frameWord4 = n
+    s:runVm.151  frameWord5 = seed
+    s:runVm.152  goto .n9
+bb:runVm.n9  -> [.n61, .n62]
+    s:runVm.161  frameWord0 = frameWord4
+    s:runVm.177  if (frameWord0 == 0) goto .n61 else .n62
+bb:runVm.n61  -> []
+    s:runVm.214  frameWord0 = frameWord6
+    s:runVm.232  return frameWord0
+bb:runVm.n62  -> [.n9]
+    s:runVm.216  frameWord0 = frameWord6
+    s:runVm.256  frameWord0 = (frameWord0 + frameWord5)
+    s:runVm.272  frameWord7 = frameWord0
+    s:runVm.286  frameWord0 = frameWord5
+    s:runVm.300  frameWord6 = frameWord0
+    s:runVm.314  frameWord0 = frameWord7
+    s:runVm.328  frameWord5 = frameWord0
+    s:runVm.342  frameWord0 = frameWord4
+    s:runVm.371  frameWord0 = (frameWord0 - 1)
+    s:runVm.388  frameWord4 = frameWord0
+    s:runVm.389  goto .n9
+{"entry":0,"states":244,"before":{"instructions":7678,"bytes":840,"result":1152},"onlyEntryResult":{"instructions":7679,"bytes":844,"result":1152},"raw":{"instructions":535,"bytes":328,"result":1152},"after":{"instructions":164,"bytes":76,"result":1152},"copies":2,"afterCopies":{"instructions":164,"bytes":76,"result":1152},"hand":{"instructions":75,"bytes":40,"result":1152},"calls":221,"gapClosed":0.9882940944364067}
+function runVm(code: buffer, entry: i32, n: i32, seed: i32): i32
+bb:runVm.n0  -> [.n9]
+    s:runVm.150  frameWord4 = n
+    s:runVm.151  frameWord5 = seed
+    s:runVm.152  goto .n9
+bb:runVm.n9  -> [.n61, .n62]
+    s:runVm.161  frameWord0 = frameWord4
+    s:runVm.177  if (frameWord0 == 0) goto .n61 else .n62
+bb:runVm.n61  -> []
+    s:runVm.214  frameWord0 = frameWord5
+    s:runVm.232  return frameWord0
+bb:runVm.n62  -> [.n9]
+    s:runVm.216  frameWord0 = frameWord5
+    s:runVm.254  frameWord0 = (frameWord0 * 33)
+    s:runVm.290  frameWord0 = (frameWord0 + frameWord4)
+    s:runVm.306  frameWord5 = frameWord0
+    s:runVm.320  frameWord0 = frameWord4
+    s:runVm.349  frameWord0 = (frameWord0 - 1)
+    s:runVm.366  frameWord4 = frameWord0
+    s:runVm.367  goto .n9
+{"entry":34,"states":222,"before":{"instructions":6874,"bytes":840,"result":1298667478},"onlyEntryResult":{"instructions":6875,"bytes":844,"result":1298667478},"raw":{"instructions":511,"bytes":320,"result":1298667478},"after":{"instructions":139,"bytes":64,"result":1298667478},"copies":4,"afterCopies":{"instructions":139,"bytes":64,"result":1298667478},"hand":{"instructions":74,"bytes":36,"result":1298667478},"calls":221,"gapClosed":0.9904411764705883}

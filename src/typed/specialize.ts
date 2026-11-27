@@ -18,7 +18,8 @@
 import { defineIR } from '../framework/contracts/definitions.js';
 import type { Artifact } from '../framework/core/types.js';
 import { TxError } from './tx.js';
-import { typedPass } from './passes.js';
+import { residualize } from './residualize.js';
+import { typedPass, type TypedPassSpec } from './passes.js';
 
 /**
  * A parameter binding (`fn`, `param`): that parameter's value. A field binding (`record`, `field`): that field of
@@ -33,8 +34,8 @@ export interface Binding {
   readonly record?: string;
   /** The field's name (field form). */
   readonly field?: string;
-  /** Its value (an enum case's value for enum parameters). */
-  readonly value: number;
+  /** A scalar or, for a buffer parameter, its complete sequence of u16 cells. */
+  readonly value: number | { readonly cells: readonly number[] };
   /** The entity of the outer artifact that establishes the fact (e.g. `candela:scene/cornell#K.scene`). */
   readonly entity: string;
   readonly note?: string;
@@ -55,11 +56,19 @@ export const BindingsIR = defineIR<Bindings>({
     const v = value as Bindings;
     if (!v || v.formatVersion !== 1 || typeof v.source !== 'string' || !Array.isArray(v.bindings))
       throw new Error('typed.bindings: formatVersion 1, source and bindings required');
+    const seen = new Map<string, boolean>();
     for (const b of v.bindings) {
       const param = typeof b.fn === 'string' && typeof b.param === 'string';
       const field = typeof b.record === 'string' && typeof b.field === 'string';
-      if (param === field || !Number.isInteger(b.value) || typeof b.entity !== 'string')
+      const cells = typeof b.value === 'object' && b.value?.cells;
+      const valid = Number.isInteger(b.value) ||
+        (param && Array.isArray(cells) && cells.every(n => Number.isInteger(n) && n >= 0 && n <= 65535));
+      if (param === field || !valid || typeof b.entity !== 'string')
         throw new Error(`typed.bindings: malformed binding ${JSON.stringify(b)}`);
+      const key = JSON.stringify(param ? ['param', b.fn, b.param] : ['field', b.record, b.field]);
+      if (seen.has(key) && (seen.get(key) || typeof b.value === 'object'))
+        throw new Error(`typed.bindings: repeated buffer binding ${key}`);
+      seen.set(key, typeof b.value === 'object');
     }
   },
 });
@@ -68,7 +77,7 @@ export const BindingsIR = defineIR<Bindings>({
 export const factRef = (art: Artifact<Bindings>, b: Binding) =>
   `fact:${art.kind}:${art.id}@${art.revision.slice(0, 12)}#${b.entity}`;
 
-export const specialize = typedPass({
+const scalarSpec = {
   name: 'specialize',
   about: 'specialization: reads of a parameter bound by an outer fact become that constant',
   needs: { reach: 'reaching' },
@@ -84,6 +93,8 @@ export const specialize = typedPass({
       return defs.length === 1 && defs[0] === `param:${i}`;
     };
     for (const b of art.value.bindings) {
+      const value = b.value;
+      if (typeof value !== 'number') continue;
       if (b.record && b.field) {
         const layout = (
           st.frontEnd.records as Record<string, Record<string, { type: string; offset: number }>> | null
@@ -117,7 +128,7 @@ export const specialize = typedPass({
             !own(v, base.imm as number)
           )
             return;
-          return tx.const(b.value, {
+          return tx.const(value, {
             because: [factRef(art, b)],
             note: `${f.locals[base.imm as number].name}.${b.field} = ${b.value} (${art.value.source})`,
           });
@@ -131,7 +142,7 @@ export const specialize = typedPass({
         tx.rewrite(
           v => {
             if (v.op !== 'get' || v.imm !== i || !v.statement || !own(v, i)) return;
-            return tx.const(b.value, {
+            return tx.const(value, {
               because: [factRef(art, b)],
               note: `${b.param} = ${b.value} (${art.value.source})`,
             });
@@ -139,5 +150,21 @@ export const specialize = typedPass({
           [blk],
         );
     }
+  },
+} satisfies TypedPassSpec;
+
+export const specialize = typedPass(scalarSpec);
+
+export const specializeBuffers = typedPass({
+  name: 'specialize-buffers',
+  about: 'residualize Typed control flow on fixed host buffers and scalar bindings',
+  needs: { reach: 'reaching', live: 'liveness' },
+  writes: ['values', 'stmts', 'cfg', 'locals'],
+  body(ctx) {
+    const art = ctx.params.bindings as Artifact<Bindings>;
+    const bindings = art.value.bindings.filter(b => b.fn === ctx.f.name);
+    if (bindings.some(b => typeof b.value === 'object'))
+      residualize(ctx, bindings, bindings.map(b => factRef(art, b)));
+    else scalarSpec.body(ctx);
   },
 });

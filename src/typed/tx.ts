@@ -279,7 +279,12 @@ export class Tx {
       madeBy: this.pass.name,
       rev: this.rev,
     });
-    this.record('local', { local: `local:${this.fn.name}/${n}`, name: n, because: this.because(opts) });
+    this.record('local', {
+      local: `local:${this.fn.name}/${n}`,
+      name: n,
+      ...(opts.from ? { from: id(opts.from), to: `local:${this.fn.name}/${index}` } : {}),
+      because: this.because(opts),
+    });
     return index;
   }
 

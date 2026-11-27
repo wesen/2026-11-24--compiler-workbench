@@ -8,6 +8,7 @@
  *
  * Methods that run passes, analyses or checks are async (the framework's analyses and contracts are).
  */
+import { validateArtifact } from '../framework/contracts/definitions.js';
 import { AnalysisManager } from '../framework/contracts/analysis-manager.js';
 import type { Artifact } from '../framework/core/types.js';
 import type { EntityCorrespondence } from '../framework/ir/types.js';
@@ -37,6 +38,10 @@ import { createIRArtifact } from '../framework/ir/adapters.js';
 import { blocksAdapter } from './ir.js';
 import { ingest, type IngestOptions } from './lift.js';
 
+import type { Binding } from './specialize.js';
+
+type Assumptions = Record<string, Record<string, Binding['value']>>;
+
 export class WorkbenchError extends Error {
   constructor(
     readonly code: string,
@@ -61,7 +66,7 @@ export interface Revision {
   readonly fns?: readonly string[];
   readonly note?: string;
   /** The assumptions in force when this revision was made (see `Program.assume`). */
-  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
+  readonly assumptions?: Readonly<Assumptions>;
 }
 
 export interface ApplyResult {
@@ -143,7 +148,7 @@ export class Program {
     return `prog:${this.name}`;
   }
   /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
-  readonly assumptions: Record<string, Record<string, number>> = {};
+  readonly assumptions: Assumptions = {};
   /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
   get inputs(): ProgramInputs {
     const base = this.options.inputs ?? {};
@@ -169,9 +174,7 @@ export class Program {
    * Restrict the program's meaning to inputs satisfying `bindings`: from now on the contract every pass must meet,
    * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
    */
-  assume(
-    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
-  ): Record<string, Record<string, number>> {
+  assume(bindings: readonly Omit<Binding, 'entity'>[]): Assumptions {
     const previous = JSON.parse(JSON.stringify(this.assumptions));
     for (const b of bindings) {
       if (b.record && b.field) {
@@ -189,11 +192,25 @@ export class Program {
     return previous;
   }
   /** Specialize on an outer artifact's facts: assume them, then apply the `specialize` pass under that contract. */
-  async specialize(bindings: Artifact<import('./specialize.js').Bindings>): Promise<ApplyResult> {
-    const { specialize } = await import('./specialize.js');
-    const previous = this.assume(bindings.value.bindings);
+  async specialize(
+    bindings: Artifact<import('./specialize.js').Bindings>,
+    options: { maxStates?: number } = {},
+  ): Promise<ApplyResult> {
+    const { specialize, specializeBuffers, BindingsIR } = await import('./specialize.js');
+    validateArtifact(BindingsIR, bindings);
+    const previous: Assumptions = JSON.parse(JSON.stringify(this.assumptions));
     try {
-      return await this.apply(specialize, { params: { bindings } });
+      for (const b of bindings.value.bindings) {
+        if (b.fn && b.param) {
+          const old = this.assumptions[b.fn]?.[b.param];
+          if (old !== undefined && JSON.stringify(old) !== JSON.stringify(b.value))
+            throw new Error(`conflicting binding for ${b.fn}.${b.param}`);
+        }
+      }
+      this.assume(bindings.value.bindings);
+      const hasBuffer = bindings.value.bindings.some(b => typeof b.value === 'object');
+      const pass = hasBuffer ? specializeBuffers : specialize;
+      return await this.apply(pass, { params: { bindings, ...options } });
     } catch (e) {
       for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
       Object.assign(this.assumptions, previous);
