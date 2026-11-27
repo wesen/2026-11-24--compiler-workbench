@@ -238,6 +238,8 @@ export function defineTransformation<I extends Ports, O extends Ports>(
       throw new Error('Transfer preservation needs a correspondence and registered transfer checker');
   }
   for (const c of result.correspondence) {
+    if (c.coverage !== undefined && !['partial', 'nonempty', 'source', 'target', 'both'].includes(c.coverage))
+      throw new Error('Invalid correspondence coverage');
     if (result.inputs[c.from]?.category !== 'ir' || result.outputs[c.to]?.category !== 'ir')
       throw new Error('Correspondence requirements need IR input/output ports');
   }
