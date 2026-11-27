@@ -66,7 +66,7 @@ Build: `npm run build` succeeded (tsc, no errors).
 - 16x16 shared-tile kernel, k ascending: 0.1232 ms, **0/262,144 bit mismatches**.
 - 16x16 tile + 2x2 register accumulators: 0.0863 ms (3.1 TFLOP/s), **0/262,144 bit mismatches**.
 - 8-way split-K + ordered combine: 0.1959 ms — no speedup at this shape (refuted my expectation), 243,569 bit mismatches, but 2.5x *smaller* max error than sequential (5.6e-6 vs 1.4e-5 rel-scaled).
-- Kahan compensation on the k0 structure: 0.2173 ms (**+1.6%** median) — cheap.
+- Kahan compensation on the k0 structure: 0.2173 ms (**+1.5%** median vs 0.2141) — cheap.
 - f64 shadow accumulation: 2.7323 ms (**12.9x**) — refutes f64-based runtime certificates; Kahan-in-f32 stands.
 - Sequential f32 error at K=512 consumes 70% of the Stage 1 tolerance (1.4e-5 of 2e-5 rel); gamma_511 worst case bound is 4.6e-3, ~16,000x looser than observed - worst-case gamma bounds certify little at these sizes.
 
@@ -101,3 +101,13 @@ Also confirmed (part 2 of the script): at K=128 with random data, origin f32 con
 **Intent.** Quantify the "check time" axis: what does today's sampled gate cost, and what would full-scale CPU checking cost?
 
 **Outcome.** `scripts/05-check-cost.mjs`: one checked split-sum application costs 0.6-15.2 ms per corpus function on this host (sample scale, dims <= 7). A single f64 origin evaluation at quarter scale (e.g. matmul 128^3) costs 77-999 ms; at full corpus scale this is minutes - which is why the sampled domain exists, and also why it is blind at scale. Against this, the GPU certificate probes (Kahan shadows) cost +0.6% (memory-bound layernorm) and +1.6% (latency-bound matmul): full-scale checking can ride inside the kernel on the GB10 for well under the noise floor, while CPU checking cannot.
+
+## Step 9 — Design doc published and reviewed
+
+**Intent.** Write the deliverable: definition of best in class, ranked proposals with theory/evidence/risks/success measures, a staged plan, the failed ideas, and two Mermaid diagrams; then review the numbers against the raw probe outputs.
+
+**Outcome.** `design-doc/01-best-in-class-for-tix-checked-performance-and-derived-budgets.md` (~4,300 words including frontmatter/tables). Structure: §1 definition (guarantee ladder × performance-vs-vendor × check time); §2 evidence table from E1–E7; §3 the classify-then-spend decision ladder (Mermaid 1); §4 ranked proposals P1 exact-locality tiling (exact gate), P2 fixed-tree fusion with derived budgets (Higham γ bounds, Demmel–Nguyen reproducibility, budget accounting that can *reward* accuracy), P3 full-scale GPU certificate kernels (compensated f32, not f64), P4 width parameterization in the extent schema (the E5 finding), P5 tensor cores under composed certified error models (speculative, deferred); §5 staged plan A–E (Mermaid 2); §6 failures; §7 conclusion. Frontmatter validated with `docmgr validate frontmatter`; ExternalSources carry all ten citations (authors, title, year, link); RelatedFiles keep the doc-to-file notes tight (5).
+
+**Review pass corrections made from the raw outputs:** γ-bound looseness range corrected to ~50–670× (was 40–600×, misdivided for split-16); split-16 ratio corrected from ~460× to ~172× and pairwise ~52× added; Kahan overhead unified to +1.5% (timed medians 0.2173 vs 0.2141 ms) everywhere; the check-time cross-reference fixed to point at E7 rather than a nonexistent §4.6. These were caught by recomputing every number in the doc against the probe outputs before the final commit - the doc now agrees with the evidence files line by line.
+
+No product code was changed anywhere in this round: every probe lives under `scripts/` (Node scripts 01–05 plus `scripts/gpu/e1-matmul`, `gpu/e3-layernorm`, `gpu/e4-softmax` with handwritten CUDA), imported only from `dist/` after `npm run build`.

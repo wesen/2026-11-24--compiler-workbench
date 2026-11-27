@@ -25,7 +25,7 @@ Findings:
    (max rel-scaled error 5.6e-6 vs 1.4e-5), consistent with blocked-summation error theory
    (~(B+S)u vs (K)u per element), but it is not bit-identical, so it must be judged by a
    tolerance relation, not the exact gate.
-4. Kahan compensation costs +3% on this latency-bound kernel; f64 shadow costs 12.9x.
+4. Kahan compensation costs +1.5% on this latency-bound kernel (timed medians 0.2173 vs 0.2141 ms); f64 shadow costs 12.9x.
    A Kahan-style per-element runtime certificate is cheap here; an f64 shadow is not.
 5. The sequential f32 error itself (1.4e-5 rel-scaled) consumes ~70% of the Stage 1
    tolerance (2e-5) at K=512 before any optimization acts.
