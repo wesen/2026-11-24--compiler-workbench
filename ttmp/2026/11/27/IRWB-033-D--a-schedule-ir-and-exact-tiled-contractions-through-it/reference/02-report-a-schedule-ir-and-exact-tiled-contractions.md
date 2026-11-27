@@ -46,6 +46,8 @@ The code is at the last commit of branch `t6-op/irwb-033-d`. Design: `design-doc
 
 GPU time is `runTixCuda(..., { benchmark: true })`: one warm-up launch, then the median of three CUDA-event intervals, under the runner's `--timed` lock. Each table entry is the **median of five such calls**, with the sides alternated (fused, unfused, base, fused, …), as the brief's protocol asks (scripts 03 and 06; raw values in `scripts/06-final-*.out.jsonl`). Inputs are seed 20, f32 in [−0.1, 0.1], eps = 1e-5. *Base* is the fused lowering of this branch's first commit (stage 3b), built by script 06. Kernel count is the number of `__global__` definitions in `cudaSource`.
 
+The tables below were measured at commit 6198832. The last commit adds one line to the launch rule (variant 0 below one tiled block per SM, after the dot product below). No shape in these tables falls under it: attention's out, the smallest grid, has 64 blocks, so every choice and kernel is the same. I did not read the SM clock during 4096³. Its five fused calls spread by 0.6% (15.72 to 15.82 ms).
+
 ### Corpus programs
 
 | Program | Kernels | Fused ms (5 calls) | Unfused ms | Base fused ms | Fused / base | Fused / unfused | Identical |
@@ -69,11 +71,21 @@ The contractions inside attention and mlp are timed as standalone Tix programs o
 | matmul-512 | **0.0457** | 5.87 | 0.2148 | 1.25 | 1.39 | yes |
 | conv2d | **0.0999** | 2.84 | 0.1662 | 1.71 |  | yes |
 | attention-score | **0.0320** | 4.19 | 0.6176 | 0.22 | 1.81 | yes |
+| attention-out | **0.0467** | 2.87 | 0.0966 | 1.39 | 2.16 | yes |
+| mlp-h | **0.0771** | 6.96 | 0.4736 | 1.13 | 1.82 | yes |
+| mlp-y | **0.0846** | 6.35 | 0.3842 | 1.40 | 1.78 | yes |
+| matmul-4096 | **15.7541** | 8.72 | 133.4398 | 1.03 | 2.20 (19.2 TFLOP/s) | yes |
 
-**Other shapes** (matmul; fused against unfused, same protocol):
+**Other shapes** (matmul; fused against unfused, same protocol; measured before the rule's last line, variant 0 for grids under one block per SM, was added: with it 1 × 1 × 4096 ran 0.0974 ms fused against 0.0971 unfused and 100³ 0.0086 against 0.0086, script 09):
 
 | Other shape (M x N x K) | Fused ms | Unfused ms | Fused / unfused | Identical |
 | --- | ---: | ---: | ---: | --- |
+| 256x256x1 | 0.0032 | 0.0034 | 0.94 | yes |
+| 1x1x4096 | 0.1580 | 0.0975 | 1.62 | yes |
+| 4096x1x1024 | 0.0683 | 0.1161 | 0.59 | yes |
+| 100x100x100 | 0.0082 | 0.0088 | 0.93 | yes |
+| 8x8x8 | 0.0029 | 0.0029 | 1.00 | yes |
+| 777x333x129 | 0.0215 | 0.0483 | 0.45 | yes |
 
 **The schedule chosen at these sizes** (the launch rule, below; all variants compiled into the same kernel):
 
@@ -172,10 +184,12 @@ The tile size depends on the shapes, which `cudaSource` does not know, so a cont
 
 | Variant | Tile m × n × r | Outputs per thread | Threads | Chosen when |
 | --- | --- | --- | ---: | --- |
-| 0 | one output per thread | 1 | 256 | the tiled grids exceed CUDA's grid limits |
 | 1 | 128 × 64 × 8 | 8 × 4 | 256 | its grid has at least 16 blocks per SM |
-| 2 | 32 × 32 × 8 | 4 × 4 | 64 | else, its grid has at least 2 blocks per SM |
-| 3 | 32 × 32 × 8 | 2 × 2 | 256 | otherwise |
+| 2 | 32 × 32 × 8 | 4 × 4 | 64 | else, at least 2 blocks per SM and 256 terms |
+| 3 | 32 × 32 × 8 | 2 × 2 | 256 | else, at least 1 block per SM |
+| 0 | one output per thread (stage 2's mapping) | 1 | 256 | otherwise, or when a tiled grid exceeds CUDA's limits |
+
+Each threshold lies between the largest measured value at which the variant lost and the smallest at which it won (`strategy.ts` lists the measurements next to the constants): variant 1 tied variant 2 at 128 blocks (mlp's h) and won at 2,048 (4096³, probe 01); variant 2 lost to variant 3 at 1.3 blocks per SM (attention's out) and at 64 and 144 terms (attention's score, conv2d), and won at 5.3 blocks per SM with 256 to 1,024 terms (512³, mlp's h and y); variant 3 took 1.62 times stage 2's time with one block (a 1 × 1 × 4096 dot product) and 0.94 with 64 blocks. Between those points the rule is not measured. The last line was added after script 06 found the dot product slower; with it the dot product ran 0.0974 against 0.0971 ms unfused (script 09).
 
 Choices, each with its reason:
 

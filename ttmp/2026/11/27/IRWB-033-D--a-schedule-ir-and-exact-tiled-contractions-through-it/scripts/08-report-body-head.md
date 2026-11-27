@@ -15,6 +15,8 @@ The code is at the last commit of branch `t6-op/irwb-033-d`. Design: `design-doc
 
 GPU time is `runTixCuda(..., { benchmark: true })`: one warm-up launch, then the median of three CUDA-event intervals, under the runner's `--timed` lock. Each table entry is the **median of five such calls**, with the sides alternated (fused, unfused, base, fused, …), as the brief's protocol asks (scripts 03 and 06; raw values in `scripts/06-final-*.out.jsonl`). Inputs are seed 20, f32 in [−0.1, 0.1], eps = 1e-5. *Base* is the fused lowering of this branch's first commit (stage 3b), built by script 06. Kernel count is the number of `__global__` definitions in `cudaSource`.
 
+The tables below were measured at commit 6198832. The last commit adds one line to the launch rule (variant 0 below one tiled block per SM, after the dot product below). No shape in these tables falls under it: attention's out, the smallest grid, has 64 blocks, so every choice and kernel is the same. I did not read the SM clock during 4096³. Its five fused calls spread by 0.6% (15.72 to 15.82 ms).
+
 ### Corpus programs
 
 CORPUS_TABLE

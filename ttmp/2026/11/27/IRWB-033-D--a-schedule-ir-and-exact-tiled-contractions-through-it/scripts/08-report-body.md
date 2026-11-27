@@ -68,10 +68,12 @@ The tile size depends on the shapes, which `cudaSource` does not know, so a cont
 
 | Variant | Tile m × n × r | Outputs per thread | Threads | Chosen when |
 | --- | --- | --- | ---: | --- |
-| 0 | one output per thread | 1 | 256 | the tiled grids exceed CUDA's grid limits |
 | 1 | 128 × 64 × 8 | 8 × 4 | 256 | its grid has at least 16 blocks per SM |
-| 2 | 32 × 32 × 8 | 4 × 4 | 64 | else, its grid has at least 2 blocks per SM |
-| 3 | 32 × 32 × 8 | 2 × 2 | 256 | otherwise |
+| 2 | 32 × 32 × 8 | 4 × 4 | 64 | else, at least 2 blocks per SM and 256 terms |
+| 3 | 32 × 32 × 8 | 2 × 2 | 256 | else, at least 1 block per SM |
+| 0 | one output per thread (stage 2's mapping) | 1 | 256 | otherwise, or when a tiled grid exceeds CUDA's limits |
+
+Each threshold lies between the largest measured value at which the variant lost and the smallest at which it won (`strategy.ts` lists the measurements next to the constants): variant 1 tied variant 2 at 128 blocks (mlp's h) and won at 2,048 (4096³, probe 01); variant 2 lost to variant 3 at 1.3 blocks per SM (attention's out) and at 64 and 144 terms (attention's score, conv2d), and won at 5.3 blocks per SM with 256 to 1,024 terms (512³, mlp's h and y); variant 3 took 1.62 times stage 2's time with one block (a 1 × 1 × 4096 dot product) and 0.94 with 64 blocks. Between those points the rule is not measured. The last line was added after script 06 found the dot product slower; with it the dot product ran 0.0974 against 0.0971 ms unfused (script 09).
 
 Choices, each with its reason:
 
