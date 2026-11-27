@@ -14,7 +14,16 @@
 //
 // Everything a decision depends on is a predicate over the IR, so an unfusable group simply reverts to stage 2's one
 // kernel per statement. Fusion is never needed for the lowering to be correct.
-import { constant, plain, visit, type Affine, type Axis, type Statement, type Tensor, type Fn } from './model.js';
+import {
+  constant,
+  plain,
+  visit,
+  type Affine,
+  type Axis,
+  type Statement,
+  type Tensor,
+  type Fn,
+} from './model.js';
 
 /** A producer inlined into the anchor's element body (flat policy). */
 export interface FlatKernel {
@@ -55,7 +64,13 @@ const rowThreads = 128;
  * The group of statements starting at `i` that may share one kernel. A member that is read outside the group, or
  * that is the function's result, has to be its last statement, so groups are cut there.
  */
-function truncate(statements: readonly Statement[], i: number, end: number, lastUse: Map<string, number>, result: string) {
+function truncate(
+  statements: readonly Statement[],
+  i: number,
+  end: number,
+  lastUse: Map<string, number>,
+  result: string,
+) {
   for (let e = end; ; ) {
     let cut = -1;
     for (let j = i; j < e - 1 && cut < 0; j++)
@@ -119,7 +134,12 @@ function flatEnd(statements: readonly Statement[], i: number): number {
 // ----------------------------------------------------------------- row policy
 
 /** Extent of a row group at `i` with `m` block axes, or null when the statements cannot share that many rows. */
-function rowEnd(statements: readonly Statement[], i: number, m: number, tensors: ReadonlyMap<string, Tensor>) {
+function rowEnd(
+  statements: readonly Statement[],
+  i: number,
+  m: number,
+  tensors: ReadonlyMap<string, Tensor>,
+) {
   const first = statements[i];
   if (first.axes.length < m) return null;
   const rowDims = first.axes.slice(0, m).map(axis => axis.extent.dim);

@@ -275,7 +275,8 @@ class Body {
 function offset(context: Context, name: string, indices: Affine[], index: (a: Affine) => string): string {
   const shape = context.tensors.get(name)!.shape;
   return indices.reduce(
-    (prior, a, i) => (i ? `(${prior} * ${affine(shape[i], key => context.dims.get(key)!)} + ${index(a)})` : index(a)),
+    (prior, a, i) =>
+      i ? `(${prior} * ${affine(shape[i], key => context.dims.get(key)!)} + ${index(a)})` : index(a),
     '',
   );
 }
@@ -407,7 +408,9 @@ function emitRow(kernel: RowKernel, index: number, context: Context): Emitted {
       } else {
         rename.set(extra, extra);
         const tuple = [...kernel.rows.map(axis => variable(axis.id)), variable(extra)];
-        body.open(`for (U lane = threadIdx.x; (I)lane < ${dimOf(context, tensor.shape[m])}; lane += blockDim.x) {`);
+        body.open(
+          `for (U lane = threadIdx.x; (I)lane < ${dimOf(context, tensor.shape[m])}; lane += blockDim.x) {`,
+        );
         body.line(`const I ${extra} = (I)lane;`);
         body.line(
           `smem[so${phase.slot} + ${extra}] = ${name(phase.tensor)}[${offset(context, phase.tensor, tuple, rowIndex(body, env))}];`,
@@ -436,11 +439,15 @@ function emitRow(kernel: RowKernel, index: number, context: Context): Emitted {
       const extra = statement.axes[m];
       const variable_ = body.bindName();
       rename.set(extra.id, variable_);
-      body.open(`for (U lane = threadIdx.x; (I)lane < ${dimOf(context, extra.extent.dim)}; lane += blockDim.x) {`);
+      body.open(
+        `for (U lane = threadIdx.x; (I)lane < ${dimOf(context, extra.extent.dim)}; lane += blockDim.x) {`,
+      );
       body.line(`const I ${variable_} = (I)lane;`);
       const value = body.scalar(statement.expr, resolve, env);
       if (phase.dest.kind === 'global')
-        body.line(`${name(statement.name)}[${offset(context, statement.name, tuple, rowIndex(body, env))}] = ${value};`);
+        body.line(
+          `${name(statement.name)}[${offset(context, statement.name, tuple, rowIndex(body, env))}] = ${value};`,
+        );
       else body.line(`smem[so${phase.dest.slot} + ${variable_}] = ${value};`);
       body.close();
     } else {
@@ -448,7 +455,9 @@ function emitRow(kernel: RowKernel, index: number, context: Context): Emitted {
       body.indent += '  ';
       const value = body.scalar(statement.expr, resolve, env);
       if (phase.dest.kind === 'global')
-        body.line(`${name(statement.name)}[${offset(context, statement.name, tuple, rowIndex(body, env))}] = ${value};`);
+        body.line(
+          `${name(statement.name)}[${offset(context, statement.name, tuple, rowIndex(body, env))}] = ${value};`,
+        );
       else body.line(`smem[so${phase.dest.slot}] = ${value};`);
       body.close();
     }
@@ -477,7 +486,8 @@ function emitRow(kernel: RowKernel, index: number, context: Context): Emitted {
   };
 }
 
-const unfused = (fn: Fn): Kernel[] => fn.statements.map(statement => ({ kind: 'flat', anchor: statement, inline: [] }));
+const unfused = (fn: Fn): Kernel[] =>
+  fn.statements.map(statement => ({ kind: 'flat', anchor: statement, inline: [] }));
 
 /** The complete translation unit for `fn`. `fuse` false is stage 2's one kernel per statement, unchanged. */
 export function emitCuda(fn: Fn, fuse = true): string {
