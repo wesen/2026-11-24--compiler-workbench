@@ -3,6 +3,8 @@
 //   share   one local for structurally equal invariant trees of a loop
 //   leaves  a bare aaddr (frame+K, one addi) stays where it is
 //   both
+// The `leaves` switch existed in licm only for this experiment (commit 14803c8) and was removed after it; with a
+// later compiler the leaves and both columns repeat base and share.
 // Instructions summed over the seeded cases (10 per function, seed 7), default and tuned backend options.
 // Passes run unchecked here (the comparison is of counts; a variant that is kept is checked by the pipeline).
 // usage: node 06-licm-variants.mjs out.json [--pipeline speed] [id...]

@@ -474,9 +474,8 @@ export const licm = typedPass({
         if (v.op === 'get') return !assigned.has(v.imm as number);
         return v.args.every(inv);
       };
-      // experiment switches (IRWB-034-G scripts/06): share one local among equal trees; leave a bare aaddr in place
-      const share = params.share === true,
-        leaves = params.leaves === true;
+      // `share: true` (IRWB-034-G, off by default): structurally equal invariant trees of a loop get one local
+      const share = params.share === true;
       const keyOf = (id: string): string => {
         const v = st.get(id) as ValueRec;
         return `${v.op}:${v.imm ?? ''}:${v.type ?? ''}(${v.args.map(keyOf).join(',')})`;
@@ -484,7 +483,7 @@ export const licm = typedPass({
       const hoisted = new Map<string, { t: number; set: string }>();
       const hoist = (id: string): string => {
         const v = st.get(id) as ValueRec;
-        if (v.op !== 'const' && v.op !== 'get' && !(leaves && v.op === 'aaddr') && inv(id)) {
+        if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
           const key = share ? keyOf(id) : id;
           let h = hoisted.get(key);
           if (!h) {

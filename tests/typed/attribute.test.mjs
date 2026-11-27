@@ -103,3 +103,30 @@ test('bytecode VM: speed runs no more instructions than r0, and no licm decision
       assert.ok(d.delta < dispatches, `${d.decision}: ${d.delta}`);
   }
 });
+
+test('licm with share: true hoists equal invariant trees into one local', async () => {
+  const twice = `
+function twice(n: i32, k: i32): i32 {
+    let s = 0;
+    for (let i = 0; i < n; i = i + 1) {
+        s = s + (k * 7 + 1);
+        s = s ^ (k * 7 + 1);
+    }
+    return s;
+}
+`;
+  const locals = async params => {
+    const p = Program.fromProject(
+      projectSource('twice', {
+        'main.typed': twice,
+        'project.json': JSON.stringify({ inputs: { twice: { n: [0, 30], k: [-9, 9] } } }),
+      }),
+    );
+    await p.apply('cfg');
+    const r = await p.apply('licm', { params });
+    assert.equal(r.check, '40/40');
+    return r.kinds.local;
+  };
+  assert.equal(await locals({}), 2);
+  assert.equal(await locals({ share: true }), 1);
+});

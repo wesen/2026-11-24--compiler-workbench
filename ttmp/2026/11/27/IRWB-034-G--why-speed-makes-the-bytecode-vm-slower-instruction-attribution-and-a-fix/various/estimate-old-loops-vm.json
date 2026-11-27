@@ -1,0 +1,119 @@
+{
+ "pipeline": "speed",
+ "summary": {
+  "est+ emu+": 1,
+  "est+ emu-": 1,
+  "est- emu-": 3,
+  "est0 emu-": 1,
+  "est0 emu0": 1
+ },
+ "byPass": {
+  "cfg est+ emu-": 1,
+  "cfg est- emu-": 1,
+  "cfg est0 emu-": 1,
+  "fold est- emu-": 1,
+  "licm est+ emu+": 1,
+  "subst est- emu-": 1,
+  "subst est0 emu0": 1
+ },
+ "steps": [
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    163.0009671287984,
+    156.1700374311213
+   ],
+   "emu": [
+    39954,
+    36724
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    156.1700374311213,
+    151.75163213695114
+   ],
+   "emu": [
+    36724,
+    35801
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    151.75163213695114,
+    295.4278896676972
+   ],
+   "emu": [
+    35801,
+    34888
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 4,
+   "pass": "licm",
+   "est": [
+    295.4278896676972,
+    432.6083151060052
+   ],
+   "emu": [
+    34888,
+    48009
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    432.6083151060052,
+    424.33188230517004
+   ],
+   "emu": [
+    48009,
+    47086
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    424.33188230517004,
+    424.33188230517004
+   ],
+   "emu": [
+    47086,
+    47086
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 7,
+   "pass": "cfg",
+   "est": [
+    424.33188230517004,
+    424.33188230517027
+   ],
+   "emu": [
+    47086,
+    47076
+   ]
+  }
+ ]
+}

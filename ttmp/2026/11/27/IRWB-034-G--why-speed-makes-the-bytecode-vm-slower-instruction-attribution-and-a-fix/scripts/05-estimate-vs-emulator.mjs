@@ -7,7 +7,10 @@ import { writeFileSync } from 'node:fs';
 import { projectIds, projectFiles } from '../../../../../../tools/corpus.mjs';
 import { installVendor } from '../../../../../../tools/node-vendor.mjs';
 await installVendor();
-const D = '../../../../../../dist/';
+// IRWB_DIST: another build of the compiler (scripts/07 builds one with the old loops analysis)
+const D = process.env.IRWB_DIST ? new URL(process.env.IRWB_DIST.replace(/\/?$/, '/'), `file://${process.cwd()}/`).href : '../../../../../../dist/';
+if (process.env.IRWB_DIST)
+  (await import(D + 'typed/vendor.js')).setVendor({ typedTape: globalThis.typedTape, typedWasm: globalThis.typedWasm, typedRv32Interp: globalThis.typedRv32Interp });
 const { Program } = await import(D + 'typed/program.js');
 const { projectSource } = await import(D + 'typed/project.js');
 const { storeOf } = await import(D + 'typed/ir.js');
