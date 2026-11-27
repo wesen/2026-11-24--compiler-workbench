@@ -483,3 +483,24 @@ The standing instructions require a minimal probe before relying on a feature no
 ### Prompt Context
 **User prompt (verbatim):** see Step 1.
 **Commit (code):** this step's commit
+
+## Step 18: The planned GPU kernels against the interpreter itself
+
+Every exactness claim so far went through Stage 2's emitted code as the oracle. That is valid by transitivity, since Stage 2 was independently found bit-identical to the interpreter, but it is indirect. I added an `--interpreter` mode to `12-planner.mjs`. It uses smaller shapes with extents that are not multiples of the 64-wide tile. The GPU program writes inputs and planned outputs to `out/<name>.bin`, and the script runs `runTix` (the f32 meaning in Node 24 on this x86 machine) on the same inputs. All five programs matched in every word.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Commit (code):** this step's commit
+
+### What I did
+- Checked first that the default generated `main.cu` was byte-identical after adding the flag (`cmp` against a saved copy), then ran `node <ticket>/scripts/12-planner.mjs --interpreter` (untimed; small shapes, not a measurement).
+- Restored the default `12-planner/main.cu` afterwards, so the committed source matches the timed results.
+
+### What worked
+- `wordsDifferent: 0` for matmul (20,480 outputs), softmax (262,144), layernorm (262,144), attention (4,608) and mlp (2,048). The interpreter took 0.2–1.2 s per program.
+
+### What didn't work
+- My first edit wrote the nested template interpolation as `${'${…}'}`, which would have emitted the literal text. I caught it on reading the diff, before running.
+
+### What I learned
+- The GPU-side timings at these tiny shapes are not meaningful: the planned matmul and mlp are slower than Stage 2 there. They are recorded in the results file only as a by-product.

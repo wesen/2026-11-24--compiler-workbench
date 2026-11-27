@@ -7,6 +7,9 @@
 // experiment 10 showed is needed. Every result is compared word for word with the unmodified Stage 2
 // translation unit on the same inputs.
 // Usage (worktree root, after npm run build and 03-fused-exact.mjs): node <ticket>/scripts/12-planner.mjs [--timed]
+// With --interpreter: smaller shapes; the GPU program also writes each program's inputs and planned output to
+// out/<name>.bin, and this script then compares the planned GPU words directly with runTix (the Node f32
+// interpreter, the meaning itself) on the same inputs. Without the flag the generated main.cu is unchanged.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -20,6 +23,15 @@ const { plain, visit } = await imp('tensor/model.js');
 const { makeGen } = await import(pathToFileURL(join(here, 'lib/tix-cuda-gen.mjs')).href);
 const { planFunction } = makeGen({ plain, visit });
 
+const interpreter = process.argv.includes('--interpreter');
+const remoteArgs = process.argv.slice(2).filter(a => a !== '--interpreter');
+const small = {
+  matmul: { M: 128, K: 96, N: 160 },
+  softmax: { N: 256, C: 1024 },
+  layernorm: { N: 256, D: 1024 },
+  attention: { Q: 96, K: 160, D: 64, V: 48 },
+  mlp: { N: 8, D: 256, H: 1024, O: 256 },
+};
 const programs = {
   matmul: { dims: { M: 512, K: 512, N: 512 }, range: [-1, 1] },
   softmax: { dims: { N: 4096, C: 1024 }, range: [-8, 8] },
@@ -28,6 +40,7 @@ const programs = {
   mlp: { dims: { N: 1024, D: 256, H: 1024, O: 256 }, range: [-0.5, 0.5] },
   conv2d: { dims: {}, range: [-1, 1] },
 };
+if (interpreter) for (const [name, dims] of Object.entries(small)) programs[name].dims = dims;
 const includes = new Set(), units = [], kernels = [], cases = [], refused = {}, plans = {};
 for (const [name, spec] of Object.entries(programs)) {
   const program = compileTix(readFileSync(join(root, `corpus/tensor/${name}/main.tix`), 'utf8'));
@@ -82,7 +95,10 @@ ${launches}
       });
       d[FAST] = word_diffs(ref.data, download(m${result - fn.params.length}, ${outN}));
     }
-    printf("{\\"program\\":\\"${name}\\",\\"plan\\":\\"${plans[name].join(' | ')}\\",\\"stage2Ms\\":%.4f,\\"plannedDoubleMs\\":%.4f,\\"plannedFastMs\\":%.4f,\\"speedupVsStage2\\":%.2f,\\"wordsDifferentFromStage2\\":{\\"double\\":%lld,\\"fast\\":%lld}}\\n",
+${interpreter ? `    { FILE* f = fopen("out/${name}.bin", "wb");
+      for (auto& x : in) { const int64_t r = x.shape.size(); fwrite(&r, 8, 1, f); fwrite(x.shape.data(), 8, r, f); fwrite(x.data.data(), 4, x.data.size(), f); }
+      const auto y = download(m${result - fn.params.length}, ${outN}); fwrite(y.data(), 4, y.size(), f); fclose(f); }
+` : ''}    printf("{\\"program\\":\\"${name}\\",\\"plan\\":\\"${plans[name].join(' | ')}\\",\\"stage2Ms\\":%.4f,\\"plannedDoubleMs\\":%.4f,\\"plannedFastMs\\":%.4f,\\"speedupVsStage2\\":%.2f,\\"wordsDifferentFromStage2\\":{\\"double\\":%lld,\\"fast\\":%lld}}\\n",
            s2ms, t[0], t[1], s2ms / t[1], d[0], d[1]);
   }`);
 }
@@ -199,10 +215,35 @@ writeFileSync(
 );
 console.log(JSON.stringify({ refused, plans }));
 const result = JSON.parse(
-  execFileSync(process.execPath, [join(root, 'tools/cuda-remote.mjs'), out, ...process.argv.slice(2)], { encoding: 'utf8', maxBuffer: 1 << 26 }),
+  execFileSync(process.execPath, [join(root, 'tools/cuda-remote.mjs'), out, ...remoteArgs], { encoding: 'utf8', maxBuffer: 1 << 26 }),
 );
 if (result.exit !== 0) {
   console.error(result.stderr.slice(0, 6000));
   process.exit(1);
 }
 process.stdout.write(result.stdout);
+if (interpreter) {
+  const { runTix } = await imp('tensor/index.js');
+  for (const name of Object.keys(small)) {
+    const program = compileTix(readFileSync(join(root, `corpus/tensor/${name}/main.tix`), 'utf8'));
+    const fn = program.current.value.functions[0];
+    const bytes = readFileSync(join(out, 'out', `${name}.bin`));
+    let o = 0;
+    const inputs = {};
+    for (const p of fn.params) {
+      const rank = Number(bytes.readBigInt64LE(o)); o += 8;
+      const shape = Array.from({ length: rank }, () => { const v = Number(bytes.readBigInt64LE(o)); o += 8; return v; });
+      const n = shape.reduce((a, b) => a * b, 1);
+      inputs[p.name] = { shape, data: new Float32Array(bytes.buffer.slice(bytes.byteOffset + o, bytes.byteOffset + o + 4 * n)) };
+      o += 4 * n;
+    }
+    const gpu = new Uint32Array(bytes.buffer.slice(bytes.byteOffset + o, bytes.byteOffset + bytes.length));
+    const t0 = performance.now();
+    const ref = runTix(program, name, inputs);
+    const ms = performance.now() - t0;
+    const words = new Uint32Array(ref.data.buffer, ref.data.byteOffset, ref.data.length);
+    let diff = words.length === gpu.length ? 0 : -1;
+    if (diff === 0) for (let q = 0; q < words.length; q++) diff += words[q] !== gpu[q];
+    console.log(JSON.stringify({ program: name, check: 'planned GPU words vs runTix f32', dims: small[name], outputs: words.length, wordsDifferent: diff, interpreterMs: Math.round(ms) }));
+  }
+}

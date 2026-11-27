@@ -1,0 +1,11 @@
+{"refused":{"conv2d":"conv2d_g0: not row-local (out)"},"plans":{"matmul":["contraction:y"],"softmax":["row:y"],"layernorm":["row:y"],"attention":["contraction:score","row:weight","contraction:out"],"mlp":["contraction:h","row:g","contraction:y"]}}
+{"program":"matmul","plan":"contraction:y","stage2Ms":0.0095,"plannedDoubleMs":0.0186,"plannedFastMs":0.0186,"speedupVsStage2":0.51,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"softmax","plan":"row:y","stage2Ms":0.2573,"plannedDoubleMs":0.0328,"plannedFastMs":0.0176,"speedupVsStage2":14.59,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"layernorm","plan":"row:y","stage2Ms":0.2370,"plannedDoubleMs":0.0187,"plannedFastMs":0.0186,"speedupVsStage2":12.75,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"attention","plan":"contraction:score | row:weight | contraction:out","stage2Ms":0.0532,"plannedDoubleMs":0.0483,"plannedFastMs":0.0484,"speedupVsStage2":1.10,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"mlp","plan":"contraction:h | row:g | contraction:y","stage2Ms":0.0628,"plannedDoubleMs":0.1814,"plannedFastMs":0.1754,"speedupVsStage2":0.36,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"matmul","check":"planned GPU words vs runTix f32","dims":{"M":128,"K":96,"N":160},"outputs":20480,"wordsDifferent":0,"interpreterMs":467}
+{"program":"softmax","check":"planned GPU words vs runTix f32","dims":{"N":256,"C":1024},"outputs":262144,"wordsDifferent":0,"interpreterMs":213}
+{"program":"layernorm","check":"planned GPU words vs runTix f32","dims":{"N":256,"D":1024},"outputs":262144,"wordsDifferent":0,"interpreterMs":311}
+{"program":"attention","check":"planned GPU words vs runTix f32","dims":{"Q":96,"K":160,"D":64,"V":48},"outputs":4608,"wordsDifferent":0,"interpreterMs":510}
+{"program":"mlp","check":"planned GPU words vs runTix f32","dims":{"N":8,"D":256,"H":1024,"O":256},"outputs":2048,"wordsDifferent":0,"interpreterMs":1192}

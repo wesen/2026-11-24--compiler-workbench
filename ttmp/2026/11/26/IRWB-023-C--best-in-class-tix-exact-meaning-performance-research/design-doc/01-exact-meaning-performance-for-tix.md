@@ -212,6 +212,8 @@ The generator recognized five of the six corpus functions as row-local, and ever
 
 The planner's geometric mean over the five programs is 3.19×, against 4.27× for the hand-written kernels on the same five. The gap is mostly in the contraction template, which uses 64-bit index arithmetic and no vector loads (0.097 ms against the experiment-01 kernel's 0.062 ms on matmul), and in the MLP's separate GELU pass. Both are schedule-quality problems, not exactness problems: every planned kernel is in the exact space by construction, and every result word matched.
 
+The planner was also checked directly against the meaning itself rather than against Stage 2 (`--interpreter` mode, `results/12-planner-interpreter.jsonl`). The GPU program writes its inputs and planned outputs back, and the Node f32 interpreter `runTix` is run on the same inputs. The shapes were chosen so that no extent is a multiple of the 64-wide tile: matmul 128×96×160, softmax and layernorm 256×1024, attention Q = 96, K = 160, D = 64, V = 48, and mlp 8·256·1024·256. All five matched in every word: 20,480, 262,144, 262,144, 4,608 and 2,048 outputs. The same planned kernels thus give the same bits on the GB10 as V8 does on an x86 laptop. That is the portability the definition in §2 asks for, observed directly.
+
 *What the measurements say about where the time goes.* In softmax the fused kernel with Stage 2's double exp took 0.352 ms, and it took 0.168 ms with the proven exp of Proposal 2. Half of the gain is the intrinsic. In the MLP the bias+GELU epilogue alone took 0.211 ms with the double tanh and 0.040 ms with the proven tanh. The one-thread ordered row sum is not a bottleneck at these sizes: the softmax kernel runs at 82% of streaming bandwidth.
 
 **Risks.**
@@ -451,7 +453,7 @@ All scripts are in this ticket's `scripts/`, and their outputs are in `scripts/r
 | 09 | `09-gemm-v2/main.cu` | The price of exactness on one tuned kernel | RN–RN 10.32 TFLOP/s and FMA fold 14.92 at 4096³ (1.45×); FMA fold within 1.22× of cuBLAS; both 0 words different from their own oracles |
 | 10 | `10-rowfuse.mjs` | Can a generator produce exact fused schedules from Tix IR? | Five of six functions recognized; all bit-identical to Stage 2; softmax 4.44×, layernorm 2.46×; contractions need a tiled template and a cost model |
 | 11 | `11-fold-wall/main.cu` | The sequential-fold wall and K-only chunk trees | 4 × 2^22 sum: best exact sequential 18.6 ms; chunk tree (C = 128) 1.19 ms; all match their own oracles |
-| 12 | `12-planner.mjs` + `lib/tix-cuda-gen.mjs` | Can a planner split at contractions and generate both templates from Tix IR? | Five of six functions planned; all bit-identical; geometric mean 3.19× (hand-written 4.27× on the same five) |
+| 12 | `12-planner.mjs` + `lib/tix-cuda-gen.mjs` | Can a planner split at contractions and generate both templates from Tix IR? | Five of six functions planned; all bit-identical to Stage 2 at full size and to `runTix` at off-tile shapes; geometric mean 3.19× (hand-written 4.27× on the same five) |
 
 Example commands:
 
@@ -466,7 +468,7 @@ Example commands:
 - `node tools/cuda-remote.mjs <ticket>/scripts/09-gemm-v2 --timed -- 512 1024 2048 4096`
 - `node <ticket>/scripts/10-rowfuse.mjs --timed` (after `03-fused-exact.mjs`, which writes the copied fast-path headers)
 - `node tools/cuda-remote.mjs <ticket>/scripts/11-fold-wall --timed`
-- `node <ticket>/scripts/12-planner.mjs --timed`
+- `node <ticket>/scripts/12-planner.mjs --timed`, and `node <ticket>/scripts/12-planner.mjs --interpreter` for the direct check against `runTix`
 
 Caveats. My Stage 2 timings come from the generated program's own benchmark mode, with a median of three runs. The coordinator's single runs (0.197, 0.785, 0.563, 1.81, 1.05 and 0.341 ms) differ by up to 2× for attention and conv2d. Optimized kernels used medians of 21 runs. Exactness claims are per input (seeded random data) and per shape (the corpus sizes), except the exhaustive and fingerprint results, which cover every input of the stated domain. The exhaustive proofs cover the binaries built by the runner's `nvcc` 13.0 at `-O3 -arch=sm_121`.
 
