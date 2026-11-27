@@ -724,10 +724,13 @@ function emitTile(
   // `linear` decoded row-major into the named axes, the last fastest
   const decode = (temp: string, linear: string, names: string[], extents: string[]) => {
     if (!names.length) return;
-    w.line(`U ${temp} = ${linear};`);
+    // (the outermost axis needs no remainder: the linear index is inside the space)
+    // The host runs a configuration only when the spaces are below 2^31, so 32-bit division is enough.
+    if (names.length === 1) return w.line(`const I ${names[0]} = ${linear};`);
+    w.line(`unsigned ${temp} = ${linear};`);
     for (let i = names.length - 1; i >= 0; --i) {
-      w.line(`const I ${names[i]} = ${temp} % ${extents[i]};`);
-      if (i > 0) w.line(`${temp} /= ${extents[i]};`);
+      w.line(`const I ${names[i]} = ${i > 0 ? `${temp} % static_cast<unsigned>(${extents[i]})` : temp};`);
+      if (i > 0) w.line(`${temp} /= static_cast<unsigned>(${extents[i]});`);
     }
   };
   const axesOf = (ids: string[]) => ({
@@ -768,12 +771,13 @@ function emitTile(
   // TK: the chunk; 0 runs all terms as one chunk (an unstaged configuration)
   w.line(`constexpr int TK = ${pick(i => k.configs[i].chunk)}, SK = Staged ? TK : 1;`);
   w.line('extern __shared__ float shared[];');
-  w.line(`const U rows = ${space(rows.extents)}, cols = ${space(cols.extents)};`);
-  w.line(`const U terms = ${termCount};`);
-  w.line('U tile = blockIdx.x;');
-  w.line('const U c0 = (tile % ((cols + TN - 1) / TN)) * TN;');
+  w.line(`const unsigned rows = static_cast<unsigned>(${space(rows.extents)});`);
+  w.line(`const unsigned cols = static_cast<unsigned>(${space(cols.extents)});`);
+  w.line(`const unsigned terms = static_cast<unsigned>(${termCount});`);
+  w.line('unsigned tile = blockIdx.x;');
+  w.line('const unsigned c0 = (tile % ((cols + TN - 1) / TN)) * TN;');
   w.line('tile /= (cols + TN - 1) / TN;');
-  w.line('const U r0 = (tile % ((rows + TM - 1) / TM)) * TM;');
+  w.line('const unsigned r0 = (tile % ((rows + TM - 1) / TM)) * TM;');
   w.line('tile /= (rows + TM - 1) / TM;');
   decode('lb', 'tile', batch.names, batch.extents);
   w.line('const int pr = (threadIdx.x / (TN / RN)) * RM, pc = (threadIdx.x % (TN / RN)) * RN;');
@@ -782,16 +786,16 @@ function emitTile(
   w.line('  for (int q = 0; q < RN; ++q) acc[r][q] = 0.0f;');
   w.line('float* const sa = shared;');
   w.line('float* const sb = shared + SK * TM;');
-  w.line('const U step = TK ? static_cast<U>(TK) : (terms ? terms : 1);');
-  w.line('for (U k0 = 0; k0 < terms; k0 += step) {');
+  w.line('const unsigned step = TK ? static_cast<unsigned>(TK) : (terms ? terms : 1);');
+  w.line('for (unsigned k0 = 0; k0 < terms; k0 += step) {');
   w.enter();
-  w.line('const U kn = terms - k0 < step ? terms - k0 : step;');
+  w.line('const int kn = static_cast<int>(terms - k0 < step ? terms - k0 : step);');
   w.line('if (Staged) {');
   w.enter();
   w.line('for (int e = threadIdx.x; e < TM * SK; e += blockDim.x) {');
   w.enter();
   w.line('const int r = e / SK, kk = e % SK;');
-  w.line('if (r0 + r < rows && static_cast<U>(kk) < kn) {');
+  w.line('if (r0 + r < rows && kk < kn) {');
   w.enter();
   factor(left, rows, 'r0 + r', 'k0 + kk', v => `sa[kk * TM + r] = ${v};`);
   w.leave();
@@ -801,7 +805,7 @@ function emitTile(
   w.line('for (int e = threadIdx.x; e < SK * TN; e += blockDim.x) {');
   w.enter();
   w.line('const int kk = e / TN, q = e % TN;');
-  w.line('if (c0 + q < cols && static_cast<U>(kk) < kn) {');
+  w.line('if (c0 + q < cols && kk < kn) {');
   w.enter();
   factor(right, cols, 'c0 + q', 'k0 + kk', v => `sb[kk * TN + q] = ${v};`);
   w.leave();
@@ -811,7 +815,7 @@ function emitTile(
   w.line('__syncthreads();');
   w.leave();
   w.line('}');
-  w.line('for (U kk = 0; kk < kn; ++kk) {');
+  w.line('for (int kk = 0; kk < kn; ++kk) {');
   w.enter();
   w.line('float av[RM], bv[RN];');
   w.line('for (int r = 0; r < RM; ++r) {');
@@ -880,6 +884,12 @@ function emitTile(
     count,
   ].join(', ');
   const rule = k.configs.reduceRight((rest, c, i) => `${tiles(i)} >= ${c.minTiles} ? ${i} : ${rest}`, String(n));
+  const hostTerms = space(
+    reduction.axes.map(a => {
+      const e = hostDim(a.extent.dim);
+      return `(${e} > 0 ? ${e} : 0)`;
+    }),
+  );
   return {
     code: w.lines.join('\n'),
     host: [
@@ -891,7 +901,9 @@ function emitTile(
       ),
       `  const int configs_${kernel} = ${n};`,
       // The first configuration with enough tiles, else stage 2's mapping; --tile=<n> forces one (the contract).
-      `  const int config_${kernel} = tile_mode >= 0 ? std::min(tile_mode, configs_${kernel}) : (${rule});`,
+      // (a tile kernel indexes its spaces with 32 bits; beyond that the kernel keeps stage 2's mapping)
+      `  const bool narrow_${kernel} = std::max<U>({rows_${kernel}, cols_${kernel}, ${hostTerms}, ${k.configs.map((_c, i) => tiles(i)).join(', ')}}) < (static_cast<U>(1) << 31);`,
+      `  const int config_${kernel} = !narrow_${kernel} ? configs_${kernel} : tile_mode >= 0 ? std::min(tile_mode, configs_${kernel}) : (${rule});`,
     ],
     preload: Array.from(
       { length: n + 1 },

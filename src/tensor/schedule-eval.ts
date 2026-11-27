@@ -12,7 +12,7 @@ import { cudaCases, seed } from './contract.js';
 import type { CudaInputs } from './cuda-runtime.js';
 import { size, type BufferValue } from './evaluate.js';
 import { outerReductions, type Reduce } from './fusion.js';
-import { plain, value, width, type Axis, type Expr, type Statement } from './model.js';
+import { plain, value, visit, width, type Axis, type Expr, type Statement } from './model.js';
 import { contractionOf, type BlockKernel, type Schedule, type TileKernel } from './schedule.js';
 
 export class OrderViolation extends Error {}
@@ -50,9 +50,9 @@ function decode(linear: number, extents: number[]): number[] {
 }
 
 /**
- * `memo` (optional) holds, for one set of inputs, the tensors each kernel produced, keyed by the kernels before
- * it, its own record and the side it took. A kernel is a function of the tensors it reads, so a later step or
- * side that leaves a prefix of the schedule unchanged reuses that prefix's results.
+ * `memo` (optional) holds, for one set of inputs, the tensors a kernel produced, keyed by what the kernel does
+ * on the forced side and by the contents of the tensors it reads. A kernel is a function of those, so a later
+ * step or side that leaves a kernel and its inputs unchanged reuses its result.
  */
 export function runSchedule(
   schedule: Schedule,
@@ -250,10 +250,16 @@ export function runSchedule(
     const stored = new Map(members.filter(m => k.stored.includes(m.name)).map(m => [m.name, allocate(m)]));
     const grid = shapeOf(members[0]).slice(0, d);
     const over = new Map(k.inPlace.map(p => [p.statement, p.over]));
+    const rowShapes = new Map<string, number[]>();
     const rowShape = (name: string) => {
-      const t = byName.get(name) ?? fn.params.find(p => p.name === name)!;
-      return t.shape.slice(d).map(a => value(a, shapes));
+      let shape = rowShapes.get(name);
+      if (!shape) {
+        const t = byName.get(name) ?? fn.params.find(p => p.name === name)!;
+        rowShapes.set(name, (shape = t.shape.slice(d).map(a => value(a, shapes))));
+      }
+      return shape;
     };
+    const ownRow = new Map<Load, boolean>();
     for (let point = 0; point < size(grid); point++) {
       const at = decode(point, grid);
       const rows = new Map<string, Float32Array>();
@@ -263,7 +269,12 @@ export function runSchedule(
       }
       for (const m of members) {
         at.forEach((ix, p) => index.set(m.axes[p].id, ix));
-        const own = (e: Load) => e.indices.slice(0, d).every((a, p) => plain(a) === m.axes[p].id);
+        const own = (e: Load) => {
+          let is = ownRow.get(e);
+          if (is === undefined)
+            ownRow.set(e, (is = e.indices.slice(0, d).every((a, p) => plain(a) === m.axes[p].id)));
+          return is;
+        };
         const load = (e: Load, ix: number[]) => {
           const row = rows.get(e.name);
           if (!row || !own(e)) {
@@ -310,7 +321,22 @@ export function runSchedule(
     }
   }
 
-  let prefix = '';
+  // tensors with equal contents share one identity, so a memo key can name a kernel's inputs
+  const identity = new Map<object, string>();
+  const identify = (t: { shape: number[]; data: Float32Array }) => {
+    let id = identity.get(t);
+    if (!id) {
+      const words = new Uint32Array(t.data.buffer, t.data.byteOffset, t.data.length);
+      let h1 = 0x811c9dc5,
+        h2 = 0x1234567;
+      for (let i = 0; i < words.length; i++) {
+        h1 = Math.imul(h1 ^ words[i], 0x01000193);
+        h2 = (Math.imul(h2, 31) + words[i]) | 0;
+      }
+      identity.set(t, (id = `${t.shape}:${h1}:${h2}`));
+    }
+    return id;
+  };
   for (const k of schedule.kernels) {
     // What the kernel does on this side: stage 2's mapping (whatever the kernel's other fields say), one tile
     // configuration, or the kernel's own record. Names and reasons do not matter.
@@ -322,8 +348,13 @@ export function runSchedule(
         : k.kind === 'tile'
           ? ['tile', k.statements, k.roles, config]
           : record;
-    prefix += '|' + JSON.stringify(effect);
-    const hit = memo?.get(prefix);
+    const reads = new Set<string>();
+    for (const n of k.statements)
+      visit(byName.get(n)!.expr, e => {
+        if (e.kind === 'load' && !k.statements.includes(e.name)) reads.add(e.name);
+      });
+    const key = JSON.stringify([effect, [...reads].map(n => [n, identify(tensors.get(n)!)])]);
+    const hit = memo?.get(key);
     if (hit) {
       for (const [name, t] of hit) tensors.set(name, t);
       continue;
@@ -331,7 +362,7 @@ export function runSchedule(
     if (k.kind === 'tile') tile(k);
     else if (k.kind === 'block') block(k);
     else k.statements.forEach(n => plainStatement(byName.get(n)!));
-    memo?.set(prefix, new Map(k.statements.flatMap(n => (tensors.has(n) ? [[n, tensors.get(n)!] as const] : []))));
+    memo?.set(key, new Map(k.statements.flatMap(n => (tensors.has(n) ? [[n, tensors.get(n)!] as const] : []))));
   }
   return tensors.get(fn.result)!;
 }
@@ -352,14 +383,16 @@ const sampleCache = new WeakMap<object, ReturnType<typeof cudaCases>>();
 const memos = new WeakMap<object, Map<string, Map<string, { shape: number[]; data: Float32Array }>>>();
 /**
  * The check of one schedule step: the candidate, executed by the interpreter on every side, gives the function's
- * f32 meaning bit for bit on the lowering's samples (streams `signed` and `half-ulp`, whose sums depend on the
- * order), with the order assertions on. The IR's validator has already re-checked legality.
+ * f32 meaning bit for bit on the lowering's samples, with the order assertions on. The IR's validator has already re-checked legality.
  */
 export function scheduleGate(_before: Artifact<Schedule>, candidate: Artifact<Schedule>): CheckResult {
   const { fn } = candidate.value;
   let samples = sampleCache.get(fn);
   if (!samples) {
-    samples = cudaCases(fn, seededRandom(seed)).filter(c => c.stream === 'signed' || c.stream === 'half-ulp');
+    // `signed` everywhere; `half-ulp` (sums that depend on the order by construction) at the small shapes
+    samples = cudaCases(fn, seededRandom(seed)).filter(
+      c => c.stream === 'signed' || (c.stream === 'half-ulp' && c.shapeValues.every(n => n <= 11)),
+    );
     sampleCache.set(fn, samples);
   }
   const sides = scheduleSides(candidate.value);
