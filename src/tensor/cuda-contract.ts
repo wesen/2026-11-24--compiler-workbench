@@ -70,7 +70,12 @@ function compare(expected: BufferValue, got: BufferValue) {
 
 type CudaSample = ReturnType<typeof cudaCases>[number];
 
-export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
+export function createCudaLowering(
+  profile: string,
+  executeBatch: typeof runCudaBatch = runCudaBatch,
+  options?: { fuse?: boolean },
+) {
+  const fuse = options?.fuse ?? true;
   const inputs = { baseline: TixIR, fn: FunctionName };
   const outputs = { subject: CudaIR };
   const ports = { ...inputs, ...outputs };
@@ -132,7 +137,9 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       },
     ],
     run(_ctx, { baseline, fn }) {
-      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+      return {
+        outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn), fuse)) },
+      };
     },
   });
 
@@ -159,4 +166,10 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   };
 }
 
-export const checkCudaLowering = createCudaLowering('cuda-remote:sm_121:-O3');
+// The profile is part of the subject cache key, so the fused and unfused lowerings of one revision keep separate
+// evidence. checkCudaLowering is the stage-2 signature: exact, fused.
+export const checkCudaLowering = createCudaLowering('cuda-remote:sm_121:-O3:fused');
+export const cudaLowering = (fuse: boolean) =>
+  fuse
+    ? checkCudaLowering
+    : createCudaLowering('cuda-remote:sm_121:-O3:plain', runCudaBatch, { fuse: false });

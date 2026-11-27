@@ -6,7 +6,7 @@ import { meaningGate } from './contract.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
-import { checkCudaLowering } from './cuda-contract.js';
+import { cudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
 import { parse } from './parser.js';
@@ -58,24 +58,33 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
   return { program: { origin, current }, steps };
 }
 
-export function cudaSource(program: TixProgram, fn: string): string {
-  return emitCuda(selectFunction(program.current.value, fn));
+export interface LoweringOptions {
+  /** The fused lowering (default) or stage 2's one kernel per statement. */
+  fuse?: boolean;
+}
+
+export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {
+  return emitCuda(selectFunction(program.current.value, fn), options?.fuse ?? true);
 }
 
 export async function runTixCuda(
   program: TixProgram,
   fn: string,
   inputs: CudaInputs,
-  options?: { host?: string },
+  options?: LoweringOptions & { host?: string; benchmark?: boolean },
 ): Promise<CudaResult> {
   const f = selectFunction(program.current.value, fn);
-  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+  const [result] = await runCudaBatch(emitCuda(f, options?.fuse ?? true), f, [inputs], {
+    host: options?.host,
+    benchmark: options?.benchmark,
+  });
   return result;
 }
 
 export function checkLowering(
   program: TixProgram,
   fn: string,
+  options?: LoweringOptions,
 ): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
-  return checkCudaLowering(program.current, fn);
+  return cudaLowering(options?.fuse ?? true)(program.current, fn);
 }
