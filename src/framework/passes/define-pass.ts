@@ -276,7 +276,9 @@ export async function applyPass<S, N extends Needs, P>(
     records[name] = record;
     facts[name] = record.value;
   }
-  const edit = view.beginEdit();
+  // The edit opens on the first read of ctx.edit, so a pass that returns a native result works with an adapter that
+  // cannot rebuild (beginEdit throws ir.capability for one) (IRWB-019 F13).
+  let edit: IREdit<S> | undefined;
   let produced: void | NativeResult<S>;
   try {
     produced = await pass.run({
@@ -285,16 +287,18 @@ export async function applyPass<S, N extends Needs, P>(
       facts: facts as FactValues<N>,
       records: records as PassRunContext<S, N, P>['records'],
       params: options.params as P,
-      edit,
+      get edit(): IREdit<S> {
+        return (edit ??= view.beginEdit());
+      },
     });
   } catch (e) {
-    if (edit.state === 'open') edit.rollback('pass threw');
+    if (edit?.state === 'open') edit.rollback('pass threw');
     throw e;
   }
   let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
   let report: unknown;
   if (produced && typeof produced === 'object' && 'native' in produced) {
-    if (edit.state === 'open') edit.rollback('native result');
+    if (edit?.state === 'open') edit.rollback('native result');
     ({ after, changes, correspondence, edits } = prepareNative(
       pass,
       view,
@@ -304,11 +308,12 @@ export async function applyPass<S, N extends Needs, P>(
     ));
     report = produced.report;
   } else {
-    if (edit.state !== 'open') throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
-    if (edit.operationCount === 0) {
+    if (edit && edit.state !== 'open')
+      throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
+    if (!edit || edit.operationCount === 0) {
       // IRWB-004: an edit with no operations is the identity (the projection and rebuild are inverses), so preparing
       // it would rebuild, re-create and re-diff the unchanged program only to find nothing changed
-      edit.rollback('no operations');
+      edit?.rollback('no operations');
       return {
         pass: { id: pass.id, version: pass.version },
         changed: false,
