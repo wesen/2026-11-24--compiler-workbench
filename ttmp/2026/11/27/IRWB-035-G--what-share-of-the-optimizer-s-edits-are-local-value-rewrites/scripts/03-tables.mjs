@@ -106,7 +106,22 @@ for (const pl of d.pipelines) {
     [...group(rest, family)].sort((a, b) => b[1].length - a[1].length).map(([k, r]) => [
       `\`${k}\``, r.length, sum(r, e => e.insns), [...new Set(r.map(e => e.pass))].sort().join(' '), pct((cum += r.length), L.length)]));
 }
-out.push('## 6. Checks on the attribution', '');
+out.push('## 6. Units a per-rule proof could discharge whole', '');
+out.push('A unit is one function in one changed pass application (what a per-function check would cover), or one function over the whole pipeline. It is "rule only" when every edit in it is local/rule, "local only" when every edit is local.', '');
+const kindOf = rows => (rows.every(e => e.sub === 'rule') ? 'rule' : rows.every(e => e.class === 'local') ? 'local' : rows.some(e => e.class === 'local') ? 'mixed' : 'none');
+const unitRow = (name, units) => {
+  const k = units.map(kindOf), n = k.length, c = x => k.filter(y => y === x).length;
+  return [name, n, c('rule'), pct(c('rule'), n), c('rule') + c('local'), pct(c('rule') + c('local'), n), c('mixed'), c('none')];
+};
+const UNIT_HEAD = ['units', 'rule only', '%', 'local only (rule or fact)', '%', 'local with other classes', 'no local edit'];
+table(['pipeline, unit', ...UNIT_HEAD], d.pipelines.flatMap(pl => {
+  const E = d.edits.filter(e => e.pipeline === pl);
+  return [
+    unitRow(`${pl}, function in one application`, [...group(E, e => `${e.project} ${e.rev} ${e.fn}`).values()]),
+    unitRow(`${pl}, function over the pipeline`, [...group(E, e => `${e.project} ${e.fn}`).values()]),
+  ];
+}));
+out.push('## 7. Checks on the attribution', '');
 table(['pipeline', 'changed applications', 'changed values and statements', 'neither claimed nor rebuilt', 'rebuilt values', 'instructions affected', 'instructions in the images before and after, summed over applications', '%', 'edits with no instruction'],
   d.pipelines.map(pl => {
     const A = d.applications.filter(a => a.pipeline === pl), E = d.edits.filter(e => e.pipeline === pl);
