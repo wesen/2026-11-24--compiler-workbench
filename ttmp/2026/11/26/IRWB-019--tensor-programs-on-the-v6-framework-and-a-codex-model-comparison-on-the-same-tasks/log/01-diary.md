@@ -1051,3 +1051,8 @@ Each pack was scored by two judges: Codex (Sol high) and Claude (an Opus subagen
     - Fusion is `planFusion` with a flat policy and a row policy. Every program fuses to 1 kernel.
     - Times: softmax 0.80 → 0.48 ms, layernorm 0.52 → 0.21 ms.
     - It reports 24/24 exact verdicts and 198 fuzz cases. Its design argues against both a Tix pass and a kernel IR, as Opus's does.
+- **Cell J (GLM 5.3 Flash max) failed a second time, the same way.** Neither attempt committed anything.
+  - Both attempts read for about a minute (context about 50K tokens). The next request then streamed thinking for exactly 20 minutes and failed with "the upstream stream failed before completion": attempt 1 ran 04:01:59 → 04:21:59Z, attempt 2 ran 04:47:15 → 05:07:15Z.
+  - The Pi extension has no such timeout (its only timeouts are 10–15 s, for settings and discovery). So a 20-minute cap on one streamed response sits on the LunaRoute side or upstream.
+  - GLM 5.3 Flash at max thinks long in other cells too. Its longest single request was 14.5 min in R1b and 9.4 min in R2b; at high in T3 it was 11.8 min. T3's opening planning request runs past 20 min.
+  - **Not retried a third time:** the failure is systematic, not transient. Unless the cap can be raised, J is recorded as not run. That leaves T3 with nine cells.
