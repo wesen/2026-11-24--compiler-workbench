@@ -1,10 +1,11 @@
-import { unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
+import { outerReductions, unfusedPlan, type FusionGroup, type FusionPlan, type Reduce } from './fusion.js';
 import {
   plain,
   visit,
   width,
   type Affine,
   type Expr,
+  type Extent,
   type Fn,
   type Statement,
   type Tensor,
@@ -162,6 +163,21 @@ function kernelWriter(
       (prior, a, i) => (i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index)),
       '',
     );
+  // The number of values an axis takes: the IR's three extent kinds (stage 2).
+  const bound = (extent: Extent) => {
+    const n = dim(extent.dim);
+    if (extent.kind === 'blocks') {
+      const tail = extent.rounding === 'ceil' ? ` + (${n} % ${width} != 0)` : '';
+      return `${n} / ${width}${tail}`;
+    }
+    if (extent.kind === 'tail') {
+      const remaining = `(${n} - ${width}LL * ${index(extent.block)})`;
+      return `(${remaining} < ${width}LL ? ${remaining} : ${width}LL)`;
+    }
+    return n;
+  };
+  // Reductions whose value an earlier phase computed (IRWB-030-D's staged terms): the walk reads the variable.
+  const replacements = new Map<Expr, string>();
   const temporary = (code: string) => {
     const name = `v${next++}`;
     line(`float ${name} = ${code};`);
@@ -201,20 +217,12 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const replaced = replacements.get(e);
+        if (replaced) return replaced;
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         for (const { id, extent } of e.axes) {
-          const axis = bind(id),
-            n = dim(extent.dim);
-          let bound = n;
-          if (extent.kind === 'blocks') {
-            const tail = extent.rounding === 'ceil' ? ` + (${n} % ${width} != 0)` : '';
-            bound = `${n} / ${width}${tail}`;
-          }
-          if (extent.kind === 'tail') {
-            const remaining = `(${n} - ${width}LL * ${index(extent.block)})`;
-            bound = `(${remaining} < ${width}LL ? ${remaining} : ${width}LL)`;
-          }
-          line(`const I end_${axis} = ${bound};`);
+          const axis = bind(id);
+          line(`const I end_${axis} = ${bound(extent)};`);
           line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
           indent += '  ';
         }
@@ -235,6 +243,9 @@ function kernelWriter(
     dim,
     bind,
     alias: (id: string, name: string) => void indices.set(id, name),
+    bound,
+    temporary,
+    replace: (e: Expr, name: string) => void replacements.set(e, name),
     scalar,
     enter: () => void (indent += '  '),
     leave: () => void (indent = indent.slice(2)),
@@ -305,6 +316,9 @@ __device__ static float max_nan(float a, float b) {
 // member's reduction reads a tensor from global memory (a contraction operand: attention's k and v, mlp's w and
 // v), 128 otherwise (rows only: softmax, layernorm).
 export const blockThreads = { rows: 128, contraction: 64 };
+// Staged reduction terms (IRWB-030-D): the term buffer holds at most this many terms; longer reductions are
+// computed and folded in chunks of this size. Chosen by measurement (the ticket's M2).
+export const termChunk = { size: 1024 };
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 
@@ -340,6 +354,21 @@ function emitGroup(
   ];
   const suffix = (name: string) => tensorName(name).slice(1);
   const rowBuffers = [...group.staged, ...group.buffered];
+  // IRWB-030-D: the reductions whose terms all threads compute, per member, and their term counts.
+  const stagedTerms = new Map<string, Reduce[]>();
+  for (const t of group.terms.filter(t => t.staged)) {
+    const m = tensors.get(t.statement) as Statement;
+    stagedTerms.set(m.name, [...(stagedTerms.get(m.name) ?? []), outerReductions(m.expr)[t.reduction]]);
+  }
+  const positive = (b: string) => `((${b}) > 0 ? static_cast<U>(${b}) : static_cast<U>(0))`;
+  const totalTerms = (r: Reduce) => `(${r.axes.map(a => positive(w.bound(a.extent))).join(' * ')})`;
+  const most = (xs: string[]) => xs.reduce((a, b) => `(${a} > ${b} ? ${a} : ${b})`);
+  const termBuffer = () => {
+    const all = [...new Set([...stagedTerms.values()].flat().map(totalTerms))];
+    if (!all.length) return undefined;
+    const m = most(all);
+    return `(${m} < ${termChunk.size}ull ? ${m} : static_cast<U>(${termChunk.size}ull))`;
+  };
   const registers = new Map<string, string>();
   let current = members[0];
   const operands = (e: Expr, inReduction: boolean): boolean =>
@@ -390,13 +419,17 @@ function emitGroup(
   if (block) {
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
-    const row = rowBuffers.map(n => `n${suffix(n)}`).join(' + ');
+    const chunk = termBuffer();
+    if (chunk) w.line(`const U nterms = ${chunk};`);
+    const row = [...rowBuffers.map(n => `n${suffix(n)}`), ...(chunk ? ['nterms'] : [])].join(' + ');
     w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
     rowBuffers.forEach((name, i) =>
       w.line(
         `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
       ),
     );
+    const last = rowBuffers.at(-1);
+    if (chunk) w.line(`float* const rterms = ${last ? `r${suffix(last)} + n${suffix(last)}` : 'base'};`);
     for (const name of group.staged) {
       const s = suffix(name);
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) r${s}[e] = t${s}[point * n${s} + e];`);
@@ -405,6 +438,34 @@ function emitGroup(
     members.forEach((m, j) => {
       current = m;
       const s = suffix(m.name);
+      // Staged terms: every thread computes terms of the chunk, then thread 0 folds the chunk in the meaning's
+      // order. A term does not depend on the accumulator, so which thread computes it changes no bit.
+      for (const r of stagedTerms.get(m.name) ?? []) {
+        const acc = w.temporary(r.op === 'sum' ? '0.0f' : '-INFINITY');
+        const axes = r.axes.map(a => w.bind(a.id));
+        r.axes.forEach((a, p) => w.line(`const I end_${axes[p]} = ${w.bound(a.extent)};`));
+        w.line(`const U terms_${acc} = ${totalTerms(r)};`);
+        w.line(`for (U c0 = 0; c0 < terms_${acc}; c0 += nterms) {`);
+        w.enter();
+        w.line(`const U chunk = terms_${acc} - c0 < nterms ? terms_${acc} - c0 : nterms;`);
+        w.line('for (U e = threadIdx.x; e < chunk; e += blockDim.x) {');
+        w.enter();
+        w.line('U rest = c0 + e;');
+        for (let p = axes.length - 1; p >= 0; --p) {
+          w.line(`const I ${axes[p]} = static_cast<I>(rest % static_cast<U>(end_${axes[p]}));`);
+          if (p > 0) w.line(`rest /= static_cast<U>(end_${axes[p]});`);
+        }
+        w.line(`rterms[e] = ${w.scalar(r.body)};`);
+        w.leave();
+        w.line('}');
+        w.line('__syncthreads();');
+        const fold = r.op === 'sum' ? `__fadd_rn(${acc}, rterms[e])` : `max_nan(${acc}, rterms[e])`;
+        w.line(`if (threadIdx.x == 0) for (U e = 0; e < chunk; ++e) ${acc} = ${fold};`);
+        w.line('__syncthreads();');
+        w.leave();
+        w.line('}');
+        w.replace(r, acc);
+      }
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
       if (m.axes.length > depth) w.line('U rest = e;');
@@ -423,7 +484,9 @@ function emitGroup(
     // The host computes the same lengths from the same shape values.
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
-    const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
+    const hostChunk = termBuffer();
+    if (hostChunk) lengths.push(hostChunk);
+    const hostRow = [...rowBuffers.map(n => lengthOf(n, hostDim)), ...(hostChunk ? [hostChunk] : [])].join(' + ');
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,

@@ -24,8 +24,17 @@ export interface FusionGroup {
   buffered: string[];
   /** Block mode: other tensors whose block-domain rows are copied to a row buffer before the members run. */
   staged: string[];
+  /** Block mode: each member's outermost reductions, and whether all threads compute their terms (IRWB-030-D). */
+  terms: TermStaging[];
   /** Why the statements share this kernel, and what changed in the thread mapping. */
   reasons: string[];
+}
+export interface TermStaging {
+  statement: string;
+  /** Index among the statement's outermost reductions, in the tree walk's order (`outerReductions`). */
+  reduction: number;
+  staged: boolean;
+  reason: string;
 }
 export interface FusionRefusal {
   statement: string;
@@ -39,6 +48,43 @@ export interface FusionPlan {
 }
 
 type Load = Extract<Expr, { kind: 'load' }>;
+export type Reduce = Extract<Expr, { kind: 'reduce' }>;
+
+/** The reductions of e that are not inside another reduction's body, in the order the tree walk meets them. */
+export function outerReductions(e: Expr, out: Reduce[] = []): Reduce[] {
+  if (e.kind === 'reduce') out.push(e);
+  if (e.kind === 'op') e.args.forEach(a => outerReductions(a, out));
+  return out;
+}
+
+// IRWB-030-D: which reduction bodies are worth computing in parallel. 'costly' (the default, measured in the
+// ticket's M1): a body with an operation that is a multi-instruction sequence on the GPU (division, square root,
+// the double-precision exp, log and tanh) or a nested reduction. 'any': every body with an operation. A body that
+// is a load or a constant is never staged: thread 0 would read a copy of what it reads now.
+export type TermRule = 'costly' | 'any' | 'none';
+const multiInstruction = new Set(['/', 'sqrt', 'exp', 'log', 'tanh']);
+function termCost(body: Expr): 'costly' | 'cheap' | 'load' {
+  let cost: 'costly' | 'cheap' | 'load' = 'load';
+  visit(body, e => {
+    if (e.kind === 'reduce' || (e.kind === 'op' && multiInstruction.has(e.op))) cost = 'costly';
+    else if (e.kind === 'op' && cost === 'load') cost = 'cheap';
+  });
+  return cost;
+}
+function stageTerms(r: Reduce, rule: TermRule): { staged: boolean; reason: string } {
+  const cost = termCost(r.body);
+  if (cost === 'load')
+    return { staged: false, reason: 'the term is a load or a constant; staging would only copy it' };
+  if (rule === 'none' || (rule === 'costly' && cost === 'cheap'))
+    return {
+      staged: false,
+      reason: 'the term is one single-instruction operation chain; thread 0 computes it in the fold',
+    };
+  return {
+    staged: true,
+    reason: 'all threads compute the terms into a term buffer; thread 0 folds them in order',
+  };
+}
 const same = (a: Affine, b: Affine) => JSON.stringify(a) === JSON.stringify(b);
 function loads(s: Statement): Load[] {
   const out: Load[] = [];
@@ -78,7 +124,8 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
   return { depth: k, reason };
 }
 
-export function planFusion(fn: Fn): FusionPlan {
+export function planFusion(fn: Fn, options?: { terms?: TermRule }): FusionPlan {
+  const rule = options?.terms ?? 'costly';
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
   const refusals: FusionRefusal[] = [];
   for (const s of fn.statements) {
@@ -123,6 +170,18 @@ export function planFusion(fn: Fn): FusionPlan {
           if (rows.every((d, p) => same(d, t.shape[p]) && plain(e.indices[p]) === m.axes[p].id))
             staged.add(e.name);
         }
+    const terms: TermStaging[] = [];
+    if (block)
+      for (const m of members)
+        outerReductions(m.expr).forEach((r, reduction) =>
+          terms.push({
+            statement: m.name,
+            reduction,
+            ...(m.axes.length > depth
+              ? { staged: false, reason: 'computed per element by its own thread, as in stage 2' }
+              : stageTerms(r, rule)),
+          }),
+        );
     const axes = members[0].shape.slice(0, depth).map(text).join(', ');
     const why = single
       ? []
@@ -133,6 +192,13 @@ export function planFusion(fn: Fn): FusionPlan {
             ...members
               .filter(m => m.axes.length === depth)
               .map(m => `thread 0 computes ${m.name} (one element per row) in the meaning's order`),
+            ...terms
+              .filter(t => t.staged)
+              .map(
+                t =>
+                  `the terms of ${t.statement}'s reduction ${t.reduction} are computed by all threads; ` +
+                  'thread 0 folds them in order',
+              ),
             ...(staged.size ? [`rows of ${[...staged].join(', ')} are staged in the row buffer`] : []),
           ]
         : [
@@ -146,6 +212,7 @@ export function planFusion(fn: Fn): FusionPlan {
       stored,
       buffered: buffered.map(m => m.name),
       staged: [...staged],
+      terms,
       reasons: [...why, ...reasons],
     };
   });
@@ -164,6 +231,7 @@ export function unfusedPlan(fn: Fn): FusionPlan {
       stored: [s.name],
       buffered: [],
       staged: [],
+      terms: [],
       reasons: [],
     })),
     refusals: [],
