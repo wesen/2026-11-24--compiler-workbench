@@ -375,3 +375,55 @@ I checked each citation with web searches or by fetching the source page. Three 
 ### What warrants a second pair of eyes
 - The ranking. Proposal 3 (fingerprints) is arguably the most novel, but it enables Proposal 1 rather than delivering speed, so it is ranked third.
 - The norm relation's k = 2 is fitted to six programs.
+
+## Step 12: Experiment 08, my tile-aware shape recipe is not enough
+
+Proposal 3 originally proposed T−1, T, T+1 and 2T+3 per tiled axis. I tested it against three shape-dependent mutants of the kind that unrolled or vectorized tails produce. `tail1` drops a one-term tail in a later K tile, `tail5rev` folds a five-term tail in reverse, and `edge5` skips the last column when N mod 128 = 5. Fingerprints only. My recipe missed `tail5rev` and `edge5`. A residue-complete recipe (every r, T + r and 2T + r on one axis at a time, 600 shapes, 1.2 s) caught every mutant, with no false alarm on the exact kernel at any of 672 shapes. The Stage 1/2 recipe caught nothing.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Try to refute my own proposal's shape recipe.
+**Inferred user intent:** Experiments that can refute the idea.
+**Commit (code):** a6fb717 — "IRWB-023-C: experiment 08 - residue-complete shape recipes for schedule checks"
+
+### What worked
+- `{"recipe":"R3-residues","shapes":600,"ms":1211.5,"shapesWhereFingerprintsDiffer":{"exact":0,"pair":593,"rowstride":536,"tail1":578,"tail5rev":2,"edge5":2}}`
+
+### What didn't work
+- R2 (my first recipe): `tail5rev` 0 and `edge5` 0 shapes detected. Its residues are 7, 0, 1 and 3, never 5.
+
+### What I learned
+- A recipe has to cover every residue of every tiled axis unless the code's dependence on the shape is analyzed. Fingerprints make that affordable.
+
+## Step 13: Experiment 09, the price of exactness on one tuned kernel
+
+The experiment-01 FMA kernel was not a fair measure of the price, so I wrote a 128×128×8 kernel with float4 global and shared loads, compiled twice with only the inner operation changed. At 4096³ the current meaning reached 10.32 TFLOP/s (72% of its ceiling) and the FMA fold 14.92 TFLOP/s: a 1.45× price, steady from 1024³ to 4096³. The FMA fold was within 1.22× of cuBLAS. Both versions had 0 words different from a naive oracle of their own meaning.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Commit (code):** 157a69d — "IRWB-023-C: experiment 09 - price of exactness on one tuned GEMM"
+
+### What didn't work
+- This kernel is worse than the 64-tile kernel at 512³ (0.090 against 0.062 ms): 16 blocks for 48 SMs. The choice of tile size has to depend on shape.
+
+### What I learned
+- The real price (1.45×) is lower than the instruction-count bound (2×), because the kernel also issues shared-memory loads and address arithmetic.
+
+## Step 14: Experiment 10, a schedule generator from Tix IR
+
+The main risk to Proposal 1 is that hand-written kernels prove nothing about a compiler. I wrote a prototype generator (`scripts/10-rowfuse.mjs`, `emitRowKernel`). It reads the compiled Tix IR, checks row-locality and emits one fused kernel per function, using the same intrinsics as Stage 2 and a join tree only for `max`. It recognized five of six corpus functions and refused conv2d (rank 4). All five generated kernels were bit-identical to Stage 2 with both transcendental paths. Softmax ran 4.44× faster and layernorm 2.46×, within 10–17% of the hand kernels, but mlp (1.01×) and matmul (1.15×) gained almost nothing.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Test whether exact schedules can be generated, not just written.
+**Commit (code):** this step's commit
+
+### What didn't work
+- The first run failed to compile: the generator printed range bounds as `-1f`, which is not a C++ literal (`error: user-defined literal operator not found`). Formatting with `toFixed(6)` fixed it.
+- Row fusion is the wrong template for contractions: each dot product stays one thread's dependent chain.
+
+### What I learned
+- Exactness of generated code costs nothing extra once the scalar emitter copies the meaning's intrinsics; the hard part is choosing the schedule. A cost model must split fusion groups at contractions, as the hand-written three-kernel attention does.
+
+### Code review instructions
+- `emitRowKernel()` in `scripts/10-rowfuse.mjs`; the generated `scripts/10-rowfuse/main.cu` (`row_softmax` is the easiest to read); `results/10-rowfuse.jsonl`.

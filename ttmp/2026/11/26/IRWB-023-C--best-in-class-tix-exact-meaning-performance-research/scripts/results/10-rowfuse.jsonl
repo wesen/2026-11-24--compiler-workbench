@@ -1,0 +1,6 @@
+{"refused":{"conv2d":"conv2d: not row-local (out)"}}
+{"program":"matmul","stage2Ms":0.2143,"generatedDoubleMs":0.1886,"generatedFastMs":0.1867,"speedupVsStage2":1.15,"wordsDifferentFromStage2":{"double":0,"fast":0},"smemBytes":4}
+{"program":"softmax","stage2Ms":0.8103,"generatedDoubleMs":0.3567,"generatedFastMs":0.1823,"speedupVsStage2":4.44,"wordsDifferentFromStage2":{"double":0,"fast":0},"smemBytes":8192}
+{"program":"layernorm","stage2Ms":0.4774,"generatedDoubleMs":0.1940,"generatedFastMs":0.1940,"speedupVsStage2":2.46,"wordsDifferentFromStage2":{"double":0,"fast":0},"smemBytes":8192}
+{"program":"attention","stage2Ms":1.0516,"generatedDoubleMs":0.8114,"generatedFastMs":0.7642,"speedupVsStage2":1.38,"wordsDifferentFromStage2":{"double":0,"fast":0},"smemBytes":16384}
+{"program":"mlp","stage2Ms":1.0610,"generatedDoubleMs":1.0491,"generatedFastMs":1.0458,"speedupVsStage2":1.01,"wordsDifferentFromStage2":{"double":0,"fast":0},"smemBytes":8196}

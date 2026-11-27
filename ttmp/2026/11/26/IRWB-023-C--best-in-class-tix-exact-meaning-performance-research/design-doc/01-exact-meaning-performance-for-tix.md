@@ -179,6 +179,19 @@ It also makes **autotuning semantically inert**. Every point in the exact schedu
 
 All six were bit-identical to Stage 2 at full size.
 
+*Experiment 10 (a generator, not a human: `scripts/10-rowfuse.mjs`).* To test whether the compiler can produce such schedules, I wrote a prototype schedule generator, about 250 lines. It reads the actual Tix IR from `dist/`, recognizes **row-local** functions, and emits one fused kernel per function. A function is row-local when every statement's first axis has the same extent and every read of an intermediate uses that row binder first. In the emitted kernel, intermediate rows live in shared memory. Per-element statements run in parallel. A per-row reduction has its body evaluated in parallel into a scratch row and is then folded: by a join tree for `max`, and in index order by one thread for `sum`. Scalar code follows the Stage 2 intrinsics. Results in one `--timed` run (`results/10-rowfuse.jsonl`):
+
+| Program | Stage 2 | Generated | Speedup | Hand-written (experiment 03) | Words different |
+|---|---:|---:|---:|---:|---:|
+| softmax | 0.810 ms | 0.182 ms | 4.44× | 0.168 ms | 0 |
+| layernorm | 0.477 ms | 0.194 ms | 2.46× | 0.166 ms | 0 |
+| attention | 1.052 ms | 0.764 ms | 1.38× | 0.139 ms (three kernels) | 0 |
+| matmul | 0.214 ms | 0.187 ms | 1.15× | 0.062 ms (tiled) | 0 |
+| mlp | 1.061 ms | 1.046 ms | 1.01× | 0.270 ms | 0 |
+| conv2d | refused: rank-4 statement, not row-local | | | | |
+
+The generator recognized five of the six corpus functions as row-local, and every generated kernel was bit-identical to Stage 2 with both transcendental paths. On the memory-bound programs, generated code comes within 10–17% of the hand-written kernels. On the contraction-bound programs it does not, because row fusion leaves each dot product as one thread's latency-bound chain. A real generator therefore needs two templates, row fusion and the tiled contraction, plus a cost model that chooses between them and splits fusion groups at contractions. Experiment 03's three-kernel attention is the target for that choice.
+
 *What the measurements say about where the time goes.* In softmax the fused kernel with Stage 2's double exp took 0.352 ms, and it took 0.168 ms with the proven exp of Proposal 2. Half of the gain is the intrinsic. In the MLP the bias+GELU epilogue alone took 0.211 ms with the double tanh and 0.040 ms with the proven tanh. The one-thread ordered row sum is not a bottleneck at these sizes: the softmax kernel runs at 82% of streaming bandwidth.
 
 **Risks.**
@@ -187,7 +200,7 @@ All six were bit-identical to Stage 2 at full size.
 - *Engineering distance to cuBLAS.* The exact ceiling is reachable only with cuBLAS-class tiling, double buffering, warp tiling and vectorized loads. My best kernel sits at 72% of the ceiling. The 128-tile kernel is poor at 512³ (0.090 ms, 16 blocks for 48 SMs), where the 64-tile kernel took 0.062 ms. Tile choice has to depend on shape, which is safe precisely because every tile choice has the same meaning.
 - *Fusion granularity.* My single-kernel attention, one block per query row, was *slower* than Stage 2 at first (1.69 ms against 1.05 ms). After three fixes it still took 0.72 ms, against 0.139 ms for the three-kernel version (§6). A schedule space needs a cost model or a tuner, not a fixed "fuse everything" rule.
 
-**How success is measured.** The compiler, rather than a human, generates schedules for the six programs that are bit-identical at full size and at least 3× faster than Stage 2 in geometric mean. The hand-written result is 3.76×. Contractions reach at least 85% of the exact ceiling, which is about 12 TFLOP/s on the GB10, or within 1.5× of cuBLAS at 4096³. Batch-invariance differences are 0 in a standing test.
+**How success is measured.** The compiler, rather than a human, generates schedules for the six programs (experiment 10 already does this for two of them at within 17% of the hand kernels) that are bit-identical at full size and at least 3× faster than Stage 2 in geometric mean. The hand-written result is 3.76×. Contractions reach at least 85% of the exact ceiling, which is about 12 TFLOP/s on the GB10, or within 1.5× of cuBLAS at 4096³. Batch-invariance differences are 0 in a standing test.
 
 **What it needs from `src/framework`.**
 
@@ -396,6 +409,7 @@ flowchart TD
 - **Fingerprints without the +0 law.** The plain tree hash flagged a K-only chunk tree as different from the sequential fold when K fits in one chunk (49/49 outputs at 7³), although the words are equal. That is a false alarm, removed by L2.
 - **My first FMA GEMM as evidence for the price.** At 4096³ the fma variant of the experiment-01 kernel was *slower* than the exact one (17.9 ms against 15.3 ms), so it said nothing about the semantic price, which the kernel's other bottlenecks masked. Experiment 09's tuned kernel replaced it: about 1.45× at every size from 1024³ to 4096³.
 - **The K-only split-K kernel at large sizes.** It took 29.4 ms at 4096³, against 15.3 ms for the 128-tile exact kernel, because the partial sums go through global memory without tuning. It won only at 512³.
+- **Row fusion as the only schedule template.** The generator's single template made mlp 1.01× and matmul 1.15× faster than Stage 2, far from the hand-written 3.9× and 3.5×. Contractions need the tiled template.
 - **My first schedule-derived shape recipe.** T−1, T, T+1 and 2T+3 per axis caught the tile-threshold bugs, but it missed both mutants that depend on a residue (`tail5rev` at K mod 8 = 5, `edge5` at N mod 128 = 5). The residue-complete recipe replaced it.
 - **Bugs that exact comparison caught immediately.** These are worth recording because each would have been easy to miss under a tolerance. A transposed index in the three-kernel attention made all 65,536 words differ. A stale output buffer would have hidden the `rowstride` mutant, until the kernels' outputs were NaN-filled.
 
@@ -415,6 +429,7 @@ All scripts are in this ticket's `scripts/`, and their outputs are in `scripts/r
 | 07 | `07-exact-tanh/main.cu` (`exhaust s e`, `stream`, `debug w`) | Proven fast tanh | First version 85,400 mismatches; fixed: 0; 4.9× streaming |
 | 08 | `08-residues/main.cu` | Which shape recipe exposes shape-dependent schedule bugs? | Stage recipe catches none; T−1/T/T+1/2T+3 misses residue bugs; residue-complete (600 shapes, 1.2 s) catches all, no false alarms |
 | 09 | `09-gemm-v2/main.cu` | The price of exactness on one tuned kernel | RN–RN 10.32 TFLOP/s and FMA fold 14.92 at 4096³ (1.45×); FMA fold within 1.22× of cuBLAS; both 0 words different from their own oracles |
+| 10 | `10-rowfuse.mjs` | Can a generator produce exact fused schedules from Tix IR? | Five of six functions recognized; all bit-identical to Stage 2; softmax 4.44×, layernorm 2.46×; contractions need a tiled template and a cost model |
 
 Example commands:
 
@@ -427,6 +442,7 @@ Example commands:
 - `node tools/cuda-remote.mjs <ticket>/scripts/07-exact-tanh --timed -- exhaust 34 36`
 - `node tools/cuda-remote.mjs <ticket>/scripts/08-residues`
 - `node tools/cuda-remote.mjs <ticket>/scripts/09-gemm-v2 --timed -- 512 1024 2048 4096`
+- `node <ticket>/scripts/10-rowfuse.mjs --timed` (after `03-fused-exact.mjs`, which writes the copied fast-path headers)
 
 Caveats. My Stage 2 timings come from the generated program's own benchmark mode, with a median of three runs. The coordinator's single runs (0.197, 0.785, 0.563, 1.81, 1.05 and 0.341 ms) differ by up to 2× for attention and conv2d. Optimized kernels used medians of 21 runs. Exactness claims are per input (seeded random data) and per shape (the corpus sizes), except the exhaustive and fingerprint results, which cover every input of the stated domain. The exhaustive proofs cover the binaries built by the runner's `nvcc` 13.0 at `-O3 -arch=sm_121`.
 
