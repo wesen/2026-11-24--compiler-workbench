@@ -1,0 +1,52 @@
+across-calls           r0                660  O2                640  speed                260
+algebra                r0                100  O2                 20  speed                 20
+blend                  r0       2255 -> 2245  O2       1925 -> 1915  speed       1915 -> 1750
+bounds-lab             r0               5923  O2               5109  speed       4788 -> 4397
+bounds-offset          r0       1364 -> 1338  O2       1224 -> 1198  speed       1215 -> 1188
+bounds-param           r0                502  O2                502  speed         499 -> 458
+bounds-two             r0                910  O2                810  speed         756 -> 715
+branches               r0         165 -> 148  O2         139 -> 131  speed         139 -> 131
+bytecode-vm            r0     39954 -> 35034  O2     32295 -> 28908  speed     32295 -> 28908
+call-chain             r0               1050  O2               1050  speed                350
+calls                  r0                651  O2                651  speed                288
+checksum               r0               1710  O2               1410  speed       1251 -> 1110
+chess-search           r0   432856 -> 431958  O2   423077 -> 427077  speed   324150 -> 324313
+collatz                r0       7461 -> 6956  O2       7461 -> 6956  speed       6955 -> 6946
+constants              r0                100  O2                 70  speed                 40
+dead-code              r0                110  O2                 30  speed                 30
+diagnostics            r0                 30  O2                 30  speed                 30
+distinct               r0                340  O2                340  speed                 80
+div-checks             r0                172  O2                162  speed                162
+div-magic              r0                729  O2                769  speed         759 -> 720
+early-exit             r0         761 -> 754  O2         631 -> 624  speed         564 -> 557
+f32-dsp                r0     49706 -> 49434  O2     49030 -> 48806  speed     46361 -> 46100
+first-steps            r0                280  O2                220  speed                 80
+fixed-point            r0                429  O2                411  speed                251
+fragments              r0       2697 -> 2687  O2       2299 -> 2289  speed       2289 -> 2090
+gcd                    r0                324  O2                324  speed         314 -> 275
+heat-lab               r0       8832 -> 8603  O2       8832 -> 8603  speed       8664 -> 8573
+histogram              r0       2416 -> 2452  O2       2292 -> 2328  speed       2222 -> 2256
+licm-nested            r0               2677  O2               1678  speed       1631 -> 1596
+licm-traps             r0                153  O2                153  speed         149 -> 142
+lz-roundtrip           r0     33646 -> 38164  O2     34551 -> 37741  speed     28745 -> 28525
+match-enum             r0         282 -> 269  O2         251 -> 246  speed         251 -> 246
+my-analysis            r0             200975  O2             200975  speed   200966 -> 200798
+my-first-pass          r0                 60  O2                 50  speed                 50
+nested-loops           r0               2634  O2               2342  speed       2289 -> 2252
+orders                 r0       1350 -> 1340  O2       1194 -> 1184  speed       1185 -> 1126
+params-demo            r0       2697 -> 2687  O2       2299 -> 2289  speed       2289 -> 2090
+pressure               r0                280  O2                240  speed                240
+ramp                   r0       1180 -> 1190  O2       1040 -> 1050  speed         962 -> 970
+records                r0                260  O2                260  speed                260
+regalloc-lab           r0               2614  O2               2614  speed       2051 -> 1969
+regex-nfa              r0     41650 -> 42675  O2     40212 -> 40295  speed     35879 -> 34830
+sha-chacha             r0   239636 -> 231196  O2   232820 -> 226660  speed   125491 -> 121618
+sort                   r0       5043 -> 4915  O2       5043 -> 4915  speed       4950 -> 4889
+start-here             r0       4385 -> 4296  O2       3871 -> 3782  speed       2932 -> 2723
+strength               r0       2220 -> 2147  O2       1938 -> 1865  speed       1793 -> 1719
+strings                r0     11895 -> 11384  O2     10833 -> 10322  speed      10283 -> 9771
+ui-gallery             r0               1214  O2               1058  speed         754 -> 720
+value-numbering        r0       3721 -> 3711  O2       3082 -> 3072  speed       3073 -> 2859
+wrong-shift            r0       1950 -> 1940  O2       1650 -> 1640  speed       1491 -> 1340
+regex-nfa speed regexMatch: 6933 -> 6719
+lz-roundtrip speed roundTrip: 161 -> 164

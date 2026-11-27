@@ -1,0 +1,23 @@
+regex-nfa speed regexMatch: ours 6933, reference 6628, gap 305
+
+   gap   ours    ref  op
+   326    326      0  j
+   248   1989   1741  addi
+   214    253     39  bge
+  -214     84    298  blt
+  -117      0    117  jal
+   -92    612    704  lw
+    58     58      0  bgeu
+   -58    803    861  bltu
+   -56      0     56  xor
+    56     82     26  xori
+   -32      1     33  ret
+   -19    360    379  sw
+   -17    299    316  bne
+     8    109    101  beq
+     0    861    861  add
+     0     19     19  lhu
+     0    134    134  mul
+     0    861    861  slli
+     0     23     23  slt
+     0     59     59  sltiu

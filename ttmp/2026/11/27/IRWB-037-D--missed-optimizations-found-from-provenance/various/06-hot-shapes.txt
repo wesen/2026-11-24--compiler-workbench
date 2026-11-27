@@ -1,0 +1,34 @@
+instructions   sites  projects                 shape (unchanged by every pass at speed)
+       37493    245  blend,bounds-lab,bounds- set x
+       25323     28  chess-search,heat-lab,hi set load16u(add(x, shl(x, 1)))
+       21882     88  blend,bounds-lab,bounds- set add(x, 1)
+       17744    117  branches,calls,chess-sea br 
+       12867     10  chess-search             set lt(rem(x, 16), 8)
+        8777     39  chess-search,f32-dsp,lz- set add(x, x)
+        8137    168  blend,bounds-lab,bounds- set 0
+        7648      6  chess-search,heat-lab,so store load16u(add(x, shl(x, 1)))
+        7383     25  chess-search,my-analysis br_if x
+        7200      8  sha-chacha               eval call(x, x, x, x)
+        6516     16  f32-dsp                  set load(add(x, shl(x, 1)))
+        5798     31  bytecode-vm,chess-search store x
+        5460      9  bytecode-vm,lz-roundtrip zero 
+        5051     11  chess-search             set lt(x, 128)
+        4780      3  chess-search             set eq(load16u(add(x, shl)), x)
+        3960      6  f32-dsp                  set add(shl(add(x, 1), 1), 1)
+        3948      7  chess-search,heat-lab,hi set add(x, shl(x, 1))
+        3401      4  bytecode-vm,chess-search br_if eq(x, 1)
+        3280      7  f32-dsp                  set add(shl(x, 1), 1)
+        3200     32  sha-chacha               set result()
+        2800      3  chess-search             br_if ne(x, 0)
+        2121      1  bytecode-vm              br_if eq(x, 2)
+        2080      2  f32-dsp                  store fadd(x, x)
+        2080      2  f32-dsp                  store fsub(x, x)
+        1928     20  bytecode-vm,chess-search set sub(x, 1)
+        1668      3  chess-search,heat-lab,so set gt(x, load16u(add(x, shl)))
+        1545      1  collatz                  br_if eq(rem(x, 2), 0)
+        1540      2  collatz,f32-dsp          set div(x, 2)
+        1530      3  chess-search             set sub(15, mul(sub(x, 4), 30))
+        1530      3  chess-search             set sub(17, mul(sub(x, 6), 34))
+
+261976 of 640339 executed instructions are charged to statements no pass edited (40.9 %)
+208 distinct shapes, 67 rules to match them against

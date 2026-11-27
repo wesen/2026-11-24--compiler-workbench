@@ -4,3 +4,7 @@ lz-roundtrip compress        163694 r0    136640 speed    137618 reference   com
 lz-roundtrip decompress       27800 r0     24800 speed     22900 reference   decompress: 100 seed-7 cases
 lz-roundtrip roundTrip       185876 r0    156782 speed    156405 reference   roundTrip: 100 seed-7 cases
 lz-roundtrip                 378170 r0    318922 speed    317823 reference   100 seed-7 cases of every function, speed with chains+coalesce+homes
+
+After this stage's changes (bce on affine indices, ranges bottom): the same three benchmarks are
+regex-nfa 6,933 speed, lz-roundtrip roundTrip 156,782 speed, chess-search 10,038,193 speed --
+unchanged, because neither shape occurs there.

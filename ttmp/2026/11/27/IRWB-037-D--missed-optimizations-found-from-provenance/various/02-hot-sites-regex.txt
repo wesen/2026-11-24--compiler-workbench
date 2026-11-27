@@ -1,0 +1,13 @@
+    360  EDIT stmt       if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62   [s:regexMatch.102]
+    320  EDIT stmt       if (load32[(inv8 + (state << 2))+0] == 1) goto .128 else .129   [s:regexMatch.193]
+    310  EDIT stmt       row = (5 * load32[(inv3 + (head << 2))+0])   [s:regexMatch.120]
+    310  EDIT stmt       if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64   [s:regexMatch.126]
+    280  EDIT stmt       t43 = (load32[(inv7 + (row << 2))+0] == 1)   [s:regexMatch.198]
+    256  EDIT stmt       store32[t46+0] = load32[(inv11 + (state << 2))+0]   [s:regexMatch.246]
+    192  EDIT stmt       store32[(inv11 + (state << 2))+0] = 0   [s:regexMatch.251]
+    168  EDIT stmt       if (row >=u 45) goto .130 else .133   [s:regexMatch.194]
+    144  EDIT stmt       if (state >=u 9) goto .52 else .55   [s:regexMatch.98]
+    137       stmt       zero frame+0, 180 bytes   [s:regexMatch.3]
+    135  EDIT stmt       if (state >= stateCount) goto .n5 else .51   [s:regexMatch.292]
+    128       stmt       row = (5 * state)   [s:regexMatch.188]
+total 6933

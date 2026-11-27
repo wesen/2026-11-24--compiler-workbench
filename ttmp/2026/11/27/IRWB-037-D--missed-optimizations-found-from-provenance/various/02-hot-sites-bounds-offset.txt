@@ -1,0 +1,5 @@
+      3  EDIT stmt       if ((i + 1) >= load32[work+0]) goto .2 else .3   [s:rises.3]
+      2       stmt       return n   [s:rises.22]
+      1       stmt       n = 0   [s:rises.0]
+      1       stmt       i = 0   [s:rises.1]
+total 7
