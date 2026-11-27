@@ -1,0 +1,85 @@
+✔ framework sources import nothing outside src/framework (166.607751ms)
+✔ strategy, contracts and ir use only core/data and core/types from core (51.735554ms)
+✔ the core runtime imports no higher framework layer (5.461279ms)
+✔ synchronous native passes share validation and write checks, and skip the gate on identity (144.47728ms)
+✔ applyPass opens its edit only when the pass reads it (IRWB-019 F13) (50.51387ms)
+✔ matmul agrees with the numerical oracle before and after optimization (631.908516ms)
+✔ softmax agrees with the numerical oracle before and after optimization (263.357965ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (352.226519ms)
+✔ attention agrees with the numerical oracle before and after optimization (937.082585ms)
+✔ mlp agrees with the numerical oracle before and after optimization (620.38441ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (21.344211ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (680.765192ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (90.414662ms)
+✔ concurrent lowering checks share a batch, retry transport failures and replay verdicts (1836.896201ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (421.022249ms)
+✔ lowering rejects statement IDs absent from the Tix artifact (66.563823ms)
+✔ kernel inventories reject invented and omitted CUDA kernels (44.737077ms)
+✔ every corpus lowering validates fused and unfused without a GPU (44660.555418ms)
+✔ every corpus program is one kernel; the row programs run one block per row (1872.51354ms)
+✔ fuse: false is stage 2 byte for byte, including contractions scheduled differently by default (3840.321943ms)
+✔ elementwise chains and epilogues share one thread per element (155.086946ms)
+✔ a statement that needs another row, other extents or nothing from the kernel starts a new one (20.891384ms)
+✔ a stencil narrows the block domain to the axes it reads plainly; middle members are stored when read later (56.406485ms)
+✔ a staged row needs the block domain as its leading extents, not just a plain address (23.421215ms)
+✔ the lowering records which statements each kernel computes, and fused and unfused share their cases (546.845534ms)
+✔ terms are staged for reductions of one-element members, unless the terms are a row already (104.788761ms)
+✔ terms are refused for members whose row occupies the block, and thread-mode kernels have none (39.760682ms)
+✔ after split-sum the outer block reduction is staged and each term is a tail sum (93.106575ms)
+✔ a block-mode kernel is one definition that also holds its statements in stage 2 form, behind a gate (123.043888ms)
+✔ the check runs every sample on both sides of the gate and names the side that disagrees (557.763367ms)
+✔ a member is written over the row it is computed from when nothing reads that row afterwards (266.301963ms)
+✔ the gate is a host condition on the grid, the longest row and the lanes of heavy members (378.642743ms)
+✔ every operation, input and literal rounds at the selected precision (296.540127ms)
+✔ lexicographic reductions, explicit grouping and nested binder scope (124.752746ms)
+✔ zero extents, empty reductions and shape values (28.582097ms)
+✔ affine shape normalization, annotations and multiple functions (1.503272ms)
+✔ invalid programs give source coordinates (41.822778ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (478.098195ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (233.212787ms)
+✔ passes compose across calls and preserve the source baseline (156.170565ms)
+✔ a rejected optimization step reports the first counterexample and leaves the program unchanged (125.446648ms)
+✔ coverage required per function and screening is origin-only (138.513605ms)
+✔ exact comparison detects a changed zero sign (97.218496ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (977.934357ms)
+✔ the compiler exposes connected Tix, schedule revisions and CUDA, including individual folds (200.347552ms)
+✔ schedule checks reject a changed algorithm, swapped panel address map, and missing phase store (101.733644ms)
+✖ matching uses resolved affine indices, including transposed operands and a register epilogue (17.950868ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 46
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50302.922969
+
+✖ failing tests:
+
+test at tests/tensor/schedule.test.mjs:85:1
+✖ matching uses resolved affine indices, including transposed operands and a register epilogue (17.950868ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + []
+  - [
+  -   [
+  -     'p',
+  -     'z'
+  -   ]
+  - ]
+
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tests/tensor/schedule.test.mjs:90:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ [ 'p', 'z' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

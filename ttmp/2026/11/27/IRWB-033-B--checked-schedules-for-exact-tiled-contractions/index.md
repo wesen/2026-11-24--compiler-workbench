@@ -1,7 +1,7 @@
 ---
 Title: Checked schedules for exact tiled contractions
 Ticket: IRWB-033-B
-Status: active
+Status: complete
 Topics:
     - tensor
     - gpu
@@ -11,46 +11,18 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-27T10:03:54.138515605-05:00
+Summary: Checked Tix schedule revisions and exact tiled contractions on GB10
+LastUpdated: 2026-11-27T11:14:31.257037896-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Checked schedules for exact tiled contractions
 
-## Overview
+The compiler lowers through a schedule artifact with named folds, v6 layout passes, and a shape-dependent launch policy. The report compares exact f32 execution and interleaved GB10 timing with base revision 0f45d04.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
-
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- tensor
-- gpu
-- verification
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design committed before implementation](design-doc/01-scheduling-exact-contractions.md)
+- [Measurements and framework findings](reference/02-results.md)
+- [Implementation diary](reference/01-implementation-diary.md)
+- [Replay scripts and raw results](scripts/)
+- [Tasks](tasks.md) and [changelog](changelog.md)

@@ -1,0 +1,9 @@
+{"name":"matmul","pass":"tensor.schedule.tile","schedule":"f5512f8fb0955d9409f69dbb8d31bf0b32b91b7052ccae188fc36bcd51bd63d2","verdict":{"accepted":true,"relation":"exact"},"wallMs":13425.214241000001}
+{"name":"matmul","pass":"tensor.schedule.register-tile","schedule":"725037c4cfcf4f7d7766973ddd8e637d5d9b2cea8d43b6d27fcde8758ea06ed2","verdict":{"accepted":true,"relation":"exact"},"wallMs":12476.989157999998}
+{"name":"matmul","pass":"tensor.schedule.stage-panels","schedule":"549ed62a375f5a0185a8772b19ca2c95ce11a45f48c3e48f5656dd6e641fdfe5","verdict":{"accepted":true,"relation":"exact"},"wallMs":12862.971253}
+{"name":"matmul","pass":"tensor.schedule.vectorize","schedule":"f020e8270cc2416ee28b199108cc7db6dc52053cb09e33d21e405baad3d2e53b","verdict":{"accepted":true,"relation":"exact"},"wallMs":11373.939454000007}
+{"name":"matmul","pass":"tensor.schedule.pack-registers","schedule":"7ac5f3ebea1a35fa95719213bd42bde19791fb7c0de02614c3d56ee0c30178f6","verdict":{"accepted":true,"relation":"exact"},"wallMs":11042.33711}
+{"name":"matmul","pass":"tensor.schedule.wide-tile","schedule":"571a6bc373224891183e35c745c8f7be0ca75d6498d206b8f7efba911f1c8bcb","verdict":{"accepted":true,"relation":"exact"},"wallMs":17817.85998100001}
+{"name":"matmul","pass":"tensor.schedule.dispatch","schedule":"7e0babe7c9044e3f6ce44f088ce678d76827dc34c43ee4e6da876a41992a5b58","verdict":{"accepted":true,"relation":"exact"},"wallMs":16463.172563999993}
+{"name":"attention","pass":"tensor.schedule.fuse-phases","schedule":"44fbedb6e1df531a900fc3e5cf6db8402f358ea9ecdd107977c5616323b4be78","verdict":{"accepted":true,"relation":"exact"},"wallMs":26476.202852999995}
+{"name":"conv2d","pass":"tensor.schedule.broadcast-patch","schedule":"387ae45e697d67cf85f098fe6ff3d96922b6b47ded206d989195b467dda2f4bb","verdict":{"accepted":true,"relation":"exact"},"wallMs":14318.67765099999}

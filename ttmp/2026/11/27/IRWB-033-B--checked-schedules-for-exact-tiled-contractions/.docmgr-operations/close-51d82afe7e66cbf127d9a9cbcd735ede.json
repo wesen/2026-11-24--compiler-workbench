@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "938ebdd9271af979be81368ce19f2d8bc98189be0522db475275ce5f5a7c3e63",
+  "request": {
+    "ticket": "IRWB-033-B",
+    "status": "complete",
+    "intent": "",
+    "entry": "Qualified all six corpus programs as exact on GB10. Recorded all 70 paired whole-function calls and 40 phase measurements, 68 passing host tests and 23 passing GPU tests."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-51d82afe7e66cbf127d9a9cbcd735ede",
+    "state": "committed",
+    "created_at": "2026-11-27T16:14:31.257186729Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "2788f4aebb22951d958aee3d50958ea1483b5ae52a1fe5575d309a154355e393",
+      "index.md": "b772ab60ef77080ad29d5d422dc13645f584438af060af5a0c8ae94914de3dd0"
+    },
+    "after": {
+      "changelog.md": "b12747361db55c6b50f25919a3c814b708e086e029c312f305b440dc153f4f9b",
+      "index.md": "84c0c2db397a4e0d070e3586219f82a752dd1ca1ccc9693dbe9b955ef36dcf14"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "2788f4aebb22951d958aee3d50958ea1483b5ae52a1fe5575d309a154355e393",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKYTkzYTE1ZCBjb21taXR0ZWQgdGhlIGRlc2lnbi4gMWFhM2IyMyBpbnRyb2R1Y2VkIGV4ZWN1dGFibGUgdGlsZWQgc2NoZWR1bGUgcmV2aXNpb25zLiBhNGEzZDhkIGFkZGVkIHBhc3Mtb3duZWQgcG9zdGNvbmRpdGlvbnMsIGZvbGQgcHJvdmVuYW5jZSwgcGFja2VkIHBhbmVscywgcGhhc2UgZnVzaW9uIGFuZCBpbnZhcmlhbnQgb3BlcmFuZCByZXVzZS4KCiMjIDIwMjYtMTEtMjcKClF1YWxpZmllZCBhbGwgc2l4IGNvcnB1cyBwcm9ncmFtcyBhcyBleGFjdCBvbiBHQjEwLiBSZWNvcmRlZCBhbGwgNzAgcGFpcmVkIHdob2xlLWZ1bmN0aW9uIGNhbGxzIGFuZCA0MCBwaGFzZSBtZWFzdXJlbWVudHMsIDY4IHBhc3NpbmcgaG9zdCB0ZXN0cyBhbmQgMjMgcGFzc2luZyBHUFUgdGVzdHMuCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "b772ab60ef77080ad29d5d422dc13645f584438af060af5a0c8ae94914de3dd0",
+      "after": "LS0tClRpdGxlOiBDaGVja2VkIHNjaGVkdWxlcyBmb3IgZXhhY3QgdGlsZWQgY29udHJhY3Rpb25zClRpY2tldDogSVJXQi0wMzMtQgpTdGF0dXM6IGNvbXBsZXRlClRvcGljczoKICAgIC0gdGVuc29yCiAgICAtIGdwdQogICAgLSB2ZXJpZmljYXRpb24KRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogQ2hlY2tlZCBUaXggc2NoZWR1bGUgcmV2aXNpb25zIGFuZCBleGFjdCB0aWxlZCBjb250cmFjdGlvbnMgb24gR0IxMApMYXN0VXBkYXRlZDogMjAyNi0xMS0yN1QxMToxNDozMS4yNTcwMzc4OTYtMDU6MDAKV2hhdEZvcjogIiIKV2hlblRvVXNlOiAiIgotLS0KCiMgQ2hlY2tlZCBzY2hlZHVsZXMgZm9yIGV4YWN0IHRpbGVkIGNvbnRyYWN0aW9ucwoKVGhlIGNvbXBpbGVyIGxvd2VycyB0aHJvdWdoIGEgc2NoZWR1bGUgYXJ0aWZhY3Qgd2l0aCBuYW1lZCBmb2xkcywgdjYgbGF5b3V0IHBhc3NlcywgYW5kIGEgc2hhcGUtZGVwZW5kZW50IGxhdW5jaCBwb2xpY3kuIFRoZSByZXBvcnQgY29tcGFyZXMgZXhhY3QgZjMyIGV4ZWN1dGlvbiBhbmQgaW50ZXJsZWF2ZWQgR0IxMCB0aW1pbmcgd2l0aCBiYXNlIHJldmlzaW9uIDBmNDVkMDQuCgotIFtEZXNpZ24gY29tbWl0dGVkIGJlZm9yZSBpbXBsZW1lbnRhdGlvbl0oZGVzaWduLWRvYy8wMS1zY2hlZHVsaW5nLWV4YWN0LWNvbnRyYWN0aW9ucy5tZCkKLSBbTWVhc3VyZW1lbnRzIGFuZCBmcmFtZXdvcmsgZmluZGluZ3NdKHJlZmVyZW5jZS8wMi1yZXN1bHRzLm1kKQotIFtJbXBsZW1lbnRhdGlvbiBkaWFyeV0ocmVmZXJlbmNlLzAxLWltcGxlbWVudGF0aW9uLWRpYXJ5Lm1kKQotIFtSZXBsYXkgc2NyaXB0cyBhbmQgcmF3IHJlc3VsdHNdKHNjcmlwdHMvKQotIFtUYXNrc10odGFza3MubWQpIGFuZCBbY2hhbmdlbG9nXShjaGFuZ2Vsb2cubWQpCg=="
+    }
+  ]
+}

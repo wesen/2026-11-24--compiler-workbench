@@ -1,0 +1,70 @@
+{"label":"large","round":0,"fuse":true,"ms":14.511232376098633,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":0,"fuse":false,"ms":135.2070770263672,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":1,"fuse":true,"ms":14.4585599899292,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":1,"fuse":false,"ms":133.9435577392578,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":2,"fuse":true,"ms":14.117888450622559,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":2,"fuse":false,"ms":133.06185913085938,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":3,"fuse":true,"ms":14.082143783569336,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":3,"fuse":false,"ms":133.78250122070312,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":4,"fuse":true,"ms":14.429535865783691,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"large","round":4,"fuse":false,"ms":134.18482971191406,"hash":"d5af670a1a2c3e9f07f67a7f950e10172e2cc230005487d089fe723d759a2d14"}
+{"label":"matmul","round":0,"fuse":true,"ms":0.051263999193906784,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":0,"fuse":false,"ms":0.20710399746894836,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":1,"fuse":true,"ms":0.05209600180387497,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":1,"fuse":false,"ms":0.20979200303554535,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":2,"fuse":true,"ms":0.05158400163054466,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":2,"fuse":false,"ms":0.20924800634384155,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":3,"fuse":true,"ms":0.05244800075888634,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":3,"fuse":false,"ms":0.2144320011138916,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":4,"fuse":true,"ms":0.05196800082921982,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"matmul","round":4,"fuse":false,"ms":0.21452799439430237,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"attention","round":0,"fuse":true,"ms":0.21007999777793884,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba","gates":{"k0":"unfused"}}
+{"label":"attention","round":0,"fuse":false,"ms":1.0705920457839966,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+{"label":"attention","round":1,"fuse":true,"ms":0.2093760073184967,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba","gates":{"k0":"unfused"}}
+{"label":"attention","round":1,"fuse":false,"ms":1.0475200414657593,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+{"label":"attention","round":2,"fuse":true,"ms":0.2091200053691864,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba","gates":{"k0":"unfused"}}
+{"label":"attention","round":2,"fuse":false,"ms":1.0491199493408203,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+{"label":"attention","round":3,"fuse":true,"ms":0.20815999805927277,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba","gates":{"k0":"unfused"}}
+{"label":"attention","round":3,"fuse":false,"ms":1.0479999780654907,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+{"label":"attention","round":4,"fuse":true,"ms":0.20972800254821777,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba","gates":{"k0":"unfused"}}
+{"label":"attention","round":4,"fuse":false,"ms":1.0498239994049072,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+{"label":"mlp","round":0,"fuse":true,"ms":0.2292799949645996,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829","gates":{"k0":"unfused"}}
+{"label":"mlp","round":0,"fuse":false,"ms":0.951583981513977,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
+{"label":"mlp","round":1,"fuse":true,"ms":0.22864000499248505,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829","gates":{"k0":"unfused"}}
+{"label":"mlp","round":1,"fuse":false,"ms":0.9453439712524414,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
+{"label":"mlp","round":2,"fuse":true,"ms":0.2301120012998581,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829","gates":{"k0":"unfused"}}
+{"label":"mlp","round":2,"fuse":false,"ms":0.9514240026473999,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
+{"label":"mlp","round":3,"fuse":true,"ms":0.22963200509548187,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829","gates":{"k0":"unfused"}}
+{"label":"mlp","round":3,"fuse":false,"ms":0.944159984588623,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
+{"label":"mlp","round":4,"fuse":true,"ms":0.22883200645446777,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829","gates":{"k0":"unfused"}}
+{"label":"mlp","round":4,"fuse":false,"ms":0.9559040069580078,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
+{"label":"conv2d","round":0,"fuse":true,"ms":0.11558400094509125,"hash":"87ea2ac715c0b7721c5b5424fc73440c30129ca1db8ce6ff4c83e8db23617cdd"}
+{"label":"conv2d","round":0,"fuse":false,"ms":0.1650560051202774,"hash":"87ea2ac715c0b7721c5b5424fc73440c30129ca1db8ce6ff4c83e8db23617cdd"}
+{"label":"conv2d","round":1,"fuse":true,"ms":0.11507199704647064,"hash":"87ea2ac715c0b7721c5b5424fc73440c30129ca1db8ce6ff4c83e8db23617cdd"}
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/dist/tensor/cuda-runtime.js:111
+      throw new Error(diagnostic || failure.message, { cause: error });
+            ^
+
+Error: Connection closed by 100.117.186.55 port 22
+    at runCudaBatch (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/dist/tensor/cuda-runtime.js:111:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async runTixCuda (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/dist/tensor/index.js:56:22)
+    at async file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/ttmp/2026/11/27/IRWB-033-B--checked-schedules-for-exact-tiled-contractions/scripts/01-paired.mjs:11:20 {
+  [cause]: Error: Command failed: /home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-7AMYBw --runtime-input inputs.bin --timed -- --benchmark
+
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:509:28)
+      at maybeClose (node:internal/child_process:1124:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-7AMYBw --runtime-input inputs.bin --timed -- --benchmark',
+    stdout: '{"host":"manuel@bling","hash":"72d4fef04e6b340871fe7e768723e8e7a43c5f2f5d5563e893cc61dc464d5ddb","compiled":false,"compileMs":null,"runMs":null,"exit":255,"stdout":"","stderr":"Connection closed by 100.117.186.55 port 22\\r\\n","outputs":[]}\n',
+    stderr: ''
+  }
+}
+
+Node.js v24.18.0

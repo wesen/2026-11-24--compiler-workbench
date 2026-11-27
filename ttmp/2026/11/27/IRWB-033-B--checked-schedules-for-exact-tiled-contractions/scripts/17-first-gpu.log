@@ -1,0 +1,10 @@
+✔ GB10 both full-width transposed panels, clipped edges, and register epilogues equal f32 (14073.082386ms)
+✔ GB10 differential contract detects a packed-load mutant in the aligned branch (20568.709409ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35427.133298

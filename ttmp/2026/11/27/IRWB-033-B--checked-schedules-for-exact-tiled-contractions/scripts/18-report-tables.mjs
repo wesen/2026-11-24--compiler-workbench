@@ -30,5 +30,6 @@ for(const [name,phase,label,ops,ref] of [
   ['conv2d',null,'conv2d',2*8*32*62*62*16*3*3,null]
 ]){
   const p=pair(phase?ph:q,name,phase);
+  if(phase && xs(ph,name,phase)[0].hash!==xs(q,name)[0].hash)throw Error('Isolated launch output differs: '+label);
   console.log(`| ${label} | ${fmt(p)} | ${p.map(t=>(ops/(t*1e9)).toFixed(2)).join(' / ')} | ${ref?p.map(t=>(ref/t).toFixed(2)+'×').join(' / '):'—'} |`);
 }

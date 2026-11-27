@@ -1,0 +1,40 @@
+✔ GB10 both full-width transposed panels, clipped edges, and register epilogues equal f32 (23531.778273ms)
+✖ GB10 differential contract detects a packed-load mutant in the aligned branch (4041.042625ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 36449.519332
+
+✖ failing tests:
+
+test at tests/tensor/schedule-gpu.test.mjs:41:1
+✖ GB10 differential contract detects a packed-load mutant in the aligned branch (4041.042625ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /expected .* got/. Input:
+
+  'CUDA evidence unavailable: file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tools/cuda-remote.mjs:74\n' +
+    "  if (put.status !== 0) throw new Error('ssh copy: ' + (put.error ?? put.stderr));\n" +
+    '                              ^\n' +
+    '\n' +
+    'Error: ssh copy: Connection closed by 100.117.186.55 port 22\r\n' +
+    '\n' +
+    '    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tools/cuda-remote.mjs:74:31\n' +
+    '    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)\n' +
+    '    at async node:internal/modules/esm/loader:643:26\n' +
+    '    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)\n' +
+    '\n' +
+    'Node.js v24.18.0'
+
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tests/tensor/schedule-gpu.test.mjs:48:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "CUDA evidence unavailable: file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tools/cuda-remote.mjs:74\n  if (put.status !== 0) throw new Error('ssh copy: ' + (put.error ?? put.stderr));\n                              ^\n\nError: ssh copy: Connection closed by 100.117.186.55 port 22\r\n\n    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-am-irwb-033-b/tools/cuda-remote.mjs:74:31\n    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)\n    at async node:internal/modules/esm/loader:643:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)\n\nNode.js v24.18.0",
+    expected: /expected .* got/,
+    operator: 'match',
+    diff: 'simple'
+  }

@@ -17,7 +17,7 @@ RelatedFiles:
     - Path: repo://src/tensor/tile-source.ts
       Note: CUDA interpretation of tiled iteration
 ExternalSources: []
-Summary: ""
+Summary: Import fusion decisions into a schedule IR and check local rewrites before exact CUDA verification
 LastUpdated: 2026-11-27T10:04:06.443492115-05:00
 WhatFor: ""
 WhenToUse: ""
