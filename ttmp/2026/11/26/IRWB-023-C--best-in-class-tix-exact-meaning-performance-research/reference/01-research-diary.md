@@ -487,7 +487,7 @@ The standing instructions require a minimal probe before relying on a feature no
 
 ## Step 18: The planned GPU kernels against the interpreter itself
 
-Every exactness claim so far went through Stage 2's emitted code as the oracle. That is valid by transitivity, since Stage 2 was independently found bit-identical to the interpreter, but it is indirect. I added an `--interpreter` mode to `12-planner.mjs`. It uses smaller shapes with extents that are not multiples of the 64-wide tile. The GPU program writes inputs and planned outputs to `out/<name>.bin`, and the script runs `runTix` (the f32 meaning in Node 24 on this x86 machine) on the same inputs. All five programs matched in every word.
+Every exactness claim so far went through Stage 2's emitted code as the oracle. That is valid by transitivity, since Stage 2 was independently found bit-identical to the interpreter, but it is indirect. I added an `--interpreter` mode to `12-planner.mjs`. It uses smaller shapes, several of whose extents (96, 160, 48) are not multiples of the 64-wide tile. The GPU program writes inputs and planned outputs to `out/<name>.bin`, and the script runs `runTix` (the f32 meaning in Node 24 on this x86 machine) on the same inputs. All five programs matched in every word.
 
 ### Prompt Context
 **User prompt (verbatim):** see Step 1.
