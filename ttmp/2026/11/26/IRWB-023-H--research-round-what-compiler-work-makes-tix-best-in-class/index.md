@@ -1,7 +1,7 @@
 ---
 Title: 'Research round: what compiler work makes Tix best in class'
 Ticket: IRWB-023-H
-Status: active
+Status: complete
 Topics:
     - compiler
     - verification
@@ -9,10 +9,12 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://ttmp/2026/11/26/IRWB-023-H--research-round-what-compiler-work-makes-tix-best-in-class/design-doc/01-best-in-class-for-tix-trustworthy-speed.md
+      Note: Primary design document
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-26T21:24:31.850562185-05:00
+Summary: 'Research round: trustworthy speed as best-in-class; bit-exact tiling/fusion, certified error budgets, deployment-scale f64 oracle; six experiments with results.'
+LastUpdated: 2026-11-26T22:48:12.420127089-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
