@@ -161,7 +161,11 @@ export interface DefinitionDescriptor extends DefinitionBase {
   readonly category: AnyDefinition['category'];
   readonly schema: unknown;
 }
-export type Assurance = 'declared' | 'checked' | 'transferred' | 'proof';
+/** How a recorded check was made (IRWB-040-C, F34): the method its evidence names. `checked-sampled` decided a
+ * finite sample, `checked-exact` exhausted or proved the claim, and plain `checked` is a check whose evidence names
+ * no method the framework knows -- it never counts as exact. */
+export type CheckedAssurance = 'checked' | 'checked-sampled' | 'checked-exact';
+export type Assurance = 'declared' | CheckedAssurance | 'transferred' | 'proof';
 export interface AnalysisDependency {
   readonly type: 'analysis';
   readonly key: string;

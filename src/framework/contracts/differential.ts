@@ -374,7 +374,5 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
   return tally(spec, seed, cases, verdicts, maxCounterexamples);
 }
 
-/** The assurance a check's evidence supports: sampled differential testing is weaker than an exact checker. */
-export function assuranceOf(evidence: unknown): 'checked-sampled' | 'checked-exact' {
-  return (evidence as { method?: string } | null)?.method === 'sampled' ? 'checked-sampled' : 'checked-exact';
-}
+/** The assurance a check's evidence supports: `assurance.ts` decides it, re-exported here for this module's callers. */
+export { assuranceOf } from './assurance.js';

@@ -110,7 +110,9 @@ All asynchronous context requests must be awaited. Pending requests are observed
 Every property fact identifies its exact artifact ID, revision, kind and schema version, the property and checker versions, the supporting analysis, dependencies, current validity and assurance:
 
 - `declared`: an assertion was recorded, without verification; `ok` is false for authorization purposes.
-- `checked`: the specified checker ran or its exact valid evidence was reused.
+- `checked`: the specified checker ran or its exact valid evidence was reused; on a check result, its evidence named no method this framework knows, so it never counts as exact.
+- `checked-sampled`: a check whose evidence names a method that decides a finite sample only (`differential()` records `method: 'sampled'`); weaker than an exact check.
+- `checked-exact`: a check whose evidence names a method that exhausts the claim's domain or proves it (`exhaustive`, `exhaustive-32`, `proof`). `assuranceOf(evidence)` in `contracts/assurance.ts` decides which of the three a check result gets; a domain maps its own method names, and an unknown name is never exact.
 - `transferred`: an existing valid result was carried to another revision after an authorized transfer checker verified the explicit correspondence.
 - `proof`: the property-specific external certificate verifier accepted a supplied certificate.
 

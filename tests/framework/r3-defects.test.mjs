@@ -18,58 +18,54 @@ const { TixIR } = await import('../../dist/tensor/ir.js');
 const desc = 'r3 defect test';
 
 // ---------- F34 (probe 01): a sampled check and an exhaustive one must not record the same assurance ----------
-test(
-  'F34: sampled and exhaustive checks record different assurance; unknown evidence is never exact',
-  { todo: 'F34' },
-  async () => {
-    const Fn = C.defineIR({ id: 'r3.fn', version: '1', description: desc, validate() {} });
-    const table = { id: x => x, buggy: x => (x % 2 ? x : x | 1) }; // wrong on every even input
-    const sampled = C.differential({
-      id: 'r3.sampled',
-      version: '1',
-      description: desc,
-      inputs: { baseline: Fn, subject: Fn },
-      baseline: 'baseline',
-      subject: 'subject',
-      count: 5,
-      seed: 1,
-      cases: () => [1, 3, 5, 7, 9],
-      run: (_side, art, x) => table[art.value](x),
-      compare: (a, b) => a === b,
-    });
-    const exhaustive = C.defineInvariant({
-      id: 'r3.exhaustive',
-      version: '1',
-      description: desc,
-      inputs: { baseline: Fn, subject: Fn },
-      check: (_ctx, { baseline, subject }) => {
-        for (let x = 0; x < 256; x++)
-          if (table[baseline.value](x) !== table[subject.value](x)) return { ok: false, reason: `x=${x}` };
-        return { ok: true, evidence: { method: 'exhaustive', domain: 'u8', cases: 256 } };
-      },
-    });
-    const m = new C.AnalysisManager();
-    const a = await m.checkInvariant(sampled, {
-      baseline: C.createArtifact(Fn, 'f', 'id'),
-      subject: C.createArtifact(Fn, 'f', 'buggy'),
-    });
-    const b = await m.checkInvariant(exhaustive, {
-      baseline: C.createArtifact(Fn, 'f', 'id'),
-      subject: C.createArtifact(Fn, 'g', 'id'),
-    });
-    assert.notDeepEqual(
-      a.assurance,
-      b.assurance,
-      'a 5-case sample and a 256-case exhaustion record the same assurance',
-    );
-    assert.notEqual(assuranceOf(undefined), 'checked-exact', 'no evidence must not count as exact');
-    assert.notEqual(
-      assuranceOf({ method: 'typo' }),
-      'checked-exact',
-      'an unknown method must not count as exact',
-    );
-  },
-);
+test('F34: sampled and exhaustive checks record different assurance; unknown evidence is never exact', async () => {
+  const Fn = C.defineIR({ id: 'r3.fn', version: '1', description: desc, validate() {} });
+  const table = { id: x => x, buggy: x => (x % 2 ? x : x | 1) }; // wrong on every even input
+  const sampled = C.differential({
+    id: 'r3.sampled',
+    version: '1',
+    description: desc,
+    inputs: { baseline: Fn, subject: Fn },
+    baseline: 'baseline',
+    subject: 'subject',
+    count: 5,
+    seed: 1,
+    cases: () => [1, 3, 5, 7, 9],
+    run: (_side, art, x) => table[art.value](x),
+    compare: (a, b) => a === b,
+  });
+  const exhaustive = C.defineInvariant({
+    id: 'r3.exhaustive',
+    version: '1',
+    description: desc,
+    inputs: { baseline: Fn, subject: Fn },
+    check: (_ctx, { baseline, subject }) => {
+      for (let x = 0; x < 256; x++)
+        if (table[baseline.value](x) !== table[subject.value](x)) return { ok: false, reason: `x=${x}` };
+      return { ok: true, evidence: { method: 'exhaustive', domain: 'u8', cases: 256 } };
+    },
+  });
+  const m = new C.AnalysisManager();
+  const a = await m.checkInvariant(sampled, {
+    baseline: C.createArtifact(Fn, 'f', 'id'),
+    subject: C.createArtifact(Fn, 'f', 'buggy'),
+  });
+  const b = await m.checkInvariant(exhaustive, {
+    baseline: C.createArtifact(Fn, 'f', 'id'),
+    subject: C.createArtifact(Fn, 'g', 'id'),
+  });
+  assert.notDeepEqual(
+    a.assurance,
+    b.assurance,
+    'a 5-case sample and a 256-case exhaustion record the same assurance',
+  );
+  assert.notEqual(assuranceOf(undefined), 'checked-exact', 'no evidence must not count as exact');
+  assert.notEqual(
+    assuranceOf({ method: 'typo' }),
+    'checked-exact',
+    'an unknown method must not count as exact',
+  );
+});
 
 // ---------- F33 (probe 03): nothing about a rejected candidate is published ----------
 test('F33: a candidate the contract rejects does not become a store head', { todo: 'F33' }, async () => {

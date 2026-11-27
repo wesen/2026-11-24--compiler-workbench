@@ -1,5 +1,6 @@
 import { canonical, fingerprint, immutable } from '../core/data.js';
 import type { Artifact, EntityRef } from '../core/types.js';
+import { assuranceOf } from './assurance.js';
 import { Check, JsonValue, definitionRef, describeDefinition, validateArtifact } from './definitions.js';
 import { MemoryResources } from './effects.js';
 import { ContractRegistry } from './registry.js';
@@ -1174,7 +1175,7 @@ export class AnalysisManager {
         phase: 'query',
         definition: definitionRef(definition),
         ok: result.ok,
-        assurance: 'checked',
+        assurance: assuranceOf(result.evidence),
         reason: result.reason ?? (result.ok ? 'Invariant checked' : 'Invariant rejected'),
         evidence: result.evidence ?? null,
       });
