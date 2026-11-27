@@ -154,7 +154,8 @@ const main = (rows: boolean) =>
   );
 /**
  * Threads per block of a row kernel. Measured on the four fused corpus programs at 32, 64, 128, 256 and 512
- * (ticket report): 64 is the fastest or within 6% of the fastest for each; 128 lost 8% on softmax and more on mlp.
+ * (IRWB-029-E report): 64 is the fastest on softmax and attention and within 8% of the fastest on layernorm and
+ * mlp; 128 is 8% slower on softmax, 256 is 60% slower.
  */
 export const rowThreads = 64;
 /** Staged bytes per row above this go to global scratch: the launch limit without opting in (ticket probe 03). */

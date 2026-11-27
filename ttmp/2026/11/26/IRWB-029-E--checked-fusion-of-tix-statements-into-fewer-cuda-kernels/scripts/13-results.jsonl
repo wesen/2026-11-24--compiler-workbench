@@ -1,0 +1,12 @@
+{"name":"matmul","fuse":false,"cases":48,"referenceMs":7,"compileMs":939,"batchRunMs":984,"checkWallMs":2237,"accepted":true}
+{"name":"matmul","fuse":true,"cases":48,"referenceMs":7,"compileMs":991,"batchRunMs":386,"checkWallMs":2,"accepted":true}
+{"name":"softmax","fuse":false,"cases":40,"referenceMs":4,"compileMs":1016,"batchRunMs":293,"checkWallMs":2659,"accepted":true}
+{"name":"softmax","fuse":true,"cases":40,"referenceMs":4,"compileMs":889,"batchRunMs":317,"checkWallMs":2797,"accepted":true}
+{"name":"layernorm","fuse":false,"cases":40,"referenceMs":4,"compileMs":1097,"batchRunMs":460,"checkWallMs":3360,"accepted":true}
+{"name":"layernorm","fuse":true,"cases":40,"referenceMs":4,"compileMs":983,"batchRunMs":553,"checkWallMs":3110,"accepted":true}
+{"name":"attention","fuse":false,"cases":56,"referenceMs":10,"compileMs":1120,"batchRunMs":311,"checkWallMs":2251,"accepted":true}
+{"name":"attention","fuse":true,"cases":56,"referenceMs":10,"compileMs":979,"batchRunMs":310,"checkWallMs":2513,"accepted":true}
+{"name":"mlp","fuse":false,"cases":56,"referenceMs":11,"compileMs":1026,"batchRunMs":296,"checkWallMs":2386,"accepted":true}
+{"name":"mlp","fuse":true,"cases":56,"referenceMs":11,"compileMs":1012,"batchRunMs":580,"checkWallMs":3161,"accepted":true}
+{"name":"conv2d","fuse":false,"cases":48,"referenceMs":562,"compileMs":963,"batchRunMs":309,"checkWallMs":2810,"accepted":true}
+{"name":"conv2d","fuse":true,"cases":48,"referenceMs":562,"compileMs":913,"batchRunMs":305,"checkWallMs":1,"accepted":true}

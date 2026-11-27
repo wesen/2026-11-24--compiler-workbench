@@ -1,0 +1,20 @@
+{"name":"matmul","unfused":{"kernels":1,"ms":0.2134,"sha":"0d61ed495ab6"},"fused":"same source"}
+{"name":"softmax","unfused":{"kernels":4,"ms":0.7742,"sha":"6e965523088d"},"fused":{"kernels":1,"ms":0.3876,"sha":"6e965523088d"}}
+{"name":"layernorm","unfused":{"kernels":4,"ms":0.4691,"sha":"9b4d9efe6573"},"fused":{"kernels":1,"ms":0.2148,"sha":"9b4d9efe6573"}}
+{"name":"attention","unfused":{"kernels":6,"ms":1.1637,"sha":"18486f63326d"},"fused":{"kernels":1,"ms":0.836,"sha":"18486f63326d"}}
+{"name":"mlp","unfused":{"kernels":3,"ms":0.9479,"sha":"599022a69f63"},"fused":{"kernels":1,"ms":0.8687,"sha":"599022a69f63"}}
+{"name":"conv2d","unfused":{"kernels":1,"ms":0.1661,"sha":"87ea2ac715c0"},"fused":"same source"}
+{"name":"matmul","unfused":{"kernels":1,"ms":0.2153,"sha":"0d61ed495ab6"},"fused":"same source"}
+{"name":"softmax","unfused":{"kernels":4,"ms":0.7984,"sha":"6e965523088d"},"fused":{"kernels":1,"ms":0.3852,"sha":"6e965523088d"}}
+{"name":"layernorm","unfused":{"kernels":4,"ms":0.6028,"sha":"9b4d9efe6573"},"fused":{"kernels":1,"ms":0.2155,"sha":"9b4d9efe6573"}}
+{"name":"attention","unfused":{"kernels":6,"ms":1.0527,"sha":"18486f63326d"},"fused":{"kernels":1,"ms":0.767,"sha":"18486f63326d"}}
+{"name":"mlp","unfused":{"kernels":3,"ms":0.9476,"sha":"599022a69f63"},"fused":{"kernels":1,"ms":1.1028,"sha":"599022a69f63"}}
+{"name":"conv2d","unfused":{"kernels":1,"ms":0.1645,"sha":"87ea2ac715c0"},"fused":"same source"}
+{"name":"matmul","unfused":{"kernels":1,"ms":0.2132,"sha":"0d61ed495ab6"},"fused":"same source"}
+{"name":"softmax","unfused":{"kernels":4,"ms":0.8041,"sha":"6e965523088d"},"fused":{"kernels":1,"ms":0.3963,"sha":"6e965523088d"}}
+{"name":"layernorm","unfused":{"kernels":4,"ms":0.4713,"sha":"9b4d9efe6573"},"fused":{"kernels":1,"ms":0.2113,"sha":"9b4d9efe6573"}}
+{"name":"attention","unfused":{"kernels":6,"ms":1.0487,"sha":"18486f63326d"},"fused":{"kernels":1,"ms":0.7681,"sha":"18486f63326d"}}
+{"name":"mlp","unfused":{"kernels":3,"ms":1.0477,"sha":"599022a69f63"},"fused":{"kernels":1,"ms":0.9034,"sha":"599022a69f63"}}
+{"name":"conv2d","unfused":{"kernels":1,"ms":0.1653,"sha":"87ea2ac715c0"},"fused":"same source"}
+{"name":"softmax","unfused":{"kernels":4,"ms":0.8131,"sha":"6e965523088d"},"meaning":"6e965523088d","fused":{"kernels":1,"ms":0.3828,"sha":"6e965523088d"}}
+{"name":"layernorm","unfused":{"kernels":4,"ms":0.4815,"sha":"9b4d9efe6573"},"meaning":"9b4d9efe6573","fused":{"kernels":1,"ms":0.2526,"sha":"9b4d9efe6573"}}

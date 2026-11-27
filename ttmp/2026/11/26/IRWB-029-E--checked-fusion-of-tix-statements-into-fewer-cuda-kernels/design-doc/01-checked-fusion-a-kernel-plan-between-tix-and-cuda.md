@@ -9,7 +9,9 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/kernels.ts
+      Note: The plan IR the design describes
 ExternalSources: []
 Summary: Fusion is decided as a kernel plan, a second v6 artifact between Tix and CUDA, whose validator is the legality check. Two fusions (inline at an injective top-level read, and a block per row with rows staged in shared memory) and what they refuse.
 LastUpdated: 2026-11-26T23:13:19.608712511-05:00
@@ -60,10 +62,9 @@ Both keep each element's expression tree as the meaning has it. Every reduction 
 
 **2. Rows (row reductions with producers and consumers).** A run of consecutive statements, at least two, becomes one kernel with a block per row. With `outer = r`:
 - every statement has rank `r` (a *row scalar*) or `r + 1` (a *row vector*), and the same first `r` dimensions;
-- every read of another statement of the run has the reader's own first `r` axes as its first `r` indices (it reads its own row); the last index is free;
-- every statement after the first reads at least one earlier statement of the run.
+- every read of another statement of the run has the reader's own first `r` axes as its first `r` indices (it reads its own row); the last index is free.
 
-The planner tries `r = rank` and `r = rank − 1` for the first statement and keeps the longer run. Per block: a row vector is computed by all threads of the block (thread `t` takes elements `t, t + B, …`) into a staged buffer; a row scalar is computed by thread 0 and stored in the staged area. `__syncthreads()` separates the steps. Reductions inside a statement run in the evaluating thread exactly as in stage 2.
+Those two are the legality rules. The planner adds a choice: reads among the run's statements must connect all of them (a kernel is for statements that pass values to each other, not for statements that merely have the same rows), and it drops the tail of a run until they do. It tries `r = rank − 1` and `r = rank` for the first statement and keeps the longer run. Per block: a row vector is computed by all threads of the block (thread `t` takes elements `t, t + B, …`) into a staged buffer; a row scalar is computed by thread 0 and stored in the staged area. `__syncthreads()` follows every step but the last (also a step that stores nothing in the block: the next step may overwrite a slot it still reads). Reductions inside a statement run in the evaluating thread exactly as in stage 2.
 - **Thread mapping change, and why:** a row scalar is computed once per row and read by every element of the row, which needs the row's threads in one block.
 - **Staging:** an outside tensor's row is copied to the staged area when a row scalar reads it (thread 0 would otherwise walk global memory alone). A vector reuses the slot of a vector that dies at that step if it reads it only at its own position (`e` over `x`, `weight` over `e` over `score`).
 - **Long rows:** staged bytes above 48 KB (the launch limit without opting in; probe 03: 49152 accepted, 49156 refused) go to a global scratch buffer instead, same kernel, selected by one pointer. So no size is refused.
@@ -71,7 +72,7 @@ The planner tries `r = rank` and `r = rank − 1` for the first statement and ke
 
 Measured before the design (softmax 4096 × 1024, probes 02 to 05): the fused kernel is bit-identical to stage 2's four; 0.41 to 0.46 ms against 0.80 ms. The floor is the double-precision `exp` (stage 2's `e` kernel alone is 0.37 ms), not memory. `minmax`'s branches made the max fold cost ten sum folds; writing the same step with selects gives 0.49 → 0.41 ms at 128 threads, so row kernels use that form.
 
-**Threads per block** is one constant, chosen by benchmark over the four fused corpus programs (reported).
+**Threads per block** is one constant, 64, chosen by benchmark over the four fused corpus programs at 32, 64, 128, 256 and 512 (report, "Threads per block").
 
 ## Refused, with reasons
 
@@ -83,12 +84,12 @@ Measured before the design (softmax 4096 × 1024, probes 02 to 05): the fused ke
 ## Contract
 
 `checkLowering(program, fn, { fuse })` runs the existing differential invariant on the fused source: the f32 meaning's result against the GPU's, bit for bit, NaN as a class. Two additions, both because the stage-2 cases cannot reach code the fused kernels have:
-- **Long-row cases:** for each shape symbol, one assignment with that symbol at `B + 3` and the others at 2, so a thread takes a second element and the last stride is partial.
+- **Long-row cases:** for each shape symbol, one assignment with that symbol at `B + 3 = 67` and the others at 2, so a thread takes a second element and the last stride is partial.
 - **Spilled rows:** when the plan has a row kernel, the batch runs a second time with `--spill`, which forces the scratch path; a case agrees only if both runs agree.
 
 ## API
 
-`cudaSource`, `runTixCuda`, `checkLowering` take `fuse` (default `true`); `runTixCuda` takes `benchmark` and passes it to `runCudaBatch`. `emitCuda(fn)` stays and is the unfused plan's source.
+`cudaSource`, `runTixCuda`, `checkLowering` take `fuse` (default `true`); `runTixCuda` takes `benchmark` and passes it to `runCudaBatch`. `emitCuda(fn)` stays and is the unfused plan's source. New: `kernelPlan(program, fn, { fuse })` returns the plan and the refusals.
 
 ## Framework and tool
 
@@ -98,6 +99,7 @@ Expected: none in `tools/cuda-remote.mjs` (program arguments already pass throug
 
 - Row mapping for a lone row reduction, and staging of reduction bodies that are not a plain row read (they run in thread 0's loop): no corpus program needs them.
 - Row keys other than the leading axes.
+- Reordering independent statements so that a run is not interrupted.
 
 ## Later
 
