@@ -9,6 +9,7 @@ import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
+import { planFusion, unfusedPlan } from './fusion.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -58,24 +59,37 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
   return { program: { origin, current }, steps };
 }
 
-export function cudaSource(program: TixProgram, fn: string): string {
-  return emitCuda(selectFunction(program.current.value, fn));
+export interface LoweringOptions {
+  /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
+  fuse?: boolean;
+}
+function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
+  const f = selectFunction(program.current.value, fn);
+  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+}
+
+export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {
+  return lower(program, fn, options).source;
 }
 
 export async function runTixCuda(
   program: TixProgram,
   fn: string,
   inputs: CudaInputs,
-  options?: { host?: string },
+  options?: LoweringOptions & { host?: string; benchmark?: boolean },
 ): Promise<CudaResult> {
-  const f = selectFunction(program.current.value, fn);
-  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+  const { f, source } = lower(program, fn, options);
+  const [result] = await runCudaBatch(source, f, [inputs], {
+    host: options?.host,
+    benchmark: options?.benchmark,
+  });
   return result;
 }
 
 export function checkLowering(
   program: TixProgram,
   fn: string,
+  options?: LoweringOptions,
 ): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
-  return checkCudaLowering(program.current, fn);
+  return checkCudaLowering(program.current, fn, undefined, { fuse: options?.fuse !== false });
 }
