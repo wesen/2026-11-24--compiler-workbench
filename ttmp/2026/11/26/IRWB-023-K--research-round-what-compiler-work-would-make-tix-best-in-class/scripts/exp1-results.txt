@@ -1,0 +1,52 @@
+
+=== Experiment 1: certified bounds vs sampled tolerance (u=2^-24, budget 2e-6+2e-5|r|) ===
+matmul     cases=15 elems=330 unbounded=0
+  origin |o32-o64| worst=3.10e-7  certified e_o worst=1.27e-6
+  split  meas=2.38e-7 cert=2.51e-6 semDiff=2.78e-17 tightness(meas/cert) mean=0.0370 max(e_c/e_o)=1.60 elems(e_c>e_o)=209
+  drop   meas=2.02e+0 cert=2.02e+0
+  transp meas=6.00e+0 cert=6.00e+0
+  gates G1(sampled)      split=true drop=false transp=false
+  gates G2(cert budget) split=true drop=false transp=false; G2x50 split=true drop=false transp=false
+  gates G3(monotone)   split=false drop=false transp=false; G3(2x slack) split=true drop=false transp=false
+softmax    cases=15 elems=270 unbounded=0
+  origin |o32-o64| worst=4.28e-8  certified e_o worst=1.36e-7
+  split  meas=2.98e-8 cert=3.07e-7 semDiff=5.55e-17 tightness(meas/cert) mean=0.0342 max(e_c/e_o)=1.50 elems(e_c>e_o)=151
+  drop   meas=Infinity cert=Infinity
+  transp meas=5.96e-8 cert=3.18e-7
+  gates G1(sampled)      split=true drop=false transp=true
+  gates G2(cert budget) split=true drop=false transp=true; G2x50 split=true drop=false transp=true
+  gates G3(monotone)   split=false drop=false transp=false; G3(2x slack) split=true drop=false transp=false
+layernorm  cases=15 elems=248 unbounded=0
+  origin |o32-o64| worst=9.55e-7  certified e_o worst=6.01e-5
+  split  meas=1.91e-6 cert=1.20e-4 semDiff=4.00e-15 tightness(meas/cert) mean=0.0355 max(e_c/e_o)=1.33 elems(e_c>e_o)=117
+  drop   meas=NaN cert=NaN
+  transp meas=6.38e+0 cert=6.38e+0
+  gates G1(sampled)      split=true drop=false transp=false
+  gates G2(cert budget) split=false drop=false transp=false; G2x50 split=true drop=false transp=false
+  gates G3(monotone)   split=false drop=false transp=false; G3(2x slack) split=true drop=false transp=false
+attention  cases=15 elems=288 unbounded=0
+  origin |o32-o64| worst=8.52e-8  certified e_o worst=2.14e-6
+  split  meas=1.19e-7 cert=4.25e-6 semDiff=3.33e-16 tightness(meas/cert) mean=0.0046 max(e_c/e_o)=1.41 elems(e_c>e_o)=184
+  drop   meas=1.00e+0 cert=1.00e+0
+  transp meas=2.90e-1 cert=2.90e-1
+  gates G1(sampled)      split=true drop=false transp=false
+  gates G2(cert budget) split=true drop=false transp=false; G2x50 split=true drop=false transp=false
+  gates G3(monotone)   split=false drop=false transp=false; G3(2x slack) split=true drop=false transp=false
+mlp        cases=15 elems=288 unbounded=0
+  origin |o32-o64| worst=2.31e-6  certified e_o worst=2.03e-5
+  split  meas=3.81e-6 cert=4.03e-5 semDiff=3.55e-15 tightness(meas/cert) mean=0.0134 max(e_c/e_o)=1.22 elems(e_c>e_o)=182
+  drop   meas=1.61e+1 cert=1.61e+1
+  transp meas=6.05e+0 cert=6.05e+0
+  gates G1(sampled)      split=true drop=false transp=false
+  gates G2(cert budget) split=true drop=false transp=false; G2x50 split=true drop=false transp=false
+  gates G3(monotone)   split=false drop=false transp=false; G3(2x slack) split=true drop=false transp=false
+conv2d     cases=15 elems=4464 unbounded=0
+  origin |o32-o64| worst=9.78e-6  certified e_o worst=5.68e-5
+  split  meas=0.00e+0 cert=1.14e-4 semDiff=0.00e+0 tightness(meas/cert) mean=0.0000 max(e_c/e_o)=1.00 elems(e_c>e_o)=0
+  drop   meas=0.00e+0 cert=1.14e-4
+  transp meas=1.37e+1 cert=1.37e+1
+  gates G1(sampled)      split=true drop=true transp=false
+  gates G2(cert budget) split=false drop=false transp=false; G2x50 split=true drop=true transp=false
+  gates G3(monotone)   split=true drop=true transp=false; G3(2x slack) split=true drop=true transp=false
+
+Soundness: 23648 assertions, 0 violations (0 expected)

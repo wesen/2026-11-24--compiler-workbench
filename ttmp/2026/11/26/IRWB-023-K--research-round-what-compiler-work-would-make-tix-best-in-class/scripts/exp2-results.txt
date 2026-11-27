@@ -1,0 +1,27 @@
+runtime inputs: exp_in.f64 ln_beta.f32 ln_eps.f32 ln_gamma.f32 lns_beta.f32 lns_eps.f32 lns_gamma.f32 lns_x.f32 log_in.f64 mm_a.f32 mm_b.f32 mms_a.f32 mms_b.f32 sm_x.f32 sms_x.f32 tanh_in.f64
+remote: host=manuel@bling compiled=false compileMs=2 runMs=332 exit=0
+mm_a.f32: 1048576
+mm_b.f32: 1048576
+sm_x.f32: 16777216
+exp_in.f64: 8388608
+TIMING mm512 naive_ms=0.2164 tiled_ms=0.1949 tiled4_ms=0.1047 fma_ms=0.1952 f64_ms=1.6038
+CHECK mm512 tiled_vs_naive_words_diff=0 fma_vs_tiled_words_diff=222332 (of 262144)
+CHECK mm512 tiled4_vs_tiled_words_diff=0
+TIMING sm4096x1024 fused_ms=0.3780
+TIMING ln4096x1024 fused_ms=0.1311
+DONE
+matmul 17x23x19:
+  tiled-GPU vs origin f32 meaning: BIT-IDENTICAL (NaN-class)
+  tiled-GPU-f64 vs origin f64 meaning: BIT-IDENTICAL (NaN-class)
+softmax 8x100:
+  fused-GPU vs split-sum IR f32 meaning: BIT-IDENTICAL (NaN-class)
+  fused-GPU vs origin IR f32 meaning (reassociation cost): 580 mismatches of 800 first at [0] gpu=0.004328959621489048 node=0.004328960087150335
+  fused-GPU vs origin f64: worst abs diff 2.99e-9
+layernorm 5x37:
+  fused-GPU vs split-sum IR f32 meaning: BIT-IDENTICAL (NaN-class)
+  fused-GPU vs origin IR f32 meaning (reassociation cost): 105 mismatches of 185 first at [1] gpu=1.4188439846038818 node=1.4188441038131714
+  fused-GPU vs origin f64: worst abs diff 2.47e-7
+exp: 107636 word mismatches of 1048576 (0 both-NaN); first at x=-745.1322844167412 cuda=0 node=5e-324
+tanh: 60934 word mismatches of 1048576 (0 both-NaN); first at x=-6.11617671601936 cuda=-0.999990259431961 node=-0.9999902594319608
+log: 16921 word mismatches of 524288 (0 both-NaN); first at x=0.5021648406982422 cuda=-0.6888268452665703 node=-0.6888268452665705
+EXPERIMENT 2 COMPLETE
