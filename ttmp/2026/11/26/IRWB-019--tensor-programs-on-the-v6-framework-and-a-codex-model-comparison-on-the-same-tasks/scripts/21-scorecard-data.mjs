@@ -82,6 +82,8 @@ write('references.json', [
 
 // the creativity round's cells
 const r2 = read('r2-config-key.json');
-write('r2-cells.json', Object.entries(r2).map(([item, c]) => ({ item, ...cell(c), status: 'running', score: null })),
-  'results/r2-config-key.json; status set by the coordinator');
+const st = fs.existsSync(path.join(RES, 'r2-status.json')) ? read('r2-status.json') : {};
+write('r2-cells.json', Object.entries(r2).map(([item, c]) => ({ item, ...cell(c), status: st[item]?.status ?? 'running',
+  minutes: st[item]?.minutes ?? null, design_words: st[item]?.design_words ?? null })),
+  'results/r2-config-key.json and results/r2-status.json (minutes: first task to completion; design_words: the design document)');
 console.log('wrote', fs.readdirSync(out).join(' '));

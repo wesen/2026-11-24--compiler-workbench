@@ -700,3 +700,31 @@ I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineerin
   - **A bug, found by the type's check** ("not_a_number" ×12 in the implementation chart): the Pi cells' model ids are `openai-codex/gpt-6.2-…`, so my lookup table mapped them to nothing, and 12 rows had no model.
     - The fix: match the model by name, and throw on any unmapped cell.
     - My earlier per-model answer to the user was unaffected, because it stripped the prefix with a regex.
+
+## Step 28: round R2 finished; the blind pack; two cross-family judges
+
+- **All four cells finished well inside their three hours.** Each stayed inside its ticket and left a clean worktree:
+
+  | cell | minutes | design words | commits | other measures |
+  |---|---|---|---|---|
+  | A (Codex · Sol · high) | 23 | 6,974 | 3 | 64 commands, 5 web calls, 63K output tokens |
+  | B (Codex · Astra · high) | 31 | 6,968 | 5 | 132 commands, 11 web calls, 72K output tokens |
+  | C (Opus) | 62 | 10,392 | 19 | 553K subagent tokens, 161 tool uses |
+  | D (Fable) | 16 | 5,583 | 6 | 185K subagent tokens, 24 tool uses |
+
+  Claude usage in IRWB-019 is now 4.18M subagent tokens in total (`results/claude-usage.json`).
+- **Convergence, and a caveat about my brief.** A, B and D all centred on running the exact f32 order in parallel, and C on exact-meaning scheduling. My brief's facts section led with the bit-exact result, so the convergence may be partly anchoring. Report it with the scores.
+- **Claims to verify after judging,** from the final messages only, not the designs. They are load-bearing:
+  - D: a mutant `mlp` that sums over the wrong index is accepted by the merged stage-1 gate, because the case generator sets some shape symbols equal.
+  - C: the stage-1 gate accepts an all-zero output at small scale, and the current sample shapes exercise no tile; exhaustively verified fast `exp` and `tanh`; 3.76× on the corpus, bit-identical.
+  - B: exact attention 1.046 → 0.757 ms; certified exponentials over every nonpositive f32 input.
+  - A: exact tiling 3.80× at 512³; a dyadic guard for INT8 contraction.
+- **The blind pack** (`scripts/23-pack-r2.mjs`, seed 13: doc-A=D, doc-B=A, doc-C=C, doc-D=B; key in `results/blind-key-r2.json`). Each whole ticket is copied, with ticket ids, branch and worktree names and model, vendor and harness names replaced.
+  - The first run leaked: the Claude cells' diaries quote my launch wrapper and its scratchpad path. Both are now replaced, and the leak scan reports nothing.
+  - The default seed's shuffle was the identity, so I switched to seed 13.
+- **The judges,** given the same prompt (`scratchpad/judge-r2-out/prompt.md`) and the rubric `scripts/22-judge-rubric-r2.md`, which I wrote before reading any design:
+  - a Claude subagent (Opus, default effort);
+  - Codex · Sol · high, read-only, with live web search.
+  
+  Both may read the r2-base worktree to check claims about the code, and neither runs GPU jobs.
+- **Scorecard:** the R2 cells show as done, with minutes and design words. The check passes.

@@ -168,8 +168,8 @@
   </section>
 
   <section class="sc-section" id="sc-r2">
-    <h2>The creativity round (running)</h2>
-    <p>Four cells answer one open question: what compiler work would make Tix best in class? Each may search the web and run experiments on the GB10, and writes a ranked design document and a diary. Codex runs Sol and Astra at high effort; Opus and Fable run as Claude Code subagents at their default effort. All four get the same brief and the same two standing rules. Two judges from different model families will score the designs blind on ingenuity, creativity, scientific depth, evidence, correctness and padding. Their scores appear here when the round is done.</p>
+    <h2>The creativity round</h2>
+    <p>Four cells answer one open question: what compiler work would make Tix best in class? Each may search the web and run experiments on the GB10, and writes a ranked design document and a diary. Codex runs Sol and Astra at high effort; Opus and Fable run as Claude Code subagents at their default effort. All four get the same brief and the same two standing rules. All four sessions have finished, well inside their three hours. Two judges from different model families are scoring the designs blind on ingenuity, creativity, scientific depth, evidence, correctness and padding; their scores appear here when judging is done.</p>
     <div class="sc-table-wrap">
       <table data-source="r2_cells" data-row-key="item" aria-label="Creativity round cells">
         <thead>
@@ -179,6 +179,8 @@
             <th data-field="harness">Harness</th>
             <th data-field="effort">Effort</th>
             <th data-field="status">Status</th>
+            <th data-field="minutes" class="num">Minutes</th>
+            <th data-field="design_words" class="num">Design words</th>
           </tr>
         </thead>
         <tbody data-draw="r2-rows"></tbody>
@@ -403,6 +405,8 @@ dash.draw('r2-rows', (tbody) => {
     { get: (r) => r.harness },
     { get: (r) => r.effort },
     { get: (r) => pill(r.status, r.status === 'done' ? 'sc-ok' : 'sc-warn') },
+    { num: 1, get: (r) => (r.minutes == null ? '—' : d3.format('.0f')(+r.minutes)) },
+    { num: 1, get: (r) => (r.design_words == null ? '—' : d3.format(',')(+r.design_words)) },
   ]);
 });
 </script>
