@@ -65,7 +65,7 @@ test('at shapes the rule tiles, and at tails, short and single reductions, the r
     [257, 129, 1],
     [97, 1030, 2],
     [1, 700, 33],
-    [640, 640, 640],
+    [200, 130, 300],
   ]) {
     const inputs = { a: tensor([m, k]), b: tensor([k, n]) };
     const got = await runTixCuda(matmul, 'mm', inputs);
