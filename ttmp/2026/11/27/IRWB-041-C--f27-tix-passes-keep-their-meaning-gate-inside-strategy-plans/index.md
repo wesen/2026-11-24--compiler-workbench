@@ -21,7 +21,17 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+F27 of the IRWB-039 framework refactor: a Tix pass's meaning gate now survives a strategy plan. Each Tix pass
+declares the relation its output has to its program's meaning (`inline` exact, `split-sum` within tolerance);
+`meaningGateContract` turns the gate into an `ensures` contract; `tixAlgorithm(pass, { origin })` exports the pass as
+a strategy algorithm that carries it. `optimizeTix` uses the declared relation and stays synchronous.
+
+- Diary: `diary/01-diary-f27-tix-meaning-gate-in-strategy-plans.md`
+- Report: `reference/01-report-f27-tix-meaning-gate-in-strategy-plans.md`
+- Probe: `scripts/01-probe-tix-gate-in-plans.mjs`
+
+Result: the F27 test passes without its `todo`, the IRWB-039 baselines check prints `no differences`, and the
+failed suites hold only other steps' `todo` tests.
 
 ## Key Links
 
