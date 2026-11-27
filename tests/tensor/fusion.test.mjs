@@ -339,12 +339,12 @@ test('a member is written over the row it is computed from when nothing reads th
 });
 
 test('the gate is a host condition on the grid, the longest row and the lanes of heavy members', () => {
-  assert.deepEqual(gate, { fullRow: 32, smallGrid: 2048, heavyLanes: [19, 24] });
-  // softmax has no heavy member: rows of a warp or more, or few rows
+  assert.deepEqual(gate, { fullRow: 96, smallGrid: 1024, heavyLanes: [19, 24] });
+  // softmax has no heavy member: long rows, or few rows
   const softmax = cudaSource(corpus('softmax'), 'softmax');
   assert.ok(
     softmax.includes(
-      'const bool fused_k0 = gate_mode ? gate_mode == 1 : (longest_k0 >= 32 || grid_k0 <= 2048);',
+      'const bool fused_k0 = gate_mode ? gate_mode == 1 : (longest_k0 >= 96 || grid_k0 <= 1024);',
     ),
   );
   assert.match(

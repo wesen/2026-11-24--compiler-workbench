@@ -120,17 +120,19 @@ function work(e: Expr): number {
 
 // The gate (IRWB-030-E): whether a block-mode group runs fused at launch, as a C++ condition over values the host
 // computes. Block mode is slower than stage 2 in two measured regimes (the report has the tables):
-//  - Many short rows. A block costs 1 to 3 ns of GPU time whatever its row holds (scripts 05 and 10: softmax and a
-//    row sum, 4M, 256K and 16K elements). With rows of 32 or more (a full warp) fused was faster in every
-//    measurement (at most 0.97 of stage 2); with 16 to 28 it was up to 1.9 times slower once there were 16,384
-//    rows. With at most 2,048 rows it was faster whatever their length (at most 0.92; one launch replaces
-//    several); at 4,096 rows of 4 it was slower (1.02 and 1.30).
+//  - Many short rows. A block has a fixed cost of 1 to 3 ns of GPU time, more with staged terms, whatever its
+//    row holds, and stage 2 is cheap per element, most of all when its tensors fit the 24 MiB L2 (scripts 05,
+//    10, 18 and 19: softmax, softmax with exp inside the sum, a row sum and a row sum of x / 3). With rows of
+//    96 or more, fused was at most 0.97 of stage 2 in every measurement. With 64 it lost on the cheapest
+//    program at 8,192 to 32,768 rows (1.00 to 1.14), with 48 up to 1.57, with 4 up to 8.4. With at most 1,024
+//    rows it was faster whatever their length (at most 0.73; one launch replaces several); at 2,048 rows of 4
+//    it lost on one program (1.05 and 1.12 in two sessions).
 //  - A heavy member (the plan's `heavy`) with few lanes at work. The lanes are the blocks resident on one SM
 //    times the threads that have an element of that member. With 19/24 of the SM's threads or more, fused was
 //    faster (attention with the division inside at 19/24: 0.76 of stage 2; narrow-div at 20/24 and 24/24:
 //    0.74 to 0.86, scripts 11 and 12). With 46% or less it was slower in six of seven measurements (up to 1.7
 //    times). 19/24 is the lowest measured occupancy at which nothing lost; between is not measured.
-export const gate = { fullRow: 32, smallGrid: 2048, heavyLanes: [19, 24] };
+export const gate = { fullRow: 96, smallGrid: 1024, heavyLanes: [19, 24] };
 export function gateRule(v: { grid: string; longest: string; lanes: string[]; slots: string }): string {
   const rows = `(${v.longest} >= ${gate.fullRow} || ${v.grid} <= ${gate.smallGrid})`;
   const [n, d] = gate.heavyLanes;

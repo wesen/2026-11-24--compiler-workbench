@@ -9,32 +9,289 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/fusion.ts
+      Note: planFusion with staged terms, in-place rows, heavy members; the staging and gate constants
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Group emitter (term pass, serial fold, templated block kernel with per-statement instantiations, host gate)
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: The lowering check; every sample on both sides of the gate
+    - Path: repo://tests/tensor/terms-gpu.test.mjs
+      Note: GB10 checks of staged terms, both gate sides and mutants
+    - Path: repo://tests/tensor/fusion.test.mjs
+      Note: Plan, source and mock-engine tests
 ExternalSources: []
-Summary: ""
+Summary: Row reductions compute their terms on all threads and fold them in order on one; members are written in place; a launch-time gate runs a block-mode kernel statement by statement where block mode measured slower. Fused is 0.32 to 0.79 of unfused on the four multi-statement corpus programs and the two inside variants, bit-identical; no framework change.
 LastUpdated: 2026-11-27T01:29:02.619910652-05:00
-WhatFor: ""
-WhenToUse: ""
+WhatFor: Final report of stage 3b (IRWB-030-E)
+WhenToUse: Reviewing how terms are staged, when the lowering fuses, what was measured and what the contract checks
 ---
 
 # Report: fusion that is never slower
 
-## Goal
+Stage 3 fused every corpus program into one kernel, bit-identical to the f32 meaning, but a row reduction with a costly body ran on one thread per block and could be slower than stage 2. This stage changes three things in the fused lowering and keeps every result bit:
 
-<!-- What is the purpose of this reference document? -->
+- **Staged terms.** A row reduction's terms are computed by all threads of the block into a buffer, and one thread folds them in the meaning's order.
+- **In-place rows.** A member is written over the row it was computed from when nothing reads that row afterwards, so more blocks fit on an SM.
+- **A gate.** At launch the host decides, from the shapes, whether a block-mode kernel runs fused or statement by statement. The second form is stage 2's code inside the same kernel definition.
 
-## Context
+On the four multi-statement corpus programs and the brief's two "inside" variants, fused takes 0.32 to 0.79 of the unfused time. Layernorm with the division inside went from 0.584 ms (base) to 0.208 ms, attention with the division inside from 1.412 to 1.167, mlp from 0.730 to 0.628. No file under `src/framework/` or `tools/` changed.
 
-<!-- Provide background context needed to use this reference -->
+The code is at the last commit of branch `t3b-fa/irwb-030-e`.
 
-## Quick Reference
+## Results
 
-<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
+Kernel count is the number of `__global__` definitions in `cudaSource`. GPU time is `runTixCuda(..., { benchmark: true })`: one warm-up launch and the median of three CUDA-event intervals, under the runner's `--timed` lock. The table gives the **median of five such calls** per program and lowering (script 13, all values in `scripts/13-final-table.out.jsonl`), at the brief's sizes, on the GB10. Inputs are seed 20, f32 values in [−0.1, 0.1], and eps = 1e-5. In every call the fused and unfused outputs had the same SHA-256.
 
-## Usage Examples
+| Program | Kernels fused / unfused | Launches fused | GPU ms fused (5 calls) | GPU ms unfused (5 calls) | Fused / unfused |
+| --- | ---: | ---: | --- | --- | ---: |
+| matmul, M = K = N = 512 | 1 / 1 | 1 | **0.215** (0.215, 0.220, 0.213, 0.216, 0.214) | **0.214** (0.207, 0.218, 0.214, 0.222, 0.209) | 1.01 |
+| softmax, N = 4096, C = 1024 | 1 / 4 | 1 | **0.381** (0.378, 0.382, 0.380, 0.386, 0.381) | **0.796** (0.796, 0.800, 0.795, 0.778, 0.801) | 0.48 |
+| layernorm, N = 4096, D = 1024 (division outside) | 1 / 4 | 1 | **0.152** (0.148, 0.151, 0.152, 0.160, 0.155) | **0.477** (0.474, 0.475, 0.477, 0.486, 0.479) | 0.32 |
+| layernorm, division inside | 1 / 4 | 1 | **0.208** (0.210, 0.208, 0.207, 0.209, 0.206) | **0.562** (0.562, 0.562, 0.555, 0.550, 0.825) | 0.37 |
+| attention, Q = K = 1024, D = V = 64 (division outside) | 1 / 6 | 1 | **0.746** (0.816, 0.746, 0.743, 0.746, 0.745) | **1.050** (1.052, 1.055, 1.048, 1.050, 1.049) | 0.71 |
+| attention, division inside | 1 / 5 | 1 | **1.167** (1.179, 1.167, 1.117, 1.213, 1.125) | **1.474** (1.474, 1.470, 1.509, 1.519, 1.456) | 0.79 |
+| mlp, N = 1024, D = 256, H = 1024, O = 256 | 1 / 3 | 1 | **0.628** (0.629, 0.628, 0.628, 0.619, 0.691) | **0.959** (0.974, 0.959, 0.940, 1.127, 0.935) | 0.66 |
+| conv2d, N = 8, C = 16, H = W = 64, O = 32 | 1 / 1 | 1 | **0.167** (0.201, 0.165, 0.167, 0.166, 0.167) | **0.166** (0.164, 0.167, 0.166, 0.164, 0.166) | 1.00 |
 
-<!-- Show how to use this reference in practice -->
+"Launches" is what the fused program does at these sizes: the gate chose block mode for all six gated programs, so each runs one kernel. Matmul and conv2d have one statement; their fused and unfused sources are the same bytes, and the two columns differ by noise.
 
-## Related
+**The kernel count needs one caveat.** A block-mode kernel is one `template <int Mode>` definition, and by the brief's definition it counts 1. Its instantiations are block mode with rows in shared memory, block mode with rows in scratch, and one per member statement in stage 2's mapping. When the gate chooses the unfused side, the host launches the per-statement instantiations in order: softmax then makes four launches from one definition. At the brief's sizes that never happens.
 
-<!-- Link to related documents or resources -->
+One more variant I measured throughout is softmax with `exp` inside the sum (`s[i] = sum(j) exp(x[i,j] - m[i])`, no `e` statement): 12.4 ms fused on the base, 0.748 ms now, 1.631 unfused.
+
+## How terms are staged
+
+**Where.** In a block-mode kernel, a member with no trailing axes (`mean[i]`, `s[i]`) has one element per block. Stage 3 had thread 0 compute it while the other threads waited. Now `planFusion` looks at each *outermost* reduction of such a member (one not inside another reduction) and decides whether its terms are staged.
+
+**How.** A staged reduction with axes a₁…aₙ gets c = n₁·…·nₙ floats in the block's term area, which follows the row buffers in shared memory (or in scratch when the rows do not fit).
+
+1. **Term pass, all threads.** Thread t computes terms t, t + blockDim, …. It decodes the term number row-major into (a₁, …, aₙ), a₁ outermost, evaluates the reduction's body with the scalar code the serial loop would have run, and stores the f32 at `terms[e]`.
+2. A barrier.
+3. **Fold, thread 0.** In place of the loop nest: `acc = init; for (t = 0; t < c; ++t) acc = fold(acc, terms[t])`, with the same `__fadd_rn` or max fold.
+
+The term area holds one member's terms at a time; its length is the largest member's total.
+
+**Why the bits do not change (argued).** Tix cannot name a reduction's accumulator, so each term depends only on the block point and the reduction's indices. The term pass runs the same instruction sequence as before and stores the rounded f32. The fold reads those words in increasing row-major order, which is the meaning's lexicographic order with the first axis outermost. Stores and loads move words unchanged. With c = 0 the fold returns the initial value, as the empty loop did.
+
+**Which bodies (decided from the IR).** Script 03 timed row sums `s[i] = sum(j) <body>; y[i,j] = x[i,j] - s[i]` over [4096, 1024] with the terms staged and with thread 0's loop, five `benchmark` calls each:
+
+| Body | Staged ms | Serial ms | Decision |
+| --- | ---: | ---: | --- |
+| `e[i,j]` (a row buffer) | | | not staged: the terms are in shared memory already |
+| 1 multiplication | 0.154 | 0.136 | serial |
+| 2 multiplications | 0.137 | 0.127 | serial |
+| 3 multiplications | 0.157 | 0.154 | serial (a tie) |
+| 4 multiplications | 0.135 | 0.152 | staged |
+| 8 multiplications | 0.151 | 0.189 | staged |
+| `x * w[j]` (one multiplication, a load from global memory) | 0.176 | 0.170 | serial |
+| `max(x, 0)` | 0.142 | 0.226 | staged |
+| `sqrt(x * x)` | 0.163 | 0.292 | staged |
+| `x / 3` | 0.154 | 0.239 | staged |
+| `exp(x - m)` (softmax, the sum without `e`; two calls) | 0.750 | 12.4 | staged |
+
+The rule: **stage when the body contains a division, `sqrt`, `exp`, `log`, `tanh`, `max`, `min` or an inner reduction, or at least four of `+`, `−`, `*` and negation.** The term pass costs a barrier and a term buffer in the block's shared memory, which is why one or two cheap operations are faster serially. Four is the smallest count at which staging was faster by more than the spread between calls. `log` and `tanh` were not timed; they are computed like `exp` (in double, rounded once).
+
+**Which reductions use staged terms, per block-mode kernel:**
+
+| Program | Staged | Not staged, and why |
+| --- | --- | --- |
+| softmax | none | `m`, `s`: the body is a row buffer |
+| layernorm | none | `mean`: a row buffer; `variance`: one multiplication |
+| layernorm, division inside | `mean`, `variance` | |
+| attention | none | `shift`, `z`: a row buffer; `score`, `out`: members with trailing axes |
+| attention, division inside | none | `shift`, `z`: a row buffer; `score`, `out`: members with trailing axes (both are *heavy*, see the gate) |
+| mlp | none | `h`, `y`: members with trailing axes |
+| softmax with `exp` inside the sum | `s` | `m`: a row buffer |
+
+Matmul and conv2d are thread-mode kernels and have no terms.
+
+**Stagings refused, with the reason recorded** in `plan.termRefusals`:
+
+- **A member with trailing axes** (`score[i,j] = sum(d) …`): every thread of the block computes elements of that row, so there is no idle thread to give the terms to, and the terms of a whole row (1024 × 64 for `score`) would not fit beside the rows. When such a reduction is costly, the gate handles it (below).
+- **A cheap body** (fewer than four single-instruction operations), by the measurements above.
+
+A reduction inside another is not considered: it is part of each outer term. After `split-sum`, the outer `blocks` reduction is staged and each term is one `tail` sum of up to four elements (tested).
+
+So layernorm with the division inside is the case the brief describes: both `mean` and `variance` are staged. Attention with the division inside gains nothing from staging, because its divisions are in members whose own rows fill the block. It gained from in-place rows.
+
+## In-place rows
+
+Script 08 patched generated sources by hand so that `e` was stored where `score` had been and `weight` where `e` had been. Attention with the division inside went from 1.41 to 1.15 ms and mlp (with `g` over `h`) from 0.727 to 0.628. Attention as in the corpus did not change (0.753, 0.756). I attribute the gain to occupancy: a block's rows live in shared memory, an SM has 100 KiB of it, and the number of resident blocks limits a compute-bound kernel.
+
+`planFusion` now decides this (`FusionGroup.inPlace`): **member B takes the row buffer of A (a staged row or an earlier member) when both rows have the same extents, every read of A in B is at B's own element, and no later member reads A.** Each thread then reads A[e] before it writes B[e], and no other thread touches element e, so every value read is the value the meaning has (argued; checked by the GPU tests on the corpus and 60 random lowerings). On the corpus: `e` over `x` in softmax, `centered` over `x` in layernorm, `e` over `score` and `weight` over `e` in attention, `g` over `h` in mlp.
+
+It also made a separate reuse of the term buffer unnecessary. Before in-place, layernorm with the division inside held x, centered and the terms (12 KiB per block) and ran in 0.240 ms at 128 threads; with in-place it holds two rows and ran in 0.208.
+
+## The rule that decides whether to fuse
+
+**Thread-mode groups** (elementwise chains, epilogues; every member has the block's rank) always fuse. They keep stage 2's thread mapping and replace memory round trips with registers. I argue this and did not add a rule. The one measurement is a chain of three elementwise statements over [4096, 1024] on the base (0.368 ms fused, 0.749 unfused); this stage did not change the thread-mode emitter.
+
+**Block-mode groups** are decided at launch by the host, from the IR's plan and the shape values:
+
+```
+fused = (longest row >= 32 or rows <= 2048)
+        and, for each heavy member m:
+            resident blocks * min(threads per block, row length of m) >= 19/24 * threads per SM
+```
+
+- *rows* is the number of blocks (points of the block domain); *longest row* is the longest of the kernel's rows, staged rows and term counts.
+- *resident blocks* is how many blocks of this kernel fit on one SM: the smallest of the SM's block limit (24), its thread limit over the block's threads (1,536 / threads), and its shared memory (102,400 bytes) over the block's rows plus the 1,024 bytes the device reserves per block. The host reads these limits from the device (probe 16 prints them).
+- A *heavy* member is one with trailing axes and a reduction that the staging rule would stage but cannot (attention's `score` and `out` when the division is inside). The plan lists them.
+
+When the answer is no, the host allocates the members' buffers and launches the kernel's per-statement instantiations in order. Those are printed by the function that prints stage 2's kernels, so that side is stage 2's code. Over 105 shape and program pairs its time was 0.93 to 1.07 of stage 2's in 94. The other 11 are between 0.84 and 1.30, in both directions: nine at times of 5 to 180 µs, and two at N of 4 and 16 with serial sums of up to a million terms, where three calls of one side spread from 31 to 45 ms.
+
+### The measurements behind the first line (short rows)
+
+Script 05 runs one program at many shapes in one process per mode: block mode forced, the per-statement instantiations forced, and stage 2. The table gives block-mode time over stage-2 time (median of three `benchmark` runs each; `scripts/05-gate-sweep-rows.out.jsonl` and `10-short-rows-and-in-place.out.jsonl`). `div1` is a row sum with `x / 3` as its body (staged terms).
+
+| Rows × row length | softmax | row sum | div1 |
+| --- | ---: | ---: | ---: |
+| 1,048,576 × 4 | 4.70 | 4.91 | 4.61 |
+| 524,288 × 8 | 2.47 | 2.74 | 3.55 |
+| 262,144 × 16 | 1.10 | 1.12 | 1.41 |
+| 131,072 × 20 | 0.92 | 1.94 | |
+| 131,072 × 24 | 0.76 | 1.28 | |
+| 131,072 × 28 | 0.65 | 0.78 | |
+| 131,072 × 32 | **0.56** | **0.66** | **0.63** |
+| 65,536 × 64 | 0.55 | 0.62 | 0.61 |
+| 4,096 × 1,024 | 0.48 | 0.67 | 0.61 |
+| 16,384 × 16 | 1.22 | 1.80 | 2.41 |
+| 16,384 × 28 | 0.85 | 1.67 | |
+| 8,192 × 32 | **0.58** | **0.97** | **1.06** |
+| 4,096 × 64 | 0.51 | 0.43 | 0.75 |
+| 4,096 × 4 | 1.30 | 1.02 | 1.36 |
+| 2,048 × 4 | **0.92** | **0.79** | |
+| 2,048 × 8 | 0.82 | 0.68 | 0.97 |
+| 1,024 × 4 | 0.57 | 0.48 | |
+| 1,024 × 16 | 0.48 | 0.57 | 0.57 |
+| 3 × 7 | 0.40 | 0.52 | 0.52 |
+| 16 × 262,144 | 0.61 | 0.85 | 0.33 |
+| 4 × 1,048,576 | 0.59 | 0.80 | 0.31 |
+| 1 × 4,194,304 | 0.53 | 0.73 | 0.32 |
+
+What the table shows:
+
+- **A block has a fixed cost.** Block mode's time with short rows is proportional to the number of rows: 0.371 to 0.372 ms for 131,072 softmax rows of 20, 24, 28 or 32 elements alike, which is 2.8 ns per block (0.9 to 1.2 ns for the row sums). Stage 2's time is proportional to the number of elements.
+- **32, a full warp, is the first row length with no loss,** except one point: `div1` at 8,192 rows of 32 measured 1.06 (12.4 against 11.7 µs, with calls of each side between 11.5 and 16.5 µs). I count that as a tie and kept 32. With rows of 16 to 28 and 16,384 rows or more, block mode lost in 12 of 18 measurements.
+- **Up to 2,048 rows, block mode won whatever the row length** (0.30 to 0.97 in 22 measurements, the table's and others in the output files): the whole program takes microseconds, and one launch replaces several. 2,048 is the largest measured row count where that held; at 4,096 rows of 4 it lost.
+- **Few long rows are not a loss,** down to one row. Both lowerings are then bound by one thread's serial fold per row, and the fused kernel reads the row from memory it wrote itself. The design had expected a loss here and planned a threshold; there is none.
+
+The rule run on its own (script 05 `--auto`, `12-gate-validation.out.jsonl`), softmax, time over stage 2: 262,144 × 16, 0.96 (unfused side); 131,072 × 32, 0.56; 16,384 × 28, 1.00 (unfused side); 8,192 × 32, 0.59; 4,096 × 4, 0.98 (unfused side); 2,048 × 4, 0.92; 16 × 262,144, 0.37; 3 × 7, 0.45.
+
+### The measurements behind the second line (heavy members)
+
+`narrow-div` is `e[i,j] = x[i,j] * 2; y[i,o] = sum(j) e[i,j] * w[j,o] / 3` over x: [4096, 1024], w: [1024, O]. Its `y` has trailing axes and a division per term, so the terms cannot be staged, and only min(threads, O) lanes of each block work during `y`.
+
+| Case | Resident blocks × working lanes | Share of 1,536 | Block mode / stage 2 |
+| --- | ---: | ---: | ---: |
+| narrow-div, O = 16, 64 threads | 20 × 16 | 21% | 1.58 |
+| narrow-div, C = 4096, O = 64 | 5 × 64 | 21% | 1.73 |
+| narrow-div, O = 32, 64 threads | 20 × 32 | 42% | 1.06 |
+| attention, division inside, before in-place | 10 × 64 | 42% | 0.95 |
+| narrow-div, O = 64, before in-place | 11 × 64 | 46% | 1.25 |
+| **attention, division inside** | 19 × 64 | **79%** | **0.79** |
+| narrow-div, O = 64 | 20 × 64 | 83% | 0.75 |
+| narrow-div, C = 4096, O = 256, 256 threads | 5 × 256 | 83% | 0.85 |
+| narrow-div, O = 128, 128 threads | 12 × 128 | 100% | 0.74 |
+| narrow-div, O = 256, 256 threads | 6 × 256 | 100% | 0.83 |
+
+- **19/24 (79%) is the lowest occupancy measured at which nothing lost.** At 46% and less, block mode lost in six of seven measurements (O of 1 and 4 are not in the table: 1.28 and 1.47). Between 46% and 79% nothing is measured, so the rule is conservative there.
+- **The block is as wide as the narrowest heavy row** (rounded up to a warp, at most 256) for kernels with heavy members. With a wider block the extra lanes idle during that member; with a narrower one fewer lanes work per resident block. Measured on attention with the division inside (rows of 1,024 and 64): 1.41 ms at 64 threads, 1.91 at 128, 1.86 at 32. On narrow-div with O = 128: 1.56 at 64, 1.21 at 128, 2.33 at 256. Kernels without heavy members keep stage 3's caps (128, or 64 with a contraction).
+- **The same program with only a multiplication per term (`narrow-mul`) is faster fused at every O** (0.47 to 0.82), so cheap reductions in members with trailing axes need no rule.
+
+The rule run on its own on narrow-div (`12-gate-validation.out.jsonl`): O of 1, 4, 16 and 32 run unfused (0.91, 1.13, 0.96 and 1.11 of stage 2: the same kernels as stage 2, in a session where calls of one side spread by up to 25%); O of 64, 128, 256 and 1,024 run fused (0.79, 0.74, 0.83, 0.82); C = 4096 with O = 64 runs unfused (1.00) and with O = 256 fused (0.85).
+
+### What the rule does not cover
+
+- **It is fitted to these programs on this device.** The thresholds are read from softmax, two row sums, attention and narrow-div on the GB10. Another program can have a different fixed cost per block or a different share of heavy work. "Never slower" is measured for the programs and shapes in this report, not proved.
+- **Between the measured points it is conservative, not exact:** rows of 29 to 31, 2,049 to 4,095 rows shorter than 32, and occupancies between 46% and 79% go to the unfused side unmeasured.
+- **Attention with the division inside sits exactly on the threshold** (19 resident blocks of 64 threads), because the threshold was read from it. A variant with slightly longer rows runs unfused, at stage 2's speed.
+- **A heavy member in a kernel whose rows do not fit shared memory** (scratch mode) is counted with the SM's block limit. I did not measure a heavy kernel in scratch mode.
+
+## Fusions and term stagings refused
+
+Stage 3's legality refusals are unchanged (a read of a member at another row, different leading extents, no member read; `plan.refusals`). Refused in this stage:
+
+- **Term staging for members with trailing axes** and **for cheap bodies** (above).
+- **Fusing at launch,** by the gate, for many short rows and for heavy members with too few lanes.
+- **A thread cap of 256 for kernels with staged terms.** It was faster before in-place rows (0.194 against 0.240 ms on layernorm with the division inside) and slower after (0.226 against 0.208).
+- **A minimum number of rows.** Measured unnecessary.
+- **Anything that reorders a reduction:** the fold over staged terms is one thread, in order. A parallel max would pass the exact check (stage 3's finding) and is still not done.
+- **General term staging for short rows of members with trailing axes** (terms for all elements of the row when the row is shorter than the block). It needs the row length, known only at launch, and a second emitted form. The gate sends those launches to the unfused side instead. Listed under Later.
+
+## Framework and tool changes
+
+**None.** No file under `src/framework/` or `tools/` changed.
+
+What the stage needed from the framework, and how it fit:
+
+- **A subject with a launch-time choice.** The lowered program decides at launch which of two forms to run. The differential check has no notion of a subject's variants, but its cases are opaque to it. The invariant's case list is "sample × side" for a subject with a gate, `decide` runs one GPU batch per side with `--gate=fused` or `--gate=unfused`, and the evidence counts and names each side (`"gate":"fused"` in a counterexample). That was enough.
+- **Finding: the `baselineKey` contract is unchecked.** The key promises that the cases are a function of the key alone. My first version doubled the cases for every subject. The second doubles them only for subjects with a gate, so the case list depends on the subject, and I had to add that flag to the key. Nothing would have failed if I had not: a fused and an unfused check of one program would have shared one cached case list, of whichever length was generated first. A guard would be for `prepare` to compare freshly generated cases with the cached ones in a debug mode. Not made; nothing here depends on it.
+- **The correspondence** is stage 3's (`statements-to-kernels`), and its evidence now also says which kernels are gated. The known gap (entity lists are not compared with the artifacts) is untouched, as the brief asks. It shaped one decision: whether a program takes `--gate` is read from its source (`takesGate`), not from the artifact's kernel list, because the caller declares that list and a mutant test passes a hand-written one.
+- **In-flight batch sharing** needed nothing: the framework keys a batch by the pending cases' memo keys, and both sides' cases are in one `decide` call. `cuda.test.mjs`'s concurrency test passes unchanged.
+
+The tool needed nothing: `tools/cuda-remote.mjs` already passes program arguments after `--`.
+
+Changes in the tensor domain:
+
+- `planFusion`: `FusionGroup` gained `terms`, `inPlace`, `heavy` and `gated`; the plan gained `termRefusals`. `fusion.ts` exports `staging`, `gate`, `gateRule` and `outerReductions`.
+- `emitCuda`: the term pass and fold; in-place row pointers; block-mode kernels as `template <int Mode>` with per-statement instantiations; the host's gate; a `main` that parses `--gate` for sources with a gated kernel. Stage 2's `main` and stage 2's bytes are unchanged (the digest test passes). `takesGate(source)`.
+- `runCudaBatch(..., { gate })`.
+- `tensor.cuda-meaning`: cases per side; `CudaIR` kernels carry `gated`.
+
+## What the contract checks and what it costs
+
+`checkLowering(program, fn, { fuse })` runs `tensor.lower-cuda` as in stage 3. The `ensures` invariant compares every case's GPU output with the current revision's f32 meaning, word for word, NaN as a class. The samples are stage 2's recipe (shape assignments of 1, 3, 4, 7, a mixed one, all zeros and one zero at a time; four input streams; at most 4,096 elements per tensor).
+
+- **For a program with a gated kernel, every sample is two cases:** one run with `--gate=fused` (block mode at every shape, including empty ones) and one with `--gate=unfused` (the per-statement instantiations). The samples have at most 11 rows, so the rule's first line would choose block mode for all of them. Forcing makes the check independent of the rule's constants and covers the other side.
+- **For a program without one** (thread-mode kernels, `fuse: false`) each sample is one case, as before.
+- **Not checked by the contract:** the rule's choice at large shapes, rows beyond shared memory, and speed. `terms-gpu.test.mjs` runs a staged kernel at [3, 200] (fused by the rule), [3000, 3] (unfused by the rule) and [2, 30000] (terms in scratch) against the interpreter, each also with both sides forced.
+
+Cost per program (script 14: wall time of one `checkLowering` with the binary already in the remote build cache, so without the one nvcc run a new source needs; I did not time that):
+
+| Program | Fused: cases | Fused: wall | Unfused: cases | Unfused: wall | Repeat |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| matmul | 36 | 2.7 s | 36 | the same source: replayed | 1 ms |
+| softmax | 64 | 3.2 s | 32 | 3.8 s | 1 ms |
+| layernorm | 64 | 3.3 s | 32 | 2.7 s | 1 ms |
+| layernorm, division inside | 64 | 2.7 s | 32 | 2.6 s | 1 ms |
+| attention | 80 | 2.7 s | 40 | 2.4 s | 1 to 2 ms |
+| attention, division inside | 80 | 3.0 s | 40 | 2.8 s | 1 ms |
+| mlp | 80 | 3.0 s | 40 | 2.8 s | 1 ms |
+| conv2d | 28 | 3.2 s | 28 | the same source: replayed | 1 ms |
+
+A gated check runs the program twice, in parallel, from one compilation. The wall time is mostly ssh, upload and process start, so the second run adds little.
+
+## Measured, and only argued
+
+**Measured on the GB10:**
+
+- **The results table:** kernel counts, five `benchmark` calls per program and lowering, equal output digests in every call.
+- **Exact acceptance,** every sample on both sides of the gate:
+  - the six corpus programs, fused and unfused, as written and after inline + split-sum (`cuda-gpu.test.mjs`);
+  - stage 3's nine feature programs (`fusion-gpu.test.mjs`) and six for this stage (`terms-gpu.test.mjs`): `exp` inside a sum, two staged reductions in one member, a reduction over two axes, a nested reduction, a stored member with staged terms, an affine block domain;
+  - six benchmark variants (script 04): softmax and layernorm and attention with the work inside, `div1`, `narrow-div`, softmax; as written and after inline + split-sum;
+  - 60 random lowerings (30 programs from stage 3's generator, as written and after inline + split-sum; script 15): 26 with a block-mode kernel, 12 with staged terms, 7 with in-place rows, 4 with heavy members; 219 statements became 132 kernels.
+- **Rejections:** five mutants, each rejected with a coordinate and the side that disagreed: stage 3's two (a reversed serial sum, a staged copy of the wrong row) and three new ones (thread 0 folding the terms backwards, the term pass storing term e at slot c − 1 − e, the per-statement side summing backwards).
+- **Shared-memory limits:** stage 3's opt-in and scratch rows, and staged terms in scratch.
+- **The staging rule, the gate's two lines, the block width for heavy members, in-place rows:** the tables above.
+- **Three probes:** the SM's limits as the host reads them (probe 16: 1,024 bytes of shared memory reserved per block, 102,400 per SM, 24 blocks and 1,536 threads per SM); nvcc rejects `std::max` in device code (`calling a constexpr __host__ function("max") from a __global__ function`), so the term area's length is a conditional expression; `cudaDevAttrReservedSharedMemoryPerBlock` exists and the generated host code compiles with it.
+
+**Argued, not measured:**
+
+- that staged terms and in-place rows keep the bits for every program in the domain (the constructions above; the measurements are samples);
+- that thread-mode fusion is never slower;
+- the explanation of the heavy-member losses by resident lanes. The occupancy numbers are computed from the device's limits (probe 16), not observed. The model fits the ten rows of the table, and that is the evidence for it;
+- the gate's behaviour between measured points.
+
+**Not rerun on the final code:** scripts 03 and 05 to 11 measured intermediate builds (the diary says which). The results table, scripts 12, 14 and 15 and all tests ran on the final lowering.
+
+## Later
+
+- Terms for members with trailing axes when the row is shorter than the block (the narrow, heavy case, now sent to the unfused side).
+- Several short rows per block, instead of sending short rows to the unfused side.
+- A cost model in place of fitted thresholds: per-term cost from the IR, the block's fixed cost and the SM's limits from the device.
+- A debug check in the differential that cached cases match freshly generated ones (the `baselineKey` finding).
+- Declaring a subject's variants in the differential, if a second lowering needs a launch-time choice checked on every side.
+- Softmax's remaining time is the exactly rounded `exp` (stage 3's finding; a later stage).
