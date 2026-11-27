@@ -53,10 +53,13 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
     assert.equal(sha(cudaSource(optimized, name, { fuse: false })), digests[name + '+inline+split'], name);
   }
-  for (const name of ['matmul', 'conv2d']) {
+  for (const name of ['conv2d']) {
     const program = corpus(name);
     assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
   }
+  // IRWB-033-J: matmul's fused lowering is now a tiled gemm kernel, so it is no longer stage 2's bytes; its
+  // stage-2 bytes are pinned above by the digest
+  assert.match(cudaSource(corpus('matmul'), 'matmul'), /aS\[/);
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
 });
 
@@ -368,7 +371,7 @@ test('the gate is a host condition on the grid, the longest row and the lanes of
   );
   assert.match(
     source,
-    /resident_k0 = std::min<U>\(\{sm_blocks, sm_threads \/ threads_k0, shared_k0 \? sm_shared \/ \(row_k0 \+ sm_reserved\) : sm_blocks\}\);/,
+    /resident_k0 = std::min<U>\(\{sm_blocks, sm_threads \/ threads_k0, shared_k0 \? sm_shared \/ \(row_k0 \+ tiles_k0 \+ sm_reserved\) : sm_blocks\}\);/,
   );
   assert.equal(source.match(/\* 24 >= 19 \* sm_threads/g).length, 2);
   // the corpus attention multiplies inside and divides outside: one multiplication per term is not heavy

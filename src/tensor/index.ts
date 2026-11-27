@@ -9,7 +9,7 @@ import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { scheduleTixFn, type ScheduleStep, type ScheduleUnit } from './schedule.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -60,12 +60,24 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
 }
 
 export interface LoweringOptions {
-  /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
+  /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's lowering. */
   fuse?: boolean;
+}
+/**
+ * The lowering pipeline (IRWB-033-J): plan the trivial schedule, then the scheduling passes, each gated by the
+ * order certificate; the emitter only prints the final schedule. Exposed for tests and the report.
+ */
+export function scheduleTix(
+  program: TixProgram,
+  fn: string,
+  options?: LoweringOptions,
+): { schedule: { value: ScheduleUnit }; steps: ScheduleStep[] } {
+  return scheduleTixFn(selectFunction(program.current.value, fn), options);
 }
 function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  const { schedule } = scheduleTixFn(f, options);
+  return { f, source: emitCuda(f, schedule.value) };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {

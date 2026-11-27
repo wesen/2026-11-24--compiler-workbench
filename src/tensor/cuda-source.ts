@@ -1,11 +1,13 @@
 import {
-  gateRule,
   outerReductions,
-  unfusedPlan,
-  type FusionGroup,
-  type FusionPlan,
   type Reduce,
 } from './fusion.js';
+import {
+  contractionOf,
+  type MemberTile,
+  type ScheduleUnit,
+  type SkKernel,
+} from './schedule.js';
 import {
   plain,
   visit,
@@ -172,6 +174,8 @@ function kernelWriter(
   maxFold = 'minmax(ACC, VALUE, true)',
   /** A reduction whose terms are already in a buffer: its count and pointer (IRWB-030-E). */
   stagedTerms: (e: Reduce) => { count: string; terms: string } | undefined = () => undefined,
+  /** A reduction already computed into a register (IRWB-033-J's tiled paths): the accumulator's name. */
+  accumulator: (e: Reduce) => string | undefined = () => undefined,
 ) {
   const lines: string[] = [];
   let indent = '  ',
@@ -239,6 +243,8 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const held = accumulator(e);
+        if (held !== undefined) return held;
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         const step = (value: string) =>
           line(
@@ -345,28 +351,19 @@ __device__ static float max_nan(float a, float b) {
   return r;
 }`;
 
-// Threads per block in block mode: the shortest warp multiple covering the longest row, up to a cap chosen by
-// measurement (IRWB-029-D diary step 4, caps 64, 128 and 256 on softmax, layernorm, attention and mlp): 64 when a
-// member's reduction reads a tensor from global memory (a contraction operand: attention's k and v, mlp's w and
-// v), 128 otherwise (rows only: softmax, layernorm).
-//
-// IRWB-030-E: when a member with trailing axes carries a costly reduction (the plan's `heavy`), the block is as
-// wide as the narrowest such row, up to 256, so that every lane works in that member's phase. Measured with the
-// division inside (scripts 06 and 09): attention (rows of 1024 and 64) 1.41 ms at 64 threads, 1.91 at 128, 1.86
-// at 32; narrow-div with rows of 128: 1.56 at 64, 1.21 at 128, 2.33 at 256. 256 is the widest block that was
-// faster than the next narrower one in any measurement (layernorm with staged terms; 512 was slower).
-export const blockThreads = { rows: 128, contraction: 64, heavy: 256 };
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 
 const product = (dims: string[]) =>
   dims.length ? `(${dims.map(d => `static_cast<U>(${d})`).join(' * ')})` : 'static_cast<U>(1)';
 
-// Stage 3: one kernel for a fused group (fusion.ts). Thread mode keeps stage 2's mapping with the members'
-// values in registers; block mode runs one block per block-domain point with rows in shared memory, or in a
-// global scratch area when they do not fit.
+// Stage 3: one kernel for a fused group (the schedule IR, IRWB-033-J). Thread mode keeps stage 2's mapping with
+// the members' values in registers; block mode runs one block per block-domain point with rows in shared memory,
+// or in a global scratch area when they do not fit. Contraction members whose staged operand the lanes would read
+// uncoalesced get an operand tile (schedule.ts): the block loads the tile cooperatively and each thread folds its
+// element's chunk from shared memory, serially, in the meaning's order.
 function emitGroup(
-  group: FusionGroup,
+  group: SkKernel,
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
@@ -394,14 +391,8 @@ function emitGroup(
   const suffix = (name: string) => tensorName(name).slice(1);
   const rowBuffers = [...group.staged, ...group.buffered];
   const registers = new Map<string, string>();
+  const accIds = new Map<Reduce, string>();
   let current = members[0];
-  const operands = (e: Expr, inReduction: boolean): boolean =>
-    e.kind === 'load'
-      ? inReduction && !rowBuffers.includes(e.name)
-      : e.kind === 'op'
-        ? e.args.some(a => operands(a, inReduction))
-        : e.kind === 'reduce' && operands(e.body, true);
-  const cap = members.some(m => operands(m.expr, false)) ? blockThreads.contraction : blockThreads.rows;
   // Staged terms (fusion.ts): reduction -> the name suffix of its count and pointer.
   const termIds = new Map<Reduce, string>();
   const memberTerms = members.map(m => {
@@ -426,6 +417,7 @@ function emitGroup(
     },
     'max_nan(ACC, VALUE)',
     e => (termIds.has(e) ? { count: `c${termIds.get(e)}`, terms: `q${termIds.get(e)}` } : undefined),
+    e => accIds.get(e),
   );
   w.lines.push(`// ${kernel}: ${group.statements.join(', ')}; ${group.reasons.join('; ')}`);
   // Block mode is a template; the host picks the instantiation. Modes 0 and 1 say where the rows live, so that
@@ -511,6 +503,10 @@ function emitGroup(
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) r${s}[e] = t${s}[point * n${s} + e];`);
     }
     if (group.staged.length) w.line('__syncthreads();');
+    // The operand tiles (IRWB-033-J): after the rows (or at the shared base when the rows went to scratch).
+    const memberTiles = group.memberTiles ?? [];
+    if (memberTiles.length)
+      w.line(`float* const tiles = Shared ? base + (${row}) : shared;`);
     members.forEach((m, j) => {
       current = m;
       const s = suffix(m.name);
@@ -534,6 +530,78 @@ function emitGroup(
         w.line('}');
       });
       if (memberTerms[j].length) w.line('__syncthreads();');
+      const tile = memberTiles.find(t => t.statement === m.name);
+      if (tile) {
+        // The tiled member (IRWB-033-J): the block loads the staged operand's tile cooperatively (coalesced,
+        // masked) and each thread folds its own element's chunk from shared memory — one accumulator, the chunk
+        // loop and the in-chunk loop both increasing, so the terms come in the meaning's order (schedule.ts's
+        // order certificate). The element assignment is exactly the generic one below (e = tid + k * blockDim).
+        const found = contractionOf(m);
+        if ('refusal' in found) throw Error(`The schedule tiles ${m.name}, but ${found.refusal}`);
+        const c = found.contraction;
+        if (c.axis.id !== tile.reduction || c.row.name !== tile.row || c.staged.name !== tile.staged)
+          throw Error(`The schedule's tile for ${m.name} does not match its contraction`);
+        const R = tensors.get(c.staged.name)!;
+        const BK = tile.chunk,
+          pad = tile.pad;
+        const Kr = w.dim(c.axis.extent.dim);
+        const at = memberTiles.indexOf(tile);
+        const stridesOf = (shape: Affine[]) =>
+          shape.map((_, q) =>
+            q === shape.length - 1 ? '1' : product(shape.slice(q + 1).map(w.dim)),
+          );
+        w.line(`float* const op${s} = tiles + ${at} * (blockDim.x * ${BK + pad});`);
+        w.line(`for (U base${s} = 0; base${s} < n${s}; base${s} += blockDim.x) {`);
+        w.enter();
+        w.line(`float acc${s} = 0.0f;`);
+        w.line(`const I own${s} = base${s} + threadIdx.x;`);
+        w.line(`const bool live${s} = own${s} < n${s};`);
+        w.line(`for (I cc${s} = 0; cc${s} * ${BK} < ${Kr}; ++cc${s}) {`);
+        w.enter();
+        w.line(`const I lo${s} = cc${s} * ${BK};`);
+        w.line(`const I hi${s} = ${Kr} - lo${s} < ${BK} ? ${Kr} - lo${s} : ${BK};`);
+        w.line(`for (U x${s} = threadIdx.x; x${s} < blockDim.x * ${BK}; x${s} += blockDim.x) {`);
+        w.enter();
+        w.line(`const U el${s} = x${s} / ${BK};`);
+        w.line(`const U tk${s} = x${s} % ${BK};`);
+        w.line(`U restT${s} = base${s} + el${s};`);
+        const trailingPos = new Map(m.axes.map((a, p) => [a.id, p] as const));
+        for (let p = m.axes.length - 1; p >= depth; --p) {
+          w.line(`const I ct${s}_${p} = restT${s} % ${w.dim(m.shape[p])};`);
+          if (p > depth) w.line(`restT${s} /= ${w.dim(m.shape[p])};`);
+        }
+        const valueAt = (q: number) =>
+          q === c.stagedAt ? `lo${s} + tk${s}` : `ct${s}_${trailingPos.get(plain(c.staged.indices[q])!)}`;
+        const address = R.shape
+          .map((_, q) => (q === R.shape.length - 1 ? valueAt(q) : `(${valueAt(q)}) * ${stridesOf(R.shape)[q]}`))
+          .join(' + ');
+        w.line(
+          `op${s}[el${s} * ${BK + pad} + tk${s}] = base${s} + el${s} < n${s} && lo${s} + tk${s} < ${Kr} ? ${tensorName(R.name)}[${address}] : 0.0f;`,
+        );
+        w.leave();
+        w.line('}');
+        w.line('__syncthreads();');
+        w.line(
+          `if (live${s}) for (I t${s} = 0; t${s} < hi${s}; ++t${s}) acc${s} = __fadd_rn(acc${s}, __fmul_rn(r${suffix(tile.row)}[lo${s} + t${s}], op${s}[threadIdx.x * ${BK + pad} + t${s}]));`,
+        );
+        w.line('__syncthreads();');
+        w.leave();
+        w.line('}');
+        accIds.set(c.reduce, `acc${s}`);
+        w.line(`if (live${s}) {`);
+        w.enter();
+        w.line(`U rest${s} = own${s};`);
+        for (let p = m.axes.length - 1; p >= depth; --p) {
+          const axis = w.bind(m.axes[p].id);
+          w.line(`const I ${axis} = rest${s} % ${w.dim(m.shape[p])};`);
+          if (p > depth) w.line(`rest${s} /= ${w.dim(m.shape[p])};`);
+        }
+        const value = w.scalar(m.expr);
+        if (group.buffered.includes(m.name)) w.line(`r${s}[own${s}] = ${value};`);
+        if (stored.has(m.name)) w.line(`t${s}[point * n${s} + own${s}] = ${value};`);
+        w.leave();
+        w.line('}');
+      } else {
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
       if (m.axes.length > depth) w.line('U rest = e;');
@@ -547,6 +615,7 @@ function emitGroup(
       if (stored.has(m.name)) w.line(`t${s}[point * n${s} + e] = ${value};`);
       w.leave();
       w.line('}');
+      }
       if (j < members.length - 1) w.line('__syncthreads();');
     });
     // The host computes the same lengths from the same shape values.
@@ -556,26 +625,31 @@ function emitGroup(
     const hostRow = [...owners.map(n => lengthOf(n, hostDim)), ...(staging.length ? [area(count)] : [])].join(
       ' + ',
     );
+    // The operand tiles always live in shared memory, one per tiled member, each blockDim.x * (chunk + pad)
+    // words (the schedule's constants; IRWB-033-J).
+    const tileWords = (group.memberTiles ?? []).reduce((n, t) => n + t.chunk + t.pad, 0);
+    const tile = `tiles_${kernel}`;
+    const threadsRule = group.threads;
+    const gateConstants = group.gate!;
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
-      `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
       group.heavy.length
-        ? `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${blockThreads.heavy}, (std::max<U>(std::min<U>({${group.heavy.map(n => lengthOf(n, hostDim)).join(', ')}}), 1) + 31) / 32 * 32));`
-        : `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
+        ? `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${threadsRule.heavyCap}, (std::max<U>(std::min<U>({${group.heavy.map(n => lengthOf(n, hostDim)).join(', ')}}), 1) + 31) / 32 * 32));`
+        : `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${threadsRule.cap}, (longest_${kernel} + 31) / 32 * 32));`,
+      `  const U ${tile} = static_cast<U>(threads_${kernel}) * ${tileWords} * sizeof(float);`,
+      `  const bool shared_${kernel} = row_${kernel} + ${tile} <= static_cast<U>(shared_limit);`,
       // The gate: block mode, or the members one by one. --gate=fused|unfused forces a side (the contract).
       // Blocks of this kernel that fit on one SM, by its block, thread and shared-memory limits (each block's
       // shared memory includes the device's reserved part: 1 KiB on the GB10).
-      `  const U resident_${kernel} = std::min<U>({sm_blocks, sm_threads / threads_${kernel}, shared_${kernel} ? sm_shared / (row_${kernel} + sm_reserved) : sm_blocks});`,
-      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : ${gateRule({
-        grid: `grid_${kernel}`,
-        longest: `longest_${kernel}`,
-        lanes: group.heavy.map(
-          n => `resident_${kernel} * std::min<U>(threads_${kernel}, ${lengthOf(n, hostDim)})`,
-        ),
-        slots: 'sm_threads',
-      })};`,
+      `  const U resident_${kernel} = std::min<U>({sm_blocks, sm_threads / threads_${kernel}, shared_${kernel} ? sm_shared / (row_${kernel} + ${tile} + sm_reserved) : sm_blocks});`,
+      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : (longest_${kernel} >= ${gateConstants.fullRow} || grid_${kernel} <= ${gateConstants.smallGrid})${group.heavy
+        .map(
+          n =>
+            ` && resident_${kernel} * std::min<U>(threads_${kernel}, ${lengthOf(n, hostDim)}) * ${gateConstants.heavyLanes[1]} >= ${gateConstants.heavyLanes[0]} * sm_threads`,
+        )
+        .join('')};`,
       `  DeviceBuffer scratch_${kernel}(fused_${kernel} && !shared_${kernel} ? grid_${kernel} * (row_${kernel} / sizeof(float)) : 0);`,
       ...members
         .filter(m => !stored.has(m.name))
@@ -602,7 +676,8 @@ function emitGroup(
     ...outputs.map(t => t + '.ptr'),
     ...(block ? [`scratch_${kernel}.ptr`] : [`count_${kernel}`]),
   ];
-  const optIn = `shared_${kernel} && row_${kernel} > ${defaultShared}`;
+  const sharedSize = block ? `row_${kernel} + tiles_${kernel}` : `count_${kernel}`;
+  const optIn = `shared_${kernel} && row_${kernel} + tiles_${kernel} > ${defaultShared}`;
   const size = (m: Statement) => `elements(shape_${tensorName(m.name)})`;
   const blockArgs = [...args, '0'].join(', ');
   return {
@@ -611,7 +686,7 @@ function emitGroup(
     preload: block
       ? `  if (grid_${kernel} && fused_${kernel}) {
     check(cudaFuncGetAttributes(&attributes, shared_${kernel} ? ${kernel}<1> : ${kernel}<0>));
-    if (${optIn}) check(cudaFuncSetAttribute(${kernel}<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(row_${kernel})));
+    if (${optIn}) check(cudaFuncSetAttribute(${kernel}<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(row_${kernel} + tiles_${kernel})));
   }
   if (grid_${kernel} && !fused_${kernel}) {
 ${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${kernel}<${2 + j}>));`).join('\n')}
@@ -619,7 +694,7 @@ ${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${kernel}
       : `  if (count_${kernel}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork,
     launch: block
-      ? `    if (grid_${kernel} && fused_${kernel} && shared_${kernel}) ${kernel}<1><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, row_${kernel}>>>(${blockArgs});
+      ? `    if (grid_${kernel} && fused_${kernel} && shared_${kernel}) ${kernel}<1><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, ${sharedSize}>>>(${blockArgs});
     if (grid_${kernel} && fused_${kernel} && !shared_${kernel}) ${kernel}<0><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}>>>(${blockArgs});
 ${members
   .map(
@@ -635,8 +710,205 @@ ${members
   };
 }
 
-/** The CUDA translation unit for `fn`, one kernel per group of `plan` (default: stage 2, one per statement). */
-export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
+// IRWB-033-J: a standalone contraction as a tiled kernel (the schedule's `gemm` mapping): one block per output
+// tile, (BM/TM)*(BN/TN) threads each owning a TM*TN register patch, both operands staged in padded shared tiles
+// (each word reused across the tile). The reduction runs in one thread per output element, chunk by chunk, both
+// loops increasing, so the terms come in the meaning's order and the product and the sum round separately, as
+// the order certificate in schedule.ts says. The emitter only prints the schedule's constants; masks handle
+// every shape, including shapes that are not multiples of a tile and empty extents.
+function emitGemm(
+  kernel: SkKernel,
+  dimensions: ReadonlyMap<string, string>,
+  tensors: ReadonlyMap<string, Tensor>,
+  tensorName: (name: string) => string,
+) {
+  const k = kernel.kernel;
+  const s = tensors.get(kernel.statements[0]) as Statement;
+  const t = kernel.tile!;
+  const found = contractionOf(s);
+  if ('refusal' in found) throw Error(`The schedule tiles ${s.name} as a gemm kernel, but ${found.refusal}`);
+  const c = found.contraction;
+  if (
+    c.axis.id !== t.reduction ||
+    c.row.name !== t.row ||
+    c.staged.name !== t.staged ||
+    c.rowAxes.join() !== t.rowAxes.join() ||
+    c.colAxes.join() !== t.colAxes.join()
+  )
+    throw Error(`The schedule's gemm tile for ${s.name} does not match its contraction`);
+  const [BM, BN] = t.block,
+    [TM, TN] = t.patch,
+    BK = t.chunk,
+    pad = t.pad;
+  const threads = (BM / TM) * (BN / TN);
+  const stage = BM * (BK + pad) + BK * (BN + pad);
+  const sharedBytes = (t.doubleBuffer ? 2 : 1) * stage * 4;
+  const reads = new Set<string>();
+  visit(s.expr, e => {
+    if (e.kind === 'load') reads.add(e.name);
+  });
+  const params = [
+    ...Array.from(dimensions.values(), d => `I ${d}`),
+    ...Array.from(reads, x => `const float* ${tensorName(x)}`),
+    `float* ${tensorName(s.name)}`,
+  ];
+  const args = [...dimensions.values(), ...Array.from(reads, x => tensorName(x) + '.ptr'), tensorName(s.name) + '.ptr'];
+  const stride = (shape: Affine[]) =>
+    shape.map((_, q) =>
+      q === shape.length - 1 ? '1' : product(shape.slice(q + 1).map(a => affine(a, n => dimensions.get(n)!))),
+    );
+  const L = tensors.get(c.row.name)!.shape,
+    R = tensors.get(c.staged.name)!.shape;
+  const Ls = stride(L),
+    Rs = stride(R);
+  const rowPos = t.rowAxes.length ? c.row.indices.findIndex(x => plain(x) === t.rowAxes[0]) : -1;
+  const colPos = t.colAxes.length ? c.staged.indices.findIndex(x => plain(x) === t.colAxes[0]) : -1;
+  const rowAddress = (rowCoord: string, kCoord: string) =>
+    [rowPos >= 0 ? `(${rowCoord}) * ${Ls[rowPos]}` : '', `(${kCoord}) * ${Ls[c.rowAt]}`]
+      .filter(Boolean)
+      .join(' + ');
+  const stagedAddress = (colCoord: string, kCoord: string) =>
+    [colPos >= 0 ? `(${colCoord}) * ${Rs[colPos]}` : '', `(${kCoord}) * ${Rs[c.stagedAt]}`]
+      .filter(Boolean)
+      .join(' + ');
+  const rowAxis = s.axes.find(a => a.id === t.rowAxes[0]),
+    colAxis = s.axes.find(a => a.id === t.colAxes[0]);
+  const dimOf = (a: Affine) => affine(a, n => dimensions.get(n)!);
+  if (c.axis.extent.kind !== 'dim') throw Error('The gemm tile needs a plain reduction extent');
+  const M = rowAxis ? `(${rowAxis.extent.kind === 'dim' ? dimOf(rowAxis.extent.dim) : ''})` : '1',
+    N = colAxis ? `(${colAxis.extent.kind === 'dim' ? dimOf(colAxis.extent.dim) : ''})` : '1';
+  const Kr = dimOf(c.axis.extent.dim);
+  const accIds = new Map<Reduce, string>();
+  const w = kernelWriter(
+    dimensions,
+    (e, offset) => `${tensorName(e.name)}[${offset(e.indices, tensors.get(e.name)!.shape)}]`,
+    'max_nan(ACC, VALUE)',
+    () => undefined,
+    e => accIds.get(e),
+  );
+  w.lines.push(`// ${k}: ${kernel.statements.join(', ')}; ${kernel.reasons.join('; ')}`);
+  w.lines.push(`__global__ void ${k}(${params.join(', ')}) {`);
+  w.line('extern __shared__ float shared[];');
+  w.line(`float* const aS = shared;`);
+  w.line(`float* const bS = shared + ${BM * (BK + pad)};`);
+  w.line(`const U tilesN = (static_cast<U>(${N}) + ${BN - 1}) / ${BN};`);
+  w.line('const I bi = blockIdx.x / tilesN, bj = blockIdx.x % tilesN;');
+  w.line(`const I ti = threadIdx.x / ${BN / TN}, tj = threadIdx.x % ${BN / TN};`);
+  for (let u = 0; u < TM; u++)
+    w.line(`float ${Array.from({ length: TN }, (_, x) => `acc${u}_${x} = 0.0f`).join(', ')};`);
+  const loadChunk = (kk: string, buf: string) => {
+    const at = `(${buf}) * ${stage}`;
+    w.line(`for (U x = threadIdx.x; x < ${BM * BK}; x += ${threads}) {`);
+    w.enter();
+    w.line(`const I lu = x / ${BK}, lv = x % ${BK};`);
+    w.line(
+      `aS[${at} + lu * ${BK + pad} + lv] = bi * ${BM} + lu < ${M} && ${kk} + lv < ${Kr} ? ${tensorName(c.row.name)}[${rowAddress(`bi * ${BM} + lu`, `${kk} + lv`)}] : 0.0f;`,
+    );
+    w.leave();
+    w.line('}');
+    w.line(`for (U x = threadIdx.x; x < ${BK * BN}; x += ${threads}) {`);
+    w.enter();
+    w.line(`const I lu = x / ${BN}, lv = x % ${BN};`);
+    w.line(
+      `bS[${at} + lu * ${BN + pad} + lv] = ${kk} + lu < ${Kr} && bj * ${BN} + lv < ${N} ? ${tensorName(c.staged.name)}[${stagedAddress(`bj * ${BN} + lv`, `${kk} + lu`)}] : 0.0f;`,
+    );
+    w.leave();
+    w.line('}');
+  };
+  const computeChunk = (kk: string, buf: string, hi: string, unroll: boolean) => {
+    const at = `(${buf}) * ${stage}`;
+    if (unroll) w.line('#pragma unroll');
+    w.line(`for (I t = 0; t < ${hi}; ++t) {`);
+    w.enter();
+    for (let u = 0; u < TM; u++)
+      w.line(`const float ar${u} = aS[${at} + (ti * ${TM} + ${u}) * ${BK + pad} + t];`);
+    for (let x = 0; x < TN; x++)
+      w.line(`const float br${x} = bS[${at} + t * ${BN + pad} + tj * ${TN} + ${x}];`);
+    for (let u = 0; u < TM; u++)
+      for (let x = 0; x < TN; x++)
+        w.line(`acc${u}_${x} = __fadd_rn(acc${u}_${x}, __fmul_rn(ar${u}, br${x}));`);
+    w.leave();
+    w.line('}');
+  };
+  if (t.doubleBuffer) {
+    loadChunk('0', '0');
+    w.line('__syncthreads();');
+    w.line(`for (I kk = 0; kk < ${Kr}; kk += ${BK}) {`);
+    w.enter();
+    w.line(`const I next = kk + ${BK};`);
+    w.line(`if (next < ${Kr}) {`);
+    w.enter();
+    loadChunk('next', `(next / ${BK}) % 2`);
+    w.leave();
+    w.line('}');
+    w.line(`if (kk + ${BK} <= ${Kr}) {`);
+    w.enter();
+    computeChunk('kk', `(kk / ${BK}) % 2`, `${BK}`, true);
+    w.leave();
+    w.line('} else {');
+    w.enter();
+    computeChunk('kk', `(kk / ${BK}) % 2`, `${Kr} - kk`, false);
+    w.leave();
+    w.line('}');
+    w.line('__syncthreads();');
+    w.leave();
+    w.line('}');
+  } else {
+    w.line(`for (I kk = 0; kk + ${BK} <= ${Kr}; kk += ${BK}) {`);
+    w.enter();
+    loadChunk('kk', '0');
+    w.line('__syncthreads();');
+    computeChunk('kk', '0', `${BK}`, true);
+    w.line('__syncthreads();');
+    w.leave();
+    w.line('}');
+    w.line(`const I tail = (${Kr} / ${BK}) * ${BK};`);
+    w.line(`if (tail < ${Kr}) {`);
+    w.enter();
+    loadChunk('tail', '0');
+    w.line('__syncthreads();');
+    computeChunk('tail', '0', `${Kr} - tail`, false);
+    w.line('__syncthreads();');
+    w.leave();
+    w.line('}');
+  }
+  // The epilogue and the store, per patch element, masked at the tile's edges.
+  const Ss = stride(s.shape);
+  for (let u = 0; u < TM; u++)
+    for (let v = 0; v < TN; v++) {
+      const rowCoord = `bi * ${BM} + ti * ${TM} + ${u}`,
+        colCoord = `bj * ${BN} + tj * ${TN} + ${v}`;
+      w.line(`if (${rowCoord} < ${M}${colAxis ? ` && ${colCoord} < ${N}` : ''}) {`);
+      w.enter();
+      for (const a of s.axes) w.alias(a.id, a.id === t.rowAxes[0] ? rowCoord : colCoord);
+      accIds.set(c.reduce, `acc${u}_${v}`);
+      const value = w.scalar(s.expr);
+      const offset = s.axes
+        .map((a, p) => `(${a.id === t.rowAxes[0] ? rowCoord : colCoord})${Ss[p] === '1' ? '' : ` * ${Ss[p]}`}`)
+        .join(' + ');
+      w.line(`${tensorName(s.name)}[${offset}] = ${value};`);
+      w.leave();
+      w.line('}');
+    }
+  w.lines.push('}');
+  return {
+    code: w.lines.join('\n'),
+    host: [
+      `  const U grid_${k} = ((static_cast<U>(${M}) + ${BM - 1}) / ${BM}) * ((static_cast<U>(${N}) + ${BN - 1}) / ${BN});`,
+    ],
+    preload: `  if (grid_${k}) {
+    check(cudaFuncGetAttributes(&attributes, ${k}));
+${sharedBytes > defaultShared ? `    check(cudaFuncSetAttribute(${k}, cudaFuncAttributeMaxDynamicSharedMemorySize, ${sharedBytes}));\n` : ''}  }`,
+    hasWork: `grid_${k}`,
+    launch: `    if (grid_${k}) {
+      ${k}<<<static_cast<unsigned>(grid_${k}), ${threads}, ${sharedBytes}>>>(${args.join(', ')});
+      check(cudaGetLastError());
+    }`,
+  };
+}
+
+/** The CUDA translation unit for `fn` from its schedule (IRWB-033-J): the emitter only prints the schedule. */
+export function emitCuda(fn: Fn, unit: ScheduleUnit): string {
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -652,12 +924,14 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
       bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
     }
   }
-  const kernels = plan.groups.map(g =>
-    g.statements.length === 1
-      ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
-      : emitGroup(g, dims, tensors, name),
+  const kernels = unit.kernels.map(g =>
+    g.mapping === 'gemm'
+      ? emitGemm(g, dims, tensors, name)
+      : g.statements.length === 1 && g.mapping === 'thread'
+        ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
+        : emitGroup(g, dims, tensors, name),
   );
-  const stored = new Set(plan.groups.flatMap(g => g.stored));
+  const stored = new Set(unit.kernels.flatMap(g => g.stored));
   const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
   for (const p of fn.params) {
     const t = name(p.name);
@@ -683,7 +957,7 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
       host.push(`  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`);
       if (stored.has(s.name)) host.push(`  DeviceBuffer ${t}(elements(shape_${t}));`);
     }
-    if (plan.groups.some(g => g.mapping === 'block'))
+    if (unit.kernels.some(g => g.mapping === 'block'))
       host.push(
         '  int shared_limit = 0, sm_shared_bytes = 0, sm_block_limit = 0, reserved_bytes = 0;',
         '  check(cudaDeviceGetAttribute(&reserved_bytes, cudaDevAttrReservedSharedMemoryPerBlock, 0));',
@@ -713,13 +987,13 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     `  write(output, shape_${result}.data(), shape_${result}.size());`,
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
     '  write(output, &gpu_ms, 1);',
-    ...plan.groups
+    ...unit.kernels
       .filter(g => g.statements.length > 1 && g.mapping === 'block')
       .map(g => `  { const unsigned char choice = fused_${g.kernel} ? 1 : 0; write(output, &choice, 1); }`),
     '}',
   );
-  const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
-  const gated = plan.groups.some(g => g.statements.length > 1 && g.mapping === 'block');
+  const fused = unit.kernels.some(g => g.statements.length > 1) ? [fusedSupport] : [];
+  const gated = unit.kernels.some(g => g.statements.length > 1 && g.mapping === 'block');
   if (gated) fused.push(gateSupport);
   return [support, ...fused, ...kernels.map(k => k.code), host.join('\n'), gated ? gatedMain : main].join(
     '\n\n',

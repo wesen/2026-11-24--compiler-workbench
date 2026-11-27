@@ -139,6 +139,19 @@ export function gateRule(v: { grid: string; longest: string; lanes: string[]; sl
   return [rows, ...v.lanes.map(l => `${l} * ${d} >= ${n} * ${v.slots}`)].join(' && ');
 }
 
+// Threads per block in block mode: the shortest warp multiple covering the longest row, up to a cap chosen by
+// measurement (IRWB-029-D diary step 4, caps 64, 128 and 256 on softmax, layernorm, attention and mlp): 64 when a
+// member's reduction reads a tensor from global memory (a contraction operand: attention's k and v, mlp's w and
+// v), 128 otherwise (rows only: softmax, layernorm).
+//
+// IRWB-030-E: when a member with trailing axes carries a costly reduction (the plan's `heavy`), the block is as
+// wide as the narrowest such row, up to 256, so that every lane works in that member's phase. Measured with the
+// division inside (scripts 06 and 09): attention (rows of 1024 and 64) 1.41 ms at 64 threads, 1.91 at 128, 1.86
+// at 32; narrow-div with rows of 128: 1.56 at 64, 1.21 at 128, 2.33 at 256. 256 is the widest block that was
+// faster than the next narrower one in any measurement (layernorm with staged terms; 512 was slower).
+// IRWB-033-J: the caps are schedule constants, set by the fuse pass into each kernel's thread rule.
+export const blockThreads = { rows: 128, contraction: 64, heavy: 256 };
+
 export function planFusion(fn: Fn): FusionPlan {
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
   const refusals: FusionRefusal[] = [],

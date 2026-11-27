@@ -14,6 +14,10 @@ function checkForm(a: Affine, names: Set<string>) {
     'Invalid affine form',
   );
 }
+/** The Tix function validator, reused by the schedule IR, which embeds a copy of the function. */
+export function validateTixFn(fn: Fn) {
+  validateFn(fn);
+}
 function validateFn(fn: Fn) {
   const shapes = new Set(fn.params.flatMap(p => p.shape.map(plain).filter((s): s is string => !!s)));
   const tensors = new Map<string, Affine[]>();
