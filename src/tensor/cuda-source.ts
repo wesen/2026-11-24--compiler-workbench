@@ -682,8 +682,7 @@ function emitTileKernel(
     reduceNode!.op === 'sum' ? `__fadd_rn(${acc}, ${term})` : `max_nan(${acc}, ${term})`;
   const init = reduceNode!.op === 'sum' ? '0.0f' : '-INFINITY';
   // Operand tile sizes (floats) and offsets inside one buffer set, in shared memory.
-  const size = (l: TileOperand) =>
-    l.cls === 'i' ? 'BM * (BK + 1)' : l.cls === 'j' ? 'BK * (BN + 4)' : 'BK';
+  const size = (l: TileOperand) => (l.cls === 'i' ? 'BM * (BK + 1)' : l.cls === 'j' ? 'BK * (BN + 4)' : 'BK');
   const setSize = () => `(${tile.loads.map(l => size(l)).join(' + ')})`;
   const offsetOf = (o: number) => tile.loads.slice(0, o).reduce((expr, l) => `(${expr} + ${size(l)})`, '0');
   // A plain-indexed load's global address: each axis id substituted by a tile-local expression, the stride of
@@ -695,8 +694,8 @@ function emitTileKernel(
         .slice(p + 1)
         .reduce((text, a) => `${text} * ${dim(a)}`, '')
         .slice(3) || '1';
-    const parts = l.indices.map(
-      (id, p) => (p === l.indices.length - 1 ? subs.get(id)! : `${subs.get(id)!} * ${stride(p)}`),
+    const parts = l.indices.map((id, p) =>
+      p === l.indices.length - 1 ? subs.get(id)! : `${subs.get(id)!} * ${stride(p)}`,
     );
     return parts.length === 1 ? parts[0] : `(${parts.join(' + ')})`;
   };
@@ -717,7 +716,13 @@ function emitTileKernel(
         lines.push(
           `for (U t_e = threadIdx.x; t_e < (U)(BM * BK); t_e += blockDim.x) {`,
           `  const I t_r = (I)(${row}), t_c2 = (I)(${col});`,
-          `  ${ptr}[t_r * (BK + 1) + t_c2] = (t_i0 + t_r) < ${M} && (${k}t_c2) < ${K} ? ${t}[${globalOffset(l, new Map([[iAxis, '(t_i0 + t_r)'], [tile.reduce.axis, `(${k}t_c2)`]]))}] : 0.0f;`,
+          `  ${ptr}[t_r * (BK + 1) + t_c2] = (t_i0 + t_r) < ${M} && (${k}t_c2) < ${K} ? ${t}[${globalOffset(
+            l,
+            new Map([
+              [iAxis, '(t_i0 + t_r)'],
+              [tile.reduce.axis, `(${k}t_c2)`],
+            ]),
+          )}] : 0.0f;`,
           `}`,
         );
       } else if (l.cls === 'j') {
@@ -727,7 +732,13 @@ function emitTileKernel(
         lines.push(
           `for (U t_e = threadIdx.x; t_e < (U)(BK * BN); t_e += blockDim.x) {`,
           `  const I t_k2 = (I)(${k2}), t_j2 = (I)(${j2});`,
-          `  ${ptr}[t_k2 * (BN + 4) + t_j2] = (${k}t_k2) < ${K} && (t_j0 + t_j2) < ${N} ? ${t}[${globalOffset(l, new Map([[jAxis, '(t_j0 + t_j2)'], [tile.reduce.axis, `(${k}t_k2)`]]))}] : 0.0f;`,
+          `  ${ptr}[t_k2 * (BN + 4) + t_j2] = (${k}t_k2) < ${K} && (t_j0 + t_j2) < ${N} ? ${t}[${globalOffset(
+            l,
+            new Map([
+              [jAxis, '(t_j0 + t_j2)'],
+              [tile.reduce.axis, `(${k}t_k2)`],
+            ]),
+          )}] : 0.0f;`,
           `}`,
         );
       } else {
@@ -801,11 +812,15 @@ function emitTileKernel(
         push(
           `        const float4 t_f${o} = *reinterpret_cast<const float4*>(t_q${o} + t_k1 * (BN + 4) + t_pj * TN + t_q * 4);`,
         );
-        push(`        t_b${o}[t_q * 4] = t_f${o}.x; t_b${o}[t_q * 4 + 1] = t_f${o}.y; t_b${o}[t_q * 4 + 2] = t_f${o}.z; t_b${o}[t_q * 4 + 3] = t_f${o}.w;`);
+        push(
+          `        t_b${o}[t_q * 4] = t_f${o}.x; t_b${o}[t_q * 4 + 1] = t_f${o}.y; t_b${o}[t_q * 4 + 2] = t_f${o}.z; t_b${o}[t_q * 4 + 3] = t_f${o}.w;`,
+        );
         push('      }');
         push('      #pragma unroll');
         push('      for (int t_q = 0; t_q < TN % 4; ++t_q)');
-        push(`        t_b${o}[TN - TN % 4 + t_q] = t_q${o}[t_k1 * (BN + 4) + t_pj * TN + TN - TN % 4 + t_q];`);
+        push(
+          `        t_b${o}[TN - TN % 4 + t_q] = t_q${o}[t_k1 * (BN + 4) + t_pj * TN + TN - TN % 4 + t_q];`,
+        );
       } else {
         push(`      const float t_v${o} = t_q${o}[t_k1];`);
       }

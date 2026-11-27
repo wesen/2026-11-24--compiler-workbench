@@ -1,0 +1,7 @@
+{"size":512,"rule":0.074,"c0":0.075,"c1":0.146}
+{"size":1024,"rule":0.347,"c0":0.347,"c1":0.398}
+{"size":2048,"rule":2.482,"c0":2.505,"c1":2.465}
+{"size":4096,"rule":18.993,"c0":20.829,"c1":18.918,"clockAfter":"2418000 kHz (NVIDIA GB10, 48 SMs)"}
+{"variant":"bias","fusedMs":0.076,"unfusedMs":0.217}
+{"variant":"scaled","fusedMs":0.08,"unfusedMs":0.216}
+{"variant":"transposed","fusedMs":0.078,"unfusedMs":0.263}

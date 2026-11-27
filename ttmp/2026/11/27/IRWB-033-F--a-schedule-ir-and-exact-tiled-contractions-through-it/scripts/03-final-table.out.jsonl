@@ -1,0 +1,11 @@
+clock before 4096: no output
+{"program":"matmul","sizes":[512,512,512],"kernelsFused":1,"kernelsUnfused":1,"fusedMs":0.07577600330114365,"unfusedMs":0.21353599429130554,"fusedAll":[0.076,0.075,0.075,0.076,0.076],"unfusedAll":[0.214,0.213,0.208,0.214,0.214],"digestsEqual":true}
+clock after 512: no output
+{"program":"softmax","sizes":[4096,1024],"kernelsFused":1,"kernelsUnfused":4,"fusedMs":0.3840320110321045,"unfusedMs":0.8006719946861267,"fusedAll":[0.384,0.389,0.38,0.388,0.379],"unfusedAll":[0.801,0.793,0.807,0.795,0.807],"digestsEqual":true}
+{"program":"layernorm","sizes":[4096,1024],"kernelsFused":1,"kernelsUnfused":4,"fusedMs":0.1507200002670288,"unfusedMs":0.4732480049133301,"fusedAll":[0.144,0.151,0.146,0.157,0.162],"unfusedAll":[0.473,0.482,0.467,0.467,0.473],"digestsEqual":true}
+{"program":"attention","sizes":[1024,1024,64,64],"kernelsFused":1,"kernelsUnfused":6,"fusedMs":0.6627200245857239,"unfusedMs":0.7272319793701172,"fusedAll":[0.659,0.66,0.663,0.665,0.663],"unfusedAll":[0.729,0.727,0.727,0.728,0.727],"digestsEqual":true}
+{"program":"mlp","sizes":[1024,256,1024,256],"kernelsFused":1,"kernelsUnfused":3,"fusedMs":0.6247040033340454,"unfusedMs":0.945248007774353,"fusedAll":[0.621,0.623,0.625,0.625,0.625],"unfusedAll":[0.943,0.949,0.945,0.939,0.951],"digestsEqual":true}
+{"program":"conv2d","sizes":[8,16,64,64,32],"kernelsFused":1,"kernelsUnfused":1,"fusedMs":0.1650879979133606,"unfusedMs":0.16624000668525696,"fusedAll":[0.165,0.166,0.165,0.164,0.165],"unfusedAll":[0.166,0.166,0.166,0.166,0.166],"digestsEqual":true}
+clock before 4096: no output
+{"program":"matmul","sizes":[4096,4096,4096],"fusedMs":19.02524757385254,"unfusedMs":133.8256378173828,"fusedAll":[19,19.04,19.15,18.91,19.03],"unfusedAll":[133.66,134.27,133.75,134.99,133.83],"digestsEqual":true}
+clock after 4096: no output

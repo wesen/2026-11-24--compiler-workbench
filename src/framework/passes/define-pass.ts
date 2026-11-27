@@ -245,7 +245,11 @@ export function applyNativePassSync<S, P>(
     if (produced instanceof Promise) void produced.catch(() => {});
     throw new PassError('badResult', 'Expected a synchronous native result');
   }
-  const base = { pass: { id: pass.id, version: pass.version }, before, preserved: [] as PreservationOutcome[] };
+  const base = {
+    pass: { id: pass.id, version: pass.version },
+    before,
+    preserved: [] as PreservationOutcome[],
+  };
   const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
   if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
   enforceWrites(pass, changes);
@@ -263,15 +267,18 @@ export function applyNativePassSync<S, P>(
         'badResult',
         `Pass ${pass.id} preserves ${definition?.id ?? 'an analysis'}, which needs the asynchronous analysis manager`,
       );
-    const recompute = (artifact: Artifact<S>) =>
-      definition.run(undefined as never, artifact, undefined);
+    const recompute = (artifact: Artifact<S>) => definition.run(undefined as never, artifact, undefined);
     if (canonical(recompute(before)) !== canonical(recompute(after)))
       throw new PassError(
         'preserveViolated',
         `Pass ${pass.id} claims to preserve ${definition.id}, but it changed`,
         { analysis: definition.id },
       );
-    base.preserved.push({ analysis: definition.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+    base.preserved.push({
+      analysis: definition.id,
+      how: 'confirmed-by-recompute',
+      evidence: { equalValue: true },
+    });
   }
   return {
     ...base,
