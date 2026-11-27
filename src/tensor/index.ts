@@ -1,17 +1,22 @@
-import type { DifferentialEvidence } from '../framework/contracts/index.js';
+import {
+  AnalysisManager,
+  defineInvariant,
+  defineTransformation,
+  type DifferentialEvidence,
+} from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
 import { createIRArtifact } from '../framework/ir/index.js';
-import { applyNativePassSync, PassError } from '../framework/passes/index.js';
+import { applyNativePassSync, passAlgorithm, PassError } from '../framework/passes/index.js';
 import { meaningGate } from './contract.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
-import { adapter } from './ir.js';
+import { adapter, TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitSchedule } from './cuda-source.js';
 import { lowerSchedule } from './strategy.js';
 import { parse } from './parser.js';
-import { inlinePass, splitPass } from './passes.js';
+import { inlinePass, splitPass, type TixPass } from './passes.js';
 
 export interface TixProgram {
   readonly origin: Artifact<Module>;
@@ -39,7 +44,7 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
       const result = applyNativePassSync(
         definition,
         current,
-        meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'),
+        meaningGate(origin, definition.relation),
       );
       current = result.artifact;
       return { pass, accepted: true, changed: result.changed };
@@ -57,6 +62,39 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     }
   });
   return { program: { origin, current }, steps };
+}
+
+export function tixAlgorithm(pass: TixPass, { origin }: { origin: Artifact<Module> }) {
+  const invariant = defineInvariant({
+    id: 'tix.meaning-gate.' + pass.relation,
+    version: '1',
+    description: 'Check the Tix meaning gate',
+    inputs: { before: TixIR, origin: TixIR, after: TixIR },
+    check: (_ctx, { before, origin, after }) => {
+      const result = meaningGate(origin, pass.relation)(before, after);
+      return result.ok
+        ? { ok: true, evidence: JSON.parse(JSON.stringify(result.evidence ?? null)) }
+        : { ok: false, reason: result.reason };
+    },
+  });
+  const contract = defineTransformation({
+    id: 'tix.gated.' + pass.relation,
+    version: '1',
+    description: 'A Tix pass checked against its origin',
+    inputs: { input: TixIR, origin: TixIR },
+    outputs: { output: TixIR },
+    ensures: [
+      {
+        invariant,
+        bindings: {
+          before: { from: 'inputs', port: 'input' },
+          origin: { from: 'inputs', port: 'origin' },
+          after: { from: 'outputs', port: 'output' },
+        },
+      },
+    ],
+  });
+  return passAlgorithm(pass, { manager: new AnalysisManager(), contract, contractInputs: () => ({ origin }) });
 }
 
 export interface LoweringOptions {

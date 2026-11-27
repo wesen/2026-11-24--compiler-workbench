@@ -11,7 +11,7 @@ import type { CudaInputs } from './cuda-runtime.js';
 import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
-type Relation = 'exact' | 'tolerance';
+export type Relation = 'exact' | 'tolerance';
 interface Sample {
   fn: string;
   shapeValues: number[];

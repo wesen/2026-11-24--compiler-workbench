@@ -1,4 +1,5 @@
-import { definePass } from '../framework/passes/index.js';
+import { definePass, type Pass } from '../framework/passes/index.js';
+import type { Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
 import {
   add,
@@ -79,16 +80,21 @@ function split(fn: Fn): Fn {
     })),
   };
 }
-function pass(name: string, transform: (fn: Fn) => Fn) {
-  return definePass<Module>({
-    id: 'tensor.' + name,
-    version: '1',
-    description: name,
-    ir: TixIR,
-    adapter,
-    writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
-    run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
+export type TixPass = Pass<Module> & { readonly relation: Relation };
+
+function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixPass {
+  return Object.freeze({
+    ...definePass<Module>({
+      id: 'tensor.' + name,
+      version: '1',
+      description: name,
+      ir: TixIR,
+      adapter,
+      writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
+      run: ({ before }) => ({ native: { functions: before.value.functions.map(transform) } }),
+    }),
+    relation,
   });
 }
-export const inlinePass = pass('inline', inline),
-  splitPass = pass('split-sum', split);
+export const inlinePass = pass('inline', 'exact', inline),
+  splitPass = pass('split-sum', 'tolerance', split);

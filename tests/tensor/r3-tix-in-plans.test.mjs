@@ -22,7 +22,6 @@ const wrong = definePass({
 
 test(
   'F27: a wrong Tix pass is rejected inside a strategy plan; correct passes are accepted',
-  { todo: 'F27' },
   async () => {
     assert.equal(typeof T.tixAlgorithm, 'function', 'src/tensor exports tixAlgorithm(pass, { origin })');
     const p = T.compileTix(src);
