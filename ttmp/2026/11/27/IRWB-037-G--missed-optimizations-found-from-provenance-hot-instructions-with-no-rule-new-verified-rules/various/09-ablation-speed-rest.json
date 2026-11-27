@@ -2,40 +2,36 @@
  "pipeline": "speed",
  "totals": {
   "old": {
-   "default": 867770,
-   "tuned": 792800
+   "default": 540454,
+   "tuned": 495418
   },
   "thread": {
-   "default": 841886,
-   "tuned": 773982
+   "default": 534362,
+   "tuned": 489140
   },
   "copies": {
-   "default": 853990,
-   "tuned": 797071
+   "default": 526694,
+   "tuned": 495824
   },
   "guards": {
-   "default": 862796,
-   "tuned": 788944
+   "default": 531640,
+   "tuned": 489642
   },
   "subst-mem": {
-   "default": 867604,
-   "tuned": 792800
+   "default": 540454,
+   "tuned": 495418
   },
-  "thread+subst-mem": {
-   "default": 841061,
-   "tuned": 773079
+  "guards+identities": {
+   "default": 531448,
+   "tuned": 489450
+  },
+  "all but identities": {
+   "default": 511052,
+   "tuned": 482546
   },
   "all": {
-   "default": 822611,
-   "tuned": 764703
-  },
-  "all, guards on every branch": {
-   "default": 822531,
-   "tuned": 764663
-  },
-  "all, thread again before bce": {
-   "default": 821024,
-   "tuned": 763212
+   "default": 510860,
+   "tuned": 482354
   }
  },
  "rows": {
@@ -60,19 +56,15 @@
     "default": 270,
     "tuned": 210
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 270,
     "tuned": 210
    },
+   "all but identities": {
+    "default": 240,
+    "tuned": 210
+   },
    "all": {
-    "default": 240,
-    "tuned": 210
-   },
-   "all, guards on every branch": {
-    "default": 240,
-    "tuned": 210
-   },
-   "all, thread again before bce": {
     "default": 240,
     "tuned": 210
    }
@@ -98,19 +90,15 @@
     "default": 20,
     "tuned": 20
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 20,
+    "tuned": 20
+   },
+   "all but identities": {
     "default": 20,
     "tuned": 20
    },
    "all": {
-    "default": 20,
-    "tuned": 20
-   },
-   "all, guards on every branch": {
-    "default": 20,
-    "tuned": 20
-   },
-   "all, thread again before bce": {
     "default": 20,
     "tuned": 20
    }
@@ -136,19 +124,15 @@
     "default": 1915,
     "tuned": 1585
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 1915,
     "tuned": 1585
    },
+   "all but identities": {
+    "default": 1750,
+    "tuned": 1585
+   },
    "all": {
-    "default": 1750,
-    "tuned": 1585
-   },
-   "all, guards on every branch": {
-    "default": 1750,
-    "tuned": 1585
-   },
-   "all, thread again before bce": {
     "default": 1750,
     "tuned": 1585
    }
@@ -174,19 +158,15 @@
     "default": 5012,
     "tuned": 4426
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 5012,
     "tuned": 4426
    },
+   "all but identities": {
+    "default": 4817,
+    "tuned": 4426
+   },
    "all": {
-    "default": 4817,
-    "tuned": 4426
-   },
-   "all, guards on every branch": {
-    "default": 4817,
-    "tuned": 4426
-   },
-   "all, thread again before bce": {
     "default": 4817,
     "tuned": 4426
    }
@@ -212,19 +192,15 @@
     "default": 1355,
     "tuned": 1258
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 1355,
     "tuned": 1258
    },
+   "all but identities": {
+    "default": 1285,
+    "tuned": 1258
+   },
    "all": {
-    "default": 1285,
-    "tuned": 1258
-   },
-   "all, guards on every branch": {
-    "default": 1285,
-    "tuned": 1258
-   },
-   "all, thread again before bce": {
     "default": 1285,
     "tuned": 1258
    }
@@ -250,19 +226,15 @@
     "default": 499,
     "tuned": 408
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 499,
     "tuned": 408
    },
+   "all but identities": {
+    "default": 449,
+    "tuned": 408
+   },
    "all": {
-    "default": 449,
-    "tuned": 408
-   },
-   "all, guards on every branch": {
-    "default": 449,
-    "tuned": 408
-   },
-   "all, thread again before bce": {
     "default": 449,
     "tuned": 408
    }
@@ -288,19 +260,15 @@
     "default": 756,
     "tuned": 665
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 756,
     "tuned": 665
    },
+   "all but identities": {
+    "default": 706,
+    "tuned": 665
+   },
    "all": {
-    "default": 706,
-    "tuned": 665
-   },
-   "all, guards on every branch": {
-    "default": 706,
-    "tuned": 665
-   },
-   "all, thread again before bce": {
     "default": 706,
     "tuned": 665
    }
@@ -326,19 +294,15 @@
     "default": 139,
     "tuned": 131
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 139,
+    "tuned": 131
+   },
+   "all but identities": {
     "default": 139,
     "tuned": 131
    },
    "all": {
-    "default": 139,
-    "tuned": 131
-   },
-   "all, guards on every branch": {
-    "default": 139,
-    "tuned": 131
-   },
-   "all, thread again before bce": {
     "default": 139,
     "tuned": 131
    }
@@ -364,19 +328,15 @@
     "default": 32295,
     "tuned": 24750
    },
-   "thread+subst-mem": {
-    "default": 32295,
-    "tuned": 24750
+   "guards+identities": {
+    "default": 31981,
+    "tuned": 24593
+   },
+   "all but identities": {
+    "default": 31981,
+    "tuned": 24593
    },
    "all": {
-    "default": 31981,
-    "tuned": 24593
-   },
-   "all, guards on every branch": {
-    "default": 31981,
-    "tuned": 24593
-   },
-   "all, thread again before bce": {
     "default": 31981,
     "tuned": 24593
    }
@@ -402,19 +362,15 @@
     "default": 350,
     "tuned": 290
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 350,
     "tuned": 290
    },
+   "all but identities": {
+    "default": 330,
+    "tuned": 290
+   },
    "all": {
-    "default": 330,
-    "tuned": 290
-   },
-   "all, guards on every branch": {
-    "default": 330,
-    "tuned": 290
-   },
-   "all, thread again before bce": {
     "default": 330,
     "tuned": 290
    }
@@ -440,19 +396,15 @@
     "default": 288,
     "tuned": 227
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 288,
     "tuned": 227
    },
+   "all but identities": {
+    "default": 234,
+    "tuned": 227
+   },
    "all": {
-    "default": 234,
-    "tuned": 227
-   },
-   "all, guards on every branch": {
-    "default": 234,
-    "tuned": 227
-   },
-   "all, thread again before bce": {
     "default": 234,
     "tuned": 227
    }
@@ -478,59 +430,17 @@
     "default": 1251,
     "tuned": 1110
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "all but identities": {
     "default": 1251,
     "tuned": 1110
    },
    "all": {
     "default": 1251,
     "tuned": 1110
-   },
-   "all, guards on every branch": {
-    "default": 1251,
-    "tuned": 1110
-   },
-   "all, thread again before bce": {
-    "default": 1251,
-    "tuned": 1110
-   }
-  },
-  "chess-search": {
-   "old": {
-    "default": 327316,
-    "tuned": 297382
-   },
-   "thread": {
-    "default": 307524,
-    "tuned": 284842
-   },
-   "copies": {
-    "default": 327296,
-    "tuned": 301247
-   },
-   "guards": {
-    "default": 327316,
-    "tuned": 297382
-   },
-   "subst-mem": {
-    "default": 327150,
-    "tuned": 297382
-   },
-   "thread+subst-mem": {
-    "default": 307300,
-    "tuned": 284784
-   },
-   "all": {
-    "default": 307360,
-    "tuned": 279858
-   },
-   "all, guards on every branch": {
-    "default": 307280,
-    "tuned": 279818
-   },
-   "all, thread again before bce": {
-    "default": 305842,
-    "tuned": 278436
    }
   },
   "collatz": {
@@ -554,19 +464,15 @@
     "default": 6955,
     "tuned": 5769
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 6955,
+    "tuned": 5769
+   },
+   "all but identities": {
     "default": 4861,
     "tuned": 3675
    },
    "all": {
-    "default": 4861,
-    "tuned": 3675
-   },
-   "all, guards on every branch": {
-    "default": 4861,
-    "tuned": 3675
-   },
-   "all, thread again before bce": {
     "default": 4861,
     "tuned": 3675
    }
@@ -592,19 +498,15 @@
     "default": 70,
     "tuned": 70
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 70,
+    "tuned": 70
+   },
+   "all but identities": {
     "default": 70,
     "tuned": 70
    },
    "all": {
-    "default": 70,
-    "tuned": 70
-   },
-   "all, guards on every branch": {
-    "default": 70,
-    "tuned": 70
-   },
-   "all, thread again before bce": {
     "default": 70,
     "tuned": 70
    }
@@ -630,19 +532,15 @@
     "default": 30,
     "tuned": 30
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all but identities": {
     "default": 30,
     "tuned": 30
    },
    "all": {
-    "default": 30,
-    "tuned": 30
-   },
-   "all, guards on every branch": {
-    "default": 30,
-    "tuned": 30
-   },
-   "all, thread again before bce": {
     "default": 30,
     "tuned": 30
    }
@@ -668,19 +566,15 @@
     "default": 30,
     "tuned": 30
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all but identities": {
     "default": 30,
     "tuned": 30
    },
    "all": {
-    "default": 30,
-    "tuned": 30
-   },
-   "all, guards on every branch": {
-    "default": 30,
-    "tuned": 30
-   },
-   "all, thread again before bce": {
     "default": 30,
     "tuned": 30
    }
@@ -706,19 +600,15 @@
     "default": 80,
     "tuned": 60
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 80,
     "tuned": 60
    },
+   "all but identities": {
+    "default": 50,
+    "tuned": 50
+   },
    "all": {
-    "default": 50,
-    "tuned": 50
-   },
-   "all, guards on every branch": {
-    "default": 50,
-    "tuned": 50
-   },
-   "all, thread again before bce": {
     "default": 50,
     "tuned": 50
    }
@@ -744,19 +634,15 @@
     "default": 162,
     "tuned": 152
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 162,
     "tuned": 152
    },
+   "all but identities": {
+    "default": 160,
+    "tuned": 152
+   },
    "all": {
-    "default": 160,
-    "tuned": 152
-   },
-   "all, guards on every branch": {
-    "default": 160,
-    "tuned": 152
-   },
-   "all, thread again before bce": {
     "default": 160,
     "tuned": 152
    }
@@ -782,19 +668,15 @@
     "default": 759,
     "tuned": 661
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 759,
     "tuned": 661
    },
+   "all but identities": {
+    "default": 739,
+    "tuned": 661
+   },
    "all": {
-    "default": 739,
-    "tuned": 661
-   },
-   "all, guards on every branch": {
-    "default": 739,
-    "tuned": 661
-   },
-   "all, thread again before bce": {
     "default": 739,
     "tuned": 661
    }
@@ -820,19 +702,15 @@
     "default": 564,
     "tuned": 557
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 564,
+    "tuned": 557
+   },
+   "all but identities": {
     "default": 564,
     "tuned": 557
    },
    "all": {
-    "default": 564,
-    "tuned": 557
-   },
-   "all, guards on every branch": {
-    "default": 564,
-    "tuned": 557
-   },
-   "all, thread again before bce": {
     "default": 564,
     "tuned": 557
    }
@@ -858,21 +736,17 @@
     "default": 46361,
     "tuned": 44107
    },
-   "thread+subst-mem": {
-    "default": 46361,
+   "guards+identities": {
+    "default": 46169,
+    "tuned": 43915
+   },
+   "all but identities": {
+    "default": 45401,
     "tuned": 44107
    },
    "all": {
-    "default": 45401,
-    "tuned": 44107
-   },
-   "all, guards on every branch": {
-    "default": 45401,
-    "tuned": 44107
-   },
-   "all, thread again before bce": {
-    "default": 45401,
-    "tuned": 44107
+    "default": 45209,
+    "tuned": 43915
    }
   },
   "first-steps": {
@@ -896,19 +770,15 @@
     "default": 80,
     "tuned": 80
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 80,
+    "tuned": 80
+   },
+   "all but identities": {
     "default": 80,
     "tuned": 80
    },
    "all": {
-    "default": 80,
-    "tuned": 80
-   },
-   "all, guards on every branch": {
-    "default": 80,
-    "tuned": 80
-   },
-   "all, thread again before bce": {
     "default": 80,
     "tuned": 80
    }
@@ -934,19 +804,15 @@
     "default": 251,
     "tuned": 242
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 251,
+    "tuned": 242
+   },
+   "all but identities": {
     "default": 251,
     "tuned": 242
    },
    "all": {
-    "default": 251,
-    "tuned": 242
-   },
-   "all, guards on every branch": {
-    "default": 251,
-    "tuned": 242
-   },
-   "all, thread again before bce": {
     "default": 251,
     "tuned": 242
    }
@@ -972,19 +838,15 @@
     "default": 2289,
     "tuned": 1891
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 2289,
     "tuned": 1891
    },
+   "all but identities": {
+    "default": 2090,
+    "tuned": 1891
+   },
    "all": {
-    "default": 2090,
-    "tuned": 1891
-   },
-   "all, guards on every branch": {
-    "default": 2090,
-    "tuned": 1891
-   },
-   "all, thread again before bce": {
     "default": 2090,
     "tuned": 1891
    }
@@ -1010,19 +872,15 @@
     "default": 314,
     "tuned": 265
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 314,
+    "tuned": 265
+   },
+   "all but identities": {
     "default": 314,
     "tuned": 265
    },
    "all": {
-    "default": 314,
-    "tuned": 265
-   },
-   "all, guards on every branch": {
-    "default": 314,
-    "tuned": 265
-   },
-   "all, thread again before bce": {
     "default": 314,
     "tuned": 265
    }
@@ -1048,19 +906,15 @@
     "default": 8664,
     "tuned": 7996
    },
-   "thread+subst-mem": {
-    "default": 8161,
+   "guards+identities": {
+    "default": 8664,
+    "tuned": 7996
+   },
+   "all but identities": {
+    "default": 7584,
     "tuned": 7523
    },
    "all": {
-    "default": 7584,
-    "tuned": 7523
-   },
-   "all, guards on every branch": {
-    "default": 7584,
-    "tuned": 7523
-   },
-   "all, thread again before bce": {
     "default": 7584,
     "tuned": 7523
    }
@@ -1086,19 +940,15 @@
     "default": 2222,
     "tuned": 2000
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 2222,
     "tuned": 2000
    },
+   "all but identities": {
+    "default": 2036,
+    "tuned": 1910
+   },
    "all": {
-    "default": 2036,
-    "tuned": 1910
-   },
-   "all, guards on every branch": {
-    "default": 2036,
-    "tuned": 1910
-   },
-   "all, thread again before bce": {
     "default": 2036,
     "tuned": 1910
    }
@@ -1124,19 +974,15 @@
     "default": 1631,
     "tuned": 1596
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "all but identities": {
     "default": 1631,
     "tuned": 1596
    },
    "all": {
-    "default": 1631,
-    "tuned": 1596
-   },
-   "all, guards on every branch": {
-    "default": 1631,
-    "tuned": 1596
-   },
-   "all, thread again before bce": {
     "default": 1631,
     "tuned": 1596
    }
@@ -1162,19 +1008,15 @@
     "default": 149,
     "tuned": 142
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 149,
+    "tuned": 142
+   },
+   "all but identities": {
     "default": 149,
     "tuned": 142
    },
    "all": {
-    "default": 149,
-    "tuned": 142
-   },
-   "all, guards on every branch": {
-    "default": 149,
-    "tuned": 142
-   },
-   "all, thread again before bce": {
     "default": 149,
     "tuned": 142
    }
@@ -1200,19 +1042,15 @@
     "default": 28745,
     "tuned": 28330
    },
-   "thread+subst-mem": {
-    "default": 27821,
-    "tuned": 27441
+   "guards+identities": {
+    "default": 27783,
+    "tuned": 26358
+   },
+   "all but identities": {
+    "default": 26839,
+    "tuned": 25469
    },
    "all": {
-    "default": 26839,
-    "tuned": 25469
-   },
-   "all, guards on every branch": {
-    "default": 26839,
-    "tuned": 25469
-   },
-   "all, thread again before bce": {
     "default": 26839,
     "tuned": 25469
    }
@@ -1238,19 +1076,15 @@
     "default": 251,
     "tuned": 226
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 251,
     "tuned": 226
    },
+   "all but identities": {
+    "default": 231,
+    "tuned": 226
+   },
    "all": {
-    "default": 231,
-    "tuned": 226
-   },
-   "all, guards on every branch": {
-    "default": 231,
-    "tuned": 226
-   },
-   "all, thread again before bce": {
     "default": 231,
     "tuned": 226
    }
@@ -1276,19 +1110,15 @@
     "default": 200966,
     "tuned": 200618
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "all but identities": {
     "default": 200966,
     "tuned": 200618
    },
    "all": {
-    "default": 200966,
-    "tuned": 200618
-   },
-   "all, guards on every branch": {
-    "default": 200966,
-    "tuned": 200618
-   },
-   "all, thread again before bce": {
     "default": 200966,
     "tuned": 200618
    }
@@ -1314,19 +1144,15 @@
     "default": 50,
     "tuned": 50
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all but identities": {
     "default": 50,
     "tuned": 50
    },
    "all": {
-    "default": 50,
-    "tuned": 50
-   },
-   "all, guards on every branch": {
-    "default": 50,
-    "tuned": 50
-   },
-   "all, thread again before bce": {
     "default": 50,
     "tuned": 50
    }
@@ -1352,19 +1178,15 @@
     "default": 2289,
     "tuned": 2252
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "all but identities": {
     "default": 2289,
     "tuned": 2252
    },
    "all": {
-    "default": 2289,
-    "tuned": 2252
-   },
-   "all, guards on every branch": {
-    "default": 2289,
-    "tuned": 2252
-   },
-   "all, thread again before bce": {
     "default": 2289,
     "tuned": 2252
    }
@@ -1390,19 +1212,15 @@
     "default": 1185,
     "tuned": 952
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 1185,
     "tuned": 952
    },
+   "all but identities": {
+    "default": 1127,
+    "tuned": 952
+   },
    "all": {
-    "default": 1127,
-    "tuned": 952
-   },
-   "all, guards on every branch": {
-    "default": 1127,
-    "tuned": 952
-   },
-   "all, thread again before bce": {
     "default": 1127,
     "tuned": 952
    }
@@ -1428,19 +1246,15 @@
     "default": 2289,
     "tuned": 1891
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 2289,
     "tuned": 1891
    },
+   "all but identities": {
+    "default": 2090,
+    "tuned": 1891
+   },
    "all": {
-    "default": 2090,
-    "tuned": 1891
-   },
-   "all, guards on every branch": {
-    "default": 2090,
-    "tuned": 1891
-   },
-   "all, thread again before bce": {
     "default": 2090,
     "tuned": 1891
    }
@@ -1466,19 +1280,15 @@
     "default": 240,
     "tuned": 230
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 240,
+    "tuned": 230
+   },
+   "all but identities": {
     "default": 240,
     "tuned": 230
    },
    "all": {
-    "default": 240,
-    "tuned": 230
-   },
-   "all, guards on every branch": {
-    "default": 240,
-    "tuned": 230
-   },
-   "all, thread again before bce": {
     "default": 240,
     "tuned": 230
    }
@@ -1504,19 +1314,15 @@
     "default": 962,
     "tuned": 780
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 962,
+    "tuned": 780
+   },
+   "all but identities": {
     "default": 962,
     "tuned": 780
    },
    "all": {
-    "default": 962,
-    "tuned": 780
-   },
-   "all, guards on every branch": {
-    "default": 962,
-    "tuned": 780
-   },
-   "all, thread again before bce": {
     "default": 962,
     "tuned": 780
    }
@@ -1542,19 +1348,15 @@
     "default": 260,
     "tuned": 240
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 260,
     "tuned": 240
    },
+   "all but identities": {
+    "default": 240,
+    "tuned": 240
+   },
    "all": {
-    "default": 240,
-    "tuned": 240
-   },
-   "all, guards on every branch": {
-    "default": 240,
-    "tuned": 240
-   },
-   "all, thread again before bce": {
     "default": 240,
     "tuned": 240
    }
@@ -1580,19 +1382,15 @@
     "default": 2051,
     "tuned": 1716
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 2051,
     "tuned": 1716
    },
+   "all but identities": {
+    "default": 1970,
+    "tuned": 1716
+   },
    "all": {
-    "default": 1970,
-    "tuned": 1716
-   },
-   "all, guards on every branch": {
-    "default": 1970,
-    "tuned": 1716
-   },
-   "all, thread again before bce": {
     "default": 1970,
     "tuned": 1716
    }
@@ -1618,21 +1416,17 @@
     "default": 35638,
     "tuned": 28128
    },
-   "thread+subst-mem": {
-    "default": 34944,
-    "tuned": 27434
+   "guards+identities": {
+    "default": 32584,
+    "tuned": 26723
+   },
+   "all but identities": {
+    "default": 31587,
+    "tuned": 25650
    },
    "all": {
-    "default": 31966,
-    "tuned": 26029
-   },
-   "all, guards on every branch": {
-    "default": 31966,
-    "tuned": 26029
-   },
-   "all, thread again before bce": {
-    "default": 31897,
-    "tuned": 25960
+    "default": 31587,
+    "tuned": 25650
    }
   },
   "sha-chacha": {
@@ -1649,28 +1443,24 @@
     "tuned": 107862
    },
    "guards": {
-    "default": 124847,
-    "tuned": 106780
+    "default": 121007,
+    "tuned": 104860
    },
    "subst-mem": {
     "default": 125491,
     "tuned": 107102
    },
-   "thread+subst-mem": {
-    "default": 125491,
-    "tuned": 107102
+   "guards+identities": {
+    "default": 121007,
+    "tuned": 104860
+   },
+   "all but identities": {
+    "default": 111277,
+    "tuned": 105620
    },
    "all": {
-    "default": 115097,
-    "tuned": 107540
-   },
-   "all, guards on every branch": {
-    "default": 115097,
-    "tuned": 107540
-   },
-   "all, thread again before bce": {
-    "default": 115097,
-    "tuned": 107540
+    "default": 111277,
+    "tuned": 105620
    }
   },
   "sort": {
@@ -1694,19 +1484,15 @@
     "default": 4950,
     "tuned": 4563
    },
-   "thread+subst-mem": {
-    "default": 4655,
+   "guards+identities": {
+    "default": 4950,
+    "tuned": 4563
+   },
+   "all but identities": {
+    "default": 4329,
     "tuned": 4294
    },
    "all": {
-    "default": 4329,
-    "tuned": 4294
-   },
-   "all, guards on every branch": {
-    "default": 4329,
-    "tuned": 4294
-   },
-   "all, thread again before bce": {
     "default": 4329,
     "tuned": 4294
    }
@@ -1732,19 +1518,15 @@
     "default": 2932,
     "tuned": 2559
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 2932,
     "tuned": 2559
    },
+   "all but identities": {
+    "default": 2550,
+    "tuned": 2327
+   },
    "all": {
-    "default": 2550,
-    "tuned": 2327
-   },
-   "all, guards on every branch": {
-    "default": 2550,
-    "tuned": 2327
-   },
-   "all, thread again before bce": {
     "default": 2550,
     "tuned": 2327
    }
@@ -1770,19 +1552,15 @@
     "default": 1793,
     "tuned": 1404
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "all but identities": {
     "default": 1793,
     "tuned": 1404
    },
    "all": {
-    "default": 1793,
-    "tuned": 1404
-   },
-   "all, guards on every branch": {
-    "default": 1793,
-    "tuned": 1404
-   },
-   "all, thread again before bce": {
     "default": 1793,
     "tuned": 1404
    }
@@ -1808,19 +1586,15 @@
     "default": 10283,
     "tuned": 9262
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 10283,
+    "tuned": 9262
+   },
+   "all but identities": {
     "default": 8100,
     "tuned": 6558
    },
    "all": {
-    "default": 8100,
-    "tuned": 6558
-   },
-   "all, guards on every branch": {
-    "default": 8100,
-    "tuned": 6558
-   },
-   "all, thread again before bce": {
     "default": 8100,
     "tuned": 6558
    }
@@ -1846,19 +1620,15 @@
     "default": 754,
     "tuned": 594
    },
-   "thread+subst-mem": {
+   "guards+identities": {
     "default": 754,
     "tuned": 594
    },
+   "all but identities": {
+    "default": 606,
+    "tuned": 572
+   },
    "all": {
-    "default": 606,
-    "tuned": 572
-   },
-   "all, guards on every branch": {
-    "default": 606,
-    "tuned": 572
-   },
-   "all, thread again before bce": {
     "default": 606,
     "tuned": 572
    }
@@ -1884,19 +1654,15 @@
     "default": 3073,
     "tuned": 2453
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "all but identities": {
     "default": 3073,
     "tuned": 2453
    },
    "all": {
-    "default": 3073,
-    "tuned": 2453
-   },
-   "all, guards on every branch": {
-    "default": 3073,
-    "tuned": 2453
-   },
-   "all, thread again before bce": {
     "default": 3073,
     "tuned": 2453
    }
@@ -1922,19 +1688,15 @@
     "default": 1491,
     "tuned": 1340
    },
-   "thread+subst-mem": {
+   "guards+identities": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "all but identities": {
     "default": 1491,
     "tuned": 1340
    },
    "all": {
-    "default": 1491,
-    "tuned": 1340
-   },
-   "all, guards on every branch": {
-    "default": 1491,
-    "tuned": 1340
-   },
-   "all, thread again before bce": {
     "default": 1491,
     "tuned": 1340
    }

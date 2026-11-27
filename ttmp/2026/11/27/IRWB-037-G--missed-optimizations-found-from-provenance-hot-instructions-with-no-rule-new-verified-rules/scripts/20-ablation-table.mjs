@@ -1,8 +1,18 @@
 // The report's ablation tables from the outputs of 09-ablation.mjs: totals per variant with the difference to the
 // first variant, and per variant the projects that are higher than under the first.
-// usage: node 20-ablation-table.mjs ablation.json
+// Several files are merged (the same variants over disjoint sets of projects).
+// usage: node 20-ablation-table.mjs ablation.json [more.json...]
 import { readFileSync } from 'node:fs';
-const j = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+const files = process.argv.slice(2).map(f => JSON.parse(readFileSync(f, 'utf8')));
+const j = { pipeline: files[0].pipeline, rows: Object.assign({}, ...files.map(f => f.rows)), totals: {} };
+for (const f of files)
+  for (const [k, t] of Object.entries(f.totals)) {
+    j.totals[k] ??= { default: 0, tuned: 0 };
+    j.totals[k].default += t.default;
+    j.totals[k].tuned += t.tuned;
+  }
+console.log(`${Object.keys(j.rows).length} projects`);
+console.log('');
 const n = x => x.toLocaleString('en-US'), d = x => (x > 0 ? '+' : '') + n(x);
 const names = Object.keys(j.totals), base = j.totals[names[0]];
 console.log(`| Variant of ${j.pipeline} | Default options | Difference | Tuned | Difference |`);
