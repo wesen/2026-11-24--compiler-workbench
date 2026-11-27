@@ -22,7 +22,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | R1     | research: derive streaming attention by checked rewrites                    | done (design only; a ceiling)                                         | M      |
 | T2     | CUDA lowering, one kernel per statement, run on the GB10                    | done (IRWB-022-I merged, `2e035c6`)                                   | M      |
 | T3     | checked fusion                                                              | done (IRWB-029-D merged, `b53cded`..`e9c6ba2`; nine cells, all exact) | M      |
-| T3b    | parallel terms, serial fold, and a cost gate for fusion                     | ready (from T3's division-placement finding)                          | S–M    |
+| T3b    | parallel terms, serial fold, and a cost gate for fusion                     | done (IRWB-030-E merged, `49cb9c7`; all exact, nine never slower)     | S–M    |
 | T4     | tolerance calibration with mutants                                          | queued 4th (before the tolerance-checked stages)                      | M      |
 | T5     | implement the streaming-attention derivation                                | queued 8th                                                            | L      |
 | T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | queued 3rd                                                            | M–L    |
@@ -185,7 +185,7 @@ T8 (ONNX) is not queued.
   - Softmax reaches about 2×. Exact double `exp` bounds it, measured independently by four cells.
   - **Finding:** the hidden programs divide inside reductions (`sum(d) x / D`). There fused layernorm and attention lose to unfused, because the whole term, division included, runs in one thread's serial fold. With the division outside, the same code gains 2.1–3.2× (layernorm) and 1.3–1.4× (attention).
 
-### T3b: parallel terms, serial fold, and a cost gate for fusion _(ready, S–M; from T3)_
+### T3b: parallel terms, serial fold, and a cost gate for fusion _(done: IRWB-030-E, Fable, merged at `49cb9c7`; ten cells, all exact, nine never slower)_
 
 - **What we know:**
   - In block mode a row reduction runs on thread 0 with its whole body inlined.
@@ -194,6 +194,12 @@ T8 (ONNX) is not queued.
 - **What we don't know:** how much of the division-inside gap the staged terms close; whether a simple cost rule (fold body cost × rows / resident blocks) predicts when to refuse fusion.
 - **Measure:** the hidden T3 evaluation and `scripts/43-probe-division-placement.mjs`, aiming for no program slower than unfused, and the geomean.
 - **Depends on:** T3 (merged).
+- **Result (diary step 42):**
+  - Fable's implementation has a geomean speed-up of 1.86× over nine programs (the four hidden ones, the two "outside" variants and three held-out ones), and its worst program is 1.31×. Main's T3 code had 1.04×, with log-softmax 6.6× slower.
+  - Terms are staged for costly bodies. A launch-time gate checks both sides. Rows are written in place, so more blocks fit per SM.
+  - **Follow-ups:**
+    - declare the CUDA artifact's kernels through F23's `entities`;
+    - two framework findings, both unaddressed: recording a launch-time choice between checked artifacts (Opus), and the unchecked `baselineKey` contract (Fable).
 
 ### T4: tolerance calibration with mutants _(queued fourth; with F15)_
 

@@ -1155,3 +1155,36 @@ The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if av
   - **Results:** fused takes 0.36–0.80 of the unfused time on every multi-statement program, including attention-inside, at 0.80 (Opus: 0.94).
   - **Framework finding:** the differential's `baselineKey` contract (cases depend on the key alone) is not checked.
 - **By 07:52Z**, Terra low (C), Sol (A), Astra (B), DeepSeek xhigh (H) and GLM 5.3 high (F) are also done. DeepSeek high, GLM Flash high and GLM 5.3 max are still running.
+
+## Step 42: T3b evaluated (all ten exact, nine never slower); Fable merged
+
+**Hidden evaluation** (`scripts/50-eval-t3b.sh`, 08:22:00Z to 09:50:04Z, about 8 min per worktree). It covers the ten cells and the baseline, a detached worktree at `t3b-base` holding main's T3 code. The summary (`scripts/51-t3b-summary.py`, `results/eval-t3b-summary.txt`) gives speed-ups (unfused ÷ fused) on nine programs: the four fusable hidden ones, which divide inside, and the five extra ones (the two "outside" variants and the three held-out programs).
+
+| cell | minutes | geomean | worst (program) |
+|---|---|---|---|
+| Fable | 90 | **1.86×** | 1.31× (attention) |
+| Astra medium | 16 | 1.76× | 1.21× (mlp) |
+| Sol medium | 15 | 1.75× | 1.19× (attention) |
+| DeepSeek high | 105 | 1.74× | 1.08× |
+| GLM Flash high | 118 | 1.72× | 1.09× |
+| GLM 5.3 max | 96 | 1.72× | 1.07× |
+| Opus | 86 | 1.71× | 1.07× |
+| GLM 5.3 high | 89 | 1.70× | 1.10× |
+| DeepSeek xhigh | 74 | 1.70× | 1.08× |
+| Terra low | 7 | 1.27× | 0.15× (log-softmax) |
+| baseline (main, T3) | — | 1.04× | 0.15× (log-softmax) |
+
+- **Correctness:** every worktree passes every check: the T3 evaluation, each extra program's fused and unfused bits, and their `checkLowering` verdicts, all exact.
+- **Never slower:** nine cells meet "never slower" on all nine programs.
+- **The held-out programs caught what the brief's programs did not:**
+  - Main's T3 code is 6.6× slower on log-softmax (12.7 against 1.9 ms) and 0.87× on rmsnorm.
+  - Terra low, which staged only divisions, keeps the log-softmax regression. Its `exp` body stays serial.
+- **Where the leaders separate:**
+  - Fable is best on attention-inside (1.31×) and mlp (1.51×), from writing rows in place, which fits more blocks per SM.
+  - Astra (1.31×) is the only other cell to beat 1.2× on attention-inside.
+  - The rest cluster at 1.70–1.76×.
+- **Merge: Fable (IRWB-030-E).** Its 12 commits are cherry-picked onto main, ending at `49cb9c7`. `src/tensor` and `tests/tensor` are identical to the evaluated branch, and its files are Prettier-clean. `npm test` on main gives 460 pass, 0 fail, 3 skipped.
+- **Framework findings, both unchanged in the framework:**
+  - Opus: nothing records that a run chose one checked artifact over another by a rule at given shapes.
+  - Fable: the differential's `baselineKey` contract (cases are a function of the key) is not checked.
+- **Follow-up:** the tensor CUDA artifact should declare its kernels via F23's `entities`.
