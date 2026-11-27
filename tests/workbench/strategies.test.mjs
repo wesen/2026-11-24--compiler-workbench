@@ -108,7 +108,7 @@ test('wb.compiler and wb.source: declarations with ids and versions, and where e
   assert.match(c.passes.find(x => x.name === 'inline').source, /^src\/typed\/inline\.ts:\d+$/);
   const licm = c.passes.find(x => x.name === 'licm');
   assert.equal(licm.id, 'typed.licm');
-  assert.deepEqual(licm.needs, { loops: 'typed.loops@1' });
+  assert.deepEqual(licm.needs, { loops: 'typed.loops@2' });
   assert.match(licm.source, /^src\/typed\/passes\.ts:\d+$/);
   assert.deepEqual(c.analyses.map(a => a.name), ['cfg', 'dominators', 'loops', 'liveness', 'reaching', 'ranges']);
   // IRWB-003 adds speed after O2+
