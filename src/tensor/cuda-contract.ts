@@ -13,8 +13,8 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitCuda, takesGate } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { emitSchedule, takesGate, takesScheduledGate } from './cuda-source.js';
+import { ScheduleIR, scheduleTix, seedSchedule, type Schedule } from './schedule.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -97,6 +97,53 @@ export function kernelCorrespondence(
   };
 }
 
+function scheduleCorrespondence(schedule: Artifact<Schedule>, subject: Artifact<CudaUnit>): Correspondence {
+  return {
+    id: 'schedule-kernels',
+    from: { artifact: schedule.id, revision: schedule.revision },
+    to: { artifact: subject.id, revision: subject.revision },
+    relation: 'schedule-to-kernels',
+    evidence: { fn: schedule.value.fn.name },
+    sourceEntities: ScheduleIR.entities!(schedule.value),
+    targetEntities: subject.value.kernels.map(k => k.name),
+    entities: subject.value.kernels.map(k => ({
+      from: k.statements.map(s => schedule.value.fn.name + '/' + s),
+      to: [k.name],
+    })),
+  };
+}
+
+const seedLowering = defineTransformation({
+  id: 'tensor.seed-schedule',
+  version: '1',
+  description: 'Import the ordered fusion groups of one Tix function',
+  inputs: { baseline: TixIR, fn: FunctionName, fuse: Fuse },
+  outputs: { schedule: ScheduleIR },
+  cache: 'pure',
+  correspondence: [{ id: 'statements', from: 'baseline', to: 'schedule', relation: 'statement-schedule' }],
+  run(_ctx, { baseline, fn, fuse }) {
+    const schedule = seedSchedule(selectFunction(baseline.value, fn), fuse);
+    return {
+      outputs: { schedule },
+      correspondence: [
+        {
+          id: 'statements',
+          from: { artifact: baseline.id, revision: baseline.revision },
+          to: { artifact: schedule.id, revision: schedule.revision },
+          sourceEntities: TixIR.entities!(baseline.value),
+          targetEntities: ScheduleIR.entities!(schedule.value),
+          relation: 'statement-schedule',
+          evidence: { fn, fuse },
+          entities: schedule.value.fn.statements.map(s => ({
+            from: [fn + '/' + s.name],
+            to: [fn + '/' + s.name],
+          })),
+        },
+      ],
+    };
+  },
+});
+
 // The relation is exact: the lowered function must give the current revision's f32 meaning bit for bit, signed
 // zeros and infinities included (IRWB-019 F17). The emitter makes that possible: explicit round-to-nearest
 // arithmetic, so nothing contracts, and exp, log and tanh in double, rounded, which equal Math.fround(Math.exp(x))
@@ -124,12 +171,17 @@ function compare(expected: BufferValue, got: BufferValue) {
 // shapes (fusion.ts). The recipe's shapes are small, so the rule alone would show little of one side. For a
 // program with a gate, every sample is therefore a case on each side, and the program is run once with each side
 // forced. A program without a gate has one case per sample.
-type Gate = 'fused' | 'unfused';
-const sides: readonly Gate[] = ['fused', 'unfused'];
+type Gate = 'fused' | 'unfused' | 'scheduled';
+const casesForSource = (source: string): readonly Gate[] =>
+  takesScheduledGate(source)
+    ? ['fused', 'unfused', 'scheduled']
+    : takesGate(source)
+      ? ['fused', 'unfused']
+      : [];
 type CudaSample = ReturnType<typeof cudaCases>[number] & { gate?: Gate };
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
-  const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
+  const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse, schedule: ScheduleIR };
   const outputs = { subject: CudaIR };
   const ports = { baseline: TixIR, fn: FunctionName, ...outputs };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
@@ -147,7 +199,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       const samples = cudaCases(selectFunction(baseline.value, fn), random);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
       return takesGate(subject.value.source)
-        ? samples.flatMap(s => sides.map(gate => ({ ...s, gate })))
+        ? samples.flatMap(s => casesForSource(subject.value.source).map(gate => ({ ...s, gate })))
         : samples;
     },
     run: (side, _artifact, sample) => {
@@ -164,7 +216,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     }),
     // The case list depends on the subject only through whether it has a gate.
     baselineKey: ({ baseline, fn, subject }) =>
-      JSON.stringify([baseline.revision, fn, takesGate(subject.value.source)]),
+      JSON.stringify([baseline.revision, fn, casesForSource(subject.value.source)]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
     async decide({ baseline, fn, subject }, cases, todo) {
       if (subject.value.fn !== fn)
@@ -186,7 +238,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       };
       if (takesGate(source))
         await Promise.all(
-          sides.map(g =>
+          casesForSource(source).map(g =>
             run(
               pending.filter(c => c.gate === g),
               g,
@@ -202,12 +254,15 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
-    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
+    version: '3',
+    description: 'Print a checked schedule and compare its CUDA execution with the current Tix function',
     inputs,
     outputs,
     cache: 'never',
-    correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' }],
+    correspondence: [
+      { id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' },
+      { id: 'schedule-kernels', from: 'schedule', to: 'subject', relation: 'schedule-to-kernels' },
+    ],
     ensures: [
       {
         invariant,
@@ -218,17 +273,19 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         },
       },
     ],
-    run(_ctx, { baseline, fn, fuse }) {
-      const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
+    run(_ctx, { baseline, fn, schedule }) {
+      const plan = schedule.value;
       const kernels = plan.groups.map(g => ({
         name: g.kernel,
         mapping: g.mapping,
         statements: g.statements,
         ...(g.gated && { gated: true }),
       }));
-      const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
-      return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
+      const subject = cudaArtifact(fn, emitSchedule(plan), kernels);
+      return {
+        outputs: { subject },
+        correspondence: [kernelCorrespondence(baseline, subject), scheduleCorrespondence(schedule, subject)],
+      };
     },
   });
 
@@ -242,11 +299,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     const manager = options?.manager ?? new AnalysisManager();
     const fuse = options?.fuse !== false;
     try {
+      const { outputs } = await manager.execute(seedLowering, { baseline, fn, fuse });
+      const schedule = scheduleTix(outputs.schedule.value.fn, fuse, outputs.schedule).artifact;
       if (candidate)
-        await manager.verifyTransformation({ baseline, fn, fuse }, { subject: candidate }, pass, [
+        await manager.verifyTransformation({ baseline, fn, fuse, schedule }, { subject: candidate }, pass, [
           kernelCorrespondence(baseline, candidate),
+          scheduleCorrespondence(schedule, candidate),
         ]);
-      else await manager.execute(pass, { baseline, fn, fuse });
+      else await manager.execute(pass, { baseline, fn, fuse, schedule });
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

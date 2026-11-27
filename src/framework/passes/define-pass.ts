@@ -225,7 +225,7 @@ function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, ch
 export function applyNativePassSync<S, P>(
   pass: Pass<S, {}, P>,
   before: Artifact<S>,
-  gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
+  gate: (before: Artifact<S>, candidate: Artifact<S>, correspondence: EntityCorrespondence) => CheckResult,
   params?: P,
 ): PassResult<S> {
   if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
@@ -249,7 +249,7 @@ export function applyNativePassSync<S, P>(
   const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
   if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
   enforceWrites(pass, changes);
-  const contract = gate(before, after);
+  const contract = gate(before, after, correspondence);
   if (contract?.ok !== true)
     throw new PassError('contractRejected', contract?.reason ?? 'Candidate rejected', contract?.evidence);
   return {

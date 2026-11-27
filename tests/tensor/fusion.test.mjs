@@ -36,7 +36,7 @@ test('every corpus program is one kernel; the row programs run one block per row
   assert.ok(softmax.reasons.some(r => /thread 0 computes m/.test(r)));
 });
 
-test('fuse: false is stage 2 byte for byte, and a one-statement program is the same either way', () => {
+test('fuse: false is stage 2 byte for byte, and tiled singletons keep one definition', () => {
   const digests = JSON.parse(
     readFileSync(
       new URL(
@@ -55,7 +55,8 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
   }
   for (const name of ['matmul', 'conv2d']) {
     const program = corpus(name);
-    assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
+    assert.equal(kernels(cudaSource(program, name)), 1);
+    assert.match(cudaSource(program, name), /template <int TileMode>/);
   }
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
 });
