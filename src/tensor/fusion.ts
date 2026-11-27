@@ -263,21 +263,56 @@ export function groupCap(group: FusionGroup, tensors: ReadonlyMap<string, Tensor
   return members.some(m => operands(m.expr, false)) ? blockThreads.contraction : blockThreads.rows;
 }
 
-// IRWB-030-F cost gate. In block mode the row members run on `points x threads-per-block` threads, each computing
-// `row-length / threads` elements, where stage 2 runs `points x row-length` threads, one element each. When
-// `points x threads` already saturates the GPU, the total work decides and fusion also saves global traffic; when
-// it does not and the unfused mapping would saturate, fusion is slower. The threshold below is the measured
-// crossover, not a round number: scripts/01 in the ticket sweeps fused against unfused over the number of rows on
-// streaming-bound row members (softmax, layernorm at 16 MiB) and on contraction row members (attention, mlp), and
-// the constant is where the fused/unfused ratio crosses 1 on those sweeps.
+// IRWB-030-F cost gate. In block mode the row members run on `points x threads-per-block` threads, each
+// computing `row-length / threads` elements, where stage 2 runs `points x row-length` threads, one element each.
+// When `points x threads` already saturates the GPU, the total work decides and fusion also saves global
+// traffic; when it does not and the unfused mapping would saturate, fusion is slower. The constant below is the
+// upper edge of the measured crossover band, not a round number: scripts 02 and 03 in the ticket sweep fused
+// against unfused over the number of rows. The one family that crosses is mlp (every row member a contraction
+// reading a strided global operand): fused/unfused is 1.78 at 8 192 fused threads, 1.19 at 12 288 and 0.99 at
+// 16 384, so the gate refuses below 16 384. The streaming families (softmax, layernorm) and attention never
+// crossed: down to 512 fused threads they are faster fused (0.45x to 0.9x), because their row-scalar members
+// carry a reduction that spans the row, and stage 2 pays the same serial fold on one thread per row - so the
+// second clause fuses those groups at any size.
 export const gateThreads = 16384;
+
+/** The serial term count of an expression at the given shape values: a reduction contributes the product of its
+ * axes' extents times its body's terms per iteration (a split sum's outer fold is short, but each of its terms
+ * carries the inner sum, so the count stays proportional to the row it spans). Loads and literals are one step. */
+function serialTerms(e: Expr, dims: ReadonlyMap<string, number>): number | undefined {
+  switch (e.kind) {
+    case 'reduce': {
+      let outer = 1;
+      for (const a of e.axes) {
+        const x = a.extent;
+        if (x.kind === 'tail') return undefined;
+        const dim = value(x.dim, dims);
+        if (!Number.isSafeInteger(dim) || dim < 0) return undefined;
+        outer *= x.kind === 'dim' ? dim : Math[x.rounding](dim / width);
+      }
+      const body = serialTerms(e.body, dims);
+      return body === undefined ? undefined : outer * (1 + body);
+    }
+    case 'op': {
+      let sum = 0;
+      for (const a of e.args) {
+        const n = serialTerms(a, dims);
+        if (n === undefined) return undefined;
+        sum += n;
+      }
+      return sum;
+    }
+    default:
+      return 1;
+  }
+}
 
 /** The gate's decision for one block-mode group at the given shape values: fuse, or fall back to stage 2. */
 function gateFuses(
   group: FusionGroup,
   tensors: ReadonlyMap<string, Tensor>,
   dims: ReadonlyMap<string, number>,
-): { fuse: boolean; points: number; threads: number; longest: number } | undefined {
+): { fuse: boolean; points: number; threads: number; longest: number; serial: number } | undefined {
   const dim = (a: Affine) => {
     const n = value(a, dims);
     return Number.isSafeInteger(n) && n >= 0 ? n : undefined;
@@ -300,9 +335,22 @@ function gateFuses(
     longest = Math.max(longest, product);
   }
   const threads = Math.min(groupCap(group, tensors), Math.max(32, Math.ceil(longest / 32) * 32));
-  // A row that fits in its block's threads keeps stage 2's concurrency; a longer row loses it, so the group fuses
-  // only when the fused thread count still reaches the measured saturation threshold.
-  return { fuse: longest <= threads || points * threads >= gateThreads, points, threads, longest };
+  // The serial chain a row-scalar member's reduction puts on one thread, at its deepest the longest row.
+  let serial = 0;
+  for (const name of group.statements) {
+    const m = tensors.get(name) as Statement;
+    if (m.axes.length !== group.depth) continue;
+    const terms = serialTerms(m.expr, dims);
+    if (terms === undefined) return undefined;
+    serial = Math.max(serial, terms);
+  }
+  // A row that fits in its block's threads keeps stage 2's concurrency; a longer row loses it, so the group
+  // fuses only when the fused thread count still reaches the measured saturation threshold - unless a
+  // row-scalar reduction spans the row, in which case stage 2 pays the same serial fold on fewer threads and
+  // the fused kernel was measured never slower at any size.
+  const fuse =
+    longest <= threads || points * threads >= gateThreads || serial >= longest;
+  return { fuse, points, threads, longest, serial };
 }
 
 /** Stage 3's plan with the cost gate applied at the launch shape values (IRWB-030-F). A block-mode group whose
@@ -330,7 +378,8 @@ export function gatedPlan(fn: Fn, dims?: ReadonlyMap<string, number>): FusionPla
       reason:
         `${decision.points} block points x ${decision.threads} threads = ${decision.points * decision.threads}` +
         ` fused threads, below the measured ${gateThreads} that saturate the GPU, with rows of ${decision.longest}` +
-        ' elements: the row members would run on fewer threads than stage 2, so the group stays unfused',
+        ' elements and no row reduction spanning a row to equalize the serial cost: the row members would run' +
+        ' on fewer threads than stage 2, so the group stays unfused',
     });
     for (const s of g.statements) {
       const single = tensors.get(s) as Statement;

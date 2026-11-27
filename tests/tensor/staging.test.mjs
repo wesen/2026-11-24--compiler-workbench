@@ -119,23 +119,42 @@ test('the cost gate keeps corpus sizes fused and refuses few-row block groups wi
     assert.equal(gate.groups.length, 1, name);
     assert.deepEqual(gate.refusals, [], name);
   }
-  // Few rows of a long row: the fused mapping would run on 32 x 128 threads where stage 2 runs 32 x 65536.
-  const fn = fnOf(insideLayernorm, 'layernorm');
-  const gate = gatedPlan(fn, new Map([['N', 32], ['D', 65536]]));
-  assert.equal(gate.groups.length, 4);
+  // Few rows of a long row with no row reduction to equalize the serial cost: the fused mapping would run on
+  // 32 x 128 threads where stage 2 runs 32 x 65536. (A group whose row-scalar reduction spans the row, like
+  // layernorm's mean, stays fused at any size: stage 2 pays the same serial fold on one thread per row.)
+  const elementwise = program(
+    'fn layernorm(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {\n' +
+      '  t[i] = x[i,0] * 2;\n' +
+      '  y[i,j] = t[i] + x[i,j] * gamma[j] + beta[j];\n' +
+      '  return y;\n' +
+      '}',
+  );
+  const gate = gatedPlan(fnOf(elementwise), new Map([['N', 32], ['D', 65536]]));
+  assert.equal(gate.groups.length, 2);
   assert.deepEqual(
     gate.groups.map(g => [g.mapping, g.statements.join(',')]),
     [
-      ['thread', 'mean'],
-      ['thread', 'centered'],
-      ['thread', 'variance'],
+      ['thread', 't'],
       ['thread', 'y'],
     ],
   );
   assert.match(gate.refusals[0].reason, /32 block points x 128 threads = 4096 fused threads/);
   assert.match(gate.refusals[0].reason, /below the measured \d+ that saturate the GPU/);
+  // The measured loser, mlp at few rows (script 03: 1.78x slower fused at 8 192 fused threads), is refused.
+  const mlp = compileTix(readFileSync(new URL('../../corpus/tensor/mlp/main.tix', import.meta.url), 'utf8'));
+  const gatedMlp = gatedPlan(mlp.current.value.functions[0], new Map([['N', 128], ['D', 256], ['H', 1024], ['O', 256]]));
+  assert.equal(gatedMlp.groups.length, 3);
+  assert.match(gatedMlp.refusals[0].reason, /8192 fused threads/);
+  // mlp at the corpus size fuses.
+  const corpusMlp = gatedPlan(mlp.current.value.functions[0], new Map([['N', 1024], ['D', 256], ['H', 1024], ['O', 256]]));
+  assert.equal(corpusMlp.groups.length, 1);
+  assert.deepEqual(corpusMlp.refusals, []);
+  // A row reduction that spans the row keeps the group fused at any size (measured: never slower).
+  const spans = gatedPlan(fnOf(insideLayernorm, 'layernorm'), new Map([['N', 4], ['D', 262144]]));
+  assert.equal(spans.groups.length, 1);
+  assert.deepEqual(spans.refusals, []);
   // A row that fits in its block's threads loses nothing and stays fused at any size.
-  const short = gatedPlan(fn, new Map([['N', 2], ['D', 32]]));
+  const short = gatedPlan(fnOf(insideLayernorm, 'layernorm'), new Map([['N', 2], ['D', 32]]));
   assert.equal(short.groups.length, 1);
   assert.deepEqual(short.refusals, []);
   // Thread-mode groups are never gated: their mapping is stage 2's.
@@ -149,11 +168,14 @@ test('the cost gate keeps corpus sizes fused and refuses few-row block groups wi
 
 test('runTixCuda lowerings cannot be slower than fuse: false at the gate, and cudaSource stays ungated', () => {
   // The gate's refusal path is stage 2's emitter; the emitted source has one kernel per statement.
-  const fn = fnOf(insideLayernorm, 'layernorm');
-  const gate = gatedPlan(fn, new Map([['N', 32], ['D', 65536]]));
+  const elementwise = compileTix(
+    'fn f(x: f32[N,C]): f32[N,C] { t[i] = x[i,0] * 2; y[i,j] = t[i] + x[i,j]; return y; }',
+  );
+  const fn = fnOf(elementwise);
+  const gate = gatedPlan(fn, new Map([['N', 32], ['C', 65536]]));
   const ungated = planFusion(fn);
   assert.notEqual(gate.groups.length, ungated.groups.length);
   // cudaSource (no shapes) is the fully fused plan: one kernel.
-  const source = cudaSource(insideLayernorm, 'layernorm');
+  const source = cudaSource(elementwise, 'f');
   assert.equal((source.match(/__global__ void/g) ?? []).length, 1);
 });

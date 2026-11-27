@@ -1,0 +1,17 @@
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-g-h-irwb-030-f/dist/tensor/model.js:19
+    return a.terms.reduce((v, [name, k]) => v + env.get(name) * k, a.constant);
+                                                    ^
+
+TypeError: env.get is not a function
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-g-h-irwb-030-f/dist/tensor/model.js:19:53
+    at Array.reduce (<anonymous>)
+    at value (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-g-h-irwb-030-f/dist/tensor/model.js:19:20)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-g-h-irwb-030-f/ttmp/2026/11/27/IRWB-030-F--fusion-that-is-never-slower-parallel-reduction-terms-and-a-launch-shape-cost-gate/scripts/02-gate-calibration.mjs:70:38
+    at Array.map (<anonymous>)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-g-h-irwb-030-f/ttmp/2026/11/27/IRWB-030-F--fusion-that-is-never-slower-parallel-reduction-terms-and-a-launch-shape-cost-gate/scripts/02-gate-calibration.mjs:70:29
+    at Array.map (<anonymous>)
+    at makeInputs (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-g-h-irwb-030-f/ttmp/2026/11/27/IRWB-030-F--fusion-that-is-never-slower-parallel-reduction-terms-and-a-launch-shape-cost-gate/scripts/02-gate-calibration.mjs:69:15)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-g-h-irwb-030-f/ttmp/2026/11/27/IRWB-030-F--fusion-that-is-never-slower-parallel-reduction-terms-and-a-launch-shape-cost-gate/scripts/02-gate-calibration.mjs:108:20
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+
+Node.js v24.18.0

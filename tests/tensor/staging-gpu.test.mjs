@@ -144,21 +144,28 @@ test('GB10: the inside placements are accepted by the exact lowering contract', 
 });
 
 test('GB10: a gated (unfused) lowering passes the contract as a candidate, and is what runTixCuda runs', async () => {
-  const fn = features.current.value.functions.find(f => f.name === 'inside');
-  // Few rows of a long row: the gate refuses; runTixCuda runs stage 2's kernels and stays exact.
+  // A block group with no row reduction spanning the row: at two rows the gate refuses (fewer than the measured
+  // saturation threshold of fused threads), runTixCuda runs stage 2's kernels, and both stay exact. A group whose
+  // row reduction spans the row (the inside placements) fuses at any size.
+  const fewrows = compileTix(
+    'fn f(x: f32[N,C]): f32[N,C] { t[i] = x[i,0] * 2; y[i,j] = t[i] + x[i,j]; return y; }',
+  );
+  const fn = fewrows.current.value.functions[0];
   const random = seededRandom(35);
-  const tensors = inputs(fn, new Map([['N', 2], ['D', 1024]]), random);
-  const result = await runTixCuda(features, 'inside', tensors);
-  equal(result, runTix(features, 'inside', tensors));
+  const x = {
+    shape: [2, 1024],
+    data: Float32Array.from({ length: 2048 }, () => 2 * random() - 1),
+  };
+  const result = await runTixCuda(fewrows, 'f', { x });
+  equal(result, runTix(fewrows, 'f', { x }));
   // The gated source itself, checked through the transformation's candidate path.
-  const gate = gatedPlan(fn, new Map([['N', 2], ['D', 1024]]));
-  assert.equal(gate.groups.length, 4);
+  const gate = gatedPlan(fn, new Map([['N', 2], ['C', 1024]]));
+  assert.equal(gate.groups.length, 2);
   const source = emitCuda(fn, gate);
   const kernels = gate.groups.map(g => ({ name: g.kernel, mapping: g.mapping, statements: g.statements }));
-  const verdict = await checkCudaLowering(
-    features.current,
-    'inside',
-    cudaArtifact('inside', source, kernels),
-  );
+  const verdict = await checkCudaLowering(fewrows.current, 'f', cudaArtifact('f', source, kernels));
   assert.deepEqual(verdict, { accepted: true, relation: 'exact' });
+  // The row-spanning reductions of the inside placement keep that group fused at any size.
+  const inside = features.current.value.functions.find(f => f.name === 'inside');
+  assert.equal(gatedPlan(inside, new Map([['N', 2], ['D', 1024]])).groups.length, 1);
 });
