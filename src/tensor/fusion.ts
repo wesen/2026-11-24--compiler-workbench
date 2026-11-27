@@ -245,10 +245,14 @@ export function planFusion(fn: Fn): FusionPlan {
   return { fn: fn.name, groups, refusals };
 }
 
-// Threads per block in block mode (IRWB-029-D diary step 4, caps 64, 128 and 256 measured on softmax, layernorm,
-// attention and mlp): 64 when a member's reduction reads a tensor from global memory (a contraction operand:
-// attention's k and v, mlp's w and v), 128 otherwise (rows only: softmax, layernorm).
-export const blockThreads = { rows: 128, contraction: 64 };
+// Threads per block in block mode. The contraction cap (a member's reduction reads a tensor from global memory:
+// attention's k and v, mlp's w and v) is IRWB-029-D's measurement, unchanged: 64. The rows-only cap is
+// IRWB-030-F's re-measurement with staged reductions (script 06 in the ticket, three benchmark calls per cap,
+// GB10): staging parallelizes the row-scalar phase across the block, so bigger blocks pay off where stage 3
+// (whose thread 0 carried the whole serial reduction) measured 128 best - layernorm 0.209 ms at 128 against
+// 0.189 at 256, layernorm-inside 0.224 against 0.215, softmax 0.390 against 0.385, and 512 is worse again
+// (0.253, 0.263, 0.380).
+export const blockThreads = { rows: 256, contraction: 64 };
 
 /** A group's block-mode thread cap: 64 when some member's reduction reads a tensor from global memory. */
 export function groupCap(group: FusionGroup, tensors: ReadonlyMap<string, Tensor>): number {

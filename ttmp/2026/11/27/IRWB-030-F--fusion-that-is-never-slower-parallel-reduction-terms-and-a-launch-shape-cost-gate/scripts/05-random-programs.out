@@ -1,0 +1,41 @@
+{"p":0,"revision":"original","statements":3,"kernels":2,"groups":["block:t0,t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":0,"revision":"inline+split","statements":2,"kernels":2,"groups":["thread:t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":1,"revision":"original","statements":6,"kernels":3,"groups":["thread:t0","thread:t1,t2,t3,t4","thread:t5"],"staged":[],"check":"exact","gated":"identical"}
+{"p":1,"revision":"inline+split","statements":2,"kernels":2,"groups":["thread:t4","thread:t5"],"staged":[],"check":"exact","gated":"identical"}
+{"p":2,"revision":"original","statements":2,"kernels":2,"groups":["thread:t0","thread:t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":2,"revision":"inline+split","statements":2,"kernels":2,"groups":["thread:t0","thread:t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":3,"revision":"original","statements":5,"kernels":5,"groups":["thread:t0","thread:t1","thread:t2","thread:t3","thread:t4"],"staged":[],"check":"exact","gated":"identical"}
+{"p":3,"revision":"inline+split","statements":5,"kernels":5,"groups":["thread:t0","thread:t1","thread:t2","thread:t3","thread:t4"],"staged":[],"check":"exact","gated":"identical"}
+{"p":4,"revision":"original","statements":2,"kernels":1,"groups":["thread:t0,t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":4,"revision":"inline+split","statements":1,"kernels":1,"groups":["thread:t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":5,"revision":"original","statements":2,"kernels":1,"groups":["thread:t0,t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":5,"revision":"inline+split","statements":2,"kernels":1,"groups":["thread:t0,t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":6,"revision":"original","statements":3,"kernels":2,"groups":["thread:t0,t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":6,"revision":"inline+split","statements":3,"kernels":2,"groups":["thread:t0,t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":7,"revision":"original","statements":3,"kernels":3,"groups":["thread:t0","thread:t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":7,"revision":"inline+split","statements":3,"kernels":3,"groups":["thread:t0","thread:t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":8,"revision":"original","statements":6,"kernels":2,"groups":["thread:t0","block:t1,t2,t3,t4,t5"],"staged":["t2: max(C)"],"check":"exact","gated":"identical"}
+{"p":8,"revision":"inline+split","statements":4,"kernels":2,"groups":["thread:t0","block:t1,t2,t5"],"staged":["t2: max(C)"],"check":"exact","gated":"identical"}
+{"p":9,"revision":"original","statements":4,"kernels":4,"groups":["thread:t0","thread:t1","thread:t2","thread:t3"],"staged":[],"check":"exact","gated":"identical"}
+{"p":9,"revision":"inline+split","statements":4,"kernels":4,"groups":["thread:t0","thread:t1","thread:t2","thread:t3"],"staged":[],"check":"exact","gated":"identical"}
+{"p":10,"revision":"original","statements":4,"kernels":1,"groups":["block:t0,t1,t2,t3"],"staged":[],"check":"exact","gated":"identical"}
+{"p":10,"revision":"inline+split","statements":3,"kernels":1,"groups":["block:t1,t2,t3"],"staged":["t2: sum(ceil(D / 4))"],"check":"exact","gated":"identical"}
+{"p":11,"revision":"original","statements":3,"kernels":3,"groups":["thread:t0","thread:t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":11,"revision":"inline+split","statements":3,"kernels":3,"groups":["thread:t0","thread:t1","thread:t2"],"staged":[],"check":"exact","gated":"identical"}
+{"p":12,"revision":"original","statements":5,"kernels":1,"groups":["block:t0,t1,t2,t3,t4"],"staged":["t0: max(C)","t2: sum(C)"],"check":"exact","gated":"identical"}
+{"p":12,"revision":"inline+split","statements":5,"kernels":1,"groups":["block:t0,t1,t2,t3,t4"],"staged":["t0: max(C)","t2: sum(ceil(C / 4))"],"check":"exact","gated":"identical"}
+{"p":13,"revision":"original","statements":4,"kernels":1,"groups":["thread:t0,t1,t2,t3"],"staged":[],"check":"exact","gated":"identical"}
+{"p":13,"revision":"inline+split","statements":4,"kernels":1,"groups":["thread:t0,t1,t2,t3"],"staged":[],"check":"exact","gated":"identical"}
+{"p":14,"revision":"original","statements":5,"kernels":1,"groups":["block:t0,t1,t2,t3,t4"],"staged":["t1: max(C)"],"check":"exact","gated":"identical"}
+{"p":14,"revision":"inline+split","statements":4,"kernels":1,"groups":["block:t0,t1,t2,t4"],"staged":["t1: max(C)"],"check":"exact","gated":"identical"}
+{"p":15,"revision":"original","statements":2,"kernels":2,"groups":["thread:t0","thread:t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":15,"revision":"inline+split","statements":2,"kernels":2,"groups":["thread:t0","thread:t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":16,"revision":"original","statements":4,"kernels":3,"groups":["thread:t0","thread:t1","thread:t2,t3"],"staged":[],"check":"exact","gated":"identical"}
+{"p":16,"revision":"inline+split","statements":4,"kernels":3,"groups":["thread:t0","thread:t1","thread:t2,t3"],"staged":[],"check":"exact","gated":"identical"}
+{"p":17,"revision":"original","statements":6,"kernels":4,"groups":["thread:t0","thread:t1,t2","thread:t3","thread:t4,t5"],"staged":[],"check":"exact","gated":"identical"}
+{"p":17,"revision":"inline+split","statements":3,"kernels":3,"groups":["thread:t2","thread:t3","thread:t5"],"staged":[],"check":"exact","gated":"identical"}
+{"p":18,"revision":"original","statements":2,"kernels":2,"groups":["thread:t0","thread:t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":18,"revision":"inline+split","statements":2,"kernels":2,"groups":["thread:t0","thread:t1"],"staged":[],"check":"exact","gated":"identical"}
+{"p":19,"revision":"original","statements":6,"kernels":5,"groups":["thread:t0","thread:t1","thread:t2","thread:t3","thread:t4,t5"],"staged":[],"check":"exact","gated":"identical"}
+{"p":19,"revision":"inline+split","statements":6,"kernels":5,"groups":["thread:t0","thread:t1","thread:t2","thread:t3","thread:t4,t5"],"staged":[],"check":"exact","gated":"identical"}
+{"accepted":40,"total":40,"gated":40,"gatedTotal":40,"stagedPrograms":7,"blockPrograms":9,"multiKernel":22}

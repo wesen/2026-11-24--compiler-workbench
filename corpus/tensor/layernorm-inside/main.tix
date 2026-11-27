@@ -1,0 +1,9 @@
+// The "inside" division placement of layernorm: each term of the mean and variance reductions carries the
+// division by D, so a serial fold pays it once per element (IRWB-030-F's motivating case).
+fn layernorm(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {
+  mean[i] = sum(d) x[i,d] / D;
+  centered[i,j] = x[i,j] - mean[i];
+  variance[i] = sum(d) centered[i,d] * centered[i,d] / D;
+  y[i,j] = centered[i,j] / sqrt(variance[i] + eps[0]) * gamma[j] + beta[j];
+  return y;
+}

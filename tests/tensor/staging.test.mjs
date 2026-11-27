@@ -138,7 +138,7 @@ test('the cost gate keeps corpus sizes fused and refuses few-row block groups wi
       ['thread', 'y'],
     ],
   );
-  assert.match(gate.refusals[0].reason, /32 block points x 128 threads = 4096 fused threads/);
+  assert.match(gate.refusals[0].reason, /32 block points x 256 threads = 8192 fused threads/);
   assert.match(gate.refusals[0].reason, /below the measured \d+ that saturate the GPU/);
   // The measured loser, mlp at few rows (script 03: 1.78x slower fused at 8 192 fused threads), is refused.
   const mlp = compileTix(readFileSync(new URL('../../corpus/tensor/mlp/main.tix', import.meta.url), 'utf8'));

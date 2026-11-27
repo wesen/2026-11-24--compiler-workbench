@@ -1,0 +1,8 @@
+{"name":"matmul","fn":"matmul","cases":36,"elements":816,"coldMs":2730,"memoMs":1,"executions":2,"accepted":true,"relation":"exact"}
+{"name":"softmax","fn":"softmax","cases":32,"elements":360,"coldMs":4097,"memoMs":1,"executions":2,"accepted":true,"relation":"exact"}
+{"name":"layernorm","fn":"layernorm","cases":32,"elements":560,"coldMs":8323,"memoMs":2,"executions":2,"accepted":true,"relation":"exact"}
+{"name":"layernorm-inside","fn":"layernorm","cases":32,"elements":560,"coldMs":10301,"memoMs":1,"executions":2,"accepted":true,"relation":"exact"}
+{"name":"attention","fn":"attention","cases":40,"elements":1300,"coldMs":7249,"memoMs":2,"executions":2,"accepted":true,"relation":"exact"}
+{"name":"attention-inside","fn":"attention","cases":40,"elements":1300,"coldMs":3103,"memoMs":1,"executions":2,"accepted":true,"relation":"exact"}
+{"name":"mlp","fn":"mlp","cases":40,"elements":1520,"coldMs":17138,"memoMs":2,"executions":2,"accepted":true,"relation":"exact"}
+{"name":"conv2d","fn":"conv2d","cases":28,"elements":17000,"coldMs":19548,"memoMs":1,"executions":2,"accepted":true,"relation":"exact"}
