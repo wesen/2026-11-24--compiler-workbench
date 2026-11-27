@@ -9,7 +9,13 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/passes/define-pass.ts
+      Note: Pass-owned structural postconditions
+    - Path: repo://src/tensor/schedule.ts
+      Note: Schedule vocabulary, validation and pass strategy
+    - Path: repo://src/tensor/tile-source.ts
+      Note: CUDA interpretation of tiled iteration
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T10:04:06.443492115-05:00

@@ -11,10 +11,11 @@ import {
   type DifferentialEvidence,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
+import { makeCorrespondence } from '../framework/ir/index.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { printSchedule, takesGate } from './cuda-source.js';
-import { scheduleFunction } from './schedule.js';
+import { hasDispatch, foldsOf, panelAssignments, ScheduleIR, scheduleFunction } from './schedule.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -79,10 +80,59 @@ export function cudaArtifact(fn: string, source: string, kernels: CudaKernel[] =
   return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source, kernels });
 }
 
+/** Both public execution and differential verification consume this exact artifact chain. */
+export function compileCudaPipeline(baseline: Artifact<Module>, fn: string, fuse: boolean) {
+  const f = selectFunction(baseline.value, fn);
+  const { initial, artifact: schedule, steps } = scheduleFunction(f, fuse);
+  const kernels = schedule.value.groups.map(g => ({
+    name: g.kernel,
+    mapping: g.mapping,
+    statements: g.statements,
+    ...(hasDispatch(g) && { gated: true }),
+  }));
+  const cuda = cudaArtifact(fn, printSchedule(schedule.value), kernels);
+  const ref = (a: Artifact) => ({ artifact: a.id, revision: a.revision });
+  const fromTix = [],
+    toCuda = [];
+  for (const g of schedule.value.groups) {
+    toCuda.push({ from: [g.kernel], to: [g.kernel], relation: 'prints' });
+    for (const n of g.statements) {
+      const folds = foldsOf(f.statements.find(s => s.name === n)!).map(r => r.id);
+      fromTix.push({ from: [fn + '/' + n], to: [g.kernel, ...folds], relation: 'schedules' });
+      if (folds.length) toCuda.push({ from: folds, to: [g.kernel], relation: 'ordered-folds-in' });
+    }
+  }
+  return {
+    f,
+    initial,
+    schedule,
+    steps,
+    cuda,
+    correspondence: [
+      makeCorrespondence(
+        ref(baseline),
+        ref(initial),
+        TixIR.entities!(baseline.value),
+        ScheduleIR.entities!(initial.value),
+        fromTix,
+      ),
+      ...steps.flatMap(step => (step.correspondence ? [step.correspondence] : [])),
+      makeCorrespondence(
+        ref(schedule),
+        ref(cuda),
+        ScheduleIR.entities!(schedule.value),
+        CudaIR.entities!(cuda.value),
+        toCuda,
+      ),
+    ],
+  };
+}
+
 /** The lowering as a framework correspondence: each kernel and the Tix statement entities it computes. */
 export function kernelCorrespondence(
   baseline: Artifact<Module>,
   subject: Artifact<CudaUnit>,
+  scheduleTrace?: ReturnType<typeof compileCudaPipeline>['correspondence'],
 ): Correspondence {
   const { fn, kernels } = subject.value;
   return {
@@ -93,7 +143,11 @@ export function kernelCorrespondence(
     sourceEntities: baseline.value.functions.flatMap(f => f.statements.map(s => f.name + '/' + s.name)),
     targetEntities: kernels.map(k => k.name),
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
-    evidence: { mappings: kernels.map(k => k.mapping), gated: kernels.map(k => k.gated === true) },
+    evidence: {
+      mappings: kernels.map(k => k.mapping),
+      gated: kernels.map(k => k.gated === true),
+      ...(scheduleTrace && { scheduleTrace }),
+    },
   };
 }
 
@@ -124,8 +178,13 @@ function compare(expected: BufferValue, got: BufferValue) {
 // shapes (fusion.ts). The recipe's shapes are small, so the rule alone would show little of one side. For a
 // program with a gate, every sample is therefore a case on each side, and the program is run once with each side
 // forced. A program without a gate has one case per sample.
-type Gate = 'fused' | 'unfused' | 'tiled';
-const sides = (source: string): Gate[] => source.includes('const bool panels_') ? ['fused','unfused','tiled'] : ['fused','unfused'];
+type Gate = 'fused' | 'unfused' | 'tiled' | 'wide';
+const sides = (source: string): Gate[] => [
+  'fused',
+  'unfused',
+  ...(source.includes('const bool panels_') ? ['tiled' as const] : []),
+  ...(source.includes('gate_mode == 4') ? ['wide' as const] : []),
+];
 type CudaSample = ReturnType<typeof cudaCases>[number] & { gate?: Gate };
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
@@ -134,7 +193,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   const ports = { baseline: TixIR, fn: FunctionName, ...outputs };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
     id: 'tensor.cuda-meaning',
-    version: '2',
+    version: '3',
     description:
       'Compare the lowered CUDA function to its current Tix f32 meaning, bit for bit (NaN as a class)',
     inputs: ports,
@@ -144,7 +203,8 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     count: 1,
     seed,
     cases: ({ baseline, fn, subject }, random): CudaSample[] => {
-      const samples = cudaCases(selectFunction(baseline.value, fn), random);
+      const f = selectFunction(baseline.value, fn);
+      const samples = cudaCases(f, random, takesGate(subject.value.source) ? panelAssignments(f) : []);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
       return takesGate(subject.value.source)
         ? samples.flatMap(s => sides(subject.value.source).map(gate => ({ ...s, gate })))
@@ -184,16 +244,15 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         if (out.length !== batch.length) throw Error('Wrong CUDA response case count');
         batch.forEach((c, i) => results.set(c, out[i]));
       };
-      if (takesGate(source))
-        await Promise.all(
-          sides(source).map(g =>
-            run(
-              pending.filter(c => c.gate === g),
-              g,
-            ),
-          ),
-        );
-      else await run(pending);
+      // One in-flight remote job per check. A four-way simultaneous SSH handshake
+      // was refused on the shared GB10; the differential still shares identical checks.
+      if (takesGate(source)) {
+        for (const g of sides(source))
+          await run(
+            pending.filter(c => c.gate === g),
+            g,
+          );
+      } else await run(pending);
       return pending.map((sample): Decided => {
         const result = compare(sample.reference, results.get(sample)!);
         return result.ok ? { v: 'agree' } : { v: 'disagree', reason: result.reason! };
@@ -202,7 +261,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
+    version: '3',
     description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
     inputs,
     outputs,
@@ -219,16 +278,11 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       },
     ],
     run(_ctx, { baseline, fn, fuse }) {
-      const f = selectFunction(baseline.value, fn);
-      const plan = scheduleFunction(f, fuse).artifact.value;
-      const kernels = plan.groups.map(g => ({
-        name: g.kernel,
-        mapping: g.mapping,
-        statements: g.statements,
-        ...(g.gated && { gated: true }),
-      }));
-      const subject = cudaArtifact(fn, printSchedule(plan), kernels);
-      return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
+      const { cuda: subject, correspondence } = compileCudaPipeline(baseline, fn, fuse);
+      return {
+        outputs: { subject },
+        correspondence: [kernelCorrespondence(baseline, subject, correspondence)],
+      };
     },
   });
 

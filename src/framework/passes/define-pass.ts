@@ -86,6 +86,8 @@ export interface PassSpec<S, N extends Needs, P = unknown> {
   /** Entity kinds (glob `prefix*`) and relation kinds the pass may change. */
   readonly writes: { readonly entities: readonly string[]; readonly relations: readonly string[] };
   readonly preserves?: readonly AnalysisDefinition<any, any>[];
+  /** A synchronous structural postcondition inherent to this pass, enforced by both application paths. */
+  readonly postcondition?: (before: Artifact<S>, after: Artifact<S>) => CheckResult;
   readonly contract?: TransformationDefinition<Ports, Ports>;
   /** Extra contract inputs beyond `input` (e.g. `origin`: r0), supplied by the caller per application. */
   run(ctx: PassRunContext<S, N, P>): void | NativeResult<S> | Promise<void | NativeResult<S>>;
@@ -221,11 +223,17 @@ function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, ch
     });
 }
 
+function requirePostcondition(result: CheckResult) {
+  if (result?.ok !== true)
+    throw new PassError('contractRejected', result?.reason ?? 'Candidate rejected', result?.evidence);
+  return result;
+}
+
 /** Run a synchronous native kernel; the caller supplies its synchronous semantic gate. */
 export function applyNativePassSync<S, P>(
   pass: Pass<S, {}, P>,
   before: Artifact<S>,
-  gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
+  gate?: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
   params?: P,
 ): PassResult<S> {
   if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
@@ -249,9 +257,10 @@ export function applyNativePassSync<S, P>(
   const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
   if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
   enforceWrites(pass, changes);
-  const contract = gate(before, after);
-  if (contract?.ok !== true)
-    throw new PassError('contractRejected', contract?.reason ?? 'Candidate rejected', contract?.evidence);
+  if (!pass.postcondition && !gate)
+    throw new PassError('badResult', 'A synchronous native pass needs a postcondition or gate');
+  const structural = pass.postcondition && requirePostcondition(pass.postcondition(before, after));
+  const contract = gate ? requirePostcondition(gate(before, after)) : structural;
   return {
     ...base,
     changed: true,
@@ -344,7 +353,7 @@ export async function applyPass<S, N extends Needs, P>(
 
   enforceWrites(pass, changes);
 
-  let contract: unknown;
+  let contract: unknown = pass.postcondition && requirePostcondition(pass.postcondition(before, after));
   const gate = options.contract ?? pass.contract;
   if (gate) {
     try {

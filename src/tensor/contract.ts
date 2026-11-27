@@ -21,7 +21,14 @@ interface Sample {
 }
 export const seed = 20;
 const half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
-function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, cuda = false): Sample[] {
+function cases(
+  fn: Fn,
+  baseline: Fn,
+  relation: Relation,
+  random: () => number,
+  cuda = false,
+  panels: Record<string, number>[] = [],
+): Sample[] {
   const symbols = [
     ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
   ].sort();
@@ -36,19 +43,18 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, c
   );
   assignments.push(symbols.map(() => 0));
   for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
-  for (const shapeValues of assignments) {
+  const standard = assignments.length;
+  assignments.push(...panels.map(p => symbols.map(s => (Object.hasOwn(p, s) ? p[s] : 1))));
+  for (const [index, shapeValues] of assignments.entries()) {
     const key = JSON.stringify(shapeValues);
     if (seen.has(key)) continue;
     seen.add(key);
     const dims = new Map(symbols.map((s, i) => [s, shapeValues[i]]));
     const shapes = fn.params.map(p => p.shape.map(d => value(d, dims)));
     if (shapes.some(s => s.some(x => x < 0) || size(s) > 4096)) continue;
-    for (const stream of [
-      'signed',
-      'positive',
-      'half-ulp',
-      ...(relation === 'exact' || cuda ? ['zero'] : []),
-    ]) {
+    for (const stream of index >= standard
+      ? ['signed']
+      : ['signed', 'positive', 'half-ulp', ...(relation === 'exact' || cuda ? ['zero'] : [])]) {
       const inputs: CudaInputs = Object.create(null);
       fn.params.forEach((p, j) => {
         const shape = shapes[j];
@@ -84,8 +90,8 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, c
   return out;
 }
 // The lowering's cases: references are the current revision's f32 meaning (IRWB-019 F17).
-export function cudaCases(fn: Fn, random: () => number): Sample[] {
-  return cases(fn, fn, 'exact', random, true);
+export function cudaCases(fn: Fn, random: () => number, panels: Record<string, number>[] = []): Sample[] {
+  return cases(fn, fn, 'exact', random, true, panels);
 }
 
 export function coordinate(shape: number[], offset: number): number[] {

@@ -4,7 +4,7 @@ import { AnalysisManager, defineIR } from '../../dist/framework/contracts/index.
 import { createIRArtifact, defineAdapter } from '../../dist/framework/ir/index.js';
 import { definePass, applyNativePassSync, applyPass } from '../../dist/framework/passes/index.js';
 
-test('synchronous native passes share validation and write checks, and skip the gate on identity', () => {
+test('synchronous native passes share validation and write checks, and skip the gate on identity', async () => {
   const ir = defineIR({
     id: 'probe',
     version: '1',
@@ -38,6 +38,10 @@ test('synchronous native passes share validation and write checks, and skip the 
     run: () => ({ native: { n: 2 } }),
   });
   const gate = (a, b) => ({ ok: a.value.n + 1 === b.value.n });
+  const intrinsic = { ...pass, postcondition: () => ({ ok: false, reason: 'layout differs' }) };
+  assert.throws(() => applyNativePassSync(intrinsic, before, gate), /layout differs/);
+  await assert.rejects(applyPass(intrinsic, before, { manager: new AnalysisManager() }), /layout differs/);
+  assert.equal(applyNativePassSync({ ...pass, postcondition: gate }, before).artifact.value.n, 2);
   assert.equal(applyNativePassSync(pass, before, gate).artifact.value.n, 2);
   assert.throws(() => applyNativePassSync(pass, before, () => ({ ok: false })), /contractRejected/);
   assert.throws(

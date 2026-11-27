@@ -1,0 +1,10 @@
+{"round":0,"step":"tensor.schedule.register-tile","ms":0.07411199808120728,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":0,"step":"tensor.schedule.stage-panels","ms":0.08844800293445587,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":1,"step":"tensor.schedule.register-tile","ms":0.07292799651622772,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":1,"step":"tensor.schedule.stage-panels","ms":0.08928000181913376,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":2,"step":"tensor.schedule.register-tile","ms":0.07411199808120728,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":2,"step":"tensor.schedule.stage-panels","ms":0.08841600269079208,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":3,"step":"tensor.schedule.register-tile","ms":0.07401599735021591,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":3,"step":"tensor.schedule.stage-panels","ms":0.08851200342178345,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":4,"step":"tensor.schedule.register-tile","ms":0.07423999905586243,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":4,"step":"tensor.schedule.stage-panels","ms":0.08851200342178345,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}

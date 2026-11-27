@@ -6,10 +6,8 @@ import { meaningGate } from './contract.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
-import { checkCudaLowering } from './cuda-contract.js';
+import { checkCudaLowering, compileCudaPipeline } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
-import { printSchedule } from './cuda-source.js';
-import { scheduleFunction } from './schedule.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -64,8 +62,8 @@ export interface LoweringOptions {
   fuse?: boolean;
 }
 function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
-  const f = selectFunction(program.current.value, fn);
-  return { f, source: printSchedule(scheduleFunction(f, options?.fuse !== false).artifact.value) };
+  const { f, cuda } = compileCudaPipeline(program.current, fn, options?.fuse !== false);
+  return { f, source: cuda.value.source };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {

@@ -1,0 +1,4 @@
+{"label":"attention","steps":[["tensor.schedule.tile",true],["tensor.schedule.register-tile",true],["tensor.schedule.stage-panels",true],["tensor.schedule.fuse-phases",true]],"verdict":{"accepted":true,"relation":"exact"},"wallMs":7406.820965}
+{"label":"attention","ms":0.2901439964771271,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba","gates":{"k0":"unfused"}}
+{"label":"mlp","steps":[["tensor.schedule.tile",true],["tensor.schedule.register-tile",true],["tensor.schedule.stage-panels",true],["tensor.schedule.fuse-phases",true]],"verdict":{"accepted":true,"relation":"exact"},"wallMs":7899.988022000001}
+{"label":"mlp","ms":0.34467199444770813,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829","gates":{"k0":"unfused"}}

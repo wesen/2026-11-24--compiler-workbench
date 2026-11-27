@@ -1,0 +1,2 @@
+{"label":"conv2d","steps":[["tensor.schedule.tile",false],["tensor.schedule.register-tile",false],["tensor.schedule.stage-panels",false],["tensor.schedule.vectorize",false],["tensor.schedule.pack-registers",false],["tensor.schedule.fuse-phases",false],["tensor.schedule.broadcast-patch",true]],"verdict":{"accepted":true,"relation":"exact"},"wallMs":7240.016532}
+{"label":"conv2d","ms":0.11503999680280685,"hash":"87ea2ac715c0b7721c5b5424fc73440c30129ca1db8ce6ff4c83e8db23617cdd"}

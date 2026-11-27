@@ -1,0 +1,10 @@
+{"round":0,"step":"tensor.schedule.vectorize","ms":0.07001599669456482,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":0,"step":"tensor.schedule.pack-registers","ms":0.05158400163054466,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":1,"step":"tensor.schedule.vectorize","ms":0.07011199742555618,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":1,"step":"tensor.schedule.pack-registers","ms":0.052032001316547394,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":2,"step":"tensor.schedule.vectorize","ms":0.07088000327348709,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":2,"step":"tensor.schedule.pack-registers","ms":0.05167999863624573,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":3,"step":"tensor.schedule.vectorize","ms":0.07011199742555618,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":3,"step":"tensor.schedule.pack-registers","ms":0.05167999863624573,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":4,"step":"tensor.schedule.vectorize","ms":0.07030399888753891,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"round":4,"step":"tensor.schedule.pack-registers","ms":0.05299200117588043,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
