@@ -165,7 +165,10 @@ export class Program {
         const param = k.slice(0, dot),
           field = k.slice(dot + 1);
         const spec = ((out[f] ?? {})[param] ?? { record: {} }) as { record?: Record<string, unknown> };
-        out[f] = { ...(out[f] ?? {}), [param]: { ...spec, record: { ...(spec.record ?? {}), [field]: { oneOf: [v] } } } };
+        out[f] = {
+          ...(out[f] ?? {}),
+          [param]: { ...spec, record: { ...(spec.record ?? {}), [field]: { oneOf: [v] } } },
+        };
       }
     return out as ProgramInputs;
   }
@@ -196,7 +199,8 @@ export class Program {
         const st = storeOf(this.head.value);
         for (const f of st.fns.values())
           f.params.forEach((t, i) => {
-            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
+            if (t === b.record)
+              (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
           });
         continue;
       }

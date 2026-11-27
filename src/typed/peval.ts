@@ -82,8 +82,23 @@ class TrapSignal extends Error {
 }
 
 const FOLDABLE = [
-  'add', 'sub', 'mul', 'shl', 'shr', 'shru', 'and', 'or', 'xor',
-  'eq', 'ne', 'lt', 'gt', 'le', 'ge', 'ltu', 'geu',
+  'add',
+  'sub',
+  'mul',
+  'shl',
+  'shr',
+  'shru',
+  'and',
+  'or',
+  'xor',
+  'eq',
+  'ne',
+  'lt',
+  'gt',
+  'le',
+  'ge',
+  'ltu',
+  'geu',
 ] as const;
 
 // ---------- the abstract domain ----------
@@ -130,12 +145,8 @@ const cls = (s: LocState | CellState): (string | number)[] =>
 
 /** The memo key of (original block, state): the live IR locals, and every cell, by class and constant. */
 function keyOf(block: string, sigma: Sigma, live: ReadonlySet<number>): string {
-  const locs = [...live]
-    .sort((a, b) => a - b)
-    .map(l => [l, cls(sigma.loc[l])]);
-  const cells = [...sigma.cell.keys()]
-    .sort((a, b) => a - b)
-    .map(b => [b, cls(sigma.cell.get(b)!)]);
+  const locs = [...live].sort((a, b) => a - b).map(l => [l, cls(sigma.loc[l])]);
+  const cells = [...sigma.cell.keys()].sort((a, b) => a - b).map(b => [b, cls(sigma.cell.get(b)!)]);
   return JSON.stringify([block, locs, cells]);
 }
 
@@ -288,7 +299,11 @@ class Tracer {
         this.invalidate(m, block, depth + 1);
         this.place(
           block,
-          this.tx.set(m, this.use(c.id), this.opt(c.id, `frame byte ${b}, before ${this.f.locals[local].name} changes`)),
+          this.tx.set(
+            m,
+            this.use(c.id),
+            this.opt(c.id, `frame byte ${b}, before ${this.f.locals[local].name} changes`),
+          ),
           'a pending value reads a local about to change',
         );
       }
@@ -299,7 +314,11 @@ class Tracer {
         this.invalidate(i, block, depth + 1);
         this.place(
           block,
-          this.tx.set(i, this.use(s.id), this.opt(s.id, `${this.f.locals[i].name}, before ${this.f.locals[local].name} changes`)),
+          this.tx.set(
+            i,
+            this.use(s.id),
+            this.opt(s.id, `${this.f.locals[i].name}, before ${this.f.locals[local].name} changes`),
+          ),
           'a pending value reads a local about to change',
         );
       }
@@ -318,7 +337,11 @@ class Tracer {
         const m = this.cellLocal(b);
         this.sigma.cell.set(b, { k: 'm', local: m });
         this.invalidate(m, block); // readers of this local are computed first
-        this.place(block, this.tx.set(m, this.use(c.id), this.opt(c.id, `frame byte ${b} at a branch`)), 'a value cannot cross a block boundary');
+        this.place(
+          block,
+          this.tx.set(m, this.use(c.id), this.opt(c.id, `frame byte ${b} at a branch`)),
+          'a value cannot cross a block boundary',
+        );
       }
     for (const l of live) {
       const s = this.sigma.loc[l];
@@ -353,7 +376,12 @@ class Tracer {
       return this.tx.get(v.imm as number, this.opt(id));
     }
     const args = v.args.map(a => this.resid(a));
-    return this.tx.make(v.op, ...args, { imm: v.imm, type: v.type ?? 'i32', from: id, because: this.because });
+    return this.tx.make(v.op, ...args, {
+      imm: v.imm,
+      type: v.type ?? 'i32',
+      from: id,
+      because: this.because,
+    });
   }
 
   /** A residual value node for an already-evaluated argument: constants stay, values are used, addresses rebuild. */
@@ -408,18 +436,27 @@ class Tracer {
       if (a.k === 'a' && a.addr.k === 'c') {
         const cells = this.mem.get(a.addr.p);
         const i = (a.addr.b + off - 4) / 2;
-        if (!cells || !Number.isInteger(i) || i < 0 || (v.op === 'load16u' ? i >= cells.length : i + 1 >= cells.length))
-          throw new TxError('unsupported', `peval: ${id} reads buffer byte ${a.addr.b + off}, outside the promised cells`);
+        if (
+          !cells ||
+          !Number.isInteger(i) ||
+          i < 0 ||
+          (v.op === 'load16u' ? i >= cells.length : i + 1 >= cells.length)
+        )
+          throw new TxError(
+            'unsupported',
+            `peval: ${id} reads buffer byte ${a.addr.b + off}, outside the promised cells`,
+          );
         this.folds++;
         if (v.op === 'load16u') return { k: 'c', n: cells[i] & 65535 };
-        return { k: 'c', n: ((cells[i + 1] << 16) | (cells[i] & 65535)) | 0 };
+        return { k: 'c', n: (cells[i + 1] << 16) | (cells[i] & 65535) | 0 };
       }
       if (a.k === 'a' && a.addr.k === 'f' && v.op === 'load') {
         const b = a.addr.b + off;
         if (b % 4 !== 0 || b < 0 || b + 4 > (this.f.arrayBytes ?? 0))
           throw new TxError('unsupported', `peval: ${id} loads outside the word-aligned array area`);
         const c = this.sigma.cell.get(b);
-        if (c === undefined) throw new TxError('unsupported', `peval: ${id} reads frame byte ${b} before it is written`);
+        if (c === undefined)
+          throw new TxError('unsupported', `peval: ${id} reads frame byte ${b} before it is written`);
         this.folds++;
         return c.k === 'c'
           ? { k: 'c', n: c.n }
@@ -505,7 +542,10 @@ class Tracer {
         if (a.k === 'a') throw new TxError('unsupported', `peval: ${sid} stores an address`);
         const addr = A.k === 'a' ? A.addr : undefined;
         if (addr?.k === 'c')
-          throw new TxError('unsupported', `peval: ${sid} stores into the bound buffer; the promise cannot hold`);
+          throw new TxError(
+            'unsupported',
+            `peval: ${sid} stores into the bound buffer; the promise cannot hold`,
+          );
         if (addr?.k === 'f') {
           const b = addr.b + (s.offset ?? 0);
           if (b % 4 !== 0 || b < 0 || b + 4 > (this.f.arrayBytes ?? 0) || s.width === 16)
@@ -519,7 +559,9 @@ class Tracer {
               block,
               this.tx.set(
                 prev.local,
-                a.k === 'c' ? this.tx.const(a.n, this.opt(s.value!, 'the stored value is constant here')) : this.use(a.id),
+                a.k === 'c'
+                  ? this.tx.const(a.n, this.opt(s.value!, 'the stored value is constant here'))
+                  : this.use(a.id),
                 this.opt(s.value!, `frame byte ${b}, in its local`),
               ),
               `from ${sid}`,
@@ -558,11 +600,15 @@ class Tracer {
       }
       case 'eval': {
         const a = this.eval(s.value!);
-        if (a.k === 'v' && hasEffect(this.tx.st, a.id)) this.emit(block, { op: 'eval', value: this.use(a.id) }, s);
+        if (a.k === 'v' && hasEffect(this.tx.st, a.id))
+          this.emit(block, { op: 'eval', value: this.use(a.id) }, s);
         return;
       }
       default:
-        throw new TxError('unsupported', `peval: statement "${s.op}" is outside the supported domain (${sid})`);
+        throw new TxError(
+          'unsupported',
+          `peval: statement "${s.op}" is outside the supported domain (${sid})`,
+        );
     }
   }
 
@@ -617,7 +663,9 @@ class Tracer {
               op: 'return',
               ...(a
                 ? a.k === 'c'
-                  ? { value: this.tx.const(a.n, this.opt(last.value!, 'the returned value is constant here')) }
+                  ? {
+                      value: this.tx.const(a.n, this.opt(last.value!, 'the returned value is constant here')),
+                    }
                   : { value: this.use(a.id) }
                 : {}),
             },
@@ -639,9 +687,11 @@ class Tracer {
             cur = to;
             continue;
           }
-          this.materialize(new Set([...this.live.liveIn(last.then!), ...this.live.liveIn(last.else!)]), block);
-          if (c.k === 'a')
-            throw new TxError('unsupported', `peval: ${last.id} branches on an address value`);
+          this.materialize(
+            new Set([...this.live.liveIn(last.then!), ...this.live.liveIn(last.else!)]),
+            block,
+          );
+          if (c.k === 'a') throw new TxError('unsupported', `peval: ${last.id} branches on an address value`);
           const cond = this.use(c.id);
           const thenB = this.enter(last.then!);
           const elseB = this.enter(last.else!);
@@ -694,7 +744,10 @@ function pevalFunction(
   const liveViewOf = liveView(live, src, f.name);
   const mem = new Map<number, readonly number[]>();
   for (const b of buffers)
-    mem.set(checkBufferBinding(src, f.name, f.locals, b.param!).index, (b as { cells: readonly number[] }).cells);
+    mem.set(
+      checkBufferBinding(src, f.name, f.locals, b.param!).index,
+      (b as { cells: readonly number[] }).cells,
+    );
   const consts = new Map<number, number>();
   for (const b of scalars) {
     const i = f.locals.findIndex(l => l.param && l.name === b.param);
@@ -729,7 +782,11 @@ function pevalFunction(
     });
     const sigma: Sigma = {
       loc: f.locals.map((l, i) =>
-        consts.has(i) ? { k: 'c', n: consts.get(i)! } : l.param ? { k: 'd' as const } : { k: 'c' as const, n: 0 },
+        consts.has(i)
+          ? { k: 'c', n: consts.get(i)! }
+          : l.param
+            ? { k: 'd' as const }
+            : { k: 'c' as const, n: 0 },
       ),
       cell: new Map(),
     };
@@ -756,7 +813,10 @@ function pevalFunction(
         : tx.block({ from: entry.id, because, note: `the entry dispatch on the promised ${name}` });
       tx.insert(
         tx.at.end(tx.st.get(chain) as BlockRec),
-        tx.stmt({ op: 'br_if', cond, then: a.into, else: next }, { from: entry.id, because, note: `the host promised ${name} = ${v}` }),
+        tx.stmt(
+          { op: 'br_if', cond, then: a.into, else: next },
+          { from: entry.id, because, note: `the host promised ${name} = ${v}` },
+        ),
         { because, note: `the host promised ${name} = ${v}` },
       );
       if (last)
@@ -842,7 +902,16 @@ export function makePeval(
         try {
           const because = list.map(b => factRef(bindings, b));
           const tx = new Tx(st, f, { name: 'peval', writes: ['stmts', 'values', 'locals', 'cfg'] }, rev);
-          const result = pevalFunction(tx, src, f, live, list.filter(isBufferBinding), list.filter(b => b.value !== undefined), p.inputs, because);
+          const result = pevalFunction(
+            tx,
+            src,
+            f,
+            live,
+            list.filter(isBufferBinding),
+            list.filter(b => b.value !== undefined),
+            p.inputs,
+            because,
+          );
           touched.push(f.name);
           detail.push({ fn: f.name, regions: result.regions, note: result.note });
           edits.push(...tx.edits);
@@ -868,7 +937,10 @@ export function makePeval(
       }
       st.rev = rev;
       const native = st.toNative();
-      const kinds = edits.reduce<Record<string, number>>((m, e) => ((m[e.kind] = (m[e.kind] || 0) + 1), m), {});
+      const kinds = edits.reduce<Record<string, number>>(
+        (m, e) => ((m[e.kind] = (m[e.kind] || 0) + 1), m),
+        {},
+      );
       const report: RevisionReport & { peval?: unknown; skipped?: unknown } = {
         pass: 'peval',
         rev,

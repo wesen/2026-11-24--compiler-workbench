@@ -111,4 +111,3 @@ export function checkBufferBinding(
     );
   return { index: i, because: [`param:${fnName}/${param}`] };
 }
-
