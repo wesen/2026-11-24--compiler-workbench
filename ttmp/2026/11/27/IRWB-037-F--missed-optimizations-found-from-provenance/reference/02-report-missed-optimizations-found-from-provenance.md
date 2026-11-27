@@ -296,7 +296,7 @@ Argued, and checked only by the meaning contract on generated cases, parity and 
 
 ## Verification
 
-All on the final compiler (compiler sources at commit FINALSRC: 2c913eb plus the removal of the unused bce case, which fired nowhere, so the corpus counts are 2c913eb's; checked again below), after `npm run build`:
+All on the final compiler (compiler sources at commit 2eaa153: 2c913eb plus the removal of the unused bce case, which fired nowhere, so the corpus counts are 2c913eb's; checked again below), after `npm run build`:
 
 | Check | Result |
 | --- | --- |
