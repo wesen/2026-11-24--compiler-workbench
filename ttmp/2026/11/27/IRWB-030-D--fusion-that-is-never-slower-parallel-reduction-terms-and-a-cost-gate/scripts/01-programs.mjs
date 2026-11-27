@@ -24,6 +24,24 @@ export const variants = {
   out[i,c] = sum(j) e[i,j] * v[j,c] / z[i];
   return out;
 }`,
+  // not in the brief's tables: softmax with exp inside the sum and recomputed in y (no e statement)
+  'softmax-inside': `fn softmax(x: f32[N,C]): f32[N,C] {
+  m[i] = max(j) x[i,j];
+  s[i] = sum(j) exp(x[i,j] - m[i]);
+  y[i,j] = exp(x[i,j] - m[i]) / s[i];
+  return y;
+}`,
+  // probes for M1c: a body of five single-instruction operations, and a body with a square root
+  'probe-cheap5': `fn probe(x: f32[N,C]): f32[N,C] {
+  s[i] = sum(j) ((x[i,j] * 2 + 1) * x[i,j] - 3) * x[i,j];
+  y[i,j] = x[i,j] - s[i];
+  return y;
+}`,
+  'probe-sqrt': `fn probe(x: f32[N,C]): f32[N,C] {
+  s[i] = sum(j) sqrt(x[i,j] * x[i,j]);
+  y[i,j] = x[i,j] - s[i];
+  return y;
+}`,
 };
 
 export const sizes = {
@@ -33,6 +51,7 @@ export const sizes = {
   attention: { Q: 1024, K: 1024, D: 64, V: 64 },
   mlp: { N: 1024, D: 256, H: 1024, O: 256 },
   conv2d: { N: 8, C: 16, H: 64, W: 64, O: 32 },
+  probe: { N: 4096, C: 1024 },
 };
 
 export const names = ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2d', 'layernorm-inside', 'attention-inside'];

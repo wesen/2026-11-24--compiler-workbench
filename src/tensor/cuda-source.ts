@@ -486,7 +486,9 @@ function emitGroup(
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
     const hostChunk = termBuffer();
     if (hostChunk) lengths.push(hostChunk);
-    const hostRow = [...rowBuffers.map(n => lengthOf(n, hostDim)), ...(hostChunk ? [hostChunk] : [])].join(' + ');
+    const hostRow = [...rowBuffers.map(n => lengthOf(n, hostDim)), ...(hostChunk ? [hostChunk] : [])].join(
+      ' + ',
+    );
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
