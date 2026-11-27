@@ -9,7 +9,7 @@ import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { planCudaFusion, unfusedPlan } from './fusion.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -60,12 +60,12 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
 }
 
 export interface LoweringOptions {
-  /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
+  /** Select profitable CUDA fusion by default. `false` emits stage 2's one kernel per statement. */
   fuse?: boolean;
 }
 function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planCudaFusion(f)) };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {

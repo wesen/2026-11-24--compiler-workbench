@@ -1,4 +1,4 @@
-import { unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
+import { parallelTerms, unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
 import {
   plain,
   visit,
@@ -136,6 +136,7 @@ function literal(text: string): string {
 }
 
 type Load = Extract<Expr, { kind: 'load' }>;
+type Reduction = Extract<Expr, { kind: 'reduce' }>;
 type Offset = (indices: readonly Affine[], shape: readonly Affine[]) => string;
 
 // The scalar code of one kernel: index names, temporaries and the tree walk shared by stage 2's one-statement
@@ -167,8 +168,9 @@ function kernelWriter(
     line(`float ${name} = ${code};`);
     return name;
   };
+  const folded = new Map<Reduction, string>();
 
-  function scalar(e: Expr): string {
+  function scalar(e: Expr, terms?: string): string {
     switch (e.kind) {
       case 'literal':
         return literal(e.text);
@@ -177,7 +179,7 @@ function kernelWriter(
       case 'load':
         return load(e, offset);
       case 'op': {
-        const [a, b] = e.args.map(scalar);
+        const [a, b] = e.args.map(arg => scalar(arg));
         switch (e.op) {
           case '+':
             return temporary(`__fadd_rn(${a}, ${b})`);
@@ -201,9 +203,11 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const prior = folded.get(e);
+        if (prior !== undefined) return prior;
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         for (const { id, extent } of e.axes) {
-          const axis = bind(id),
+          const axis = terms ? index(id) : bind(id),
             n = dim(extent.dim);
           let bound = n;
           if (extent.kind === 'blocks') {
@@ -218,7 +222,7 @@ function kernelWriter(
           line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
           indent += '  ';
         }
-        const value = scalar(e.body);
+        const value = terms ? `${terms}[${index(e.axes[0].id)}]` : scalar(e.body);
         const fold = maxFold.replace('ACC', acc).replace('VALUE', value);
         line(`${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : fold};`);
         for (const _axis of e.axes) {
@@ -234,6 +238,7 @@ function kernelWriter(
     line,
     dim,
     bind,
+    folded,
     alias: (id: string, name: string) => void indices.set(id, name),
     scalar,
     enter: () => void (indent += '  '),
@@ -340,6 +345,8 @@ function emitGroup(
   ];
   const suffix = (name: string) => tensorName(name).slice(1);
   const rowBuffers = [...group.staged, ...group.buffered];
+  const stagedTerms = new Map(block ? members.map(m => [m, parallelTerms(m, depth)]) : []);
+  const stagedExtents = [...stagedTerms.values()].flat().map(e => e.axes[0].extent.dim);
   const registers = new Map<string, string>();
   let current = members[0];
   const operands = (e: Expr, inReduction: boolean): boolean =>
@@ -391,7 +398,18 @@ function emitGroup(
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
     const row = rowBuffers.map(n => `n${suffix(n)}`).join(' + ');
-    w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
+    const termLength = (dim: (a: Affine) => string) =>
+      `std::max<U>({${stagedExtents.map(a => `static_cast<U>(${dim(a)})`).join(', ')}})`;
+    // Use the same row stride in the host allocation and the global-scratch instantiation.
+    if (stagedExtents.length) {
+      w.line('U term_count = 0;');
+      for (const extent of stagedExtents)
+        w.line(`if (term_count < static_cast<U>(${w.dim(extent)})) term_count = ${w.dim(extent)};`);
+    }
+    w.line(
+      `float* const base = Shared ? shared : scratch + point * (${row}${stagedExtents.length ? ' + term_count' : ''});`,
+    );
+    if (stagedExtents.length) w.line(`float* const reduction_terms = base + (${row});`);
     rowBuffers.forEach((name, i) =>
       w.line(
         `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
@@ -404,7 +422,30 @@ function emitGroup(
     if (group.staged.length) w.line('__syncthreads();');
     members.forEach((m, j) => {
       current = m;
+      w.folded.clear();
       const s = suffix(m.name);
+      const reductions = stagedTerms.get(m)!;
+      reductions.forEach((e, r) => {
+        const axis = w.bind(e.axes[0].id);
+        const end = w.dim(e.axes[0].extent.dim);
+        const partial = `fold_${s}_${r}`;
+        w.line(`// Parallel terms for ${m.name} reduction ${r + 1} (${e.op}), folded in index order.`);
+        w.line(`for (I ${axis} = threadIdx.x; ${axis} < ${end}; ${axis} += blockDim.x) {`);
+        w.enter();
+        w.line(`reduction_terms[${axis}] = ${w.scalar(e.body)};`);
+        w.leave();
+        w.line('}');
+        w.line('__syncthreads();');
+        w.line(`float ${partial} = 0.0f;`);
+        w.line('if (threadIdx.x == 0) {');
+        w.enter();
+        const value = w.scalar(e, 'reduction_terms');
+        w.line(`${partial} = ${value};`);
+        w.leave();
+        w.line('}');
+        w.folded.set(e, partial);
+        if (r + 1 < reductions.length) w.line('__syncthreads();');
+      });
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
       if (m.axes.length > depth) w.line('U rest = e;');
@@ -424,9 +465,13 @@ function emitGroup(
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
     const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
+    if (stagedExtents.length) {
+      host.push(`  const U terms_${kernel} = ${termLength(hostDim)};`);
+      lengths.push(`terms_${kernel}`);
+    }
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
-      `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
+      `  const U row_${kernel} = (${hostRow}${stagedExtents.length ? ` + terms_${kernel}` : ''}) * sizeof(float);`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,

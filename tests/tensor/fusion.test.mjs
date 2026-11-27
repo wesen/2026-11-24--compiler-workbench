@@ -6,7 +6,7 @@ import { AnalysisManager } from '../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js';
 import { createCudaLowering } from '../../dist/tensor/cuda-contract.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
-import { planFusion } from '../../dist/tensor/fusion.js';
+import { planCudaFusion, planFusion } from '../../dist/tensor/fusion.js';
 
 const corpus = name =>
   compileTix(readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'));
@@ -133,6 +133,51 @@ test('a staged row needs the block domain as its leading extents, not just a pla
     'f',
   );
   assert.deepEqual(summary(q), [['thread', 1, 'a,y', 'y']]);
+});
+
+test('CUDA scheduling refuses legal block joins that serialize element work or an unstaged expensive fold', () => {
+  for (const [text, reason] of [
+    [
+      'fn f(x:f32[N,C]):f32[N,C-1] { a[i,j] = x[i,j] * 2; y[i,j]: f32[N,C-1] = a[i,j+0] + a[i,j+1]; return y; }',
+      /lose grid parallelism/,
+    ],
+    [
+      'fn f(x:f32[N,C], z:f32[K]):f32[N,C] { s[i] = sum(j) (sum(k) x[i,j] / z[k]); y[i,j] = x[i,j] - s[i]; return y; }',
+      /costly row reduction whose terms cannot be staged/,
+    ],
+  ]) {
+    const program = compileTix(text);
+    const fn = program.current.value.functions[0];
+    assert.equal(planFusion(fn).groups.length, 1);
+    assert.match(planCudaFusion(fn).refusals[0].reason, reason);
+    assert.equal(cudaSource(program, 'f'), cudaSource(program, 'f', { fuse: false }));
+  }
+});
+
+test('CUDA scheduling isolates expensive per-element reductions and keeps the row group between them', () => {
+  const p = compileTix(`
+    fn f(x:f32[N,K], w:f32[K,M], v:f32[M,O]):f32[N,O] {
+      a[i,j] = sum(k) x[i,k] / w[k,j];
+      m[i] = max(j) a[i,j];
+      e[i,j] = a[i,j] - m[i];
+      y[i,t] = sum(j) e[i,j] / v[j,t];
+      return y;
+    }
+  `);
+  const fn = p.current.value.functions[0];
+  assert.equal(planFusion(fn).groups.length, 1);
+  const selected = planCudaFusion(fn);
+  assert.deepEqual(summary(selected), [
+    ['thread', 2, 'a', 'a'],
+    ['block', 1, 'm,e', 'e'],
+    ['thread', 2, 'y', 'y'],
+  ]);
+  assert.deepEqual(
+    selected.refusals.map(r => r.statement),
+    ['m', 'y'],
+  );
+  assert.ok(selected.refusals.every(r => /needs the element grid/.test(r.reason)));
+  assert.equal(kernels(cudaSource(p, 'f')), 3);
 });
 
 test('the lowering records which statements each kernel computes, and fused and unfused share their cases', async () => {

@@ -14,7 +14,7 @@ import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { planCudaFusion, unfusedPlan } from './fusion.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -162,8 +162,8 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
-    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
+    version: '3',
+    description: 'Select a Tix CUDA schedule and check it on the GPU',
     inputs,
     outputs,
     cache: 'never',
@@ -180,7 +180,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     ],
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
+      const plan = fuse ? planCudaFusion(f) : unfusedPlan(f);
       const kernels = plan.groups.map(g => ({
         name: g.kernel,
         mapping: g.mapping,

@@ -8,7 +8,7 @@
 //   - thread mode (every member has rank `depth`): one thread per point; a member is a register;
 //   - block mode (some member has trailing axes): one block per point; a member's row lives in a row buffer, a
 //     member with no trailing axes is computed by thread 0, and `__syncthreads()` separates the members.
-// Every element is still computed by one thread with stage 2's scalar code, so its evaluation order is unchanged.
+// The scalar writer preserves each operation and fold. Eligible row reductions can compute terms in parallel.
 import { plain, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
 
 export interface FusionGroup {
@@ -39,6 +39,42 @@ export interface FusionPlan {
 }
 
 type Load = Extract<Expr, { kind: 'load' }>;
+type Reduction = Extract<Expr, { kind: 'reduce' }>;
+
+function outerReductions(e: Expr): Reduction[] {
+  if (e.kind === 'reduce') return [e];
+  return e.kind === 'op' ? e.args.flatMap(outerReductions) : [];
+}
+
+function costlyReduction(reduction: Reduction): boolean {
+  const binders = new Set<string>();
+  visit(reduction, e => {
+    if (e.kind === 'reduce') for (const axis of e.axes) binders.add(axis.id);
+  });
+  let costly = false;
+  visit(reduction.body, e => {
+    if (e.kind !== 'op' || !['/', 'sqrt', 'exp', 'log', 'tanh'].includes(e.op)) return;
+    visit(e, arg => {
+      if (arg.kind === 'load' && arg.indices.some(a => a.terms.some(([id]) => binders.has(id))))
+        costly = true;
+    });
+  });
+  return costly;
+}
+
+/** Reductions that can stage terms before a row-scalar statement runs on thread 0. */
+export function parallelTerms(statement: Statement, depth: number): Reduction[] {
+  if (statement.axes.length !== depth) return [];
+  return outerReductions(statement.expr).filter(e => {
+    if (e.axes.length !== 1 || e.axes[0].extent.kind !== 'dim') return false;
+    let nested = false;
+    visit(e.body, term => {
+      if (term.kind === 'reduce') nested = true;
+    });
+    return !nested && costlyReduction(e);
+  });
+}
+
 const same = (a: Affine, b: Affine) => JSON.stringify(a) === JSON.stringify(b);
 function loads(s: Statement): Load[] {
   const out: Load[] = [];
@@ -79,13 +115,44 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
 }
 
 export function planFusion(fn: Fn): FusionPlan {
+  return planGroups(fn);
+}
+
+/** Select a CUDA schedule after checking each candidate join's IR legality. */
+export function planCudaFusion(fn: Fn): FusionPlan {
+  return planGroups(fn, blockCost);
+}
+
+function blockCost(members: Statement[], depth: number): string | undefined {
+  if (members.every(m => m.axes.length === depth)) return;
+  // Block mapping strands the independent elements of a stencil in one block per row.
+  // Keep their element mapping without a shape-specific guarantee of enough rows.
+  let reduces = false;
+  for (const m of members)
+    visit(m.expr, e => {
+      if (e.kind === 'reduce') reduces = true;
+    });
+  if (!reduces) return 'block fusion of elementwise work can lose grid parallelism on wide rows';
+  for (const m of members) {
+    const costly = outerReductions(m.expr).filter(costlyReduction);
+    if (!costly.length) continue;
+    if (m.axes.length > depth)
+      return `${m.name} has a costly per-element reduction that needs the element grid`;
+    const staged = parallelTerms(m, depth);
+    if (costly.some(e => !staged.includes(e)))
+      return `${m.name} has a costly row reduction whose terms cannot be staged`;
+  }
+}
+
+function planGroups(fn: Fn, cost?: (members: Statement[], depth: number) => string | undefined): FusionPlan {
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
   const refusals: FusionRefusal[] = [];
   for (const s of fn.statements) {
     const current = runs.at(-1);
     if (current) {
       const join = joinDepth(s, current.members, current.depth);
-      if (join.depth > 0) {
+      const refusal = join.depth > 0 ? cost?.([...current.members, s], join.depth) : join.reason;
+      if (refusal === undefined) {
         if (join.depth < current.depth)
           current.reasons.push(
             `${s.name} narrows the block domain to ${join.depth} ${join.depth === 1 ? 'axis' : 'axes'}: ${join.reason}`,
@@ -94,7 +161,7 @@ export function planFusion(fn: Fn): FusionPlan {
         current.depth = join.depth;
         continue;
       }
-      refusals.push({ statement: s.name, kernel: 'k' + (runs.length - 1), reason: join.reason });
+      refusals.push({ statement: s.name, kernel: 'k' + (runs.length - 1), reason: refusal });
     }
     runs.push({ members: [s], depth: s.axes.length, reasons: [] });
   }

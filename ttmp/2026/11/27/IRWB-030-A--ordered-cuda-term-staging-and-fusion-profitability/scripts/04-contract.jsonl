@@ -1,0 +1,8 @@
+{"label":"matmul","batches":[{"cases":36,"wallMs":3537.9179000000004}],"checks":[{"wallMs":3568.057222,"accepted":true,"relation":"exact"},{"wallMs":5.203592000000299,"accepted":true,"relation":"exact"}]}
+{"label":"softmax","batches":[{"cases":32,"wallMs":3401.542186}],"checks":[{"wallMs":3437.712419,"accepted":true,"relation":"exact"},{"wallMs":3.4467619999995804,"accepted":true,"relation":"exact"}]}
+{"label":"layernorm","batches":[{"cases":32,"wallMs":3153.6674889999995}],"checks":[{"wallMs":3173.662710999999,"accepted":true,"relation":"exact"},{"wallMs":1.7261279999984254,"accepted":true,"relation":"exact"}]}
+{"label":"attention","batches":[{"cases":40,"wallMs":3386.719202}],"checks":[{"wallMs":3422.9119819999996,"accepted":true,"relation":"exact"},{"wallMs":3.1450559999993857,"accepted":true,"relation":"exact"}]}
+{"label":"mlp","batches":[{"cases":40,"wallMs":3005.0167979999987}],"checks":[{"wallMs":3047.055063,"accepted":true,"relation":"exact"},{"wallMs":7.700856000003114,"accepted":true,"relation":"exact"}]}
+{"label":"conv2d","batches":[{"cases":28,"wallMs":3181.7667309999997}],"checks":[{"wallMs":4343.002074,"accepted":true,"relation":"exact"},{"wallMs":2.146588999999949,"accepted":true,"relation":"exact"}]}
+{"label":"layernorm-inside","batches":[{"cases":32,"wallMs":2946.7173379999986}],"checks":[{"wallMs":3007.5641369999976,"accepted":true,"relation":"exact"},{"wallMs":1.73490700000184,"accepted":true,"relation":"exact"}]}
+{"label":"attention-inside","batches":[{"cases":40,"wallMs":3330.5863360000003}],"checks":[{"wallMs":3353.600489999997,"accepted":true,"relation":"exact"},{"wallMs":7.244439000001876,"accepted":true,"relation":"exact"}]}

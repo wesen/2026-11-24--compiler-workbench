@@ -1,0 +1,8 @@
+{"label":"matmul","batches":[{"cases":36,"wallMs":3773.225227}],"checks":[{"wallMs":3823.2520270000005,"accepted":true,"relation":"exact"},{"wallMs":1.8503600000003644,"accepted":true,"relation":"exact"}]}
+{"label":"softmax","batches":[{"cases":32,"wallMs":3795.4985450000004}],"checks":[{"wallMs":3843.026138,"accepted":true,"relation":"exact"},{"wallMs":3.460519000000204,"accepted":true,"relation":"exact"}]}
+{"label":"layernorm","batches":[{"cases":32,"wallMs":3643.224072000001}],"checks":[{"wallMs":3676.920337999999,"accepted":true,"relation":"exact"},{"wallMs":4.219261000000188,"accepted":true,"relation":"exact"}]}
+{"label":"attention","batches":[{"cases":40,"wallMs":3917.373539}],"checks":[{"wallMs":3949.5245560000003,"accepted":true,"relation":"exact"},{"wallMs":2.088737999998557,"accepted":true,"relation":"exact"}]}
+{"label":"mlp","batches":[{"cases":40,"wallMs":3504.934030000002}],"checks":[{"wallMs":3553.829304000001,"accepted":true,"relation":"exact"},{"wallMs":8.560516000001371,"accepted":true,"relation":"exact"}]}
+{"label":"conv2d","batches":[{"cases":28,"wallMs":3493.7737620000007}],"checks":[{"wallMs":4736.690246999999,"accepted":true,"relation":"exact"},{"wallMs":5.739751000000979,"accepted":true,"relation":"exact"}]}
+{"label":"layernorm-inside","batches":[{"cases":32,"wallMs":3658.5620100000015}],"checks":[{"wallMs":3673.0243219999975,"accepted":true,"relation":"exact"},{"wallMs":1.7321559999982128,"accepted":true,"relation":"exact"}]}
+{"label":"attention-inside","batches":[{"cases":40,"wallMs":3965.586780999998}],"checks":[{"wallMs":3984.8777640000008,"accepted":true,"relation":"exact"},{"wallMs":2.7818350000015926,"accepted":true,"relation":"exact"}]}
