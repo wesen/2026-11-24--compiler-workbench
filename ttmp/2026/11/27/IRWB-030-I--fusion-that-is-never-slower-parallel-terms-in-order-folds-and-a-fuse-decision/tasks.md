@@ -5,4 +5,4 @@
 - [x] Term staging implemented and exact on the GB10 <!-- t:0qz7 -->
 - [x] Launch gate measured and implemented (crossover 64 rows) <!-- t:1n6d -->
 - [x] Final benchmarks, contract cost, feature battery <!-- t:u1sw -->
-- [ ] Final report <!-- t:yyze -->
+- [x] Final report <!-- t:yyze -->

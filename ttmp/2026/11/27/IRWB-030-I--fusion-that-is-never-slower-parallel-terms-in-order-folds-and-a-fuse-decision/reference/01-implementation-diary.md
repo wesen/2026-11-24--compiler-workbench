@@ -63,3 +63,14 @@ same fused kernel with inline folds (fixed in script 03's final form; script 05 
 Script 04: all eight programs, fused ≤ unfused, fused/unfused digests equal at full size, and fused, unfused and
 the f32 interpreter word-equal at reduced sizes. Script 05 (running): staged vs inline-fold vs unfused per
 program. Contract cost and the report follow.
+
+## Step 6 — Final measurements, report (commit ba69878)
+
+Script 04 (three benchmark calls per column): all eight programs fused ≤ unfused, fused/unfused digests equal
+at full size, and fused, unfused and the f32 interpreter word-equal at reduced sizes. Script 05 separates the
+claims: layernorm inside — staged 0.198 ms, inline folds (the stage-3 lowering) 0.491 ms, unfused 0.391 ms;
+softmax, attention inside and mlp stage nothing and their staged/inline columns are equal, as they must be.
+Script 06: the exact check costs 2.2–2.6 s cold and 1–3 ms memoized, all accepted exact. Script 07: six
+staged-feature programs through the full case battery, all exact and word-equal. Prettier clean; all
+tests/tensor suites pass (language 5, passes 7, corpus 6, cuda 4, fusion 11, fusion-gpu 8). No framework
+change; the launch gate's placement outside the checked transformation is reported as a finding.
