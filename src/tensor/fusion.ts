@@ -15,7 +15,17 @@
 //     in order afterwards, so a costly term (a division, an exp) is no longer serial (rules S0-S4 below);
 //   - the launch gate: with the shape values at launch, a block-mode group with too few rows to fill the machine
 //     stays unfused (stage 2's singleton kernels); without values the planner keeps stage 3's behaviour.
-import { plain, value, visit, width, type Affine, type Expr, type Extent, type Fn, type Statement } from './model.js';
+import {
+  plain,
+  value,
+  visit,
+  width,
+  type Affine,
+  type Expr,
+  type Extent,
+  type Fn,
+  type Statement,
+} from './model.js';
 
 export interface FusionGroup {
   kernel: string;
@@ -235,10 +245,16 @@ function rowAndFoldOf(run: { members: Statement[]; depth: number }, dims: Map<st
     fold = 0;
   for (const m of run.members) {
     if (m.shape.slice(run.depth).some(a => !a.terms.every(([n]) => dims.has(n)))) return undefined;
-    row = Math.max(row, m.shape.slice(run.depth).reduce((n, a) => n * value(a, dims), 1));
+    row = Math.max(
+      row,
+      m.shape.slice(run.depth).reduce((n, a) => n * value(a, dims), 1),
+    );
     for (const { node } of reduceNodes(m.expr)) {
       if (node.axes.some(a => !a.extent.dim.terms.every(([n]) => dims.has(n)))) return undefined;
-      fold = Math.max(fold, node.axes.reduce((n, a) => n * extentCount(a.extent), 1));
+      fold = Math.max(
+        fold,
+        node.axes.reduce((n, a) => n * extentCount(a.extent), 1),
+      );
     }
   }
   return { row, fold };
@@ -306,7 +322,7 @@ export function planFusion(fn: Fn, shapeValues?: Map<string, number>): FusionPla
           ...reduceNodes(m.expr).map(({ at }) => ({
             statement: m.name,
             node: at,
-            reason: 'a one-statement kernel is stage 2\'s own emitter; it keeps the inline fold',
+            reason: "a one-statement kernel is stage 2's own emitter; it keeps the inline fold",
           })),
         );
     const axes = members[0].shape.slice(0, depth).map(text).join(', ');
@@ -345,7 +361,8 @@ export function planFusion(fn: Fn, shapeValues?: Map<string, number>): FusionPla
         gated.push({
           statements: group.statements,
           rows,
-          reason: `${rows} ${rows === 1 ? 'row' : 'rows'} with no row-length fold: the row phase runs on ` +
+          reason:
+            `${rows} ${rows === 1 ? 'row' : 'rows'} with no row-length fold: the row phase runs on ` +
             `${bounds.row} elements per block while stage 2 spreads it over the whole grid ` +
             `(crossover ${blockModeMinRows} rows, script 02)`,
         });
@@ -354,7 +371,7 @@ export function planFusion(fn: Fn, shapeValues?: Map<string, number>): FusionPla
             ...reduceNodes(m.expr).map(({ at }) => ({
               statement: m.name,
               node: at,
-              reason: 'the group is unfused at launch; every kernel is stage 2\'s own emitter',
+              reason: "the group is unfused at launch; every kernel is stage 2's own emitter",
             })),
           );
           return {

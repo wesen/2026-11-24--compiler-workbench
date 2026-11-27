@@ -1,0 +1,6 @@
+{"feature":"exp-terms","staged":["k0:s"],"accepted":true,"wordsEqual":true}
+{"feature":"two-axes","staged":["k0:s"],"accepted":true,"wordsEqual":true}
+{"feature":"staged-max","staged":["k0:m"],"accepted":true,"wordsEqual":true}
+{"feature":"staged-and-nested","staged":["k0:s"],"accepted":true,"wordsEqual":true}
+{"feature":"two-staged-one-member","staged":["k0:t"],"accepted":true,"wordsEqual":true}
+{"feature":"staged-max-feeds-row","staged":["k0:m","k0:s"],"accepted":true,"wordsEqual":true}

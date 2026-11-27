@@ -190,16 +190,25 @@ test('IRWB-030-I: the plan stages the reductions whose terms are costly, and rec
   // The corpus placement divides the reduced value: mean's terms are a single load of the staged row, so
   // staging would only copy shared memory; variance's terms compute (a multiply of loads), so they stage.
   const outside = planFusion(corpus('layernorm').current.value.functions[0]);
-  assert.deepEqual(outside.groups[0].terms.map(t => t.statement), ['variance']);
+  assert.deepEqual(
+    outside.groups[0].terms.map(t => t.statement),
+    ['variance'],
+  );
   assert.deepEqual(
     outside.termRefusals.map(r => [r.statement, r.reason]),
     [['mean', 'its terms are loads of x, already in the row buffer; staging would copy them']],
   );
   // softmax's max and sum read the row buffer; attention's row members keep one thread per element.
   const softmax = planFusion(corpus('softmax').current.value.functions[0]);
-  assert.deepEqual(softmax.termRefusals.map(r => r.statement), ['m', 's']);
+  assert.deepEqual(
+    softmax.termRefusals.map(r => r.statement),
+    ['m', 's'],
+  );
   const attention = planFusion(corpus('attention').current.value.functions[0]);
-  assert.deepEqual(attention.termRefusals.map(r => r.statement), ['score', 'shift', 'z', 'out']);
+  assert.deepEqual(
+    attention.termRefusals.map(r => r.statement),
+    ['score', 'shift', 'z', 'out'],
+  );
   assert.match(attention.termRefusals[0].reason, /trailing axes/);
   assert.match(attention.termRefusals[1].reason, /already in the row buffer/);
 });
@@ -210,7 +219,10 @@ test('IRWB-030-I: single-load bodies keep the inline fold; anything computed sta
     'fn f(x:f32[N,C], w:f32[C]):f32[N,C] { s[i] = sum(j) x[i,j] * w[j]; y[i,j] = x[i,j] - s[i]; return y; }',
     'f',
   );
-  assert.deepEqual(cheap.groups[0].terms.map(t => t.statement), ['s']);
+  assert.deepEqual(
+    cheap.groups[0].terms.map(t => t.statement),
+    ['s'],
+  );
   const global = plan(
     'fn f(x:f32[N,C], g:f32[C]):f32[N,C] { m[i]: f32[N] = max(j) g[j]; y[i,j] = x[i,j] - m[i]; return y; }',
     'f',
@@ -223,7 +235,10 @@ test('IRWB-030-I: single-load bodies keep the inline fold; anything computed sta
     'fn f(x:f32[N,C], z:f32[N,C]):f32[N,C] { s[i] = sum(j) (x[i,j] * sum(k) z[i,k]); y[i,j] = x[i,j] - s[i]; return y; }',
     'f',
   );
-  assert.deepEqual(nested.groups[0].terms.map(t => t.statement), ['s']);
+  assert.deepEqual(
+    nested.groups[0].terms.map(t => t.statement),
+    ['s'],
+  );
   assert.match(nested.termRefusals[0].reason, /nested inside another reduction/);
   // After split-sum the fold's axes have blocks/tail extents: the term space is ragged, so no staging.
   const split = optimizeTix(
@@ -242,9 +257,10 @@ test('IRWB-030-I: thread-mode groups and singletons never stage', () => {
   assert.deepEqual(summary(chain), [['thread', 2, 'y,z', 'z']]);
   assert.match(chain.termRefusals[0].reason, /thread mode computes one element per thread/);
   const single = plan('fn f(x:f32[N,C]):f32[N] { s[i] = sum(j) x[i,j] / C; return s; }', 'f');
-  assert.deepEqual(single.termRefusals.map(r => r.reason), [
-    "a one-statement kernel is stage 2's own emitter; it keeps the inline fold",
-  ]);
+  assert.deepEqual(
+    single.termRefusals.map(r => r.reason),
+    ["a one-statement kernel is stage 2's own emitter; it keeps the inline fold"],
+  );
 });
 
 test('IRWB-030-I: with the shape values at launch, a row-phase group with too few rows stays unfused', () => {
@@ -253,7 +269,14 @@ test('IRWB-030-I: with the shape values at launch, a row-phase group with too fe
   const rowphase = compileTix(
     'fn f(s0: f32[N], z: f32[M,C]): f32[N,C] { s[i] = s0[i] + 1; y[i,j] = tanh(s[i]) * exp(z[i+0,j]); return y; }',
   ).current.value.functions[0];
-  const few = planFusion(rowphase, new Map([['N', 4], ['C', 1024], ['M', 4]]));
+  const few = planFusion(
+    rowphase,
+    new Map([
+      ['N', 4],
+      ['C', 1024],
+      ['M', 4],
+    ]),
+  );
   assert.deepEqual(
     few.groups.map(g => [g.kernel, g.mapping, g.statements.join(',')]),
     [
@@ -261,15 +284,37 @@ test('IRWB-030-I: with the shape values at launch, a row-phase group with too fe
       ['k0f1', 'thread', 'y'],
     ],
   );
-  assert.deepEqual(few.unfused.map(u => [u.statements, u.rows]), [[['s', 'y'], 4]]);
+  assert.deepEqual(
+    few.unfused.map(u => [u.statements, u.rows]),
+    [[['s', 'y'], 4]],
+  );
   assert.match(few.unfused[0].reason, /no row-length fold/);
-  const many = planFusion(rowphase, new Map([['N', 4096], ['C', 1024], ['M', 4096]]));
-  assert.deepEqual(many.groups.map(g => g.mapping), ['block']);
+  const many = planFusion(
+    rowphase,
+    new Map([
+      ['N', 4096],
+      ['C', 1024],
+      ['M', 4096],
+    ]),
+  );
+  assert.deepEqual(
+    many.groups.map(g => g.mapping),
+    ['block'],
+  );
   assert.deepEqual(many.unfused, []);
   // A member that folds the whole row keeps the group fused even at one row (script 02: softmax, layernorm).
   const softmax = corpus('softmax').current.value.functions[0];
-  const tiny = planFusion(softmax, new Map([['N', 1], ['C', 1024]]));
-  assert.deepEqual(tiny.groups.map(g => g.mapping), ['block']);
+  const tiny = planFusion(
+    softmax,
+    new Map([
+      ['N', 1],
+      ['C', 1024],
+    ]),
+  );
+  assert.deepEqual(
+    tiny.groups.map(g => g.mapping),
+    ['block'],
+  );
   assert.deepEqual(tiny.unfused, []);
   // Without shape values (cudaSource, checkLowering) the plan is stage 3's: one fused kernel.
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax')), 1);
@@ -277,6 +322,15 @@ test('IRWB-030-I: with the shape values at launch, a row-phase group with too fe
   const two = compileTix(
     'fn f(x:f32[N,C]):f32[N,C] { s[i] = x[i,0] + 1; y[i,j] = tanh(s[i]) * exp(x[i+0,j]); return y; }',
   ).current.value.functions[0];
-  const gated = planFusion(two, new Map([['N', 2], ['C', 8]]));
-  assert.deepEqual(gated.groups.map(g => g.stored), [['s'], ['y']]);
+  const gated = planFusion(
+    two,
+    new Map([
+      ['N', 2],
+      ['C', 8],
+    ]),
+  );
+  assert.deepEqual(
+    gated.groups.map(g => g.stored),
+    [['s'], ['y']],
+  );
 });

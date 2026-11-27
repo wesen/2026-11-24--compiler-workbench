@@ -195,7 +195,9 @@ test('GB10: a staged max over global terms and a split-sum program keep the exac
   const global = compileTix(
     'fn f(x:f32[N,C], g:f32[C]):f32[N,C] { m[i]: f32[N] = max(j) g[j] / C; y[i,j] = x[i,j] - m[i]; return y; }',
   );
-  const split = compileTix('fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j] / C; y[i,j] = x[i,j] - s[i]; return y; }');
+  const split = compileTix(
+    'fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j] / C; y[i,j] = x[i,j] - s[i]; return y; }',
+  );
   const optimized = optimizeTix(split, ['split-sum']).program;
   // The split bounds make the term space ragged: the plan refuses to stage and keeps the inline fold.
   assert.deepEqual(planFusion(optimized.current.value.functions[0]).groups[0].terms, []);
@@ -213,7 +215,14 @@ test('GB10: with tiny shape values at launch the fuse gate keeps the row-phase g
   );
   // 4 rows of heavy elementwise work with no row-length fold: the launch gate plans stage 2's kernels.
   const fn = rowphase.current.value.functions[0];
-  const gated = planFusion(fn, new Map([['N', 4], ['C', 64], ['M', 4]]));
+  const gated = planFusion(
+    fn,
+    new Map([
+      ['N', 4],
+      ['C', 64],
+      ['M', 4],
+    ]),
+  );
   assert.equal(gated.unfused.length, 1);
   const random = seededRandom(33);
   const s0 = { shape: [4], data: Float32Array.from({ length: 4 }, () => 2 * random() - 1) };

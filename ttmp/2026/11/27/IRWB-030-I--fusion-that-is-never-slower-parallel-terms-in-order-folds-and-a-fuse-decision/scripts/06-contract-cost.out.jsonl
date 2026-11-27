@@ -1,0 +1,8 @@
+{"name":"softmax","fuse":true,"accepted":true,"relation":"exact","coldMs":2548,"repeatMs":3}
+{"name":"softmax","fuse":false,"accepted":true,"relation":"exact","coldMs":2196,"repeatMs":1}
+{"name":"layernorm","fuse":true,"accepted":true,"relation":"exact","coldMs":2337,"repeatMs":3}
+{"name":"layernorm","fuse":false,"accepted":true,"relation":"exact","coldMs":2221,"repeatMs":2}
+{"name":"layernorm-inside","fuse":true,"accepted":true,"relation":"exact","coldMs":2221,"repeatMs":3}
+{"name":"layernorm-inside","fuse":false,"accepted":true,"relation":"exact","coldMs":2250,"repeatMs":2}
+{"name":"attention-inside","fuse":true,"accepted":true,"relation":"exact","coldMs":2343,"repeatMs":1}
+{"name":"attention-inside","fuse":false,"accepted":true,"relation":"exact","coldMs":2218,"repeatMs":5}

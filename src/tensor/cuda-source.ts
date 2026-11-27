@@ -450,9 +450,7 @@ function emitGroup(
           `const U nq${slot} = ${node.axes.map(a => `static_cast<U>(${w.dim(extentDim(a))})`).join(' * ')};`,
         );
     withTerms.forEach((m, k) =>
-      w.line(
-        `const U nqt${k} = ${(termPlans.get(m) ?? []).map(({ slot }) => `nq${slot}`).join(' + ')};`,
-      ),
+      w.line(`const U nqt${k} = ${(termPlans.get(m) ?? []).map(({ slot }) => `nq${slot}`).join(' + ')};`),
     );
     const rows = rowBuffers.map(n => `n${suffix(n)}`);
     const pool = withTerms.length ? ` + ${maxOf(withTerms.map((_, k) => `nqt${k}`))}` : '';
@@ -531,7 +529,10 @@ function emitGroup(
     const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
     const hostPool = withTerms.map(m =>
       (termPlans.get(m) ?? [])
-        .map(({ node }) => `(${node.axes.map(a => `static_cast<U>(${affine(extentDim(a), n => dimensions.get(n)!)})`).join(' * ')})`)
+        .map(
+          ({ node }) =>
+            `(${node.axes.map(a => `static_cast<U>(${affine(extentDim(a), n => dimensions.get(n)!)})`).join(' * ')})`,
+        )
         .join(' + '),
     );
     host.push(
