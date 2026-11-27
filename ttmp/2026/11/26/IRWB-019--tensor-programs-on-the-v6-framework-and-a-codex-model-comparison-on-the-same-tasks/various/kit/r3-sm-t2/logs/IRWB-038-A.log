@@ -1,0 +1,2323 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a21e24-8aec-70c2-a751-836d4c83cb00
+--------
+user
+One more question for IRWB-038-A, from the coordinator, at the user's request. The other reviewers received it during their first turn. Continue in the same worktree and ticket, extend your design document, keep your diary, and commit.
+
+**A standard library of compiler building blocks.** Some reusable parts do not belong in the framework's generic core but are still common to many compilers and analyses. Examples: dominators and natural loops, SSA construction, liveness and other lattices, value numbering, affine expressions and dependence tests, binding-time analysis and a partial-evaluation core, exact f32 arithmetic, rule verifiers, case generators, instruction attribution, edit classification, and cost and timing measurement, plus others the material shows.
+
+Propose a standard library of such primitives, so the project starts building a clean, composable, reusable set of them. Cover:
+- what belongs in the generic core, what in the standard library, what stays in a domain, and the criteria that decide it;
+- for each primitive: its interface, the theory it implements, the existing code (in either domain or any cell) it would replace, and how it composes with other primitives and with the framework.
+
+Add it to the design document as "the proposed standard library: its layering criteria and its primitives", and revise the rest where this changes your conclusions.
+
+Final message: the same list as before (ticket and document paths, five findings, framework concepts, fundamental changes, last commit), plus "the standard-library primitives you propose, one line each".
+codex
+I’ll extend the existing design and diary using the same docmgr workflow. I’ll focus on the boundary between framework protocols, reusable compiler algorithms, and domain semantics, then trace each proposed primitive to concrete replacement sites.
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -2 --oneline; rg -n '"'^##|''^###|Graph analysis|affine|standard library'"' ttmp/2026/11/27/IRWB-038-A--*/design-doc/*.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+exec
+/usr/bin/zsh -lc "rg -n '"'^export |''^function'"' src/typed/{analyses,ssa,sccp,f32,cases-strong,evaluate,attribute,passes,rules/{compile,semantics,verify},backend/{frequency,coalesce,regalloc,run}}.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+exec
+/usr/bin/zsh -lc "rg -n '"'^export |''^function'"' src/tensor/{model,evaluate,contract,fusion,cuda-contract,cuda-runtime}.ts; rg -n 'export |process\\.hrtime|median|repeat|warmup' src/framework/dataflow/{solver,lattices}.ts tools/{cuda-remote,attribute}.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+exec
+/usr/bin/zsh -lc "rg -n '"'^###|''^##'"' ttmp/2026/11/27/IRWB-038-A--*/analysis/*.md; rg --files tests | rg 'analys|ssa|rules|fusion|typed|tensor' | head -55" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 2130ms:
+src/tensor/cuda-contract.ts:36:export const CudaIR = defineIR<CudaUnit>({
+src/tensor/cuda-contract.ts:78:export function cudaArtifact(fn: string, source: string, kernels: CudaKernel[] = []): Artifact<CudaUnit> {
+src/tensor/cuda-contract.ts:83:export function kernelCorrespondence(
+src/tensor/cuda-contract.ts:105:function compare(expected: BufferValue, got: BufferValue) {
+src/tensor/cuda-contract.ts:131:export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
+src/tensor/cuda-contract.ts:267:export const checkCudaLowering = createCudaLowering('cuda-remote:sm_121:-O3');
+src/tensor/fusion.ts:14:export interface FusionGroup {
+src/tensor/fusion.ts:48:export interface FusionRefusal {
+src/tensor/fusion.ts:53:export interface FusionPlan {
+src/tensor/fusion.ts:62:export type Reduce = Extract<Expr, { kind: 'reduce' }>;
+src/tensor/fusion.ts:64:export function outerReductions(e: Expr): Reduce[] {
+src/tensor/fusion.ts:69:function loads(s: Statement): Load[] {
+src/tensor/fusion.ts:83:function joinDepth(s: Statement, members: Statement[], depth: number): { depth: number; reason: string } {
+src/tensor/fusion.ts:113:export const staging = { cheapOperations: 4 };
+src/tensor/fusion.ts:115:function work(e: Expr): number {
+src/tensor/fusion.ts:135:export const gate = { fullRow: 96, smallGrid: 1024, heavyLanes: [19, 24] };
+src/tensor/fusion.ts:136:export function gateRule(v: { grid: string; longest: string; lanes: string[]; slots: string }): string {
+src/tensor/fusion.ts:142:export function planFusion(fn: Fn): FusionPlan {
+src/tensor/fusion.ts:282:export function unfusedPlan(fn: Fn): FusionPlan {
+src/tensor/contract.ts:22:export const seed = 20;
+src/tensor/contract.ts:24:function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, cuda = false): Sample[] {
+src/tensor/contract.ts:87:export function cudaCases(fn: Fn, random: () => number): Sample[] {
+src/tensor/contract.ts:91:export function coordinate(shape: number[], offset: number): number[] {
+src/tensor/contract.ts:100:function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
+src/tensor/contract.ts:118:function signature(m: Module) {
+src/tensor/contract.ts:121:export function meaningGate(origin: Artifact<Module>, relation: Relation) {
+src/tensor/evaluate.ts:2:export interface BufferValue {
+src/tensor/evaluate.ts:6:export type Inputs = Record<string, BufferValue>;
+src/tensor/evaluate.ts:7:export type Precision = 'f32' | 'f64';
+src/tensor/evaluate.ts:8:export const size = (shape: number[]) => shape.reduce((a, b) => a * b, 1);
+src/tensor/evaluate.ts:22:export class OutsideSample extends Error {}
+src/tensor/evaluate.ts:24:export function evaluate(fn: Fn, inputs: Inputs, precision: Precision, sampling = false): BufferValue {
+src/tensor/model.ts:2:export interface Affine {
+src/tensor/model.ts:6:export const constant = (value: number): Affine => ({ constant: value, terms: [] });
+src/tensor/model.ts:7:export const variable = (name: string): Affine => ({ constant: 0, terms: [[name, 1]] });
+src/tensor/model.ts:8:export function add(a: Affine, b: Affine, scale = 1): Affine {
+src/tensor/model.ts:19:export function substitute(a: Affine, bindings: Map<string, Affine>): Affine {
+src/tensor/model.ts:25:export function value(a: Affine, env: Map<string, number>): number {
+src/tensor/model.ts:28:export function plain(a: Affine): string | undefined {
+src/tensor/model.ts:31:export type Extent =
+src/tensor/model.ts:35:export interface Axis {
+src/tensor/model.ts:39:export type Op = '+' | '-' | '*' | '/' | 'neg' | 'exp' | 'log' | 'sqrt' | 'tanh' | 'max' | 'min';
+src/tensor/model.ts:40:export type Expr =
+src/tensor/model.ts:46:export interface Tensor {
+src/tensor/model.ts:50:export interface Statement extends Tensor {
+src/tensor/model.ts:54:export interface Fn {
+src/tensor/model.ts:61:export interface Module {
+src/tensor/model.ts:64:export const width = 4;
+src/tensor/model.ts:65:export function mapExpr(e: Expr, f: (e: Expr) => Expr): Expr {
+src/tensor/model.ts:70:export function visit(e: Expr, f: (e: Expr) => void) {
+src/tensor/model.ts:76:export function selectFunction(module: Module, name: string): Fn {
+src/tensor/cuda-runtime.ts:9:export type CudaInputs = Record<string, { shape: number[]; data: Float32Array }>;
+src/tensor/cuda-runtime.ts:10:export interface CudaResult {
+src/tensor/cuda-runtime.ts:20:function elements(shape: number[]): number {
+src/tensor/cuda-runtime.ts:27:export function encodeCudaCases(fn: Fn, cases: readonly CudaInputs[]): Buffer {
+src/tensor/cuda-runtime.ts:61:export function decodeCudaCases(
+src/tensor/cuda-runtime.ts:106:export async function runCudaBatch(
+src/framework/dataflow/lattices.ts:10:export interface Lattice<V> {
+src/framework/dataflow/lattices.ts:22:export function setLattice<T extends number | string>(): Lattice<ReadonlySet<T>> {
+src/framework/dataflow/lattices.ts:40:export const TOP = 'varies';
+src/framework/dataflow/lattices.ts:41:export const BOT = 'unknown';
+src/framework/dataflow/lattices.ts:42:export type Flat<T> = typeof TOP | typeof BOT | { readonly value: T };
+src/framework/dataflow/lattices.ts:45:export function flatLattice<T extends Json>(): Lattice<Flat<T>> {
+src/framework/dataflow/lattices.ts:60:export const I32_MIN = -2147483648;
+src/framework/dataflow/lattices.ts:61:export const I32_MAX = 2147483647;
+src/framework/dataflow/lattices.ts:63:export type Interval = readonly [number, number] | null;
+src/framework/dataflow/lattices.ts:66:export function intervalLattice(
+src/framework/dataflow/lattices.ts:93:export function mapLattice<K extends string | number, V>(
+src/framework/dataflow/lattices.ts:133:export const lattice = {
+src/framework/dataflow/solver.ts:17:export interface FlowGraph {
+src/framework/dataflow/solver.ts:24:export interface SolveOptions<V> {
+src/framework/dataflow/solver.ts:42:export interface Solution<V> {
+src/framework/dataflow/solver.ts:53:export class DataflowError extends Error {
+src/framework/dataflow/solver.ts:64:export function depthFirst(graph: FlowGraph): { postorder: string[]; loopHeads: Set<string> } {
+src/framework/dataflow/solver.ts:90:export function solve<V>(graph: FlowGraph, options: SolveOptions<V>): Solution<V> {
+
+ succeeded in 2179ms:
+## r3-sm/irwb-038-a
+b84ad23 IRWB-038-A: propose one transformation lifecycle and scoped evidence
+b580637 IRWB-038-A: open review and capture baseline probes
+35:## Decision
+43:## Merged evidence, in stage order
+47:| T1, IRWB-020-B | A native AST evaluator and FP comparators feed a seeded meaning gate against origin. Inline counts uses, substitutes affine indices and deletes the producer. Split builds block/tail reductions. The graph exposes function and tensor entities, plus named reads, and leaves editing unsupported. `src/tensor/contract.ts:24`, `src/tensor/contract.ts:100`, `src/tensor/contract.ts:121`, `src/tensor/passes.ts:16`, `src/tensor/passes.ts:53`, `src/tensor/ir.ts:102`, `src/tensor/ir.ts:140`. | The evaluator, arithmetic, and affine substitution remain language semantics. Reuse use-def analysis, guarded single-use inlining, scoped matching, and a native edit receipt. |
+56:## Assessment by layer
+64:| **Dataflow** | Keep the forward/backward worklist, meet/join interface, boundary facts, and declared read-set transfer for CFG problems. Typed liveness, reaching definitions and range propagation are concrete users. `src/framework/dataflow/solver.ts:20`, `src/framework/dataflow/analysis.ts:120`, `src/framework/dataflow/analysis.ts:160`, `src/typed/analyses.ts:296`, `src/typed/analyses.ts:352`, `src/typed/analyses.ts:486`. | In the merged Tix path, the adapter emits tensor and read edges, and optimization and scheduling consume native ASTs. I found no use of the dataflow solver or directed rewrite runner there. `src/tensor/ir.ts:102`, `src/tensor/passes.ts:82`, `src/tensor/fusion.ts:142`, `src/tensor/index.ts:32`. A CFG is a useful solver input. It is a poor requirement for affine dependence or a changing set of abstract specialization states. Add reusable graph analyses, sparse/worklist services where a second client exists, and a sibling dependence provider. Tix’s tensor use counting and dependence logic presently live in AST traversal and fusion. `src/tensor/passes.ts:23`, `src/tensor/fusion.ts:69`. |
+69:## Correcting the starting hypotheses
+77:## Probe results
+90:## Proposed concepts
+92:### 1. Typed transformations with preconditions and receipts
+112:### 2. Translation-validation obligations and independently keyed observations
+129:### 3. Witnessed edits and guarded local rewriting
+140:Typed fold/simplify and the A0 classification census are immediate uses of producer-supplied witnesses. Tix single-use inline is a second language instance of guarded rewriting with affine substitution and source occurrence lineage. B1 residual entry and D1 LICM preheader formation are immediate consumers of root-aware structural edits. Preserve generic matching alongside the native builders. Use explicit entry checks and region dominance validation. Tix expression projection and strict arithmetic rule evidence are testable extensions. A provenance witness from a legacy classifier should remain retrospective evidence with an explicit origin. `src/typed/rules/passes.ts:14`, `A0-G/src/typed/edit-classes.ts:283`, `src/tensor/passes.ts:21`, `B1-G/src/typed/specialize-buffer.ts:294`, `src/typed/passes.ts:423`.
+142:### 4. Scoped lineage and additive execution attribution
+154:### 5. Graph analysis providers and binding-time specialization
+169:### 6. Dependence relations and validated schedules
+171:**Evidenced for Tix; Typed lifting is conjectural.** Separate a description of computation from its schedule. An affine region supplies domains and access relations indexed by iteration points. Compose access-to-location relations to compute conflicts and constrain them by original order, alias information and the relevant dependence classes. A legal time map preserves strict lexicographic order for every ordered dependence. Parallel placement requires a stronger independence condition for points in the same concurrent band or a correct synchronization/visibility proof. Preserve reduction event order for strict IEEE arithmetic. Size-dependent guards must be sufficient over the entire selected domain, including tails, zero extents, and integer bounds. [Feautrier, Affine Scheduling Part II](https://link.springer.com/article/10.1007/BF01379404), [Ragan-Kelley et al., Decoupling Algorithms from Schedules](https://dspace.mit.edu/entities/publication/121e12b2-928b-4e8f-a78a-79f44d11cc6b).
+174:AffineRegion { parameters, statementDomains, affineAccesses, effectSummary, originalOrder }
+180:Apply this to T3's fusion boundary and T6's split, reorder and tiling. The smallest useful interface returns a precise dependence or a reason for refusal on pointwise and two-dimensional affine examples. Take both order and movement out of `planFusion`. The schedule pass selects a partition and records variants. The emitter interprets that artifact. Keep the current read-name graph as a cheap query for simple transformations. Use region scoping so a schedule artifact can reference its semantic revision and region without duplicating the entire AST. For a second domain, try one Typed affine counted-loop region from the corrected loop forest, with explicit noalias and trap facts. The loop-header fix itself is CFG theory. It does not establish affine legality. `src/tensor/fusion.ts:83`, `src/tensor/fusion.ts:142`, `T6-D/src/tensor/schedule.ts:580`, `T6-H/src/tensor/schedule.ts:522`, `src/typed/analyses.ts:215`.
+182:### 7. Constrained variant selection and measurement
+194:## Root changes and alternatives
+220:## Ordered migration and decision gates
+236:## Open questions
+
+ succeeded in 2158ms:
+22:## Reading the evidence
+28:## Committed cell heads
+30:### T6
+47:### D1
+61:### A0
+75:### B1
+89:## Merged and earlier records
+101:## Uncommitted observations
+105:### Connection to the F-series
+tests/tensor/fusion.test.mjs
+tests/tensor/corpus.test.mjs
+tests/tensor/language.test.mjs
+tests/tensor/terms-gpu.test.mjs
+tests/tensor/gate-choice-gpu.test.mjs
+tests/tensor/cuda.test.mjs
+tests/tensor/cuda-gpu.test.mjs
+tests/tensor/fusion-gpu.test.mjs
+tests/tensor/fixtures/cublas-product/main.cu
+tests/tensor/passes.test.mjs
+tests/typed/corpus-expectations.mjs
+tests/typed/f32-backend.test.mjs
+tests/typed/mutate.test.mjs
+tests/typed/rules.test.mjs
+tests/typed/strategies.test.mjs
+tests/typed/inline.test.mjs
+tests/typed/evaluate-analyses.test.mjs
+tests/typed/f32-dsp.test.mjs
+tests/typed/audit.test.mjs
+tests/typed/tape.test.mjs
+tests/typed/format.test.mjs
+tests/typed/parallel.test.mjs
+tests/typed/bytecode-vm.test.mjs
+tests/typed/meaning-memo.test.mjs
+tests/typed/project-meta.test.mjs
+tests/typed/f32.test.mjs
+tests/typed/sha-chacha.test.mjs
+tests/typed/f32-backend-fixture.mjs
+tests/typed/reference-check.test.mjs
+tests/typed/f32-fixture.mjs
+tests/typed/candela.test.mjs
+tests/typed/specialize.test.mjs
+tests/typed/backend.test.mjs
+tests/typed/ingest.test.mjs
+tests/typed/facts-check.test.mjs
+tests/typed/regex-nfa.test.mjs
+tests/typed/ssa.test.mjs
+tests/typed/program.test.mjs
+tests/typed/lz-roundtrip.test.mjs
+tests/typed/attribute.test.mjs
+tests/typed/bcm.test.mjs
+tests/typed/dfe.test.mjs
+tests/typed/chess-search.test.mjs
+tests/typed/speed.test.mjs
+tests/typed/passes.test.mjs
+
+ succeeded in 2231ms:
+src/typed/sccp.ts:23:export type Lat =
+src/typed/sccp.ts:31:export const meet = (a: Lat, b: Lat): Lat =>
+src/typed/sccp.ts:37:export interface SccpResult {
+src/typed/sccp.ts:47:export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
+src/typed/sccp.ts:118:function contributing(ssa: SsaFn, res: SccpResult, name: string, f: WorkFn): string[] {
+src/typed/sccp.ts:141:export const sccp: TypedPass = typedPass({
+src/typed/sccp.ts:170:export const SSA_PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({ sccp });
+src/typed/sccp.ts:171:export const SSA_PIPELINES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+src/typed/sccp.ts:175:export const passNamed = (name: string): TypedPass => {
+src/typed/sccp.ts:186:export async function runPasses(
+src/typed/cases-strong.ts:49:export const F32_EXTRA: readonly number[] = [
+src/typed/cases-strong.ts:66:export function constantsOf(st: Store, f: WorkFn): number[] {
+src/typed/cases-strong.ts:89:function i32Pool(lo: number, hi: number, consts: readonly number[]): number[] {
+src/typed/cases-strong.ts:96:function f32Pool(spec: any): number[] {
+src/typed/cases-strong.ts:118:function cellPatterns(len: number, lo: number, hi: number, consts: readonly number[]): number[][] {
+src/typed/cases-strong.ts:132:function pool(spec: any, type: string, t: Tables, consts: readonly number[]): Entry[] {
+src/typed/cases-strong.ts:193:export function poolSizes(st: Store, fname: string, inputs: FunctionInputs = {}): number[] {
+src/typed/cases-strong.ts:214:export function offsetOrdered(st: Store): Store {
+src/typed/cases-strong.ts:233:export function boundaryCases(
+src/typed/cases-strong.ts:253:export function coveredStatements(st: Store, cases: readonly Case[], limit = 2e4): Set<string> {
+src/typed/cases-strong.ts:263:export function blockCoverage(
+src/typed/cases-strong.ts:276:function coverageCases(
+src/typed/cases-strong.ts:306:export interface StrongParams extends MeaningParams {
+src/typed/cases-strong.ts:329:export function strongCasesFrom(
+src/typed/cases-strong.ts:369:export function meaningKeptStrong(
+src/typed/cases-strong.ts:468:export function strongOptimizationContract(params: StrongParams = {}): TransformationDefinition<any, any> {
+src/typed/backend/coalesce.ts:21:export interface Coalesced {
+src/typed/backend/coalesce.ts:27:export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): Coalesced {
+src/typed/backend/frequency.ts:17:export interface Edge {
+src/typed/backend/frequency.ts:23:export interface Frequencies {
+src/typed/backend/frequency.ts:37:export function targetsOf(st: Store, b: BlockRec): string[] {
+src/typed/backend/frequency.ts:54:function components(blocks: readonly string[], succ: (b: string) => readonly string[]) {
+src/typed/backend/frequency.ts:105:export function blockFrequencies(st: Store, f: WorkFn): Frequencies {
+src/typed/backend/frequency.ts:174:export function estimateCost(code: readonly MInsn[], fr: Frequencies): number {
+src/typed/f32.ts:23:export const CANONICAL_NAN = 0x7fc00000;
+src/typed/f32.ts:27:export function fromBits(bits: number): number {
+src/typed/f32.ts:32:export function toBits(x: number): number {
+src/typed/f32.ts:37:export const isNaNBits = (b: number): boolean => (b & 0x7fffffff) > 0x7f800000;
+src/typed/f32.ts:40:function minmax(a: number, b: number, max: boolean): number {
+src/typed/f32.ts:45:function round(a: number, f: (x: number) => number): number {
+src/typed/f32.ts:49:function toInt(a: number, unsigned: boolean): number {
+src/typed/f32.ts:57:export const F32_BINARY: Readonly<Record<string, (a: number, b: number) => number>> = {
+src/typed/f32.ts:67:export const F32_COMPARE: Readonly<Record<string, (a: number, b: number) => number>> = {
+src/typed/f32.ts:76:export const F32_UNARY: Readonly<Record<string, (a: number) => number>> = {
+src/typed/f32.ts:92:export const F32_RESULT = new Set([
+src/typed/f32.ts:111:export const F32_OPERANDS = new Set([
+src/typed/f32.ts:129:export const F32_FOLDABLE = new Set([
+src/typed/f32.ts:142:export function f32Op(op: string, a: number, b?: number): number | undefined {
+src/typed/f32.ts:150:export function formatF32(bits: number): string {
+src/typed/rules/semantics.ts:17:export const TRAP = 4294967296;
+src/typed/rules/semantics.ts:18:export type Outcome = number;
+src/typed/rules/semantics.ts:20:export const wrap = (x: number, w: number): number => (w === 32 ? x | 0 : (x << (32 - w)) >> (32 - w));
+src/typed/rules/semantics.ts:21:export const unsigned = (x: number, w: number): number => (w === 32 ? x >>> 0 : x & ((1 << w) - 1));
+src/typed/rules/semantics.ts:22:export const minOf = (w: number): number => -(2 ** (w - 1));
+src/typed/rules/semantics.ts:23:export const maxOf = (w: number): number => 2 ** (w - 1) - 1;
+src/typed/rules/semantics.ts:25:export const I32_BINARY = new Set([
+src/typed/rules/semantics.ts:29:export const COMPARISONS = new Set(['eq', 'ne', 'lt', 'gt', 'le', 'ge', 'ltu', 'geu', 'eqz']);
+src/typed/rules/semantics.ts:30:export const LINEAR = new Set(['add', 'sub', 'mul', 'shl']);
+src/typed/rules/semantics.ts:31:export const BITWISE = new Set(['and', 'or', 'xor']);
+src/typed/rules/semantics.ts:35:export const BIN: Readonly<Record<string, Bin>> = {
+src/typed/rules/semantics.ts:58:export function binopW(op: string, a: number, b: number, w: number): Outcome {
+src/typed/rules/semantics.ts:65:export function opW(op: string, args: readonly number[], w: number): Outcome {
+src/typed/rules/semantics.ts:80:export function compileSide(
+src/typed/rules/semantics.ts:160:export const agreeOutcome = (a: Outcome, b: Outcome): boolean => a === b;
+src/typed/rules/semantics.ts:168:export const F32_SPECIALS: readonly number[] = [
+src/typed/rules/semantics.ts:175:export function boundaryI32(): number[] {
+src/typed/ssa.ts:23:export const VIRTUAL_ENTRY = '^entry';
+src/typed/ssa.ts:25:export interface SsaDef {
+src/typed/ssa.ts:36:export interface SsaPhi {
+src/typed/ssa.ts:42:export interface SsaFn {
+src/typed/ssa.ts:60:export function ssaOf(st: Store, f: WorkFn): SsaFn {
+src/typed/ssa.ts:219:export const ssaAnalysis = defineAnalysis({
+src/typed/ssa.ts:232:export interface SsaView {
+src/typed/ssa.ts:243:export function ssaView(fact: SsaFn): SsaView {
+src/typed/ssa.ts:293:export function deadPhis(fact: SsaFn, live: LiveView): number {
+src/typed/ssa.ts:300:export interface SsaCheck {
+src/typed/ssa.ts:325:export function checkSsa(st: Store, f: WorkFn, fact: SsaFn, reach: ReachView): SsaCheck {
+src/typed/rules/compile.ts:16:export type Bindings = Record<string, ValueHandle>;
+src/typed/rules/compile.ts:20:export const isPow2 = (n: number) => n > 0 && (n & (n - 1)) === 0;
+src/typed/rules/compile.ts:21:export const log2 = (n: number) => 31 - Math.clz32(n);
+src/typed/rules/compile.ts:24:export function matchPat(p: Pat, h: ValueHandle, b: Bindings): boolean {
+src/typed/rules/compile.ts:43:export function guardHolds(g: Guard, b: Bindings): boolean {
+src/typed/rules/compile.ts:53:export function evalOp(op: string, args: readonly number[]): number {
+src/typed/rules/compile.ts:60:export function numOf(n: Num, imm: (name: string) => number): number {
+src/typed/rules/compile.ts:72:function provenance(r: Rule, v: ValueHandle, b: Bindings): MakeOptions {
+src/typed/rules/compile.ts:78:function instantiate(t: Tpl, b: Bindings, tx: Tx, prov: MakeOptions): string {
+src/typed/rules/compile.ts:90:export type Firings = Map<string, number>;
+src/typed/rules/compile.ts:93:export function firstMatch(
+src/typed/rules/compile.ts:108:export function indexRules(rules: readonly Rule[]): Map<string, Rule[]> {
+src/typed/rules/compile.ts:119:export function compileRules(
+src/typed/rules/compile.ts:133:export function tableBody(rules: readonly Rule[], firings?: Firings): (ctx: { tx: Tx }) => void {
+src/typed/analyses.ts:25:export const MIN = -2147483648,
+src/typed/analyses.ts:29:export function readsOf(st: Store, id: string | undefined, acc = new Set<number>()): Set<number> {
+src/typed/analyses.ts:40:export function hasEffect(st: Store, id: string | undefined): boolean {
+src/typed/analyses.ts:59:export function isPure(st: Store, id: string): boolean {
+src/typed/analyses.ts:65:export const stmtValues = (s: StmtRec): string[] => [s.value, s.cond, s.addr].filter((x): x is string => !!x);
+src/typed/analyses.ts:68:export interface Cfg {
+src/typed/analyses.ts:75:export function cfgOf(f: WorkFn): Cfg {
+src/typed/analyses.ts:100:export const flowGraph = (f: WorkFn): FlowGraph => {
+src/typed/analyses.ts:125:export const cfgAnalysis = defineAnalysis({
+src/typed/analyses.ts:135:export interface Dominators {
+src/typed/analyses.ts:140:export function dominatorsOf(f: WorkFn): Dominators {
+src/typed/analyses.ts:169:export interface DomView {
+src/typed/analyses.ts:174:export function domView(d: Dominators): DomView {
+src/typed/analyses.ts:188:export const dominatorsAnalysis = defineAnalysis({
+src/typed/analyses.ts:198:export interface Loop {
+src/typed/analyses.ts:215:export function loopsOf(st: Store, f: WorkFn): Loop[] {
+src/typed/analyses.ts:258:export const loopsAnalysis = defineAnalysis({
+src/typed/analyses.ts:296:export const livenessAnalysis = dataflow<TypedBlocks, ReadonlySet<number>, FnContext>({
+src/typed/analyses.ts:314:export interface LiveView {
+src/typed/analyses.ts:320:export function liveView(result: DataflowResult, st: Store, fname: string): LiveView {
+src/typed/analyses.ts:352:export const reachingAnalysis = dataflow<TypedBlocks, ReadonlySet<string>, FnContext>({
+src/typed/analyses.ts:370:export interface ReachView {
+src/typed/analyses.ts:375:export function reachView(result: DataflowResult, st: Store, fname: string): ReachView {
+src/typed/analyses.ts:397:export function evalRange(st: Store, id: string, env: Env): [number, number] {
+src/typed/analyses.ts:455:function refine(st: Store, cond: string, env: Env, taken: boolean): Env {
+src/typed/analyses.ts:486:export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
+src/typed/analyses.ts:520:export interface RangeView {
+src/typed/analyses.ts:526:export function rangeView(result: DataflowResult, st: Store, fname: string): RangeView {
+src/typed/analyses.ts:554:export const ANALYSES = {
+src/typed/passes.ts:70:export interface TypedPassSpec {
+src/typed/passes.ts:95:export interface RevisionReport {
+src/typed/passes.ts:119:export function revisionCorrespondence(
+src/typed/passes.ts:164:export type TypedPass = Pass<TypedBlocks, Record<string, any>, Record<string, unknown>> & {
+src/typed/passes.ts:168:export function typedPass(spec: TypedPassSpec): TypedPass {
+src/typed/passes.ts:224:export function optimizationContract(params: MeaningParams = {}): TransformationDefinition<any, any> {
+src/typed/passes.ts:265:export const fold = typedPass({
+src/typed/passes.ts:282:export const simplify = typedPass({
+src/typed/passes.ts:290:export const constprop = typedPass({
+src/typed/passes.ts:329:export const dce = typedPass({
+src/typed/passes.ts:347:export const cfg = typedPass({
+src/typed/passes.ts:423:export const licm = typedPass({
+src/typed/passes.ts:516:export const lvn = typedPass({
+src/typed/passes.ts:568:export const strength = typedPass({
+src/typed/passes.ts:592:export const divToShift = typedPass({
+src/typed/passes.ts:606:export const bce = typedPass({
+src/typed/passes.ts:712:export const bcm = typedPass({
+src/typed/passes.ts:962:export const dfe: TypedPass = Object.freeze({
+src/typed/passes.ts:989:export const subst = typedPass({
+src/typed/passes.ts:1045:export const rotate = typedPass(rotateSpec);
+src/typed/passes.ts:1047:export const inline = makeInline(revisionCorrespondence);
+src/typed/passes.ts:1049:export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
+src/typed/passes.ts:1068:export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+src/typed/passes.ts:1145:export type { ValueHandle };
+src/typed/backend/run.ts:44:export interface ImageRun extends Omit<RunResult, 'counts'> {
+src/typed/backend/run.ts:55:export interface RunImageOptions {
+src/typed/backend/run.ts:74:export function runImage(
+src/typed/backend/run.ts:168:export interface Heat {
+src/typed/backend/run.ts:175:export function heat(st: Store, image: Rv32Image | Artifact<Rv32Image>, counts: Uint32Array | null): Heat {
+src/typed/backend/run.ts:194:export interface ImageDiff {
+src/typed/backend/run.ts:205:export function diffImages(
+src/typed/backend/run.ts:247:export function imageStatus(
+src/typed/backend/run.ts:257:export const imageSig = (sig: CallSignature): ImageSig => ({
+src/typed/backend/run.ts:269:export function imageFromCode(
+src/typed/backend/run.ts:321:export interface ImageCheckParams {
+src/typed/backend/run.ts:365:export function imageAgrees(params: ImageCheckParams = {}): DifferentialInvariant<ImagePorts> {
+src/typed/backend/regalloc.ts:28:export const usesOf = (m: MInsn): number[] =>
+src/typed/backend/regalloc.ts:30:export const defsOf = (m: MInsn): number[] =>
+src/typed/backend/regalloc.ts:33:export interface MachineBlock {
+src/typed/backend/regalloc.ts:41:export function machineBlocks(code: readonly MInsn[]): MachineBlock[] {
+src/typed/backend/regalloc.ts:66:export interface Interval {
+src/typed/backend/regalloc.ts:74:export interface Intervals {
+src/typed/backend/regalloc.ts:85:export function intervals(code: readonly MInsn[]): Intervals {
+src/typed/backend/regalloc.ts:138:export interface Allocation {
+src/typed/backend/regalloc.ts:152:export function physicalOccupancy(
+src/typed/backend/regalloc.ts:233:export function allocate(
+src/typed/evaluate.ts:16:export function rng(seed: number): () => number {
+src/typed/evaluate.ts:29:export function hash(text: string): string {
+src/typed/evaluate.ts:38:export class Trap extends Error {
+src/typed/evaluate.ts:48:export interface MemoryItem {
+src/typed/evaluate.ts:57:export class Memory {
+src/typed/evaluate.ts:102:export function readBuffer(bytes: Uint8Array, at: number): number[] {
+src/typed/evaluate.ts:117:export type InputSpec = number | readonly [number, number] | Readonly<Record<string, unknown>>;
+src/typed/evaluate.ts:118:export type FunctionInputs = Readonly<Record<string, InputSpec>>;
+src/typed/evaluate.ts:119:export type ProgramInputs = Readonly<Record<string, FunctionInputs>>;
+src/typed/evaluate.ts:130:function makeValue(
+src/typed/evaluate.ts:196:export const F32_EDGES: readonly number[] = [
+src/typed/evaluate.ts:206:function makeF32(spec: any, rnd: () => number): number {
+src/typed/evaluate.ts:223:export interface Case {
+src/typed/evaluate.ts:232:export function casesFrom(
+src/typed/evaluate.ts:257:export function benchCase(st: Store, fname: string, bench: Readonly<Record<string, unknown>> = {}): Case {
+src/typed/evaluate.ts:268:export function binop(op: string, a: number, b: number): number {
+src/typed/evaluate.ts:316:export interface RunResult {
+src/typed/evaluate.ts:332:export const STACK_BYTES = 65536;
+src/typed/evaluate.ts:351:export function evaluate(
+src/typed/evaluate.ts:545:export const outcome = (r: RunResult): number | readonly number[] | 'trap' => (r.trap ? 'trap' : r.result!);
+src/typed/evaluate.ts:561:export function agrees(expected: RunResult, got: RunResult): boolean {
+src/typed/evaluate.ts:569:export interface MeaningParams {
+src/typed/evaluate.ts:594:export function meaningKept(
+src/typed/attribute.ts:24:export interface AttributedRevision {
+src/typed/attribute.ts:31:export interface AttributedCall {
+src/typed/attribute.ts:38:export interface AttributionRow {
+src/typed/attribute.ts:53:export interface DecisionRow {
+src/typed/attribute.ts:62:export interface Attribution {
+src/typed/attribute.ts:81:function measureSites(r: AttributedRevision, call: AttributedCall, backend: BackendOptionsInput): Measured {
+src/typed/attribute.ts:103:function stepRows(A: Measured, B: Measured, r: AttributedRevision): AttributionRow[] {
+src/typed/attribute.ts:185:export function attributeSteps(
+src/typed/attribute.ts:216:export function formatAttribution(a: Attribution): string {
+src/typed/rules/verify.ts:39:export type MethodName =
+src/typed/rules/verify.ts:48:export interface MethodResult {
+src/typed/rules/verify.ts:56:export interface Counterexample {
+src/typed/rules/verify.ts:63:export type Strength = 'proof' | 'exhaustive' | 'reduced-width+argument' | 'sampled' | 'by-construction';
+src/typed/rules/verify.ts:64:export interface RuleEvidence {
+src/typed/rules/verify.ts:75:export interface VerifyOptions {
+src/typed/rules/verify.ts:87:export const ruleFingerprint = (r: Rule): string => fingerprint(r);
+src/typed/rules/verify.ts:90:export function argumentFor(r: Rule): string | undefined {
+src/typed/rules/verify.ts:110:function varsOf(r: Rule): Var[] {
+src/typed/rules/verify.ts:125:function opsOf(r: Rule): Set<string> {
+src/typed/rules/verify.ts:148:function domainAt(x: Var, w: number): number[] | null {
+src/typed/rules/verify.ts:155:function guardsHold(guards: readonly Guard[], slot: Map<string, number>, env: ArrayLike<number>, w: number) {
+src/typed/rules/verify.ts:179:export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
+src/typed/rules/verify.ts:485:function structuralProblem(r: Rule, vars: readonly Var[]): string | undefined {
+src/typed/rules/verify.ts:546:function lin(n: Pat | Tpl, at: ReadonlyMap<string, number>): Lin | null {
+src/typed/rules/verify.ts:590:function product(doms: readonly (readonly number[])[]): number[][] {
+
+web search: 
+exec
+/usr/bin/zsh -lc "nl -ba src/tensor/evaluate.ts | sed -n '12,155p'; nl -ba src/typed/f32.ts | sed -n '1,95p'; nl -ba src/typed/passes.ts | sed -n '510,568p'; nl -ba src/framework/dataflow/solver.ts | sed -n '17,93p'; nl -ba src/typed/ssa.ts | sed -n '54,143p'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+exec
+/usr/bin/zsh -lc "rg -n '"'^(export |function |async function)|median|warmup|repeats'"' src/typed/{mutate,backend/{select,frequency,coalesce,regalloc,compile}}.ts src/tensor/cuda-source.ts ttmp/2026/11/26/IRWB-019--*/scripts/53-t9-timing-spread.mjs | head -140; rg -n 'range|stride|affine|integerOverflow' src/typed/passes.ts | tail -45; rg -n 'firstMatch|classif|instructionWeights' ../a0-fa-irwb-035-g/src/typed/edit-classes.ts | head -30" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+web search: Cooper Harvey Kennedy A Simple Fast Dominance Algorithm Rice PDF natural loops LLVM loop terminology ...
+ succeeded in 1664ms:
+    12	  '*': (a, b) => a * b,
+    13	  '/': (a, b) => a / b,
+    14	  neg: a => -a,
+    15	  exp: Math.exp,
+    16	  log: Math.log,
+    17	  sqrt: Math.sqrt,
+    18	  tanh: Math.tanh,
+    19	  max: Math.max,
+    20	  min: Math.min,
+    21	};
+    22	export class OutsideSample extends Error {}
+    23	// Limits apply only when selecting the contract's cases.
+    24	export function evaluate(fn: Fn, inputs: Inputs, precision: Precision, sampling = false): BufferValue {
+    25	  const ArrayType = precision === 'f32' ? Float32Array : Float64Array;
+    26	  const round = precision === 'f32' ? Math.fround : (x: number) => x;
+    27	  const shapes = new Map<string, number>(),
+    28	    indices = new Map<string, number>(),
+    29	    tensors = new Map<string, BufferValue>();
+    30	  let work = 0;
+    31	  function tick() {
+    32	    if (sampling && ++work > 1e6) throw new OutsideSample('Sample work limit');
+    33	  }
+    34	  for (const p of fn.params) {
+    35	    const input = inputs[p.name];
+    36	    p.shape.forEach((a, i) => {
+    37	      const n = plain(a);
+    38	      if (n) shapes.set(n, input.shape[i]);
+    39	    });
+    40	    tensors.set(p.name, { shape: input.shape, data: ArrayType.from(input.data) });
+    41	  }
+    42	  function loop(axes: Axis[], i: number, body: () => void) {
+    43	    if (i === axes.length) {
+    44	      body();
+    45	      return;
+    46	    }
+    47	    const { id, extent } = axes[i],
+    48	      dim = value(extent.dim, shapes);
+    49	    const n =
+    50	      extent.kind === 'blocks'
+    51	        ? Math[extent.rounding](dim / width)
+    52	        : extent.kind === 'tail'
+    53	          ? Math.min(width, dim - width * indices.get(extent.block)!)
+    54	          : dim;
+    55	    for (let j = 0; j < n; j++) {
+    56	      tick();
+    57	      indices.set(id, j);
+    58	      loop(axes, i + 1, body);
+    59	    }
+    60	  }
+    61	  function scalar(e: Expr): number {
+    62	    tick();
+    63	    switch (e.kind) {
+    64	      case 'literal':
+    65	        return round(Number(e.text));
+    66	      case 'shape':
+    67	        return round(shapes.get(e.name)!);
+    68	      case 'load': {
+    69	        const t = tensors.get(e.name)!;
+    70	        let offset = 0;
+    71	        for (let i = 0; i < e.indices.length; i++) {
+    72	          const ix = value(e.indices[i], indices);
+    73	          if (sampling && (ix < 0 || ix >= t.shape[i]))
+    74	            throw new OutsideSample('Sample outside address domain');
+    75	          offset = offset * t.shape[i] + ix;
+    76	        }
+    77	        return t.data[offset];
+    78	      }
+    79	      case 'op':
+    80	        return round(operations[e.op](scalar(e.args[0]), e.args.length === 2 ? scalar(e.args[1]) : 0));
+    81	      case 'reduce': {
+    82	        let acc = e.op === 'sum' ? 0 : -Infinity;
+    83	        loop(e.axes, 0, () => {
+    84	          const x = scalar(e.body);
+    85	          acc = round(e.op === 'sum' ? acc + x : Math.max(acc, x));
+    86	        });
+    87	        return acc;
+    88	      }
+    89	    }
+    90	  }
+    91	  for (const s of fn.statements) {
+    92	    const shape = s.shape.map(a => value(a, shapes));
+    93	    if (sampling && (shape.some(n => n < 0) || size(shape) > 4096))
+    94	      throw new OutsideSample('Sample shape limit');
+    95	    const data = new ArrayType(size(shape));
+    96	    let offset = 0;
+    97	    loop(s.axes, 0, () => {
+    98	      data[offset++] = scalar(s.expr);
+    99	    });
+   100	    tensors.set(s.name, { shape, data });
+   101	  }
+   102	  return tensors.get(fn.result)!;
+   103	}
+     1	/**
+     2	 * f32 semantics on IEEE bit patterns, as the target (RV32F, ESP32-P4) computes them. An f32 value is carried as its
+     3	 * bits in a signed i32: in the evaluator's locals and memory, in constants (`imm`), and in results, so NaN payloads
+     4	 * and the sign of zero are exact and the native tables stay finite JSON.
+     5	 *
+     6	 * The rules are those of the reference compiler (vendor/ds-js-os/compiler/typed/typed-rv32.js, rv32/emit/floats.js)
+     7	 * and of tape.js, checked against the reference interpreter (bench/host/rv32-interp.js):
+     8	 *   - arithmetic (add sub mul div sqrt) and i32→f32 conversion round to nearest even; the compiler names RNE in every
+     9	 *     rounding instruction and never fuses a product and a sum, so one Math.fround of the exact double result is
+    10	 *     the target's result (double rounding is innocuous for + - * / sqrt: 53 ≥ 2·24 + 2);
+    11	 *   - a NaN result of arithmetic is the canonical NaN 0x7fc00000 (RISC-V);
+    12	 *   - neg, abs, copysign change only the sign bit (fsgnjn, fsgnjx, fsgnj), so NaN payloads are kept;
+    13	 *   - min and max (fmin.s, fmax.s): the other operand when one is a NaN, the canonical NaN when both are, -0 < +0;
+    14	 *   - comparisons are false when an operand is a NaN, except ne;
+    15	 *   - to_i32, to_u32 (fcvt.w.s, fcvt.wu.s rtz): toward zero, saturating; NaN gives 2^31 - 1 and 2^32 - 1;
+    16	 *   - floor, ceil, trunc: x itself when |x| ≥ 2^23, x is infinite or a NaN; otherwise the integer in that direction
+    17	 *     with x's sign (floats.js `round`: fcvt.w.s rm, fcvt.s.w rm, fsgnj.s), so ceil(-0.5) is -0.
+    18	 */
+    19	
+    20	const F = new Float32Array(1);
+    21	const I = new Int32Array(F.buffer);
+    22	
+    23	export const CANONICAL_NAN = 0x7fc00000;
+    24	const SIGN = -0x80000000; // 0x80000000 as a signed i32
+    25	
+    26	/** The f32 with these bits, as a number. */
+    27	export function fromBits(bits: number): number {
+    28	  I[0] = bits;
+    29	  return F[0];
+    30	}
+    31	/** The bits of x rounded to f32 (nearest even); a NaN gives the canonical NaN. */
+    32	export function toBits(x: number): number {
+    33	  if (x !== x) return CANONICAL_NAN;
+    34	  F[0] = x;
+    35	  return I[0];
+    36	}
+    37	export const isNaNBits = (b: number): boolean => (b & 0x7fffffff) > 0x7f800000;
+    38	
+    39	const order = (b: number) => (b < 0 ? -(b & 0x7fffffff) - 1 : b);
+    40	function minmax(a: number, b: number, max: boolean): number {
+    41	  if (isNaNBits(a)) return isNaNBits(b) ? CANONICAL_NAN : b;
+    42	  if (isNaNBits(b)) return a;
+    43	  return order(a) < order(b) === max ? b : a;
+    44	}
+    45	function round(a: number, f: (x: number) => number): number {
+    46	  if ((a << 1) >>> 0 >= 0x96000000) return a; // |x| ≥ 2^23, an infinity or a NaN
+    47	  return (toBits(f(fromBits(a))) & 0x7fffffff) | (a & SIGN);
+    48	}
+    49	function toInt(a: number, unsigned: boolean): number {
+    50	  if (isNaNBits(a)) return unsigned ? -1 : 0x7fffffff;
+    51	  const t = Math.trunc(fromBits(a));
+    52	  if (unsigned) return t < 0 ? 0 : t >= 4294967296 ? -1 : t | 0;
+    53	  return t >= 2147483648 ? 0x7fffffff : t < -2147483648 ? -0x80000000 : t | 0;
+    54	}
+    55	
+    56	/** f32 → f32 binary operators. */
+    57	export const F32_BINARY: Readonly<Record<string, (a: number, b: number) => number>> = {
+    58	  fadd: (a, b) => toBits(fromBits(a) + fromBits(b)),
+    59	  fsub: (a, b) => toBits(fromBits(a) - fromBits(b)),
+    60	  fmul: (a, b) => toBits(fromBits(a) * fromBits(b)),
+    61	  fdiv: (a, b) => toBits(fromBits(a) / fromBits(b)),
+    62	  fmin: (a, b) => minmax(a, b, false),
+    63	  fmax: (a, b) => minmax(a, b, true),
+    64	  fcopysign: (a, b) => (a & 0x7fffffff) | (b & SIGN),
+    65	};
+    66	/** f32 × f32 → i32 (0 or 1). */
+    67	export const F32_COMPARE: Readonly<Record<string, (a: number, b: number) => number>> = {
+    68	  feq: (a, b) => +(fromBits(a) === fromBits(b)),
+    69	  fne: (a, b) => +(fromBits(a) !== fromBits(b)),
+    70	  flt: (a, b) => +(fromBits(a) < fromBits(b)),
+    71	  fgt: (a, b) => +(fromBits(a) > fromBits(b)),
+    72	  fle: (a, b) => +(fromBits(a) <= fromBits(b)),
+    73	  fge: (a, b) => +(fromBits(a) >= fromBits(b)),
+    74	};
+    75	/** One-operand operators: f32 → f32, f32 → i32 and i32 → f32. */
+    76	export const F32_UNARY: Readonly<Record<string, (a: number) => number>> = {
+    77	  fneg: a => a ^ SIGN,
+    78	  fabs: a => a & 0x7fffffff,
+    79	  fsqrt: a => toBits(Math.sqrt(fromBits(a))),
+    80	  ffloor: a => round(a, Math.floor),
+    81	  fceil: a => round(a, Math.ceil),
+    82	  ftrunc: a => round(a, Math.trunc),
+    83	  f2i: a => toInt(a, false),
+    84	  f2u: a => toInt(a, true),
+    85	  f2bits: a => a | 0,
+    86	  i2f: a => toBits(a | 0),
+    87	  u2f: a => toBits(a >>> 0),
+    88	  bits2f: a => a | 0,
+    89	};
+    90	
+    91	/** Operators whose result is an f32. */
+    92	export const F32_RESULT = new Set([
+    93	  'fadd',
+    94	  'fsub',
+    95	  'fmul',
+   510	            }
+   511	        }
+   512	    }
+   513	  },
+   514	});
+   515	
+   516	export const lvn = typedPass({
+   517	  name: 'lvn',
+   518	  about: 'local value numbering: the same pure expression computed twice in a block is computed once',
+   519	  writes: ['stmts', 'values', 'locals'],
+   520	  // Compiler Workbench also claims 'loops'; false: adding or removing a `set` in a loop changes its assigned locals.
+   521	  preserves: ['cfg', 'dominators'],
+   522	  body({ st, f, tx }) {
+   523	    // a key names the operator, its immediate (an array offset, a load offset) and type, so an f32 constant and an
+   524	    // i32 constant with the same bits, or two frame addresses, never share a number
+   525	    const key = (id: string): string => {
+   526	      const v = st.get(id) as ValueRec;
+   527	      const t = v.type === 'f32' ? 'f' : '';
+   528	      return v.op === 'const'
+   529	        ? `#${t}${v.imm}`
+   530	        : v.op === 'get'
+   531	          ? `@${v.imm}`
+   532	          : `${v.op}${v.imm === undefined ? '' : `[${v.imm}]`}${t}(${v.args.map(key).join(',')})`;
+   533	    };
+   534	    const size = (id: string): number => 1 + (st.get(id) as ValueRec).args.reduce((n, a) => n + size(a), 0);
+   535	    for (const b of f.blocks) {
+   536	      const seen = new Map<string, { stmt: string; value: string }>();
+   537	      for (const sid of b.stmts.slice()) {
+   538	        const s = st.get(sid) as StmtRec;
+   539	        const visit = (id: string): boolean => {
+   540	          const v = st.get(id) as ValueRec;
+   541	          if (v.op !== 'tuple' && v.args.length && size(id) >= 3 && isPure(st, id)) {
+   542	            const k = key(id),
+   543	              first = seen.get(k);
+   544	            if (first && first.value !== id) {
+   545	              const t = tx.local('vn', { because: [first.value], type: v.type ?? 'i32' });
+   546	              const set = tx.set(t, first.value, {
+   547	                because: [first.value, id],
+   548	                note: `computed once for ${first.stmt} and ${sid}`,
+   549	              });
+   550	              tx.replace(first.value, tx.get(t, { from: first.value, because: [set] }));
+   551	              tx.replace(id, tx.get(t, { from: id, because: [set] }));
+   552	              tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
+   553	              seen.delete(k);
+   554	              return true;
+   555	            }
+   556	            if (!first) seen.set(k, { stmt: sid, value: id });
+   557	          }
+   558	          return v.args.some(visit);
+   559	        };
+   560	        for (const k of ['addr', 'value', 'cond'] as const) if (s[k] && visit(s[k]!)) break;
+   561	        if (s.op === 'set')
+   562	          for (const [k, e] of [...seen]) if (readsOf(st, e.value).has(s.local!)) seen.delete(k);
+   563	      }
+   564	    }
+   565	  },
+   566	});
+   567	
+   568	export const strength = typedPass({
+    17	export interface FlowGraph {
+    18	  readonly entry: string;
+    19	  readonly blocks: readonly string[];
+    20	  succ(block: string): readonly string[];
+    21	  preds(block: string): readonly string[];
+    22	}
+    23	
+    24	export interface SolveOptions<V> {
+    25	  readonly direction: 'forward' | 'backward';
+    26	  readonly lattice: Lattice<V>;
+    27	  /** The fact entering the entry block (forward) or leaving exit blocks (backward). Default: bottom. */
+    28	  readonly boundary?: V;
+    29	  transfer(block: string, input: V): V;
+    30	  /** Required for lattices of infinite height; called at loop heads with the previous and new value. */
+    31	  widen?(previous: V, next: V, block: string): V;
+    32	  /** Widen at a loop head only after it has been visited this many times (default 0: from the first visit). */
+    33	  readonly widenAfter?: number;
+    34	  /** The fact flowing along one edge (forward: out(from) into to; backward: in(to) into from), e.g. branch refinement. */
+    35	  edge?(from: string, to: string, value: V): V;
+    36	  /** `worklist` (default) or `round-robin` sweeps in (reverse) postorder until nothing changes. */
+    37	  readonly strategy?: 'worklist' | 'round-robin';
+    38	  readonly maxIterations?: number;
+    39	  readonly maxRounds?: number;
+    40	}
+    41	
+    42	export interface Solution<V> {
+    43	  /** Fact at block entry (forward: after the join; backward: after transfer). */
+    44	  readonly in: ReadonlyMap<string, V>;
+    45	  /** Fact at block exit (forward: after transfer; backward: after the join). */
+    46	  readonly out: ReadonlyMap<string, V>;
+    47	  readonly iterations: number;
+    48	  /** Sweeps made (round-robin only; 0 for the worklist). */
+    49	  readonly rounds: number;
+    50	  readonly loopHeads: readonly string[];
+    51	}
+    52	
+    53	export class DataflowError extends Error {
+    54	  constructor(
+    55	    readonly code: 'noWidening' | 'noFixpoint' | 'badGraph',
+    56	    message: string,
+    57	  ) {
+    58	    super(`[${code}] ${message}`);
+    59	    this.name = 'DataflowError';
+    60	  }
+    61	}
+    62	
+    63	/** Depth-first order from the entry: postorder of reachable blocks, and targets of retreating edges. */
+    64	export function depthFirst(graph: FlowGraph): { postorder: string[]; loopHeads: Set<string> } {
+    65	  const state = new Map<string, 'active' | 'done'>(),
+    66	    postorder: string[] = [],
+    67	    loopHeads = new Set<string>();
+    68	  const stack: { block: string; next: number }[] = [{ block: graph.entry, next: 0 }];
+    69	  state.set(graph.entry, 'active');
+    70	  while (stack.length) {
+    71	    const top = stack[stack.length - 1],
+    72	      succ = graph.succ(top.block);
+    73	    if (top.next < succ.length) {
+    74	      const s = succ[top.next++];
+    75	      const st = state.get(s);
+    76	      if (st === 'active') loopHeads.add(s);
+    77	      else if (!st) {
+    78	        state.set(s, 'active');
+    79	        stack.push({ block: s, next: 0 });
+    80	      }
+    81	    } else {
+    82	      state.set(top.block, 'done');
+    83	      postorder.push(top.block);
+    84	      stack.pop();
+    85	    }
+    86	  }
+    87	  return { postorder, loopHeads };
+    88	}
+    89	
+    90	export function solve<V>(graph: FlowGraph, options: SolveOptions<V>): Solution<V> {
+    91	  const { lattice, direction } = options;
+    92	  if (!graph.blocks.includes(graph.entry))
+    93	    throw new DataflowError('badGraph', `entry ${graph.entry} is not a block`);
+    54	  readonly frontier: Readonly<Record<string, readonly string[]>>;
+    55	  /** The blocks the dominator tree does not reach (no names, no uses). */
+    56	  readonly unreachable: readonly string[];
+    57	}
+    58	
+    59	/** The SSA form of one function of a working store. */
+    60	export function ssaOf(st: Store, f: WorkFn): SsaFn {
+    61	  const cfg = cfgOf(f),
+    62	    entry = cfg.entry,
+    63	    rpo = cfg.rpo,
+    64	    reachable = new Set(rpo);
+    65	  const position = new Map(rpo.map((b, i) => [b, i]));
+    66	  const d = dominatorsOf(f);
+    67	  const idom = new Map<string, string>();
+    68	  for (const b of rpo) idom.set(b, b === entry ? VIRTUAL_ENTRY : d.idom[b]!);
+    69	  const preds = (b: string): string[] => [
+    70	    ...(b === entry ? [VIRTUAL_ENTRY] : []),
+    71	    ...new Set((cfg.preds[b] ?? []).filter(p => reachable.has(p))),
+    72	  ];
+    73	  const succs = (b: string): string[] => [...new Set((cfg.succ[b] ?? []).filter(s => reachable.has(s)))];
+    74	
+    75	  // dominance frontiers: for each join Y, climb from each predecessor to idom(Y)
+    76	  const df = new Map<string, Set<string>>([[VIRTUAL_ENTRY, new Set()]]);
+    77	  for (const b of rpo) df.set(b, new Set());
+    78	  for (const y of rpo) {
+    79	    const ps = preds(y);
+    80	    if (ps.length < 2) continue;
+    81	    for (const p of ps) {
+    82	      let runner = p;
+    83	      while (runner !== idom.get(y)) {
+    84	        df.get(runner)!.add(y);
+    85	        if (runner === VIRTUAL_ENTRY) break; // only reached if idom(y) is not on the path: cannot happen
+    86	        runner = idom.get(runner)!;
+    87	      }
+    88	    }
+    89	  }
+    90	
+    91	  // phi placement at the iterated frontier of each local's `set` blocks
+    92	  const defBlocks = new Map<number, Set<string>>();
+    93	  for (const b of rpo)
+    94	    for (const sid of (st.get(b) as BlockRec).stmts) {
+    95	      const s = st.get(sid) as StmtRec;
+    96	      if (s.op === 'set') {
+    97	        if (!defBlocks.has(s.local!)) defBlocks.set(s.local!, new Set());
+    98	        defBlocks.get(s.local!)!.add(b);
+    99	      }
+   100	    }
+   101	  const phiLocals = new Map<string, Set<number>>();
+   102	  for (const [l, blocks] of defBlocks) {
+   103	    const work = [...blocks],
+   104	      placed = new Set<string>();
+   105	    while (work.length) {
+   106	      const x = work.pop()!;
+   107	      for (const y of df.get(x)!) {
+   108	        if (placed.has(y)) continue;
+   109	        placed.add(y);
+   110	        if (!phiLocals.has(y)) phiLocals.set(y, new Set());
+   111	        phiLocals.get(y)!.add(l);
+   112	        if (!blocks.has(y)) work.push(y);
+   113	      }
+   114	    }
+   115	  }
+   116	  const phiRecs = new Map<string, { name: string; local: number; args: Record<string, string> }[]>();
+   117	  for (const b of rpo)
+   118	    if (phiLocals.has(b))
+   119	      phiRecs.set(
+   120	        b,
+   121	        [...phiLocals.get(b)!].sort((x, y) => x - y).map(local => ({ name: '', local, args: {} })),
+   122	      );
+   123	
+   124	  // renaming: a preorder walk of the dominator tree, a stack of names per local
+   125	  const names: Record<string, SsaDef> = {},
+   126	    uses: Record<string, string> = {},
+   127	    defs: Record<string, string> = {};
+   128	  const counter = f.locals.map(() => 0),
+   129	    stacks: string[][] = f.locals.map(() => []);
+   130	  // a local whose name another local shares (Candela has such functions, from nested scopes) is named with its
+   131	  // index too: `z#4.1`; neither `.` nor `#` can occur in a Typed identifier, so names stay unique
+   132	  const shared = new Set(f.locals.map(l => l.name).filter((n, i, all) => all.indexOf(n) !== i));
+   133	  const base = f.locals.map((l, i) => (shared.has(l.name) ? `${l.name}#${i}` : l.name));
+   134	  const fresh = (l: number) => `${base[l]}.${counter[l]++}`;
+   135	  const top = (l: number) => stacks[l][stacks[l].length - 1];
+   136	  f.locals.forEach((loc, i) => {
+   137	    const name = fresh(i);
+   138	    names[name] = {
+   139	      local: i,
+   140	      kind: loc.param ? 'param' : 'init',
+   141	      block: VIRTUAL_ENTRY,
+   142	      def: (loc.param ? 'param:' : 'init:') + i,
+   143	    };
+
+ succeeded in 1697ms:
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:2:// T9: how noisy is `runTixCuda(..., { benchmark: true })` on the GB10, and how many calls give a stable median?
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:5:// Each call is itself a warm-up launch plus the median of three timed launches, under the tool's GPU lock.
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:7:// Prints per program and side: median, coefficient of variation, min/max ratio, and for k = 1, 3, 5, 7 calls the share of
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:8:// random k-subsets whose median falls within 2% and 5% of the K-call median.
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:54:const median = xs => { const s = xs.slice().sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:58:  const ref = median(xs);
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:64:    if (Math.abs(median(pick) - ref) / ref <= tol) hit++;
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:72:  summary[key] = { median: median(xs), cv: sd / mean, maxOverMin: Math.max(...xs) / Math.min(...xs),
+ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:75:  console.log(`${key.padEnd(20)} median ${s.median.toFixed(4)} ms  cv ${(100 * s.cv).toFixed(1)}%  max/min ${s.maxOverMin.toFixed(2)}  within 2%: k1 ${s.within2[1].toFixed(2)} k3 ${s.within2[3].toFixed(2)} k5 ${s.within2[5].toFixed(2)} k7 ${s.within2[7].toFixed(2)}  within 5%: k1 ${s.within5[1].toFixed(2)} k3 ${s.within5[3].toFixed(2)}`);
+src/typed/backend/coalesce.ts:21:export interface Coalesced {
+src/typed/backend/coalesce.ts:27:export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): Coalesced {
+src/typed/backend/frequency.ts:17:export interface Edge {
+src/typed/backend/frequency.ts:23:export interface Frequencies {
+src/typed/backend/frequency.ts:37:export function targetsOf(st: Store, b: BlockRec): string[] {
+src/typed/backend/frequency.ts:54:function components(blocks: readonly string[], succ: (b: string) => readonly string[]) {
+src/typed/backend/frequency.ts:105:export function blockFrequencies(st: Store, f: WorkFn): Frequencies {
+src/typed/backend/frequency.ts:174:export function estimateCost(code: readonly MInsn[], fr: Frequencies): number {
+src/typed/backend/select.ts:57:export interface Selection {
+src/typed/backend/select.ts:73:export interface SelectContext {
+src/typed/backend/select.ts:141:export function select({ st, f, o, live, ranges, homes, onConst }: SelectContext): Selection {
+src/typed/mutate.ts:28:export type MutationOperator =
+src/typed/mutate.ts:40:export const MUTATION_OPERATORS: readonly MutationOperator[] = [
+src/typed/mutate.ts:54:export const OPERATOR_MODELS: Readonly<Record<MutationOperator, string>> = {
+src/typed/mutate.ts:67:export interface MutationSite {
+src/typed/mutate.ts:177:export interface SiteOptions {
+src/typed/mutate.ts:187:export function mutationSites(st: Store, options: SiteOptions = {}): MutationSite[] {
+src/typed/mutate.ts:224:function valueSites(
+src/typed/mutate.ts:270:function hoistable(
+src/typed/mutate.ts:317:function copyTree(tx: Tx, st: Store, id: string): string {
+src/typed/mutate.ts:328:export function applyMutation(st: Store, f: WorkFn, tx: Tx, site: MutationSite): void {
+src/typed/mutate.ts:401:export const mutantPass: TypedPass = typedPass({
+src/typed/mutate.ts:416:export function callGraph(st: Store): Map<string, Set<string>> {
+src/typed/mutate.ts:442:export function affected(st: Store, fn: string): string[] {
+src/typed/mutate.ts:465:function domainOf(spec: any, type: string, records: any, enums: any, budget: number): Domain | null {
+src/typed/mutate.ts:535:export function finiteDomain(
+src/typed/mutate.ts:566:export interface Comparison {
+src/typed/mutate.ts:586:export function compareOn(
+src/typed/mutate.ts:649:export function closure(st: Store, fns: readonly string[]): string[] {
+src/typed/mutate.ts:664:export function subProgram(v: TypedBlocks, fns: readonly string[]): TypedBlocks {
+src/typed/mutate.ts:686:export function overlay(base: Store, part: Store): Store {
+src/typed/backend/compile.ts:51:export interface Finished {
+src/typed/backend/compile.ts:69:export function finish(
+src/typed/backend/compile.ts:234:export function relaxBranches(code: readonly MInsn[]): MInsn[] {
+src/typed/backend/compile.ts:277:export interface BackendFacts {
+src/typed/backend/compile.ts:282:export interface FnCompilation {
+src/typed/backend/compile.ts:292:function compileFunction(
+src/typed/backend/compile.ts:334:export function compileImage(
+src/typed/backend/compile.ts:432:export interface Lowered {
+src/typed/backend/compile.ts:442:export function lowerToImage(
+src/typed/backend/compile.ts:456:export function variantChoices(
+src/typed/backend/compile.ts:469:export interface MachineStages {
+src/typed/backend/compile.ts:484:export function machineCode(
+src/tensor/cuda-source.ts:92:  const int repeats = benchmark ? ms.size() : 1;
+src/tensor/cuda-source.ts:93:  for (int i = 0; i < repeats; ++i) {
+src/tensor/cuda-source.ts:101:  return ms[repeats / 2];
+src/tensor/cuda-source.ts:148:export const takesGate = (source: string) => source.includes(gateSupport);
+src/tensor/cuda-source.ts:150:function affine(a: Affine, name: (key: string) => string): string {
+src/tensor/cuda-source.ts:158:function literal(text: string): string {
+src/tensor/cuda-source.ts:169:function kernelWriter(
+src/tensor/cuda-source.ts:285:function elementOfThread(w: ReturnType<typeof kernelWriter>, statement: Statement, target: string) {
+src/tensor/cuda-source.ts:297:function emitKernel(
+src/tensor/cuda-source.ts:358:export const blockThreads = { rows: 128, contraction: 64, heavy: 256 };
+src/tensor/cuda-source.ts:368:function emitGroup(
+src/tensor/cuda-source.ts:639:export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
+src/typed/backend/regalloc.ts:28:export const usesOf = (m: MInsn): number[] =>
+src/typed/backend/regalloc.ts:30:export const defsOf = (m: MInsn): number[] =>
+src/typed/backend/regalloc.ts:33:export interface MachineBlock {
+src/typed/backend/regalloc.ts:41:export function machineBlocks(code: readonly MInsn[]): MachineBlock[] {
+src/typed/backend/regalloc.ts:66:export interface Interval {
+src/typed/backend/regalloc.ts:74:export interface Intervals {
+src/typed/backend/regalloc.ts:85:export function intervals(code: readonly MInsn[]): Intervals {
+src/typed/backend/regalloc.ts:138:export interface Allocation {
+src/typed/backend/regalloc.ts:152:export function physicalOccupancy(
+src/typed/backend/regalloc.ts:233:export function allocate(
+22:  rangeView,
+59:  ranges?: RangeView;
+109:    case 'ranges':
+110:      return rangeView(value as DataflowResult, st, fname);
+571:    'strength reduction with proof: x / 2^k and x % 2^k become shifts and masks when ranges prove x is not negative',
+572:  needs: { ranges: 'ranges' },
+576:    const ranges = facts.ranges!;
+581:        r = ranges.of(sid, v.args[0].id);
+584:        why = [`fact:ranges(${f.name})@r${tx.rev - 1}: ${v.args[0].text} in [${r[0]}, ${r[1]}]`];
+601:          note: 'no range check: wrong for negative x',
+609:    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
+610:  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
+616:      ranges = facts.ranges!;
+675:        if (ranges.at(t.id, idx.local)[0] < 0) continue;
+680:            because: [t.id, `fact:ranges(${f.name}): ${f.locals[idx.local].name} ≥ 0`],
+2: * IRWB-035-G: a classifier for the edits of one pass application.
+6: * from the pass's name, so a user pass or a new pass is classified by the same rules.
+27: * `instructionWeights` gives each edit the RV32 instructions it affects: the instructions of the image lowered from
+38:import { firstMatch, indexRules, numOf, type Bindings } from './rules/compile.js';
+154:  const m = firstMatch(index, handle(n) as unknown as ValueHandle);
+217:// ---------- classification ----------
+283:export function classifyApplication(app: Application): ClassifiedEdit[] {
+456: * The instructions each classified edit affects, in the same order: instructions of `imageBefore` that implement
+461:export function instructionWeights(
+462:  classified: readonly ClassifiedEdit[],
+468:  const weights = classified.map(() => 0);
+471:    classified.forEach((c, i) => {
+503:  classified: readonly ClassifiedEdit[],
+506:  classified.forEach((c, i) => {
+
+web search: 
+exec
+/usr/bin/zsh -lc "nl -ba src/typed/analyses.ts | sed -n '68,109p;138,171p'; nl -ba src/tensor/parser.ts | grep -E 'max|sqrt|function'; nl -ba src/typed/evaluate.ts | sed -n '14,28p'; nl -ba src/framework/contracts/differential.ts | sed -n '15,27p'; nl -ba src/typed/backend/regalloc.ts | sed -n '40,128p'; rg -n 'unit|edge|cost|frequency' src/typed/backend/frequency.ts | tail -26" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+web search: Kalibera Jones Rigorous Benchmarking in Reasonable Time paper karlin Kent 2013 ...
+ succeeded in 1224ms:
+    68	export interface Cfg {
+    69	  readonly entry: string;
+    70	  readonly succ: Readonly<Record<string, readonly string[]>>;
+    71	  readonly preds: Readonly<Record<string, readonly string[]>>;
+    72	  readonly rpo: readonly string[];
+    73	  readonly edges: number;
+    74	}
+    75	export function cfgOf(f: WorkFn): Cfg {
+    76	  const succ: Record<string, string[]> = {},
+    77	    preds: Record<string, string[]> = {};
+    78	  for (const b of f.blocks) {
+    79	    succ[b.id] = b.succ.slice();
+    80	    preds[b.id] = [];
+    81	  }
+    82	  for (const b of f.blocks) for (const s of b.succ) if (preds[s]) preds[s].push(b.id);
+    83	  const order: string[] = [],
+    84	    seen = new Set<string>();
+    85	  const dfs = (id: string) => {
+    86	    if (seen.has(id) || !succ[id]) return;
+    87	    seen.add(id);
+    88	    for (const s of succ[id]) dfs(s);
+    89	    order.push(id);
+    90	  };
+    91	  dfs(f.blocks[0].id);
+    92	  return {
+    93	    entry: f.blocks[0].id,
+    94	    succ,
+    95	    preds,
+    96	    rpo: order.reverse(),
+    97	    edges: f.blocks.reduce((n, b) => n + b.succ.length, 0),
+    98	  };
+    99	}
+   100	export const flowGraph = (f: WorkFn): FlowGraph => {
+   101	  const c = cfgOf(f);
+   102	  return {
+   103	    entry: c.entry,
+   104	    blocks: f.blocks.map(b => b.id),
+   105	    succ: b => (c.succ[b] ?? []).filter(s => c.succ[s]),
+   106	    preds: b => c.preds[b] ?? [],
+   107	  };
+   108	};
+   109	
+   138	  readonly rounds: number;
+   139	}
+   140	export function dominatorsOf(f: WorkFn): Dominators {
+   141	  const cfg = cfgOf(f),
+   142	    rpo = cfg.rpo,
+   143	    idx = new Map(rpo.map((id, i) => [id, i]));
+   144	  const idom = new Map<string, string | null>([[rpo[0], rpo[0]]]);
+   145	  const inter = (a: string, b: string) => {
+   146	    while (a !== b) {
+   147	      while (idx.get(a)! > idx.get(b)!) a = idom.get(a)!;
+   148	      while (idx.get(b)! > idx.get(a)!) b = idom.get(b)!;
+   149	    }
+   150	    return a;
+   151	  };
+   152	  let changed = true,
+   153	    rounds = 0;
+   154	  while (changed) {
+   155	    changed = false;
+   156	    rounds++;
+   157	    for (const id of rpo.slice(1)) {
+   158	      let n: string | null = null;
+   159	      for (const q of cfg.preds[id])
+   160	        if (idom.has(q) && idom.get(q) !== undefined && idx.has(q)) n = n === null ? q : inter(q, n);
+   161	      if (idom.get(id) !== n) {
+   162	        idom.set(id, n);
+   163	        changed = true;
+   164	      }
+   165	    }
+   166	  }
+   167	  return { idom: Object.fromEntries(idom), rpo, rounds };
+   168	}
+   169	export interface DomView {
+   170	  readonly idom: ReadonlyMap<string, string | null>;
+   171	  dominates(a: string, b: string): boolean;
+    21	function fail(t: Token, message: string): never {
+    26	function lex(source: string): Token[] {
+    54	function checkBounds({ index, extent, token, binders }: Access) {
+    72	export function parse(source: string): Module {
+   107	    const functions: Fn[] = [];
+   111	      if (functions.some(f => f.name === fn.name)) fail(t, 'Duplicate function');
+   112	      functions.push(fn);
+   114	    return { functions };
+   253	  private maxBinderList() {
+   305	      if (n === 'sum' || (n === 'max' && this.maxBinderList())) {
+   317	      const arity = ['exp', 'log', 'sqrt', 'tanh'].includes(n) ? 1 : ['max', 'min'].includes(n) ? 2 : 0;
+    14	
+    15	/** Compiler Workbench's generator (xorshift32): its seeds must give its cases. */
+    16	export function rng(seed: number): () => number {
+    17	  let s = seed >>> 0 || 1;
+    18	  return () => {
+    19	    s ^= s << 13;
+    20	    s >>>= 0;
+    21	    s ^= s >>> 17;
+    22	    s ^= s << 5;
+    23	    s >>>= 0;
+    24	    return s / 4294967296;
+    25	  };
+    26	}
+    27	
+    28	/** FNV-1a over UTF-16 code units, as Compiler Workbench hashes sources. */
+    15	
+    16	/** A small deterministic generator (mulberry32), so a reported counterexample can be run again from its seed. */
+    17	export function seededRandom(seed: number): () => number {
+    18	  let a = seed >>> 0;
+    19	  return () => {
+    20	    a = (a + 0x6d2b79f5) >>> 0;
+    21	    let t = a;
+    22	    t = Math.imul(t ^ (t >>> 15), t | 1);
+    23	    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    24	    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    25	  };
+    26	}
+    27	
+    40	/** Basic blocks of machine code: a label or the instruction after a branch or terminal starts one. */
+    41	export function machineBlocks(code: readonly MInsn[]): MachineBlock[] {
+    42	  const blocks: MachineBlock[] = [],
+    43	    at = new Map<string, number>();
+    44	  let cur: MachineBlock | null = null;
+    45	  code.forEach((m, i) => {
+    46	    if (m.op === 'label' || !cur) {
+    47	      cur = { start: i, end: i, labels: [], succ: [] };
+    48	      blocks.push(cur);
+    49	    }
+    50	    if (m.op === 'label') {
+    51	      cur.labels.push(m.name!);
+    52	      at.set(m.name!, blocks.length - 1);
+    53	    }
+    54	    cur.end = i;
+    55	    if (isBranch(m.op) || isTerminal(m.op)) cur = null;
+    56	  });
+    57	  blocks.forEach((b, k) => {
+    58	    const last = code[b.end];
+    59	    if (isBranch(last.op)) b.succ.push(at.get(last.target!)!);
+    60	    if (last.op === 'j') b.succ.push(at.get(last.target!)!);
+    61	    if (!isTerminal(last.op) && k + 1 < blocks.length) b.succ.push(k + 1);
+    62	  });
+    63	  return blocks;
+    64	}
+    65	
+    66	export interface Interval {
+    67	  readonly reg: number;
+    68	  start: number;
+    69	  end: number;
+    70	  uses: number;
+    71	  crossesCall: boolean;
+    72	}
+    73	
+    74	export interface Intervals {
+    75	  /** Sorted by start, then register. */
+    76	  readonly list: Interval[];
+    77	  readonly blocks: MachineBlock[];
+    78	  readonly liveOut: Set<number>[];
+    79	}
+    80	
+    81	/**
+    82	 * One interval per virtual register, from its first definition or use to its last, stretched over whole blocks
+    83	 * where it is live in (to the block's start) or live out (to just past its end).
+    84	 */
+    85	export function intervals(code: readonly MInsn[]): Intervals {
+    86	  const blocks = machineBlocks(code);
+    87	  const use = blocks.map(() => new Set<number>()),
+    88	    def = blocks.map(() => new Set<number>());
+    89	  blocks.forEach((b, k) => {
+    90	    for (let i = b.start; i <= b.end; i++) {
+    91	      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
+    92	      for (const r of defsOf(code[i])) def[k].add(r);
+    93	    }
+    94	  });
+    95	  const IN = blocks.map(() => new Set<number>()),
+    96	    OUT = blocks.map(() => new Set<number>());
+    97	  for (let changed = true; changed; ) {
+    98	    changed = false;
+    99	    for (let k = blocks.length - 1; k >= 0; k--) {
+   100	      const out = new Set<number>();
+   101	      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+   102	      const inn = new Set(use[k]);
+   103	      for (const r of out) if (!def[k].has(r)) inn.add(r);
+   104	      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+   105	        IN[k] = inn;
+   106	        OUT[k] = out;
+   107	        changed = true;
+   108	      }
+   109	    }
+   110	  }
+   111	  const iv = new Map<number, Interval>();
+   112	  const touch = (r: number, i: number) => {
+   113	    const x = iv.get(r);
+   114	    if (!x) iv.set(r, { reg: r, start: i, end: i, uses: 1, crossesCall: false });
+   115	    else {
+   116	      x.start = Math.min(x.start, i);
+   117	      x.end = Math.max(x.end, i);
+   118	      x.uses++;
+   119	    }
+   120	  };
+   121	  blocks.forEach((b, k) => {
+   122	    for (const r of IN[k]) touch(r, b.start);
+   123	    for (const r of OUT[k]) touch(r, b.end + 0.5);
+   124	    for (let i = b.start; i <= b.end; i++) {
+   125	      for (const r of usesOf(code[i])) touch(r, i);
+   126	      for (const r of defsOf(code[i])) touch(r, i);
+   127	    }
+   128	  });
+2: * Static block frequencies and the backend's cost estimate (IRWB-003). There is no profile: how often a block
+4: * prediction (Ball and Larus), so that the layout can make hot edges fall through and the coalescing and
+7: *   prob(b -> s)   a check that fails (a block ending in trap) is taken with 0; an edge that stays in b's cycle
+8: *                  0.88 against 0.12 for one that leaves it; an edge that enters a cycle 0.88; otherwise 0.5
+10: *   cost(code)     Σ over finished instructions of the frequency of the IR block they belong to
+26:  /** Every edge of every block's terminator (or its fall-through), with its probability. */
+27:  readonly edges: readonly Edge[];
+112:  const edges: Edge[] = [];
+115:    if (ts.length === 1) edges.push({ from: b, to: ts[0], prob: 1 });
+128:    edges.push({ from: b, to: T, prob: pT }, { from: b, to: E, prob: 1 - pT });
+154:  for (const e of edges) into.get(e.to)!.push(e);
+167:  return { block: freq, edges };
+171: * The estimated instructions one call executes: each finished instruction weighs the frequency of the IR block
+176:    cost = 0;
+183:    cost += weight;
+185:  return cost;
+
+exec
+/usr/bin/zsh -lc "nl -ba src/typed/backend/regalloc.ts | sed -n '13,40p'; nl -ba src/framework/dataflow/lattices.ts | sed -n '9,41p'; nl -ba src/typed/analyses.ts | sed -n '207,260p;275,313p'; nl -ba ttmp/2026/11/27/IRWB-038-A--*/design-doc/*.md | sed -n '154,194p'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 955ms:
+    13	 * an interval only ever receives a register of its own class, and the options apply to each class.
+    14	 */
+    15	import type { BackendOptions } from './options.js';
+    16	import {
+    17	  ARGS,
+    18	  CALLEE,
+    19	  CALLER,
+    20	  F_ARGS,
+    21	  F_CALLEE,
+    22	  F_CALLER,
+    23	  isBranch,
+    24	  isTerminal,
+    25	  type MInsn,
+    26	} from './encode.js';
+    27	
+    28	export const usesOf = (m: MInsn): number[] =>
+    29	  [m.rs1, m.rs2].filter((r): r is number => r !== undefined && r >= 64);
+    30	export const defsOf = (m: MInsn): number[] =>
+    31	  m.rd !== undefined && m.rd >= 64 && m.op !== 'label' ? [m.rd] : [];
+    32	
+    33	export interface MachineBlock {
+    34	  readonly start: number;
+    35	  end: number;
+    36	  readonly labels: string[];
+    37	  readonly succ: number[];
+    38	}
+    39	
+    40	/** Basic blocks of machine code: a label or the instruction after a branch or terminal starts one. */
+     9	
+    10	export interface Lattice<V> {
+    11	  readonly name: string;
+    12	  bottom(): V;
+    13	  join(a: V, b: V): V;
+    14	  equal(a: V, b: V): boolean;
+    15	  encode(value: V): Json;
+    16	  decode(json: Json): V;
+    17	  /** True when ascending chains can be infinite; such a lattice needs `widen`. */
+    18	  readonly infiniteHeight: boolean;
+    19	}
+    20	
+    21	/** A finite set of numbers or strings, ordered by inclusion; bottom is the empty set. */
+    22	export function setLattice<T extends number | string>(): Lattice<ReadonlySet<T>> {
+    23	  return {
+    24	    name: 'set',
+    25	    infiniteHeight: false,
+    26	    bottom: () => new Set<T>(),
+    27	    join(a, b) {
+    28	      if (!b.size) return a;
+    29	      if (!a.size) return b;
+    30	      const out = new Set(a);
+    31	      for (const x of b) out.add(x);
+    32	      return out;
+    33	    },
+    34	    equal: (a, b) => a.size === b.size && [...a].every(x => b.has(x)),
+    35	    encode: v => [...v].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)) as Json,
+    36	    decode: j => new Set(j as T[]),
+    37	  };
+    38	}
+    39	
+    40	export const TOP = 'varies';
+    41	export const BOT = 'unknown';
+   207	  readonly assigned: readonly number[];
+   208	}
+   209	/**
+   210	 * One natural loop per header: the union of the bodies of the header's back edges (IRWB-034-G). A loop with a
+   211	 * `continue`, or a dispatch loop whose every arm jumps back, has several back edges to one header; one loop per
+   212	 * back edge gave them one id and bodies that exclude each other's latches, so a preheader made for one of them
+   213	 * sat on the others' back edges and ran every iteration.
+   214	 */
+   215	export function loopsOf(st: Store, f: WorkFn): Loop[] {
+   216	  const dom = domView(dominatorsOf(f)),
+   217	    cfg = cfgOf(f),
+   218	    latchesOf = new Map<string, string[]>();
+   219	  for (const b of f.blocks)
+   220	    for (const s of b.succ)
+   221	      if (dom.dominates(s, b.id)) {
+   222	        const latches = latchesOf.get(s) ?? [];
+   223	        if (!latches.length) latchesOf.set(s, latches);
+   224	        if (!latches.includes(b.id)) latches.push(b.id);
+   225	      }
+   226	  const out: Loop[] = [];
+   227	  for (const [s, latches] of latchesOf) {
+   228	    const body = new Set([s]),
+   229	      work = [...latches];
+   230	    while (work.length) {
+   231	      const x = work.pop()!;
+   232	      if (body.has(x)) continue;
+   233	      body.add(x);
+   234	      work.push(...cfg.preds[x]);
+   235	    }
+   236	    const outside = cfg.preds[s].filter(q => !body.has(q));
+   237	    const pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
+   238	    const exits = [...body].flatMap(x => cfg.succ[x].filter(y => !body.has(y)));
+   239	    const assigned = new Set<number>();
+   240	    for (const x of body)
+   241	      for (const sid of (st.get(x) as BlockRec).stmts) {
+   242	        const t = st.get(sid) as StmtRec;
+   243	        if (t.op === 'set') assigned.add(t.local!);
+   244	      }
+   245	    out.push({
+   246	      id: `loop:${f.name}@${s}`,
+   247	      head: s,
+   248	      latch: latches[0],
+   249	      latches,
+   250	      body: [...body],
+   251	      preheader: pre,
+   252	      exits: [...new Set(exits)],
+   253	      assigned: [...assigned],
+   254	    });
+   255	  }
+   256	  return out;
+   257	}
+   258	export const loopsAnalysis = defineAnalysis({
+   259	  id: 'typed.loops',
+   260	  version: '2',
+   275	};
+   276	const READS_ALL = {
+   277	  entities: ['block', 'stmt.*', 'value.*', 'local'],
+   278	  relations: ['contains', 'succ', 'jump', 'uses', 'operand', 'reads', 'writes', 'declares'],
+   279	};
+   280	const READS_CONTROL_STMTS = {
+   281	  entities: ['block', 'stmt.*', 'local'],
+   282	  relations: ['contains', 'succ', 'jump', 'writes', 'declares'],
+   283	};
+   284	
+   285	// liveness
+   286	const useDef = (st: Store, b: BlockRec) => {
+   287	  const u = new Set<number>(),
+   288	    d = new Set<number>();
+   289	  for (const sid of b.stmts) {
+   290	    const s = st.get(sid) as StmtRec;
+   291	    for (const v of stmtValues(s)) for (const l of readsOf(st, v)) if (!d.has(l)) u.add(l);
+   292	    if (s.op === 'set') d.add(s.local!);
+   293	  }
+   294	  return { u, d };
+   295	};
+   296	export const livenessAnalysis = dataflow<TypedBlocks, ReadonlySet<number>, FnContext>({
+   297	  id: 'typed.liveness',
+   298	  version: '1',
+   299	  description: 'locals live into and out of each block',
+   300	  input: BlocksIR,
+   301	  adapter: blocksAdapter,
+   302	  direction: 'backward',
+   303	  lattice: setLattice<number>(),
+   304	  strategy: 'round-robin',
+   305	  regions: view => regions(view as never),
+   306	  transfer(block, out, { st }) {
+   307	    const { u, d } = useDef(st, st.get(block));
+   308	    const s = new Set(u);
+   309	    for (const l of out) if (!d.has(l)) s.add(l);
+   310	    return s;
+   311	  },
+   312	  reads: READS_ALL,
+   313	});
+   154	### 5. Graph analysis providers and binding-time specialization
+   155	
+   156	**Evidenced.** Keep fixed-point iteration, dependency graphs, and reusable abstract domains in the framework. A CFG provider supplies entry, successors, predecessors, dominators, and loops clustered by header. Typed supplies assignments, memory semantics and trap/effect facts. A binding-time abstract interpreter supplies an abstraction of known values and known memory, with a defined join and dynamic top. A residualizer consumes a division or performs online specialization, memoizing program point plus projected static state. It controls termination by generalization, widening, fallback to an unspecialized region, or explicit refusal at a budget. P5 distinguishes the last two policies in the cell code. Allocate residual labels before visiting successors to handle recursion and back edges. Keep residual source correspondences and version static assumptions. `src/framework/dataflow/solver.ts:20`, `src/typed/analyses.ts:75`, `src/typed/analyses.ts:215`, `B1-A/src/typed/specialize-memory.ts:54`, `B1-G/src/typed/bta.ts:65`. [Cousot and Cousot, Abstract Interpretation](https://www.di.ens.fr/~cousot/COUSOTpapers/POPL77.shtml), [Jones, Gomard and Sestoft, Partial Evaluation and Automatic Program Generation](https://raspi.itu.dk/people/sestoft/pebook/toc.html).
+   157	
+   158	~~~ts
+   159	CFGView { entry, blocks, successorEdges }
+   160	AbstractDomain<State> { bottom, join, equals, widen? }
+   161	SpecializationModel { point, initial, liveProjection, transfer, residualize, generalize }
+   162	specialize(model, facts, budgets): ResidualGraph | Refusal
+   163	~~~
+   164	
+   165	First use the CFG provider in Typed LICM and in VM specialization/liveness. B1's analysis/residualization pairs and Typed scene-buffer specialization are two applications of the latter interface. Existing scalar specialization establishes where domain bindings, provenance and runtime parameters enter. Cells A and B already show a concrete common algorithm despite different treatment of private frames. F and G experiment with binding-time divisions. Let bytecode loads, frame aliasing, host initialization and traps remain the domain's responsibility. Give the engine a versioned binding contract that states immutability, extents, alias exclusions and argument narrowing. Validate exit/trap behavior for the restricted input domain. `src/typed/specialize.ts:27`, `src/typed/specialize.ts:71`, `B1-A/src/typed/specialize-memory.ts:79`, `B1-B/src/typed/residualize.ts:18`, `B1-F/src/typed/pe.ts:76`, `B1-G/src/typed/bta.ts:65`.
+   166	
+   167	**Conjecture.** Reuse the static/dynamic division for Tix shape specialization and branch elimination. Static shape parameters and runtime extents would be declared with validity constraints, leaving code generation and GPU capacity policy to the backend. Measure specialization point diversity and residual size first. Continue using `dataflow` directly for ordinary CFG liveness/reaching/ranges. An online polyvariant evaluator needs states indexed by both program point and environment, and the schedule analysis is over iteration points. Their abstract domains and edge semantics need distinct providers. `src/typed/analyses.ts:296`, `src/typed/analyses.ts:352`, `src/typed/analyses.ts:486`, `src/tensor/contract.ts:24`, `src/tensor/cuda-source.ts:565`.
+   168	
+   169	### 6. Dependence relations and validated schedules
+   170	
+   171	**Evidenced for Tix; Typed lifting is conjectural.** Separate a description of computation from its schedule. An affine region supplies domains and access relations indexed by iteration points. Compose access-to-location relations to compute conflicts and constrain them by original order, alias information and the relevant dependence classes. A legal time map preserves strict lexicographic order for every ordered dependence. Parallel placement requires a stronger independence condition for points in the same concurrent band or a correct synchronization/visibility proof. Preserve reduction event order for strict IEEE arithmetic. Size-dependent guards must be sufficient over the entire selected domain, including tails, zero extents, and integer bounds. [Feautrier, Affine Scheduling Part II](https://link.springer.com/article/10.1007/BF01379404), [Ragan-Kelley et al., Decoupling Algorithms from Schedules](https://dspace.mit.edu/entities/publication/121e12b2-928b-4e8f-a78a-79f44d11cc6b).
+   172	
+   173	~~~ts
+   174	AffineRegion { parameters, statementDomains, affineAccesses, effectSummary, originalOrder }
+   175	dependences(region): { flow, anti, output, unknown, assumptions }
+   176	Schedule { timeMap, placements, storage, guards, fallback }
+   177	validateSchedule(region, schedule, deps): LegalWitness | Counterexample | Unknown
+   178	~~~
+   179	
+   180	Apply this to T3's fusion boundary and T6's split, reorder and tiling. The smallest useful interface returns a precise dependence or a reason for refusal on pointwise and two-dimensional affine examples. Take both order and movement out of `planFusion`. The schedule pass selects a partition and records variants. The emitter interprets that artifact. Keep the current read-name graph as a cheap query for simple transformations. Use region scoping so a schedule artifact can reference its semantic revision and region without duplicating the entire AST. For a second domain, try one Typed affine counted-loop region from the corrected loop forest, with explicit noalias and trap facts. The loop-header fix itself is CFG theory. It does not establish affine legality. `src/tensor/fusion.ts:83`, `src/tensor/fusion.ts:142`, `T6-D/src/tensor/schedule.ts:580`, `T6-H/src/tensor/schedule.ts:522`, `src/typed/analyses.ts:215`.
+   181	
+   182	### 7. Constrained variant selection and measurement
+   183	
+   184	**Evidenced.** Factor variant generation, legality, measurement, and dispatch using existing strategy choice. A variant names its guard and fallback, required semantic obligations, and plan or code reference. A profile measures candidates with explicit workload and target context and records uncertainty. Turn the resulting selection into a deterministic policy with a complete fallback. A measurement relation such as empirical non-regression has a workload and protocol. A universal semantic claim has a separate quantifier. This is schedule-space search/autotuning under constraints. [MLIR Transform Dialect](https://mlir.llvm.org/docs/Dialects/Transform/), [Ragan-Kelley et al., Decoupling Algorithms from Schedules](https://dspace.mit.edu/entities/publication/121e12b2-928b-4e8f-a78a-79f44d11cc6b).
+   185	
+   186	~~~ts
+   187	Variant { candidate, guard, fallbackId, obligationIds }
+   188	MetricProtocol { target, caseSet, warmup, repeats, estimator, uncertainty, units }
+   189	select(legalVariants, observations, objective, constraints): Decision
+   190	~~~
+   191	
+   192	T3b's fused/unfused choice and T6 tile-size/staging alternatives are direct uses. Typed D1 can compare baseline and candidate speed pipelines for a measured configuration or use static facts to refuse a nonprofitable hoist. Keep the precise unit and any break-even calculation specific to the target. Across repeated measurements, compare candidates paired on the same cases and target, and preserve selected-side telemetry. A strict static tie rule can keep decisions reproducible when differences fall below measured noise. `src/tensor/fusion.ts:135`, `src/tensor/cuda-source.ts:565`, `T6-D/src/tensor/schedule.ts:658`, `src/typed/attribute.ts:185`, `src/framework/strategy/builders.ts:54`.
+   193	
+   194	## Root changes and alternatives
+
+exec
+/usr/bin/zsh -lc "rg -n 'isBranch|isTerminal' src/typed/backend/encode.ts; nl -ba src/tensor/model.ts | head -32; rg -n 'rng\\(' src/{typed/evaluate,tensor/contract,framework/contracts/differential}.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 1129ms:
+320:export const isTerminal = (op: string): boolean =>
+322:export const isBranch = (op: string): boolean => op in BR;
+     1	// Affine forms use ordered terms so equivalent dimensions have the same artifact identity.
+     2	export interface Affine {
+     3	  constant: number;
+     4	  terms: [string, number][];
+     5	}
+     6	export const constant = (value: number): Affine => ({ constant: value, terms: [] });
+     7	export const variable = (name: string): Affine => ({ constant: 0, terms: [[name, 1]] });
+     8	export function add(a: Affine, b: Affine, scale = 1): Affine {
+     9	  const terms = new Map(a.terms);
+    10	  for (const [name, k] of b.terms) terms.set(name, (terms.get(name) ?? 0) + k * scale);
+    11	  const result = {
+    12	    constant: a.constant + b.constant * scale,
+    13	    terms: [...terms].filter(([, k]) => k !== 0).sort(([x], [y]) => (x < y ? -1 : 1)),
+    14	  };
+    15	  if (![result.constant, ...result.terms.map(([, k]) => k)].every(Number.isSafeInteger))
+    16	    throw Error('Affine integer overflow');
+    17	  return result;
+    18	}
+    19	export function substitute(a: Affine, bindings: Map<string, Affine>): Affine {
+    20	  return a.terms.reduce(
+    21	    (v, [name, k]) => add(v, bindings.get(name) ?? variable(name), k),
+    22	    constant(a.constant),
+    23	  );
+    24	}
+    25	export function value(a: Affine, env: Map<string, number>): number {
+    26	  return a.terms.reduce((v, [name, k]) => v + env.get(name)! * k, a.constant);
+    27	}
+    28	export function plain(a: Affine): string | undefined {
+    29	  return a.constant === 0 && a.terms.length === 1 && a.terms[0][1] === 1 ? a.terms[0][0] : undefined;
+    30	}
+    31	export type Extent =
+    32	  | { kind: 'dim'; dim: Affine }
+src/typed/evaluate.ts:16:export function rng(seed: number): () => number {
+src/typed/evaluate.ts:240:    rnd = rng(seed);
+src/typed/evaluate.ts:260:    rnd = rng(1);
+
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*)
+cat > \""'$ticket/scripts/10-standard-library-boundaries.mjs" <<'"'JS'
+import './02-source-loader.mjs';
+import assert from 'node:assert/strict';
+
+const root = new URL('../../../../../../', import.meta.url);
+const source = path => import(new URL(path, root));
+
+const { F32_BINARY, isNaNBits, toBits } = await source('src/typed/f32.ts');
+const { compileTix, runTix } = await source('src/tensor/index.ts');
+const tensor = compileTix('fn f(x:f32[N], y:f32[N]):f32[N] { z[i] = max(x[i], y[i]); return z; }');
+const result = runTix(tensor, 'f', {
+  x: { shape: [2], data: Float32Array.of(NaN, -0) },
+  y: { shape: [2], data: Float32Array.of(7, 0) },
+});
+const rv32 = [F32_BINARY.fmax(toBits(NaN), toBits(7)), F32_BINARY.fmax(toBits(-0), toBits(0))];
+assert(isNaNBits(toBits(result.data[0])));
+assert.equal(rv32[0], toBits(7));
+assert.equal(toBits(result.data[1]), 0);
+assert.equal(rv32[1], 0);
+assert.equal(F32_BINARY.fadd(toBits(2 ** -149), toBits(2 ** -149)), 2);
+console.log('binary32 max: Typed RV32F returns 7 for (NaN, 7); Tix propagates NaN; both return +0 for (-0, +0)');
+
+const { add, constant, value } = await source('src/tensor/model.ts');
+const max = Number.MAX_SAFE_INTEGER;
+const factor = 4503599627370497;
+const exact = Number(3n * BigInt(factor) - BigInt(max));
+const observed = add(constant(-max), constant(factor), 3).constant;
+assert.equal(observed, exact + 1);
+assert.equal(value({ constant: 0, terms: [['a', 1], ['b', 1], ['c', -1]] },
+  new Map([['a', max], ['b', 2], ['c', max]])), 1);
+console.log('direct Tix affine helpers: rounded intermediates change safe final integers (outside the tested corpus)');
+
+const { depthFirst, solve } = await source('src/framework/dataflow/solver.ts');
+const { setLattice } = await source('src/framework/dataflow/lattices.ts');
+const { flowGraph, loopsOf } = await source('src/typed/analyses.ts');
+const nodes = { entry: ['a', 'b'], a: ['b'], b: ['a', 'exit'], exit: [] };
+const fn = { blocks: Object.entries(nodes).map(([id, succ]) => ({ id, succ })) };
+const irreducible = flowGraph(fn);
+assert.deepEqual([...depthFirst(irreducible).loopHeads], ['a']);
+assert.deepEqual(loopsOf({ get() { throw new Error('unexpected natural loop body'); } }, fn), []);
+console.log('two-entry cycle: DFS names a retreating target; dominance finds no natural loop');
+
+const { intervals, usesOf, defsOf } = await source('src/typed/backend/regalloc.ts');
+const code = [
+  { op: 'addi', rd: 64, rs1: 0 },
+  { op: 'beq', rs1: 1, rs2: 2, target: 'left' },
+  { op: 'addi', rd: 65, rs1: 64 },
+  { op: 'j', target: 'join' },
+  { op: 'label', name: 'left' },
+  { op: 'addi', rd: 65, rs1: 64 },
+  { op: 'label', name: 'join' },
+  { op: 'add', rd: 1, rs1: 64, rs2: 65 },
+  { op: 'ret' },
+];
+const machine = intervals(code);
+const graph = flowGraph({
+  blocks: machine.blocks.map((b, i) => ({ id: String(i), succ: b.succ.map(String) })),
+});
+const solution = solve(graph, {
+  direction: 'backward', lattice: setLattice(),
+  transfer(key, outgoing) {
+    const b = machine.blocks[Number(key)];
+    const live = new Set(outgoing);
+    for (let i = b.end; i >= b.start; i--) {
+      for (const def of defsOf(code[i])) live.delete(def);
+      for (const use of usesOf(code[i])) live.add(use);
+    }
+    return live;
+  },
+});
+assert.deepEqual(graph.blocks.map(b => solution.out.get(b)), machine.liveOut);
+assert.deepEqual(machine.liveOut, [new Set([64]), new Set([64, 65]), new Set([64, 65]), new Set()]);
+console.log('machine diamond: generic backward solver and native register liveness agree on all four live-out sets');
+JS
+node --experimental-transform-types \""'$ticket/scripts/10-standard-library-boundaries.mjs"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 1084ms:
+binary32 max: Typed RV32F returns 7 for (NaN, 7); Tix propagates NaN; both return +0 for (-0, +0)
+direct Tix affine helpers: rounded intermediates change safe final integers (outside the tested corpus)
+two-entry cycle: DFS names a retreating target; dominance finds no natural loop
+machine diamond: generic backward solver and native register liveness agree on all four live-out sets
+(node:2) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+web search: 
+exec
+/usr/bin/zsh -lc "rg -n 'runTixCuda|gateRule|ln |time|metric' src/typed/backend/variants.ts src/tensor/{fusion,cuda-runtime}.ts | head -80
+nl -ba src/typed/rules/verify.ts | sed -n '35,80p;177,228p'
+rg -n 'defUse|usesOf|dependence|invocations' src/framework/{ir/rewrites,ir/patterns,contracts/differential,strategy/interpreter}.ts | head -48
+git -C ../b1-op-irwb-036-f grep -n -E '"'^export |''^function '"' HEAD -- src/typed/pe.ts | head -30" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 566ms:
+src/tensor/cuda-runtime.ts:88:    if (!Number.isFinite(gpuMs) || gpuMs < 0) throw Error('Invalid CUDA event time');
+src/tensor/cuda-runtime.ts:117:    const args = [runner, dir, '--runtime-input', 'inputs.bin'];
+src/tensor/cuda-runtime.ts:119:    if (options?.benchmark) args.push('--timed');
+src/tensor/fusion.ts:43:  /** Block mode: the host decides at launch (`gateRule`) between this kernel and the members one by one. */
+src/tensor/fusion.ts:112:// 2 times, and with exp by 17 times.
+src/tensor/fusion.ts:123://  - Many short rows. A block has a fixed cost of 1 to 3 ns of GPU time, more with staged terms, whatever its
+src/tensor/fusion.ts:131://    times the threads that have an element of that member. With 19/24 of the SM's threads or more, fused was
+src/tensor/fusion.ts:134://    to 1.7 times). 19/24 is the lowest measured occupancy at which nothing lost; between is not measured.
+src/tensor/fusion.ts:136:export function gateRule(v: { grid: string; longest: string; lanes: string[]; slots: string }): string {
+    35	  opW,
+    36	  TRAP,
+    37	} from './semantics.js';
+    38	
+    39	export type MethodName =
+    40	  | 'structural'
+    41	  | 'by-construction'
+    42	  | 'symbolic-linear'
+    43	  | 'bitwise-w1'
+    44	  | 'exhaustive-w8'
+    45	  | 'random-32'
+    46	  | 'f32-special'
+    47	  | 'exhaustive-32';
+    48	export interface MethodResult {
+    49	  readonly method: MethodName;
+    50	  readonly verdict: 'pass' | 'fail' | 'n/a';
+    51	  readonly cases?: number;
+    52	  readonly instances?: number;
+    53	  readonly ms?: number;
+    54	  readonly detail?: string;
+    55	}
+    56	export interface Counterexample {
+    57	  readonly bindings: Readonly<Record<string, number>>;
+    58	  readonly lhs: number | 'trap';
+    59	  readonly rhs: number | 'trap';
+    60	  readonly method: MethodName;
+    61	  readonly width: number;
+    62	}
+    63	export type Strength = 'proof' | 'exhaustive' | 'reduced-width+argument' | 'sampled' | 'by-construction';
+    64	export interface RuleEvidence {
+    65	  readonly rule: string;
+    66	  readonly version: string;
+    67	  readonly fingerprint: string;
+    68	  readonly verdict: 'sound' | 'unsound';
+    69	  readonly strength?: Strength;
+    70	  readonly methods: readonly MethodResult[];
+    71	  readonly argument?: string;
+    72	  readonly counterexample?: Counterexample;
+    73	  readonly reason?: string;
+    74	}
+    75	export interface VerifyOptions {
+    76	  /** Random assignments at 32 bits (default 1e5). */
+    77	  readonly random?: number;
+    78	  readonly seed?: number;
+    79	  /** Run exhaustive checking over 2^32 inputs (minutes per rule); small domains are always exhaustive. */
+    80	  readonly exhaustive32?: boolean;
+   177	
+   178	// ---------- the verifier ----------
+   179	export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
+   180	  const vars = varsOf(r),
+   181	    slot = new Map(vars.map((x, i) => [x.name, i])),
+   182	    guards = r.where ?? [];
+   183	  const methods: MethodResult[] = [];
+   184	  let counter: Counterexample | undefined, reason: string | undefined;
+   185	  const base = { rule: r.name, version: r.version, fingerprint: ruleFingerprint(r) };
+   186	  const show = (o: number) => (o === TRAP ? ('trap' as const) : o);
+   187	  const sides = (w: number) => [compileSide(r.lhs, slot, w), compileSide(r.rhs, slot, w)] as const;
+   188	  const failWith = (method: MethodName, env: ArrayLike<number>, l: number, rr: number, w: number) => {
+   189	    counter = {
+   190	      bindings: Object.fromEntries(vars.map((x, i) => [x.name, env[i]])),
+   191	      lhs: show(l),
+   192	      rhs: show(rr),
+   193	      method,
+   194	      width: w,
+   195	    };
+   196	  };
+   197	  const done = (): RuleEvidence => {
+   198	    if (counter || reason)
+   199	      return {
+   200	        ...base,
+   201	        verdict: 'unsound',
+   202	        methods,
+   203	        ...(counter ? { counterexample: counter } : {}),
+   204	        ...(reason ? { reason } : {}),
+   205	      };
+   206	    const passed = new Set(methods.filter(m => m.verdict === 'pass').map(m => m.method));
+   207	    const argument = argumentFor(r);
+   208	    const strength: Strength = passed.has('by-construction')
+   209	      ? 'by-construction'
+   210	      : passed.has('symbolic-linear') || passed.has('bitwise-w1')
+   211	        ? 'proof'
+   212	        : passed.has('exhaustive-32')
+   213	          ? 'exhaustive'
+   214	          : passed.has('exhaustive-w8') && argument
+   215	            ? 'reduced-width+argument'
+   216	            : 'sampled';
+   217	    return {
+   218	      ...base,
+   219	      verdict: 'sound',
+   220	      strength,
+   221	      methods,
+   222	      ...(strength === 'reduced-width+argument' ? { argument } : {}),
+   223	    };
+   224	  };
+   225	  const timed = (method: MethodName, f: () => Omit<MethodResult, 'method' | 'ms'>) => {
+   226	    const t = performance.now();
+   227	    const res = f();
+   228	    methods.push({ method, ...res, ms: Math.round(performance.now() - t) });
+HEAD:src/typed/pe.ts:45:export type Kind = 'n' | 'f';
+HEAD:src/typed/pe.ts:47:export interface BindingTimes {
+HEAD:src/typed/pe.ts:57:export function bindingsOf(f: WorkFn, bindings: readonly Binding[]): { b: Binding; param: number }[] {
+HEAD:src/typed/pe.ts:76:export function bindingTimes(
+HEAD:src/typed/pe.ts:113:function kindOf(
+HEAD:src/typed/pe.ts:141:function staticValue(
+HEAD:src/typed/pe.ts:170:export const RESIDUAL_PIPELINE: readonly string[] = Object.freeze([
+HEAD:src/typed/pe.ts:184:export const pe = typedPass({
+
+web search: Briggs Cooper Simpson Value Numbering Software Practice Experience 1997 paper value numbering Rice ...
+codex
+The probe supports three concrete library boundaries. The shared solver matched RV32 register liveness on a four-block diamond. Typed and Tix differed on `max(NaN, 7)`, so shared binary32 helpers need explicit operation semantics. And the direct Tix affine helpers rounded an intermediate even though the final mathematical result fit in a safe integer.
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*)
+python3 - \""'$ticket/design-doc/01-composable-transformations-and-independent-evidence.md" <<'"'PY'
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1])
+s = p.read_text()
+section = r'''
+## The proposed standard library: its layering criteria and its primitives
+
+Organize the project around a small execution framework and an independently usable compiler standard library. The framework owns the meaning of accepting, publishing, and inspecting a transformation. The library owns algorithms with reusable specifications over graphs, values, constraints, events, or measurements. Domains supply the semantics that make a particular application correct. Use "'`src/stdlib/` as the proposed location. The sketches below specify the boundaries, with directory packaging deferred until two real consumers exercise them.
+
+### Layering criteria
+
+| Owner | Rule for placement | Application to this review |
+| --- | --- | --- |
+| **Framework** | Put a mechanism here when different participants must agree on its semantics for composition to work. The invariant should hold as compiler algorithms are exchanged. | Artifact identity and views, transactions and named roots, typed ports and transformation receipts, versioned analysis registration and invalidation, correspondence and obligation schemas, effect capabilities, publication, cache dependency checks, and the semantics of strategy operators. The current `dataflow()` adapter'"'s revision, encoding and transfer protocol belong on this side of the boundary. "'`src/framework/ir/view.ts:53`, `src/framework/ir/transactions.ts:294`, `src/framework/contracts/analysis-manager.ts:227`, `src/framework/dataflow/analysis.ts:120`, `src/framework/dataflow/analysis.ts:160`, `src/framework/strategy/interpreter.ts:134`. |
+| **Standard library** | Put a reusable algorithm here when its inputs and guarantees can be expressed independently of an artifact store, language opcode set, target ABI, or measurement device. Demand a small semantic interface and an executable fixture. Prefer two existing consumers, including two distinct stages of one compiler. Prototype a conjectural consumer before generalizing its interface. | CFG queries, lattice solvers, SSA, numerical primitives, affine tests, verifier methods, and analysis of observations. Keep implementation choices replaceable. An algorithm can run on a plain graph and be lifted into a versioned framework analysis when its caller wants revision tracking. `src/framework/dataflow/solver.ts:17`, `src/typed/analyses.ts:125`, `src/typed/analyses.ts:296`, `src/typed/backend/regalloc.ts:85`. |
+| **Domain or target** | Keep the interpretation of an IR, its memory and effect model, what a workload means, and target-specific policy with the people who can state and test those assumptions. A library client supplies semantic parameters or a narrow projection. | Typed supplies variable and trap semantics, guest memory, instruction classes and ABI. Tix supplies binding and shapes, affine access extraction, math-operation semantics, CUDA emission, and execution. The measurement adapter chooses whether it can observe counts, events, or only elapsed time. `src/typed/analyses.ts:29`, `src/typed/evaluate.ts:351`, `src/typed/backend/encode.ts:364`, `src/tensor/model.ts:31`, `src/tensor/evaluate.ts:61`, `src/tensor/cuda-runtime.ts:106`. |
+
+Use inward dependencies. A framework client can import both the framework and the library. An optional integration module can depend on both and register a library algorithm using the host'"'s revision-scoped adapter. The framework's publication and assurance primitive can run with an empty library. The library kernels import no domain or framework runtime objects. Use opaque graph IDs and plain inputs. Expose serializable results at the integration boundary, including declared assumptions and versions when they affect a result. Keep device execution, file access, clocks and mutable stores behind caller-supplied providers. For example, liveness over a synthesized graph can use the same library algorithm as a Typed machine pass. The Typed wrapper binds the graph and its use/def queries to one artifact revision and declares the data that invalidates the analysis. An analysis consumer receives a revision-specific fact, plus a correspondence witness when transfer is authorized. "'`src/framework/dataflow/analysis.ts:120`, `src/framework/dataflow/analysis.ts:160`, `src/typed/analyses.ts:276`, `src/typed/backend/regalloc.ts:85`.
+
+An extraction succeeds when it removes duplicated mechanism, preserves each client'"'s observable semantics, and keeps adapters smaller than the algorithms they replace. A shared abstraction may have multiple policies. Choose names that expose the difference, such as a DFS retreating target versus a natural-loop header, or binary32 maximum versus maximum-number. Protocol stability belongs to the framework. Algorithm quality, precision and cost are measurable library choices. Keep existing behavior until a proposed replacement matches the current fixtures or the migration documents an intentional correction.
+
+**P7, library boundaries.** The [probe](../scripts/10-standard-library-boundaries.mjs) exercised four seams. The native machine liveness and existing lattice solver agreed at every block exit of a four-block diamond. In a two-entry cycle, DFS found a retreating target and the dominator-based algorithm found no natural loop. Typed's RV32F max returned "'`7` for `(NaN, 7)`, while Tix propagated NaN. Both returned positive zero for `(-0, +0)`. Direct Tix affine helpers returned the wrong exact integer on two synthetic cancellation examples with a rounded intermediate and safe final result, including a scaled addition whose final safe-integer check passed. The affine test exercised the helper APIs with large integers. It establishes a library arithmetic requirement, with no demonstrated corpus failure. `src/typed/backend/regalloc.ts:85`, `src/framework/dataflow/solver.ts:64`, `src/typed/analyses.ts:215`, `src/typed/f32.ts:40`, `src/tensor/evaluate.ts:19`, `src/tensor/evaluate.ts:79`, `src/tensor/model.ts:8`, `src/tensor/model.ts:25`.
+
+### Graph and value analysis primitives
+
+| Primitive and interface sketch | Theory and guarantees | Replacement, clients, and composition |
+| --- | --- | --- |
+| **Graph traversal and SCCs.** `reversePostorder(graph, entries)`, `strongComponents(graph)`, `condensation(graph, scc)`. An edge can have its own ID when order or duplicate destinations matter. | Directed depth-first traversal and Tarjan strongly connected components. Expose reachability and cycle entries. State edge order because reproducible numbering depends on it. | Replace traversal in Typed CFG construction and the backend frequency routine'"'s SCC scaffolding. Let DFS return retreating targets for the solver's widening policy. Dominance and the expected-frequency estimator consume this common graph view. "'`src/typed/analyses.ts:75`, `src/typed/backend/frequency.ts:54`, `src/framework/dataflow/solver.ts:64`. [Tarjan, Depth-First Search and Linear Graph Algorithms](https://www.cs.cmu.edu/~cdm/resources/Tarjan1972-sccs.pdf) |
+| **Dominance, frontiers, and natural loops.** `dominators(cfg)` returns a rooted tree and reachable set, `frontiers(cfg, dom)` returns join sites, and `naturalLoops(cfg, dom)` returns headers, all latches, body, exits and optional preheader. | Cooper–Harvey–Kennedy immediate dominators, dominance frontiers, and natural loops from edges whose target dominates their source. Report multi-entry SCCs separately. A loop'"'s assigned values are a derived effect query. | Extract "'`dominatorsOf`, the frontier computation inside `ssaOf`, and the CFG-only part of D1'"'s per-header loop analysis. SSA uses frontiers, LICM combines the loop body with Typed effect facts, and layout can consume cycles without inheriting LICM's assumptions. "'`src/typed/analyses.ts:140`, `src/typed/ssa.ts:75`, `src/typed/analyses.ts:215`, `src/typed/passes.ts:423`. [Cooper, Harvey and Kennedy, A Simple, Fast Dominance Algorithm](https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom06.pdf), [LLVM Loop Terminology](https://llvm.org/docs/LoopTerminology.html) |
+| **Lattices and fixed-point solving.** `Lattice<V> = { bottom, join, equal }`, with set, flat, product, map and interval constructors and optional widening. `solve(graph, boundary, transfer, edgeTransfer, policy)` returns facts and convergence or exhaustion. | Kildall'"'s monotone graph equations and abstract interpretation. Expose the order and widening assumptions. Keep mathematical bottom separate from an unreachable point where the two differ. | Move the existing pure solver and lattice implementations into the library. Keep "'`dataflow()` and its revision/codec binding in the framework. Typed ranges use intervals and a wrap-aware transfer. VM binding-time uses flat constants or products on the same solver where the CFG is fixed. `src/framework/dataflow/solver.ts:24`, `src/framework/dataflow/lattices.ts:10`, `src/framework/dataflow/lattices.ts:66`, `src/framework/dataflow/analysis.ts:120`, `src/typed/analyses.ts:486`, `B1-G/src/typed/bta.ts:65`. [Kildall, A Unified Approach to Global Program Optimization](https://doi.org/10.1145/512927.512945), [Cousot and Cousot, Abstract Interpretation](https://www.di.ens.fr/~cousot/COUSOTpapers/POPL77.shtml) |
+| **Liveness and reaching definitions.** `live(cfg, blockUseDef, exitLive)`, `reaching(cfg, genKill, entryDefs)`, plus statement-position queries from explicit instruction order. | Backward and forward may-dataflow with gen/kill transfer. Exit liveness, exceptional edges, entry definitions and parallel assignments are supplied by clients. | Replace repetitive transfer plumbing in Typed'"'s local analysis and the separate RV32 machine liveness loop. Keep instruction uses/defs, calling convention and register classes in the backend. SSA prunes phi placement with live-in facts, and B1 projects a specialization key using liveness. P7 validates one machine fixture. "'`src/typed/analyses.ts:285`, `src/typed/analyses.ts:352`, `src/typed/backend/regalloc.ts:28`, `src/typed/backend/regalloc.ts:85`, `B1-A/src/typed/specialize-memory.ts:57`. [Kildall, A Unified Approach to Global Program Optimization](https://doi.org/10.1145/512927.512945) |
+| **SSA construction and checking.** `ssa(cfg, dom, defsUses, initialDefs, liveIn?)` produces phi or block-argument sites, reaching SSA names and a correspondence. `checkSSA(view, edgeUses)` validates dominance and coverage. | Cytron et al.'"'s iterated dominance-frontier placement and dominator-tree renaming. Uses on phi operands belong to incoming edges. Distinguish absent initial values from a language-defined default. | Replace frontier and renaming machinery in Typed's "'`ssaOf` and the matching construction inputs to `checkSsa`. Typed keeps local identity and initialization. Its SCCP reuses the library view. Prototype a second client for B1 residual blocks or virtual registers before adding SSA lowering or a universal SSA store. `src/typed/ssa.ts:60`, `src/typed/ssa.ts:91`, `src/typed/ssa.ts:124`, `src/typed/ssa.ts:325`, `src/typed/sccp.ts:47`, `B1-G/src/typed/specialize-buffer.ts:288`. [Cytron et al., Efficiently Computing Static Single Assignment Form](https://cs.brown.edu/research/pubs/techreports/reports/CS-91-21.html) |
+| **Sparse conditional constant propagation.** `sccp(ssa, evaluateAbstract, feasibleEdges)` returns reachable edges and value facts. | A sparse product of executable-edge facts and a flat value lattice. Phi operands contribute only along executable edges. Supply transfer and trap behavior and keep unrelated IR edits outside the analysis. | Extract propagation from Typed `sccpOf`. Typed'"'s pass still uses its transaction to materialize facts. A residualizer can run it after creating a residual region when that region has SSA, while Tix remains a prospective shape-fact client. "'`src/typed/sccp.ts:23`, `src/typed/sccp.ts:47`, `src/typed/sccp.ts:141`, `B1-G/src/typed/specialize-buffer.ts:387`. [Wegman and Zadeck, Constant Propagation with Conditional Branches](https://doi.org/10.1145/318593.318659) |
+| **Local value numbering and CSE candidates.** `numberValues(region, key, dependencies, available, kills)` maps values to equivalence classes and eligible representatives. | Value numbering under the language'"'s equality and effect semantics. A key carries opcode semantics, type, immediate, operand numbers and, for justified reads, memory version. An eligible representative must be available and preserve effects and traps. | Replace the local key and kills machinery in Typed "'`lvn` and the equal-invariant-tree grouping in LICM. Keep materialization and its cost policy with the pass. Reuse SSA names or sound def/use scopes. Tix single-use or repeated-expression detection is a second-domain trial using affine access keys and explicit occurrence semantics. `src/typed/passes.ts:447`, `src/typed/passes.ts:516`, `src/typed/passes.ts:525`, `src/typed/passes.ts:561`, `src/tensor/passes.ts:31`. [Briggs, Cooper and Simpson, Value Numbering](https://onlinelibrary.wiley.com/doi/abs/10.1002/%28SICI%291097-024X%28199706%2927%3A6%3C701%3A%3AAID-SPE104%3E3.0.CO%3B2-0) |
+| **Live intervals and conflicts.** `intervals(layout, liveness, defUse, clobberPoints)` and `interferes(intervals, constraints)`. | Live-range approximation in a linear order, with overlap and target-supplied interference. A convex interval is conservative across holes in a live range. Defer a generic allocator until allocation policy and constraints admit a second useful instance. | Replace common interval construction used by Typed'"'s allocator and coalescing path. Preserve machine CFG recovery, reserved registers, register classes and spill decisions. Consume the library's liveness result. "'`src/typed/backend/regalloc.ts:66`, `src/typed/backend/regalloc.ts:85`, `src/typed/backend/regalloc.ts:233`, `src/typed/backend/coalesce.ts:27`. [Poletto and Sarkar, Linear Scan Register Allocation](https://condor.depaul.edu/dmumaugh/readings/handouts/CSC548/toplas99.pdf) |
+
+### Iteration spaces, specialization, and numerical semantics
+
+| Primitive and interface sketch | Theory and guarantees | Replacement, clients, and composition |
+| --- | --- | --- |
+| **Exact affine expressions.** `normalize(constant, coefficientTerms)`, `substitute(form, bindings)`, `evaluate(form, environment)`, and `lowerToCheckedInt(form, representation)`. | Affine forms over mathematical integers. Use checked arithmetic for a bounded implementation or arbitrary-precision intermediates and a canonical serialization at the artifact boundary. Floor/mod by fixed factors and dimension constraints belong in a separate supported relation fragment. | Replace coefficient arithmetic in Tix'"'s model and enable the parser, inline substitution, and emission to carry a common normalized form. Keep binder identity, tail rounding, valid index ranges and target overflow legalities in clients. The dependence checker consumes these forms and explicit domains. P7 exposes the need for exact intermediates. "'`src/tensor/model.ts:1`, `src/tensor/model.ts:8`, `src/tensor/model.ts:25`, `src/tensor/parser.ts:54`, `src/tensor/passes.ts:16`, `src/tensor/cuda-source.ts:150`. [Feautrier, Affine Scheduling Part II](https://link.springer.com/article/10.1007/BF01379404) |
+| **Affine dependence and schedule tests.** `accessConflicts(region, aliasModel)`, `preservesOrder(dependences, timeMap)`, and `sameReductionEvents(before, after, foldSemantics)`. Return a witness, a violating iteration pair, or an unresolved obligation. | Integer relations over iterations and access locations, lexicographic schedule preservation, and event-sequence equivalence for strict reductions. Separately check output coverage and concurrency constraints. Finite enumeration labels its tested bounds. | Replace portions of T3'"'s load-index/share checks and T6's repeated split/reorder/order-validation logic. Lift as revision-keyed dependence analyses and pass obligations. Tix keeps contraction recognition, CUDA synchronization, and layout. A Typed counted-loop projection is conjectural and requires no-wrap/alias evidence. "'`src/tensor/fusion.ts:69`, `src/tensor/fusion.ts:83`, `T6-D/src/tensor/schedule.ts:303`, `T6-D/src/tensor/schedule.ts:580`, `T6-H/src/tensor/schedule.ts:399`, `src/typed/analyses.ts:215`. [Feautrier, Affine Scheduling Part II](https://link.springer.com/article/10.1007/BF01379404) |
+| **Binding-time analysis.** `bindingTimes(graph, seeds, transfer, memoryAbstraction)` produces a binding-time division or abstract facts with stated assumptions. | Binding-time analysis and abstract interpretation. Model known scalars, known immutable locations, and residual computation explicitly. Treat a disputed alias or effect as dynamic unless a checked condition makes it static. | Extract the common division machinery from B1-F and G. Preserve binding syntax, immutable bytecode assumptions, trap semantics and initialization in Typed. Consume use/def and lattice services. Feed B1 residualization and the proposed reuse over static scene buffers. `B1-F/src/typed/pe.ts:76`, `B1-G/src/typed/bta.ts:65`, `src/typed/specialize.ts:27`. [Jones, Gomard and Sestoft, Partial Evaluation and Automatic Program Generation](https://raspi.itu.dk/people/sestoft/pebook/toc.html) |
+| **Polyvariant partial-evaluation core.** `residualize(point, staticState, model, budgetPolicy)` returns a residual graph, mapped exits, footprint and assumptions. | Memoized program-point specialization over a projected static environment. Install residual labels before expanding successors. Support bounded generalization, refusal, or a residual fallback with a validated bridge back to the original state. | Replace worklists and key construction in B1-A/B/E/G. Reserve opcode evaluation, block building, mutable memory effects and runtime guards for the domain. Use liveness and optional binding-time division, then use the framework to check and commit the residual revision. P5 supplies contrasting refusal and fallback fixtures. `B1-A/src/typed/specialize-memory.ts:54`, `B1-B/src/typed/residualize.ts:55`, `B1-E/src/typed/peval.ts:208`, `B1-G/src/typed/specialize-buffer.ts:294`. [Jones, Gomard and Sestoft, Partial Evaluation and Automatic Program Generation](https://raspi.itu.dk/people/sestoft/pebook/toc.html) |
+| **Fixed-width bit-vector arithmetic.** `bitVector(width).add/mul/shift/compare`, with explicit signedness on operations that depend on it. Decode a trapping division through a supplied semantic operation. | Modular arithmetic modulo '"\\(2"'^w'"\\) and fixed-width bit-vector theory. Wrapping, comparison, and signed conversion have a fixed specification. Target trap behavior and shift-count policy remain explicit. | Replace duplicate signed/unsigned wrapping and primitive arithmetic between the Typed evaluator and the width-parameterized rule runner. B1 transfer and SCCP can consume these same operations. Rule validation wraps them with a chosen trap and guard semantics. "'`src/typed/evaluate.ts:268`, `src/typed/rules/semantics.ts:20`, `src/typed/rules/semantics.ts:58`, `src/typed/sccp.ts:47`, `B1-A/src/typed/specialize-memory.ts:114`. [SMT-LIB FixedSizeBitVectors](https://smt-lib.org/theories-FixedSizeBitVectors.shtml) |
+| **Bit-exact binary32 primitives.** `fromWord/roundToWord`, `classifyWord`, `signOp`, and `binary32.apply(op, words, explicitMode)`. Separate `maximum` and `maximumNumber`, and define flags or exception observations only for operations that model them. | IEEE 754 binary32 interchange and correctly rounded named operations. State round-to-nearest-even, subnormal treatment, NaN class/payload, signed zero, and contraction policy in the interface. Target transcendental implementations need their own specifications and evidence. A software oracle such as SoftFloat can test its supported primitive operations independently. | Share conversion, classification, and common rounded arithmetic between Typed'"'s helpers and Tix's evaluator/comparator. P7 rules out a shared unqualified max. Keep RV32 saturating conversions and canonical arithmetic NaNs as selected semantics, Tix reduction order and CUDA math functions in their domains, and equality/tolerance in the claim. Use the bit operations in constant folding, test generation, and rule verification. "'`src/typed/f32.ts:20`, `src/typed/f32.ts:40`, `src/typed/f32.ts:57`, `src/tensor/evaluate.ts:24`, `src/tensor/evaluate.ts:79`, `src/tensor/cuda-contract.ts:105`. [IEEE 754-2019](https://standards.ieee.org/ieee/754/6210/), [Hauser, Berkeley SoftFloat Library Interface](https://www.jhauser.us/arithmetic/SoftFloat-3/doc/SoftFloat.html) |
+
+### Validation, observation, and cost primitives
+
+| Primitive and interface sketch | Theory and guarantees | Replacement, clients, and composition |
+| --- | --- | --- |
+| **Guarded rule verification.** `verify(rule, semantics, domain, methods, budget)` gives checked proof evidence, finite-domain coverage, a counterexample, or unresolved obligations. `checkApplication(ruleEvidence, before, after, substitution, contextFacts)` checks a particular edit. | Conditional term rewriting and translation validation. Quantify guards over the stated semantics. Replay a checked certificate or enumerate the actual finite domain. Reduced-width and sampled tests retain their own labels. Proving the schema and validating its contextual application are separate obligations. | Extract method orchestration and counterexample shapes from Typed'"'s verifier, and the replay logic supporting A0-G. Keep domain opcode/guard semantics and the choice of proof system in providers. Bind the result to the framework's rule/edit evidence; prototype a second use on a strict Tix substitution or reduction-order rewrite. "'`src/typed/rules/verify.ts:179`, `src/typed/rules/verify.ts:197`, `src/typed/rules/compile.ts:93`, `A0-G/src/typed/edit-classes.ts:154`, `src/tensor/passes.ts:21`. [Visser, Stratego](https://eelcovisser.org/publications/2001/Visser01.pdf), [Pnueli, Siegel and Singerman, Translation Validation](https://link.springer.com/chapter/10.1007/BFb0054170) |
+| **Reproducible case generation.** `generate(recipe, randomStream, budget)` returns ordered cases with tags, stable IDs and skip reasons. Combinators cover products, dependent draws, boundary pools, small finite enumeration and seeded sampling. An optional reducer minimizes failing inputs while respecting the recipe. | Property-based testing, targeted boundary testing and finite-domain enumeration. Preserve generator versions and distribution. Report what actually ran, including invalid, inconclusive and zero-work cases. | Replace general pool/combination code in Typed'"'s case generators and Tix's shape/case enumeration. Preserve Typed's xorshift32 stream, Tix's use of the differential driver's mulberry32 stream, and domain input validity and coverage predicates. Cases feed differential checks, mutations, rule verification and paired benchmarking. The framework owns verdict/dependency identity. "'`src/typed/evaluate.ts:15`, `src/typed/evaluate.ts:232`, `src/typed/cases-strong.ts:233`, `src/typed/mutate.ts:535`, `src/tensor/contract.ts:24`, `src/tensor/contract.ts:121`, `src/framework/contracts/differential.ts:17`. [Claessen and Hughes, QuickCheck](https://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf) |
+| **Execution attribution.** `attribute(before, after, siteObservations, lineage, allocation)` returns scoped weighted rows, unmatched counts and totals. | Relational provenance and additive accounting. For a count, conserve the total across explicit assignments and an unmatched bucket. Preserve pass interactions and revision order. Overlapped elapsed time needs a separate measurement definition. | Replace generic join/delta/grouping code in merged D1 and its parallel implementations. The RV32 client keeps PC lookup and instruction coverage. Tix can feed executed variants and future additive counters through statement-to-kernel lineage. The framework validates revision/entity identity used by the library join. `src/typed/attribute.ts:81`, `src/typed/attribute.ts:103`, `D1-E/src/typed/attribute.ts:126`, `src/tensor/cuda-runtime.ts:10`, `src/tensor/cuda-contract.ts:82`. [Buneman, Khanna and Tan, Why and Where](https://homepages.inf.ed.ac.uk/opb/papers/ICDT2001.pdf) |
+| **Edit classification and census.** `classify(groups, revisions, taxonomy, replay?)` returns labels, evidence source, unsupported cases, and grouping IDs. `count(rows, unit, weights?)` declares its denominator. | Structural differencing and rewrite application evidence. Derive categories from grouped edits, scoped footprint and provenance. Inferred rule replay, a certified application, and a fact-dependent local replacement retain distinct evidence statuses. | Replace duplicate A0 correlation and classification plumbing. Keep an explicit taxonomy and report named alternatives where cells disagree. Receipt-native classification handles new edits. Legacy replay remains an audit. It can consume the same weighted observations as D1 with distinct measures for events, unique sites, static instructions and dynamic instructions. `A0-A/src/typed/edit-classification.ts:214`, `A0-G/src/typed/edit-classes.ts:283`, `A0-G/src/typed/edit-classes.ts:461`, `src/typed/attribute.ts:185`. [Visser, Stratego](https://eelcovisser.org/publications/2001/Visser01.pdf), [Buneman, Khanna and Tan, Why and Where](https://homepages.inf.ed.ac.uk/opb/papers/ICDT2001.pdf) |
+| **Static cost estimation.** `expectedVisits(cfg, edgeWeights, entryMass)` returns a frequency estimate or unknown. `foldCosts(sites, weights, unit)` returns a tagged estimate and recorded assumptions. | Static branch prediction and weighted control flow. Validate edge normalization. A recurrent region without modeled exit can lack a finite expected count. Feature counts and timing models expose separate units. | Replace the reusable frequency and weighted-cost math in Typed'"'s backend. Keep Typed branch priors and RV32 costs, and Tix operation costs and launch/occupancy features in their domains. Both produce comparable results within a common unit and model version for a strategy metric. Use measured observations to evaluate error and false decisions. "'`src/typed/backend/frequency.ts:105`, `src/typed/backend/frequency.ts:174`, `src/tensor/fusion.ts:115`, `src/tensor/fusion.ts:135`. [Ball and Larus, Branch Prediction for Free](https://doi.org/10.1145/155090.155119) |
+| **Measurement design and summaries.** `planComparisons(cases, variants, order, warmup, repetitions)` and `summarizePaired(samples, estimator, uncertaintyModel)`. Run the plan with an explicit executor or clock supplied by the host. | Controlled paired comparisons and hierarchical repetition for benchmarking. Tag each observation with target, build, case, eligible and selected variant, phase, repetition, unit and sampling protocol. Estimate variation at the level at which samples are independent. | Replace repeated ordering, median and spread calculations in the GB10 timing experiments and share observation preparation with Typed instruction measurements. CUDA event collection and synchronization remain target mechanics, and deterministic emulator counts can use a one-run protocol. The framework records selected alternatives and uses the resulting measurements in strategy selection. `ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts/53-t9-timing-spread.mjs:54`, `src/tensor/cuda-source.ts:85`, `src/tensor/cuda-runtime.ts:106`, `src/typed/attribute.ts:81`, `src/framework/strategy/builders.ts:59`. [Kalibera and Jones, Rigorous Benchmarking in Reasonable Time](https://kar.kent.ac.uk/33611/45/p63-kaliber.pdf) |
+
+### Adoption and limits
+
+Start with graph/dominance and liveness, and with binary32 word classification and bit conversion. These have existing implementations, independent fixtures and immediate second clients. Compare exact facts and output bits before deleting logic. Include unreachable components, an irreducible cycle, the two-latch loop, machine exceptional/control edges, signed zero, subnormals, infinities, and distinct NaN payload policies. Preserve each client'"'s current case streams and compare same-seed case digests. Measure adapter lines, deleted algorithm lines, cold/warm solve time, browser bundle size and end-to-end regressions. Consider static estimates and measurement summaries separately even when both feed the same strategy node. "'`src/typed/analyses.ts:215`, `src/typed/backend/regalloc.ts:85`, `src/typed/f32.ts:20`, `src/typed/evaluate.ts:15`, `src/tensor/contract.ts:121`, `src/framework/strategy/builders.ts:59`.
+
+Next use edit receipts and scope-aware correspondence to connect validation, attribution and the A0 census. Publish both producer evidence and the method used for any inference. Then extract affine arithmetic, the restricted affine dependence service, and the B1 residual-state engine independently. The affine service should reject unsupported regions without invalidating unrelated CFG facts. An offline binding-time analysis is optional for the residual engine. Gate further generalization on a real second client and independently checked outputs. Full polyhedral search, generalized register allocation, out-of-SSA, and arbitrary floating-point proof engines are research extensions. The initial interfaces have smaller checks and deletion targets. `src/framework/ir/correspondence.ts:149`, `src/typed/attribute.ts:185`, `A0-G/src/typed/edit-classes.ts:283`, `T6-D/src/tensor/schedule.ts:303`, `B1-A/src/typed/specialize-memory.ts:54`, `B1-F/src/typed/pe.ts:76`.
+'"'''
+assert s.count(\"## Root changes and alternatives\") == 1
+p.write_text(s.replace(\"## Root changes and alternatives\", section.strip() + \"\\n\\n## Root changes and alternatives\"))
+PY
+rg -n 'const t|shared' src/typed/passes.ts | rg '"'^(4[5-9]|50)'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 782ms:
+491:            const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
+
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*); python3 \""'$ticket/scripts/08-check-evidence.py"; git diff --check; git diff --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+exec
+/usr/bin/zsh -lc "docmgr task add --ticket IRWB-038-A --text 'Define the compiler standard library boundary and cross-check reusable primitives'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+exec
+/usr/bin/zsh -lc "nl -ba src/typed/passes.ts | sed -n '469,505p'; nl -ba src/tensor/contract.ts | sed -n '113,154p'; nl -ba src/typed/backend/frequency.ts | sed -n '45,110p'; nl -ba src/typed/backend/coalesce.ts | sed -n '12,50p'; rg -n 'verif|evidence' src/framework/ir/rewrites.ts | head -20" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 924ms:
+   469	        'aaddr',
+   470	      ];
+   471	      const inv = (id: string): boolean => {
+   472	        const v = st.get(id) as ValueRec;
+   473	        if (!INV.includes(v.op)) return false;
+   474	        if (v.op === 'get') return !assigned.has(v.imm as number);
+   475	        return v.args.every(inv);
+   476	      };
+   477	      // IRWB-034-G: structurally equal invariant trees of a loop get one local (the bytecode VM's dispatch loop has
+   478	      // fifteen uses of two frame addresses; a local per use filled the registers). `share: false` is the old way.
+   479	      const share = params.share !== false;
+   480	      const keyOf = (id: string): string => {
+   481	        const v = st.get(id) as ValueRec;
+   482	        return `${v.op}:${v.imm ?? ''}:${v.type ?? ''}(${v.args.map(keyOf).join(',')})`;
+   483	      };
+   484	      const hoisted = new Map<string, { t: number; set: string }>();
+   485	      const hoist = (id: string): string => {
+   486	        const v = st.get(id) as ValueRec;
+   487	        if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
+   488	          const key = share ? keyOf(id) : id;
+   489	          let h = hoisted.get(key);
+   490	          if (!h) {
+   491	            const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
+   492	            const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
+   493	            tx.insert(tx.at.end(pre!), set, { because: [L.id] });
+   494	            hoisted.set(key, (h = { t, set }));
+   495	          }
+   496	          return tx.get(h.t, { from: id, because: [h.set] });
+   497	        }
+   498	        const args = v.args.map(hoist);
+   499	        return args.some((a, i) => a !== v.args[i])
+   500	          ? tx.make(v.op, ...args, { imm: v.imm, from: id, type: v.type ?? 'i32' })
+   501	          : id;
+   502	      };
+   503	      for (const bid of L.body)
+   504	        for (const sid of (st.get(bid) as BlockRec).stmts.slice()) {
+   505	          const s = st.get(sid) as StmtRec;
+   113	      };
+   114	    }
+   115	  }
+   116	  return { ok: true };
+   117	}
+   118	function signature(m: Module) {
+   119	  return JSON.stringify(m.functions.map(({ name, params, shape }) => ({ name, params, shape })));
+   120	}
+   121	export function meaningGate(origin: Artifact<Module>, relation: Relation) {
+   122	  return (before: Artifact<Module>, candidate: Artifact<Module>): CheckResult => {
+   123	    if (signature(origin.value) !== signature(candidate.value))
+   124	      return { ok: false, reason: 'Function signatures differ' };
+   125	    const baseline = relation === 'exact' ? before : origin;
+   126	    const samples: Sample[] = [];
+   127	    const random = seededRandom(seed);
+   128	    for (const [i, fn] of origin.value.functions.entries()) {
+   129	      const group = cases(fn, baseline.value.functions[i], relation, random);
+   130	      // empty-extent cases are compared, but only a case with every extent nonempty counts as coverage
+   131	      if (!group.some(c => c.shapeValues.every(v => v > 0)))
+   132	        return { ok: false, reason: 'No comparable case for ' + fn.name };
+   133	      samples.push(...group);
+   134	    }
+   135	    const ports = { baseline: TixIR, subject: TixIR };
+   136	    const invariant = differential<typeof ports, Sample, BufferValue>({
+   137	      id: 'tensor.meaning.' + relation,
+   138	      version: '1',
+   139	      description: 'Compare returned tensor on origin-derived cases',
+   140	      inputs: ports,
+   141	      baseline: 'baseline',
+   142	      subject: 'subject',
+   143	      seed,
+   144	      count: samples.length,
+   145	      cases: () => samples,
+   146	      run: (side, artifact, s) =>
+   147	        side === 'baseline'
+   148	          ? s.reference
+   149	          : evaluate(artifact.value.functions.find(f => f.name === s.fn)!, s.inputs, 'f32'),
+   150	      compare: (a, b) => compare(a, b, relation),
+   151	      describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
+   152	    });
+   153	    const evidence = runDifferential(differentialSpec(invariant), { baseline, subject: candidate });
+   154	    return { ok: evidence.status === 'agree', reason: evidence.counterexamples[0]?.reason, evidence };
+    45	    case 'return':
+    46	    case 'trap':
+    47	      return [];
+    48	    default:
+    49	      return b.succ.slice(0, 1);
+    50	  }
+    51	}
+    52	
+    53	/** Strongly connected components (Tarjan, iterative); returns each block's component and which ones are cycles. */
+    54	function components(blocks: readonly string[], succ: (b: string) => readonly string[]) {
+    55	  const index = new Map<string, number>(),
+    56	    low = new Map<string, number>(),
+    57	    comp = new Map<string, number>(),
+    58	    onStack = new Set<string>(),
+    59	    stack: string[] = [];
+    60	  const cyclic: boolean[] = [];
+    61	  let n = 0;
+    62	  for (const root of blocks) {
+    63	    if (index.has(root)) continue;
+    64	    const work: { b: string; i: number }[] = [{ b: root, i: 0 }];
+    65	    index.set(root, n);
+    66	    low.set(root, n++);
+    67	    stack.push(root);
+    68	    onStack.add(root);
+    69	    while (work.length) {
+    70	      const top = work[work.length - 1];
+    71	      const ss = succ(top.b);
+    72	      if (top.i < ss.length) {
+    73	        const s = ss[top.i++];
+    74	        if (!index.has(s)) {
+    75	          index.set(s, n);
+    76	          low.set(s, n++);
+    77	          stack.push(s);
+    78	          onStack.add(s);
+    79	          work.push({ b: s, i: 0 });
+    80	        } else if (onStack.has(s)) low.set(top.b, Math.min(low.get(top.b)!, index.get(s)!));
+    81	        continue;
+    82	      }
+    83	      work.pop();
+    84	      if (work.length) {
+    85	        const parent = work[work.length - 1].b;
+    86	        low.set(parent, Math.min(low.get(parent)!, low.get(top.b)!));
+    87	      }
+    88	      if (low.get(top.b) === index.get(top.b)) {
+    89	        const id = cyclic.length,
+    90	          members: string[] = [];
+    91	        for (;;) {
+    92	          const x = stack.pop()!;
+    93	          onStack.delete(x);
+    94	          comp.set(x, id);
+    95	          members.push(x);
+    96	          if (x === top.b) break;
+    97	        }
+    98	        cyclic.push(members.length > 1 || succ(top.b).includes(top.b));
+    99	      }
+   100	    }
+   101	  }
+   102	  return { comp, cyclic };
+   103	}
+   104	
+   105	export function blockFrequencies(st: Store, f: WorkFn): Frequencies {
+   106	  const ids = f.blocks.map(b => b.id);
+   107	  const known = new Set(ids);
+   108	  const succ = new Map(f.blocks.map(b => [b.id, targetsOf(st, b).filter(s => known.has(s))]));
+   109	  const trapping = new Set(f.blocks.filter(b => lastOf(st, b)?.op === 'trap').map(b => b.id));
+   110	  const { comp, cyclic } = components(ids, b => succ.get(b) ?? []);
+    12	 * Runs between selection and allocation, on the selected code. Copies from or to a physical register
+    13	 * (parameters, call results, return values) are left to the allocator's hints. Merging lengthens intervals,
+    14	 * which under linear scan can cost a callee-saved register or a spill, so the caller compares estimates.
+    15	 */
+    16	import { machineBlocks, usesOf, defsOf } from './regalloc.js';
+    17	import type { MInsn } from './encode.js';
+    18	import type { Frequencies } from './frequency.js';
+    19	import type { Selection } from './select.js';
+    20	
+    21	export interface Coalesced {
+    22	  readonly sel: Selection;
+    23	  /** How many copies were removed. */
+    24	  readonly removed: number;
+    25	}
+    26	
+    27	export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): Coalesced {
+    28	  const code = sel.code;
+    29	  const cls = (r: number) => (sel.fregs.has(r) ? 'f' : 'x');
+    30	  const isCopy = (m: MInsn) =>
+    31	    m.mv && m.rd !== undefined && m.rs1 !== undefined && m.rd >= 64 && m.rs1 >= 64 && m.rd !== m.rs1;
+    32	  // liveness per block, then per instruction backwards
+    33	  const blocks = machineBlocks(code);
+    34	  const use = blocks.map(() => new Set<number>()),
+    35	    def = blocks.map(() => new Set<number>());
+    36	  blocks.forEach((b, k) => {
+    37	    for (let i = b.start; i <= b.end; i++) {
+    38	      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
+    39	      for (const r of defsOf(code[i])) def[k].add(r);
+    40	    }
+    41	  });
+    42	  const IN = blocks.map(() => new Set<number>()),
+    43	    OUT = blocks.map(() => new Set<number>());
+    44	  for (let changed = true; changed; ) {
+    45	    changed = false;
+    46	    for (let k = blocks.length - 1; k >= 0; k--) {
+    47	      const out = new Set<number>();
+    48	      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+    49	      const inn = new Set(use[k]);
+    50	      for (const r of out) if (!def[k].has(r)) inn.add(r);
+161:  readonly verify?: EditOptions<T>['verify'];
+174:  /** Provisional results in rejected steps are evidence; only status=applied publishes them. */
+178:    readonly verification: 'unverified' | 'host-accepted';
+347:  const verify = options.verify,
+437:          verification: accepted && !!verify ? 'host-accepted' : 'unverified',
+478:      const gate: EditOptions<T>['verify'] = signal
+481:            const acceptance = verify
+482:              ? await verify(transformed, original)
+492:              throw new Error('Semantic verification must return commit and rollback callbacks');
+511:        : verify;
+514:        ...(gate ? { verify: gate } : {}),
+576:        'Replacement validated and committed' + (verify ? ' through the host semantic gate' : ''),
+
+ succeeded in 1388ms:
+570 full line anchors and local document links resolve across 31 frozen heads
+ ...ble-transformations-and-independent-evidence.md | 59 ++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
+
+ succeeded in 1674ms:
+Task ceur added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/tasks.md
+
+web search: 
+exec
+/usr/bin/zsh -lc "nl -ba src/typed/backend/coalesce.ts | sed -n '40,112p'; rg -n 'function .*freq|estimated|damping|bounded' src/typed/backend/frequency.ts; rg -n 'array.isArray|undefined|bigint|case' src/framework/core/data.ts | head -35" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 487ms:
+    40	    }
+    41	  });
+    42	  const IN = blocks.map(() => new Set<number>()),
+    43	    OUT = blocks.map(() => new Set<number>());
+    44	  for (let changed = true; changed; ) {
+    45	    changed = false;
+    46	    for (let k = blocks.length - 1; k >= 0; k--) {
+    47	      const out = new Set<number>();
+    48	      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+    49	      const inn = new Set(use[k]);
+    50	      for (const r of out) if (!def[k].has(r)) inn.add(r);
+    51	      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+    52	        IN[k] = inn;
+    53	        OUT[k] = out;
+    54	        changed = true;
+    55	      }
+    56	    }
+    57	  }
+    58	  // IRWB-034-G: at a copy `rd <- rs`, the registers that an earlier copy in the block set from the same rs, with
+    59	  // neither side redefined since, hold the value rd receives. The definition does not make them interfere with rd
+    60	  // (the argument of the copy exception itself), so `a <- s; b <- s` can end up as one register.
+    61	  const sameAsSource = new Map<number, Set<number>>();
+    62	  for (const b of blocks) {
+    63	    const copyOf = new Map<number, number>();
+    64	    for (let i = b.start; i <= b.end; i++) {
+    65	      const m = code[i];
+    66	      if (isCopy(m)) {
+    67	        const same = [...copyOf].filter(([, s]) => s === m.rs1).map(([q]) => q);
+    68	        if (same.length) sameAsSource.set(i, new Set(same));
+    69	      }
+    70	      for (const r of defsOf(m)) {
+    71	        copyOf.delete(r);
+    72	        for (const [q, s] of copyOf) if (s === r) copyOf.delete(q);
+    73	      }
+    74	      if (isCopy(m)) copyOf.set(m.rd!, m.rs1!);
+    75	    }
+    76	  }
+    77	  const adj = new Map<number, Set<number>>();
+    78	  const edge = (a: number, b: number) => {
+    79	    if (!adj.has(a)) adj.set(a, new Set());
+    80	    if (!adj.has(b)) adj.set(b, new Set());
+    81	    adj.get(a)!.add(b);
+    82	    adj.get(b)!.add(a);
+    83	  };
+    84	  blocks.forEach((b, k) => {
+    85	    const live = new Set(OUT[k]);
+    86	    for (let i = b.end; i >= b.start; i--) {
+    87	      const m = code[i];
+    88	      for (const r of defsOf(m)) {
+    89	        const copy = isCopy(m),
+    90	          same = copy ? sameAsSource.get(i) : undefined;
+    91	        for (const q of live)
+    92	          if (q !== r && cls(q) === cls(r) && !(copy && (q === m.rs1 || same?.has(q)))) edge(r, q);
+    93	        live.delete(r);
+    94	      }
+    95	      for (const r of usesOf(m)) live.add(r);
+    96	    }
+    97	  });
+    98	  // the block frequency of each instruction, for the order of the candidates
+    99	  const weight: number[] = [];
+   100	  let w = 1;
+   101	  for (const m of code) {
+   102	    if (m.op === 'label' && fr) {
+   103	      if (m.name === 'exit') w = 1;
+   104	      else if (fr.block.has(m.name!)) w = fr.block.get(m.name!)!;
+   105	    }
+   106	    weight.push(w);
+   107	  }
+   108	  const candidates = code
+   109	    .map((m, i) => ({ m, i }))
+   110	    .filter(({ m }) => isCopy(m) && cls(m.rd!) === cls(m.rs1!))
+   111	    .sort((a, b) => weight[b.i] - weight[a.i] || a.i - b.i);
+   112	  // union-find; the representative keeps the union of its members' edges (by member id)
+3: * runs per call is estimated from the control flow alone, with the loop-branch heuristics of static branch
+171: * The estimated instructions one call executes: each finished instruction weighs the frequency of the IR block
+33:  if (cached !== undefined) return cached;
+79:    if (cached !== undefined) return cached;
+198:    if (h === undefined) HASH.set(value, (h = sha256(canonical(value))));
+224:  if (h === undefined) m.set(key, (h = hashIt()));
+242:  const seen = cacheable ? VALIDATED.get(validator) : undefined;
+
+web search: https://llvm.org/docs/LoopTerminology.html
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*)
+python3 - \""'$ticket/design-doc/01-composable-transformations-and-independent-evidence.md" <<'"'PY'
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1])
+s = p.read_text()
+changes = {
+    \"Put eligibility, candidate construction, validation, and commit on one execution path. Make semantic obligations, entity lineage, and performance observations independently queryable.\":
+        \"Put eligibility, candidate construction, validation, and commit on one execution path. Make semantic obligations, entity lineage, and performance observations independently queryable. Use an optional compiler standard library for algorithms over common mathematical representations, with domain-supplied adapters and semantics.\",
+    \"Keep the forward/backward worklist, meet/join interface, boundary facts, and declared read-set transfer for CFG problems.\":
+        \"Keep the forward/backward worklist, lattice interface, boundary facts, and declared read-set transfer for CFG problems. The pure solver and abstract domains belong in the library. The framework owns the revision and checked transfer protocol used to lift them.\",
+    \"Add reusable graph analyses, sparse/worklist services where a second client exists, and a sibling dependence provider.\":
+        \"Use separate library algorithms for CFGs, sparse value facts, and affine dependence, each with a versioned framework analysis wrapper where the caller needs cached guarantees.\",
+    \"Keep fixed-point iteration, dependency graphs, and reusable abstract domains in the framework. A CFG provider supplies\":
+        \"Put fixed-point iteration, CFG algorithms, and reusable abstract domains in the standard library. Keep artifact dependency tracking and analysis validity in the framework. A CFG provider supplies\",
+    \"For GPU-only evidence, make batch execution an explicit alternative to providing synchronous per-case callbacks.\":
+        \"For GPU-only evidence, make batch execution an explicit alternative to providing synchronous per-case callbacks. The standard library supplies case recipes and verifier methods. The framework binds their results to obligations and versioned dependencies.\",
+    \"D1 can keep its "'`covers` metadata and synthetic instruction buckets while sharing the reconciliation.":
+        "D1 can keep its `covers` metadata and synthetic instruction buckets while using library reconciliation over framework-validated lineage.",
+    "The smallest useful interface returns a precise dependence or a reason for refusal on pointwise and two-dimensional affine examples.":
+        "The smallest useful library interface returns a precise dependence or a reason for refusal on pointwise and two-dimensional affine examples. A framework analysis binds the result to its input revision.",
+    "This is schedule-space search/autotuning under constraints.":
+        "This is schedule-space search/autotuning under constraints. Strategy owns the semantics of choice. The library supplies cost estimation and empirical comparison, while the target owns cost features and dispatch guards.",
+    "SSA prunes phi placement with live-in facts":
+        "The SSA constructor can use live-in facts for pruned placement",
+    "and the separate RV32 machine liveness loop. Keep instruction uses/defs":
+        "and the separate machine liveness loops in allocation and coalescing. Keep instruction uses/defs",
+    "`src/typed/backend/regalloc.ts:85`, `B1-A/src/typed/specialize-memory.ts:57`.":
+        "`src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:32`, `B1-A/src/typed/specialize-memory.ts:57`.",
+    "`src/typed/passes.ts:447`, `src/typed/passes.ts:516`, `src/typed/passes.ts:525`":
+        "`src/typed/passes.ts:480`, `src/typed/passes.ts:516`, `src/typed/passes.ts:525`",
+    "`intervals(layout, liveness, defUse, clobberPoints)` and `interferes(intervals, constraints)`.":
+        "`intervals(layout, liveOut, defUse, clobberPoints)` and `interference(liveAt, defs, excludedPairs)`.",
+    "Replace common interval construction used by Typed'"'s allocator and coalescing path. Preserve machine CFG recovery, reserved registers, register classes and spill decisions. Consume the library's liveness result.\":
+        \"Extract the allocator's interval construction and the coalescer's interference-graph traversal. Both consume library liveness. Keep machine CFG recovery, register constraints, spill decisions and the semantic copy exceptions with the backend.\",
+    \""'`src/typed/backend/regalloc.ts:233`, `src/typed/backend/coalesce.ts:27`.":
+        "`src/typed/backend/regalloc.ts:233`, `src/typed/backend/coalesce.ts:58`, `src/typed/backend/coalesce.ts:84`.",
+    "Graph and dependence providers compute facts. Policy defines admissible evidence.":
+        "The standard library computes graph and dependence facts and measurement summaries. Policy defines admissible evidence.",
+    "| 5 | Extract one CFG provider (including multi-latch natural loops) and a small memoized specializer.":
+        "| 5 | Extract library CFG/dominance and liveness, with a machine-liveness parity fixture, then a small memoized specializer.",
+    "| 6 | Expose Tix access-dependence facts for pointwise fusion, then ordered contraction on a single supported subset.":
+        "| 6 | Extract exact affine arithmetic and expose library dependence facts for pointwise fusion, then ordered contraction on a single supported subset.",
+    "| 7 | Run a constrained choice over two Tix variants and one Typed pipeline pair.":
+        "| 7 | Use the library measurement summaries to run a constrained choice over two Tix variants and one Typed pipeline pair.",
+    "Measure analysis cost, refusals and missed valid fusions, correspondence fidelity, generated-source size and GB10 performance.":
+        "Measure analysis cost, refusals and missed valid fusions, correspondence fidelity, generated-source size and GB10 performance. Retain P7'"'s near-limit affine cases alongside ordinary shapes.\"
+}
+for old, new in changes.items():
+    assert old in s, old
+    s = s.replace(old, new, 1)
+anchor = \"An extraction succeeds when it removes duplicated mechanism\"
+assert s.count(anchor) == 1
+s = s.replace(anchor, \"\"\"Two compositions illustrate where integration ends. Typed lowers a revision to a CFG and use/def view, runs library liveness, then uses that fact in SSA or live-interval analysis. A coalescing pass applies its own copy exceptions and submits a candidate receipt. Tix projects affine regions, obtains dependence and fold-order evidence from the library, then constructs its own schedule candidate and declares the relevant obligations. CUDA execution can supply additional observations through the framework. Both clients can use the same validation and publication protocol. "'`src/typed/analyses.ts:296`, `src/typed/ssa.ts:60`, `src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:58`, `src/tensor/fusion.ts:83`, `src/tensor/cuda-contract.ts:169`.
+
+""" + anchor)
+s = s.replace("## Open questions'"\\n\", \"\"\"The narrow first extractions in the library can proceed independently of a new transformation API. Run their current consumers through their public entry points and compare results. Route the library's validation and attribution through shared receipts once that lifecycle exists.
+
+## Open questions
+\"\"\")
+p.write_text(s)
+PY
+python3 \""'$ticket/scripts/08-check-evidence.py" && git diff --check' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 826ms:
+578 full line anchors and local document links resolve across 31 frozen heads
+
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*)
+python3 - \""'$ticket/design-doc/01-composable-transformations-and-independent-evidence.md" "$ticket/index.md" <<'"'PY'
+from pathlib import Path
+import sys
+
+doc, index = (Path(arg) for arg in sys.argv[1:])
+s = doc.read_text()
+s = s.replace(\"correspondence and obligation schemas, effect capabilities\", \"correspondence, rule-witness and obligation schemas, effect capabilities\", 1)
+s = s.replace(\"**Liveness and reaching definitions.** "'`live(cfg, blockUseDef, exitLive)`, `reaching(cfg, genKill, entryDefs)`, plus statement-position queries from explicit instruction order.", "**Use-def indexing, liveness and reaching definitions.** `indexUses(occurrences, resolveDefinition)`, `live(cfg, blockUseDef, exitLive)`, `reaching(cfg, genKill, entryDefs)`, plus statement-position queries from explicit instruction order.", 1)
+s = s.replace("Backward and forward may-dataflow with gen/kill transfer. Exit liveness", "Use-def chains and backward and forward may-dataflow with gen/kill transfer. Index distinct occurrences separately and allow unresolved reaching definitions until analysis supplies them. Exit liveness", 1)
+s = s.replace("P7 validates one machine fixture. `src/typed/analyses.ts:285`", "Tix inline can query an occurrence index for the single-use condition. P7 validates one machine fixture. `src/tensor/passes.ts:31`, `src/typed/analyses.ts:285`", 1)
+s = s.replace("Tix single-use or repeated-expression detection is a second-domain trial using affine access keys and explicit occurrence semantics.", "Tix repeated-expression detection is a second-domain trial using affine access keys and explicit occurrence semantics.", 1)
+doc.write_text(s)
+s = index.read_text()
+s = s.replace("- [Cell evidence and historical records]", "- [Proposed compiler standard library](design-doc/01-composable-transformations-and-independent-evidence.md#the-proposed-standard-library-its-layering-criteria-and-its-primitives)'"\\n- [Cell evidence and historical records]\")
+index.write_text(s)
+PY
+cat >> \""'$ticket/log/01-research-diary.md" <<'"'EOF'
+
+## 4. Separate the compiler standard library from the execution framework
+
+The coordinator's follow-up asks where portable compiler algorithms belong. I extended the design at "'`b84ad23` and revised the original recommendations about dataflow, scheduling, evidence and measurement. The proposed library owns algorithms specified over ordinary graphs, values or observations. Revision semantics, acceptance, publication and strategy execution remain framework protocols. Domains supply the language and target meaning.
+
+<details>
+<summary>Authored follow-up</summary>
+
+One more question for IRWB-038-A, from the coordinator, at the user'"'s request. The other reviewers received it during their first turn. Continue in the same worktree and ticket, extend your design document, keep your diary, and commit.
+
+**A standard library of compiler building blocks.** Some reusable parts do not belong in the framework's generic core but are still common to many compilers and analyses. Examples: dominators and natural loops, SSA construction, liveness and other lattices, value numbering, affine expressions and dependence tests, binding-time analysis and a partial-evaluation core, exact f32 arithmetic, rule verifiers, case generators, instruction attribution, edit classification, and cost and timing measurement, plus others the material shows.
+
+Propose a standard library of such primitives, so the project starts building a clean, composable, reusable set of them. Cover:
+- what belongs in the generic core, what in the standard library, what stays in a domain, and the criteria that decide it;
+- for each primitive: its interface, the theory it implements, the existing code (in either domain or any cell) it would replace, and how it composes with other primitives and with the framework.
+
+Add it to the design document as \"the proposed standard library: its layering criteria and its primitives\", and revise the rest where this changes your conclusions.
+
+Final message: the same list as before (ticket and document paths, five findings, framework concepts, fundamental changes, last commit), plus \"the standard-library primitives you propose, one line each\".
+
+</details>
+
+### Observations and decisions
+
+- The fixed-point solver can already run on a plain graph. A new probe assembled the RV32 CFG from a four-block machine diamond and supplied machine definitions and uses to the existing solver. The four live-out sets matched the backend's loop. The allocator and coalescer have separate liveness loops. This gives the extraction two machine clients alongside source-level liveness. "'`scripts/10-standard-library-boundaries.mjs`, `src/framework/dataflow/solver.ts:90`, `src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:32`, `src/typed/analyses.ts:296`.
+- The two-entry CFG produced a DFS retreating target and no natural loop. This keeps DFS, SCCs and dominance as separate outputs with different clients. `scripts/10-standard-library-boundaries.mjs`, `src/framework/dataflow/solver.ts:64`, `src/typed/analyses.ts:215`.
+- The binary32 fixture had a deliberate semantic difference. Typed returned the finite operand for `max(NaN, 7)` while Tix propagated NaN. Both preserved the same sign of zero for the tested max. Common conversion, classification and explicitly named arithmetic are useful. Canonical operations and comparison policy must stay visible in the client. `scripts/10-standard-library-boundaries.mjs`, `src/typed/f32.ts:40`, `src/tensor/evaluate.ts:19`, `src/tensor/evaluate.ts:79`.
+- The direct affine arithmetic fixture uncovered rounding even when the final integer is safe. The addition test used a scaled coefficient with an unrepresentable intermediate. The evaluation test used cancellation. This supports exact intermediate arithmetic in the library interface. The probe does not establish a difference on an accepted corpus input. `scripts/10-standard-library-boundaries.mjs`, `src/tensor/model.ts:8`, `src/tensor/model.ts:25`.
+- The design now gives the solver, liveness, dominators, SSA and other algorithms explicit library interfaces. I also kept observation collection, policy thresholds and domain legality with their owners. The initial extractions need parity on actual fixtures. Broader scheduling and specialization reuse remain conditional on a useful second client.
+
+### Verification
+
+Run `node --experimental-transform-types scripts/10-standard-library-boundaries.mjs` from this ticket directory and `python3 scripts/08-check-evidence.py` for the citation checks. P7 uses the merged CPU implementations and direct helper calls. No GPU timing or entire-corpus extrapolation follows from these runs.
+EOF
+docmgr meta update --doc "$ticket/design-doc/01-composable-transformations-and-independent-evidence.md" --field Summary --value '"'Framework and compiler standard library design after Typed, Tix and 31 comparison cells, with reproducible probes and a migration.'
+docmgr changelog update --ticket IRWB-038-A --entry 'Defined the compiler standard library boundary, specified twenty reusable primitives, and probed numeric and graph-analysis seams.'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 1095ms:
+updated Summary in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/changelog.md
+
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*)
+for probe in \""'$ticket"/scripts/0{3,4,5,6,7,9}-*.mjs "$ticket"/scripts/10-*.mjs; do
+  node --experimental-transform-types "$probe" || exit
+done' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*)
+python3 \""'$ticket/scripts/08-check-evidence.py" &&
+git diff --check &&
+git status --short --branch
+rg -n '"'"'^## |''^### '"' \""'$ticket/design-doc/01-composable-transformations-and-independent-evidence.md" | tail -16
+rg -c '"'"'^'"\\| \\*\\*.*\\*\\*.*\\"'`'"' \""'$ticket/design-doc/01-composable-transformations-and-independent-evidence.md"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 1241ms:
+579 full line anchors and local document links resolve across 31 frozen heads
+## r3-sm/irwb-038-a
+ M ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/changelog.md
+ M ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md
+ M ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/index.md
+ M ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/log/01-research-diary.md
+ M ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/tasks.md
+?? ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/scripts/10-standard-library-boundaries.mjs
+92:### 1. Typed transformations with preconditions and receipts
+112:### 2. Translation-validation obligations and independently keyed observations
+129:### 3. Witnessed edits and guarded local rewriting
+142:### 4. Scoped lineage and additive execution attribution
+154:### 5. Graph analysis providers and binding-time specialization
+169:### 6. Dependence relations and validated schedules
+182:### 7. Constrained variant selection and measurement
+194:## The proposed standard library: its layering criteria and its primitives
+198:### Layering criteria
+214:### Graph and value analysis primitives
+227:### Iteration spaces, specialization, and numerical semantics
+238:### Validation, observation, and cost primitives
+249:### Adoption and limits
+255:## Root changes and alternatives
+281:## Ordered migration and decision gates
+299:## Open questions
+29
+
+ succeeded in 6010ms:
+inline: real Tix gate accepted; no rebuild; injected gate rejects; async apply has no gate
+inline correspondence: [{"relation":"retained","from":["f"],"to":["f"]},{"relation":"retained","from":["f/x"],"to":["f/x"]},{"relation":"removed","from":["f/y"],"to":[]},{"relation":"retained","from":["f/z"],"to":["f/z"]}]
+native pass with explicit store: ir.unpublished; base stays head
+identical cases, aliased baseline key: agree with reuse, disagree without reuse
+unclassified evidence: checked-exact
+(node:390) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+stock strategy fork/chooseBest with native Tix callbacks: inline chosen
+t6-fa-irwb-033-e: rejected chooseBest
+t6-ds-x-irwb-033-h: rejected chooseBest
+Typed: {"loops":1,"latches":2,"initial":248,"final":130,"licmDelta":-36}
+(node:397) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+T6-D: both runners reject a reordered reduction before invoking the kernel
+T6-D: post-check rejects the wrong reduction even when eligibility succeeds
+(node:404) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+injected executor received both forced sides; the relation is exact over the sampled outputs
+cross-IR correspondence: valid-ID wrong mapping accepted, unknown source ID rejected
+(node:411) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+same constprop event: A0-A says other; A0-G says local/fact
+one residual variant: B1-A refuses and preserves revision and assumptions; B1-G keeps a checked fallback
+(node:418) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+pass rejected its false preservation claim after the contract published an accepted execution and candidate fact
+deferred contract verification kept the same candidate fact private and permitted rollback
+(node:425) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+binary32 max: Typed RV32F returns 7 for (NaN, 7); Tix propagates NaN; both return +0 for (-0, +0)
+direct Tix affine helpers: rounded intermediates change safe final integers (outside the tested corpus)
+two-entry cycle: DFS names a retreating target; dominance finds no natural loop
+machine diamond: generic backward solver and native register liveness agree on all four live-out sets
+(node:432) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+exec
+/usr/bin/zsh -lc 'ticket=$(printf '"'%s' ttmp/2026/11/27/IRWB-038-A--*)
+docmgr task check --ticket IRWB-038-A --id ceur &&
+docmgr doctor --ticket IRWB-038-A --stale-after 30 --fail-on warning &&
+git diff --check &&
+awk '/"'^### Graph and value analysis primitives/{body=1} /''^### Adoption and limits/{body=0} body && /''^'"\\| \\*\\*/{n++} END{print n, \"proposed primitives\"; exit n"'!=20}'"' \""'$ticket/design-doc/01-composable-transformations-and-independent-evidence.md"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 1889ms:
+Task checked: ceur (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-038-A
+## Doctor Report (1 findings)
+
+### IRWB-038-A
+
+- ✅ All checks passed
+
+20 proposed primitives
+
+exec
+/usr/bin/zsh -lc "git add -- ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix && git diff --cached --check && git commit -m 'IRWB-038-A: specify the compiler standard library boundary'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 676ms:
+[r3-sm/irwb-038-a 59c16e0] IRWB-038-A: specify the compiler standard library boundary
+ 6 files changed, 187 insertions(+), 13 deletions(-)
+ create mode 100644 ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/scripts/10-standard-library-boundaries.mjs
+
+exec
+/usr/bin/zsh -lc "git status --short --branch && git log -1 --format='%H %s' && git diff-tree --no-commit-id --name-only -r HEAD" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a
+ succeeded in 1071ms:
+## r3-sm/irwb-038-a
+59c16e0e5e7c52c2a50ab51e27519ea319ace302 IRWB-038-A: specify the compiler standard library boundary
+ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/changelog.md
+ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md
+ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/index.md
+ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/log/01-research-diary.md
+ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/scripts/10-standard-library-boundaries.mjs
+ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/tasks.md
+
+codex
+Extended [IRWB-038-A](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/index.md) with [the proposed standard library](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md:194) and updated the [research diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/log/01-research-diary.md). Each primitive has an interface sketch, theoretical basis, replacement sites, and composition examples.
+
+## Five findings
+
+1. **Acceptance can split.** The contract manager exposed an accepted candidate fact before the enclosing pass rejected a false preservation claim. [Acceptance probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md:88)
+2. **All ten T6 cells still consult `planFusion`.** The schedule IR exposes decisions, while the old planner continues to supply some of them. [T6 comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/analysis/01-cell-evidence.md:30)
+3. **A0 and D1 reconstruct information the producer could record.** Two classifiers assigned different categories to the same constant-propagation edit. [Cell policy probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md:87)
+4. **B1 repeats residual-state exploration.** The cells share memoization and worklist machinery, while their budget policies can refuse a candidate or retain a checked fallback. [B1 comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/analysis/01-cell-evidence.md:75)
+5. **Reuse works when semantics are explicit.** The shared solver matched machine liveness on a four-block diamond, Typed and Tix differed on `max(NaN, 7)`, and synthetic affine cases exposed intermediate rounding despite safe final integers. [Library boundary probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/scripts/10-standard-library-boundaries.mjs)
+
+## Framework concepts
+
+- Typed transformations with eligibility, candidate preparation, and atomic publication.
+- Translation-validation obligations with explicit assurance, coverage, and cache dependencies.
+- Witnessed edits with versioned rule applications and explicit entry changes.
+- Scoped cross-IR lineage and revision-addressed observations.
+- Versioned analysis registration and checked fact transfer.
+- Schedule transformations with independent dependence and order obligations.
+- Strategy-controlled selection with explicit guards, fallbacks, and measurement evidence.
+
+## Standard-library primitives
+
+- Graph traversal and strongly connected components.
+- Dominators, dominance frontiers, and natural loops.
+- Lattice constructors and fixed-point solving.
+- Use-def indexing, liveness, and reaching definitions.
+- SSA construction and checking.
+- Sparse conditional constant propagation.
+- Local value numbering and common-subexpression candidates.
+- Live intervals and interference graphs.
+- Exact affine expressions.
+- Affine dependence and schedule tests.
+- Binding-time analysis.
+- Polyvariant partial evaluation.
+- Fixed-width bit-vector arithmetic.
+- Bit-exact binary32 primitives with explicit operation semantics.
+- Guarded rule verification and application checking.
+- Reproducible case generation.
+- Additive execution attribution.
+- Edit classification and census.
+- Static cost estimation.
+- Benchmark design and paired measurement summaries.
+
+**Fundamental recommendation.** Keep one transformation lifecycle and one strategy interpreter. The framework owns revision identity, obligations, and publication. The optional standard library owns reusable algorithms, including the pure dataflow solver. Domains own language semantics, target behavior, and policy. Start with graph analysis, liveness, and binary32 conversion and classification, where existing clients give concrete parity tests.
+
+All seven CPU probes and docmgr validation passed. The affine probe exercised direct helpers on synthetic inputs. GPU findings still come from the supplied stage reports. The worktree is clean, and the commit is local.
+
+**Last commit** `59c16e0e5e7c52c2a50ab51e27519ace302`
+tokens used
+404,037
+Extended [IRWB-038-A](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/index.md) with [the proposed standard library](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md:194) and updated the [research diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/log/01-research-diary.md). Each primitive has an interface sketch, theoretical basis, replacement sites, and composition examples.
+
+## Five findings
+
+1. **Acceptance can split.** The contract manager exposed an accepted candidate fact before the enclosing pass rejected a false preservation claim. [Acceptance probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md:88)
+2. **All ten T6 cells still consult `planFusion`.** The schedule IR exposes decisions, while the old planner continues to supply some of them. [T6 comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/analysis/01-cell-evidence.md:30)
+3. **A0 and D1 reconstruct information the producer could record.** Two classifiers assigned different categories to the same constant-propagation edit. [Cell policy probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/design-doc/01-composable-transformations-and-independent-evidence.md:87)
+4. **B1 repeats residual-state exploration.** The cells share memoization and worklist machinery, while their budget policies can refuse a candidate or retain a checked fallback. [B1 comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/analysis/01-cell-evidence.md:75)
+5. **Reuse works when semantics are explicit.** The shared solver matched machine liveness on a four-block diamond, Typed and Tix differed on `max(NaN, 7)`, and synthetic affine cases exposed intermediate rounding despite safe final integers. [Library boundary probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-sm-irwb-038-a/ttmp/2026/11/27/IRWB-038-A--framework-structure-after-typed-and-tix/scripts/10-standard-library-boundaries.mjs)
+
+## Framework concepts
+
+- Typed transformations with eligibility, candidate preparation, and atomic publication.
+- Translation-validation obligations with explicit assurance, coverage, and cache dependencies.
+- Witnessed edits with versioned rule applications and explicit entry changes.
+- Scoped cross-IR lineage and revision-addressed observations.
+- Versioned analysis registration and checked fact transfer.
+- Schedule transformations with independent dependence and order obligations.
+- Strategy-controlled selection with explicit guards, fallbacks, and measurement evidence.
+
+## Standard-library primitives
+
+- Graph traversal and strongly connected components.
+- Dominators, dominance frontiers, and natural loops.
+- Lattice constructors and fixed-point solving.
+- Use-def indexing, liveness, and reaching definitions.
+- SSA construction and checking.
+- Sparse conditional constant propagation.
+- Local value numbering and common-subexpression candidates.
+- Live intervals and interference graphs.
+- Exact affine expressions.
+- Affine dependence and schedule tests.
+- Binding-time analysis.
+- Polyvariant partial evaluation.
+- Fixed-width bit-vector arithmetic.
+- Bit-exact binary32 primitives with explicit operation semantics.
+- Guarded rule verification and application checking.
+- Reproducible case generation.
+- Additive execution attribution.
+- Edit classification and census.
+- Static cost estimation.
+- Benchmark design and paired measurement summaries.
+
+**Fundamental recommendation.** Keep one transformation lifecycle and one strategy interpreter. The framework owns revision identity, obligations, and publication. The optional standard library owns reusable algorithms, including the pure dataflow solver. Domains own language semantics, target behavior, and policy. Start with graph analysis, liveness, and binary32 conversion and classification, where existing clients give concrete parity tests.
+
+All seven CPU probes and docmgr validation passed. The affine probe exercised direct helpers on synthetic inputs. GPU findings still come from the supplied stage reports. The worktree is clean, and the commit is local.
+
+**Last commit** `59c16e0e5e7c52c2a50ab51e27519ace302`

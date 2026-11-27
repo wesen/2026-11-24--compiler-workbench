@@ -1,0 +1,2182 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+model: gpt-6.2-astra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a21e24-8694-7aa1-b72a-554843ff2a62
+--------
+user
+One more question for IRWB-038-B, from the coordinator, at the user's request. The other reviewers received it during their first turn. Continue in the same worktree and ticket, extend your design document, keep your diary, and commit.
+
+**A standard library of compiler building blocks.** Some reusable parts do not belong in the framework's generic core but are still common to many compilers and analyses. Examples: dominators and natural loops, SSA construction, liveness and other lattices, value numbering, affine expressions and dependence tests, binding-time analysis and a partial-evaluation core, exact f32 arithmetic, rule verifiers, case generators, instruction attribution, edit classification, and cost and timing measurement, plus others the material shows.
+
+Propose a standard library of such primitives, so the project starts building a clean, composable, reusable set of them. Cover:
+- what belongs in the generic core, what in the standard library, what stays in a domain, and the criteria that decide it;
+- for each primitive: its interface, the theory it implements, the existing code (in either domain or any cell) it would replace, and how it composes with other primitives and with the framework.
+
+Add it to the design document as "the proposed standard library: its layering criteria and its primitives", and revise the rest where this changes your conclusions.
+
+Final message: the same list as before (ticket and document paths, five findings, framework concepts, fundamental changes, last commit), plus "the standard-library primitives you propose, one line each".
+codex
+I’ll use the docmgr and diary skills to extend IRWB-038-B. I’ll trace each proposed primitive to a concrete implementation and revise the earlier recommendations wherever the standard-library boundary changes ownership.
+exec
+/usr/bin/zsh -c "rg --files src/{framework,typed,tensor} | rg 'ssa|sccp|analys|dataflow|float|f32|rule|case|strateg|cost|tim|fusion|model|affine|attribut|frame|number|bench|effect'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+exec
+/usr/bin/zsh -c "pwd; git status --short --branch; git log -1 --oneline; ls ttmp/2026/11/27/IRWB-038-B*/{design-doc,log,scripts}; rg -n '"'^#|''^'"\\| [1-8] ' ttmp/2026/11/27/IRWB-038-B*/design-doc/*.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1505ms:
+src/tensor/fusion.ts
+src/tensor/model.ts
+src/tensor/cuda-runtime.ts
+src/typed/analyses.ts
+src/typed/f32.ts
+src/typed/strategies.ts
+src/typed/sccp.ts
+src/typed/cases-strong.ts
+src/typed/ssa.ts
+src/typed/strategy.ts
+src/typed/model.ts
+src/typed/rules/form.ts
+src/typed/rules/semantics.ts
+src/typed/rules/candidates.ts
+src/typed/rules/fold.ts
+src/typed/rules/handwritten.ts
+src/typed/rules/listing.ts
+src/typed/rules/verify.ts
+src/typed/rules/passes.ts
+src/typed/rules/evidence.ts
+src/typed/rules/simplify.ts
+src/typed/rules/compile.ts
+src/typed/attribute.ts
+src/framework/passes/bridge.ts
+src/framework/passes/index.ts
+src/framework/passes/define-pass.ts
+src/framework/dataflow/analysis.ts
+src/framework/dataflow/solver.ts
+src/framework/dataflow/index.ts
+src/framework/dataflow/lattices.ts
+src/framework/contracts/registry.ts
+src/framework/contracts/definitions.ts
+src/framework/contracts/differential.ts
+src/framework/contracts/index.ts
+src/framework/contracts/README.md
+src/framework/contracts/effects.ts
+src/framework/contracts/analysis-manager.ts
+src/framework/contracts/types.ts
+src/framework/core/sha256.ts
+src/framework/core/data.ts
+src/framework/core/index.ts
+src/framework/core/records.ts
+src/framework/core/query.ts
+src/framework/core/runtime.ts
+src/framework/core/types.ts
+src/framework/ir/correspondence.ts
+src/framework/ir/diff.ts
+src/framework/ir/patterns.ts
+src/framework/ir/PATTERNS-AND-REWRITES.md
+src/framework/ir/store.ts
+src/framework/ir/adapters.ts
+src/framework/ir/readers.ts
+src/framework/ir/view.ts
+src/framework/ir/index.ts
+src/framework/ir/README.md
+src/framework/ir/common.ts
+src/framework/ir/traversal.ts
+src/framework/ir/transactions.ts
+src/framework/ir/types.ts
+src/framework/ir/rewrites.ts
+src/framework/strategy/registry.ts
+src/framework/strategy/ir.ts
+src/framework/strategy/validation.ts
+src/framework/strategy/builders.ts
+src/framework/strategy/index.ts
+src/framework/strategy/README.md
+src/framework/strategy/serialization.ts
+src/framework/strategy/interpreter.ts
+src/framework/strategy/editing.ts
+
+ succeeded in 1520ms:
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+## r3-am/irwb-038-b
+db8c6fb IRWB-038-B: design a single publication boundary for checked transformations
+ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc:
+01-what-a-checked-compiler-transformation-should-return.md
+
+ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/log:
+01-diary.md
+
+ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts:
+01-pass-boundary.mjs
+02-binding-times.mjs
+03-merged-fixtures.sh
+04-cell-survey.py
+05-reduction-order.mjs
+06-rewrite-scope.mjs
+07-checked-choice.mjs
+29:# What a checked compiler transformation should return
+31:## Decision
+39:## What the comparison changes
+41:### A pass is currently too small to carry its own experiment
+49:### The entity universe is part of the type of a correspondence
+61:### Binding time is two problems with different termination conditions
+67:### A schedule needs an independent statement of legality
+75:### A comparison relation has no intrinsic assurance level
+81:### Who owns publication matters even in a single process
+85:## Layer-by-layer decision
+98:## Proposed concepts and their smallest instances
+102:### 1. Partial transformation with a single publication boundary
+118:### 2. Revision-scoped provenance relations and rewrite witnesses
+134:### 3. Translation-validation judgments with explicit scope and method
+151:### 4. Demand-driven analysis queries with explicit dependency projections
+165:### 5. Polyvariant specialization with memoized residual control points
+179:### 6. Affine schedule relations with validity dependences
+196:## How this revises the earlier research program
+208:## Alternatives and rejection criteria
+220:## Migration with decision points
+226:| 1 | Give native candidate inspection a private view. Publish only after the pass finishes its required validations. Start with one input and one fresh output ID. | The use of the caller's live IRStore for preparing the candidate. | Reuse the two cases in `scripts/01-pass-boundary.mjs:58`. After rejection both store heads and history of accepted outputs must be unchanged. Add a concurrent stale-head test and a retry. Preserve diagnostic access to the rejected candidate. |
+227:| 2 | Introduce explicit acceptance mode, reference semantics, method and quantified scope in results. Wrap Tix exact and tolerance gates first, then the CUDA batch. | The default-to-exact inference and the CUDA scalar stub on the batch-only path. | Unknown method → unknown assurance. Split stays rejected under immediate exact and accepted only on the chosen tolerance cases. Inject a failing executor and distinguish unavailable from refuted. Compare per-function/per-arm coverage, including empty shapes and all-inconclusive runs. `scripts/01-pass-boundary.mjs:17`, `src/tensor/cuda-contract.ts:153`, `src/framework/contracts/differential.ts:291`. |
+228:| 3 | Add named projection and coverage requirements to one Tix inline and one lowering. Check endpoint sets and entry coverage separately. | Hand wiring of kernel entity lists and implicit same-ID provenance as the entire explanation for inline. | Test two functions, an unused parameter, removal, empty mapping, and a producer merged into two consumers. Trace a statement through inline and lowering. Check that unrelated functions are outside the declared selection and that the projection boundary composes. `scripts/01-pass-boundary.mjs:27`, `src/tensor/cuda-contract.ts:93`, `src/framework/ir/correspondence.ts:158`. |
+229:| 4 | Bind a transformation plus its validation policy as a strategy algorithm. Use one fork of inline/split and choose among accepted arms. Admit an inapplicable arm and an unavailable arm explicitly. | Tix's name-dispatch loop when parity is demonstrated; removes the case for the T6-E/H duplicate operator switches. | For the same inputs compare direct and planned outcomes, revisions, checks, reasons, evidence and origin. Compare synchronous call overhead and end-to-end time. Keep an immediate public entry only where a caller requires it. Preserve different baseline choices for exact and tolerance. `src/tensor/index.ts:32`, `src/framework/passes/bridge.ts:29`, `src/tensor/contract.ts:125`. |
+230:| 5 | Make one Typed table rewrite and one Tix substitution emit witnesses. Add declared structural edit for changing entry. Derive local/fact/structural census and D1 ownership bins as queries. | Per-cell table replay for **new** witnessed edits, heuristics for identifying a new entry, and duplicated joins for revision-to-site observations. | Replay the whole candidate. Mutate a sibling operand, stale premise, target revision and rule fingerprint. Record proof coverage per edit, function and whole application separately. Reproduce both A0 policies and D1 conservation; report ambiguous weight rather than duplicating it at multiple parents. `scripts/06-rewrite-scope.mjs:14`, `tests/typed/attribute.test.mjs:43`, **B1-G** `src/typed/specialize-buffer.ts:293`. |
+231:| 6 | Register two demands: Tix read/axis summaries per function and B1-G's offline division per function and bindings. Port one dependency propagation to the merged solver. | Repeated planner scans and one BTA iteration loop; leave the domain transfer functions in place. | Compare all cells/locals against the old facts at joins, loops and unreachable blocks. Change the bound buffer or a callee without changing the function text. Count transfer visits, cache hit rate, independent recomputations, wall time and peak bytes. Keep a plain scan if query overhead costs more than repeated work. `src/tensor/fusion.ts:97`, `src/typed/parts.ts:13`, **B1-G** `src/typed/bta.ts:91`, `scripts/02-binding-times.mjs:36`. |
+232:| 7 | Extract interning of residual control points from two B1 paths. Keep static operand semantics, alias analysis and guard generation in the domain. | Repeated queues, state-key construction and residual backedge plumbing. | Compare residual programs on the two VM bytecodes with the same inputs, guard and backend profile. Measure instructions, emitted statements/bytes, variants, compilation time and execution of fallback. Force budget exhaustion and ensure no partial publication. Compare joining environments vs splitting by live static data. **B1-B** `src/typed/residualize.ts:61`, **B1-F** `src/typed/pe.ts:224`, **B1-G** `src/typed/specialize-buffer.ts:288`. |
+233:| 8 | Hoist one Tix fusion decision into schedule data. Give the emitter and runner the same manifest of kernels, variants and gates. Introduce a restricted checker for strip-mining and ordered fold, then test a dependence-based implementation. | Replanning inside emission, planner-equality checking as a semantic requirement, and gate discovery from source text. | Check symbolic identity of the covered iteration set and empty set of reversed dependence pairs. Include extents 0,1,T−1,T,T+1, simultaneous tails and transposed accesses. Re-run the extent-17 counterexample. Force every runtime arm, compare CPU reference and GPU output, then compare paired timings over held-out shapes with warm-up and repeated samples. Choose wider polyhedral machinery only if it accepts valuable legal candidates the restricted checker refuses at acceptable compile cost. `src/tensor/cuda-runtime.ts:142`, `src/tensor/cuda-contract.ts:187`, `scripts/05-reduction-order.mjs:15`. |
+237:## Open questions
+246:## Evidence and reproduction
+
+exec
+/usr/bin/zsh -c "rg -n '"'^(export |function |class )'"' src/typed/{analyses,ssa,sccp,f32,strategies,cases-strong}.ts | head -155; rg -n '"'^(export |function )'"' src/tensor/{model,evaluate}.ts |head -85" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+exec
+/usr/bin/zsh -c "rg -n 'median|quantile|warmup|warm.up|cudaEventElapsedTime' src/tensor tools |head -55; rg -n 'lvn|keyOf|isPure|hasEffect' src/typed/passes.ts; ls tests/typed; ls dist/typed; cat src/typed/f32.ts|head -115; cat src/typed/ssa.ts|head -110" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1254ms:
+src/typed/f32.ts:23:export const CANONICAL_NAN = 0x7fc00000;
+src/typed/f32.ts:27:export function fromBits(bits: number): number {
+src/typed/f32.ts:32:export function toBits(x: number): number {
+src/typed/f32.ts:37:export const isNaNBits = (b: number): boolean => (b & 0x7fffffff) > 0x7f800000;
+src/typed/f32.ts:40:function minmax(a: number, b: number, max: boolean): number {
+src/typed/f32.ts:45:function round(a: number, f: (x: number) => number): number {
+src/typed/f32.ts:49:function toInt(a: number, unsigned: boolean): number {
+src/typed/f32.ts:57:export const F32_BINARY: Readonly<Record<string, (a: number, b: number) => number>> = {
+src/typed/f32.ts:67:export const F32_COMPARE: Readonly<Record<string, (a: number, b: number) => number>> = {
+src/typed/f32.ts:76:export const F32_UNARY: Readonly<Record<string, (a: number) => number>> = {
+src/typed/f32.ts:92:export const F32_RESULT = new Set([
+src/typed/f32.ts:111:export const F32_OPERANDS = new Set([
+src/typed/f32.ts:129:export const F32_FOLDABLE = new Set([
+src/typed/f32.ts:142:export function f32Op(op: string, a: number, b?: number): number | undefined {
+src/typed/f32.ts:150:export function formatF32(bits: number): string {
+src/typed/sccp.ts:23:export type Lat =
+src/typed/sccp.ts:31:export const meet = (a: Lat, b: Lat): Lat =>
+src/typed/sccp.ts:37:export interface SccpResult {
+src/typed/sccp.ts:47:export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
+src/typed/sccp.ts:118:function contributing(ssa: SsaFn, res: SccpResult, name: string, f: WorkFn): string[] {
+src/typed/sccp.ts:141:export const sccp: TypedPass = typedPass({
+src/typed/sccp.ts:170:export const SSA_PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({ sccp });
+src/typed/sccp.ts:171:export const SSA_PIPELINES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+src/typed/sccp.ts:175:export const passNamed = (name: string): TypedPass => {
+src/typed/sccp.ts:186:export async function runPasses(
+src/typed/ssa.ts:23:export const VIRTUAL_ENTRY = '^entry';
+src/typed/ssa.ts:25:export interface SsaDef {
+src/typed/ssa.ts:36:export interface SsaPhi {
+src/typed/ssa.ts:42:export interface SsaFn {
+src/typed/ssa.ts:60:export function ssaOf(st: Store, f: WorkFn): SsaFn {
+src/typed/ssa.ts:219:export const ssaAnalysis = defineAnalysis({
+src/typed/ssa.ts:232:export interface SsaView {
+src/typed/ssa.ts:243:export function ssaView(fact: SsaFn): SsaView {
+src/typed/ssa.ts:293:export function deadPhis(fact: SsaFn, live: LiveView): number {
+src/typed/ssa.ts:300:export interface SsaCheck {
+src/typed/ssa.ts:325:export function checkSsa(st: Store, f: WorkFn, fact: SsaFn, reach: ReachView): SsaCheck {
+src/typed/analyses.ts:25:export const MIN = -2147483648,
+src/typed/analyses.ts:29:export function readsOf(st: Store, id: string | undefined, acc = new Set<number>()): Set<number> {
+src/typed/analyses.ts:40:export function hasEffect(st: Store, id: string | undefined): boolean {
+src/typed/analyses.ts:59:export function isPure(st: Store, id: string): boolean {
+src/typed/analyses.ts:65:export const stmtValues = (s: StmtRec): string[] => [s.value, s.cond, s.addr].filter((x): x is string => !!x);
+src/typed/analyses.ts:68:export interface Cfg {
+src/typed/analyses.ts:75:export function cfgOf(f: WorkFn): Cfg {
+src/typed/analyses.ts:100:export const flowGraph = (f: WorkFn): FlowGraph => {
+src/typed/analyses.ts:125:export const cfgAnalysis = defineAnalysis({
+src/typed/analyses.ts:135:export interface Dominators {
+src/typed/analyses.ts:140:export function dominatorsOf(f: WorkFn): Dominators {
+src/typed/analyses.ts:169:export interface DomView {
+src/typed/analyses.ts:174:export function domView(d: Dominators): DomView {
+src/typed/analyses.ts:188:export const dominatorsAnalysis = defineAnalysis({
+src/typed/analyses.ts:198:export interface Loop {
+src/typed/analyses.ts:215:export function loopsOf(st: Store, f: WorkFn): Loop[] {
+src/typed/analyses.ts:258:export const loopsAnalysis = defineAnalysis({
+src/typed/analyses.ts:296:export const livenessAnalysis = dataflow<TypedBlocks, ReadonlySet<number>, FnContext>({
+src/typed/analyses.ts:314:export interface LiveView {
+src/typed/analyses.ts:320:export function liveView(result: DataflowResult, st: Store, fname: string): LiveView {
+src/typed/analyses.ts:352:export const reachingAnalysis = dataflow<TypedBlocks, ReadonlySet<string>, FnContext>({
+src/typed/analyses.ts:370:export interface ReachView {
+src/typed/analyses.ts:375:export function reachView(result: DataflowResult, st: Store, fname: string): ReachView {
+src/typed/analyses.ts:397:export function evalRange(st: Store, id: string, env: Env): [number, number] {
+src/typed/analyses.ts:455:function refine(st: Store, cond: string, env: Env, taken: boolean): Env {
+src/typed/analyses.ts:486:export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
+src/typed/analyses.ts:520:export interface RangeView {
+src/typed/analyses.ts:526:export function rangeView(result: DataflowResult, st: Store, fname: string): RangeView {
+src/typed/analyses.ts:554:export const ANALYSES = {
+src/typed/cases-strong.ts:49:export const F32_EXTRA: readonly number[] = [
+src/typed/cases-strong.ts:66:export function constantsOf(st: Store, f: WorkFn): number[] {
+src/typed/cases-strong.ts:89:function i32Pool(lo: number, hi: number, consts: readonly number[]): number[] {
+src/typed/cases-strong.ts:96:function f32Pool(spec: any): number[] {
+src/typed/cases-strong.ts:118:function cellPatterns(len: number, lo: number, hi: number, consts: readonly number[]): number[][] {
+src/typed/cases-strong.ts:132:function pool(spec: any, type: string, t: Tables, consts: readonly number[]): Entry[] {
+src/typed/cases-strong.ts:193:export function poolSizes(st: Store, fname: string, inputs: FunctionInputs = {}): number[] {
+src/typed/cases-strong.ts:214:export function offsetOrdered(st: Store): Store {
+src/typed/cases-strong.ts:233:export function boundaryCases(
+src/typed/cases-strong.ts:253:export function coveredStatements(st: Store, cases: readonly Case[], limit = 2e4): Set<string> {
+src/typed/cases-strong.ts:263:export function blockCoverage(
+src/typed/cases-strong.ts:276:function coverageCases(
+src/typed/cases-strong.ts:306:export interface StrongParams extends MeaningParams {
+src/typed/cases-strong.ts:329:export function strongCasesFrom(
+src/typed/cases-strong.ts:369:export function meaningKeptStrong(
+src/typed/cases-strong.ts:468:export function strongOptimizationContract(params: StrongParams = {}): TransformationDefinition<any, any> {
+src/typed/strategies.ts:52:export interface MetricsOptions {
+src/typed/strategies.ts:66:export function measure(
+src/typed/strategies.ts:98:export function strategyRegistry(
+src/typed/strategies.ts:166:export function passesNode(id: string, passes: string | readonly string[]): StrategyNode {
+src/typed/strategies.ts:175:export function choosePlan(
+src/typed/strategies.ts:200:export function untilStablePlan(name: string, passes: readonly string[], maxIterations = 8): StrategyPlan {
+src/typed/strategies.ts:208:export const toJson = (p: StrategyPlan, width = TILE_WIDTH) => {
+src/typed/strategies.ts:212:export const fromJson = (text: string, registry?: AlgorithmRegistry) => deserialize(text, registry);
+src/typed/strategies.ts:215:export interface StrategyRun {
+src/typed/strategies.ts:228:export interface StrategyTraceRow {
+src/typed/strategies.ts:249:export function traceRows(records: readonly NodeExecution[]): StrategyTraceRow[] {
+src/typed/strategies.ts:266:export async function runStrategy(
+src/typed/strategies.ts:333:export function searchPlan(
+src/typed/strategies.ts:374:export interface StrategySpec {
+src/typed/strategies.ts:385:export function planFromSpec(name: string, spec: StrategySpec): StrategyPlan {
+src/typed/strategies.ts:402:export const PRESETS: Readonly<Record<string, StrategySpec>> = Object.freeze({
+src/typed/strategies.ts:434:export function presetFiles(width = TILE_WIDTH): Record<string, string> {
+src/typed/strategies.ts:440:export const aboutOf = (spec: StrategySpec) => joinText(spec.about);
+src/typed/strategies.ts:443:export function projectStrategies(files: Readonly<Record<string, string>>): Record<string, StrategyPlan> {
+src/tensor/evaluate.ts:2:export interface BufferValue {
+src/tensor/evaluate.ts:6:export type Inputs = Record<string, BufferValue>;
+src/tensor/evaluate.ts:7:export type Precision = 'f32' | 'f64';
+src/tensor/evaluate.ts:8:export const size = (shape: number[]) => shape.reduce((a, b) => a * b, 1);
+src/tensor/evaluate.ts:22:export class OutsideSample extends Error {}
+src/tensor/evaluate.ts:24:export function evaluate(fn: Fn, inputs: Inputs, precision: Precision, sampling = false): BufferValue {
+src/tensor/model.ts:2:export interface Affine {
+src/tensor/model.ts:6:export const constant = (value: number): Affine => ({ constant: value, terms: [] });
+src/tensor/model.ts:7:export const variable = (name: string): Affine => ({ constant: 0, terms: [[name, 1]] });
+src/tensor/model.ts:8:export function add(a: Affine, b: Affine, scale = 1): Affine {
+src/tensor/model.ts:19:export function substitute(a: Affine, bindings: Map<string, Affine>): Affine {
+src/tensor/model.ts:25:export function value(a: Affine, env: Map<string, number>): number {
+src/tensor/model.ts:28:export function plain(a: Affine): string | undefined {
+src/tensor/model.ts:31:export type Extent =
+src/tensor/model.ts:35:export interface Axis {
+src/tensor/model.ts:39:export type Op = '+' | '-' | '*' | '/' | 'neg' | 'exp' | 'log' | 'sqrt' | 'tanh' | 'max' | 'min';
+src/tensor/model.ts:40:export type Expr =
+src/tensor/model.ts:46:export interface Tensor {
+src/tensor/model.ts:50:export interface Statement extends Tensor {
+src/tensor/model.ts:54:export interface Fn {
+src/tensor/model.ts:61:export interface Module {
+src/tensor/model.ts:64:export const width = 4;
+src/tensor/model.ts:65:export function mapExpr(e: Expr, f: (e: Expr) => Expr): Expr {
+src/tensor/model.ts:70:export function visit(e: Expr, f: (e: Expr) => void) {
+src/tensor/model.ts:76:export function selectFunction(module: Module, name: string): Fn {
+
+ succeeded in 1298ms:
+src/tensor/cuda-source.ts:98:    check(cudaEventElapsedTime(&ms[i], start.handle, stop.handle));
+19:  hasEffect,
+20:  isPure,
+340:      if (s.op === 'set' && !live.liveAfter(s.id).has(s.local!) && !hasEffect(st, s.value!))
+342:      else if (s.op === 'eval' && !hasEffect(st, s.value!)) tx.remove(s.id, { because: ['no effect'] });
+364:      else if (last.then === last.else && isPure(st, last.cond!))
+480:      const keyOf = (id: string): string => {
+482:        return `${v.op}:${v.imm ?? ''}:${v.type ?? ''}(${v.args.map(keyOf).join(',')})`;
+488:          const key = share ? keyOf(id) : id;
+516:export const lvn = typedPass({
+517:  name: 'lvn',
+541:          if (v.op !== 'tuple' && v.args.length && size(id) >= 3 && isPure(st, id)) {
+1012:          !isPure(st, d.value!)
+1056:  lvn,
+1081:    'lvn',
+1104:    'lvn',
+1129:    'lvn',
+1140:  loops: ['cfg', 'simplify', 'licm', 'lvn', 'subst', 'dce', 'cfg'],
+attribute.test.mjs
+audit.test.mjs
+backend.test.mjs
+bcm.test.mjs
+bytecode-vm.test.mjs
+candela.test.mjs
+chess-search.test.mjs
+corpus-expectations.mjs
+dfe.test.mjs
+evaluate-analyses.test.mjs
+f32-backend-fixture.mjs
+f32-backend.test.mjs
+f32-dsp.test.mjs
+f32-fixture.mjs
+f32.test.mjs
+facts-check.test.mjs
+format.test.mjs
+ingest.test.mjs
+inline.test.mjs
+lz-roundtrip.test.mjs
+meaning-memo.test.mjs
+mutate.test.mjs
+parallel.test.mjs
+passes.test.mjs
+program.test.mjs
+project-meta.test.mjs
+reference-check.test.mjs
+regex-nfa.test.mjs
+rules.test.mjs
+sha-chacha.test.mjs
+specialize.test.mjs
+speed.test.mjs
+ssa.test.mjs
+strategies.test.mjs
+tape.test.mjs
+analyses.js
+attribute.js
+backend
+builder.js
+candela-render.js
+cases-strong.js
+evaluate.js
+f32.js
+facts-check.js
+format.js
+ilp32f.js
+inline.js
+ir.js
+lift.js
+listing.js
+meaning-exec.js
+model.js
+mutate.js
+parallel
+parts.js
+passes.js
+program.js
+project.js
+reference.js
+rotate.js
+rules
+sccp.js
+specialize.js
+ssa.js
+strategies.js
+strategy.js
+tx.js
+vendor.js
+/**
+ * f32 semantics on IEEE bit patterns, as the target (RV32F, ESP32-P4) computes them. An f32 value is carried as its
+ * bits in a signed i32: in the evaluator's locals and memory, in constants (`imm`), and in results, so NaN payloads
+ * and the sign of zero are exact and the native tables stay finite JSON.
+ *
+ * The rules are those of the reference compiler (vendor/ds-js-os/compiler/typed/typed-rv32.js, rv32/emit/floats.js)
+ * and of tape.js, checked against the reference interpreter (bench/host/rv32-interp.js):
+ *   - arithmetic (add sub mul div sqrt) and i32→f32 conversion round to nearest even; the compiler names RNE in every
+ *     rounding instruction and never fuses a product and a sum, so one Math.fround of the exact double result is
+ *     the target's result (double rounding is innocuous for + - * / sqrt: 53 ≥ 2·24 + 2);
+ *   - a NaN result of arithmetic is the canonical NaN 0x7fc00000 (RISC-V);
+ *   - neg, abs, copysign change only the sign bit (fsgnjn, fsgnjx, fsgnj), so NaN payloads are kept;
+ *   - min and max (fmin.s, fmax.s): the other operand when one is a NaN, the canonical NaN when both are, -0 < +0;
+ *   - comparisons are false when an operand is a NaN, except ne;
+ *   - to_i32, to_u32 (fcvt.w.s, fcvt.wu.s rtz): toward zero, saturating; NaN gives 2^31 - 1 and 2^32 - 1;
+ *   - floor, ceil, trunc: x itself when |x| ≥ 2^23, x is infinite or a NaN; otherwise the integer in that direction
+ *     with x's sign (floats.js `round`: fcvt.w.s rm, fcvt.s.w rm, fsgnj.s), so ceil(-0.5) is -0.
+ */
+
+const F = new Float32Array(1);
+const I = new Int32Array(F.buffer);
+
+export const CANONICAL_NAN = 0x7fc00000;
+const SIGN = -0x80000000; // 0x80000000 as a signed i32
+
+/** The f32 with these bits, as a number. */
+export function fromBits(bits: number): number {
+  I[0] = bits;
+  return F[0];
+}
+/** The bits of x rounded to f32 (nearest even); a NaN gives the canonical NaN. */
+export function toBits(x: number): number {
+  if (x !== x) return CANONICAL_NAN;
+  F[0] = x;
+  return I[0];
+}
+export const isNaNBits = (b: number): boolean => (b & 0x7fffffff) > 0x7f800000;
+
+const order = (b: number) => (b < 0 ? -(b & 0x7fffffff) - 1 : b);
+function minmax(a: number, b: number, max: boolean): number {
+  if (isNaNBits(a)) return isNaNBits(b) ? CANONICAL_NAN : b;
+  if (isNaNBits(b)) return a;
+  return order(a) < order(b) === max ? b : a;
+}
+function round(a: number, f: (x: number) => number): number {
+  if ((a << 1) >>> 0 >= 0x96000000) return a; // |x| ≥ 2^23, an infinity or a NaN
+  return (toBits(f(fromBits(a))) & 0x7fffffff) | (a & SIGN);
+}
+function toInt(a: number, unsigned: boolean): number {
+  if (isNaNBits(a)) return unsigned ? -1 : 0x7fffffff;
+  const t = Math.trunc(fromBits(a));
+  if (unsigned) return t < 0 ? 0 : t >= 4294967296 ? -1 : t | 0;
+  return t >= 2147483648 ? 0x7fffffff : t < -2147483648 ? -0x80000000 : t | 0;
+}
+
+/** f32 → f32 binary operators. */
+export const F32_BINARY: Readonly<Record<string, (a: number, b: number) => number>> = {
+  fadd: (a, b) => toBits(fromBits(a) + fromBits(b)),
+  fsub: (a, b) => toBits(fromBits(a) - fromBits(b)),
+  fmul: (a, b) => toBits(fromBits(a) * fromBits(b)),
+  fdiv: (a, b) => toBits(fromBits(a) / fromBits(b)),
+  fmin: (a, b) => minmax(a, b, false),
+  fmax: (a, b) => minmax(a, b, true),
+  fcopysign: (a, b) => (a & 0x7fffffff) | (b & SIGN),
+};
+/** f32 × f32 → i32 (0 or 1). */
+export const F32_COMPARE: Readonly<Record<string, (a: number, b: number) => number>> = {
+  feq: (a, b) => +(fromBits(a) === fromBits(b)),
+  fne: (a, b) => +(fromBits(a) !== fromBits(b)),
+  flt: (a, b) => +(fromBits(a) < fromBits(b)),
+  fgt: (a, b) => +(fromBits(a) > fromBits(b)),
+  fle: (a, b) => +(fromBits(a) <= fromBits(b)),
+  fge: (a, b) => +(fromBits(a) >= fromBits(b)),
+};
+/** One-operand operators: f32 → f32, f32 → i32 and i32 → f32. */
+export const F32_UNARY: Readonly<Record<string, (a: number) => number>> = {
+  fneg: a => a ^ SIGN,
+  fabs: a => a & 0x7fffffff,
+  fsqrt: a => toBits(Math.sqrt(fromBits(a))),
+  ffloor: a => round(a, Math.floor),
+  fceil: a => round(a, Math.ceil),
+  ftrunc: a => round(a, Math.trunc),
+  f2i: a => toInt(a, false),
+  f2u: a => toInt(a, true),
+  f2bits: a => a | 0,
+  i2f: a => toBits(a | 0),
+  u2f: a => toBits(a >>> 0),
+  bits2f: a => a | 0,
+};
+
+/** Operators whose result is an f32. */
+export const F32_RESULT = new Set([
+  'fadd',
+  'fsub',
+  'fmul',
+  'fdiv',
+  'fmin',
+  'fmax',
+  'fcopysign',
+  'fneg',
+  'fabs',
+  'fsqrt',
+  'ffloor',
+  'fceil',
+  'ftrunc',
+  'i2f',
+  'u2f',
+  'bits2f',
+]);
+/** Operators whose operands are f32. */
+export const F32_OPERANDS = new Set([
+  ...Object.keys(F32_BINARY),
+  ...Object.keys(F32_COMPARE),
+  'fneg',
+  'fabs',
+/**
+ * A single-assignment view of `typed.blocks` (IRWB-006, agenda item A1): a fact about a revision, not a new IR.
+ *
+ * The construction is Cytron, Ferrante, Rosen, Wegman and Zadeck's: the dominator tree (from `dominatorsOf`),
+ * dominance frontiers (Cooper, Harvey and Kennedy's runner), phis for each local at the iterated frontier of its
+ * `set` statements (minimal SSA: no liveness), and renaming by a preorder walk of the dominator tree with a stack of
+ * names per local. Every local also has a definition at function entry (`param:i` or `init:i`, as in reaching
+ * definitions), placed in a virtual block `^entry` that immediately dominates the real entry and has one edge to it;
+ * so a loop whose header is the entry block gets phis like any other join.
+ *
+ * Names are `<local>.<n>` (a `.` cannot occur in a Typed identifier), numbered per local in the order the walk
+ * creates them, `.0` being the entry definition; a local whose name another local of the function shares is
+ * `<local>#<index>.<n>`. The result maps every SSA name back to what defines it (a `set`
+ * statement and its value tree, an entry definition, or a phi: a block and a local), every `get` value to the name
+ * it reads, and every `set` statement to the name it defines. `checkSsa` validates it against reaching definitions.
+ */
+import { defineAnalysis, defineType } from '../framework/contracts/definitions.js';
+import { canonical } from '../framework/core/data.js';
+import { cfgOf, dominatorsOf, stmtValues, type LiveView, type ReachView } from './analyses.js';
+import { BlocksIR, storeOf } from './ir.js';
+import type { BlockRec, StmtRec, Store, TypedBlocks, ValueRec, WorkFn } from './model.js';
+
+export const VIRTUAL_ENTRY = '^entry';
+
+export interface SsaDef {
+  readonly local: number;
+  readonly kind: 'param' | 'init' | 'set' | 'phi';
+  /** The block of the definition: '^entry' for param and init, the join block for a phi. */
+  readonly block: string;
+  /** kind 'set': the statement and the value tree it assigns. */
+  readonly stmt?: string;
+  readonly value?: string;
+  /** The definition's id in reaching definitions: 'param:i', 'init:i' or the statement id (absent for a phi). */
+  readonly def?: string;
+}
+export interface SsaPhi {
+  readonly name: string;
+  readonly local: number;
+  /** Predecessor block (or '^entry') -> the name that reaches the end of it. */
+  readonly args: Readonly<Record<string, string>>;
+}
+export interface SsaFn {
+  readonly entry: string;
+  readonly names: Readonly<Record<string, SsaDef>>;
+  /** Block -> its phis, ordered by local index. */
+  readonly phis: Readonly<Record<string, readonly SsaPhi[]>>;
+  /** Every `get` value id in a reachable block -> the name it reads. */
+  readonly uses: Readonly<Record<string, string>>;
+  /** Every `set` statement id in a reachable block -> the name it defines. */
+  readonly defs: Readonly<Record<string, string>>;
+  /** Block -> immediate dominator ('^entry' for the entry block). */
+  readonly idom: Readonly<Record<string, string>>;
+  /** Block -> its dominance frontier (blocks in reverse postorder). */
+  readonly frontier: Readonly<Record<string, readonly string[]>>;
+  /** The blocks the dominator tree does not reach (no names, no uses). */
+  readonly unreachable: readonly string[];
+}
+
+/** The SSA form of one function of a working store. */
+export function ssaOf(st: Store, f: WorkFn): SsaFn {
+  const cfg = cfgOf(f),
+    entry = cfg.entry,
+    rpo = cfg.rpo,
+    reachable = new Set(rpo);
+  const position = new Map(rpo.map((b, i) => [b, i]));
+  const d = dominatorsOf(f);
+  const idom = new Map<string, string>();
+  for (const b of rpo) idom.set(b, b === entry ? VIRTUAL_ENTRY : d.idom[b]!);
+  const preds = (b: string): string[] => [
+    ...(b === entry ? [VIRTUAL_ENTRY] : []),
+    ...new Set((cfg.preds[b] ?? []).filter(p => reachable.has(p))),
+  ];
+  const succs = (b: string): string[] => [...new Set((cfg.succ[b] ?? []).filter(s => reachable.has(s)))];
+
+  // dominance frontiers: for each join Y, climb from each predecessor to idom(Y)
+  const df = new Map<string, Set<string>>([[VIRTUAL_ENTRY, new Set()]]);
+  for (const b of rpo) df.set(b, new Set());
+  for (const y of rpo) {
+    const ps = preds(y);
+    if (ps.length < 2) continue;
+    for (const p of ps) {
+      let runner = p;
+      while (runner !== idom.get(y)) {
+        df.get(runner)!.add(y);
+        if (runner === VIRTUAL_ENTRY) break; // only reached if idom(y) is not on the path: cannot happen
+        runner = idom.get(runner)!;
+      }
+    }
+  }
+
+  // phi placement at the iterated frontier of each local's `set` blocks
+  const defBlocks = new Map<number, Set<string>>();
+  for (const b of rpo)
+    for (const sid of (st.get(b) as BlockRec).stmts) {
+      const s = st.get(sid) as StmtRec;
+      if (s.op === 'set') {
+        if (!defBlocks.has(s.local!)) defBlocks.set(s.local!, new Set());
+        defBlocks.get(s.local!)!.add(b);
+      }
+    }
+  const phiLocals = new Map<string, Set<number>>();
+  for (const [l, blocks] of defBlocks) {
+    const work = [...blocks],
+      placed = new Set<string>();
+    while (work.length) {
+      const x = work.pop()!;
+      for (const y of df.get(x)!) {
+        if (placed.has(y)) continue;
+        placed.add(y);
+        if (!phiLocals.has(y)) phiLocals.set(y, new Set());
+
+exec
+/usr/bin/zsh -c "nl -ba src/tensor/evaluate.ts |sed -n '24,120p'; rg -n 'max\\(' tests/tensor/*.mjs |head -12; rg -n 'export |const .*=' src/framework/dataflow/lattices.ts|head -45; rg -n 'key|clear' src/typed/passes.ts |rg '"'^5[2-8]'"'; nl -ba src/tensor/cuda-source.ts|sed -n '79,115p'; nl -ba src/typed/strategies.ts|sed -n '51,96p'; head -45 tests/typed/ssa.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+exec
+/usr/bin/zsh -c "rg -n 'dominat|liveness|liveIn|liveOut|live-in' src/typed/backend|head -45; rg -n 'cost|median|timing' ../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D*/scripts/*.mjs |head -14; rg -n '"'^export|'"\\bmeet\\(' src/typed/sccp.ts|head -21; head -35 src/typed/sccp.ts; sed -n '85,102p;218,240p' ttmp/2026/11/27/IRWB-038*/design-doc/*" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1424ms:
+    24	export function evaluate(fn: Fn, inputs: Inputs, precision: Precision, sampling = false): BufferValue {
+    25	  const ArrayType = precision === 'f32' ? Float32Array : Float64Array;
+    26	  const round = precision === 'f32' ? Math.fround : (x: number) => x;
+    27	  const shapes = new Map<string, number>(),
+    28	    indices = new Map<string, number>(),
+    29	    tensors = new Map<string, BufferValue>();
+    30	  let work = 0;
+    31	  function tick() {
+    32	    if (sampling && ++work > 1e6) throw new OutsideSample('Sample work limit');
+    33	  }
+    34	  for (const p of fn.params) {
+    35	    const input = inputs[p.name];
+    36	    p.shape.forEach((a, i) => {
+    37	      const n = plain(a);
+    38	      if (n) shapes.set(n, input.shape[i]);
+    39	    });
+    40	    tensors.set(p.name, { shape: input.shape, data: ArrayType.from(input.data) });
+    41	  }
+    42	  function loop(axes: Axis[], i: number, body: () => void) {
+    43	    if (i === axes.length) {
+    44	      body();
+    45	      return;
+    46	    }
+    47	    const { id, extent } = axes[i],
+    48	      dim = value(extent.dim, shapes);
+    49	    const n =
+    50	      extent.kind === 'blocks'
+    51	        ? Math[extent.rounding](dim / width)
+    52	        : extent.kind === 'tail'
+    53	          ? Math.min(width, dim - width * indices.get(extent.block)!)
+    54	          : dim;
+    55	    for (let j = 0; j < n; j++) {
+    56	      tick();
+    57	      indices.set(id, j);
+    58	      loop(axes, i + 1, body);
+    59	    }
+    60	  }
+    61	  function scalar(e: Expr): number {
+    62	    tick();
+    63	    switch (e.kind) {
+    64	      case 'literal':
+    65	        return round(Number(e.text));
+    66	      case 'shape':
+    67	        return round(shapes.get(e.name)!);
+    68	      case 'load': {
+    69	        const t = tensors.get(e.name)!;
+    70	        let offset = 0;
+    71	        for (let i = 0; i < e.indices.length; i++) {
+    72	          const ix = value(e.indices[i], indices);
+    73	          if (sampling && (ix < 0 || ix >= t.shape[i]))
+    74	            throw new OutsideSample('Sample outside address domain');
+    75	          offset = offset * t.shape[i] + ix;
+    76	        }
+    77	        return t.data[offset];
+    78	      }
+    79	      case 'op':
+    80	        return round(operations[e.op](scalar(e.args[0]), e.args.length === 2 ? scalar(e.args[1]) : 0));
+    81	      case 'reduce': {
+    82	        let acc = e.op === 'sum' ? 0 : -Infinity;
+    83	        loop(e.axes, 0, () => {
+    84	          const x = scalar(e.body);
+    85	          acc = round(e.op === 'sum' ? acc + x : Math.max(acc, x));
+    86	        });
+    87	        return acc;
+    88	      }
+    89	    }
+    90	  }
+    91	  for (const s of fn.statements) {
+    92	    const shape = s.shape.map(a => value(a, shapes));
+    93	    if (sampling && (shape.some(n => n < 0) || size(shape) > 4096))
+    94	      throw new OutsideSample('Sample shape limit');
+    95	    const data = new ArrayType(size(shape));
+    96	    let offset = 0;
+    97	    loop(s.axes, 0, () => {
+    98	      data[offset++] = scalar(s.expr);
+    99	    });
+   100	    tensors.set(s.name, { shape, data });
+   101	  }
+   102	  return tensors.get(fn.result)!;
+   103	}
+tests/tensor/terms-gpu.test.mjs:14:    m[i] = max(j) x[i,j];
+tests/tensor/terms-gpu.test.mjs:20:    s[i] = (sum(j) x[i,j] / C) + max(j) sqrt(x[i,j] * x[i,j]);
+tests/tensor/terms-gpu.test.mjs:31:    y[i,j] = x[i,j] / s[i] + max(s[i], z[i,j]);
+tests/tensor/terms-gpu.test.mjs:35:    m[i] = max(j) tanh(x[i,j]);
+tests/tensor/fusion.test.mjs:116:    'fn f(x:f32[N,N]):f32[N,N] { m[i] = max(j) x[i,j]; e[i,j] = x[i,j] - m[i]; t[i] = m[i] * 2; y[i,j] = e[j,i] + t[i]; return y; }',
+tests/tensor/fusion.test.mjs:186:  m[i] = max(j) x[i,j];
+tests/tensor/fusion.test.mjs:211:      'fn f(x:f32[N,C]):f32[N,C] { s[i] = (sum(j) x[i,j] / C) + max(j) sqrt(x[i,j]); y[i,j] = x[i,j] - s[i]; return y; }',
+tests/tensor/fusion.test.mjs:327:      'fn f(x:f32[N,C]):f32[N,C] { e[i,j] = x[i,j] * 2; m[i] = max(j) e[i,j]; y[i,j] = e[i,j] - m[i] + x[i,j]; return y; }',
+tests/tensor/fusion.test.mjs:334:        e[i,j] = x[i,j] * 2; m[i] = max(j) x[i,j]; d[i,j]: f32[N,C-1] = ${read} * m[i]; t[i] = max(j) d[i,j];
+tests/tensor/cuda-gpu.test.mjs:83:      s[i] = sum(k) x[i,k]; m[i] = max(k) x[i,k];
+tests/tensor/cuda-gpu.test.mjs:84:      y[i,j]:f32[N,2] = max(s[i], m[i]) + (log(1) * 0);
+tests/tensor/cuda-gpu.test.mjs:103:  const max = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = max(k) x[i,k]; return y; }');
+10:export interface Lattice<V> {
+22:export function setLattice<T extends number | string>(): Lattice<ReadonlySet<T>> {
+30:      const out = new Set(a);
+40:export const TOP = 'varies';
+41:export const BOT = 'unknown';
+42:export type Flat<T> = typeof TOP | typeof BOT | { readonly value: T };
+45:export function flatLattice<T extends Json>(): Lattice<Flat<T>> {
+46:  const same = (a: Flat<T>, b: Flat<T>) =>
+60:export const I32_MIN = -2147483648;
+61:export const I32_MAX = 2147483647;
+63:export type Interval = readonly [number, number] | null;
+66:export function intervalLattice(
+73:  const top = [min, max] as const;
+93:export function mapLattice<K extends string | number, V>(
+96:  const isBottom = (v: V) => inner.equal(v, inner.bottom());
+105:      const out = new Map(a);
+110:      const keys = new Set([...a.keys(), ...b.keys()]);
+112:        const x = a.get(k) ?? inner.bottom(),
+119:      const out: Record<string, Json> = {};
+120:      for (const k of [...v.keys()].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)))
+125:      const out = new Map<K, V>();
+133:export const lattice = {
+52:type AnalysisName = keyof typeof ANALYSES;
+523:    // a key names the operator, its immediate (an array offset, a load offset) and type, so an f32 constant and an
+525:    const key = (id: string): string => {
+532:          : `${v.op}${v.imm === undefined ? '' : `[${v.imm}]`}${t}(${v.args.map(key).join(',')})`;
+542:            const k = key(id),
+    79	struct Event {
+    80	  cudaEvent_t handle;
+    81	  Event() { check(cudaEventCreate(&handle)); }
+    82	  ~Event() { cudaEventDestroy(handle); }
+    83	};
+    84	
+    85	template <class Launch> static double time_kernels(const Launch& launch, bool benchmark) {
+    86	  Event start, stop;
+    87	  if (benchmark) {
+    88	    launch();
+    89	    check(cudaDeviceSynchronize());
+    90	  }
+    91	  std::array<float, 3> ms{};
+    92	  const int repeats = benchmark ? ms.size() : 1;
+    93	  for (int i = 0; i < repeats; ++i) {
+    94	    check(cudaEventRecord(start.handle));
+    95	    launch();
+    96	    check(cudaEventRecord(stop.handle));
+    97	    check(cudaEventSynchronize(stop.handle));
+    98	    check(cudaEventElapsedTime(&ms[i], start.handle, stop.handle));
+    99	  }
+   100	  if (benchmark) std::sort(ms.begin(), ms.end());
+   101	  return ms[repeats / 2];
+   102	}
+   103	`;
+   104	
+   105	const main = String.raw`
+   106	int main(int argc, char** argv) {
+   107	  try {
+   108	    using File = std::unique_ptr<FILE, decltype(&fclose)>;
+   109	    File input(fopen("inputs.bin", "rb"), fclose);
+   110	    File output(fopen("out/results.bin", "wb"), fclose);
+   111	    if (!input || !output) throw std::runtime_error("cannot open CUDA request or response");
+   112	    const char magic[] = "TIXCUDA1";
+   113	    char header[8];
+   114	    read(input.get(), header, sizeof(header));
+   115	    if (memcmp(header, magic, sizeof(header))) throw std::runtime_error("bad CUDA request header");
+    51	
+    52	export interface MetricsOptions {
+    53	  /** Cases per function for the instruction count (seeded like the checks). */
+    54	  readonly count?: number;
+    55	  readonly seed?: number;
+    56	  /** Measure only this function's cases (instructions include the callees it runs). */
+    57	  readonly fn?: string;
+    58	  /** Awaited before each algorithm runs: a host (a web page) can yield to its event loop between passes. */
+    59	  readonly pause?: () => Promise<void>;
+    60	  /** The interpreter's trace events as they happen (progress). */
+    61	  readonly onEvent?: (event: TraceEvent) => void;
+    62	}
+    63	
+    64	const LIMIT = 2e5;
+    65	/** The metrics a candidate program is judged by. */
+    66	export function measure(
+    67	  p: Program,
+    68	  art: Artifact<TypedBlocks>,
+    69	  opts: MetricsOptions = {},
+    70	): Record<string, number> {
+    71	  const st = storeOf(art.value);
+    72	  let statements = 0,
+    73	    blocks = 0;
+    74	  for (const f of st.fns.values()) {
+    75	    blocks += f.blocks.length;
+    76	    for (const b of f.blocks) statements += b.stmts.length;
+    77	  }
+    78	  const { image } = lowerToImage(art);
+    79	  let instructions = 0,
+    80	    limited = 0;
+    81	  for (const fn of opts.fn ? [opts.fn] : art.value.fnOrder)
+    82	    for (const c of casesFrom(st, fn, {
+    83	      count: opts.count ?? 10,
+    84	      seed: opts.seed ?? 7,
+    85	      inputs: p.inputs[fn] ?? {},
+    86	    })) {
+    87	      // a run that hits the step limit costs the limit (its own step count is unknown); `limited` counts them
+    88	      const r = runImage(image, fn, c.args, c.memory, { limit: LIMIT });
+    89	      if (r.limit || !Number.isFinite(r.steps)) {
+    90	        instructions += LIMIT;
+    91	        limited++;
+    92	      } else instructions += r.steps;
+    93	    }
+    94	  return { statements, blocks, bytes: image.value.bytes, instructions, limited };
+    95	}
+    96	
+// IRWB-006 A1 and A2: the SSA view of typed.blocks, validated against reaching definitions, and SCCP on it.
+import { expectation } from './corpus-expectations.mjs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { installVendor } from '../../tools/node-vendor.mjs';
+import { projectFiles, projectIds } from '../../tools/corpus.mjs';
+
+await installVendor();
+const { projectSource, ingestProject } = await import('../../dist/typed/project.js');
+const { ingest } = await import('../../dist/typed/lift.js');
+const { blocksAdapter, storeOf } = await import('../../dist/typed/ir.js');
+const { createIRArtifact } = await import('../../dist/framework/ir/index.js');
+const A = await import('../../dist/typed/analyses.js');
+const S = await import('../../dist/typed/ssa.js');
+const { sccp, sccpOf, runPasses, SSA_PIPELINES } = await import('../../dist/typed/sccp.js');
+const { PASSES, PIPELINES, optimizationContract } = await import('../../dist/typed/passes.js');
+const { Program } = await import('../../dist/typed/program.js');
+const { Store } = await import('../../dist/typed/model.js');
+const { AnalysisManager } = await import('../../dist/framework/contracts/index.js');
+const { applyPass } = await import('../../dist/framework/passes/index.js');
+
+const facts = async art => {
+  const m = new AnalysisManager();
+  return { ssa: (await m.analyse(S.ssaAnalysis, art)).value, reach: (await m.analyse(A.reachingAnalysis, art)).value };
+};
+const checkAll = async art => {
+  const { ssa, reach } = await facts(art), st = storeOf(art.value);
+  return [...st.fns.values()].map(f => S.checkSsa(st, f, ssa[f.name], A.reachView(reach, st, f.name)));
+};
+
+test('A1: Blend at r0: phis at the loop head, names mapped back to statements and values', async () => {
+  const r0 = ingestProject(projectSource('blend', projectFiles('blend')));
+  const { ssa } = await facts(r0), b = ssa.blend;
+  assert.deepEqual(b.frontier['bb:blend.7'], ['bb:blend.1']);
+  assert.deepEqual(b.frontier['bb:blend.0'], []);
+  assert.deepEqual(b.phis['bb:blend.1'], [
+    { name: 's.2', local: 5, args: { 'bb:blend.0': 's.1', 'bb:blend.7': 's.3' } },
+    { name: 'i.2', local: 6, args: { 'bb:blend.0': 'i.1', 'bb:blend.7': 'i.3' } },
+    { name: 't7.1', local: 7, args: { 'bb:blend.0': 't7.0', 'bb:blend.7': 't7.2' } },
+  ]);
+  assert.deepEqual(b.names['s.1'], { local: 5, kind: 'set', block: 'bb:blend.0', stmt: 's:blend.1', value: r0.value.stmts['s:blend.1'].value, def: 's:blend.1' });
+  assert.deepEqual(b.names['n.0'], { local: 1, kind: 'param', block: '^entry', def: 'param:1' });
+  assert.equal(b.defs['s:blend.11'], 'i.3');
+  const v = S.ssaView(b);
+  assert.deepEqual(v.reachingDefs('i.2'), ['s:blend.11', 's:blend.2']);
+
+ succeeded in 1602ms:
+src/typed/backend/select.ts:755:  for (const l of live.liveIn(f.blocks[0].id))
+src/typed/backend/coalesce.ts:7: *   live-after per instruction, backwards over the machine blocks (as the allocator computes liveness)
+src/typed/backend/coalesce.ts:32:  // liveness per block, then per instruction backwards
+src/typed/backend/regalloc.ts:2: * Register allocation by linear scan: liveness over the machine code (per block, then per instruction), one
+src/typed/backend/regalloc.ts:78:  readonly liveOut: Set<number>[];
+src/typed/backend/regalloc.ts:134:    liveOut: OUT,
+src/typed/backend/regalloc.ts:155:): { occupied(r: number, from: number, to: number): boolean; liveOut(r: number, at: number): boolean } {
+src/typed/backend/regalloc.ts:193:  const liveIn = new Int32Array(n),
+src/typed/backend/regalloc.ts:200:      liveIn[i] = live;
+src/typed/backend/regalloc.ts:206:    for (let i = 0; i < n; i++) p[i + 1] = p[i] + (((liveIn[i] | def[i]) >> j) & 1);
+src/typed/backend/regalloc.ts:216:    liveOut: (r, at) => ((liveAfter[at] >> index.get(r)!) & 1) === 1,
+src/typed/backend/regalloc.ts:267:    return shared.liveOut(r, s) && !(d.mv && d.rs1 === r);
+src/typed/backend/compile.ts:11:import { livenessAnalysis, liveView, rangesAnalysis, rangeView } from '../analyses.js';
+src/typed/backend/compile.ts:278:  readonly liveness?: DataflowResult;
+src/typed/backend/compile.ts:296:  liveness: DataflowResult,
+src/typed/backend/compile.ts:304:      live: liveView(liveness, st, f.name),
+src/typed/backend/compile.ts:329:  liveness: facts.liveness ?? livenessAnalysis.solveArtifact(blocks),
+src/typed/backend/compile.ts:341:  const { liveness, ranges } = factsFor(blocks, o, facts);
+src/typed/backend/compile.ts:342:  const perFn = [...st.fns.values()].map(f => compileFunction(st, f, o, liveness, ranges));
+src/typed/backend/compile.ts:463:  const { liveness, ranges } = factsFor(blocks, o, facts);
+src/typed/backend/compile.ts:465:    [...st.fns.values()].map(f => [f.name, compileFunction(st, f, o, liveness, ranges).choice ?? null]),
+src/typed/backend/compile.ts:492:  const { liveness, ranges } = factsFor(blocks, o, facts);
+src/typed/backend/compile.ts:493:  const { sel, alloc, leaf } = compileFunction(st, st.fn(fname), o, liveness, ranges);
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/07-report-tables.mjs:7:  cost = read('./05-check-cases-and-schedule-cost.out.jsonl');
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/07-report-tables.mjs:22:  console.log(`| ${r.name} | ${r.kernels} | **${f(r.fused.median)}** (${r.fused.calls.join(', ')}) | ${f(r.unfused.median)} | ${f(r.base?.median)} | ${(r.fused.median / r.base.median).toFixed(2)} | ${(r.fused.median / r.unfused.median).toFixed(2)} | ${r.identical ? 'yes' : 'NO'} |`);
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/07-report-tables.mjs:27:  console.log(`| ${r.name} | **${f(r.fused.median)}** | ${(t / r.fused.median).toFixed(2)} | ${f(r.unfused.median)} | ${(t / r.unfused.median).toFixed(2)} | ${cublas[r.name] ? (r.fused.median / cublas[r.name]).toFixed(2) : r.name === 'matmul-4096' ? `${(19.2 / (t / r.fused.median)).toFixed(2)} (19.2 TFLOP/s)` : ''} | ${r.identical ? 'yes' : 'NO'} |`);
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/07-report-tables.mjs:32:  console.log(`| ${r.name.slice(7)} | ${f(r.fused.median)} | ${f(r.unfused.median)} | ${(r.fused.median / r.unfused.median).toFixed(2)} | ${r.identical ? 'yes' : 'NO'} |`);
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/07-report-tables.mjs:35:for (const r of variants) console.log(`| ${r.name} | ${['v0', 'v1', 'v2', 'v3'].map(v => f(r[v]?.median)).join(' | ')} |`);
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/07-report-tables.mjs:38:for (const r of cost) console.log(`| ${r.name} | ${r.samples} | ${r.casesFused} | ${r.casesUnfused} | ${r.passApplications} | ${r.scheduleMs} |`);
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/03-bench.mjs:2:// the sides (A B A B ...), median of the 5. Sides are `fused` and `unfused` (runTixCuda), or with --variants each
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/03-bench.mjs:49:const median = xs => [...xs].sort((a, b) => a - b)[xs.length >> 1];
+../t6-op-irwb-033-d/ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/03-bench.mjs:83:  for (const s of sides) out[s] = { median: +median(times[s]).toFixed(4), calls: times[s].map(t => +t.toFixed(4)) };
+23:export type Lat =
+31:export const meet = (a: Lat, b: Lat): Lat =>
+37:export interface SccpResult {
+47:export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
+96:          if (edges.has(`${pred}>${b}`)) val = meet(val, L.get(a)!);
+141:export const sccp: TypedPass = typedPass({
+170:export const SSA_PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({ sccp });
+171:export const SSA_PIPELINES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+175:export const passNamed = (name: string): TypedPass => {
+186:export async function runPasses(
+/**
+ * Sparse conditional constant propagation over the SSA view (IRWB-006: the first consumer of A1, a first piece of
+ * agenda item A2). Wegman and Zadeck's algorithm: one lattice value per SSA name (⊤: not yet seen to execute, a
+ * constant, ⊥: varies) and one flag per control-flow edge (executable or not), propagated together, so a branch on
+ * a constant makes the other edge dead, which can make a phi constant, which can decide another branch, in one run.
+ *
+ * The pass `sccp` then replaces, like `constprop`, every `get` in an executable block whose name is a constant by
+ * that constant (of the local's type). Folding the now-constant conditions and removing dead arms is left to `fold`
+ * and `cfg`. Operators are evaluated as `fold` evaluates them (`evalOp`: binop, f32Op; a trapping division, and the
+ * operators fold leaves to run time, are ⊥), so every constant is one `fold` could have produced.
+ *
+ * The pass is not in PASSES and its pipeline not in PIPELINES (O2 and the registries stay as they are); it runs
+ * through `Program.apply(pass)` with `runPasses`.
+ */
+import { cfgOf } from './analyses.js';
+import { F32_FOLDABLE, F32_RESULT } from './f32.js';
+import { typeClass, type StmtRec, type Store, type ValueRec, type WorkFn } from './model.js';
+import { PASSES, PIPELINES, typedPass, type TypedPass } from './passes.js';
+import { evalOp } from './rules/compile.js';
+import { FOLD_I32 } from './rules/fold.js';
+import { ssaOf, VIRTUAL_ENTRY, type SsaFn } from './ssa.js';
+
+export type Lat =
+  | { readonly k: 'top' }
+  | { readonly k: 'const'; readonly v: number; readonly t: 'i32' | 'f32' }
+  | { readonly k: 'bot' };
+const TOP: Lat = { k: 'top' },
+  BOT: Lat = { k: 'bot' };
+const same = (a: Lat, b: Lat) =>
+  a.k === b.k && (a.k !== 'const' || (b.k === 'const' && a.v === b.v && a.t === b.t));
+export const meet = (a: Lat, b: Lat): Lat =>
+  a.k === 'top' ? b : b.k === 'top' ? a : a.k === 'const' && same(a, b) ? a : BOT;
+
+const FOLDS = new Set<string>(['eqz', ...FOLD_I32, ...F32_FOLDABLE]);
+const MIN = -2147483648;
+## Layer-by-layer decision
+
+| Layer | What to keep as it is | Where the boundary should move |
+|---|---|---|
+| Core | Content-derived identity, immutable artifact snapshots, dependency-aware reuse, and policy checks even on a warm cache. The stricter-policy fixture passed in the CPU suite. `src/framework/ir/store.ts:30`, `src/framework/core/runtime.ts:753`, `tests/framework/pass-policy.test.mjs:64`, `scripts/03-merged-fixtures.sh:4`. | A retained candidate, a cached computation and a currently accepted output are distinct states. Publish the accepted head at one boundary. Attach run observations to an invocation so a second profile or benchmark result can coexist with the same artifact hash. `src/framework/core/runtime.ts:395`, `src/tensor/cuda-contract.ts:168`, `scripts/01-pass-boundary.mjs:58`. |
+| IR | Native representations, optional logical projections, typed relation kinds, bounded correspondence composition and scoped edit authority. The separation of operation log and actual diff is valuable for auditing. `src/framework/ir/types.ts:64`, `src/framework/ir/README.md:48`, `src/framework/ir/correspondence.ts:148`, `src/framework/ir/PATTERNS-AND-REWRITES.md:109`. | Name each projection and its universe in references. Allow the native builder to emit a logical edit with witnesses. Requiring a full inverse for every read projection gives a poor price for expression matching. Tix's adapter has no rebuild and stores expressions inside attributes; Typed has a value-handle matcher and editor. `src/tensor/ir.ts:105`, `src/tensor/ir.ts:140`, `src/tensor/passes.ts:82`, `src/typed/tx.ts:120`, `src/typed/rules/compile.ts:24`. |
+| Contracts | Typed ports, versioned validators, pre/post conditions, fact-transfer verification and external certificate verification. Preserve deterministic differential generation, delegated deciding and canonical case fingerprint checks. `src/framework/contracts/analysis-manager.ts:885`, `src/framework/contracts/analysis-manager.ts:1226`, `src/framework/contracts/differential.ts:209`, `src/framework/contracts/differential.ts:356`. | Make the reference semantics, domain of inputs, comparator, quantifier and validator explicit. Permit batch-only evaluation. CUDA currently supplies a throwing subject runner because the scalar runner is mandatory, and separately maps infrastructure failure into accepted=false. `src/framework/contracts/differential.ts:49`, `src/tensor/cuda-contract.ts:153`, `src/tensor/cuda-contract.ts:169`, `src/tensor/cuda-contract.ts:253`. |
+| Passes | Write-set checking, native or projected candidate construction and recomputation as a fallback for a preservation claim. Preserve the no-edit fast path. `src/framework/passes/define-pass.ts:216`, `src/framework/passes/define-pass.ts:302`, `src/framework/passes/define-pass.ts:315`, `src/framework/passes/define-pass.ts:373`. | Make an optimization a same-port instance of transformation. Give both execution modes the same specification and outcomes; determine at plan construction which capabilities a synchronous host can supply. Give identity proposals a `no-change` outcome so reports distinguish them from a new equivalence check. `src/framework/passes/define-pass.ts:225`, `src/framework/passes/define-pass.ts:250`, `src/tensor/index.ts:44`. |
+| Dataflow | Lattice/transfer separation, worklist and sweep schedules, edge refinement, explicit widening and bounded nonconvergence. Typed liveness, reaching definitions and ranges supply distinct instances. `src/framework/dataflow/solver.ts:24`, `src/framework/dataflow/solver.ts:90`, `src/typed/analyses.ts:296`, `src/typed/analyses.ts:352`, `src/typed/analyses.ts:486`. | Keep the solver available to analyses over finite dependence graphs. Let a registered analysis also call a symbolic relation algorithm or a direct traversal. Tix's affine read relation and ordered reductions are a poor match for CFG joins; the production planner currently computes them directly. `src/tensor/fusion.ts:83`, `src/tensor/ir.ts:123`, `src/framework/dataflow/analysis.ts:153`, `scripts/02-binding-times.mjs:36`. |
+| Strategy | Versioned declarative plans, recoverable alternatives, independent branches, budgets, metrics and recorded selection. Typed chooses pipelines with these operations; the merged strategy fixture exercises all 13 node kinds. `src/typed/strategies.ts:175`, `src/framework/strategy/interpreter.ts:443`, `tests/framework/strategy.test.mjs:27`, `scripts/03-merged-fixtures.sh:4`. | Keep one strategy semantics. Domain-defined kernels may run immediately, dispatch to workers, or await device observations. Keep compile-time selection distinct from a generated runtime shape guard. Tix currently does the latter and parses arm IDs out of emitted source. `src/tensor/fusion.ts:136`, `src/tensor/cuda-runtime.ts:142`, **T6-J** `src/tensor/schedule-plan.ts:45`. |
+
+The import evidence is specific to the merged tensor implementation. Its two optimization registrations build native modules, its optimizer directly maps a list of names, and its lowering directly calls the planner. Searching the tensor sources found no framework dataflow or rewrite-engine use. The matcher hit in the parser is JavaScript string matching. The framework's generic rewrite engine has valuable scheduling and match evidence; there is no reason to route a whole-function fusion planner through it merely to increase adoption. `src/tensor/passes.ts:82`, `src/tensor/index.ts:35`, `src/tensor/index.ts:66`, `src/tensor/parser.ts:32`, `src/framework/ir/PATTERNS-AND-REWRITES.md:74`.
+
+## Proposed concepts and their smallest instances
+
+The evidence supports extracting the following *interfaces*. The signatures, division of ownership and proposed evaluation criteria are design hypotheses. “Domain” below means the implementer supplies the operators' semantics, layout, aliasing, floating-point model and measurement method. A generic validator cannot infer those by inspecting JSON.
+
+### 1. Partial transformation with a single publication boundary
+**Promote empirical thresholds into universal cost facts.** I would decline. Keep the shape predicate, selected arm and observation protocol as reproducible data. A prediction may propose a choice. A measured choice is evidence on the measured shapes and hardware profile. Tie the winner to that comparison and retain the fallback arm and uncertainty. This also applies to Typed speed versus O2. Add a new cost-analysis package only after both clients agree on an observation protocol and on which quantities are comparable. `src/tensor/fusion.ts:107`, `src/tensor/fusion.ts:135`, `src/typed/strategies.ts:66`, `src/typed/strategies.ts:175`, `BACKLOG.md:485`.
+
+## Migration with decision points
+
+Each step can land without a new production implementation of the later steps. The deletions below are targets after parity. All measurements are proposed unless identified as probe results.
+
+| Order | Small change and first client | What it deletes | Check and decision |
+|---|---|---|---|
+| 1 | Give native candidate inspection a private view. Publish only after the pass finishes its required validations. Start with one input and one fresh output ID. | The use of the caller's live IRStore for preparing the candidate. | Reuse the two cases in `scripts/01-pass-boundary.mjs:58`. After rejection both store heads and history of accepted outputs must be unchanged. Add a concurrent stale-head test and a retry. Preserve diagnostic access to the rejected candidate. |
+| 2 | Introduce explicit acceptance mode, reference semantics, method and quantified scope in results. Wrap Tix exact and tolerance gates first, then the CUDA batch. | The default-to-exact inference and the CUDA scalar stub on the batch-only path. | Unknown method → unknown assurance. Split stays rejected under immediate exact and accepted only on the chosen tolerance cases. Inject a failing executor and distinguish unavailable from refuted. Compare per-function/per-arm coverage, including empty shapes and all-inconclusive runs. `scripts/01-pass-boundary.mjs:17`, `src/tensor/cuda-contract.ts:153`, `src/framework/contracts/differential.ts:291`. |
+| 3 | Add named projection and coverage requirements to one Tix inline and one lowering. Check endpoint sets and entry coverage separately. | Hand wiring of kernel entity lists and implicit same-ID provenance as the entire explanation for inline. | Test two functions, an unused parameter, removal, empty mapping, and a producer merged into two consumers. Trace a statement through inline and lowering. Check that unrelated functions are outside the declared selection and that the projection boundary composes. `scripts/01-pass-boundary.mjs:27`, `src/tensor/cuda-contract.ts:93`, `src/framework/ir/correspondence.ts:158`. |
+| 4 | Bind a transformation plus its validation policy as a strategy algorithm. Use one fork of inline/split and choose among accepted arms. Admit an inapplicable arm and an unavailable arm explicitly. | Tix's name-dispatch loop when parity is demonstrated; removes the case for the T6-E/H duplicate operator switches. | For the same inputs compare direct and planned outcomes, revisions, checks, reasons, evidence and origin. Compare synchronous call overhead and end-to-end time. Keep an immediate public entry only where a caller requires it. Preserve different baseline choices for exact and tolerance. `src/tensor/index.ts:32`, `src/framework/passes/bridge.ts:29`, `src/tensor/contract.ts:125`. |
+| 5 | Make one Typed table rewrite and one Tix substitution emit witnesses. Add declared structural edit for changing entry. Derive local/fact/structural census and D1 ownership bins as queries. | Per-cell table replay for **new** witnessed edits, heuristics for identifying a new entry, and duplicated joins for revision-to-site observations. | Replay the whole candidate. Mutate a sibling operand, stale premise, target revision and rule fingerprint. Record proof coverage per edit, function and whole application separately. Reproduce both A0 policies and D1 conservation; report ambiguous weight rather than duplicating it at multiple parents. `scripts/06-rewrite-scope.mjs:14`, `tests/typed/attribute.test.mjs:43`, **B1-G** `src/typed/specialize-buffer.ts:293`. |
+| 6 | Register two demands: Tix read/axis summaries per function and B1-G's offline division per function and bindings. Port one dependency propagation to the merged solver. | Repeated planner scans and one BTA iteration loop; leave the domain transfer functions in place. | Compare all cells/locals against the old facts at joins, loops and unreachable blocks. Change the bound buffer or a callee without changing the function text. Count transfer visits, cache hit rate, independent recomputations, wall time and peak bytes. Keep a plain scan if query overhead costs more than repeated work. `src/tensor/fusion.ts:97`, `src/typed/parts.ts:13`, **B1-G** `src/typed/bta.ts:91`, `scripts/02-binding-times.mjs:36`. |
+| 7 | Extract interning of residual control points from two B1 paths. Keep static operand semantics, alias analysis and guard generation in the domain. | Repeated queues, state-key construction and residual backedge plumbing. | Compare residual programs on the two VM bytecodes with the same inputs, guard and backend profile. Measure instructions, emitted statements/bytes, variants, compilation time and execution of fallback. Force budget exhaustion and ensure no partial publication. Compare joining environments vs splitting by live static data. **B1-B** `src/typed/residualize.ts:61`, **B1-F** `src/typed/pe.ts:224`, **B1-G** `src/typed/specialize-buffer.ts:288`. |
+| 8 | Hoist one Tix fusion decision into schedule data. Give the emitter and runner the same manifest of kernels, variants and gates. Introduce a restricted checker for strip-mining and ordered fold, then test a dependence-based implementation. | Replanning inside emission, planner-equality checking as a semantic requirement, and gate discovery from source text. | Check symbolic identity of the covered iteration set and empty set of reversed dependence pairs. Include extents 0,1,T−1,T,T+1, simultaneous tails and transposed accesses. Re-run the extent-17 counterexample. Force every runtime arm, compare CPU reference and GPU output, then compare paired timings over held-out shapes with warm-up and repeated samples. Choose wider polyhedral machinery only if it accepts valuable legal candidates the restricted checker refuses at acceptable compile cost. `src/tensor/cuda-runtime.ts:142`, `src/tensor/cuda-contract.ts:187`, `scripts/05-reduction-order.mjs:15`. |
+
+**Stop condition for framework growth.** If the second instance needs unrelated revisions of an abstraction, retain two domain implementations and share only the smaller demonstrated law. If a new check rejects a formerly accepted input, classify the case as a real counterexample, a stricter policy, unsupported semantics or a checker defect before comparing speed. Report compiler and validator cost separately. A stronger checker and a faster kernel answer independent research questions.
+
+## Open questions
+
+1. **What counts as published to a client?** A caller may want rejected candidates to remain inspectable. Can a separate candidate store serve that purpose while accepted heads, fact transfer and strategy selection share one commit decision? The fresh-output-ID case is a concrete acceptance test. `scripts/01-pass-boundary.mjs:64`.
+2. **How small can a witness be?** Start with a verified rule, focus path and fact IDs. Compare trace size, replay cost and fraction of full revisions covered against a structural diff. A0 recovers a substantial numerator, but the denominator changes markedly with scope. **A0-G** `ttmp/2026/11/27/IRWB-035-G--what-share-of-the-optimizer-s-edits-are-local-value-rewrites/reference/02-report-the-share-of-local-value-rewrites-among-the-optimizer-s-edits.md:66`.
+
+web search: 
+web search: https://www.cs.cornell.edu/courses/cs6120/2023fa/lesson/5/
+exec
+/usr/bin/zsh -c "nl -ba src/typed/backend/regalloc.ts|sed -n '50,143p'; nl -ba src/typed/backend/coalesce.ts|sed -n '20,88p'; nl -ba src/framework/dataflow/lattices.ts |rg 'export '; rg -n 'export|useDef|blocks' src/typed/backend/{regalloc,machine}.ts|head -40; nl -ba src/typed/passes.ts|sed -n '520,564p'; cat src/tensor/model.ts |head -34; rg -n '"'^test'"\\(' tests/typed/{ssa,evaluate-analyses,rules,passes,mutate}.test.mjs |rg -i 'sccp|lvn|interval|liveness|domin|bound|mutant|phis|range' |head -25" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1445ms:
+    50	    if (m.op === 'label') {
+    51	      cur.labels.push(m.name!);
+    52	      at.set(m.name!, blocks.length - 1);
+    53	    }
+    54	    cur.end = i;
+    55	    if (isBranch(m.op) || isTerminal(m.op)) cur = null;
+    56	  });
+    57	  blocks.forEach((b, k) => {
+    58	    const last = code[b.end];
+    59	    if (isBranch(last.op)) b.succ.push(at.get(last.target!)!);
+    60	    if (last.op === 'j') b.succ.push(at.get(last.target!)!);
+    61	    if (!isTerminal(last.op) && k + 1 < blocks.length) b.succ.push(k + 1);
+    62	  });
+    63	  return blocks;
+    64	}
+    65	
+    66	export interface Interval {
+    67	  readonly reg: number;
+    68	  start: number;
+    69	  end: number;
+    70	  uses: number;
+    71	  crossesCall: boolean;
+    72	}
+    73	
+    74	export interface Intervals {
+    75	  /** Sorted by start, then register. */
+    76	  readonly list: Interval[];
+    77	  readonly blocks: MachineBlock[];
+    78	  readonly liveOut: Set<number>[];
+    79	}
+    80	
+    81	/**
+    82	 * One interval per virtual register, from its first definition or use to its last, stretched over whole blocks
+    83	 * where it is live in (to the block's start) or live out (to just past its end).
+    84	 */
+    85	export function intervals(code: readonly MInsn[]): Intervals {
+    86	  const blocks = machineBlocks(code);
+    87	  const use = blocks.map(() => new Set<number>()),
+    88	    def = blocks.map(() => new Set<number>());
+    89	  blocks.forEach((b, k) => {
+    90	    for (let i = b.start; i <= b.end; i++) {
+    91	      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
+    92	      for (const r of defsOf(code[i])) def[k].add(r);
+    93	    }
+    94	  });
+    95	  const IN = blocks.map(() => new Set<number>()),
+    96	    OUT = blocks.map(() => new Set<number>());
+    97	  for (let changed = true; changed; ) {
+    98	    changed = false;
+    99	    for (let k = blocks.length - 1; k >= 0; k--) {
+   100	      const out = new Set<number>();
+   101	      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+   102	      const inn = new Set(use[k]);
+   103	      for (const r of out) if (!def[k].has(r)) inn.add(r);
+   104	      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+   105	        IN[k] = inn;
+   106	        OUT[k] = out;
+   107	        changed = true;
+   108	      }
+   109	    }
+   110	  }
+   111	  const iv = new Map<number, Interval>();
+   112	  const touch = (r: number, i: number) => {
+   113	    const x = iv.get(r);
+   114	    if (!x) iv.set(r, { reg: r, start: i, end: i, uses: 1, crossesCall: false });
+   115	    else {
+   116	      x.start = Math.min(x.start, i);
+   117	      x.end = Math.max(x.end, i);
+   118	      x.uses++;
+   119	    }
+   120	  };
+   121	  blocks.forEach((b, k) => {
+   122	    for (const r of IN[k]) touch(r, b.start);
+   123	    for (const r of OUT[k]) touch(r, b.end + 0.5);
+   124	    for (let i = b.start; i <= b.end; i++) {
+   125	      for (const r of usesOf(code[i])) touch(r, i);
+   126	      for (const r of defsOf(code[i])) touch(r, i);
+   127	    }
+   128	  });
+   129	  const calls = code.map((m, i) => (m.op === 'call' ? i : -1)).filter(i => i >= 0);
+   130	  for (const x of iv.values()) x.crossesCall = calls.some(c => x.start < c && x.end > c);
+   131	  return {
+   132	    list: [...iv.values()].sort((a, b) => a.start - b.start || a.reg - b.reg),
+   133	    blocks,
+   134	    liveOut: OUT,
+   135	  };
+   136	}
+   137	
+   138	export interface Allocation {
+   139	  /** Virtual register -> physical register. */
+   140	  readonly assign: Map<number, number>;
+   141	  /** Virtual registers that live in stack slots, in the order they were spilled. */
+   142	  readonly spilled: Set<number>;
+   143	  readonly intervals: readonly Interval[];
+    20	
+    21	export interface Coalesced {
+    22	  readonly sel: Selection;
+    23	  /** How many copies were removed. */
+    24	  readonly removed: number;
+    25	}
+    26	
+    27	export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): Coalesced {
+    28	  const code = sel.code;
+    29	  const cls = (r: number) => (sel.fregs.has(r) ? 'f' : 'x');
+    30	  const isCopy = (m: MInsn) =>
+    31	    m.mv && m.rd !== undefined && m.rs1 !== undefined && m.rd >= 64 && m.rs1 >= 64 && m.rd !== m.rs1;
+    32	  // liveness per block, then per instruction backwards
+    33	  const blocks = machineBlocks(code);
+    34	  const use = blocks.map(() => new Set<number>()),
+    35	    def = blocks.map(() => new Set<number>());
+    36	  blocks.forEach((b, k) => {
+    37	    for (let i = b.start; i <= b.end; i++) {
+    38	      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
+    39	      for (const r of defsOf(code[i])) def[k].add(r);
+    40	    }
+    41	  });
+    42	  const IN = blocks.map(() => new Set<number>()),
+    43	    OUT = blocks.map(() => new Set<number>());
+    44	  for (let changed = true; changed; ) {
+    45	    changed = false;
+    46	    for (let k = blocks.length - 1; k >= 0; k--) {
+    47	      const out = new Set<number>();
+    48	      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+    49	      const inn = new Set(use[k]);
+    50	      for (const r of out) if (!def[k].has(r)) inn.add(r);
+    51	      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
+    52	        IN[k] = inn;
+    53	        OUT[k] = out;
+    54	        changed = true;
+    55	      }
+    56	    }
+    57	  }
+    58	  // IRWB-034-G: at a copy `rd <- rs`, the registers that an earlier copy in the block set from the same rs, with
+    59	  // neither side redefined since, hold the value rd receives. The definition does not make them interfere with rd
+    60	  // (the argument of the copy exception itself), so `a <- s; b <- s` can end up as one register.
+    61	  const sameAsSource = new Map<number, Set<number>>();
+    62	  for (const b of blocks) {
+    63	    const copyOf = new Map<number, number>();
+    64	    for (let i = b.start; i <= b.end; i++) {
+    65	      const m = code[i];
+    66	      if (isCopy(m)) {
+    67	        const same = [...copyOf].filter(([, s]) => s === m.rs1).map(([q]) => q);
+    68	        if (same.length) sameAsSource.set(i, new Set(same));
+    69	      }
+    70	      for (const r of defsOf(m)) {
+    71	        copyOf.delete(r);
+    72	        for (const [q, s] of copyOf) if (s === r) copyOf.delete(q);
+    73	      }
+    74	      if (isCopy(m)) copyOf.set(m.rd!, m.rs1!);
+    75	    }
+    76	  }
+    77	  const adj = new Map<number, Set<number>>();
+    78	  const edge = (a: number, b: number) => {
+    79	    if (!adj.has(a)) adj.set(a, new Set());
+    80	    if (!adj.has(b)) adj.set(b, new Set());
+    81	    adj.get(a)!.add(b);
+    82	    adj.get(b)!.add(a);
+    83	  };
+    84	  blocks.forEach((b, k) => {
+    85	    const live = new Set(OUT[k]);
+    86	    for (let i = b.end; i >= b.start; i--) {
+    87	      const m = code[i];
+    88	      for (const r of defsOf(m)) {
+    10	export interface Lattice<V> {
+    22	export function setLattice<T extends number | string>(): Lattice<ReadonlySet<T>> {
+    40	export const TOP = 'varies';
+    41	export const BOT = 'unknown';
+    42	export type Flat<T> = typeof TOP | typeof BOT | { readonly value: T };
+    45	export function flatLattice<T extends Json>(): Lattice<Flat<T>> {
+    60	export const I32_MIN = -2147483648;
+    61	export const I32_MAX = 2147483647;
+    63	export type Interval = readonly [number, number] | null;
+    66	export function intervalLattice(
+    93	export function mapLattice<K extends string | number, V>(
+   133	export const lattice = {
+rg: src/typed/backend/machine.ts: No such file or directory (os error 2)
+src/typed/backend/regalloc.ts:28:export const usesOf = (m: MInsn): number[] =>
+src/typed/backend/regalloc.ts:30:export const defsOf = (m: MInsn): number[] =>
+src/typed/backend/regalloc.ts:33:export interface MachineBlock {
+src/typed/backend/regalloc.ts:40:/** Basic blocks of machine code: a label or the instruction after a branch or terminal starts one. */
+src/typed/backend/regalloc.ts:41:export function machineBlocks(code: readonly MInsn[]): MachineBlock[] {
+src/typed/backend/regalloc.ts:42:  const blocks: MachineBlock[] = [],
+src/typed/backend/regalloc.ts:48:      blocks.push(cur);
+src/typed/backend/regalloc.ts:52:      at.set(m.name!, blocks.length - 1);
+src/typed/backend/regalloc.ts:57:  blocks.forEach((b, k) => {
+src/typed/backend/regalloc.ts:61:    if (!isTerminal(last.op) && k + 1 < blocks.length) b.succ.push(k + 1);
+src/typed/backend/regalloc.ts:63:  return blocks;
+src/typed/backend/regalloc.ts:66:export interface Interval {
+src/typed/backend/regalloc.ts:74:export interface Intervals {
+src/typed/backend/regalloc.ts:77:  readonly blocks: MachineBlock[];
+src/typed/backend/regalloc.ts:82: * One interval per virtual register, from its first definition or use to its last, stretched over whole blocks
+src/typed/backend/regalloc.ts:85:export function intervals(code: readonly MInsn[]): Intervals {
+src/typed/backend/regalloc.ts:86:  const blocks = machineBlocks(code);
+src/typed/backend/regalloc.ts:87:  const use = blocks.map(() => new Set<number>()),
+src/typed/backend/regalloc.ts:88:    def = blocks.map(() => new Set<number>());
+src/typed/backend/regalloc.ts:89:  blocks.forEach((b, k) => {
+src/typed/backend/regalloc.ts:95:  const IN = blocks.map(() => new Set<number>()),
+src/typed/backend/regalloc.ts:96:    OUT = blocks.map(() => new Set<number>());
+src/typed/backend/regalloc.ts:99:    for (let k = blocks.length - 1; k >= 0; k--) {
+src/typed/backend/regalloc.ts:101:      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
+src/typed/backend/regalloc.ts:121:  blocks.forEach((b, k) => {
+src/typed/backend/regalloc.ts:133:    blocks,
+src/typed/backend/regalloc.ts:138:export interface Allocation {
+src/typed/backend/regalloc.ts:150: * entry until their copies. Liveness is computed over the machine blocks, as for virtual registers.
+src/typed/backend/regalloc.ts:152:export function physicalOccupancy(
+src/typed/backend/regalloc.ts:168:  const blocks = machineBlocks(code);
+src/typed/backend/regalloc.ts:169:  const bUse = blocks.map(b => {
+src/typed/backend/regalloc.ts:178:    IN = new Int32Array(blocks.length),
+src/typed/backend/regalloc.ts:179:    OUT = new Int32Array(blocks.length);
+src/typed/backend/regalloc.ts:182:    for (let k = blocks.length - 1; k >= 0; k--) {
+src/typed/backend/regalloc.ts:184:      for (const s of blocks[k].succ) out |= IN[s];
+src/typed/backend/regalloc.ts:195:  blocks.forEach((b, k) => {
+src/typed/backend/regalloc.ts:233:export function allocate(
+   520	  // Compiler Workbench also claims 'loops'; false: adding or removing a `set` in a loop changes its assigned locals.
+   521	  preserves: ['cfg', 'dominators'],
+   522	  body({ st, f, tx }) {
+   523	    // a key names the operator, its immediate (an array offset, a load offset) and type, so an f32 constant and an
+   524	    // i32 constant with the same bits, or two frame addresses, never share a number
+   525	    const key = (id: string): string => {
+   526	      const v = st.get(id) as ValueRec;
+   527	      const t = v.type === 'f32' ? 'f' : '';
+   528	      return v.op === 'const'
+   529	        ? `#${t}${v.imm}`
+   530	        : v.op === 'get'
+   531	          ? `@${v.imm}`
+   532	          : `${v.op}${v.imm === undefined ? '' : `[${v.imm}]`}${t}(${v.args.map(key).join(',')})`;
+   533	    };
+   534	    const size = (id: string): number => 1 + (st.get(id) as ValueRec).args.reduce((n, a) => n + size(a), 0);
+   535	    for (const b of f.blocks) {
+   536	      const seen = new Map<string, { stmt: string; value: string }>();
+   537	      for (const sid of b.stmts.slice()) {
+   538	        const s = st.get(sid) as StmtRec;
+   539	        const visit = (id: string): boolean => {
+   540	          const v = st.get(id) as ValueRec;
+   541	          if (v.op !== 'tuple' && v.args.length && size(id) >= 3 && isPure(st, id)) {
+   542	            const k = key(id),
+   543	              first = seen.get(k);
+   544	            if (first && first.value !== id) {
+   545	              const t = tx.local('vn', { because: [first.value], type: v.type ?? 'i32' });
+   546	              const set = tx.set(t, first.value, {
+   547	                because: [first.value, id],
+   548	                note: `computed once for ${first.stmt} and ${sid}`,
+   549	              });
+   550	              tx.replace(first.value, tx.get(t, { from: first.value, because: [set] }));
+   551	              tx.replace(id, tx.get(t, { from: id, because: [set] }));
+   552	              tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
+   553	              seen.delete(k);
+   554	              return true;
+   555	            }
+   556	            if (!first) seen.set(k, { stmt: sid, value: id });
+   557	          }
+   558	          return v.args.some(visit);
+   559	        };
+   560	        for (const k of ['addr', 'value', 'cond'] as const) if (s[k] && visit(s[k]!)) break;
+   561	        if (s.op === 'set')
+   562	          for (const [k, e] of [...seen]) if (readsOf(st, e.value).has(s.local!)) seen.delete(k);
+   563	      }
+   564	    }
+// Affine forms use ordered terms so equivalent dimensions have the same artifact identity.
+export interface Affine {
+  constant: number;
+  terms: [string, number][];
+}
+export const constant = (value: number): Affine => ({ constant: value, terms: [] });
+export const variable = (name: string): Affine => ({ constant: 0, terms: [[name, 1]] });
+export function add(a: Affine, b: Affine, scale = 1): Affine {
+  const terms = new Map(a.terms);
+  for (const [name, k] of b.terms) terms.set(name, (terms.get(name) ?? 0) + k * scale);
+  const result = {
+    constant: a.constant + b.constant * scale,
+    terms: [...terms].filter(([, k]) => k !== 0).sort(([x], [y]) => (x < y ? -1 : 1)),
+  };
+  if (![result.constant, ...result.terms.map(([, k]) => k)].every(Number.isSafeInteger))
+    throw Error('Affine integer overflow');
+  return result;
+}
+export function substitute(a: Affine, bindings: Map<string, Affine>): Affine {
+  return a.terms.reduce(
+    (v, [name, k]) => add(v, bindings.get(name) ?? variable(name), k),
+    constant(a.constant),
+  );
+}
+export function value(a: Affine, env: Map<string, number>): number {
+  return a.terms.reduce((v, [name, k]) => v + env.get(name)! * k, a.constant);
+}
+export function plain(a: Affine): string | undefined {
+  return a.constant === 0 && a.terms.length === 1 && a.terms[0][1] === 1 ? a.terms[0][0] : undefined;
+}
+export type Extent =
+  | { kind: 'dim'; dim: Affine }
+  | { kind: 'blocks'; dim: Affine; rounding: 'ceil' | 'floor' }
+  | { kind: 'tail'; dim: Affine; block: string };
+tests/typed/mutate.test.mjs:62:test('IRWB-005: every mutant of Blend and of the f32 fixture is a valid, changed revision', async () => {
+tests/typed/mutate.test.mjs:77:test('IRWB-005: a mutant is judged by Program.apply as a pass is, and checkInvariant gives the same verdict', async () => {
+tests/typed/mutate.test.mjs:140:test('IRWB-005: strong cases extend the default cases and reach the boundaries', async () => {
+tests/typed/passes.test.mjs:59:test('P2.4: a false preservation claim is caught (Compiler Workbench\'s lvn claimed loops)', async () => {
+tests/typed/rules.test.mjs:84:test('B2: binopW at 32 bits is the evaluator\'s binop (boundary values crossed, every i32 operator)', () => {
+tests/typed/evaluate-analyses.test.mjs:56:test('P2.3: Blend facts: one loop with a preheader, liveness, reaching definitions, ranges', async () => {
+tests/typed/ssa.test.mjs:31:test('A1: Blend at r0: phis at the loop head, names mapped back to statements and values', async () => {
+tests/typed/ssa.test.mjs:63:test('A1: the check sees a wrong name, and a loop whose header is the entry block gets entry phis', async () => {
+tests/typed/ssa.test.mjs:99:test('A2: sccp finds the constant behind a decided branch, which constprop cannot see', async () => {
+tests/typed/ssa.test.mjs:111:test('A2: O2-sccp is O2 with sccp for constprop, accepted by the meaning contract; O2 itself is unchanged', async () => {
+
+exec
+/usr/bin/zsh -c "head -51 src/typed/backend/regalloc.ts; cat src/framework/dataflow/lattices.ts|rg 'export '; rg -n 'const operations|max:' src/tensor/evaluate.ts; rg -n 'export.*usesOf|export.*defsOf' src/typed/backend; cat src/tensor/index.ts|head -32; nl -ba src/tensor/cuda-source.ts|sed -n '85,106p'; rg -n '"'^export '"' src/typed/mutate.ts|head -16" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1069ms:
+/**
+ * Register allocation by linear scan: liveness over the machine code (per block, then per instruction), one
+ * interval per virtual register, and a scan in start order that gives each interval a free register that does
+ * not clash, or spills. A port of Compiler Workbench's backend.js `machineBlocks`, `intervals` and `allocate`.
+ *
+ * The pools: `t0`-`t4` and, in leaf functions, `a0`-`a7` (caller-saved: a call may destroy them), and `s1`-`s11`
+ * (callee-saved: a function that uses one must restore it). `t5` and `t6` are kept back as spill scratch; `s0`,
+ * `sp`, `ra`, `gp` and `tp` are never allocated. An interval that spans a call must be in a callee-saved register,
+ * or spilled.
+ *
+ * f32 values are a second class with its own pools: `ft0`-`ft9` and, in leaf functions, `fa0`-`fa7` (caller-saved),
+ * and `fs0`-`fs11` (callee-saved); `ft10` and `ft11` are its spill scratch. The two classes are scanned separately:
+ * an interval only ever receives a register of its own class, and the options apply to each class.
+ */
+import type { BackendOptions } from './options.js';
+import {
+  ARGS,
+  CALLEE,
+  CALLER,
+  F_ARGS,
+  F_CALLEE,
+  F_CALLER,
+  isBranch,
+  isTerminal,
+  type MInsn,
+} from './encode.js';
+
+export const usesOf = (m: MInsn): number[] =>
+  [m.rs1, m.rs2].filter((r): r is number => r !== undefined && r >= 64);
+export const defsOf = (m: MInsn): number[] =>
+  m.rd !== undefined && m.rd >= 64 && m.op !== 'label' ? [m.rd] : [];
+
+export interface MachineBlock {
+  readonly start: number;
+  end: number;
+  readonly labels: string[];
+  readonly succ: number[];
+}
+
+/** Basic blocks of machine code: a label or the instruction after a branch or terminal starts one. */
+export function machineBlocks(code: readonly MInsn[]): MachineBlock[] {
+  const blocks: MachineBlock[] = [],
+    at = new Map<string, number>();
+  let cur: MachineBlock | null = null;
+  code.forEach((m, i) => {
+    if (m.op === 'label' || !cur) {
+      cur = { start: i, end: i, labels: [], succ: [] };
+      blocks.push(cur);
+    }
+    if (m.op === 'label') {
+      cur.labels.push(m.name!);
+export interface Lattice<V> {
+export function setLattice<T extends number | string>(): Lattice<ReadonlySet<T>> {
+export const TOP = 'varies';
+export const BOT = 'unknown';
+export type Flat<T> = typeof TOP | typeof BOT | { readonly value: T };
+export function flatLattice<T extends Json>(): Lattice<Flat<T>> {
+export const I32_MIN = -2147483648;
+export const I32_MAX = 2147483647;
+export type Interval = readonly [number, number] | null;
+export function intervalLattice(
+export function mapLattice<K extends string | number, V>(
+export const lattice = {
+9:const operations: Record<Op, (a: number, b: number) => number> = {
+19:  max: Math.max,
+src/typed/backend/regalloc.ts:28:export const usesOf = (m: MInsn): number[] =>
+src/typed/backend/regalloc.ts:30:export const defsOf = (m: MInsn): number[] =>
+import type { DifferentialEvidence } from '../framework/contracts/index.js';
+import type { Artifact } from '../framework/core/types.js';
+import { createIRArtifact } from '../framework/ir/index.js';
+import { applyNativePassSync, PassError } from '../framework/passes/index.js';
+import { meaningGate } from './contract.js';
+import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
+import { adapter } from './ir.js';
+import { selectFunction, type Module } from './model.js';
+import { checkCudaLowering } from './cuda-contract.js';
+import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+import { emitCuda } from './cuda-source.js';
+import { planFusion, unfusedPlan } from './fusion.js';
+import { parse } from './parser.js';
+import { inlinePass, splitPass } from './passes.js';
+
+export interface TixProgram {
+  readonly origin: Artifact<Module>;
+  readonly current: Artifact<Module>;
+}
+export function compileTix(source: string): TixProgram {
+  const origin = createIRArtifact(adapter, 'tix', parse(source));
+  return { origin, current: origin };
+}
+export function runTix(
+  program: TixProgram,
+  fn: string,
+  inputs: Inputs,
+  options?: { precision?: Precision },
+): BufferValue {
+  return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');
+}
+export function optimizeTix(program: TixProgram, passes: string[]) {
+    85	template <class Launch> static double time_kernels(const Launch& launch, bool benchmark) {
+    86	  Event start, stop;
+    87	  if (benchmark) {
+    88	    launch();
+    89	    check(cudaDeviceSynchronize());
+    90	  }
+    91	  std::array<float, 3> ms{};
+    92	  const int repeats = benchmark ? ms.size() : 1;
+    93	  for (int i = 0; i < repeats; ++i) {
+    94	    check(cudaEventRecord(start.handle));
+    95	    launch();
+    96	    check(cudaEventRecord(stop.handle));
+    97	    check(cudaEventSynchronize(stop.handle));
+    98	    check(cudaEventElapsedTime(&ms[i], start.handle, stop.handle));
+    99	  }
+   100	  if (benchmark) std::sort(ms.begin(), ms.end());
+   101	  return ms[repeats / 2];
+   102	}
+   103	`;
+   104	
+   105	const main = String.raw`
+   106	int main(int argc, char** argv) {
+28:export type MutationOperator =
+40:export const MUTATION_OPERATORS: readonly MutationOperator[] = [
+54:export const OPERATOR_MODELS: Readonly<Record<MutationOperator, string>> = {
+67:export interface MutationSite {
+177:export interface SiteOptions {
+187:export function mutationSites(st: Store, options: SiteOptions = {}): MutationSite[] {
+328:export function applyMutation(st: Store, f: WorkFn, tx: Tx, site: MutationSite): void {
+401:export const mutantPass: TypedPass = typedPass({
+416:export function callGraph(st: Store): Map<string, Set<string>> {
+442:export function affected(st: Store, fn: string): string[] {
+535:export function finiteDomain(
+566:export interface Comparison {
+586:export function compareOn(
+649:export function closure(st: Store, fns: readonly string[]): string[] {
+664:export function subProgram(v: TypedBlocks, fns: readonly string[]): TypedBlocks {
+686:export function overlay(base: Store, part: Store): Store {
+
+exec
+/usr/bin/zsh -c 'T=(ttmp/2026/11/27/IRWB-038-B--*)
+cat > "$T/scripts/08-library-boundaries.mjs" <<'"'EOF'
+// Run from the review worktree root after building dist/.
+import assert from 'node:assert/strict';
+import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const at = path => import(pathToFileURL(resolve('dist', path)));
+const {intervals, usesOf, defsOf} = await at('typed/backend/regalloc.js');
+const {solve} = await at('framework/dataflow/solver.js');
+const {setLattice} = await at('framework/dataflow/lattices.js');
+const {compileTix, runTix} = await at('tensor/index.js');
+const {F32_BINARY, fromBits, toBits} = await at('typed/f32.js');
+
+const program = compileTix('fn f(x:f32[N]):f32[N]{y[i]=max(x[i],1);return y;}');
+const tixMax = runTix(program, 'f', {x:{shape:[1], data:Float32Array.of(NaN)}}).data[0];
+const typedMax = fromBits(F32_BINARY.fmax(toBits(NaN), toBits(1)));
+assert.ok(Number.isNaN(tixMax));
+assert.equal(typedMax, 1);
+console.log('max(NaN,1): Tix NaN, Typed 1');
+
+const code = [
+  {op:'j', target:'join'},
+  {op:'label',name:'dead'}, {op:'j',target:'join'},
+  {op:'label',name:'join'}, {op:'add',rd:66,rs1:64,rs2:65}
+];
+const machine = intervals(code);
+const ids = machine.blocks.map((_, i) => String(i));
+const succ = id => machine.blocks[Number(id)].succ.map(String);
+const graph = {entry:ids[0],blocks:ids,succ,preds:id=>ids.filter(b=>succ(b).includes(id))};
+function transfer(id, liveOut) {
+  const live = new Set(liveOut);
+  const {start,end} = machine.blocks[Number(id)];
+  for (let i=end; i>=start; i--) {
+    for (const reg of defsOf(code[i])) live.delete(reg);
+    for (const reg of usesOf(code[i])) live.add(reg);
+  }
+  return live;
+}
+const facts = solve(graph,{direction:'backward',lattice:setLattice(),transfer});
+const ordered = values => [...values].sort((a,b)=>a-b);
+const machineOut = machine.liveOut.map(ordered);
+const solverOut = ids.map(id=>ordered(facts.out.get(id)));
+assert.deepEqual(machineOut, [[64,65],[64,65],[]]);
+assert.deepEqual(solverOut, [[64,65],[],[]]);
+console.log('machine vs entry-reachable live-out', machineOut, solverOut);
+EOF
+node \""'$T/scripts/08-library-boundaries.mjs"
+rg -n '"'"'^test'"\\(' tests/typed/{speed,f32,mutate,rules,ssa}.test.mjs |rg -i 'lvn|reaching|loop whose|sccp finds|boundaries|f32|pure' |head -22" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1304ms:
+max(NaN,1): Tix NaN, Typed 1
+machine vs entry-reachable live-out [ [ 64, 65 ], [ 64, 65 ], [] ] [ [ 64, 65 ], [], [] ]
+tests/typed/mutate.test.mjs:62:test('IRWB-005: every mutant of Blend and of the f32 fixture is a valid, changed revision', async () => {
+tests/typed/mutate.test.mjs:140:test('IRWB-005: strong cases extend the default cases and reach the boundaries', async () => {
+tests/typed/f32.test.mjs:24:test('P4.2: f32 operations on bits follow RV32F', () => {
+tests/typed/f32.test.mjs:71:test('P4.2: the evaluator agrees with the reference compiler on every pair of f32 edge values', () => {
+tests/typed/f32.test.mjs:99:test('P4.2: values carry their type; a mistyped table is refused', () => {
+tests/typed/f32.test.mjs:128:test('P4.2: O2 keeps the meaning of f32 code; f32 identities are not applied; fold rounds as the target does', async () => {
+tests/typed/f32.test.mjs:151:test('P4.2: unsound f32 rewrites are rejected by the meaning check with NaN, -0 and ∞ counterexamples', async () => {
+tests/typed/ssa.test.mjs:53:test('A1: on every corpus function at r0, SSA def-use agrees with reaching definitions', async () => {
+tests/typed/ssa.test.mjs:63:test('A1: the check sees a wrong name, and a loop whose header is the entry block gets entry phis', async () => {
+tests/typed/ssa.test.mjs:99:test('A2: sccp finds the constant behind a decided branch, which constprop cannot see', async () => {
+tests/typed/rules.test.mjs:139:test('B2: x + (-0) -> x passes the meaning check\'s f32 edge values and is refuted by NaN payloads', () => {
+
+web search: 
+web search: Cytron efficiently computing static single assignment form IBM research Wegman Zadeck constant propagation conditional branches IBM ...
+web search: 
+web search: site:research.ibm.com constant propagation with conditional branches Wegman Zadeck
+exec
+/usr/bin/zsh -c 'T=(ttmp/2026/11/27/IRWB-038-B--*)
+cat >> "$T/scripts/08-library-boundaries.mjs" <<'"'EOF'
+
+// Existing fixtures provide independent oracles for the graph and testing clients.
+const {execFileSync} = await import('node:child_process');
+execFileSync(process.execPath, [
+  '--test','--test-name-pattern=phis at the loop head|loop whose header|sccp finds|Blend facts|strong cases extend|f32 operations on bits',
+  'tests/typed/ssa.test.mjs','tests/typed/evaluate-analyses.test.mjs',
+  'tests/typed/mutate.test.mjs','tests/typed/f32.test.mjs'
+], {stdio:'inherit'});
+EOF
+node \""'$T/scripts/08-library-boundaries.mjs"
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 2293ms:
+max(NaN,1): Tix NaN, Typed 1
+machine vs entry-reachable live-out [ [ 64, 65 ], [ 64, 65 ], [] ] [ [ 64, 65 ], [], [] ]
+✔ tests/typed/evaluate-analyses.test.mjs (480.888659ms)
+✔ tests/typed/f32.test.mjs (735.998914ms)
+✔ tests/typed/mutate.test.mjs (915.127982ms)
+✔ tests/typed/ssa.test.mjs (1046.230691ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1105.070358
+
+exec
+/usr/bin/zsh -c "rg -n '"'^export|''^function'"' src/framework/dataflow/lattices.ts src/typed/mutate.ts |tail -53; nl -ba src/typed/sccp.ts |sed -n '25,117p'; rg -n 'sgn|branch|sccp|ssa' ../b1-*-036-*/src/typed/{promote,webs,frame-slots,dispatch}.ts(N) | head -17; rg -n 'fusion|dependence|scope' src/framework/ir/types.ts |head -9; rg -n 'export|function' src/typed/rotate.ts|head -12; cat ttmp/2026/11/27/IRWB-038*/index.md|tail -9; sed -n '31,38p;90,102p' ttmp/2026/11/27/IRWB-038*/design-doc/*" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 972ms:
+src/typed/mutate.ts:28:export type MutationOperator =
+src/typed/mutate.ts:40:export const MUTATION_OPERATORS: readonly MutationOperator[] = [
+src/typed/mutate.ts:54:export const OPERATOR_MODELS: Readonly<Record<MutationOperator, string>> = {
+src/typed/mutate.ts:67:export interface MutationSite {
+src/typed/mutate.ts:177:export interface SiteOptions {
+src/typed/mutate.ts:187:export function mutationSites(st: Store, options: SiteOptions = {}): MutationSite[] {
+src/typed/mutate.ts:224:function valueSites(
+src/typed/mutate.ts:270:function hoistable(
+src/typed/mutate.ts:317:function copyTree(tx: Tx, st: Store, id: string): string {
+src/typed/mutate.ts:328:export function applyMutation(st: Store, f: WorkFn, tx: Tx, site: MutationSite): void {
+src/typed/mutate.ts:401:export const mutantPass: TypedPass = typedPass({
+src/typed/mutate.ts:416:export function callGraph(st: Store): Map<string, Set<string>> {
+src/typed/mutate.ts:442:export function affected(st: Store, fn: string): string[] {
+src/typed/mutate.ts:465:function domainOf(spec: any, type: string, records: any, enums: any, budget: number): Domain | null {
+src/typed/mutate.ts:535:export function finiteDomain(
+src/typed/mutate.ts:566:export interface Comparison {
+src/typed/mutate.ts:586:export function compareOn(
+src/typed/mutate.ts:649:export function closure(st: Store, fns: readonly string[]): string[] {
+src/typed/mutate.ts:664:export function subProgram(v: TypedBlocks, fns: readonly string[]): TypedBlocks {
+src/typed/mutate.ts:686:export function overlay(base: Store, part: Store): Store {
+src/framework/dataflow/lattices.ts:10:export interface Lattice<V> {
+src/framework/dataflow/lattices.ts:22:export function setLattice<T extends number | string>(): Lattice<ReadonlySet<T>> {
+src/framework/dataflow/lattices.ts:40:export const TOP = 'varies';
+src/framework/dataflow/lattices.ts:41:export const BOT = 'unknown';
+src/framework/dataflow/lattices.ts:42:export type Flat<T> = typeof TOP | typeof BOT | { readonly value: T };
+src/framework/dataflow/lattices.ts:45:export function flatLattice<T extends Json>(): Lattice<Flat<T>> {
+src/framework/dataflow/lattices.ts:60:export const I32_MIN = -2147483648;
+src/framework/dataflow/lattices.ts:61:export const I32_MAX = 2147483647;
+src/framework/dataflow/lattices.ts:63:export type Interval = readonly [number, number] | null;
+src/framework/dataflow/lattices.ts:66:export function intervalLattice(
+src/framework/dataflow/lattices.ts:93:export function mapLattice<K extends string | number, V>(
+src/framework/dataflow/lattices.ts:133:export const lattice = {
+    25	  | { readonly k: 'const'; readonly v: number; readonly t: 'i32' | 'f32' }
+    26	  | { readonly k: 'bot' };
+    27	const TOP: Lat = { k: 'top' },
+    28	  BOT: Lat = { k: 'bot' };
+    29	const same = (a: Lat, b: Lat) =>
+    30	  a.k === b.k && (a.k !== 'const' || (b.k === 'const' && a.v === b.v && a.t === b.t));
+    31	export const meet = (a: Lat, b: Lat): Lat =>
+    32	  a.k === 'top' ? b : b.k === 'top' ? a : a.k === 'const' && same(a, b) ? a : BOT;
+    33	
+    34	const FOLDS = new Set<string>(['eqz', ...FOLD_I32, ...F32_FOLDABLE]);
+    35	const MIN = -2147483648;
+    36	
+    37	export interface SccpResult {
+    38	  /** SSA name -> lattice value. */
+    39	  readonly values: ReadonlyMap<string, Lat>;
+    40	  /** Executable edges as `pred>block` ('^entry>entry' included). */
+    41	  readonly edges: ReadonlySet<string>;
+    42	  readonly blocks: ReadonlySet<string>;
+    43	  readonly rounds: number;
+    44	}
+    45	
+    46	/** The SCCP fixpoint of one function, on its SSA form. */
+    47	export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
+    48	  const L = new Map<string, Lat>();
+    49	  for (const [n, d] of Object.entries(ssa.names))
+    50	    L.set(
+    51	      n,
+    52	      d.kind === 'param'
+    53	        ? BOT
+    54	        : d.kind === 'init'
+    55	          ? { k: 'const', v: 0, t: typeClass(f.locals[d.local].type) }
+    56	          : TOP,
+    57	    );
+    58	  const edges = new Set<string>([`${VIRTUAL_ENTRY}>${ssa.entry}`]),
+    59	    blocks = new Set<string>([ssa.entry]);
+    60	  const rpo = cfgOf(f).rpo.filter(b => !ssa.unreachable.includes(b));
+    61	  const evalTree = (vid: string): Lat => {
+    62	    const v = st.get(vid) as ValueRec;
+    63	    if (v.op === 'const') return { k: 'const', v: v.imm as number, t: v.type === 'f32' ? 'f32' : 'i32' };
+    64	    if (v.op === 'get') return L.get(ssa.uses[vid]) ?? BOT;
+    65	    if (!FOLDS.has(v.op)) return BOT;
+    66	    const args = v.args.map(evalTree);
+    67	    if (args.some(a => a.k === 'bot')) return BOT;
+    68	    if (args.some(a => a.k === 'top')) return TOP;
+    69	    const xs = args.map(a => (a as { v: number }).v);
+    70	    if ((v.op === 'div' || v.op === 'rem') && (xs[1] === 0 || (xs[0] === MIN && xs[1] === -1))) return BOT;
+    71	    return { k: 'const', v: evalOp(v.op, xs) | 0, t: F32_RESULT.has(v.op) ? 'f32' : 'i32' };
+    72	  };
+    73	  let changed = true,
+    74	    rounds = 0;
+    75	  const set = (name: string, val: Lat) => {
+    76	    if (!same(L.get(name)!, val)) {
+    77	      L.set(name, val);
+    78	      changed = true;
+    79	    }
+    80	  };
+    81	  const mark = (from: string, to: string) => {
+    82	    const e = `${from}>${to}`;
+    83	    if (edges.has(e)) return;
+    84	    edges.add(e);
+    85	    blocks.add(to);
+    86	    changed = true;
+    87	  };
+    88	  while (changed) {
+    89	    changed = false;
+    90	    rounds++;
+    91	    for (const b of rpo) {
+    92	      if (!blocks.has(b)) continue;
+    93	      for (const phi of ssa.phis[b] ?? []) {
+    94	        let val: Lat = TOP;
+    95	        for (const [pred, a] of Object.entries(phi.args))
+    96	          if (edges.has(`${pred}>${b}`)) val = meet(val, L.get(a)!);
+    97	        set(phi.name, val);
+    98	      }
+    99	      for (const sid of (st.get(b) as { stmts: string[] }).stmts) {
+   100	        const s = st.get(sid) as StmtRec;
+   101	        if (s.op === 'set') set(ssa.defs[sid], evalTree(s.value!));
+   102	        else if (s.op === 'br') mark(b, s.to!);
+   103	        else if (s.op === 'br_if') {
+   104	          const c = evalTree(s.cond!);
+   105	          if (c.k === 'const') mark(b, c.v !== 0 ? s.then! : s.else!);
+   106	          else if (c.k === 'bot') {
+   107	            mark(b, s.then!);
+   108	            mark(b, s.else!);
+   109	          }
+   110	        }
+   111	      }
+   112	    }
+   113	  }
+   114	  return { values: L, edges, blocks, rounds };
+   115	}
+   116	
+   117	/** The `set` statements (and initial values) a constant name rests on, through phi arguments on executable edges. */
+../b1-ds-x-irwb-036-d/src/typed/dispatch.ts:5: * load — and branches on what it read. When the interpreted program is a promise (a `cells` binding, see
+39:export const rotateSpec: TypedPassSpec = {
+Summary: ""
+LastUpdated: 2026-11-27T12:55:08.742469048-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Composing compiler transformations and their evidence
+
+The [design review](design-doc/01-what-a-checked-compiler-transformation-should-return.md) assesses six framework layers and proposes six reusable concepts. The [branch survey](various/01-cell-survey.md) identifies the 31 implementation snapshots. The [diary](log/01-diary.md) records the experiments and their limitations.
+## Decision
+
+Make a **validated transformation between named artifact ports** the unit that a strategy can select, cache or publish. Let a domain produce a candidate in its natural representation. Give the candidate a revision-scoped explanation of its edits and give the validator an explicit statement of what must hold. This is a change to who owns acceptance. It does not require rewriting either compiler into a common instruction set.
+
+The motivating experiment takes one real Tix reduction split. Its exact gate rejected it. The stock strategy bridge ran the very same pass, returned a changed artifact and recorded no contract. Supplying a managed correspondence requirement revealed a second problem. The generic edit named the function and parameter as well as its statements, and the contract rejected that universe. Fixing only the async call site would leave both the semantic obligation and the vocabulary of the mapping unresolved. See `src/tensor/index.ts:39`, `src/framework/passes/bridge.ts:39`, `src/framework/passes/define-pass.ts:348`, `scripts/01-pass-boundary.mjs:17` and `scripts/01-pass-boundary.mjs:45`.
+
+**Evidence conventions.** Unqualified source paths refer to review base `93ec5fc`. Ticket-relative paths begin with `scripts/` or `various/`. Prefixes such as **T6-D**, **A0-G** and **B1-F** identify the corresponding sibling and revision in the [31-cell survey](../various/01-cell-survey.md). The table distinguishes the committed diff from working-copy source and gives each cell's own record. Its counts cover changed paths under src and tools relative to t6-base, not completed deliverables. D1-G is also the merged D1 exemplar, so it supplies one design lineage. Runtime conclusions below identify the probe. A branch source citation alone describes an implementation choice. GPU claims in the historical reports are the authors' measurements. This review ran CPU probes.
+
+| IR | Native representations, optional logical projections, typed relation kinds, bounded correspondence composition and scoped edit authority. The separation of operation log and actual diff is valuable for auditing. `src/framework/ir/types.ts:64`, `src/framework/ir/README.md:48`, `src/framework/ir/correspondence.ts:148`, `src/framework/ir/PATTERNS-AND-REWRITES.md:109`. | Name each projection and its universe in references. Allow the native builder to emit a logical edit with witnesses. Requiring a full inverse for every read projection gives a poor price for expression matching. Tix's adapter has no rebuild and stores expressions inside attributes; Typed has a value-handle matcher and editor. `src/tensor/ir.ts:105`, `src/tensor/ir.ts:140`, `src/tensor/passes.ts:82`, `src/typed/tx.ts:120`, `src/typed/rules/compile.ts:24`. |
+| Contracts | Typed ports, versioned validators, pre/post conditions, fact-transfer verification and external certificate verification. Preserve deterministic differential generation, delegated deciding and canonical case fingerprint checks. `src/framework/contracts/analysis-manager.ts:885`, `src/framework/contracts/analysis-manager.ts:1226`, `src/framework/contracts/differential.ts:209`, `src/framework/contracts/differential.ts:356`. | Make the reference semantics, domain of inputs, comparator, quantifier and validator explicit. Permit batch-only evaluation. CUDA currently supplies a throwing subject runner because the scalar runner is mandatory, and separately maps infrastructure failure into accepted=false. `src/framework/contracts/differential.ts:49`, `src/tensor/cuda-contract.ts:153`, `src/tensor/cuda-contract.ts:169`, `src/tensor/cuda-contract.ts:253`. |
+| Passes | Write-set checking, native or projected candidate construction and recomputation as a fallback for a preservation claim. Preserve the no-edit fast path. `src/framework/passes/define-pass.ts:216`, `src/framework/passes/define-pass.ts:302`, `src/framework/passes/define-pass.ts:315`, `src/framework/passes/define-pass.ts:373`. | Make an optimization a same-port instance of transformation. Give both execution modes the same specification and outcomes; determine at plan construction which capabilities a synchronous host can supply. Give identity proposals a `no-change` outcome so reports distinguish them from a new equivalence check. `src/framework/passes/define-pass.ts:225`, `src/framework/passes/define-pass.ts:250`, `src/tensor/index.ts:44`. |
+| Dataflow | Lattice/transfer separation, worklist and sweep schedules, edge refinement, explicit widening and bounded nonconvergence. Typed liveness, reaching definitions and ranges supply distinct instances. `src/framework/dataflow/solver.ts:24`, `src/framework/dataflow/solver.ts:90`, `src/typed/analyses.ts:296`, `src/typed/analyses.ts:352`, `src/typed/analyses.ts:486`. | Keep the solver available to analyses over finite dependence graphs. Let a registered analysis also call a symbolic relation algorithm or a direct traversal. Tix's affine read relation and ordered reductions are a poor match for CFG joins; the production planner currently computes them directly. `src/tensor/fusion.ts:83`, `src/tensor/ir.ts:123`, `src/framework/dataflow/analysis.ts:153`, `scripts/02-binding-times.mjs:36`. |
+| Strategy | Versioned declarative plans, recoverable alternatives, independent branches, budgets, metrics and recorded selection. Typed chooses pipelines with these operations; the merged strategy fixture exercises all 13 node kinds. `src/typed/strategies.ts:175`, `src/framework/strategy/interpreter.ts:443`, `tests/framework/strategy.test.mjs:27`, `scripts/03-merged-fixtures.sh:4`. | Keep one strategy semantics. Domain-defined kernels may run immediately, dispatch to workers, or await device observations. Keep compile-time selection distinct from a generated runtime shape guard. Tix currently does the latter and parses arm IDs out of emitted source. `src/tensor/fusion.ts:136`, `src/tensor/cuda-runtime.ts:142`, **T6-J** `src/tensor/schedule-plan.ts:45`. |
+
+The import evidence is specific to the merged tensor implementation. Its two optimization registrations build native modules, its optimizer directly maps a list of names, and its lowering directly calls the planner. Searching the tensor sources found no framework dataflow or rewrite-engine use. The matcher hit in the parser is JavaScript string matching. The framework's generic rewrite engine has valuable scheduling and match evidence; there is no reason to route a whole-function fusion planner through it merely to increase adoption. `src/tensor/passes.ts:82`, `src/tensor/index.ts:35`, `src/tensor/index.ts:66`, `src/tensor/parser.ts:32`, `src/framework/ir/PATTERNS-AND-REWRITES.md:74`.
+
+## Proposed concepts and their smallest instances
+
+The evidence supports extracting the following *interfaces*. The signatures, division of ownership and proposed evaluation criteria are design hypotheses. “Domain” below means the implementer supplies the operators' semantics, layout, aliasing, floating-point model and measurement method. A generic validator cannot infer those by inspecting JSON.
+
+### 1. Partial transformation with a single publication boundary
+
+exec
+/usr/bin/zsh -c "rg -n 'export function|function ' src/typed/rotate.ts |head; rg -n 'reach|ssa|domina' ../b1-op-irwb-036-f/src/typed/webs.ts |head -10; nl -ba src/typed/sccp.ts|sed -n '46,88p'; nl -ba src/typed/backend/coalesce.ts|sed -n '55,77p'; rg -n '"'^export function'"' src/tensor/passes.ts src/typed/parts.ts|tail -10" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 830ms:
+2: * IRWB-036-F: live-range splitting. A local's definitions and uses fall into webs: the definitions that reach one
+4: * its parameter value) gets a fresh local. Each use still reads exactly the definitions that reached it, so the
+24:  needs: { reach: 'reaching' },
+26:  preserves: ['cfg', 'dominators'],
+28:    const reach = facts.reach!;
+43:              const ds = reach.reachingAt(s.id, l).map(d => (parent.has(d) ? d : `init:${l}`));
+56:            (n = tx.local(f.locals[l].name, { because: [`fact:reaching(${f.name})@r${tx.rev - 1}`] })),
+70:    const because = [`fact:reaching(${f.name})@r${tx.rev - 1}`];
+    46	/** The SCCP fixpoint of one function, on its SSA form. */
+    47	export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
+    48	  const L = new Map<string, Lat>();
+    49	  for (const [n, d] of Object.entries(ssa.names))
+    50	    L.set(
+    51	      n,
+    52	      d.kind === 'param'
+    53	        ? BOT
+    54	        : d.kind === 'init'
+    55	          ? { k: 'const', v: 0, t: typeClass(f.locals[d.local].type) }
+    56	          : TOP,
+    57	    );
+    58	  const edges = new Set<string>([`${VIRTUAL_ENTRY}>${ssa.entry}`]),
+    59	    blocks = new Set<string>([ssa.entry]);
+    60	  const rpo = cfgOf(f).rpo.filter(b => !ssa.unreachable.includes(b));
+    61	  const evalTree = (vid: string): Lat => {
+    62	    const v = st.get(vid) as ValueRec;
+    63	    if (v.op === 'const') return { k: 'const', v: v.imm as number, t: v.type === 'f32' ? 'f32' : 'i32' };
+    64	    if (v.op === 'get') return L.get(ssa.uses[vid]) ?? BOT;
+    65	    if (!FOLDS.has(v.op)) return BOT;
+    66	    const args = v.args.map(evalTree);
+    67	    if (args.some(a => a.k === 'bot')) return BOT;
+    68	    if (args.some(a => a.k === 'top')) return TOP;
+    69	    const xs = args.map(a => (a as { v: number }).v);
+    70	    if ((v.op === 'div' || v.op === 'rem') && (xs[1] === 0 || (xs[0] === MIN && xs[1] === -1))) return BOT;
+    71	    return { k: 'const', v: evalOp(v.op, xs) | 0, t: F32_RESULT.has(v.op) ? 'f32' : 'i32' };
+    72	  };
+    73	  let changed = true,
+    74	    rounds = 0;
+    75	  const set = (name: string, val: Lat) => {
+    76	    if (!same(L.get(name)!, val)) {
+    77	      L.set(name, val);
+    78	      changed = true;
+    79	    }
+    80	  };
+    81	  const mark = (from: string, to: string) => {
+    82	    const e = `${from}>${to}`;
+    83	    if (edges.has(e)) return;
+    84	    edges.add(e);
+    85	    blocks.add(to);
+    86	    changed = true;
+    87	  };
+    88	  while (changed) {
+    55	      }
+    56	    }
+    57	  }
+    58	  // IRWB-034-G: at a copy `rd <- rs`, the registers that an earlier copy in the block set from the same rs, with
+    59	  // neither side redefined since, hold the value rd receives. The definition does not make them interfere with rd
+    60	  // (the argument of the copy exception itself), so `a <- s; b <- s` can end up as one register.
+    61	  const sameAsSource = new Map<number, Set<number>>();
+    62	  for (const b of blocks) {
+    63	    const copyOf = new Map<number, number>();
+    64	    for (let i = b.start; i <= b.end; i++) {
+    65	      const m = code[i];
+    66	      if (isCopy(m)) {
+    67	        const same = [...copyOf].filter(([, s]) => s === m.rs1).map(([q]) => q);
+    68	        if (same.length) sameAsSource.set(i, new Set(same));
+    69	      }
+    70	      for (const r of defsOf(m)) {
+    71	        copyOf.delete(r);
+    72	        for (const [q, s] of copyOf) if (s === r) copyOf.delete(q);
+    73	      }
+    74	      if (isCopy(m)) copyOf.set(m.rd!, m.rs1!);
+    75	    }
+    76	  }
+    77	  const adj = new Map<number, Set<number>>();
+src/typed/parts.ts:92:export function partText(p: FunctionPart): string {
+src/typed/parts.ts:115:export function partHash(p: FunctionPart): string {
+src/typed/parts.ts:123:export function calleesOf(p: FunctionPart): readonly string[] {
+src/typed/parts.ts:134:export function hasFrameArrays(v: TypedBlocks): boolean {
+src/typed/parts.ts:139:export function closureOf(v: TypedBlocks, f: string): readonly string[] {
+src/typed/parts.ts:169:export function partsRef(revision: string, v: TypedBlocks, full = false): PartsRef {
+src/typed/parts.ts:189:export function parsePart(text: string): PartRecords {
+src/typed/parts.ts:193:export function assembleParts(ref: PartsRef, part: (hash: string) => PartRecords | undefined): TypedBlocks {
+src/typed/parts.ts:224:export function missingParts(v: TypedBlocks, have: Set<string>): [string, string][] {
+src/typed/parts.ts:241:export function closureKey(v: TypedBlocks, f: string): string {
+
+codex
+The probes found two policies a shared API needs to expose. Typed’s `fmax(NaN, 1)` returned `1`, while Tix returned NaN. The machine allocator and the generic solver also disagreed on live-out facts for an unreachable block. I’ll use those cases as acceptance tests for the proposed library boundary.
+exec
+/usr/bin/zsh -c "python3 - <<'PY'
+from pathlib import Path
+t=next(Path('ttmp/2026/11/27').glob('IRWB-038-B--*'))
+d=next(t.glob('log/*.md'))
+d.write_text(d.read_text()+'''
+## 4. Standard-library follow-up
+
+The coordinator asked me to revisit ownership of the proposed abstractions. I compared the Typed graph, numeric, measurement and testing code with the tensor evaluator and machine backend, then ran a probe before choosing extraction boundaries. The comparison used the existing local build at db8c6fb on Node 24.
+
+"'`node <ticket>/scripts/08-library-boundaries.mjs` returned 1 for Typed fmax(NaN,1) and NaN for Tix. On an unreachable predecessor of a reachable join, the machine interval builder assigned two live-out registers and the generic solver assigned none. Both agreed on the reachable blocks. Four selected fixture files also passed. See `scripts/08-library-boundaries.mjs:12`, `scripts/08-library-boundaries.mjs:40`, `src/typed/backend/regalloc.ts:97` and `src/framework/dataflow/solver.ts:100`. These results require explicit numeric profiles and analysis scope in the proposed library.
+
+### Follow-up brief (verbatim)
+
+> One more question for IRWB-038-B, from the coordinator, at the user'"'s request. The other reviewers received it during their first turn. Continue in the same worktree and ticket, extend your design document, keep your diary, and commit.
+>
+> **A standard library of compiler building blocks.** Some reusable parts do not belong in the framework's generic core but are still common to many compilers and analyses. Examples: dominators and natural loops, SSA construction, liveness and other lattices, value numbering, affine expressions and dependence tests, binding-time analysis and a partial-evaluation core, exact f32 arithmetic, rule verifiers, case generators, instruction attribution, edit classification, and cost and timing measurement, plus others the material shows.
+>
+> Propose a standard library of such primitives, so the project starts building a clean, composable, reusable set of them. Cover:
+> - what belongs in the generic core, what in the standard library, what stays in a domain, and the criteria that decide it;
+> - for each primitive: its interface, the theory it implements, the existing code (in either domain or any cell) it would replace, and how it composes with other primitives and with the framework.
+>
+> Add it to the design document as \"the proposed standard library: its layering criteria and its primitives\", and revise the rest where this changes your conclusions.
+>
+> Final message: the same list as before (ticket and document paths, five findings, framework concepts, fundamental changes, last commit), plus \"the standard-library primitives you propose, one line each\".
+''')
+PY
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1594ms:
+exec
+/usr/bin/zsh -lc 'git add -- ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/08-library-boundaries.mjs ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/log/01-diary.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1971ms:
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-038-B: probe numeric profiles and machine liveness scope'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 1799ms:
+[r3-am/irwb-038-b bca8943] IRWB-038-B: probe numeric profiles and machine liveness scope
+ 2 files changed, 71 insertions(+)
+ create mode 100644 ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/08-library-boundaries.mjs
+
+exec
+/usr/bin/zsh -c "python3 - <<'PY'
+from pathlib import Path
+t=next(Path('ttmp/2026/11/27').glob('IRWB-038-B--*')); p=next(t.glob('design-doc/*.md'))
+s=p.read_text()
+section=\"\"\"## The proposed standard library: its layering criteria and its primitives
+
+**Extraction decision.** Start with the repeated backward-liveness equations in the allocator and coalescer. They are two real clients within one compiler. Their different downstream needs (interval construction and copy interference) put a useful limit on the API. The graph, use/def projection and traversal scope suffice. A shared RV32 instruction class, register allocator or optimization policy would add coupling. The CPU probe exposes an important wrinkle: solving only from entry changes the fact returned for an unreachable predecessor. Preserve each caller’s coverage contract. "'`src/typed/backend/regalloc.ts:85`, `src/typed/backend/regalloc.ts:121`, `src/typed/backend/coalesce.ts:27`, `src/typed/analyses.ts:296`, `scripts/08-library-boundaries.mjs:20`.
+
+### Layering criteria
+
+| Owner | Admission test | Responsibility and limit |
+|---|---|---|
+| Generic core | Removing this facility would break the meaning of composition, identity or acceptance even for a domain with no CFG, numeric values or hardware backend. | Versioned artifact/port references, projection identity, candidate isolation, dependency records, validation outcomes and publication, strategy control, and the shape of a correspondence or premise. An execution can say which validator ran and what it concluded without knowing floating-point arithmetic. The existing manager and strategy already expose suitable integration points. `src/framework/contracts/analysis-manager.ts:518`, `src/framework/contracts/analysis-manager.ts:1577`, `src/framework/strategy/interpreter.ts:134`. |
+| Standard library | There is a named algorithm or law, a small input vocabulary, at least two credible clients and a way to check the output independently. The clients can be different phases or independent cells. | Optional algorithms on plain graph, value, relation, observation or event views. A library result can be computed without a compiler session; register it as a versioned analysis, validator, metric or candidate builder when revision tracking matters. A concrete lattice, proof procedure or estimator has an owner here. A proposed second client is labelled below. |
+| Domain | Correctness or utility depends on language evaluation, memory layout, ABI, target scheduling, host effects, or what the experiment is trying to measure. | Supply the views, operator interpretation, initial facts, alias/trap rules, observations, cost objectives, and edit/emission callbacks. For example, Tix'"'s reduction order and CUDA launch barriers constrain scheduling, while Typed chooses how a local is initialized and what register classes can coalesce. "'`src/tensor/evaluate.ts:81`, `src/tensor/fusion.ts:246`, `src/typed/ssa.ts:6`, `src/typed/backend/coalesce.ts:29`. |
+
+**Dependency direction.** Domains instantiate library algorithms. Optional registrations connect library values to core ports. Core has no dependency on the catalogue. A standalone algorithm receives a projected value or graph and returns an immutable result or refusal. The registration binds that result to exact revisions, parameters, profile and algorithm version. A domain edit still goes through candidate validation. Reusing the calculation across projects does not itself warrant reusing a cached answer across revisions.
+
+**Promotion test.** Name both clients, the common law, the code to retire and one input on which an incautious extraction changes meaning. An algorithm that requires a switch on language or target should expose that semantic operation as an input, or stay with its existing owner. Share an implementation only after comparing results on both clients and measuring any projection cost. The proposed `stdlib` is a logical ownership boundary; the first extraction can occur in place. The signatures below are proposals. Their replacement sites are source observations. Probe results and untested extensions are identified explicitly.
+
+### Graphs and dataflow
+
+1. **Dominance, dominance frontiers and natural loops.** `dominance(cfg, entry) → {reachable, idom, frontier}`; `naturalLoops(cfg, dom) → {header, latches, body, exits, externalPredecessors}[]`. Dominance means every entry path passes through the dominator. For a natural loop, merge the backwards predecessor closures of all dominance backedges with the same header. Preserve the reachable-node set and distinguish irreducible cycles from natural loops. Replace the graph walks in Typed dominance, SSA frontier construction and loop discovery. Keep the Typed computation of assigned locals and the test for a usable preheader in the client. SSA consumes frontiers; LICM consumes the loop and its domain facts. Register both as revision-scoped queries. The merged two-latch fixture and the virtual-entry fixture are acceptance tests. `src/typed/analyses.ts:140`, `src/typed/analyses.ts:215`, `src/typed/analyses.ts:239`, `src/typed/ssa.ts:75`, `tests/typed/attribute.test.mjs:58`, `tests/typed/ssa.test.mjs:63`. [LLVM loop terminology](https://llvm.org/docs/LoopTerminology.html)
+
+2. **Monotone dataflow, lattices and bit-vector analyses.** `solve(graph, scope, direction, lattice, boundary, transfer, edgeRefine?, widen?) → in/out`; `liveness(useDef, observableExits)` and `reachingDefs(genKill, entryDefs)` instantiate it. In backward liveness, OUT is the union of successor IN sets and IN = USE ∪ (OUT ∖ DEF). Supply powerset, flat constants, intervals and pointwise maps. Encodings may use bitsets while preserving the same lattice. Reuse the existing solver and lattice definitions; replace repeated machine backward sweeps and the common equations in Typed liveness/reaching definitions. Instruction uses, physical register effects, integer overflow and widening thresholds stay explicit. Coalescing consumes live-after; allocation builds intervals; dead-code elimination consumes liveness plus effects. The probe found {64,65} vs ∅ for the unreachable block. An all-blocks least fixed point and an entry-reachable result must have different scope keys. `src/framework/dataflow/lattices.ts:22`, `src/framework/dataflow/lattices.ts:45`, `src/framework/dataflow/lattices.ts:66`, `src/framework/dataflow/lattices.ts:93`, `src/framework/dataflow/solver.ts:90`, `src/typed/analyses.ts:352`, `src/typed/backend/regalloc.ts:97`, `src/typed/backend/coalesce.ts:32`, `scripts/08-library-boundaries.mjs:40`. [Cousot on abstract interpretation](https://www.di.ens.fr/~cousot/AI/)
+
+3. **SSA construction as a read-only view.** `buildSSA(cfg, dom, orderedDefsUses, entryDefinitions) → {defOfUse, phiInputs, originOfDef}`. Place φ functions at iterated dominance frontiers and rename along the dominator tree. Entry definitions and unreachable blocks are explicit; clients with parallel CFG edges need predecessor-edge identity where values differ. Extract placement and renaming from Typed. Retain local names, initial zero values, parameter IDs and statement traversal in its projection. SCCP consumes the def-use graph; the reaching-definitions checker independently checks the constructed view. Pruned SSA using liveness is a later selectable policy. The entry-loop fixture matters because the virtual entry supplies a real incoming value. `src/typed/ssa.ts:60`, `src/typed/ssa.ts:95`, `src/typed/ssa.ts:219`, `src/typed/ssa.ts:325`, `src/typed/sccp.ts:47`, `tests/typed/ssa.test.mjs:63`. [Cytron et al. on SSA construction](https://research.ibm.com/publications/efficiently-computing-static-single-assignment-form-and-the-control-dependence-graph)
+
+4. **Sparse conditional constant propagation (SCCP).** `sccp(ssa, entryValues, fold, feasibleSuccessors) → {abstractValues, executableEdges, justifications}`. Compute the coupled fixed point of value information and executable edges; join φ operands only from feasible predecessors. Extract the solver and typed-constant lattice coordination from Typed. Keep operation evaluation, trap behavior and branch conventions local. A value simplifier can consume constant facts and a CFG simplifier can consume infeasible edges. Each applies through a separate checked candidate. Unknown operations conservatively return overdefined. The existing decided-branch fixture is the first differential check; using this primitive to simplify a residual VM is conjectural. `src/typed/sccp.ts:23`, `src/typed/sccp.ts:47`, `src/typed/sccp.ts:141`, `src/typed/passes.ts:352`, `tests/typed/ssa.test.mjs:99`. [Wegman and Zadeck on conditional propagation](https://research.ibm.com/publications/constant-propagation-with-conditional-branches)
+
+5. **Local value numbering.** `number(op, type, literalBits, operandNumbers, stateVersion) → congruenceClass`; `available(class, point) → dominatingRepresentative?`. This is congruence under deterministic operators with equal operands and relevant state. Replace the repeated tree-key logic in local value numbering and loop-invariant expression sharing. Keep the placement decision, scope, purity, traps and alias invalidation with each pass. A proof of equal values does not permit moving an expression that may trap onto a new path. Use SSA names or kill old representatives on assignment; retain a structural equality check for hash collisions. Return representative sites as edit premises. Check a repeated pure expression and the same expression across a local redefinition. `src/typed/passes.ts:480`, `src/typed/passes.ts:525`, `src/typed/passes.ts:541`, `src/typed/passes.ts:561`, `src/typed/analyses.ts:40`. [Cornell on local value numbering](https://www.cs.cornell.edu/courses/cs6120/2023fa/lesson/3/)
+
+6. **Transitive dependence closure and slicing.** `closure(roots, successors, direction) → members`; `sliceKey(members, revisionOfMember, externalInputs) → key`. Forward reachability answers which callees must be present for execution; reverse reachability answers which callers a mutation may affect. Extract repeated walks in function-part reuse and mutation testing. Keep call-target resolution, missing callees, frame-layout dependencies and copying of a subprogram in Typed. The core query records the resulting dependencies. A recursive call cycle must terminate and a changed external input must invalidate the result even when membership is unchanged. `src/typed/parts.ts:123`, `src/typed/parts.ts:139`, `src/typed/parts.ts:241`, `src/typed/mutate.ts:416`, `src/typed/mutate.ts:442`, `src/typed/mutate.ts:649`. [Adapton on demand-driven dependencies](https://www.cs.umd.edu/~mwh/papers/hammer13adapton.html)
+
+### Scheduling, specialization and numerical semantics
+
+7. **Affine expressions, access relations and dependence tests.** `normalize(expr)`, `substitute(map, bindings)` and `violations(iterationDomain, accesses, requiredOrder, candidateSchedule) → empty | counterexample(pair) | unknown`. Canonical integer affine forms support composition; integer-relation emptiness checks whether a required dependence is reversed. Extract Tix’s coefficient arithmetic and substitution first. Replace recognized axis-prefix tests and finite reduction-order checks only for a proven subset. Shape bounds, alias hypotheses, ordered reductions, synchronization and target index width are inputs. Inline uses substitution; fusion and tiling use the same access maps; a schedule validator returns a scoped judgment to the core. Begin with constant tile factors and the extent-17 counterexample, then measure the coverage gain of a general solver. `src/tensor/model.ts:8`, `src/tensor/model.ts:19`, `src/tensor/passes.ts:12`, `src/tensor/fusion.ts:97`, **T6-D** `src/tensor/schedule.ts:298`, `scripts/05-reduction-order.mjs:15`. [isl manual](https://libisl.sourceforge.io/user.html)
+
+8. **Binding-time analysis.** `divide(defUse, staticInputs, operationDivision, memoryAssumptions) → {staticSites, dynamicSites, reasons}`. Offline partial evaluation computes a safe division for later specialization. Extract the dependency iteration in B1-F/G; domain transfer establishes which loads, traps and assignments are determined by the bindings. Return a conservative dynamic fact when a buffer can be mutated through an alias. Use the lattice solver for cyclic dependencies and key the query on the bound inputs as well as the function. The residualizer consumes the division; an inspection tool can report the first dynamic premise. The earlier B1-G probe demonstrates agreement on cyclic copies only. **B1-F** `src/typed/pe.ts:76`, **B1-G** `src/typed/bta.ts:65`, `src/typed/bta.ts:91`, **B1-A** `src/typed/specialize-memory.ts:154`, `scripts/02-binding-times.mjs:36`. [Jones, Gomard and Sestoft on partial evaluation](https://raspi.itu.dk/people/sestoft/pebook/toc.html)
+
+9. **Polyvariant residualization.** `residualize(entry, staticEnv, step, liveProjection, generalize, budget) → residualGraph + assumptions | refusal`. Memoize a residual handle before exploring successors so repeated static states close loops. Extract B1-B'"'s and B1-F's version tables and queues. Use BTA or online interpretation, project keys to live static values, and return origin edges for emitted operations. Keep VM instruction semantics, guard construction and residual entry installation in the domain builder. State-count and output-size budgets are independent. On exhaustion either generalize under a justified policy or discard the private candidate. Compare guarded and unguarded VM variants; shape-specialized launch code remains a possible second domain. **B1-B** "'`src/typed/residualize.ts:61`, **B1-F** `src/typed/pe.ts:202`, `src/typed/pe.ts:224`, **B1-G** `src/typed/specialize-buffer.ts:288`.
+
+10. **Binary32 arithmetic and observations by semantic profile.** `eval32(profile, op, operandWords) → resultWord | unsupported`; `equal32(observation, a, b)`. Separate representation, rounding and operation semantics from the observation relation. Extract word conversion, NaN classification and the shared rounded arithmetic subset from Typed and Tix; retain target rules for min/max, conversions, NaN payloads, contraction and transcendental functions as explicit bindings. The Typed folder and Tix reference evaluator can share compatible operations; an independent oracle should still test the implementation. On the same NaN and 1, Typed fmax returned 1 while Tix max produced NaN. Also test negative zero and finite rounding boundaries. “Exact” identifies a stated profile and observation; it cannot select them. `src/typed/f32.ts:27`, `src/typed/f32.ts:40`, `src/typed/f32.ts:57`, `src/tensor/evaluate.ts:19`, `src/tensor/evaluate.ts:79`, `src/tensor/cuda-contract.ts:105`, `scripts/08-library-boundaries.mjs:12`. [Berkeley SoftFloat interface](https://www.jhauser.us/arithmetic/SoftFloat-3/doc/SoftFloat.html)
+
+### Validation, explanation and measurement
+
+11. **Rule verification and contextual replay.** `verify(schema, semantics, assumptions) → certificate | boundedEvidence | refutation`; `replay(edit, focus, binding, premises) → explainedFootprint`. Equational rewriting needs a valid schema, a valid instance and a compatible context. Extract verifier dispatch and replay from Typed’s modular-linear and bitwise rule checks and the A0 reconstructions. Algebra-specific procedures and domain premises remain explicit. A validator checks the reconstructed candidate and any residual changes before publishing a judgment. A proven i32 identity and an f32 law can use the same protocol while depending on different semantics. Refuse a changed sibling even if the focused rewrite is valid. `src/typed/rules/verify.ts:9`, `src/typed/rules/verify.ts:179`, `src/typed/rules/compile.ts:124`, **A0-C** `tools/edit-census.mjs:21`, `scripts/06-rewrite-scope.mjs:13`. [Lopes et al. on verified peephole optimizations](https://web.ist.utl.pt/nuno.lopes/pubs/alive-pldi15.pdf)
+
+12. **Case generation and coverage.** `generate(recipe, constraints, seed, budget) → cases + strata`; `coverage(attempted, comparable, obligations) → covered + gaps`. Property-based testing uses generators for the valid input domain. Share finite products, dependent choices, boundary values, seeded sampling and coverage bookkeeping. Replace the common recipe mechanics in Typed strong cases and Tix shape/stream/arm cases. Keep memory validity, correlated dimensions, NaN policy and the counterexample oracle in each domain. The differential validator records the recipe and coverage. Mutation testing can evaluate a recipe by which known changes it detects; invalid, equivalent and undecided mutants need distinct accounting. Check reproducibility and regenerate cases when the input grammar changes. `src/typed/cases-strong.ts:233`, `src/typed/cases-strong.ts:329`, `src/typed/mutate.ts:535`, `src/tensor/contract.ts:24`, `src/tensor/contract.ts:130`, `src/tensor/cuda-contract.ts:146`, `tests/typed/mutate.test.mjs:140`. [Claessen and Hughes on QuickCheck](https://research.chalmers.se/en/publication/155860)
+
+13. **Edit classification.** `classify(editGroup, before, after, witnesses, policy) → {footprint, premises, labels, unknowns}`. Use term context and structural graph differences to characterize an edit; define the unit of counting before aggregating. Extract grouping of replacements, locality tests and witness lookup from A0-B/G. Core stores operations, revision references and evidence. Library queries can count either individual records or atomic applications, and can expose fact-dependent and rule-only classes simultaneously. Domains supply structural roles such as block entry or tensor reduction. A0'"'s two reported O2 denominators make an acceptance fixture: preserve both interpretations and the common 183 matches. **A0-B** "'`src/typed/edit-census.ts:84`, **A0-G** `src/typed/edit-classes.ts:259`, `src/typed/edit-classes.ts:307`, `BACKLOG.md:491`.
+
+14. **Conserved attribution of additive observations.** `attribute(weights, correspondenceChain, ownershipPolicy) → exclusiveBins + unresolved`; `delta(beforeBins, afterBins)`. Relational provenance joins sites across revisions. Partitioning an additive measure preserves its sum. Extract step alignment, grouping and delta accounting from D1-D/G. The domain still maps instruction addresses to observations, identifies frame costs and supplies instrumentation. Use grouped ownership or record ambiguity when one target has multiple origins. A0'"'s affected-instruction reports can use the same accounting with a different weight. Overlapping elapsed times and causal speedups need a separate experimental model. Validate that per-bin deltas telescope to the total and that a many-to-one join never credits a count twice. "'`src/typed/attribute.ts:89`, `src/typed/attribute.ts:138`, **D1-D** `src/typed/attribution.ts:223`, **A0-G** `tests/typed/edit-classes.test.mjs:13`, `tests/typed/attribute.test.mjs:43`.
+
+15. **Cost observations and paired benchmark protocols.** `measure(subject, workload, instrument, protocol) → observations(unit, scope, profile, status)`; `compare(pairedRuns, estimator) → effect + uncertainty`. Use controlled comparisons, repeated measurements and an estimator appropriate to the source of variation. Extract common workload identity, aggregation and comparison from Typed strategy metrics, the CUDA timing harness and T6 report tables. Domain instruments read emulator counters or synchronize device events. Keep a static cost estimate distinguishable from an observed count and from elapsed time; retain raw repeat groups, capped runs and warm-up policy. Strategy selection consumes comparable observations after validation. Validate the aggregation on recorded samples first, then compare on held-out shapes with randomized paired ordering. The device harness currently reduces its three benchmark measurements before returning; retaining individual samples requires changing that result boundary. `src/typed/strategies.ts:66`, `src/typed/strategies.ts:87`, `src/tensor/cuda-source.ts:85`, **T6-D** `ttmp/2026/11/27/IRWB-033-D--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/07-report-tables.mjs:22`. [Kalibera and Jones on rigorous benchmarking](https://kar.kent.ac.uk/33611/45/p63-kaliber.pdf)
+
+### How to build the library
+
+**First extraction:** introduce one backward liveness implementation with explicit scope, compare its live-in/live-out sets on both machine clients, and delete each private sweep after parity. Include disconnected blocks, fallthrough, backedges and multiple exits. Measure compile time and memory as well as fact equality. This can proceed independently of the publication fix. `src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:32`, `scripts/08-library-boundaries.mjs:40`.
+
+**Next:** extract dominance/frontiers and SSA as revision-local values, then SCCP as a consumer. Compare SSA reaching definitions and exact output revisions on the existing fixtures. In parallel, promote a narrow binary32 word API and round-to-nearest arithmetic with two explicit max policies. Measure how many duplicated implementation paths disappear and whether the remaining reference check uses an independent oracle. `src/typed/ssa.ts:325`, `tests/typed/ssa.test.mjs:99`, `scripts/08-library-boundaries.mjs:12`.
+
+**Then:** follow the numbered migration below for witnesses, observation queries, residualization and scheduling. Gate promotion on deletion of two independent implementations or on a second successful instance with materially different inputs. Retain specialized representations when the shared abstraction changes precision, misses a required outcome or imposes substantial projection cost. General polyhedral solving and a cross-domain residualizer remain research decisions. The catalogue specifies how to test them before committing to a framework dependency.
+
+"""
+s=s.replace('"'## How this revises the earlier research program',section+'## How this revises the earlier research program')
+s=s.replace('**Evidence conventions.**','The standard-library review changes ownership of this design. Keep identity, dependency tracking, validation outcomes and publication in the core. Make the graph, arithmetic, specialization and measurement algorithms optional library clients of those protocols. The first independent extraction is shared liveness for machine allocation and coalescing. See "'`src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:32` and `scripts/08-library-boundaries.mjs:40`.'"\\n\\n**Evidence conventions.**')
+s=s.replace('Keep the solver available to analyses over finite dependence graphs.', 'Place the finite-graph solver and its concrete lattices in the optional standard library. Keep fact registration and invalidation in core.')
+s=s.replace('The evidence supports extracting the following *interfaces*.', 'The first four proposals define core protocols for composition and evidence. Attribution, replay and query algorithms are optional library clients. The last two proposals are standard-library algorithms with domain-specific semantics and emitters. The evidence supports extracting the following *interfaces*.')
+s=s.replace('Each step can land without a new production implementation of the later steps.', 'Steps 1–4 primarily establish core protocols. Step 5 divides witness storage in core from replay and classification in the library. Steps 6–8 implement library algorithms and domain instances. The independent liveness extraction above gives an early test of this split. Each step can land without a new production implementation of the later steps.')
+s += '| "'`node <ticket>/scripts/08-library-boundaries.mjs` | Typed and Tix differ on max with one NaN. Machine and entry-reachable live-out differ on an unreachable predecessor. Four selected Typed fixture files passed. `scripts/08-library-boundaries.mjs:12`, `scripts/08-library-boundaries.mjs:40`. |'"\\n'
+p.write_text(s)
+PY" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 826ms:
+exec
+/usr/bin/zsh -c "T=(ttmp/2026/11/27/IRWB-038-B--*)
+rg -n '"'^## |''^### How to build|''^1'"\\. \\*\\*Dominance|"'^15'"\\. \\*\\*Cost' \""'$T"/design-doc/*.md|cut -c1-123
+cat "$T/index.md"|tail -5
+tail -5 "$T"/design-doc/*.md
+nl -ba src/typed/rotate.ts|head -35
+nl -ba "$T/scripts/08-library-boundaries.mjs"|tail -20
+cat "$T/tasks.md"
+git diff --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 223ms:
+31:## Decision
+41:## What the comparison changes
+87:## Layer-by-layer decision
+100:## Proposed concepts and their smallest instances
+198:## The proposed standard library: its layering criteria and its primitives
+216:1. **Dominance, dominance frontiers and natural loops.** `dominance(cfg, entry) → {reachable, idom, frontier}`; `natu
+248:15. **Cost observations and paired benchmark protocols.** `measure(subject, workload, instrument, protocol) → observa
+250:### How to build the library
+258:## How this revises the earlier research program
+270:## Alternatives and rejection criteria
+282:## Migration with decision points
+299:## Open questions
+308:## Evidence and reproduction
+---
+
+# Composing compiler transformations and their evidence
+
+The [design review](design-doc/01-what-a-checked-compiler-transformation-should-return.md) assesses six framework layers and proposes six reusable concepts. The [branch survey](various/01-cell-survey.md) identifies the 31 implementation snapshots. The [diary](log/01-diary.md) records the experiments and their limitations.
+| `python3 <ticket>/scripts/04-cell-survey.py` | 10 T6 and seven each of D1, A0 and B1; branch revision, committed change count, source status, site and document locator. `various/01-cell-survey.md:17`, `various/01-cell-survey.md:27`, `various/01-cell-survey.md:34`, `various/01-cell-survey.md:41`. |
+| `node <ticket>/scripts/05-reduction-order.mjs` | Validator and source order agree on tested small extents; helper missed a reversed fold at R=17. The reorder precondition refused the same permutation. `scripts/05-reduction-order.mjs:12`, `scripts/05-reduction-order.mjs:26`. |
+| `node <ticket>/scripts/06-rewrite-scope.mjs` | A0-G recovered two rules with weakest strength proof and refused an unrelated sibling change. `scripts/06-rewrite-scope.mjs:14`. |
+| `node <ticket>/scripts/07-checked-choice.mjs` | A single existing strategy interpreter ranked two Tix candidates after both passed one common sampled policy; the one-statement revision won. `scripts/07-checked-choice.mjs:37`. |
+| `node <ticket>/scripts/08-library-boundaries.mjs` | Typed and Tix differ on max with one NaN. Machine and entry-reachable live-out differ on an unreachable predecessor. Four selected Typed fixture files passed. `scripts/08-library-boundaries.mjs:12`, `scripts/08-library-boundaries.mjs:40`. |
+     1	/**
+     2	 * Loop rotation by header duplication (IRWB-003, agenda item G1). A loop's header that is only its test,
+     3	 * `if c goto T else E`, is copied into every block that jumps to it unconditionally: the preheader's copy is the
+     4	 * guard (does the loop run at all), the latch's copy is the bottom test (does it run again). The header then has
+     5	 * no predecessor and is pruned. An iteration ends with one conditional branch instead of a jump and a branch,
+     6	 * once the backend's layout ('loops') puts the latch's exit after it.
+     7	 *
+     8	 * Valid whatever the test reads or does: it is tail duplication. Each path that jumped to the header runs a copy
+     9	 * of it at the point where it would have run the original, once. When both T and E are inside the loop (the
+    10	 * first half of an `&&`), the rotated loop has two entries and is irreducible; analyses still terminate (the
+    11	 * solver widens at every retreating edge), and passes that need natural loops (licm) no longer see it, so
+    12	 * rotation runs after them. The condition may not call or read a result leaf, which keeps leaves next to their
+    13	 * calls.
+    14	 *
+    15	 * The spec is wrapped by `typedPass` in passes.ts (`rotate`), which registers it; this module imports only types
+    16	 * from there, so the two do not form a cycle at load time.
+    17	 */
+    18	import type { TypedPassSpec } from './passes.js';
+    19	import type { BlockRec, StmtRec, Store, ValueRec } from './model.js';
+    20	import type { Tx } from './tx.js';
+    21	
+    22	const opsOf = (st: Store, id: string, out: string[] = []): string[] => {
+    23	  const v = st.get(id) as ValueRec;
+    24	  out.push(v.op);
+    25	  for (const a of v.args) opsOf(st, a, out);
+    26	  return out;
+    27	};
+    28	
+    29	const copyTree = (tx: Tx, st: Store, id: string, because: string[]): string => {
+    30	  const v = st.get(id) as ValueRec;
+    31	  return tx.make(v.op, ...v.args.map(a => copyTree(tx, st, a, because)), {
+    32	    imm: v.imm,
+    33	    from: id,
+    34	    because,
+    35	    type: v.type ?? 'i32',
+    32	    for (const reg of defsOf(code[i])) live.delete(reg);
+    33	    for (const reg of usesOf(code[i])) live.add(reg);
+    34	  }
+    35	  return live;
+    36	}
+    37	const facts = solve(graph,{direction:'backward',lattice:setLattice(),transfer});
+    38	const ordered = values => [...values].sort((a,b)=>a-b);
+    39	const machineOut = machine.liveOut.map(ordered);
+    40	const solverOut = ids.map(id=>ordered(facts.out.get(id)));
+    41	assert.deepEqual(machineOut, [[64,65],[64,65],[]]);
+    42	assert.deepEqual(solverOut, [[64,65],[],[]]);
+    43	console.log('machine vs entry-reachable live-out', machineOut, solverOut);
+    44	
+    45	// Existing fixtures provide independent oracles for the graph and testing clients.
+    46	const {execFileSync} = await import('node:child_process');
+    47	execFileSync(process.execPath, [
+    48	  '--test','--test-name-pattern=phis at the loop head|loop whose header|sccp finds|Blend facts|strong cases extend|f32 operations on bits',
+    49	  'tests/typed/ssa.test.mjs','tests/typed/evaluate-analyses.test.mjs',
+    50	  'tests/typed/mutate.test.mjs','tests/typed/f32.test.mjs'
+    51	], {stdio:'inherit'});
+# Tasks
+
+## TODO
+- [x] Review merged framework and coordinator records, then compare all 31 sibling implementations <!-- t:iezf -->
+- [x] Probe disputed behavior and write the design, migration, and research diary <!-- t:usgi -->
+ ...hecked-compiler-transformation-should-return.md | 69 +++++++++++++++++++++-
+ 1 file changed, 66 insertions(+), 3 deletions(-)
+
+exec
+/usr/bin/zsh -c "python3 - <<'PY'
+from pathlib import Path
+t=next(Path('ttmp/2026/11/27').glob('IRWB-038-B--*'))
+p=next(t.glob('design-doc/*.md'));s=p.read_text()
+a=s.index('## The proposed standard library:'); b=s.index('## How this revises the earlier',a)
+new=s[a:b]
+new=new.replace('"'`; `'"','"'` and `'"').replace('size, capped','size, capped')
+# Keep the interface sketches readable in Markdown and separate independent prose clauses.
+for before,after in [
+ ('different downstream needs (interval construction and copy interference)','different downstream needs (interval construction and copy interference)'),
+ ('session; register','session. Register'), ('ownership boundary; the','ownership boundary. The'),
+ ('the loop and its domain facts','the loop and its domain facts'), ('frontiers; LICM','frontiers. LICM'),
+ ('definitions; replace','definitions. Replace'), ('live-after; allocation','live-after. Allocation'), ('intervals; dead-code','intervals. Dead-code'),
+ ('are explicit; clients','are explicit. Clients'), ('graph; the reaching','graph. The reaching'),
+ ('edges; join','edges. Join'), ('check; using','check. Using'),
+ ('domain;','domain.'), ('assignment; retain','assignment. Retain'), ('execution; reverse','execution. Reverse'),
+ ('composition; integer','composition. Integer'), ('substitution; fusion','substitution. Fusion'), ('maps; a schedule','maps. A schedule'),
+ ('B1-F/G; domain','B1-F/G. Domain'), ('division; an inspection','division. An inspection'),
+ ('VM variants; shape-specialized','VM variants. Shape-specialized'), ('Tix; retain','Tix. Retain'),
+ ('operations; an independent','operations. An independent'), ('observation; it','observation. It'),
+ ('detects; invalid','detects. Invalid'), ('edit; define','edit. Define'), ('elapsed time; retain','elapsed time. Retain'),
+ ('returning; retaining','returning. Retaining')]:
+ new=new.replace(before,after)
+new=new.replace('### How to build the library','''### Two compositions to test end to end
+
+For a **Typed branch simplification**, the domain supplies CFG, definitions, uses and operator semantics. Dominance feeds SSA, SSA feeds SCCP, and SCCP returns executable-edge and constant-value facts. A Typed pass uses those facts to propose a branch edit. The core checks the revision-bound premises and required validation policy before publication. The library classifier can label the published edit as structural with a constant premise. A paired instruction-count comparison then observes its cost. Carry the input revision through all queries so a deleted edge cannot authorize another edit on a stale CFG. Existing starting points are "'`src/typed/ssa.ts:219`, `src/typed/sccp.ts:141`, `src/typed/passes.ts:352` and `src/typed/attribute.ts:185`.
+
+For a **Tix tiled reduction**, the domain supplies index access maps, reduction semantics and target mapping. An affine validator checks tail coverage and ordered dependences, a binary32 profile supplies the reference fold, and a generator supplies boundary shapes and gate arms. Record the symbolic judgment and the sampled device judgment separately. Only accepted candidates enter the timing comparison. Retain the winning shape predicate and its profile with the observation. This composes the proposed library without requiring Tix to manufacture basic blocks, SSA or liveness facts. The exercised CPU counterexample and the existing CUDA boundary are `scripts/05-reduction-order.mjs:15`, `src/tensor/cuda-contract.ts:146` and `src/tensor/cuda-source.ts:85`.
+
+### How to build the library'"''')
+s=s[:a]+new+s[b:]
+s=s.replace('## Evidence and reproduction','7. **Can one liveness implementation preserve both scopes cheaply?** Compare an explicit all-blocks worklist with a reachable-only computation plus a separate solve over disconnected components. Include an unreachable predecessor flowing into a reachable block and compare intervals, coalescing choices and compile cost. The scope difference is already observable. "'`scripts/08-library-boundaries.mjs:20`, `src/typed/backend/regalloc.ts:121`, `src/typed/backend/coalesce.ts:32`.'"\\n\\n## Evidence and reproduction')
+s=s.replace('A review of 31 implementations, with executable evidence for a single publication boundary, scoped provenance, and explicit validation judgments.', 'A review of 31 implementations proposing a single publication boundary and 15 optional compiler primitives, with extraction criteria and reproducible probes.')
+p.write_text(s)
+p=t/'index.md';s=p.read_text().replace('and proposes six reusable concepts.', 'and proposes six architectural concepts. The [standard-library catalogue](design-doc/01-what-a-checked-compiler-transformation-should-return.md#the-proposed-standard-library-its-layering-criteria-and-its-primitives) gives interfaces, theory, replacement sites and composition for 15 compiler building blocks.');p.write_text(s)
+p=next(t.glob('log/*.md'));p.write_text(p.read_text()+'''
+## 5. Revise ownership and migration
+
+Checkpoint bca8943 records the follow-up measurements. The amended design assigns evidence and publication protocols to core, algorithm implementations to an optional library, and input/target semantics to the domain. It includes 15 entries and two end-to-end compositions. The first library extraction can proceed independently of the publication fix. I chose machine liveness because allocation and coalescing both supply concrete clients, with exact sets available for comparison ("'`src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:32`, `scripts/08-library-boundaries.mjs:40`). The catalogue is design work. The new experiments used CPU execution and did not collect GPU timings.
+'"''')
+PY
+docmgr task add --ticket IRWB-038-B --text 'Specify the compiler standard library, its boundary, primitive interfaces and extraction tests'
+docmgr task check --ticket IRWB-038-B --id 3
+docmgr changelog update --ticket IRWB-038-B --entry 'Added 15 standard-library primitives, two worked compositions, and CPU probes for binary32 semantics and liveness scope.'
+docmgr doctor --ticket IRWB-038-B --stale-after 30
+git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 3384ms:
+Task 9jfa added to /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/tasks.md
+Task checked: 9jfa (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-038-B
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/changelog.md
+## Doctor Report (1 findings)
+
+### IRWB-038-B
+
+- ✅ All checks passed
+
+
+exec
+/usr/bin/zsh -c "python3 - <<'PY'
+from pathlib import Path
+import re
+t=next(Path('ttmp/2026/11/27').glob('IRWB-038-B--*'));d=next(t.glob('design-doc/*.md'))
+s=d.read_text();a=s.index('## The proposed standard library:');b=s.index('### Two compositions',a);c=s[a:b]
+rows=re.findall(r'"'^'"\\d+\\. \\*\\*(["'^*]+)'"\\*\\*(.*)"'$'"',c,re.M)
+assert len(rows)==15
+for name,body in rows:
+ assert '→' in body or 'residualize(' in body,name
+ assert len(re.findall(r'"'`[''^'"\\x60]+:\\d+"'`'"',body))>=2,name
+roots=[Path('.'),t,*Path('..').glob('*-irwb-03[3-6]-?')]
+refs=re.findall(r'"'`((?:scripts/|src/|tests/|tools/|ttmp/|various/|BACKLOG.md)[''^'"\\x60]*?):(\\d+)"'`'"',s)
+for path,num in refs:
+ assert any((root/path).is_file() and len((root/path).read_text().splitlines())>=int(num) for root in roots),(path,num)
+print(len(rows),'catalogue entries;',len(refs),'locators in range')
+PY
+rg -n '"'^## (Decision|The proposed standard library|Proposed concepts|Migration)|''^### (A pass|The entity|A schedule|Who owns)|''^1'"\\. \\*\\*Dominance|"'^10'"\\. \\*\\*Binary32' ttmp/2026/11/27/IRWB-038*/design-doc/*|cut -c1-130
+git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 501ms:
+15 catalogue entries; 433 locators in range
+31:## Decision
+43:### A pass is currently too small to carry its own experiment
+51:### The entity universe is part of the type of a correspondence
+69:### A schedule needs an independent statement of legality
+83:### Who owns publication matters even in a single process
+100:## Proposed concepts and their smallest instances
+198:## The proposed standard library: its layering criteria and its primitives
+216:1. **Dominance, dominance frontiers and natural loops.** `dominance(cfg, entry) → {reachable, idom, frontier}` and `naturalL
+236:10. **Binary32 arithmetic and observations by semantic profile.** `eval32(profile, op, operandWords) → resultWord | unsuppor
+288:## Migration with decision points
+ M ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/changelog.md
+ M ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc/01-what-a-checked-compiler-transformation-should-return.md
+ M ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/index.md
+ M ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/log/01-diary.md
+ M ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/tasks.md
+
+exec
+/usr/bin/zsh -lc 'git add -- ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 624ms:
+exec
+/usr/bin/zsh -c 'git diff --cached --check && git diff --cached --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 319ms:
+ .../changelog.md                                   |  4 ++
+ ...hecked-compiler-transformation-should-return.md | 79 ++++++++++++++++++++--
+ .../index.md                                       |  2 +-
+ .../log/01-diary.md                                |  4 ++
+ .../tasks.md                                       |  1 +
+ 5 files changed, 85 insertions(+), 5 deletions(-)
+
+exec
+/usr/bin/zsh -lc "git commit -m 'IRWB-038-B: specify the compiler standard library and extraction order'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 735ms:
+[r3-am/irwb-038-b aac9a7a] IRWB-038-B: specify the compiler standard library and extraction order
+ 5 files changed, 85 insertions(+), 5 deletions(-)
+
+exec
+/usr/bin/zsh -c 'git rev-parse HEAD; git status --short --branch' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b
+ succeeded in 343ms:
+aac9a7a27e473046936d1c5fd053279688631806
+## r3-am/irwb-038-b
+
+codex
+[IRWB-038-B ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/index.md) · [Design document and standard-library catalogue](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc/01-what-a-checked-compiler-transformation-should-return.md:198)
+
+**Fundamental recommendation:** Give the generic core one responsibility for acceptance and publication. Put reusable compiler algorithms in an optional standard library. Let each domain supply its operator semantics, memory assumptions, target constraints and measurement policy. Fix candidate publication first. Shared machine liveness can proceed independently as the first library extraction.
+
+### Five findings
+
+1. A native Tix pass ran through the existing strategy interpreter with its required gate omitted. With a fresh output ID, a rejected candidate also remained visible as the caller’s store head. [Pass and publication probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/01-pass-boundary.mjs:17)
+2. Correspondence needs both a named entity set and a coverage requirement. The manager rejected incompatible projections but accepted complete endpoint lists with zero mapping groups. [Correspondence probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/01-pass-boundary.mjs:45)
+3. T6-D’s sampled order validator missed a permutation that changed an f32 sum from **1 to 0** at extent 17. Its reorder precondition correctly refused that permutation. [Reduction-order probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/05-reduction-order.mjs:12)
+4. Allocation and coalescing are concrete clients for shared liveness. The machine analysis and entry-reachable solver agreed on reachable blocks but returned `{64,65}` and `∅` for one unreachable block. Traversal scope belongs in the interface. [Liveness comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/08-library-boundaries.mjs:20)
+5. Typed’s `fmax(NaN, 1)` returned `1`; Tix’s `max(NaN, 1)` returned NaN. Shared binary32 arithmetic needs explicit operation semantics and an independently specified equality relation. [Numeric comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/08-library-boundaries.mjs:12)
+
+### Framework concepts
+
+- **Partial transformations** construct candidates privately and publish accepted outputs atomically.
+- **Revision-scoped provenance** records entity relations, edit footprints, rule witnesses and premises.
+- **Translation-validation judgments** identify the reference, assumptions, observation, method and quantified scope.
+- **Demand-driven analysis queries** track dependencies at the granularity each result requires.
+- **Polyvariant specialization** uses a library algorithm to construct and bound residual control points.
+- **Affine schedule validation** uses a library algorithm to check coverage and required order independently of cost selection.
+
+### Standard-library primitives
+
+1. **Dominance, frontiers and natural loops** derive control structure from a CFG with an explicit entry.
+2. **Monotone dataflow and lattices** provide scoped fixed points, liveness, reaching definitions and ranges.
+3. **SSA construction** exposes definitions, uses and φ inputs as a revision-local view.
+4. **Sparse conditional constant propagation** computes constant values and feasible edges together.
+5. **Local value numbering** identifies reusable expressions under declared effects and invalidation rules.
+6. **Dependence closure and slicing** find required callees or affected callers for reuse and testing.
+7. **Affine expressions and dependence tests** compose index maps and identify illegal schedules.
+8. **Binding-time analysis** determines which values follow from static inputs and memory assumptions.
+9. **Polyvariant residualization** interns specialized states, closes backedges and bounds code growth.
+10. **Binary32 arithmetic profiles** provide word-level operations and explicit comparison policies.
+11. **Rule verification and contextual replay** check a rule instance and account for surrounding edits.
+12. **Case generation and coverage** produce reproducible constrained inputs and report untested strata.
+13. **Edit classification** derives policy-specific counts from footprints, premises and witnesses.
+14. **Conserved instruction attribution** distributes additive observations across revision-qualified sites.
+15. **Cost observations and paired benchmarks** retain units, workload, profile, censoring and uncertainty.
+
+The follow-up probe and four selected CPU fixture files passed. `docmgr doctor` passed. GPU timing remains a proposed migration check. The worktree is clean, and both follow-up commits are local.
+
+**Last commit** `aac9a7a27e473046936d1c5fd053279688631806`
+tokens used
+212,695
+[IRWB-038-B ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/index.md) · [Design document and standard-library catalogue](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc/01-what-a-checked-compiler-transformation-should-return.md:198)
+
+**Fundamental recommendation:** Give the generic core one responsibility for acceptance and publication. Put reusable compiler algorithms in an optional standard library. Let each domain supply its operator semantics, memory assumptions, target constraints and measurement policy. Fix candidate publication first. Shared machine liveness can proceed independently as the first library extraction.
+
+### Five findings
+
+1. A native Tix pass ran through the existing strategy interpreter with its required gate omitted. With a fresh output ID, a rejected candidate also remained visible as the caller’s store head. [Pass and publication probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/01-pass-boundary.mjs:17)
+2. Correspondence needs both a named entity set and a coverage requirement. The manager rejected incompatible projections but accepted complete endpoint lists with zero mapping groups. [Correspondence probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/01-pass-boundary.mjs:45)
+3. T6-D’s sampled order validator missed a permutation that changed an f32 sum from **1 to 0** at extent 17. Its reorder precondition correctly refused that permutation. [Reduction-order probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/05-reduction-order.mjs:12)
+4. Allocation and coalescing are concrete clients for shared liveness. The machine analysis and entry-reachable solver agreed on reachable blocks but returned `{64,65}` and `∅` for one unreachable block. Traversal scope belongs in the interface. [Liveness comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/08-library-boundaries.mjs:20)
+5. Typed’s `fmax(NaN, 1)` returned `1`; Tix’s `max(NaN, 1)` returned NaN. Shared binary32 arithmetic needs explicit operation semantics and an independently specified equality relation. [Numeric comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/08-library-boundaries.mjs:12)
+
+### Framework concepts
+
+- **Partial transformations** construct candidates privately and publish accepted outputs atomically.
+- **Revision-scoped provenance** records entity relations, edit footprints, rule witnesses and premises.
+- **Translation-validation judgments** identify the reference, assumptions, observation, method and quantified scope.
+- **Demand-driven analysis queries** track dependencies at the granularity each result requires.
+- **Polyvariant specialization** uses a library algorithm to construct and bound residual control points.
+- **Affine schedule validation** uses a library algorithm to check coverage and required order independently of cost selection.
+
+### Standard-library primitives
+
+1. **Dominance, frontiers and natural loops** derive control structure from a CFG with an explicit entry.
+2. **Monotone dataflow and lattices** provide scoped fixed points, liveness, reaching definitions and ranges.
+3. **SSA construction** exposes definitions, uses and φ inputs as a revision-local view.
+4. **Sparse conditional constant propagation** computes constant values and feasible edges together.
+5. **Local value numbering** identifies reusable expressions under declared effects and invalidation rules.
+6. **Dependence closure and slicing** find required callees or affected callers for reuse and testing.
+7. **Affine expressions and dependence tests** compose index maps and identify illegal schedules.
+8. **Binding-time analysis** determines which values follow from static inputs and memory assumptions.
+9. **Polyvariant residualization** interns specialized states, closes backedges and bounds code growth.
+10. **Binary32 arithmetic profiles** provide word-level operations and explicit comparison policies.
+11. **Rule verification and contextual replay** check a rule instance and account for surrounding edits.
+12. **Case generation and coverage** produce reproducible constrained inputs and report untested strata.
+13. **Edit classification** derives policy-specific counts from footprints, premises and witnesses.
+14. **Conserved instruction attribution** distributes additive observations across revision-qualified sites.
+15. **Cost observations and paired benchmarks** retain units, workload, profile, censoring and uncertainty.
+
+The follow-up probe and four selected CPU fixture files passed. `docmgr doctor` passed. GPU timing remains a proposed migration check. The worktree is clean, and both follow-up commits are local.
+
+**Last commit** `aac9a7a27e473046936d1c5fd053279688631806`

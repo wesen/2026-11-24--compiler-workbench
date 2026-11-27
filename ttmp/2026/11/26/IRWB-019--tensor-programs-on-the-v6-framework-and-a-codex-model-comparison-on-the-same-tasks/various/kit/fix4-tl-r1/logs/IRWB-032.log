@@ -1,0 +1,1085 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+model: gpt-6.1-terra
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git] (network access enabled)
+reasoning effort: low
+reasoning summaries: none
+session id: 01a21d66-9c3f-7d72-8db2-646e07035cde
+--------
+user
+Review of IRWB-032. F24 and F25 are accepted as they are. F26 needs one change.
+
+**F26 breaks the browser build.** `src/framework/` is bundled into the browser workbench by `tools/build-site.mjs` (esbuild, `platform: 'browser'`), and no framework file imports a Node built-in. `import { isDeepStrictEqual } from 'node:util'` in `differential.ts` makes `node tools/build-site.mjs` fail: `Could not resolve "node:util"`. The build passes on your base.
+
+Needed:
+- Compare the regenerated cases without Node built-ins. The framework already canonicalizes and hashes plain data (`src/framework/core/`, for example the canonical encoding and `sha256.ts` used for content addresses). Use what is there, for example by storing a canonical digest of the cases with the reused entry and comparing digests, so the comparison is also cheaper than a deep equality.
+- Use `ContractError` (or the error type the module already throws for contract violations) rather than a bare `Error`, if one fits.
+- Run `node tools/build-site.mjs` before your last commit and check that it passes, in addition to the tests you ran before.
+- Re-measure the cost on warm reuse checks.
+- Commit with a message starting `IRWB-032: F26`.
+
+Your final message: the new commit hash, the build-site result, the test counts from your last run, and the measured cost.
+codex
+I’ll replace the Node-only comparison with a browser-safe approach grounded in the framework’s existing data handling, then rerun the requested builds, tests, and warm-reuse measurement before committing.
+exec
+/usr/bin/zsh -lc "git status --short && cat src/framework/core/sha256.ts && rg -n 'canonical|fingerprint|ContractError|function prepare|interface Reuse' src/framework/core/data.ts src/framework/contracts/{differential,analysis-manager,types}.ts && cat ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/01-measure.mjs && cat tools/build-site.mjs | head -65" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 992ms:
+/**
+ * IRWB-004: SHA-256 of text, as the UTF-8 bytes `TextEncoder` gives (a lone surrogate becomes U+FFFD), for
+ * identical content addresses in Node and in a browser.
+ *
+ *   - In Node, `node:crypto` (found through `process.getBuiltinModule`, so no import ties this module to Node).
+ *   - Elsewhere, a portable streaming implementation: the text is encoded into a fixed buffer with
+ *     `TextEncoder.encodeInto` and hashed block by block, so a large text is never copied into one byte array.
+ *
+ * Both give the digest the original implementation in data.ts gave (sha256 of `new TextEncoder().encode(text)`).
+ * `sha256Parts` hashes the concatenation of several texts without building it.
+ */
+
+interface NodeHash {
+  update(data: string, encoding: 'utf8'): NodeHash;
+  digest(encoding: 'hex'): string;
+}
+const nodeCrypto: { createHash(algorithm: 'sha256'): NodeHash } | null = (() => {
+  try {
+    const p = (globalThis as { process?: { getBuiltinModule?: (id: string) => unknown } }).process;
+    const m = p?.getBuiltinModule?.('node:crypto') as { createHash?: unknown } | undefined;
+    return m && typeof m.createHash === 'function' ? (m as { createHash(a: 'sha256'): NodeHash }) : null;
+  } catch {
+    return null;
+  }
+})();
+
+const K = new Int32Array([
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98,
+  0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+  0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8,
+  0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+  0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
+  0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+  0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+  0xc67178f2,
+]);
+
+/** Compress the 64-byte blocks of `b[start, end)` into the state `h`. */
+function compress(h: Int32Array, w: Int32Array, b: Uint8Array, start: number, end: number): void {
+  let h0 = h[0],
+    h1 = h[1],
+    h2 = h[2],
+    h3 = h[3],
+    h4 = h[4],
+    h5 = h[5],
+    h6 = h[6],
+    h7 = h[7];
+  for (let off = start; off < end; off += 64) {
+    for (let i = 0; i < 16; i++) {
+      const j = off + 4 * i;
+      w[i] = (b[j] << 24) | (b[j + 1] << 16) | (b[j + 2] << 8) | b[j + 3];
+    }
+    for (let i = 16; i < 64; i++) {
+      const x = w[i - 15],
+        y = w[i - 2];
+      const s0 = ((x >>> 7) | (x << 25)) ^ ((x >>> 18) | (x << 14)) ^ (x >>> 3);
+      const s1 = ((y >>> 17) | (y << 15)) ^ ((y >>> 19) | (y << 13)) ^ (y >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+    let a = h0,
+      c1 = h1,
+      c2 = h2,
+      d = h3,
+      e = h4,
+      f = h5,
+      g = h6,
+      k = h7;
+    for (let i = 0; i < 64; i++) {
+      const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+      const t1 = (k + S1 + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
+      const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+      const t2 = (S0 + ((a & c1) ^ (a & c2) ^ (c1 & c2))) | 0;
+      k = g;
+      g = f;
+      f = e;
+      e = (d + t1) | 0;
+      d = c2;
+      c2 = c1;
+      c1 = a;
+      a = (t1 + t2) | 0;
+    }
+    h0 = (h0 + a) | 0;
+    h1 = (h1 + c1) | 0;
+    h2 = (h2 + c2) | 0;
+    h3 = (h3 + d) | 0;
+    h4 = (h4 + e) | 0;
+    h5 = (h5 + f) | 0;
+    h6 = (h6 + g) | 0;
+    h7 = (h7 + k) | 0;
+  }
+  h[0] = h0;
+  h[1] = h1;
+  h[2] = h2;
+  h[3] = h3;
+  h[4] = h4;
+  h[5] = h5;
+  h[6] = h6;
+  h[7] = h7;
+}
+
+const isHigh = (c: number) => c >= 0xd800 && c <= 0xdbff;
+const isLow = (c: number) => c >= 0xdc00 && c <= 0xdfff;
+
+/**
+ * A streaming SHA-256 over text, portable. `update` may be called with any pieces; the digest is that of the UTF-8
+ * encoding of their concatenation (a surrogate pair split between two pieces is joined, as in the concatenation).
+ */
+export class Sha256 {
+  #h = new Int32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+  ]);
+  #w = new Int32Array(64);
+  #buf = new Uint8Array(1 << 16);
+  #have = 0;
+  #bytes = 0;
+  #pending = ''; // a high surrogate that ended the previous piece
+  #done = false;
+  static #encoder = new TextEncoder();
+  update(text: string): this {
+    if (this.#done) throw new Error('sha256: update after digest');
+    if (this.#pending) {
+      text = this.#pending + text;
+      this.#pending = '';
+    }
+    if (text.length && isHigh(text.charCodeAt(text.length - 1))) {
+      this.#pending = text[text.length - 1];
+      text = text.slice(0, -1);
+    }
+    let pos = 0;
+    while (pos < text.length) {
+      // a window that fits the buffer whatever it holds (at most 3 bytes per UTF-16 unit), not the rest of the text:
+      // encodeInto on the rest made a browser flatten an 18 MB string once per 64 KiB, about 7 MB/s (IRWB-004)
+      let end = Math.min(text.length, pos + Math.floor((this.#buf.length - this.#have) / 3));
+      if (end < text.length && isHigh(text.charCodeAt(end - 1))) end--; // keep a surrogate pair together
+      const r = Sha256.#encoder.encodeInto(
+        pos === 0 && end === text.length ? text : text.slice(pos, end),
+        this.#buf.subarray(this.#have),
+      );
+      pos += r.read;
+      this.#have += r.written;
+      this.#bytes += r.written;
+      const whole = this.#have & ~63;
+      if (whole) {
+        compress(this.#h, this.#w, this.#buf, 0, whole);
+        this.#buf.copyWithin(0, whole, this.#have);
+        this.#have -= whole;
+      }
+      if (r.read === 0) break;
+    }
+    return this;
+  }
+  digest(): string {
+    if (this.#pending) {
+      // the input ended in a lone high surrogate: TextEncoder writes it as U+FFFD (fewer than 64 bytes are buffered)
+      const r = Sha256.#encoder.encode(this.#pending);
+      this.#pending = '';
+      this.#buf.set(r, this.#have);
+      this.#have += r.length;
+      this.#bytes += r.length;
+    }
+    this.#done = true;
+    const have = this.#have;
+    const tail = new Uint8Array((have + 9 + 63) & ~63);
+    tail.set(this.#buf.subarray(0, have));
+    tail[have] = 0x80;
+    const bits = this.#bytes * 8;
+    const view = new DataView(tail.buffer);
+    view.setUint32(tail.length - 8, Math.floor(bits / 0x100000000));
+    view.setUint32(tail.length - 4, bits >>> 0);
+    compress(this.#h, this.#w, tail, 0, tail.length);
+    let out = '';
+    for (let i = 0; i < 8; i++) out += (this.#h[i] >>> 0).toString(16).padStart(8, '0');
+    return out;
+  }
+}
+
+/** SHA-256 of the concatenation of `parts`, as hex. */
+export function sha256Parts(parts: readonly string[]): string {
+  if (nodeCrypto) {
+    // node:crypto encodes each update on its own, so a surrogate pair split between two parts must be joined first
+    let split = false;
+    for (let i = 0; i + 1 < parts.length; i++) {
+      const a = parts[i],
+        b = parts[i + 1];
+      if (a.length && b.length && isHigh(a.charCodeAt(a.length - 1)) && isLow(b.charCodeAt(0))) split = true;
+    }
+    const h = nodeCrypto.createHash('sha256');
+    if (split) h.update(parts.join(''), 'utf8');
+    else for (const p of parts) h.update(p, 'utf8');
+    return h.digest('hex');
+  }
+  const s = new Sha256();
+  for (const p of parts) s.update(p);
+  return s.digest();
+}
+
+/** The portable implementation, whatever the platform (for tests and for measuring it in Node). */
+export function sha256Portable(parts: readonly string[]): string {
+  const s = new Sha256();
+  for (const p of parts) s.update(p);
+  return s.digest();
+}
+
+/** Which implementation `sha256Parts` uses here. */
+export const sha256Implementation: 'node:crypto' | 'portable' = nodeCrypto ? 'node:crypto' : 'portable';
+src/framework/contracts/differential.ts:146:interface Reuse {
+src/framework/contracts/differential.ts:173:function prepare<P extends Ports, Case, Outcome>(
+src/framework/contracts/analysis-manager.ts:1:import { canonical, fingerprint, immutable } from '../core/data.js';
+src/framework/contracts/analysis-manager.ts:37:export class ContractError extends Error {
+src/framework/contracts/analysis-manager.ts:43:    this.name = 'ContractError';
+src/framework/contracts/analysis-manager.ts:86:  canonical({
+src/framework/contracts/analysis-manager.ts:93:  if (!items.some(d => canonical(d) === canonical(dependency))) items.push(immutable(dependency));
+src/framework/contracts/analysis-manager.ts:117:      throw new ContractError(
+src/framework/contracts/analysis-manager.ts:125:      throw new ContractError('async-resource-port', 'Resource reads and atomic commits must be synchronous');
+src/framework/contracts/analysis-manager.ts:139:      throw new ContractError('artifact', 'Expected a versioned artifact');
+src/framework/contracts/analysis-manager.ts:216:    return canonical({
+src/framework/contracts/analysis-manager.ts:238:    return fingerprint({
+src/framework/contracts/analysis-manager.ts:247:    return fingerprint({
+src/framework/contracts/analysis-manager.ts:261:    return staged ? fingerprint(staged.value) : (this.resources.read(resource)?.revision ?? 'missing');
+src/framework/contracts/analysis-manager.ts:302:    if (!this.isActive(frame)) throw new ContractError('closed-context', 'Contract context is closed');
+src/framework/contracts/analysis-manager.ts:308:      throw new ContractError('effect-access', `Effect ${effect.id} does not permit ${access}`);
+src/framework/contracts/analysis-manager.ts:319:        throw new ContractError(
+src/framework/contracts/analysis-manager.ts:365:      if (!token.open) throw new ContractError('closed-context', 'Contract context is sealed');
+src/framework/contracts/analysis-manager.ts:400:              throw new ContractError('property-required', `${d.id} failed: ${f.reason}`);
+src/framework/contracts/analysis-manager.ts:429:                revision: fingerprint(staged.value),
+src/framework/contracts/analysis-manager.ts:434:        if (!current) throw new ContractError('missing-resource', `Resource ${effect.resource} is missing`);
+src/framework/contracts/analysis-manager.ts:462:    throw new ContractError(
+src/framework/contracts/analysis-manager.ts:500:          throw new ContractError(
+src/framework/contracts/analysis-manager.ts:539:      throw new ContractError('analysis-cycle', `Analysis dependency cycle involving ${definition.id}`);
+src/framework/contracts/analysis-manager.ts:578:        throw new ContractError('invalidated-analysis', 'Analysis was invalidated while it was computing');
+src/framework/contracts/analysis-manager.ts:580:        id: `analysis-${fingerprint({
+src/framework/contracts/analysis-manager.ts:699:      throw new ContractError('property-cycle', `Property dependency cycle involving ${property.id}`);
+src/framework/contracts/analysis-manager.ts:741:        throw new ContractError(
+src/framework/contracts/analysis-manager.ts:746:        id: `fact-${fingerprint({
+src/framework/contracts/analysis-manager.ts:880:      throw new ContractError('proof-verifier', 'Property has no external proof verifier');
+src/framework/contracts/analysis-manager.ts:888:      throw new ContractError('proof-rejected', checked.reason ?? 'External verifier rejected proof');
+src/framework/contracts/analysis-manager.ts:890:      throw new ContractError('invalidated-property', 'Property was invalidated during proof verification');
+src/framework/contracts/analysis-manager.ts:959:      throw new ContractError('transfer-source', 'A valid source analysis must exist before transfer');
+src/framework/contracts/analysis-manager.ts:973:      throw new ContractError('transfer-unauthorized', `Analysis ${definition.id} has no transfer rule`);
+src/framework/contracts/analysis-manager.ts:987:        throw new ContractError(
+src/framework/contracts/analysis-manager.ts:992:        throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1064:      throw new ContractError('objective-value', 'Objective must produce a finite number');
+src/framework/contracts/analysis-manager.ts:1073:      throw new ContractError('ports', 'Expected named port values');
+src/framework/contracts/analysis-manager.ts:1076:      throw new ContractError('ports', 'Port names do not match contract');
+src/framework/contracts/analysis-manager.ts:1078:      if (!Object.hasOwn(entries, name)) throw new ContractError('ports', `Missing port ${name}`);
+src/framework/contracts/analysis-manager.ts:1083:        canonical(entries[name]);
+src/framework/contracts/analysis-manager.ts:1094:    canonical(c);
+src/framework/contracts/analysis-manager.ts:1096:      throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1109:      throw new ContractError('correspondence', 'Correspondence entities must be string lists');
+src/framework/contracts/analysis-manager.ts:1121:        throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1127:          if (!actual.has(id)) throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
+src/framework/contracts/analysis-manager.ts:1147:    const key = `invariant:${fingerprint({
+src/framework/contracts/analysis-manager.ts:1162:      throw new ContractError('invariant-cycle', `Invariant cycle involving ${definition.id}`);
+src/framework/contracts/analysis-manager.ts:1304:        throw new ContractError('committed-transaction', 'Cannot roll back an accepted transformation');
+src/framework/contracts/analysis-manager.ts:1322:          throw new ContractError('committed-transaction', 'Cannot fail an accepted transformation');
+src/framework/contracts/analysis-manager.ts:1330:      execution.status = error instanceof ContractError ? 'rejected' : 'failed';
+src/framework/contracts/analysis-manager.ts:1332:        code: error instanceof ContractError ? error.code : 'contract-error',
+src/framework/contracts/analysis-manager.ts:1344:          throw new ContractError('precondition', `${check.definition.id}: ${check.reason}`);
+src/framework/contracts/analysis-manager.ts:1364:          throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1370:          throw new ContractError('stale-evidence', 'Cached body dependencies are no longer reusable');
+src/framework/contracts/analysis-manager.ts:1378:              throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1415:          throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1435:            throw new ContractError('cache-policy', 'This transformation forbids cached output acceptance');
+src/framework/contracts/analysis-manager.ts:1438:              throw new ContractError('correspondence', 'Duplicate correspondence id');
+src/framework/contracts/analysis-manager.ts:1443:            if (!c) throw new ContractError('correspondence', `Missing correspondence ${requirement.id}`);
+src/framework/contracts/analysis-manager.ts:1452:              throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1473:              throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1480:                throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1499:              throw new ContractError('preservation-failed', `${p.property.id} was not preserved`);
+src/framework/contracts/analysis-manager.ts:1509:                throw new ContractError('postcondition', `${check.definition.id}: ${check.reason}`);
+src/framework/contracts/analysis-manager.ts:1522:              if (closed) throw new ContractError('transaction-state', 'Transaction is already closed');
+src/framework/contracts/analysis-manager.ts:1524:                const e = new ContractError('stale-evidence', 'A semantic dependency changed before commit');
+src/framework/contracts/analysis-manager.ts:1542:                  throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1599:      throw new ContractError(
+src/framework/contracts/analysis-manager.ts:1606:      key = fingerprint({
+src/framework/core/data.ts:4: * Values that `immutable` produced: deep-frozen plain records and arrays in canonical form (finite numbers, -0 as 0,
+src/framework/core/data.ts:5: * no accessors, symbols, holes or cycles). Nothing in one can change, so its canonical text is fixed: `canonical`
+src/framework/core/data.ts:11: * Canonical text of canonical values of at least `RECORD_MIN` characters. IRWB-001 kept only large values (4,096
+src/framework/core/data.ts:19: * The keys of a canonical record in sorted order. `immutable` inserted them sorted, so `Object.keys` returns them in
+src/framework/core/data.ts:28: * The canonical text of a canonical value (one `immutable` built). Its subtree is canonical, frozen, acyclic and made
+src/framework/core/data.ts:67:export function canonical(value: unknown): string {
+src/framework/core/data.ts:77:    if (CANONICAL.has(v)) return encodeCanonical(v); // IRWB-004: the same text, without re-checking a canonical value
+src/framework/core/data.ts:129: * A deep-frozen canonical copy: what `JSON.parse(canonical(value))`, deep-frozen, would give (keys in sorted order,
+src/framework/core/data.ts:130: * -0 as 0), built directly instead of through text, with the same rejections as `canonical`. A value that
+src/framework/core/data.ts:131: * `immutable` produced is returned as it is; canonical parts of a new value are shared, not copied.
+src/framework/core/data.ts:195:export function fingerprint(value: unknown): string {
+src/framework/core/data.ts:198:    if (h === undefined) HASH.set(value, (h = sha256(canonical(value))));
+src/framework/core/data.ts:201:  return sha256(canonical(value));
+src/framework/core/data.ts:206: * IRWB-004: `fingerprint({ kind, schemaVersion, value })`, an artifact's revision, computed once per canonical value.
+src/framework/core/data.ts:207: * The canonical text of that record is `{"kind":K,"schemaVersion":S,"value":V}` (keys sorted, strings JSON-encoded),
+src/framework/core/data.ts:208: * so it is hashed from its three pieces without building it, V being the value's (cached) canonical text.
+src/framework/core/data.ts:212:    return fingerprint({ kind, schemaVersion, value });
+src/framework/core/data.ts:216:      canonical(value),
+src/framework/core/data.ts:230: * IRWB-004: run `validator(value)` unless it already accepted this canonical value. A canonical value cannot change
+src/framework/core/data.ts:252:/** True for values `immutable` produced: deep-frozen, canonical, already validated. */
+src/framework/core/data.ts:258: * `canonical(a) === canonical(b)`, decided without building text: both are made canonical (free for values
+src/framework/core/data.ts:259: * `immutable` produced), then compared structurally (canonical records have sorted keys, so equal records have
+import { performance } from 'node:perf_hooks';
+import { installVendor } from '../../../../../../tools/node-vendor.mjs';
+import { projectFiles } from '../../../../../../tools/corpus.mjs';
+import { differentialSpec, runDifferential, seededRandom, setDifferentialReuse } from '../../../../../../dist/framework/contracts/index.js';
+import { compileTix } from '../../../../../../dist/tensor/index.js';
+import { cudaCases, seed } from '../../../../../../dist/tensor/contract.js';
+await installVendor();
+const { projectSource, ingestProject } = await import('../../../../../../dist/typed/project.js');
+const { meaningKept } = await import('../../../../../../dist/typed/evaluate.js');
+const project = projectSource('blend', projectFiles('blend'));
+const origin = ingestProject(project);
+const typed = differentialSpec(meaningKept({ inputs: project.meta.inputs }));
+const fn = compileTix('fn f(x:f32[N,C]):f32[N,C] { s[i]=sum(j) x[i,j]; y[i,j]=x[i,j]-s[i]; return y; }').current.value.functions[0];
+const tensor = { id:'measurement.tensor', version:'1', count:1, seed, baseline:'a', subject:'b', baselineKey:()=> 'same', subjectKey:()=> 'same', cases:()=>cudaCases(fn, seededRandom(seed)), run:()=>0, compare:()=>true };
+for (const [name, spec, inputs] of [['typed', typed, { origin, candidate: origin }], ['tensor', tensor, { a: null, b: null }]]) {
+  for (const mode of ['cached cases', 'regenerate cases']) {
+    setDifferentialReuse(false); setDifferentialReuse(true);
+    const original = spec.cases; let saved;
+    const measured = { ...spec, id: spec.id + mode, cases: (...args) => mode === 'cached cases' ? (saved ??= original(...args)) : original(...args) };
+    runDifferential(measured, inputs);
+    const start = performance.now();
+    for (let i=0;i<20;i++) runDifferential(measured, inputs);
+    console.log(name, mode, ((performance.now()-start)/20).toFixed(3), 'ms/check');
+  }
+}
+// Build the standalone browser workbench into dist/site/ (npm run build:site):
+//   index.html      site-src/index.html
+//   app.js          site-src/main.js bundled with esbuild (the UI, src/workbench, src/typed, src/framework) and the
+//                   built-in content: corpus/projects, corpus/book, corpus/reference.md and the workbench's source
+//   app.css         site-src/{kiln,agent,app,port}.css
+//   vendor/*.js     the vendored ds-js-os front end and emulator, checked against vendor/ds-js-os/VENDOR.json
+//   loaded only when the Candela view opens (each with a subresource-integrity hash the bundle carries):
+//     vendor/typed-rv32*.js      the reference compiler and its pass groups (vendor/ds-js-os/VENDOR.json)
+//     candela/candela-data.js    globalThis.candelaData: the gallery's Typed sources and scene table, each file
+//                                checked against corpus/candela-gallery/VENDOR.json
+// Nothing is fetched at run time; the page loads its own scripts and makes no other requests (see the CSP).
+import { build } from 'esbuild';
+import { createHash } from 'node:crypto';
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { builtinProjects } from './corpus.mjs';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const out = join(root, process.argv[2] || 'dist/site');
+const t0 = performance.now();
+
+// ---------- content ----------
+function book() {
+  const dir = join(root, 'corpus/book');
+  return readdirSync(dir)
+    .filter(f => f.endsWith('.md'))
+    .sort()
+    .map(f => {
+      const text = readFileSync(join(dir, f), 'utf8');
+      const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
+      const meta = {};
+      if (m) for (const line of m[1].split('\n')) {
+        const k = /^(\w+):\s*(.*)$/.exec(line);
+        if (k) meta[k[1]] = k[2].trim();
+      }
+      return {
+        id: meta.id || f.replace(/^\d+-|\.md$/g, ''),
+        title: meta.title || f,
+        part: meta.part || '',
+        projects: meta.projects ? meta.projects.split(',').map(s => s.trim()).filter(Boolean) : [],
+        md: m ? text.slice(m[0].length) : text,
+      };
+    });
+}
+function reference() {
+  const divergences = readFileSync(join(root, 'src/workbench/DIVERGENCES.md'), 'utf8');
+  const ref = readFileSync(join(root, 'corpus/reference.md'), 'utf8');
+  // the prototype's reference, with this build's differences first (wb.help('divergences') prints them)
+  const body = divergences.replace(/^# .*\n/, '');
+  return ref.replace(/^(# .*\n)/, `$1\n## Divergences in this build\n\n${body.replace(/^## /gm, '### ')}\n`);
+}
+function sources() {
+  const files = {};
+  const walk = (dir, filter) => {
+    for (const f of readdirSync(dir).sort()) {
+      const p = join(dir, f);
+      if (statSync(p).isDirectory()) walk(p, filter);
+      else if (filter(f)) files[relative(root, p)] = readFileSync(p, 'utf8');
+    }
+  };
+  walk(join(root, 'src/workbench'), f => /\.(ts|md)$/.test(f));
+  walk(join(root, 'src/typed'), f => /\.ts$/.test(f));
+  walk(join(root, 'src/framework'), f => /\.ts$/.test(f));
+  walk(join(root, 'site-src'), f => /\.(js|html)$/.test(f));
+
+exec
+/usr/bin/zsh -lc "rg -n 'interface Case|type Case|casesFrom|Float32Array|Uint8Array|Infinity|NaN' src/typed/evaluate.ts src/tensor/contract.ts | head -70 && sed -n '30,50p' src/framework/contracts/analysis-manager.ts && cat tsconfig.json && sed -n '185,205p' src/framework/core/data.ts && ls -la | head" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 331ms:
+src/typed/evaluate.ts:58:  bytes: Uint8Array;
+src/typed/evaluate.ts:63:    this.bytes = new Uint8Array(size);
+src/typed/evaluate.ts:73:    const b = new Uint8Array(Math.ceil(n / 4096) * 4096);
+src/typed/evaluate.ts:97:  image(): Uint8Array {
+src/typed/evaluate.ts:102:export function readBuffer(bytes: Uint8Array, at: number): number[] {
+src/typed/evaluate.ts:193: * Edge values of f32, as bits, most telling first: NaN, ±∞, ±0, ±1, the smallest subnormal, the largest finite, the
+src/typed/evaluate.ts:203: * values in [0, 1], and with low probability an edge value (±0, ±∞, NaN, subnormals, extremes) or any bit pattern.
+src/typed/evaluate.ts:204: * (`casesFrom` also gives the first cases of a function edge values outright.)
+src/typed/evaluate.ts:223:export interface Case {
+src/typed/evaluate.ts:227:  readonly memory: Uint8Array;
+src/typed/evaluate.ts:232:export function casesFrom(
+src/typed/evaluate.ts:242:  // parameter i of case k takes edge (k + i), so every edge meets every parameter and NaN meets ordinary values
+src/typed/evaluate.ts:328:  readonly bytes: Uint8Array;
+src/typed/evaluate.ts:337:let SCRATCH = new Uint8Array(0);
+src/typed/evaluate.ts:355:  memBytes: Uint8Array,
+src/typed/evaluate.ts:374:  let bytes: Uint8Array;
+src/typed/evaluate.ts:376:    if (SCRATCH.length < size) SCRATCH = new Uint8Array(size);
+src/typed/evaluate.ts:379:  } else bytes = new Uint8Array(size);
+src/typed/evaluate.ts:550:const sameBytes = (a: Uint8Array, b: Uint8Array) => {
+src/typed/evaluate.ts:617:        return (roots ?? [...st.fns.keys()]).flatMap(fn => casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }));
+src/tensor/contract.ts:55:        const data = Float32Array.from({ length: size(shape) }, (_, i) => {
+  ResourcePort,
+  ResourceStamp,
+  ResourceWrite,
+  TransformationDefinition,
+  TransformationTransaction,
+  VersionRef,
+} from './types.js';
+export class ContractError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ContractError';
+  }
+}
+interface Store {
+  analyses: Map<string, AnalysisRecord>;
+  facts: Map<string, PropertyFact>;
+  analysisHistory: Map<string, AnalysisRecord>;
+  factHistory: Map<string, PropertyFact>;
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+
+/**
+ * Portable SHA-256 for identical browser/Node content addresses; no platform or npm dependency. IRWB-004: the
+ * implementation is in sha256.ts (node:crypto in Node, a streaming portable one elsewhere); the digest is unchanged.
+ */
+export function sha256(text: string): string {
+  return sha256Parts([text]);
+}
+
+const HASH = new WeakMap<object, string>();
+export function fingerprint(value: unknown): string {
+  if (value && typeof value === 'object' && CANONICAL.has(value)) {
+    let h = HASH.get(value);
+    if (h === undefined) HASH.set(value, (h = sha256(canonical(value))));
+    return h;
+  }
+  return sha256(canonical(value));
+}
+
+const REVISION = new WeakMap<object, Map<string, string>>();
+/**
+total 80
+drwxrwxr-x  13 manuel manuel  4096 Nov 27 09:33 .
+drwxrwxr-x 138 manuel manuel  4096 Nov 27 09:26 ..
+dr-xr-xr-x   2 manuel manuel    40 Nov 27 09:33 .agents
+dr-xr-xr-x   2 manuel manuel    40 Nov 27 09:33 .aws
+dr-xr-xr-x   2 manuel manuel    40 Nov 27 09:33 .codex
+-rw-rw-r--   1 manuel manuel    95 Nov 27 09:26 .git
+-rw-rw-r--   1 manuel manuel    90 Nov 27 09:26 .gitignore
+-rw-rw-r--   1 manuel manuel    91 Nov 27 09:26 .prettierrc.json
+-rw-rw-r--   1 manuel manuel   109 Nov 27 09:26 .ttmp.yaml
+
+exec
+/usr/bin/zsh -lc "sed -n '220,310p' src/typed/evaluate.ts && sed -n '1,70p' src/framework/contracts/analysis-manager.ts && cat tests/framework/ext-e5.test.mjs | tail -25 && cat tools/node-vendor.mjs | head -80 && ls node_modules 2>/dev/null | head" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 455ms:
+          : (rnd() * 4294967296) | 0;
+}
+
+export interface Case {
+  readonly fn: string;
+  readonly n: number;
+  readonly args: readonly number[];
+  readonly memory: Uint8Array;
+  readonly items: readonly MemoryItem[];
+}
+
+/** `count` cases for one function, deterministic in `seed` (Compiler Workbench's `cases.from`). */
+export function casesFrom(
+  st: Store,
+  fname: string,
+  { count = 50, seed = 7, inputs = {} as FunctionInputs } = {},
+): Case[] {
+  const f = st.fn(fname),
+    fe = tables(st),
+    out: Case[] = [],
+    rnd = rng(seed);
+  // the first quarter of the cases (at most one per edge value) give each unspecified f32 parameter an edge value:
+  // parameter i of case k takes edge (k + i), so every edge meets every parameter and NaN meets ordinary values
+  const edges = f.params.includes('f32') ? Math.min(F32_EDGES.length, Math.floor(count / 4)) : 0;
+  for (let k = 0; k < count; k++) {
+    const mem = new Memory();
+    const args = f.params.map((t, i) =>
+      t === 'f32' && k < edges && inputs[f.locals[i].name] === undefined
+        ? F32_EDGES[(k + i) % F32_EDGES.length]
+        : makeValue(inputs[f.locals[i].name], t, mem, rnd, fe, f.locals[i].name),
+    );
+    out.push({ fn: fname, n: k, args, memory: mem.image(), items: mem.items.slice() });
+  }
+  return out;
+}
+
+/** One concrete call: `{ name: number | {cells} | {buffer} | {string} }`. */
+export function benchCase(st: Store, fname: string, bench: Readonly<Record<string, unknown>> = {}): Case {
+  const f = st.fn(fname),
+    mem = new Memory(),
+    rnd = rng(1);
+  const args = f.params.map((t, i) =>
+    makeValue(bench[f.locals[i].name] ?? 0, t, mem, rnd, tables(st), f.locals[i].name),
+  );
+  return { fn: fname, n: 0, args, memory: mem.image(), items: mem.items.slice() };
+}
+
+const MASK = 31;
+export function binop(op: string, a: number, b: number): number {
+  switch (op) {
+    case 'add':
+      return (a + b) | 0;
+    case 'sub':
+      return (a - b) | 0;
+    case 'mul':
+      return Math.imul(a, b);
+    case 'div':
+      if (b === 0) throw new Trap('division by zero');
+      if (a === -2147483648 && b === -1) throw new Trap('division overflow');
+      return (a / b) | 0;
+    case 'rem':
+      if (b === 0) throw new Trap('division by zero');
+      if (b === -1) return 0;
+      return a % b | 0;
+    case 'and':
+      return a & b;
+    case 'or':
+      return a | b;
+    case 'xor':
+      return a ^ b;
+    case 'shl':
+      return a << (b & MASK);
+    case 'shr':
+      return a >> (b & MASK);
+    case 'shru':
+      return (a >>> (b & MASK)) | 0;
+    case 'eq':
+      return +(a === b);
+    case 'ne':
+      return +(a !== b);
+    case 'lt':
+      return +(a < b);
+    case 'gt':
+      return +(a > b);
+    case 'le':
+      return +(a <= b);
+    case 'ge':
+      return +(a >= b);
+    case 'ltu':
+      return +(a >>> 0 < b >>> 0);
+    case 'geu':
+import { canonical, fingerprint, immutable } from '../core/data.js';
+import type { Artifact, EntityRef } from '../core/types.js';
+import { Check, JsonValue, definitionRef, describeDefinition, validateArtifact } from './definitions.js';
+import { MemoryResources } from './effects.js';
+import { ContractRegistry } from './registry.js';
+import type {
+  AnalysisDefinition,
+  AnalysisRecord,
+  Assurance,
+  CheckEvidence,
+  CheckResult,
+  Condition,
+  ContractContext,
+  ContractEvent,
+  ContractExecution,
+  ContractSnapshot,
+  Correspondence,
+  Dependency,
+  EffectAccess,
+  EffectDefinition,
+  ExecutionOptions,
+  InvariantDefinition,
+  IRType,
+  ObjectiveDefinition,
+  PortValues,
+  Ports,
+  PreparedTransformation,
+  PropertyDefinition,
+  PropertyFact,
+  ResourcePort,
+  ResourceStamp,
+  ResourceWrite,
+  TransformationDefinition,
+  TransformationTransaction,
+  VersionRef,
+} from './types.js';
+export class ContractError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ContractError';
+  }
+}
+interface Store {
+  analyses: Map<string, AnalysisRecord>;
+  facts: Map<string, PropertyFact>;
+  analysisHistory: Map<string, AnalysisRecord>;
+  factHistory: Map<string, PropertyFact>;
+  resourceView?: Map<string, ResourceWrite>;
+}
+interface Frame {
+  allowed: readonly EffectDefinition[];
+  deps: Dependency[];
+  stack: readonly string[];
+  store: Store;
+  events: ContractEvent[];
+  effects: EffectAccess[];
+  writes: Map<string, ResourceWrite>;
+  expected: Map<string, ResourceStamp>;
+  analyses: Set<string>;
+  facts: Set<string>;
+  active: boolean;
+  cacheable: boolean;
+  pending: Set<Promise<unknown>>;
+  bodyToken?: {
+    open: boolean;
+  };
+  parent?: Frame;
+  const contract = defineTransformation({
+    id: 'test.rewrite', version: '1', description: 'a rewrite must keep sampled meaning',
+    inputs: { input: ExpressionIR }, outputs: { output: ExpressionIR },
+    ensures: [{ invariant: sameMeaning(), bindings: { origin: { from: 'inputs', port: 'input' }, candidate: { from: 'outputs', port: 'output' } } }],
+  });
+  const input = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const ok = await manager.verifyTransformation({ input }, { output: createArtifact(ExpressionIR, 'e', rewritten()) }, contract);
+  assert.ok(ok);
+  await assert.rejects(manager.verifyTransformation({ input }, { output: createArtifact(ExpressionIR, 'e', wrong()) }, contract), /disagree/);
+});
+
+test('baseline key rejects cases that change outside the key', () => {
+  let outside = 1;
+  const spec = {
+    id: 'test.key-contract', version: '1', count: 1, seed: 1,
+    baseline: 'origin', subject: 'candidate', baselineKey: () => 'fixed-key',
+    cases: () => [{ outside }], run: (_side, _art, c) => c.outside, compare: (a, b) => a === b,
+  };
+  const origin = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const inputs = { origin, candidate: origin };
+  assert.equal(runDifferential(spec, inputs).status, 'agree');
+  assert.equal(runDifferential(spec, inputs).status, 'agree');
+  outside = 2;
+  assert.throws(() => runDifferential(spec, inputs), /fixed-key/);
+});
+// Load the vendored ds-js-os classic scripts into this Node realm and hand them to the typed domain.
+// Verifies each file's SHA-256 against vendor/ds-js-os/VENDOR.json first, so a test never runs a modified copy.
+import vm from 'node:vm';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+
+const root = fileURLToPath(new URL('../vendor/ds-js-os/', import.meta.url));
+const manifest = JSON.parse(readFileSync(join(root, 'VENDOR.json'), 'utf8'));
+const loaded = new Set();
+
+export function loadVendorFile(path) {
+  if (loaded.has(path)) return;
+  const entry = manifest.files.find(f => f.path === path);
+  if (!entry) throw new Error(`${path} is not in VENDOR.json`);
+  const text = readFileSync(join(root, path));
+  const digest = createHash('sha256').update(text).digest('hex');
+  if (digest !== entry.sha256) throw new Error(`${path}: sha256 ${digest} does not match VENDOR.json ${entry.sha256}`);
+  vm.runInThisContext(text.toString('utf8'), { filename: join(root, path) });
+  loaded.add(path);
+}
+
+/** Load everything and install it into the typed domain's vendor slot. */
+export async function installVendor({ reference = false } = {}) {
+  for (const p of ['compiler/typed/tape.js', 'compiler/typed/typed-wasm.js', 'bench/host/rv32-interp.js']) loadVendorFile(p);
+  if (reference)
+    for (const p of ['typed-rv32.js', 'typed-rv32-inline.js', 'typed-rv32-loops.js', 'typed-rv32-kernel.js'])
+      loadVendorFile(`compiler/typed/${p}`); // the core, then the pass groups its policies install
+  const { setVendor } = await import('../dist/typed/vendor.js');
+  setVendor({
+    typedTape: globalThis.typedTape,
+    typedWasm: globalThis.typedWasm,
+    typedRv32Interp: globalThis.typedRv32Interp,
+    ...(reference ? { typedRv32: globalThis.typedRv32 } : {}),
+  });
+  return manifest;
+}
+
+exec
+/usr/bin/zsh -lc "rg -n 'differential' src/framework/contracts/{analysis-manager,definitions,registry}.ts && node tools/build-site.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ exited 1 in 335ms:
+exec
+/usr/bin/zsh -lc 'node tools/build-site.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ exited 1 in 448ms:
+✘ [ERROR] Could not resolve "node:util"
+
+    src/framework/contracts/differential.ts:11:34:
+      11 │ import { isDeepStrictEqual } from 'node:util';
+         ╵                                   ~~~~~~~~~~~
+
+  The package "node:util" wasn't found on the file system but is built into node. Are you trying to bundle for node? You can use "platform: 'node'" to do that, which will remove this error.
+
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:1467
+  let error = new Error(text);
+              ^
+
+Error: Build failed with 1 error:
+src/framework/contracts/differential.ts:11:34: ERROR: Could not resolve "node:util"
+    at failureErrorWithLog (/home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:1467:15)
+    at /home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:926:25
+    at /home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:878:52
+    at buildResponseToResult (/home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:924:7)
+    at /home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:951:16
+    at responseCallbacks.<computed> (/home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:603:9)
+    at handleIncomingPacket (/home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:658:12)
+    at Socket.readFromStdout (/home/manuel/code/wesen/2026-11-24--compiler-workbench/node_modules/esbuild/lib/main.js:581:7)
+    at Socket.emit (node:events:509:28)
+    at addChunk (node:internal/streams/readable:563:12) {
+  errors: [Getter/Setter],
+  warnings: [Getter/Setter]
+}
+
+Node.js v24.18.0
+
+codex
+The browser build reproduces the reported `node:util` resolution failure. The existing cases include typed arrays and signed zero, which the framework’s plain-data canonicalizer does not directly accept, so the comparison must preserve those values when preparing data for hashing.
+exec
+/usr/bin/zsh -lc "cat >> tests/framework/ext-e5.test.mjs <<'EOF'
+
+test('baseline key checks typed arrays and signed zero using a stored snapshot', () => {
+  const memory = new Uint8Array([1, 2]);
+  let value = -0;
+  const spec = {
+    id: 'test.key-typed-data', version: '1', count: 1, baseline: 'origin', subject: 'candidate',
+    baselineKey: () => 'typed-key', cases: () => [{ memory, value }], run: () => 1, compare: () => true,
+  };
+  const origin = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const inputs = { origin, candidate: origin };
+  runDifferential(spec, inputs);
+  value = 0;
+  assert.throws(() => runDifferential(spec, inputs), e => e.name === 'ContractError' && /typed-key/.test(e.message));
+  value = -0;
+  memory[0] = 3;
+  assert.throws(() => runDifferential(spec, inputs), e => e.name === 'ContractError' && /typed-key/.test(e.message));
+});
+EOF
+node --test tests/framework/ext-e5.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ exited 1 in 499ms:
+✔ E5: the seeded generator is deterministic (1.278957ms)
+✔ E5: a correct rewrite agrees on every sampled case; a wrong one yields counterexamples (4.668728ms)
+✔ E5: inconclusive cases are counted, never a verdict; all-inconclusive fails (0.435853ms)
+✔ E5: a transformation contract can ensure a differential invariant (3.91399ms)
+✔ baseline key rejects cases that change outside the key (0.370188ms)
+✖ baseline key checks typed arrays and signed zero using a stored snapshot (0.656648ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69.282014
+
+✖ failing tests:
+
+test at tests/framework/ext-e5.test.mjs:102:1
+✖ baseline key checks typed arrays and signed zero using a stored snapshot (0.656648ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: Differential baseline key typed-key produced different cases
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032/tests/framework/ext-e5.test.mjs:113:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: Differential baseline key typed-key produced different cases
+        at prepare (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032/dist/framework/contracts/differential.js:93:19)
+        at runDifferential (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032/dist/framework/contracts/differential.js:177:30)
+        at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032/tests/framework/ext-e5.test.mjs:113:23
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032/tests/framework/ext-e5.test.mjs:113:10)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1325:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+        at Test.postRun (node:internal/test_runner/test:1465:19),
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+p='src/framework/contracts/differential.ts'
+s=open(p).read().replace(\"import { isDeepStrictEqual } from 'node:util';\", \"import { fingerprint } from '../core/data.js';\\nimport { ContractError } from './analysis-manager.js';\")
+s=s.replace('  readonly cases: readonly unknown[];','  readonly cases: readonly unknown[];\\n  readonly caseDigest: string;',1)
+pos=s.index('function prepare<P extends Ports, Case, Outcome>(')
+s=s[:pos]+'''/** Encode case values as canonical plain data, preserving typed-array bytes and special numbers. */
+function caseDigest(cases: readonly unknown[]): string {
+  function encode(value: unknown): unknown {
+    if (value === null) return ['null'];
+    if (typeof value === 'number')
+      return ['number', Object.is(value, -0) ? '-0' : String(value)];
+    if (typeof value === 'string' || typeof value === 'boolean' || typeof value === 'bigint' || value === undefined)
+      return [typeof value, String(value)];
+    if (ArrayBuffer.isView(value)) {
+      const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+      return ['view', Object.getPrototypeOf(value).constructor.name, Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')];
+    }
+    if (value instanceof ArrayBuffer)
+      return ['buffer', Array.from(new Uint8Array(value), b => b.toString(16).padStart(2, '0')).join('')];
+    if (Array.isArray(value)) return ['array', value.map(encode)];
+    if (value instanceof Date) return ['date', String(value.getTime())];
+    if (value instanceof Map) return ['map', [...value].map(([k, v]) => [encode(k), encode(v)])];
+    if (value instanceof Set) return ['set', [...value].map(encode)];
+    if (typeof value === 'object')
+      return ['object', Object.keys(value).sort().map(k => [k, encode((value as Record<string, unknown>)[k])])];
+    throw new Error('Unsupported differential case value');
+  }
+  return fingerprint(encode(cases));
+}
+
+'''+s[pos:]
+s=s.replace('if ("'!isDeepStrictEqual(reuse.cases, current)) throw new Error(`Differential baseline key ${bk} produced different cases`);'"',\"if (reuse.caseDigest "'!== caseDigest(current))'"\\n      throw new ContractError('baseline-key', "'`Differential baseline key ${bk} produced different cases`);")
+s=s.replace('"'  else\\n    reuse = {\\n      key,\\n      cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),','  else {\\n    const cases = spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count);\\n    reuse = {\\n      key,\\n      cases,\\n      caseDigest: caseDigest(cases),').replace('      verdicts: new Map(),\\n    };\\n  REUSE.set', '      verdicts: new Map(),\\n    };\\n  }\\n  REUSE.set')
+open(p,'w').write(s)
+PY
+npm run build && node --test tests/framework/ext-e5.test.mjs tests/tensor/cuda.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 7017ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ E5: the seeded generator is deterministic (1.182573ms)
+✔ E5: a correct rewrite agrees on every sampled case; a wrong one yields counterexamples (7.880801ms)
+✔ E5: inconclusive cases are counted, never a verdict; all-inconclusive fails (0.432694ms)
+✔ E5: a transformation contract can ensure a differential invariant (4.406204ms)
+✔ baseline key rejects cases that change outside the key (1.205081ms)
+✔ baseline key checks typed arrays and signed zero using a stored snapshot (0.471461ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (3.616975ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (1.407017ms)
+✔ concurrent lowering checks share a batch, retry transport failures and replay verdicts (235.059049ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (41.714513ms)
+✔ lowering rejects statement IDs absent from the Tix artifact (0.727108ms)
+✔ kernel inventories reject invented and omitted CUDA kernels (1.293644ms)
+✔ every corpus lowering validates fused and unfused without a GPU (931.915372ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1370.25903
+
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/01-measure.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+exec
+/usr/bin/zsh -lc 'node tools/build-site.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 712ms:
+typed cached cases 4.717 ms/check
+typed regenerate cases 5.144 ms/check
+tensor cached cases 1.218 ms/check
+tensor regenerate cases 1.964 ms/check
+
+ succeeded in 736ms:
+dist/site built in 304 ms: app.js 2940 KiB, app.css 80 KiB, 50 projects, 17 chapters, 121 source files, Candela on demand 1479 KiB
+
+codex
+The browser build now passes, and the focused tests cover typed-array mutation, signed zero, and the contract error. The digest also snapshots the original cases, so later mutation of a reused array is detectable. I’m running the full requested test selection and measuring the revised path.
+exec
+/usr/bin/zsh -lc 'node --test tests/framework/*.test.mjs tests/typed/*.test.mjs tests/tensor/cuda.test.mjs tests/tensor/corpus.test.mjs tests/tensor/fusion.test.mjs tests/tensor/language.test.mjs tests/tensor/passes.test.mjs tests/tensor/gate-choice-gpu.test.mjs > /tmp/irwb-032-review-tests.log 2>&1' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/diary/01-implementation-diary.md <<'EOF'
+
+## F26 review: browser build
+
+"'`node tools/build-site.mjs` reproduced the failure: esbuild could not resolve `node:util`. The new regression in `tests/framework/ext-e5.test.mjs` initially failed because a changed case raised a bare `Error`; it also checks a mutated typed array and signed zero. Replaced the Node-only comparison with a stored digest of a canonical projection of the cases; typed-array bytes and special numbers are preserved. A mismatch now raises `ContractError` naming the key. The browser build passed after the change.
+
+Re-ran `scripts/01-measure.mjs` (20 warm iterations). With the digest implementation, Typed blend took 5.144 ms/check and the tensor reduction took 1.964 ms/check with regenerated cases. The earlier recorded pre-detection warm baselines were 0.095 and 0.030 ms/check respectively, suggesting approximately 5.05 ms and 1.93 ms added. These are small local samples from separate runs, not end-to-end timings; the current script'"'s cached-case mode still hashes cases and therefore is not a zero-detection baseline.
+EOF
+node ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/01-measure.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 1994ms:
+typed cached cases 8.598 ms/check
+typed regenerate cases 9.732 ms/check
+tensor cached cases 3.110 ms/check
+tensor regenerate cases 4.741 ms/check
+
+exec
+/usr/bin/zsh -lc "rg -n '✖|not ok|ERR_' /tmp/irwb-032-review-tests.log | head -20 && tail -4 /tmp/irwb-032-review-tests.log && git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 956ms:
+ℹ entry 0, 184 guest instructions. RV32 r0/speed/specialized: 7678 / 9286 / 75 instructions, 41.73 / 50.47 / 0.41 per guest instruction
+ℹ entry 34, 160 guest instructions. RV32 r0/speed/specialized: 6874 / 8218 / 74 instructions, 42.96 / 51.36 / 0.46 per guest instruction
+ℹ maximum evaluator statements by entry: {"0":{"r0":4131,"speed":5350},"34":{"r0":3699,"speed":4690}}
+✔ the workbench opens the project and explores both entries on a fresh copy (1015.193865ms)
+ M src/framework/contracts/differential.ts
+ M tests/framework/ext-e5.test.mjs
+ M ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/diary/01-implementation-diary.md
+
+exec
+/usr/bin/zsh -lc 'git show HEAD:src/framework/contracts/differential.ts | npm exec --no -- prettier --check --stdin-filepath src/framework/contracts/differential.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ exited 1 in 1579ms:
+(stdin)
+
+exec
+/usr/bin/zsh -lc "cat > ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/02-compare.mjs <<'EOF'
+import { execFileSync } from 'node:child_process';
+import { performance } from 'node:perf_hooks';
+import { transform } from 'esbuild';
+import { installVendor } from '../../../../../../tools/node-vendor.mjs';
+import { projectFiles } from '../../../../../../tools/corpus.mjs';
+import { differentialSpec, seededRandom } from '../../../../../../dist/framework/contracts/index.js';
+import * as current from '../../../../../../dist/framework/contracts/differential.js';
+import { compileTix } from '../../../../../../dist/tensor/index.js';
+import { cudaCases, seed } from '../../../../../../dist/tensor/contract.js';
+
+// Reconstruct the immediately preceding implementation, with its reuse-hit check removed, to measure the
+// increment in the same process. The recorded revision keeps this comparison reproducible after later commits.
+let source = execFileSync('git', ['show', '4f929dd:src/framework/contracts/differential.ts'], { encoding: 'utf8' });
+const previous = "'`if (reuse) {'"\\n    const current = spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count);\\n    if ("'!isDeepStrictEqual(reuse.cases, current)) throw new Error('"\\"'`Differential baseline key '"\\"'${bk} produced different cases'"\\"'`);'"\\n    REUSE.delete(key);\\n  }"'`;
+if (!source.includes(previous)) throw Error('"'Baseline source changed');
+source = source.replace(previous, 'if (reuse) REUSE.delete(key);');
+const definitionUrl = new URL('../../../../../../dist/framework/contracts/definitions.js', import.meta.url).href;
+source = source.replace(\"'./definitions.js'\", JSON.stringify(definitionUrl));
+const js = await transform(source, { loader: 'ts', format: 'esm', target: 'es2022' });
+const baseline = await import('data:text/javascript;base64,' + Buffer.from(js.code).toString('base64'));
+await installVendor();
+const { projectSource, ingestProject } = await import('../../../../../../dist/typed/project.js');
+const { meaningKept } = await import('../../../../../../dist/typed/evaluate.js');
+const project = projectSource('blend', projectFiles('blend'));
+const origin = ingestProject(project);
+const typed = differentialSpec(meaningKept({ inputs: project.meta.inputs }));
+const fn = compileTix('fn f(x:f32[N,C]):f32[N,C] { s[i]=sum(j) x[i,j]; y[i,j]=x[i,j]-s[i]; return y; }').current.value.functions[0];
+const tensor = { id:'measurement.tensor', version:'1', count:1, seed, baseline:'a', subject:'b', baselineKey:()=> 'same', subjectKey:()=> 'same', cases:()=>cudaCases(fn, seededRandom(seed)), run:()=>0, compare:()=>true };
+for (const [name, spec, inputs] of [['typed', typed, { origin, candidate: origin }], ['tensor', tensor, { a: null, b: null }]]) {
+  for (const [label, engine] of [['without detection', baseline], ['with detection', current]]) {
+    engine.setDifferentialReuse(false); engine.setDifferentialReuse(true);
+    engine.runDifferential(spec, inputs);
+    const start = performance.now();
+    for (let i = 0; i < 20; i++) engine.runDifferential(spec, inputs);
+    console.log(name, label, ((performance.now() - start) / 20).toFixed(3), 'ms/check');
+  }
+}
+EOF
+node ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/02-compare.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 1172ms:
+typed without detection 0.037 ms/check
+typed with detection 9.311 ms/check
+tensor without detection 0.015 ms/check
+tensor with detection 3.524 ms/check
+
+codex
+The digest path works in the browser build. A same-process comparison shows the check adds measurable work on warm hits; I’m letting the test run finish before taking an uncontended measurement.
+ succeeded in 78541ms:
+exec
+/usr/bin/zsh -lc "tail -5 /tmp/irwb-032-review-tests.log && rg -n '✖|not ok|ERR_' /tmp/irwb-032-review-tests.log | head" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 493ms:
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 78117.807203
+
+exec
+/usr/bin/zsh -lc 'tail -10 /tmp/irwb-032-review-tests.log && git diff --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/02-compare.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 337ms:
+✔ P4.2: local types inferred from the tape agree with the front end's localTypes (214.254828ms)
+✔ P4.2: the corpus lifted from the tape gives the inspection path's tables, or the same meaning where a checked address differs (2339.524941ms)
+ℹ tests 425
+ℹ suites 0
+ℹ pass 423
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 78117.807203
+ src/framework/contracts/differential.ts            | 39 +++++++++++++++++++---
+ tests/framework/ext-e5.test.mjs                    | 17 ++++++++++
+ .../diary/01-implementation-diary.md               |  6 ++++
+ 3 files changed, 58 insertions(+), 4 deletions(-)
+
+ succeeded in 618ms:
+typed without detection 0.025 ms/check
+typed with detection 4.153 ms/check
+tensor without detection 0.008 ms/check
+tensor with detection 1.663 ms/check
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/diary/01-implementation-diary.md <<'EOF'
+
+A more direct comparison uses "'`scripts/02-compare.mjs`, which probes esbuild'"'s TypeScript transform and a data-URL module successfully, reconstructs the previous implementation with its detection removed, and measures both paths in the same process. After the suite finished, 20 warm checks averaged 0.025 ms without versus 4.153 ms with detection for Typed, and 0.008 versus 1.663 ms for tensor. The increases are approximately 4.13 and 1.66 ms per check, respectively. These samples are local and omit GPU execution. An opt-in audit mode would be cheaper but would not check every reuse.
+
+Validation: "'`npm run build` and `node tools/build-site.mjs` passed; the requested framework, Typed, non-GPU tensor, and new GPU test selection finished with 423 passed and 2 skipped (425 total).
+EOF
+git diff --check && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 407ms:
+ M src/framework/contracts/differential.ts
+ M tests/framework/ext-e5.test.mjs
+ M ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/diary/01-implementation-diary.md
+?? ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/02-compare.mjs
+
+exec
+/usr/bin/zsh -lc "git add src/framework/contracts/differential.ts tests/framework/ext-e5.test.mjs ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/diary/01-implementation-diary.md ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/02-compare.mjs && git commit -m 'IRWB-032: F26 make reuse checking browser compatible' && git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ exited 128 in 603ms:
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/fix4-tl-irwb-032/index.lock': Read-only file system
+
+codex
+The final selection passed with 423 tests passing and two skipped. Git again needs elevated access to create this worktree’s index lock, so I’m using that access for the requested commit.
+exec
+/usr/bin/zsh -lc "git add src/framework/contracts/differential.ts tests/framework/ext-e5.test.mjs ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/diary/01-implementation-diary.md ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/02-compare.mjs && git commit -m 'IRWB-032: F26 make reuse checking browser compatible' && git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix4-tl-irwb-032
+ succeeded in 408ms:
+[fix4-tl/irwb-032 3900b3e] IRWB-032: F26 make reuse checking browser compatible
+ 4 files changed, 99 insertions(+), 4 deletions(-)
+ create mode 100644 ttmp/2026/11/27/IRWB-032--f24-to-f26-kernel-entities-the-gate-s-choice-the-baseline-key-contract/scripts/02-compare.mjs
+
+codex
+Committed the F26 browser fix as **`3900b3e`**. Reuse checks now compare a stored, browser-compatible digest and raise `ContractError` when cases change.
+
+`node tools/build-site.mjs` and `npm run build` passed. The final test run had **425 tests: 423 passed and 2 skipped**.
+
+In a same-process measurement of 20 warm checks, detection added approximately **4.13 ms per Typed check** and **1.66 ms per tensor check**. These local measurements exclude GPU execution.
+tokens used
+105,948
+Committed the F26 browser fix as **`3900b3e`**. Reuse checks now compare a stored, browser-compatible digest and raise `ContractError` when cases change.
+
+`node tools/build-site.mjs` and `npm run build` passed. The final test run had **425 tests: 423 passed and 2 skipped**.
+
+In a same-process measurement of 20 warm checks, detection added approximately **4.13 ms per Typed check** and **1.66 ms per tensor check**. These local measurements exclude GPU execution.

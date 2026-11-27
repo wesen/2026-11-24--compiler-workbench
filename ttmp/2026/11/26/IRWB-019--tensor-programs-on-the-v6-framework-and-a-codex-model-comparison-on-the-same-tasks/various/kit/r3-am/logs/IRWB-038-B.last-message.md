@@ -1,0 +1,24 @@
+[IRWB-038-B ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/index.md) · [Design document](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc/01-what-a-checked-compiler-transformation-should-return.md) · [31-cell survey](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/various/01-cell-survey.md)
+
+**Fundamental recommendation:** Make a validated transformation between named artifact ports the unit of composition. Keep native IRs and one strategy interpreter. Construct candidates privately, record precisely what was checked, and publish accepted outputs atomically. Fix publication first: it is possible today for a rejected candidate to remain visible as a store head. [Publication probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/01-pass-boundary.mjs:58)
+
+### Five findings
+
+1. The existing interpreter can run native Tix passes. The stock bridge omitted the requested exact gate; a prototype carrying an explicit policy successfully checked and ranked both Tix alternatives. [Bridge experiment](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc/01-what-a-checked-compiler-transformation-should-return.md:45)
+2. Correspondence needs a named entity set and a coverage requirement. Managed inline failed because two projections enumerated different entities, yet complete statement lists with zero mapping groups passed. [Correspondence probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/01-pass-boundary.mjs:45)
+3. Two A0 cells recovered the same **183** verified O2 rewrites while counting **203** versus **395** local edits. Recording rule witnesses and premises would let researchers reproduce both classifications. [Census comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc/01-what-a-checked-compiler-transformation-should-return.md:57)
+4. The existing dataflow solver reproduced B1-G’s binding-time result on cyclic copies. Online specialization needs a different service to discover, memoize and bound residual program points. [Binding-time comparison](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/design-doc/01-what-a-checked-compiler-transformation-should-return.md:63)
+5. T6-D’s sampled order validator missed a permutation that changed an f32 sum from **1 to 0** at reduction extent 17. Its reorder precondition correctly refused the same permutation. [Reduction-order probe](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b/ttmp/2026/11/27/IRWB-038-B--composing-compiler-transformations-and-their-evidence/scripts/05-reduction-order.mjs:12)
+
+### Proposed framework concepts
+
+- **Partial transformations** with explicit applicability, candidate construction, validation and atomic publication.
+- **Revision-scoped provenance relations and rewrite witnesses** for tracing edits, replaying rules and attributing observations.
+- **Translation-validation judgments** that identify the reference semantics, relation, assumptions, coverage and verification method.
+- **Demand-driven analysis queries** keyed by the artifact regions and dependencies a fact actually reads.
+- **Polyvariant specialization** with memoized residual control points, explicit assumptions and growth budgets.
+- **Affine schedule relations** that check iteration coverage and validity dependences independently of the planner’s cost choices.
+
+All seven ticket scripts ran, nine merged CPU test files passed, and `docmgr doctor` passed. GPU timings and full-corpus census totals are attributed to the original reports. The worktree is clean and all commits are local.
+
+**Last commit** `db8c6fbd10c636c7afb302a323ca94a64933e664`

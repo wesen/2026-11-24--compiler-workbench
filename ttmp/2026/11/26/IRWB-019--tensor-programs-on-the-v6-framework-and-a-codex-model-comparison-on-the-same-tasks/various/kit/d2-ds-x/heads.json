@@ -1,0 +1,9 @@
+{
+ "IRWB-037-D": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-ds-x-irwb-037-d",
+  "branch": "d2-ds-x/irwb-037-d",
+  "base": "2966b9b",
+  "harness": "pi",
+  "rev": "88ef00c"
+ }
+}

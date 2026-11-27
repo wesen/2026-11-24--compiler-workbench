@@ -1,0 +1,9 @@
+{
+ "IRWB-036-E": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/b1-g-h-irwb-036-e",
+  "branch": "b1-g-h/irwb-036-e",
+  "base": "0f45d04",
+  "harness": "pi",
+  "rev": "b8b4498"
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "IRWB-038-B": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-am-irwb-038-b",
+  "branch": "r3-am/irwb-038-b",
+  "base": "db8c6fb",
+  "rev": "aac9a7a",
+  "resumedFrom": "r3-am"
+ }
+}
