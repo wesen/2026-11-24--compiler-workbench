@@ -94,6 +94,18 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
   return { depth: k, reason };
 }
 
+// Which bodies are worth a term pass (IRWB-030-E script 03, row sums over [4096, 1024]). The pass costs a
+// barrier and a term buffer in the block's shared memory, so fewer blocks are resident. With one or two
+// single-instruction operations per term the serial loop was faster (0.136 against 0.154 ms, 0.127 against
+// 0.137); PLACEHOLDER
+export const staging = { cheapOperations: 4 };
+/** The body's work for one thread: the number of + - * and negations, or Infinity with anything costlier. */
+function work(e: Expr): number {
+  if (e.kind === 'reduce') return Infinity;
+  if (e.kind !== 'op') return 0;
+  return e.args.reduce((n, a) => n + work(a), ['+', '-', '*', 'neg'].includes(e.op) ? 1 : Infinity);
+}
+
 // The gate (IRWB-030-E): whether a block-mode group runs fused, from its grid (number of blocks) and its longest
 // row, as a C++ condition over the host's two values. PLACEHOLDER until script 04's measurements.
 export const gate = { minRow: 32 };
@@ -161,6 +173,11 @@ export function planFusion(fn: Fn): FusionPlan {
           if (r.body.kind === 'load' && ownRow(r.body)) return;
           if (m.axes.length > depth)
             return refuse('every thread of the block computes elements of the row, so none is idle');
+          const n = work(r.body);
+          if (n < staging.cheapOperations)
+            return refuse(
+              `the body is ${n} single-instruction operation${n === 1 ? '' : 's'}; below ${staging.cheapOperations} one thread's loop is faster`,
+            );
           terms.push({ statement: m.name, reduction });
         });
       }

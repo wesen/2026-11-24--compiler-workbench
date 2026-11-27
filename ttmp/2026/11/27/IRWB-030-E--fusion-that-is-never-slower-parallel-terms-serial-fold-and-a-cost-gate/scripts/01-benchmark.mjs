@@ -98,6 +98,7 @@ export const programs = {
 const bodies = {
   mul1: 'x[i,j] * x[i,j]',
   mul2: 'x[i,j] * x[i,j] * x[i,j]',
+  mul3: 'x[i,j] * x[i,j] * x[i,j] * x[i,j]',
   mul4: 'x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j]',
   mul8: 'x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j]',
   relu: 'max(x[i,j], 0)',
@@ -116,6 +117,15 @@ programs.weighted = {
   source: 'fn f(x: f32[N,C], w: f32[C]): f32[N,C] { s[i] = sum(j) x[i,j] * w[j]; y[i,j] = x[i,j] - s[i]; return y; }',
   sizes: { N: 4096, C: 1024 },
 };
+
+// A member with trailing axes whose row (O elements) can be much shorter than the block, with a reduction per
+// element: its terms are not staged, so only O lanes of the block work in that phase (script 05, the lanes rule).
+for (const [name, body] of Object.entries({ 'narrow-div': 'e[i,j] * w[j,o] / 3', 'narrow-mul': 'e[i,j] * w[j,o]' }))
+  programs[name] = {
+    fn: 'f',
+    source: `fn f(x: f32[N,C], w: f32[C,O]): f32[N,O] { e[i,j] = x[i,j] * 2; y[i,o] = sum(j) ${body}; return y; }`,
+    sizes: { N: 4096, C: 1024, O: 4 },
+  };
 
 export function inputsFor(program, fnName, sizes) {
   const fn = program.current.value.functions.find(f => f.name === fnName);
