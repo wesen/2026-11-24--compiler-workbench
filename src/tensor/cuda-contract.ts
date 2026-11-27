@@ -33,7 +33,7 @@ interface CudaUnit {
   kernels: CudaKernel[];
 }
 
-const CudaIR = defineIR<CudaUnit>({
+export const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
   version: '2',
   description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
