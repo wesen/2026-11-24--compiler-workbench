@@ -1,0 +1,232 @@
+✔ a header with two back edges is one loop, and its preheader is outside it (573.752961ms)
+✔ the rows of an attribution sum to the emulator counts, and licm hoists out of a two-latch loop (1196.049638ms)
+✔ a call that does not finish is refused (150.61033ms)
+✔ bytecode VM: speed runs no more instructions than r0, and no licm decision costs a dispatch (11665.779694ms)
+✔ licm hoists equal invariant trees into one local (share: false gives one per use) (288.196185ms)
+✔ audit: Compiler Workbench's dce claimed to preserve loops; ramp@r3 shows it does not (940.761725ms)
+✔ P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40 (520.269927ms)
+✔ P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 52 bytes / 366 (1854.608835ms)
+✔ P2.4: the book's other r0 numbers reproduce (1229.116024ms)
+✔ P2.4: rv32.image-agrees holds for every function of every corpus project at r0 (27147.25145ms)
+✔ P2.4: the reference compiler (oracle) agrees with the evaluator, and with our images on results (1855.418223ms)
+✔ P2.4: encoders and the disassembler round-trip (558.250637ms)
+✔ P2.4: options are validated with the prototype's codes (208.669911ms)
+✔ P2.4: a calling-convention fault in the emulator counts as disagreement (22.21427ms)
+✔ P2.4: imageAgrees is one definition per parameter set; limits make cases inconclusive (171.654071ms)
+✔ P2.4: rv32.image is a v6 IR: projection, validation, serialization (119.131353ms)
+✔ P2.4: the correspondence maps program entities to the instructions that cover them (134.943107ms)
+✔ P2.4: heat, diffs, machine stages and image status (100.1679ms)
+✔ P2.6: the book's table against the reference compiler, and 5160 bytes against 7628 (2199.404971ms)
+✔ P2.6: the evaluator at r0 agrees with the reference images on 8286 decided cases (14 at the step limit) (25142.307836ms)
+✔ bcm: constant positions are checked once, for the largest, at the first site (749.490178ms)
+✔ bcm: one base plus offsets keeps the smallest and the largest check, three sites become two (341.977912ms)
+✔ bcm: a call ends a group (it might not return), so both checks stay (281.793253ms)
+✔ bcm: why on an unchecked address reaches the statement where the group is checked (218.612526ms)
+✔ bytecode fixtures match independent results and dispatch counts (23.091774ms)
+✔ generated and exhaustive VM cases agree across evaluators and RV32 compilers (9852.000148ms)
+ℹ entry 0, 184 guest instructions. RV32 r0/speed/specialized: 7678 / 6301 / 75 instructions, 41.73 / 34.24 / 0.41 per guest instruction
+ℹ entry 34, 160 guest instructions. RV32 r0/speed/specialized: 6874 / 5605 / 74 instructions, 42.96 / 35.03 / 0.46 per guest instruction
+ℹ maximum evaluator statements by entry: {"0":{"r0":4131,"speed":2384},"34":{"r0":3699,"speed":2108}}
+✔ the workbench opens the project and explores both entries on a fresh copy (5777.024942ms)
+✔ P4.2: the evaluator at r0 agrees with the reference compiler's image on every Candela function (151597.953876ms)
+✔ P4.2: the program host ingests Candela from the tape and runs f32 functions on bits (30718.217119ms)
+﹣ P4.2: O2 on Candela keeps its meaning (IRWB_CANDELA=1) (6.703084ms) # SKIP
+✔ chess-search generated entries agree through speed and all RV32 images (240857.271034ms)
+✔ chess-search legal moves, check status, and perft match the reference positions (13320.652689ms)
+✔ chess-search finds mates, handles terminal positions, and avoids the poisoned pawn (7409.278548ms)
+✔ chess-search workbench and fresh inspector check the configured roots (85788.622948ms)
+✔ F36: bce keeps a bounds check when the index is reassigned between the guard and the check (517.485965ms)
+⚠ F37: typed.ranges keeps an outer loop counter non-negative under an inner loop (125098.054707ms) # F37
+✔ F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa) (15749.359969ms)
+✔ dfe: removes functions no call reaches from the entries, and refuses to run without entries (239.375003ms)
+✔ specialize on a record field, then cfg and dfe: one branch and its callee remain, checked on the entry (805.77262ms)
+✔ specialize refuses a field binding the program itself writes (22.417665ms)
+✔ rederive: a tree pair is an instance of a verified table, or it is not (9.982063ms)
+✔ blend under O2: the classes of each pass, by edits (1385.477043ms)
+✔ speed on six projects: classes agree with the per-pass table, rule edits re-derive, every change is accounted for (7888.873789ms)
+✔ a pass with no table and no because: div-to-shift is local/uncited, with its shape (69.430919ms)
+✔ P2.2: Compiler Workbench's generator and hash are reproduced (7.01918ms)
+✔ P2.2: the evaluator runs Blend; cases are deterministic; traps are outcomes (164.389246ms)
+✔ P2.2: typed.meaning-kept is a framework differential invariant (207.105968ms)
+✔ P2.3: Blend facts: one loop with a preheader, liveness, reaching definitions, ranges (184.003783ms)
+✔ P2.3: every corpus function gets every fact (15419.262408ms)
+✔ P4.5: RV32F encodings decode to their assembly, and a register of the wrong class is refused (40.464822ms)
+✔ P4.5: f32 tiles compute RV32F bits: NaN, -0, ±∞, saturation and rounding direction (38463.736468ms)
+✔ P4.5: ilp32f record results, stack words and f32 arguments beyond fa7; the reference image agrees (15779.460193ms)
+✔ P4.5: f registers spill through ft10 and ft11; the options apply per class; fs0-fs11 are checked (14004.62607ms)
+✔ P4.5: a branch beyond ±4 KiB is relaxed into an inverted branch over a jump (3334.507909ms)
+✔ P4.5: every Candela function compiles at r0 and agrees with the evaluator (56057.311265ms)
+﹣ P4.5: Candela images agree on 100 cases per function at r0 and at the O2 head (IRWB_CANDELA=1) (5.23172ms) # SKIP
+✔ reference images require signatures (5.020753ms)
+✔ f32 DSP agrees with the binary64 oracles and both RV32 compilers (18021.274264ms)
+ℹ {"fft(8)":{"errorDb":-143.1191794631096,"r0Statements":913,"r0Instructions":1591,"speedInstructions":1536,"checkedStatements":913},"fft(16)":{"errorDb":-141.60053532496528,"r0Statements":2337,"r0Instructions":4154,"speedInstructions":4041,"checkedStatements":2337},"biquadBank":{"errorDb":-138.91748039422097,"r0Statements":674,"r0Instructions":1464,"speedInstructions":1096,"checkedStatements":898}}
+✔ binding FFT length preserves sampled results and measures the size-16 images on identical inputs (26466.207474ms)
+ℹ {"generalInstructions":4041,"specializedInstructions":4040}
+✔ the workbench comparison runs on a fresh copy (13957.274663ms)
+ℹ [{"fn":"fft","r0Instructions":4154,"speedInstructions":4041},{"fn":"biquadBank","r0Instructions":1464,"speedInstructions":1096}]
+✔ P4.2: f32 operations on bits follow RV32F (3.812793ms)
+✔ P4.2: the evaluator agrees with the reference compiler on every pair of f32 edge values (3223.436772ms)
+✔ P4.2: values carry their type; a mistyped table is refused (337.530005ms)
+✔ P4.2: O2 keeps the meaning of f32 code; f32 identities are not applied; fold rounds as the target does (7893.390015ms)
+✔ P4.2: unsound f32 rewrites are rejected by the meaning check with NaN, -0 and ∞ counterexamples (6044.29535ms)
+✔ IRWB-005 C5: the range facts of Blend hold at every revision of O2, and a narrowed fact is reported (2980.390939ms)
+✔ IRWB-005 C5: observing a run changes nothing in it (450.83239ms)
+✔ format: JSON keeps what fits on one line, breaks the rest, and round-trips (17.207154ms)
+✔ format: prose wraps without changing blocks; lists keep their items (3.468251ms)
+✔ format: every corpus file the workbench shows fits a tile; formatted ones fit TILE_WIDTH (1277.853922ms)
+✔ format: strategy presets and plans fit TILE_WIDTH (193.362787ms)
+✔ format: already wrapped list continuations remain indented and idempotent (0.649144ms)
+✔ thread: the join of an && is copied into its arms, and the stored boolean goes (1176.10905ms)
+✔ thread leaves a loop head alone (copying a head is rotation, which runs after licm) (204.320594ms)
+✔ guards: one check of state decides the later ones, and those of 5 * state + k (930.392669ms)
+✔ guards: a check stays when its index was assigned after the check that would decide it (178.299021ms)
+✔ guards: only checks by default; params.all decides any branch (449.849523ms)
+✔ guards: a counter that only goes up is not negative, so x / 8 and x % 8 are a shift and a mask (2689.869297ms)
+✔ copies: a read of a copy reads the source, unless the source was assigned since (346.21379ms)
+✔ subst-mem: a load moves into its reader, not past a store (238.794915ms)
+✔ speed is inline, inline, O2+, rotate, cfg with the new passes inserted; O2 does not name them (1.815432ms)
+✔ decideCompare says true or false only when every pair of values agrees (28 x 28 intervals, 8 operators) (91.829061ms)
+✔ narrowBy keeps every x for which x op y holds for some y of the interval (308.074786ms)
+✔ identities: every rule has recorded evidence for its current form, it says sound, and a re-run agrees (58.564857ms)
+✔ the same shapes over a division are refused by the verifier: they are wrong for negative x (16.440774ms)
+✔ identities after guards: a board index loses its division, then its shift pair and its comparison (875.880128ms)
+✔ P2.1: Blend lifts to the book's r0 shape (7 blocks, 13 statements) (71.223028ms)
+✔ P2.1: provenance reaches front-end ops and source lines (5.237855ms)
+✔ P2.1: the native value round-trips through Store and through the v6 projection (5783.90959ms)
+✔ P2.1: a v6 IREdit on the projection rebuilds into valid native tables (106.188081ms)
+✔ P2.1: the validator refuses broken tables (16.097495ms)
+✔ P2.1: front-end errors carry positions (3.028637ms)
+✔ inline: a whole-program pass, registered, in the speed pipeline twice, and not scoped per function (20.318211ms)
+✔ inline on calls: energy calls nothing afterwards, the check agrees, and why reaches callee and call (815.80375ms)
+✔ inline: record results become locals; leaf reads read them; f32 code stays correct through the backend (4904.68962ms)
+✔ inline: limits and refusals (271.581552ms)
+✔ inline under an entry-only contract, then dfe: the inlined callees disappear (924.732878ms)
+✔ inline: a callee local read before written starts at 0 at every inlined call (1025.59513ms)
+✔ speed on every corpus project agrees with r0 under the default and the new backend options (IRWB_FULL) (4.916794ms)
+✔ LZ exact tokens, byte-for-byte round trips, and checked instruction measurements (38393.383665ms)
+ℹ general speed pass verdicts: r1 inline 400/400, r2 cfg 400/400, r3 thread 400/400, r4 simplify 400/400, r5 copies 400/400, r6 dce 400/400, r7 cfg 400/400, r8 licm 400/400, r9 guards 400/400, r10 subst-mem 400/400, r11 subst-mem 400/400, r12 cfg 400/400, r13 subst-mem 400/400, r14 rotate 400/400
+ℹ Maximum generated evaluator steps: r0 1703, speed 995
+ℹ Evaluator steps for 24 A cells: r0 1745, speed 971
+ℹ Evaluator steps for 24 collision-heavy cells: r0 1767, speed 1032
+ℹ Scalar binding verdict: 160/160
+ℹ specialized speed pass verdicts: r2 inline 400/400, r3 cfg 400/400, r4 thread 400/400, r5 simplify 400/400, r6 copies 400/400, r7 dce 400/400, r8 cfg 400/400, r9 licm 400/400, r10 guards 400/400, r11 subst-mem 400/400, r12 subst-mem 400/400, r13 cfg 400/400, r14 subst-mem 400/400, r15 rotate 400/400
+ℹ RV32 instructions over 100 seed-7 cases: {"r0":185876,"speed":140194,"reference":156405}
+ℹ RV32 instructions over the same 34 cases at limit 3: general 48782, specialized 48748
+✔ LZ workbench opens the tape project and runs explore on a fresh program (9574.421027ms)
+✔ IRWB-004 F1: a pass that changes some functions keeps the other functions' parts, by identity (901.745201ms)
+✔ IRWB-004 F1: a closure key covers the callees and the frame-array flag, and nothing else (99.847476ms)
+✔ IRWB-004 D1: reuse gives the evidence of evaluating every case, agreeing and disagreeing (2193.088893ms)
+✔ IRWB-004 F4: a decide hook gets exactly the cases nobody decided, and the evidence is assembled in case order (17.844004ms)
+✔ at r0 every executed instruction of a statement is untouched, and both tables sum to the run (4082.558005ms)
+✔ after speed the constant bounds checks that remain are the hottest untouched shape, and rows name their passes (15798.488161ms)
+✔ guards removes the checks the table showed: fewer instructions in the shape than with the old speed list (25564.366414ms)
+✔ IRWB-005: the default contract is unchanged (pinned versions) (123.202663ms)
+✔ IRWB-005: sites are enumerated deterministically and cover the operators Blend has (1069.941108ms)
+✔ IRWB-005: every mutant of Blend and of the f32 fixture is a valid, changed revision (14313.475573ms)
+✔ IRWB-005: a mutant is judged by Program.apply as a pass is, and checkInvariant gives the same verdict (5680.192557ms)
+✔ IRWB-005: the divergence rule of version 2 rejects a loop made infinite that version 1 accepts (15842.162998ms)
+✔ IRWB-005: finite domains and the functions a mutation can reach (425.844694ms)
+✔ IRWB-005: strong cases extend the default cases and reach the boundaries (717.791153ms)
+✔ IRWB-005: the strong contract accepts every O2 revision of Blend and rejects div-to-shift (876.806539ms)
+✔ IRWB-005: records are laid out at their offsets in version 2 (version 1 writes them in key order) (41.013041ms)
+✔ IRWB-005: a float rewrite wrong only on NaN payloads (x + -0 -> x) passes version 1 and fails version 2 (360.683375ms)
+✔ IRWB-004 F4: workers decide the same verdicts as the calling thread (10557.531156ms)
+✔ IRWB-004 F4: small jobs stay on the calling thread (145.357106ms)
+✔ P2.6: O2 on Blend makes the book's six revisions, each checked against r0 (1654.669792ms)
+✔ P2.6: pipelines are deterministic: the same input gives the same revisions (1956.26856ms)
+✔ P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published (218.427025ms)
+✔ P2.4: a false preservation claim is caught (Compiler Workbench's lvn claimed loops) (415.321119ms)
+✔ P2.4: transactions enforce declared write kinds and reasons for removals (114.994856ms)
+✔ P2.6: corpus parity (subset) (12261.091678ms)
+✔ P2.6: O2 as a Strategy IR plan gives the same revisions as the pipeline runner (584.234354ms)
+✔ binding times: the code image and the entry make pc, sp and the decoded instruction static (937.015465ms)
+✔ pe: the VM specialized on entry 0 is a checked loop over scalars and agrees on every valid call (7096.158607ms)
+✔ pe: the VM specialized on entry 34 is a checked loop over scalars and agrees on every valid call (5730.433658ms)
+✔ pe stops: a budget below what the residual needs is refused, and nothing changes (1358.832493ms)
+✔ pe stops: a static counter under a dynamic exit never repeats its store and runs into the budget (224.266084ms)
+✔ buffer binding: refused when the program may write the buffer, accepted and folded at constant positions (1005.483255ms)
+✔ promote leaves the general VM alone: its stack index is dynamic (310.166021ms)
+✔ P3.1: p.pipeline(O2) reports each step with its check, as the prototype does (1279.973295ms)
+✔ P3.1: the book's why tree for s:blend.15 (975.052584ms)
+✔ P3.1: removed things keep their fields; statuses name the revision (660.71925ms)
+✔ P3.1: undo and checkout move the head back; r0 stays the meaning (496.406541ms)
+✔ P3.1: exec, cases, check, facts, actions, dryRun (1064.417462ms)
+✔ P3.1: front-end errors and unknown names are refusals with codes (42.270461ms)
+✔ without ingest metadata the frame array fails the default ingest (74.942679ms)
+✔ ingest from project.json reaches ingestProject and Program.fromProject (352.476246ms)
+✔ entries from project.json limit the checked functions (363.935803ms)
+✔ runPipeline checks from the given roots (830.399369ms)
+✔ reference check selects projects and rejects unknown ids (2175.070775ms)
+✔ Thompson NFA agrees with RegExp in the evaluator and both RV32 backends (18591.448623ms)
+ℹ Maximal active-set IR statements: r0 5290, speed 2962
+ℹ Benchmark r0: 8183 RV32 instructions
+ℹ Benchmark speed: 6052 RV32 instructions
+ℹ Benchmark reference: 6628 RV32 instructions
+✔ the workbench opens the project and runs the exploration script on a fresh copy (15140.051003ms)
+✔ B1: the tables give the hand-written passes' revisions, edits and correspondences (subset) (29683.809029ms)
+✔ B1: the comparison sees a one-rule difference (a rule with another note changes the revision) (2324.240922ms)
+✔ B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework (6.959212ms)
+✔ B2: binopW at 32 bits is the evaluator's binop (boundary values crossed, every i32 operator) (145.941575ms)
+✔ B2: every table rule has recorded evidence for its current version, and it says sound (13.460078ms)
+✔ B2: the fast methods, re-run, agree with the recorded evidence (6802.778334ms)
+✔ B2: deliberately unsound rules are rejected, each with a counterexample or a structural reason (15.658745ms)
+✔ B2: x + (-0) -> x passes the meaning check's f32 edge values and is refuted by NaN payloads (88.27073ms)
+✔ workbench: the rules listing fits 72 columns and shows every rule with its evidence (47.82688ms)
+✔ SHA-256 and ChaCha20 vectors, generated cases, and checked RV32 images (47372.790496ms)
+ℹ sha256Block statements: r0 4737, speed r17 2467, peak 6465
+ℹ chacha20Block statements: r0 2568, speed r17 1618, peak 3528
+✔ fresh SHA-256 and ChaCha20 exploration measures one block per kernel (24896.796871ms)
+✔ specialize: an outer fact turns a dispatch into one case, under a restricted contract (1900.814553ms)
+✔ specialize: a bad binding is refused and the assumptions are restored (174.845798ms)
+✔ specialize: undoing the specialization drops its assumption (550.749677ms)
+✔ IRWB-003 options: extras are absent at their defaults, validated, and recorded when on (611.121659ms)
+✔ IRWB-003 frequencies and chains: rotated Blend runs its loop 7.33 times per call and ends it in one branch (1743.418655ms)
+✔ IRWB-003 coalesce: the copy t7 = i in Blend disappears, and Blend runs in 370 with rotation (1173.645408ms)
+✔ IRWB-034-G coalesce: two copies of one register (orders: a = inv, b = inv) both disappear (2504.340782ms)
+✔ IRWB-003 homes: Collatz builds 1, 2 and 3 once, outside its loop (148.33776ms)
+✔ IRWB-003 rotate: Blend's header is duplicated into the preheader and the latch, checked, with provenance (852.921515ms)
+✔ IRWB-003 rotate: a header that is not the exit test (Collatz) gives a two-entry loop, still checked and analysable (586.74854ms)
+✔ IRWB-003: the benchmarks under O2+, rotate, cfg and all three options (3261.947169ms)
+✔ IRWB-003: every corpus project agrees with r0 under each option alone and all together (IRWB_FULL) (0.856378ms)
+✔ A1: Blend at r0: phis at the loop head, names mapped back to statements and values (144.677416ms)
+✔ A1: on every corpus function at r0, SSA def-use agrees with reaching definitions (12257.792495ms)
+✔ A1: the check sees a wrong name, and a loop whose header is the entry block gets entry phis (69.388976ms)
+✔ A1: every O2 revision of a few projects agrees too (the full run is scripts/05-ssa-check-corpus.mjs) (2027.966596ms)
+✔ A2: sccp finds the constant behind a decided branch, which constprop cannot see (208.975153ms)
+✔ A2: O2-sccp is O2 with sccp for constprop, accepted by the meaning contract; O2 itself is unchanged (2187.978065ms)
+✔ strategies: chooseBest picks O2 for Blend by instructions; the winner is published with its provenance (2900.607359ms)
+✔ strategies: the objective decides; ties break by candidate name, as the decision records (1328.510569ms)
+✔ strategies: a candidate whose pass breaks the contract is a rejected alternative, not a failure (539.181276ms)
+✔ user passes: the builder makes framework passes held to the same rules (487.862061ms)
+✔ strategies are data: JSON round trip, project strategy files, repeat until stable (530.940136ms)
+✔ strategies: per-function search chooses a chain for each function, each checked (1391.236962ms)
+✔ strategies: a run that hits the step limit costs the limit, not NaN (179.14692ms)
+✔ pipelines: O2+ is O2 then subst, and removes the loop copy O2 leaves in Checksum (951.109671ms)
+✔ P4.2: the inspection path cannot lift Candela; its Wasm encoding has operations the tape does not (77.925232ms)
+✔ P4.2: all 332 Candela functions lift from the tape, with spans and raw; the tables validate and round-trip (58423.628771ms)
+✔ P4.2: local types inferred from the tape agree with the front end's localTypes (764.987183ms)
+✔ P4.2: the corpus lifted from the tape gives the inspection path's tables, or the same meaning where a checked address differs (13867.709427ms)
+ℹ tests 188
+ℹ suites 0
+ℹ pass 185
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 1
+ℹ duration_ms 365405.880976
+
+✖ failing tests:
+
+test at tests/typed/d2-defects.test.mjs:47:1
+⚠ F37: typed.ranges keeps an outer loop counter non-negative under an inner loop (125098.054707ms) # F37
+  AssertionError [ERR_ASSERTION]: dense's lower bound is -2147483648
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-ds-x-irwb-042-c/tests/typed/d2-defects.test.mjs:59:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

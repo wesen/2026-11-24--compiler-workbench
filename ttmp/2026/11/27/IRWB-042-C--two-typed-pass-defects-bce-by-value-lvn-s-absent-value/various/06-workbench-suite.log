@@ -1,0 +1,33 @@
+✔ the site bundles Candela and the reference compiler as checked, lazily loaded scripts (1985.280359ms)
+✔ the Candela project: its files in app.json order, the same source as tools/candela.mjs, narrow text (8.269084ms)
+✔ renderProgressive: one span per row at stride 1, one per pixel otherwise, as renderScene (15.221581ms)
+✔ renderProgressive: pass p renders frame 0, then p + 1, and colour is summed as f32 (4.459144ms)
+✔ renderProgressive stops when asked, and keeps what it rendered (2.279132ms)
+✔ compareFrames counts differing bits, and compares the colour sums only over the same passes (3.264965ms)
+✔ B-01 at stride 32: the emulator and the evaluator at r0 give the same floats (6742.102885ms)
+﹣ Candela opens as a project: ingested from the tape, check inputs derived (IRWB_FULL=1) (0.497576ms) # SKIP
+✔ project scripts run unchanged through the wb layer (2778.729042ms)
+✔ build:site writes the page, the bundle, the styles and the checked vendor scripts (1891.399081ms)
+✔ the reference, the divergences and the book are wrapped at 72 columns (227.591114ms)
+✔ wb.strategy: choosing among O0/O1/O2/loops by instructions picks O2 for Blend (1534.965728ms)
+✔ wb.strategy: in a replay context a strategy returns its result directly (792.705402ms)
+✔ wb.strategy: a candidate whose pass breaks the contract is a rejected alternative (331.307417ms)
+✔ wb.strategy: project files in the short form, presets and pipelines, at tile width (92.800398ms)
+✔ wb.pass: the kernel builder from a project script; applied, listed, and used in a candidate (216.384835ms)
+✔ wb.compiler and wb.source: declarations with ids and versions, and where each is defined (125.195124ms)
+✔ wb: Blend at O2 shows the hoisted statement, an 88-byte image and its why chain (891.09456ms)
+✔ wb.sync: passes are synchronous inside a replay context, and Promises outside it (362.519811ms)
+✔ wb: the gate is the kernel contract; a rejected pass changes nothing (361.044538ms)
+✔ projects: browser-local edits over the built-in files, kept in storage, and reset (134.35349ms)
+✔ projects: project.json the workbench writes fits a tile; prose read back as one string (34.970744ms)
+✔ params, book and help (51.612497ms)
+✔ events: views hear revisions, focus and files (167.275927ms)
+✔ projects: shared metadata parser matches workbench metadata across the corpus (95.944905ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 9310.601673

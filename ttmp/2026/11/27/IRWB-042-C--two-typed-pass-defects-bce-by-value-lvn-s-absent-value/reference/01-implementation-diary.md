@@ -11,13 +11,15 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - src/typed/passes.ts
-    - tests/typed/d2-defects.test.mjs
+    - Path: src/typed/passes.ts
+      Note: bce compares SSA names (F36); lvn drops the entries a firing rebuilds (F38)
+    - Path: tests/typed/d2-defects.test.mjs
+      Note: F36 and F38 without todo
 ExternalSources: []
-Summary: "Chronological record of the two fixes: bce compared reaching-definition sets (F36), lvn replaced a value a firing had already rebuilt (F38)."
-LastUpdated: 2026-11-27T18:00:00.000000000-05:00
-WhatFor: "Review of this step: what was reproduced, what was measured, what was changed and why."
-WhenToUse: "When reviewing IRWB-042-C, or before touching bce or lvn again."
+Summary: 'Chronological record of the two fixes: bce compared reaching-definition sets (F36), lvn replaced a value a firing had already rebuilt (F38).'
+LastUpdated: 2026-11-27T18:00:00-05:00
+WhatFor: 'Review of this step: what was reproduced, what was measured, what was changed and why.'
+WhenToUse: When reviewing IRWB-042-C, or before touching bce or lvn again.
 ---
 
 # Implementation diary — IRWB-042-C (F36, F38)

@@ -22,7 +22,16 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Two Typed pass defects that IRWB-037-G found and left unchanged, fixed in one session:
+
+- **F36, `bce`:** it accepted a dominating `i < buf.length` as proof when the index had the same *set* of reaching
+  definitions at the branch and at the check. Equal sets are not equal values. It now compares the SSA names of
+  the two reads; the corpus keeps all 13 bounds-check eliminations (see `reference/02`).
+- **F38, `lvn`:** run a second time before `rotate` on regex-nfa it threw `absent`: it replaced a value that a
+  firing of the same block had already rebuilt. It now drops the `seen` entries whose value a firing rebuilds.
+
+Both `todo` tests in `tests/typed/d2-defects.test.mjs` pass, the baselines report `no differences`, and the four
+passing suites file by file are in the report. F37 (`typed.ranges`) is another ticket (IRWB-043-A).
 
 ## Key Links
 

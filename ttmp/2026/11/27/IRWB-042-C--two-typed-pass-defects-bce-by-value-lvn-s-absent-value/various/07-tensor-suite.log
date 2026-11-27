@@ -1,0 +1,76 @@
+✔ matmul agrees with the numerical oracle before and after optimization (116.487522ms)
+✔ softmax agrees with the numerical oracle before and after optimization (41.880479ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (55.901579ms)
+✔ attention agrees with the numerical oracle before and after optimization (155.610863ms)
+✔ mlp agrees with the numerical oracle before and after optimization (107.271199ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (8.176314ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (34.420852ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (7.423376ms)
+✔ concurrent lowering checks share a batch, retry transport failures and replay verdicts (241.873783ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (53.651475ms)
+✔ lowering rejects statement IDs absent from the Tix artifact (1.344299ms)
+✔ kernel inventories reject invented and omitted CUDA kernels (5.766636ms)
+✔ every corpus lowering validates fused and unfused without a GPU (8395.503871ms)
+✔ every corpus program is one kernel; the row programs run one block per row (2177.430516ms)
+✔ fuse: false is stage 2 byte for byte, and a one-statement program is the same either way (388.09286ms)
+✔ elementwise chains and epilogues share one thread per element (7.78403ms)
+✔ a statement that needs another row, other extents or nothing from the kernel starts a new one (6.027298ms)
+✔ a stencil narrows the block domain to the axes it reads plainly; middle members are stored when read later (14.550647ms)
+✔ a staged row needs the block domain as its leading extents, not just a plain address (2.316154ms)
+✔ the lowering records which statements each kernel computes, and fused and unfused share their cases (133.645338ms)
+✔ terms are staged for reductions of one-element members, unless the terms are a row already (17.187751ms)
+✔ terms are refused for members whose row occupies the block, and thread-mode kernels have none (3.430942ms)
+✔ after split-sum the outer block reduction is staged and each term is a tail sum (17.415567ms)
+✔ a block-mode kernel is one definition that also holds its statements in stage 2 form, behind a gate (7.307104ms)
+✔ the check runs every sample on both sides of the gate and names the side that disagrees (88.074626ms)
+✔ a member is written over the row it is computed from when nothing reads that row afterwards (17.392388ms)
+✔ the gate is a host condition on the grid, the longest row and the lanes of heavy members (8.809294ms)
+✔ every operation, input and literal rounds at the selected precision (47.785924ms)
+✔ lexicographic reductions, explicit grouping and nested binder scope (27.251536ms)
+✔ zero extents, empty reductions and shape values (7.391476ms)
+✔ affine shape normalization, annotations and multiple functions (2.739183ms)
+✔ invalid programs give source coordinates (6.393239ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (34.649177ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (25.326993ms)
+✔ passes compose across calls and preserve the source baseline (13.837573ms)
+✔ a rejected optimization step reports the first counterexample and leaves the program unchanged (11.94882ms)
+✔ coverage required per function and screening is origin-only (15.277662ms)
+✔ exact comparison detects a changed zero sign (11.439376ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (147.026684ms)
+⚠ F27: a wrong Tix pass is rejected inside a strategy plan; correct passes are accepted (7.569575ms) # F27
+✔ the corpus schedules: contractions leave block mode and become tiled kernels with four variants (2566.702738ms)
+✔ tileable contractions are recognised from the IR, and others say why not (5.472031ms)
+✔ each pass refuses an illegal step before it runs, with the reason (10.814147ms)
+✔ the order gate rejects a step that changes any output accumulation order, which legality would not see (15.109601ms)
+✔ the printer only prints: a schedule outside its form is rejected, fuse: false is unchanged (14.644238ms)
+ℹ tests 45
+ℹ suites 0
+ℹ pass 44
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 1
+ℹ duration_ms 9126.644347
+
+✖ failing tests:
+
+test at tests/tensor/r3-tix-in-plans.test.mjs:23:1
+⚠ F27: a wrong Tix pass is rejected inside a strategy plan; correct passes are accepted (7.569575ms) # F27
+  AssertionError [ERR_ASSERTION]: src/tensor exports tixAlgorithm(pass, { origin })
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/v7-f36-ds-x-irwb-042-c/tests/tensor/r3-tix-in-plans.test.mjs:27:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
