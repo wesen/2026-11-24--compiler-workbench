@@ -1,0 +1,490 @@
+[
+ {
+  "doc": "doc-A.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 0,
+   "R4": 0,
+   "R5": 1,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 5,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 1,
+  "fitness": 9,
+  "quotes": {
+   "R5": [
+    "Warm the GPU with one execution and report the median of five CUDA-event intervals in one short `--timed` job per program."
+   ],
+   "A3": [
+    "**No change proposed.** Use `decide` for one async GPU batch over the uncached indices."
+   ]
+  },
+  "notes": "The reported GB10 probe measures the proposed tolerance on ordered, split, and composed reductions. The batch integration leaves the stock differential spec's mandatory synchronous `run` and `compare` callbacks unspecified."
+ },
+ {
+  "doc": "doc-B.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 0,
+   "R4": 1,
+   "R5": 2,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 4,
+   "A5": 4
+  },
+  "relation": "tolerance",
+  "over_engineering": 2,
+  "fitness": 9,
+  "quotes": {
+   "R4": [
+    "a fake batch runner for case mapping, cold/warm counts and incomplete-result rejection."
+   ],
+   "R5": [
+    "record CUDA-event median and range",
+    "for evidence about tolerance, origin f64 (record largest budget fraction and its coordinate; keep this work outside timers)."
+   ],
+   "A3": [
+    "**None.** Async batch delegation plus revision/version keys and typed prepublication checks already work."
+   ],
+   "A4": [
+    "On the GPU, preallocate and upload, run one warm-up, then a short group of repetitions of the entire function under `--timed`; record CUDA-event median and range, excluding transfers, warm-up and compile/start-up."
+   ],
+   "A5": [
+    "The host binds shapes from direct axes and checks repeated/affine axes and byte sizes; it computes concrete tensor extents and uses those in launch metadata."
+   ]
+  },
+  "notes": "The 1,024-term softmax probe tests numerical error through several statements, and the tool design separates compilation from runtime data. The design leaves the required synchronous callbacks and kernel argument layout unspecified, and the timing plan collects intervals without a focused check of the emitted harness's timing."
+ },
+ {
+  "doc": "doc-C.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 0,
+   "R4": 1,
+   "R5": 1,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 4,
+   "A5": 4
+  },
+  "relation": "tolerance",
+  "over_engineering": 2,
+  "fitness": 8,
+  "quotes": {
+   "R4": [
+    "rejected mutation and failed run retried."
+   ],
+   "R5": [
+    "one warmup then three event intervals for the full kernel sequence on resident inputs, report median plus range."
+   ],
+   "A3": [
+    "Reuse completed validated observations by candidate revision, engine and exact case bytes through the manager"
+   ],
+   "A4": [
+    "inline transpose and split tails (K=7) on real optimized programs. Check independent small corpus oracles and all six real gates."
+   ],
+   "A5": [
+    "Use one buffer per materialized tensor, copy inputs, launch in definition order on one stream, then copy only the return, including a parameter return."
+   ]
+  },
+  "notes": "A read-only local probe confirmed that `ctx.analysis` executes again when the enclosing transformation rejects, so this design reuses observations from accepted checks only. The CUDA plan leaves the kernel signature and block size open, and its split-tail test gives no f32 word expectation that distinguishes a correctly blocked fold from a flat fold."
+ },
+ {
+  "doc": "doc-D.md",
+  "counts": {
+   "R1": 2,
+   "R2": 0,
+   "R3": 0,
+   "R4": 3,
+   "R5": 1,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 5,
+   "A4": 5,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 3,
+  "fitness": 10,
+  "quotes": {
+   "R1": [
+    "with an explicit unsupported-mode error",
+    "return nonacceptance with the failing stage."
+   ],
+   "R4": [
+    "rejection on missing/wrong length",
+    "retry after failed batch",
+    "no sync fallback"
+   ],
+   "R5": [
+    "launch a warm-up sequence then three measured sequences using the same allocated buffers, report individual CUDA-event intervals and median"
+   ]
+  },
+  "notes": "The batch-only spec addresses the mandatory synchronous callbacks while reusing the framework's memo and tally. The reported GB10 probe supports the sampled tolerance, and the changed-revision word test independently checks the split fold's rounding order."
+ },
+ {
+  "doc": "doc-E.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 1,
+   "R4": 2,
+   "R5": 1,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 5,
+   "A5": 4
+  },
+  "relation": "tolerance",
+  "over_engineering": 2,
+  "fitness": 9,
+  "quotes": {
+   "R3": [
+    "Use 128 threads per block and flatten the grid over a second block dimension if needed."
+   ],
+   "R4": [
+    "A failed compile must be retryable.",
+    "zero-case evidence, and cold/warm/changed-source behavior with a counting batch runner."
+   ],
+   "R5": [
+    "warm once and record three individual event intervals for the complete sequence of statement kernels in one short locked run per function. Report the median and retain the samples."
+   ],
+   "A3": [
+    "Typed transformation ports already cross the Tix/text boundary, and `differential` already delegates all missing indices asynchronously and replays decided evidence."
+   ],
+   "A5": [
+    "Use 128 threads per block and flatten the grid over a second block dimension if needed."
+   ]
+  },
+  "notes": "The cancellation-sensitive dot probe and real GPU mutant test address numerical and lowering risks. The differential spec still needs synchronous callbacks, and the optional two-dimensional launch lacks a selection rule and a linear block-index formula."
+ },
+ {
+  "doc": "doc-F.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 1,
+   "R4": 1,
+   "R5": 1,
+   "R6": 0,
+   "R7": "yes",
+   "R8": 2
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 4,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 4,
+  "fitness": 9,
+  "quotes": {
+   "R3": [
+    "Allow a pinned `--nvcc` path for the contract."
+   ],
+   "R4": [
+    "verify one batch, repeat/concurrent evidence reuse, failure retry and cache-key changes."
+   ],
+   "R5": [
+    "one warmup and three kernel timings in the same executable."
+   ],
+   "R7": [
+    "Putting the GPU batch and its memo in the tensor invariant avoids modifying the generic differential loop that Stage 1 uses per case."
+   ],
+   "R8": [
+    "Retain a bounded process-local memo of completed semantic verdicts",
+    "Model the pinned device/compiler configuration as a versioned read-only resource in `MemoryResources`."
+   ],
+   "A3": [
+    "Putting the GPU batch and its memo in the tensor invariant avoids modifying the generic differential loop that Stage 1 uses per case."
+   ],
+   "A4": [
+    "Use a fake batch engine to verify one batch, repeat/concurrent evidence reuse, failure retry and cache-key changes. Test that a valid CUDA artifact with an index or tail mutation fails the same invariant."
+   ]
+  },
+  "notes": "The framework already supports delegated batches and verdict replay, so the separate memo duplicates existing machinery, and the fixed engine profile can be passed as a value port. The mutation test is in the local test plan, leaving rejection of compilable wrong CUDA by the real remote gate untested."
+ },
+ {
+  "doc": "doc-G.md",
+  "counts": {
+   "R1": 1,
+   "R2": 0,
+   "R3": 0,
+   "R4": 1,
+   "R5": 1,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 4,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 2,
+  "fitness": 9,
+  "quotes": {
+   "R1": [
+    "Run errors should identify the failing engine step."
+   ],
+   "R4": [
+    "fake batch runner for partial/missing results"
+   ],
+   "R5": [
+    "short warm-up and three event-timed repetitions in one process, report the median."
+   ],
+   "A3": [
+    "A general async native pass, new differential batch API or separate tensor verdict cache would duplicate working behavior."
+   ],
+   "A4": [
+    "Run all six small corpus checks. Include a pointwise transposed inline, the split K=7 witness and tail"
+   ]
+  },
+  "notes": "The origin-based case memo and per-invocation remote isolation fit the stage. The design leaves the required synchronous callbacks unspecified, and the GPU plan gives no explicit expected f32 word for the split witness, where the tolerance can accept both groupings."
+ },
+ {
+  "doc": "doc-H.md",
+  "counts": {
+   "R1": 1,
+   "R2": 0,
+   "R3": 0,
+   "R4": 2,
+   "R5": 1,
+   "R6": 0,
+   "R7": "yes",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 5,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 3,
+  "fitness": 9,
+  "quotes": {
+   "R1": [
+    "The sync `run` path for the GPU is unavailable (throw on accidental use)."
+   ],
+   "R4": [
+    "malformed/failed batch and retry",
+    "Verify an infrastructure error doesn't become reusable evidence."
+   ],
+   "R5": [
+    "e.g. one warm chain and three event samples, report median and samples in ms"
+   ],
+   "R7": [
+    "The sync `run` path for the GPU is unavailable (throw on accidental use)."
+   ],
+   "A3": [
+    "The sync `run` path for the GPU is unavailable (throw on accidental use)."
+   ]
+  },
+  "notes": "The test plan separately checks f32 rounding and fold order, sampled tolerance, and rejection by the actual remote gate. A throwing callback works around the identified remote-only spec gap and leaves the mandatory `compare` callback unspecified."
+ },
+ {
+  "doc": "doc-I.md",
+  "counts": {
+   "R1": 1,
+   "R2": 0,
+   "R3": 0,
+   "R4": 2,
+   "R5": 2,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 4,
+   "A3": 4,
+   "A4": 5,
+   "A5": 4
+  },
+  "relation": "tolerance",
+  "over_engineering": 4,
+  "fitness": 8,
+  "quotes": {
+   "R1": [
+    "Surface copy, compile, execution and fetch failures with the phase and diagnostic."
+   ],
+   "R4": [
+    "missing output/fetch failure handling after the tool change.",
+    "Test duplicate verdict reuse and interrupted batch retries."
+   ],
+   "R5": [
+    "with buffers and inputs reused. Report the median and range.",
+    "Count coordinates\nunder each rule in the benchmark report."
+   ],
+   "A2": [
+    "Where f64 is an unsuitable oracle for the specified f32 evaluation, require a finite result within\n   `budget(s)` of finite `s`, or the same nonfinite class as `s`"
+   ],
+   "A3": [
+    "No changes to `src/framework/` are proposed. The Node 24 probe used\nan actual Tix artifact, a scalar output port and a Promise-returning `DifferentialSpec.decide`"
+   ],
+   "A5": [
+    "The host launches statements in order on one stream, with a distinct\n  buffer per definition."
+   ]
+  },
+  "notes": "The cancellation witness motivates a fallback, but the probe gives no basis for the half-budget switch or for the allowance centered on f32 when both references are finite. The design also leaves the synchronous callback requirements, kernel signature, and launch block size unspecified."
+ },
+ {
+  "doc": "doc-J.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 0,
+   "R4": 2,
+   "R5": 1,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 5,
+   "A4": 4,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 2,
+  "fitness": 9,
+  "quotes": {
+   "R4": [
+    "failed batch retry",
+    "result-count mismatch"
+   ],
+   "R5": [
+    "Run an untimed warm-up, then three short measured GPU executions under `--timed` and report the median CUDA-event time."
+   ],
+   "A4": [
+    "Use the seven-element half-ULP witness to check the returned GPU *words* for ordinary versus split sums. This tests order beyond what the tolerance can distinguish.",
+    "Run an untimed warm-up, then three short measured GPU executions under `--timed` and report the median CUDA-event time."
+   ]
+  },
+  "notes": "The batch-only overload addresses the concrete framework gap and preserves the existing synchronous path. The split witness checks fold order directly, but the plan does not explicitly test a contraction-sensitive emitted expression or validate event timing through the public runner."
+ },
+ {
+  "doc": "doc-K.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 0,
+   "R4": 2,
+   "R5": 2,
+   "R6": 0,
+   "R7": "no",
+   "R8": 0
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 5,
+   "A3": 4,
+   "A4": 5,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 2,
+  "fitness": 9,
+  "quotes": {
+   "R4": [
+    "wrong/missing records",
+    "retry after transport failure"
+   ],
+   "R5": [
+    "Warm up once, then take three short repetitions for each function (report samples and median).",
+    "Compute full-size f64 comparison errors outside timing."
+   ],
+   "A3": [
+    "Use `DifferentialSpec.decide(inputs, cases, todo)` to send only uncached case indices in one bundle and remote process per candidate/function.",
+    "Record observed device/toolchain versions on actual runs; a host/toolchain change invalidates the epoch."
+   ]
+  },
+  "notes": "The reported ordered-dot and primitive probes support the tolerance, and the standalone compile mode isolates jobs while reusing identical source. The contract design leaves the mandatory synchronous callbacks unspecified and does not say how the epoch is invalidated when a warm replay makes no remote observation."
+ },
+ {
+  "doc": "doc-L.md",
+  "counts": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 0,
+   "R4": 1,
+   "R5": 1,
+   "R6": 0,
+   "R7": "no",
+   "R8": 1
+  },
+  "scores": {
+   "A1": 5,
+   "A2": 4,
+   "A3": 4,
+   "A4": 5,
+   "A5": 5
+  },
+  "relation": "tolerance",
+  "over_engineering": 2,
+  "fitness": 9,
+  "quotes": {
+   "R4": [
+    "Exercise cold, warm, concurrent and failed check paths and record their batch counts."
+   ],
+   "R5": [
+    "Run one warmup and a few repeats, report sample count and median (or fewer CPU repeats with count noted if the interpreter is slow)."
+   ],
+   "R8": [
+    "Capture the configured host, architecture, nvcc path/flags and tool revision in a versioned read-only engine profile (`MemoryResources`, declared read in the invariant and transformation)."
+   ],
+   "A2": [
+    "If f64 is nonfinite and f32 is finite, compare f32 words."
+   ],
+   "A3": [
+    "Scalar ports already let the manager gate emission; `decide`, `baselineKey` and `subjectKey` already supply async delegation and evidence reuse."
+   ]
+  },
+  "notes": "The widened-intrinsic probe supports the ordinary finite tolerance, but it does not establish bit identity for the composed cases sent to the exact-word fallback. The batch design leaves the required synchronous callbacks unspecified, and the fixed engine profile needs no separate resource layer."
+ }
+]

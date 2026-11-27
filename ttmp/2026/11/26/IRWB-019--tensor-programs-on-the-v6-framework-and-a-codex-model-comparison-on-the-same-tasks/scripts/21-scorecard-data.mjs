@@ -30,18 +30,22 @@ const write = (name, rows, inputs) =>
 // designs: every judged design document, per judging session
 const t1key = read('t1-config-key.json'), t2key = read('t2-config-key.json');
 const designs = [];
-for (const [pack, scores, blind, key] of [
-  ['Stage 1 designs', 'judge-scores-t1.json', 'blind-key-t1.json', t1key],
-  ['Stage 1, Sol policy session', 'judge-scores-t1-v3.json', 'blind-key-t1-v3.json', t1key],
-  ['Stage 2 designs', 'judge-scores-t2.json', 'blind-key-t2.json', t2key],
+// judge: the original judges were Claude subagents; the Codex judge (Sol, high) re-scored stages 1 and 2 blind from the
+// same packs and rubrics after round R2 showed that judges favour their own family
+for (const [pack, judge, scores, blind, key] of [
+  ['Stage 1 designs', 'Claude judge', 'judge-scores-t1.json', 'blind-key-t1.json', t1key],
+  ['Stage 1 designs', 'Codex judge', 'judge-scores-t1-codex.json', 'blind-key-t1.json', t1key],
+  ['Stage 1, Sol policy session', 'Claude judge', 'judge-scores-t1-v3.json', 'blind-key-t1-v3.json', t1key],
+  ['Stage 2 designs', 'Claude judge', 'judge-scores-t2.json', 'blind-key-t2.json', t2key],
+  ['Stage 2 designs', 'Codex judge', 'judge-scores-t2-codex.json', 'blind-key-t2.json', t2key],
 ]) {
   const items = Object.fromEntries(read(blind).map(b => [b.name, b.item]));
   for (const d of read(scores)) {
     const item = items[d.doc];
-    designs.push({ pack, item, ...cell(key[item]), over_engineering: d.over_engineering, fitness: d.fitness });
+    designs.push({ pack, judge, item, ...cell(key[item]), over_engineering: d.over_engineering, fitness: d.fitness });
   }
 }
-write('designs.json', designs, 'results/judge-scores-{t1,t1-v3,t2}.json with blind-key-*.json and t1/t2-config-key.json');
+write('designs.json', designs, 'results/judge-scores-{t1,t1-codex,t1-v3,t2,t2-codex}.json with blind-key-*.json and t1/t2-config-key.json');
 
 // implementations: stage 1 from impl-summary-t1.json; stage 2 from eval-t2.json and each worktree's diff
 const impl = [];

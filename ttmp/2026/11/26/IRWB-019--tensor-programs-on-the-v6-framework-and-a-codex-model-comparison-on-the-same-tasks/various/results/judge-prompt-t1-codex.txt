@@ -1,0 +1,10 @@
+You are judging 16 anonymous design documents for a compiler project. The pack is the directory /tmp/claude-1000/-home-manuel-code-wesen-2026-11-24--compiler-workbench/6d4ded76-01c1-42ed-bd4c-3f506f14dfc9/scratchpad/judge-t1-codex:
+- specs/brief.md is the brief every author answered;
+- RUBRIC.md is how you score them;
+- docs/doc-*.md are the documents.
+
+The repository the brief describes, at the revision the authors started from, is /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-judge-base. Read it, without changing it, to check the documents' claims about the code. Read nothing else on this machine. Do not run GPU jobs.
+
+Follow RUBRIC.md exactly. Score every document on its own against the brief, with the same standard for all, and quote as the rubric asks. The authors are anonymous; do not guess who wrote what.
+
+Your final answer is the rubric's JSON array and nothing else.
