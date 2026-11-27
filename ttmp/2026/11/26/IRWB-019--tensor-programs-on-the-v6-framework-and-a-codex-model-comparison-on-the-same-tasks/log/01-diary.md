@@ -1116,3 +1116,4 @@ Each pack was scored by two judges: Codex (Sol high) and Claude (an Opus subagen
 - Follow-up candidates:
   - **T3b**, parallel terms with a serial fold, plus a cost gate;
   - **F23**, recorded.
+- **Validation after the merge:** `npm test` on main gives 445 pass, 0 fail, 3 skipped (448 tests, GPU tests included; `results/merge-t3/npm-test.txt`).
