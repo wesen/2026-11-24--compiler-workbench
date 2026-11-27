@@ -40,3 +40,7 @@ WhenToUse: ""
 ## F2
 
 Required the existing signatures argument: smaller than changing the reference compiler result API. Regression `node --test --test-name-pattern='reference images require signatures' tests/typed/f32-backend.test.mjs` failed before the fix with `Missing expected exception`, then passed after build. The first attempt lacked dist; a sandboxed runner also failed at file level, so the successful runs used escalation.
+
+## F3
+
+`node --test tests/typed/reference-check.test.mjs` failed with 83 functions instead of blend's one. Selecting and validating requested ids makes it pass; no ids still selects the corpus.
