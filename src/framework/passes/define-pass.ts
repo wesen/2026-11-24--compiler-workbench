@@ -43,10 +43,10 @@ import type { AnalysisManager } from '../contracts/analysis-manager.js';
 export class PassError extends Error {
   constructor(
     readonly code: 'undeclaredWrite' | 'preserveViolated' | 'contractRejected' | 'badResult' | 'passFailed',
-    message: string,
+    readonly reason: string,
     readonly evidence?: unknown,
   ) {
-    super(`[${code}] ${message}`);
+    super(`[${code}] ${reason}`);
     this.name = 'PassError';
   }
 }

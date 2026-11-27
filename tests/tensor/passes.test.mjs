@@ -46,7 +46,7 @@ test('passes compose across calls and preserve the source baseline', () => {
   const p = compileTix('fn f(x:f32[1,K]):f32[1]{a[i,k]=x[i,k]*1;y[i]=sum(k)a[i,k];return y;}');
   const split = optimizeTix(p, ['split-sum']).program;
   const later = optimizeTix(split, ['inline']);
-  assert.deepEqual(later.steps, [{ pass: 'inline', accepted: true }]);
+  assert.deepEqual(later.steps, [{ pass: 'inline', accepted: true, changed: true }]);
   assert.equal(later.program.origin, p.origin);
   assert.notEqual(later.program.current.revision, split.current.revision);
 });
@@ -55,8 +55,9 @@ test('coverage required per function and screening is origin-only', () => {
   const p = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k)x[i,k];return y;}' + never);
   const r = optimizeTix(p, ['split-sum', 'inline']);
   assert.deepEqual(
-    r.steps.map(s => s.accepted),
-    [false, true],
+    r.steps,
+    [{ pass: 'split-sum', accepted: false, changed: false, reason: 'No comparable case for g' },
+     { pass: 'inline', accepted: true, changed: false }],
   );
   assert.equal(r.program.current, p.current);
   const bad = mutate(splitPass, e => {
