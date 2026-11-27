@@ -11,12 +11,15 @@ Tix has been built in four stages, each merged from one of several independent i
 
 Stages 1 to 3 are under `ttmp/2026/11/26/`, stage 3b under `ttmp/2026/11/27/`. Read stage 3b's and stage 3's designs and final reports first, then stage 2's, then the code.
 
-Since stage 2, these changes have landed:
+Since stage 2, these changes have landed besides stages 3 and 3b:
 - the lowering is checked under the exact relation: bit-identical with the current revision's f32 meaning, NaN compared as a class;
 - the stage-1 meaning gate gives every shape symbol a distinct size, and checks empty extents;
 - `optimizeTix` steps carry `changed` and `reason`;
 - concurrent checks share an in-flight GPU batch;
 - `tools/cuda-remote.mjs` takes `--link <lib>`.
+- an IR type may enumerate its entities (`entities(value)` on `defineIR`); the contracts manager then checks every correspondence's entity lists and entry IDs against both artifacts, and `TixIR` and `CudaIR` enumerate their statements and kernels;
+- `runTixCuda` reports, for a source with gated kernels, which side each gated kernel took (`gates`);
+- the differential checker detects a spec whose cases do not depend on its `baselineKey` alone.
 
 The tensor domain exists to test the framework, not to be a product. Where the framework does not fit, that is a finding. Each change you make to `src/framework/`, with its reason, is a primary result of this stage.
 
@@ -71,7 +74,7 @@ The current lowering computes a contraction such as `c[i, j] = sum(k) a[i, k] * 
 | mlp | N = 1024, D = 256, H = 1024, O = 256 |
 | conv2d | N = 8, C = 16, H = W = 64, O = 32 (3 × 3 kernel) |
 
-<TIMING>
+**How to time (measured for this stage, 2026-11-27: 12 interleaved `benchmark: true` calls per program and side, 14 series).** Each `runTixCuda(..., { benchmark: true })` call already returns the median of three timed launches after a warm-up. Take the median of **5** such calls, alternating the two variants you compare (A B A B ...), and treat differences under **5%** as noise. Across those series the coefficient of variation was 0.2-1.7% (3.4% for attention), max/min at most 1.12, and a median of 5 calls fell within 2% of the median of 12 in at least 81% of subsets on every program (100% on 12 of 14 series) and within 5% always. SM clock held at 2411 MHz throughout, so there is no thermal drift at these sizes; for 4096^3 matmul, check it yourself. The hidden evaluation times this way.
 
 ## Tix, fixed core (unchanged)
 ```
@@ -133,7 +136,7 @@ Put the final report in the ticket. Say which results you measured and which you
 - **Scope:** you may change `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and `src/framework/` and `tools/cuda-remote.mjs` where the stage needs it. Do not modify `src/typed/`, `corpus/projects/`, other tools or existing tests outside `tests/tensor/`, except framework tests that a framework change makes necessary. Do not run the full suite (`npm test`): other agents share this machine.
 - **Scripts:** put every probe, benchmark and temporary program you write in your ticket's `scripts/` directory, numbered in the order you write them (`01-name.mjs`), and commit them. Nothing you ran should exist only in a scratch directory or a one-off command.
 - **Tickets and commits:** use your docmgr and diary skills for the ticket and diary. Commit on your current branch with messages starting `<ID>:`, as you go, so that your last commit always holds working code. Do not push.
-- **Outside your worktree,** use only the GPU machine.
+- **Outside your worktree,** use only the GPU machine. Do not fetch this repository, its branches or its files from GitHub or any other remote.
 
 ## Final message
 - the ticket, design and report paths;

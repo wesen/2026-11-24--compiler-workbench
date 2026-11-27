@@ -25,7 +25,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | T3b    | parallel terms, serial fold, and a cost gate for fusion                     | done (IRWB-030-E merged, `49cb9c7`; all exact, nine never slower)     | S–M    |
 | T4     | tolerance calibration with mutants                                          | queued 4th (before the tolerance-checked stages)                      | M      |
 | T5     | implement the streaming-attention derivation                                | queued 8th                                                            | L      |
-| T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | queued 3rd                                                            | M–L    |
+| T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | running (IRWB-033, ten cells, from 2026-11-27)                        | M–L    |
 | T7     | autotuning under noisy GPU cost                                             | queued 7th                                                            | M      |
 | T8     | ONNX importer into Tix                                                      | idea                                                                  | M      |
 | T9     | a GPU timing protocol                                                       | prep, queued 2nd (coordinator, during T3)                             | S      |
@@ -36,15 +36,15 @@ Keep it current: update an entry when a round finishes, move items between statu
 | T13    | exhaustively verified fast intrinsics (`exp`, `tanh`)                       | idea, from R2                                                         | M      |
 | T14    | a parallel fold that is bit-identical to the sequential one                 | idea, from R2                                                         | M      |
 | T15    | acceptance by proof: normal-form equivalence and symbolic fingerprints      | idea, from R2; with F21                                               | M      |
-| D1     | why `speed` slows the bytecode VM                                           | ready                                                                 | S–M    |
+| D1     | why `speed` slows the bytecode VM                                           | running (IRWB-034, seven cells)                                       | S–M    |
 | D2     | missed optimizations from provenance                                        | ready                                                                 | M      |
-| B1     | specialize the VM on its bytecode                                           | ready                                                                 | M–L    |
+| B1     | specialize the VM on its bytecode                                           | running (IRWB-036, seven cells)                                       | M–L    |
 | B2     | specialize Candela on its scene buffers                                     | idea                                                                  | L      |
-| A0     | measure: share of edits that are local value rewrites                       | ready                                                                 | S      |
+| A0     | measure: share of edits that are local value rewrites                       | running (IRWB-035, seven cells)                                       | S      |
 | A1     | e-graph over value trees with verified rules                                | decision                                                              | L      |
 | C1     | calibrated gate                                                             | prep                                                                  | M      |
 | E1     | incremental checking per function                                           | prep                                                                  | L      |
-| F1–F23 | framework and workbench fixes found by agents                               | 10 open (F1, F7–F12, F15, F18, F22)                                   | S each |
+| F1–F29 | framework and workbench fixes found by agents                               | 13 open (F1, F7–F12, F15, F18, F22, F27–F29)                          | S each |
 | M1–M5  | agent methodology                                                           | running / ready                                                       | —      |
 
 ---
@@ -73,6 +73,16 @@ The user asked for "T6 level work, and working on additional IRs and innovative 
 - new approaches tried and reported, including negative results.
 
 The cells run under policy v3r (`prompts/developer-instructions-v3r.md`). It is v3 with two rules changed: try the invited approaches instead of preferring the smallest deliverable, and describe new IRs and passes built in the session. The IR-level items are T6 (schedule IR), T14 (a parallel fold bit-identical to the sequential one), T5 (a fold construct with a tuple state, from R1), T10 (reassociation as an IR rewrite), T15 (acceptance by proof), and on the Typed side A1 (an e-graph with verified rules).
+
+### Framework first, grounded in theory (the user, 2026-11-27)
+
+"allow tix to make use as much as possible of existing framework concepts, buildng machinery on its own is a smell that needs bringing to the surface. and the framework should be based on fundamental theory (compiler theory, etc...) such that its machinery is as domain independent and can be reused in many different cases."
+
+- **A domain uses framework concepts wherever they exist:** analyses through `defineAnalysis` and pass `needs`, edits through IR transactions and correspondence, rewrites through patterns and schedules, pipelines through strategy plans. Machinery a domain builds for itself is a finding, reported as such, never an unremarked convenience.
+- **Where the framework lacks a concept, the fix goes in the framework,** stated in its standard theory (lattices and fixpoints, dependence analysis, rewriting and confluence, translation validation, abstract interpretation), domain-independent, with a second use named or planned.
+- **Evaluation counts it:** from T6 on, each implementation's review lists the mechanisms it built inside the domain that duplicate or should be framework concepts (F28's method), next to correctness and speed.
+- Items: F27 (sync passes in strategies), F28 (the reuse audit of `src/tensor`), F29 (affine dependence analysis in the framework).
+- **Policy v4** (`prompts/developer-instructions-v4.md`) is v3r plus three rules saying this, for every stage launched after T6 and the first Typed round (which were already running under v3r).
 
 ### Queue (tensor track, in order)
 
@@ -471,6 +481,12 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
   - _Known:_ |c − r| ≤ 2e-6 + 2e-5·|r| accepts an all-zero output whenever the results are below about 2e-6 (shown at an input scale of 1e-7). It is also vacuous for inputs scaled by 2⁻²⁰.
   - _Needed:_ a scale-covariant relation, part of F15.
 - **F23: a correspondence's entity lists are self-declared** _(done: IRWB-031, Terra low, `fc39478`, `fab6334`, after one review; an IR type may declare `entities(value)`, and the manager then checks the declared lists and every entry ID against both revisions. Next: the tensor CUDA artifact should declare its kernels, after T3b)_.
+- **F24: Tix statements and CUDA kernels are not enumerated** _(done: IRWB-032, Terra low; `TixIR` enumerates `fn/stmt`, `CudaIR` its kernels, so every lowering's correspondence is checked)_.
+- **F25: `runTixCuda` does not say which side of the gate ran** _(done: IRWB-032; `gates: Record<kernel, 'fused' | 'unfused'>`, written by the CUDA program)_.
+- **F26: differential reuse trusts the spec's `baselineKey`** _(done: IRWB-032, after one review; on a reuse hit the cases are regenerated and compared by a canonical `fingerprint` digest, browser-safe; a mismatch throws `ContractError`)_.
+- **F27: the strategy bridge cannot run native synchronous passes** _(ready, S; the user, 2026-11-27)_. `passAlgorithm` (`src/framework/passes/bridge.ts`) wraps a pass with the asynchronous `applyPass` and requires an `AnalysisManager`; Tix passes run through `applyNativePassSync`, so no Tix pass can appear in a strategy plan. Make the bridge accept native passes, or give `applyNativePassSync`'s passes an async adapter, so any domain using the simpler runner can join plans. Test: a plan with `fork` and `chooseBest` over `inline` and `split-sum`.
+- **F28: a reuse audit of `src/tensor`: domain machinery that duplicates or should be framework concepts** _(ready, M; after T6 merges, because T6 rewrites the lowering; the user, 2026-11-27)_. List every mechanism the tensor domain builds itself, and for each, the framework concept it duplicates or the domain-independent concept the framework lacks. Known candidates: `planFusion`'s facts are plain TypeScript, not `defineAnalysis` results cached per revision and declared as pass `needs`; Tix passes return whole modules instead of using the IR layer's transactions, patterns and rewrite schedules, so their correspondence is no finer than "the module changed"; fusion, staging and gate decisions are not passes; no strategy plans (F27). Each finding is either moved onto the framework or recorded with the reason it cannot be.
+- **F29: affine dependence analysis as a framework analysis** _(idea, M–L; the user, 2026-11-27)_. The dataflow layer solves fixpoints over control-flow graphs; tensor scheduling needs dependence analysis over affine iteration spaces (which iterations read what another writes; whether a reordering preserves every dependence). Build it domain-independently in the framework, on the standard theory (dependence polyhedra, legality of a schedule as preservation of every dependence's lexicographic positivity), so Tix's schedule IR and any later loop-nest IR, Typed's loops included, can use it.
   - _Known:_ `makeCorrespondence` (`src/framework/ir/correspondence.ts:50`) checks each entry against the `sourceEntities` and `targetEntities` lists, but the caller supplies those lists. Nothing compares them with the entities of the two artifacts.
     - DeepSeek xhigh passed no target list, and `{from: [m, s], to: [k0]}` was rejected ("Unknown target entity k0").
     - Opus passed lists with made-up IDs (or no kernels at all), and they were accepted.

@@ -1,0 +1,81 @@
+{
+ "IRWB-033-A": {
+  "config": "sm",
+  "model": "gpt-6.2-sol",
+  "effort": "medium",
+  "round": "t6-sm",
+  "harness": "codex"
+ },
+ "IRWB-033-B": {
+  "config": "am",
+  "model": "gpt-6.2-astra",
+  "effort": "medium",
+  "round": "t6-am",
+  "harness": "codex"
+ },
+ "IRWB-033-C": {
+  "config": "tl",
+  "model": "gpt-6.1-terra",
+  "effort": "low",
+  "round": "t6-tl",
+  "harness": "codex"
+ },
+ "IRWB-033-D": {
+  "config": "op",
+  "model": "opus",
+  "effort": "default",
+  "round": "t6-op",
+  "harness": "claude-code-subagent",
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-op-irwb-033-d",
+  "branch": "t6-op/irwb-033-d"
+ },
+ "IRWB-033-E": {
+  "config": "fa",
+  "model": "fable",
+  "effort": "default",
+  "round": "t6-fa",
+  "harness": "claude-code-subagent",
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-fa-irwb-033-e",
+  "branch": "t6-fa/irwb-033-e"
+ },
+ "IRWB-033-F": {
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "t6-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-033-G": {
+  "config": "ds-h",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "high",
+  "round": "t6-ds-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-033-H": {
+  "config": "ds-x",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "xhigh",
+  "round": "t6-ds-x",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-033-I": {
+  "config": "gf-h",
+  "model": "lunaroute/glm-5.3-flash",
+  "effort": "high",
+  "round": "t6-gf-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-033-J": {
+  "config": "g-max",
+  "model": "lunaroute/glm-5.3",
+  "effort": "max",
+  "round": "t6-g-max",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ }
+}

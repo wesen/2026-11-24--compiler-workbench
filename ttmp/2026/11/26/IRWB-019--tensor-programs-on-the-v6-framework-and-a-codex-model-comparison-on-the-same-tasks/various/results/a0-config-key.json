@@ -1,0 +1,57 @@
+{
+ "IRWB-035-A": {
+  "config": "sm",
+  "model": "gpt-6.2-sol",
+  "effort": "medium",
+  "round": "a0-sm",
+  "harness": "codex"
+ },
+ "IRWB-035-B": {
+  "config": "am",
+  "model": "gpt-6.2-astra",
+  "effort": "medium",
+  "round": "a0-am",
+  "harness": "codex"
+ },
+ "IRWB-035-C": {
+  "config": "tl",
+  "model": "gpt-6.1-terra",
+  "effort": "low",
+  "round": "a0-tl",
+  "harness": "codex"
+ },
+ "IRWB-035-D": {
+  "config": "ds-x",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "xhigh",
+  "round": "a0-ds-x",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-035-E": {
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "a0-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-035-F": {
+  "config": "op",
+  "model": "opus",
+  "effort": "default",
+  "round": "a0-op",
+  "harness": "claude-code-subagent",
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/a0-op-irwb-035-f",
+  "branch": "a0-op/irwb-035-f"
+ },
+ "IRWB-035-G": {
+  "config": "fa",
+  "model": "fable",
+  "effort": "default",
+  "round": "a0-fa",
+  "harness": "claude-code-subagent",
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/a0-fa-irwb-035-g",
+  "branch": "a0-fa/irwb-035-g"
+ }
+}
