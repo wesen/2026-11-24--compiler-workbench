@@ -90,3 +90,51 @@ candidate path.
 
 Not yet done: the gate's constant is a placeholder; calibration sweeps, corpus benchmarks and the
 report remain.
+
+## Step 3: the gate calibrated by sweep; the rule has two clauses; the rows cap moves to 256
+
+Scripts 02 (calibration sweep, fused-ungated-source against fuse:false) and 03 (repeats around the
+crossover), outputs committed:
+
+- **mlp** is the one family that crosses: fused/unfused is 1.78 at 8,192 fused threads (N=128), 1.19 at
+  12,288 (N=192), 0.99 at 16,384 (N=256), and it wins above (0.77 at 65,536, the corpus size). Every row
+  member is a contraction reading a strided global operand, and there is no row-scalar member at all.
+- **softmax, layernorm-inside** (streaming row members, 16 MiB fixed) never cross: fused wins down to
+  4 rows x 128 threads = 512 fused threads (ratios 0.45 to 0.90). Their row-scalar members carry reductions
+  that span the row, and stage 2 pays the same serial fold on one thread per row - at few rows that thread is
+  the whole unfused kernel.
+- **attention** never crosses either: 0.45 at Q=32 (2,048 fused threads) down to 0.71 at the corpus size.
+
+So a single threshold would forfeit measured wins (softmax at 512 fused threads is 2.2x faster fused), and
+the final rule has two clauses, both measured (fusion.ts): a block-mode group fuses when
+`points x threads-per-block >= 16384` (the upper edge of mlp's measured crossover band), **or** when one of
+its row-scalar members carries a reduction whose serial term count spans the longest row (the equalizer that
+was measured never slower), **or** when the row fits in its block's threads (no concurrency lost at all).
+The CPU tests pin all three clauses; the GPU tests run a gated (refused) source through the transformation's
+candidate path and runTixCuda's gated path against the interpreter.
+
+The rows-only thread cap is re-measured with staging (script 06): 256 beats stage 3's 128 (layernorm 0.189
+against 0.209 ms; layernorm-inside 0.215 against 0.224; softmax 0.385 against 0.390) and 512 is worse again.
+Stage 3 measured 128 best because thread 0 carried the whole serial reduction; with the terms staged across
+the block, bigger blocks pay. `blockThreads.rows` is 256; the contraction cap stays 64.
+
+## Step 4: probes, final table, contract cost; all suites green
+
+Script 06 probes (each three benchmark calls):
+
+- **Bare-load refusal**: the refused serial `sum(j) e[i,j]` at 0.383 ms against the same reduction staged by
+  a multiplication by 1 (exact for every f32 word) at 0.381 ms - ratio 0.996. Staging a bare load buys
+  nothing; the fold's own chain dominates. The refusal is measured, not argued.
+- **Costly body**: layernorm-inside's staged instantiation at 0.240 ms against the serial instantiation of the
+  same source (flipping the host's `staged_k0`) at 0.585 ms - staging is 2.44x faster, and the serial
+  instantiation reproduces stage 3's measured fused time (0.569 in the brief's table), which cross-checks the
+  whole mechanism.
+
+Script 04 (final table, three benchmark calls per cell, GB10): every corpus program and both inside variants
+fused is faster than unfused, all outputs bit-identical; layernorm-inside fused is 0.202 ms against 0.545
+unfused (stage 3: 0.569 against 0.577). Script 07: the exact contract accepts all eight programs; cold
+`checkLowering` 2.7-19.5 s wall (ssh and compile; the machine is shared), repeat 1-2 ms.
+
+`node --test` on the GPU files: cuda-gpu 11, fusion-gpu 5, staging-gpu 5, all pass; CPU files 35 pass,
+including the stage-2 digest pins. Prettier was run only on the new test files (the base's `src/tensor`
+sources were already outside its style, so they are left as they were).

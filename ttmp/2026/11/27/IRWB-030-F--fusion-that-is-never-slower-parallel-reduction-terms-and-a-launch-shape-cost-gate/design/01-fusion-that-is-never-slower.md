@@ -166,3 +166,24 @@ express, the change and its reason go in the report; that is a primary result of
   mapping; the flat term space of attention's `score` is 256 KB per row).
 - An adaptive thread cap for few-row launches; several rows per block.
 - Reassociating reductions (tree folds, split-K) - excluded by this stage's brief.
+
+## As built
+
+The implementation follows this design. Four points differ, each measured (diary steps 3 and 4, scripts 02,
+03, 06):
+
+- **The gate's rule has two clauses, not one.** The calibration sweeps found only one family that crosses
+  (mlp: every row member a contraction, no row-scalar member; 1.78 at 8,192 fused threads, 0.99 at 16,384),
+  while the streaming families and attention win fused down to 512 fused threads, because their row-scalar
+  reductions span the row and stage 2 pays the same serial fold on one thread per row. So the group fuses
+  when `points x threads >= 16384` **or** a row-scalar member's serial term count spans the longest row
+  **or** the row fits in its block's threads. A single threshold would have forfeited measured wins.
+- **The rows-only thread cap is 256, not stage 3's 128.** With the terms staged across the block, bigger
+  blocks pay (layernorm 0.189 against 0.209 ms at 128; 512 is worse again); stage 3's 128 was measured with
+  the serial reduction on thread 0.
+- **A group without staged reductions keeps stage 3's kernel body**, but its host lines (the shared-memory
+  size and the instantiation choice) are shared with the staged path and read differently; the `fuse: false`
+  bytes are pinned by the digest test and unchanged.
+- **The staging refusals are measured where cheap to do so**: staging a bare load buys nothing (0.996), and
+  the serial instantiation of a staged kernel reproduces stage 3's time. The memory-budget fallback (term
+  buffers beyond the shared limit take the serial fold) is argued by traffic, not measured.

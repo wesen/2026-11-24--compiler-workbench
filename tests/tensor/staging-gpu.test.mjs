@@ -159,7 +159,13 @@ test('GB10: a gated (unfused) lowering passes the contract as a candidate, and i
   const result = await runTixCuda(fewrows, 'f', { x });
   equal(result, runTix(fewrows, 'f', { x }));
   // The gated source itself, checked through the transformation's candidate path.
-  const gate = gatedPlan(fn, new Map([['N', 2], ['C', 1024]]));
+  const gate = gatedPlan(
+    fn,
+    new Map([
+      ['N', 2],
+      ['C', 1024],
+    ]),
+  );
   assert.equal(gate.groups.length, 2);
   const source = emitCuda(fn, gate);
   const kernels = gate.groups.map(g => ({ name: g.kernel, mapping: g.mapping, statements: g.statements }));
@@ -167,5 +173,14 @@ test('GB10: a gated (unfused) lowering passes the contract as a candidate, and i
   assert.deepEqual(verdict, { accepted: true, relation: 'exact' });
   // The row-spanning reductions of the inside placement keep that group fused at any size.
   const inside = features.current.value.functions.find(f => f.name === 'inside');
-  assert.equal(gatedPlan(inside, new Map([['N', 2], ['D', 1024]])).groups.length, 1);
+  assert.equal(
+    gatedPlan(
+      inside,
+      new Map([
+        ['N', 2],
+        ['D', 1024],
+      ]),
+    ).groups.length,
+    1,
+  );
 });
