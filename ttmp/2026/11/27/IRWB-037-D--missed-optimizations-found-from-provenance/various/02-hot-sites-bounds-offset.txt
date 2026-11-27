@@ -1,5 +1,11 @@
-      3  EDIT stmt       if ((i + 1) >= load32[work+0]) goto .2 else .3   [s:rises.3]
+     76  EDIT stmt       if (t5 > load16[(work + (t4 << 1))+4]) goto .12 else .14   [s:rises.15]
+     60  EDIT stmt       if ((i + 1) >= load32[work+0]) goto .2 else .3   [s:rises.3]
+     57  EDIT stmt       t5 = load16[(work + (t3 << 1))+4]   [s:rises.10]
+     38  EDIT stmt       if (t4 >=u load32[work+0]) goto .8 else .11   [s:rises.11]
+     19       stmt       t3 = (i + 1)   [s:rises.4]
+     19  EDIT stmt       t4 = i   [s:rises.9]
+     19       stmt       i = (i + 1)   [s:rises.19]
+     19       stmt       goto .1   [s:rises.20]
+     17       stmt       n = (n + 1)   [s:rises.16]
       2       stmt       return n   [s:rises.22]
-      1       stmt       n = 0   [s:rises.0]
-      1       stmt       i = 0   [s:rises.1]
-total 7
+total 328

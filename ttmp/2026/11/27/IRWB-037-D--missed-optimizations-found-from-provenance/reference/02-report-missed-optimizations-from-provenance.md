@@ -38,7 +38,8 @@ bounds-offset 1.52×, heat-lab 1.28×, sort 1.27×, bounds-lab 1.18×, bounds-pa
 
 ### S1 — a bounds check on an affine index, guarded by a test that compared the same value
 
-The `O2` IR listing of `bounds-offset` at `speed` (`bounds-offset`'s own `project.json` asks for this; the
+`various/02-hot-sites-bounds-offset.txt` shows the surviving check as the third hottest statement of the
+function. The `O2` IR listing of `bounds-offset` at `speed` (`bounds-offset`'s own `project.json` asks for this; the
 listing is `src/typed/listing.ts`'s):
 
 ```
