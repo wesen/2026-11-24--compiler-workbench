@@ -98,3 +98,15 @@ test('GB10: the exact check rejects a kernel that folds a chunk of terms backwar
   assert.equal(verdict.accepted, false);
   assert.match(verdict.reason, /At \[.*\], expected .* got/);
 });
+
+test('GB10: a call whose rows are below the gate runs stage 2 and gives the interpreter words', async () => {
+  const p = compileTix(
+    'fn f(x:f32[N,C]):f32[N,C] { m[i] = max(j) x[i,j]; e[i,j] = exp(x[i,j] - m[i]); s[i] = sum(j) e[i,j]; y[i,j] = e[i,j] / s[i]; return y; }',
+  );
+  const random = seededRandom(31);
+  for (const c of [8, 40]) {
+    const x = { shape: [50, c], data: Float32Array.from({ length: 50 * c }, () => 8 * random() - 4) };
+    const fused = await runTixCuda(p, 'f', { x });
+    assert.deepEqual(words(fused), words(runTix(p, 'f', { x })), 'C = ' + c);
+  }
+});
