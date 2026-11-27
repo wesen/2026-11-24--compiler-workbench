@@ -53,6 +53,15 @@ const features = compileTix(`
     e[i,j] = x[i,j] - m[i];
     return m;
   }
+  fn dead(x:f32[N,C]):f32[N,C] {
+    a[i,j] = x[i,j] * 2; b[i,j] = a[i,j] + 1;
+    return x;
+  }
+  fn affine(x:f32[N,C]):f32[N-1,C] {
+    m[i]: f32[N-1] = max(j) x[i+1,j];
+    y[i,j]: f32[N-1,C] = x[i+1,j] - m[i];
+    return y;
+  }
 `);
 
 test('GB10: fused lowerings of block domains, stencils, shadowing, reuse and epilogues are exact', async () => {
@@ -67,6 +76,8 @@ test('GB10: fused lowerings of block domains, stencils, shadowing, reuse and epi
     shifted: [['block', 1, 'e,y']],
     chain: [['thread', 2, 'y,z']],
     middle: [['block', 1, 'm,e']],
+    dead: [['thread', 2, 'a,b']],
+    affine: [['block', 1, 'm,y']],
   };
   for (const [name, groups] of Object.entries(expected)) {
     const plan = planFusion(features.current.value.functions.find(f => f.name === name));
