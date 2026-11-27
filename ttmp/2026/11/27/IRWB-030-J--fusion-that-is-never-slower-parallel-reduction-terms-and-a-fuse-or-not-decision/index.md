@@ -9,7 +9,13 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Term phase, ordered fold and terms row buffer in the group emitter
+    - Path: repo://src/tensor/fusion.ts
+      Note: Term-staging and decline decisions with recorded reasons
+    - Path: repo://tests/tensor/parallel-terms-gpu.test.mjs
+      Note: GB10 tests of staged terms, declined groups and the fold-order mutant
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T01:32:51.449549391-05:00

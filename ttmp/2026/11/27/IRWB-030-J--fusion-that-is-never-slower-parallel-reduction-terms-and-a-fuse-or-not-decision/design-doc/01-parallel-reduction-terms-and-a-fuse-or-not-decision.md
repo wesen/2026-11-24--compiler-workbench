@@ -113,3 +113,10 @@ No change planned. The finding this stage adds: **the profitability decision nee
 - Staging with split-sum extents (rectangular decode of the blocks/tail nest).
 - More threads per block for long rows, measured against the decline.
 - The exactly rounded `exp` (softmax's floor), contraction tiling, tensor cores: unchanged from stage 3's Later list.
+
+## As built
+
+The implementation follows this design except in two points, both measured and described in the report:
+
+- **The decline rule's loss class is narrower than designed.** The sweep (script 03) showed rows-only groups are faster fused at every measured rung, down to 1 point x 128 threads, because stage 2's one-thread-per-row folds are latency-bound at few rows. The rule therefore declines only groups with a trailing member whose reduction streams a global operand, below 65 536 points x threads (the least measured rung where the contraction family won).
+- **Reductions nested in another reduction are refused** (computed per term by the term's thread), after the random probe caught the first version staging them and emitting out-of-scope accumulators.

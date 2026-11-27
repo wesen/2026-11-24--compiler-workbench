@@ -12,3 +12,7 @@
 {"program":"layernorm-inside","variant":"staged, cap 64","gpuMs":0.255840003490448}
 {"program":"layernorm-inside","variant":"staged, cap 128","gpuMs":0.16816000640392303}
 {"program":"layernorm-inside","variant":"staged, cap 256","gpuMs":0.1993280053138733}
+{"program":"layernorm (corpus)","variant":"rule (variance's multiply body staged: 1)","gpuMs":0.1979839950799942}
+{"program":"layernorm (corpus)","variant":"unstaged (stage 3 fold)","gpuMs":0.19791999459266663}
+{"program":"layernorm (corpus)","variant":"rule (variance's multiply body staged: 1)","gpuMs":0.20083199441432953}
+{"program":"layernorm (corpus)","variant":"unstaged (stage 3 fold)","gpuMs":0.1918720006942749}

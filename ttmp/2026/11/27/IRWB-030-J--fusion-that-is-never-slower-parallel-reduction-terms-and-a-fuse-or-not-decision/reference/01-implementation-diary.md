@@ -70,3 +70,55 @@ I implemented the design: `planFusion(fn, shapes?)` in `src/tensor/fusion.ts` no
 
 ### Commit (code)
 - fc0192d (local tests), 420373d (GB10 tests)
+
+## Step 4: The decline sweep overturned the design's assumption; the rule comes from the data
+
+Script 03 ran three families at a ladder of points x threads, fused (the default plan) against unfused, each rung a case of one batch. The design had assumed any block-mode group loses when points x threads cannot fill the machine. The measurements say otherwise: rows-only groups (softmax, inside layernorm) were faster fused at every rung, down to 1 point x 128 threads (softmax 0.67x, layernorm 0.30x), because stage 2's one-thread-per-row folds are memory-latency-bound at few rows while the fused kernel stages the row with the whole block. The contraction family (mlp: trailing members whose reductions stream w and v) lost below 65 536 threads (4.6x at 256 threads, 1.37x/1.24x at 32 768) and won at 65 536 (0.77x/0.73x).
+
+I changed the rule to match: decline a group only when a member with trailing axes has a reduction reading a global tensor (the same predicate that picks the 64-thread cap), the longest row exceeds the cap, and points x threads < 65 536 - the least measured rung where the contraction family was faster fused, which also keeps mlp and attention (1024 x 64) fused. The constant is that rung, not a round number chosen in advance.
+
+### What I did
+- `node <ticket>/scripts/03-decline-sweep.mjs` twice (the first, narrower ladder agreed with the second, extended one).
+- `src/tensor/fusion.ts`: `fuseThreads = 65536`; `declineReason` requires the contraction-chain predicate and records it.
+- Tests updated: softmax is no longer declined at few points (it never was the loss case); mlp at few points is; the mixed-plan test program now declines through a trailing-member contraction (h reads u from global memory) while the rows-only group before it stays fused.
+
+### What I learned
+- The parallelism-loss model is incomplete: stage 2's row kernels are themselves latency-bound at few rows. What fusion loses at few rows is only the per-element fold chains of streaming contractions.
+- A rule built on an unmeasured mechanism would have declined fused winners (softmax at 16 points: 2.5 ms fused against 4.7 ms unfused).
+
+### What warrants a second pair of eyes
+- 65 536 sits exactly on mlp's and attention's corpus points x threads; between 32 768 and 65 536 the boundary is only bracketed, not located. The rule takes the conservative end: below it, a declined group is stage 2 and cannot be slower.
+
+## Step 5: The random probe caught a real emitter bug
+
+Script 06 (the stage-3 generator extended with division-inside-reduction and nested-reduction forms) failed 5 of 40 lowerings with `identifier "v4" is undefined`: a reduction nested inside a staged reduction's body (for example `max(j) (x * 2 + sum(k) v[k] * 3)`) was itself staged, and accumulators from earlier `if (threadIdx.x == 0)` blocks were out of scope in the final combine block. My GPU test had not caught it because its nested sum had a bare-load body, refused for the wrong reason.
+
+Two fixes: `topReduces` splits a member's reductions into those no other reduction encloses (stageable) and the nested ones, which are refused with the reason that they are computed per term by the term's thread (exactly what the phase does); and the accumulators are declared at member scope before the phases, so the final fold's combine sees them all.
+
+### What I did
+- `src/tensor/fusion.ts` `topReduces` + refusal; `src/tensor/cuda-source.ts` accumulator scope.
+- Reran script 06 with seed 29 (40/40 exact, 27 staged reductions) and a new seed 101 (40/40, 25 staged): 80/80 lowerings exact, 167 statements to 111 kernels in the second set, 20 and 14 lowerings with staged terms.
+
+### What didn't work
+- The first generator run: 35/40. The five failures were all the same emitter bug, in both original and inline+split revisions.
+
+## Step 6: Measurements
+
+Script 02 (three rounds, medians of benchmark calls; fused and unfused outputs bit-identical in every round): matmul 0.215/0.214 (1/1), softmax 0.385/0.814 (1/4), layernorm 0.209/0.481 (1/4), attention 0.753/1.048 (1/6), mlp 0.725/0.960 (1/3), conv2d 0.166/0.166 (1/1), layernorm-inside 0.220/0.555 (1/4), attention-inside 1.413/1.515 (1/5). Inside layernorm dropped from stage 3's 0.569 to 0.220, matching outside layernorm's 0.209; attention-inside is unchanged (no staging applies to its trailing-member contractions) and keeps a 6.7% edge.
+
+Script 04 (what the staging decisions cost): staging softmax's refused bare-load reductions (m, s) by force made no difference (0.399/0.393, then 0.387/0.387 - exp-bound, and the terms buffer is invisible); the refusal stands because staging removes no serial work. Inside layernorm staged 0.226/0.217 against unstaged 0.593/0.585. The corpus layernorm's multiply body staged vs unstaged: 0.198/0.201 against 0.198/0.192 - neutral, so the one-line rule (stage any body that rounds a value per term) keeps divisions' 2.6x win and accepts neutrality elsewhere. The block cap re-measured on staged inside layernorm: 64 lost clearly (0.253/0.256), 128 and 256 disagreed between rounds (0.207/0.196 then 0.168/0.199) - stage 3's 128 stays.
+
+Script 05 (contract cost): case counts and elements identical to stage 3 (the recipe is unchanged); cold `checkLowering` 2.6 to 4.1 s, repeats 1 ms. Script 07 printed the per-kernel staging table for the report.
+
+### What I did
+- `node <ticket>/scripts/02-benchmark.mjs` (24 rows), `04-staging-cost.mjs` (twice), `05-contract-cost.mjs`, `06-random-programs.mjs 20 29` and `20 101`, `07-kernel-table.mjs`; outputs committed beside the scripts.
+
+### What I learned
+- Session-to-session drift is real: stage 3's fused layernorm was 0.169 ms; this session measured 0.209 for the same kernel, and stage 3's own unfused number moved from 0.491 to 0.481. Only within-session A/B comparisons are worth drawing conclusions from.
+
+## Step 7: Final validation
+
+`npm run build`; the six local tensor files 37/37; the three GB10 files 23/23 (fusion-gpu 5, cuda-gpu 11, parallel-terms-gpu 7); stage 2's `fuse: false` digests byte-identical (the existing digest test).
+
+### Commit (code)
+- 20956e6 (the measured decline rule), a4c1ad9 (nested-reduction refusal, accumulator scope, 80/80 random lowerings)

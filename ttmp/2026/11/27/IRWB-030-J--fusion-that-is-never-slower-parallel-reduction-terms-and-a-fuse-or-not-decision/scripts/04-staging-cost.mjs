@@ -87,6 +87,30 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }),
   );
 
+  const corpusLayernorm = compileTix(readFileSync('corpus/tensor/layernorm/main.tix', 'utf8'));
+  const layernormFn = corpusLayernorm.current.value.functions[0];
+  const layernormInputs = inputsOf(layernormFn, { N: 4096, D: 1024 });
+  layernormInputs.eps = { shape: [1], data: Float32Array.of(1e-5) };
+  const layernormPlan = planFusion(layernormFn);
+  const layernormUnstaged = {
+    ...layernormPlan,
+    groups: layernormPlan.groups.map(g => ({ ...g, terms: [], termRefusals: [] })),
+  };
+  console.log(
+    JSON.stringify({
+      program: 'layernorm (corpus)',
+      variant: `rule (variance's multiply body staged: ${layernormPlan.groups[0].terms.length})`,
+      gpuMs: (await time(emitCuda(layernormFn, layernormPlan), layernormFn, layernormInputs)).gpuMs,
+    }),
+  );
+  console.log(
+    JSON.stringify({
+      program: 'layernorm (corpus)',
+      variant: 'unstaged (stage 3 fold)',
+      gpuMs: (await time(emitCuda(layernormFn, layernormUnstaged), layernormFn, layernormInputs)).gpuMs,
+    }),
+  );
+
   const inside = compileTix(`fn layernorm(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {
     mean[i] = sum(d) x[i,d] / D;
     centered[i,j] = x[i,j] - mean[i];
