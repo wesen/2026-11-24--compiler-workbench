@@ -6,4 +6,4 @@
 - [x] Write and run the numeric probe (f32/f64 host simulation of P0..P8 plus negative controls) <!-- t:fzzb -->
 - [x] Write the research design document <!-- t:06vl -->
 - [x] Relate files, update changelog and index, final diary step <!-- t:m403 -->
-- [ ] Commit on the IRWB-021-S branch with IRWB-021-S: prefix <!-- t:c8z0 -->
+- [x] Commit on the IRWB-021-S branch with IRWB-021-S: prefix <!-- t:c8z0 -->
