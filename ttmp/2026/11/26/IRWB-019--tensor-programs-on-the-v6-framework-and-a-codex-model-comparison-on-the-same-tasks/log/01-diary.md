@@ -1130,3 +1130,11 @@ The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if av
 - **The brief names both division placements.** So the hidden evaluation (`hidden-t3b/t3b-eval.mjs`, written now, before any T3b work) adds three held-out programs that are not in the brief: rmsnorm and centering with the division inside, and log-softmax, whose reduction body is an `exp`. It also runs the whole T3 evaluation. Main's code (Opus's T3) will be evaluated in the same run as the baseline.
 - **F23 to Terra low (IRWB-031, `scripts/45-launch-fixes-3.sh`):** framework only, not `src/tensor/`, so it does not conflict with T3b. The T3b brief tells its agents not to touch the correspondence code.
 - **F22 is not sent:** the backlog files it as part of F15, the tolerance relation, which goes with T4.
+- **Write-ups:**
+  - Report 11 has new Sections 11 (DeepSeek and GLM on R1 and R2), 12 (stage 3) and 13 (stage 3b, under way), plus new summary bullets; vault `6430812`.
+  - The playbook has a new §12 (more families, implementation stages, hidden evaluators); vault `5086ea7`.
+  - The scorecard (https://claude.ai/artifact/LohZckE2CXVn7PGZV41dhW) has two new sections, "DeepSeek and GLM on the research rounds" (a per-model table and two dot charts) and "Stage 3: checked fusion" (the speed-up table and the placement table). It reads three new datasets (`families`, `t3`, `placement`), built by `scripts/48-scorecard-data.py` into `results/scorecard/`. Page at version 9; its check passed.
+- **F23, first pass** (`fc39478`, Terra low, 4 min):
+  - It adds `entities(value)` to `IRType`, and `validateCorrespondence` compares the declared lists with the enumerations.
+  - Entry IDs in a directly built `Correspondence` are still unchecked, and that is how stage 3's lowering builds its correspondence.
+  - Sent back with `prompts/fixes-3/review-1.md` (`scripts/47-resume-fixes-3.sh`).
