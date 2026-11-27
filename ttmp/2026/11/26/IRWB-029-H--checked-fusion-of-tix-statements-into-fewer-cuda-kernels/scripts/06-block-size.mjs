@@ -42,12 +42,13 @@ const cases = {
 for (const [name, { fn, inputs }] of Object.entries(cases)) {
   const program = compileTix(readFileSync('corpus/tensor/' + name + '/main.tix', 'utf8'));
   const source = cudaSource(program, name);
-  const launch = source.match(/k0<<<(\(.*?\)), 256, /);
+  const launch = source.match(/k0<<<(\(.*?\)), (\d+), /);
   if (!launch) throw Error('no row launch to patch in ' + name);
+  console.log(`${name} default block size ${launch[2]}`);
   const out = [];
   for (const threads of [64, 128, 128, 256, 256]) {
-    const patched = source.replace(`k0<<<${launch[1]}, 256, `, `k0<<<${launch[1]}, ${threads}, `);
-    if (patched === source && threads !== 256) throw Error('patch did not apply');
+    const patched = source.replace(`k0<<<${launch[1]}, ${launch[2]}, `, `k0<<<${launch[1]}, ${threads}, `);
+    if (patched === source && String(threads) !== launch[2]) throw Error('patch did not apply');
     const [result] = await runCudaBatch(patched, program.current.value.functions[0], [inputs], {
       benchmark: true,
     });

@@ -78,7 +78,18 @@ A statement stays in global memory when it is the function's result or is read o
 
 For each corpus program at the brief's sizes, fused and unfused: kernel count; benchmark GPU time (`benchmark: true`, one warm-up and the median of three timed runs under the tool's `--timed` lock); the global bytes each kernel reads and writes, counted statically from the plan (issued addresses, not DRAM transactions); and the time those bytes would take at 244 GB/s. The contract's own cost: cases per function, wall time per `checkLowering`, and which verdicts are replayed.
 
-The block size stays at stage 2's 256 threads so that the fused and unfused columns differ only in what the plan decided. A row-kernel block size measurement is a separate, single-purpose run.
+The block size was to stay at stage 2's 256 threads so that the fused and unfused columns would differ only in what
+the plan decided. It did not: the measurement below is an amendment.
+
+## Amendments after implementation
+
+| Change | Reason |
+| --- | --- |
+| The fused row kernel launches 128 threads per block; the flat mapping keeps 256. | A reduction over the lane axis is one thread's serial work, so the number of *resident blocks*, not threads, sets how many rows are folded at once. `scripts/06-block-size.mjs` measured 32/64/128/256 twice: softmax 0.414 ms at 128 against 0.489 at 64 and 0.608 at 256, layernorm 0.152 against 0.168 and 0.179, with under 1% spread between repeats. |
+| Rule P1 also requires that no read of the statement sits inside a reduction. | This is a cost rule, not a legality rule: recomputation there is still exact, but it puts the expression into one thread's serial fold. Softmax's `e` would have been recomputed once per row element by one thread instead of once per lane. |
+| Rule P2 additionally requires a single read. | `mlp`'s `h` has five reads inside the GELU expression; substituting it would recompute a 256-term contraction five times, so it is staged in shared memory instead. |
+| Staged reads also accept the `split-sum` address `4 * block + lane`. | Its tail extent is `min(4, dim - 4 * block)`, so the value covers `[0, dim)` exactly. Without this the *optimized* corpus programs lost their staging entirely and read every staged value back from global memory. |
+| The shared-memory requirement is checked at launch through `cudaDevAttrMaxSharedMemoryPerBlockOptin` and throws with the number of bytes needed and the number available. | To state the one new boundary of the input domain where it is enforced, rather than relying on a bare `cudaFuncSetAttribute` failure. |
 
 ## Later
 

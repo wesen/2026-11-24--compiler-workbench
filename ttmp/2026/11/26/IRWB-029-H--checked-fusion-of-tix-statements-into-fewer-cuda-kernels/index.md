@@ -10,7 +10,9 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/fusion.ts
+      Note: The plan and its legality rules
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-26T23:05:45.6790084-05:00
@@ -19,6 +21,16 @@ WhenToUse: ""
 ---
 
 # Checked fusion of Tix statements into fewer CUDA kernels
+
+Stage 3 of Tix. Stage 2 launched one kernel per statement; this stage fuses statements into fewer kernels from a
+plan computed on the Tix IR, and checks the result under the same exact relation. Every corpus program now lowers to
+one kernel, bit-identically, at 1.04x to 3.15x stage 2's GPU time where there was something to fuse. No framework or
+tool source changed; the one place the framework does not fit is the correspondence of statements to kernels.
+
+- [Design and amendments](design-doc/01-checked-fusion-of-tix-statements-into-fewer-cuda-kernels.md)
+- [Report](reference/01-fusion-report-fewer-kernels-the-same-bits.md)
+- [Implementation diary](reference/02-implementation-diary.md)
+- [Tasks](tasks.md) · [Changelog](changelog.md)
 
 ## Overview
 
