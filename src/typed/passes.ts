@@ -48,6 +48,7 @@ import {
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { rotateSpec } from './rotate.js';
 import { makeInline } from './inline.js';
+import { makePeval } from './peval.js';
 
 type AnalysisName = keyof typeof ANALYSES;
 interface FactViews {
@@ -1032,6 +1033,8 @@ export const subst = typedPass({
 export const rotate = typedPass(rotateSpec);
 /** IRWB-003: inlining, a whole-program pass like dfe (src/typed/inline.ts). */
 export const inline = makeInline(revisionCorrespondence);
+/** IRWB-036-E: partial evaluation over bound buffers, a whole-program pass like dfe (src/typed/peval.ts). */
+export const peval = makePeval(revisionCorrespondence);
 
 export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   fold,
@@ -1049,6 +1052,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   dfe,
   rotate,
   inline,
+  peval,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */

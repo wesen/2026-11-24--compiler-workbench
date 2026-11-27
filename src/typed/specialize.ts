@@ -15,58 +15,14 @@
  * with it: the program is checked against r0 only on cases that satisfy the bindings (`Program.assume`), and every
  * later pass is held to the same restricted contract.
  */
-import { defineIR } from '../framework/contracts/definitions.js';
 import type { Artifact } from '../framework/core/types.js';
 import { TxError } from './tx.js';
+import { BindingsIR, checkBufferBinding, factRef, isBufferBinding } from './bindings.js';
+import type { Binding, Bindings } from './bindings.js';
 import { typedPass } from './passes.js';
 
-/**
- * A parameter binding (`fn`, `param`): that parameter's value. A field binding (`record`, `field`): that field of
- * every record of the type a function receives as a parameter (Candela: `K.scene`), in every function.
- */
-export interface Binding {
-  /** The function whose parameter is bound. */
-  readonly fn?: string;
-  /** The parameter's name. */
-  readonly param?: string;
-  /** The record type whose field is bound (field form). */
-  readonly record?: string;
-  /** The field's name (field form). */
-  readonly field?: string;
-  /** Its value (an enum case's value for enum parameters). */
-  readonly value: number;
-  /** The entity of the outer artifact that establishes the fact (e.g. `candela:scene/cornell#K.scene`). */
-  readonly entity: string;
-  readonly note?: string;
-}
-export interface Bindings {
-  readonly formatVersion: 1;
-  /** What produced the facts (e.g. `candela`). */
-  readonly source: string;
-  readonly bindings: readonly Binding[];
-}
-
-export const BindingsIR = defineIR<Bindings>({
-  id: 'typed.bindings',
-  version: '1',
-  description:
-    'parameter values a program will always be called with, and the outer entities that establish them',
-  validate(value) {
-    const v = value as Bindings;
-    if (!v || v.formatVersion !== 1 || typeof v.source !== 'string' || !Array.isArray(v.bindings))
-      throw new Error('typed.bindings: formatVersion 1, source and bindings required');
-    for (const b of v.bindings) {
-      const param = typeof b.fn === 'string' && typeof b.param === 'string';
-      const field = typeof b.record === 'string' && typeof b.field === 'string';
-      if (param === field || !Number.isInteger(b.value) || typeof b.entity !== 'string')
-        throw new Error(`typed.bindings: malformed binding ${JSON.stringify(b)}`);
-    }
-  },
-});
-
-/** The reason a specialization cites: the outer artifact, its exact revision, and the entity. */
-export const factRef = (art: Artifact<Bindings>, b: Binding) =>
-  `fact:${art.kind}:${art.id}@${art.revision.slice(0, 12)}#${b.entity}`;
+export { BindingsIR, factRef, isBufferBinding, checkBufferBinding } from './bindings.js';
+export type { Binding, Bindings } from './bindings.js';
 
 export const specialize = typedPass({
   name: 'specialize',
@@ -84,6 +40,11 @@ export const specialize = typedPass({
       return defs.length === 1 && defs[0] === `param:${i}`;
     };
     for (const b of art.value.bindings) {
+      if (isBufferBinding(b)) {
+        // the promise is checked the way a field binding's is; the loads are folded by the peval pass
+        if (b.fn === f.name) checkBufferBinding(st, f.name, f.locals, b.param!);
+        continue;
+      }
       if (b.record && b.field) {
         const layout = (
           st.frontEnd.records as Record<string, Record<string, { type: string; offset: number }>> | null
@@ -117,7 +78,7 @@ export const specialize = typedPass({
             !own(v, base.imm as number)
           )
             return;
-          return tx.const(b.value, {
+          return tx.const(b.value!, {
             because: [factRef(art, b)],
             note: `${f.locals[base.imm as number].name}.${b.field} = ${b.value} (${art.value.source})`,
           });
@@ -131,7 +92,7 @@ export const specialize = typedPass({
         tx.rewrite(
           v => {
             if (v.op !== 'get' || v.imm !== i || !v.statement || !own(v, i)) return;
-            return tx.const(b.value, {
+            return tx.const(b.value!, {
               because: [factRef(art, b)],
               note: `${b.param} = ${b.value} (${art.value.source})`,
             });

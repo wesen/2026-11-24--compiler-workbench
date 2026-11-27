@@ -143,8 +143,7 @@ export class Program {
     return `prog:${this.name}`;
   }
   /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
-  readonly assumptions: Record<string, Record<string, number>> = {};
-  /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
+  readonly assumptions: Record<string, Record<string, number | readonly number[]>> = {};
   get inputs(): ProgramInputs {
     const base = this.options.inputs ?? {};
     const out: Record<string, Record<string, unknown>> = Object.fromEntries(
@@ -152,6 +151,11 @@ export class Program {
     );
     for (const [f, params] of Object.entries(this.assumptions))
       for (const [k, v] of Object.entries(params)) {
+        // a buffer promise fixes the parameter's whole input spec: the cells the host promised
+        if (Array.isArray(v)) {
+          out[f] = { ...(out[f] ?? {}), [k]: { cells: v } };
+          continue;
+        }
         const dot = k.indexOf('.');
         if (dot < 0) {
           out[f] = { ...(out[f] ?? {}), [k]: v };
@@ -168,23 +172,36 @@ export class Program {
   /**
    * Restrict the program's meaning to inputs satisfying `bindings`: from now on the contract every pass must meet,
    * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
+   * A buffer binding (`fn`, `param`, `cells`: IRWB-036-E) fixes that buffer parameter's contents.
    */
   assume(
-    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
-  ): Record<string, Record<string, number>> {
-    const previous = JSON.parse(JSON.stringify(this.assumptions));
+    bindings: readonly {
+      fn?: string;
+      param?: string;
+      record?: string;
+      field?: string;
+      value?: number;
+      cells?: readonly number[];
+    }[],
+  ): Record<string, Record<string, number | readonly number[]>> {
+    const previous = JSON.parse(JSON.stringify(this.assumptions)) as typeof this.assumptions;
     for (const b of bindings) {
+      if (Array.isArray(b.cells)) {
+        this.fname(b.fn!);
+        (this.assumptions[b.fn!] ??= {})[b.param!] = b.cells;
+        continue;
+      }
       if (b.record && b.field) {
         // every parameter of that record type, in every function
         const st = storeOf(this.head.value);
         for (const f of st.fns.values())
           f.params.forEach((t, i) => {
-            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value;
+            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
           });
         continue;
       }
       this.fname(b.fn!);
-      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value;
+      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value!;
     }
     return previous;
   }
