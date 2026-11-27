@@ -146,6 +146,7 @@ interface Reuse {
   readonly cases: readonly unknown[];
   readonly outcomes: unknown[];
   readonly verdicts: Map<string, Decided>;
+  readonly pending: Map<string, Promise<Decided>>;
 }
 const REUSE = new Map<string, Reuse>();
 const REUSE_MAX = 4;
@@ -178,6 +179,7 @@ function prepare<P extends Ports, Case, Outcome>(
       cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),
       outcomes: [],
       verdicts: new Map(),
+      pending: new Map(),
     };
   REUSE.set(key, reuse);
   while (REUSE.size > REUSE_MAX) REUSE.delete(REUSE.keys().next().value!);
@@ -310,14 +312,37 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
       STATS.replayed++;
     } else todo.push(i);
   }
-  const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
+  const fresh = todo.filter(i => keys[i] === undefined || !reuse!.pending.has(keys[i]!));
+  const elsewhere = fresh.length ? spec.decide?.(inputs, cases, fresh) : undefined;
   if (elsewhere) {
-    const decided = await elsewhere;
-    if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
-    todo.forEach((i, k) => (verdicts[i] = decided[k]));
-    STATS.delegated += todo.length;
-  } else for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
-  for (const i of todo) if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+    const batch = elsewhere.then(decided => {
+      if (decided.length !== fresh.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${fresh.length}`);
+      STATS.delegated += fresh.length;
+      return decided;
+    });
+    const promises = fresh.map((i, k) => {
+      const key = keys[i];
+      const promise = batch.then(decided => {
+        const verdict = decided[k];
+        if (key !== undefined) reuse!.verdicts.set(key, verdict);
+        return verdict;
+      }).finally(() => {
+        if (key !== undefined) reuse!.pending.delete(key);
+      });
+      if (key !== undefined) reuse!.pending.set(key, promise);
+      return promise;
+    });
+    const freshPromises = new Map(fresh.map((i, k) => [i, promises[k]]));
+    await Promise.all(todo.map(async i => {
+      verdicts[i] = await (freshPromises.get(i) ?? reuse!.pending.get(keys[i]!)!);
+    }));
+  } else {
+    await Promise.all(todo.map(async i => {
+      const pending = keys[i] === undefined ? undefined : reuse!.pending.get(keys[i]!);
+      verdicts[i] = pending ? await pending : decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+      if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+    }));
+  }
   return tally(spec, seed, cases, verdicts, maxCounterexamples);
 }
 

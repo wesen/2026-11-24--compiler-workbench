@@ -117,3 +117,22 @@ test('the lowering relation is exact: one ulp is rejected, a different NaN word 
     relation: 'exact',
   });
 });
+
+test('concurrent cold lowering checks share a batch and retry failures', async () => {
+  let batches = 0;
+  let fail = true;
+  const engine = async (_source, f, cases) => {
+    batches++;
+    await new Promise(resolve => setImmediate(resolve));
+    if (fail) throw Error('concurrent failure');
+    return cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
+  };
+  const check = createCudaLowering('concurrent-test', engine);
+  const failed = await Promise.all([check(p.current, 'f'), check(p.current, 'f')]);
+  assert.ok(failed.every(result => !result.accepted && /concurrent failure/.test(result.reason)));
+  assert.equal(batches, 1);
+  fail = false;
+  const passed = await Promise.all([check(p.current, 'f'), check(p.current, 'f')]);
+  assert.ok(passed.every(result => result.accepted));
+  assert.equal(batches, 2);
+});
