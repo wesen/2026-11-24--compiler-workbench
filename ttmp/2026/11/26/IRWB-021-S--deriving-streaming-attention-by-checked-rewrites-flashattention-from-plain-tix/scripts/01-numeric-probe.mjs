@@ -368,9 +368,11 @@ console.log('# in increasing lexicographic order; sum starts at 0, max starts at
 console.log(`# node ${process.version}`);
 console.log('# mixed = |cand-ref|/(2^-20 + epsRel*|ref|): load factor against the tolerance relation;');
 console.log('# reported at epsRel = 2^-10 (9.77e-4). Pass iff mixed <= 1. mixed(P8)/mixed(P0) is the');
-console.log('# calibration factor the tolerance contract needs on top of P0\'s own f32 error.');
+console.log('# calibration factor the tolerance contract needs on top of P0\'s own f32 error;');
+console.log('# mixed(P2) attributes the drift: P2 = inline + factor-const only, so mixed(P8)/mixed(P2)');
+console.log('# is what the streaming steps add on top of the hoisting steps.');
 console.log('');
-console.log('config                     dist      seed  maxRel(P0)   maxRel(P8)  mixed(P0)@2^-10  mixed(P8)@2^-10  P8/P0   bitexact(P3,P2)  ctrl c1 min    ctrl c2 brk    ctrl c3 mean');
+console.log('config                     dist      seed  maxRel(P0)   maxRel(P8)  mixed(P0)@2^-10  mixed(P2)@2^-10  mixed(P8)@2^-10  P8/P0  P8/P2  bitexact(P3,P2)  ctrl c1 min    ctrl c2 brk    ctrl c3 mean');
 
 for (const dist of ['uniform', 'normal', 'hot', 'extreme']) {
   for (const seed of [1, 2]) {
@@ -384,6 +386,7 @@ for (const dist of ['uniform', 'normal', 'hot', 'extreme']) {
       const e0 = maxRelErr(r0.o, ref);
       const e8 = maxRelErr(r8.o, ref);
       const m0 = mixedErr(r0.o, ref, Math.pow(2, -10));
+      const m2 = mixedErr(r2.o, ref, Math.pow(2, -10));
       const m8 = mixedErr(r8.o, ref, Math.pow(2, -10));
       const bits =
         bitIdentical(r3.o, r2.o) && bitIdentical(r3.l, r2.l) && bitIdentical(r3.m, r2.m)
@@ -402,7 +405,7 @@ for (const dist of ['uniform', 'normal', 'hot', 'extreme']) {
       console.log(
         `N=${String(N).padEnd(4)} D=${String(D).padEnd(3)} B=${String(B).padEnd(3)} ${dist.padEnd(9)} ${String(seed).padEnd(4)} ` +
           `${e0.toExponential(2).padEnd(12)} ${e8.toExponential(2).padEnd(11)} ` +
-          `${m0.toFixed(3).padStart(14)} ${m8.toFixed(3).padStart(15)} ${(m8 / m0).toFixed(2).padStart(7)} ` +
+          `${m0.toFixed(3).padStart(14)} ${m2.toFixed(3).padStart(15)} ${m8.toFixed(3).padStart(15)} ${(m8 / m0).toFixed(2).padStart(6)} ${(m8 / m2).toFixed(2).padStart(6)} ` +
           `${bits.padEnd(16)} ${fmt(c1).padEnd(14)} ${fmt(c2).padEnd(14)} ${fmt(c3)}`
       );
     }
@@ -425,9 +428,11 @@ let failures = 0;
   ok('split-index is bit-identical (o, l, m)', bitIdentical(r3.o, r2.o) && bitIdentical(r3.l, r2.l) && bitIdentical(r3.m, r2.m));
   ok('P8 has no non-finite outputs on the standard domain', nonFiniteCount(r8.o) === 0);
   const m0 = mixedErr(p0(inputs, 256, 64).o, ref, Math.pow(2, -10));
+  const m2 = mixedErr(r2.o, ref, Math.pow(2, -10));
   const m8 = mixedErr(r8.o, ref, Math.pow(2, -10));
   ok('P0 itself passes the draft tolerance (mixed <= 1 at epsRel 2^-10)', m0 <= 1);
   ok('P8 tolerance load within 10x of P0\'s (calibration headroom)', m8 <= 10 * m0);
+  ok('streaming steps (P8 vs P2) stay within 4x of the hoisting steps', m8 <= 4 * m2);
   const c2 = p8(inputs, 256, 64, 32, { combineMode: 'broken' });
   ok('broken combine exceeds the tolerance by >10x', mixedErr(c2.o, ref, Math.pow(2, -10)) > 10 * Math.max(1, m8));
   const extreme = genInputs('extreme', 128, 32, 1);

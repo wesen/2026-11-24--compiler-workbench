@@ -142,7 +142,7 @@ famously hard, before any implementation is committed.
 
 ## Step 2: The rule set and the streaming lemma over the reals
 
-The derivation was worked out by hand before writing anything down. The result: eleven rule
+The derivation was worked out by hand before writing anything down. The result: thirteen rule
 applications from seven rules, resting on exactly four algebraic facts over ℝ (distributivity of a
 constant over a sum; order-preserving index renaming; iterated max/sum over a rectangular index
 split; the exponent law exp(a−b) = exp(a−c)·exp(c−b)) plus one lemma — the *streaming lemma*: the pair
@@ -257,15 +257,19 @@ exactness claims, per the repo's evidence discipline.
 - Ran it: `node scripts/01-numeric-probe.mjs > various/01-probe-results.txt` — 72 s wall, exit 0,
   8/8 sanity checks pass. Summary over the 80 rows (see `various/01-probe-results.txt`):
 
-  | distribution | max mixed(P0) @epsRel 2^-10 | max mixed(P8) | max mixed(P8)/mixed(P0) |
-  |---|---|---|---|
-  | uniform | 0.028 | 0.020 | 1.13 |
-  | normal | 0.099 | 0.099 | 1.31 |
-  | hot | 1.063 | 1.048 | 2.87 |
-  | extreme | 9.481 | 4.390 | 2.78 |
+  | distribution | max mixed(P0) @epsRel 2^-10 | max mixed(P8) | max mixed(P8)/mixed(P0) | max mixed(P8)/mixed(P2) |
+  |---|---|---|---|---|
+  | uniform | 0.028 | 0.020 | 1.13 | 0.98 |
+  | normal | 0.099 | 0.099 | 1.31 | 1.26 |
+  | hot | 1.063 | 1.048 | 2.87 | 1.17 |
+  | extreme | 9.481 | 4.390 | 2.78 | 1.01 |
 
 - `split-index` is bit-identical (o, l, m) in all 80 rows — the order-preserving-rename claim holds
   exactly in f32, not just over ℝ.
+- Attribution: `P2` (inline + factor-const only) already carries most of the drift — its mixed load
+  reached 2.6× P0's on hot inputs — and the streaming steps add at most 1.26× on top of `P2`
+  (worst over all 80 rows). The fold itself is not the numerical risk; the hoisting steps are the
+  movers, and even they stay within the ε calibration.
 - Controls: the broken combine errs by 10²–10⁴× P0 everywhere (any tolerance rejects it);
   min-shift and mean-shift stay finite and accurate on tame inputs (they are algebraically exact
   over ℝ — any shift c works) but leave the finite domain on extreme scores (thousands of
@@ -288,12 +292,15 @@ exactness claims, per the repo's evidence discipline.
 
 ### What didn't work
 - First probe run (before the mixed metric): a sanity assertion "P8 within 2× of P0 error" failed on
-  hot inputs (ratio up to 7.5). Diagnosis: the error growth happens at the *factor-const* steps
-  (hoisting 1/sqrt(D) out of the score sum), not at the fold — P8 tracks P2 within ~1.3× on the
-  whole grid. The claim was corrected to what the data supports: the tolerance is calibrated against
-  P0's measured error with a safety factor (10× measured, worst-case observed need 2.87×), and
-  accuracy-neutrality is measured against the *hand-written streaming kernel* (same algorithm), not
-  against P0.
+  hot inputs (ratio up to 7.5 under pure relative error). Diagnosis: the error growth happens at the
+  *factor-const* steps (hoisting 1/sqrt(D) out of the score sum), not at the fold — under the mixed
+  metric the worst P8/P2 ratio is 1.26 on the whole grid. The claim was corrected to what the data
+  supports: the tolerance is calibrated against P0's measured error with a safety factor (10×
+  measured, worst-case observed need 2.87×), and accuracy-neutrality is measured against the
+  *hand-written streaming kernel* (same algorithm), not against P0.
+- The second run initially dropped the P2 columns when switching metrics, which would have left the
+  design's attribution claims ("the fold is not the error mover") without saved evidence; the
+  columns were restored and the run repeated before writing the document.
 - maxRel as printed first was dominated by near-zero reference elements (9.68 on uniform); replaced
   by the mixed metric for all conclusions.
 
@@ -327,3 +334,123 @@ exactness claims, per the repo's evidence discipline.
 - f32 ops: `fadd/fmul/fdiv = fround(a op b)`, `fexp(a) = fround(Math.exp(a))`, reductions accumulate
   in increasing lexicographic order with rounding after each step; inputs rounded to f32 at
   generation; seeds 1 and 2; the mixed metric uses ε_abs = 2^-20.
+
+## Step 4: The research design document
+
+The design document was written against the brief's five required settlements and the repo's
+design-doc guidelines, with the probe's numbers in place of estimates. Structure: problem and
+given context (with the assumption about the parallel meaning contract stated as an assumption);
+preliminaries and the valid domain; the seven rules (pattern, replace, side conditions, exact
+argument over the reals, f32 effect, check); the thirteen-application derivation with complete
+programs at each milestone; the `fold` construct (syntax, reals semantics, f32 meaning, monoid
+declaration, once-per-combine verification, lowering rules L1–L4); checking (per-rule table, f32
+difference sources, ε calibration, the chain of meanings, negative controls); generality (reached
+and not-reached with reasons); the experiment (hypothesis, arms, domain, metrics, protocol,
+refutation, phases, open questions); design decisions with alternatives; Later; references.
+
+### Prompt Context
+**User prompt (verbatim):** See Step 1.
+**Assistant interpretation:** Write the design document; cite the probe's measured numbers.
+**Inferred user intent:** A document a second researcher could implement from, with no unstated
+mathematics and no unmeasured numerical claims.
+**Commit (code):** recorded in Step 5.
+
+### What I did
+- Wrote `design-doc/01-research-design-deriving-streaming-attention-by-checked-rewrites.md`
+  (~19 KB): the rule set with exact statements; the derivation P0→P8; the fold construct; the
+  checking design; generality; the GB10 experiment; decisions/alternatives; Later; references.
+- Corrected two number claims after re-checking them against the saved probe file
+  (`various/01-probe-results.txt`): "factor-const dominates" is 2.6× P0 (mixed metric), not 8.1×
+  (that figure was from the first run's pure-relative column, since replaced); and the streaming
+  steps add ≤ 1.26× on top of P2 (also from the re-run with restored P2 columns).
+
+### Why
+- The design must survive its own refutation criteria: every number it cites is either measured
+  (probe) or marked as an assumption with a stated dependency (the shipped tolerance relation's
+  shape).
+
+### What worked
+- The document's five brief settlements map one-to-one onto Parts 3–8; the addendum's contrastive
+  requirement is met by Part 9 (each decision names the simplest alternative and why it falls
+  short).
+
+### What didn't work
+- The two number corrections above (caught by re-reading the probe file before committing —
+  exactly the discipline the diary is for).
+
+### What I learned
+- Writing the checking section forced the honest split the probe had already suggested: exact
+  gates for rules 1/3/4, tolerance for 2/5/6/7, and the *finiteness* part of the domain (not
+  tolerance) as what rejects the shift mutations.
+
+### What was tricky to build
+- The fold's reference semantics: it must pin enough to be checkable (sequential left fold) while
+  leaving reassociation to the lowering, where the once-verified associativity licenses it.
+
+### What warrants a second pair of eyes
+- The streaming lemma's induction (Part 3.7) and the l ≥ 1 invariant (Part 2.2) — both are short,
+  both are load-bearing for the domain argument.
+
+### What should be done in the future
+- Step 5: relations, changelog, index, tasks, commits.
+
+### Code review instructions
+- Read the design doc against the brief's five settlements; every empirical number should trace to
+  `various/01-probe-results.txt`.
+
+### Technical details
+- The document uses the repo's design-doc frontmatter; docmgr will own RelatedFiles via
+  `docmgr doc relate`.
+
+## Step 5: Relations, changelog, tasks, commits
+
+### Prompt Context
+**User prompt (verbatim):** See Step 1.
+**Assistant interpretation:** Finish the ticket's bookkeeping and commit with `IRWB-021-S:`
+prefixes; do not push.
+**Inferred user intent:** The ticket should be resumable from its index, diary and changelog alone.
+**Commit (code):** see the git log on branch `r1b-g-max/irwb-021-s` (`IRWB-021-S:` prefixes).
+
+### What I did
+- `docmgr doc relate` for the probe script, the probe results, the three framework files the rules
+  and gates target, and the diary; `docmgr changelog update` for the document; task checks;
+  index overview text; commits.
+- Reviewed the whole document once before committing: fixed three cross-references (the domain
+  grid is section 8.3, the ε calibration is 6.4), the arm list in 8.2 (the blocked two-level form
+  is arm 4; the vendor routine is informational), and the lowering-rule count in 5.6 (four, not
+  three; L4 optional). `docmgr validate frontmatter` passes on the design doc.
+
+### Why
+- Per the docmgr skill: RelatedFiles tight (3–7), absolute paths, subdocument-first links.
+
+### What worked
+- Relations, changelog, index and task updates all landed on the first try (the only wrinkle:
+  `docmgr doc relate` appended its notes to frontmatter entries written by hand, so the notes were
+  deduplicated by editing the frontmatter once — frontmatter still validates).
+
+### What didn't work
+- The first `docmgr doc relate` batch on the design doc duplicated two notes (see above); fixed by
+  editing the frontmatter.
+- One `edit` call with a non-matching block was rejected wholesale (good: no partial application);
+  the three real fixes were re-issued and applied.
+
+### What I learned
+- `docmgr doc relate` merges by file path and appends notes rather than replacing them when the
+  frontmatter was authored by hand — write RelatedFiles by hand or via relate, not both.
+
+### What was tricky to build
+- Keeping every empirical claim in the document traceable to `various/01-probe-results.txt`: two
+  numbers changed between draft and commit because the evidence file, not memory, is the source.
+
+### What warrants a second pair of eyes
+- N/A (bookkeeping).
+
+### What should be done in the future
+- Phase 1 of the design's implementation plan (the fold construct + combine verifier).
+
+### Code review instructions
+- `docmgr doctor --ticket IRWB-021-S`; `docmgr task list --ticket IRWB-021-S`; `git log
+  --oneline --grep IRWB-021-S`.
+
+### Technical details
+- Final commit hash recorded in the ticket changelog.
