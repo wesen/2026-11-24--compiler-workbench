@@ -1,0 +1,2 @@
+{"name":"layernorm-inside","cases":32,"shapeAssignments":8,"fused":{"accepted":true,"coldMs":2492,"repeatMs":2,"repeatedSame":true},"unfused":{"accepted":true,"coldMs":2712,"repeatMs":2,"repeatedSame":true}}
+{"name":"attention-inside","cases":40,"shapeAssignments":10,"fused":{"accepted":true,"coldMs":2513,"repeatMs":2,"repeatedSame":true},"unfused":{"accepted":true,"coldMs":2789,"repeatMs":3,"repeatedSame":true}}

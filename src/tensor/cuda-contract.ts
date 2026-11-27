@@ -23,6 +23,8 @@ interface CudaKernel {
   name: string;
   mapping: 'thread' | 'block';
   statements: string[];
+  /** Block mode: the reductions whose terms the block computes in parallel (IRWB-030-H), `member#index`. */
+  terms?: string[];
 }
 interface CudaUnit {
   fn: string;
@@ -33,8 +35,9 @@ interface CudaUnit {
 
 const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '2',
-  description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
+  version: '3',
+  description:
+    "Standalone CUDA translation unit for a Tix function, with its kernels' statements and staged reductions",
   validate(value) {
     const unit = value as Partial<CudaUnit> | null;
     if (typeof unit?.fn !== 'string' || !unit.fn || typeof unit.source !== 'string' || !unit.source)
@@ -47,7 +50,8 @@ const CudaIR = defineIR<CudaUnit>({
           !['thread', 'block'].includes(k.mapping) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
-          k.statements.some(s => typeof s !== 'string'),
+          k.statements.some(s => typeof s !== 'string') ||
+          (k.terms !== undefined && (!Array.isArray(k.terms) || k.terms.some(t => typeof t !== 'string'))),
       )
     )
       throw Error('Invalid CUDA kernel list');
@@ -87,7 +91,11 @@ export function kernelCorrespondence(
     to: { artifact: subject.id, revision: subject.revision },
     relation: 'statements-to-kernels',
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
-    evidence: { mappings: kernels.map(k => k.mapping) },
+    evidence: {
+      mappings: kernels.map(k => k.mapping),
+      // which of a block-mode kernel's reductions compute their terms with the whole block (IRWB-030-H)
+      terms: kernels.map(k => k.terms ?? []),
+    },
   };
 }
 
@@ -162,7 +170,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
+    version: '3',
     description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
     inputs,
     outputs,
@@ -185,6 +193,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         name: g.kernel,
         mapping: g.mapping,
         statements: g.statements,
+        terms: g.terms.map(t => `${t.member}#${t.reduction}`),
       }));
       const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };

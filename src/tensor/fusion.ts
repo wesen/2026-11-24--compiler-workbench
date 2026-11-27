@@ -16,7 +16,19 @@
 //     thread 0. `stageTerms` prices a term against a shared store, a barrier share and a shared load;
 //   - `fusionGate` then decides, with the launch's shape values, whether the program keeps this plan or falls back
 //     to stage 2's one kernel per statement, when block mode would leave a warp's lanes idle.
-import { plain, value, width, visit, type Affine, type Axis, type Extent, type Expr, type Fn, type Op, type Statement } from './model.js';
+import {
+  plain,
+  value,
+  width,
+  visit,
+  type Affine,
+  type Axis,
+  type Extent,
+  type Expr,
+  type Fn,
+  type Op,
+  type Statement,
+} from './model.js';
 
 export interface FusionGroup {
   kernel: string;
@@ -79,7 +91,9 @@ export function topLevelReductions(e: Expr): Reduce[] {
 
 /** The number of terms of a reduction whose axes are plain extents, as an expression over the shape values. */
 export function termCount(r: Reduce, dim: (a: Affine) => string): string {
-  return r.axes.length > 1 ? `(${r.axes.map(a => dim(a.extent.dim)).join(' * ')})` : r.axes.map(a => dim(a.extent.dim))[0];
+  return r.axes.length > 1
+    ? `(${r.axes.map(a => dim(a.extent.dim)).join(' * ')})`
+    : r.axes.map(a => dim(a.extent.dim))[0];
 }
 
 // Per-term prices for staging a row reduction's terms (IRWB-030-H script 04: staged against serial for the same
@@ -107,7 +121,8 @@ export function stageTerms(body: Expr, local: (name: string) => boolean): { stag
     ? { stage: true, reason: `${price}, so the block computes the terms and thread 0 folds them` }
     : {
         stage: false,
-        reason: 'a term is a row-buffer load or an arithmetic step, no dearer than the store and load staging it would add',
+        reason:
+          'a term is a row-buffer load or an arithmetic step, no dearer than the store and load staging it would add',
       };
 }
 function loads(s: Statement): Load[] {
@@ -211,7 +226,8 @@ export function planFusion(fn: Fn): FusionPlan {
             return void serial.push({
               member: m.name,
               reduction,
-              reason: 'a split (blocks or tail) bound sizes the terms per outer index; the row buffer is sized from the shape values alone',
+              reason:
+                'a split (blocks or tail) bound sizes the terms per outer index; the row buffer is sized from the shape values alone',
             });
           const price = stageTerms(r.body, local);
           (price.stage ? terms : serial).push({ member: m.name, reduction, reason: price.reason });
@@ -230,7 +246,9 @@ export function planFusion(fn: Fn): FusionPlan {
               t =>
                 `the block computes ${t.member}'s reduction ${t.reduction} terms in parallel, thread 0 folds them in order`,
             ),
-            ...serial.map(t => `${t.member}'s reduction ${t.reduction} keeps the folding thread's loop: ${t.reason}`),
+            ...serial.map(
+              t => `${t.member}'s reduction ${t.reduction} keeps the folding thread's loop: ${t.reason}`,
+            ),
           ]
         : [
             `one thread per element of [${axes}] computes ${members.map(m => m.name).join(', ')} in registers`,
@@ -297,8 +315,7 @@ function extentValue(e: Extent, dims: ReadonlyMap<string, number>): number {
 /** The longest row a block-mode kernel covers: its longest member row or staged row. */
 export function groupRow(group: FusionGroup, fn: Fn, dims: ReadonlyMap<string, number>): number {
   const tensors = new Map([...fn.params, ...fn.statements].map(t => [t.name, t]));
-  const length = (shape: Affine[]) =>
-    shape.slice(group.depth).reduce((n, d) => n * value(d, dims), 1);
+  const length = (shape: Affine[]) => shape.slice(group.depth).reduce((n, d) => n * value(d, dims), 1);
   const rows = group.statements.map(name => {
     const s = tensors.get(name) as Statement;
     return s.axes.slice(group.depth).reduce((n, a) => n * extentValue(a.extent, dims), 1);

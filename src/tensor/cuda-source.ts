@@ -1,10 +1,4 @@
-import {
-  termCount,
-  topLevelReductions,
-  unfusedPlan,
-  type FusionGroup,
-  type FusionPlan,
-} from './fusion.js';
+import { termCount, topLevelReductions, unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
 import {
   plain,
   visit,
@@ -334,8 +328,7 @@ const product = (dims: string[]) =>
 const maxOf = (values: string[]) =>
   values.length ? [...new Set(values)].reduce((a, b) => `(${a} > ${b} ? ${a} : ${b})`) : '0';
 // Not deduplicated: two reductions of one member need their own slots even when they are the same length.
-const sumOf = (values: string[]) =>
-  values.length > 1 ? `(${values.join(' + ')})` : (values[0] ?? '0');
+const sumOf = (values: string[]) => (values.length > 1 ? `(${values.join(' + ')})` : (values[0] ?? '0'));
 
 // Stage 3: one kernel for a fused group (fusion.ts). Thread mode keeps stage 2's mapping with the members'
 // values in registers; block mode runs one block per block-domain point with rows in shared memory, or in a
@@ -425,10 +418,14 @@ function emitGroup(
     // region is reused from member to member and its size is the largest member's total.
     const termCounts = group.terms.map(t => termCount(reductions.get(t.member)![t.reduction], w.dim));
     const perMember = new Map<string, string[]>();
-    group.terms.forEach((t, i) => perMember.set(t.member, [...(perMember.get(t.member) ?? []), termCounts[i]]));
+    group.terms.forEach((t, i) =>
+      perMember.set(t.member, [...(perMember.get(t.member) ?? []), termCounts[i]]),
+    );
     const nterms = maxOf([...perMember.values()].map(c => sumOf(c)));
     if (termCounts.length) w.line(`const U nterms = ${nterms};`);
-    const row = [...rowBuffers.map(n => `n${suffix(n)}`), ...(termCounts.length ? ['nterms'] : [])].join(' + ');
+    const row = [...rowBuffers.map(n => `n${suffix(n)}`), ...(termCounts.length ? ['nterms'] : [])].join(
+      ' + ',
+    );
     w.line(`float* const base = Shared ? shared : scratch + point * (${row || '0'});`);
     rowBuffers.forEach((name, i) =>
       w.line(
@@ -438,7 +435,8 @@ function emitGroup(
     if (termCounts.length) {
       const last = rowBuffers.at(-1);
       w.line(`float* const terms_base = ${last ? `r${suffix(last)} + n${suffix(last)}` : 'base'};`);
-      let member: string | undefined, offset = '';
+      let member: string | undefined,
+        offset = '';
       group.terms.forEach((t, i) => {
         const name = `terms${i}`;
         w.line(`float* const ${name} = ${t.member === member ? offset : 'terms_base'};`);

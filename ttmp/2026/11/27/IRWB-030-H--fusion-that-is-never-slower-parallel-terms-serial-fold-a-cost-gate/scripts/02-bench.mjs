@@ -11,7 +11,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { seededRandom } from '../../../../../../dist/framework/contracts/index.js';
-import { compileTix, cudaSource, runTixCuda } from '../../../../../../dist/tensor/index.js';
+import { compileTix, loweredTix, runTixCuda } from '../../../../../../dist/tensor/index.js';
 import { value } from '../../../../../../dist/tensor/model.js';
 import { sizes as corpusSizes, variants } from './01-programs.mjs';
 
@@ -52,10 +52,11 @@ const names = args.filter(a => !a.startsWith('--'));
 for (const name of names.length ? names : [...Object.keys(corpusSizes), ...Object.keys(variants)]) {
   const { program, fn } = load(name);
   const data = inputs(name);
-  const row = { name };
+  const row = { name, shapes: load(name).sizes };
   for (const fuse of fuseArg === 'both' ? [true, false] : [fuseArg === 'fused']) {
     const label = fuse ? 'fused' : 'unfused';
-    const source = cudaSource(program, fn.name, { fuse });
+    // What runTixCuda will actually run for these inputs, gate included (kernel counts are of that source).
+    const lowered = loweredTix(program, fn.name, { fuse, shapes: Object.fromEntries(Object.entries(row.shapes)) });
     const times = [];
     let result;
     for (let i = 0; i < runs; i++) {
@@ -64,7 +65,10 @@ for (const name of names.length ? names : [...Object.keys(corpusSizes), ...Objec
     }
     times.sort((a, b) => a - b);
     row[label] = {
-      kernels: kernels(source),
+      kernels: kernels(lowered.source),
+      gated: Boolean(lowered.gate && !lowered.gate.fuse),
+      mappings: lowered.plan.groups.map(g => g.mapping),
+      terms: lowered.plan.groups.flatMap(g => g.terms.map(t => `${t.member}#${t.reduction}`)),
       gpuMs: times[times.length >> 1],
       times,
       outputSha256: digest(result),
@@ -72,6 +76,7 @@ for (const name of names.length ? names : [...Object.keys(corpusSizes), ...Objec
   }
   if (row.fused && row.unfused) {
     row.equal = row.fused.outputSha256 === row.unfused.outputSha256;
+    row.slowest = Math.min(row.fused.gpuMs, row.unfused.gpuMs);
     row.ratio = +(row.unfused.gpuMs / row.fused.gpuMs).toFixed(3);
   }
   console.log(JSON.stringify(row));

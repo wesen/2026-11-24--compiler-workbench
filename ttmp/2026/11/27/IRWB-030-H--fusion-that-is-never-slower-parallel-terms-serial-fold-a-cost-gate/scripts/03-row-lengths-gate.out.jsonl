@@ -1,0 +1,6 @@
+{"name":"softmax","N":524288,"C":8,"lanes":4,"gate":"unfused","fused":{"kernels":4,"gpuMs":0.5962},"unfused":{"kernels":4,"gpuMs":0.5953},"unfusedOverFused":0.998}
+{"name":"softmax","N":262144,"C":16,"lanes":2,"gate":"unfused","fused":{"kernels":4,"gpuMs":0.6833},"unfused":{"kernels":4,"gpuMs":0.674},"unfusedOverFused":0.986}
+{"name":"softmax","N":131072,"C":32,"lanes":1,"gate":"fuse","fused":{"kernels":1,"gpuMs":0.3709},"unfused":{"kernels":4,"gpuMs":0.6565},"unfusedOverFused":1.77}
+{"name":"normalize","N":524288,"C":8,"lanes":4,"gate":"unfused","fused":{"kernels":4,"gpuMs":0.3422},"unfused":{"kernels":4,"gpuMs":0.3409},"unfusedOverFused":0.996}
+{"name":"normalize","N":262144,"C":16,"lanes":2,"gate":"unfused","fused":{"kernels":4,"gpuMs":0.3974},"unfused":{"kernels":4,"gpuMs":0.4128},"unfusedOverFused":1.039}
+{"name":"normalize","N":131072,"C":32,"lanes":1,"gate":"fuse","fused":{"kernels":1,"gpuMs":0.1612},"unfused":{"kernels":4,"gpuMs":0.3823},"unfusedOverFused":2.372}
