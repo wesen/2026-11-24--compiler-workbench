@@ -16,31 +16,35 @@ Keep it current: update an entry when a round finishes, move items between statu
 
 ## Index
 
-| ID     | Item                                                            | Status                                           | Size   |
-| ------ | --------------------------------------------------------------- | ------------------------------------------------ | ------ |
-| T1     | Tix front end, IR, evaluators, contract, two passes             | done (IRWB-020-B merged, `98b04da`)              | M      |
-| R1     | research: derive streaming attention by checked rewrites        | done (design only; a ceiling)                    | M      |
-| T2     | CUDA lowering, one kernel per statement, run on the GB10        | done (IRWB-022-I merged, `2e035c6`)              | M      |
-| T3     | checked fusion                                                  | **ready, queued 1st** (base `2e035c6`)           | M      |
-| T4     | tolerance calibration with mutants                              | queued 4th (before the tolerance-checked stages) | M      |
-| T5     | implement the streaming-attention derivation                    | queued 8th                                       | L      |
-| T6     | exact tiled contractions with a schedule IR, against cuBLAS     | queued 3rd                                       | M–L    |
-| T7     | autotuning under noisy GPU cost                                 | queued 7th                                       | M      |
-| T8     | ONNX importer into Tix                                          | idea                                             | M      |
-| T9     | a GPU timing protocol                                           | prep, queued 2nd (coordinator, during T3)        | S      |
-| T10    | parallel reductions and split-K, by lowering split-sum programs | queued 5th                                       | M      |
-| T11    | checked FMA contraction                                         | queued 6th                                       | M      |
-| T12    | tensor cores as a checked precision change                      | queued 9th (last)                                | L      |
-| D1     | why `speed` slows the bytecode VM                               | ready                                            | S–M    |
-| D2     | missed optimizations from provenance                            | ready                                            | M      |
-| B1     | specialize the VM on its bytecode                               | ready                                            | M–L    |
-| B2     | specialize Candela on its scene buffers                         | idea                                             | L      |
-| A0     | measure: share of edits that are local value rewrites           | ready                                            | S      |
-| A1     | e-graph over value trees with verified rules                    | decision                                         | L      |
-| C1     | calibrated gate                                                 | prep                                             | M      |
-| E1     | incremental checking per function                               | prep                                             | L      |
-| F1–F20 | framework and workbench fixes found by agents                   | mostly ready                                     | S each |
-| M1–M5  | agent methodology                                               | running / ready                                  | —      |
+| ID     | Item                                                                        | Status                                           | Size   |
+| ------ | --------------------------------------------------------------------------- | ------------------------------------------------ | ------ |
+| T1     | Tix front end, IR, evaluators, contract, two passes                         | done (IRWB-020-B merged, `98b04da`)              | M      |
+| R1     | research: derive streaming attention by checked rewrites                    | done (design only; a ceiling)                    | M      |
+| T2     | CUDA lowering, one kernel per statement, run on the GB10                    | done (IRWB-022-I merged, `2e035c6`)              | M      |
+| T3     | checked fusion                                                              | **ready, queued 1st** (base `2e035c6`)           | M      |
+| T4     | tolerance calibration with mutants                                          | queued 4th (before the tolerance-checked stages) | M      |
+| T5     | implement the streaming-attention derivation                                | queued 8th                                       | L      |
+| T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | queued 3rd                                       | M–L    |
+| T7     | autotuning under noisy GPU cost                                             | queued 7th                                       | M      |
+| T8     | ONNX importer into Tix                                                      | idea                                             | M      |
+| T9     | a GPU timing protocol                                                       | prep, queued 2nd (coordinator, during T3)        | S      |
+| T10    | parallel reductions and split-K, by lowering split-sum programs             | queued 5th                                       | M      |
+| T11    | checked FMA contraction                                                     | queued 6th                                       | M      |
+| T12    | tensor cores as a checked precision change                                  | queued 9th (last)                                | L      |
+| R2     | research round: what would make Tix best in class (Sol, Astra, Opus, Fable) | done (IRWB-023; ideas below)                     | M      |
+| T13    | exhaustively verified fast intrinsics (`exp`, `tanh`)                       | idea, from R2                                    | M      |
+| T14    | a parallel fold that is bit-identical to the sequential one                 | idea, from R2                                    | M      |
+| T15    | acceptance by proof: normal-form equivalence and symbolic fingerprints      | idea, from R2; with F21                          | M      |
+| D1     | why `speed` slows the bytecode VM                                           | ready                                            | S–M    |
+| D2     | missed optimizations from provenance                                        | ready                                            | M      |
+| B1     | specialize the VM on its bytecode                                           | ready                                            | M–L    |
+| B2     | specialize Candela on its scene buffers                                     | idea                                             | L      |
+| A0     | measure: share of edits that are local value rewrites                       | ready                                            | S      |
+| A1     | e-graph over value trees with verified rules                                | decision                                         | L      |
+| C1     | calibrated gate                                                             | prep                                             | M      |
+| E1     | incremental checking per function                                           | prep                                             | L      |
+| F1–F20 | framework and workbench fixes found by agents                               | mostly ready                                     | S each |
+| M1–M5  | agent methodology                                                           | running / ready                                  | —      |
 
 ---
 
@@ -74,6 +78,35 @@ The path from T2's naive kernels toward library speed. Each step is a stage for 
 9. **T12, tensor cores** (TF32, BF16) as a checked precision change.
 
 T8 (ONNX) is not queued.
+
+### R2: what compiler work would make Tix best in class _(done: IRWB-023 A–D; IRWB-019 diary steps 27–31)_
+
+- **Result:**
+  - The judges' family effect (+1.5 and +1.75 of 10) exceeds every model difference (≤ 1.0 on the cross-family mean: Astra 8.0, Opus 7.5, Fable 7.25, Sol 7.0).
+  - Both judges find more errors in the Claude designs, and rate Sol least creative.
+  - Every load-bearing experiment I reran reproduced.
+- **Ideas for the queue,** with their evidence:
+  - **Exact row fusion (feeds T3):**
+    - Sol emitted certificate-checked rows (softmax 1.98×, layernorm 2.48×).
+    - Opus generated rows from the IR (softmax 4.44×, layernorm 2.46×; a planner at 3.19× geometric mean on five programs).
+    - Astra's softmax with a fitted `exp` is 4.25×.
+
+    All are bit-identical to stage 2.
+
+  - **Exact tiling (feeds T6):** 0.054–0.058 ms at 512³ in three cells; 1.6–1.75× cuBLAS.
+  - **T13, exhaustively verified fast intrinsics:**
+    - Opus's `exp` and `tanh` fast paths have a rounding test and a double fallback: 0 mismatches over all 2³² inputs, reproduced; 2.4× and 4.9× faster.
+    - Astra fits one binary64 table coefficient by interval intersection, with refutation witnesses, and certifies the deployed binary by digest against Node.
+  - **T14, a parallel fold identical to the sequential one:**
+    - Fable's parity transducer: inside one binade, a rounded add depends on the accumulator only through its parity, so a chunk has a two-entry summary.
+    - Astra's even-translation certificate.
+
+    Neither judge found a published version. It wins on long rows and loses at the corpus's 4096 × 1024.
+
+  - **T15, acceptance by proof:**
+    - Fable's normal-form equivalence for exact passes: 60 lines, rejecting the F21 mutant.
+    - Opus's symbolic fingerprints: the same kernel source at a hash type, with residue-complete shapes.
+  - **For T11:** Opus's exact FMA reference for the interpreter. `Math.fround(a*b + c)` fails all 65,536 constructed near-midpoint cases.
 
 ### T1: Tix front end, IR as a v6 artifact, evaluators, contract, `inline` and `split-sum` _(done: IRWB-020)_
 
