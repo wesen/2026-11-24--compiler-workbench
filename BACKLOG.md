@@ -457,3 +457,5 @@ The experiments around the work. The playbooks are in the go-go-parc vault under
   - _Unknown:_ whether v3 should replace v1 in `~/.codex/config.toml` (the user's call), and whether its effect holds over repeated runs (M2).
 - **M5: tell designers what is already checked** _(ready)_.
   - _Known:_ in IRWB-018, half of each project's test matrix repeated corpus-wide checks, because the designs prescribed it and nothing said what was covered.
+
+- **Read: Yang, Riasanovsky, Deng, Sarkar, arXiv 2609.11356 (2026), "Taming Bitwise Behavior in GPU Kernels with Tensor Core".** Black-box reconstruction of cuBLAS's GEMM reduction order, balanced-tree reductions enforced in Triton lowering, and static bitwise-equivalence checkers across PTX and GCN that restrict Triton's autotuner to one bit-equivalence class. Closest prior art to Tix's exact checked lowering; five R2 tickets claimed a version of it as new. _(found by the R2 Claude judge; abstract checked)_.

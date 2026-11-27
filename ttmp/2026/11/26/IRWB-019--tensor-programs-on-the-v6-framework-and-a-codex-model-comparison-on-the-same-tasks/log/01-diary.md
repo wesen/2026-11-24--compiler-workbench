@@ -1001,3 +1001,44 @@ The user set the cells for implementation tasks from now on, and asked to start 
 - **Cell J (GLM 5.3 Flash max) failed.** After 21 minutes of work (session 04:00:51Z to 04:21:59Z), LunaRoute returned "the upstream stream failed before completion". It had made no commits. Its first attempt is kept in `kit/t3-gf-max/attempt-1/`. It was relaunched alone with `scripts/41-relaunch-t3-j.sh`, a new file because 33- is still running. The relaunch started at about 04:50Z, 50 minutes after the others, so J shares the GPU with fewer cells and its wall-clock time is not comparable.
 - **Correction:** an earlier draft of this step said the Codex cells took "about an hour and a half", J failed "within seconds", and J restarted "5.5 hours" after the others. I wrote all three without checking the timestamps; this step now gives the checked times.
 - **Evaluation waits for all ten cells,** then runs one cell at a time so benchmark times are not perturbed.
+
+## Step 39: all four judges scored R1 and R2 with the new models
+
+Each pack was scored by two judges: Codex (Sol high) and Claude (an Opus subagent). Scores are overall, out of 10, as per-model means.
+
+| R1 (19 designs) | Codex judge | Claude judge | errors per design (Codex / Claude) |
+|---|---|---|---|
+| Astra (6) | 10.0 | 8.5 | 0 / 0 |
+| Sol (6) | 9.7 | 8.2 | 0.2 / 0.2 |
+| GLM 5.3 (2) | 4.5 | 6.5 | 17 / 6.5 |
+| DeepSeek 4.1 Flash (3) | 4.7 | 6.3 | 17.7 / 5.7 |
+| GLM 5.3 Flash (2) | 3.5 | 4.5 | 16.5 / 6.5 |
+
+| R2 (11 tickets) | Codex judge | Claude judge |
+|---|---|---|
+| Opus | 9 | 9 |
+| Sol high | 9 | 8 |
+| Fable | 8 | 8 |
+| Astra high | 10 | 7 |
+| DeepSeek 4.1 Flash high / xhigh / max | 5 / 6 / 7 | 3 / 5 / 6 |
+| GLM 5.3 high / max | 5 / 6 | 4 / 6 |
+| GLM 5.3 Flash high / max | 6 / 7 | 5 / 5 |
+
+**Agreement between the judges.**
+- Spearman rank correlation: R1 overall 0.89 and over-engineering 0.93; R2 overall 0.88, correctness 0.79, creativity 0.87, padding 0.13. The judges disagree on padding.
+- Family effect in R2 (OpenAI / Anthropic / new models): the Codex judge gives 9.5 / 8.5 / 6.0, the Claude judge 7.5 / 8.5 / 4.86. Each judge rates its own family 1.0 above the other, about 2 points in total, close to the earlier R2 figure (+1.5 and +1.75).
+- Both judges put the new models below every original cell in both rounds.
+
+**Effort for the new models.** In R2, higher effort scored higher for each new model under both judges, except GLM 5.3 Flash under the Claude judge (5 / 5). In R1 there is no such pattern: the Claude judge gives DeepSeek 7 / 6 / 6 for high / xhigh / max. One run per setting.
+
+**What I checked myself.**
+- R1: four of the Codex judge's major errors in new-model designs are real mathematical errors (step 37 notes). The Claude judge's f32 simulation (`r1-all-judges/claude-scratch/fold.mjs`) refutes a design's claimed bit-identity on 73 of 200 rows.
+- R2 doc-D (GLM 5.3 Flash max) has fabricated references. I resolved them:
+  - arXiv 1904.03187, cited as Tiramisu, is a LIGO paper;
+  - arXiv 2002.10967, cited as Ansor, is a presolar-SiC paper;
+  - DOI 10.1145/276698.276712, cited as Necula and Lee, is Grover's STOC 1998 quantum-algorithms paper.
+
+  The Claude judge found all three; the Codex judge found the Tiramisu one and a misattribution. The Claude judge also lists ten bad references in doc-B (DeepSeek high).
+- The Claude judge found prior art: Yang, Riasanovsky, Deng and Sarkar, arXiv 2609.11356 (September 2026), "Taming Bitwise Behavior in GPU Kernels with Tensor Core". It reconstructs cuBLAS's reduction order and has static bitwise-equivalence checkers (PTX and AMD GCN) that restrict Triton's autotuner to one bit-equivalence class. I checked the abstract on arXiv. Five R2 tickets (Opus, Astra, and three new) claim a version of that idea as new without citing it. It is relevant to Tix's exact-lowering direction, and should go into the backlog as reading.
+
+**Cost.** The Claude judges used 445K tokens (R1) and 527K (R2). The R2 judge spawned its own citation-checking subagents.

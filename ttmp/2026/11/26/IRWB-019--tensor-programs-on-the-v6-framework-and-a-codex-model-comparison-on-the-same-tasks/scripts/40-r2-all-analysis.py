@@ -66,3 +66,22 @@ if len(judges) == 2:
         if ds:
             print(f"  {mname:14} {st.mean((a[d]['overall'] + b[d]['overall']) / 2 for d in ds):.2f}"
                   f"  ({judges[0]} {st.mean(a[d]['overall'] for d in ds):.2f}, {judges[1]} {st.mean(b[d]['overall'] for d in ds):.2f})")
+    def rank(xs):
+        o = sorted(range(len(xs)), key=lambda i: xs[i]); r = [0.0] * len(xs); i = 0
+        while i < len(o):
+            j = i
+            while j + 1 < len(o) and xs[o[j + 1]] == xs[o[i]]:
+                j += 1
+            for k in range(i, j + 1):
+                r[o[k]] = (i + j) / 2
+            i = j + 1
+        return r
+    docs = sorted(a)
+    for k in ['overall', 'correctness', 'creativity', 'padding']:
+        ra, rb = rank([a[d][k] for d in docs]), rank([b[d][k] for d in docs])
+        ma, mb = st.mean(ra), st.mean(rb)
+        den = (sum((x - ma) ** 2 for x in ra) * sum((y - mb) ** 2 for y in rb)) ** 0.5
+        print(f'Spearman {k} between judges: {sum((x - ma) * (y - mb) for x, y in zip(ra, rb)) / den:.2f}')
+    for fam in ['OpenAI', 'Anthropic', 'other']:
+        ds = [d for d in docs if a[d]['family'] == fam]
+        print(f"  {fam:9} n={len(ds):2}  {judges[0]} {st.mean(a[d]['overall'] for d in ds):.2f}  {judges[1]} {st.mean(b[d]['overall'] for d in ds):.2f}")
