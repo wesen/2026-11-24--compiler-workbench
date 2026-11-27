@@ -18,22 +18,10 @@ WhenToUse: ""
 
 # Short report
 
-## Goal
+Tix passes now carry their meaning relation: inline is exact and split-sum uses tolerance. `optimizeTix` reads that declaration. `tixAlgorithm` supplies a transformation contract and origin input to the existing strategy bridge, with the gate as an invariant. Evidence is normalized by a JSON round trip as in the R3 probe, because the analysis manager rejects undefined fields.
 
-<!-- What is the purpose of this reference document? -->
+The simplest alternative, choosing the relation by pass name, would repeat the original coupling and would not work for a renamed or derived pass. The synchronous optimization path remains in place; a synchronous strategy driver is later work.
 
-## Context
+The F27 regression and TypeScript check passed. The corpus baseline comparison reported `no differences`. The non-GPU suite run reported 66 passing and 4 failing files out of 70 in the sandbox. All four failing files passed on an escalated rerun: 15 tests passed, 1 skipped, 0 failed. The file-level reporter did not expose the original individual failures, so their precise causes are unconfirmed. No framework files changed. GPU tests were excluded as requested.
 
-<!-- Provide background context needed to use this reference -->
-
-## Quick Reference
-
-<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
-
-## Usage Examples
-
-<!-- Show how to use this reference in practice -->
-
-## Related
-
-<!-- Link to related documents or resources -->
+The test file's introductory comment says `optimizeTix` should run a plan; the task explicitly keeps it synchronous, so that comment is stale. No assertions were weakened.
