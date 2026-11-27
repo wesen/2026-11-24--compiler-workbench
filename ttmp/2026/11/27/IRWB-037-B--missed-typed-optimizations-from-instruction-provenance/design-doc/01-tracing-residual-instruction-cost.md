@@ -3,7 +3,8 @@ Title: Tracing residual instruction cost
 Ticket: IRWB-037-B
 Status: active
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: design-doc
 Intent: long-term
 Owners: []

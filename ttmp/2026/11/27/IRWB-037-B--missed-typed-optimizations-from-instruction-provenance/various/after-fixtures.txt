@@ -1,0 +1,37 @@
+✔ LZ exact tokens, byte-for-byte round trips, and checked instruction measurements (7839.648119ms)
+ℹ general speed pass verdicts: r1 inline 400/400, r2 cfg 400/400, r3 simplify 400/400, r4 licm 400/400, r5 bce 400/400, r6 subst 400/400, r7 subst 400/400, r8 cfg 400/400, r9 subst 400/400, r10 rotate 400/400
+ℹ Maximum generated evaluator steps: r0 1703, speed 1179
+ℹ Evaluator steps for 24 A cells: r0 1745, speed 1178
+ℹ Evaluator steps for 24 collision-heavy cells: r0 1767, speed 1217
+ℹ Scalar binding verdict: 160/160
+ℹ specialized speed pass verdicts: r2 inline 400/400, r3 cfg 400/400, r4 simplify 400/400, r5 licm 400/400, r6 bce 400/400, r7 subst 400/400, r8 subst 400/400, r9 cfg 400/400, r10 subst 400/400, r11 rotate 400/400
+ℹ RV32 instructions over 100 seed-7 cases: {"r0":185876,"speed":145435,"reference":156405}
+ℹ RV32 instructions over the same 34 cases at limit 3: general 50775, specialized 50741
+✔ LZ workbench opens the tape project and runs explore on a fresh program (2192.636842ms)
+✔ Thompson NFA agrees with RegExp in the evaluator and both RV32 backends (3383.2976ms)
+ℹ Maximal active-set IR statements: r0 5290, speed 3439
+ℹ Benchmark r0: 8183 RV32 instructions
+ℹ Benchmark speed: 6587 RV32 instructions
+ℹ Benchmark reference: 6628 RV32 instructions
+✔ the workbench opens the project and runs the exploration script on a fresh copy (3210.155612ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16859.878922
+{
+  "position": "quiet-mate-in-two",
+  "move": "d6c7",
+  "score": 29997,
+  "completed": 3,
+  "nodes": 1344,
+  "evaluatorStatements": 7820284,
+  "instructions": {
+    "r0": 14804396,
+    "speed": 10038193,
+    "reference": 10827760
+  }
+}

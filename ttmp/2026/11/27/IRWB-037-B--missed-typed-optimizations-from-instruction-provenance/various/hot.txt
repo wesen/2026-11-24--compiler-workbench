@@ -1,0 +1,202 @@
+regexMatch(1024, 1072): r0 8183 -> r14 6587 instructions (-1596)
+
+revision       instructions   step
+r0 ingest              8183
+r1 inline              8002   -181
+r2 cfg                 7663   -339
+r3 fold                7654   -9
+r4 simplify            7654   0
+r5 constprop           7720   +66
+r6 dce                 7717   -3
+r7 cfg                 7709   -8
+r8 licm                6974   -735
+r9 bce                 6628   -346
+r10 subst              6613   -15
+r11 subst              6613   0
+r12 cfg                6613   0
+r13 subst              6613   0
+r14 rotate             6587   -26
+
+   delta    after  groups  decision
+    +157      164       4  inline: indirect
+    +132      553       8  subst: replace
+     +70      748       5  constprop: replace
+     +64      136       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.122; loop test duplicated into bb:regexMatch.164)
+     +63      144       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.48; loop test duplicated into bb:regexMatch.62)
+     +56      128       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.120; loop test duplicated into bb:regexMatch.156)
+     +28       99       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.113; loop test duplicated into bb:regexMatch.n5)
+     +27       27       3  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)
+     +24       24       3  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)
+     +20       23       1  licm: indirect, frame
+     +18       18       2  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.49)
+      +9        9       1  licm: insert
+      +4        4       4  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)
+      +3       13       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.0; loop test duplicated into bb:regexMatch.40)
+      +2        6       1  licm: indirect
+      +1        1       1  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.1)
+       0      608       5  cfg: move
+       0        0       1  cfg: move+remove (merged with its only successor)
+       0       32       1  cfg: move+retarget
+       0        0       3  cfg: remove (merged with its only successor)
+       0       81       1  licm: retarget
+       0      306       5  simplify: replace
+      -3        0       3  dce: remove
+      -4        3       1  constprop: indirect, frame
+      -9        0       1  cfg: replaceStmt
+      -9        9       1  fold: replace
+     -50        7       1  inline: indirect, frame
+    -147        0       8  subst: remove (substituted into its only reader)
+    -160        0       6  cfg: indirect
+    -178     3155      48  cfg: retarget
+    -240        0      10  rotate: replaceStmt
+    -288        0       1  inline: inline+remove (the call to inRange, inlined)
+    -346        0       4  bce: replaceStmt (index is within the fixed bound 9)
+    -840     3278      28  licm: replace
+     384  s:regexMatch.246  store32[(inv10 + (state << 2))+0] = load32[(inv11 + (state << 2))+0]  [r8 licm: replace]
+     360  s:regexMatch.102  if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62  [r8 licm: replace]
+     320  s:regexMatch.193  if (load32[(inv8 + (state << 2))+0] == 1) goto .128 else .129  [r8 licm: replace]
+     310  s:regexMatch.120  row = (5 * load32[(inv3 + (head << 2))+0])  [r8 licm: replace]
+     310  s:regexMatch.126  if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64  [r8 licm: replace]
+     280  s:regexMatch.198  t43 = (load32[(inv7 + (row << 2))+0] == 1)  [r8 licm: replace]
+     192  s:regexMatch.251  store32[(inv11 + (state << 2))+0] = 0  [r8 licm: replace]
+     168  s:regexMatch.194  if (row >=u 45) goto .130 else .133  [no recorded reduction]
+     144  s:regexMatch.98  if (state >=u 9) goto .52 else .55  [no recorded reduction]
+     137  s:regexMatch.3  zero frame+0, 180 bytes  [no recorded reduction]
+     135  s:regexMatch.296  if (state >= stateCount) goto .n5 else .51  [no recorded reduction]
+     128  s:regexMatch.188  row = (5 * state)  [no recorded reduction]
+     128  s:regexMatch.189  if (state >=u 9) goto .124 else .127  [no recorded reduction]
+     128  s:regexMatch.237  if (state >=u 9) goto .161 else .164  [no recorded reduction]
+     124  s:regexMatch.116  if (head >=u 9) goto .67 else .70  [no recorded reduction]
+     124  s:regexMatch.122  if (row >=u 45) goto .71 else .74  [no recorded reduction]
+     120  s:regexMatch.300  if (state >= stateCount) goto .122 else .123  [no recorded reduction]
+     120  s:regexMatch.302  if (state >= stateCount) goto .159 else .160  [no recorded reduction]
+     104  s:regexMatch.143  if (load32[(inv4 + (first << 2))+0] == 0) goto .94 else .99  [r8 licm: replace]
+     104  s:regexMatch.148  store32[(inv4 + (first << 2))+0] = 1  [r8 licm: replace]
+     104  s:regexMatch.161  if (load32[(inv4 + (second << 2))+0] == 0) goto .109 else .64  [r8 licm: replace]
+      96  s:regexMatch.209  t44 = load32[(inv7 + (t37 << 2))+0]  [r8 licm: replace]
+      96  s:regexMatch.265  inRange_high = load32[(inv7 + (t38 << 2))+0]  [r8 licm: replace]
+      78  s:regexMatch.132  first = load32[(inv5 + (t29 << 2))+0]  [r8 licm: replace]
+      78  s:regexMatch.138  second = load32[(inv5 + (t31 << 2))+0]  [r8 licm: replace]
+      78  s:regexMatch.153  store32[(inv3 + (tail << 2))+0] = first  [r8 licm: replace]
+      76  s:regexMatch.166  store32[(inv4 + (second << 2))+0] = 1  [r8 licm: replace]
+      72  s:regexMatch.111  state = (state + 1)  [no recorded reduction]
+      64  s:regexMatch.202  if t43 goto .135 else .156  [no recorded reduction]
+      64  s:regexMatch.204  if (t37 >=u 45) goto .137 else .140  [r2 cfg: retarget]
+      64  s:regexMatch.210  if (t38 >=u 45) goto .141 else .144  [no recorded reduction]
+      64  s:regexMatch.226  store32[(inv6 + (t40 << 2))+0] = 1  [r8 licm: replace]
+      64  s:regexMatch.231  state = (state + 1)  [no recorded reduction]
+      64  s:regexMatch.252  state = (state + 1)  [no recorded reduction]
+      62  s:regexMatch.121  head = (head + 1)  [no recorded reduction]
+      57  s:regexMatch.171  store32[(inv3 + (tail << 2))+0] = second  [r8 licm: replace]
+      52  s:regexMatch.128  if (t29 >=u 45) goto .77 else .80  [r2 cfg: retarget]
+      52  s:regexMatch.134  if (t31 >=u 45) goto .81 else .84  [no recorded reduction]
+      52  s:regexMatch.139  if (first >=u 9) goto .85 else .88  [no recorded reduction]
+      52  s:regexMatch.149  if (tail >=u 9) goto .95 else .98  [no recorded reduction]
+      52  s:regexMatch.157  if (second >=u 9) goto .100 else .103  [no recorded reduction]
+      51  s:regexMatch.107  store32[(inv1 + (tail << 2))+0] = state  [r8 licm: replace]
+      48  s:regexMatch.221  t40 = load32[(inv7 + (t39 << 2))+0]  [r8 licm: replace]
+      46  s:regexMatch.268  inRange_t3 = (inRange_code <= inRange_high)  [no recorded reduction]
+      43  s:regexMatch.115  if (head >= tail) goto .65 else .66  [no recorded reduction]
+      40  s:regexMatch.184  code = load16[caddr(text, i)+4]  [no recorded reduction]
+      38  s:regexMatch.167  if (tail >=u 9) goto .110 else .113  [no recorded reduction]
+      38  s:regexMatch.297  if (head >= tail) goto .65 else .66  [no recorded reduction]
+      34  s:regexMatch.103  if (tail >=u 9) goto .58 else .61  [r2 cfg: retarget]
+      32  s:regexMatch.203  t37 = (row + 1)  [no recorded reduction]
+      32  s:regexMatch.208  t38 = (row + 2)  [no recorded reduction]
+      32  s:regexMatch.215  if inRange_t3 goto .145 else .156  [no recorded reduction]
+      32  s:regexMatch.217  if (t39 >=u 45) goto .147 else .150  [r2 cfg: retarget]
+      32  s:regexMatch.222  if (t40 >=u 9) goto .151 else .154  [no recorded reduction]
+      32  s:regexMatch.263  inRange_code = code  [no recorded reduction]
+      32  s:regexMatch.267  if (inRange_code >= t44) goto .n2 else .n3  [no recorded reduction]
+      26  s:regexMatch.127  t29 = (row + 3)  [no recorded reduction]
+      26  s:regexMatch.133  t31 = (row + 4)  [no recorded reduction]
+      26  s:regexMatch.154  tail = (tail + 1)  [no recorded reduction]
+      26  s:regexMatch.179  if (i == load32[text+0]) goto .47 else .120  [no recorded reduction]
+      23  frame  frame  [r1 inline: indirect, frame, r5 constprop: indirect, frame]
+      23  s:regexMatch.269  goto .n4  [no recorded reduction]
+      21  s:regexMatch.23  t42 = (load16[caddr(pattern, p)+4] == 42)  [no recorded reduction]
+      20  s:regexMatch.9  low = load16[caddr(pattern, p)+4]  [no recorded reduction]
+      19  s:regexMatch.172  tail = (tail + 1)  [no recorded reduction]
+      18  s:regexMatch.298  if (head >= tail) goto .65 else .66  [no recorded reduction]
+      17  s:regexMatch.108  tail = (tail + 1)  [no recorded reduction]
+      16  s:regexMatch.216  t39 = (row + 3)  [no recorded reduction]
+      16  s:regexMatch.301  if (state >= stateCount) goto .159 else .160  [no recorded reduction]
+      16  s:regexMatch.56  store32[(inv + (range << 2))+0] = 1  [r8 licm: replace]
+      12  s:regexMatch.13  low = load16[caddr(pattern, (p + 1))+4]  [no recorded reduction]
+      12  s:regexMatch.15  high = load16[caddr(pattern, (p + 3))+4]  [no recorded reduction]
+      12  s:regexMatch.33  store32[(inv + (split << 2))+0] = 2  [r8 licm: replace]
+      12  s:regexMatch.39  store32[(inv + (t15 << 2))+0] = (s + 1)  [r8 licm: replace]
+      12  s:regexMatch.45  store32[(inv + (t16 << 2))+0] = (s + 2)  [r8 licm: replace]
+      12  s:regexMatch.62  store32[(inv + (t18 << 2))+0] = low  [r8 licm: replace]
+      12  s:regexMatch.68  store32[(inv + (t19 << 2))+0] = high  [r8 licm: replace]
+      12  s:regexMatch.74  store32[(inv + (t20 << 2))+0] = out  [r8 licm: replace]
+      11  s:regexMatch.294  if (p >= load32[pattern+0]) goto .2 else .3  [no recorded reduction]
+       9  s:regexMatch.270  inRange_t3 = 0  [no recorded reduction]
+       9  s:regexMatch.276  inv1 = inv9  [no recorded reduction]
+       9  s:regexMatch.277  inv2 = inv10  [no recorded reduction]
+       9  s:regexMatch.279  inv3 = frame+252  [no recorded reduction]
+       9  s:regexMatch.280  inv4 = frame+180  [no recorded reduction]
+       9  s:regexMatch.281  inv5 = frame+0  [no recorded reduction]
+       9  s:regexMatch.295  if (state >= stateCount) goto .n5 else .51  [no recorded reduction]
+       9  s:regexMatch.86  zero frame+180, 36 bytes  [no recorded reduction]
+       9  s:regexMatch.87  zero frame+216, 36 bytes  [no recorded reduction]
+       9  s:regexMatch.88  zero frame+252, 36 bytes  [no recorded reduction]
+       9  s:regexMatch.93  head = 0  [no recorded reduction]
+       9  s:regexMatch.94  tail = 0  [no recorded reduction]
+       9  s:regexMatch.95  state = 0  [no recorded reduction]
+       8  s:regexMatch.11  if (low == 91) goto .4 else .5  [no recorded reduction]
+       8  s:regexMatch.185  state = 0  [no recorded reduction]
+       8  s:regexMatch.200  t43 = 0  [no recorded reduction]
+       8  s:regexMatch.201  goto .134  [no recorded reduction]
+       8  s:regexMatch.21  if (p < load32[pattern+0]) goto .7 else .8  [no recorded reduction]
+       8  s:regexMatch.234  state = 0  [no recorded reduction]
+       8  s:regexMatch.255  i = (i + 1)  [no recorded reduction]
+       8  s:regexMatch.256  goto .48  [no recorded reduction]
+       8  s:regexMatch.282  inv6 = inv11  [no recorded reduction]
+       8  s:regexMatch.283  inv7 = inv12  [no recorded reduction]
+       8  s:regexMatch.284  inv8 = inv10  [no recorded reduction]
+       8  s:regexMatch.299  if (state >= stateCount) goto .122 else .123  [no recorded reduction]
+       8  s:regexMatch.51  range = (5 * s)  [no recorded reduction]
+       8  s:regexMatch.52  if (range >=u 45) goto .25 else .28  [no recorded reduction]
+       8  s:regexMatch.58  if (t18 >=u 45) goto .29 else .32  [no recorded reduction]
+       8  s:regexMatch.64  if (t19 >=u 45) goto .33 else .36  [no recorded reduction]
+       8  s:regexMatch.70  if (t20 >=u 45) goto .37 else .40  [no recorded reduction]
+       6  s:regexMatch.262  return load32[(frame+180 + (accept << 2))+0]  [r1 inline: indirect]
+       6  s:regexMatch.28  split = (5 * s)  [no recorded reduction]
+       6  s:regexMatch.29  if (split >=u 45) goto .12 else .15  [r2 cfg: retarget]
+       6  s:regexMatch.35  if (t15 >=u 45) goto .16 else .19  [no recorded reduction]
+       6  s:regexMatch.41  if (t16 >=u 45) goto .20 else .23  [no recorded reduction]
+       5  s:regexMatch.84  store32[(frame+0 + (t22 << 2))+0] = 3  [no recorded reduction]
+       4  s:regexMatch.10  high = low  [no recorded reduction]
+       4  s:regexMatch.20  out = (s + 1)  [no recorded reduction]
+       4  s:regexMatch.27  if t42 goto .10 else .24  [no recorded reduction]
+       4  s:regexMatch.57  t18 = (range + 1)  [no recorded reduction]
+       4  s:regexMatch.63  t19 = (range + 2)  [no recorded reduction]
+       4  s:regexMatch.69  t20 = (range + 3)  [no recorded reduction]
+       4  s:regexMatch.75  s = (s + 1)  [no recorded reduction]
+       3  s:regexMatch.24  goto .9  [no recorded reduction]
+       3  s:regexMatch.258  if (accept >=u 9) goto .175 else .178  [no recorded reduction]
+       3  s:regexMatch.34  t15 = (split + 3)  [no recorded reduction]
+       3  s:regexMatch.40  t16 = (split + 4)  [no recorded reduction]
+       3  s:regexMatch.46  out = s  [no recorded reduction]
+       3  s:regexMatch.47  s = (s + 1)  [no recorded reduction]
+       3  s:regexMatch.48  p = (p + 1)  [no recorded reduction]
+       3  s:regexMatch.80  if (t22 >=u 45) goto .42 else .45  [no recorded reduction]
+       2  s:regexMatch.16  p = (p + 5)  [no recorded reduction]
+       2  s:regexMatch.17  goto .6  [no recorded reduction]
+       2  s:regexMatch.18  p = (p + 1)  [no recorded reduction]
+       2  s:regexMatch.293  if (p >= load32[pattern+0]) goto .2 else .3  [no recorded reduction]
+       2  s:regexMatch.79  t22 = (5 * accept)  [no recorded reduction]
+       2  s:regexMatch.89  store32[frame+180+0] = 1  [no recorded reduction]
+       1  s:regexMatch.25  t42 = 0  [no recorded reduction]
+       1  s:regexMatch.275  inv = frame+0  [no recorded reduction]
+       1  s:regexMatch.285  inv9 = frame+252  [no recorded reduction]
+       1  s:regexMatch.286  inv10 = frame+180  [no recorded reduction]
+       1  s:regexMatch.287  inv11 = frame+216  [no recorded reduction]
+       1  s:regexMatch.288  inv12 = frame+0  [no recorded reduction]
+       1  s:regexMatch.4  p = 0  [no recorded reduction]
+       1  s:regexMatch.5  s = 0  [no recorded reduction]
+       1  s:regexMatch.78  accept = s  [no recorded reduction]
+       1  s:regexMatch.85  stateCount = (accept + 1)  [no recorded reduction]
+       1  s:regexMatch.90  i = 0  [no recorded reduction]
+       1  s:regexMatch.91  goto .48  [no recorded reduction]

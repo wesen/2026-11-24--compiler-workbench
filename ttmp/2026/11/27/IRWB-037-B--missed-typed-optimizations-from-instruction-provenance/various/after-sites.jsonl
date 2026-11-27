@@ -1,0 +1,149 @@
+[{"rev":0,"pass":"ingest","instructions":8183},{"rev":1,"pass":"inline","instructions":8002},{"rev":2,"pass":"cfg","instructions":7663},{"rev":3,"pass":"fold","instructions":7654},{"rev":4,"pass":"simplify","instructions":7654},{"rev":5,"pass":"constprop","instructions":7720},{"rev":6,"pass":"dce","instructions":7717},{"rev":7,"pass":"cfg","instructions":7709},{"rev":8,"pass":"licm","instructions":6974},{"rev":9,"pass":"bce","instructions":6628},{"rev":10,"pass":"subst","instructions":6613},{"rev":11,"pass":"subst","instructions":6613},{"rev":12,"pass":"cfg","instructions":6613},{"rev":13,"pass":"subst","instructions":6613},{"rev":14,"pass":"rotate","instructions":6587}]
+{"id":"s:regexMatch.246","text":"store32[(inv10 + (state << 2))+0] = load32[(inv11 + (state << 2))+0]","count":384,"insns":[["slli s1, s6, 2",64],["add s1, t4, s1",64],["slli s2, s6, 2",64],["add s2, a2, s2",64],["lw s2, 0(s2)",64],["sw s2, 0(s1)",64]],"history":[["licm",-64,"licm: replace"],["cfg",0,"cfg: move"],["subst",128,"subst: replace"]]}
+{"id":"s:regexMatch.102","text":"if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62","count":360,"insns":[["slli s1, a6, 2",72],["add s1, a0, s1",72],["lw s1, 0(s1)",72],["addi s2, zero, 1",72],["bne s1, s2, bb.62",72]],"history":[["cfg",0,"cfg: retarget"],["licm",-72,"licm: replace"]]}
+{"id":"s:regexMatch.193","text":"if (load32[(inv8 + (state << 2))+0] == 1) goto .128 else .129","count":320,"insns":[["slli s8, s2, 2",64],["add s8, s5, s8",64],["lw s8, 0(s8)",64],["addi s9, zero, 1",64],["bne s8, s9, bb.129",64]],"history":[["licm",-64,"licm: replace"]]}
+{"id":"s:regexMatch.120","text":"row = (5 * load32[(inv3 + (head << 2))+0])","count":310,"insns":[["addi s1, zero, 5",62],["slli s2, a4, 2",62],["add s2, a6, s2",62],["lw s2, 0(s2)",62],["mul s1, s1, s2",62]],"history":[["licm",-62,"licm: replace"]]}
+{"id":"s:regexMatch.126","text":"if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64","count":310,"insns":[["slli s2, s1, 2",62],["add s2, a0, s2",62],["lw s2, 0(s2)",62],["addi s3, zero, 2",62],["bne s2, s3, bb.64",62]],"history":[["cfg",0,"cfg: retarget"],["constprop",62,"constprop: replace"],["licm",-62,"licm: replace"]]}
+{"id":"s:regexMatch.198","text":"t43 = (load32[(inv7 + (row << 2))+0] == 1)","count":280,"insns":[["slli s9, s7, 2",56],["add s9, s4, s9",56],["lw s9, 0(s9)",56],["xori s8, s9, 1",56],["sltiu s8, s8, 1",56]],"history":[["constprop",0,"constprop: replace"],["licm",-56,"licm: replace"]]}
+{"id":"s:regexMatch.251","text":"store32[(inv11 + (state << 2))+0] = 0","count":192,"insns":[["slli s1, s6, 2",64],["add s1, a2, s1",64],["sw zero, 0(s1)",64]],"history":[["licm",-64,"licm: replace"],["cfg",0,"cfg: move"]]}
+{"id":"s:regexMatch.194","text":"if (row >=u 45) goto .130 else .133","count":168,"insns":[["addi s8, zero, 45",56],["bgeu s7, s8, bb.130",56],["jal zero, bb.133",56]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.98","text":"if (state >=u 9) goto .52 else .55","count":144,"insns":[["addi s1, zero, 9",72],["bltu a6, s1, bb.55",72]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.3","text":"zero frame+0, 180 bytes","count":137,"insns":[["addi t0, sp, 0",1],["addi t1, t0, 180",1],["sw zero, 0(t0)",45],["addi t0, t0, 4",45],["bne t0, t1, L0",45]],"history":[]}
+{"id":"s:regexMatch.296","text":"if (state >= stateCount) goto .n5 else .51","count":135,"insns":[["bge a6, t0, bb.n5",72],["jal zero, bb.51",63]],"history":[["rotate",63,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.48; loop test duplicated into bb:regexMatch.62)"]]}
+{"id":"s:regexMatch.188","text":"row = (5 * state)","count":128,"insns":[["addi s7, zero, 5",64],["mul s7, s7, s2",64]],"history":[]}
+{"id":"s:regexMatch.189","text":"if (state >=u 9) goto .124 else .127","count":128,"insns":[["addi s8, zero, 9",64],["bltu s2, s8, bb.127",64]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.237","text":"if (state >=u 9) goto .161 else .164","count":128,"insns":[["addi s1, zero, 9",64],["bltu s6, s1, bb.164",64]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.116","text":"if (head >=u 9) goto .67 else .70","count":124,"insns":[["addi s1, zero, 9",62],["bltu a4, s1, bb.70",62]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.122","text":"if (row >=u 45) goto .71 else .74","count":124,"insns":[["addi s2, zero, 45",62],["bltu s1, s2, bb.74",62]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.300","text":"if (state >= stateCount) goto .122 else .123","count":120,"insns":[["bge s2, t0, bb.122",64],["jal zero, bb.123",56]],"history":[["rotate",56,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.120; loop test duplicated into bb:regexMatch.156)"]]}
+{"id":"s:regexMatch.302","text":"if (state >= stateCount) goto .159 else .160","count":120,"insns":[["bge s6, t0, bb.159",64],["jal zero, bb.160",56]],"history":[["rotate",64,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.122; loop test duplicated into bb:regexMatch.164)"]]}
+{"id":"s:regexMatch.143","text":"if (load32[(inv4 + (first << 2))+0] == 0) goto .94 else .99","count":104,"insns":[["slli s3, s2, 2",26],["add s3, a7, s3",26],["lw s3, 0(s3)",26],["bne s3, zero, bb.99",26]],"history":[["cfg",0,"cfg: retarget"],["licm",-26,"licm: replace"],["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.148","text":"store32[(inv4 + (first << 2))+0] = 1","count":104,"insns":[["slli s3, s2, 2",26],["add s3, a7, s3",26],["addi s4, zero, 1",26],["sw s4, 0(s3)",26]],"history":[["licm",-26,"licm: replace"]]}
+{"id":"s:regexMatch.161","text":"if (load32[(inv4 + (second << 2))+0] == 0) goto .109 else .64","count":104,"insns":[["slli s2, s1, 2",26],["add s2, a7, s2",26],["lw s2, 0(s2)",26],["bne s2, zero, bb.64",26]],"history":[["cfg",0,"cfg: retarget"],["licm",-26,"licm: replace"],["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.209","text":"t44 = load32[(inv7 + (t37 << 2))+0]","count":96,"insns":[["slli s8, s8, 2",32],["add s8, s4, s8",32],["lw s8, 0(s8)",32]],"history":[["licm",-32,"licm: replace"]]}
+{"id":"s:regexMatch.265","text":"inRange_high = load32[(inv7 + (t38 << 2))+0]","count":96,"insns":[["slli s9, s9, 2",32],["add s9, s4, s9",32],["lw s9, 0(s9)",32]],"history":[["inline",128,"inline: indirect"],["licm",-32,"licm: replace"]]}
+{"id":"s:regexMatch.132","text":"first = load32[(inv5 + (t29 << 2))+0]","count":78,"insns":[["slli s2, s2, 2",26],["add s2, a0, s2",26],["lw s2, 0(s2)",26]],"history":[["licm",-26,"licm: replace"]]}
+{"id":"s:regexMatch.138","text":"second = load32[(inv5 + (t31 << 2))+0]","count":78,"insns":[["slli s1, s1, 2",26],["add s1, a0, s1",26],["lw s1, 0(s1)",26]],"history":[["licm",-26,"licm: replace"]]}
+{"id":"s:regexMatch.153","text":"store32[(inv3 + (tail << 2))+0] = first","count":78,"insns":[["slli s3, a5, 2",26],["add s3, a6, s3",26],["sw s2, 0(s3)",26]],"history":[["licm",-26,"licm: replace"]]}
+{"id":"s:regexMatch.166","text":"store32[(inv4 + (second << 2))+0] = 1","count":76,"insns":[["slli s2, s1, 2",19],["add s2, a7, s2",19],["addi s3, zero, 1",19],["sw s3, 0(s2)",19]],"history":[["licm",-19,"licm: replace"]]}
+{"id":"s:regexMatch.111","text":"state = (state + 1)","count":72,"insns":[["addi a6, a6, 1",72]],"history":[]}
+{"id":"s:regexMatch.202","text":"if t43 goto .135 else .156","count":64,"insns":[["beq s8, zero, bb.156",64]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.204","text":"if (t37 >=u 45) goto .137 else .140","count":64,"insns":[["addi s9, zero, 45",32],["bltu s8, s9, bb.140",32]],"history":[["cfg",-32,"cfg: retarget"]]}
+{"id":"s:regexMatch.210","text":"if (t38 >=u 45) goto .141 else .144","count":64,"insns":[["addi s10, zero, 45",32],["bltu s9, s10, bb.144",32]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.226","text":"store32[(inv6 + (t40 << 2))+0] = 1","count":64,"insns":[["slli s7, s7, 2",16],["add s7, s3, s7",16],["addi s8, zero, 1",16],["sw s8, 0(s7)",16]],"history":[["licm",-16,"licm: replace"]]}
+{"id":"s:regexMatch.231","text":"state = (state + 1)","count":64,"insns":[["addi s2, s2, 1",64]],"history":[]}
+{"id":"s:regexMatch.252","text":"state = (state + 1)","count":64,"insns":[["addi s6, s6, 1",64]],"history":[["cfg",0,"cfg: move"]]}
+{"id":"s:regexMatch.121","text":"head = (head + 1)","count":62,"insns":[["addi a4, a4, 1",62]],"history":[]}
+{"id":"s:regexMatch.171","text":"store32[(inv3 + (tail << 2))+0] = second","count":57,"insns":[["slli s2, a5, 2",19],["add s2, a6, s2",19],["sw s1, 0(s2)",19]],"history":[["licm",-19,"licm: replace"]]}
+{"id":"s:regexMatch.128","text":"if (t29 >=u 45) goto .77 else .80","count":52,"insns":[["addi s3, zero, 45",26],["bltu s2, s3, bb.80",26]],"history":[["cfg",-26,"cfg: retarget"]]}
+{"id":"s:regexMatch.134","text":"if (t31 >=u 45) goto .81 else .84","count":52,"insns":[["addi s3, zero, 45",26],["bltu s1, s3, bb.84",26]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.139","text":"if (first >=u 9) goto .85 else .88","count":52,"insns":[["addi s3, zero, 9",26],["bltu s2, s3, bb.88",26]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.149","text":"if (tail >=u 9) goto .95 else .98","count":52,"insns":[["addi s3, zero, 9",26],["bltu a5, s3, bb.98",26]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.157","text":"if (second >=u 9) goto .100 else .103","count":52,"insns":[["addi s2, zero, 9",26],["bltu s1, s2, bb.103",26]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.107","text":"store32[(inv1 + (tail << 2))+0] = state","count":51,"insns":[["slli s1, a5, 2",17],["add s1, a7, s1",17],["sw a6, 0(s1)",17]],"history":[["licm",-17,"licm: replace"]]}
+{"id":"s:regexMatch.221","text":"t40 = load32[(inv7 + (t39 << 2))+0]","count":48,"insns":[["slli s7, s7, 2",16],["add s7, s4, s7",16],["lw s7, 0(s7)",16]],"history":[["licm",-16,"licm: replace"]]}
+{"id":"s:regexMatch.268","text":"inRange_t3 = (inRange_code <= inRange_high)","count":46,"insns":[["slt s8, s9, s10",23],["xori s8, s8, 1",23]],"history":[]}
+{"id":"s:regexMatch.115","text":"if (head >= tail) goto .65 else .66","count":43,"insns":[["blt a4, a5, bb.66",43]],"history":[["simplify",0,"simplify: replace"],["rotate",28,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.113; loop test duplicated into bb:regexMatch.n5)"]]}
+{"id":"s:regexMatch.184","text":"code = load16[caddr(text, i)+4]","count":40,"insns":[["lw s1, 0(a1)",8],["bltu t1, s1, L5",8],["slli s1, t1, 1",8],["add s1, a1, s1",8],["lhu s1, 4(s1)",8]],"history":[["subst",0,"subst: replace"]]}
+{"id":"s:regexMatch.167","text":"if (tail >=u 9) goto .110 else .113","count":38,"insns":[["addi s2, zero, 9",19],["bltu a5, s2, bb.113",19]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.297","text":"if (head >= tail) goto .65 else .66","count":38,"insns":[["bge a4, a5, bb.65",19],["jal zero, bb.66",19]],"history":[["rotate",28,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.113; loop test duplicated into bb:regexMatch.n5)"]]}
+{"id":"s:regexMatch.103","text":"if (tail >=u 9) goto .58 else .61","count":34,"insns":[["addi s1, zero, 9",17],["bltu a5, s1, bb.61",17]],"history":[["cfg",-17,"cfg: retarget"]]}
+{"id":"s:regexMatch.203","text":"t37 = (row + 1)","count":32,"insns":[["addi s8, s7, 1",32]],"history":[]}
+{"id":"s:regexMatch.208","text":"t38 = (row + 2)","count":32,"insns":[["addi s9, s7, 2",32]],"history":[]}
+{"id":"s:regexMatch.263","text":"inRange_code = code","count":32,"insns":[["addi s10, s1, 0",32]],"history":[["inline",32,"inline: indirect"]]}
+{"id":"s:regexMatch.267","text":"if (inRange_code >= t44) goto .n2 else .n3","count":32,"insns":[["blt s10, s8, bb.n3",32]],"history":[["cfg",0,"cfg: move"],["subst",0,"subst: replace"]]}
+{"id":"s:regexMatch.215","text":"if inRange_t3 goto .145 else .156","count":32,"insns":[["beq s8, zero, bb.156",32]],"history":[["cfg",0,"cfg: move+retarget"],["subst",0,"subst: replace"]]}
+{"id":"s:regexMatch.217","text":"if (t39 >=u 45) goto .147 else .150","count":32,"insns":[["addi s8, zero, 45",16],["bltu s7, s8, bb.150",16]],"history":[["cfg",-16,"cfg: retarget"]]}
+{"id":"s:regexMatch.222","text":"if (t40 >=u 9) goto .151 else .154","count":32,"insns":[["addi s8, zero, 9",16],["bltu s7, s8, bb.154",16]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.179","text":"if (i == load32[text+0]) goto .47 else .120","count":26,"insns":[["lw s1, 0(a1)",9],["beq t1, s1, bb.47",9],["jal zero, bb.120",8]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.127","text":"t29 = (row + 3)","count":26,"insns":[["addi s2, s1, 3",26]],"history":[]}
+{"id":"s:regexMatch.133","text":"t31 = (row + 4)","count":26,"insns":[["addi s1, s1, 4",26]],"history":[]}
+{"id":"s:regexMatch.154","text":"tail = (tail + 1)","count":26,"insns":[["addi a5, a5, 1",26]],"history":[]}
+{"id":"frame","text":"frame","count":23,"insns":[["addi sp, sp, -336",1],["sw s1, 332(sp)",1],["sw s2, 328(sp)",1],["sw s3, 324(sp)",1],["sw s4, 320(sp)",1],["sw s5, 316(sp)",1],["sw s6, 312(sp)",1],["sw s7, 308(sp)",1],["sw s8, 304(sp)",1],["sw s9, 300(sp)",1],["sw s10, 296(sp)",1],["lw s1, 332(sp)",1],["lw s2, 328(sp)",1],["lw s3, 324(sp)",1],["lw s4, 320(sp)",1],["lw s5, 316(sp)",1],["lw s6, 312(sp)",1],["lw s7, 308(sp)",1],["lw s8, 304(sp)",1],["lw s9, 300(sp)",1],["lw s10, 296(sp)",1],["addi sp, sp, 336",1],["ret",1]],"history":[["inline",-50,"inline: indirect, frame"],["constprop",-4,"constprop: indirect, frame"],["licm",20,"licm: indirect, frame"]]}
+{"id":"s:regexMatch.269","text":"goto .n4","count":23,"insns":[["jal zero, bb.n4",23]],"history":[]}
+{"id":"s:regexMatch.23","text":"t42 = (load16[caddr(pattern, p)+4] == 42)","count":21,"insns":[["lw a5, 0(a0)",3],["bltu t0, a5, L4",3],["slli a5, t0, 1",3],["add a5, a0, a5",3],["lhu a5, 4(a5)",3],["xori a5, a5, 42",3],["sltiu a5, a5, 1",3]],"history":[["subst",0,"subst: replace"]]}
+{"id":"s:regexMatch.9","text":"low = load16[caddr(pattern, p)+4]","count":20,"insns":[["lw a2, 0(a0)",4],["bltu t0, a2, L1",4],["slli a2, t0, 1",4],["add a2, a0, a2",4],["lhu a2, 4(a2)",4]],"history":[["subst",0,"subst: replace"]]}
+{"id":"s:regexMatch.172","text":"tail = (tail + 1)","count":19,"insns":[["addi a5, a5, 1",19]],"history":[]}
+{"id":"s:regexMatch.298","text":"if (head >= tail) goto .65 else .66","count":18,"insns":[["bge a4, a5, bb.65",9],["jal zero, bb.66",9]],"history":[["rotate",28,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.113; loop test duplicated into bb:regexMatch.n5)"]]}
+{"id":"s:regexMatch.108","text":"tail = (tail + 1)","count":17,"insns":[["addi a5, a5, 1",17]],"history":[]}
+{"id":"s:regexMatch.56","text":"store32[(inv + (range << 2))+0] = 1","count":16,"insns":[["slli a6, a5, 2",4],["add a6, t2, a6",4],["addi a7, zero, 1",4],["sw a7, 0(a6)",4]],"history":[["constprop",4,"constprop: replace"],["licm",-4,"licm: replace"]]}
+{"id":"s:regexMatch.301","text":"if (state >= stateCount) goto .159 else .160","count":16,"insns":[["bge s6, t0, bb.159",8],["jal zero, bb.160",8]],"history":[["rotate",64,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.122; loop test duplicated into bb:regexMatch.164)"]]}
+{"id":"s:regexMatch.216","text":"t39 = (row + 3)","count":16,"insns":[["addi s7, s7, 3",16]],"history":[]}
+{"id":"s:regexMatch.13","text":"low = load16[caddr(pattern, (p + 1))+4]","count":12,"insns":[["addi a4, t0, 1",2],["lw a5, 0(a0)",2],["bltu a4, a5, L2",2],["slli a4, a4, 1",2],["add a4, a0, a4",2],["lhu a2, 4(a4)",2]],"history":[["subst",2,"subst: replace"]]}
+{"id":"s:regexMatch.15","text":"high = load16[caddr(pattern, (p + 3))+4]","count":12,"insns":[["addi a4, t0, 3",2],["lw a5, 0(a0)",2],["bltu a4, a5, L3",2],["slli a4, a4, 1",2],["add a4, a0, a4",2],["lhu a3, 4(a4)",2]],"history":[["subst",2,"subst: replace"]]}
+{"id":"s:regexMatch.33","text":"store32[(inv + (split << 2))+0] = 2","count":12,"insns":[["slli a6, a5, 2",3],["add a6, t2, a6",3],["addi a7, zero, 2",3],["sw a7, 0(a6)",3]],"history":[["constprop",3,"constprop: replace"],["licm",-3,"licm: replace"]]}
+{"id":"s:regexMatch.39","text":"store32[(inv + (t15 << 2))+0] = (s + 1)","count":12,"insns":[["slli a6, a6, 2",3],["add a6, t2, a6",3],["addi a7, t1, 1",3],["sw a7, 0(a6)",3]],"history":[["licm",-3,"licm: replace"]]}
+{"id":"s:regexMatch.45","text":"store32[(inv + (t16 << 2))+0] = (s + 2)","count":12,"insns":[["slli a5, a5, 2",3],["add a5, t2, a5",3],["addi a6, t1, 2",3],["sw a6, 0(a5)",3]],"history":[["licm",-3,"licm: replace"]]}
+{"id":"s:regexMatch.62","text":"store32[(inv + (t18 << 2))+0] = low","count":12,"insns":[["slli a6, a6, 2",4],["add a6, t2, a6",4],["sw a2, 0(a6)",4]],"history":[["licm",-4,"licm: replace"]]}
+{"id":"s:regexMatch.68","text":"store32[(inv + (t19 << 2))+0] = high","count":12,"insns":[["slli a2, a2, 2",4],["add a2, t2, a2",4],["sw a3, 0(a2)",4]],"history":[["licm",-4,"licm: replace"]]}
+{"id":"s:regexMatch.74","text":"store32[(inv + (t20 << 2))+0] = out","count":12,"insns":[["slli a2, a2, 2",4],["add a2, t2, a2",4],["sw a4, 0(a2)",4]],"history":[["licm",-4,"licm: replace"]]}
+{"id":"s:regexMatch.294","text":"if (p >= load32[pattern+0]) goto .2 else .3","count":11,"insns":[["lw a2, 0(a0)",4],["bge t0, a2, bb.2",4],["jal zero, bb.3",3]],"history":[["rotate",3,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.0; loop test duplicated into bb:regexMatch.40)"]]}
+{"id":"s:regexMatch.86","text":"zero frame+180, 36 bytes","count":9,"insns":[["sw zero, 180(sp)",1],["sw zero, 184(sp)",1],["sw zero, 188(sp)",1],["sw zero, 192(sp)",1],["sw zero, 196(sp)",1],["sw zero, 200(sp)",1],["sw zero, 204(sp)",1],["sw zero, 208(sp)",1],["sw zero, 212(sp)",1]],"history":[]}
+{"id":"s:regexMatch.87","text":"zero frame+216, 36 bytes","count":9,"insns":[["sw zero, 216(sp)",1],["sw zero, 220(sp)",1],["sw zero, 224(sp)",1],["sw zero, 228(sp)",1],["sw zero, 232(sp)",1],["sw zero, 236(sp)",1],["sw zero, 240(sp)",1],["sw zero, 244(sp)",1],["sw zero, 248(sp)",1]],"history":[]}
+{"id":"s:regexMatch.88","text":"zero frame+252, 36 bytes","count":9,"insns":[["sw zero, 252(sp)",1],["sw zero, 256(sp)",1],["sw zero, 260(sp)",1],["sw zero, 264(sp)",1],["sw zero, 268(sp)",1],["sw zero, 272(sp)",1],["sw zero, 276(sp)",1],["sw zero, 280(sp)",1],["sw zero, 284(sp)",1]],"history":[]}
+{"id":"s:regexMatch.93","text":"head = 0","count":9,"insns":[["addi a4, zero, 0",9]],"history":[]}
+{"id":"s:regexMatch.94","text":"tail = 0","count":9,"insns":[["addi a5, zero, 0",9]],"history":[]}
+{"id":"s:regexMatch.95","text":"state = 0","count":9,"insns":[["addi a6, zero, 0",9]],"history":[]}
+{"id":"s:regexMatch.276","text":"inv1 = inv9","count":9,"insns":[["addi a7, t2, 0",9]],"history":[["licm",9,"licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.49)"]]}
+{"id":"s:regexMatch.277","text":"inv2 = inv10","count":9,"insns":[["addi a0, t4, 0",9]],"history":[["licm",9,"licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.49)"]]}
+{"id":"s:regexMatch.295","text":"if (state >= stateCount) goto .n5 else .51","count":9,"insns":[["bge a6, t0, bb.n5",9]],"history":[["rotate",63,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.48; loop test duplicated into bb:regexMatch.62)"]]}
+{"id":"s:regexMatch.270","text":"inRange_t3 = 0","count":9,"insns":[["addi s8, zero, 0",9]],"history":[]}
+{"id":"s:regexMatch.279","text":"inv3 = frame+252","count":9,"insns":[["addi a6, sp, 252",9]],"history":[["licm",9,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)"]]}
+{"id":"s:regexMatch.280","text":"inv4 = frame+180","count":9,"insns":[["addi a7, sp, 180",9]],"history":[["licm",9,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)"]]}
+{"id":"s:regexMatch.281","text":"inv5 = frame+0","count":9,"insns":[["addi a0, sp, 0",9]],"history":[["licm",9,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)"]]}
+{"id":"s:regexMatch.11","text":"if (low == 91) goto .4 else .5","count":8,"insns":[["addi a4, zero, 91",4],["bne a2, a4, bb.5",4]],"history":[]}
+{"id":"s:regexMatch.21","text":"if (p < load32[pattern+0]) goto .7 else .8","count":8,"insns":[["lw a5, 0(a0)",4],["bge t0, a5, bb.8",4]],"history":[]}
+{"id":"s:regexMatch.51","text":"range = (5 * s)","count":8,"insns":[["addi a5, zero, 5",4],["mul a5, a5, t1",4]],"history":[]}
+{"id":"s:regexMatch.52","text":"if (range >=u 45) goto .25 else .28","count":8,"insns":[["addi a6, zero, 45",4],["bltu a5, a6, bb.28",4]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.58","text":"if (t18 >=u 45) goto .29 else .32","count":8,"insns":[["addi a7, zero, 45",4],["bltu a6, a7, bb.32",4]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.64","text":"if (t19 >=u 45) goto .33 else .36","count":8,"insns":[["addi a6, zero, 45",4],["bltu a2, a6, bb.36",4]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.70","text":"if (t20 >=u 45) goto .37 else .40","count":8,"insns":[["addi a3, zero, 45",4],["bltu a2, a3, bb.40",4]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.185","text":"state = 0","count":8,"insns":[["addi s2, zero, 0",8]],"history":[]}
+{"id":"s:regexMatch.282","text":"inv6 = inv11","count":8,"insns":[["addi s3, a2, 0",8]],"history":[["licm",8,"licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)"]]}
+{"id":"s:regexMatch.283","text":"inv7 = inv12","count":8,"insns":[["addi s4, a3, 0",8]],"history":[["licm",8,"licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)"]]}
+{"id":"s:regexMatch.284","text":"inv8 = inv10","count":8,"insns":[["addi s5, t4, 0",8]],"history":[["licm",8,"licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)"]]}
+{"id":"s:regexMatch.299","text":"if (state >= stateCount) goto .122 else .123","count":8,"insns":[["blt s2, t0, bb.123",8]],"history":[["rotate",56,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.120; loop test duplicated into bb:regexMatch.156)"]]}
+{"id":"s:regexMatch.234","text":"state = 0","count":8,"insns":[["addi s6, zero, 0",8]],"history":[]}
+{"id":"s:regexMatch.200","text":"t43 = 0","count":8,"insns":[["addi s8, zero, 0",8]],"history":[]}
+{"id":"s:regexMatch.201","text":"goto .134","count":8,"insns":[["jal zero, bb.134",8]],"history":[]}
+{"id":"s:regexMatch.255","text":"i = (i + 1)","count":8,"insns":[["addi t1, t1, 1",8]],"history":[]}
+{"id":"s:regexMatch.256","text":"goto .48","count":8,"insns":[["jal zero, bb.48",8]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.28","text":"split = (5 * s)","count":6,"insns":[["addi a5, zero, 5",3],["mul a5, a5, t1",3]],"history":[]}
+{"id":"s:regexMatch.29","text":"if (split >=u 45) goto .12 else .15","count":6,"insns":[["addi a6, zero, 45",3],["bltu a5, a6, bb.15",3]],"history":[["cfg",-3,"cfg: retarget"]]}
+{"id":"s:regexMatch.35","text":"if (t15 >=u 45) goto .16 else .19","count":6,"insns":[["addi a7, zero, 45",3],["bltu a6, a7, bb.19",3]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.41","text":"if (t16 >=u 45) goto .20 else .23","count":6,"insns":[["addi a6, zero, 45",3],["bltu a5, a6, bb.23",3]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.262","text":"return load32[(frame+180 + (accept << 2))+0]","count":6,"insns":[["addi s1, sp, 180",1],["slli s2, t3, 2",1],["add s1, s1, s2",1],["lw s1, 0(s1)",1],["addi a0, s1, 0",1],["jal zero, exit",1]],"history":[["inline",-1,"inline: indirect"],["licm",2,"licm: indirect"]]}
+{"id":"s:regexMatch.84","text":"store32[(frame+0 + (t22 << 2))+0] = 3","count":5,"insns":[["addi t0, sp, 0",1],["slli t1, t4, 2",1],["add t0, t0, t1",1],["addi t1, zero, 3",1],["sw t1, 0(t0)",1]],"history":[["constprop",1,"constprop: replace"]]}
+{"id":"s:regexMatch.10","text":"high = low","count":4,"insns":[["addi a3, a2, 0",4]],"history":[]}
+{"id":"s:regexMatch.20","text":"out = (s + 1)","count":4,"insns":[["addi a4, t1, 1",4]],"history":[]}
+{"id":"s:regexMatch.27","text":"if t42 goto .10 else .24","count":4,"insns":[["beq a5, zero, bb.24",4]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.57","text":"t18 = (range + 1)","count":4,"insns":[["addi a6, a5, 1",4]],"history":[]}
+{"id":"s:regexMatch.63","text":"t19 = (range + 2)","count":4,"insns":[["addi a2, a5, 2",4]],"history":[]}
+{"id":"s:regexMatch.69","text":"t20 = (range + 3)","count":4,"insns":[["addi a2, a5, 3",4]],"history":[]}
+{"id":"s:regexMatch.75","text":"s = (s + 1)","count":4,"insns":[["addi t1, t1, 1",4]],"history":[]}
+{"id":"s:regexMatch.80","text":"if (t22 >=u 45) goto .42 else .45","count":3,"insns":[["addi a2, zero, 45",1],["bgeu t4, a2, bb.42",1],["jal zero, bb.45",1]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.24","text":"goto .9","count":3,"insns":[["jal zero, bb.9",3]],"history":[]}
+{"id":"s:regexMatch.34","text":"t15 = (split + 3)","count":3,"insns":[["addi a6, a5, 3",3]],"history":[]}
+{"id":"s:regexMatch.40","text":"t16 = (split + 4)","count":3,"insns":[["addi a5, a5, 4",3]],"history":[]}
+{"id":"s:regexMatch.46","text":"out = s","count":3,"insns":[["addi a4, t1, 0",3]],"history":[]}
+{"id":"s:regexMatch.47","text":"s = (s + 1)","count":3,"insns":[["addi t1, t1, 1",3]],"history":[]}
+{"id":"s:regexMatch.48","text":"p = (p + 1)","count":3,"insns":[["addi t0, t0, 1",3]],"history":[]}
+{"id":"s:regexMatch.258","text":"if (accept >=u 9) goto .175 else .178","count":3,"insns":[["addi a4, zero, 9",1],["bgeu t3, a4, bb.175",1],["jal zero, bb.178",1]],"history":[["cfg",0,"cfg: retarget"]]}
+{"id":"s:regexMatch.293","text":"if (p >= load32[pattern+0]) goto .2 else .3","count":2,"insns":[["lw t3, 0(a0)",1],["blt t0, t3, bb.3",1]],"history":[["rotate",3,"rotate: replaceStmt (loop test duplicated into bb:regexMatch.0; loop test duplicated into bb:regexMatch.40)"]]}
+{"id":"s:regexMatch.79","text":"t22 = (5 * accept)","count":2,"insns":[["addi t4, zero, 5",1],["mul t4, t4, t3",1]],"history":[]}
+{"id":"s:regexMatch.16","text":"p = (p + 5)","count":2,"insns":[["addi t0, t0, 5",2]],"history":[]}
+{"id":"s:regexMatch.17","text":"goto .6","count":2,"insns":[["jal zero, bb.6",2]],"history":[]}
+{"id":"s:regexMatch.18","text":"p = (p + 1)","count":2,"insns":[["addi t0, t0, 1",2]],"history":[]}
+{"id":"s:regexMatch.89","text":"store32[frame+180+0] = 1","count":2,"insns":[["addi t1, zero, 1",1],["sw t1, 180(sp)",1]],"history":[]}
+{"id":"s:regexMatch.4","text":"p = 0","count":1,"insns":[["addi t0, zero, 0",1]],"history":[]}
+{"id":"s:regexMatch.5","text":"s = 0","count":1,"insns":[["addi t1, zero, 0",1]],"history":[]}
+{"id":"s:regexMatch.275","text":"inv = frame+0","count":1,"insns":[["addi t2, sp, 0",1]],"history":[["licm",1,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.1)"]]}
+{"id":"s:regexMatch.78","text":"accept = s","count":1,"insns":[["addi t3, t1, 0",1]],"history":[]}
+{"id":"s:regexMatch.25","text":"t42 = 0","count":1,"insns":[["addi a5, zero, 0",1]],"history":[]}
+{"id":"s:regexMatch.85","text":"stateCount = (accept + 1)","count":1,"insns":[["addi t0, t3, 1",1]],"history":[]}
+{"id":"s:regexMatch.90","text":"i = 0","count":1,"insns":[["addi t1, zero, 0",1]],"history":[]}
+{"id":"s:regexMatch.285","text":"inv9 = frame+252","count":1,"insns":[["addi t2, sp, 252",1]],"history":[["licm",1,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)"]]}
+{"id":"s:regexMatch.286","text":"inv10 = frame+180","count":1,"insns":[["addi t4, sp, 180",1]],"history":[["licm",1,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)"]]}
+{"id":"s:regexMatch.287","text":"inv11 = frame+216","count":1,"insns":[["addi a2, sp, 216",1]],"history":[["licm",1,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)"]]}
+{"id":"s:regexMatch.288","text":"inv12 = frame+0","count":1,"insns":[["addi a3, sp, 0",1]],"history":[["licm",1,"licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)"]]}
+{"id":"s:regexMatch.91","text":"goto .48","count":1,"insns":[["jal zero, bb.48",1]],"history":[["cfg",1,"cfg: retarget"]]}

@@ -1,0 +1,88 @@
+{"sampleIndex":20,"length":24,"totals":[{"rev":0,"pass":"ingest","instructions":3261},{"rev":1,"pass":"inline","instructions":2867},{"rev":2,"pass":"cfg","instructions":2843},{"rev":3,"pass":"simplify","instructions":2843},{"rev":4,"pass":"licm","instructions":2917},{"rev":5,"pass":"bce","instructions":2684},{"rev":6,"pass":"subst","instructions":2684},{"rev":7,"pass":"subst","instructions":2684},{"rev":8,"pass":"cfg","instructions":2684},{"rev":9,"pass":"subst","instructions":2684},{"rev":10,"pass":"rotate","instructions":2635}],"bce":[{"rev":5,"pass":"bce","decision":"bce: indirect, frame","because":[],"delta":12,"before":34,"after":46,"sites":[{"id":"frame","text":"frame"}]},{"rev":5,"pass":"bce","decision":"bce: indirect","because":[],"delta":-10,"before":20,"after":10,"sites":[{"id":"s:compress.53","text":"if (candidate >=u 24) goto .30 else .33"}]},{"rev":5,"pass":"bce","decision":"bce: indirect","because":[],"delta":-10,"before":20,"after":10,"sites":[{"id":"s:compress.64","text":"if (bestLen < 3) goto .36 else .37"}]},{"rev":5,"pass":"bce","decision":"bce: indirect","because":[],"delta":-20,"before":70,"after":50,"sites":[{"id":"s:compress.112","text":"t30 = (((((hash3_a * 31) + hash3_b) * 31) + hash3_c) & 15)"}]},{"rev":5,"pass":"bce","decision":"bce: replaceStmt (index is within the fixed bound 16)","because":["fact:ranges(compress)@r4: bucket in [0, 15]"],"delta":-20,"before":20,"after":0,"sites":[{"id":"s:compress.124","text":"goto .9"},{"id":"s:compress.15","text":"if (bucket >=u 16) goto .6 else .9"}]},{"rev":5,"pass":"bce","decision":"bce: indirect","because":[],"delta":-22,"before":44,"after":22,"sites":[{"id":"s:compress.83","text":"if (p >=u 24) goto .44 else .47"}]},{"rev":5,"pass":"bce","decision":"bce: indirect","because":[],"delta":-31,"before":62,"after":31,"sites":[{"id":"s:compress.31","text":"if (len < 6) goto .17 else .18"}]},{"rev":5,"pass":"bce","decision":"bce: indirect","because":[],"delta":-44,"before":154,"after":110,"sites":[{"id":"s:compress.118","text":"t33 = (((((hash3_a1 * 31) + hash3_b1) * 31) + hash3_c1) & 15)"}]},{"rev":5,"pass":"bce","decision":"bce: replaceStmt (index is within the fixed bound 16)","because":["fact:ranges(compress)@r4: bucket in [0, 15]"],"delta":-44,"before":44,"after":0,"sites":[{"id":"s:compress.125","text":"goto .51"},{"id":"s:compress.88","text":"if (bucket >=u 16) goto .48 else .51"}]},{"rev":5,"pass":"bce","decision":"bce: replaceStmt (index is within the fixed bound 16)","because":["fact:ranges(compress)@r4: bucket in [0, 15]"],"delta":-44,"before":44,"after":0,"sites":[{"id":"s:compress.126","text":"goto .55"},{"id":"s:compress.93","text":"if (bucket >=u 16) goto .52 else .55"}]}]}
+{"id":"s:compress.38","text":"current = load16[caddr(input, (i + len))+4]","instructions":180,"reductions":[]}
+{"id":"s:compress.40","text":"earlier = load16[caddr(input, (candidate + len))+4]","instructions":180,"reductions":[]}
+{"id":"s:compress.115","text":"hash3_b1 = load16[caddr(input, (p + 1))+4]","instructions":132,"reductions":[]}
+{"id":"s:compress.116","text":"hash3_c1 = load16[caddr(input, (p + 2))+4]","instructions":132,"reductions":[]}
+{"id":"s:compress.92","text":"store32[(inv2 + (p << 2))+0] = load32[(inv1 + (bucket << 2))+0]","instructions":132,"reductions":["r4 licm: replace"]}
+{"id":"s:compress.114","text":"hash3_a1 = load16[caddr(input, p)+4]","instructions":110,"reductions":[]}
+{"id":"s:compress.118","text":"t33 = (((((hash3_a1 * 31) + hash3_b1) * 31) + hash3_c1) & 15)","instructions":110,"reductions":["r5 bce: indirect"]}
+{"id":"s:roundTrip.30","text":"decompress_cell = load16[caddr(decompress_output, (decompress_written - decompress_distance))+4]","instructions":108,"reductions":[]}
+{"id":"s:roundTrip.32","text":"store16[caddr(decompress_output, decompress_written)+4] = decompress_cell","instructions":90,"reductions":[]}
+{"id":"s:compress.97","text":"store32[(inv1 + (bucket << 2))+0] = (p + 1)","instructions":88,"reductions":["r4 licm: replace"]}
+{"id":"s:compress.1","text":"zero frame+64, 96 bytes","instructions":74,"reductions":[]}
+{"id":"s:compress.109","text":"hash3_b = load16[caddr(input, (i + 1))+4]","instructions":60,"reductions":[]}
+{"id":"s:compress.110","text":"hash3_c = load16[caddr(input, (i + 2))+4]","instructions":60,"reductions":[]}
+{"id":"s:compress.32","text":"t32 = ((i + len) < n)","instructions":60,"reductions":[]}
+{"id":"s:compress.67","text":"store16[caddr(packed, k)+4] = load16[caddr(input, i)+4]","instructions":60,"reductions":[]}
+{"id":"s:compress.108","text":"hash3_a = load16[caddr(input, i)+4]","instructions":50,"reductions":[]}
+{"id":"s:compress.112","text":"t30 = (((((hash3_a * 31) + hash3_b) * 31) + hash3_c) & 15)","instructions":50,"reductions":["r5 bce: indirect"]}
+{"id":"s:roundTrip.15","text":"decompress_token = load16[caddr(decompress_packed, decompress_k)+4]","instructions":50,"reductions":[]}
+{"id":"s:compress.77","text":"if ((p + 3) <= n) goto .42 else .56","instructions":48,"reductions":[]}
+{"id":"frame","text":"frame","instructions":44,"reductions":["r1 inline: indirect, frame","r4 licm: indirect, frame","r10 rotate: indirect, frame"]}
+{"id":"s:compress.71","text":"store16[caddr(packed, k)+4] = ((128 | ((bestLen - 3) << 5)) | (bestDistance - 1))","instructions":40,"reductions":[]}
+{"id":"s:compress.134","text":"if (p >= inv3) goto .40 else .41","instructions":38,"reductions":[]}
+{"id":"s:roundTrip.39","text":"if (decompress_copied >= decompress_len) goto .n7 else .n10","instructions":32,"reductions":[]}
+{"id":"s:compress.36","text":"if !(t32) goto .20 else .21","instructions":31,"reductions":[]}
+{"id":"s:compress.19","text":"link = load32[(inv1 + (bucket << 2))+0]","instructions":30,"reductions":["r4 licm: replace"]}
+{"id":"s:compress.33","text":"goto .19","instructions":30,"reductions":[]}
+{"id":"s:compress.41","text":"if (current != earlier) goto .20 else .25","instructions":30,"reductions":[]}
+{"id":"s:compress.57","text":"link = load32[(inv + (candidate << 2))+0]","instructions":30,"reductions":["r4 licm: replace"]}
+{"id":"s:roundTrip.18","text":"store16[caddr(decompress_output, decompress_written)+4] = decompress_token","instructions":30,"reductions":[]}
+{"id":"s:compress.100","text":"p = (p + 1)","instructions":24,"reductions":[]}
+{"id":"s:compress.83","text":"if (p >=u 24) goto .44 else .47","instructions":22,"reductions":["r1 inline: indirect","r5 bce: indirect"]}
+{"id":"s:compress.128","text":"if (len < 6) goto .17 else .18","instructions":21,"reductions":[]}
+{"id":"s:compress.45","text":"len = (len + 1)","instructions":21,"reductions":[]}
+{"id":"s:compress.27","text":"if !(t31) goto .35 else .15","instructions":20,"reductions":[]}
+{"id":"s:compress.9","text":"if ((i + 3) <= n) goto .4 else .35","instructions":20,"reductions":[]}
+{"id":"s:roundTrip.16","text":"if ((decompress_token & 128) == 0) goto .n5 else .n6","instructions":20,"reductions":[]}
+{"id":"s:roundTrip.33","text":"decompress_written = (decompress_written + 1)","instructions":18,"reductions":[]}
+{"id":"s:roundTrip.34","text":"decompress_copied = (decompress_copied + 1)","instructions":18,"reductions":[]}
+{"id":"s:compress.0","text":"zero frame+0, 64 bytes","instructions":16,"reductions":[]}
+{"id":"s:compress.23","text":"t31 = (visits < chainLimit)","instructions":13,"reductions":[]}
+{"id":"s:compress.24","text":"goto .13","instructions":13,"reductions":[]}
+{"id":"s:roundTrip.21","text":"decompress_len = (((decompress_token >>> 5) & 3) + 3)","instructions":12,"reductions":[]}
+{"id":"s:compress.103","text":"i = (i + advance)","instructions":10,"reductions":[]}
+{"id":"s:compress.104","text":"k = (k + 1)","instructions":10,"reductions":[]}
+{"id":"s:compress.123","text":"inv3 = (i + advance)","instructions":10,"reductions":[]}
+{"id":"s:compress.127","text":"if (len < 6) goto .17 else .18","instructions":10,"reductions":[]}
+{"id":"s:compress.129","text":"if (link != 0) goto .11 else .12","instructions":10,"reductions":[]}
+{"id":"s:compress.130","text":"if (link != 0) goto .11 else .12","instructions":10,"reductions":[]}
+{"id":"s:compress.132","text":"if (i >= n) goto .2 else .3","instructions":10,"reductions":[]}
+{"id":"s:compress.133","text":"if (p >= inv3) goto .40 else .41","instructions":10,"reductions":[]}
+{"id":"s:compress.20","text":"visits = 0","instructions":10,"reductions":[]}
+{"id":"s:compress.28","text":"candidate = (link - 1)","instructions":10,"reductions":[]}
+{"id":"s:compress.29","text":"len = 0","instructions":10,"reductions":[]}
+{"id":"s:compress.48","text":"if (len > bestLen) goto .27 else .29","instructions":10,"reductions":["r1 inline: indirect"]}
+{"id":"s:compress.53","text":"if (candidate >=u 24) goto .30 else .33","instructions":10,"reductions":["r1 inline: indirect","r5 bce: indirect"]}
+{"id":"s:compress.58","text":"visits = (visits + 1)","instructions":10,"reductions":[]}
+{"id":"s:compress.63","text":"advance = 1","instructions":10,"reductions":[]}
+{"id":"s:compress.64","text":"if (bestLen < 3) goto .36 else .37","instructions":10,"reductions":["r1 inline: indirect","r5 bce: indirect"]}
+{"id":"s:compress.7","text":"bestLen = 0","instructions":10,"reductions":[]}
+{"id":"s:compress.74","text":"p = i","instructions":10,"reductions":[]}
+{"id":"s:compress.8","text":"bestDistance = 0","instructions":10,"reductions":[]}
+{"id":"s:roundTrip.25","text":"decompress_k = (decompress_k + 1)","instructions":10,"reductions":[]}
+{"id":"s:roundTrip.37","text":"if (decompress_k >= decompress_packedLen) goto .n3 else .n4","instructions":10,"reductions":[]}
+{"id":"s:roundTrip.22","text":"decompress_distance = ((decompress_token & 31) + 1)","instructions":8,"reductions":[]}
+{"id":"s:compress.25","text":"t31 = 0","instructions":7,"reductions":[]}
+{"id":"s:compress.68","text":"goto .38","instructions":6,"reductions":[]}
+{"id":"s:roundTrip.19","text":"decompress_written = (decompress_written + 1)","instructions":6,"reductions":[]}
+{"id":"s:roundTrip.20","text":"goto .n7","instructions":6,"reductions":[]}
+{"id":"s:compress.49","text":"bestLen = len","instructions":5,"reductions":[]}
+{"id":"s:compress.50","text":"bestDistance = (i - candidate)","instructions":5,"reductions":[]}
+{"id":"s:roundTrip.0","text":"t5 = compress(input, packed, chainLimit)","instructions":5,"reductions":[]}
+{"id":"backend","text":"backend","instructions":4,"reductions":["r1 inline: indirect"]}
+{"id":"s:compress.72","text":"advance = bestLen","instructions":4,"reductions":[]}
+{"id":"s:roundTrip.23","text":"decompress_copied = 0","instructions":4,"reductions":[]}
+{"id":"s:roundTrip.38","text":"if (decompress_copied >= decompress_len) goto .n7 else .n10","instructions":4,"reductions":[]}
+{"id":"s:compress.107","text":"return k","instructions":2,"reductions":[]}
+{"id":"s:roundTrip.3","text":"return decompress_written","instructions":2,"reductions":[]}
+{"id":"s:compress.121","text":"inv1 = frame+0","instructions":1,"reductions":[]}
+{"id":"s:compress.122","text":"inv2 = frame+64","instructions":1,"reductions":[]}
+{"id":"s:compress.131","text":"if (i >= n) goto .2 else .3","instructions":1,"reductions":[]}
+{"id":"s:compress.2","text":"n = load32[input+0]","instructions":1,"reductions":[]}
+{"id":"s:compress.3","text":"i = 0","instructions":1,"reductions":[]}
+{"id":"s:compress.34","text":"t32 = 0","instructions":1,"reductions":[]}
+{"id":"s:compress.4","text":"k = 0","instructions":1,"reductions":[]}
+{"id":"s:roundTrip.36","text":"if (decompress_k >= decompress_packedLen) goto .n3 else .n4","instructions":1,"reductions":[]}
+{"id":"s:roundTrip.8","text":"decompress_written = 0","instructions":1,"reductions":[]}
+{"id":"s:roundTrip.9","text":"decompress_k = 0","instructions":1,"reductions":[]}

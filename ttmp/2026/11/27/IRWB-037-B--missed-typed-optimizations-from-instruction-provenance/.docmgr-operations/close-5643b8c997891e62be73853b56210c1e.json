@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "8fa9ec222c6f6b70de240a770a9dc48ac5c84bbf3a8dff871ae4a8bd192d1bb0",
+  "request": {
+    "ticket": "IRWB-037-B",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed both fixture and corpus comparisons, verified the checked pass, and recorded the final suite and parity results."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-5643b8c997891e62be73853b56210c1e",
+    "state": "committed",
+    "created_at": "2026-11-27T17:59:05.564244446Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "31edc4ac843724bbf1cdc5edd5e435b203e1fe77fdf0d55ddef02294a661ca98",
+      "index.md": "f6051c309db57fdc5913bf164e40fc2727fd2da4633b8c51e4c15f9d72cf2458"
+    },
+    "after": {
+      "changelog.md": "cd66ea41930478ff1996a4c9c1365ba616725377d22df82e10c2bd74980d18e9",
+      "index.md": "56c381402b66076eb9a9011b5b144dc1254d2ca2932248ec9a47fca52adc3225"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "31edc4ac843724bbf1cdc5edd5e435b203e1fe77fdf0d55ddef02294a661ca98",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKTWVhc3VyZWQgdGhlIEQxIGJhc2VsaW5lLCB2ZXJpZmllZCBhIG5ldXRyYWwgbXVsdGlwbHkgcmV3cml0ZSwgYW5kIGVsaW1pbmF0ZWQgcHJvdmVuIGZpeGVkLWFycmF5IGd1YXJkcyBpbiB0aGUgY2hlY2tlZCBCQ0UgcGFzcy4KCiMjIDIwMjYtMTEtMjcKCkNvbXBsZXRlZCBib3RoIGZpeHR1cmUgYW5kIGNvcnB1cyBjb21wYXJpc29ucywgdmVyaWZpZWQgdGhlIGNoZWNrZWQgcGFzcywgYW5kIHJlY29yZGVkIHRoZSBmaW5hbCBzdWl0ZSBhbmQgcGFyaXR5IHJlc3VsdHMuCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "f6051c309db57fdc5913bf164e40fc2727fd2da4633b8c51e4c15f9d72cf2458",
+      "after": "LS0tClRpdGxlOiBNaXNzZWQgVHlwZWQgb3B0aW1pemF0aW9ucyBmcm9tIGluc3RydWN0aW9uIHByb3ZlbmFuY2UKVGlja2V0OiBJUldCLTAzNy1CClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBwZXJmb3JtYW5jZQpEb2NUeXBlOiBpbmRleApJbnRlbnQ6IGxvbmctdGVybQpPd25lcnM6IFtdClJlbGF0ZWRGaWxlczoKICAgIC0gUGF0aDogcmVwbzovL3NyYy90eXBlZC9hbmFseXNlcy50cwogICAgICBOb3RlOiBVbnNpZ25lZCBzdWNjZXNzIGVkZ2UgcmVmaW5lbWVudAogICAgLSBQYXRoOiByZXBvOi8vc3JjL3R5cGVkL2F0dHJpYnV0ZS50cwogICAgICBOb3RlOiBGaW5hbCBkeW5hbWljIGNvc3QgYnkgc2l0ZQogICAgLSBQYXRoOiByZXBvOi8vc3JjL3R5cGVkL3Bhc3Nlcy50cwogICAgICBOb3RlOiBGaXhlZCBhcnJheSBib3VuZHMgZWxpbWluYXRpb24KRXh0ZXJuYWxTb3VyY2VzOiBbXQpTdW1tYXJ5OiAiIgpMYXN0VXBkYXRlZDogMjAyNi0xMS0yN1QxMjo1OTowNS41NjQwNTE0NjktMDU6MDAKV2hhdEZvcjogIiIKV2hlblRvVXNlOiAiIgotLS0KCiMgTWlzc2VkIFR5cGVkIG9wdGltaXphdGlvbnMgZnJvbSBpbnN0cnVjdGlvbiBwcm92ZW5hbmNlCgojIyBPdXRjb21lCgpUaGUgY2hlY2tlZCBib3VuZHMgcGFzcyBzYXZlcyAzNDYgaW5zdHJ1Y3Rpb25zIG9uIHRoZSBoaXN0b3JpY2FsIHJlZ2V4IGZpeHR1cmUgYW5kIDExLDM0NyBvbiBMWi4gQ29ycHVzIHNwZWVkIHNhdmVzIDUsMTg3IGluc3RydWN0aW9ucyBhY3Jvc3MgNTAgcHJvamVjdHMuIFRoZSBmaW5hbCByZXBvcnQgcmVjb3JkcyB0aGUgY29zdHMgb2YgaW5kaXZpZHVhbCBndWFyZHMsIHRoZSBuZXV0cmFsIHZlcmlmaWVkIHJ1bGUsIHRoZSBmaXh0dXJlIGFuZCBjb3JwdXMgcHJvdG9jb2xzLCBhbmQgdGhlIHZlcmlmaWNhdGlvbiBsaW1pdHMuCgotIFtEZXNpZ25dKGRlc2lnbi1kb2MvMDEtdHJhY2luZy1yZXNpZHVhbC1pbnN0cnVjdGlvbi1jb3N0Lm1kKQotIFtGaW5hbCByZXBvcnRdKHJlZmVyZW5jZS8wMi1tZWFzdXJlZC1yZXN1bHRzLWFuZC12ZXJpZmljYXRpb24ubWQpCi0gW0ltcGxlbWVudGF0aW9uIGRpYXJ5XShyZWZlcmVuY2UvMDEtaW1wbGVtZW50YXRpb24tZGlhcnkubWQpCi0gW1JlcHJvZHVjdGlvbiBzY3JpcHRzXShzY3JpcHRzLykKLSBbTWVhc3VyZW1lbnRzIGFuZCB2ZXJpZmljYXRpb24gb3V0cHV0XSh2YXJpb3VzLykK"
+    }
+  ]
+}

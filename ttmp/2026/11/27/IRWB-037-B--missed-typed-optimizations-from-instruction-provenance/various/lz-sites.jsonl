@@ -1,0 +1,17 @@
+{"sampleIndex":0,"length":0,"totals":[{"rev":0,"pass":"ingest","instructions":154},{"rev":1,"pass":"inline","instructions":153},{"rev":2,"pass":"cfg","instructions":155},{"rev":3,"pass":"simplify","instructions":155},{"rev":4,"pass":"licm","instructions":148},{"rev":5,"pass":"bce","instructions":160},{"rev":6,"pass":"subst","instructions":160},{"rev":7,"pass":"subst","instructions":160},{"rev":8,"pass":"cfg","instructions":160},{"rev":9,"pass":"subst","instructions":160},{"rev":10,"pass":"rotate","instructions":156}],"bce":[{"rev":5,"pass":"bce","decision":"bce: indirect, frame","because":[],"delta":12,"before":34,"after":46,"sites":[{"id":"frame","text":"frame"}]}]}
+{"id":"s:compress.1","text":"zero frame+64, 96 bytes","instructions":74,"reductions":[]}
+{"id":"frame","text":"frame","instructions":44,"reductions":["r4 licm: indirect, frame","r10 rotate: indirect, frame"]}
+{"id":"s:compress.0","text":"zero frame+0, 64 bytes","instructions":16,"reductions":[]}
+{"id":"s:roundTrip.0","text":"t5 = compress(input, packed, chainLimit)","instructions":5,"reductions":[]}
+{"id":"backend","text":"backend","instructions":4,"reductions":["r1 inline: indirect"]}
+{"id":"s:compress.107","text":"return k","instructions":2,"reductions":[]}
+{"id":"s:roundTrip.3","text":"return decompress_written","instructions":2,"reductions":[]}
+{"id":"s:compress.121","text":"inv1 = frame+0","instructions":1,"reductions":[]}
+{"id":"s:compress.122","text":"inv2 = frame+64","instructions":1,"reductions":[]}
+{"id":"s:compress.131","text":"if (i >= n) goto .2 else .3","instructions":1,"reductions":[]}
+{"id":"s:compress.2","text":"n = load32[input+0]","instructions":1,"reductions":[]}
+{"id":"s:compress.3","text":"i = 0","instructions":1,"reductions":[]}
+{"id":"s:compress.4","text":"k = 0","instructions":1,"reductions":[]}
+{"id":"s:roundTrip.36","text":"if (decompress_k >= decompress_packedLen) goto .n3 else .n4","instructions":1,"reductions":[]}
+{"id":"s:roundTrip.8","text":"decompress_written = 0","instructions":1,"reductions":[]}
+{"id":"s:roundTrip.9","text":"decompress_k = 0","instructions":1,"reductions":[]}

@@ -1,0 +1,3 @@
+{"rule":"five-times","version":"1","fingerprint":"df51ba05a6189f91587bea25aab29a1f4c07e2cfd11eecfe49fca5d1cb235c6d","verdict":"sound","strength":"proof","methods":[{"method":"structural","verdict":"pass","ms":1},{"method":"symbolic-linear","verdict":"pass","instances":1,"detail":"normal forms equal","ms":2},{"method":"random-32","verdict":"pass","cases":100048,"detail":"boundary values crossed (48), then random","ms":132}]}
+{"candidate":false,"firings":[],"instructions":6933}
+{"candidate":true,"firings":[["five-times",4]],"instructions":6933}

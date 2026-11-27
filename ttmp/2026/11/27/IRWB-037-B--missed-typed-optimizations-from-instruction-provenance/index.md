@@ -1,52 +1,35 @@
 ---
 Title: Missed Typed optimizations from instruction provenance
 Ticket: IRWB-037-B
-Status: active
+Status: complete
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/analyses.ts
+      Note: Unsigned success edge refinement
+    - Path: repo://src/typed/attribute.ts
+      Note: Final dynamic cost by site
+    - Path: repo://src/typed/passes.ts
+      Note: Fixed array bounds elimination
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T12:39:21.074352673-05:00
+LastUpdated: 2026-11-27T12:59:05.564051469-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Missed Typed optimizations from instruction provenance
 
-## Overview
+## Outcome
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+The checked bounds pass saves 346 instructions on the historical regex fixture and 11,347 on LZ. Corpus speed saves 5,187 instructions across 50 projects. The final report records the costs of individual guards, the neutral verified rule, the fixture and corpus protocols, and the verification limits.
 
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- typed
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design](design-doc/01-tracing-residual-instruction-cost.md)
+- [Final report](reference/02-measured-results-and-verification.md)
+- [Implementation diary](reference/01-implementation-diary.md)
+- [Reproduction scripts](scripts/)
+- [Measurements and verification output](various/)
