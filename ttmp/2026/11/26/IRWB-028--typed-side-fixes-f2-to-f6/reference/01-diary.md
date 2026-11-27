@@ -60,3 +60,11 @@ F2 follow-up: the broad run found chess's fixture still omitted signatures, caus
 The corpus-wide workbench metadata regression initially failed with `parseProjectMeta is not a function`. Extracted the existing Typed metadata parser and reused it in the workbench, retaining its defaults and malformed-JSON fallback; the regression passes for every corpus project.
 
 Final validation: `npm run build` passed; `node --test tests/typed/*.test.mjs tests/workbench/*.test.mjs` passed 173 of 176 tests, with 3 skipped. Prettier was unavailable in this worktree; changed TypeScript follows the existing formatting manually.
+
+## F5 review follow-up
+
+The prior F5 replaced regression quantities with nonzero checks; the review correctly identified that as a loss of coverage. Measured every project through the existing test paths with `scripts/02-measure.mjs` and recorded the values in a shared per-project table. Each affected test now checks its own functions, cases, sizes, SSA gets or tape classification against that row. The backend also checks that the corpus and table contain the same projects.
+
+Chapter 13 was present at revision `ea1d742`; its tree contains 44 projects. `scripts/03-expectations.mjs` measured precisely 70 reference functions, 6,986 decided and 14 inconclusive cases, and 5,160/7,628 image bytes for that set; pipeline parity is 7,000 total, 6,986 agreed and 14 inconclusive. The tests preserve those figures for the historical set separately from current per-project checks.
+
+`scripts/04-extra-project.mjs` copied Blend, verified the missing-row error, added one copied row, and ran all affected tests in full mode: 6 passed. It restored the table and removed the project. `npm run build` passed, and the Typed/workbench suite reported 176 tests: 173 passed, 3 skipped, 0 failed. After adding project-set coverage the targeted backend test and the six full temporary-project checks passed again.

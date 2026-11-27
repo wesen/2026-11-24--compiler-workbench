@@ -1,4 +1,5 @@
 // IRWB-006 A1 and A2: the SSA view of typed.blocks, validated against reaching definitions, and SCCP on it.
+import { expectation } from './corpus-expectations.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installVendor } from '../../tools/node-vendor.mjs';
@@ -50,15 +51,13 @@ test('A1: Blend at r0: phis at the loop head, names mapped back to statements an
 });
 
 test('A1: on every corpus function at r0, SSA def-use agrees with reaching definitions', async () => {
-  let fns = 0, gets = 0;
   for (const id of projectIds()) {
-    for (const c of await checkAll(ingestProject(projectSource(id, projectFiles(id))))) {
-      assert.deepEqual([c.mismatches, c.violations], [[], []], `${id} ${c.fn}`);
-      fns++;
-      gets += c.gets;
-    }
+    const expected = expectation(id);
+    const checks = await checkAll(ingestProject(projectSource(id, projectFiles(id))));
+    for (const c of checks) assert.deepEqual([c.mismatches, c.violations], [[], []], `${id} ${c.fn}`);
+    assert.equal(checks.length, expected.fns, `${id}: functions`);
+    assert.equal(checks.reduce((n, c) => n + c.gets, 0), expected.gets, `${id}: SSA gets`);
   }
-  assert.ok(fns > 0 && gets > 0);
 });
 
 test('A1: the check sees a wrong name, and a loop whose header is the entry block gets entry phis', async () => {

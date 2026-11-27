@@ -1,0 +1,1052 @@
+{
+  "across-calls": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 17,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      192,
+      200
+    ]
+  },
+  "algebra": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 8,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      8,
+      68
+    ]
+  },
+  "blend": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 13,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      88,
+      176
+    ]
+  },
+  "bounds-lab": {
+    "fns": 4,
+    "p24": 0,
+    "gets": 52,
+    "tape": "checked",
+    "ref": {
+      "fns": 4,
+      "decided": 400,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 4,
+      "total": 400,
+      "agree": 400,
+      "inconclusive": 0
+    },
+    "bytes": [
+      280,
+      428
+    ]
+  },
+  "bounds-offset": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 16,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      100,
+      116
+    ]
+  },
+  "bounds-param": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 10,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      60,
+      132
+    ]
+  },
+  "bounds-two": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 16,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      84,
+      108
+    ]
+  },
+  "branches": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 6,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      104,
+      132
+    ]
+  },
+  "bytecode-vm": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 76,
+    "tape": "skipped",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      908,
+      832
+    ]
+  },
+  "call-chain": {
+    "fns": 3,
+    "p24": 0,
+    "gets": 9,
+    "tape": "identical",
+    "ref": {
+      "fns": 3,
+      "decided": 300,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 3,
+      "total": 300,
+      "agree": 300,
+      "inconclusive": 0
+    },
+    "bytes": [
+      172,
+      176
+    ]
+  },
+  "calls": {
+    "fns": 3,
+    "p24": 0,
+    "gets": 26,
+    "tape": "identical",
+    "ref": {
+      "fns": 3,
+      "decided": 300,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 3,
+      "total": 300,
+      "agree": 300,
+      "inconclusive": 0
+    },
+    "bytes": [
+      212,
+      252
+    ]
+  },
+  "checksum": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 10,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      52,
+      80
+    ]
+  },
+  "chess-search": {
+    "fns": 50,
+    "p24": 0,
+    "gets": 1516,
+    "tape": "checked",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 50,
+      "total": 5000,
+      "agree": 5000,
+      "inconclusive": 0
+    },
+    "bytes": [
+      13256,
+      20140
+    ]
+  },
+  "collatz": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 9,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      88,
+      132
+    ]
+  },
+  "constants": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 8,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      28,
+      64
+    ]
+  },
+  "dead-code": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 6,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      12,
+      100
+    ]
+  },
+  "diagnostics": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 2,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      12,
+      36
+    ]
+  },
+  "distinct": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 9,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      112,
+      148
+    ]
+  },
+  "div-checks": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 17,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      88,
+      168
+    ]
+  },
+  "div-magic": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 14,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      136,
+      192
+    ]
+  },
+  "early-exit": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 11,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      60,
+      88
+    ]
+  },
+  "f32-dsp": {
+    "fns": 3,
+    "p24": 0,
+    "gets": 206,
+    "tape": "checked",
+    "ref": {
+      "fns": 3,
+      "decided": 300,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 3,
+      "total": 300,
+      "agree": 300,
+      "inconclusive": 0
+    },
+    "bytes": [
+      1444,
+      1312
+    ]
+  },
+  "first-steps": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 5,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      64,
+      104
+    ]
+  },
+  "fixed-point": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 18,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      128,
+      180
+    ]
+  },
+  "fragments": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 13,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      88,
+      176
+    ]
+  },
+  "gcd": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 8,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      36,
+      72
+    ]
+  },
+  "heat-lab": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 42,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      240,
+      284
+    ]
+  },
+  "histogram": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 31,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      176,
+      204
+    ]
+  },
+  "licm-nested": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 13,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      68,
+      92
+    ]
+  },
+  "licm-traps": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 8,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      68,
+      92
+    ]
+  },
+  "lz-roundtrip": {
+    "fns": 4,
+    "p24": 0,
+    "gets": 127,
+    "tape": "skipped",
+    "ref": {
+      "fns": 4,
+      "decided": 400,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 4,
+      "total": 400,
+      "agree": 400,
+      "inconclusive": 0
+    },
+    "bytes": [
+      1404,
+      1532
+    ]
+  },
+  "match-enum": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 29,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      156,
+      212
+    ]
+  },
+  "my-analysis": {
+    "fns": 1,
+    "p24": 4,
+    "gets": 7,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 86,
+      "inconclusive": 14
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 86,
+      "inconclusive": 14
+    },
+    "bytes": [
+      52,
+      92
+    ]
+  },
+  "my-first-pass": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 6,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      20,
+      48
+    ]
+  },
+  "nested-loops": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 12,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      60,
+      84
+    ]
+  },
+  "orders": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 24,
+    "tape": "checked",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      136,
+      328
+    ]
+  },
+  "params-demo": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 13,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      88,
+      176
+    ]
+  },
+  "pressure": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 34,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      96,
+      196
+    ]
+  },
+  "ramp": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 18,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      80,
+      120
+    ]
+  },
+  "records": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 26,
+    "tape": "identical",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      112,
+      168
+    ]
+  },
+  "regalloc-lab": {
+    "fns": 3,
+    "p24": 0,
+    "gets": 56,
+    "tape": "checked",
+    "ref": {
+      "fns": 3,
+      "decided": 300,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 3,
+      "total": 300,
+      "agree": 300,
+      "inconclusive": 0
+    },
+    "bytes": [
+      348,
+      460
+    ]
+  },
+  "regex-nfa": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 146,
+    "tape": "skipped",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      2028,
+      1572
+    ]
+  },
+  "sha-chacha": {
+    "fns": 5,
+    "p24": 0,
+    "gets": 457,
+    "tape": "skipped",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 5,
+      "total": 500,
+      "agree": 500,
+      "inconclusive": 0
+    },
+    "bytes": [
+      5496,
+      5908
+    ]
+  },
+  "sort": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 42,
+    "tape": "checked",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      240,
+      284
+    ]
+  },
+  "start-here": {
+    "fns": 4,
+    "p24": 0,
+    "gets": 40,
+    "tape": "checked",
+    "ref": {
+      "fns": 4,
+      "decided": 400,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 4,
+      "total": 400,
+      "agree": 400,
+      "inconclusive": 0
+    },
+    "bytes": [
+      312,
+      452
+    ]
+  },
+  "strength": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 18,
+    "tape": "checked",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      116,
+      192
+    ]
+  },
+  "strings": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 33,
+    "tape": "checked",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      228,
+      288
+    ]
+  },
+  "ui-gallery": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 20,
+    "tape": "checked",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      176,
+      280
+    ]
+  },
+  "value-numbering": {
+    "fns": 1,
+    "p24": 0,
+    "gets": 8,
+    "tape": "identical",
+    "ref": {
+      "fns": 1,
+      "decided": 100,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 1,
+      "total": 100,
+      "agree": 100,
+      "inconclusive": 0
+    },
+    "bytes": [
+      92,
+      128
+    ]
+  },
+  "wrong-shift": {
+    "fns": 2,
+    "p24": 0,
+    "gets": 11,
+    "tape": "checked",
+    "ref": {
+      "fns": 2,
+      "decided": 200,
+      "inconclusive": 0
+    },
+    "parity": {
+      "fns": 2,
+      "total": 200,
+      "agree": 200,
+      "inconclusive": 0
+    },
+    "bytes": [
+      92,
+      120
+    ]
+  }
+}
