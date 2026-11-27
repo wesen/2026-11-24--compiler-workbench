@@ -1,0 +1,3 @@
+{"p":0,"revision":"original","statements":4,"kernels":2,"groups":["thread:t0,t1,t2","thread:t3"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":0,"revision":"inline+split","statements":2,"kernels":2,"groups":["thread:t2","thread:t3"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":1,"revision":"original","statements":2,"kernels":1,"groups":["block:t0,t1"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
