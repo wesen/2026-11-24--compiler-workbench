@@ -44,3 +44,7 @@ Required the existing signatures argument: smaller than changing the reference c
 ## F3
 
 `node --test tests/typed/reference-check.test.mjs` failed with 83 functions instead of blend's one. Selecting and validating requested ids makes it pass; no ids still selects the corpus.
+
+## F4
+
+The already-wrapped list regression in `tests/typed/format.test.mjs` failed because continuation lines lost their spaces. Preserving their existing indent when wrapping makes it pass and preserves idempotence.

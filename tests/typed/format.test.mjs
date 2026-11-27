@@ -52,3 +52,10 @@ test('format: strategy presets and plans fit TILE_WIDTH', () => {
     assert.ok(width(S.toJson(S.planFromSpec(name, JSON.parse(text)))) <= TILE_WIDTH);
   }
 });
+
+test('format: already wrapped list continuations remain indented and idempotent', () => {
+  const input = '- short item\n  ' + 'continuation '.repeat(12).trim() + '\n';
+  const output = wrapProse(input, 40);
+  assert.ok(output.trimEnd().split('\n').slice(1).every(line => line.startsWith('  ')), output);
+  assert.equal(wrapProse(output, 40), output);
+});

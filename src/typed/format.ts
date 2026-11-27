@@ -118,7 +118,10 @@ export function wrapProse(markdown: string, width = TILE_WIDTH): string {
     } else {
       const q = /^(> ?)(.*)$/.exec(l);
       if (q) out.push(...wrapWords(q[2].split(/\s+/).filter(Boolean), q[1], q[1], width));
-      else out.push(...wrapWords(l.trim().split(/\s+/).filter(Boolean), '', '', width));
+      else {
+        const indent = /^\s*/.exec(l)![0];
+        out.push(...wrapWords(l.trim().split(/\s+/).filter(Boolean), indent, indent, width));
+      }
     }
     i++;
   }
