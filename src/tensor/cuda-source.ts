@@ -470,17 +470,24 @@ function emitGroup(
     const area = (c: (r: Reduce) => string) =>
       // (a ternary: std::max is not callable in device code, probe in diary step 2)
       staging.map(rs => rs.map(c).join(' + ')).reduce((a, b) => (a ? `((${a}) > (${b}) ? (${a}) : (${b}))` : b), '');
+    // A member written in place (fusion.ts) has no buffer of its own.
+    const over = new Map(group.inPlace.map(p => [p.statement, p.over]));
+    const owners = rowBuffers.filter(n => !over.has(n));
     const row = [
-      ...rowBuffers.map(n => `n${suffix(n)}`),
+      ...owners.map(n => `n${suffix(n)}`),
       ...(staging.length ? [area(r => `c${termIds.get(r)}`)] : []),
     ].join(' + ');
     w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
-    rowBuffers.forEach((name, i) =>
-      w.line(
-        `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
-      ),
-    );
-    const last = rowBuffers.at(-1);
+    for (const name of rowBuffers) {
+      const i = owners.indexOf(name);
+      const at = over.has(name)
+        ? `r${suffix(over.get(name)!)}`
+        : i
+          ? `r${suffix(owners[i - 1])} + n${suffix(owners[i - 1])}`
+          : 'base';
+      w.line(`float* const r${suffix(name)} = ${at};`);
+    }
+    const last = owners.at(-1);
     if (staging.length) w.line(`float* const terms = ${last ? `r${suffix(last)} + n${suffix(last)}` : 'base'};`);
     for (const name of group.staged) {
       const s = suffix(name);
@@ -529,7 +536,7 @@ function emitGroup(
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
     lengths.push(...staging.flat().map(count));
-    const hostRow = [...rowBuffers.map(n => lengthOf(n, hostDim)), ...(staging.length ? [area(count)] : [])].join(
+    const hostRow = [...owners.map(n => lengthOf(n, hostDim)), ...(staging.length ? [area(count)] : [])].join(
       ' + ',
     );
     host.push(
