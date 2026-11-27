@@ -146,10 +146,19 @@ interface Reuse {
   readonly cases: readonly unknown[];
   readonly outcomes: unknown[];
   readonly verdicts: Map<string, Decided>;
+  readonly pending: Map<string, Promise<Decided>>;
 }
 const REUSE = new Map<string, Reuse>();
 const REUSE_MAX = 4;
 let reuseEnabled = true;
+
+function trimReuse(active?: Reuse): void {
+  for (const [key, reuse] of REUSE) {
+    if (REUSE.size <= REUSE_MAX) break;
+    if (reuse !== active && reuse.pending.size === 0) REUSE.delete(key);
+  }
+}
+
 /** Turn the reuse of cases, baseline outcomes and verdicts on or off (tests and measurements compare both). */
 export function setDifferentialReuse(enabled: boolean): void {
   reuseEnabled = enabled;
@@ -178,9 +187,10 @@ function prepare<P extends Ports, Case, Outcome>(
       cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),
       outcomes: [],
       verdicts: new Map(),
+      pending: new Map(),
     };
   REUSE.set(key, reuse);
-  while (REUSE.size > REUSE_MAX) REUSE.delete(REUSE.keys().next().value!);
+  trimReuse(reuse);
   return { cases: reuse.cases as readonly Case[], reuse };
 }
 
@@ -303,21 +313,64 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
   const keys = memoKeys(spec, inputs, cases, reuse);
   const verdicts: Decided[] = new Array(cases.length);
   const todo: number[] = [];
+  const waiting: Promise<void>[] = [];
+  const collect = (i: number, pending: Promise<Decided>) => {
+    waiting.push(
+      pending.then(verdict => {
+        verdicts[i] = verdict;
+      }),
+    );
+  };
   for (let i = 0; i < cases.length; i++) {
-    const known = keys[i] === undefined ? undefined : reuse!.verdicts.get(keys[i]!);
+    const key = keys[i];
+    const known = key === undefined ? undefined : reuse!.verdicts.get(key);
     if (known) {
       verdicts[i] = known;
       STATS.replayed++;
-    } else todo.push(i);
+      continue;
+    }
+    const pending = key === undefined ? undefined : reuse!.pending.get(key);
+    if (pending) collect(i, pending);
+    else todo.push(i);
   }
-  const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
-  if (elsewhere) {
-    const decided = await elsewhere;
-    if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
-    todo.forEach((i, k) => (verdicts[i] = decided[k]));
-    STATS.delegated += todo.length;
-  } else for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
-  for (const i of todo) if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+  try {
+    const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
+    if (elsewhere) {
+      const batch = elsewhere.then(decided => {
+        if (decided.length !== todo.length)
+          throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
+        STATS.delegated += todo.length;
+        return decided;
+      });
+      todo.forEach((i, k) => {
+        const key = keys[i];
+        let pending = batch.then(decided => decided[k]);
+        if (key !== undefined) {
+          pending = pending
+            .then(verdict => {
+              reuse!.verdicts.set(key, verdict);
+              return verdict;
+            })
+            .finally(() => {
+              reuse!.pending.delete(key);
+              if (reuse!.pending.size === 0) trimReuse();
+            });
+          reuse!.pending.set(key, pending);
+        }
+        collect(i, pending);
+      });
+    } else {
+      for (const i of todo) {
+        verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+        if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+      }
+    }
+  } catch (error) {
+    // A synchronous failure can occur while this check is also joining another batch.
+    void Promise.all(waiting).catch(() => {});
+    throw error;
+  }
+  await Promise.all(waiting);
   return tally(spec, seed, cases, verdicts, maxCounterexamples);
 }
 
