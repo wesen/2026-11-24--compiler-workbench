@@ -85,9 +85,7 @@ and a head the loop analysis does not know (irreducible, as `rotate` can make) f
   sentence covers this; the first does not. chess-search is the only such project.
 * The `fits` fallback in `evalRange` loses the lower bound on a wrapping add. It is the honest interval answer and
   not where the defect starts, so I left it; a wrapping-aware add is in the "Later" list.
-* The header comment of `src/typed/analyses.ts` still says the dataflow facts are "the prototype's" and names
-  `widenAfter: 3` as the prototype's. After this change the ranges are no longer bit-identical to Compiler
-  Workbench's; I did not rewrite that sentence because the prototype comparison is outside this step's scope.
-  Flagged rather than silently changed.
+* The header comment of `src/typed/analyses.ts` said the dataflow facts are "the prototype's"; after this change
+  the ranges no longer are, so the header now names the one deliberate difference and why.
 * Not touched: `src/tensor/`, `intervalLattice`, `loopsOf` (reused, unchanged), and the `frequency.ts` Tarjan SCC
   that could share a framework `cycles(graph)` helper.

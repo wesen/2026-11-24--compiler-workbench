@@ -12,7 +12,9 @@
  * Results are finite JSON keyed by function name. Pass code reads them through views (`liveView`, `reachView`,
  * `rangeView`, `domView`) that rebuild Compiler Workbench's query methods (liveAfter, reachingAt, ranges.at/of,
  * dominates) from the stored block facts. The three dataflow analyses use the round-robin schedule and, for
- * ranges, widening after three visits of a loop head, as the prototype does, so their facts are the prototype's.
+ * ranges, widening after three visits of a loop head, as the prototype does. One deliberate difference (IRWB-043-C,
+ * F37): ranges widens only the locals the head's loop assigns, because the prototype's rule widened every local and
+ * an inner loop used to turn an outer loop's counter into the full range.
  */
 import { defineAnalysis, defineType } from '../framework/contracts/definitions.js';
 import { canonical } from '../framework/core/data.js';
