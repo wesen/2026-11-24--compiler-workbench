@@ -13,6 +13,7 @@
  * (parameters, call results, return values) are left to the allocator's hints. Merging lengthens intervals,
  * which under linear scan can cost a callee-saved register or a spill, so the caller compares estimates.
  */
+import { liveness } from '../../stdlib/index.js';
 import { machineBlocks, usesOf, defsOf } from './regalloc.js';
 import type { MInsn } from './encode.js';
 import type { Frequencies } from './frequency.js';
@@ -39,22 +40,9 @@ export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): C
       for (const r of defsOf(code[i])) def[k].add(r);
     }
   });
-  const IN = blocks.map(() => new Set<number>()),
-    OUT = blocks.map(() => new Set<number>());
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (let k = blocks.length - 1; k >= 0; k--) {
-      const out = new Set<number>();
-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
-      const inn = new Set(use[k]);
-      for (const r of out) if (!def[k].has(r)) inn.add(r);
-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
-        IN[k] = inn;
-        OUT[k] = out;
-        changed = true;
-      }
-    }
-  }
+  const { liveOut: OUT } = liveness(
+    blocks.map((b, k) => ({ successors: b.succ, uses: use[k], definitions: def[k] })),
+  );
   // IRWB-034-G: at a copy `rd <- rs`, the registers that an earlier copy in the block set from the same rs, with
   // neither side redefined since, hold the value rd receives. The definition does not make them interfere with rd
   // (the argument of the copy exception itself), so `a <- s; b <- s` can end up as one register.

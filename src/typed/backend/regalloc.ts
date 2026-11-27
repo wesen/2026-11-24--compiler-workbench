@@ -12,6 +12,7 @@
  * and `fs0`-`fs11` (callee-saved); `ft10` and `ft11` are its spill scratch. The two classes are scanned separately:
  * an interval only ever receives a register of its own class, and the options apply to each class.
  */
+import { liveness } from '../../stdlib/index.js';
 import type { BackendOptions } from './options.js';
 import {
   ARGS,
@@ -92,22 +93,9 @@ export function intervals(code: readonly MInsn[]): Intervals {
       for (const r of defsOf(code[i])) def[k].add(r);
     }
   });
-  const IN = blocks.map(() => new Set<number>()),
-    OUT = blocks.map(() => new Set<number>());
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (let k = blocks.length - 1; k >= 0; k--) {
-      const out = new Set<number>();
-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
-      const inn = new Set(use[k]);
-      for (const r of out) if (!def[k].has(r)) inn.add(r);
-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
-        IN[k] = inn;
-        OUT[k] = out;
-        changed = true;
-      }
-    }
-  }
+  const { liveIn: IN, liveOut: OUT } = liveness(
+    blocks.map((b, k) => ({ successors: b.succ, uses: use[k], definitions: def[k] })),
+  );
   const iv = new Map<number, Interval>();
   const touch = (r: number, i: number) => {
     const x = iv.get(r);

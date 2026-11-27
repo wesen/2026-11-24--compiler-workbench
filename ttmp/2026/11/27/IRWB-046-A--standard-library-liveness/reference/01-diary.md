@@ -19,3 +19,5 @@ WhenToUse: ""
 
 - Inspected both identical sweeps and the Phase 2 plan. Chose all supplied blocks to preserve machine behavior, including unreachable predecessors.
 - Created the design before implementation.
+- Committed the design, extracted the original sweep into a domain-independent interface, and switched both clients. Added exact unreachable-predecessor, loop, and dependency tests.
+- Build, focused tests, TypeScript checking and formatting passed. Started the requested corpus baseline and non-GPU suites.

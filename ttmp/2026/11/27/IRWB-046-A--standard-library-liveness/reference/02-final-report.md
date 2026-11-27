@@ -17,22 +17,15 @@ WhenToUse: ""
 
 # Final report
 
-## Goal
+Added a pure, synchronous liveness algorithm over finite block arrays, and replaced the allocator and coalescer sweeps with it. The result covers all supplied blocks, including unreachable predecessors, preserving the machine semantics and iteration order. Tests cover the specified unreachable graph, a loop, and the library dependency boundary.
 
-<!-- What is the purpose of this reference document? -->
+The sweep duplicates the general dataflow framework's fixpoint concept: the requested standard-library boundary prohibits framework dependencies, and the existing framework solver uses entry reachability, unlike these clients. A reusable domain-independent lattice solver is deferred as planned.
 
-## Context
+The brief refers to a pre-existing todo for this step in the three defect files, but none names liveness or IRWB-046-A; no unrelated todo was changed. Physical-register bitset liveness was left untouched because this step specifies the two set-based clients.
 
-<!-- Provide background context needed to use this reference -->
+## Later
 
-## Quick Reference
-
-<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
-
-## Usage Examples
-
-<!-- Show how to use this reference in practice -->
-
-## Related
-
-<!-- Link to related documents or resources -->
+- Dominators and loops.
+- Lattices and a fixpoint solver.
+- SSA construction.
+- Affine forms.
