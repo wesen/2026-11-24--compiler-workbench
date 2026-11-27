@@ -150,3 +150,75 @@ test('GB10: benchmark mode times warm launches and returns the same words', asyn
   assert.deepEqual(words(timed), words(plain));
   assert.ok(Number.isFinite(timed.gpuMs) && timed.gpuMs > 0);
 });
+
+const inside = compileTix(`fn layernorm(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {
+  mean[i] = sum(j) x[i,j] / D;
+  variance[i] = sum(j) (x[i,j] - mean[i]) * (x[i,j] - mean[i]) / D;
+  y[i,j] = (x[i,j] - mean[i]) / sqrt(variance[i] + eps[0]) * gamma[j] + beta[j];
+  return y;
+}`);
+
+test('GB10: staged term phases fold in the meaning order; a reversed fold is rejected', async () => {
+  const plan = planFusion(inside.current.value.functions[0]);
+  assert.deepEqual(
+    plan.groups[0].terms.map(t => t.statement),
+    ['mean', 'variance'],
+  );
+  const random = seededRandom(31);
+  const inputs = {
+    x: { shape: [3, 17], data: Float32Array.from({ length: 51 }, () => 2 * random() - 1) },
+    gamma: { shape: [17], data: Float32Array.from({ length: 17 }, () => 2 * random() - 1) },
+    beta: { shape: [17], data: Float32Array.from({ length: 17 }, () => 2 * random() - 1) },
+    eps: { shape: [1], data: Float32Array.of(1e-5) },
+  };
+  const result = await runTixCuda(inside, 'layernorm', inputs);
+  assert.deepEqual(words(result), words(runTix(inside, 'layernorm', inputs)));
+  // Mutant: fold the staged terms in reverse; the sum is order-sensitive, so the check must reject it.
+  const source = cudaSource(inside, 'layernorm');
+  const reversed = source.replace(
+    /for \(U t = 0; t < (nq\d+); \+\+t\) (v\d+) = __fadd_rn\(\2, (q\d+)\[t\]\);/,
+    'for (U t = 0; t < $1; ++t) $2 = __fadd_rn($2, $3[$1 - 1 - t]);',
+  );
+  assert.notEqual(reversed, source);
+  const kernels = [{ name: 'k0', mapping: 'block', statements: ['mean', 'variance', 'y'], terms: 2 }];
+  const verdict = await checkCudaLowering(
+    inside.current,
+    'layernorm',
+    cudaArtifact('layernorm', reversed, kernels),
+  );
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \[.*\], expected .* got/);
+  assert.deepEqual(await checkLowering(inside, 'layernorm'), { accepted: true, relation: 'exact' });
+});
+
+test('GB10: a staged max over global terms and a split-sum program keep the exact relation', async () => {
+  const global = compileTix(
+    'fn f(x:f32[N,C], g:f32[C]):f32[N,C] { m[i]: f32[N] = max(j) g[j] / C; y[i,j] = x[i,j] - m[i]; return y; }',
+  );
+  const split = compileTix('fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j] / C; y[i,j] = x[i,j] - s[i]; return y; }');
+  const optimized = optimizeTix(split, ['split-sum']).program;
+  // The split bounds make the term space ragged: the plan refuses to stage and keeps the inline fold.
+  assert.deepEqual(planFusion(optimized.current.value.functions[0]).groups[0].terms, []);
+  const random = seededRandom(32);
+  const x = { shape: [5, 33], data: Float32Array.from({ length: 165 }, () => 2 * random() - 1) };
+  const g = { shape: [33], data: Float32Array.from({ length: 33 }, () => random()) };
+  assert.deepEqual(words(await runTixCuda(global, 'f', { x, g })), words(runTix(global, 'f', { x, g })));
+  assert.deepEqual(words(await runTixCuda(optimized, 'f', { x })), words(runTix(optimized, 'f', { x })));
+  assert.deepEqual(await checkLowering(global, 'f'), { accepted: true, relation: 'exact' });
+});
+
+test('GB10: with tiny shape values at launch the fuse gate keeps the program unfused, still exact', async () => {
+  const softmax = compileTix(
+    'fn f(x:f32[N,C]):f32[N,C] { m[i] = max(j) x[i,j]; e[i,j] = exp(x[i,j] - m[i]); s[i] = sum(j) e[i,j]; y[i,j] = e[i,j] / s[i]; return y; }',
+  );
+  // 4 rows cannot fill the machine with one block per row; the launch-time gate plans stage 2's kernels.
+  const fn = softmax.current.value.functions[0];
+  const gated = planFusion(fn, new Map([['N', 4], ['C', 64]]));
+  assert.equal(gated.unfused.length, 1);
+  const random = seededRandom(33);
+  const x = { shape: [4, 64], data: Float32Array.from({ length: 256 }, () => 2 * random() - 1) };
+  const fused = await runTixCuda(softmax, 'f', { x });
+  const unfused = await runTixCuda(softmax, 'f', { x }, { fuse: false });
+  assert.deepEqual(words(fused), words(unfused));
+  assert.deepEqual(words(fused), words(runTix(softmax, 'f', { x })));
+});

@@ -1,4 +1,4 @@
-import { unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
+import { reduceNodes, unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
 import {
   plain,
   visit,
@@ -8,6 +8,7 @@ import {
   type Fn,
   type Statement,
   type Tensor,
+  type Extent,
 } from './model.js';
 
 const support = String.raw`
@@ -137,6 +138,11 @@ function literal(text: string): string {
 
 type Load = Extract<Expr, { kind: 'load' }>;
 type Offset = (indices: readonly Affine[], shape: readonly Affine[]) => string;
+// Staged reductions have dim extents (rule S4 in fusion.ts); the term phase needs each axis's extent.
+const extentDim = (a: { extent: Extent }): Affine => {
+  if (a.extent.kind !== 'dim') throw Error('A staged reduction has a split axis extent');
+  return a.extent.dim;
+};
 
 // The scalar code of one kernel: index names, temporaries and the tree walk shared by stage 2's one-statement
 // kernels and stage 3's fused kernels, so every element is computed by the same code either way.
@@ -144,6 +150,9 @@ function kernelWriter(
   dimensions: ReadonlyMap<string, string>,
   load: (e: Load, offset: Offset) => string,
   maxFold = 'minmax(ACC, VALUE, true)',
+  // IRWB-030-I: reductions staged by the plan (fusion.ts) fold their term buffer in the meaning's order instead of
+  // running the body inline; emitGroup fills the map for the member it is emitting and empties it otherwise.
+  stagedTerms = new Map<Expr, { pointer: string; count: string }>(),
 ) {
   const lines: string[] = [];
   let indent = '  ',
@@ -201,6 +210,19 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const staged = stagedTerms.get(e);
+        if (staged) {
+          // The term phase has filled the buffer block-wide; the fold keeps the meaning's order.
+          const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
+          line(
+            `for (U t = 0; t < ${staged.count}; ++t) ${acc} = ${
+              e.op === 'sum'
+                ? `__fadd_rn(${acc}, ${staged.pointer}[t])`
+                : `max_nan(${acc}, ${staged.pointer}[t])`
+            };`,
+          );
+          return acc;
+        }
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         for (const { id, extent } of e.axes) {
           const axis = bind(id),
@@ -349,6 +371,35 @@ function emitGroup(
         ? e.args.some(a => operands(a, inReduction))
         : e.kind === 'reduce' && operands(e.body, true);
   const cap = members.some(m => operands(m.expr, false)) ? blockThreads.contraction : blockThreads.rows;
+  // IRWB-030-I: the plan's staged reductions. Each staged reduction gets a slice of one term pool `q`, reused by
+  // the members in turn (a member's staged terms are dead once its fold has run, which is before the barrier that
+  // precedes the next member's term phase). The writer folds a staged reduction's slice in the meaning's order
+  // where the reduce node sits; the term phase that fills the slice is emitted before the member's element loop.
+  const stagedTerms = new Map<Expr, { pointer: string; count: string }>();
+  const termPlans = new Map<Statement, { node: Extract<Expr, { kind: 'reduce' }>; slot: number }[]>();
+  let slots = 0;
+  if (block)
+    for (const m of members) {
+      const planned = group.terms.filter(t => t.statement === m.name);
+      if (!planned.length) continue;
+      const nodes = reduceNodes(m.expr);
+      termPlans.set(
+        m,
+        planned.map(t => {
+          const found = nodes.find(n => n.at === t.node);
+          if (!found) throw Error(`Planned term staging for ${m.name} at node ${t.node} not found`);
+          return { node: found.node, slot: slots++ };
+        }),
+      );
+    }
+  const withTerms = [...termPlans.keys()];
+  const stagedSlice = (m: Statement) => {
+    stagedTerms.clear();
+    for (const { node, slot } of termPlans.get(m) ?? [])
+      stagedTerms.set(node, { pointer: `q${slot}`, count: `nq${slot}` });
+  };
+  const maxOf = (names: string[]) =>
+    names.reduce((best, n) => (best ? `(${n} > ${best} ? ${n} : ${best})` : n), '');
   const w = kernelWriter(
     dimensions,
     (e, offset) => {
@@ -361,6 +412,7 @@ function emitGroup(
       return `${tensorName(e.name)}[${offset(e.indices, shape)}]`;
     },
     'max_nan(ACC, VALUE)',
+    stagedTerms,
   );
   w.lines.push(`// ${kernel}: ${group.statements.join(', ')}; ${group.reasons.join('; ')}`);
   // Block mode is a template on where the rows live, so that shared-memory rows are addressed as shared memory
@@ -390,13 +442,28 @@ function emitGroup(
   if (block) {
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
-    const row = rowBuffers.map(n => `n${suffix(n)}`).join(' + ');
-    w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
+    // Term pool sizes: one count per staged reduction (all axes have dim extents, rule S4), one total per member
+    // with staging, and the pool holds the largest member total. The host computes the same values below.
+    for (const [m, plan] of termPlans)
+      for (const { node, slot } of plan)
+        w.line(
+          `const U nq${slot} = ${node.axes.map(a => `static_cast<U>(${w.dim(extentDim(a))})`).join(' * ')};`,
+        );
+    withTerms.forEach((m, k) =>
+      w.line(
+        `const U nqt${k} = ${(termPlans.get(m) ?? []).map(({ slot }) => `nq${slot}`).join(' + ')};`,
+      ),
+    );
+    const rows = rowBuffers.map(n => `n${suffix(n)}`);
+    const pool = withTerms.length ? ` + ${maxOf(withTerms.map((_, k) => `nqt${k}`))}` : '';
+    w.line(`float* const base = Shared ? shared : scratch + point * (${rows.join(' + ')}${pool});`);
     rowBuffers.forEach((name, i) =>
       w.line(
         `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
       ),
     );
+    if (withTerms.length)
+      w.line(`float* const qterm = base${rows.length ? ` + (${rows.join(' + ')})` : ''};`);
     for (const name of group.staged) {
       const s = suffix(name);
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) r${s}[e] = t${s}[point * n${s} + e];`);
@@ -404,6 +471,44 @@ function emitGroup(
     if (group.staged.length) w.line('__syncthreads();');
     members.forEach((m, j) => {
       current = m;
+      stagedSlice(m);
+      // The term phase: the block computes the reduction's terms into its slice of the pool, then one barrier;
+      // the element loop below folds them in the meaning's order (thread 0, for a row-scalar member).
+      let offset = '';
+      for (const { node, slot } of termPlans.get(m) ?? []) {
+        const axes = node.axes;
+        if (axes.length > 1)
+          axes.forEach((a, p) => w.line(`const I b${slot}_${p} = ${w.dim(extentDim(a))};`));
+        for (let p = 0; p + 1 < axes.length; p++)
+          w.line(
+            `const U s${slot}_${p} = ${axes
+              .slice(p + 1)
+              .map((_, q) => `static_cast<U>(b${slot}_${p + 1 + q})`)
+              .join(' * ')};`,
+          );
+        w.line(`float* const q${slot} = qterm + ${offset || 0};`);
+        offset = offset ? `(${offset} + nq${slot})` : `nq${slot}`;
+        w.line(`for (U t = threadIdx.x; t < nq${slot}; t += blockDim.x) {`);
+        w.enter();
+        if (axes.length === 1) {
+          const name = w.bind(axes[0].id);
+          w.line(`const I ${name} = static_cast<I>(t);`);
+        } else {
+          w.line(`U rem${slot} = t;`);
+          axes.forEach((a, p) => {
+            const name = w.bind(a.id);
+            if (p + 1 < axes.length) {
+              w.line(`const I ${name} = static_cast<I>(rem${slot} / s${slot}_${p});`);
+              w.line(`rem${slot} %= s${slot}_${p};`);
+            } else w.line(`const I ${name} = static_cast<I>(rem${slot});`);
+          });
+        }
+        const term = w.scalar(node.body);
+        w.line(`q${slot}[t] = ${term};`);
+        w.leave();
+        w.line('}');
+      }
+      if ((termPlans.get(m) ?? []).length) w.line('__syncthreads();');
       const s = suffix(m.name);
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
@@ -424,9 +529,14 @@ function emitGroup(
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
     const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
+    const hostPool = withTerms.map(m =>
+      (termPlans.get(m) ?? [])
+        .map(({ node }) => `(${node.axes.map(a => `static_cast<U>(${affine(extentDim(a), n => dimensions.get(n)!)})`).join(' * ')})`)
+        .join(' + '),
+    );
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
-      `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
+      `  const U row_${kernel} = (${hostRow}${hostPool.length ? ` + ${maxOf(hostPool)}` : ''}) * sizeof(float);`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,

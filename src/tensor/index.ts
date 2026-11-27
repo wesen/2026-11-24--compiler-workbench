@@ -5,7 +5,7 @@ import { applyNativePassSync, PassError } from '../framework/passes/index.js';
 import { meaningGate } from './contract.js';
 import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
 import { adapter } from './ir.js';
-import { selectFunction, type Module } from './model.js';
+import { plain, selectFunction, type Fn, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
@@ -63,9 +63,24 @@ export interface LoweringOptions {
   /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
   fuse?: boolean;
 }
-function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
+// The shape values the inputs determine, for the launch-time fuse gate (fusion.ts). A param whose input is
+// missing or of the wrong rank makes the values unusable; the planner then keeps stage 3's behaviour.
+function launchDims(f: Fn, inputs: CudaInputs): Map<string, number> | undefined {
+  const dims = new Map<string, number>();
+  for (const p of f.params) {
+    const tensor = Object.hasOwn(inputs, p.name) ? inputs[p.name] : undefined;
+    if (!tensor || tensor.shape.length !== p.shape.length) return undefined;
+    p.shape.forEach((a, i) => {
+      const key = plain(a);
+      if (key !== undefined) dims.set(key, tensor.shape[i]);
+    });
+  }
+  return dims;
+}
+function lower(program: TixProgram, fn: string, options?: LoweringOptions, dims?: Map<string, number>) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  const source = emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f, dims));
+  return { f, source };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {
@@ -78,7 +93,10 @@ export async function runTixCuda(
   inputs: CudaInputs,
   options?: LoweringOptions & { host?: string; benchmark?: boolean },
 ): Promise<CudaResult> {
-  const { f, source } = lower(program, fn, options);
+  const f = selectFunction(program.current.value, fn);
+  // The inputs determine the shape values at launch, so the fuse gate can keep a block-mode group unfused when
+  // its rows cannot fill the machine; cudaSource and checkLowering have no values and plan without the gate.
+  const { source } = lower(program, fn, options, launchDims(f, inputs));
   const [result] = await runCudaBatch(source, f, [inputs], {
     host: options?.host,
     benchmark: options?.benchmark,

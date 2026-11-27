@@ -1,0 +1,35 @@
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-gf-h-irwb-030-i/dist/tensor/cuda-runtime.js:110
+            throw new Error(diagnostic || failure.message, { cause: error });
+                  ^
+
+Error: main.cu(121): error: expected an expression
+      float v0 = __fmul_rn(r0[(i5)], t1[(() * (d1) + (i5))]);
+                                          ^
+
+main.cu(164): error: expected an expression
+      float v8 = __fmul_rn(r5[(i10)], t2[((i10) * (d3) + ())]);
+                                                          ^
+
+2 errors detected in the compilation of "main.cu".
+    at runCudaBatch (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-gf-h-irwb-030-i/dist/tensor/cuda-runtime.js:110:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async runTixCuda (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-gf-h-irwb-030-i/dist/tensor/index.js:76:22)
+    at async file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-gf-h-irwb-030-i/ttmp/2026/11/27/IRWB-030-I--fusion-that-is-never-slower-parallel-terms-in-order-folds-and-a-fuse-decision/scripts/01-baseline.mjs:77:16 {
+  [cause]: Error: Command failed: /home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-gf-h-irwb-030-i/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-ZCvLXS --runtime-input inputs.bin --timed -- --benchmark
+  
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:509:28)
+      at maybeClose (node:internal/child_process:1124:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3b-gf-h-irwb-030-i/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-ZCvLXS --runtime-input inputs.bin --timed -- --benchmark',
+    stdout: '{"host":"manuel@bling","hash":"4b3c344698b860e26d65362bf9e6cfc0c8cde2ad39a38340fdf1ee82fb3729e3","compiled":false,"compileMs":null,"runMs":null,"exit":97,"stdout":"","stderr":"main.cu(121): error: expected an expression\\n      float v0 = __fmul_rn(r0[(i5)], t1[(() * (d1) + (i5))]);\\n                                          ^\\n\\nmain.cu(164): error: expected an expression\\n      float v8 = __fmul_rn(r5[(i10)], t2[((i10) * (d3) + ())]);\\n                                                          ^\\n\\n2 errors detected in the compilation of \\"main.cu\\".\\n","outputs":[]}\n',
+    stderr: ''
+  }
+}
+
+Node.js v24.18.0

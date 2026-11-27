@@ -23,6 +23,8 @@ interface CudaKernel {
   name: string;
   mapping: 'thread' | 'block';
   statements: string[];
+  /** IRWB-030-I: how many of the kernel's reductions compute their terms block-wide and fold in order. */
+  terms?: number;
 }
 interface CudaUnit {
   fn: string;
@@ -33,7 +35,7 @@ interface CudaUnit {
 
 const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '2',
+  version: '3',
   description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
   validate(value) {
     const unit = value as Partial<CudaUnit> | null;
@@ -47,7 +49,8 @@ const CudaIR = defineIR<CudaUnit>({
           !['thread', 'block'].includes(k.mapping) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
-          k.statements.some(s => typeof s !== 'string'),
+          k.statements.some(s => typeof s !== 'string') ||
+          (k.terms !== undefined && (!Number.isSafeInteger(k.terms) || k.terms < 0)),
       )
     )
       throw Error('Invalid CUDA kernel list');
@@ -87,7 +90,7 @@ export function kernelCorrespondence(
     to: { artifact: subject.id, revision: subject.revision },
     relation: 'statements-to-kernels',
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
-    evidence: { mappings: kernels.map(k => k.mapping) },
+    evidence: { mappings: kernels.map(k => k.mapping), stagedTerms: kernels.map(k => k.terms ?? 0) },
   };
 }
 
@@ -162,8 +165,8 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
-    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
+    version: '3',
+    description: 'Lower a Tix function to CUDA, fused with staged reduction terms or one kernel per statement, and check it on the GPU',
     inputs,
     outputs,
     cache: 'never',
@@ -185,6 +188,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         name: g.kernel,
         mapping: g.mapping,
         statements: g.statements,
+        ...(g.terms.length ? { terms: g.terms.length } : {}),
       }));
       const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
