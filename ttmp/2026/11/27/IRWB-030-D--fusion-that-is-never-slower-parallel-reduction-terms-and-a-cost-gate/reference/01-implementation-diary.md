@@ -66,3 +66,32 @@ So the gate's quantity is the row length, not the row count. The mechanism desig
 `fuseAt(fn, plan, shapes)` (fusion.ts) returns `{ fuse: false, reason }` when some block-mode kernel's longest row (over its members and staged tensors, trailing axes at the call's shape values) has fewer than `gate.shortestRow` elements. `runTixCuda` computes the shape values with `shapeValues(fn, inputs)` (cuda-runtime.ts, factored out of `encodeCudaCases`, same validation) and, when the gate says no, runs stage 2's source. `cudaSource` and `checkLowering` take no inputs and are unchanged. The threshold was set to 32 provisionally; M3b fixes it. A local test (`terms.test.mjs`) checks the gate on softmax, attention (whose `out` rows keep it fused when K is short) and matmul (thread mode, never gated).
 
 **Failure (process):** I chained M3b behind `while pgrep -f 06-m3-rows.mjs; do sleep 3; done; ...` in a background shell. `pgrep -f` matched the waiting shell's own command line, so the loop never ended and M3b never started; about ten minutes passed before I noticed the missing output file. The four waiting shells were stopped and M3b and M2 started directly in one background command.
+
+## Step 6: M3b fixes the gate at 24 elements, M2 the chunk at 256
+
+Script 10 (M3b), medians of three rounds (`10-m3b-short-rows.summary.md`, table by script 13). Unfused over fused:
+
+| Row length | softmax, 2^22 elements | softmax, 2^18 | layernorm-inside, 2^22 |
+| ---: | ---: | ---: | ---: |
+| 4 | 0.21 | 0.21 | 0.29 |
+| 8 | 0.41 | 0.42 | 0.41 |
+| 16 | 0.91 | 0.84 | 1.12 |
+| 24 | 1.33 | 1.16 | 1.67 |
+| 32 | 1.77 | 1.75 | 2.55 |
+| 64 | 1.81 | 2.02 | 2.78 |
+| 128 | 1.83 | 2.46 | 2.39 |
+
+Rows of 16 are slower fused in two series, rows of 24 faster in all three, so `gate.shortestRow = 24`. Attention with 4,096 queries and 4 to 128 keys was not slower fused at any K (1.02 to 1.28): its `out` rows have V = 64 elements, which is why the rule takes a kernel's *longest* row. All shapes gave equal digests fused and unfused.
+
+Script 05 (M2), median of three rounds, chunk sizes 128 to 4096:
+
+| Case | 128 | 256 | 512 | 1024 | 2048 | 4096 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| layernorm-inside, N = 4096, D = 1024 | **0.189** | 0.202 | 0.217 | 0.227 | 0.237 | 0.236 |
+| layernorm-inside, N = 1024, D = 4096 | 0.644 | 0.615 | 0.599 | 0.591 | 0.591 | **0.587** |
+| softmax-inside, N = 4096, C = 1024 | 0.749 | **0.745** | 0.746 | 0.747 | 0.749 | 0.750 |
+| softmax-inside, N = 1024, C = 4096 | 0.845 | 0.833 | **0.808** | 0.837 | 0.923 | 0.962 |
+
+The worst slowdown against each case's best chunk is 10% at 128, 7% at 256, 15% at 512 and 20% at 1024, so the chunk is 256. Short rows prefer a small buffer (more blocks fit in shared memory), long ones fewer barriers. Commit `fd3719f`.
+
+Then, in one background command, in sequence so that nothing of mine overlaps the timings: the three GPU test files, script 02 again, script 11 (results, three rounds), script 11 with the interpreter, script 12 (contract cost).

@@ -9,7 +9,11 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://ttmp/2026/11/27/IRWB-030-D--fusion-that-is-never-slower-parallel-reduction-terms-and-a-cost-gate/design-doc/01-parallel-reduction-terms-and-a-fusion-cost-gate.md
+      Note: Design
+    - Path: repo://ttmp/2026/11/27/IRWB-030-D--fusion-that-is-never-slower-parallel-reduction-terms-and-a-cost-gate/reference/02-report-fusion-that-is-never-slower.md
+      Note: Final report
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T01:23:02.716480588-05:00

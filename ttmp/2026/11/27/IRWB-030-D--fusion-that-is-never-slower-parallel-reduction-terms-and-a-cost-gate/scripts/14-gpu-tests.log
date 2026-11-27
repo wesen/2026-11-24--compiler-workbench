@@ -1,0 +1,6 @@
+terms-gpu ℹ pass 4
+terms-gpu ℹ fail 0
+fusion-gpu ℹ pass 5
+fusion-gpu ℹ fail 0
+cuda-gpu ℹ pass 11
+cuda-gpu ℹ fail 0

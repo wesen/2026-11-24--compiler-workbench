@@ -1,12 +1,12 @@
-{"label":"softmax","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
-{"label":"layernorm","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
 {"label":"matmul","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
+{"label":"layernorm","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
+{"label":"softmax","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
 {"label":"attention","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
 {"label":"mlp","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
 {"label":"conv2d","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
+{"label":"layernorm-inside","kernels":1,"staged":["mean#0","variance#0"],"accepted":true,"relation":"exact"}
 {"label":"attention-inside","kernels":1,"staged":[],"accepted":true,"relation":"exact"}
 {"label":"twoterms","kernels":1,"staged":["s#0","s#1"],"accepted":true,"relation":"exact"}
-{"label":"layernorm-inside","kernels":1,"staged":["mean#0","variance#0"],"accepted":true,"relation":"exact"}
 {"label":"multiaxis","kernels":1,"staged":["s#0"],"accepted":true,"relation":"exact"}
 {"label":"nested","kernels":1,"staged":["s#0"],"accepted":true,"relation":"exact"}
 {"label":"maxterms","kernels":1,"staged":["m#0"],"accepted":true,"relation":"exact"}

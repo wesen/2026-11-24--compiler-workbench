@@ -1,0 +1,5 @@
+{"name":"matmul","interpreter":true,"sha":"0d61ed495ab65256","ms":68542.020168}
+{"name":"softmax","interpreter":true,"sha":"6e965523088d394f","ms":6490.049815000006}
+{"name":"layernorm","interpreter":true,"sha":"9b4d9efe65735039","ms":10371.259472999998}
+{"name":"attention","interpreter":true,"sha":"18486f63326ddfd2","ms":82481.362029}
+{"name":"mlp","interpreter":true,"sha":"599022a69f638322","ms":369086.64991499996}

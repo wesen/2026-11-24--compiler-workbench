@@ -9,7 +9,11 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Emitter
+    - Path: repo://src/tensor/fusion.ts
+      Note: Planner and gate
 ExternalSources: []
 Summary: Row-scalar reductions in block-mode kernels compute their terms with all threads and fold them in order on thread 0; a launch-time row-count gate runs stage 2 where block mode is slower.
 LastUpdated: 2026-11-27T01:27:18.314730933-05:00
