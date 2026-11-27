@@ -1,7 +1,7 @@
 ---
 Title: Checked fusion for Tix on the GB10
 Ticket: IRWB-029-G
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -18,7 +18,7 @@ RelatedFiles:
       Note: Exact fused checks on the GB10
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T23:11:48.554187403-05:00
+LastUpdated: 2026-11-26T23:45:49.8357014-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
