@@ -129,9 +129,9 @@ function work(e: Expr): number {
 //    it lost on one program (1.05 and 1.12 in two sessions).
 //  - A heavy member (the plan's `heavy`) with few lanes at work. The lanes are the blocks resident on one SM
 //    times the threads that have an element of that member. With 19/24 of the SM's threads or more, fused was
-//    faster (attention with the division inside at 19/24: 0.76 of stage 2; narrow-div at 20/24 and 24/24:
-//    0.74 to 0.86, scripts 11 and 12). With 46% or less it was slower in six of seven measurements (up to 1.7
-//    times). 19/24 is the lowest measured occupancy at which nothing lost; between is not measured.
+//    faster (attention with the division inside at 19/24: 0.76 to 0.82 of stage 2; narrow-div at 20/24 and
+//    24/24: 0.74 to 0.86, scripts 11 and 12). With 46% or less it was slower in six of seven measurements (up
+//    to 1.7 times). 19/24 is the lowest measured occupancy at which nothing lost; between is not measured.
 export const gate = { fullRow: 96, smallGrid: 1024, heavyLanes: [19, 24] };
 export function gateRule(v: { grid: string; longest: string; lanes: string[]; slots: string }): string {
   const rows = `(${v.longest} >= ${gate.fullRow} || ${v.grid} <= ${gate.smallGrid})`;

@@ -21,7 +21,7 @@ RelatedFiles:
     - Path: repo://tests/tensor/fusion.test.mjs
       Note: Plan, source and mock-engine tests
 ExternalSources: []
-Summary: Row reductions compute their terms on all threads and fold them in order on one; members are written in place; a launch-time gate runs a block-mode kernel statement by statement where block mode measured slower. Fused is 0.32 to 0.79 of unfused on the four multi-statement corpus programs and the two inside variants, bit-identical; no framework change.
+Summary: Row reductions compute their terms on all threads and fold them in order on one; members are written in place; a launch-time gate runs a block-mode kernel statement by statement where block mode measured slower. Fused is 0.36 to 0.80 of unfused on the four multi-statement corpus programs and the two inside variants, bit-identical; no framework change.
 LastUpdated: 2026-11-27T01:29:02.619910652-05:00
 WhatFor: Final report of stage 3b (IRWB-030-E)
 WhenToUse: Reviewing how terms are staged, when the lowering fuses, what was measured and what the contract checks
@@ -35,7 +35,7 @@ Stage 3 fused every corpus program into one kernel, bit-identical to the f32 mea
 - **In-place rows.** A member is written over the row it was computed from when nothing reads that row afterwards, so more blocks fit on an SM.
 - **A gate.** At launch the host decides, from the shapes, whether a block-mode kernel runs fused or statement by statement. The second form is stage 2's code inside the same kernel definition.
 
-On the four multi-statement corpus programs and the brief's two "inside" variants, fused takes 0.32 to 0.79 of the unfused time. Layernorm with the division inside went from 0.584 ms (base) to 0.208 ms, attention with the division inside from 1.412 to 1.167, mlp from 0.730 to 0.628. No file under `src/framework/` or `tools/` changed.
+On the four multi-statement corpus programs and the brief's two "inside" variants, fused takes 0.36 to 0.80 of the unfused time. Layernorm with the division inside went from 0.584 ms (base) to 0.213 ms, attention with the division inside from 1.412 to 1.200, mlp from 0.730 to 0.627. No file under `src/framework/` or `tools/` changed.
 
 The code is at the last commit of branch `t3b-fa/irwb-030-e`.
 
@@ -45,20 +45,20 @@ Kernel count is the number of `__global__` definitions in `cudaSource`. GPU time
 
 | Program | Kernels fused / unfused | Launches fused | GPU ms fused (5 calls) | GPU ms unfused (5 calls) | Fused / unfused |
 | --- | ---: | ---: | --- | --- | ---: |
-| matmul, M = K = N = 512 | 1 / 1 | 1 | **0.215** (0.215, 0.220, 0.213, 0.216, 0.214) | **0.214** (0.207, 0.218, 0.214, 0.222, 0.209) | 1.01 |
-| softmax, N = 4096, C = 1024 | 1 / 4 | 1 | **0.381** (0.378, 0.382, 0.380, 0.386, 0.381) | **0.796** (0.796, 0.800, 0.795, 0.778, 0.801) | 0.48 |
-| layernorm, N = 4096, D = 1024 (division outside) | 1 / 4 | 1 | **0.152** (0.148, 0.151, 0.152, 0.160, 0.155) | **0.477** (0.474, 0.475, 0.477, 0.486, 0.479) | 0.32 |
-| layernorm, division inside | 1 / 4 | 1 | **0.208** (0.210, 0.208, 0.207, 0.209, 0.206) | **0.562** (0.562, 0.562, 0.555, 0.550, 0.825) | 0.37 |
-| attention, Q = K = 1024, D = V = 64 (division outside) | 1 / 6 | 1 | **0.746** (0.816, 0.746, 0.743, 0.746, 0.745) | **1.050** (1.052, 1.055, 1.048, 1.050, 1.049) | 0.71 |
-| attention, division inside | 1 / 5 | 1 | **1.167** (1.179, 1.167, 1.117, 1.213, 1.125) | **1.474** (1.474, 1.470, 1.509, 1.519, 1.456) | 0.79 |
-| mlp, N = 1024, D = 256, H = 1024, O = 256 | 1 / 3 | 1 | **0.628** (0.629, 0.628, 0.628, 0.619, 0.691) | **0.959** (0.974, 0.959, 0.940, 1.127, 0.935) | 0.66 |
-| conv2d, N = 8, C = 16, H = W = 64, O = 32 | 1 / 1 | 1 | **0.167** (0.201, 0.165, 0.167, 0.166, 0.167) | **0.166** (0.164, 0.167, 0.166, 0.164, 0.166) | 1.00 |
+| matmul, M = K = N = 512 | 1 / 1 | 1 | **0.217** (0.218, 0.218, 0.211, 0.213, 0.217) | **0.211** (0.210, 0.213, 0.219, 0.211, 0.190) | 1.03 |
+| softmax, N = 4096, C = 1024 | 1 / 4 | 1 | **0.385** (0.380, 0.385, 0.410, 0.381, 0.387) | **0.801** (0.801, 0.827, 0.791, 0.800, 0.930) | 0.48 |
+| layernorm, N = 4096, D = 1024 (division outside) | 1 / 4 | 1 | **0.170** (0.172, 0.169, 0.176, 0.170, 0.165) | **0.477** (0.484, 0.471, 0.468, 0.477, 0.483) | 0.36 |
+| layernorm, division inside | 1 / 4 | 1 | **0.213** (0.206, 0.213, 0.206, 0.214, 0.231) | **0.561** (0.541, 0.563, 0.610, 0.543, 0.561) | 0.38 |
+| attention, Q = K = 1024, D = V = 64 (division outside) | 1 / 6 | 1 | **0.746** (0.815, 0.742, 0.749, 0.746, 0.744) | **1.050** (1.050, 1.053, 1.050, 1.050, 1.053) | 0.71 |
+| attention, division inside | 1 / 5 | 1 | **1.200** (1.245, 1.200, 1.113, 1.209, 1.194) | **1.510** (1.494, 1.493, 1.527, 1.597, 1.510) | 0.80 |
+| mlp, N = 1024, D = 256, H = 1024, O = 256 | 1 / 3 | 1 | **0.627** (0.627, 0.623, 0.629, 0.688, 0.627) | **0.946** (1.050, 0.946, 0.968, 0.919, 0.946) | 0.66 |
+| conv2d, N = 8, C = 16, H = W = 64, O = 32 | 1 / 1 | 1 | **0.165** (0.165, 0.165, 0.165, 0.166, 0.184) | **0.166** (0.168, 0.166, 0.166, 0.166, 0.166) | 0.99 |
 
 "Launches" is what the fused program does at these sizes: by the rule below the gate chooses block mode for all six gated programs, so each runs one kernel (computed from the rule and the shapes; the program does not report its choice). Matmul and conv2d have one statement; their fused and unfused sources are the same bytes, and the two columns differ by noise.
 
 **The kernel count needs one caveat.** A block-mode kernel is one `template <int Mode>` definition, and by the brief's definition it counts 1. Its instantiations are block mode with rows in shared memory, block mode with rows in scratch, and one per member statement in stage 2's mapping. When the gate chooses the unfused side, the host launches the per-statement instantiations in order: softmax then makes four launches from one definition. At the brief's sizes that never happens.
 
-One more variant I measured throughout is softmax with `exp` inside the sum (`s[i] = sum(j) exp(x[i,j] - m[i])`, no `e` statement): 12.4 ms fused on the base, 0.748 ms now, 1.631 unfused.
+One more variant I measured throughout is softmax with `exp` inside the sum (`s[i] = sum(j) exp(x[i,j] - m[i])`, no `e` statement): 12.4 ms fused on the base, 0.748 ms now, 1.639 unfused.
 
 ## How terms are staged
 
@@ -221,7 +221,7 @@ On the fused side the times are 0.22 to 0.97 of stage 2 (24 measurements). On th
 | narrow-div, O = 32, 64 threads | 20 × 32 | 42% | 1.06 |
 | attention, division inside, before in-place | 10 × 64 | 42% | 0.95 |
 | narrow-div, O = 64, before in-place | 11 × 64 | 46% | 1.25 |
-| **attention, division inside** | 19 × 64 | **79%** | **0.79** |
+| **attention, division inside** | 19 × 64 | **79%** | **0.80** |
 | narrow-div, O = 64 | 20 × 64 | 83% | 0.75 |
 | narrow-div, C = 4096, O = 256, 256 threads | 5 × 256 | 83% | 0.85 |
 | narrow-div, O = 128, 128 threads | 12 × 128 | 100% | 0.74 |

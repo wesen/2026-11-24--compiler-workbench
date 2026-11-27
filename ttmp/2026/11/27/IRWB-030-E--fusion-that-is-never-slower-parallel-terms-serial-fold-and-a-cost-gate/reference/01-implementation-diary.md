@@ -174,7 +174,7 @@ I ran the rule on its own over shapes on both sides of each threshold, ran rando
 
 ### What worked
 - narrow-div under the rule: unfused for O of 1 to 32 (0.91 to 1.13 of stage 2, the same kernels), fused for O of 64 to 1,024 (0.74 to 0.83); with C = 4096, O = 64 unfused (1.00) and O = 256 fused at 256 threads (0.85).
-- The final table: fused over unfused 0.48 (softmax), 0.32 (layernorm), 0.37 (layernorm, division inside), 0.71 (attention), 0.79 (attention, division inside), 0.66 (mlp).
+- The final table, second run: fused over unfused 0.48 (softmax), 0.32 (layernorm), 0.37 (layernorm, division inside), 0.71 (attention), 0.79 (attention, division inside), 0.66 (mlp). The third run, after the thresholds changed (step 9; the one in the report): 0.48, 0.36, 0.38, 0.71, 0.80, 0.66. Layernorm's fused median moved from 0.152 to 0.170 ms between the two runs of the same kernels.
 
 ### What didn't work
 - **The rule lost where it said fuse.** Under `--auto`, softmax with `exp` inside at 2,048 rows of 4 took 1.05 of stage 2 (15.3 against 14.6 µs, tight), and `div1` at 8,192 rows of 32 took 1.06, as it had in the forced sweep, where I had called it a tie.
@@ -192,3 +192,21 @@ I ran the rule on its own over shapes on both sides of each threshold, ran rando
 ### Code review instructions
 - Start at `gate` and `gateRule` in `src/tensor/fusion.ts`, then the host lines `resident_k`, `fused_k` in `emitGroup` (`src/tensor/cuda-source.ts`).
 - `node --test tests/tensor/fusion.test.mjs tests/tensor/cuda.test.mjs` (no GPU); `node --test tests/tensor/terms-gpu.test.mjs tests/tensor/fusion-gpu.test.mjs tests/tensor/cuda-gpu.test.mjs` (GB10).
+
+## Step 9: Report, records, last checks
+
+### What I did
+- Wrote the report (`reference/02-…`). Its results table and the numbers quoted from it are filled by `scripts/17-report-table.py` from script 13's output and the template beside it, so the table cannot drift from the measurement.
+- Added `gated` to the CUDA artifact's kernel list and to the correspondence's evidence.
+- Measured the results table a third time after the thresholds changed (the kernels are the same; only two constants in the host's condition differ), and kept the earlier output as `13-final-table-before-thresholds.out.jsonl`.
+- Last runs on the final code: `node --test tests/tensor/fusion.test.mjs tests/tensor/cuda.test.mjs tests/tensor/corpus.test.mjs tests/tensor/passes.test.mjs tests/tensor/language.test.mjs` (36 pass) and the three GPU test files (19 pass, `various/final-gpu-tests.log`). `docmgr doctor --ticket IRWB-030-E`: all checks passed.
+
+### What didn't work
+- `node --test … > ttmp/…/IRWB-030-E*/various/final-gpu-tests.log` failed with `no matches found`: zsh does not expand a glob to a file that does not exist yet. I used the expanded ticket path.
+- `docmgr doctor` rejected the report template as a Markdown file without front matter in `scripts/`; it is `17-report-body.template.txt` now.
+
+### What warrants a second pair of eyes
+- The gate's thresholds are fitted to five programs on one device, and the cheapest of them sits at 0.95 to 0.97 of stage 2 just above the row threshold.
+- Attention with the division inside sits exactly on the lanes threshold (19 of 24), because the threshold was read from it.
+- The kernel count: one `__global__` definition per block-mode group by the brief's definition, with per-statement instantiations that the gate may launch instead.
+- `baselineKey` now depends on whether the subject has a gate; the framework does not check that keys and case lists agree.
