@@ -928,3 +928,30 @@ All four fixes agents fixed all three items correctly. The differences were in s
 - **R1b and R2b so far:** 11 of 14 cells done.
   - The DeepSeek R1b designs are long: 16,841 and 12,131 words, against 2,600–3,700 for the Codex R1 cells.
   - GLM 5.3 Flash at high (IRWB-021-P) wrote its design to `design/` and its diary to `various/diary.md`, not the docmgr layout. The blind pack's pattern must include it.
+
+## Step 36: T3 launched as an implementation stage (ten cells); F2–F6 to Terra low; the matrix set
+
+The user set the cells for implementation tasks from now on, and asked to start implementation agents on what is already worked out. I launched T3, checked fusion, directly as an implementation stage, since R2 settled its approach. The small Typed-side fixes F2–F6 went to one Terra low agent.
+
+- **The user's messages** (verbatim): "add terra low to the mix in the future for implementation tasks, as well as glm-5.3 high and deepseek-4.1-flash high + xhigh and glm-5.3-flash high + xhigh"; "can we starts implementation agents for stuff that's already worked out?". To my two questions, the user chose "T3 + small fixes (Recommended)" and, for GLM 5.3 Flash, "Use max instead" (its `xhigh` maps to `high`).
+- **A correction:** I first told the user, and wrote in the backlog, "eleven cells". The matrix has ten: Codex Sol medium, Astra medium and Terra low; Opus; Fable; Pi GLM 5.3 high, DeepSeek 4.1 Flash high and xhigh, and GLM 5.3 Flash high and max.
+- **The base, `t3-base` (`f706115`):** main without IRWB-019 and `BACKLOG.md`, so agents see neither my analysis nor the hidden suites. Agent work is merged by cherry-picking.
+- **The brief** (`prompts/t3/common.md`): order-preserving fusion only. That covers elementwise chains, epilogues, and row reductions with their producers and consumers; the thread mapping may change while reductions stay sequential. Legality comes from the IR, and the GPU check uses the exact relation.
+  - The fixed API adds `{ fuse }` (default true; `false` is stage 2) to `cudaSource`, `runTixCuda` and `checkLowering`, and `{ benchmark }` to `runTixCuda`. The kernel count is the number of `__global__` definitions.
+  - Facts given: the stage-2 times, 244 GB/s, and the R2 prototype's exact softmax at 4.25×.
+  - The scripts rule is in it.
+- **The hidden evaluator** (`hidden-t3/t3-eval.mjs`), written before any T3 work:
+  - fused and unfused bits against the f32 meaning (corpus, optimized, 20 random programs, large sizes), with NaN compared as a class;
+  - `checkLowering` accepted as exact;
+  - kernel counts;
+  - benchmark time, the median of three benchmark calls.
+
+  A baseline run on `t3-base` is in progress.
+- **The cells** (`results/t3-config-key.json`; `scripts/33-launch-t3.sh` for Codex and Pi; the Agent tool for Opus and Fable, whose prompts are in `prompts/t3/claude/`):
+  - IRWB-029-A Sol medium, B Astra medium, C Terra low;
+  - D Opus, E Fable;
+  - F GLM 5.3 high, G DeepSeek high, H DeepSeek xhigh, I GLM Flash high, J GLM Flash max.
+
+  All run on policy v3, with a three-hour cap.
+- **F2–F6** (`prompts/fixes-2/common.md`, `scripts/32-launch-fixes-2.sh`): IRWB-028, Terra low, on `t3-base`.
+- **Kit logs committed:** the 24 stage-2 implementation and report-turn kit directories had never been committed. They are now (`9783c1a`), along with the fixes and the finished R1b and R2b cells.
