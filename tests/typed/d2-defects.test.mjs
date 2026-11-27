@@ -49,17 +49,17 @@ function walk(buf: buffer, c: bool): i32 {
 );
 
 test('F37: typed.ranges keeps an outer loop counter non-negative under an inner loop', async () => {
-    const p = Program.fromProject(projectSource('chess-search', projectFiles('chess-search')));
-    for (const pass of PIPELINES.speed.slice(0, PIPELINES.speed.indexOf('strength')))
-      await p.apply(pass, { count: 3 });
-    const f = storeOf(p.head.value).fn('chessPseudoMoves');
-    const dense = String(f.locals.findIndex(l => l.name === 'dense'));
-    const ranges = (await p.fact('ranges', 'chessPseudoMoves')).value;
-    // dense counts 0..63; today its interval at the block of `dense / 8` is [-2^31, 63]
-    const [lo, up] = ranges.in['bb:chessPseudoMoves.3'][dense];
-    assert.ok(lo >= 0, `dense's lower bound is ${lo}`);
-    assert.ok(up <= 63, `dense's upper bound is ${up}`);
-  });
+  const p = Program.fromProject(projectSource('chess-search', projectFiles('chess-search')));
+  for (const pass of PIPELINES.speed.slice(0, PIPELINES.speed.indexOf('strength')))
+    await p.apply(pass, { count: 3 });
+  const f = storeOf(p.head.value).fn('chessPseudoMoves');
+  const dense = String(f.locals.findIndex(l => l.name === 'dense'));
+  const ranges = (await p.fact('ranges', 'chessPseudoMoves')).value;
+  // dense counts 0..63 in .3, the block of `dense / 8`; before F37 its interval there was [-2^31, 63]
+  const [lo, up] = ranges.in['bb:chessPseudoMoves.3'][dense];
+  assert.ok(lo >= 0, `dense's lower bound is ${lo}`);
+  assert.ok(up <= 63, `dense's upper bound is ${up}`);
+});
 
 test(
   'F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)',
