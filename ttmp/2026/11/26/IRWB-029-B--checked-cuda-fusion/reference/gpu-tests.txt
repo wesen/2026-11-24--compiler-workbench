@@ -1,0 +1,21 @@
+✔ GB10 checks matmul before and after optimization (5209.273488ms)
+✔ GB10 checks softmax before and after optimization (6438.305606ms)
+✔ GB10 checks layernorm before and after optimization (5970.968779ms)
+✔ GB10 checks attention before and after optimization (5565.04069ms)
+✔ GB10 checks mlp before and after optimization (4624.975733ms)
+✔ GB10 checks conv2d before and after optimization (2958.062211ms)
+✔ GB10 preserves split rounding and a partial final block (7307.020952ms)
+✔ GB10 checks composed inline addresses and rejects a valid index mutant (5146.875714ms)
+✔ GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns (15028.252977ms)
+✔ remote runner links repeated libraries and keys the build by their order (5854.122818ms)
+✔ remote runner shares a compile across isolated jobs and invalidates on build input changes (5548.069005ms)
+✔ GB10 fuses a pointwise producer into a row fold, including empty and oversize rows (9915.031727ms)
+✔ GB10 checks row-private affine reads and detects a misplaced fused load (6929.633275ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 86654.724788

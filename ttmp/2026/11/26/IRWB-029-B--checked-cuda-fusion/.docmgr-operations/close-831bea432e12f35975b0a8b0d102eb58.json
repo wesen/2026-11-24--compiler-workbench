@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "6b724817344a8e747f99895923a5ea581ab849026e7d69e4565502ff46fd9d54",
+  "request": {
+    "ticket": "IRWB-029-B",
+    "status": "complete",
+    "intent": "",
+    "entry": "Implemented checked CUDA fusion in fabd9e9, verified 36 tensor tests and recorded twelve locked benchmark medians."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-831bea432e12f35975b0a8b0d102eb58",
+    "state": "committed",
+    "created_at": "2026-11-27T04:11:13.816795134Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "index.md": "740b5db95618aeaf92891372130541731097a3d8968fd97aaddb023cf05f5a1d"
+    },
+    "after": {
+      "changelog.md": "5a9efc4b8c9e3f453b119d5659855ad6460ab44d7cf0900b33fe97f6afa22341",
+      "index.md": "87e2c95557a6825cca2c665c5019b21710c7a1c05bfb32aeb053ca9b022c855a"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKSW1wbGVtZW50ZWQgY2hlY2tlZCBDVURBIGZ1c2lvbiBpbiBmYWJkOWU5LCB2ZXJpZmllZCAzNiB0ZW5zb3IgdGVzdHMgYW5kIHJlY29yZGVkIHR3ZWx2ZSBsb2NrZWQgYmVuY2htYXJrIG1lZGlhbnMuCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "740b5db95618aeaf92891372130541731097a3d8968fd97aaddb023cf05f5a1d",
+      "after": "LS0tClRpdGxlOiBDaGVja2VkIENVREEgZnVzaW9uClRpY2tldDogSVJXQi0wMjktQgpTdGF0dXM6IGNvbXBsZXRlClRvcGljczoKICAgIC0gY29tcGlsZXIKICAgIC0gaXIKICAgIC0gdmVyaWZpY2F0aW9uCkRvY1R5cGU6IGluZGV4CkludGVudDogbG9uZy10ZXJtCk93bmVyczogW10KUmVsYXRlZEZpbGVzOiBbXQpFeHRlcm5hbFNvdXJjZXM6IFtdClN1bW1hcnk6ICIiCkxhc3RVcGRhdGVkOiAyMDI2LTExLTI2VDIzOjExOjEzLjgxNjcxMzE5OC0wNTowMApXaGF0Rm9yOiAiIgpXaGVuVG9Vc2U6ICIiCi0tLQoKIyBDaGVja2VkIENVREEgZnVzaW9uCgpUaGUgQ1VEQSBlbWl0dGVyIGdyb3VwcyBUaXggZGVmaW5pdGlvbnMgdGhhdCBjYW4gc2hhcmUgYSB0aHJlYWQgb3IgYSByb3ctb3duaW5nIGJsb2NrIHdoaWxlIHByZXNlcnZpbmcgdGhlIGN1cnJlbnQgcmV2aXNpb24ncyBmMzIgb3JkZXIuIFRoZSBleGFjdCBjaGVja2VyIGFjY2VwdGVkIGJvdGggbW9kZXMgb24gdGhlIGNvcnB1cywgYW5kIGFsbCBzaXggZnVsbC1zaXplIGZ1c2VkIG91dHB1dHMgbWF0Y2hlZCB0aGVpciB1bmZ1c2VkIGhhc2hlcy4KCi0gW0Rlc2lnbiBjb21taXR0ZWQgYmVmb3JlIGltcGxlbWVudGF0aW9uXShkZXNpZ24tZG9jLzAxLW9yZGVyLXByZXNlcnZpbmctZnVzaW9uLm1kKQotIFtSZXN1bHRzLCBwZXIta2VybmVsIHRyYWZmaWMgYW5kIGZyYW1ld29yayBmaW5kaW5nc10ocmVmZXJlbmNlLzAyLWZ1c2lvbi1yZXN1bHRzLm1kKQotIFtJbXBsZW1lbnRhdGlvbiBkaWFyeV0ocmVmZXJlbmNlLzAxLWltcGxlbWVudGF0aW9uLWRpYXJ5Lm1kKQo="
+    }
+  ]
+}

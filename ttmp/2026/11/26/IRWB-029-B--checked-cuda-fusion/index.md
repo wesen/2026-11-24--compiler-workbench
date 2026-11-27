@@ -1,7 +1,7 @@
 ---
 Title: Checked CUDA fusion
 Ticket: IRWB-029-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -12,45 +12,15 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T23:01:23.301628546-05:00
+LastUpdated: 2026-11-26T23:11:13.816713198-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Checked CUDA fusion
 
-## Overview
+The CUDA emitter groups Tix definitions that can share a thread or a row-owning block while preserving the current revision's f32 order. The exact checker accepted both modes on the corpus, and all six full-size fused outputs matched their unfused hashes.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
-
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- compiler
-- ir
-- verification
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design committed before implementation](design-doc/01-order-preserving-fusion.md)
+- [Results, per-kernel traffic and framework findings](reference/02-fusion-results.md)
+- [Implementation diary](reference/01-implementation-diary.md)

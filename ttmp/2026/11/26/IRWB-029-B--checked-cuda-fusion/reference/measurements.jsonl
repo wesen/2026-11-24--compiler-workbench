@@ -1,0 +1,12 @@
+{"name":"softmax","fuse":true,"kernels":1,"gpuMs":0.3628160059452057,"checkMs":3990.802106,"replayMs":1.885348000000704,"sha256":"af126d5581031594c2deb7042ba961cc3e5375b39e8a88624d41a91f67c0ce2c"}
+{"name":"softmax","fuse":false,"kernels":4,"gpuMs":0.8040639758110046,"checkMs":2369.4212640000005,"replayMs":0.9690099999988888,"sha256":"af126d5581031594c2deb7042ba961cc3e5375b39e8a88624d41a91f67c0ce2c"}
+{"name":"layernorm","fuse":true,"kernels":1,"gpuMs":0.23552000522613525,"checkMs":3479.0968859999994,"replayMs":1.3896410000015749,"sha256":"b71171dde399c57e874c64afa30f7528f0dc316d71eab17c86326091d6beece0"}
+{"name":"layernorm","fuse":false,"kernels":4,"gpuMs":0.4869120121002197,"checkMs":2395.012154,"replayMs":1.3814689999999246,"sha256":"b71171dde399c57e874c64afa30f7528f0dc316d71eab17c86326091d6beece0"}
+{"name":"attention","fuse":true,"kernels":3,"gpuMs":0.8145920038223267,"checkMs":3493.690908999997,"replayMs":17.73796599999332,"sha256":"9dc4f1a0019cfcffc4ab822fe11adc56ab6e51ea9a38f335da827a91e96d80d8"}
+{"name":"attention","fuse":false,"kernels":6,"gpuMs":1.0482560396194458,"checkMs":3236.9333899999983,"replayMs":1.763184999996156,"sha256":"9dc4f1a0019cfcffc4ab822fe11adc56ab6e51ea9a38f335da827a91e96d80d8"}
+{"name":"mlp","fuse":true,"kernels":2,"gpuMs":0.8675519824028015,"checkMs":2504.5003790000046,"replayMs":1.251893000000564,"sha256":"082153362381f223068c280ea6e721d1071a25dee4c3fd645a970eabbb9503ba"}
+{"name":"mlp","fuse":false,"kernels":3,"gpuMs":1.0538560152053833,"checkMs":2487.811284000003,"replayMs":1.1262080000014976,"sha256":"082153362381f223068c280ea6e721d1071a25dee4c3fd645a970eabbb9503ba"}
+{"name":"matmul","fuse":true,"kernels":1,"gpuMs":0.2136320024728775,"checkMs":2682.168798999999,"replayMs":1.025313999998616,"sha256":"e7aef7eace3c1dafd92123f2b8fe1ccb53ef82ea1ece67e145a8dfc239c6d05e"}
+{"name":"matmul","fuse":false,"kernels":1,"gpuMs":0.215488001704216,"checkMs":1.0269189999962691,"replayMs":1.3880670000071405,"sha256":"e7aef7eace3c1dafd92123f2b8fe1ccb53ef82ea1ece67e145a8dfc239c6d05e"}
+{"name":"conv2d","fuse":true,"kernels":1,"gpuMs":0.16486400365829468,"checkMs":2914.708909000008,"replayMs":1.178394999995362,"sha256":"a56b1e08e4bbd3dcc6d37b08c1316b7348194a500d69e0d3669a9880fcd33d3f"}
+{"name":"conv2d","fuse":false,"kernels":1,"gpuMs":0.1669439971446991,"checkMs":0.8379839999979595,"replayMs":0.650166999999783,"sha256":"a56b1e08e4bbd3dcc6d37b08c1316b7348194a500d69e0d3669a9880fcd33d3f"}

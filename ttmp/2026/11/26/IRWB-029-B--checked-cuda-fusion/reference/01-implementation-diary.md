@@ -34,3 +34,9 @@ The first implementation's full-size hashes agreed in all twelve runs. Softmax n
 The block also kept the staged input alive after its final read. The final planner recycles a row slot when its value expires. A replacement that reads the expiring tensor may reuse it only at its own column. Otherwise other lanes may still be reading the old contents, so the replacement gets distinct storage. Review rowSlots, the affine-read GPU mutation test and the large-row scratch path together.
 
 The first git add failed with “Read-only file system” on the shared worktree index. Escalated git succeeded. The first benchmark launcher exited before producing output in the sandbox. Keeping a foreground tmux wait-for attached to the launcher fixed its lifetime. Its first script import then failed with ERR_MODULE_NOT_FOUND because the relative path went up one directory too far. Correcting the import let all six runs execute through the public API.
+
+## Step 3. Verify and measure revision fabd9e9
+
+The final locked run produced twelve accepted exact verdicts and six matching pairs of full-size output hashes. The separate traffic script called makeCorrespondence for both schedules on all six programs. The grouped entries and byte counts are in reference/traffic.jsonl. All 23 local tests and 13 remote tests passed, including the deliberately corrupted fused load. The report records stage membership, kernel event medians, API wall times and the shared-memory limit fallback.
+
+Rebuild with npm run build. Run the network-free files with node --test tests/tensor/{language,passes,corpus,cuda}.test.mjs, and run tests/tensor/cuda-gpu.test.mjs separately through Node's test runner. From the repository root, run the ticket's scripts/02-measure.mjs with Node for the locked measurements and scripts/04-traffic.mjs for the logical count. Exact lowering is sampled. The two full-size hashes compare GPU modes, and the byte counts are source-level calculations.
