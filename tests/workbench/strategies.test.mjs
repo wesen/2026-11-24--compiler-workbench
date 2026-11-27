@@ -103,9 +103,10 @@ test('wb.pass: the kernel builder from a project script; applied, listed, and us
 test('wb.compiler and wb.source: declarations with ids and versions, and where each is defined', () => {
   const { wb } = makeWb();
   const c = wb.compiler();
-  assert.equal(c.passes.length, 15); // the eleven of Compiler Workbench, bcm and dfe; IRWB-003's rotate, inline
+  assert.equal(c.passes.length, 16); // the eleven of Compiler Workbench, bcm and dfe; IRWB-003's rotate, inline; IRWB-036-E's peval
   assert.match(c.passes.find(x => x.name === 'rotate').source, /^src\/typed\/rotate\.ts:\d+$/);
   assert.match(c.passes.find(x => x.name === 'inline').source, /^src\/typed\/inline\.ts:\d+$/);
+  assert.match(c.passes.find(x => x.name === 'peval').source, /^src\/typed\/peval\.ts:\d+$/);
   const licm = c.passes.find(x => x.name === 'licm');
   assert.equal(licm.id, 'typed.licm');
   assert.deepEqual(licm.needs, { loops: 'typed.loops@1' });
