@@ -1,0 +1,1 @@
+{"host":"manuel@bling","hash":"eeb82dd29454ba9282e981e298236f0d7f8e3a0e9865986a30ff03a672d76831","compiled":false,"compileMs":4,"runMs":412,"exit":0,"stdout":"{\"mode\":\"stream\",\"n\":16777216,\"ms\":{\"doubleTanh\":3.3016,\"fastExactTanh\":0.6676,\"tanhf\":0.5436},\"wordsDifferentFromMeaning\":{\"fastExactTanh\":0,\"tanhf\":3397679}}\n","stderr":"","outputs":[]}

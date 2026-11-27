@@ -1,10 +1,11 @@
-// IRWB-023-C experiment 03: fused row kernels that stay bit-identical to the Tix meaning.
+// IRWB-023-C experiment 03: optimized kernels for the six corpus programs that stay bit-identical to Stage 2.
 //
 // Builds scripts/03-fused/main.cu from three parts and runs it on the GPU machine:
-//   1. the *unmodified* Stage 2 translation units for softmax, layernorm and attention (cudaSource from
+//   1. the *unmodified* Stage 2 translation units for all six corpus programs (cudaSource from
 //      dist/), each wrapped in its own namespace; their run_case() is the oracle and the baseline timing;
-//   2. the fast exact exp copied verbatim from scripts/02-exact-exp/main.cu (the code that was checked
-//      on all 2^32 inputs);
+//   2. the fast exact exp and tanh copied verbatim from scripts/02-exact-exp/main.cu and
+//      scripts/07-exact-tanh/main.cu (the code that was checked on all 2^32 inputs), and the exact GEMM
+//      of scripts/01-exact-gemm/main.cu;
 //   3. hand-written fused kernels in scripts/03-fused/fused.cuh.
 // Usage (worktree root, after npm run build): node <ticket>/scripts/03-fused-exact.mjs [--timed]
 import { execFileSync } from 'node:child_process';
@@ -17,7 +18,7 @@ const root = process.cwd();
 const { compileTix, cudaSource } = await import(pathToFileURL(join(root, 'dist/tensor/index.js')).href);
 
 const includes = new Set();
-const units = ['softmax', 'layernorm', 'attention'].map(name => {
+const units = ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2d'].map(name => {
   const source = cudaSource(compileTix(readFileSync(join(root, `corpus/tensor/${name}/main.tix`), 'utf8')), name);
   const body = source.slice(0, source.indexOf('int main('));
   const lines = body.split('\n').filter(line => {
@@ -43,7 +44,13 @@ if (gemmStart < 0 || gemmEnd < gemmStart) throw Error('GEMM markers not found');
 const naiveStart = gemm.indexOf('__global__ void naive('), tiledStart = gemm.indexOf('// Register-blocked SGEMM');
 const tiled = gemm.slice(gemmStart, naiveStart) + gemm.slice(tiledStart, gemmEnd);
 
+// The fast exact tanh of experiment 07, copied verbatim.
+const tanhSource = readFileSync(join(here, '07-exact-tanh/main.cu'), 'utf8');
+const tanhStart = tanhSource.indexOf('// BEGIN fast tanh'), tanhEnd = tanhSource.indexOf('// END fast tanh');
+if (tanhStart < 0 || tanhEnd < tanhStart) throw Error('fast tanh markers not found');
+
 const out = join(here, '03-fused');
+writeFileSync(join(out, 'fast_tanh.cuh'), '// Copied by 03-fused-exact.mjs from 07-exact-tanh/main.cu.\n' + tanhSource.slice(tanhStart, tanhEnd));
 writeFileSync(join(out, 'exact_gemm.cuh'), '// Copied by 03-fused-exact.mjs from 01-exact-gemm/main.cu.\n' + tiled);
 writeFileSync(join(out, 'fast_exp.cuh'), '// Copied by 03-fused-exact.mjs from 02-exact-exp/main.cu.\n' + fastExp + table);
 writeFileSync(
@@ -56,6 +63,7 @@ writeFileSync(
     ...units,
     '#include "fast_exp.cuh"',
     '#include "exact_gemm.cuh"',
+    '#include "fast_tanh.cuh"',
     '#include "fused.cuh"',
     '',
   ].join('\n'),
