@@ -58,6 +58,30 @@ export const SIMPLIFY_RULES = ruleSet(
       },
     ),
     rule('div-one', X, op('div', v('x'), c(1)), v('x')),
+    // IRWB-037-E: a shift out and back by the same count is one mask (k <= 31 by the shift guard; for k >= 32
+    // the evaluator masks the count, so the identity would not hold)
+    rule(
+      'shl-shru-mask',
+      { x: 'i32', k: 'i32' },
+      op('shl', op('shru', v('x'), kv('k')), kv('k')),
+      op('and', v('x'), c({ highMask: 'k' })),
+      {
+        where: [{ shift: 'k' }],
+        because: 'const-args',
+        note: '(x >>> {k}) << {k} clears the low {k} bits',
+      },
+    ),
+    rule(
+      'sub-shl-shru-mask',
+      { x: 'i32', k: 'i32' },
+      op('sub', v('x'), op('shl', op('shru', same('x'), kv('k')), kv('k'))),
+      op('and', v('x'), c({ lowMask: 'k' })),
+      {
+        where: [{ pure: 'x' }, { shift: 'k' }],
+        because: 'const-args',
+        note: 'x - ((x >>> {k}) << {k}) keeps the low {k} bits',
+      },
+    ),
     zeroRight('or'),
     zeroRight('xor'),
     zeroRight('shl'),

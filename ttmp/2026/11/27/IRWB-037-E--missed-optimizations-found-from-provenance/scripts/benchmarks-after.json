@@ -1,0 +1,23 @@
+{
+ "regex-nfa": {
+  "regexMatch": {
+   "r0": 8183,
+   "speed": 6587,
+   "reference": 6628
+  }
+ },
+ "lz-roundtrip": {
+  "lz100": {
+   "r0": 178278,
+   "speed": 154700,
+   "reference": 156405
+  }
+ },
+ "chess-search": {
+  "chessSearch": {
+   "r0": 14152069,
+   "speed": 9535352,
+   "reference": 10827760
+  }
+ }
+}

@@ -483,9 +483,67 @@ const rangeStep = (st: Store, env: Env, sid: string): Env => {
   return m;
 };
 const interval = intervalLattice();
+/**
+ * IRWB-037-E: widening up to the guard constants (threshold widening). Standard widening sends a growing bound to
+ * the domain's extreme, and then `x + 1` overflows the interval to full, so an induction variable with a guard
+ * `x < 64` loses its whole interval at the loop head and `strength` can no longer prove it non-negative. A bound
+ * that moves climbs only to the smallest constant some branch of the same function compares the local with — a
+ * superset of the joined interval (sound), from a finite ladder (terminating).
+ */
+const widenTo = (
+  old: readonly [number, number],
+  next: readonly [number, number],
+  thresholds: readonly number[],
+): [number, number] => {
+  let lo = old[0],
+    hi = old[1];
+  if (next[0] < lo) {
+    lo = MIN;
+    for (const t of thresholds) if (t <= next[0] && t > lo) lo = t;
+  }
+  if (next[1] > hi) {
+    hi = MAX;
+    for (const t of thresholds) if (t >= next[1] && t < hi) hi = t;
+  }
+  return [lo, hi];
+};
+/** The constants each local is compared with in the function's branch conditions, cached per store and function. */
+const guardConstantsCache = new WeakMap<object, Map<string, ReadonlyMap<string, readonly number[]>>>();
+const guardConstants = (st: Store, f: WorkFn): ReadonlyMap<string, readonly number[]> => {
+  const byFn = guardConstantsCache.get(st) ?? new Map();
+  guardConstantsCache.set(st, byFn);
+  const cached = byFn.get(f.name);
+  if (cached) return cached;
+  const lists = new Map<string, number[]>();
+  for (const b of f.blocks) {
+    const last = b.stmts.length ? (st.get(b.stmts.at(-1)!) as StmtRec) : undefined;
+    if (!last || last.op !== 'br_if' || !last.cond) continue;
+    const cond = st.get(last.cond) as ValueRec;
+    const cmp = cond.op === 'eqz' ? (st.get(cond.args[0]) as ValueRec) : cond;
+    if (!CMP_OPS.has(cmp.op)) continue;
+    for (const [x, y] of [
+      [cmp.args[0], cmp.args[1]],
+      [cmp.args[1], cmp.args[0]],
+    ] as const) {
+      const lhs = st.get(x) as ValueRec,
+        rhs = st.get(y) as ValueRec;
+      if (lhs.op === 'get' && rhs.op === 'const' && !rhs.type) {
+        const list = lists.get(String(lhs.imm)) ?? [];
+        list.push(rhs.imm as number);
+        lists.set(String(lhs.imm), list);
+      }
+    }
+  }
+  const frozen = new Map(
+    [...lists].map(([k, v]) => [k, [...new Set(v)].sort((a, b) => a - b)] as const),
+  );
+  byFn.set(f.name, frozen);
+  return frozen;
+};
+const CMP_OPS = new Set(['lt', 'le', 'gt', 'ge', 'ltu', 'geu']);
 export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
   id: 'typed.ranges',
-  version: '1',
+  version: '2',
   description: 'an interval for each local at each statement, with branch refinement and widening',
   input: BlocksIR,
   adapter: blocksAdapter,
@@ -510,9 +568,15 @@ export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval
       return refine(st, last.cond!, out, last.then === to);
     return out;
   },
-  widen(a, b) {
+  widen(a, b, _block, { st, f }) {
+    const thresholds = guardConstants(st, f);
     const m = new Map(b);
-    for (const [k, v] of b) if (a.has(k)) m.set(k, interval.widen(a.get(k)!, v));
+    for (const [k, v] of b)
+      if (a.has(k)) {
+        const t = thresholds.get(k),
+          old = a.get(k) as readonly [number, number];
+        m.set(k, t && v ? widenTo(old, v, t) : interval.widen(old, v));
+      }
     return m;
   },
   reads: READS_ALL,

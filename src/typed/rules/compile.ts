@@ -28,6 +28,10 @@ export function matchPat(p: Pat, h: ValueHandle, b: Bindings): boolean {
   }
   if ('constVar' in p) {
     if (!h.isConst) return false;
+    // a repeated constant variable is the same constant (IRWB-037-E): the first occurrence binds, later ones
+    // must agree, exactly as same(x) is the same tree
+    const prev = b[p.constVar];
+    if (prev !== undefined && (!prev.isConst || prev.imm !== h.imm)) return false;
     b[p.constVar] = h;
     return true;
   }
@@ -44,6 +48,10 @@ export function guardHolds(g: Guard, b: Bindings): boolean {
   if ('pure' in g) return b[g.pure].isPure;
   if ('pow2' in g) return isPow2(b[g.pow2].imm as number);
   if ('boolean' in g) return b[g.boolean].isBoolean;
+  if ('shift' in g) {
+    const n = b[g.shift].imm as number;
+    return Number.isInteger(n) && n >= 0 && n <= 31;
+  }
   const x = b[g.noTrap[0]].imm as number,
     y = b[g.noTrap[1]].imm as number;
   return !(y === 0 || (x === MIN && y === -1));
@@ -60,6 +68,8 @@ export function evalOp(op: string, args: readonly number[]): number {
 export function numOf(n: Num, imm: (name: string) => number): number {
   if (typeof n === 'number') return n;
   if ('log2' in n) return log2(imm(n.log2));
+  if ('lowMask' in n) return (1 << imm(n.lowMask)) - 1;
+  if ('highMask' in n) return ~((1 << imm(n.highMask)) - 1);
   return evalOp(n.eval, n.args.map(imm));
 }
 

@@ -14,9 +14,11 @@
  *   guard       { pure: x }        the tree bound to x can be evaluated or dropped without effect (isPure)
  *               { pow2: k }        k is 2^j with 0 <= j <= 30 (simplify's isPow2: n > 0 && n & (n-1) == 0)
  *               { boolean: x }     the tree bound to x is a comparison, so its value is 0 or 1
+ *               { shift: k }       k is a shift count this IR admits: 0 <= k <= 31 (IRWB-037-E)
  *               { noTrap: [a, b], op }   op(a, b) would not trap (div, rem: b != 0 and not MIN / -1)
  *   template    { var: x }         the bound tree itself (no new value)
- *               { const: num }     tx.const; num is a number, { log2: k } or { eval: op, args } (the evaluator)
+ *               { const: num }     tx.const; num is a number, { log2: k }, { lowMask: k }, { highMask: k } or
+ *                                  { eval: op, args } (the evaluator)
  *               { op, args }       tx.make, sub-templates first, left to right
  */
 import type { NodePattern } from '../../framework/ir/patterns.js';
@@ -42,12 +44,15 @@ export type Guard =
   | { readonly pure: string }
   | { readonly pow2: string }
   | { readonly boolean: string }
+  | { readonly shift: string }
   | { readonly noTrap: readonly [string, string]; readonly op: 'div' | 'rem' };
 
 /** A number computed from the immediates of constant variables. */
 export type Num =
   | number
   | { readonly log2: string }
+  | { readonly lowMask: string }
+  | { readonly highMask: string }
   | { readonly eval: ValueOp; readonly args: readonly string[] };
 
 export type Tpl =
@@ -160,14 +165,17 @@ export function ruleSet(
 }
 
 // ---------- well-formedness ----------
-/** The variables a pattern binds (var, constVar), in left-to-right order, and the repeats (same). */
+/** The variables a pattern binds (var, constVar), in left-to-right order, and the repeats (same, a constant
+ * variable's later occurrences: the same constant). */
 export function patternVars(
   p: Pat,
   out: { binds: string[]; repeats: string[] } = { binds: [], repeats: [] },
 ) {
   if ('var' in p) out.binds.push(p.var);
-  else if ('constVar' in p) out.binds.push(p.constVar);
-  else if ('same' in p) out.repeats.push(p.same);
+  else if ('constVar' in p) {
+    if (out.binds.includes(p.constVar)) out.repeats.push(p.constVar);
+    else out.binds.push(p.constVar);
+  } else if ('same' in p) out.repeats.push(p.same);
   else if ('op' in p) for (const a of p.args) patternVars(a, out);
   return out;
 }
@@ -178,6 +186,8 @@ export function templateVars(t: Tpl, out: { uses: string[]; consts: string[] } =
     const n = t.const;
     if (typeof n === 'object') {
       if ('log2' in n) out.consts.push(n.log2);
+      else if ('lowMask' in n) out.consts.push(n.lowMask);
+      else if ('highMask' in n) out.consts.push(n.highMask);
       else out.consts.push(...n.args);
     }
   } else for (const a of t.args) templateVars(a, out);
@@ -216,16 +226,34 @@ function checkRule(r: Rule): void {
   for (const x of consts)
     if (!constVars.has(x)) fail(`${x} is used as a number but is not a constant variable`);
   for (const g of r.where ?? []) {
-    const names = 'pure' in g ? [g.pure] : 'pow2' in g ? [g.pow2] : 'boolean' in g ? [g.boolean] : g.noTrap;
+    const names =
+      'pure' in g
+        ? [g.pure]
+        : 'pow2' in g
+          ? [g.pow2]
+          : 'boolean' in g
+            ? [g.boolean]
+            : 'shift' in g
+              ? [g.shift]
+              : g.noTrap;
     for (const x of names) if (!binds.includes(x)) fail(`guard on unbound ${x}`);
     if ('pow2' in g && !constVars.has(g.pow2)) fail(`pow2(${g.pow2}) needs a constant variable`);
+    if ('shift' in g && !constVars.has(g.shift)) fail(`shift(${g.shift}) needs a constant variable`);
     if ('noTrap' in g && !g.noTrap.every(x => constVars.has(x))) fail('noTrap needs constant variables');
   }
 }
 
 // ---------- text ----------
 const numText = (n: Num): string =>
-  typeof n === 'number' ? String(n) : 'log2' in n ? `log2 ${n.log2}` : `${n.eval}(${n.args.join(', ')})`;
+  typeof n === 'number'
+    ? String(n)
+    : 'log2' in n
+      ? `log2 ${n.log2}`
+      : 'lowMask' in n
+        ? `lowMask ${n.lowMask}`
+        : 'highMask' in n
+          ? `highMask ${n.highMask}`
+          : `${n.eval}(${n.args.join(', ')})`;
 export function patText(p: Pat): string {
   if ('var' in p) return p.var;
   if ('constVar' in p) return `#${p.constVar}`;
@@ -242,6 +270,7 @@ export function guardText(g: Guard): string {
   if ('pure' in g) return `pure ${g.pure}`;
   if ('pow2' in g) return `pow2 ${g.pow2}`;
   if ('boolean' in g) return `bool ${g.boolean}`;
+  if ('shift' in g) return `shift ${g.shift}`;
   return `no trap(${g.noTrap.join(', ')})`;
 }
 /** A rule as one line: `mul(x, #k) → shl(x, #log2 k) if pow2 k`. */

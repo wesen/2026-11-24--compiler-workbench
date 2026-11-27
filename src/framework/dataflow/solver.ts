@@ -28,7 +28,7 @@ export interface SolveOptions<V> {
   readonly boundary?: V;
   transfer(block: string, input: V): V;
   /** Required for lattices of infinite height; called at loop heads with the previous and new value. */
-  widen?(previous: V, next: V, block: string): V;
+  widen?(previous: V, next: V, block: string, context: unknown): V;
   /** Widen at a loop head only after it has been visited this many times (default 0: from the first visit). */
   readonly widenAfter?: number;
   /** The fact flowing along one edge (forward: out(from) into to; backward: in(to) into from), e.g. branch refinement. */
@@ -37,6 +37,8 @@ export interface SolveOptions<V> {
   readonly strategy?: 'worklist' | 'round-robin';
   readonly maxIterations?: number;
   readonly maxRounds?: number;
+  /** The flow region's context (dataflow(): the per-region context), handed to `widen` like to transfer/edge. */
+  readonly context?: unknown;
 }
 
 export interface Solution<V> {
@@ -131,7 +133,7 @@ export function solve<V>(graph: FlowGraph, options: SolveOptions<V>): Solution<V
       );
     }
     const before = forward ? IN.get(b)! : OUT.get(b)!;
-    if (loopHeads.has(b) && options.widen && n > widenAfter) joined = options.widen(before, joined, b);
+    if (loopHeads.has(b) && options.widen && n > widenAfter) joined = options.widen(before, joined, b, options.context);
     const inChanged = !lattice.equal(before, joined);
     if (forward) IN.set(b, joined);
     else OUT.set(b, joined);

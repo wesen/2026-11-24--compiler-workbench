@@ -68,8 +68,8 @@ test('B1: the comparison sees a one-rule difference (a rule with another note ch
   assert.ok(i < SIMPLIFY_RULES.rules.findIndex(r => r.name === 'mul-pow2'));
 });
 
-test('B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework', () => {
-  assert.equal(SIMPLIFY_RULES.rules.length, 27);
+test('B1: the tables are data: names, text, 29 simplify and 40 fold rules, patterns convertible to the framework', () => {
+  assert.equal(SIMPLIFY_RULES.rules.length, 29);
   assert.equal(FOLD_RULES.rules.length, 40);
   const byName = Object.fromEntries(SIMPLIFY_RULES.rules.map(r => [r.name, r]));
   assert.equal(ruleText(byName['mul-pow2']), 'mul(x, #k) → shl(x, #log2 k) if pow2 k');

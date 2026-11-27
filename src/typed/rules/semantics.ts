@@ -104,6 +104,15 @@ export function compileSide(
       const i = slot.get(n.log2)!;
       return env => log2(env[i]);
     }
+    // the masks of the shift-mask rules: (1 << k) - 1 and its complement, k < w by the shift guard's domain
+    if ('lowMask' in n) {
+      const i = slot.get(n.lowMask)!;
+      return env => (1 << env[i]) - 1;
+    }
+    if ('highMask' in n) {
+      const i = slot.get(n.highMask)!;
+      return env => ~((1 << env[i]) - 1);
+    }
     // at 32 bits a computed constant is fold's own value (evalOp: binop, f32Op), so the two sides of a fold rule
     // are computed by two implementations (BIN for the pattern, binop for the replacement): a real cross-check
     const idx = n.args.map(a => slot.get(a)!),

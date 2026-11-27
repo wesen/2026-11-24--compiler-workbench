@@ -582,8 +582,10 @@ export const strength = typedPass({
       if (r[0] < 0) return;
       const k = v.args[1].imm as number,
         why = [`fact:ranges(${f.name})@r${tx.rev - 1}: ${v.args[0].text} in [${r[0]}, ${r[1]}]`];
+      // IRWB-037-E: the shift is logical (x ≥ 0, so shr and shru agree), which lets the simplifier's shift-mask
+      // rules see the result as a mask: (x >>> k) << k
       return v.op === 'div'
-        ? tx.make('shr', v.args[0].id, tx.const(log2(k)), { because: why, note: `x / ${k} with x ≥ 0` })
+        ? tx.make('shru', v.args[0].id, tx.const(log2(k)), { because: why, note: `x / ${k} with x ≥ 0` })
         : tx.make('and', v.args[0].id, tx.const(k - 1), { because: why, note: `x % ${k} with x ≥ 0` });
     });
   },
@@ -642,12 +644,20 @@ export const bce = typedPass({
       const last = lastStmt(st, b);
       if (!last || last.op !== 'br_if') continue;
       const c = st.get(last.cond!) as ValueRec;
-      if (c.op !== 'geu' || !isLength(c.args[1])) continue;
+      if (c.op !== 'geu') continue;
+      const lenV = st.get(c.args[1]) as ValueRec;
+      // IRWB-037-E: the length is either the buffer's word 0 (a load) or, for a frame buffer the front end sized
+      // itself, a constant; the constant case is what the corpus's Int32Array(n) indexing produces
+      const constLen = lenV.op === 'const' && !lenV.type ? (lenV.imm as number) : null;
+      if (constLen === null && !isLength(c.args[1])) continue;
       const trapB = st.get(last.then!) as BlockRec;
       if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') continue;
-      const idx = resolve(last.id, c.args[0]),
-        buf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number;
+      const idx = resolve(last.id, c.args[0]);
       if (idx.local === null) continue;
+      const buf =
+        constLen !== null
+          ? null
+          : ((st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number);
       // walk up the dominator tree for a branch whose taken edge proves idx < buf.length
       for (let d = dom.idom.get(b.id), child = b.id; d && d !== child; child = d, d = dom.idom.get(d)) {
         const t = lastStmt(st, st.get(d) as BlockRec);
@@ -658,19 +668,41 @@ export const bce = typedPass({
           cond = st.get(cond.args[0]) as ValueRec;
           onTrue = false;
         }
-        if (cond.op === 'ge')
-          onTrue = !onTrue; // x >= len taken means x < len on the other arm
-        else if (cond.op !== 'lt') continue;
-        const arm = onTrue ? t.then! : t.else!;
-        if (!dom.dominates(arm, b.id)) continue;
-        const x = st.get(cond.args[0]) as ValueRec;
-        if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
         // the index and the buffer are the same values at the branch and at the check
         const same = (l: number) => {
           const a = reach.reachingAt(t.id, l).sort().join(),
             z = reach.reachingAt(idx.sid, l).sort().join();
           return a === z;
         };
+        // IRWB-037-E: a dominating identical check proved it: if (idx >=u len) trap leaves idx <u len on the arm
+        // that does not trap, and that arm dominating this block means every path here already passed it
+        if (cond.op === 'geu') {
+          const ix = resolve(t.id, cond.args[0]);
+          if (ix.local !== idx.local || !same(idx.local)) continue;
+          const theirLen = st.get(cond.args[1]) as ValueRec;
+          const sameLength =
+            (constLen !== null && theirLen.op === 'const' && !theirLen.type && theirLen.imm === constLen) ||
+            (buf !== null && isLength(cond.args[1], buf) && same(buf));
+          if (!sameLength) continue;
+          const okArm = onTrue ? t.else! : t.then!;
+          if (!dom.dominates(okArm, b.id)) continue;
+          tx.replaceStmt(
+            last.id,
+            { op: 'br', to: last.else },
+            {
+              because: [t.id],
+              note: `${t.id} already checked ${f.locals[idx.local].name} the same way`,
+            },
+          );
+          break;
+        }
+        if (buf === null) continue; // the lt/ge case needs the buffer's own length load
+        if (cond.op === 'ge') onTrue = !onTrue; // x >= len taken means x < len on the other arm
+        else if (cond.op !== 'lt') continue;
+        const arm = onTrue ? t.then! : t.else!;
+        if (!dom.dominates(arm, b.id)) continue;
+        const x = st.get(cond.args[0]) as ValueRec;
+        if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
         if (!same(idx.local) || !same(buf)) continue;
         if (ranges.at(t.id, idx.local)[0] < 0) continue;
         tx.replaceStmt(
@@ -1113,6 +1145,8 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
   /**
    * IRWB-003: two levels of inlining, then O2+, then loop rotation and a cfg to merge what rotation leaves in a
    * line. Meant for the backend options chains, coalesce and homes. No dfe: it needs the program's entries.
+   * IRWB-037-E: a simplify after strength, so the shift-mask rules see strength's logical shifts (O2+ stays as the
+   * book defines it).
    */
   speed: [
     'inline',
@@ -1128,6 +1162,7 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'licm',
     'lvn',
     'strength',
+    'simplify',
     'bce',
     'subst',
     'subst',

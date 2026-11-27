@@ -44,7 +44,7 @@ export interface DataflowSpec<S, V, C = unknown> {
   regions(view: IRView<S>, params: unknown): readonly (FlowRegion & { readonly context: C })[];
   transfer(block: string, input: V, context: C, region: FlowRegion): V;
   boundary?(region: FlowRegion, context: C): V;
-  widen?(previous: V, next: V, block: string): V;
+  widen?(previous: V, next: V, block: string, context: C): V;
   readonly widenAfter?: number;
   edge?(from: string, to: string, value: V, context: C, region: FlowRegion): V;
   readonly strategy?: 'worklist' | 'round-robin';
@@ -128,7 +128,7 @@ export function dataflow<S, V, C = unknown>(spec: DataflowSpec<S, V, C>): Datafl
         lattice: spec.lattice,
         boundary: spec.boundary?.(region, region.context),
         transfer: (b, v) => spec.transfer(b, v, region.context, region),
-        widen: spec.widen,
+        widen: spec.widen && ((before, joined, b) => spec.widen!(before, joined, b, region.context)),
         widenAfter: spec.widenAfter,
         edge: spec.edge && ((from, to, v) => spec.edge!(from, to, v, region.context, region)),
         strategy: spec.strategy,
