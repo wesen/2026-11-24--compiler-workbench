@@ -157,8 +157,9 @@ T8 (ONNX) is not queued.
 
 - **Codex:** Sol medium and Astra medium, and Terra low (`gpt-6.1-terra`; the account cannot run `gpt-6.2-terra`).
 - **Claude subagents** (few): Opus and Fable, default effort.
-- **Pi with only the LunaRoute extension:** GLM 5.3 high; DeepSeek 4.1 Flash high and xhigh; GLM 5.3 Flash high and xhigh.
-  - GLM 5.3 Flash's `xhigh` maps to `high` in Pi's catalogue, so that pair is one configuration twice: a replicate, unless the user picks `max`.
+- **Pi with only the LunaRoute extension:** GLM 5.3 high; DeepSeek 4.1 Flash high and xhigh; GLM 5.3 Flash high and max.
+  - The user asked for GLM 5.3 Flash at xhigh, but Pi's catalogue maps its `xhigh` to `high`. Asked, they chose max instead.
+- **Small specified fixes** (such as F2–F6) go to one cheap Codex agent (Terra low), not all eleven cells (the user's choice, 2026-11-27).
 - **Eleven cells per task.** Only Opus and Fable use Claude tokens.
 
 ### T3: checked fusion _(ready; base `2e035c6`; queued first)_
