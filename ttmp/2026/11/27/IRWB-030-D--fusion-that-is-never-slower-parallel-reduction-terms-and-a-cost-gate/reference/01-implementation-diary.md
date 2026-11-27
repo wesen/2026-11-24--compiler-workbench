@@ -57,7 +57,7 @@ Output digests were equal across all configurations of a program. layernorm and 
 
 Script 09 (M1c) measured two bodies the M1 programs did not cover, four alternating rounds of three timed cases (N = 4096, C = 1024): a square root (`sum(j) sqrt(x*x)`) went from 0.266 to 0.157 ms when staged, in every round; five single-instruction operations (`((x*2+1)*x-3)*x`) went from 0.169 to 0.153 ms in the median, but two rounds were faster staged and two slower (0.148/0.154, 0.172/0.178). That is not a consistent win, so the rule keeps single-instruction chains on thread 0, and an operation-count threshold goes to Later.
 
-Script 06 (M3) tested the design's hypothesis, that block mode loses with few long rows. **It does not.** Rows of 1,024 with N from 1 to 4,096: fused is faster at every N (softmax N = 1: 0.015 against 0.071 ms; layernorm-inside N = 1: 0.015 against 0.120; attention Q = 1: 0.075 against 0.126). At a fixed 2^22 elements, fused is faster from 1 row of 2^22 (203 against 392 ms: stage 2's row scalars also fold the whole row in one thread, from global memory) down to rows of 64 (0.372 against 0.701). It is **slower with short rows**: 2^18 rows of 16 elements, 0.737 against 0.795 ms in the median but 0.738 against 0.675 in round 0; 2^20 rows of 4, 2.935 against 0.620 (4.7 times slower). A 32-thread block per 4-element row leaves 28 lanes idle and pays a barrier per member for four elements. Every shape gave the same output digest fused and unfused (`06-m3-rows.summary.md`).
+Script 06 (M3) tested the design's hypothesis, that block mode loses with few long rows. **It does not.** Rows of 1,024 with N from 1 to 4,096: fused is faster at every N (softmax N = 1: 0.015 against 0.071 ms; layernorm-inside N = 1: 0.015 against 0.120; attention Q = 1: 0.075 against 0.126). At a fixed 2^22 elements, fused is faster from 1 row of 2^22 (203 against 392 ms: stage 2's row scalars also fold the whole row in one thread, from global memory) down to rows of 64 (0.372 against 0.701). It is **slower with short rows**: 2^18 rows of 16 elements, 0.737 against 0.795 ms in the median but 0.738 against 0.675 in round 0; 2^20 rows of 4, 2.935 against 0.620 (4.7 times slower). A 32-thread block per 4-element row leaves 28 lanes idle and pays a barrier per member for four elements. Every shape gave the same output digest fused and unfused (`06-m3-rows.summary.txt`).
 
 So the gate's quantity is the row length, not the row count. The mechanism designed in step 1 (the call's shape values, choose between the two checked whole-program sources) stays; the rule becomes "every block-mode kernel's longest row has at least L* elements". Script 10 (M3b) locates L* with row lengths 4 to 128 at 2^22 and 2^18 elements (softmax), layernorm-inside, and attention with few keys.
 
@@ -69,7 +69,7 @@ So the gate's quantity is the row length, not the row count. The mechanism desig
 
 ## Step 6: M3b fixes the gate at 24 elements, M2 the chunk at 256
 
-Script 10 (M3b), medians of three rounds (`10-m3b-short-rows.summary.md`, table by script 13). Unfused over fused:
+Script 10 (M3b), medians of three rounds (`10-m3b-short-rows.summary.txt`, table by script 13). Unfused over fused:
 
 | Row length | softmax, 2^22 elements | softmax, 2^18 | layernorm-inside, 2^22 |
 | ---: | ---: | ---: | ---: |

@@ -102,7 +102,7 @@ An outermost reduction's axes always have `dim` or `blocks` extents. `split-sum`
 
 **Rule.** `fuseAt(fn, plan, shapes)` (`fusion.ts`): when some block-mode kernel's *longest row* has fewer than **24 elements**, the call runs stage 2's lowering. The longest row is taken over the kernel's members and staged tensors, at the call's shape values. `runTixCuda(..., { fuse: true })` computes the shape values from its inputs (`shapeValues`) and applies the rule. `cudaSource` and `checkLowering` take no inputs and always give and check the fused source. So the gate only ever chooses between two sources that are each checked. The reason string names the kernel and its row length.
 
-**The measurements behind it.** The design assumed that few, long rows would be the slow case. M3 (script 06) disproved this, and M3b (script 10) located the real one. Each series below is one GPU call per lowering and round, three rounds, medians. Full tables are in `scripts/06-m3-rows.summary.md` and `scripts/10-m3b-short-rows.summary.md`.
+**The measurements behind it.** The design assumed that few, long rows would be the slow case. M3 (script 06) disproved this, and M3b (script 10) located the real one. Each series below is one GPU call per lowering and round, three rounds, medians. Full tables are in `scripts/06-m3-rows.summary.txt` and `scripts/10-m3b-short-rows.summary.txt`.
 
 | Series | Unfused / fused |
 | --- | --- |
