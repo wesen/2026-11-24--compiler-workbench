@@ -316,15 +316,21 @@ export const specializeBuffer = typedPass({
             note: `${f.locals[p].name}.length as bound`,
           }),
         });
-        for (const i of [...(cellsRead.get(p) ?? [])].sort((a, b) => a - b))
+        // the length is as bound from here on, so the cells are read without the bounds check; two cells that
+        // share a word (cells 2k and 2k + 1 are the halves of the word at byte 4 + 4k) are compared at once
+        const read = cellsRead.get(p) ?? new Set<number>();
+        for (const i of [...read].sort((a, b) => a - b)) {
+          if (i % 2 === 1 && read.has(i - 1)) continue;
+          const pair = i % 2 === 0 && read.has(i + 1);
           tests.push({
             cond: tx.make(
               'eq',
-              tx.make('load16u', tx.make('caddr', tx.get(p), tx.const(i)), { imm: 4 }),
-              tx.const(cells[i], { because }),
-              { because, note: `${f.locals[p].name}[${i}] as bound` },
+              tx.make(pair ? 'load' : 'load16u', tx.get(p), { imm: 4 + 2 * i }),
+              tx.const(pair ? cells[i] | (cells[i + 1] << 16) : cells[i], { because }),
+              { because, note: `${f.locals[p].name}[${i}${pair ? `..${i + 1}` : ''}] as bound` },
             ),
           });
+        }
       }
     // a promised candidate set: the last candidate needs no test; guarded: every candidate is tested
     const tested = candidate ? (guard ? candidates.length : candidates.length - 1) : 0;
@@ -375,7 +381,7 @@ export const specializeBuffer = typedPass({
 /**
  * The whole sequence for an interpreter (IRWB-036-G): specialize on the buffer, merge the straight-line variants
  * (`cfg`), promote the frame to locals while its addresses are still written out (`frame-slots`), propagate the
- * copies that leaves (`copyprop`, `dce`), then the `speed` pipeline. Each step is a checked revision of `p`; a
+ * copies that leaves (`copyprop`, `dce`, `copyback`), then the `speed` pipeline. Each step is a checked revision of `p`; a
  * step the contract rejects is reported and skipped, as in `Program.pipeline`.
  */
 export async function specializeInterpreter(
@@ -384,13 +390,14 @@ export async function specializeInterpreter(
   opts: { budget?: number; guard?: boolean } = {},
 ): Promise<Record<string, unknown>[]> {
   const { frameSlots } = await import('./frame-slots.js');
-  const { copyprop } = await import('./copyprop.js');
+  const { copyprop, copyback } = await import('./copyprop.js');
   const steps: Record<string, unknown>[] = [{ ...(await p.specializeBuffer(bindings, opts)) }];
   const run = async (x: Parameters<typeof p.pipeline>[0]) =>
     steps.push(...((await p.pipeline(x)).steps as Record<string, unknown>[]));
   await run(['cfg']);
   for (const pass of [frameSlots, copyprop]) steps.push({ ...(await p.apply(pass)) });
   await run(['dce']);
+  steps.push({ ...(await p.apply(copyback)) });
   await run('speed');
   return steps;
 }

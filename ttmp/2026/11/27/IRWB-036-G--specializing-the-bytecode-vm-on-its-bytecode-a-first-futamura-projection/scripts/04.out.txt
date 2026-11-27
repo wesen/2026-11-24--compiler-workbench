@@ -1,0 +1,69 @@
+copyprop dce rejected [] changed copyprop dce
+speed rejected [] changed constprop dce subst rotate
+copyprop dce rejected [] changed copyprop
+speed rejected [] changed licm cfg
+┌─────────┬──────────────────┬───────┬────────┬──────┬──────┬──────┬────────────┐
+│ (index) │ label            │ bytes │ blocks │ e0   │ r0   │ e34  │ r34        │
+├─────────┼──────────────────┼───────┼────────┼──────┼──────┼──────┼────────────┤
+│ 0       │ 'promoted'       │ 1072  │ 9      │ 1366 │ 1152 │ 1222 │ 1298667478 │
+│ 1       │ '+ copyprop dce' │ 116   │ 9      │ 116  │ 1152 │ 128  │ 1298667478 │
+│ 2       │ '+ speed'        │ 108   │ 7      │ 91   │ 1152 │ 103  │ 1298667478 │
+│ 3       │ '+ copyprop dce' │ 108   │ 7      │ 91   │ 1152 │ 103  │ 1298667478 │
+│ 4       │ '+ speed'        │ 108   │ 7      │ 91   │ 1152 │ 103  │ 1298667478 │
+└─────────┴──────────────────┴───────┴────────┴──────┴──────┴──────┴────────────┘
+function runVm(code: buffer, entry: i32, n: i32, seed: i32): i32
+bb:runVm.n0  -> [.n1, .n2]
+    s:runVm.450  if (entry == 0) goto .n1 else .n2
+bb:runVm.n1  -> [.n7, .n12]
+    s:runVm.457  slot24 = 0
+    s:runVm.459  slot16 = n
+    s:runVm.460  slot20 = seed
+    s:runVm.497  if (n == 0) goto .n7 else .n12
+bb:runVm.n2  -> [.n9, .n14]
+    s:runVm.469  slot16 = n
+    s:runVm.470  slot20 = seed
+    s:runVm.499  if (n == 0) goto .n9 else .n14
+bb:runVm.n7  -> []
+    s:runVm.236  return slot24
+bb:runVm.n9  -> []
+    s:runVm.252  return slot20
+bb:runVm.n12  -> [.n7, .n12]
+    s:runVm.477  slot0 = (slot24 + slot20)
+    s:runVm.480  slot24 = slot20
+    s:runVm.482  slot20 = slot0
+    s:runVm.485  slot0 = (slot16 - 1)
+    s:runVm.486  slot16 = slot0
+    s:runVm.498  if (slot0 == 0) goto .n7 else .n12
+bb:runVm.n14  -> [.n9, .n14]
+    s:runVm.489  slot0 = (slot20 * 33)
+    s:runVm.491  slot0 = (slot0 + slot16)
+    s:runVm.492  slot20 = slot0
+    s:runVm.495  slot0 = (slot16 - 1)
+    s:runVm.496  slot16 = slot0
+    s:runVm.500  if (slot0 == 0) goto .n9 else .n14
+hand-specialized: { bytes: 76, seededFib: 75, rollingChecksum: 74 }
+function seededFib(n: i32, seed: i32): i32
+bb:seededFib.0  -> [.2, .3]
+    s:seededFib.0 a = 0
+    s:seededFib.1 b = seed
+    s:seededFib.2 remaining = n
+    s:seededFib.12 if (remaining <= 0) goto .2 else .3
+bb:seededFib.2  -> []
+    s:seededFib.11 return a
+bb:seededFib.3  -> [.2, .3]
+    s:seededFib.5 next = (a + b)
+    s:seededFib.6 a = b
+    s:seededFib.7 b = next
+    s:seededFib.8 remaining = (remaining - 1)
+    s:seededFib.13 if (remaining <= 0) goto .2 else .3
+function rollingChecksum(n: i32, seed: i32): i32
+bb:rollingChecksum.0  -> [.2, .3]
+    s:rollingChecksum.0 h = seed
+    s:rollingChecksum.1 remaining = n
+    s:rollingChecksum.9 if (remaining <= 0) goto .2 else .3
+bb:rollingChecksum.2  -> []
+    s:rollingChecksum.8 return h
+bb:rollingChecksum.3  -> [.2, .3]
+    s:rollingChecksum.4 h = ((h * 33) + remaining)
+    s:rollingChecksum.5 remaining = (remaining - 1)
+    s:rollingChecksum.10 if (remaining <= 0) goto .2 else .3

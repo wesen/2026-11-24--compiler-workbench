@@ -1,0 +1,58 @@
+specialize-buffer  r1 edits 122 check 40/40
+cfg                r2 edits 340 check 40/40
+frame-slots        r3 edits 108 check 40/40
+copyprop           r4 edits 17 check 40/40
+dce                r5 edits 245 check 40/40
+copyback           r6 edits 8 check 40/40
+inline             no change
+inline             no change
+cfg                no change
+fold               no change
+simplify           no change
+constprop          r7 edits 3 check 40/40
+fold               no change
+simplify           no change
+dce                r8 edits 3 check 40/40
+cfg                no change
+licm               no change
+lvn                no change
+strength           no change
+bce                no change
+subst              r9 edits 2 check 40/40
+subst              no change
+dce                no change
+cfg                no change
+subst              no change
+rotate             r10 edits 6 check 40/40
+cfg                no change
+function runVm(code: buffer, entry: i32, n: i32, seed: i32): i32
+bb:runVm.n0  -> [.n1, .n2]
+    s:runVm.450  if (entry == 0) goto .n1 else .n2
+bb:runVm.n1  -> [.n7, .n12]
+    s:runVm.457  slot24 = 0
+    s:runVm.459  slot16 = n
+    s:runVm.460  slot20 = seed
+    s:runVm.497  if (slot16 == 0) goto .n7 else .n12
+bb:runVm.n2  -> [.n9, .n14]
+    s:runVm.469  slot16 = n
+    s:runVm.470  slot20 = seed
+    s:runVm.499  if (slot16 == 0) goto .n9 else .n14
+bb:runVm.n7  -> []
+    s:runVm.236  return slot24
+bb:runVm.n9  -> []
+    s:runVm.252  return slot20
+bb:runVm.n12  -> [.n7, .n12]
+    s:runVm.478  slot28 = (slot24 + slot20)
+    s:runVm.480  slot24 = slot20
+    s:runVm.482  slot20 = slot28
+    s:runVm.486  slot16 = (slot16 - 1)
+    s:runVm.498  if (slot16 == 0) goto .n7 else .n12
+bb:runVm.n14  -> [.n9, .n14]
+    s:runVm.492  slot20 = ((slot20 * 33) + slot16)
+    s:runVm.496  slot16 = (slot16 - 1)
+    s:runVm.500  if (slot16 == 0) goto .n9 else .n14
+┌─────────┬───────────────┬───────┬────────┬────┬──────┬─────┬────────────┐
+│ (index) │ label         │ bytes │ blocks │ e0 │ r0   │ e34 │ r34        │
+├─────────┼───────────────┼───────┼────────┼────┼──────┼─────┼────────────┤
+│ 0       │ 'specialized' │ 96    │ 7      │ 79 │ 1152 │ 79  │ 1298667478 │
+└─────────┴───────────────┴───────┴────────┴────┴──────┴─────┴────────────┘

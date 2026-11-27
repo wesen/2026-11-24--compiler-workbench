@@ -1,0 +1,23 @@
+rejected: [] variants: 18
+function runVm(code: buffer, entry: i32, n: i32, seed: i32): i32
+bb:runVm.n0  -> [.n4, .n7]
+    s:runVm.298  slot16 = n
+    s:runVm.299  slot20 = seed
+    s:runVm.312  if (slot16 == 0) goto .n4 else .n7
+bb:runVm.n4  -> []
+    s:runVm.192  return slot20
+bb:runVm.n7  -> [.n4, .n7]
+    s:runVm.307  slot20 = (slot20 + (slot16 * slot16))
+    s:runVm.311  slot16 = (slot16 - 1)
+    s:runVm.313  if (slot16 == 0) goto .n4 else .n7
+squares general: { result: 658, steps: 6994, bytes: 840 } specialized: { result: 658, steps: 65, bytes: 44 } expected 658
+┌─────────┬──────────────┬───────┬───────┬─────┬──────┬──────────┐
+│ (index) │ label        │ entry │ bytes │ n0  │ n12  │ perTrip  │
+├─────────┼──────────────┼───────┼───────┼─────┼──────┼──────────┤
+│ 0       │ 'general r0' │ 0     │ 840   │ 166 │ 7678 │ '626.00' │
+│ 1       │ 'general r0' │ 34    │ 840   │ 166 │ 6874 │ '559.00' │
+│ 2       │ 'promised'   │ 0     │ 96    │ 7   │ 79   │ '6.00'   │
+│ 3       │ 'promised'   │ 34    │ 96    │ 7   │ 79   │ '6.00'   │
+│ 4       │ 'guarded'    │ 0     │ 3236  │ 250 │ 1150 │ '75.00'  │
+│ 5       │ 'guarded'    │ 34    │ 3236  │ 268 │ 1228 │ '80.00'  │
+└─────────┴──────────────┴───────┴───────┴─────┴──────┴──────────┘

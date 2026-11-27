@@ -1,0 +1,49 @@
+rejected: []
+function runVm(code: buffer, entry: i32, n: i32, seed: i32): i32
+bb:runVm.n0  -> [.n1, .n2]
+    s:runVm.450  if (entry == 0) goto .n1 else .n2
+bb:runVm.n1  -> [.n7, .n12]
+    s:runVm.457  slot24 = 0
+    s:runVm.459  slot16 = n
+    s:runVm.460  slot20 = seed
+    s:runVm.497  if (slot16 == 0) goto .n7 else .n12
+bb:runVm.n2  -> [.n9, .n14]
+    s:runVm.469  slot16 = n
+    s:runVm.470  slot20 = seed
+    s:runVm.499  if (slot16 == 0) goto .n9 else .n14
+bb:runVm.n7  -> []
+    s:runVm.236  return slot24
+bb:runVm.n9  -> []
+    s:runVm.252  return slot20
+bb:runVm.n12  -> [.n7, .n12]
+    s:runVm.478  slot28 = (slot24 + slot20)
+    s:runVm.480  slot24 = slot20
+    s:runVm.482  slot20 = slot28
+    s:runVm.486  slot16 = (slot16 - 1)
+    s:runVm.498  if (slot16 == 0) goto .n7 else .n12
+bb:runVm.n14  -> [.n9, .n14]
+    s:runVm.492  slot20 = ((slot20 * 33) + slot16)
+    s:runVm.496  slot16 = (slot16 - 1)
+    s:runVm.500  if (slot16 == 0) goto .n9 else .n14
+rejected: []
+rejected: []
+guarded assumptions: {}
+┌─────────┬───────────────────────────────────────┬───────┬────────┬───────┬───────┬───────────┬───────────┬──────────┬──────┐
+│ (index) │ label                                 │ bytes │ blocks │ e0    │ e34   │ closed0   │ closed34  │ variants │ over │
+├─────────┼───────────────────────────────────────┼───────┼────────┼───────┼───────┼───────────┼───────────┼──────────┼──────┤
+│ 0       │ 'general r0'                          │ 840   │ 82     │ 7678  │ 6874  │ '0.00%'   │ '0.00%'   │          │      │
+│ 1       │ 'general speed'                       │ 904   │ 54     │ 9286  │ 8218  │ '-21.15%' │ '-19.76%' │          │      │
+│ 2       │ 'specialize-buffer only'              │ 1652  │ 39     │ 2209  │ 1957  │ '71.93%'  │ '72.31%'  │ 38       │ 0    │
+│ 3       │ 'specialized (code + entry promised)' │ 96    │ 7      │ 79    │ 79    │ '99.95%'  │ '99.93%'  │ 38       │ 0    │
+│ 4       │ 'code promised, entry unbound'        │ 2792  │ 108    │ 11711 │ 10487 │ '-53.04%' │ '-53.13%' │ 111      │ 0    │
+│ 5       │ 'guarded (nothing assumed)'           │ 3236  │ 97     │ 1150  │ 1228  │ '85.86%'  │ '83.03%'  │ 38       │ 0    │
+│ 6       │ 'budget 0'                            │ 904   │ 54     │ 9286  │ 8218  │ '-21.15%' │ '-19.76%' │ 0        │ 2    │
+│ 7       │ 'budget 4'                            │ 1244  │ 56     │ 10866 │ 9702  │ '-41.93%' │ '-41.59%' │ 4        │ 2    │
+│ 8       │ 'budget 8'                            │ 1272  │ 57     │ 10803 │ 9641  │ '-41.10%' │ '-40.69%' │ 8        │ 4    │
+│ 9       │ 'budget 16'                           │ 1376  │ 60     │ 10703 │ 9589  │ '-39.79%' │ '-39.93%' │ 16       │ 3    │
+│ 10      │ 'budget 24'                           │ 1596  │ 60     │ 12955 │ 11439 │ '-69.41%' │ '-67.13%' │ 24       │ 2    │
+│ 11      │ 'budget 32'                           │ 1728  │ 60     │ 13172 │ 11552 │ '-72.26%' │ '-68.79%' │ 32       │ 2    │
+│ 12      │ 'budget 37'                           │ 2056  │ 61     │ 15161 │ 694   │ '-98.42%' │ '90.88%'  │ 37       │ 1    │
+│ 13      │ 'budget 38'                           │ 96    │ 7      │ 79    │ 79    │ '99.95%'  │ '99.93%'  │ 38       │ 0    │
+│ 14      │ 'hand-specialized (two functions)'    │ 76    │        │ 75    │ 74    │ '100.00%' │ '100.00%' │          │      │
+└─────────┴───────────────────────────────────────┴───────┴────────┴───────┴───────┴───────────┴───────────┴──────────┴──────┘

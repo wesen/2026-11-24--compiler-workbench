@@ -3,7 +3,9 @@ Title: Specializing the bytecode VM on a constant buffer
 Ticket: IRWB-036-G
 Status: active
 Topics:
-    - typed
+    - compiler
+    - ir
+    - performance
 DocType: design-doc
 Intent: long-term
 Owners: []
@@ -173,3 +175,24 @@ None in `src/framework/`. In `src/typed/`: the binding forms, `assume` for them,
 - Bindings for buffers reached through record fields (needs alias facts for record pointers).
 - Functions with calls (needs effect summaries to keep the no-write check).
 - A second Futamura projection (specializing the specializer) needs the specializer written in Typed.
+
+## Changes during implementation
+
+Recorded here so the design above stays what was committed first; the report has the measurements.
+
+- **Transition compression.** The first implementation made one variant per original block and state, and the
+  budget of 256 ran out at `pc = 14` (the argument "at most 11 blocks per instruction" forgot the chain of opcode
+  tests). A decided jump now continues in the same variant unless the target is the head of an original loop,
+  already has a variant for the state, or was already copied into this variant. The VM then needs 38 variants.
+- **Budget.** The default is 4 variants per bound cell (argument in `specialize-buffer.ts`), 256 for this image,
+  against a measured need of 38.
+- **Pipeline.** `frame-slots` must run before `licm`/`lvn`, which hoist the constant frame addresses into locals
+  shared across blocks. The sequence is `specialize-buffer`, `cfg`, `frame-slots`, `copyprop`, `dce`, `copyback`,
+  `speed` (`specializeInterpreter`).
+- **Two more small passes.** `copyprop` (block-local copy propagation) and `copyback` (`t = E; a = t` → `a = E`):
+  the promoted stack is one local assigned many times, a shape `subst` does not forward.
+- **`frame-slots`** also resolves an address through a local assigned earlier in the same block, the front
+  end's `t17 = address; store32[t17] = …`.
+- **Guard.** After the length test the cells are compared without the bounds check, two cells per 32-bit word.
+- **BTA entry values.** Only locals that are not parameters and candidate parameters start static, as designed;
+  with `entry` unbound the division leaves `pc` dynamic, which the report measures.

@@ -15,7 +15,7 @@ const { BindingsIR } = await import('../../dist/typed/specialize.js');
 const { specializeBuffer, specializeInterpreter } = await import('../../dist/typed/specialize-buffer.js');
 const { bindingTimes } = await import('../../dist/typed/bta.js');
 const { frameSlots } = await import('../../dist/typed/frame-slots.js');
-const { copyprop } = await import('../../dist/typed/copyprop.js');
+const { copyprop, copyback } = await import('../../dist/typed/copyprop.js');
 const { createArtifact } = await import('../../dist/framework/contracts/index.js');
 
 const project = projectSource('bytecode-vm', projectAllFiles('bytecode-vm'));
@@ -80,8 +80,8 @@ test('the VM specialized on its bytecode: checked steps, no general loop, every 
   // the measurement of the report (n = 12, seed = 8): general 7,678 and 6,874; hand-written 75 and 74
   const fib = rv32(p, inputs.code, 0, 12, 8).steps,
     sum = rv32(p, inputs.code, 34, 12, 8).steps;
-  assert.ok(fib <= 91 && sum <= 103, `specialized: ${fib} and ${sum} instructions`);
-  assert.ok(s.value.bytes <= 108, `${s.value.bytes} code bytes`);
+  assert.ok(fib <= 79 && sum <= 79, `specialized: ${fib} and ${sum} instructions`);
+  assert.ok(s.value.bytes <= 96, `${s.value.bytes} code bytes`);
 });
 
 test('cells that are not the ones the program is run with are rejected by the meaning contract', async () => {
@@ -152,16 +152,61 @@ test('guarded: nothing is assumed, other bytecode runs the general loop, the bou
       }
   const bound = rv32(p, inputs.code, 0, 12, 8).steps,
     unbound = rv32(p, { cells: other }, 0, 12, 8).steps;
-  assert.ok(bound < 2000 && unbound > 7000, `bound ${bound}, other bytecode ${unbound}`);
+  assert.ok(bound < 1300 && unbound > 7000, `bound ${bound}, other bytecode ${unbound}`);
 });
 
-test('frame-slots does nothing while an index is dynamic; copyprop keeps the meaning on corpus programs', async () => {
+test('another bytecode image: seed plus the sum of squares becomes one loop', async () => {
+  const squares = [2, 0, 7, 26, 2, 1, 2, 0, 2, 0, 6, 0, 4, 0, 3, 1, 2, 0, 1, 1, 5, 0, 3, 0, 8, 0, 2, 1, 0, 0];
+  const meta = { ingest: { tape: true }, inputs: { runVm: { code: { cells: squares }, entry: 0, n: [0, 12], seed: [-8, 8] } } };
+  const p = Program.fromProject(projectSource('bytecode-vm-squares', { 'main.typed': project.source, 'project.json': JSON.stringify(meta) }));
+  const b = createArtifact(BindingsIR, 'squares', {
+    formatVersion: 1,
+    source: 'test',
+    bindings: [
+      { fn: 'runVm', param: 'code', cells: squares, entity: 'squares' },
+      { fn: 'runVm', param: 'entry', oneOf: [0], entity: 'squares.entry' },
+    ],
+  });
+  assert.deepEqual(rejected(await specializeInterpreter(p, b)), []);
+  assert.doesNotMatch(p.listing('runVm'), /load|store|frame|caddr/);
+  const r = rv32(p, { cells: squares }, 0, 12, 8);
+  assert.equal(r.result, 8 + 650);
+  assert.ok(r.steps <= 65, `${r.steps} instructions`);
+});
+
+test('bytecode that leaves the buffer or underflows the stack still traps where the general VM traps', async () => {
+  for (const image of [[8, 100], [1, 5, 4, 0, 0, 0], [9, 0]]) {
+    // JUMP 100: the fetch is out of bounds. PUSH 5; ADD: the stack underflows. Opcode 9: returns 0.
+    const meta = { ingest: { tape: true }, inputs: { runVm: { code: { cells: image }, entry: 0, n: [0, 3], seed: [0, 3] } } };
+    const src = () => projectSource('bytecode-vm-odd', { 'main.typed': project.source, 'project.json': JSON.stringify(meta) });
+    const general = Program.fromProject(src()),
+      p = Program.fromProject(src());
+    const b = createArtifact(BindingsIR, 'odd', {
+      formatVersion: 1,
+      source: 'test',
+      bindings: [
+        { fn: 'runVm', param: 'code', cells: image, entity: 'odd' },
+        { fn: 'runVm', param: 'entry', oneOf: [0], entity: 'odd.entry' },
+      ],
+    });
+    assert.deepEqual(rejected(await specializeInterpreter(p, b)), [], JSON.stringify(image));
+    const c = benchCase(storeOf(general.head.value), 'runVm', { code: { cells: image }, entry: 0, n: 1, seed: 1 });
+    const a = evaluate(storeOf(general.head.value), c.fn, c.args, c.memory),
+      z = evaluate(storeOf(p.head.value), c.fn, c.args, c.memory);
+    assert.deepEqual([z.trap, z.result], [a.trap, a.result], JSON.stringify(image));
+    assert.equal(!!a.trap, image[0] !== 9, JSON.stringify(image));
+  }
+});
+
+test('frame-slots does nothing while an index is dynamic; copyprop and copyback keep the meaning on corpus programs', async () => {
   const p = fresh();
   assert.equal((await p.apply(frameSlots)).changed, false);
   for (const id of ['sort', 'histogram', 'records', 'gcd']) {
     const q = Program.fromProject(projectSource(id, projectFiles(id)));
     await q.pipeline('O1');
-    const r = await q.apply(copyprop); // throws contractRejected if the meaning changed
-    if (r.changed) assert.match(r.check, /^(\d+)\/\1$/, id);
+    for (const pass of [copyprop, copyback]) {
+      const r = await q.apply(pass); // throws contractRejected if the meaning changed
+      if (r.changed) assert.match(r.check, /^(\d+)\/\1$/, id);
+    }
   }
 });

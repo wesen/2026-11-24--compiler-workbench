@@ -1,0 +1,8 @@
+code bound
+  static : sp t10
+  dynamic: pc (s:runVm.5) t6 (s:runVm.8) opcode (s:runVm.9) t8 (s:runVm.10) operand (s:runVm.11) t17 (s:runVm.34) t18 (s:runVm.48) right (s:runVm.61) left (s:runVm.67) right (s:runVm.81) left (s:runVm.87) right (s:runVm.101) left (s:runVm.107)
+  buffer loads: static 0 dynamic 2
+code and entry bound
+  static : entry sp pc t6 opcode t8 operand t10
+  dynamic: t17 (s:runVm.34) t18 (s:runVm.48) right (s:runVm.61) left (s:runVm.67) right (s:runVm.81) left (s:runVm.87) right (s:runVm.101) left (s:runVm.107)
+  buffer loads: static 2 dynamic 0
