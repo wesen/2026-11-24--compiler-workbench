@@ -10,7 +10,19 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/strategy/sync.ts
+      Note: Synchronous plan executor (the interpreter is async)
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: emitGemm and the printer that reads every decision from the schedule
+    - Path: repo://src/tensor/schedule.ts
+      Note: The schedule IR, its five passes and the accumulation-order analysis
+    - Path: repo://src/tensor/strategy.ts
+      Note: The rule as a Strategy IR plan, the variants and the cost model
+    - Path: repo://tests/tensor/schedule.test.mjs
+      Note: The IR, passes, order analysis and the rejected mutants
+    - Path: repo://tests/tensor/tiled-gpu.test.mjs
+      Note: GB10 exactness at 512^3 and the edges
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T10:07:06.865265651-05:00

@@ -1,5 +1,5 @@
 ---
-Title: 'A schedule IR between Tix and CUDA, and exact tiled contractions'
+Title: A schedule IR between Tix and CUDA, and exact tiled contractions
 Ticket: IRWB-033-H
 Status: active
 Topics:
@@ -11,18 +11,20 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: repo://src/tensor/schedule.ts
-      Note: The schedule IR (v6 artifact), its adapter, its passes and the accumulation-order analysis
-    - Path: repo://src/tensor/strategy.ts
-      Note: The rule that picks a schedule, as a Strategy IR plan plus a cost model over the schedule
-    - Path: repo://src/tensor/cuda-source.ts
-      Note: Emitter; after this stage it prints a schedule and decides nothing
-    - Path: repo://src/tensor/cuda-contract.ts
-      Note: The lowering transformation now runs Tix -> schedule -> CUDA and records the schedule
     - Path: repo://src/framework/strategy/sync.ts
       Note: Synchronous executor for sequence/apply strategy plans (the interpreter is async)
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: The lowering transformation now runs Tix -> schedule -> CUDA and records the schedule
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Emitter; after this stage it prints a schedule and decides nothing
+    - Path: repo://src/tensor/schedule.ts
+      Note: |-
+        The schedule IR (v6 artifact), its adapter, its passes and the accumulation-order analysis
+        The schedule IR
+    - Path: repo://src/tensor/strategy.ts
+      Note: The rule that picks a schedule, as a Strategy IR plan plus a cost model over the schedule
 ExternalSources:
-    - 'Yang, Riasanovsky, Deng and Sarkar, Taming Bitwise Behavior in GPU Kernels with Tensor Core'
+    - Yang, Riasanovsky, Deng and Sarkar, Taming Bitwise Behavior in GPU Kernels with Tensor Core
 Summary: A second v6 IR between Tix and CUDA holds the layout decisions; tile, bind, patch and unroll are checked passes on it that preserve each output's accumulation order; a cost model picks the schedule; contractions become exact tiled kernels.
 LastUpdated: 2026-11-27T00:00:00-05:00
 WhatFor: Design of stage 6 (IRWB-033-H) before implementation
