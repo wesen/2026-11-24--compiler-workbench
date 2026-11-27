@@ -1,1 +1,64 @@
-matmul 4096^3 64x64x64 p4x4 single-buffer:
+matmul 4096^3:
+tiled 64x64x64 p4x4 single-buffer: 21.753 ms  6.32 TFLOP/s  [21.66, 21.75, 21.89]
+tiled 64x64x64 p4x4 double-buffer: 21.698 ms  6.33 TFLOP/s  [21.66, 21.70, 21.82]
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/dist/tensor/cuda-runtime.js:126
+            throw new Error(diagnostic || failure.message, { cause: error });
+                  ^
+
+Error: file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs:115
+    if (get.status !== 0) throw new Error('ssh fetch: ' + (get.error ?? get.stderr));
+                                ^
+
+Error: ssh fetch: client_loop: send disconnect: Broken pipe
+
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs:115:33
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.18.0
+    at runCudaBatch (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/dist/tensor/cuda-runtime.js:126:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async runTixCuda (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/dist/tensor/index.js:64:22)
+    at async file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/ttmp/2026/11/27/IRWB-033-J--a-schedule-ir-and-exact-tiled-contractions-through-it/scripts/05-matmul-4096.mjs:55:20 {
+  [cause]: Error: Command failed: /home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-nAnRII --runtime-input inputs.bin --timed -- --benchmark
+  file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs:115
+      if (get.status !== 0) throw new Error('ssh fetch: ' + (get.error ?? get.stderr));
+                                  ^
+  
+  Error: ssh fetch: client_loop: send disconnect: Broken pipe
+  
+      at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs:115:33
+      at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+      at async node:internal/modules/esm/loader:643:26
+      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+  
+  Node.js v24.18.0
+  
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:509:28)
+      at maybeClose (node:internal/child_process:1124:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs /tmp/irwb-tix-cuda-nAnRII --runtime-input inputs.bin --timed -- --benchmark',
+    stdout: '',
+    stderr: 'file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs:115\n' +
+      "    if (get.status !== 0) throw new Error('ssh fetch: ' + (get.error ?? get.stderr));\n" +
+      '                                ^\n' +
+      '\n' +
+      'Error: ssh fetch: client_loop: send disconnect: Broken pipe\r\n' +
+      '\n' +
+      '    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-g-max-irwb-033-j/tools/cuda-remote.mjs:115:33\n' +
+      '    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)\n' +
+      '    at async node:internal/modules/esm/loader:643:26\n' +
+      '    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)\n' +
+      '\n' +
+      'Node.js v24.18.0\n'
+  }
+}
+
+Node.js v24.18.0
