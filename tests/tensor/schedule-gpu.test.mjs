@@ -50,14 +50,15 @@ test('GB10 gives the f32 meaning at shapes that are not multiples of a tile or a
       );
     }
   }
-  // the host's own choice: 64 tiles of 64 x 64 at 512 x 512, stage 2's mapping for a small output
+  // the host's own choice: 64 tiles of 64 x 64 at 512 x 512, stage 2's mapping for a small output or few terms
   const zeros = (m, k, n) => ({
     a: { shape: [m, k], data: new Float32Array(m * k) },
     b: { shape: [k, n], data: new Float32Array(k * n) },
   });
-  assert.deepEqual((await runTixCuda(p, 'matmul', zeros(512, 2, 512))).tiles, { k0: 0 });
-  assert.deepEqual((await runTixCuda(p, 'matmul', zeros(256, 2, 256))).tiles, { k0: 1 });
-  assert.deepEqual((await runTixCuda(p, 'matmul', zeros(100, 2, 100))).tiles, { k0: 2 });
+  assert.deepEqual((await runTixCuda(p, 'matmul', zeros(512, 64, 512))).tiles, { k0: 0 });
+  assert.deepEqual((await runTixCuda(p, 'matmul', zeros(256, 64, 256))).tiles, { k0: 1 });
+  assert.deepEqual((await runTixCuda(p, 'matmul', zeros(100, 64, 100))).tiles, { k0: 2 });
+  assert.deepEqual((await runTixCuda(p, 'matmul', zeros(512, 16, 512))).tiles, { k0: 2 });
 });
 
 test('GB10 rejects a tile kernel that adds a chunk backwards, naming the configuration', async () => {

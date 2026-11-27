@@ -55,3 +55,21 @@ What failed, in order:
 - **The first generated kernel was 1.5 times slower than the probe** (0.119 against 0.076 ms at 512^3) and conv2d was slower than stage 2 (0.205 against 0.166). The decode of a linear index used 64-bit remainders on every staged element. The outermost axis needs none, and the kernel now indexes with 32 bits (the host keeps stage 2's mapping when a space reaches 2^31). Matmul: 0.079; conv2d: 0.128.
 
 All GPU comparisons at non-multiple shapes were bit-identical on the first run (`scripts/04-run-forced.out.jsonl`).
+
+## Step 5: measurements, and a rule that was wrong
+
+Benchmarks (`scripts/05-benchmark*.out.jsonl`, 5 interleaved calls; 3 for 4096^3): matmul 512^3 0.080 ms (stage 2 0.211), 4096^3 20.4 ms (133.8), attention 0.222 (base 0.746), mlp 0.341 (0.624), conv2d 0.128 (0.166); softmax and layernorm at 1.00 and 1.02 of the base. All variants returned the same bits in every call.
+
+- **The first full benchmark run died on `ssh fetch: kex_exchange_identification: read: Connection reset by peer`** while my GPU tests ran beside it. The scripts now retry a failed call; the table is in two parts (`part1`, `part2`).
+- **Script 07 showed the tile-count rule choosing a slower kernel for short reductions:** 256 x 16 x 256 at 2.06 of stage 2, 512 x 16 x 512 at 1.13, 512 x 4 x 512 at 1.33. I added `minTerms` to the tile configuration (IR field, pass argument, host condition) and set it to 64, the smallest term count measured winning. The benchmark programs all have at least 64 terms. `schedule-gpu.test.mjs` asserts the new choice.
+- Script 07's remaining rows and its part b (small shapes of attention and mlp) had not finished when I wrote the report; the report says which claims are argued.
+
+Checks: 20 existing GPU tests pass (`various/existing-gpu-tests.log`, on the build before Prettier and `minTerms`); `schedule-gpu.test.mjs` passes (`various/schedule-gpu-test.log`); script 06: 19 `checkLowering` calls, all exact, 1.9 to 17.9 s each.
+
+Not done, and why: epilogue fusion and the whole-group alternative (time); random programs through the new lowering (time; the 3b generator is in another ticket's scripts).
+
+### What to review first
+
+- `src/tensor/schedule.ts` `validate` and `contractionOf`: the legality rules.
+- `src/tensor/cuda-source.ts` `emitTile`: the kernel, especially the edge conditions (`r0 + r < rows`, `kk < kn`) and the 32-bit guard on the host.
+- `src/tensor/schedule-eval.ts` `tile`: it must mirror `emitTile`; they are the two implementations of a tile configuration's meaning.

@@ -42,8 +42,8 @@ test('the fused schedule: contractions are tile kernels of their own, the rest k
   // rows n, y, xpos (read by x only), column o (read by kernel only)
   assert.deepEqual([conv.roles.rows.length, conv.roles.cols.length, conv.roles.batch.length], [3, 1, 0]);
   assert.deepEqual(schedule('matmul').kernels[0].configs, [
-    { tile: [64, 64], patch: [4, 4], chunk: 16, staged: true, minTiles: 64 },
-    { tile: [32, 32], patch: [2, 2], chunk: 32, staged: true, minTiles: 64 },
+    { tile: [64, 64], patch: [4, 4], chunk: 16, staged: true, minTiles: 64, minTerms: 64 },
+    { tile: [32, 32], patch: [2, 2], chunk: 32, staged: true, minTiles: 64, minTerms: 64 },
   ]);
   // the softmax part of attention keeps its staged row, in-place rows and gate
   const block = schedule('attention').kernels[1];
@@ -128,8 +128,11 @@ test('legality is decided from the IR before a step is applied, and the validato
   const apply = (pass, artifact, params) => applyNativePassSync(pass, artifact, open, params).artifact;
   const marked = apply(passes.markContractions, scheduleArtifact(initialSchedule(f)));
   // a 64 x 64 tile with one thread per element is not a block
-  assert.throws(() => apply(passes.tile, marked, { tile: [64, 64], minTiles: 1 }), /more than 1,024 threads/);
-  const tiled = apply(passes.tile, marked, { tile: [16, 16], minTiles: 1 });
+  assert.throws(
+    () => apply(passes.tile, marked, { tile: [64, 64], minTiles: 1, minTerms: 1 }),
+    /more than 1,024 threads/,
+  );
+  const tiled = apply(passes.tile, marked, { tile: [16, 16], minTiles: 1, minTerms: 1 });
   assert.throws(() => apply(passes.registerTile, tiled, { patch: [16, 16] }), /more than 64 accumulators/);
   const patched = apply(passes.registerTile, tiled, { patch: [4, 4] });
   assert.deepEqual(patched.value.kernels[0].configs[0].tile, [64, 64]);
@@ -189,7 +192,10 @@ test('the printed source: one definition per schedule kernel, configurations as 
   assert.match(source, /template <int Mode>\n__global__ void k0\(/);
   assert.match(source, /constexpr int TM = Mode == 0 \? 64 : Mode == 1 \? 32 : 1/);
   assert.match(source, /acc\[r\]\[q\] = __fadd_rn\(acc\[r\]\[q\], __fmul_rn\(av\[r\], bv\[q\]\)\);/);
-  assert.match(source, /tiles_k0_0 >= 64 \? 0 : tiles_k0_1 >= 64 \? 1 : 2/);
+  assert.match(
+    source,
+    /tiles_k0_0 >= 64 && terms_k0 >= 64 \? 0 : tiles_k0_1 >= 64 && terms_k0 >= 64 \? 1 : 2/,
+  );
   assert.match(source, /k0<0><<<static_cast<unsigned>\(tiles_k0_0\), 256, 8192>>>/);
   assert.match(source, /"--tile="/);
   assert.equal(tileModes(source), 2);

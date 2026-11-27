@@ -152,12 +152,12 @@ export const passes = {
         gate: { ...gateConstants, heavyLanes: [...gateConstants.heavyLanes] as [number, number] },
       })),
   ),
-  tile: step<{ tile: [number, number]; minTiles: number }>(
+  tile: step<{ tile: [number, number]; minTiles: number; minTerms: number }>(
     'tile',
     'Give a contraction kernel a configuration with one block per tile of its (row, column) space and one thread per element',
-    (s, { tile, minTiles }) =>
+    (s, { tile, minTiles, minTerms }) =>
       s.kernels.map(k => {
-        const config: TileConfig = { tile, patch: [1, 1], chunk: 0, staged: false, minTiles };
+        const config: TileConfig = { tile, patch: [1, 1], chunk: 0, staged: false, minTiles, minTerms };
         const { problem } = configLimits(config);
         if (k.kind === 'thread' && k.contraction) {
           if (problem) throw Error(`tile of ${k.name} refused: ${problem}`);
@@ -168,7 +168,10 @@ export const passes = {
             stored: k.stored,
             roles: k.contraction,
             configs: [config],
-            reasons: [...k.reasons, `tile ${tile.join(' x ')} when there are at least ${minTiles} tiles`],
+            reasons: [
+              ...k.reasons,
+              `tile ${tile.join(' x ')} when there are at least ${minTiles} tiles and ${minTerms} terms`,
+            ],
           };
         }
         if (k.kind !== 'tile') return k;
@@ -176,7 +179,10 @@ export const passes = {
         return {
           ...k,
           configs: [...k.configs, config],
-          reasons: [...k.reasons, `tile ${tile.join(' x ')} when there are at least ${minTiles} tiles`],
+          reasons: [
+            ...k.reasons,
+            `tile ${tile.join(' x ')} when there are at least ${minTiles} tiles and ${minTerms} terms`,
+          ],
         };
       }),
   ),
@@ -209,15 +215,18 @@ export const passes = {
 //    1024 x 256 x 1024 (0.099 against 0.451). It lost with 16 tiles (200^3: 0.027 against 0.018; 1024 x 1024 x 64:
 //    0.109 against 0.096) and won with 64 (512^3).
 //  - 32 x 32 tiles, 2 x 2 patches, chunks of 32: for fewer outputs (1024 x 1024 x 64: 0.072 with 64 tiles).
+//  - A reduction needs enough terms: script 07 has the measurements behind MIN_TERMS.
+const MIN_TERMS = 64;
 // `threads` is the block before register tiling (one thread per element); the tile is threads x patch.
 export const tileConfigs: {
   threads: [number, number];
   patch: [number, number];
   chunk: number;
   minTiles: number;
+  minTerms: number;
 }[] = [
-  { threads: [16, 16], patch: [4, 4], chunk: 16, minTiles: 64 },
-  { threads: [16, 16], patch: [2, 2], chunk: 32, minTiles: 64 },
+  { threads: [16, 16], patch: [4, 4], chunk: 16, minTiles: 64, minTerms: MIN_TERMS },
+  { threads: [16, 16], patch: [2, 2], chunk: 32, minTiles: 64, minTerms: MIN_TERMS },
 ];
 
 /** The strategy that builds the fused schedule: stage 3 and 3b's steps, then one tile configuration at a time. */
@@ -230,8 +239,8 @@ export const fusedPlan = S.plan(
     S.apply('terms', S.algorithm(passes.stageTerms.id)),
     S.apply('in-place', S.algorithm(passes.inPlace.id)),
     S.apply('gate', S.algorithm(passes.gate.id)),
-    ...tileConfigs.flatMap(({ threads, patch, chunk, minTiles }, i) => [
-      S.apply(`tile-${i}`, S.algorithm(passes.tile.id), { args: { tile: threads, minTiles } }),
+    ...tileConfigs.flatMap(({ threads, patch, chunk, minTiles, minTerms }, i) => [
+      S.apply(`tile-${i}`, S.algorithm(passes.tile.id), { args: { tile: threads, minTiles, minTerms } }),
       S.apply(`patch-${i}`, S.algorithm(passes.registerTile.id), { args: { patch } }),
       S.apply(`stage-${i}`, S.algorithm(passes.stageOperands.id), { args: { chunk } }),
     ]),

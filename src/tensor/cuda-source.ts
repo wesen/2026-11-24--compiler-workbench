@@ -884,7 +884,7 @@ function emitTile(
     count,
   ].join(', ');
   const rule = k.configs.reduceRight(
-    (rest, c, i) => `${tiles(i)} >= ${c.minTiles} ? ${i} : ${rest}`,
+    (rest, c, i) => `${tiles(i)} >= ${c.minTiles} && terms_${kernel} >= ${c.minTerms} ? ${i} : ${rest}`,
     String(n),
   );
   const hostTerms = space(
@@ -905,7 +905,8 @@ function emitTile(
       `  const int configs_${kernel} = ${n};`,
       // The first configuration with enough tiles, else stage 2's mapping; --tile=<n> forces one (the contract).
       // (a tile kernel indexes its spaces with 32 bits; beyond that the kernel keeps stage 2's mapping)
-      `  const bool narrow_${kernel} = std::max<U>({rows_${kernel}, cols_${kernel}, ${hostTerms}, ${k.configs.map((_c, i) => tiles(i)).join(', ')}}) < (static_cast<U>(1) << 31);`,
+      `  const U terms_${kernel} = ${hostTerms};`,
+      `  const bool narrow_${kernel} = std::max<U>({rows_${kernel}, cols_${kernel}, terms_${kernel}, ${k.configs.map((_c, i) => tiles(i)).join(', ')}}) < (static_cast<U>(1) << 31);`,
       `  const int config_${kernel} = !narrow_${kernel} ? configs_${kernel} : tile_mode >= 0 ? std::min(tile_mode, configs_${kernel}) : (${rule});`,
     ],
     preload: Array.from(

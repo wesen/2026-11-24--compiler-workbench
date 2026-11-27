@@ -1,6 +1,6 @@
 // IRWB-033-E script 06: checkLowering (exact, every tile configuration and gate side forced) on the corpus, as
 // written and after inline + split-sum, fused and unfused, and on contraction variants; with the wall time of
-// each check. node 06-check-programs.mjs
+// each check. node 06-check-programs.mjs [--quick]  (--quick: fused only; the variants only as written)
 import { readFileSync } from 'node:fs';
 import { checkLowering, compileTix, cudaSource, optimizeTix } from '../../../../../../dist/tensor/index.js';
 import { sidesOf } from '../../../../../../dist/tensor/cuda-contract.js';
@@ -21,6 +21,7 @@ const variants = compileTix(`
   }
   fn matvec(a:f32[M,K], x:f32[K]):f32[M] { y[i] = sum(k) a[i,k] * x[k]; return y; }
 `);
+const quick = process.argv.includes('--quick');
 const programs = [
   ...['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2d'].map(name => [
     name,
@@ -33,7 +34,8 @@ for (const [name, written] of programs)
     ['written', written],
     ['inline+split', optimizeTix(written, ['inline', 'split-sum']).program],
   ])
-    for (const fuse of [true, false]) {
+    for (const fuse of quick ? [true] : [true, false]) {
+      if (quick && form !== 'written' && written === variants) continue;
       const source = cudaSource(program, name, { fuse });
       const t0 = performance.now();
       const verdict = await checkLowering(program, name, { fuse });

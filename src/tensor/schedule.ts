@@ -58,8 +58,10 @@ export interface TileConfig {
   patch: [number, number];
   chunk: number;
   staged: boolean;
-  /** Chosen at launch when the kernel would have at least this many blocks. */
+  /** Chosen at launch when the kernel would have at least this many blocks... */
   minTiles: number;
+  /** ...and the reduction at least this many terms. */
+  minTerms: number;
 }
 /** A contraction statement with an ordered list of configurations; the host takes the first whose condition holds, else stage 2's mapping. */
 export interface TileKernel {
@@ -143,9 +145,9 @@ export function configLimits(c: TileConfig) {
     [rm, rn] = c.patch;
   const threads = (tm / rm) * (tn / rn);
   const shared = c.staged ? c.chunk * (tm + tn) : 0;
-  const ints = [tm, tn, rm, rn, c.minTiles].every(n => Number.isSafeInteger(n) && n >= 1);
+  const ints = [tm, tn, rm, rn, c.minTiles, c.minTerms].every(n => Number.isSafeInteger(n) && n >= 1);
   const problem = !ints
-    ? 'tile, patch and minTiles are positive integers'
+    ? 'tile, patch, minTiles and minTerms are positive integers'
     : tm % rm || tn % rn
       ? 'a patch side does not divide its tile side'
       : threads > 1024
