@@ -1,0 +1,14 @@
+{"name":"softmax","N":524288,"C":8,"lanes":4,"fused":{"kernels":1,"gpuMs":1.535},"unfused":{"kernels":4,"gpuMs":0.5931},"unfusedOverFused":0.386}
+{"name":"softmax","N":262144,"C":16,"lanes":2,"fused":{"kernels":1,"gpuMs":0.7377},"unfused":{"kernels":4,"gpuMs":0.6712},"unfusedOverFused":0.91}
+{"name":"softmax","N":131072,"C":32,"lanes":1,"fused":{"kernels":1,"gpuMs":0.3709},"unfused":{"kernels":4,"gpuMs":0.6537},"unfusedOverFused":1.762}
+{"name":"softmax","N":65536,"C":64,"lanes":1,"fused":{"kernels":1,"gpuMs":0.3725},"unfused":{"kernels":4,"gpuMs":0.6893},"unfusedOverFused":1.85}
+{"name":"softmax","N":32768,"C":128,"lanes":1,"fused":{"kernels":1,"gpuMs":0.3718},"unfused":{"kernels":4,"gpuMs":0.6752},"unfusedOverFused":1.816}
+{"name":"softmax","N":16384,"C":256,"lanes":1,"fused":{"kernels":1,"gpuMs":0.3721},"unfused":{"kernels":4,"gpuMs":0.6999},"unfusedOverFused":1.881}
+{"name":"softmax","N":4096,"C":1024,"lanes":1,"fused":{"kernels":1,"gpuMs":0.3829},"unfused":{"kernels":4,"gpuMs":0.8163},"unfusedOverFused":2.132}
+{"name":"normalize","N":524288,"C":8,"lanes":4,"fused":{"kernels":1,"gpuMs":0.7128},"unfused":{"kernels":4,"gpuMs":0.3401},"unfusedOverFused":0.477}
+{"name":"normalize","N":262144,"C":16,"lanes":2,"fused":{"kernels":1,"gpuMs":0.2717},"unfused":{"kernels":4,"gpuMs":0.4161},"unfusedOverFused":1.531}
+{"name":"normalize","N":131072,"C":32,"lanes":1,"fused":{"kernels":1,"gpuMs":0.1648},"unfused":{"kernels":4,"gpuMs":0.373},"unfusedOverFused":2.263}
+{"name":"normalize","N":65536,"C":64,"lanes":1,"fused":{"kernels":1,"gpuMs":0.1436},"unfused":{"kernels":4,"gpuMs":0.3855},"unfusedOverFused":2.685}
+{"name":"normalize","N":32768,"C":128,"lanes":1,"fused":{"kernels":1,"gpuMs":0.153},"unfused":{"kernels":4,"gpuMs":0.3927},"unfusedOverFused":2.567}
+{"name":"normalize","N":16384,"C":256,"lanes":1,"fused":{"kernels":1,"gpuMs":0.1459},"unfused":{"kernels":4,"gpuMs":0.4148},"unfusedOverFused":2.843}
+{"name":"normalize","N":4096,"C":1024,"lanes":1,"fused":{"kernels":1,"gpuMs":0.1674},"unfused":{"kernels":4,"gpuMs":0.5004},"unfusedOverFused":2.989}
