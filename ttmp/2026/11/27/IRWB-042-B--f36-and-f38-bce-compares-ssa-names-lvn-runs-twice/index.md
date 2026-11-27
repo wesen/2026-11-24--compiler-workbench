@@ -4,14 +4,17 @@ Ticket: IRWB-042-B
 Status: active
 Topics:
     - compiler
-    - typed
-    - defects
+    - verification
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/passes.ts
+      Note: bce compares SSA names through copies (nameOf); lvn refreshes stale seen entries
+    - Path: repo://tests/typed/d2-defects.test.mjs
+      Note: F36 and F38 todo options removed in this step
 ExternalSources: []
-Summary: ""
+Summary: "Fixes two Typed pass defects found by IRWB-037-G: bce now compares the SSA names of index and buffer instead of equal reaching-definition sets (F36), and lvn refreshes a seen entry whose value an earlier merge of the same run rebuilt away instead of throwing absent (F38)."
 LastUpdated: 2026-11-27T17:40:48.169271149-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -21,7 +24,16 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Two small Typed pass defects found by IRWB-037-G ("Found on the way, not changed"), fixed and verified:
+
+- **F36** — `bce` accepted a dominating `i < buf.length` when the index had the same *set* of reaching
+  definitions at the branch and at the check; equal sets are not equal values. It now compares **SSA names**,
+  resolved through copies (a `typed.ssa` need, replacing `reaching`).
+- **F38** — a second `lvn` threw `[absent]`: a merge replaces values and `tx.replace` rebuilds every tree
+  around them, so a `seen` entry can name a dead id. `lvn` now refreshes such an entry to the current occurrence.
+
+Report: [reference/02-report.md](./reference/02-report.md). Diary:
+[reference/01-implementation-diary.md](./reference/01-implementation-diary.md).
 
 ## Key Links
 
