@@ -1,1 +1,11 @@
 ✔ GB10 accepts the corpus contractions and other contraction forms as exact, every configuration forced (61715.257155ms)
+✔ GB10 gives the f32 meaning at shapes that are not multiples of a tile or a chunk, on every side (62741.315807ms)
+✔ GB10 rejects a tile kernel that adds a chunk backwards, naming the configuration (8018.029955ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 133052.454204

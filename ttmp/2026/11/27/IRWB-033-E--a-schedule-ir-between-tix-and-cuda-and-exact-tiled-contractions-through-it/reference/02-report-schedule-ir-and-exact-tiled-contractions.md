@@ -110,11 +110,14 @@ Script 07 runs matmul through the compiler with each configuration forced (`--ti
 | 512 × 16 × 512 | 64 | 256 | 0.0106 | 0.0075 | 0.0094 | stage2 (1.00 of stage 2) | tile32 |
 | 512 × 4 × 512 | 64 | 256 | 0.0089 | 0.0068 | 0.0067 | stage2 (1.00 of stage 2) | stage2 |
 | 2048 × 1 × 2048 | 1024 | 4096 | 0.0907 | 0.0762 | 0.0691 | stage2 (1.00 of stage 2) | stage2 |
+| 2048 × 4 × 2048 | 1024 | 4096 | 0.0905 | 0.0791 | 0.0735 | stage2 (1.00 of stage 2) | stage2 |
+| 1024 × 1024 × 32 | 16 | 32 | 0.1068 | 0.0519 | 0.0498 | stage2 (1.00 of stage 2) | stage2 |
 
 - **64 tiles for the 32 × 32 configuration:** with 16 and 36 tiles it ties with stage 2 (0.91 and 0.99); with 64 it is at 0.71. 64 is the smallest measured count at which it wins by more than the 5% noise band.
 - **64 tiles for the 64 × 64 configuration:** with 16, 25 and 36 tiles the 32 × 32 configuration is faster; at 64 the 64 × 64 one is (0.044 against 0.050 ms).
 - **64 terms, found by this sweep after the benchmark table was measured.** With the tile count alone the rule chose a tile kernel for 256 × 16 × 256, 512 × 16 × 512 and 512 × 4 × 512, at 2.06, 1.13 and 1.33 of stage 2: with few terms a chunk is mostly staging. I added `minTerms` to the configuration (a second launch-time condition) and set it to 64, the smallest term count I measured winning (attention's `score`, 64 terms: 0.046 against 0.618 ms). Between 16 and 64 terms nothing is measured, so the rule is conservative there. The benchmark table's programs all have at least 64 terms, so their choices are unchanged; the GPU test asserts the choice at 512 × 16 × 512.
-- **Rows of this table that the run did not reach** (few outputs with long reductions, one term) are not measured; the session's GPU queue was slow. Shapes with fewer than 64 tiles of 32 × 32 or fewer than 64 terms run stage 2's kernel, so they are at stage 2's speed by construction.
+- **One and four terms at 2,048 × 2,048, and 32 columns with 1,024 terms:** stage 2's kernel is the fastest of the three, and the final rule picks it.
+- **Not reached:** I stopped script 07 after these twelve shapes (the session's GPU queue was slow). Its last four shapes (very few rows or columns with long reductions) and its part b were not measured. Shapes with fewer than 64 tiles of 32 × 32 or fewer than 64 terms run stage 2's kernel, so a single contraction is at stage 2's speed there by construction.
 - **What the rule does not cover:** it is fitted to matmul on this device. `attention.out` (1,024 × 64 outputs, 1,024 terms) takes the 32 × 32 configuration at 0.74 of stage 2, the thinnest margin in the table.
 
 ## The schedule IR
@@ -216,7 +219,7 @@ Attention and mlp at small shapes, where no contraction reaches 64 tiles: the fu
 | Program and shapes | Fused ms | Base (3b) ms | Unfused ms | Fused / base | Chosen |
 | --- | ---: | ---: | ---: | ---: | --- |
 
-If the table above is empty, part b of script 07 did not run before the session ended: **the small-shape cost is then argued, not measured.** The argument: below the thresholds each contraction runs stage 2's kernel in its own launch, so attention is three launches (stage 2 `score`, the block kernel for the softmax part, stage 2 `out`) against 3b's one and stage 2's six. Stage 3b measured one launch at 0.10 to 0.73 of several for small programs, so attention and mlp at small shapes are expected between 3b's time and stage 2's: **slower than the base, by microseconds.** This is the one place where the stage does not meet "no program slower than it is now", and the whole-group alternative under Later is the fix.
+Part b of script 07 did not run before the session ended, so the table is empty: **the small-shape cost is argued, not measured.** The argument: below the thresholds each contraction runs stage 2's kernel in its own launch, so attention is three launches (stage 2 `score`, the block kernel for the softmax part, stage 2 `out`) against 3b's one and stage 2's six. Stage 3b measured one launch at 0.10 to 0.73 of several for small programs, so attention and mlp at small shapes are expected between 3b's time and stage 2's: **slower than the base, by microseconds.** This is the one place where the stage does not meet "no program slower than it is now", and the whole-group alternative under Later is the fix.
 
 ## Framework and tool changes
 
