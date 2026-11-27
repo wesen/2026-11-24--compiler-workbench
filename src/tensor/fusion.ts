@@ -61,6 +61,8 @@ export interface LoadSite {
   tensor: string;
   indices: Affine[];
   inReduce: boolean;
+  /** the extents of the reductions enclosing the load, outermost first */
+  folds: Extent[];
   scope: Map<string, Extent>;
 }
 
@@ -74,23 +76,32 @@ export function binders(statement: Statement): Map<string, Extent> {
 /** Every load in `statement`. */
 export function loadSites(statement: Statement): LoadSite[] {
   const out: LoadSite[] = [];
-  const walk = (e: Expr, inReduce: boolean, scope: Map<string, Extent>) => {
+  const walk = (e: Expr, folds: Extent[], scope: Map<string, Extent>) => {
     switch (e.kind) {
       case 'load':
-        out.push({ statement, tensor: e.name, indices: e.indices, inReduce, scope });
+        out.push({
+          statement,
+          tensor: e.name,
+          indices: e.indices,
+          inReduce: folds.length > 0,
+          folds,
+          scope,
+        });
         return;
       case 'op':
-        e.args.forEach(a => walk(a, inReduce, scope));
+        e.args.forEach(a => walk(a, folds, scope));
         return;
       case 'reduce': {
         const inner = new Map(scope);
         for (const a of e.axes) inner.set(a.id, extentOf(a));
-        walk(e.body, true, inner);
+        const nested = [...folds];
+        for (const a of e.axes) nested[nested.length] = extentOf(a);
+        walk(e.body, nested, inner);
         return;
       }
     }
   };
-  walk(statement.expr, false, binders(statement));
+  walk(statement.expr, [], binders(statement));
   return out;
 }
 

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -168,4 +169,115 @@ int main() {
   } finally {
     await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true })));
   }
+});
+
+const small = {
+  matmul: [
+    ['a', [3, 4]],
+    ['b', [4, 5]],
+  ],
+  softmax: [['x', [3, 5]]],
+  layernorm: [
+    ['x', [3, 4]],
+    ['gamma', [4]],
+    ['beta', [4]],
+    ['eps', [1]],
+  ],
+  attention: [
+    ['q', [2, 3]],
+    ['k', [4, 3]],
+    ['v', [4, 2]],
+  ],
+  mlp: [
+    ['x', [2, 3]],
+    ['w', [3, 4]],
+    ['bias', [4]],
+    ['v', [4, 2]],
+    ['outBias', [2]],
+  ],
+  conv2d: [
+    ['x', [1, 2, 4, 5]],
+    ['kernel', [2, 2, 3, 3]],
+  ],
+};
+function inputs(spec) {
+  let state = 7;
+  const out = {};
+  for (const [name, shape] of spec) {
+    const n = shape.reduce((x, y) => x * y, 1);
+    out[name] = {
+      shape,
+      data: Float32Array.from({ length: n }, (_, i) => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        const v = state / 2 ** 32;
+        // positive eps and gamma so layernorm's root stays finite
+        return name === 'eps' ? 1e-3 : name === 'gamma' ? 0.5 + v : 2 * v - 1;
+      }),
+    };
+  }
+  return out;
+}
+
+const edge = {
+  'row then contraction':
+    'fn f(x:f32[N,K], v:f32[K,O]):f32[N,O]{s[i]=sum(j) x[i,j];y[i,o]=sum(k) (x[i,k]-s[i])*v[k,o];return y;}',
+  'two rows of different extents':
+    'fn f(x:f32[N,K], z:f32[P,M]):f32[N,K]{a[p]=sum(m) z[p,m];b[i]=sum(k) x[i,k];c[i,j]=b[i]*x[i,j];return c;}',
+  'permuted read of a reduction':
+    'fn f(x:f32[N,K]):f32[N,N]{s[i,j]=sum(k) x[i,k]*x[j,k];t[i,j]=s[j,i]+1;return t;}',
+  'nested reduction': 'fn f(x:f32[N,K]):f32[N]{y[i]=sum(j) (x[i,j]*(sum(k) x[i,k]));return y;}',
+  'empty lanes and rows':
+    'fn f(x:f32[N,K]):f32[N,K]{m[i]=max(j) x[i,j];s[i]=sum(j) exp(x[i,j]-m[i]);y[i,j]=exp(x[i,j]-m[i])/s[i];return y;}',
+  'dead and staged':
+    'fn f(x:f32[N,K]):f32[N]{d[i,j]=x[i,j]*0;s[i]=sum(j) x[i,j];y[i]=s[i]*s[i]+d[i,0];return y;}',
+};
+for (const [label, source] of Object.entries(edge)) {
+  test('GB10 fused lowering equals the unfused one word for word: ' + label, async () => {
+    const program = compileTix(source);
+    const shapes = {
+      N: 3,
+      K: 4,
+      P: 2,
+      M: 5,
+      O: 3,
+    };
+    const params = program.current.value.functions[0].params;
+    const x = {};
+    for (const p of params) {
+      const shape = p.shape.map(d => (d.terms.length ? shapes[d.terms[0][0]] : d.constant));
+      x[p.name] = inputs([[p.name, shape]])[p.name];
+    }
+    const reference = runTix(program, 'f', x);
+    for (const fuse of [true, false]) {
+      const result = await runTixCuda(program, 'f', x, { fuse });
+      assert.deepEqual(result.shape, reference.shape, label);
+      assert.deepEqual([...words(result)], [...words(reference)], label + ' fuse=' + fuse);
+    }
+  });
+}
+
+test('GB10 fused lowering equals the f32 meaning on the corpus at small sizes', async () => {
+  for (const [name, spec] of Object.entries(small)) {
+    const program = compileTix(
+      readFileSync(new URL('../../corpus/tensor/' + name + '/main.tix', import.meta.url), 'utf8'),
+    );
+    const x = inputs(spec);
+    const reference = runTix(program, name, x);
+    const result = await runTixCuda(program, name, x);
+    assert.deepEqual(result.shape, reference.shape, name);
+    assert.deepEqual([...words(result)], [...words(reference)], name);
+  }
+});
+
+test('GB10 rejects a fused kernel whose fold drops its last lane', async () => {
+  const program = compileTix(
+    await readFile(new URL('../../corpus/tensor/softmax/main.tix', import.meta.url), 'utf8'),
+  );
+  const source = cudaSource(program, 'softmax');
+  const mutant = source.replace('const I end_r1 = (d1);', 'const I end_r1 = (d1) - 1;');
+  assert.notEqual(mutant, source);
+  assert.equal((await checkLowering(program, 'softmax')).accepted, true);
+  const verdict = await checkCudaLowering(program.current, 'softmax', cudaArtifact('softmax', mutant));
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \[.*\], expected/);
 });

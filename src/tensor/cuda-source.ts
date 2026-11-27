@@ -112,7 +112,12 @@ int main(int argc, char** argv) {
 }
 `;
 
+// Stage 2's block size for the flat mapping, unchanged.
 const threads = 256;
+// A fused kernel's reduction over the lane axis is one thread's serial fold, so how many rows can be folded at once
+// is set by the number of resident blocks, 2048 threads per SM divided by the block size (probe 06 measured 128
+// threads at 0.414 ms against 0.609 ms at 256 for softmax, and 0.158 against 0.181 for layernorm).
+const rowThreads = 128;
 
 function affine(a: Affine, name: (key: string) => string): string {
   const terms = a.terms.map(([key, coefficient]) =>
@@ -464,7 +469,7 @@ function rowKernel(
   }`,
     hasWork: rows,
     launch: `    if (${rows}) {
-      ${name}<<<${rows}, ${threads}, ${shared}>>>(${args.join(', ')});
+      ${name}<<<${rows}, ${rowThreads}, ${shared}>>>(${args.join(', ')});
       check(cudaGetLastError());
     }`,
   };
