@@ -1,0 +1,6 @@
+{"name":"matmul","samples":36,"casesFused":144,"casesUnfused":36,"passApplications":53,"scheduleMs":631,"memoizedMs":0.2}
+{"name":"softmax","samples":32,"casesFused":64,"casesUnfused":32,"passApplications":0,"scheduleMs":3,"memoizedMs":0.6}
+{"name":"layernorm","samples":32,"casesFused":64,"casesUnfused":32,"passApplications":0,"scheduleMs":7,"memoizedMs":0.4}
+{"name":"attention","samples":40,"casesFused":160,"casesUnfused":40,"passApplications":107,"scheduleMs":2884,"memoizedMs":1.8}
+{"name":"mlp","samples":40,"casesFused":160,"casesUnfused":40,"passApplications":107,"scheduleMs":1271,"memoizedMs":0.3}
+{"name":"conv2d","samples":28,"casesFused":112,"casesUnfused":28,"passApplications":53,"scheduleMs":490,"memoizedMs":0.1}

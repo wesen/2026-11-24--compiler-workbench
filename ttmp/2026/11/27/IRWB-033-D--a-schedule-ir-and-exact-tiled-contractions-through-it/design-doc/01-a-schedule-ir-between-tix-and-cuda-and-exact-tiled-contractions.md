@@ -185,3 +185,13 @@ Script 02 (later number) times every corpus program fused and unfused with the b
 - Vector global loads and double buffering as variants.
 - Tiling inside block groups (attention without the score round trip).
 - A cost model in place of the block-count rule.
+
+## As built
+
+The implementation follows this design. Differences:
+
+- **The order analysis simulates per dim**, not the whole nest: the accumulator is indexed by the output point, so other dims' loops cannot change one output's term sequence (the whole-nest simulation took seconds per step). An empty reduction (r = 0) is among the simulated extents.
+- **The printer reads two more choices from the schedule:** which grid axis numbers the m tiles (the strategy binds n.0 to `block.x`, probe 04) and the launch bound per variant (from the thread loops; probe 04).
+- **The stage limit** is half of 48 KiB per operand tile (room for the other tile and the padding).
+- **`CudaIR` kernels** take the mapping `tiled`; the case list's baseline key is the list of modes.
+- `planFusion(fn, { noBlock })` refuses with a reason in `plan.refusals` ("it is a tileable contraction, which starts its own kernel"; "it would put the tileable contraction h in block mode").
