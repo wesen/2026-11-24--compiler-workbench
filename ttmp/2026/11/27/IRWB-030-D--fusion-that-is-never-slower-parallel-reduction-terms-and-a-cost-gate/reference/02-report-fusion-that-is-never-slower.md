@@ -54,7 +54,7 @@ Code: branch `t3b-op/irwb-030-d`. The measurements used the commit `fd3719f` (te
 | **attention-inside** | 1 / 5 | **1.412** (1.412, 1.412, 1.412) | 1.501 (1.501, 1.470, 1.509) | **1.06** | k0: none (shift and z are loads) |
 | softmax-inside (extra variant) | 1 / 3 | 0.751 (0.751, 0.753, 0.751) | 1.630 (1.636, 1.630, 1.629) | 2.17 | k0: s |
 
-For matmul and conv2d the fused and unfused sources are the same bytes, so their differences (1%) are noise. In every call the fused and unfused outputs had the same SHA-256. INTERPRETER_SENTENCE
+For matmul and conv2d the fused and unfused sources are the same bytes, so their differences (1%) are noise. In every call the fused and unfused outputs had the same SHA-256. The f32 interpreter (`runTix`, script 11 with `cpu`, `11-results-cpu.out.jsonl`) gives the same digest for all nine programs at these sizes. So at full size the fused results equal the meaning bit for bit, and so do the unfused ones.
 
 The variants (script 01):
 
@@ -158,7 +158,19 @@ Tensor-domain changes:
 
 Cost per program, fused (script 12: cold check, then a repeat in the same process):
 
-CONTRACT_TABLE
+| Program | Cases | Elements in and out | Cold `checkLowering` | Repeat |
+| --- | ---: | ---: | ---: | ---: |
+| matmul | 36 | 1,292 | 2.7 s | 0.8 ms |
+| softmax | 32 | 720 | 2.2 s | 0.9 ms |
+| layernorm | 32 | 920 | 2.4 s | 0.7 ms |
+| attention | 40 | 1,728 | 3.0 s | 1.0 ms |
+| mlp | 40 | 1,948 | 2.7 s | 0.8 ms |
+| conv2d | 28 | 22,900 | 2.7 s | 0.5 ms |
+| layernorm-inside | 32 | 920 | 2.3 s | 0.6 ms |
+| attention-inside | 40 | 1,728 | 2.4 s | 0.6 ms |
+| softmax-inside | 32 | 720 | 2.3 s | 4 ms |
+
+A cold check is one GPU call: ssh, `nvcc`, and the run. The repeat replays the differential memo. The cost is stage 3's (2.2 to 3.7 s cold there). Staging adds a few loops to the source and nothing to the cases.
 
 ## Measured, and only argued
 
@@ -173,7 +185,7 @@ CONTRACT_TABLE
   - the `terms-gpu` test programs;
 - full-size words equal to the interpreter for 3,000 and 30,000 terms (several chunks, scratch), and for gated calls with rows of 8 (stage 2) and 40 (fused);
 - the rejection of a mutant that folds a chunk backwards, with a coordinate;
-- the regression suites: `fusion-gpu` (5 pass), `terms-gpu` (4 pass), and the local tensor tests (`fusion`, `terms`, `cuda`, `corpus`, `passes`, `language`), all passing. `cuda-gpu` was rerun at the end (diary step 7).
+- the regression suites: `fusion-gpu` (5 pass), `terms-gpu` (4 pass), and the local tensor tests (`fusion`, `terms`, `cuda`, `corpus`, `passes`, `language`), all passing. `cuda-gpu` (11 pass, rerun alone at the end, `14-cuda-gpu-test.log`).
 
 **Argued, not measured:**
 

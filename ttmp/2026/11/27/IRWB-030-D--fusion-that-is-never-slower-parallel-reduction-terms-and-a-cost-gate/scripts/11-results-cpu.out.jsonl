@@ -3,3 +3,7 @@
 {"name":"layernorm","interpreter":true,"sha":"9b4d9efe65735039","ms":10371.259472999998}
 {"name":"attention","interpreter":true,"sha":"18486f63326ddfd2","ms":82481.362029}
 {"name":"mlp","interpreter":true,"sha":"599022a69f638322","ms":369086.64991499996}
+{"name":"conv2d","interpreter":true,"sha":"87ea2ac715c0b772","ms":157617.676845}
+{"name":"layernorm-inside","interpreter":true,"sha":"9b4d9efe65735039","ms":9239.191341000027}
+{"name":"attention-inside","interpreter":true,"sha":"9661c74770216c82","ms":78407.93197499996}
+{"name":"softmax-inside","interpreter":true,"sha":"6e965523088d394f","ms":4686.229630000074}

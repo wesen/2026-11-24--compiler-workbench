@@ -95,3 +95,11 @@ Script 05 (M2), median of three rounds, chunk sizes 128 to 4096:
 The worst slowdown against each case's best chunk is 10% at 128, 7% at 256, 15% at 512 and 20% at 1024, so the chunk is 256. Short rows prefer a small buffer (more blocks fit in shared memory), long ones fewer barriers. Commit `fd3719f`.
 
 Then, in one background command, in sequence so that nothing of mine overlaps the timings: the three GPU test files, script 02 again, script 11 (results, three rounds), script 11 with the interpreter, script 12 (contract cost).
+
+## Step 7: Results, contract cost, report
+
+The background sequence finished (exit 0). Results (script 11, three `benchmark` calls per program and lowering, through `runTixCuda`): every program is one kernel fused, and none is slower fused. softmax 0.390 against 0.797 ms, layernorm 0.189/0.485, attention 0.771/1.047, mlp 0.725/0.951, layernorm-inside 0.211/0.567, attention-inside 1.412/1.501, softmax-inside 0.751/1.630. matmul and conv2d use identical sources and are within 1%. Fused, unfused and the interpreter (`11-results-cpu.out.jsonl`, 4.7 s for softmax-inside up to 369 s for mlp) had the same digest for all nine programs. Script 02 ran again at the final constants: 15 of 15 exact. `terms-gpu` passed 4 of 4 and `fusion-gpu` 5 of 5. Contract cost (script 12): 28 to 40 cases, 2.2 to 3.0 s cold, under 5 ms repeated.
+
+**Failure (process):** while script 11 was running, I started `timeout 60 node --test tests/tensor/cuda-gpu.test.mjs` in the foreground. The timeout killed it after 6 of its tests (`Promise resolution is still pending`), and for about a minute it shared the GPU with the timed rounds. The three rounds of each program agree within 4%, except layernorm fused (0.173 to 0.201), so I kept the data and say so in the report. `cuda-gpu` then ran alone to completion: 11 of 11 pass (`14-cuda-gpu-test.log`). `14-gpu-tests.log` has no `cuda-gpu` lines, from the first, interrupted sequence.
+
+The report (`reference/02-report-fusion-that-is-never-slower.md`) and the design's "As built" section are written.

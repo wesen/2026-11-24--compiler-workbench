@@ -1,0 +1,9 @@
+{"name":"matmul","cases":36,"elements":1292,"accepted":true,"relation":"exact","coldMs":2673,"repeatMs":0.8}
+{"name":"softmax","cases":32,"elements":720,"accepted":true,"relation":"exact","coldMs":2152,"repeatMs":0.9}
+{"name":"layernorm","cases":32,"elements":920,"accepted":true,"relation":"exact","coldMs":2430,"repeatMs":0.7}
+{"name":"attention","cases":40,"elements":1728,"accepted":true,"relation":"exact","coldMs":3035,"repeatMs":1}
+{"name":"mlp","cases":40,"elements":1948,"accepted":true,"relation":"exact","coldMs":2695,"repeatMs":0.8}
+{"name":"conv2d","cases":28,"elements":22900,"accepted":true,"relation":"exact","coldMs":2717,"repeatMs":0.5}
+{"name":"layernorm-inside","cases":32,"elements":920,"accepted":true,"relation":"exact","coldMs":2261,"repeatMs":0.6}
+{"name":"attention-inside","cases":40,"elements":1728,"accepted":true,"relation":"exact","coldMs":2440,"repeatMs":0.6}
+{"name":"softmax-inside","cases":32,"elements":720,"accepted":true,"relation":"exact","coldMs":2264,"repeatMs":4}

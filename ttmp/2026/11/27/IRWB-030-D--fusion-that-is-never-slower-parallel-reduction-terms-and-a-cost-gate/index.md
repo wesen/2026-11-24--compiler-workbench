@@ -15,7 +15,7 @@ RelatedFiles:
     - Path: repo://ttmp/2026/11/27/IRWB-030-D--fusion-that-is-never-slower-parallel-reduction-terms-and-a-cost-gate/reference/02-report-fusion-that-is-never-slower.md
       Note: Final report
 ExternalSources: []
-Summary: ""
+Summary: Stage 3b of the Tix CUDA lowering; staged reduction terms and a measured row-length gate, so fused is never slower than unfused on the corpus and the inside variants.
 LastUpdated: 2026-11-27T01:23:02.716480588-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -25,7 +25,12 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Stage 3b (IRWB-030-D) of Tix's CUDA lowering. A block-mode kernel's row scalars now compute costly reduction terms with all threads and fold them in order on thread 0. `runTixCuda` runs stage 2's lowering when a block-mode kernel's rows are shorter than 24 elements. Every corpus program and both "inside" variants are one kernel, exact, and not slower fused than unfused.
+
+- Design: [design-doc/01-parallel-reduction-terms-and-a-fusion-cost-gate.md](./design-doc/01-parallel-reduction-terms-and-a-fusion-cost-gate.md)
+- Report: [reference/02-report-fusion-that-is-never-slower.md](./reference/02-report-fusion-that-is-never-slower.md)
+- Diary: [reference/01-implementation-diary.md](./reference/01-implementation-diary.md)
+- Scripts: `scripts/01` to `14`, numbered in the order written; `.out.jsonl` files are their raw outputs.
 
 ## Key Links
 
