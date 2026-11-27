@@ -13,7 +13,9 @@
  * a new native value with explicit correspondence entries (efficient for domain code). Either way the framework
  * derives the v6 change set by diffing the two projections, validates the native value through the adapter, builds
  * the correspondence, enforces `writes`, runs the contract, and checks the preservation claims. Nothing is
- * published unless all of that succeeds.
+ * published unless all of that succeeds (F33): the candidate opens on a private store, the contract runs with a
+ * deferred commit, and the accepted revision, its contract facts and its preservation evidence all become public
+ * at one boundary; a rejection publishes nothing.
  */
 import type { Artifact } from '../core/types.js';
 import { canonical } from '../core/data.js';
@@ -36,6 +38,7 @@ import type {
   Correspondence,
   IRType,
   Ports,
+  PreparedTransformation,
   TransformationDefinition,
 } from '../contracts/types.js';
 import type { AnalysisManager } from '../contracts/analysis-manager.js';
@@ -225,11 +228,12 @@ function prepareNative<S, N extends Needs, P>(
   view: IRView<S>,
   produced: NativeResult<S>,
   id: string,
-  store?: IRStore,
 ) {
   const before = view.artifact;
   const after = createIRArtifact(pass.adapter, id, produced.native);
-  const afterView = openIR(after, pass.adapter, store);
+  // F33: the candidate opens on a private store; a caller-supplied store sees it only after acceptance,
+  // when applyPass retains it (prepareNative no longer publishes).
+  const afterView = openIR(after, pass.adapter);
   const changes = diff(view, afterView);
   const correspondence = makeCorrespondence(
     { artifact: before.id, revision: before.revision },
@@ -331,6 +335,9 @@ export async function applyPass<S, N extends Needs, P>(
   }
   let after: Artifact<S>, changes: ChangeSet, correspondence: EntityCorrespondence, edits: number;
   let report: unknown;
+  // F33: only a native result was retained in the caller's store before acceptance; publication keeps
+  // that shape and moves it past the acceptance boundary. An edit-path revision was never retained at all.
+  let retainToStore: boolean;
   if (produced && typeof produced === 'object' && 'native' in produced) {
     if (edit?.state === 'open') edit.rollback('native result');
     ({ after, changes, correspondence, edits } = prepareNative(
@@ -338,9 +345,9 @@ export async function applyPass<S, N extends Needs, P>(
       view,
       produced,
       options.outputId ?? before.id,
-      options.store,
     ));
     report = produced.report;
+    retainToStore = true;
   } else {
     if (edit && edit.state !== 'open')
       throw new PassError('badResult', `Pass ${pass.id} closed its edit itself`);
@@ -363,6 +370,7 @@ export async function applyPass<S, N extends Needs, P>(
     correspondence = prepared.correspondence;
     edits = changes.operations.filter(o => o.kind !== 'correspond').length;
     edit.rollback('applyPass publishes revisions itself');
+    retainToStore = false;
   }
   if (after.revision === before.revision && !changes.entities.length && !changes.relations.length)
     return {
@@ -377,16 +385,20 @@ export async function applyPass<S, N extends Needs, P>(
   enforceWrites(pass, changes);
 
   let contract: unknown;
+  let prepared: PreparedTransformation<Ports> | undefined;
   const gate = options.contract ?? pass.contract;
   if (gate) {
     try {
-      const prepared = await manager.verifyTransformation(
+      // F33: deferred commit - the execution and its facts stay in the transaction overlay until the
+      // preservation checks pass and applyPass commits; a rejection rolls them back.
+      prepared = await manager.verifyTransformation(
         { input: before, ...(options.contractInputs ?? {}) } as never,
         { output: after } as never,
         gate,
         gate.correspondence.length
           ? gate.correspondence.map(req => semanticCorrespondence(correspondence, req.id, req.relation))
           : [semanticCorrespondence(correspondence)],
+        { deferCommit: true },
       );
       contract = prepared;
     } catch (e) {
@@ -396,29 +408,49 @@ export async function applyPass<S, N extends Needs, P>(
     }
   }
 
+  // F33: the acceptance boundary. Everything about the candidate is private until the preservation
+  // checks pass: the contract is committed, and only then is the candidate retained in the caller's
+  // store. Any failure rolls the contract back and invalidates the preservation evidence about the
+  // candidate, so no valid fact about a rejected candidate survives.
   const preserved: PreservationOutcome[] = [];
-  for (const def of pass.preserves ?? []) {
-    if (!manager.hasAnalysis(def, before)) {
-      if (!options.auditPreservation) continue; // nothing to keep
-      await manager.analyse(def, before);
+  const accepts = async () => {
+    for (const def of pass.preserves ?? []) {
+      if (!manager.hasAnalysis(def, before)) {
+        if (!options.auditPreservation) continue; // nothing to keep
+        await manager.analyse(def, before);
+      }
+      try {
+        const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
+        preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
+      } catch {
+        const old = await manager.analyse(def, before),
+          fresh = await manager.analyse(def, after);
+        if (canonical(old.value) !== canonical(fresh.value))
+          throw new PassError(
+            'preserveViolated',
+            `Pass ${pass.id} claims to preserve ${def.id}, but it changed`,
+            {
+              analysis: def.id,
+            },
+          );
+        preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+      }
     }
-    try {
-      const record = await manager.preserve(def, before, after, semanticCorrespondence(correspondence));
-      preserved.push({ analysis: def.id, how: 'transferred', evidence: record.transfer?.evidence });
-    } catch {
-      const old = await manager.analyse(def, before),
-        fresh = await manager.analyse(def, after);
-      if (canonical(old.value) !== canonical(fresh.value))
-        throw new PassError(
-          'preserveViolated',
-          `Pass ${pass.id} claims to preserve ${def.id}, but it changed`,
-          {
-            analysis: def.id,
-          },
-        );
-      preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
-    }
+    prepared?.commit();
+  };
+  try {
+    await accepts();
+  } catch (e) {
+    for (const def of pass.preserves ?? [])
+      try {
+        manager.invalidate(def, after, `Pass ${pass.id} was not accepted`);
+      } catch {
+        // cleanup must not mask the rejection
+      }
+    prepared?.rollback(`Pass ${pass.id} was not accepted`);
+    throw e;
   }
+  if (retainToStore && options.store) options.store.retain(after);
   return {
     pass: { id: pass.id, version: pass.version },
     changed: true,

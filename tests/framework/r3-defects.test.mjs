@@ -72,7 +72,7 @@ test(
 );
 
 // ---------- F33 (probe 03): nothing about a rejected candidate is published ----------
-test('F33: a candidate the contract rejects does not become a store head', { todo: 'F33' }, async () => {
+test('F33: a candidate the contract rejects does not become a store head', async () => {
   const p = compileTix('fn f(x:f32[N]):f32[N] { y[i] = x[i] * 2; z[i] = y[i] + 1; return z; }');
   const no = C.defineInvariant({
     id: 'r3.no',
@@ -108,61 +108,57 @@ test('F33: a candidate the contract rejects does not become a store head', { tod
   assert.equal(head, undefined, 'the rejected candidate is the head of the caller-supplied store');
 });
 
-test(
-  'F33: no accepted execution or fact survives a later preservation failure',
-  { todo: 'F33' },
-  async () => {
-    const p = compileTix('fn f(x:f32[N]):f32[N] { y[i] = x[i] * 2; z[i] = y[i] + 1; return z; }');
-    const candidate = optimizeTix(p, ['inline']).program.current;
-    const count = C.defineAnalysis({
-      id: 'r3.count',
-      version: '1',
-      description: desc,
-      input: TixIR,
-      output: C.Integer,
-      run: (_c, a) => a.value.functions[0].statements.length,
-    });
-    const one = C.defineAnalysis({
-      id: 'r3.one',
-      version: '1',
-      description: desc,
-      input: TixIR,
-      output: C.Check,
-      run: (_c, a) => ({ ok: a.value.functions[0].statements.length === 1 }),
-    });
-    const property = C.defineProperty({
-      id: 'r3.single-statement',
-      version: '1',
-      description: desc,
-      subject: TixIR,
-      check: one,
-    });
-    const establishes = C.defineTransformation({
-      id: 'r3.establishes',
-      version: '1',
-      description: desc,
-      inputs: { input: TixIR },
-      outputs: { output: TixIR },
-      establishes: [{ property, subject: { from: 'outputs', port: 'output' } }],
-    });
-    const m = new C.AnalysisManager();
-    const falseClaim = definePass({
-      ...inlinePass,
-      id: 'r3.false-claim',
-      contract: establishes,
-      preserves: [count],
-    });
-    await assert.rejects(applyPass(falseClaim, p.current, { manager: m, auditPreservation: true }), {
-      code: 'preserveViolated',
-    });
-    assert.equal(m.properties(candidate).length, 0, 'a fact about the rejected candidate is visible');
-    assert.notEqual(
-      m.snapshot().executions.at(-1)?.status,
-      'accepted',
-      'the rejected application is recorded as accepted',
-    );
-  },
-);
+test('F33: no accepted execution or fact survives a later preservation failure', async () => {
+  const p = compileTix('fn f(x:f32[N]):f32[N] { y[i] = x[i] * 2; z[i] = y[i] + 1; return z; }');
+  const candidate = optimizeTix(p, ['inline']).program.current;
+  const count = C.defineAnalysis({
+    id: 'r3.count',
+    version: '1',
+    description: desc,
+    input: TixIR,
+    output: C.Integer,
+    run: (_c, a) => a.value.functions[0].statements.length,
+  });
+  const one = C.defineAnalysis({
+    id: 'r3.one',
+    version: '1',
+    description: desc,
+    input: TixIR,
+    output: C.Check,
+    run: (_c, a) => ({ ok: a.value.functions[0].statements.length === 1 }),
+  });
+  const property = C.defineProperty({
+    id: 'r3.single-statement',
+    version: '1',
+    description: desc,
+    subject: TixIR,
+    check: one,
+  });
+  const establishes = C.defineTransformation({
+    id: 'r3.establishes',
+    version: '1',
+    description: desc,
+    inputs: { input: TixIR },
+    outputs: { output: TixIR },
+    establishes: [{ property, subject: { from: 'outputs', port: 'output' } }],
+  });
+  const m = new C.AnalysisManager();
+  const falseClaim = definePass({
+    ...inlinePass,
+    id: 'r3.false-claim',
+    contract: establishes,
+    preserves: [count],
+  });
+  await assert.rejects(applyPass(falseClaim, p.current, { manager: m, auditPreservation: true }), {
+    code: 'preserveViolated',
+  });
+  assert.equal(m.properties(candidate).length, 0, 'a fact about the rejected candidate is visible');
+  assert.notEqual(
+    m.snapshot().executions.at(-1)?.status,
+    'accepted',
+    'the rejected application is recorded as accepted',
+  );
+});
 
 // ---------- F35 (probe 04): a required mapping must cover what it claims, and be consistent with the diff ----------
 test(
