@@ -98,3 +98,20 @@ test('baseline key rejects cases that change outside the key', () => {
   outside = 2;
   assert.throws(() => runDifferential(spec, inputs), /fixed-key/);
 });
+
+test('baseline key checks typed arrays and signed zero using a stored snapshot', () => {
+  const memory = new Uint8Array([1, 2]);
+  let value = -0;
+  const spec = {
+    id: 'test.key-typed-data', version: '1', count: 1, baseline: 'origin', subject: 'candidate',
+    baselineKey: () => 'typed-key', cases: () => [{ memory, value }], run: () => 1, compare: () => true,
+  };
+  const origin = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const inputs = { origin, candidate: origin };
+  runDifferential(spec, inputs);
+  value = 0;
+  assert.throws(() => runDifferential(spec, inputs), e => e.name === 'ContractError' && /typed-key/.test(e.message));
+  value = -0;
+  memory[0] = 3;
+  assert.throws(() => runDifferential(spec, inputs), e => e.name === 'ContractError' && /typed-key/.test(e.message));
+});
