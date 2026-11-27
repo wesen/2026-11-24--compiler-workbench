@@ -492,7 +492,10 @@ const rangeStep = (st: Store, env: Env, sid: string): Env => {
   return m;
 };
 const interval = intervalLattice();
-export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
+interface RangeContext extends FnContext {
+  readonly thresholds: readonly number[];
+}
+export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, RangeContext>({
   id: 'typed.ranges',
   version: '1',
   description: 'an interval for each local at each statement, with branch refinement and widening',
@@ -502,7 +505,22 @@ export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval
   lattice: mapLattice<string, Interval>(interval),
   strategy: 'round-robin',
   widenAfter: 3,
-  regions: view => regions(view as never),
+  regions: view =>
+    regions(view as never).map(region => {
+      const { st, f } = region.context;
+      const thresholds = new Set([MIN, 0, MAX]);
+      const seen = new Set<string>();
+      const visit = (id: string) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        const v = st.get(id) as ValueRec;
+        if (v.op === 'const' && v.type !== 'f32' && typeof v.imm === 'number') thresholds.add(v.imm);
+        v.args.forEach(visit);
+      };
+      for (const block of f.blocks)
+        for (const sid of block.stmts) stmtValues(st.get(sid) as StmtRec).forEach(visit);
+      return { ...region, context: { st, f, thresholds: [...thresholds].sort((a, b) => a - b) } };
+    }),
   boundary: (_r, { f }) =>
     new Map(
       f.locals.map((l, i) => [
@@ -519,9 +537,13 @@ export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval
       return refine(st, last.cond!, out, last.then === to);
     return out;
   },
-  widen(a, b) {
+  widen(a, b, _block, { thresholds }) {
     const m = new Map(b);
-    for (const [k, v] of b) if (a.has(k)) m.set(k, interval.widen(a.get(k)!, v));
+    for (const [k, v] of b) {
+      const old = a.get(k);
+      if (!old || !v) continue;
+      m.set(k, interval.widen(old, v, thresholds));
+    }
     return m;
   },
   reads: READS_ALL,

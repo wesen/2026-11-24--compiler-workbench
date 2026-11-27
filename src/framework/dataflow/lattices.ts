@@ -68,7 +68,7 @@ export function intervalLattice(
   max = I32_MAX,
 ): Lattice<Interval> & {
   readonly top: readonly [number, number];
-  widen(old: Interval, next: Interval): Interval;
+  widen(old: Interval, next: Interval, thresholds?: readonly number[]): Interval;
 } {
   const top = [min, max] as const;
   return {
@@ -80,11 +80,20 @@ export function intervalLattice(
     equal: (a, b) => a === b || (!!a && !!b && a[0] === b[0] && a[1] === b[1]),
     encode: v => (v ? [v[0], v[1]] : null),
     decode: j => (j === null ? null : [(j as number[])[0], (j as number[])[1]]),
-    /** Standard widening: a bound that moved jumps to the extreme of the domain. */
-    widen(old, next) {
+    /** A moving bound jumps to the nearest enclosing threshold, or the domain extreme. */
+    widen(old, next, thresholds = []) {
       if (!old) return next;
       if (!next) return old;
-      return [next[0] < old[0] ? min : old[0], next[1] > old[1] ? max : old[1]];
+      let lower = min,
+        upper = max;
+      for (const t of thresholds) {
+        if (t <= next[0]) lower = Math.max(lower, t);
+        if (t >= next[1]) upper = Math.min(upper, t);
+      }
+      return [
+        next[0] < old[0] ? lower : old[0],
+        next[1] > old[1] ? upper : old[1],
+      ];
     },
   };
 }
