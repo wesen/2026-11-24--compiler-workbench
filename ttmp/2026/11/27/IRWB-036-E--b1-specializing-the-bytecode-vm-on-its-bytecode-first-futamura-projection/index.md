@@ -10,7 +10,13 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/bindings.ts
+      Note: the buffer promise and its check
+    - Path: repo://src/typed/peval.ts
+      Note: the peval pass the report measures
+    - Path: repo://tests/typed/peval.test.mjs
+      Note: the checks the report cites
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T09:44:32.887682704-05:00

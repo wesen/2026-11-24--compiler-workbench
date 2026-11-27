@@ -16,13 +16,13 @@ RelatedFiles:
     - Path: repo://src/typed/specialize.ts
       Note: the existing parameter/field bindings this design extends with a constant-buffer promise
     - Path: repo://src/typed/peval.ts
-      Note: the polyvariant partial evaluator (new): trace, memo, liveness-bounded materialization, demotion restarts
+      Note: the polyvariant partial evaluator (new): trace, memo, pending-value materialization, loop peeling
     - Path: repo://src/typed/program.ts
       Note: assume(): how a buffer promise restricts the meaning contract's cases
     - Path: repo://ttmp/2026/11/27/IRWB-036-E--b1-specializing-the-bytecode-vm-on-its-bytecode-first-futamura-projection/scripts/01-vm-ir.mjs
       Note: the lifted dispatch loop this design specializes
 ExternalSources: []
-Summary: 'Design for IRWB-036-E: a host promise that a buffer parameter holds fixed contents, and a polyvariant partial evaluator that traces the dispatch loop on known program counters, closes loops at memoized program points, demotes loop-varying static cells to locals, and emits the residual as checked TypedBlocks. Targets the 7,678/6,874-instruction general VM against the 75/74 hand-specialized loops.'
+Summary: 'Design for IRWB-036-E: a host promise that a buffer parameter holds fixed contents, and a polyvariant partial evaluator that traces the dispatch loop on known program counters, closes loops at memoized program points, peels the first trip where the state differs, and emits the residual as checked TypedBlocks. Targets the 7,678/6,874-instruction general VM against the 75/74 hand-specialized loops.'
 LastUpdated: 2026-11-27T12:00:00-05:00
 WhatFor: Implementing the first Futamura projection for the bytecode VM, and judging how much of the 100x gap automatic specialization closes.
 WhenToUse: Before writing the buffer binding, the peval pass, or their measurements; and when reviewing them.
@@ -102,60 +102,66 @@ Generalizing further (calls, f32, records) is listed under Later: no corpus prog
 
 ### 3.3 Regions, the memo, and how the loop closes
 
-The trace follows original blocks. A **region** is the maximal straight run of blocks executed from
-one abstract entry point; it ends at a `br` into an already-seen entry point, a dynamic `br_if`, a
-`return`, or a `trap`. Entry points are memoized by key
+The trace follows original blocks. A **region** is the maximal straight run of blocks executed from one abstract
+entry point; it ends at a branch into an already-seen (block, state) — the memo closes the loop there — at a
+dynamic `br_if`, which cuts both arms into new regions, or at `return`/`trap`. Entry points are memoized by key
 
 ```
-(original block, live IR locals with their values, live frame cells with their states)
+(original block, the live IR locals with their values, every frame cell with its state)
 ```
 
-where "live" comes from liveness: IR locals from the framework's `liveness` analysis (`liveIn` of
-the target block), frame cells from a liveness fixpoint over the region graph that the first
-(discovery) pass records (each region logs its cell read/write events and exit keys; cells not
-live-in are written before read on every path, so their state is irrelevant both to the key and to
-materialization). A `br` to a memo hit closes a loop as a residual `goto`/`br_if` back-edge; a
-dynamic `br_if` cuts the region and pushes both arms as new entry points.
+"Live" IR locals come from the framework's `liveness` analysis (`liveIn` of the target block); every cell is in
+the key, constants exactly and locals-in-use by identity. A `br` (or a folded `br_if`) to a memo hit closes a loop
+as a residual back-edge; a dynamic `br_if` materializes the pending values and cuts both arms; a revisit of a
+point this region has already passed closes an in-region cycle the same way.
 
-**Splitting on entry**: at the function entry, a scalar parameter whose input spec is `oneOf` with
-at most 8 values (justified below) is split polyvariantly: the residual entry block becomes a
-`br_if` chain `entry == v0 → arm0, …, else trap`, and each arm is traced with that parameter
-constant. The `else trap` is honest: outside the promised domain the residual has no meaning, and
-the contract never generates such a case (the same stance a scalar binding takes via `assume`).
+**Splitting on entry**: at the function entry, a scalar parameter whose input spec is `oneOf` with at most 8
+values (justified below) is split polyvariantly: the residual entry block becomes a `br_if` chain
+`entry == v0 → arm0, …, else trap`, and each arm is traced with that parameter constant. The `else trap` is
+honest: outside the promised domain the residual has no meaning, and the contract never generates such a case
+(the same stance a scalar binding takes via `assume`; the test pins it down with an entry the promise does not
+list).
 
-**Unrolling and stopping**: a region unrolls as long as the state stays precise — `pc` static means
-every fetch, dispatch and operand folds, so one region covers one guest instruction (or a whole
-guest straight-line run). The trace stops at: a memo hit (loop closed), a dynamic condition (cut),
-a `return`/`trap` (region end), or a budget. Budgets: ≤ 256 regions, ≤ 4096 traced blocks, ≤ 2048
-residual statements, ≤ 8 demotion rounds (§3.4); all refuse (function skipped) rather than
-truncate. Justification: the corpus VM needs 7 regions and < 20 residual statements; 256 regions
-covers bytecode programs of ~500 cells (8x the largest corpus buffer) and still bounds the image
-size for the device; the 8-value split cap bounds the entry chain at one comparison per case
-(present domain has 2).
+**Unrolling and stopping**: a region unrolls as long as the state stays precise — `pc` static means every fetch,
+dispatch and operand folds, so one region covers one guest instruction (or a whole guest straight-line run).
+The trace stops at a memo hit (loop closed), a dynamic condition (cut), a `return`/`trap` (region end), or a
+budget. Budgets: ≤ 256 regions, ≤ 4096 traced blocks, ≤ 2048 residual statements, ≤ 8 split values; all refuse
+(function skipped, reason recorded) rather than truncate. Justification: the corpus VM's residuals need 13
+regions and < 60 statements; 256 regions covers bytecode programs of several hundred cells unrolled once around
+their loops, and the statement budget is the real size guard for the device.
 
-**Demotion (the binding-time fixpoint)**: when an arrival at a memoized point finds a live frame
-cell (or IR local) that was `CONST` there but is now dynamic — loop-varying, e.g. VM `locals[2]`
-which starts 0 but holds the running Fibonacci value after one trip — the trace restarts with that
-cell *demoted*: forced `LOC(m)` from the start, so the prologue materializes it (`set m = 0`) and
-every store emits `set m = …`. Demotions accumulate across restarts (monotone, so it terminates);
-stack cells are *not* demoted this way because cell liveness shows they are written before read at
-the loop head — they stay pure block-local dataflow, which is exactly why the residual loop needs
-no stack at all.
+**When two arrivals differ, the pass peels instead of merging** (a design revision; the first sketch demoted the
+conflicting cell to a local and re-traced): the first trip through the Fibonacci loop runs with `locals[2] = 0`,
+a constant; the second arrives with a dynamic value in that cell. Since the two states are different memo keys,
+the second arrival is traced as its own region, which peels the first trip off the loop and lets the steady-state
+loop close on itself — *more* precise than demotion, which would have forced the constant through a local on
+every trip. Demotion was abandoned for a measured reason: with no exact cell-liveness to hand, it also demoted
+the dead stack cells, costing ~8 register moves per trip (measured on the first working residual: 162
+instructions; after peeling + the store rules below: 76). Termination does not depend on trusting this: budgets
+refuse anything larger, and a state that keeps changing never matches a memo key, so it can only run to the
+budget.
 
-This trace *is* the binding-time analysis the ticket asks for: it propagates the buffer promise
-through `load16u/caddr` chains, computes which values stay static per program point, and its
-per-region report (folds, splits, demotions, residual statements) is the binding-time profile.
+**Cells and pending values** (the ordering rules that make the residual correct):
+- a frame cell is a constant, a *pending value id* (valid in this block only), or a fresh local `m`;
+- when a store hits a cell whose local is read by some pending value, the local is written **now**, after
+  every pending value that reads it has been emitted (`invalidate`, recursively: materializing one value
+  overwrites its own local in turn, so its readers go first; a cycle refuses the function);
+- when no pending value reads that local, the write is deferred to the cut, where pending ids become `set`
+  statements anyway — the deferred sets for cells the next region overwrites first are dead and `dce` removes
+  them. This rule is what keeps the operand stack out of the residual entirely: pushes and pops forward through
+  pending ids, and no stack local is ever read.
 
 ### 3.4 The residual
 
-Each region becomes one residual block: `set` statements for demoted cells and materialized
-values, one `br`/`br_if`/`return`/`trap` terminator, values as ordinary DAG nodes (a value used a
-second time is cloned; the `speed` pipeline's `lvn` re-merges the copies, reproducing the hand
-code's `const next = a + b`). Prologue `zero` becomes `set m = 0` per demoted cell; non-demoted
-zeroed cells stay folded constants. Every residual entity records `origin.from` = the original
-statement/value it traces, `because` = the binding fact (`fact:typed.bindings@<rev>#<entity>`) and
-the source ids, so `why` walks the residual back to the interpreter's source, and
-`revisionCorrespondence` groups them; the original statements are removed with the same `because`.
+Each region becomes one residual block: `set` statements for locals that must hold values (stack cells mostly
+disappear), one `br`/`br_if`/`return`/`trap` terminator, values as ordinary DAG nodes (a value used a second
+time is cloned; the `speed` pipeline's `lvn` re-merges the copies, reproducing the hand code's `const next`). A
+`set` is emitted only when the *residual* tree has an effect (a load or checked address the folding could not
+remove) — checking the source tree instead was a bug: it kept the folded stack reads as memory loads. Prologue
+Prologue `zero` folds to constants; a cell that already lives in a local gets `set m = 0`. Every residual entity records
+`origin.from` = the original statement/value it traces, `because` = the binding fact
+(`fact:typed.bindings@<revision>#<entity>`), so `why` walks the residual back to the interpreter's source, and
+`revisionCorrespondence` groups them; the original statements are removed citing the same fact.
 
 ### 3.5 Checks
 
