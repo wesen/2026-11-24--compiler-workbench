@@ -1,7 +1,0 @@
-[IRWB-020-R ticket](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v2-sh-irwb-020-r/ttmp/2026/11/26/IRWB-020-R--tix-stage-1-language-ir-evaluators-meaning-contract-and-checked-passes/index.md), [stage-one design](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v2-sh-irwb-020-r/ttmp/2026/11/26/IRWB-020-R--tix-stage-1-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-stage-1-design.md), and [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-v2-sh-irwb-020-r/ttmp/2026/11/26/IRWB-020-R--tix-stage-1-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md) are ready for review.
-
-The sole proposed framework change is a synchronous `applyNativePass` entry point that shares native candidate validation, diffs, correspondence, and declared-write checks with `applyPass`. It would let Tix use a projection-only adapter and the existing synchronous differential checker.
-
-The design uses exact f32 comparison for `inline` and a sampled tolerance against the original f64 output for `split-sum`. Node 24 probes confirmed the framework constraints and the rounding witnesses. The repository build and `docmgr doctor` passed.
-
-Design-only commit `1d7d6690db09bf48ebab642bdd6fdd083d3c0ac2`. The worktree is clean.

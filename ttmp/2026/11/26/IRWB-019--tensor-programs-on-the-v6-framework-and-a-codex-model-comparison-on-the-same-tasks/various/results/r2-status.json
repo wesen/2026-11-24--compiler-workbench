@@ -1,6 +1,0 @@
-{
- "IRWB-023-A": { "status": "done", "minutes": 23.3, "design_words": 6974, "commits": 3, "experiments": 12 },
- "IRWB-023-B": { "status": "done", "minutes": 30.8, "design_words": 6968, "commits": 5, "experiments": 83 },
- "IRWB-023-C": { "status": "done", "minutes": 61.9, "design_words": 10392, "commits": 19, "experiments": 19 },
- "IRWB-023-D": { "status": "done", "minutes": 15.8, "design_words": 5583, "commits": 6, "experiments": 10 }
-}

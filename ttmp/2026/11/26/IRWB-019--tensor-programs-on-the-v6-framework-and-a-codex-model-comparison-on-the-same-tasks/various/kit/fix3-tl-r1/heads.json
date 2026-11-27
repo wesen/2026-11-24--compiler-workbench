@@ -1,9 +1,0 @@
-{
- "IRWB-031": {
-  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix3-tl-irwb-031",
-  "branch": "fix3-tl/irwb-031",
-  "base": "fc39478",
-  "rev": "fab6334",
-  "resumedFrom": "fix3-tl"
- }
-}

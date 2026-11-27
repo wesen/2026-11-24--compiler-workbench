@@ -1,9 +1,0 @@
-**IRWB-020-K is ready for review.** This was a design-only commit; implementation awaits your feedback.
-
-- [Ticket](ttmp/2026/11/26/IRWB-020-K--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/index.md)
-- [Design](ttmp/2026/11/26/IRWB-020-K--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/design-doc/01-tix-stage-1-design.md)
-- [Diary](ttmp/2026/11/26/IRWB-020-K--tix-language-tensor-ir-evaluators-meaning-contract-and-passes/reference/01-diary.md)
-
-**Proposed framework changes:** Let native passes use read-only IR adapters without opening an edit draft, and add a synchronous runner for native passes with pure invariant postconditions so `optimizeTix` can return a checked result directly. The existing differential checker already supports both comparison relations.
-
-**Commit:** `8002cc37301fdbec3cdfe01398955984782258b0`
