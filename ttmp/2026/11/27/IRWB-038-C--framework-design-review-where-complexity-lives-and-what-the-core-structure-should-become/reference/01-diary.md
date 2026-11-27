@@ -105,3 +105,21 @@ What I now think the root is (to be argued in the design doc): the framework's u
 endomorphism `S -> S` with an asynchronous acceptance protocol wrapped around it, while both domains' important
 steps are translations `S -> T` whose checks are mostly synchronous and structural. Every workaround above is a
 local patch over that mismatch.
+
+## Step 4: the B1 survey, and probe 04 (a binding-time analysis on the existing solver)
+
+The B1 agent returned. Spot checks matched: the two near-identical flow-insensitive BTAs
+(`b1-op-irwb-036-f/src/typed/pe.ts:76`, `b1-fa-irwb-036-g/src/typed/bta.ts:65`), the near-identical memo keys of the
+online specializers (`b1-sm-irwb-036-a/src/typed/specialize-memory.ts:57`, `b1-am-irwb-036-b/src/typed/residualize.ts:61`),
+the hand-written edge-constant analysis in the uncommitted D cell (`b1-ds-x-irwb-036-d/src/typed/dispatch.ts:76`),
+and the identical `WriteKind 'frame'` added twice (`b1-op-irwb-036-f/src/typed/tx.ts:28`,
+`b1-sm-irwb-036-a/src/typed/tx.ts:27-28`). No B1 cell touched `src/framework`; none used `framework/dataflow` for
+its BTA.
+
+The cells' reason for hand-writing the BTA is not stated anywhere; my hypothesis was that the solver's name and
+signature (`FlowGraph` of blocks) hide that it is a generic monotone-framework solver. Probe
+`04-bta-on-the-existing-solver.mjs` encodes a flow-insensitive BTA as a forward problem over the def-use
+dependence graph (a virtual entry with an edge to every local, a two-point lattice S below D) and solves it with the
+unmodified `solve` (`src/framework/dataflow/solver.ts:90`): `{pc:S, op:S, acc:D, x:D, tmp:D}` in 7 iterations, the
+expected division. So the gap is not the solver but the missing graph builders (def-use, SSA, constraint graphs)
+and the CFG-centred naming of `dataflow()` (`src/framework/dataflow/analysis.ts:110`), which ties a spec to blocks.

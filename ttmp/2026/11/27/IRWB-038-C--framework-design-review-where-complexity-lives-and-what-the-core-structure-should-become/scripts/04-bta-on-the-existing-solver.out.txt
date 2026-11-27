@@ -1,0 +1,2 @@
+{ pc: 'S', op: 'S', acc: 'D', x: 'D', tmp: 'D' } iterations: 7
+matches the expected division: true
