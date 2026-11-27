@@ -1259,3 +1259,25 @@ The user asked for the planned work, the T6 and Typed stages started in parallel
   - F37: `typed.ranges` loses an outer counter's lower bound under an inner loop;
   - F38: `lvn` throws `absent` on a second run, and a second run would save 1,324 instructions.
 - **Running:** the hidden T6 evaluation (`scripts/63-t6-eval.sh`, base plus ten cells, on the GB10) and the hidden D2 evaluation (`scripts/64-d2-eval.sh`, against `d2-base`).
+
+## Step 47: D2 evaluated (hidden), Fable merged
+
+- **Hidden D2 evaluation** (`scripts/64-d2-eval.sh`, the D1 evaluator against `d2-base`; `results/eval-d2.json`). Corpus `speed` totals, at the agents' seed and the held-out seed. Every cell has parity clean, all tests passing and no project slower than the base:
+
+  | cell | `speed` | held-out | VM `speed` | lines (src/typed, src/framework) |
+  |---|---|---|---|---|
+  | base | 867,770 | 1,921,642 | 32,295 | — |
+  | Sol | 859,126 | 1,904,740 | 31,981 | 169, 0 |
+  | Astra | 860,378 | 1,907,448 | 31,981 | 76, 0 |
+  | Terra low | 867,770 | 1,921,642 | 32,295 | nothing committed |
+  | DeepSeek xhigh | 867,406 | 1,921,040 | 32,295 | 182, 0 |
+  | GLM 5.3 high | 852,486 | 1,891,172 | 31,981 | 281, 6 |
+  | Opus | 847,183 | 1,881,379 | 31,353 | 588, 0 |
+  | **Fable** | **789,710** | **1,764,291** | 31,981 | 1,018, 78 |
+
+- **Merged Fable** (IRWB-037-G) by cherry-pick, `badf42a`..`a2fae5b`. The gain is −9.0% at the agents' seed and −8.2% held out; O2 is unchanged, by design, since it stays pinned to the book pipeline. The work:
+  - four passes in `speed`, built from the hot-shape tables: `thread`, `guards`, `copies`, `subst-mem`;
+  - an identities table, checked exhaustively over 2^32;
+  - in the framework, `dataflow/scoped.ts`: a domain-independent dominator-tree walk with scoped maps (the SSA-renaming stack of Cytron et al.), with its own tests.
+- **Checks on main:** `tsc` clean; Prettier reports no file the merge touched (`format:check` still flags nine `src` files that were already unformatted at `d2-base`); tests typed 172/0/2, framework 237/0/0, workbench 24/0/1; site builds.
+- F36–F38 (Fable's findings) stay open; the merge does not change `bce`, `typed.ranges` or `lvn`.

@@ -37,7 +37,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | T14    | a parallel fold that is bit-identical to the sequential one                 | idea, from R2                                                         | M      |
 | T15    | acceptance by proof: normal-form equivalence and symbolic fingerprints      | idea, from R2; with F21                                               | M      |
 | D1     | why `speed` slows the bytecode VM                                           | done (IRWB-034; Fable merged)                                         | S–M    |
-| D2     | missed optimizations from provenance                                        | done (IRWB-037, seven cells); hidden evaluation running, merge pending | M      |
+| D2     | missed optimizations from provenance                                        | done (IRWB-037; Fable merged, `speed` corpus −9.0%)                    | M      |
 | B1     | specialize the VM on its bytecode                                           | done (IRWB-036, seven cells); merge pending (Opus the candidate)      | M–L    |
 | B2     | specialize Candela on its scene buffers                                     | idea                                                                  | L      |
 | A0     | measure: share of edits that are local value rewrites                       | done (IRWB-035, seven cells); merge pending                           | S      |
@@ -346,7 +346,7 @@ The six programs added in IRWB-012 to 017 (bytecode VM, SHA-256/ChaCha20, LZ, re
 - **Measure:** VM instructions at or below r0; corpus totals with no regression; parity clean.
 - **Depends on:** nothing.
 
-### D2: missed optimizations from provenance _(done: IRWB-037, seven cells; merge pending)_
+### D2: missed optimizations from provenance _(done: IRWB-037; Fable merged `badf42a`..`a2fae5b` as cherry-picks)_
 
 - **What we know:**
   - Regex after `speed`: 8,040 instructions, against the reference compiler's 6,628.
