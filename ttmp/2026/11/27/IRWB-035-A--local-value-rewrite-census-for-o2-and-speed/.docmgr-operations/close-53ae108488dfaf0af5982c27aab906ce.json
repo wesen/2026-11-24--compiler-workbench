@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "88cba4c1c6e3e825ac32a8d728e03c712220b9b888ae685dc1f098fe2cc22952",
+  "request": {
+    "ticket": "IRWB-035-A",
+    "status": "complete",
+    "intent": "",
+    "entry": "Completed the checked 50-project O2 and speed census, verified its reproducibility, and passed the requested test groups."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-53ae108488dfaf0af5982c27aab906ce",
+    "state": "committed",
+    "created_at": "2026-11-27T15:03:26.824713798Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "f01b414f36c0111a68c110b2791fc2b487317bc1557ed42ef83c5d03a0dbf9e4",
+      "index.md": "ea20c50cbe3ba051e1e8132141a06defccfc083a985ba16da89c30fa0302d6d6"
+    },
+    "after": {
+      "changelog.md": "1aa046a42e6229f1ce714b7da8dcf8fdf2048b46ff42f8e74b30cede8037d1e3",
+      "index.md": "3af97380b750a754b537433f6670c67f785800506a8b0531b184dc42df25d31b"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "f01b414f36c0111a68c110b2791fc2b487317bc1557ed42ef83c5d03a0dbf9e4",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKRGVmaW5lIHRoZSBjZW5zdXMgZG9tYWluLCBjbGFzc2VzLCBzdGF0ZW1lbnQgYXR0cmlidXRpb24sIGFuZCBydWxlIGV2aWRlbmNlIGJlZm9yZSBpbXBsZW1lbnRhdGlvbi4KCiMjIDIwMjYtMTEtMjcKCkNvbXBsZXRlZCB0aGUgY2hlY2tlZCA1MC1wcm9qZWN0IE8yIGFuZCBzcGVlZCBjZW5zdXMsIHZlcmlmaWVkIGl0cyByZXByb2R1Y2liaWxpdHksIGFuZCBwYXNzZWQgdGhlIHJlcXVlc3RlZCB0ZXN0IGdyb3Vwcy4K"
+    },
+    {
+      "path": "index.md",
+      "before": "ea20c50cbe3ba051e1e8132141a06defccfc083a985ba16da89c30fa0302d6d6",
+      "after": "LS0tClRpdGxlOiBMb2NhbCB2YWx1ZSByZXdyaXRlIGNlbnN1cyBmb3IgTzIgYW5kIHNwZWVkClRpY2tldDogSVJXQi0wMzUtQQpTdGF0dXM6IGNvbXBsZXRlClRvcGljczoKICAgIC0gY29tcGlsZXIKICAgIC0gdmVyaWZpY2F0aW9uCiAgICAtIHJlc2VhcmNoCkRvY1R5cGU6IGluZGV4CkludGVudDogbG9uZy10ZXJtCk93bmVyczogW10KUmVsYXRlZEZpbGVzOiBbXQpFeHRlcm5hbFNvdXJjZXM6IFtdClN1bW1hcnk6ICIiCkxhc3RVcGRhdGVkOiAyMDI2LTExLTI3VDEwOjAzOjI2LjgyNDUzNTc1OC0wNTowMApXaGF0Rm9yOiAiIgpXaGVuVG9Vc2U6ICIiCi0tLQoKIyBMb2NhbCB2YWx1ZSByZXdyaXRlIGNlbnN1cyBmb3IgTzIgYW5kIHNwZWVkCgojIyBPdmVydmlldwoKVGhlIGNsYXNzaWZpZXIgbWVhc3VyZXMgbG9jYWwgcmV3cml0ZXMsIHN0cnVjdHVyYWwgZWRpdHMgYW5kIG90aGVyIGNoYW5nZXMgaW4gdGhlIE8yIGFuZCBzcGVlZCBjb3JwdXMgcGlwZWxpbmVzLgoKIyMgS2V5IExpbmtzCgotIFtDbGFzc2lmaWNhdGlvbiBkZXNpZ25dKGRlc2lnbi1kb2MvMDEtZWRpdC1jbGFzc2lmaWNhdGlvbi1kZXNpZ24ubWQpCi0gW0NlbnN1cyByZXBvcnRdKGFuYWx5c2lzLzAxLWNvcnB1cy1lZGl0LWNlbnN1cy1yZXBvcnQubWQpCi0gW0NvcnB1cyB0YWJsZXNdKGFuYWx5c2lzLzAyLWNvcnB1cy1jZW5zdXMtdGFibGVzLm1kKQotIFtJbXBsZW1lbnRhdGlvbiBkaWFyeV0ocmVmZXJlbmNlLzAxLWltcGxlbWVudGF0aW9uLWRpYXJ5Lm1kKQoKLSAqKlJlbGF0ZWQgRmlsZXMqKjogU2VlIGZyb250bWF0dGVyIFJlbGF0ZWRGaWxlcyBmaWVsZAotICoqRXh0ZXJuYWwgU291cmNlcyoqOiBTZWUgZnJvbnRtYXR0ZXIgRXh0ZXJuYWxTb3VyY2VzIGZpZWxkCgojIyBTdGF0dXMKCkN1cnJlbnQgc3RhdHVzOiAqKmFjdGl2ZSoqCgojIyBUb3BpY3MKCi0gY29tcGlsZXIKLSB2ZXJpZmljYXRpb24KLSByZXNlYXJjaAoKIyMgVGFza3MKClNlZSBbdGFza3MubWRdKC4vdGFza3MubWQpIGZvciB0aGUgY3VycmVudCB0YXNrIGxpc3QuCgojIyBDaGFuZ2Vsb2cKClNlZSBbY2hhbmdlbG9nLm1kXSguL2NoYW5nZWxvZy5tZCkgZm9yIHJlY2VudCBjaGFuZ2VzIGFuZCBkZWNpc2lvbnMuCgojIyBTdHJ1Y3R1cmUKCi0gZGVzaWduLyAtIEFyY2hpdGVjdHVyZSBhbmQgZGVzaWduIGRvY3VtZW50cwotIHJlZmVyZW5jZS8gLSBQcm9tcHQgcGFja3MsIEFQSSBjb250cmFjdHMsIGNvbnRleHQgc3VtbWFyaWVzCi0gcGxheWJvb2tzLyAtIENvbW1hbmQgc2VxdWVuY2VzIGFuZCB0ZXN0IHByb2NlZHVyZXMKLSBzY3JpcHRzLyAtIFRlbXBvcmFyeSBjb2RlIGFuZCB0b29saW5nCi0gdmFyaW91cy8gLSBXb3JraW5nIG5vdGVzIGFuZCByZXNlYXJjaAotIGFyY2hpdmUvIC0gRGVwcmVjYXRlZCBvciByZWZlcmVuY2Utb25seSBhcnRpZmFjdHMK"
+    }
+  ]
+}

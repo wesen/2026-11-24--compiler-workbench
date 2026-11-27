@@ -1,7 +1,7 @@
 ---
 Title: Local value rewrite census for O2 and speed
 Ticket: IRWB-035-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - verification
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T09:44:00.959433506-05:00
+LastUpdated: 2026-11-27T10:03:26.824535758-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -21,16 +21,21 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+The classifier measures local rewrites, structural edits and other changes in the O2 and speed corpus pipelines.
 
 ## Key Links
+
+- [Classification design](design-doc/01-edit-classification-design.md)
+- [Census report](analysis/01-corpus-edit-census-report.md)
+- [Corpus tables](analysis/02-corpus-census-tables.md)
+- [Implementation diary](reference/01-implementation-diary.md)
 
 - **Related Files**: See frontmatter RelatedFiles field
 - **External Sources**: See frontmatter ExternalSources field
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 
