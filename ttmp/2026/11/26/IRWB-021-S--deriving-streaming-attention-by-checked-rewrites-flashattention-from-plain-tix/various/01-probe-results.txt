@@ -1,0 +1,107 @@
+# IRWB-021-S numeric probe: attention derivation, host f32/f64 simulation
+# f32 semantics per the brief: Math.fround after every operation; reductions accumulate
+# in increasing lexicographic order; sum starts at 0, max starts at -Infinity.
+# node v24.18.0
+# mixed = |cand-ref|/(2^-20 + epsRel*|ref|): load factor against the tolerance relation;
+# reported at epsRel = 2^-10 (9.77e-4). Pass iff mixed <= 1. mixed(P8)/mixed(P0) is the
+# calibration factor the tolerance contract needs on top of P0's own f32 error.
+
+config                     dist      seed  maxRel(P0)   maxRel(P8)  mixed(P0)@2^-10  mixed(P8)@2^-10  P8/P0   bitexact(P3,P2)  ctrl c1 min    ctrl c2 brk    ctrl c3 mean
+N=128  D=32  B=16  uniform   1    3.71e-4      2.82e-4              0.012           0.014    1.10 yes              2.13e-4        3.56e+2        5.23e-4
+N=128  D=32  B=32  uniform   1    3.71e-4      4.84e-4              0.012           0.014    1.10 yes              4.25e-4        9.00e+1        7.31e-4
+N=128  D=64  B=16  uniform   1    1.80e-2      1.77e-3              0.025           0.014    0.58 yes              1.01e-2        1.53e+4        1.13e-2
+N=128  D=64  B=32  uniform   1    1.80e-2      1.06e-2              0.025           0.019    0.75 yes              2.54e-3        1.75e+3        2.35e-3
+N=256  D=32  B=16  uniform   1    8.98e-4      2.75e-4              0.018           0.009    0.52 yes              1.16e-3        3.45e+2        4.06e-4
+N=256  D=32  B=32  uniform   1    8.98e-4      1.97e-4              0.018           0.009    0.52 yes              6.78e-4        3.36e+2        1.37e-3
+N=256  D=64  B=16  uniform   1    4.13e-4      5.01e-4              0.019           0.012    0.62 yes              5.89e-4        7.29e+2        6.93e-4
+N=256  D=64  B=32  uniform   1    4.13e-4      9.73e-4              0.019           0.012    0.66 yes              1.87e-3        7.29e+2        4.44e-4
+N=512  D=64  B=16  uniform   1    8.66e-3      5.75e-3              0.024           0.009    0.36 yes              1.63e-2        1.57e+4        1.09e-2
+N=512  D=64  B=32  uniform   1    8.66e-3      3.61e-3              0.024           0.009    0.36 yes              2.82e-3        4.42e+3        1.35e-2
+
+N=128  D=32  B=16  uniform   2    1.01e-3      8.30e-4              0.013           0.011    0.82 yes              4.55e-4        3.99e+2        6.58e-4
+N=128  D=32  B=32  uniform   2    1.01e-3      6.63e-4              0.013           0.015    1.13 yes              1.37e-4        1.20e+2        6.44e-4
+N=128  D=64  B=16  uniform   2    4.13e-4      5.83e-4              0.024           0.018    0.76 yes              4.09e-4        3.99e+2        5.13e-4
+N=128  D=64  B=32  uniform   2    4.13e-4      3.60e-4              0.024           0.020    0.86 yes              3.95e-4        5.00e+2        4.43e-4
+N=256  D=32  B=16  uniform   2    3.88e-3      1.48e-3              0.021           0.010    0.47 yes              1.82e-3        1.92e+3        1.94e-3
+N=256  D=32  B=32  uniform   2    3.88e-3      1.45e-3              0.021           0.012    0.58 yes              4.85e-4        1.90e+3        9.52e-4
+N=256  D=64  B=16  uniform   2    9.68e+0      2.46e+1              0.020           0.009    0.46 yes              9.56e+0        7.16e+6        2.03e+1
+N=256  D=64  B=32  uniform   2    9.68e+0      6.13e+0              0.020           0.016    0.77 yes              8.33e+0        3.86e+6        1.53e+1
+N=512  D=64  B=16  uniform   2    1.37e-3      5.97e-4              0.028           0.010    0.37 yes              1.35e-3        1.16e+3        9.56e-4
+N=512  D=64  B=32  uniform   2    1.37e-3      1.23e-3              0.028           0.015    0.54 yes              1.11e-3        6.10e+2        8.61e-4
+
+N=128  D=32  B=16  normal    1    3.36e-4      5.17e-4              0.031           0.030    0.96 yes              8.91e-4        5.60e+3        2.78e-4
+N=128  D=32  B=32  normal    1    3.36e-4      9.77e-4              0.031           0.034    1.11 yes              1.37e-3        5.09e+2        4.22e-4
+N=128  D=64  B=16  normal    1    7.81e-4      7.29e-4              0.053           0.069    1.31 yes              8.93e-4        7.50e+2        4.66e-4
+N=128  D=64  B=32  normal    1    7.81e-4      8.51e-4              0.053           0.069    1.31 yes              4.49e-4        6.14e+2        3.64e-4
+N=256  D=32  B=16  normal    1    3.91e-3      9.75e-4              0.050           0.048    0.95 yes              2.63e-3        1.32e+3        1.05e-3
+N=256  D=32  B=32  normal    1    3.91e-3      1.46e-3              0.050           0.037    0.73 yes              8.61e-4        1.68e+3        1.17e-3
+N=256  D=64  B=16  normal    1    3.20e-3      2.48e-3              0.092           0.066    0.71 yes              2.46e-3        7.46e+3        2.80e-3
+N=256  D=64  B=32  normal    1    3.20e-3      2.22e-3              0.092           0.064    0.69 yes              2.26e-3        9.15e+3        2.94e-3
+N=512  D=64  B=16  normal    1    1.53e-3      3.42e-3              0.085           0.064    0.76 yes              2.68e-3        7.72e+3        4.63e-3
+N=512  D=64  B=32  normal    1    1.53e-3      3.14e-3              0.085           0.069    0.81 yes              3.42e-3        6.16e+3        1.88e-3
+
+N=128  D=32  B=16  normal    2    4.72e-3      3.04e-3              0.087           0.044    0.50 yes              1.08e-3        1.98e+3        4.39e-4
+N=128  D=32  B=32  normal    2    4.72e-3      7.93e-4              0.087           0.034    0.39 yes              9.98e-4        1.98e+3        6.01e-4
+N=128  D=64  B=16  normal    2    2.15e-3      2.43e-3              0.059           0.067    1.13 yes              9.31e-4        8.49e+2        1.63e-3
+N=128  D=64  B=32  normal    2    2.15e-3      2.55e-3              0.059           0.075    1.27 yes              1.07e-3        6.78e+2        1.99e-3
+N=256  D=32  B=16  normal    2    3.93e-4      8.19e-4              0.035           0.035    0.99 yes              5.28e-4        9.52e+2        5.88e-4
+N=256  D=32  B=32  normal    2    3.93e-4      6.25e-4              0.035           0.038    1.07 yes              4.42e-4        9.48e+2        6.11e-4
+N=256  D=64  B=16  normal    2    3.80e-3      1.50e-3              0.099           0.099    1.01 yes              3.94e-3        2.89e+3        2.00e-3
+N=256  D=64  B=32  normal    2    3.80e-3      2.01e-3              0.099           0.092    0.93 yes              2.28e-3        3.31e+3        2.90e-3
+N=512  D=64  B=16  normal    2    4.84e-3      6.58e-3              0.094           0.063    0.67 yes              3.28e-3        5.32e+3        6.71e-3
+N=512  D=64  B=32  normal    2    4.84e-3      3.75e-3              0.094           0.059    0.63 yes              4.05e-3        5.45e+3        1.89e-3
+
+N=128  D=32  B=16  hot       1    4.50e-4      3.37e-3              0.311           0.290    0.93 yes              3.34e-3        2.54e+3        4.05e-3
+N=128  D=32  B=32  hot       1    4.50e-4      3.33e-3              0.311           0.287    0.92 yes              3.79e-3        8.97e+2        4.13e-3
+N=128  D=64  B=16  hot       1    1.19e-2      1.49e-2              0.516           0.646    1.25 yes              2.06e-2        1.05e+4        1.69e-2
+N=128  D=64  B=32  hot       1    1.19e-2      1.49e-2              0.516           0.646    1.25 yes              1.95e-2        1.06e+4        1.12e-2
+N=256  D=32  B=16  hot       1    8.11e-4      1.22e-3              0.312           0.417    1.34 yes              1.03e-3        1.14e+3        9.68e-4
+N=256  D=32  B=32  hot       1    8.11e-4      1.23e-3              0.312           0.411    1.32 yes              1.06e-3        1.13e+3        1.28e-3
+N=256  D=64  B=16  hot       1    1.84e-2      1.81e-2              1.063           1.048    0.99 yes              2.57e-2        1.72e+4        1.92e-2
+N=256  D=64  B=32  hot       1    1.84e-2      1.76e-2              1.063           1.019    0.96 yes              1.74e-2        1.91e+4        1.94e-2
+N=512  D=64  B=16  hot       1    5.21e-2      6.75e-2              0.821           0.861    1.05 yes              7.23e-2        5.49e+4        1.14e-1
+N=512  D=64  B=32  hot       1    5.21e-2      6.33e-2              0.821           0.852    1.04 yes              7.67e-2        5.50e+4        8.23e-2
+
+N=128  D=32  B=16  hot       2    7.88e-4      2.39e-3              0.239           0.686    2.87 yes              2.72e-3        6.56e+2        2.28e-3
+N=128  D=32  B=32  hot       2    7.88e-4      2.18e-3              0.239           0.623    2.61 yes              2.62e-3        5.72e+2        2.42e-3
+N=128  D=64  B=16  hot       2    4.78e-3      4.02e-3              0.633           0.661    1.04 yes              4.81e-3        1.24e+4        4.66e-3
+N=128  D=64  B=32  hot       2    4.78e-3      4.02e-3              0.633           0.649    1.03 yes              4.34e-3        2.07e+4        3.90e-3
+N=256  D=32  B=16  hot       2    5.56e-3      2.93e-3              0.561           0.401    0.71 yes              5.34e-3        2.92e+3        3.80e-3
+N=256  D=32  B=32  hot       2    5.56e-3      2.96e-3              0.561           0.418    0.75 yes              3.69e-3        2.61e+3        3.31e-3
+N=256  D=64  B=16  hot       2    1.42e-2      1.43e-2              0.566           0.621    1.10 yes              1.40e-2        4.58e+3        1.24e-2
+N=256  D=64  B=32  hot       2    1.42e-2      1.43e-2              0.566           0.603    1.07 yes              1.48e-2        4.11e+3        9.42e-3
+N=512  D=64  B=16  hot       2    1.67e-2      1.66e-2              0.643           0.639    0.99 yes              1.05e-2        3.19e+3        1.47e-2
+N=512  D=64  B=32  hot       2    1.67e-2      1.48e-2              0.643           0.571    0.89 yes              1.43e-2        2.30e+3        1.31e-2
+
+N=128  D=32  B=16  extreme   1    4.51e-3      1.51e-2              0.716           1.993    2.78 yes              nonfin:3595    1.47e+4        nonfin:64
+N=128  D=32  B=32  extreme   1    4.51e-3      1.51e-2              0.716           1.964    2.74 yes              nonfin:3688    8.77e+3        nonfin:96
+N=128  D=64  B=16  extreme   1    1.96e-3      1.95e-3              1.490           1.489    1.00 yes              nonfin:7552    4.46e+3        2.01e-3
+N=128  D=64  B=32  extreme   1    1.96e-3      1.94e-3              1.490           1.489    1.00 yes              nonfin:7744    1.03e+3        nonfin:17
+N=256  D=32  B=16  extreme   1    9.53e-3      8.18e-3              2.679           2.300    0.86 yes              nonfin:7729    1.47e+4        nonfin:256
+N=256  D=32  B=32  extreme   1    9.53e-3      8.15e-3              2.679           2.292    0.86 yes              nonfin:7910    7.39e+3        nonfin:364
+N=256  D=64  B=16  extreme   1    4.31e-3      4.31e-3              2.282           2.279    1.00 yes              nonfin:15816   1.77e+3        nonfin:256
+N=256  D=64  B=32  extreme   1    4.31e-3      4.31e-3              2.282           2.279    1.00 yes              nonfin:16064   1.95e+3        nonfin:401
+N=512  D=64  B=16  extreme   1    2.31e-2      2.32e-2              4.329           4.347    1.00 yes              nonfin:32578   2.25e+4        nonfin:1612
+N=512  D=64  B=32  extreme   1    2.31e-2      2.32e-2              4.329           4.347    1.00 yes              nonfin:32704   2.41e+3        nonfin:1851
+
+N=128  D=32  B=16  extreme   2    3.05e-3      7.60e-3              0.837           2.088    2.49 yes              nonfin:3552    3.81e+3        nonfin:128
+N=128  D=32  B=32  extreme   2    3.05e-3      7.59e-3              0.837           2.087    2.49 yes              nonfin:3745    3.02e+3        nonfin:96
+N=128  D=64  B=16  extreme   2    5.38e-3      5.38e-3              2.675           2.676    1.00 yes              nonfin:7936    9.09e+2        nonfin:128
+N=128  D=64  B=32  extreme   2    5.38e-3      5.38e-3              2.675           2.676    1.00 yes              nonfin:8192    1.37e+3        nonfin:128
+N=256  D=32  B=16  extreme   2    1.26e-1      2.63e-2              9.481           4.390    0.46 yes              nonfin:7915    4.13e+3        nonfin:420
+N=256  D=32  B=32  extreme   2    1.26e-1      2.63e-2              9.481           4.367    0.46 yes              nonfin:8128    7.30e+3        nonfin:366
+N=256  D=64  B=16  extreme   2    4.22e-3      4.19e-3              2.674           2.676    1.00 yes              nonfin:16128   6.02e+3        nonfin:659
+N=256  D=64  B=32  extreme   2    4.22e-3      4.20e-3              2.674           2.676    1.00 yes              nonfin:16320   6.02e+3        nonfin:640
+N=512  D=64  B=16  extreme   2    7.25e-3      7.25e-3              3.374           3.356    0.99 yes              nonfin:32704   5.95e+3        nonfin:2139
+N=512  D=64  B=32  extreme   2    7.25e-3      7.25e-3              3.374           3.356    0.99 yes              nonfin:32704   5.74e+3        nonfin:2816
+
+PASS  split-index is bit-identical (o, l, m)
+PASS  P8 has no non-finite outputs on the standard domain
+PASS  P0 itself passes the draft tolerance (mixed <= 1 at epsRel 2^-10)
+PASS  P8 tolerance load within 10x of P0's (calibration headroom)
+PASS  broken combine exceeds the tolerance by >10x
+PASS  P8 stays finite on extreme scores (block-max shift)
+PASS  min-shift control leaves the finite domain on extreme scores
+PASS  mean-shift control leaves the finite domain on extreme scores
+
+all sanity checks passed
