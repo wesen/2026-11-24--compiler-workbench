@@ -1,0 +1,191 @@
+{
+ "project": "bytecode-vm",
+ "fns": 1,
+ "pipelines": {
+  "O2": {
+   "applications": 7,
+   "changed": 7,
+   "byPass": {
+    "cfg": {
+     "edits": 119,
+     "cls": {
+      "local": 0,
+      "structural": 119,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 98,
+     "dropped": 110
+    },
+    "fold": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "fold-eqz": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 2
+    },
+    "licm": {
+     "edits": 81,
+     "cls": {
+      "local": 0,
+      "structural": 81,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 55,
+     "dropped": 41
+    },
+    "subst": {
+     "edits": 4,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 2
+     },
+     "just": {
+      "rule": 0,
+      "fact": 2,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 2
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 13,
+     "dropped": 14
+    }
+   },
+   "edits": 205,
+   "cls": {
+    "local": 3,
+    "structural": 200,
+    "other": 2
+   },
+   "images": {
+    "r0": 212,
+    "head": 227
+   }
+  },
+  "speed": {
+   "applications": 7,
+   "changed": 7,
+   "byPass": {
+    "cfg": {
+     "edits": 119,
+     "cls": {
+      "local": 0,
+      "structural": 119,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 98,
+     "dropped": 110
+    },
+    "fold": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "fold-eqz": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 2
+    },
+    "licm": {
+     "edits": 81,
+     "cls": {
+      "local": 0,
+      "structural": 81,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 55,
+     "dropped": 41
+    },
+    "subst": {
+     "edits": 4,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 2
+     },
+     "just": {
+      "rule": 0,
+      "fact": 2,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 2
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 13,
+     "dropped": 14
+    }
+   },
+   "edits": 205,
+   "cls": {
+    "local": 3,
+    "structural": 200,
+    "other": 2
+   },
+   "images": {
+    "r0": 212,
+    "head": 227
+   }
+  }
+ },
+ "ms": 10071
+}

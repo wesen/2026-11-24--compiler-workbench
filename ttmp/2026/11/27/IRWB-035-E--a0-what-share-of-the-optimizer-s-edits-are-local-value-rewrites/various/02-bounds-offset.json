@@ -1,0 +1,133 @@
+{
+ "project": "bounds-offset",
+ "fns": 1,
+ "pipelines": {
+  "O2": {
+   "applications": 2,
+   "changed": 2,
+   "byPass": {
+    "cfg": {
+     "edits": 6,
+     "cls": {
+      "local": 0,
+      "structural": 6,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 8,
+     "dropped": 8
+    },
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    }
+   },
+   "edits": 7,
+   "cls": {
+    "local": 1,
+    "structural": 6,
+    "other": 0
+   },
+   "images": {
+    "r0": 25,
+    "head": 25
+   }
+  },
+  "speed": {
+   "applications": 3,
+   "changed": 3,
+   "byPass": {
+    "cfg": {
+     "edits": 6,
+     "cls": {
+      "local": 0,
+      "structural": 6,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 8,
+     "dropped": 8
+    },
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    },
+    "rotate": {
+     "edits": 3,
+     "cls": {
+      "local": 0,
+      "structural": 3,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 7,
+     "dropped": 4
+    }
+   },
+   "edits": 10,
+   "cls": {
+    "local": 1,
+    "structural": 9,
+    "other": 0
+   },
+   "images": {
+    "r0": 25,
+    "head": 28
+   }
+  }
+ },
+ "ms": 565
+}

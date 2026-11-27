@@ -1,0 +1,153 @@
+{
+ "project": "calls",
+ "fns": 3,
+ "pipelines": {
+  "O2": {
+   "applications": 1,
+   "changed": 1,
+   "byPass": {
+    "subst": {
+     "edits": 2,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 1
+     },
+     "just": {
+      "rule": 0,
+      "fact": 1,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 1
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 7,
+     "dropped": 7
+    }
+   },
+   "edits": 2,
+   "cls": {
+    "local": 1,
+    "structural": 0,
+    "other": 1
+   },
+   "images": {
+    "r0": 53,
+    "head": 53
+   }
+  },
+  "speed": {
+   "applications": 7,
+   "changed": 7,
+   "byPass": {
+    "inline": {
+     "edits": 34,
+     "cls": {
+      "local": 0,
+      "structural": 34,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 15,
+     "dropped": 32
+    },
+    "cfg": {
+     "edits": 44,
+     "cls": {
+      "local": 0,
+      "structural": 44,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 14,
+     "dropped": 14
+    },
+    "constprop": {
+     "edits": 6,
+     "cls": {
+      "local": 6,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 6,
+      "none": 0
+     },
+     "facts": {
+      "constprop: every reaching definition of the read assigns this constant": 6
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 10,
+     "dropped": 4
+    },
+    "dce": {
+     "edits": 4,
+     "cls": {
+      "local": 0,
+      "structural": 0,
+      "other": 4
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 6
+    },
+    "subst": {
+     "edits": 8,
+     "cls": {
+      "local": 4,
+      "structural": 0,
+      "other": 4
+     },
+     "just": {
+      "rule": 0,
+      "fact": 4,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 4
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 9,
+     "dropped": 9
+    }
+   },
+   "edits": 96,
+   "cls": {
+    "local": 10,
+    "structural": 78,
+    "other": 8
+   },
+   "images": {
+    "r0": 53,
+    "head": 34
+   }
+  }
+ },
+ "ms": 1072
+}

@@ -1,0 +1,189 @@
+{
+ "project": "bounds-two",
+ "fns": 1,
+ "pipelines": {
+  "O2": {
+   "applications": 4,
+   "changed": 4,
+   "byPass": {
+    "cfg": {
+     "edits": 10,
+     "cls": {
+      "local": 0,
+      "structural": 10,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 10,
+     "dropped": 10
+    },
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    },
+    "bce": {
+     "edits": 2,
+     "cls": {
+      "local": 0,
+      "structural": 2,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 3
+    }
+   },
+   "edits": 13,
+   "cls": {
+    "local": 1,
+    "structural": 12,
+    "other": 0
+   },
+   "images": {
+    "r0": 24,
+    "head": 21
+   }
+  },
+  "speed": {
+   "applications": 6,
+   "changed": 6,
+   "byPass": {
+    "cfg": {
+     "edits": 10,
+     "cls": {
+      "local": 0,
+      "structural": 10,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 10,
+     "dropped": 10
+    },
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    },
+    "bce": {
+     "edits": 2,
+     "cls": {
+      "local": 0,
+      "structural": 2,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 3
+    },
+    "subst": {
+     "edits": 2,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 1
+     },
+     "just": {
+      "rule": 0,
+      "fact": 1,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 1
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 4
+    },
+    "rotate": {
+     "edits": 3,
+     "cls": {
+      "local": 0,
+      "structural": 3,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 5,
+     "dropped": 3
+    }
+   },
+   "edits": 18,
+   "cls": {
+    "local": 2,
+    "structural": 15,
+    "other": 1
+   },
+   "images": {
+    "r0": 24,
+    "head": 22
+   }
+  }
+ },
+ "ms": 1024
+}

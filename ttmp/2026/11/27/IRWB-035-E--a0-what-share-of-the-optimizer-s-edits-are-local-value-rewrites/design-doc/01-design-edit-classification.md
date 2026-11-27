@@ -142,6 +142,11 @@ means for programme A even though they are not value rewrites.
 - **A `replace` whose new tree is a rebuild around a changed child** (origin "rebuilt around a changed argument")
   is local when it passes the motion test: it changed one field's tree, nothing else. This is the common case for
   inner-node rule firings under `fold`/`simplify`.
+- **`lvn` numbers one field twice.** Its first `replace` on a field can itself be replaced by its second, so one
+  of the two trees exists only in the pass's working copy (neither revision publishes it). The motion test runs on
+  the chain's *surviving* tree (the later edit's, which the after-revision holds); a chained replace that is not
+  motion bookkeeping would be local with justification `none` — its before-tree is unpublished, so no re-derivation
+  from published revisions can ever check it, which is exactly what the `none` count is for.
 - **`bcm`** (bounds-check merging, in `PASSES` but not in O2/speed) would pass the motion test and be labelled
   `rule: none`: its equality argument is a whole-block group fact, not a rule. If it ever enters a measured
   pipeline, the `none` count will show it.

@@ -1,0 +1,135 @@
+{
+ "project": "call-chain",
+ "fns": 3,
+ "pipelines": {
+  "O2": {
+   "applications": 1,
+   "changed": 1,
+   "byPass": {
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-pow2": 1
+     },
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 3
+    }
+   },
+   "edits": 1,
+   "cls": {
+    "local": 1,
+    "structural": 0,
+    "other": 0
+   },
+   "images": {
+    "r0": 43,
+    "head": 43
+   }
+  },
+  "speed": {
+   "applications": 7,
+   "changed": 7,
+   "byPass": {
+    "inline": {
+     "edits": 44,
+     "cls": {
+      "local": 0,
+      "structural": 44,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 42,
+     "dropped": 56
+    },
+    "cfg": {
+     "edits": 78,
+     "cls": {
+      "local": 0,
+      "structural": 78,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 29,
+     "dropped": 29
+    },
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-pow2": 1
+     },
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 2
+    },
+    "subst": {
+     "edits": 12,
+     "cls": {
+      "local": 6,
+      "structural": 0,
+      "other": 6
+     },
+     "just": {
+      "rule": 0,
+      "fact": 6,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 6
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 18,
+     "dropped": 20
+    }
+   },
+   "edits": 135,
+   "cls": {
+    "local": 7,
+    "structural": 122,
+    "other": 6
+   },
+   "images": {
+    "r0": 43,
+    "head": 35
+   }
+  }
+ },
+ "ms": 1232
+}

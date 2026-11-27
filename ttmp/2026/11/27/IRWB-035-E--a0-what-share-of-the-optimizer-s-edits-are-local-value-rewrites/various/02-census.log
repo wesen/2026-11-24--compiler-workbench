@@ -1,0 +1,12 @@
+across-calls 1360 ms
+algebra 726 ms
+blend 1333 ms
+bounds-lab 3389 ms
+bounds-offset 565 ms
+bounds-param 591 ms
+bounds-two 1024 ms
+branches 306 ms
+bytecode-vm 10071 ms
+call-chain 1232 ms
+calls 1072 ms
+checksum 1230 ms

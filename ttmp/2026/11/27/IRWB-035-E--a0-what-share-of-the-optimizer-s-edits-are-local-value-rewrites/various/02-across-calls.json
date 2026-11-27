@@ -1,0 +1,115 @@
+{
+ "project": "across-calls",
+ "fns": 2,
+ "pipelines": {
+  "O2": {
+   "applications": 2,
+   "changed": 2,
+   "byPass": {
+    "subst": {
+     "edits": 4,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 2
+     },
+     "just": {
+      "rule": 0,
+      "fact": 2,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 2
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 14,
+     "dropped": 16
+    }
+   },
+   "edits": 4,
+   "cls": {
+    "local": 2,
+    "structural": 0,
+    "other": 2
+   },
+   "images": {
+    "r0": 50,
+    "head": 48
+   }
+  },
+  "speed": {
+   "applications": 5,
+   "changed": 5,
+   "byPass": {
+    "inline": {
+     "edits": 20,
+     "cls": {
+      "local": 0,
+      "structural": 20,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 16,
+     "dropped": 24
+    },
+    "cfg": {
+     "edits": 43,
+     "cls": {
+      "local": 0,
+      "structural": 43,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 22,
+     "dropped": 22
+    },
+    "subst": {
+     "edits": 6,
+     "cls": {
+      "local": 3,
+      "structural": 0,
+      "other": 3
+     },
+     "just": {
+      "rule": 0,
+      "fact": 3,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 3
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 14,
+     "dropped": 15
+    }
+   },
+   "edits": 69,
+   "cls": {
+    "local": 3,
+    "structural": 63,
+    "other": 3
+   },
+   "images": {
+    "r0": 50,
+    "head": 27
+   }
+  }
+ },
+ "ms": 1360
+}

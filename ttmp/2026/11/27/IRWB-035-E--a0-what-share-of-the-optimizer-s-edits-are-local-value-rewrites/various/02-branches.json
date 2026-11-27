@@ -1,0 +1,151 @@
+{
+ "project": "branches",
+ "fns": 2,
+ "pipelines": {
+  "O2": {
+   "applications": 3,
+   "changed": 3,
+   "byPass": {
+    "cfg": {
+     "edits": 10,
+     "cls": {
+      "local": 0,
+      "structural": 10,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 5,
+     "dropped": 7
+    },
+    "fold": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "fold-sub": 1
+     },
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 2
+    },
+    "dce": {
+     "edits": 1,
+     "cls": {
+      "local": 0,
+      "structural": 0,
+      "other": 1
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 1
+    }
+   },
+   "edits": 12,
+   "cls": {
+    "local": 1,
+    "structural": 10,
+    "other": 1
+   },
+   "images": {
+    "r0": 29,
+    "head": 26
+   }
+  },
+  "speed": {
+   "applications": 3,
+   "changed": 3,
+   "byPass": {
+    "cfg": {
+     "edits": 10,
+     "cls": {
+      "local": 0,
+      "structural": 10,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 5,
+     "dropped": 7
+    },
+    "fold": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "fold-sub": 1
+     },
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 2
+    },
+    "dce": {
+     "edits": 1,
+     "cls": {
+      "local": 0,
+      "structural": 0,
+      "other": 1
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 1
+    }
+   },
+   "edits": 12,
+   "cls": {
+    "local": 1,
+    "structural": 10,
+    "other": 1
+   },
+   "images": {
+    "r0": 29,
+    "head": 26
+   }
+  }
+ },
+ "ms": 306
+}

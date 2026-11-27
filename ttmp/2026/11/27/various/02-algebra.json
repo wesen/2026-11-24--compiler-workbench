@@ -1,0 +1,203 @@
+{
+ "project": "algebra",
+ "fns": 1,
+ "pipelines": {
+  "O2": {
+   "applications": 6,
+   "changed": 6,
+   "byPass": {
+    "simplify": {
+     "edits": 5,
+     "cls": {
+      "local": 5,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 5,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-one": 2,
+      "add-zero": 3,
+      "sub-zero": 1,
+      "mul-zero": 1,
+      "sub-self": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 8
+    },
+    "constprop": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 1,
+      "none": 0
+     },
+     "facts": {
+      "constprop: every reaching definition of the read assigns this constant": 1
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    },
+    "dce": {
+     "edits": 1,
+     "cls": {
+      "local": 0,
+      "structural": 0,
+      "other": 1
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 1
+    },
+    "subst": {
+     "edits": 4,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 2
+     },
+     "just": {
+      "rule": 0,
+      "fact": 2,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 2
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 4
+    }
+   },
+   "edits": 11,
+   "cls": {
+    "local": 8,
+    "structural": 0,
+    "other": 3
+   },
+   "images": {
+    "r0": 10,
+    "head": 2
+   }
+  },
+  "speed": {
+   "applications": 6,
+   "changed": 6,
+   "byPass": {
+    "simplify": {
+     "edits": 5,
+     "cls": {
+      "local": 5,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 5,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-one": 2,
+      "add-zero": 3,
+      "sub-zero": 1,
+      "mul-zero": 1,
+      "sub-self": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 8
+    },
+    "constprop": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 1,
+      "none": 0
+     },
+     "facts": {
+      "constprop: every reaching definition of the read assigns this constant": 1
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    },
+    "dce": {
+     "edits": 1,
+     "cls": {
+      "local": 0,
+      "structural": 0,
+      "other": 1
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 0,
+     "dropped": 1
+    },
+    "subst": {
+     "edits": 4,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 2
+     },
+     "just": {
+      "rule": 0,
+      "fact": 2,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 2
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 4
+    }
+   },
+   "edits": 11,
+   "cls": {
+    "local": 8,
+    "structural": 0,
+    "other": 3
+   },
+   "images": {
+    "r0": 10,
+    "head": 2
+   }
+  }
+ },
+ "ms": 784
+}
