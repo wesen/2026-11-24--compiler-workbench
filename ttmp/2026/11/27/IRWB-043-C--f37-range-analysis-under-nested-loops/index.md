@@ -3,14 +3,21 @@ Title: 'F37: range analysis under nested loops'
 Ticket: IRWB-043-C
 Status: active
 Topics:
-    - typed
-    - dataflow
-    - analysis
-    - widening
+    - compiler
+    - ir
+    - verification
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/dataflow/analysis.ts
+      Note: the dataflow widen hook now sees the region it widens
+    - Path: repo://src/typed/analyses.ts
+      Note: 'typed.ranges: widening restricted to a loop''s assigned locals (F37)'
+    - Path: repo://tests/typed/d2-defects.test.mjs
+      Note: F37's test, todo removed
+    - Path: repo://tests/typed/guards.test.mjs
+      Note: counter test now asserts strength makes the rewrite
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T17:28:23.893215059-05:00
