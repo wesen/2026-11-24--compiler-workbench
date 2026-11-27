@@ -44,7 +44,12 @@ export interface DataflowSpec<S, V, C = unknown> {
   regions(view: IRView<S>, params: unknown): readonly (FlowRegion & { readonly context: C })[];
   transfer(block: string, input: V, context: C, region: FlowRegion): V;
   boundary?(region: FlowRegion, context: C): V;
-  widen?(previous: V, next: V, block: string): V;
+  /**
+   * The widening operator, applied at a loop head of `region`. It gets the region (with its context) because a
+   * sound widening still needs to know what the loop can change: a component the loop leaves alone arrives from
+   * outside and only has to be joined, and pushing its bound to the domain's extreme throws precision away.
+   */
+  widen?(previous: V, next: V, block: string, region: FlowRegion & { readonly context: C }): V;
   readonly widenAfter?: number;
   edge?(from: string, to: string, value: V, context: C, region: FlowRegion): V;
   readonly strategy?: 'worklist' | 'round-robin';
@@ -128,7 +133,7 @@ export function dataflow<S, V, C = unknown>(spec: DataflowSpec<S, V, C>): Datafl
         lattice: spec.lattice,
         boundary: spec.boundary?.(region, region.context),
         transfer: (b, v) => spec.transfer(b, v, region.context, region),
-        widen: spec.widen,
+        widen: spec.widen && ((a, b, block) => spec.widen!(a, b, block, region)),
         widenAfter: spec.widenAfter,
         edge: spec.edge && ((from, to, v) => spec.edge!(from, to, v, region.context, region)),
         strategy: spec.strategy,

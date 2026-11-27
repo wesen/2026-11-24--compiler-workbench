@@ -491,10 +491,25 @@ const rangeStep = (st: Store, env: Env, sid: string): Env => {
   m.set(String(s.local), evalRange(st, s.value!, env));
   return m;
 };
+/**
+ * The locals each natural loop head assigns, in one region. Widen only those: see `widen` below.
+ */
+const loopWrites = new WeakMap<object, ReadonlyMap<string, ReadonlySet<number>>>();
+const writesOfHeads = (
+  region: FlowRegion & { readonly context: FnContext },
+): ReadonlyMap<string, ReadonlySet<number>> => {
+  const cached = loopWrites.get(region);
+  if (cached) return cached;
+  const { st, f } = region.context;
+  const heads = new Map<string, ReadonlySet<number>>();
+  for (const l of loopsOf(st, f)) heads.set(l.head, new Set(l.assigned));
+  loopWrites.set(region, heads);
+  return heads;
+};
 const interval = intervalLattice();
 export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
   id: 'typed.ranges',
-  version: '1',
+  version: '2',
   description: 'an interval for each local at each statement, with branch refinement and widening',
   input: BlocksIR,
   adapter: blocksAdapter,
@@ -519,9 +534,16 @@ export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval
       return refine(st, last.cond!, out, last.then === to);
     return out;
   },
-  widen(a, b) {
+  widen(a, b, block, region) {
     const m = new Map(b);
-    for (const [k, v] of b) if (a.has(k)) m.set(k, interval.widen(a.get(k)!, v));
+    // Widen only what the loop can change (F37). A local the loop leaves alone — an outer loop's counter, read in
+    // an inner loop — arrives from outside, so its joined value is already stable and widening only pushes it to
+    // the domain's extreme: the inner head used to turn `dense` in [0, 63] into [-2^31, 2^31-1], and the increment
+    // `dense + 1` then overflowed into the full range, losing the non-negative lower bound the whole function's
+    // `dense / 8` needed. A head the loop analysis does not know (an irreducible loop) is widened as before.
+    const writes = writesOfHeads(region).get(block);
+    for (const [k, v] of b)
+      if (a.has(k) && (!writes || writes.has(Number(k)))) m.set(k, interval.widen(a.get(k)!, v));
     return m;
   },
   reads: READS_ALL,

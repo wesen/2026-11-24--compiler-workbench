@@ -192,10 +192,16 @@ function wander(n: i32, back: bool): i32 {
 }`;
 
 test('guards: a counter that only goes up is not negative, so x / 8 and x % 8 are a shift and a mask', async () => {
-  const p = open('counter', COUNTER, { sum: { n: [0, 3] }, wander: { n: [0, 40], back: { bool: true } } });
+  const inputs = { sum: { n: [0, 3] }, wander: { n: [0, 40], back: { bool: true } } };
+  // F37: typed.ranges keeps d's lower bound under the inner loop, so strength now makes this rewrite itself.
+  const s = open('counter', COUNTER, inputs);
+  await run(s, ['cfg', 'simplify']);
+  const strength = await run(s, ['strength']);
+  assert.deepEqual(strength.changed, ['strength']);
+  assert.match(strength.text, /\(s \+ \(d >> 3\)\) \+ \(d & 7\)/, strength.text);
+  // and guards has the same rule for a division it sees itself, without strength in front of it
+  const p = open('counter', COUNTER, inputs);
   await run(p, ['cfg', 'simplify']);
-  // typed.ranges loses d's lower bound here: the inner loop's head widens d while the outer loop is still rising
-  assert.equal((await p.apply('strength')).changed, false);
   const { changed, text } = await run(p, ['guards']);
   assert.deepEqual(changed, ['guards']);
   assert.match(text, /\(s \+ \(d >> 3\)\) \+ \(d & 7\)/, text);
