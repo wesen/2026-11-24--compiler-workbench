@@ -6,7 +6,7 @@ T=/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-01
 export REPO=/home/manuel/code/wesen/2026-11-24--compiler-workbench BASE=bc7702c OUT=$T/various/kit WORKTREES=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees AGENT_TIMEOUT=5400
 export CODEX_EXTRA="-c sandbox_workspace_write.network_access=true"
 # Usage: 26-launch-fixes.sh [effort round item model]   (default: high fix1-ah IRWB-024 gpt-6.2-astra). Later, on the
-# user's requests, to compare on the same brief and base: Astra low (IRWB-025, fix1-al), Sol low (IRWB-026, fix1-sl),
+# user's requests, 4½ to 7 minutes after the first, to compare on the same brief and base: Astra low (IRWB-025, fix1-al), Sol low (IRWB-026, fix1-sl),
 # and Terra low (IRWB-027, fix1-tl) as gpt-6.1-terra, since gpt-6.2-terra "is not supported when using Codex with a
 # ChatGPT account".
 MODEL=${4:-gpt-6.2-astra} EFFORT=${1:-high} bash $K/01-launch-codex-round.sh ${2:-fix1-ah} $T/various/prompts/fixes-1 ${3:-IRWB-024}
