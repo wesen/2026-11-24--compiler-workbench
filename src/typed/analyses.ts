@@ -204,40 +204,55 @@ export interface Loop {
   readonly exits: readonly string[];
   readonly assigned: readonly number[];
 }
+/**
+ * The natural loops of a function, one per loop header (IRWB-034-E). Every back edge into a header defines a
+ * natural loop of its own; loops that share a header are one loop at runtime — the union of their bodies is the
+ * smallest predecessor-closed set containing the header, i.e. the merged loop's body — so they are merged here,
+ * with the first back edge's source as the latch. Keeping them apart gave every consumer N copies of one loop
+ * under one id, and code motion per sub-loop (licm) created a preheader per copy and retargeted the other
+ * sub-loops' back edges into it, putting the "hoisted" code on the runtime cycle (the bytecode VM's dispatch
+ * loop made `speed` slower exactly this way).
+ */
 export function loopsOf(st: Store, f: WorkFn): Loop[] {
   const dom = domView(dominatorsOf(f)),
-    cfg = cfgOf(f),
-    out: Loop[] = [];
+    cfg = cfgOf(f);
+  const backEdges = new Map<string, string[]>();
   for (const b of f.blocks)
     for (const s of b.succ)
       if (dom.dominates(s, b.id)) {
-        const body = new Set([s]),
-          work = [b.id];
-        while (work.length) {
-          const x = work.pop()!;
-          if (body.has(x)) continue;
-          body.add(x);
-          work.push(...cfg.preds[x]);
-        }
-        const outside = cfg.preds[s].filter(q => !body.has(q));
-        const pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
-        const exits = [...body].flatMap(x => cfg.succ[x].filter(y => !body.has(y)));
-        const assigned = new Set<number>();
-        for (const x of body)
-          for (const sid of (st.get(x) as BlockRec).stmts) {
-            const t = st.get(sid) as StmtRec;
-            if (t.op === 'set') assigned.add(t.local!);
-          }
-        out.push({
-          id: `loop:${f.name}@${s}`,
-          head: s,
-          latch: b.id,
-          body: [...body],
-          preheader: pre,
-          exits: [...new Set(exits)],
-          assigned: [...assigned],
-        });
+        const latches = backEdges.get(s) ?? [];
+        latches.push(b.id);
+        backEdges.set(s, latches);
       }
+  const out: Loop[] = [];
+  for (const [s, latches] of backEdges) {
+    const body = new Set([s]),
+      work = [...latches];
+    while (work.length) {
+      const x = work.pop()!;
+      if (body.has(x)) continue;
+      body.add(x);
+      work.push(...cfg.preds[x]);
+    }
+    const outside = cfg.preds[s].filter(q => !body.has(q));
+    const pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
+    const exits = [...body].flatMap(x => cfg.succ[x].filter(y => !body.has(y)));
+    const assigned = new Set<number>();
+    for (const x of body)
+      for (const sid of (st.get(x) as BlockRec).stmts) {
+        const t = st.get(sid) as StmtRec;
+        if (t.op === 'set') assigned.add(t.local!);
+      }
+    out.push({
+      id: `loop:${f.name}@${s}`,
+      head: s,
+      latch: latches[0],
+      body: [...body],
+      preheader: pre,
+      exits: [...new Set(exits)],
+      assigned: [...assigned],
+    });
+  }
   return out;
 }
 export const loopsAnalysis = defineAnalysis({
