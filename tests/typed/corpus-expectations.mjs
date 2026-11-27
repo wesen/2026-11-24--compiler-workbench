@@ -81,7 +81,7 @@ const rows = {
     tape: 'skipped',
     ref: { fns: 1, decided: 100, inconclusive: 0 },
     parity: { fns: 1, total: 100, agree: 100, inconclusive: 0 },
-    bytes: [908, 832],
+    bytes: [828, 832],
   },
   'call-chain': {
     fns: 3,
@@ -378,7 +378,7 @@ const rows = {
     tape: 'skipped',
     ref: { fns: 1, decided: 100, inconclusive: 0 },
     parity: { fns: 2, total: 200, agree: 200, inconclusive: 0 },
-    bytes: [2028, 1572],
+    bytes: [1972, 1572],
   },
   'sha-chacha': {
     fns: 5,

@@ -428,7 +428,17 @@ export const licm = typedPass({
   writes: ['stmts', 'values', 'locals', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts }) {
+    // Loop facts describe one natural loop per backedge. With a shared header, an
+    // "outside" predecessor of one such body can be another latch of the same loop.
+    // Redirecting it would execute the preheader and its hoists on the dispatch path.
+    const heads = new Set<string>();
+    const shared = new Set<string>();
+    for (const { head } of facts.loops!) {
+      if (heads.has(head)) shared.add(head);
+      heads.add(head);
+    }
     for (const L of facts.loops!) {
+      if (shared.has(L.head)) continue;
       let pre = L.preheader;
       if (!pre) {
         pre = tx.block({ because: [L.id], note: 'preheader' });
