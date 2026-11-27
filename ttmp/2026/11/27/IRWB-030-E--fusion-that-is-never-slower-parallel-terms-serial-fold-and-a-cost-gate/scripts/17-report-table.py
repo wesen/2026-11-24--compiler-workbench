@@ -1,5 +1,5 @@
 # IRWB-030-E script 17: fills the report's results table and the numbers quoted from it from script 13's output.
-#   python3 <ticket>/scripts/17-report-table.py <13-final-table.out.jsonl> <report body template> <report.md>
+#   python3 <ticket>/scripts/17-report-table.py <13-final-table.out.jsonl> <ticket>/scripts/17-report-body.template.txt <report.md>
 # The template has TABLE and TABLE_* / RATIO_* tokens; the report keeps its front matter (everything before
 # the first top-level heading).
 import json, sys

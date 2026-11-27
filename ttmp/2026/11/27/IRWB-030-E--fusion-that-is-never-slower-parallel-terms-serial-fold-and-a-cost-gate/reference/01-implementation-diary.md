@@ -160,3 +160,35 @@ Staging every body slowed the cheap ones, so I measured row sums `s[i] = sum(j) 
 
 ### What I learned
 - The differential's `baselineKey` contract ("the cases are a function of the key alone") is easy to break silently: nothing checks that two subjects under one key produce the same case list. I changed the key because I read the comment, not because anything failed.
+
+## Step 8: Validation runs, and the first-line thresholds corrected
+
+I ran the rule on its own over shapes on both sides of each threshold, ran random programs, and measured the final table. The validation showed that the first line's thresholds (rows of 32, 2,048 rows) were wrong for two programs, and why.
+
+### What I did
+- `05-gate-sweep.mjs --auto` on narrow-div and on softmax, the row sum, `div1` and softmax with `exp` inside (`12-gate-validation.out.jsonl`).
+- `15-random-programs.mjs 30 31`: 60 lowerings, all accepted as exact on both sides of the gate (26 with a block-mode kernel, 12 with staged terms, 7 with in-place rows, 4 with heavy members).
+- `13-final-table.mjs --calls=5`, twice: once before and once after the last change to the lowering's source text (formatting only), the second with softmax with `exp` inside added. The report uses the second.
+- `14-contract-cost.mjs`; probe 16 (`reservedSharedPerBlock: 1024, sharedPerSm: 102400, maxBlocksPerSm: 24, maxThreadsPerSm: 1536`).
+- After the validation: `18-small-grids.out.jsonl` (256 to 2,048 rows of 4 to 48; 8,192 to 32,768 rows of 48 and 64) and `19-mid-size-rows.out.jsonl` (rows of 96 to 512 at 2,048 to 16,384 rows), five runs each, then `gate = { fullRow: 96, smallGrid: 1024, ... }` and `20-gate-validation-final.out.jsonl`.
+
+### What worked
+- narrow-div under the rule: unfused for O of 1 to 32 (0.91 to 1.13 of stage 2, the same kernels), fused for O of 64 to 1,024 (0.74 to 0.83); with C = 4096, O = 64 unfused (1.00) and O = 256 fused at 256 threads (0.85).
+- The final table: fused over unfused 0.48 (softmax), 0.32 (layernorm), 0.37 (layernorm, division inside), 0.71 (attention), 0.79 (attention, division inside), 0.66 (mlp).
+
+### What didn't work
+- **The rule lost where it said fuse.** Under `--auto`, softmax with `exp` inside at 2,048 rows of 4 took 1.05 of stage 2 (15.3 against 14.6 µs, tight), and `div1` at 8,192 rows of 32 took 1.06, as it had in the forced sweep, where I had called it a tie.
+- The follow-up (script 18) showed more: `div1` at 32,768 rows of 48 is 1.57, at 32,768 × 64 1.14, at 16,384 × 64 1.03; softmax with `exp` inside at 32,768 × 48 is 1.18. The first sweep had `div1` at 65,536 × 64 as 0.61.
+
+### What I learned
+- **The first sweep's sizes hid a regime.** It had 4M, 256K and 16K elements. Between them, stage 2's tensors fit the 24 MiB L2 and `benchmark` relaunches on the same buffers, so stage 2 is several times cheaper per element (`div1`: 0.052 ms for 2M elements, 0.239 for 4M). Block mode's fixed cost per block then decides. A threshold read from three sizes is not a threshold.
+- A tie at the edge of a rule is a warning. The 1.06 I waved through was the first sign.
+- With staged terms a block costs more (a term pass and a barrier): `div1` is at 0.91 to 0.97 with rows of 96 and 128 where the plain row sum is at 0.52 to 0.63.
+- The final thresholds are the smallest row length (96) and the largest row count (1,024) with no measured loss. Rows of 32 to 64 now run unfused beyond 1,024 rows, which gives up wins on softmax (0.55 to 0.67) to keep the cheapest program from losing.
+
+### What should be done in the future
+- Replace the two constants with a cost per block and a cost per element estimated from the IR and the tensor sizes against L2; the data in scripts 05, 18 and 19 is a start.
+
+### Code review instructions
+- Start at `gate` and `gateRule` in `src/tensor/fusion.ts`, then the host lines `resident_k`, `fused_k` in `emitGroup` (`src/tensor/cuda-source.ts`).
+- `node --test tests/tensor/fusion.test.mjs tests/tensor/cuda.test.mjs` (no GPU); `node --test tests/tensor/terms-gpu.test.mjs tests/tensor/fusion-gpu.test.mjs tests/tensor/cuda-gpu.test.mjs` (GB10).

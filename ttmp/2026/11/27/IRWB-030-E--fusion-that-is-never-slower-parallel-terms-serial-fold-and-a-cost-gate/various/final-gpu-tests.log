@@ -1,0 +1,27 @@
+✔ GB10 checks matmul before and after optimization (6684.075326ms)
+✔ GB10 checks softmax before and after optimization (14609.329695ms)
+✔ GB10 checks layernorm before and after optimization (16059.044251ms)
+✔ GB10 checks attention before and after optimization (14893.931097ms)
+✔ GB10 checks mlp before and after optimization (14218.139089ms)
+✔ GB10 checks conv2d before and after optimization (3660.02508ms)
+✔ GB10 preserves split rounding and a partial final block (8668.024875ms)
+✔ GB10 checks composed inline addresses and rejects a valid index mutant (5484.557787ms)
+✔ GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns (16586.209092ms)
+✔ remote runner links repeated libraries and keys the build by their order (6053.342776ms)
+✔ remote runner shares a compile across isolated jobs and invalidates on build input changes (5685.305475ms)
+✔ GB10: fused lowerings of block domains, stencils, shadowing, reuse and epilogues are exact (37180.929791ms)
+✔ GB10: fusion after inline and split-sum keeps the generated bounds and the half-ulp witness (6890.239999ms)
+✔ GB10: rows beyond the default and the opt-in shared-memory limit run through the same kernel (6150.122751ms)
+✔ GB10: the exact check rejects a fused kernel that reverses a serial sum or reads another row (10874.143082ms)
+✔ GB10: benchmark mode times warm launches and returns the same words (6013.41312ms)
+✔ GB10: staged terms are exact on both sides of the gate (25400.568582ms)
+✔ GB10: the gate picks a side by shape, and both give the interpreter words; long rows keep terms in scratch (27233.835476ms)
+✔ GB10: the exact check rejects a reversed fold over terms, a misplaced term and a wrong per-statement side (16660.468688ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 112834.441778
