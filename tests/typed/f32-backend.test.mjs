@@ -275,3 +275,7 @@ test('P4.5: Candela images agree on 100 cases per function at r0 and at the O2 h
   assert.equal(o2.ev.evidence.disagree, 0, JSON.stringify(o2.ev.evidence.counterexamples));
   assert.ok(o2.image.value.bytes < r0.image.value.bytes);
 });
+
+test('reference images require signatures', () => {
+  assert.throws(() => B.imageFromCode('missing', new Uint8Array(), {}), /signatures|undefined/);
+});

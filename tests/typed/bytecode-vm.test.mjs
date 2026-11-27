@@ -141,7 +141,7 @@ test('generated and exhaustive VM cases agree across evaluators and RV32 compile
   const speedImage = lowerToImage(p.head, backendOptions).image;
 
   const reference = globalThis.typedRv32.compile(project.source, [], undefined);
-  const referenceImage = imageFromCode(id, reference.image, reference.entries);
+  const referenceImage = imageFromCode(id, reference.image, reference.entries, reference.signatures);
 
   const scalarInputs = { n: inputs.n, seed: inputs.seed };
   const specialized = Program.fromProject(projectSource('bytecode-vm-specialized', {

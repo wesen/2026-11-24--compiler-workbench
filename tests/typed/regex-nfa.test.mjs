@@ -60,7 +60,7 @@ test('Thompson NFA agrees with RegExp in the evaluator and both RV32 backends', 
   const baseImage = lowerToImage(r0).image;
   const speedImage = lowerToImage(run.artifact).image;
   const ref = globalThis.typedRv32.compile(project.source, [], undefined);
-  const referenceImage = imageFromCode(id, ref.image, ref.entries);
+  const referenceImage = imageFromCode(id, ref.image, ref.entries, ref.signatures);
 
   const checkAgainstOracle = (k, explicit) => {
     const [pattern, text] = decode(k);

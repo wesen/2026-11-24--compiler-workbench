@@ -46,7 +46,7 @@ const steps = (image, st, fn, bench) => {
 // The vendored reference compiler carries only its core bundle, so the policy without tape passes.
 const reference = (id, source) => {
   const r = globalThis.typedRv32.compile(source, [], undefined, { policy: 'interactive' });
-  return createIRArtifact(B.imageAdapter, `ref:${id}`, B.imageFromCode(id, r.image, r.entries));
+  return createIRArtifact(B.imageAdapter, `ref:${id}`, B.imageFromCode(id, r.image, r.entries, r.signatures));
 };
 
 test('P2.4: Blend at r0 matches the book: 96 bytes, 531 instructions on 40 cells with n = 40', () => {
@@ -318,7 +318,7 @@ test('P2.4: a calling-convention fault in the emulator counts as disagreement', 
   const words = [B.instruction.i(0x13, 9, 0, 9, 1) >>> 0, 0x00008067];
   const bytes = new Uint8Array(8);
   words.forEach((w, i) => new DataView(bytes.buffer).setUint32(4 * i, w, true));
-  const bad = createIRArtifact(B.imageAdapter, 'img:id-bad', B.imageFromCode('id', bytes, { id: 0 }));
+  const bad = createIRArtifact(B.imageAdapter, 'img:id-bad', B.imageFromCode('id', bytes, { id: 0 }, []));
   const run = B.runImage(bad, 'id', [5], new Uint8Array(1024));
   assert.equal(run.fault, true);
   assert.match(run.trap, /callee-saved x9 changed across a call/);
@@ -334,7 +334,7 @@ test('P2.4: a calling-convention fault in the emulator counts as disagreement', 
     /id#0: expected -?\d+, got fault: callee-saved x9 changed/,
   );
   // a function the image lacks is a fault too, not an exception
-  const other = createIRArtifact(B.imageAdapter, 'img:other', B.imageFromCode('id', bytes, { other: 0 }));
+  const other = createIRArtifact(B.imageAdapter, 'img:other', B.imageFromCode('id', bytes, { other: 0 }, []));
   const missing = await m.checkInvariant(check, { program: r0, image: other });
   assert.equal(missing.ok, false);
   assert.match(missing.evidence.counterexamples[0].reason, /fault: no entry "id"/);
@@ -516,7 +516,7 @@ test("P2.6: the book's table against the reference compiler, and 5160 bytes agai
   ];
   const refImage = (id, source) => {
     const r = globalThis.typedRv32.compile(source, [], undefined);
-    return B.imageFromCode(id, r.image, r.entries);
+    return B.imageFromCode(id, r.image, r.entries, r.signatures);
   };
   for (const [id, fn, bench, expected] of rows) {
     const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
