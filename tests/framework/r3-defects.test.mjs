@@ -169,7 +169,6 @@ test(
 // ---------- F35 (probe 04): a required mapping must cover what it claims, and be consistent with the diff ----------
 test(
   'F35: zero mapping groups and a false group are rejected; the honest mapping is accepted',
-  { todo: 'F35' },
   async () => {
     const q = compileTix('fn f(x:f32[N,N]):f32[N,N] { p[i,j] = x[i,j] + 1; y[i,j] = p[j,i]; return y; }');
     const inline = applyNativePassSync(inlinePass, q.current, meaningGate(q.origin, 'exact'));

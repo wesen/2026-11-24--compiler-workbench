@@ -1,5 +1,6 @@
 import { canonical, fingerprint, immutable } from '../core/data.js';
 import type { Artifact, EntityRef } from '../core/types.js';
+import { diffGraphs } from '../ir/diff.js';
 import { Check, JsonValue, definitionRef, describeDefinition, validateArtifact } from './definitions.js';
 import { MemoryResources } from './effects.js';
 import { assuranceOf } from './differential.js';
@@ -16,6 +17,7 @@ import type {
   ContractExecution,
   ContractSnapshot,
   Correspondence,
+  CorrespondenceCoverage,
   Dependency,
   EffectAccess,
   EffectDefinition,
@@ -1091,6 +1093,7 @@ export class AnalysisManager {
     to: Artifact,
     sourceType: IRType<any>,
     targetType: IRType<any>,
+    coverage?: CorrespondenceCoverage,
   ) {
     canonical(c);
     if (!c.id || !c.relation || !sameRef(c.from, from) || !sameRef(c.to, to))
@@ -1126,6 +1129,50 @@ export class AnalysisManager {
       for (const entry of c.entities ?? [])
         for (const id of label === 'source' ? entry.from : entry.to)
           if (!actual.has(id)) throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
+    }
+    if (coverage !== undefined) {
+      const source = c.sourceEntities ?? [],
+        target = c.targetEntities ?? [],
+        entries = c.entities ?? [];
+      const mappedSource = new Set(entries.flatMap(e => [...e.from]));
+      const mappedTarget = new Set(entries.flatMap(e => [...e.to]));
+      if (
+        coverage === 'nonempty' &&
+        (source.length || target.length) &&
+        !entries.some(e => e.from.length || e.to.length)
+      )
+        throw new ContractError('correspondence', 'Correspondence mapping is empty');
+      if ((coverage === 'source' || coverage === 'both') && source.some(id => !mappedSource.has(id)))
+        throw new ContractError('correspondence', 'Correspondence does not cover every source entity');
+      if ((coverage === 'target' || coverage === 'both') && target.some(id => !mappedTarget.has(id)))
+        throw new ContractError('correspondence', 'Correspondence does not cover every target entity');
+    }
+    if (
+      sourceType.id === targetType.id &&
+      sourceType.version === targetType.version &&
+      sourceType.entities &&
+      targetType.entities
+    ) {
+      // The entity universe is a projection sufficient to detect survival, insertion and removal.
+      const graph = (ids: readonly string[]) => ({
+        entities: ids.map(id => ({ id, kind: 'entity', attributes: {} })),
+        relations: [],
+        roots: [],
+      });
+      const changes = diffGraphs(
+        graph(sourceType.entities(from.value)),
+        graph(targetType.entities(to.value)),
+        c.from,
+        c.to,
+      );
+      const removed = new Set(changes.entities.filter(e => e.kind === 'removed').map(e => e.entity));
+      const inserted = new Set(changes.entities.filter(e => e.kind === 'inserted').map(e => e.entity));
+      for (const entry of c.entities ?? []) {
+        if (!entry.to.length && entry.from.some(id => !removed.has(id)))
+          throw new ContractError('correspondence', 'Correspondence deletes a surviving entity');
+        if (!entry.from.length && entry.to.some(id => !inserted.has(id)))
+          throw new ContractError('correspondence', 'Correspondence inserts a surviving entity');
+      }
     }
   }
   async checkInvariant<P extends Ports>(
@@ -1448,6 +1495,7 @@ export class AnalysisManager {
               after[requirement.to] as Artifact,
               definition.inputs[requirement.from] as IRType<any>,
               definition.outputs[requirement.to] as IRType<any>,
+              requirement.coverage ?? 'nonempty',
             );
             if (requirement.relation && c.relation !== requirement.relation)
               throw new ContractError(

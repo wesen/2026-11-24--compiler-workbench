@@ -218,7 +218,15 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     inputs,
     outputs,
     cache: 'never',
-    correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' }],
+    correspondence: [
+      {
+        id: 'kernels',
+        from: 'baseline',
+        to: 'subject',
+        relation: 'statements-to-kernels',
+        coverage: 'partial',
+      },
+    ],
     ensures: [
       {
         invariant,

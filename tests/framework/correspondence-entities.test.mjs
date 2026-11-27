@@ -90,3 +90,29 @@ test('direct correspondences reject unknown entry IDs on enumerated sides', asyn
   await assert.rejects(verify(['made-up-source'], ['t1']), /made-up-source/);
   await assert.rejects(verify(['s1'], ['made-up-target']), /made-up-target/);
 });
+
+test('coverage modes check each side and reject contradictory insertions and deletions', async () => {
+  const type = defineIR({ id: 'coverage', version: '1', description: 'Coverage', validate() {}, entities: v => v });
+  const from = createArtifact(type, 'before', ['a', 'b']);
+  const to = createArtifact(type, 'after', ['a', 'c']);
+  const verify = (coverage, entities) => new AnalysisManager().verifyTransformation(
+    { from }, { to },
+    defineTransformation({ id: 'coverage-test', version: '1', description: 'Coverage',
+      inputs: { from: type }, outputs: { to: type },
+      correspondence: [{ id: 'entities', from: 'from', to: 'to', coverage }] }),
+    [{ id: 'entities', from: { artifact: from.id, revision: from.revision },
+      to: { artifact: to.id, revision: to.revision }, relation: 'edit',
+      sourceEntities: ['a', 'b'], targetEntities: ['a', 'c'], entities, evidence: {} }],
+  );
+  const partial = [{ from: ['a'], to: ['a'] }];
+  await verify('partial', []);
+  await verify('partial', partial);
+  await assert.rejects(verify('nonempty', []), /empty/);
+  await assert.rejects(verify('source', partial), /source/);
+  await assert.rejects(verify('target', partial), /target/);
+  await verify('source', [...partial, { from: ['b'], to: [] }]);
+  await verify('target', [...partial, { from: [], to: ['c'] }]);
+  await verify('both', [...partial, { from: ['b'], to: [] }, { from: [], to: ['c'] }]);
+  await assert.rejects(verify('partial', [{ from: [], to: ['a'] }]), /surviving/);
+  await assert.rejects(verify('partial', [{ from: ['a'], to: [] }]), /surviving/);
+});
