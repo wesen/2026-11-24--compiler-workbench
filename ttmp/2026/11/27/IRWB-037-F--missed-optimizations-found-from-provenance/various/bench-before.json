@@ -1,0 +1,22 @@
+{
+ "regex": {
+  "rejected": [],
+  "r0": 8183,
+  "speed": 6933,
+  "speedTuned": 5405,
+  "reference": 6628
+ },
+ "lz": {
+  "rejected": [],
+  "r0": 185876,
+  "speed": 159079,
+  "speedTuned": 156782,
+  "reference": 156405
+ },
+ "chess": {
+  "move": "d6c7",
+  "r0": 14804396,
+  "speed": 10038193,
+  "reference": 10827760
+ }
+}

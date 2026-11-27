@@ -1,0 +1,70 @@
+     35957   224  add(x, shl)                  chess-search 16987, regex-nfa 4101, f32-dsp 3724, sha-chacha 3664
+     26245   191  shl(x, 1)                    chess-search 13990, f32-dsp 6565, heat-lab 1154, sort 652
+     24974   257  load(x)                      chess-search 15600, f32-dsp 3724, heat-lab 1234, sort 704
+     22537   130  add(x, 1)                    chess-search 8307, sha-chacha 2172, f32-dsp 2056, regex-nfa 2009
+     20592   114  shl(x, #c)                   sha-chacha 12694, regex-nfa 4121, bytecode-vm 1700, chess-search 1055
+     20513   153  geu(x, load)                 chess-search 13380, f32-dsp 3724, heat-lab 1154, sort 652
+     16347    87  add(x, x)                    chess-search 7332, sha-chacha 5920, f32-dsp 966, lz-roundtrip 920
+     15068   100  load16u(add)                 chess-search 10729, heat-lab 806, bounds-lab 591, strings 531
+     11943    44  lt(x, #c)                    chess-search 10811, collatz 515, lz-roundtrip 361, strength 136
+     10234    42  shru(x, #c)                  sha-chacha 10200, lz-roundtrip 34
+      9438    32  ge(x, #c)                    chess-search 7482, sha-chacha 1250, f32-dsp 370, my-analysis 189
+      9149    59  geu(x, #c)                   regex-nfa 4121, sha-chacha 2564, bytecode-vm 1700, lz-roundtrip 764
+      9058    50  load(add)                    sha-chacha 2882, regex-nfa 2673, f32-dsp 2172, bytecode-vm 923
+      6375    13  ne(x, 0)                     chess-search 6145, lz-roundtrip 230
+      6249    74  ge(x, x)                     regex-nfa 1587, lz-roundtrip 864, f32-dsp 695, chess-search 604
+      5770    11  or(shru, shl)                sha-chacha 5770
+      5719    57  eq(x, #c)                    bytecode-vm 2191, strings 1850, chess-search 1627, regex-nfa 40
+      5642    96  add(x, #c)                   chess-search 3211, bytecode-vm 923, regex-nfa 667, lz-roundtrip 661
+      5534    45  load16u(caddr)               bytecode-vm 1846, sha-chacha 1812, lz-roundtrip 1729, regex-nfa 147
+      5505    24  rem(x, #c)                   chess-search 4718, collatz 515, value-numbering 213, div-magic 49
+      5383    13  ge(x, 0)                     chess-search 5383
+      5375    17  eqz(x)                       chess-search 4020, collatz 525, lz-roundtrip 445, heat-lab 244
+      5221    42  div(x, #c)                   chess-search 4406, collatz 348, value-numbering 223, div-magic 69
+      4360     6  xor(x, x)                    sha-chacha 4360
+      4310    12  lt(rem, #c)                  chess-search 4310
+      3956    33  add(shl, 1)                  f32-dsp 3916, first-steps 30, diagnostics 10
+      3862    16  shl(div, #c)                 chess-search 3862
+      3804    21  sub(x, #c)                   sha-chacha 1920, chess-search 1840, lz-roundtrip 26, constants 10
+      3570    18  caddr(x, x)                  sha-chacha 1592, lz-roundtrip 948, bytecode-vm 923, regex-nfa 107
+      3250     5  or(shl, shru)                sha-chacha 3250
+      3200    32  result()                     sha-chacha 3200
+      2670    12  fmul(x, x)                   f32-dsp 2670
+      2560     4  and(x, x)                    sha-chacha 2560
+      2226    15  add(add, x)                  sha-chacha 1760, licm-nested 268, chess-search 125, across-calls 40
+      2202    23  sub(x, 1)                    heat-lab 751, bytecode-vm 587, sort 425, chess-search 196
+      2162    16  shl(add, 1)                  f32-dsp 2152, dead-code 10
+      1983     9  caddr(x, add)                lz-roundtrip 1020, bytecode-vm 923, regex-nfa 40
+      1924    32  ge(x, load)                  strings 551, bounds-lab 319, checksum 160, wrong-shift 160
+      1911    17  sub(#c, mul)                 chess-search 1911
+      1810    15  eq(x, 1)                     bytecode-vm 913, chess-search 897
+      1748     8  add(#c, x)                   chess-search 1748
+      1719    23  geu(#c, load)                chess-search 1719
+      1518    11  mul(sub, #c)                 chess-search 1518
+      1509    39  and(x, #c)                   chess-search 776, sha-chacha 562, lz-roundtrip 161, strength 10
+      1467    11  shr(x, #c)                   chess-search 1145, sha-chacha 312, strength 10
+      1363    36  mul(x, #c)                   chess-search 537, lz-roundtrip 313, value-numbering 213, regalloc-lab 192
+      1348    14  eq(x, 0)                     bytecode-vm 923, chess-search 356, gcd 59, match-enum 10
+      1280     2  xor(xor, x)                  sha-chacha 1280
+      1280     2  xor(and, and)                sha-chacha 1280
+      1157    14  add(x, mul)                  fragments 199, params-demo 199, chess-search 176, blend 165
+      1120     2  xor(or, x)                   sha-chacha 1120
+      1107    35  mul(x, x)                    nested-loops 382, f32-dsp 260, regalloc-lab 151, pressure 70
+      1040     2  shr(x, 1)                    f32-dsp 1040
+      1032     5  eq(load16u, x)               chess-search 967, early-exit 65
+       960     2  xor(xor, shru)               sha-chacha 960
+       916     3  eq(load, 1)                  regex-nfa 916
+       841     7  add(x, load16u)              bounds-lab 361, checksum 150, wrong-shift 150, strength 136
+       810     9  call(x, x, x, x)             sha-chacha 800, chess-search 10
+       808    21  sub(x, x)                    chess-search 378, lz-roundtrip 196, regalloc-lab 121, bytecode-vm 63
+       750    12  or(load16u, shl)             sha-chacha 750
+       750    12  shl(load16u, #c)             sha-chacha 750
+       700     7  shl(sub, #c)                 chess-search 352, sha-chacha 322, lz-roundtrip 26
+       656     2  le(x, 1)                     f32-dsp 656
+       654     9  mul(#c, x)                   regex-nfa 376, collatz 167, chess-search 89, f32-dsp 20
+       640     1  and(xor, x)                  sha-chacha 640
+       640     1  xor(x, -1)                   sha-chacha 640
+       640     1  xor(xor, and)                sha-chacha 640
+       640     1  add(add, load)               sha-chacha 640
+       632     7  sub(x, shl)                  chess-search 632
+       626     6  add(mul, x)                  lz-roundtrip 626

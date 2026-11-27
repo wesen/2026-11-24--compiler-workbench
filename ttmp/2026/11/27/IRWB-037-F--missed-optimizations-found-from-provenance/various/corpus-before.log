@@ -1,0 +1,12 @@
+across-calls             {"r0":{"default":660,"tuned":630,"limited":0},"O2":{"default":640,"tuned":630,"limited":0},"speed":{"default":270,"tuned":210,"limited":0},"reference":700}
+algebra                  {"r0":{"default":100,"tuned":100,"limited":0},"O2":{"default":20,"tuned":20,"limited":0},"speed":{"default":20,"tuned":20,"limited":0},"reference":170}
+blend                    {"r0":{"default":2255,"tuned":2080,"limited":0},"O2":{"default":1925,"tuned":1750,"limited":0},"speed":{"default":1915,"tuned":1585,"limited":0},"reference":1715}
+bounds-lab               {"r0":{"default":5923,"tuned":5495,"limited":0},"O2":{"default":5333,"tuned":4843,"limited":0},"speed":{"default":5012,"tuned":4426,"limited":0},"reference":4234}
+bounds-offset            {"r0":{"default":1364,"tuned":1268,"limited":0},"O2":{"default":1364,"tuned":1268,"limited":0},"speed":{"default":1355,"tuned":1258,"limited":0},"reference":894}
+bounds-param             {"r0":{"default":502,"tuned":452,"limited":0},"O2":{"default":502,"tuned":452,"limited":0},"speed":{"default":499,"tuned":408,"limited":0},"reference":426}
+bounds-two               {"r0":{"default":910,"tuned":860,"limited":0},"O2":{"default":810,"tuned":710,"limited":0},"speed":{"default":756,"tuned":665,"limited":0},"reference":675}
+branches                 {"r0":{"default":165,"tuned":148,"limited":0},"O2":{"default":139,"tuned":131,"limited":0},"speed":{"default":139,"tuned":131,"limited":0},"reference":211}
+bytecode-vm              {"r0":{"default":39954,"tuned":29483,"limited":0},"O2":{"default":32295,"tuned":24750,"limited":0},"speed":{"default":32295,"tuned":24750,"limited":0},"reference":28889}
+call-chain               {"r0":{"default":1050,"tuned":1050,"limited":0},"O2":{"default":1050,"tuned":1050,"limited":0},"speed":{"default":350,"tuned":290,"limited":0},"reference":1120}
+calls                    {"r0":{"default":651,"tuned":580,"limited":0},"O2":{"default":651,"tuned":580,"limited":0},"speed":{"default":288,"tuned":227,"limited":0},"reference":840}
+checksum                 {"r0":{"default":1710,"tuned":1560,"limited":0},"O2":{"default":1410,"tuned":1260,"limited":0},"speed":{"default":1251,"tuned":1110,"limited":0},"reference":1170}

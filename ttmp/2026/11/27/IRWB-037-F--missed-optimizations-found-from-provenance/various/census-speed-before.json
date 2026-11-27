@@ -1,0 +1,3292 @@
+[
+ {
+  "shape": "add(x, shl)",
+  "weight": 35957,
+  "nodes": 224,
+  "projects": [
+   [
+    "chess-search",
+    16987
+   ],
+   [
+    "regex-nfa",
+    4101
+   ],
+   [
+    "f32-dsp",
+    3724
+   ],
+   [
+    "sha-chacha",
+    3664
+   ]
+  ]
+ },
+ {
+  "shape": "shl(x, 1)",
+  "weight": 26245,
+  "nodes": 191,
+  "projects": [
+   [
+    "chess-search",
+    13990
+   ],
+   [
+    "f32-dsp",
+    6565
+   ],
+   [
+    "heat-lab",
+    1154
+   ],
+   [
+    "sort",
+    652
+   ]
+  ]
+ },
+ {
+  "shape": "load(x)",
+  "weight": 24974,
+  "nodes": 257,
+  "projects": [
+   [
+    "chess-search",
+    15600
+   ],
+   [
+    "f32-dsp",
+    3724
+   ],
+   [
+    "heat-lab",
+    1234
+   ],
+   [
+    "sort",
+    704
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, 1)",
+  "weight": 22537,
+  "nodes": 130,
+  "projects": [
+   [
+    "chess-search",
+    8307
+   ],
+   [
+    "sha-chacha",
+    2172
+   ],
+   [
+    "f32-dsp",
+    2056
+   ],
+   [
+    "regex-nfa",
+    2009
+   ]
+  ]
+ },
+ {
+  "shape": "shl(x, #c)",
+  "weight": 20592,
+  "nodes": 114,
+  "projects": [
+   [
+    "sha-chacha",
+    12694
+   ],
+   [
+    "regex-nfa",
+    4121
+   ],
+   [
+    "bytecode-vm",
+    1700
+   ],
+   [
+    "chess-search",
+    1055
+   ]
+  ]
+ },
+ {
+  "shape": "geu(x, load)",
+  "weight": 20513,
+  "nodes": 153,
+  "projects": [
+   [
+    "chess-search",
+    13380
+   ],
+   [
+    "f32-dsp",
+    3724
+   ],
+   [
+    "heat-lab",
+    1154
+   ],
+   [
+    "sort",
+    652
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, x)",
+  "weight": 16347,
+  "nodes": 87,
+  "projects": [
+   [
+    "chess-search",
+    7332
+   ],
+   [
+    "sha-chacha",
+    5920
+   ],
+   [
+    "f32-dsp",
+    966
+   ],
+   [
+    "lz-roundtrip",
+    920
+   ]
+  ]
+ },
+ {
+  "shape": "load16u(add)",
+  "weight": 15068,
+  "nodes": 100,
+  "projects": [
+   [
+    "chess-search",
+    10729
+   ],
+   [
+    "heat-lab",
+    806
+   ],
+   [
+    "bounds-lab",
+    591
+   ],
+   [
+    "strings",
+    531
+   ]
+  ]
+ },
+ {
+  "shape": "lt(x, #c)",
+  "weight": 11943,
+  "nodes": 44,
+  "projects": [
+   [
+    "chess-search",
+    10811
+   ],
+   [
+    "collatz",
+    515
+   ],
+   [
+    "lz-roundtrip",
+    361
+   ],
+   [
+    "strength",
+    136
+   ]
+  ]
+ },
+ {
+  "shape": "shru(x, #c)",
+  "weight": 10234,
+  "nodes": 42,
+  "projects": [
+   [
+    "sha-chacha",
+    10200
+   ],
+   [
+    "lz-roundtrip",
+    34
+   ]
+  ]
+ },
+ {
+  "shape": "ge(x, #c)",
+  "weight": 9438,
+  "nodes": 32,
+  "projects": [
+   [
+    "chess-search",
+    7482
+   ],
+   [
+    "sha-chacha",
+    1250
+   ],
+   [
+    "f32-dsp",
+    370
+   ],
+   [
+    "my-analysis",
+    189
+   ]
+  ]
+ },
+ {
+  "shape": "geu(x, #c)",
+  "weight": 9149,
+  "nodes": 59,
+  "projects": [
+   [
+    "regex-nfa",
+    4121
+   ],
+   [
+    "sha-chacha",
+    2564
+   ],
+   [
+    "bytecode-vm",
+    1700
+   ],
+   [
+    "lz-roundtrip",
+    764
+   ]
+  ]
+ },
+ {
+  "shape": "load(add)",
+  "weight": 9058,
+  "nodes": 50,
+  "projects": [
+   [
+    "sha-chacha",
+    2882
+   ],
+   [
+    "regex-nfa",
+    2673
+   ],
+   [
+    "f32-dsp",
+    2172
+   ],
+   [
+    "bytecode-vm",
+    923
+   ]
+  ]
+ },
+ {
+  "shape": "ne(x, 0)",
+  "weight": 6375,
+  "nodes": 13,
+  "projects": [
+   [
+    "chess-search",
+    6145
+   ],
+   [
+    "lz-roundtrip",
+    230
+   ]
+  ]
+ },
+ {
+  "shape": "ge(x, x)",
+  "weight": 6249,
+  "nodes": 74,
+  "projects": [
+   [
+    "regex-nfa",
+    1587
+   ],
+   [
+    "lz-roundtrip",
+    864
+   ],
+   [
+    "f32-dsp",
+    695
+   ],
+   [
+    "chess-search",
+    604
+   ]
+  ]
+ },
+ {
+  "shape": "or(shru, shl)",
+  "weight": 5770,
+  "nodes": 11,
+  "projects": [
+   [
+    "sha-chacha",
+    5770
+   ]
+  ]
+ },
+ {
+  "shape": "eq(x, #c)",
+  "weight": 5719,
+  "nodes": 57,
+  "projects": [
+   [
+    "bytecode-vm",
+    2191
+   ],
+   [
+    "strings",
+    1850
+   ],
+   [
+    "chess-search",
+    1627
+   ],
+   [
+    "regex-nfa",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, #c)",
+  "weight": 5642,
+  "nodes": 96,
+  "projects": [
+   [
+    "chess-search",
+    3211
+   ],
+   [
+    "bytecode-vm",
+    923
+   ],
+   [
+    "regex-nfa",
+    667
+   ],
+   [
+    "lz-roundtrip",
+    661
+   ]
+  ]
+ },
+ {
+  "shape": "load16u(caddr)",
+  "weight": 5534,
+  "nodes": 45,
+  "projects": [
+   [
+    "bytecode-vm",
+    1846
+   ],
+   [
+    "sha-chacha",
+    1812
+   ],
+   [
+    "lz-roundtrip",
+    1729
+   ],
+   [
+    "regex-nfa",
+    147
+   ]
+  ]
+ },
+ {
+  "shape": "rem(x, #c)",
+  "weight": 5505,
+  "nodes": 24,
+  "projects": [
+   [
+    "chess-search",
+    4718
+   ],
+   [
+    "collatz",
+    515
+   ],
+   [
+    "value-numbering",
+    213
+   ],
+   [
+    "div-magic",
+    49
+   ]
+  ]
+ },
+ {
+  "shape": "ge(x, 0)",
+  "weight": 5383,
+  "nodes": 13,
+  "projects": [
+   [
+    "chess-search",
+    5383
+   ]
+  ]
+ },
+ {
+  "shape": "eqz(x)",
+  "weight": 5375,
+  "nodes": 17,
+  "projects": [
+   [
+    "chess-search",
+    4020
+   ],
+   [
+    "collatz",
+    525
+   ],
+   [
+    "lz-roundtrip",
+    445
+   ],
+   [
+    "heat-lab",
+    244
+   ]
+  ]
+ },
+ {
+  "shape": "div(x, #c)",
+  "weight": 5221,
+  "nodes": 42,
+  "projects": [
+   [
+    "chess-search",
+    4406
+   ],
+   [
+    "collatz",
+    348
+   ],
+   [
+    "value-numbering",
+    223
+   ],
+   [
+    "div-magic",
+    69
+   ]
+  ]
+ },
+ {
+  "shape": "xor(x, x)",
+  "weight": 4360,
+  "nodes": 6,
+  "projects": [
+   [
+    "sha-chacha",
+    4360
+   ]
+  ]
+ },
+ {
+  "shape": "lt(rem, #c)",
+  "weight": 4310,
+  "nodes": 12,
+  "projects": [
+   [
+    "chess-search",
+    4310
+   ]
+  ]
+ },
+ {
+  "shape": "add(shl, 1)",
+  "weight": 3956,
+  "nodes": 33,
+  "projects": [
+   [
+    "f32-dsp",
+    3916
+   ],
+   [
+    "first-steps",
+    30
+   ],
+   [
+    "diagnostics",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shl(div, #c)",
+  "weight": 3862,
+  "nodes": 16,
+  "projects": [
+   [
+    "chess-search",
+    3862
+   ]
+  ]
+ },
+ {
+  "shape": "sub(x, #c)",
+  "weight": 3804,
+  "nodes": 21,
+  "projects": [
+   [
+    "sha-chacha",
+    1920
+   ],
+   [
+    "chess-search",
+    1840
+   ],
+   [
+    "lz-roundtrip",
+    26
+   ],
+   [
+    "constants",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "caddr(x, x)",
+  "weight": 3570,
+  "nodes": 18,
+  "projects": [
+   [
+    "sha-chacha",
+    1592
+   ],
+   [
+    "lz-roundtrip",
+    948
+   ],
+   [
+    "bytecode-vm",
+    923
+   ],
+   [
+    "regex-nfa",
+    107
+   ]
+  ]
+ },
+ {
+  "shape": "or(shl, shru)",
+  "weight": 3250,
+  "nodes": 5,
+  "projects": [
+   [
+    "sha-chacha",
+    3250
+   ]
+  ]
+ },
+ {
+  "shape": "result()",
+  "weight": 3200,
+  "nodes": 32,
+  "projects": [
+   [
+    "sha-chacha",
+    3200
+   ]
+  ]
+ },
+ {
+  "shape": "fmul(x, x)",
+  "weight": 2670,
+  "nodes": 12,
+  "projects": [
+   [
+    "f32-dsp",
+    2670
+   ]
+  ]
+ },
+ {
+  "shape": "and(x, x)",
+  "weight": 2560,
+  "nodes": 4,
+  "projects": [
+   [
+    "sha-chacha",
+    2560
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, x)",
+  "weight": 2226,
+  "nodes": 15,
+  "projects": [
+   [
+    "sha-chacha",
+    1760
+   ],
+   [
+    "licm-nested",
+    268
+   ],
+   [
+    "chess-search",
+    125
+   ],
+   [
+    "across-calls",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "sub(x, 1)",
+  "weight": 2202,
+  "nodes": 23,
+  "projects": [
+   [
+    "heat-lab",
+    751
+   ],
+   [
+    "bytecode-vm",
+    587
+   ],
+   [
+    "sort",
+    425
+   ],
+   [
+    "chess-search",
+    196
+   ]
+  ]
+ },
+ {
+  "shape": "shl(add, 1)",
+  "weight": 2162,
+  "nodes": 16,
+  "projects": [
+   [
+    "f32-dsp",
+    2152
+   ],
+   [
+    "dead-code",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "caddr(x, add)",
+  "weight": 1983,
+  "nodes": 9,
+  "projects": [
+   [
+    "lz-roundtrip",
+    1020
+   ],
+   [
+    "bytecode-vm",
+    923
+   ],
+   [
+    "regex-nfa",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "ge(x, load)",
+  "weight": 1924,
+  "nodes": 32,
+  "projects": [
+   [
+    "strings",
+    551
+   ],
+   [
+    "bounds-lab",
+    319
+   ],
+   [
+    "checksum",
+    160
+   ],
+   [
+    "wrong-shift",
+    160
+   ]
+  ]
+ },
+ {
+  "shape": "sub(#c, mul)",
+  "weight": 1911,
+  "nodes": 17,
+  "projects": [
+   [
+    "chess-search",
+    1911
+   ]
+  ]
+ },
+ {
+  "shape": "eq(x, 1)",
+  "weight": 1810,
+  "nodes": 15,
+  "projects": [
+   [
+    "bytecode-vm",
+    913
+   ],
+   [
+    "chess-search",
+    897
+   ]
+  ]
+ },
+ {
+  "shape": "add(#c, x)",
+  "weight": 1748,
+  "nodes": 8,
+  "projects": [
+   [
+    "chess-search",
+    1748
+   ]
+  ]
+ },
+ {
+  "shape": "geu(#c, load)",
+  "weight": 1719,
+  "nodes": 23,
+  "projects": [
+   [
+    "chess-search",
+    1719
+   ]
+  ]
+ },
+ {
+  "shape": "mul(sub, #c)",
+  "weight": 1518,
+  "nodes": 11,
+  "projects": [
+   [
+    "chess-search",
+    1518
+   ]
+  ]
+ },
+ {
+  "shape": "and(x, #c)",
+  "weight": 1509,
+  "nodes": 39,
+  "projects": [
+   [
+    "chess-search",
+    776
+   ],
+   [
+    "sha-chacha",
+    562
+   ],
+   [
+    "lz-roundtrip",
+    161
+   ],
+   [
+    "strength",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shr(x, #c)",
+  "weight": 1467,
+  "nodes": 11,
+  "projects": [
+   [
+    "chess-search",
+    1145
+   ],
+   [
+    "sha-chacha",
+    312
+   ],
+   [
+    "strength",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "mul(x, #c)",
+  "weight": 1363,
+  "nodes": 36,
+  "projects": [
+   [
+    "chess-search",
+    537
+   ],
+   [
+    "lz-roundtrip",
+    313
+   ],
+   [
+    "value-numbering",
+    213
+   ],
+   [
+    "regalloc-lab",
+    192
+   ]
+  ]
+ },
+ {
+  "shape": "eq(x, 0)",
+  "weight": 1348,
+  "nodes": 14,
+  "projects": [
+   [
+    "bytecode-vm",
+    923
+   ],
+   [
+    "chess-search",
+    356
+   ],
+   [
+    "gcd",
+    59
+   ],
+   [
+    "match-enum",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "xor(xor, x)",
+  "weight": 1280,
+  "nodes": 2,
+  "projects": [
+   [
+    "sha-chacha",
+    1280
+   ]
+  ]
+ },
+ {
+  "shape": "xor(and, and)",
+  "weight": 1280,
+  "nodes": 2,
+  "projects": [
+   [
+    "sha-chacha",
+    1280
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, mul)",
+  "weight": 1157,
+  "nodes": 14,
+  "projects": [
+   [
+    "fragments",
+    199
+   ],
+   [
+    "params-demo",
+    199
+   ],
+   [
+    "chess-search",
+    176
+   ],
+   [
+    "blend",
+    165
+   ]
+  ]
+ },
+ {
+  "shape": "xor(or, x)",
+  "weight": 1120,
+  "nodes": 2,
+  "projects": [
+   [
+    "sha-chacha",
+    1120
+   ]
+  ]
+ },
+ {
+  "shape": "mul(x, x)",
+  "weight": 1107,
+  "nodes": 35,
+  "projects": [
+   [
+    "nested-loops",
+    382
+   ],
+   [
+    "f32-dsp",
+    260
+   ],
+   [
+    "regalloc-lab",
+    151
+   ],
+   [
+    "pressure",
+    70
+   ]
+  ]
+ },
+ {
+  "shape": "shr(x, 1)",
+  "weight": 1040,
+  "nodes": 2,
+  "projects": [
+   [
+    "f32-dsp",
+    1040
+   ]
+  ]
+ },
+ {
+  "shape": "eq(load16u, x)",
+  "weight": 1032,
+  "nodes": 5,
+  "projects": [
+   [
+    "chess-search",
+    967
+   ],
+   [
+    "early-exit",
+    65
+   ]
+  ]
+ },
+ {
+  "shape": "xor(xor, shru)",
+  "weight": 960,
+  "nodes": 2,
+  "projects": [
+   [
+    "sha-chacha",
+    960
+   ]
+  ]
+ },
+ {
+  "shape": "eq(load, 1)",
+  "weight": 916,
+  "nodes": 3,
+  "projects": [
+   [
+    "regex-nfa",
+    916
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, load16u)",
+  "weight": 841,
+  "nodes": 7,
+  "projects": [
+   [
+    "bounds-lab",
+    361
+   ],
+   [
+    "checksum",
+    150
+   ],
+   [
+    "wrong-shift",
+    150
+   ],
+   [
+    "strength",
+    136
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, x, x, x)",
+  "weight": 810,
+  "nodes": 9,
+  "projects": [
+   [
+    "sha-chacha",
+    800
+   ],
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "sub(x, x)",
+  "weight": 808,
+  "nodes": 21,
+  "projects": [
+   [
+    "chess-search",
+    378
+   ],
+   [
+    "lz-roundtrip",
+    196
+   ],
+   [
+    "regalloc-lab",
+    121
+   ],
+   [
+    "bytecode-vm",
+    63
+   ]
+  ]
+ },
+ {
+  "shape": "or(load16u, shl)",
+  "weight": 750,
+  "nodes": 12,
+  "projects": [
+   [
+    "sha-chacha",
+    750
+   ]
+  ]
+ },
+ {
+  "shape": "shl(load16u, #c)",
+  "weight": 750,
+  "nodes": 12,
+  "projects": [
+   [
+    "sha-chacha",
+    750
+   ]
+  ]
+ },
+ {
+  "shape": "shl(sub, #c)",
+  "weight": 700,
+  "nodes": 7,
+  "projects": [
+   [
+    "chess-search",
+    352
+   ],
+   [
+    "sha-chacha",
+    322
+   ],
+   [
+    "lz-roundtrip",
+    26
+   ]
+  ]
+ },
+ {
+  "shape": "le(x, 1)",
+  "weight": 656,
+  "nodes": 2,
+  "projects": [
+   [
+    "f32-dsp",
+    656
+   ]
+  ]
+ },
+ {
+  "shape": "mul(#c, x)",
+  "weight": 654,
+  "nodes": 9,
+  "projects": [
+   [
+    "regex-nfa",
+    376
+   ],
+   [
+    "collatz",
+    167
+   ],
+   [
+    "chess-search",
+    89
+   ],
+   [
+    "f32-dsp",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "and(xor, x)",
+  "weight": 640,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    640
+   ]
+  ]
+ },
+ {
+  "shape": "xor(x, -1)",
+  "weight": 640,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    640
+   ]
+  ]
+ },
+ {
+  "shape": "xor(xor, and)",
+  "weight": 640,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    640
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, load)",
+  "weight": 640,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    640
+   ]
+  ]
+ },
+ {
+  "shape": "sub(x, shl)",
+  "weight": 632,
+  "nodes": 7,
+  "projects": [
+   [
+    "chess-search",
+    632
+   ]
+  ]
+ },
+ {
+  "shape": "add(mul, x)",
+  "weight": 626,
+  "nodes": 6,
+  "projects": [
+   [
+    "lz-roundtrip",
+    626
+   ]
+  ]
+ },
+ {
+  "shape": "mul(load16u, x)",
+  "weight": 621,
+  "nodes": 4,
+  "projects": [
+   [
+    "fragments",
+    199
+   ],
+   [
+    "params-demo",
+    199
+   ],
+   [
+    "blend",
+    165
+   ],
+   [
+    "orders",
+    58
+   ]
+  ]
+ },
+ {
+  "shape": "caddr(x, #c)",
+  "weight": 620,
+  "nodes": 62,
+  "projects": [
+   [
+    "sha-chacha",
+    620
+   ]
+  ]
+ },
+ {
+  "shape": "gt(x, 1)",
+  "weight": 599,
+  "nodes": 3,
+  "projects": [
+   [
+    "collatz",
+    525
+   ],
+   [
+    "chess-search",
+    74
+   ]
+  ]
+ },
+ {
+  "shape": "fadd(fmul, fmul)",
+  "weight": 590,
+  "nodes": 3,
+  "projects": [
+   [
+    "f32-dsp",
+    590
+   ]
+  ]
+ },
+ {
+  "shape": "sub(1, shl)",
+  "weight": 542,
+  "nodes": 6,
+  "projects": [
+   [
+    "chess-search",
+    542
+   ]
+  ]
+ },
+ {
+  "shape": "shl(shr, #c)",
+  "weight": 523,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    523
+   ]
+  ]
+ },
+ {
+  "shape": "add(shl, and)",
+  "weight": 520,
+  "nodes": 1,
+  "projects": [
+   [
+    "f32-dsp",
+    520
+   ]
+  ]
+ },
+ {
+  "shape": "and(x, 1)",
+  "weight": 520,
+  "nodes": 1,
+  "projects": [
+   [
+    "f32-dsp",
+    520
+   ]
+  ]
+ },
+ {
+  "shape": "fadd(x, x)",
+  "weight": 520,
+  "nodes": 2,
+  "projects": [
+   [
+    "f32-dsp",
+    520
+   ]
+  ]
+ },
+ {
+  "shape": "fsub(x, x)",
+  "weight": 520,
+  "nodes": 2,
+  "projects": [
+   [
+    "f32-dsp",
+    520
+   ]
+  ]
+ },
+ {
+  "shape": "eq(rem, 0)",
+  "weight": 515,
+  "nodes": 1,
+  "projects": [
+   [
+    "collatz",
+    515
+   ]
+  ]
+ },
+ {
+  "shape": "gt(x, load16u)",
+  "weight": 492,
+  "nodes": 6,
+  "projects": [
+   [
+    "heat-lab",
+    229
+   ],
+   [
+    "sort",
+    128
+   ],
+   [
+    "bounds-offset",
+    70
+   ],
+   [
+    "chess-search",
+    65
+   ]
+  ]
+ },
+ {
+  "shape": "add(load, x)",
+  "weight": 490,
+  "nodes": 2,
+  "projects": [
+   [
+    "sha-chacha",
+    480
+   ],
+   [
+    "records",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, load)",
+  "weight": 480,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    480
+   ]
+  ]
+ },
+ {
+  "shape": "sub(shl, #c)",
+  "weight": 478,
+  "nodes": 13,
+  "projects": [
+   [
+    "chess-search",
+    431
+   ],
+   [
+    "ui-gallery",
+    47
+   ]
+  ]
+ },
+ {
+  "shape": "gt(x, 0)",
+  "weight": 447,
+  "nodes": 6,
+  "projects": [
+   [
+    "heat-lab",
+    244
+   ],
+   [
+    "sort",
+    141
+   ],
+   [
+    "chess-search",
+    56
+   ],
+   [
+    "branches",
+    6
+   ]
+  ]
+ },
+ {
+  "shape": "lt(x, x)",
+  "weight": 439,
+  "nodes": 12,
+  "projects": [
+   [
+    "lz-roundtrip",
+    151
+   ],
+   [
+    "f32-dsp",
+    136
+   ],
+   [
+    "histogram",
+    62
+   ],
+   [
+    "calls",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "sub(1, x)",
+  "weight": 428,
+  "nodes": 7,
+  "projects": [
+   [
+    "chess-search",
+    428
+   ]
+  ]
+ },
+ {
+  "shape": "gt(x, x)",
+  "weight": 415,
+  "nodes": 8,
+  "projects": [
+   [
+    "start-here",
+    121
+   ],
+   [
+    "lz-roundtrip",
+    105
+   ],
+   [
+    "chess-search",
+    90
+   ],
+   [
+    "ui-gallery",
+    52
+   ]
+  ]
+ },
+ {
+  "shape": "call(x)",
+  "weight": 400,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    400
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, mul)",
+  "weight": 387,
+  "nodes": 6,
+  "projects": [
+   [
+    "nested-loops",
+    337
+   ],
+   [
+    "regalloc-lab",
+    30
+   ],
+   [
+    "calls",
+    10
+   ],
+   [
+    "pressure",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "rem(div, #c)",
+  "weight": 382,
+  "nodes": 6,
+  "projects": [
+   [
+    "chess-search",
+    382
+   ]
+  ]
+ },
+ {
+  "shape": "aaddr()",
+  "weight": 371,
+  "nodes": 24,
+  "projects": [
+   [
+    "regex-nfa",
+    221
+   ],
+   [
+    "sha-chacha",
+    60
+   ],
+   [
+    "bytecode-vm",
+    50
+   ],
+   [
+    "lz-roundtrip",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, x, x)",
+  "weight": 366,
+  "nodes": 11,
+  "projects": [
+   [
+    "chess-search",
+    356
+   ],
+   [
+    "lz-roundtrip",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "le(add, x)",
+  "weight": 358,
+  "nodes": 2,
+  "projects": [
+   [
+    "lz-roundtrip",
+    358
+   ]
+  ]
+ },
+ {
+  "shape": "eq(load, 0)",
+  "weight": 349,
+  "nodes": 5,
+  "projects": [
+   [
+    "regex-nfa",
+    250
+   ],
+   [
+    "bytecode-vm",
+    73
+   ],
+   [
+    "chess-search",
+    26
+   ]
+  ]
+ },
+ {
+  "shape": "mul(add, #c)",
+  "weight": 333,
+  "nodes": 5,
+  "projects": [
+   [
+    "lz-roundtrip",
+    313
+   ],
+   [
+    "call-chain",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "ne(x, x)",
+  "weight": 333,
+  "nodes": 2,
+  "projects": [
+   [
+    "lz-roundtrip",
+    207
+   ],
+   [
+    "chess-search",
+    126
+   ]
+  ]
+ },
+ {
+  "shape": "fadd(fadd, fmul)",
+  "weight": 330,
+  "nodes": 2,
+  "projects": [
+   [
+    "f32-dsp",
+    330
+   ]
+  ]
+ },
+ {
+  "shape": "add(mul, 1)",
+  "weight": 328,
+  "nodes": 10,
+  "projects": [
+   [
+    "collatz",
+    167
+   ],
+   [
+    "regalloc-lab",
+    91
+   ],
+   [
+    "call-chain",
+    70
+   ]
+  ]
+ },
+ {
+  "shape": "sub(#c, shl)",
+  "weight": 322,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    322
+   ]
+  ]
+ },
+ {
+  "shape": "or(load, shl)",
+  "weight": 322,
+  "nodes": 2,
+  "projects": [
+   [
+    "sha-chacha",
+    322
+   ]
+  ]
+ },
+ {
+  "shape": "sub(#c, and)",
+  "weight": 322,
+  "nodes": 2,
+  "projects": [
+   [
+    "sha-chacha",
+    322
+   ]
+  ]
+ },
+ {
+  "shape": "eq(sub, #c)",
+  "weight": 320,
+  "nodes": 4,
+  "projects": [
+   [
+    "chess-search",
+    320
+   ]
+  ]
+ },
+ {
+  "shape": "fsub(fsub, fmul)",
+  "weight": 320,
+  "nodes": 1,
+  "projects": [
+   [
+    "f32-dsp",
+    320
+   ]
+  ]
+ },
+ {
+  "shape": "fsub(x, fmul)",
+  "weight": 320,
+  "nodes": 1,
+  "projects": [
+   [
+    "f32-dsp",
+    320
+   ]
+  ]
+ },
+ {
+  "shape": "and(add, #c)",
+  "weight": 313,
+  "nodes": 3,
+  "projects": [
+   [
+    "lz-roundtrip",
+    313
+   ]
+  ]
+ },
+ {
+  "shape": "shl(load16u, shl)",
+  "weight": 312,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    312
+   ]
+  ]
+ },
+ {
+  "shape": "mul(#c, load)",
+  "weight": 303,
+  "nodes": 1,
+  "projects": [
+   [
+    "regex-nfa",
+    303
+   ]
+  ]
+ },
+ {
+  "shape": "eq(load, #c)",
+  "weight": 303,
+  "nodes": 1,
+  "projects": [
+   [
+    "regex-nfa",
+    303
+   ]
+  ]
+ },
+ {
+  "shape": "add(mul, #c)",
+  "weight": 273,
+  "nodes": 7,
+  "projects": [
+   [
+    "value-numbering",
+    213
+   ],
+   [
+    "fixed-point",
+    20
+   ],
+   [
+    "blend",
+    10
+   ],
+   [
+    "fragments",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "eq(shr, x)",
+  "weight": 266,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    266
+   ]
+  ]
+ },
+ {
+  "shape": "shl(mul, 1)",
+  "weight": 260,
+  "nodes": 1,
+  "projects": [
+   [
+    "f32-dsp",
+    260
+   ]
+  ]
+ },
+ {
+  "shape": "fsub(fmul, fmul)",
+  "weight": 260,
+  "nodes": 1,
+  "projects": [
+   [
+    "f32-dsp",
+    260
+   ]
+  ]
+ },
+ {
+  "shape": "div(x, x)",
+  "weight": 253,
+  "nodes": 8,
+  "projects": [
+   [
+    "chess-search",
+    220
+   ],
+   [
+    "div-checks",
+    20
+   ],
+   [
+    "licm-traps",
+    13
+   ]
+  ]
+ },
+ {
+  "shape": "eq(and, #c)",
+  "weight": 252,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    252
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, div)",
+  "weight": 236,
+  "nodes": 3,
+  "projects": [
+   [
+    "value-numbering",
+    223
+   ],
+   [
+    "licm-traps",
+    13
+   ]
+  ]
+ },
+ {
+  "shape": "add(shl, x)",
+  "weight": 231,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    221
+   ],
+   [
+    "call-chain",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(#c, shl)",
+  "weight": 229,
+  "nodes": 13,
+  "projects": [
+   [
+    "chess-search",
+    229
+   ]
+  ]
+ },
+ {
+  "shape": "add(load16u, 1)",
+  "weight": 218,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    156
+   ],
+   [
+    "histogram",
+    62
+   ]
+  ]
+ },
+ {
+  "shape": "lt(add, x)",
+  "weight": 214,
+  "nodes": 1,
+  "projects": [
+   [
+    "lz-roundtrip",
+    214
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, rem)",
+  "weight": 213,
+  "nodes": 1,
+  "projects": [
+   [
+    "value-numbering",
+    213
+   ]
+  ]
+ },
+ {
+  "shape": "lt(x, 0)",
+  "weight": 208,
+  "nodes": 8,
+  "projects": [
+   [
+    "chess-search",
+    198
+   ],
+   [
+    "branches",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shl(shl, 1)",
+  "weight": 192,
+  "nodes": 4,
+  "projects": [
+   [
+    "f32-dsp",
+    192
+   ]
+  ]
+ },
+ {
+  "shape": "sub(0, x)",
+  "weight": 187,
+  "nodes": 12,
+  "projects": [
+   [
+    "chess-search",
+    127
+   ],
+   [
+    "match-enum",
+    20
+   ],
+   [
+    "records",
+    20
+   ],
+   [
+    "call-chain",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, 1)",
+  "weight": 180,
+  "nodes": 1,
+  "projects": [
+   [
+    "my-analysis",
+    180
+   ]
+  ]
+ },
+ {
+  "shape": "lt(#c, x)",
+  "weight": 176,
+  "nodes": 4,
+  "projects": [
+   [
+    "chess-search",
+    156
+   ],
+   [
+    "fixed-point",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "sub(x, sub)",
+  "weight": 166,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    166
+   ]
+  ]
+ },
+ {
+  "shape": "eq(and, 1)",
+  "weight": 160,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    160
+   ]
+  ]
+ },
+ {
+  "shape": "and(div, 1)",
+  "weight": 160,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    160
+   ]
+  ]
+ },
+ {
+  "shape": "sub(#c, x)",
+  "weight": 159,
+  "nodes": 8,
+  "projects": [
+   [
+    "chess-search",
+    139
+   ],
+   [
+    "sha-chacha",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "caddr(x, sub)",
+  "weight": 159,
+  "nodes": 2,
+  "projects": [
+   [
+    "lz-roundtrip",
+    159
+   ]
+  ]
+ },
+ {
+  "shape": "eq(x, x)",
+  "weight": 154,
+  "nodes": 5,
+  "projects": [
+   [
+    "chess-search",
+    154
+   ]
+  ]
+ },
+ {
+  "shape": "mul(x, sub)",
+  "weight": 152,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    152
+   ]
+  ]
+ },
+ {
+  "shape": "add(shl, #c)",
+  "weight": 151,
+  "nodes": 4,
+  "projects": [
+   [
+    "start-here",
+    136
+   ],
+   [
+    "orders",
+    10
+   ],
+   [
+    "ui-gallery",
+    5
+   ]
+  ]
+ },
+ {
+  "shape": "sub(add, #c)",
+  "weight": 150,
+  "nodes": 1,
+  "projects": [
+   [
+    "wrong-shift",
+    150
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, load16u, sub)",
+  "weight": 146,
+  "nodes": 4,
+  "projects": [
+   [
+    "chess-search",
+    146
+   ]
+  ]
+ },
+ {
+  "shape": "add(1, mul)",
+  "weight": 129,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    129
+   ]
+  ]
+ },
+ {
+  "shape": "eq(load16u, 0)",
+  "weight": 128,
+  "nodes": 5,
+  "projects": [
+   [
+    "chess-search",
+    128
+   ]
+  ]
+ },
+ {
+  "shape": "eq(and, 0)",
+  "weight": 127,
+  "nodes": 2,
+  "projects": [
+   [
+    "lz-roundtrip",
+    127
+   ]
+  ]
+ },
+ {
+  "shape": "mul(x, add)",
+  "weight": 126,
+  "nodes": 1,
+  "projects": [
+   [
+    "start-here",
+    126
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, x)",
+  "weight": 124,
+  "nodes": 8,
+  "projects": [
+   [
+    "chess-search",
+    124
+   ]
+  ]
+ },
+ {
+  "shape": "sub(x, load16u)",
+  "weight": 112,
+  "nodes": 1,
+  "projects": [
+   [
+    "bounds-lab",
+    112
+   ]
+  ]
+ },
+ {
+  "shape": "le(x, x)",
+  "weight": 105,
+  "nodes": 2,
+  "projects": [
+   [
+    "regex-nfa",
+    105
+   ]
+  ]
+ },
+ {
+  "shape": "mul(x, load16u)",
+  "weight": 101,
+  "nodes": 2,
+  "projects": [
+   [
+    "bounds-lab",
+    56
+   ],
+   [
+    "bounds-two",
+    45
+   ]
+  ]
+ },
+ {
+  "shape": "eq(rem, 1)",
+  "weight": 100,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    100
+   ]
+  ]
+ },
+ {
+  "shape": "le(x, #c)",
+  "weight": 99,
+  "nodes": 1,
+  "projects": [
+   [
+    "strings",
+    99
+   ]
+  ]
+ },
+ {
+  "shape": "add(shl, shl)",
+  "weight": 90,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    90
+   ]
+  ]
+ },
+ {
+  "shape": "add(mul, sub)",
+  "weight": 89,
+  "nodes": 2,
+  "projects": [
+   [
+    "regalloc-lab",
+    81
+   ],
+   [
+    "strings",
+    8
+   ]
+  ]
+ },
+ {
+  "shape": "eqz(load)",
+  "weight": 84,
+  "nodes": 6,
+  "projects": [
+   [
+    "chess-search",
+    84
+   ]
+  ]
+ },
+ {
+  "shape": "sub(sub, x)",
+  "weight": 84,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    84
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, add)",
+  "weight": 81,
+  "nodes": 1,
+  "projects": [
+   [
+    "regalloc-lab",
+    81
+   ]
+  ]
+ },
+ {
+  "shape": "ge(add, load)",
+  "weight": 80,
+  "nodes": 2,
+  "projects": [
+   [
+    "bounds-offset",
+    80
+   ]
+  ]
+ },
+ {
+  "shape": "add(#c, mul)",
+  "weight": 74,
+  "nodes": 6,
+  "projects": [
+   [
+    "chess-search",
+    74
+   ]
+  ]
+ },
+ {
+  "shape": "shl(and, 1)",
+  "weight": 74,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    74
+   ]
+  ]
+ },
+ {
+  "shape": "div(load16u, #c)",
+  "weight": 62,
+  "nodes": 1,
+  "projects": [
+   [
+    "histogram",
+    62
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, x, x, x, x)",
+  "weight": 60,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    60
+   ]
+  ]
+ },
+ {
+  "shape": "rem(x, x)",
+  "weight": 59,
+  "nodes": 2,
+  "projects": [
+   [
+    "gcd",
+    49
+   ],
+   [
+    "div-checks",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "le(x, 0)",
+  "weight": 59,
+  "nodes": 2,
+  "projects": [
+   [
+    "div-magic",
+    59
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, div)",
+  "weight": 58,
+  "nodes": 1,
+  "projects": [
+   [
+    "orders",
+    58
+   ]
+  ]
+ },
+ {
+  "shape": "eq(x, add)",
+  "weight": 55,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    55
+   ]
+  ]
+ },
+ {
+  "shape": "eq(x, load16u)",
+  "weight": 52,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    52
+   ]
+  ]
+ },
+ {
+  "shape": "sub(mul, #c)",
+  "weight": 50,
+  "nodes": 5,
+  "projects": [
+   [
+    "across-calls",
+    50
+   ]
+  ]
+ },
+ {
+  "shape": "add(mul, mul)",
+  "weight": 50,
+  "nodes": 5,
+  "projects": [
+   [
+    "across-calls",
+    10
+   ],
+   [
+    "calls",
+    10
+   ],
+   [
+    "constants",
+    10
+   ],
+   [
+    "pressure",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(aaddr, shl)",
+  "weight": 50,
+  "nodes": 5,
+  "projects": [
+   [
+    "regex-nfa",
+    20
+   ],
+   [
+    "sha-chacha",
+    20
+   ],
+   [
+    "bytecode-vm",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "ne(div, 0)",
+  "weight": 50,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    50
+   ]
+  ]
+ },
+ {
+  "shape": "ne(x, sub)",
+  "weight": 50,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    50
+   ]
+  ]
+ },
+ {
+  "shape": "add(x, rem)",
+  "weight": 49,
+  "nodes": 1,
+  "projects": [
+   [
+    "div-magic",
+    49
+   ]
+  ]
+ },
+ {
+  "shape": "sub(add, 1)",
+  "weight": 48,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    48
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, #c)",
+  "weight": 47,
+  "nodes": 4,
+  "projects": [
+   [
+    "chess-search",
+    37
+   ],
+   [
+    "constants",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "eq(x, load)",
+  "weight": 47,
+  "nodes": 1,
+  "projects": [
+   [
+    "regex-nfa",
+    47
+   ]
+  ]
+ },
+ {
+  "shape": "eq(sub, shl)",
+  "weight": 46,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    46
+   ]
+  ]
+ },
+ {
+  "shape": "shl(sub, 1)",
+  "weight": 46,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    46
+   ]
+  ]
+ },
+ {
+  "shape": "le(load, 0)",
+  "weight": 41,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    41
+   ]
+  ]
+ },
+ {
+  "shape": "sub(load, 1)",
+  "weight": 41,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    41
+   ]
+  ]
+ },
+ {
+  "shape": "lt(0, x)",
+  "weight": 40,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    20
+   ],
+   [
+    "calls",
+    10
+   ],
+   [
+    "start-here",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "sub(#c, load16u)",
+  "weight": 40,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "div(x, shl)",
+  "weight": 40,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "ge(load, load)",
+  "weight": 40,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "sub(load, load)",
+  "weight": 40,
+  "nodes": 4,
+  "projects": [
+   [
+    "match-enum",
+    20
+   ],
+   [
+    "records",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "mul(sub, sub)",
+  "weight": 40,
+  "nodes": 4,
+  "projects": [
+   [
+    "pressure",
+    20
+   ],
+   [
+    "regalloc-lab",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "lt(x, load)",
+  "weight": 40,
+  "nodes": 1,
+  "projects": [
+   [
+    "regex-nfa",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "caddr(x, 0)",
+  "weight": 40,
+  "nodes": 4,
+  "projects": [
+   [
+    "sha-chacha",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "caddr(x, 1)",
+  "weight": 40,
+  "nodes": 4,
+  "projects": [
+   [
+    "sha-chacha",
+    40
+   ]
+  ]
+ },
+ {
+  "shape": "div(#c, x)",
+  "weight": 37,
+  "nodes": 1,
+  "projects": [
+   [
+    "f32-dsp",
+    37
+   ]
+  ]
+ },
+ {
+  "shape": "ge(x, load16u)",
+  "weight": 35,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    35
+   ]
+  ]
+ },
+ {
+  "shape": "add(and, #c)",
+  "weight": 34,
+  "nodes": 2,
+  "projects": [
+   [
+    "lz-roundtrip",
+    34
+   ]
+  ]
+ },
+ {
+  "shape": "and(shru, #c)",
+  "weight": 34,
+  "nodes": 2,
+  "projects": [
+   [
+    "lz-roundtrip",
+    34
+   ]
+  ]
+ },
+ {
+  "shape": "add(and, 1)",
+  "weight": 34,
+  "nodes": 2,
+  "projects": [
+   [
+    "lz-roundtrip",
+    34
+   ]
+  ]
+ },
+ {
+  "shape": "sub(add, x)",
+  "weight": 32,
+  "nodes": 3,
+  "projects": [
+   [
+    "chess-search",
+    12
+   ],
+   [
+    "pressure",
+    10
+   ],
+   [
+    "regalloc-lab",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "mul(sub, x)",
+  "weight": 30,
+  "nodes": 3,
+  "projects": [
+   [
+    "across-calls",
+    10
+   ],
+   [
+    "constants",
+    10
+   ],
+   [
+    "fixed-point",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shl(add, #c)",
+  "weight": 30,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    20
+   ],
+   [
+    "first-steps",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "eq(div, sub)",
+  "weight": 30,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    30
+   ]
+  ]
+ },
+ {
+  "shape": "add(1, shl)",
+  "weight": 30,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    30
+   ]
+  ]
+ },
+ {
+  "shape": "eq(load16u, #c)",
+  "weight": 30,
+  "nodes": 1,
+  "projects": [
+   [
+    "regex-nfa",
+    30
+   ]
+  ]
+ },
+ {
+  "shape": "add(shl, sub)",
+  "weight": 26,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    26
+   ]
+  ]
+ },
+ {
+  "shape": "ne(div, #c)",
+  "weight": 26,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    26
+   ]
+  ]
+ },
+ {
+  "shape": "or(or, sub)",
+  "weight": 26,
+  "nodes": 1,
+  "projects": [
+   [
+    "lz-roundtrip",
+    26
+   ]
+  ]
+ },
+ {
+  "shape": "or(#c, shl)",
+  "weight": 26,
+  "nodes": 1,
+  "projects": [
+   [
+    "lz-roundtrip",
+    26
+   ]
+  ]
+ },
+ {
+  "shape": "add(load, 1)",
+  "weight": 23,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    23
+   ]
+  ]
+ },
+ {
+  "shape": "sub(load16u, 1)",
+  "weight": 20,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, x, add)",
+  "weight": 20,
+  "nodes": 2,
+  "projects": [
+   [
+    "chess-search",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "add(div, rem)",
+  "weight": 20,
+  "nodes": 2,
+  "projects": [
+   [
+    "div-checks",
+    10
+   ],
+   [
+    "strength",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shr(add, #c)",
+  "weight": 20,
+  "nodes": 2,
+  "projects": [
+   [
+    "fixed-point",
+    20
+   ]
+  ]
+ },
+ {
+  "shape": "add(sub, mul)",
+  "weight": 20,
+  "nodes": 2,
+  "projects": [
+   [
+    "pressure",
+    10
+   ],
+   [
+    "regalloc-lab",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "sub(add, mul)",
+  "weight": 20,
+  "nodes": 2,
+  "projects": [
+   [
+    "pressure",
+    10
+   ],
+   [
+    "regalloc-lab",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "mul(mul, x)",
+  "weight": 12,
+  "nodes": 2,
+  "projects": [
+   [
+    "calls",
+    10
+   ],
+   [
+    "match-enum",
+    2
+   ]
+  ]
+ },
+ {
+  "shape": "call(and)",
+  "weight": 12,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    12
+   ]
+  ]
+ },
+ {
+  "shape": "and(shr, #c)",
+  "weight": 12,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    12
+   ]
+  ]
+ },
+ {
+  "shape": "and(load16u, #c)",
+  "weight": 12,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    12
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, #c, load, #c, #c)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "ne(rem, rem)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "lt(x, load16u)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "eq(add, x)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, #c)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "ge(x, add)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(load, #c)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "lt(1, x)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "div-checks",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(div, div)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "div-magic",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(add, add)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "my-first-pass",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "div(add, #c)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "orders",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "sub(load, x)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "records",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "mul(load, load)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "records",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shru(x, x)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shl(x, sub)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shl(#c, shl)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shl(x, x)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "shru(x, sub)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "sha-chacha",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "add(shr, and)",
+  "weight": 10,
+  "nodes": 1,
+  "projects": [
+   [
+    "strength",
+    10
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, x, x, sub)",
+  "weight": 6,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    6
+   ]
+  ]
+ },
+ {
+  "shape": "call(x, load)",
+  "weight": 6,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    6
+   ]
+  ]
+ },
+ {
+  "shape": "div(mul, #c)",
+  "weight": 3,
+  "nodes": 1,
+  "projects": [
+   [
+    "match-enum",
+    3
+   ]
+  ]
+ },
+ {
+  "shape": "ne(shr, x)",
+  "weight": 2,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    2
+   ]
+  ]
+ },
+ {
+  "shape": "ne(and, #c)",
+  "weight": 2,
+  "nodes": 1,
+  "projects": [
+   [
+    "chess-search",
+    2
+   ]
+  ]
+ }
+]
