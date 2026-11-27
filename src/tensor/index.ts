@@ -34,14 +34,16 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
     if (!definition) throw Error('Unknown pass ' + pass);
     try {
-      current = applyNativePassSync(
+      const result = applyNativePassSync(
         definition,
         current,
         meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'),
-      ).artifact;
-      return { pass, accepted: true };
+      );
+      current = result.artifact;
+      return { pass, accepted: true, changed: result.changed };
     } catch (error) {
-      if (error instanceof PassError && error.code === 'contractRejected') return { pass, accepted: false };
+      if (error instanceof PassError && error.code === 'contractRejected')
+        return { pass, accepted: false, changed: false, reason: error.message };
       throw error;
     }
   });
