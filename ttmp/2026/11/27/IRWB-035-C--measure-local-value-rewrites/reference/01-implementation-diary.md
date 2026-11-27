@@ -19,6 +19,14 @@ WhenToUse: ""
 
 # Implementation diary
 
+## Step 1: Design and initial implementation
+
+The requested edit census is in progress. The design was committed as `9adde9e`. A probe on Blend confirmed the normal checked pipeline supplies edit records and correspondence. A second probe confirmed that RV32 image instructions list covered Typed values and statements. An initial classifier and census runner are present but have not completed corpus validation.
+
+`npm ci` first failed because esbuild's version probe could not spawn under the sandbox (EPERM); an escalated retry installed the locked dependencies. `npm run build` completed. `node --test tests/typed/edit-census.test.mjs` passed before the final classifier adjustment. The requested broad test command was interrupted after it started many tests concurrently and heavily loaded the shared machine; its interrupted tests must not be treated as failures or passes. A bounded-concurrency rerun and the corpus census were started in tmux. Check their logs and completion before using their results. The census initially imported an earlier classifier version; rerun it after the last adjustment before reporting results.
+
+The current classifier's attribution counts static instructions whose `covers` identify a referenced statement or block in either adjacent image. Attribution can overlap and does not measure runtime heat or prove causation. Its treatment of structural compound edits, the correspondence use, and rule-matching soundness need review before the results can answer the ticket.
+
 ## Goal
 
 <!-- What is the purpose of this reference document? -->
