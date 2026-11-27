@@ -1,0 +1,4592 @@
+{
+ "t3-sm-irwb-029-a": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2327
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2815
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2259
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2304
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3013
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3488
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2881
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2461
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2301
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2846
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2292
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2323
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2907
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2976
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2297
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2240
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 2,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 2,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.21321600675582886,
+     "runs": [
+      0.21318399906158447,
+      0.21526400744915009,
+      0.21321600675582886
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.21408000588417053,
+     "runs": [
+      0.2091519981622696,
+      0.21987199783325195,
+      0.21408000588417053
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.39161598682403564,
+     "runs": [
+      0.3935360014438629,
+      0.39161598682403564,
+      0.38838401436805725
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.7870079874992371,
+     "runs": [
+      0.7847359776496887,
+      0.7870079874992371,
+      0.790880024433136
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.6847360134124756,
+     "runs": [
+      0.7225599884986877,
+      0.6845120191574097,
+      0.6847360134124756
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5463680028915405,
+     "runs": [
+      0.551584005355835,
+      0.532800018787384,
+      0.5463680028915405
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 1.8424320220947266,
+     "runs": [
+      1.82915198802948,
+      1.8888640403747559,
+      1.8424320220947266
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.518847942352295,
+     "runs": [
+      1.4820159673690796,
+      1.518847942352295,
+      1.5743680000305176
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 0.8451840281486511,
+     "runs": [
+      0.8583999872207642,
+      0.8449599742889404,
+      0.8451840281486511
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.0561599731445312,
+     "runs": [
+      1.0701440572738647,
+      1.051967978477478,
+      1.0561599731445312
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.32678401470184326,
+     "runs": [
+      0.3270080089569092,
+      0.32678401470184326,
+      0.3266879916191101
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.3269439935684204,
+     "runs": [
+      0.32793599367141724,
+      0.32678401470184326,
+      0.3269439935684204
+     ]
+    }
+   }
+  },
+  "seconds": 276.8
+ },
+ "t3-am-irwb-029-b": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2188
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2276
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2803
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2230
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2221
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2898
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2306
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2294
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2781
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2286
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2218
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2429
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3187
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2491
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2256
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2856
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 4,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 2,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.21385599672794342,
+     "runs": [
+      0.21385599672794342,
+      0.2133760005235672,
+      0.2184000015258789
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.21116800606250763,
+     "runs": [
+      0.21116800606250763,
+      0.21116800606250763,
+      0.21615999937057495
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.35951998829841614,
+     "runs": [
+      0.35951998829841614,
+      0.36057600378990173,
+      0.3587520122528076
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.8055359721183777,
+     "runs": [
+      0.8032320141792297,
+      0.8090559840202332,
+      0.8055359721183777
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 1.1583360433578491,
+     "runs": [
+      1.155295968055725,
+      1.1583360433578491,
+      1.160640001296997
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.559391975402832,
+     "runs": [
+      0.5619199872016907,
+      0.5501120090484619,
+      0.559391975402832
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 1.396191954612732,
+     "runs": [
+      1.3817600011825562,
+      1.396191954612732,
+      1.4082560539245605
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.51692795753479,
+     "runs": [
+      1.51692795753479,
+      1.6592639684677124,
+      1.4861119985580444
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 0.8489919900894165,
+     "runs": [
+      0.8521280288696289,
+      0.8489919900894165,
+      0.8349760174751282
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.0541119575500488,
+     "runs": [
+      1.0649919509887695,
+      1.0541119575500488,
+      1.040544033050537
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.32764801383018494,
+     "runs": [
+      0.32787200808525085,
+      0.32764801383018494,
+      0.3270080089569092
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.3280639946460724,
+     "runs": [
+      0.328031986951828,
+      0.3280960023403168,
+      0.3280639946460724
+     ]
+    }
+   }
+  },
+  "seconds": 270.1
+ },
+ "t3-tl-irwb-029-c": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2268
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2237
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2208
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2269
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2277
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2300
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3791
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2342
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2245
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2235
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2262
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2265
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2304
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2284
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2245
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2993
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 4,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 4,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 5,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 3,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.21740800142288208,
+     "runs": [
+      0.21833600103855133,
+      0.21740800142288208,
+      0.21526400744915009
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.21510399878025055,
+     "runs": [
+      0.21510399878025055,
+      0.22150400280952454,
+      0.20403200387954712
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.7896320223808289,
+     "runs": [
+      0.7857279777526855,
+      0.7898880243301392,
+      0.7896320223808289
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.7968320250511169,
+     "runs": [
+      0.7984960079193115,
+      0.7949439883232117,
+      0.7968320250511169
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.5454080104827881,
+     "runs": [
+      0.5389760136604309,
+      0.5480319857597351,
+      0.5454080104827881
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5493760108947754,
+     "runs": [
+      0.5498560070991516,
+      0.5493760108947754,
+      0.5459520220756531
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 1.5249919891357422,
+     "runs": [
+      1.5249919891357422,
+      1.4770560264587402,
+      1.5321919918060303
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.484063982963562,
+     "runs": [
+      1.484063982963562,
+      1.48198401927948,
+      1.4965120553970337
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 1.0722559690475464,
+     "runs": [
+      1.0609920024871826,
+      1.1022720336914062,
+      1.0722559690475464
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.0644479990005493,
+     "runs": [
+      1.0644160509109497,
+      1.0680960416793823,
+      1.0644479990005493
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.32713600993156433,
+     "runs": [
+      0.32681599259376526,
+      0.32812801003456116,
+      0.32713600993156433
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.32787200808525085,
+     "runs": [
+      0.32784000039100647,
+      0.328031986951828,
+      0.32787200808525085
+     ]
+    }
+   }
+  },
+  "seconds": 274
+ },
+ "t3-op-irwb-029-d": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2411
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2281
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3563
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2192
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2253
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2336
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2358
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2219
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2863
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2250
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2229
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2235
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2386
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2437
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3211
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2749
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 1,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 1,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.2133760005235672,
+     "runs": [
+      0.20950399339199066,
+      0.21536000072956085,
+      0.2133760005235672
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.2163199931383133,
+     "runs": [
+      0.2163199931383133,
+      0.2199999988079071,
+      0.2152000069618225
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.3864000141620636,
+     "runs": [
+      0.3853760063648224,
+      0.38835200667381287,
+      0.3864000141620636
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.7969920039176941,
+     "runs": [
+      0.7940160036087036,
+      0.8070080280303955,
+      0.7969920039176941
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.5789120197296143,
+     "runs": [
+      0.5810239911079407,
+      0.5789120197296143,
+      0.5788800120353699
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5480319857597351,
+     "runs": [
+      0.5480319857597351,
+      0.5510079860687256,
+      0.5447999835014343
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 1.4122560024261475,
+     "runs": [
+      1.4117120504379272,
+      1.4122560024261475,
+      1.4134080410003662
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.5166720151901245,
+     "runs": [
+      1.5166720151901245,
+      1.500383973121643,
+      1.5209280252456665
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 0.8804479837417603,
+     "runs": [
+      0.8655359745025635,
+      0.8804479837417603,
+      0.8809919953346252
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.063264012336731,
+     "runs": [
+      1.063264012336731,
+      1.0394879579544067,
+      1.087488055229187
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.3269439935684204,
+     "runs": [
+      0.32678401470184326,
+      0.3269439935684204,
+      0.3279680013656616
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.32793599367141724,
+     "runs": [
+      0.32793599367141724,
+      0.32758399844169617,
+      0.3288640081882477
+     ]
+    }
+   }
+  },
+  "seconds": 272.3
+ },
+ "t3-fa-irwb-029-e": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2830
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2462
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3281
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2502
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2832
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2946
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2825
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2266
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2510
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2669
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3228
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2968
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2451
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2287
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 4014
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2265
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 1,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 1,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.21427200734615326,
+     "runs": [
+      0.21747200191020966,
+      0.2133760005235672,
+      0.21427200734615326
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.21622399985790253,
+     "runs": [
+      0.2165759950876236,
+      0.21225599944591522,
+      0.21622399985790253
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.3904320001602173,
+     "runs": [
+      0.3904320001602173,
+      0.3874239921569824,
+      0.39340800046920776
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.8037760257720947,
+     "runs": [
+      0.8042880296707153,
+      0.8027520179748535,
+      0.8037760257720947
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.6743680238723755,
+     "runs": [
+      0.6742720007896423,
+      0.6800959706306458,
+      0.6743680238723755
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5509439706802368,
+     "runs": [
+      0.5509439706802368,
+      0.5420479774475098,
+      0.5554239749908447
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 2.02620792388916,
+     "runs": [
+      2.0169599056243896,
+      2.02620792388916,
+      2.0661120414733887
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.51692795753479,
+     "runs": [
+      1.4880640506744385,
+      1.51692795753479,
+      1.5539519786834717
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 0.9073600172996521,
+     "runs": [
+      0.8961920142173767,
+      0.9096959829330444,
+      0.9073600172996521
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.059999942779541,
+     "runs": [
+      1.0685440301895142,
+      1.058143973350525,
+      1.059999942779541
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.32815998792648315,
+     "runs": [
+      0.3372800052165985,
+      0.32684800028800964,
+      0.32815998792648315
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.3269439935684204,
+     "runs": [
+      0.3269439935684204,
+      0.3277440071105957,
+      0.3259199857711792
+     ]
+    }
+   }
+  },
+  "seconds": 285.7
+ },
+ "t3-g-h-irwb-029-f": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2189
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2209
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2229
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2266
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2222
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2284
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2248
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2288
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2782
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2267
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2433
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3691
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2303
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2651
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2439
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2307
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 2,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 2,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.21244800090789795,
+     "runs": [
+      0.21244800090789795,
+      0.21209600567817688,
+      0.2141759991645813
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.2152000069618225,
+     "runs": [
+      0.2101760059595108,
+      0.2152000069618225,
+      0.21747200191020966
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.7291839718818665,
+     "runs": [
+      0.730239987373352,
+      0.7246080040931702,
+      0.7291839718818665
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.8099520206451416,
+     "runs": [
+      0.8066880106925964,
+      0.8131840229034424,
+      0.8099520206451416
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.7723199725151062,
+     "runs": [
+      0.7763519883155823,
+      0.7723199725151062,
+      0.7608960270881653
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5748479962348938,
+     "runs": [
+      0.5758399963378906,
+      0.5613759756088257,
+      0.5748479962348938
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 1.2606719732284546,
+     "runs": [
+      1.2607680559158325,
+      1.2598079442977905,
+      1.2606719732284546
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.4758720397949219,
+     "runs": [
+      1.4758720397949219,
+      1.5086400508880615,
+      1.475808024406433
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 0.8478720188140869,
+     "runs": [
+      0.8478720188140869,
+      0.8734400272369385,
+      0.8409280180931091
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.068608045578003,
+     "runs": [
+      1.055999994277954,
+      1.0827200412750244,
+      1.068608045578003
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.328000009059906,
+     "runs": [
+      0.3279680013656616,
+      0.328000009059906,
+      0.32812801003456116
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.32684800028800964,
+     "runs": [
+      0.32684800028800964,
+      0.328031986951828,
+      0.32678401470184326
+     ]
+    }
+   }
+  },
+  "seconds": 275.4
+ },
+ "t3-ds-h-irwb-029-g": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2257
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2282
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2732
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2317
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2353
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2359
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2225
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2209
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2244
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2823
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2264
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3313
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2253
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3058
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2438
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2381
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 1,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 1,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.2136639952659607,
+     "runs": [
+      0.21673600375652313,
+      0.20521600544452667,
+      0.2136639952659607
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.21695999801158905,
+     "runs": [
+      0.21747200191020966,
+      0.21695999801158905,
+      0.21532799303531647
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.465503990650177,
+     "runs": [
+      0.465503990650177,
+      0.4658240079879761,
+      0.46239998936653137
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.8176320195198059,
+     "runs": [
+      0.8231040239334106,
+      0.8095359802246094,
+      0.8176320195198059
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.5956799983978271,
+     "runs": [
+      0.5911359786987305,
+      0.5972480177879333,
+      0.5956799983978271
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5767359733581543,
+     "runs": [
+      0.5767359733581543,
+      0.5600000023841858,
+      0.5785279870033264
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 1.9262720346450806,
+     "runs": [
+      1.9262720346450806,
+      1.924415946006775,
+      1.9489279985427856
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.494271993637085,
+     "runs": [
+      1.5085439682006836,
+      1.494271993637085,
+      1.4831039905548096
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 0.9779520034790039,
+     "runs": [
+      0.9752960205078125,
+      0.9779520034790039,
+      0.9842560291290283
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.0531840324401855,
+     "runs": [
+      1.0531840324401855,
+      1.0538239479064941,
+      1.0355199575424194
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.3275519907474518,
+     "runs": [
+      0.3275519907474518,
+      0.3287999927997589,
+      0.3267520070075989
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.32732799649238586,
+     "runs": [
+      0.326911985874176,
+      0.32732799649238586,
+      0.32784000039100647
+     ]
+    }
+   }
+  },
+  "seconds": 280.7
+ },
+ "t3-ds-x-irwb-029-h": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2571
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2218
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2591
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2961
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2360
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3085
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2238
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2283
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2260
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2698
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2303
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2252
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2210
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2655
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2739
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2680
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 1,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 1,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.21750399470329285,
+     "runs": [
+      0.21347199380397797,
+      0.21750399470329285,
+      0.21935999393463135
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.21212799847126007,
+     "runs": [
+      0.21743999421596527,
+      0.2120639979839325,
+      0.21212799847126007
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.41596800088882446,
+     "runs": [
+      0.41596800088882446,
+      0.41488000750541687,
+      0.4191359877586365
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.8267840147018433,
+     "runs": [
+      0.8296319842338562,
+      0.8256959915161133,
+      0.8267840147018433
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.6148480176925659,
+     "runs": [
+      0.6147840023040771,
+      0.6148480176925659,
+      0.6165120005607605
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5691199898719788,
+     "runs": [
+      0.5691199898719788,
+      0.6095679998397827,
+      0.5660799741744995
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 2.255039930343628,
+     "runs": [
+      2.255039930343628,
+      2.238111972808838,
+      2.2607998847961426
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.550271987915039,
+     "runs": [
+      1.5278400182724,
+      1.6375360488891602,
+      1.550271987915039
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 1.0088319778442383,
+     "runs": [
+      1.0088000297546387,
+      1.0209920406341553,
+      1.0088319778442383
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.0764800310134888,
+     "runs": [
+      1.0764800310134888,
+      1.0732799768447876,
+      1.084671974182129
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.32684800028800964,
+     "runs": [
+      0.32684800028800964,
+      0.32598400115966797,
+      0.3280639946460724
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.32793599367141724,
+     "runs": [
+      0.32793599367141724,
+      0.3269439935684204,
+      0.32819199562072754
+     ]
+    }
+   }
+  },
+  "seconds": 287.8
+ },
+ "t3-gf-h-irwb-029-i": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3041
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2775
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2308
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3411
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2261
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3137
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2227
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2255
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3445
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2322
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3198
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2848
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2276
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2196
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2890
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2231
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 1,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 2,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 2,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.21545599400997162,
+     "runs": [
+      0.210207998752594,
+      0.21907199919223785,
+      0.21545599400997162
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.2178879976272583,
+     "runs": [
+      0.2178879976272583,
+      0.2215680032968521,
+      0.21305599808692932
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.3872640132904053,
+     "runs": [
+      0.38809600472450256,
+      0.3871679902076721,
+      0.3872640132904053
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.8082559704780579,
+     "runs": [
+      0.8082559704780579,
+      0.7991039752960205,
+      0.8096640110015869
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.5470399856567383,
+     "runs": [
+      0.5461120009422302,
+      0.5480639934539795,
+      0.5470399856567383
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5569279789924622,
+     "runs": [
+      0.5569279789924622,
+      0.5583680272102356,
+      0.5412480235099792
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 2.1988799571990967,
+     "runs": [
+      2.1988799571990967,
+      2.1401278972625732,
+      2.2047998905181885
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.53603196144104,
+     "runs": [
+      1.53603196144104,
+      1.4922879934310913,
+      1.5423359870910645
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 0.851360023021698,
+     "runs": [
+      0.857151985168457,
+      0.8470399975776672,
+      0.851360023021698
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.0578240156173706,
+     "runs": [
+      1.0456000566482544,
+      1.0578240156173706,
+      1.059999942779541
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.32688000798225403,
+     "runs": [
+      0.32688000798225403,
+      0.32598400115966797,
+      0.32688000798225403
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.32787200808525085,
+     "runs": [
+      0.326911985874176,
+      0.32790398597717285,
+      0.32787200808525085
+     ]
+    }
+   }
+  },
+  "seconds": 288.3
+ }
+}
