@@ -15,13 +15,19 @@ test('CUDA source is deterministic and preloads every emitted statement kernel b
   const program = compileTix(
     'fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }',
   );
-  const source = cudaSource(program, 'second');
-  assert.equal(source, cudaSource(program, 'second'));
+  // stage 2 (fuse: false) is one kernel per statement; the fused default computes both in one (IRWB-029-D)
+  const source = cudaSource(program, 'second', { fuse: false });
+  assert.equal(source, cudaSource(program, 'second', { fuse: false }));
   assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
   assert.ok(
     source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
   );
   assert.match(source, /__double2float_rn\(exp/);
+  const fused = cudaSource(program, 'second');
+  assert.equal(fused, cudaSource(program, 'second'));
+  assert.equal((fused.match(/__global__ void/g) ?? []).length, 1);
+  assert.ok(fused.indexOf('cudaFuncGetAttributes(&attributes, k0)') < fused.indexOf('gpu_ms = time_kernels'));
+  assert.match(fused, /__double2float_rn\(exp/);
   assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
 });
 
