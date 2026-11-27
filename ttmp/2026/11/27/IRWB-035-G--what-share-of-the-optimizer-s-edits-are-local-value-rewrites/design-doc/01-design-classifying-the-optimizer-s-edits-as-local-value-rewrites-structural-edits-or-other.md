@@ -30,7 +30,7 @@ The measurement covers the 50 corpus projects under `O2` and `speed`, each run t
 ## What the records contain (probe 01)
 
 - An edit record carries `pass`, `fn`, `kind`, and ids. It carries **no rule name**: a `simplify` edit does not say which rule fired. The `because` of a `replace` record is empty for every pass except `licm`; the justification is in the `origin` of the values the pass made.
-- A `replace` record names the statement, the field (`value`, `cond`, `addr`), and the root ids of the tree before (`from`) and after (`to`). `from` is in the revision before for all but 3 of 1,001 `replace` records under `speed` (two `lvn`, one `licm`): those are the second link of a chain, where one pass replaced the same field twice and the intermediate tree is in neither revision.
+- A `replace` record names the statement, the field (`value`, `cond`, `addr`), and the root ids of the tree before (`from`) and after (`to`). `from` is in the revision before for all but 3 of 1,138 `replace` records under `speed` (two `lvn`, one `licm`): those are the second link of a chain, where one pass replaced the same field twice and the intermediate tree is in neither revision.
 - `inline` records one `inline` edit per call site, plus `local`, `block` and `remove` edits; the copied statements have no records of their own, but their `origin` names the call.
 - An image instruction lists the entities it implements in `covers` (a value and its statement, or only the statement), so instructions can be attributed to entities.
 
