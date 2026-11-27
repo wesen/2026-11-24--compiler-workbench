@@ -14,7 +14,7 @@ import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitCuda, takesGate } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { scheduleFunction } from './schedule.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -220,7 +220,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     ],
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
+      const plan = scheduleFunction(f, fuse).value.plan;
       const kernels = plan.groups.map(g => ({
         name: g.kernel,
         mapping: g.mapping,
