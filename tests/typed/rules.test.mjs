@@ -24,7 +24,12 @@ const { canonical } = await import('../../dist/framework/core/data.js');
 
 const FULL = process.env.IRWB_FULL === '1';
 const SUBSET = ['blend', 'algebra', 'checksum', 'dead-code', 'strength', 'value-numbering', 'constants', 'start-here'];
-const sig = r => [r.artifact.revision, canonical(r.report?.edits ?? []), canonical(r.correspondence?.entries ?? [])];
+// Only the tables name their rules. Compare the structural edits shared by both implementations.
+const sig = r => [
+  r.artifact.revision,
+  canonical((r.report?.edits ?? []).map(({ rules, ...edit }) => edit)),
+  canonical(r.correspondence?.entries ?? []),
+];
 
 /** Every pipeline with simplify or fold; at each such step, apply `alt[name]` to the same input and compare. */
 async function compareOnCorpus(ids, alt) {
@@ -51,7 +56,7 @@ async function compareOnCorpus(ids, alt) {
   return { compared, changed, differ };
 }
 
-test(`B1: the tables give the hand-written passes' revisions, edits and correspondences (${FULL ? 'all projects' : 'subset'})`, { timeout: 600000 }, async () => {
+test(`B1: the tables give the hand-written passes' revisions, structural edits and correspondences (${FULL ? 'all projects' : 'subset'})`, { timeout: 600000 }, async () => {
   const res = await compareOnCorpus(FULL ? projectIds() : SUBSET, { simplify: R.simplifyHandwritten, fold: R.foldHandwritten });
   assert.deepEqual(res.differ, []);
   assert.ok(res.changed > 0, 'some steps change the program, so the comparison has something to compare');

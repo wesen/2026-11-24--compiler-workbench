@@ -113,3 +113,66 @@ under coalescing. The remaining review point is whether any other
 multiple-latch loop loses more from the more accurate invariant set than
 it gains from proper preheader placement. The paired corpus run measures
 that question.
+
+## Step 3 — Follow surviving edits and preserve reference comparisons
+
+The attribution API and its focused test passed before the LICM
+change. The test follows an executed Blend instruction from its hoisted
+statement through an earlier constant propagation and back to r0.
+VM script 03 credits each word once and also reports every LICM
+association. It reaches the 2,748 and 2,376 frame-address executions
+through the final CFG moves. The focused fixture regression asserts
+that both speed images stay at or below r0 for n = 12 and seed = 8.
+
+The first broad run found one rule comparison failure. The B1 test
+compared the complete edit record against a hand-written pass that has
+no named rules. I made its signature omit only the new rule evidence.
+It continues to compare artifact revisions, structural edits, and
+correspondences, including the deliberate changed-rule counterexample.
+The attribution test checks that the rule-table path supplies rule
+evidence.
+
+## Step 4 — Qualify the correction with backend extras
+
+The first paired corpus run showed zero regressions with default options
+or coalescing. With chains, coalescing and homes enabled, regex-nfa O2
+rose from 392,605 to 434,313 steps. The option ablation in script 05
+loaded a transpiled copy of the old pass from the current branch's
+history and reproduced both totals. Chained layout selected a variant
+with 41,337 extra reloads and 10,414 extra stores. Its cost estimate
+did not predict that dynamic effect.
+
+I tried sharing hoisted frame addresses of the same offset inside each
+combined loop. Script 06 transpiled the candidate pass with the locked
+TypeScript package and installed that one pass for checked O2 and speed
+runs. It measured regex O2 at 376,740 with all extras and the VM
+fixtures at 6,349 and 5,677 with coalescing. This left the backend's
+selection policy and the single-latch LICM path alone. The final corpus
+run used the normal build and named pipelines.
+
+A private tmux socket initially failed with `Operation not permitted`
+in the sandbox. The escalated tmux probe created the session in
+`dist/`, and the validation commands could then spawn isolated Node
+test workers there. Full test diagnostics and parity summaries were
+read from the command outputs.
+
+The preliminary script 06 total of 376,740 included direct benchmark
+calls to the `inRange` helper. I aligned the probe with the project's
+configured entry roots. The paired 100-case regex O2 result is 376,332
+with all backend extras enabled. All final corpus comparisons use entry
+roots consistently.
+
+## Step 5 — Verify and report the final build
+
+The final `npm run build` succeeded. The requested three test groups
+reported 408 passes, three skips and zero failures. The optimization
+parity command and both reference-check modes had 8,286 agreements
+and 14 inconclusives. The paired corpus comparator returned no
+regressions for O2 or speed in any of the three measured backend
+configurations. The report includes all 50 coalesced project rows and
+links the raw measurements for the other configurations.
+
+Review the shared-header grouping and address reuse in `src/typed/passes.ts`,
+then the reverse correspondence traversal in
+`src/typed/backend/attribution.ts`. The tool follows the pass's changes
+through the existing Typed revision and image correspondence.

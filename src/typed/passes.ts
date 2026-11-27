@@ -15,6 +15,7 @@ import { definePass, type Pass } from '../framework/passes/define-pass.js';
 import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
+  cfgOf,
   domView,
   hasEffect,
   isPure,
@@ -428,15 +429,28 @@ export const licm = typedPass({
   writes: ['stmts', 'values', 'locals', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts }) {
-    for (const L of facts.loops!) {
-      let pre = L.preheader;
+    // The analysis gives one natural loop per back edge. For code motion, use the
+    // whole region that shares a header so a sibling back edge stays in the loop.
+    const loops = new Map<string, Loop[]>();
+    for (const loop of facts.loops!) {
+      const group = loops.get(loop.head) ?? [];
+      group.push(loop);
+      loops.set(loop.head, group);
+    }
+    const cfg = cfgOf(f);
+    for (const [head, group] of loops) {
+      const [L] = group;
+      const body = new Set(group.flatMap(loop => loop.body));
+      const assigned = new Set(group.flatMap(loop => loop.assigned));
+      const outside = cfg.preds[head].filter(pred => !body.has(pred));
+      let pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
       if (!pre) {
         pre = tx.block({ because: [L.id], note: 'preheader' });
         tx.insert(tx.at.start(pre), tx.stmt({ op: 'br', to: L.head }, { because: [L.id] }), {
           because: [L.id],
         });
         for (const b of f.blocks) {
-          if (L.body.includes(b.id) || b.id === pre) continue;
+          if (body.has(b.id) || b.id === pre) continue;
           const last = lastStmt(st, b);
           if (!last) continue;
           for (const field of ['to', 'then', 'else'] as const)
@@ -444,7 +458,6 @@ export const licm = typedPass({
         }
         if (f.blocks[0].id === L.head) throw new TxError('unsupported', 'licm: a loop at the entry block');
       }
-      const assigned = new Set(L.assigned);
       const INV = [
         'get',
         'const',
@@ -474,12 +487,19 @@ export const licm = typedPass({
         if (v.op === 'get') return !assigned.has(v.imm as number);
         return v.args.every(inv);
       };
+      const addresses = new Map<number, { local: number; set: string }>();
       const hoist = (id: string): string => {
         const v = st.get(id) as ValueRec;
         if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
+          // A frame address is the same across all arms of a shared-header loop.
+          // Keep one live temporary per offset when pulling those arms together.
+          const offset = group.length > 1 && v.op === 'aaddr' ? (v.imm as number) : undefined;
+          const prior = offset === undefined ? undefined : addresses.get(offset);
+          if (prior) return tx.get(prior.local, { from: id, because: [prior.set] });
           const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
           const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
           tx.insert(tx.at.end(pre!), set, { because: [L.id] });
+          if (offset !== undefined) addresses.set(offset, { local: t, set });
           return tx.get(t, { from: id, because: [set] });
         }
         const args = v.args.map(hoist);
@@ -487,7 +507,7 @@ export const licm = typedPass({
           ? tx.make(v.op, ...args, { imm: v.imm, from: id, type: v.type ?? 'i32' })
           : id;
       };
-      for (const bid of L.body)
+      for (const bid of body)
         for (const sid of (st.get(bid) as BlockRec).stmts.slice()) {
           const s = st.get(sid) as StmtRec;
           for (const k of ['value', 'cond', 'addr'] as const)

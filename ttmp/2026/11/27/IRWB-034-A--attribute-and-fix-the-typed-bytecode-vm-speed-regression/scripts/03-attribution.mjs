@@ -12,8 +12,9 @@ const p = Program.fromProject(project);
 const result = await p.pipeline('speed');
 if (result.steps.some(s => s.rejected)) throw new Error(JSON.stringify(result.steps));
 const input = project.meta.inputs.runVm;
+const fold = p.revisions.findIndex(r => r.pass === 'fold');
 const licm = p.revisions.findIndex(r => r.pass === 'licm');
-const checkpoints = new Set([0, licm - 1, licm, p.rev]);
+const checkpoints = new Set([0, fold, licm - 1, licm, p.rev]);
 for (const rev of checkpoints) {
   if (rev < 0) continue;
   const lowered = lowerToImage(p.revisions[rev].artifact, { coalesce: true });

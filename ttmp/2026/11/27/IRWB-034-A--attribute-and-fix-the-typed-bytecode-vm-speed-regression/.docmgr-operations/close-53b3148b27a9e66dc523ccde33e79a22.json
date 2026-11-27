@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "173925426979d913e51a228e2015c7d06dfc032fd57dc8b821ca481abd132849",
+  "request": {
+    "ticket": "IRWB-034-A",
+    "status": "complete",
+    "intent": "",
+    "entry": "Fixed LICM placement and frame address reuse for shared loop headers. Verified both VM fixtures, the full requested test groups, parity, and all 50 corpus projects in three backend configurations."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-53b3148b27a9e66dc523ccde33e79a22",
+    "state": "committed",
+    "created_at": "2026-11-27T15:19:50.309668171Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "140d4ec40378ae1ac5f09f1a2109c67d9ca6c89346c59cb875b4fa9c17a51616",
+      "index.md": "078096d19c8cb777de9cf718c5bc7867135cd05740bb0c635617c40efa518e58"
+    },
+    "after": {
+      "changelog.md": "4b0113e63622e1f340c8687bd6157436b1fba81dbf9de5b783df90c851c99dbb",
+      "index.md": "9648275bd4f9fd4f760e4175311ae5df64c53bfc65faf67327211226c828b761"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "140d4ec40378ae1ac5f09f1a2109c67d9ca6c89346c59cb875b4fa9c17a51616",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKQ29tbWl0dGVkIHRoZSBkZXNpZ24gYXQgNjdiMmVhYiBhbmQgdGVzdGVkIHRoZSBUeXBlZCBleGVjdXRpb24gYXR0cmlidXRpb24gQVBJIGF0IDBmZDY3ZTUuCgojIyMgUmVsYXRlZCBGaWxlcwoKLSAvaG9tZS9tYW51ZWwvY29kZS93ZXNlbi8yMDI2LTExLTI0LS1jb21waWxlci13b3JrYmVuY2gvLmNsYXVkZS93b3JrdHJlZXMvZDEtc20taXJ3Yi0wMzQtYS9zcmMvdHlwZWQvYmFja2VuZC9hdHRyaWJ1dGlvbi50cyDigJQgUmV0dXJucyBpbnN0cnVjdGlvbiBjb3VudHMgd2l0aCBtdWx0aS1wYXNzIGxpbmVhZ2UKCiMjIDIwMjYtMTEtMjcKCkZpeGVkIExJQ00gcGxhY2VtZW50IGFuZCBmcmFtZSBhZGRyZXNzIHJldXNlIGZvciBzaGFyZWQgbG9vcCBoZWFkZXJzLiBWZXJpZmllZCBib3RoIFZNIGZpeHR1cmVzLCB0aGUgZnVsbCByZXF1ZXN0ZWQgdGVzdCBncm91cHMsIHBhcml0eSwgYW5kIGFsbCA1MCBjb3JwdXMgcHJvamVjdHMgaW4gdGhyZWUgYmFja2VuZCBjb25maWd1cmF0aW9ucy4K"
+    },
+    {
+      "path": "index.md",
+      "before": "078096d19c8cb777de9cf718c5bc7867135cd05740bb0c635617c40efa518e58",
+      "after": "LS0tClRpdGxlOiBBdHRyaWJ1dGUgYW5kIGZpeCB0aGUgVHlwZWQgYnl0ZWNvZGUgVk0gc3BlZWQgcmVncmVzc2lvbgpUaWNrZXQ6IElSV0ItMDM0LUEKU3RhdHVzOiBjb21wbGV0ZQpUb3BpY3M6CiAgICAtIGNvbXBpbGVyCiAgICAtIGlyCiAgICAtIHBlcmZvcm1hbmNlCkRvY1R5cGU6IGluZGV4CkludGVudDogbG9uZy10ZXJtCk93bmVyczogW10KUmVsYXRlZEZpbGVzOiBbXQpFeHRlcm5hbFNvdXJjZXM6IFtdClN1bW1hcnk6IE1lYXN1cmVkIFR5cGVkIExJQ00gcmVncmVzc2lvbiwgY29tcGlsZXIgZml4LCBhbmQgcmV1c2FibGUgUlYzMiBpbnN0cnVjdGlvbiBhdHRyaWJ1dGlvbi4KTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjdUMTA6MTk6NTAuMzA5NTIzNzY3LTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIEF0dHJpYnV0ZSBhbmQgZml4IHRoZSBUeXBlZCBieXRlY29kZSBWTSBzcGVlZCByZWdyZXNzaW9uCgojIyBSZXN1bHQKClR5cGVkIExJQ00gd2FzIHRyZWF0aW5nIHNpYmxpbmcgYmFjayBlZGdlcyBvZiBhIHNpbmdsZSBkaXNwYXRjaCBsb29wCmFzIGV4dGVybmFsIGVkZ2VzLiBHcm91cGluZyB0aGVtIGJ5IGhlYWRlciByZXN0b3JlcyBvbmUgcHJlaGVhZGVyIGFuZAprZWVwcyB0aGUgYWRkcmVzcyBjYWxjdWxhdGlvbnMgb2ZmIHRoZSBkaXNwYXRjaCBwYXRoLiBUaGUgbmV3CmF0dHJpYnV0aW9uIEFQSSBjb25uZWN0cyBleGVjdXRlZCBSVjMyIHdvcmRzIHRvIFR5cGVkIG9wdGltaXphdGlvbgplZGl0cyBhY3Jvc3MgcmV2aXNpb25zLgoKLSBbRGVzaWduXShkZXNpZ24tZG9jLzAxLWF0dHJpYnV0ZS1keW5hbWljLXJ2MzItY29zdC10by10eXBlZC1vcHRpbWl6YXRpb24tZGVjaXNpb25zLm1kKQotIFtGaW5hbCByZXBvcnRdKGFuYWx5c2lzLzAxLWJ5dGVjb2RlLXZtLXNwZWVkLWF0dHJpYnV0aW9uLWFuZC12YWxpZGF0aW9uLm1kKQotIFtJbXBsZW1lbnRhdGlvbiBkaWFyeV0obG9nLzAxLWltcGxlbWVudGF0aW9uLWRpYXJ5Lm1kKQotIFtSZXByb2R1Y3Rpb24gc2NyaXB0cyBhbmQgbWVhc3VyZW1lbnRzXShzY3JpcHRzLykKLSBbVGFza3NdKHRhc2tzLm1kKQotIFtDaGFuZ2Vsb2ddKGNoYW5nZWxvZy5tZCkK"
+    }
+  ]
+}

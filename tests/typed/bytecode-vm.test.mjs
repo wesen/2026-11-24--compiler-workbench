@@ -200,6 +200,7 @@ test('generated and exhaustive VM cases agree across evaluators and RV32 compile
         cases++;
 
         if (n === 12 && seed === 8) {
+          assert.ok(speedRun.steps <= r0Run.steps, `speed instruction regression at entry ${entry}`);
           const counts = [r0Run.steps, speedRun.steps, scalarRun.steps];
           const ratios = counts.map(steps => (steps / oracle.dispatches).toFixed(2));
           t.diagnostic(`entry ${entry}, ${oracle.dispatches} guest instructions. RV32 r0/speed/specialized: ${counts.join(' / ')} instructions, ${ratios.join(' / ')} per guest instruction`);
