@@ -136,12 +136,16 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     },
   });
 
-  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>, options?: { fuse?: boolean }) => {
     const relation = 'exact' as const;
     const manager = new AnalysisManager();
     try {
       if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
-      else await manager.execute(pass, { baseline, fn });
+      else await manager.verifyTransformation(
+        { baseline, fn },
+        { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn), options)) },
+        pass,
+      );
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

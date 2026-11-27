@@ -15,8 +15,8 @@ test('CUDA source is deterministic and preloads every emitted statement kernel b
   const program = compileTix(
     'fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }',
   );
-  const source = cudaSource(program, 'second');
-  assert.equal(source, cudaSource(program, 'second'));
+  const source = cudaSource(program, 'second', { fuse: false });
+  assert.equal(source, cudaSource(program, 'second', { fuse: false }));
   assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
   assert.ok(
     source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),

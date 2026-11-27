@@ -1,4 +1,5 @@
 import { plain, visit, width, type Affine, type Expr, type Fn, type Tensor } from './model.js';
+import { inline } from './passes.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -253,7 +254,8 @@ function emitKernel(
   };
 }
 
-export function emitCuda(fn: Fn): string {
+export function emitCuda(fn: Fn, options?: { fuse?: boolean }): string {
+  if (options?.fuse !== false) fn = inline(fn, true);
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));

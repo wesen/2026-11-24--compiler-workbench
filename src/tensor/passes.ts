@@ -18,7 +18,7 @@ function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
     e.kind === 'load' ? { ...e, indices: e.indices.map(a => substitute(a, bindings)) } : e,
   );
 }
-function inline(fn: Fn): Fn {
+export function inline(fn: Fn, fuseReductions = false): Fn {
   const statements = [...fn.statements];
   for (let i = 0; i < statements.length; i++) {
     const p = statements[i];
@@ -27,7 +27,6 @@ function inline(fn: Fn): Fn {
     visit(p.expr, e => {
       if (e.kind === 'reduce') pointwise = false;
     });
-    if (!pointwise) continue;
     let uses = 0,
       consumer = -1;
     for (let j = i + 1; j < statements.length; j++)
@@ -39,6 +38,33 @@ function inline(fn: Fn): Fn {
       });
     if (uses !== 1) continue;
     const s = statements[consumer];
+    if (pointwise && fuseReductions) {
+      let insideReduction = false;
+      const inspect = (e: Expr, nested: boolean) => {
+        if (e.kind === 'load' && e.name === p.name && nested) insideReduction = true;
+        if (e.kind === 'op') e.args.forEach(x => inspect(x, nested));
+        if (e.kind === 'reduce') inspect(e.body, true);
+      };
+      inspect(s.expr, false);
+      if (insideReduction) continue;
+    }
+    if (!pointwise) {
+      if (!fuseReductions) continue;
+      // Only fuse a reduction into the same output coordinate, outside any consumer reduction.
+      let legal = false;
+      const inspect = (e: Expr, inReduction: boolean) => {
+        if (e.kind === 'load' && e.name === p.name) {
+          legal = !inReduction && p.axes.length === s.axes.length &&
+            e.indices.every((a, k) => a.constant === 0 && a.terms.length === 1 &&
+              a.terms[0][0] === s.axes[k].id && a.terms[0][1] === 1) &&
+            JSON.stringify(p.shape) === JSON.stringify(s.shape);
+        }
+        if (e.kind === 'op') e.args.forEach(x => inspect(x, inReduction));
+        if (e.kind === 'reduce') inspect(e.body, true);
+      };
+      inspect(s.expr, false);
+      if (!legal) continue;
+    }
     statements[consumer] = {
       ...s,
       expr: mapExpr(s.expr, e => {
