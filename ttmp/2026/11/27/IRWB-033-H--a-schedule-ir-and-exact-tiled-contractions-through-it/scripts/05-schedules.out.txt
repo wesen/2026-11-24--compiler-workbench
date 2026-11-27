@@ -1,0 +1,22 @@
+
+== matmul: 1 kernel(s) fused, 1 unfused
+  k0: gemm [y] depth 2 stored ["y"] threads {"cap":128,"kind":"cap"}
+      contraction on i2, order ascending/ascending, peel true, unroll {"patch":true,"reduction":true}, fallback true
+      variants 64x64 tile 16 patch 8x4 (128 threads)
+               32x32 tile 16 patch 4x4 (64 threads)
+               64x64 tile 16 patch 4x4 (256 threads)
+
+== softmax: 1 kernel(s) fused, 4 unfused
+  k0: block [m, e, s, y] depth 1 stored ["y"] gated threads {"cap":128,"kind":"cap"}
+
+== layernorm: 1 kernel(s) fused, 4 unfused
+  k0: block [mean, centered, variance, y] depth 1 stored ["y"] gated threads {"cap":64,"kind":"cap"}
+
+== attention: 1 kernel(s) fused, 6 unfused
+  k0: block [score, shift, e, z, weight, out] depth 1 stored ["out"] gated threads {"cap":64,"kind":"cap"}
+
+== mlp: 1 kernel(s) fused, 3 unfused
+  k0: block [h, g, y] depth 1 stored ["y"] gated threads {"cap":64,"kind":"cap"}
+
+== conv2d: 1 kernel(s) fused, 1 unfused
+  k0: thread [out] depth 4 stored ["out"] threads {"cap":128,"kind":"cap"}

@@ -247,3 +247,33 @@ Following the brief's protocol (5 interleaved `benchmark: true` calls per side, 
 - Split-K and parallel folds (they leave the bit-equivalence class; the IR has room via `Contraction`).
 - The cost model with per-term costs from the IR and the SM's limits read from the device, in place of two fitted constants.
 - Emitting the schedule IR as the artifact the contract checks, and a correspondence that follows one output element's accumulation through every step (started here: `orderOf` per statement; per element is a refinement).
+
+## As built (differences from the design above, and why)
+
+Five points where the implementation settled differently. Each is measured or forced by a measurement.
+
+1. **The pass order is tile → patch → block tile → unroll → variants,** not tile → block → patch. `bind-block-tile`
+   divides by the thread patch to get the block's thread count, so with the block tile bound first (64×64) and the
+   patch still 1×1, the pass refused "4096 threads are outside 32..1024". The patch is the divisor, so it is bound
+   first.
+2. **The tile sizes are a launch-time choice, not a compile-time one.** `cudaSource(program, fn)` has no shape
+   values, so a compile-time tile would be wrong at one of 512³ and 4096³ (script 02: 32×32 is 11% better at 512³,
+   64×64 with an 8×4 patch is 25% better at 4096³). `Contraction.variants` lists the layouts, the kernel is a
+   `template <int V>` with one body per layout (so the kernel count stays 1), and the host picks with the cost
+   model over the shape values. This is the brief's "a rule or a strategy that picks schedules from the shapes,
+   without timing candidates".
+3. **`Contraction.fallback` was added.** The first measurement of the tiled lowering was *slower* than stage 2 at
+   three small shapes (300×200×100, 128³, 17×4096×33): the tiled grid has 1 to 16 blocks for 48 SMs. The kernel
+   therefore also holds the statement's stage-2 form as one more instantiation, and the launch runs it when the
+   chosen layout's grid is below one block per SM. The threshold is that comparison, and the measurements behind it
+   are in the field's comment: tiled wins by 3 to 8 times from 512³ (64 blocks) up, and loses below.
+4. **`steps` is not a field of the artifact.** A pass does not own the pass chain's revisions, so `scheduleOf`
+   returns `{ schedule, steps }` and the CUDA unit carries the schedule and (in `tensor.lower-cuda`) the steps.
+   The schedule artifacts themselves form the revision chain; each step's artifact revision is in `steps`.
+5. **`emitUnfused` exists** so that `fuse: false` prints from the same printer with a schedule built from
+   `unfusedPlan`, and the rule is told `{ tile: false }`. That keeps stage 2's bytes exactly (the digest test in
+   `tests/tensor/fusion.test.mjs`), which a rule that tiles any thread-mode contraction would otherwise break.
+
+The framework changes are the two named above (`SyncClaim` in `applyNativePassSync`, `runPlanSync` in
+`src/framework/strategy/sync.ts`) plus `syncPassAlgorithm` in `src/framework/passes/bridge.ts`, the synchronous twin
+of the existing `passAlgorithm`.

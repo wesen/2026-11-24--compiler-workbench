@@ -1,0 +1,13 @@
+matmul    fused   accepted  cold 4686 ms, repeat 184 ms
+matmul    unfused accepted  cold 4086 ms, repeat 67 ms
+softmax   fused   accepted  cold 4404 ms, repeat 57 ms
+softmax   unfused accepted  cold 3813 ms, repeat 89 ms
+layernorm fused   accepted  cold 4173 ms, repeat 89 ms
+layernorm unfused accepted  cold 3827 ms, repeat 34 ms
+attention fused   accepted  cold 4585 ms, repeat 97 ms
+attention unfused accepted  cold 3512 ms, repeat 73 ms
+mlp       fused   accepted  cold 4122 ms, repeat 79 ms
+mlp       unfused accepted  cold 3341 ms, repeat 60 ms
+conv2d    fused   accepted  cold 5425 ms, repeat 1883 ms
+conv2d    unfused accepted  cold 1538 ms, repeat 2559 ms
+[{"program":"matmul","fuse":true,"accepted":true,"coldMs":4686,"repeatMs":184},{"program":"matmul","fuse":false,"accepted":true,"coldMs":4086,"repeatMs":67},{"program":"softmax","fuse":true,"accepted":true,"coldMs":4404,"repeatMs":57},{"program":"softmax","fuse":false,"accepted":true,"coldMs":3813,"repeatMs":89},{"program":"layernorm","fuse":true,"accepted":true,"coldMs":4173,"repeatMs":89},{"program":"layernorm","fuse":false,"accepted":true,"coldMs":3827,"repeatMs":34},{"program":"attention","fuse":true,"accepted":true,"coldMs":4585,"repeatMs":97},{"program":"attention","fuse":false,"accepted":true,"coldMs":3512,"repeatMs":73},{"program":"mlp","fuse":true,"accepted":true,"coldMs":4122,"repeatMs":79},{"program":"mlp","fuse":false,"accepted":true,"coldMs":3341,"repeatMs":60},{"program":"conv2d","fuse":true,"accepted":true,"coldMs":5425,"repeatMs":1883},{"program":"conv2d","fuse":false,"accepted":true,"coldMs":1538,"repeatMs":2559}]

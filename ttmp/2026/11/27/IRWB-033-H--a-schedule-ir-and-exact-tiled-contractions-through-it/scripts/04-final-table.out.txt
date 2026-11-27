@@ -5,3 +5,7 @@ matmul    {"M":300,"K":200,"N":100}              fused 0.0135 ms  unfused 0.0128
 matmul    {"M":128,"K":128,"N":128}              fused 0.0106 ms  unfused 0.0107 ms  ratio 0.988  0.40 TFLOP/s
 matmul    {"M":17,"K":4096,"N":33}               fused 0.1671 ms  unfused 0.1690 ms  ratio 0.989  0.03 TFLOP/s
 attention {"Q":1024,"K":1024,"D":64,"V":64}      fused 0.7447 ms  unfused 1.0505 ms  ratio 0.709
+mlp       {"N":1024,"D":256,"H":1024,"O":256}    fused 0.6250 ms  unfused 0.9427 ms  ratio 0.663
+conv2d    {"N":8,"C":16,"H":64,"W":64,"O":32}    fused 0.1662 ms  unfused 0.1662 ms  ratio 1.000
+softmax   {"N":4096,"C":1024}                    fused 0.3844 ms  unfused 0.8092 ms  ratio 0.475
+layernorm {"N":4096,"D":1024}                    fused 0.1785 ms  unfused 0.4770 ms  ratio 0.374

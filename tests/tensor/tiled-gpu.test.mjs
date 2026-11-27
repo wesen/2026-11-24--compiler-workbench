@@ -49,13 +49,26 @@ test('GB10: a padded reduction tile adds no term, and an odd reduction keeps k a
   const inputs = { a: { shape: [3, 40], data: fill([3, 40]) }, b: { shape: [40, 2], data: fill([40, 2], 5) } };
   const program = compileTix('fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = sum(k) a[i,k] * b[k,j]; return y; }');
   same(await runTixCuda(program, 'f', inputs), runTix(program, 'f', inputs));
-  // the meaning's order matters: a reversed reduction of the same operands must differ somewhere
-  const reversed = compileTix(
-    'fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = sum(k) a[i,K-1-k] * b[K-1-k,j]; return y; }',
-  );
-  const a = await runTixCuda(program, 'f', inputs),
-    b = await runTixCuda(reversed, 'f', inputs);
-  assert.notDeepEqual(Array.from(words(a)), Array.from(words(b)));
+  // and the comparison is not vacuous: on the same operands the meaning's own order differs from the reversed one
+  const [M, K, N] = [3, 40, 2];
+  const a = inputs.a.data,
+    b = inputs.b.data;
+  const f = Math.fround;
+  const order = (descending, i, j) => {
+    let acc = 0;
+    for (let step = 0; step < K; step++) {
+      const k = descending ? K - 1 - step : step;
+      acc = f(acc + f(a[i * K + k] * b[k * N + j]));
+    }
+    return acc;
+  };
+  let differs = 0;
+  for (let i = 0; i < M; i++)
+    for (let j = 0; j < N; j++) if (order(false, i, j) !== order(true, i, j)) differs++;
+  assert.ok(differs > 0, 'the reversed order must differ on this input, or the check proves nothing');
+  const gpu = await runTixCuda(program, 'f', inputs);
+  for (let i = 0; i < M; i++)
+    for (let j = 0; j < N; j++) assert.equal(gpu.data[i * N + j], order(false, i, j), `at [${i}, ${j}]`);
 });
 
 test('GB10: the contract accepts the tiled matmul as exact, and a swapped operand is left untiled', async () => {
