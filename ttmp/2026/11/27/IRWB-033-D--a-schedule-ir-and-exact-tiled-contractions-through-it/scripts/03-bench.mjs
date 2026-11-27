@@ -2,7 +2,8 @@
 // the sides (A B A B ...), median of the 5. Sides are `fused` and `unfused` (runTixCuda), or with --variants each
 // variant of the fused source forced (runCudaBatch --variant=N), for the launch rule. Every call's output SHA-256
 // is recorded; all sides must agree.
-//   node 03-bench.mjs [--variants] [--calls 5] case ...      (cases below; `corpus` = the six corpus programs)
+// With --base <dir>, a third side `base` is the fused lowering of another build (<dir>/dist, the base commit).
+//   node 03-bench.mjs [--variants] [--base dir] [--calls 5] case ...  (cases below; `corpus` = the six programs)
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { seededRandom } from '../../../../../../dist/framework/contracts/index.js';
@@ -40,8 +41,10 @@ for (const [m, n, k] of [[256, 256, 1], [256, 256, 3], [1, 1, 4096], [4096, 1, 1
   cases[`matmul-${m}x${n}x${k}`] = mm(m, n, k);
 const args = process.argv.slice(2);
 const variants = args.includes('--variants');
+const baseDir = args.includes('--base') ? args[args.indexOf('--base') + 1] : undefined;
+const base = baseDir && (await import(baseDir + '/dist/tensor/index.js'));
 const calls = args.includes('--calls') ? +args[args.indexOf('--calls') + 1] : 5;
-let names = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--calls');
+let names = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--calls' && args[i - 1] !== '--base');
 if (names.includes('corpus')) names = ['matmul-512', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2d', ...names.filter(n => n !== 'corpus')];
 const median = xs => [...xs].sort((a, b) => a - b)[xs.length >> 1];
 for (const name of names) {
@@ -60,7 +63,7 @@ for (const name of names) {
   const source = cudaSource(program, fn.name);
   const sides = variants
     ? Array.from({ length: variantCount(source) }, (_, v) => 'v' + v)
-    : ['fused', 'unfused'];
+    : ['fused', 'unfused', ...(base ? ['base'] : [])];
   const times = Object.fromEntries(sides.map(s => [s, []])),
     digests = new Set();
   let gates;
@@ -68,7 +71,9 @@ for (const name of names) {
     for (const side of sides) {
       const result = side.startsWith('v')
         ? (await runCudaBatch(source, fn, [inputs], { benchmark: true, variant: +side.slice(1) }))[0]
-        : await runTixCuda(program, fn.name, inputs, { benchmark: true, fuse: side === 'fused' });
+        : side === 'base'
+          ? await base.runTixCuda(base.compileTix(text), fn.name, inputs, { benchmark: true })
+          : await runTixCuda(program, fn.name, inputs, { benchmark: true, fuse: side === 'fused' });
       times[side].push(result.gpuMs);
       gates ??= result.gates;
       digests.add(createHash('sha256').update(new Uint8Array(result.data.buffer)).digest('hex').slice(0, 16));

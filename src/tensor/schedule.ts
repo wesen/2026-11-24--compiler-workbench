@@ -10,7 +10,12 @@
 // Scheduling steps are v6 passes with a legality check decided from the IR (`legal`) and a correspondence to the
 // revision before. Every application is gated by `accumulationOrder`, which must not change.
 import { defineIR, type CheckResult } from '../framework/contracts/index.js';
-import { defineAdapter, type CorrespondenceEntry, type IREntity, type IRRelation } from '../framework/ir/index.js';
+import {
+  defineAdapter,
+  type CorrespondenceEntry,
+  type IREntity,
+  type IRRelation,
+} from '../framework/ir/index.js';
 import { applyNativePassSync, definePass, type PassResult } from '../framework/passes/index.js';
 import { createIRArtifact } from '../framework/ir/index.js';
 import type { Artifact } from '../framework/core/types.js';
@@ -19,8 +24,25 @@ import { visit, type Expr, type Fn, type Statement } from './model.js';
 
 export type Dim = 'b' | 'm' | 'n' | 'r';
 export const dimsInOrder: readonly Dim[] = ['b', 'm', 'n', 'r'];
-export type Bind = 'serial' | 'thread' | 'block.x' | 'block.y' | 'block.z' | 'thread.x' | 'thread.y' | 'unroll';
-const binds: readonly Bind[] = ['serial', 'thread', 'block.x', 'block.y', 'block.z', 'thread.x', 'thread.y', 'unroll'];
+export type Bind =
+  | 'serial'
+  | 'thread'
+  | 'block.x'
+  | 'block.y'
+  | 'block.z'
+  | 'thread.x'
+  | 'thread.y'
+  | 'unroll';
+const binds: readonly Bind[] = [
+  'serial',
+  'thread',
+  'block.x',
+  'block.y',
+  'block.z',
+  'thread.x',
+  'thread.y',
+  'unroll',
+];
 export interface Loop {
   /** `<dim>.<level>`; level 0 is the outermost part of the dim. */
   id: string;
@@ -126,20 +148,17 @@ function validateVariant(v: Variant) {
     require(levels.length, `No loop over dim ${d}`);
     levels.forEach((l, i) => {
       require(l.level === i && l.id === `${d}.${i}`, 'Invalid loop levels');
-      require(
-        i === 0
-          ? l.factor === null || (Number.isSafeInteger(l.factor) && l.factor > 0)
-          : Number.isSafeInteger(l.factor) && l.factor! > 0,
-        'Invalid loop factor',
-      );
+      require(i === 0
+        ? l.factor === null || (Number.isSafeInteger(l.factor) && l.factor > 0)
+        : Number.isSafeInteger(l.factor) && l.factor! > 0, 'Invalid loop factor');
       require(binds.includes(l.bind), 'Invalid loop binding');
     });
   }
   for (const s of v.stages)
-    require(
-      ['m', 'n'].includes(s.operand) && ids.has(s.at) && s.scope === 'shared' && dimsInOrder.includes(s.fast),
-      'Invalid stage',
-    );
+    require(['m', 'n'].includes(s.operand) &&
+      ids.has(s.at) &&
+      s.scope === 'shared' &&
+      dimsInOrder.includes(s.fast), 'Invalid stage');
 }
 function validate(value: unknown) {
   const s = value as Schedule;
@@ -147,22 +166,19 @@ function validate(value: unknown) {
   require(new Set(s.kernels.map(k => k.name)).size === s.kernels.length, 'Duplicate kernel name');
   const statements = new Set(s.fn.statements.map(t => t.name));
   const covered = s.kernels.flatMap(k => k.group.statements);
-  require(
-    covered.length === statements.size && covered.every(n => statements.has(n)),
-    'Kernels must cover every statement once',
-  );
+  require(covered.length === statements.size &&
+    covered.every(n => statements.has(n)), 'Kernels must cover every statement once');
   for (const k of s.kernels) {
     require(['pointwise', 'rows', 'contraction'].includes(k.kind), 'Invalid kernel kind');
     if (k.kind !== 'contraction') continue;
     require(k.group.statements.includes(k.contraction), 'Contraction outside its kernel');
     require(k.variants.length > 0, 'A contraction kernel needs a variant');
     k.variants.forEach(validateVariant);
-    require(
-      k.select.length > 0 &&
-        k.select.every(e => Number.isSafeInteger(e.variant) && e.variant >= 0 && e.variant < k.variants.length) &&
-        k.select.at(-1)!.minBlocks === 0,
-      'Invalid variant selection',
-    );
+    require(k.select.length > 0 &&
+      k.select.every(
+        e => Number.isSafeInteger(e.variant) && e.variant >= 0 && e.variant < k.variants.length,
+      ) &&
+      k.select.at(-1)!.minBlocks === 0, 'Invalid variant selection');
   }
 }
 function* entities(s: Schedule): Generator<IREntity> {
@@ -170,12 +186,18 @@ function* entities(s: Schedule): Generator<IREntity> {
     const { name, kind, group } = k;
     const attributes: Record<string, unknown> = { kind, group };
     if (k.kind === 'contraction')
-      Object.assign(attributes, { contraction: k.contraction, dims: k.dims, operands: k.operands, select: k.select });
+      Object.assign(attributes, {
+        contraction: k.contraction,
+        dims: k.dims,
+        operands: k.operands,
+        select: k.select,
+      });
     yield { id: name, kind: 'kernel', attributes };
     if (k.kind !== 'contraction') continue;
     for (const [v, variant] of k.variants.entries()) {
       yield { id: `${name}/v${v}`, kind: 'variant', attributes: { order: variant.loops.map(l => l.id) } };
-      for (const l of variant.loops) yield { id: `${name}/v${v}/${l.id}`, kind: 'loop', attributes: { ...l } };
+      for (const l of variant.loops)
+        yield { id: `${name}/v${v}/${l.id}`, kind: 'loop', attributes: { ...l } };
       for (const st of variant.stages)
         yield { id: `${name}/v${v}/stage.${st.operand}`, kind: 'stage', attributes: { ...st } };
     }
@@ -215,7 +237,8 @@ function byId(s: Schedule) {
 export const ScheduleIR = defineIR<Schedule>({
   id: 'tensor.schedule',
   version: '1',
-  description: 'A Tix function and the schedule of its kernels: fused groups and tiled contraction loop nests',
+  description:
+    'A Tix function and the schedule of its kernels: fused groups and tiled contraction loop nests',
   validate,
   entities: s => [...entities(s)].map(e => e.id),
 });
@@ -344,7 +367,10 @@ const editable = (s: Schedule): Schedule => ({
     k.kind === 'contraction'
       ? {
           ...k,
-          variants: k.variants.map(v => ({ loops: v.loops.map(l => ({ ...l })), stages: v.stages.map(x => ({ ...x })) })),
+          variants: k.variants.map(v => ({
+            loops: v.loops.map(l => ({ ...l })),
+            stages: v.stages.map(x => ({ ...x })),
+          })),
           select: k.select.map(e => ({ ...e })),
         }
       : k,
@@ -377,16 +403,22 @@ interface VariantRef {
   variant: number;
 }
 const variantOf = (s: Schedule, p: VariantRef) => contractionKernel(s, p.kernel)?.variants[p.variant];
-const loopOf = (s: Schedule, p: VariantRef & { loop: string }) => variantOf(s, p)?.loops.find(l => l.id === p.loop);
+const loopOf = (s: Schedule, p: VariantRef & { loop: string }) =>
+  variantOf(s, p)?.loops.find(l => l.id === p.loop);
 
 /** Schedule kernels for a fusion plan: block-mode groups are rows kernels, the others pointwise. */
 export function scheduleKernels(plan: FusionPlan): ScheduleKernel[] {
-  return plan.groups.map(group => ({ name: group.kernel, kind: group.mapping === 'block' ? 'rows' : 'pointwise', group }));
+  return plan.groups.map(group => ({
+    name: group.kernel,
+    kind: group.mapping === 'block' ? 'rows' : 'pointwise',
+    group,
+  }));
 }
 export function initialSchedule(fn: Fn, plan: FusionPlan): Artifact<Schedule> {
   return createIRArtifact(scheduleAdapter, 'tix-schedule/' + fn.name, { fn, kernels: scheduleKernels(plan) });
 }
-const tileable = (fn: Fn) => fn.statements.filter(s => typeof contractionForm(s) !== 'string').map(s => s.name);
+const tileable = (fn: Fn) =>
+  fn.statements.filter(s => typeof contractionForm(s) !== 'string').map(s => s.name);
 
 /** Fission: re-plan fusion so that no tileable contraction is computed in block mode. */
 export const isolatePass = schedulePass<{}>(
@@ -409,14 +441,26 @@ export const isolatePass = schedulePass<{}>(
       while (grew) {
         grew = false;
         for (const n of kernels)
-          if (!to.has(n.name) && n.group.statements.some(t => s.kernels.some(o => from.has(o.name) && o.group.statements.includes(t))))
+          if (
+            !to.has(n.name) &&
+            n.group.statements.some(t =>
+              s.kernels.some(o => from.has(o.name) && o.group.statements.includes(t)),
+            )
+          )
             (to.add(n.name), (grew = true));
         for (const o of s.kernels)
-          if (!from.has(o.name) && o.group.statements.some(t => kernels.some(n => to.has(n.name) && n.group.statements.includes(t))))
+          if (
+            !from.has(o.name) &&
+            o.group.statements.some(t => kernels.some(n => to.has(n.name) && n.group.statements.includes(t)))
+          )
             (from.add(o.name), (grew = true));
       }
       from.forEach(n => left.delete(n));
-      entries.push({ from: [...from], to: [...to], relation: from.size === 1 && to.size === 1 ? 'retained' : 'refused-fusion' });
+      entries.push({
+        from: [...from],
+        to: [...to],
+        relation: from.size === 1 && to.size === 1 ? 'retained' : 'refused-fusion',
+      });
     }
     return { native: { ...s, kernels }, correspondence: entries };
   },
@@ -431,7 +475,8 @@ export const contractionPass = schedulePass<{ kernel: string }>(
     if (k?.kind !== 'pointwise') return no(`${kernel} is not a pointwise kernel`);
     const members = k.group.statements.map(n => s.fn.statements.find(t => t.name === n)!);
     const reducing = members.filter(m => reductions(m.expr).length);
-    if (reducing.length !== 1) return no(`${kernel} has ${reducing.length} members with a reduction, not one`);
+    if (reducing.length !== 1)
+      return no(`${kernel} has ${reducing.length} members with a reduction, not one`);
     const form = contractionForm(reducing[0], new Set(k.group.statements));
     return typeof form === 'string' ? no(`${reducing[0].name}: ${form}`) : ok;
   },
@@ -498,17 +543,26 @@ export const splitPass = schedulePass<VariantRef & { loop: string; factor: numbe
     const l = v.loops.find(x => x.id === p.loop)!;
     const prefix = `${p.kernel}/v${p.variant}/`;
     const entries: CorrespondenceEntry[] = [];
-    const deeper = v.loops.filter(x => x.dim === l.dim && x.level > l.level).sort((a, b) => b.level - a.level);
+    const deeper = v.loops
+      .filter(x => x.dim === l.dim && x.level > l.level)
+      .sort((a, b) => b.level - a.level);
     for (const x of deeper) {
       const id = `${x.dim}.${x.level + 1}`;
       entries.push({ from: [prefix + x.id], to: [prefix + id], relation: 'renamed' });
       Object.assign(x, { id, level: x.level + 1 });
     }
-    const inner: Loop = { id: `${l.dim}.${l.level + 1}`, dim: l.dim, level: l.level + 1, factor: p.factor, bind: 'serial' };
+    const inner: Loop = {
+      id: `${l.dim}.${l.level + 1}`,
+      dim: l.dim,
+      level: l.level + 1,
+      factor: p.factor,
+      bind: 'serial',
+    };
     if (l.factor !== null) l.factor /= p.factor;
     v.loops.splice(v.loops.indexOf(l) + 1, 0, inner);
     entries.push({ from: [prefix + l.id], to: [prefix + l.id, prefix + inner.id], relation: 'split' });
-    for (const st of v.stages) if (deeper.some(x => x.id === st.at)) throw Error('unreachable: stage at a renamed loop');
+    for (const st of v.stages)
+      if (deeper.some(x => x.id === st.at)) throw Error('unreachable: stage at a renamed loop');
     return { native: s, correspondence: entries };
   },
 );
@@ -576,11 +630,13 @@ export const stagePass = schedulePass<VariantRef & { operand: 'm' | 'n'; at: str
     if (!v || !at) return no(`no loop ${p.at} in ${p.kernel} variant ${p.variant}`);
     if (at.dim !== 'r') return no(`${p.at} is not a reduction loop`);
     if (v.stages.some(x => x.operand === p.operand)) return no(`the ${p.operand} operand is already staged`);
-    if (p.fast !== 'r' && p.fast !== p.operand) return no(`the ${p.operand} operand does not vary with ${p.fast}`);
+    if (p.fast !== 'r' && p.fast !== p.operand)
+      return no(`the ${p.operand} operand does not vary with ${p.fast}`);
     const n = tileElements(v, p.operand, p.at);
     if (n === undefined) return no('a loop inside the stage has no fixed number of iterations');
     // half the limit: the other operand's tile and the padding of four floats per row share it
-    if (n * 4 * 2 > sharedTileLimit) return no(`the tile (${n} floats) does not fit ${sharedTileLimit} bytes`);
+    if (n * 4 * 2 > sharedTileLimit)
+      return no(`the tile (${n} floats) does not fit ${sharedTileLimit} bytes`);
     return ok;
   },
   (s, p) => {
@@ -597,7 +653,8 @@ export const selectPass = schedulePass<{ kernel: string; rule: { variant: number
     const k = contractionKernel(s, kernel);
     if (!k) return no(`${kernel} is not a contraction kernel`);
     if (!rule.length || rule.at(-1)!.minBlocks !== 0) return no('the last entry must accept every grid');
-    if (rule.some(e => !k.variants[e.variant] || !(e.minBlocks >= 0))) return no('the rule names a missing variant');
+    if (rule.some(e => !k.variants[e.variant] || !(e.minBlocks >= 0)))
+      return no('the rule names a missing variant');
     return ok;
   },
   (s, { kernel, rule }) => {

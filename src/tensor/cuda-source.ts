@@ -162,7 +162,9 @@ if (variantMain === gatedMain) throw Error('The gated CUDA main no longer has th
 export const takesVariant = (source: string) => source.includes(variantSupport);
 /** The number of variants of the source's contraction kernels (the largest), or 0 without one. */
 export const variantCount = (source: string) =>
-  takesVariant(source) ? Math.max(...[...source.matchAll(/if constexpr \(V == (\d+)\)/g)].map(m => +m[1])) + 1 : 0;
+  takesVariant(source)
+    ? Math.max(...[...source.matchAll(/if constexpr \(V == (\d+)\)/g)].map(m => +m[1])) + 1
+    : 0;
 
 function affine(a: Affine, name: (key: string) => string): string {
   const terms = a.terms.map(([key, coefficient]) =>
@@ -685,8 +687,8 @@ export function emitCuda(
           kernelWriter(dims, load, undefined, undefined, reduced),
         )
       : g.statements.length === 1
-      ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
-      : emitGroup(g, dims, tensors, name),
+        ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
+        : emitGroup(g, dims, tensors, name),
   );
   const stored = new Set(plan.groups.flatMap(g => g.stored));
   const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
@@ -765,9 +767,7 @@ export function emitCuda(
     ...kernels.map(k => k.code),
     host.join('\n'),
     contractions.size ? variantMain : gated ? gatedMain : main,
-  ].join(
-    '\n\n',
-  );
+  ].join('\n\n');
 }
 
 /** IRWB-033-D: print a schedule. With no contraction kernel this is `emitCuda` of the schedule's fusion plan. */
