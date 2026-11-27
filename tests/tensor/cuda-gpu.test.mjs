@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { seededRandom } from '../../dist/framework/contracts/index.js';
 import {
   checkLowering,
   compileTix,
@@ -19,9 +20,42 @@ import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract
 
 const buf = (shape, data) => ({ shape, data: Float32Array.from(data) });
 const words = ({ data }) => new Uint32Array(data.buffer, data.byteOffset, data.length);
+// The exact relation compares NaN as a class: the GB10 and V8 write different NaN words.
+const identical = (a, b) =>
+  JSON.stringify(a.shape) === JSON.stringify(b.shape) &&
+  words(a).length === words(b).length &&
+  words(a).every((w, i) => w === words(b)[i] || (Number.isNaN(a.data[i]) && Number.isNaN(b.data[i])));
+const inputs = (fn, assignment, fill) => {
+  const tensors = {};
+  const dims = new Map(Object.entries(assignment));
+  for (const p of fn.params) {
+    const shape = p.shape.map(d =>
+      d.terms.length === 1 && d.terms[0][1] === 1 && d.constant === 0
+        ? (dims.get(d.terms[0][0]) ?? 1)
+        : d.constant,
+    );
+    shape.forEach((v, i) => {
+      const key = p.shape[i].terms[0]?.[0];
+      if (key && !dims.has(key)) dims.set(key, v);
+    });
+    tensors[p.name] = buf(
+      shape,
+      Array.from({ length: shape.reduce((a, b) => a * b, 1) }, () => fill()),
+    );
+  }
+  return tensors;
+};
 
 for (const name of ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2d']) {
-  test('GB10 checks ' + name + ' before and after optimization', async () => {
+  const sizes = {
+    matmul: { M: 32, K: 16, N: 24 },
+    softmax: { N: 64, C: 32 },
+    layernorm: { N: 64, D: 32 },
+    attention: { Q: 32, K: 24, D: 8, V: 12 },
+    mlp: { N: 32, D: 16, H: 24, O: 12 },
+    conv2d: { N: 2, C: 3, H: 8, W: 8, O: 3 },
+  }[name];
+  test('GB10 checks ' + name + ' fused and unfused, before and after optimization', async () => {
     const source = await readFile(
       new URL('../../corpus/tensor/' + name + '/main.tix', import.meta.url),
       'utf8',
@@ -29,11 +63,21 @@ for (const name of ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2
     const program = compileTix(source);
     const optimized = optimizeTix(program, ['inline', 'split-sum']);
     assert.ok(optimized.steps.every(s => s.accepted));
+    const fn = program.current.value.functions[0];
+    const random = seededRandom(29);
+    const data = inputs(fn, sizes, () => 2 * random() - 1);
+    if (name === 'layernorm') data.eps = buf([1], [1e-5]);
+    const reference = runTix(program, name, data);
+    const fused = await runTixCuda(program, name, data);
+    assert.ok(identical(reference, fused), name + ' fused run differs from the f32 meaning');
     for (const revision of [program, optimized.program]) {
       const verdict = await checkLowering(revision, name);
       assert.equal(verdict.accepted, true, verdict.reason);
       assert.equal(verdict.relation, 'exact');
     }
+    const unfused = await checkLowering(program, name, { fuse: false });
+    assert.equal(unfused.accepted, true, unfused.reason);
+    assert.equal(unfused.relation, 'exact');
   });
 }
 
@@ -168,4 +212,54 @@ int main() {
   } finally {
     await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true })));
   }
+});
+
+test('GB10 fuses a row group beyond the shared cap through the global staging fallback', async () => {
+  // One row needs 2 x 13000 floats > the 12288-float stage, so the kernel stages in the statement buffers.
+  const p = compileTix(
+    'fn f(x:f32[N,C]):f32[N,C] { m[i]=max(j)x[i,j]; e[i,j]=exp(x[i,j]-m[i]); s[i]=sum(j)e[i,j]; y[i,j]=e[i,j]/s[i]; return y; }',
+  );
+  const fn = p.current.value.functions[0];
+  const random = seededRandom(31);
+  const data = inputs(fn, { N: 4, C: 13000 }, () => 2 * random() - 1);
+  const source = cudaSource(p, 'f');
+  assert.equal((source.match(/__global__ void/g) ?? []).length, 1);
+  const reference = runTix(p, 'f', data);
+  const result = await runTixCuda(p, 'f', data);
+  assert.ok(identical(reference, result), 'fallback staging differs from the f32 meaning');
+  const verdict = await checkLowering(p, 'f');
+  assert.equal(verdict.accepted, true, verdict.reason);
+});
+
+test('GB10 fuses an elementwise chain into one kernel, bit-identically', async () => {
+  const p = compileTix('fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]+y[i]; return z; }');
+  const fn = p.current.value.functions[0];
+  const random = seededRandom(37);
+  const data = inputs(fn, { N: 1024 }, () => 2 * random() - 1);
+  assert.equal((cudaSource(p, 'f').match(/__global__ void/g) ?? []).length, 1);
+  assert.ok(identical(runTix(p, 'f', data), await runTixCuda(p, 'f', data)));
+  assert.equal((await checkLowering(p, 'f')).accepted, true);
+});
+
+test('GB10 rejects a fused-source mutant under the exact relation', async () => {
+  const p = compileTix(
+    'fn f(x:f32[N,C]):f32[N,C] { m[i]=max(j)x[i,j]; e[i,j]=exp(x[i,j]-m[i]); s[i]=sum(j)e[i,j]; y[i,j]=e[i,j]/s[i]; return y; }',
+  );
+  const source = cudaSource(p, 'f');
+  // A valid mutant: the row maximum folds as a minimum, so the fused kernel compiles but computes wrong bits.
+  const mutant = source.replace('), true);', '), false);');
+  assert.notEqual(mutant, source);
+  const verdict = await checkCudaLowering(p.current, 'f', cudaArtifact('f', mutant));
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \[.*\], expected/);
+});
+
+test('runTixCuda exposes the benchmark option: warm-up plus the median of three timed intervals', async () => {
+  const p = compileTix('fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]+y[i]; return z; }');
+  const fn = p.current.value.functions[0];
+  const random = seededRandom(41);
+  const data = inputs(fn, { N: 4096 }, () => 2 * random() - 1);
+  const result = await runTixCuda(p, 'f', data, { benchmark: true });
+  assert.ok(Number.isFinite(result.gpuMs) && result.gpuMs > 0, 'gpuMs ' + result.gpuMs);
+  assert.ok(identical(runTix(p, 'f', data), result));
 });

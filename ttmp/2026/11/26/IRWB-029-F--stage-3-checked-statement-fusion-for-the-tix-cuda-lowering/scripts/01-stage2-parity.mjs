@@ -47,9 +47,16 @@ for (const name of programs) {
   const plan = fusionPlan(program.current.value.functions[0]);
   console.log(
     name.padEnd(10),
-    'stage2-identical:', identical,
-    'kernels:', (then.match(/__global__ void/g) ?? []).length, '->', (fused.match(/__global__ void/g) ?? []).length,
-    'plan:', JSON.stringify(plan.segments.map(s => s.kind + ':' + (s.kind === 'single' ? s.index : s.start + '-' + s.end))),
+    'stage2-identical:',
+    identical,
+    'kernels:',
+    (then.match(/__global__ void/g) ?? []).length,
+    '->',
+    (fused.match(/__global__ void/g) ?? []).length,
+    'plan:',
+    JSON.stringify(
+      plan.segments.map(s => s.kind + ':' + (s.kind === 'single' ? s.index : s.start + '-' + s.end)),
+    ),
   );
 }
 console.log(mismatches === 0 ? 'fuse:false is byte-identical to stage 2' : mismatches + ' MISMATCHES');

@@ -480,7 +480,11 @@ function emitChain(
   const info = groupInfo(fn, seg, tensors);
   const names = new Set(info.statements.map(s => s.name));
   const count = `${tensorName(info.statements[0].name)}.size`;
-  const args = [...dimensions.values(), ...info.pointers.map(t => tensorName(t.name)), count];
+  const args = [
+    ...dimensions.values(),
+    ...info.pointers.map(t => tensorName(t.name) + '.ptr'),
+    count,
+  ];
   const params = [
     ...Array.from(dimensions.values(), d => `I ${d}`),
     ...info.pointers.map(t => `${names.has(t.name) ? '' : 'const '}float* ${tensorName(t.name)}`),
@@ -506,7 +510,7 @@ function emitChain(
     preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork: count,
     launch: `    if (${count}) {
-      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')});
+      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${args.join(', ')});
       check(cudaGetLastError());
     }`,
   };

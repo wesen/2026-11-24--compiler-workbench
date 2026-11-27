@@ -5,8 +5,7 @@ import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js'
 import { fusionPlan } from '../../dist/tensor/fusion.js';
 
 const kernels = source => (source.match(/__global__ void/g) ?? []).length;
-const planOf = source =>
-  fusionPlan(compileTix(source).current.value.functions[0]);
+const planOf = source => fusionPlan(compileTix(source).current.value.functions[0]);
 const load = name =>
   compileTix(readFileSync(new URL('../../corpus/tensor/' + name + '/main.tix', import.meta.url), 'utf8'));
 
@@ -41,11 +40,11 @@ test('a cross-row read of a group tensor refuses the fusion', () => {
     plan.segments.map(s => s.kind),
     ['single', 'single'],
   );
-  assert.deepEqual(plan.refusals, [
-    { statement: 1, reason: 't is read outside its row within the group' },
-  ]);
+  assert.deepEqual(plan.refusals, [{ statement: 1, reason: 't is read outside its row within the group' }]);
   assert.equal(
-    kernels(cudaSource(compileTix('fn f(x:f32[N]):f32[N]{t[i]=x[i]*2;s[i]=(sum(c)t[c])+x[i];return s;}'), 'f')),
+    kernels(
+      cudaSource(compileTix('fn f(x:f32[N]):f32[N]{t[i]=x[i]*2;s[i]=(sum(c)t[c])+x[i];return s;}'), 'f'),
+    ),
     2,
   );
 });
@@ -70,7 +69,11 @@ test('a statement whose row extent differs stays out of the group', () => {
   );
   assert.deepEqual(
     plan.segments.map(s => [s.kind, ...(s.kind === 'single' ? [s.index] : [s.start, s.end])]),
-    [['single', 0], ['single', 1], ['single', 2]],
+    [
+      ['single', 0],
+      ['single', 1],
+      ['single', 2],
+    ],
   );
   assert.deepEqual(
     plan.refusals.map(r => r.statement),
@@ -101,7 +104,10 @@ test('a two-dimensional elementwise chain uses the row mapping with staging', ()
   assert.match(source, /__shared__ float stage\[12288\];/);
   assert.match(source, /__syncthreads\(\);/);
   assert.match(source, /stage\[off0 \+ l\] = t0\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\];/);
-  assert.match(source, /const bool fits = \(static_cast<U>\(\(d1\)\)\) \+ \(static_cast<U>\(\(d1\)\)\) <= 12288u;/);
+  assert.match(
+    source,
+    /const bool fits = \(static_cast<U>\(\(d1\)\)\) \+ \(static_cast<U>\(\(d1\)\)\) <= 12288u;/,
+  );
   // The intermediate is staged for the consumer and only reaches global memory in the fallback path.
   assert.match(source, /if \(!fits\) t1\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\] = v0;/);
   assert.match(source, /if \(fits\) stage\[off1 \+ l\] = v0;/);
@@ -114,7 +120,10 @@ test('a row group stages row-local reads and reads row-free tensors from global 
     'fn f(x:f32[N,K],b:f32[K]):f32[N,K]{p[i,j]=x[i,j]*b[j];g[i,j]=p[i,j]+1;y[i,j]=g[i,j]*3;return y;}',
   );
   const plan = fusionPlan(program.current.value.functions[0]);
-  assert.deepEqual(plan.segments.map(s => s.kind), ['row']);
+  assert.deepEqual(
+    plan.segments.map(s => s.kind),
+    ['row'],
+  );
   const source = cudaSource(program, 'f');
   assert.equal(kernels(source), 1);
   assert.match(source, /stage\[off0 \+ l\] = t0\[/);
@@ -130,11 +139,12 @@ test('a fused group still writes tensors consumed outside the group', () => {
   const plan = fusionPlan(program.current.value.functions[0]);
   assert.deepEqual(
     plan.segments.map(s => [s.kind, ...(s.kind === 'single' ? [s.index] : [s.start, s.end])]),
-    [['row', 0, 1], ['single', 2]],
+    [
+      ['row', 0, 1],
+      ['single', 2],
+    ],
   );
-  assert.deepEqual(plan.refusals, [
-    { statement: 2, reason: 'a is read outside its row within the group' },
-  ]);
+  assert.deepEqual(plan.refusals, [{ statement: 2, reason: 'a is read outside its row within the group' }]);
   const source = cudaSource(program, 'f');
   assert.equal(kernels(source), 2);
   assert.match(source, /t1\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\] = v0;/);
@@ -146,7 +156,10 @@ test('a split reduction still fuses: the group kernel keeps the generated block 
   const program = compileTix('fn f(x:f32[N,K]):f32[N]{e[i,j]=x[i,j]-x[i,0];y[i]=sum(j)e[i,j];return y;}');
   const { program: split } = optimizeTix(program, ['split-sum']);
   const plan = fusionPlan(split.current.value.functions[0]);
-  assert.deepEqual(plan.segments.map(s => s.kind), ['row']);
+  assert.deepEqual(
+    plan.segments.map(s => s.kind),
+    ['row'],
+  );
   const source = cudaSource(split, 'f');
   assert.equal(kernels(source), 1);
   assert.match(source, /end_i\d+ = \(d1\) \/ 4 \+ \(\(d1\) % 4 != 0\)/);
