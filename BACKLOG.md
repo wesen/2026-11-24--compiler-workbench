@@ -214,6 +214,7 @@ T8 (ONNX) is not queued.
 - **Approach:** a schedule (kernel) IR as a v6 artifact, following the Halide/TVM split between algorithm and schedule: tile, split, reorder, bind to block or thread, stage in shared memory. Check order-preserving schedule changes under the exact relation; reassociating ones belong to T10.
 - **Measure:** TFLOP/s against cuBLAS at matmul 512³, the attention and mlp shapes, and 4096³; bit-exactness; the framework changes.
 - **Depends on:** T2, T9; T3 for the epilogue.
+- **Prior art to read first:** Yang, Riasanovsky, Deng and Sarkar, arXiv 2609.11356 (2026), "Taming Bitwise Behavior in GPU Kernels with Tensor Core". It reconstructs cuBLAS's GEMM reduction order black-box (including split-K), enforces a fixed reduction tree in Triton lowering, and checks bitwise equivalence of compiled kernels statically (PTX and GCN), restricting Triton's autotuner to one bit-equivalence class. It is the closest prior art to Tix's exact checked lowering and to T7. Five R2 tickets claimed a version of it as new. _(Found by the R2 Claude judge; abstract checked on arXiv.)_
 
 ### T7: autotuning under noisy cost _(queued seventh)_
 
@@ -457,5 +458,3 @@ The experiments around the work. The playbooks are in the go-go-parc vault under
   - _Unknown:_ whether v3 should replace v1 in `~/.codex/config.toml` (the user's call), and whether its effect holds over repeated runs (M2).
 - **M5: tell designers what is already checked** _(ready)_.
   - _Known:_ in IRWB-018, half of each project's test matrix repeated corpus-wide checks, because the designs prescribed it and nothing said what was covered.
-
-- **Read: Yang, Riasanovsky, Deng, Sarkar, arXiv 2609.11356 (2026), "Taming Bitwise Behavior in GPU Kernels with Tensor Core".** Black-box reconstruction of cuBLAS's GEMM reduction order, balanced-tree reductions enforced in Triton lowering, and static bitwise-equivalence checkers across PTX and GCN that restrict Triton's autotuner to one bit-equivalence class. Closest prior art to Tix's exact checked lowering; five R2 tickets claimed a version of it as new. _(found by the R2 Claude judge; abstract checked)_.
