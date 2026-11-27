@@ -116,7 +116,7 @@ Every property fact identifies its exact artifact ID, revision, kind and schema 
 
 The last category is an explicit trust boundary. This framework does not contain a theorem prover and does not turn a Boolean checker into a mathematical proof. The record identifies the external verifier and certificate, so callers can evaluate the authority of that evidence. Supplying an assurance string cannot create an accepted fact.
 
-A correspondence contains `id`, exact `from` and `to` artifact references, `relation`, optional entity groups and application evidence. It is small relationship data, not the generic IR editing framework proposed separately. Transfer checks validate exact revisions and their semantic justification. Same-artifact preservation reuses the existing analysis without introducing a self-dependency. Source invalidation also invalidates transferred results.
+A correspondence contains `id`, exact `from` and `to` artifact references, `relation`, optional entity groups and application evidence. An IR definition may provide `entities(value)` to enumerate its entity IDs; when it does, correspondence checking compares the corresponding `sourceEntities` or `targetEntities` list against that artifact's IDs. `semanticCorrespondence` carries these lists from a generic IR correspondence. Transfer checks validate exact revisions and their semantic justification. Same-artifact preservation reuses the existing analysis without introducing a self-dependency. Source invalidation also invalidates transferred results.
 
 ## Transaction and compiler integration
 

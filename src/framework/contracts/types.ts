@@ -13,6 +13,7 @@ export interface ValueType<T = unknown> extends DefinitionBase {
 export interface IRType<T = unknown> extends DefinitionBase {
   readonly category: 'ir';
   validate(value: unknown): asserts value is T;
+  entities?(value: T): readonly string[];
 }
 export type PortType = ValueType<any> | IRType<any>;
 export type Ports = Readonly<Record<string, PortType>>;
@@ -54,6 +55,8 @@ export interface Correspondence {
   readonly from: EntityRef;
   readonly to: EntityRef;
   readonly relation: string;
+  readonly sourceEntities?: readonly string[];
+  readonly targetEntities?: readonly string[];
   readonly entities?: readonly {
     readonly from: readonly string[];
     readonly to: readonly string[];

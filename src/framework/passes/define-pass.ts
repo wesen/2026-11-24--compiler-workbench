@@ -178,6 +178,8 @@ export function semanticCorrespondence(
     from: { artifact: c.from.artifact, revision: c.from.revision },
     to: { artifact: c.to.artifact, revision: c.to.revision },
     relation,
+    sourceEntities: c.sourceEntities,
+    targetEntities: c.targetEntities,
     entities: c.entries.map(e => ({ from: e.from, to: e.to })),
     evidence: {
       formatVersion: c.formatVersion,
