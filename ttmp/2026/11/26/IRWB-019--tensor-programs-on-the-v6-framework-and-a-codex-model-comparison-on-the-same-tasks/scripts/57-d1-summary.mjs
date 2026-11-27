@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // IRWB-019: D1 summary from results/eval-d1.json: the VM under r0/O2/speed at both seeds, corpus totals, projects
 // slower than the base (per pipeline and seed), parity, tests, and lines changed per area.
-// node 57-d1-summary.mjs <eval-d1.json> [--tests <dir>]   (--tests: rerun the three test directories per worktree)
+// node 57-d1-summary.mjs <eval.json> [--tests] [--base <worktree-name>]   (--tests: rerun the three test directories per worktree)
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 const [file, ...rest] = process.argv.slice(2);
 const all = JSON.parse(fs.readFileSync(file, 'utf8'));
-const base = all['typed-base-eval'];
+const base = all[rest.includes('--base') ? rest[rest.indexOf('--base') + 1] : 'typed-base-eval'];
 const W = '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees';
 if (rest.includes('--tests')) {
   for (const name of Object.keys(all)) {

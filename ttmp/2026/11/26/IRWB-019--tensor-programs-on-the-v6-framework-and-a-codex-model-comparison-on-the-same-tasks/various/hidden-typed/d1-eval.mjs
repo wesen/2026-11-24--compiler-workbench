@@ -9,7 +9,7 @@
 //     seed (count 20, seed 1103) the brief never named; rejected pass applications are counted;
 //   parity: tools/parity.mjs --json (every pass checked, head against r0 on 100 cases);
 //   tests: tests/typed, tests/framework, tests/workbench (pass, fail, skip);
-//   scope: files changed against t6-base, by area.
+//   scope: files changed against t6-base (or $EVAL_BASE), by area. Also used for D2 (EVAL_BASE=d2-base).
 // The brief's acceptance: the VM's instructions under `speed` at or below r0's, no regression in the other projects'
 // totals, parity clean.
 import fs from 'node:fs';
@@ -79,7 +79,7 @@ if (mode === 'worker') {
     const r = spawnSync(process.execPath, [new URL(import.meta.url).pathname, 'worker', wt], { encoding: 'utf8', timeout: 4 * 3600000, maxBuffer: 1 << 28 });
     let res;
     try { res = JSON.parse(r.stdout); } catch { res = { error: (r.stderr || r.error?.message || 'no output').slice(-600) }; }
-    const diff = spawnSync('git', ['diff', '--numstat', 't6-base', 'HEAD'], { cwd: wt, encoding: 'utf8' }).stdout.trim().split('\n').filter(Boolean);
+    const diff = spawnSync('git', ['diff', '--numstat', process.env.EVAL_BASE ?? 't6-base', 'HEAD'], { cwd: wt, encoding: 'utf8' }).stdout.trim().split('\n').filter(Boolean);
     const areas = {};
     for (const l of diff) { const [a, d, f] = l.split('\t'); const k = f.split('/').slice(0, f.startsWith('src/') || f.startsWith('tests/') ? 2 : 1).join('/'); areas[k] = (areas[k] ?? 0) + (+a || 0); }
     res.scope = areas;
