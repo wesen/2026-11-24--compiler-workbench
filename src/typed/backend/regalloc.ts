@@ -12,6 +12,7 @@
  * and `fs0`-`fs11` (callee-saved); `ft10` and `ft11` are its spill scratch. The two classes are scanned separately:
  * an interval only ever receives a register of its own class, and the options apply to each class.
  */
+import { liveness, type Liveness } from '../../stdlib/flow/liveness.js';
 import type { BackendOptions } from './options.js';
 import {
   ARGS,
@@ -75,7 +76,28 @@ export interface Intervals {
   /** Sorted by start, then register. */
   readonly list: Interval[];
   readonly blocks: MachineBlock[];
-  readonly liveOut: Set<number>[];
+  readonly liveOut: readonly ReadonlySet<number>[];
+}
+
+/**
+ * Liveness over the machine blocks, as the code is laid out: scope 'all', so a block no path from the entry reaches
+ * still has a live-out — its instructions are in the image, so an interval must cover what they read and write.
+ * (An entry-reachable liveness would disagree on exactly those blocks; see src/stdlib/flow/liveness.ts.)
+ */
+export function machineLiveness(
+  code: readonly MInsn[],
+  blocks: readonly MachineBlock[] = machineBlocks(code),
+): Liveness<number> {
+  return liveness(
+    {
+      blockCount: blocks.length,
+      successors: b => blocks[b].succ,
+      items: b => blocks[b],
+      reads: i => usesOf(code[i]),
+      writes: i => defsOf(code[i]),
+    },
+    { blocks: 'all' },
+  );
 }
 
 /**
@@ -84,30 +106,7 @@ export interface Intervals {
  */
 export function intervals(code: readonly MInsn[]): Intervals {
   const blocks = machineBlocks(code);
-  const use = blocks.map(() => new Set<number>()),
-    def = blocks.map(() => new Set<number>());
-  blocks.forEach((b, k) => {
-    for (let i = b.start; i <= b.end; i++) {
-      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
-      for (const r of defsOf(code[i])) def[k].add(r);
-    }
-  });
-  const IN = blocks.map(() => new Set<number>()),
-    OUT = blocks.map(() => new Set<number>());
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (let k = blocks.length - 1; k >= 0; k--) {
-      const out = new Set<number>();
-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
-      const inn = new Set(use[k]);
-      for (const r of out) if (!def[k].has(r)) inn.add(r);
-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
-        IN[k] = inn;
-        OUT[k] = out;
-        changed = true;
-      }
-    }
-  }
+  const { liveIn: IN, liveOut: OUT } = machineLiveness(code, blocks);
   const iv = new Map<number, Interval>();
   const touch = (r: number, i: number) => {
     const x = iv.get(r);

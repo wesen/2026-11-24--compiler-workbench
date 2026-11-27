@@ -4,7 +4,7 @@
  * other is live afterwards, except by a copy between them, after which both hold the same value (and, IRWB-034-G,
  * by a copy from a register the other was copied from earlier in the block, with neither changed since).
  *
- *   live-after per instruction, backwards over the machine blocks (as the allocator computes liveness)
+ *   live-after per instruction, from src/stdlib/flow/liveness.ts over the machine blocks (as the allocator does)
  *   edges:  r -- q  for each definition of r with q of r's class live after it, unless the definition copies q
  *   copies, hottest block first: if find(rd) and find(rs) have no edge between them, merge them
  *   rename every virtual register to its representative; a copy that became `r <- r` is dropped
@@ -13,7 +13,7 @@
  * (parameters, call results, return values) are left to the allocator's hints. Merging lengthens intervals,
  * which under linear scan can cost a callee-saved register or a spill, so the caller compares estimates.
  */
-import { machineBlocks, usesOf, defsOf } from './regalloc.js';
+import { machineBlocks, machineLiveness, defsOf } from './regalloc.js';
 import type { MInsn } from './encode.js';
 import type { Frequencies } from './frequency.js';
 import type { Selection } from './select.js';
@@ -29,32 +29,9 @@ export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): C
   const cls = (r: number) => (sel.fregs.has(r) ? 'f' : 'x');
   const isCopy = (m: MInsn) =>
     m.mv && m.rd !== undefined && m.rs1 !== undefined && m.rd >= 64 && m.rs1 >= 64 && m.rd !== m.rs1;
-  // liveness per block, then per instruction backwards
+  // liveness per block and per instruction: the stdlib primitive, over every block (see regalloc.ts machineLiveness)
   const blocks = machineBlocks(code);
-  const use = blocks.map(() => new Set<number>()),
-    def = blocks.map(() => new Set<number>());
-  blocks.forEach((b, k) => {
-    for (let i = b.start; i <= b.end; i++) {
-      for (const r of usesOf(code[i])) if (!def[k].has(r)) use[k].add(r);
-      for (const r of defsOf(code[i])) def[k].add(r);
-    }
-  });
-  const IN = blocks.map(() => new Set<number>()),
-    OUT = blocks.map(() => new Set<number>());
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (let k = blocks.length - 1; k >= 0; k--) {
-      const out = new Set<number>();
-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
-      const inn = new Set(use[k]);
-      for (const r of out) if (!def[k].has(r)) inn.add(r);
-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
-        IN[k] = inn;
-        OUT[k] = out;
-        changed = true;
-      }
-    }
-  }
+  const live = machineLiveness(code, blocks);
   // IRWB-034-G: at a copy `rd <- rs`, the registers that an earlier copy in the block set from the same rs, with
   // neither side redefined since, hold the value rd receives. The definition does not make them interfere with rd
   // (the argument of the copy exception itself), so `a <- s; b <- s` can end up as one register.
@@ -81,20 +58,18 @@ export function coalesceCopies(sel: Selection, fr: Frequencies | null = null): C
     adj.get(a)!.add(b);
     adj.get(b)!.add(a);
   };
-  blocks.forEach((b, k) => {
-    const live = new Set(OUT[k]);
-    for (let i = b.end; i >= b.start; i--) {
+  blocks.forEach((b, k) =>
+    live.walkBackwards(k, (i, after) => {
       const m = code[i];
-      for (const r of defsOf(m)) {
-        const copy = isCopy(m),
-          same = copy ? sameAsSource.get(i) : undefined;
-        for (const q of live)
-          if (q !== r && cls(q) === cls(r) && !(copy && (q === m.rs1 || same?.has(q)))) edge(r, q);
-        live.delete(r);
-      }
-      for (const r of usesOf(m)) live.add(r);
-    }
-  });
+      // at most one definition per instruction (a single rd), so no definition of m is removed from `after` early
+      const [def] = defsOf(m);
+      if (def === undefined) return;
+      const copy = isCopy(m),
+        same = copy ? sameAsSource.get(i) : undefined;
+      for (const q of after)
+        if (q !== def && cls(q) === cls(def) && !(copy && (q === m.rs1 || same?.has(q)))) edge(def, q);
+    }),
+  );
   // the block frequency of each instruction, for the order of the candidates
   const weight: number[] = [];
   let w = 1;
