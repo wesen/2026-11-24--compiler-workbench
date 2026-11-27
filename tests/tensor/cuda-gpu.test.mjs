@@ -32,7 +32,7 @@ for (const name of ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2
     for (const revision of [program, optimized.program]) {
       const verdict = await checkLowering(revision, name);
       assert.equal(verdict.accepted, true, verdict.reason);
-      assert.equal(verdict.relation, 'tolerance');
+      assert.equal(verdict.relation, 'exact');
     }
   });
 }

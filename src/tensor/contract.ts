@@ -83,8 +83,9 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, c
   }
   return out;
 }
+// The lowering's cases: references are the current revision's f32 meaning (IRWB-019 F17).
 export function cudaCases(fn: Fn, random: () => number): Sample[] {
-  return cases(fn, fn, 'tolerance', random, true);
+  return cases(fn, fn, 'exact', random, true);
 }
 
 export function coordinate(shape: number[], offset: number): number[] {

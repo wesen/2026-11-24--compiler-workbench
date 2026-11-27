@@ -45,21 +45,25 @@ export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
   return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
 }
 
+// The relation is exact: the lowered function must give the current revision's f32 meaning bit for bit, signed
+// zeros and infinities included (IRWB-019 F17). The emitter makes that possible: explicit round-to-nearest
+// arithmetic, so nothing contracts, and exp, log and tanh in double, rounded, which equal Math.fround(Math.exp(x))
+// and so on for all 2^32 f32 inputs on the GB10 (IRWB-019 diary step 23). NaN is compared as a class, because the
+// GPU and V8 produce different NaN words (sqrt of -2^-149: 0x7fffffff against 0xffc00000).
 function compare(expected: BufferValue, got: BufferValue) {
   if (expected.shape.length !== got.shape.length || expected.shape.some((n, i) => n !== got.shape[i]))
     return { ok: false, reason: 'Output shape differs' };
   if (expected.data.length !== got.data.length) return { ok: false, reason: 'Output length differs' };
-  for (const [i, ref] of expected.data.entries()) {
-    const actual = got.data[i];
-    const tolerance = 2e-6 + 2e-5 * Math.abs(ref);
-    const agrees = Number.isFinite(ref)
-      ? Number.isFinite(actual) && Math.abs(actual - ref) <= tolerance
-      : Object.is(actual, ref);
-    if (!agrees) {
-      const at = coordinate(expected.shape, i);
-      const budget = Number.isFinite(ref) ? ` (tolerance ${tolerance})` : '';
-      return { ok: false, reason: `At [${at}], expected ${ref}, got ${actual}${budget}` };
-    }
+  const f32 = (d: ArrayLike<number>) => (d instanceof Float32Array ? d : Float32Array.from(d));
+  const a = f32(expected.data),
+    b = f32(got.data);
+  const wa = new Uint32Array(a.buffer, a.byteOffset, a.length),
+    wb = new Uint32Array(b.buffer, b.byteOffset, b.length);
+  const hex = (w: number) => '0x' + w.toString(16).padStart(8, '0');
+  for (let i = 0; i < a.length; i++) {
+    if (wa[i] === wb[i] || (Number.isNaN(a[i]) && Number.isNaN(b[i]))) continue;
+    const at = coordinate(expected.shape, i);
+    return { ok: false, reason: `At [${at}], expected ${a[i]} (${hex(wa[i])}), got ${b[i]} (${hex(wb[i])})` };
   }
   return { ok: true };
 }
@@ -72,8 +76,9 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   const ports = { ...inputs, ...outputs };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
     id: 'tensor.cuda-meaning',
-    version: '1',
-    description: 'Compare the lowered CUDA function to its current Tix f64 meaning',
+    version: '2',
+    description:
+      'Compare the lowered CUDA function to its current Tix f32 meaning, bit for bit (NaN as a class)',
     inputs: ports,
     baseline: 'baseline',
     subject: 'subject',
@@ -132,7 +137,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
 
   return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
-    const relation = 'tolerance' as const;
+    const relation = 'exact' as const;
     const manager = new AnalysisManager();
     try {
       if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
