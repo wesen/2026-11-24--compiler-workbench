@@ -1,3 +1,16 @@
 {"p":0,"revision":"original","statements":4,"kernels":2,"groups":["thread:t0,t1,t2","thread:t3"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
 {"p":0,"revision":"inline+split","statements":2,"kernels":2,"groups":["thread:t2","thread:t3"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
 {"p":1,"revision":"original","statements":2,"kernels":1,"groups":["block:t0,t1"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":1,"revision":"inline+split","statements":1,"kernels":1,"groups":["thread:t1"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":2,"revision":"original","statements":6,"kernels":1,"groups":["block:t0,t1,t2,t3,t4,t5"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":2,"revision":"inline+split","statements":5,"kernels":1,"groups":["block:t0,t1,t2,t3,t5"],"terms":["t3/0"],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":3,"revision":"original","statements":5,"kernels":3,"groups":["thread:t0","block:t1,t2,t3","thread:t4"],"terms":["t3/0"],"inPlace":["t2>t1"],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":3,"revision":"inline+split","statements":4,"kernels":3,"groups":["thread:t0","block:t2,t3","thread:t4"],"terms":["t3/0"],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":4,"revision":"original","statements":5,"kernels":3,"groups":["thread:t0,t1","thread:t2","thread:t3,t4"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":4,"revision":"inline+split","statements":4,"kernels":3,"groups":["thread:t0,t1","thread:t2","thread:t4"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":5,"revision":"original","statements":4,"kernels":1,"groups":["block:t0,t1,t2,t3"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":5,"revision":"inline+split","statements":4,"kernels":1,"groups":["block:t0,t1,t2,t3"],"terms":["t3/0"],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":6,"revision":"original","statements":3,"kernels":2,"groups":["thread:t0,t1","thread:t2"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":6,"revision":"inline+split","statements":3,"kernels":2,"groups":["thread:t0,t1","thread:t2"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":7,"revision":"original","statements":4,"kernels":2,"groups":["thread:t0,t1","thread:t2,t3"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}
+{"p":7,"revision":"inline+split","statements":3,"kernels":2,"groups":["thread:t0,t1","thread:t3"],"terms":[],"inPlace":[],"heavy":[],"accepted":true,"relation":"exact"}

@@ -23,6 +23,8 @@ interface CudaKernel {
   name: string;
   mapping: 'thread' | 'block';
   statements: string[];
+  /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
+  gated?: boolean;
 }
 interface CudaUnit {
   fn: string;
@@ -45,6 +47,7 @@ const CudaIR = defineIR<CudaUnit>({
         k =>
           typeof k?.name !== 'string' ||
           !['thread', 'block'].includes(k.mapping) ||
+          !['boolean', 'undefined'].includes(typeof k.gated) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
           k.statements.some(s => typeof s !== 'string'),
@@ -87,7 +90,7 @@ export function kernelCorrespondence(
     to: { artifact: subject.id, revision: subject.revision },
     relation: 'statements-to-kernels',
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
-    evidence: { mappings: kernels.map(k => k.mapping) },
+    evidence: { mappings: kernels.map(k => k.mapping), gated: kernels.map(k => k.gated === true) },
   };
 }
 
@@ -219,6 +222,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         name: g.kernel,
         mapping: g.mapping,
         statements: g.statements,
+        ...(g.gated && { gated: true }),
       }));
       const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
