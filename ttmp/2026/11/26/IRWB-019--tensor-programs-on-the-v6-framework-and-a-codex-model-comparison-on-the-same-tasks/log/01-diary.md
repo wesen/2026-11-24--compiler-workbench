@@ -783,3 +783,38 @@ I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineerin
   - Both judges are rerunning fresh on the complete pack (`claude-2.md`, `codex-sol-2.md`).
   - Run 1 stays as a record. The family reversal appears even with the bug: the Codex judge ranked Sol second although Sol lost logs and Fable lost none. With run 2, it also gives each judge's run-to-run variance.
 - **For the playbook:** a blind pack must be checked for completeness (file counts against the source), not only for leaks. And a cross-family judge pair is necessary: a single-family judge would have produced a confident ranking that the other family reverses.
+
+## Step 31: round R2 judged (four judge runs); the family effect; errors adjudicated
+
+- **The second runs on the complete pack** (`results/r2-judges/run2-*.md`); analysis in `scripts/24-r2-analysis.mjs` and `results/r2-scores.json`:
+
+  | model | Claude r1 | Claude r2 | Codex r1 | Codex r2 | mean | errors listed (C1, C2, X1, X2) |
+  |---|---|---|---|---|---|---|
+  | Astra | 7 | 7 | 9 | 9 | **8.0** | 0, 0, 1, 1 |
+  | Opus | 9 | 8 | 6 | 7 | 7.5 | 3, 5, 12, 10 |
+  | Fable | 8 | 7 | 7 | 7 | 7.25 | 4, 3, 7, 8 |
+  | Sol | 6 | 6 | 8 | 8 | 7.0 | 0, 1, 3, 3 |
+
+- **The family effect** is larger than any model difference:
+  - the Claude judge scores its own family 1.5 points higher (8.0 against 6.5);
+  - the Codex judge 1.75 points higher (8.5 against 6.75);
+  - averaged over both judges, the largest gap between models is 1.0.
+  
+  Within a judge, run-to-run changes are at most 1 point per model; 5 of 8 are 0. So each judge is consistent with itself and biased by family.
+- **What the judges agree on:**
+  - **Errors.** In all four judge runs, the two Claude designs have more listed errors than the two Codex designs (7–19 against 0–4). I re-checked three of the Codex judge's errors against the Claude designs, and all three hold:
+    - Opus's batch invariance fails for `y[i] = x[i] + N`: in the merged interpreter, `y[0]` is 6 at N = 1 and 7 at N = 2;
+    - Opus's `ratio > K_NORM` never flags a NaN;
+    - Fable's "2.49× the fixed tolerance" uses the sequential f32 sum as reference, where the gate uses the f64 origin (`contract.ts:68`).
+    
+    The Claude judge was the lenient one: 16 errors over two runs, against 45 for the Codex judge.
+  - **Creativity.** Both judges score Sol lowest ("least distant from the standard fusion playbook"). Creativity means over the four runs: Fable 8, Astra 8, Opus 7.75, Sol 6.25.
+  - **Evidence.** Astra is highest under both judges (9.25 mean). The Codex judge in run 2 gave Astra evidence 10, Sol 9 and Opus 9 once the logs were present.
+- **My reading:**
+  - Astra (Codex, high) produced the best-evidenced and most correct design, with the most original single mechanism, the fitted, exhaustively certified `exp`. It ranks first on the cross-family mean.
+  - Opus produced the broadest and most ambitious design, with the most errors and overclaims.
+  - Fable produced the most original theoretical idea (the parity transducer) in the shortest time (16 minutes).
+  - Sol produced the most conventional plan.
+  - The differences between models are smaller than the judge's family effect. Only the error counts, and the reproduced experiments, are free of it.
+- **Claude usage:** 4.80M subagent tokens in total. This round used the two cells (0.74M) and two judge runs (0.62M).
+- **The scorecard** has a new section, "How the two judges scored the creativity round", with the four judge runs per model, the dimension means, error totals, the family effect and the retest spread. Every number is drawn from `r2_scores`; the check passes.

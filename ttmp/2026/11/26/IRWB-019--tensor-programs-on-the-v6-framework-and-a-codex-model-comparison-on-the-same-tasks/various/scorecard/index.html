@@ -169,7 +169,7 @@
 
   <section class="sc-section" id="sc-r2">
     <h2>The creativity round</h2>
-    <p>Four cells answer one open question: what compiler work would make Tix best in class? Each may search the web and run experiments on the GB10, and writes a ranked design document and a diary. Codex runs Sol and Astra at high effort; Opus and Fable run as Claude Code subagents at their default effort. All four get the same brief and the same two standing rules. All four sessions have finished, well inside their three hours. Two judges from different model families are scoring the designs blind on ingenuity, creativity, scientific depth, evidence, correctness and padding; their scores appear here when judging is done.</p>
+    <p>Four cells answer one open question: what compiler work would make Tix best in class? Each may search the web and run experiments on the GB10, and writes a ranked design document and a diary. Codex runs Sol and Astra at high effort; Opus and Fable run as Claude Code subagents at their default effort. All four get the same brief and the same two standing rules. All four sessions finished well inside their three hours. Two judges from different model families scored the designs blind, twice each, on ingenuity, creativity, scientific depth, evidence, correctness, grounding and padding.</p>
     <div class="sc-table-wrap">
       <table data-source="r2_cells" data-row-key="item" aria-label="Creativity round cells">
         <thead>
@@ -188,9 +188,43 @@
     </div>
   </section>
 
+  <section class="sc-section" id="sc-r2-scores">
+    <h2>How the two judges scored the creativity round</h2>
+    <p>Each judge rated its own family's designs higher: by <b data-draw="r2-claude-diff" class="dash-skeleton" data-source="r2_summary" data-field="claude_own_minus_other" data-row="0">—</b> points out of 10 for the Claude judge and <b data-draw="r2-codex-diff" class="dash-skeleton" data-source="r2_summary" data-field="codex_own_minus_other" data-row="0">—</b> for the Codex judge. Averaged over both judges, the largest gap between two models is <b data-draw="r2-model-gap" class="dash-skeleton" data-source="r2_summary" data-field="model_gap" data-row="0">—</b> points, so the judge's family moves a score more than the author's model does. A judge's two runs agree closely: no overall score moved by more than <b data-draw="r2-retest" class="dash-skeleton" data-source="r2_summary" data-field="retest_max" data-row="0">—</b> point between runs.</p>
+    <p>The judges agree on two things. Both list far more errors in the two Claude designs than in the two Codex designs, and the coordinator re-checked three of the Codex judge's errors against the Claude designs and all three held. Both also rate Sol's design the least creative, closest to the standard fusion and tiling playbook.</p>
+    <div class="sc-legend" aria-hidden="true">
+      <span><i data-judge="claude"></i>Claude judge</span><span><i data-judge="codex"></i>Codex judge</span><span><i class="sc-hollow"></i>first run</span><span><i class="sc-filled"></i>second run</span>
+    </div>
+    <div class="sc-card" id="sc-r2-chart">
+      <h3>Overall score from each judge run</h3>
+      <div class="sc-chart dash-skeleton" data-draw="r2-dots" data-source="r2_scores"></div>
+    </div>
+    <div class="sc-table-wrap">
+      <table data-source="r2_dims" data-row-key="model" aria-label="Creativity round scores per model">
+        <thead>
+          <tr>
+            <th data-field="model">Model</th>
+            <th data-field="overall" class="num">Overall</th>
+            <th data-field="ingenuity" class="num">Ingenuity</th>
+            <th data-field="creativity" class="num">Creativity</th>
+            <th data-field="scientific_depth" class="num">Scientific depth</th>
+            <th data-field="evidence" class="num">Evidence</th>
+            <th data-field="correctness" class="num">Correctness</th>
+            <th data-field="grounding" class="num">Grounding</th>
+            <th data-field="padding" class="num">Padding (lower is better)</th>
+            <th data-field="errors" class="num">Errors listed</th>
+          </tr>
+        </thead>
+        <tbody data-draw="r2-dim-rows"></tbody>
+      </table>
+    </div>
+    <p class="sc-muted">Scores are means over the four judge runs. Errors listed is the total over the four runs; the Codex judge listed about three times as many as the Claude judge.</p>
+  </section>
+
   <details class="sc-card" id="sc-caveats">
     <summary>How far these numbers go</summary>
     <ul>
+      <li>In the creativity round, the first judging pass left out 21 result logs from three of the four tickets, by a packing bug that the second pass corrected. The scores shown include both passes; their differences are within the run-to-run spread given above.</li>
       <li>Each configuration ran once. Opus and Fable have two stage-1 designs and one stage-1 implementation each, and did not run in stage 2.</li>
       <li>The design judges were Claude subagents. Blinding hides the author's name but not the writing style, so the Claude designs' scores may carry a style preference.</li>
       <li>Two judges scoring the same document differed by up to two fitness points, so gaps under about one point are noise.</li>
@@ -486,6 +520,85 @@ dash.draw('kernel-dots', (el) => {
     .style('fill', (p) => (p.r.bit_exact === true ? window.SC.color(p.r.model) : 'var(--color-bg)'))
     .style('stroke', (p) => window.SC.color(p.r.model)).style('stroke-width', 2)
     .on('pointerenter pointermove', (ev, p) => tip.show(ev, [`${p.r.program}: ${d3.format('.3f')(+p.r.gpu_ms)} ms`, `${p.r.item} · ${p.r.model} · ${p.r.harness} · ${p.r.effort}`, p.r.bit_exact ? 'bit-exact' : 'within tolerance']))
+    .on('pointerleave', tip.hide);
+});
+</script>
+
+<script>
+document.querySelectorAll('.sc-legend i[data-judge]').forEach((el) => { el.style.background = el.dataset.judge === 'claude' ? dash.colors[4 % dash.colors.length] : dash.colors[5 % dash.colors.length]; });
+
+dash.calc('r2_dims', {
+  inputs: ['r2_scores'],
+  title: 'Creativity round, per model',
+  description: 'Each score averaged over the four judge runs, and the errors listed summed over them.',
+  fn: (r2_scores) => ['Astra', 'Sol', 'Fable', 'Opus'].map((model) => {
+    const r = r2_scores.filter((x) => x.model === model);
+    const m = (k) => Math.round((r.reduce((a, x) => a + +x[k], 0) / r.length) * 100) / 100;
+    return { model, overall: m('overall'), ingenuity: m('ingenuity'), creativity: m('creativity'), scientific_depth: m('scientific_depth'), evidence: m('evidence'), correctness: m('correctness'), grounding: m('grounding'), padding: m('padding'), errors: r.reduce((a, x) => a + +x.errors, 0) };
+  }),
+});
+
+dash.calc('r2_summary', {
+  inputs: ['r2_scores'],
+  title: 'Creativity round, judge effects',
+  description: 'How much each judge favoured its own family, the largest gap between model averages, and the largest change between a judge\'s two runs.',
+  fn: (r2_scores) => {
+    const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const diff = (judge) => mean(r2_scores.filter((x) => x.judge === judge && x.own_family).map((x) => +x.overall)) - mean(r2_scores.filter((x) => x.judge === judge && !x.own_family).map((x) => +x.overall));
+    const avgs = ['Astra', 'Sol', 'Fable', 'Opus'].map((m) => mean(r2_scores.filter((x) => x.model === m).map((x) => +x.overall)));
+    let retest = 0;
+    for (const x of r2_scores.filter((y) => +y.run === 1)) {
+      const y = r2_scores.find((z) => z.judge === x.judge && +z.run === 2 && z.model === x.model);
+      if (y) retest = Math.max(retest, Math.abs(+x.overall - +y.overall));
+    }
+    const r2 = (v) => Math.round(v * 100) / 100;
+    return [{ claude_own_minus_other: r2(diff('Claude judge')), codex_own_minus_other: r2(diff('Codex judge')), model_gap: r2(Math.max(...avgs) - Math.min(...avgs)), retest_max: retest }];
+  },
+});
+
+for (const [name, field] of [['r2-claude-diff', 'claude_own_minus_other'], ['r2-codex-diff', 'codex_own_minus_other'], ['r2-model-gap', 'model_gap'], ['r2-retest', 'retest_max']]) {
+  dash.draw(name, (el) => {
+    const s = dash.data('r2_summary'); window.SC.settle(el, s.status);
+    el.textContent = s.status === 'ok' && s.data[0] ? d3.format('.2~f')(s.data[0][field]) : '—';
+  });
+}
+
+dash.draw('r2-dim-rows', (tbody) => {
+  const s = dash.data('r2_dims');
+  if (s.status === 'error') { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 10; td.className = 'sc-muted'; td.textContent = 'The round\'s scores could not be computed.'; tr.appendChild(td); tbody.replaceChildren(tr); return; }
+  if (s.status !== 'ok') { tbody.replaceChildren(); return; }
+  const f2 = (v) => d3.format('.2~f')(v);
+  tbody.replaceChildren(...s.data.map((r) => {
+    const tr = document.createElement('tr');
+    const first = document.createElement('td'), sw = document.createElement('span');
+    sw.className = 'sc-swatch'; sw.style.background = window.SC.color(r.model); first.append(sw, r.model); tr.appendChild(first);
+    for (const k of ['overall', 'ingenuity', 'creativity', 'scientific_depth', 'evidence', 'correctness', 'grounding', 'padding']) { const td = document.createElement('td'); td.className = 'num'; td.textContent = f2(r[k]); tr.appendChild(td); }
+    const td = document.createElement('td'); td.className = 'num'; td.textContent = String(r.errors); tr.appendChild(td);
+    return tr;
+  }));
+});
+
+dash.draw('r2-dots', (el) => {
+  const d = dash.data('r2_scores'); window.SC.settle(el, d.status);
+  if (d.status === 'error') return window.SC.failText(el, 'The round\'s scores');
+  if (d.status !== 'ok') { el.replaceChildren(); return; }
+  const models = ['Astra', 'Sol', 'Fable', 'Opus'], rows = d.data.filter((r) => models.includes(r.model));
+  el.replaceChildren();
+  const W = Math.max(260, el.clientWidth), m = { t: 10, r: 18, b: 40, l: 56 }, band = 46, H = m.t + m.b + band * models.length;
+  const x = d3.scaleLinear([4, 10], [m.l, W - m.r]), y = d3.scaleBand(models, [m.t, H - m.b]).padding(0.25);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).attr('role', 'img')
+    .attr('aria-label', 'Overall score each judge run gave each model, Claude judge and Codex judge, first and second run');
+  svg.append('g').attr('class', 'sc-grid').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(6).tickSize(-(H - m.t - m.b)).tickFormat(''));
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(6));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).tickSize(0)).call((g) => g.select('.domain').remove());
+  svg.append('text').attr('x', (m.l + W - m.r) / 2).attr('y', H - 6).attr('text-anchor', 'middle').text('overall score (0–10)');
+  const jc = (j) => (j === 'Claude judge' ? dash.colors[4 % dash.colors.length] : dash.colors[5 % dash.colors.length]);
+  const tip = window.SC.tip(el);
+  const pts = rows.map((r) => ({ r, dy: (r.judge === 'Claude judge' ? -8 : 8) + (+r.run === 1 ? -3 : 3), dx: +r.run === 1 ? -4 : 4 }));
+  svg.append('g').selectAll('circle').data(pts).join('circle')
+    .attr('cx', (p) => x(+p.r.overall) + p.dx).attr('cy', (p) => y(p.r.model) + y.bandwidth() / 2 + p.dy).attr('r', 5.5)
+    .style('fill', (p) => (+p.r.run === 2 ? jc(p.r.judge) : 'var(--color-bg)')).style('stroke', (p) => jc(p.r.judge)).style('stroke-width', 2)
+    .on('pointerenter pointermove', (ev, p) => tip.show(ev, [`${p.r.model}: ${p.r.overall} overall`, `${p.r.judge}, run ${p.r.run}`, `ingenuity ${p.r.ingenuity} · creativity ${p.r.creativity} · errors listed ${p.r.errors}`]))
     .on('pointerleave', tip.hide);
 });
 </script>
