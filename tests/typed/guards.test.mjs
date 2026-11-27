@@ -271,8 +271,8 @@ function keep(n: i32): i32 {
   assert.match(text, /t = load32\[frame\+4\+0\]\n.*store32/, 'keep: the store is between the load and its reader');
 });
 
-test('speed is inline, inline, O2+, rotate, cfg with the four passes inserted; O2 does not name them', () => {
-  const added = ['thread', 'copies', 'guards'];
+test('speed is inline, inline, O2+, rotate, cfg with the new passes inserted; O2 does not name them', () => {
+  const added = ['thread', 'copies', 'guards', 'identities'];
   const base = PIPELINES.speed.filter(n => !added.includes(n)).map(n => (n === 'subst-mem' ? 'subst' : n));
   assert.deepEqual(base, ['inline', 'inline', ...PIPELINES['O2+'], 'rotate', 'cfg']);
   for (const n of [...added, 'subst-mem']) {
@@ -323,4 +323,64 @@ test('narrowBy keeps every x for which x op y holds for some y of the interval',
             assert.ok(next && x >= next[0] && x <= next[1], `${op} ${cur} ${r}: lost ${x}, got ${next}`);
       }
   assert.ok(narrowed > 1000, String(narrowed));
+});
+
+// ---------- the identities table ----------
+const { IDENTITY_RULES } = await import('../../dist/typed/rules/identities.js');
+const { IDENTITY_EVIDENCE } = await import('../../dist/typed/rules/evidence-identities.js');
+const { verifyRule, ruleFingerprint } = await import('../../dist/typed/rules/verify.js');
+const { rule, op, v, c } = await import('../../dist/typed/rules/form.js');
+const { RULE_SETS, rulesListing } = await import('../../dist/typed/rules/listing.js');
+
+test('identities: every rule has recorded evidence for its current form, it says sound, and a re-run agrees', () => {
+  assert.equal(RULE_SETS.identities, IDENTITY_RULES);
+  const others = new Set([...RULE_SETS.simplify.rules, ...RULE_SETS.fold.rules].map(r => r.name));
+  for (const r of IDENTITY_RULES.rules) {
+    assert.ok(!others.has(r.name), `${r.name} is not a name of another table`);
+    const e = IDENTITY_EVIDENCE[r.name];
+    assert.ok(e, `${r.name} has evidence`);
+    assert.equal(e.fingerprint, ruleFingerprint(r), `${r.name} changed since it was verified: scripts/17`);
+    assert.equal(e.verdict, 'sound', r.name);
+    assert.ok(['proof', 'exhaustive'].includes(e.strength), `${r.name}: ${e.strength}`);
+    assert.equal(verifyRule(r, { random: 2000 }).verdict, 'sound', r.name);
+  }
+  const text = rulesListing(IDENTITY_RULES);
+  for (const line of text.split('\n')) assert.ok(line.length <= 72, line);
+  assert.doesNotMatch(text, /none|stale|UNSOUND/);
+});
+
+test('the same shapes over a division are refused by the verifier: they are wrong for negative x', () => {
+  const X = { x: 'i32' };
+  const rem = rule('lt-rem16-8', X, op('lt', op('rem', v('x'), c(16)), c(8)), op('eqz', op('and', v('x'), c(8))));
+  const div = rule('shl-div8-3', X, op('shl', op('div', v('x'), c(8)), c(3)), op('and', v('x'), c(-8)));
+  for (const r of [rem, div]) {
+    const e = verifyRule(r, { random: 20000, seed: 7 });
+    assert.equal(e.verdict, 'unsound', r.name);
+    assert.ok(e.counterexample.bindings.x < 0, r.name);
+  }
+});
+
+test('identities after guards: a board index loses its division, then its shift pair and its comparison', async () => {
+  const p = open(
+    'board',
+    `
+function files(n: i32): i32 {
+    let s = 0;
+    for (let d = 0; d < 64; d = d + 1) {
+        const square = d + (d / 8) * 8;
+        if (square % 16 < 8) {
+            s = s + square;
+        }
+        if (s > n) {
+            break;
+        }
+    }
+    return s;
+}`,
+    { files: { n: [0, 4000] } },
+  );
+  const { changed, text } = await run(p, ['cfg', 'simplify', 'guards', 'subst-mem', 'identities']);
+  assert.ok(changed.includes('guards') && changed.includes('identities'), changed.join(' '));
+  assert.match(text, /d & -8/, text);
+  assert.doesNotMatch(text, /[/%]/, text);
 });

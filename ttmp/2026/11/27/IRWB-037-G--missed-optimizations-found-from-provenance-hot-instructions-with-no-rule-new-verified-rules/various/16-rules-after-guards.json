@@ -1,0 +1,29 @@
+{
+ "firings": {
+  "lt-and15-8": 14,
+  "shl-shr3-mask": 3,
+  "shl-shl-one": 4
+ },
+ "rows": {
+  "chess-search": {
+   "speed": {
+    "default": 286239,
+    "tuned": 245751
+   },
+   "speed + rules": {
+    "default": 278850,
+    "tuned": 242367
+   }
+  },
+  "f32-dsp": {
+   "speed": {
+    "default": 45401,
+    "tuned": 44107
+   },
+   "speed + rules": {
+    "default": 45209,
+    "tuned": 43915
+   }
+  }
+ }
+}

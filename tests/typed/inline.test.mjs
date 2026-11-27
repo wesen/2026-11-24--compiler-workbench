@@ -49,8 +49,8 @@ test('inline: a whole-program pass, registered, in the speed pipeline twice, and
   assert.equal(PASSES.inline.id, 'typed.inline');
   assert.deepEqual(PIPELINES.speed.slice(0, 2), ['inline', 'inline']);
   assert.deepEqual(PIPELINES.speed.slice(-2), ['rotate', 'cfg']);
-  // IRWB-037-G inserted thread, copies and guards, and runs subst as subst-mem; the rest is still O2+
-  const added = ['thread', 'copies', 'guards'];
+  // IRWB-037-G inserted thread, copies, guards and identities, and runs subst as subst-mem; the rest is still O2+
+  const added = ['thread', 'copies', 'guards', 'identities'];
   assert.deepEqual(
     PIPELINES.speed
       .slice(2, -2)

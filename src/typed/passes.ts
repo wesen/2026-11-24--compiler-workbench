@@ -36,6 +36,7 @@ import { hash, meaningKept, type MeaningParams } from './evaluate.js';
 import { tableBody } from './rules/compile.js';
 import { FOLD_RULES } from './rules/fold.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
+import { IDENTITY_RULES } from './rules/identities.js';
 import {
   Store,
   typeClass,
@@ -1125,6 +1126,15 @@ export const copies = typedPass({
   },
 });
 
+/** The identities found from hot shapes (rules/identities.ts), as a table pass like simplify. */
+export const identities = typedPass({
+  name: 'identities',
+  about: 'identities found from hot shapes: (x >> 3) << 3, (x & 15) < 8 and (x << 1) << 1 as one operation',
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body: tableBody(IDENTITY_RULES.rules),
+});
+
 export const substMem = typedPass({
   ...subst.typed,
   name: 'subst-mem',
@@ -1158,6 +1168,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   guards,
   copies,
   'subst-mem': substMem,
+  identities,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */
@@ -1213,7 +1224,8 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
    * IRWB-037-G adds, inside the O2+ part: `thread` after the first cfg, and again after strength (the inner join
    * of a nested && is a block of its own only once cfg has merged what the first run left), `copies` after
    * constprop (so the dce that follows removes the copies), `guards` after strength (it reads what licm and lvn
-   * left) and `subst-mem` in place of each subst. Without those four names,
+   * left), `subst-mem` in place of each subst, and `identities` after the last of them (its rules match what
+   * guards and subst-mem leave). Without those names,
    * and with subst-mem read as subst, the list is still inline, inline, O2+, rotate, cfg (a test says so).
    */
   speed: [
@@ -1240,6 +1252,7 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'dce',
     'cfg',
     'subst-mem',
+    'identities',
     'rotate',
     'cfg',
   ],

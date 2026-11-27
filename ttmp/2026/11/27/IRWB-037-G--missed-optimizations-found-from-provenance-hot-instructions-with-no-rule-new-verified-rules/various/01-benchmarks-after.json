@@ -1,0 +1,26 @@
+{
+ "regex": {
+  "cases": 1,
+  "r0": 8183,
+  "rejected": [],
+  "speed": 6052,
+  "speed tuned": 4868,
+  "reference": 6628
+ },
+ "lz": {
+  "cases": 100,
+  "r0": 185876,
+  "rejected": [],
+  "speed": 147978,
+  "speed tuned": 140194,
+  "reference": 156405
+ },
+ "chess": {
+  "cases": 1,
+  "r0": 14804396,
+  "rejected": [],
+  "speed": 9252728,
+  "speed tuned": 8172948,
+  "reference": 10827760
+ }
+}
