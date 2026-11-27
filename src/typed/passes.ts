@@ -48,7 +48,7 @@ import {
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { rotateSpec } from './rotate.js';
 import { makeInline } from './inline.js';
-import { copyReads, decideChecks, threadTests } from './guards.js';
+import { copyReads, guardPlan, threadTests } from './guards.js';
 import { ssaAnalysis, type SsaFn } from './ssa.js';
 
 /** What a pass may name as a need: the six analyses of ANALYSES, and the SSA view (IRWB-037-G). */
@@ -1080,12 +1080,24 @@ export const thread = typedPass({
 export const guards = typedPass({
   name: 'guards',
   about:
-    'guard facts: a check whose outcome dominating branches already decide becomes a jump (intervals of SSA names; params.all: every branch)',
+    'guard facts: a check whose outcome dominating branches already decide becomes a jump, and x / 2^k, x % 2^k with x proven non-negative become a shift and a mask (intervals of SSA names; params.all: every branch)',
   needs: { ssa: 'ssa' },
-  writes: ['stmts', 'cfg'],
+  writes: ['stmts', 'values', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts, params }) {
-    for (const d of decideChecks({ st, f, tx }, facts.ssa!, params.all === true))
+    const plan = guardPlan({ st, f, tx }, facts.ssa!, params.all === true);
+    if (plan.divisions.length && params.divisions !== false) {
+      const byValue = new Map(plan.divisions.map(d => [d.value, d]));
+      tx.rewrite(v => {
+        const d = byValue.get(v.id);
+        if (!d) return;
+        const opts = { because: [...d.because], note: d.note };
+        return d.op === 'div'
+          ? tx.make('shr', v.args[0].id, tx.const(log2(d.divisor)), opts)
+          : tx.make('and', v.args[0].id, tx.const(d.divisor - 1), opts);
+      });
+    }
+    for (const d of plan.checks)
       tx.replaceStmt(d.stmt, { op: 'br', to: d.to }, { because: [...d.because], note: d.note });
   },
 });

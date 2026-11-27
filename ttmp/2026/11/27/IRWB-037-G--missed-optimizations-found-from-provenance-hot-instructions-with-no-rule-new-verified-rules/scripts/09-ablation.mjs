@@ -1,7 +1,7 @@
 // What each new pass gives: the corpus under variants of a pipeline, pass by pass, summed over the seeded cases
 // `measure` uses (10 per function, seed 7), default and tuned backend options. The variants are pass lists: the
 // old `speed` (the four IRWB-037-G names removed, subst-mem read as subst), the old list plus each new pass alone,
-// all of them (`speed` as it is now), `guards` deciding every branch, `thread` once instead of twice, without `copies`, `copies` only for copies all of whose
+// all of them (`speed` as it is now), `guards` deciding every branch, `guards` without its divisions, `thread` once instead of twice, without `copies`, `copies` only for copies all of whose
 // reads can be read through (params.whole), and a second
 // `lvn` before rotate (after cfg has merged the blocks the removed checks separated).
 // With --pipeline O2: O2 as it is, and O2 with the same four insertions (not a registered pipeline).
@@ -44,6 +44,7 @@ const VARIANTS =
         'thread+subst-mem': without(S, ['thread', 'subst-mem']),
         all: S,
         'all, guards on every branch': S.map(n => (n === 'guards' ? ['guards', { all: true }] : n)),
+        'all, guards without divisions': S.map(n => (n === 'guards' ? ['guards', { divisions: false }] : n)),
         'all, one thread': S.filter((n, i) => n !== 'thread' || i === S.indexOf('thread')),
         'all but copies': S.filter(n => n !== 'copies'),
         'all, copies whole': S.map(n => (n === 'copies' ? ['copies', { whole: true }] : n)),
