@@ -93,6 +93,29 @@ export const programs = {
     sizes: { N: 4096, C: 1024 },
   },
 };
+// Row sums with bodies of graded cost, for the staging rule (script 03): `y[i,j] = x[i,j] - s[i]` after
+// `s[i] = sum(j) <body>`.
+const bodies = {
+  mul1: 'x[i,j] * x[i,j]',
+  mul2: 'x[i,j] * x[i,j] * x[i,j]',
+  mul4: 'x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j]',
+  mul8: 'x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j] * x[i,j]',
+  relu: 'max(x[i,j], 0)',
+  relu2: 'max(x[i,j], 0) * min(x[i,j], 1)',
+  sqrt1: 'sqrt(x[i,j] * x[i,j])',
+  div1: 'x[i,j] / 3',
+};
+for (const [name, body] of Object.entries(bodies))
+  programs[name] = {
+    fn: 'f',
+    source: `fn f(x: f32[N,C]): f32[N,C] { s[i] = sum(j) ${body}; y[i,j] = x[i,j] - s[i]; return y; }`,
+    sizes: { N: 4096, C: 1024 },
+  };
+programs.weighted = {
+  fn: 'f',
+  source: 'fn f(x: f32[N,C], w: f32[C]): f32[N,C] { s[i] = sum(j) x[i,j] * w[j]; y[i,j] = x[i,j] - s[i]; return y; }',
+  sizes: { N: 4096, C: 1024 },
+};
 
 export function inputsFor(program, fnName, sizes) {
   const fn = program.current.value.functions.find(f => f.name === fnName);

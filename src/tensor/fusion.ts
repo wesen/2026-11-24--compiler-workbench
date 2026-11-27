@@ -24,6 +24,14 @@ export interface FusionGroup {
   buffered: string[];
   /** Block mode: other tensors whose block-domain rows are copied to a row buffer before the members run. */
   staged: string[];
+  /**
+   * Block mode (IRWB-030-E): reductions whose terms all threads of the block compute into a term buffer before
+   * one thread folds them in the meaning's order. `reduction` numbers the statement's outermost reductions in
+   * preorder (`outerReductions`).
+   */
+  terms: { statement: string; reduction: number }[];
+  /** Block mode: the host decides at launch (`gateRule`) between this kernel and the members one by one. */
+  gated: boolean;
   /** Why the statements share this kernel, and what changed in the thread mapping. */
   reasons: string[];
 }
@@ -36,9 +44,17 @@ export interface FusionPlan {
   fn: string;
   groups: FusionGroup[];
   refusals: FusionRefusal[];
+  /** Reductions of block-mode members whose terms are not staged, with the reason (IRWB-030-E). */
+  termRefusals: FusionRefusal[];
 }
 
 type Load = Extract<Expr, { kind: 'load' }>;
+export type Reduce = Extract<Expr, { kind: 'reduce' }>;
+/** The reductions of e that are not inside another reduction, in preorder. */
+export function outerReductions(e: Expr): Reduce[] {
+  if (e.kind === 'reduce') return [e];
+  return e.kind === 'op' ? e.args.flatMap(outerReductions) : [];
+}
 const same = (a: Affine, b: Affine) => JSON.stringify(a) === JSON.stringify(b);
 function loads(s: Statement): Load[] {
   const out: Load[] = [];
@@ -78,9 +94,15 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
   return { depth: k, reason };
 }
 
+// The gate (IRWB-030-E): whether a block-mode group runs fused, from its grid (number of blocks) and its longest
+// row, as a C++ condition over the host's two values. PLACEHOLDER until script 04's measurements.
+export const gate = { minRow: 32 };
+export const gateRule = (grid: string, longest: string) => `(${longest} >= ${gate.minRow} || ${grid} < 0)`;
+
 export function planFusion(fn: Fn): FusionPlan {
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
-  const refusals: FusionRefusal[] = [];
+  const refusals: FusionRefusal[] = [],
+    termRefusals: FusionRefusal[] = [];
   for (const s of fn.statements) {
     const current = runs.at(-1);
     if (current) {
@@ -123,6 +145,25 @@ export function planFusion(fn: Fn): FusionPlan {
           if (rows.every((d, p) => same(d, t.shape[p]) && plain(e.indices[p]) === m.axes[p].id))
             staged.add(e.name);
         }
+    // Term staging (IRWB-030-E). A member with no trailing axes has one element per block, computed by thread 0
+    // while the other threads wait. Its outermost reductions' bodies do not depend on the accumulator, so all
+    // threads compute the terms and thread 0 folds them in order. A body that is one load from a row buffer is
+    // already a term in shared memory.
+    const terms: FusionGroup['terms'] = [];
+    const rowBuffers = new Set([...staged, ...buffered.map(m => m.name)]);
+    if (block)
+      for (const m of members) {
+        const ownRow = (e: Load) =>
+          rowBuffers.has(e.name) && e.indices.slice(0, depth).every((a, p) => plain(a) === m.axes[p].id);
+        outerReductions(m.expr).forEach((r, reduction) => {
+          const refuse = (reason: string) =>
+            termRefusals.push({ statement: m.name, kernel: 'k' + g, reason: `${r.op} ${reduction}: ${reason}` });
+          if (r.body.kind === 'load' && ownRow(r.body)) return;
+          if (m.axes.length > depth)
+            return refuse('every thread of the block computes elements of the row, so none is idle');
+          terms.push({ statement: m.name, reduction });
+        });
+      }
     const axes = members[0].shape.slice(0, depth).map(text).join(', ');
     const why = single
       ? []
@@ -134,6 +175,9 @@ export function planFusion(fn: Fn): FusionPlan {
               .filter(m => m.axes.length === depth)
               .map(m => `thread 0 computes ${m.name} (one element per row) in the meaning's order`),
             ...(staged.size ? [`rows of ${[...staged].join(', ')} are staged in the row buffer`] : []),
+            ...terms.map(
+              t => `all threads compute the terms of ${t.statement}'s reduction ${t.reduction}; thread 0 folds them in order`,
+            ),
           ]
         : [
             `one thread per element of [${axes}] computes ${members.map(m => m.name).join(', ')} in registers`,
@@ -146,10 +190,12 @@ export function planFusion(fn: Fn): FusionPlan {
       stored,
       buffered: buffered.map(m => m.name),
       staged: [...staged],
+      terms,
+      gated: block,
       reasons: [...why, ...reasons],
     };
   });
-  return { fn: fn.name, groups, refusals };
+  return { fn: fn.name, groups, refusals, termRefusals };
 }
 
 /** Stage 2's plan: one thread-mode kernel per statement. */
@@ -164,8 +210,11 @@ export function unfusedPlan(fn: Fn): FusionPlan {
       stored: [s.name],
       buffered: [],
       staged: [],
+      terms: [],
+      gated: false,
       reasons: [],
     })),
     refusals: [],
+    termRefusals: [],
   };
 }
