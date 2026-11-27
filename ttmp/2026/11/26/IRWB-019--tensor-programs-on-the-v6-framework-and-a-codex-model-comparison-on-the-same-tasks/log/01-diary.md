@@ -1117,3 +1117,16 @@ Each pack was scored by two judges: Codex (Sol high) and Claude (an Opus subagen
   - **T3b**, parallel terms with a serial fold, plus a cost gate;
   - **F23**, recorded.
 - **Validation after the merge:** `npm test` on main gives 445 pass, 0 fail, 3 skipped (448 tests, GPU tests included; `results/merge-t3/npm-test.txt`).
+
+## Step 41: T3b and F23 launched
+
+The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if avail, otherwise let's just use high (single one). do 10 agents. continue. write up reports appropriately."
+
+- **GLM 5.3 Flash:** its thinking-level map has no xhigh (`~/.pi/agent/models-store.json`: low, high, max), so it gets one cell, at high. That leaves nine cells. **The tenth is my choice: GLM 5.3 max (J),** which gives GLM 5.3 a high/max pair like DeepSeek's. Its longest single request in R1b and R2b was 10.1 and 4.3 min, under the 20-minute cap.
+- **T3b (IRWB-030-A..J):**
+  - Brief: `prompts/t3b/common.md`, adapted from T3's. It asks for parallel terms with a serial fold, and a decision that keeps a program unfused where fusing would be slower.
+  - Base: `t3b-base` (`84b6516`), main after T3 without this ticket and `BACKLOG.md`.
+  - Launcher: `scripts/46-launch-t3b.sh`; cells in `results/t3b-config-key.json`. The Claude cells D and E go through the Agent tool.
+- **The brief names both division placements.** So the hidden evaluation (`hidden-t3b/t3b-eval.mjs`, written now, before any T3b work) adds three held-out programs that are not in the brief: rmsnorm and centering with the division inside, and log-softmax, whose reduction body is an `exp`. It also runs the whole T3 evaluation. Main's code (Opus's T3) will be evaluated in the same run as the baseline.
+- **F23 to Terra low (IRWB-031, `scripts/45-launch-fixes-3.sh`):** framework only, not `src/tensor/`, so it does not conflict with T3b. The T3b brief tells its agents not to touch the correspondence code.
+- **F22 is not sent:** the backlog files it as part of F15, the tolerance relation, which goes with T4.
