@@ -15,7 +15,7 @@
 //     in order afterwards, so a costly term (a division, an exp) is no longer serial (rules S0-S4 below);
 //   - the launch gate: with the shape values at launch, a block-mode group with too few rows to fill the machine
 //     stays unfused (stage 2's singleton kernels); without values the planner keeps stage 3's behaviour.
-import { plain, value, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
+import { plain, value, visit, width, type Affine, type Expr, type Extent, type Fn, type Statement } from './model.js';
 
 export interface FusionGroup {
   kernel: string;
@@ -100,14 +100,6 @@ export function reduceNodes(e: Expr): ReduceNode[] {
   walk(e, false);
   return nodes;
 }
-const expensive = (e: Expr): boolean => {
-  let found = false;
-  visit(e, x => {
-    if (x.kind === 'op' && (x.op === '/' || x.op === 'exp' || x.op === 'log' || x.op === 'tanh'))
-      found = true;
-  });
-  return found;
-};
 const singleLoad = (e: Expr): string | undefined => (e.kind === 'load' ? e.name : undefined);
 
 /** The deepest block domain s can share with the group's members, or 0 with the reason it cannot join. */
@@ -136,9 +128,12 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
 }
 
 /**
- * Term staging, decided from the IR (design S0-S4). `resident` holds the tensors already living in the block's
- * row buffers (staged parameters and buffered members). Returns the staged reductions of `member` and the
- * refusals for the ones that keep the inline fold.
+ * Term staging, decided from the IR. S0: only row-scalar members of block-mode groups (a row member's terms
+ * already run one output element per thread; thread mode is stage 2's mapping). S3: not nested inside another
+ * reduction (cooperation would need a barrier per enclosing term). S4: every axis extent has kind dim (split
+ * bounds make the term space ragged). S1: the body is not a single load (measured, script 03). `resident` holds
+ * the tensors already living in the block's row buffers (staged parameters and buffered members). Returns the
+ * staged reductions of `member` and the refusals for the ones that keep the inline fold.
  */
 function planTerms(
   member: Statement,
@@ -184,19 +179,16 @@ function planTerms(
       continue;
     }
     const load = singleLoad(node.body);
-    if (load !== undefined && resident.has(load)) {
+    if (load !== undefined) {
+      // Measured (script 03): staging a pure copy of a row buffer is 3% slower, and staging single global loads
+      // is neutral; every body that computes anything staged 1.1-2.8 times faster, even through the scratch
+      // fallback. So the terms are staged unless computing a term is just addressing an existing value.
       refusals.push({
         statement: member.name,
         node: at,
-        reason: `its terms are loads of ${load}, already in the row buffer; staging would copy them`,
-      });
-      continue;
-    }
-    if (!expensive(node.body)) {
-      refusals.push({
-        statement: member.name,
-        node: at,
-        reason: 'its terms are loads and cheap ops; the fold is not the serial cost',
+        reason: resident.has(load)
+          ? `its terms are loads of ${load}, already in the row buffer; staging would copy them`
+          : `its terms are single loads of ${load} from global memory; staging them measured no win`,
       });
       continue;
     }
@@ -210,11 +202,17 @@ function planTerms(
   return { terms, refusals };
 }
 /**
- * Rows below this keep a block-mode group unfused when the shape values at launch say so: one block per row cannot
- * use more blocks than there are rows, so a small grid leaves the machine idle while stage 2's per-statement
- * kernels spread every row phase over the whole GPU. The crossover is measured, not chosen (script 05).
+ * The launch gate (measured, script 02): a block-mode group pays for itself at small row counts only when one of
+ * its members folds a serial chain as long as the row. Stage 2's own row-scalar kernel then runs that fold on one
+ * thread per row over uncoalesced global loads, and the fused kernel's staged, shared-memory fold beats it at any
+ * row count (softmax and layernorm: fused 2-3 times faster from 1 row to 4096). When no member folds the row —
+ * the group's work is its row phase, heavy elementwise work per element — one block per row confines that phase
+ * to blockDim threads while stage 2 spreads it over the grid: measured 9.6 times slower at one row, parity at
+ * about 32 rows, ahead from 64 rows on, with or without staged rows (script 02, C = 1024, 4096, 16384). So a
+ * block-mode group with fewer than 64 rows and no row-length fold stays unfused: stage 2's kernels, exact by
+ * stage 2's own check, and never slower than the fused alternative.
  */
-export const blockModeMinRows = 96;
+export const blockModeMinRows = 64;
 
 /** The block-domain extent values of a group, or undefined when the shape values do not determine them. */
 function rowsOf(fn: Fn, group: { statements: string[]; depth: number }, dims?: Map<string, number>) {
@@ -223,6 +221,27 @@ function rowsOf(fn: Fn, group: { statements: string[]; depth: number }, dims?: M
   const extents = member.shape.slice(0, group.depth);
   if (!extents.every(a => a.terms.every(([n]) => dims.has(n)))) return undefined;
   return extents.reduce((rows, a) => rows * value(a, dims), 1);
+}
+
+/** The longest member row and the longest serial fold of a run, in elements, or undefined when undeterminable. */
+function rowAndFoldOf(run: { members: Statement[]; depth: number }, dims: Map<string, number>) {
+  const extentCount = (e: Extent): number =>
+    e.kind === 'dim'
+      ? value(e.dim, dims)
+      : e.kind === 'blocks'
+        ? Math[e.rounding](value(e.dim, dims) / width)
+        : width;
+  let row = 0,
+    fold = 0;
+  for (const m of run.members) {
+    if (m.shape.slice(run.depth).some(a => !a.terms.every(([n]) => dims.has(n)))) return undefined;
+    row = Math.max(row, m.shape.slice(run.depth).reduce((n, a) => n * value(a, dims), 1));
+    for (const { node } of reduceNodes(m.expr)) {
+      if (node.axes.some(a => !a.extent.dim.terms.every(([n]) => dims.has(n)))) return undefined;
+      fold = Math.max(fold, node.axes.reduce((n, a) => n * extentCount(a.extent), 1));
+    }
+  }
+  return { row, fold };
 }
 
 export function planFusion(fn: Fn, shapeValues?: Map<string, number>): FusionPlan {
@@ -317,15 +336,18 @@ export function planFusion(fn: Fn, shapeValues?: Map<string, number>): FusionPla
       terms,
       reasons: [...why, ...reasons],
     };
-    // The launch gate: with the shape values at launch, a block-mode group with too few rows stays unfused.
+    // The launch gate: with the shape values at launch, a block-mode group whose work is its row phase and whose
+    // rows cannot yet fill the machine stays unfused. A member that folds the whole row keeps the group fused.
     if (block && shapeValues) {
       const rows = rowsOf(fn, group, shapeValues);
-      if (rows !== undefined && rows < blockModeMinRows) {
+      const bounds = rows === undefined ? undefined : rowAndFoldOf({ members, depth }, shapeValues);
+      if (rows !== undefined && bounds !== undefined && rows < blockModeMinRows && bounds.fold < bounds.row) {
         gated.push({
           statements: group.statements,
           rows,
-          reason: `${rows} ${rows === 1 ? 'row fills' : 'rows fill'} fewer blocks than the machine runs concurrently; ` +
-            `stage 2's kernels spread each row phase over the whole grid (crossover ${blockModeMinRows}, script 05)`,
+          reason: `${rows} ${rows === 1 ? 'row' : 'rows'} with no row-length fold: the row phase runs on ` +
+            `${bounds.row} elements per block while stage 2 spreads it over the whole grid ` +
+            `(crossover ${blockModeMinRows} rows, script 02)`,
         });
         return members.map((m, i): FusionGroup => {
           termRefusals.push(

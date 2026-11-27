@@ -207,18 +207,19 @@ test('GB10: a staged max over global terms and a split-sum program keep the exac
   assert.deepEqual(await checkLowering(global, 'f'), { accepted: true, relation: 'exact' });
 });
 
-test('GB10: with tiny shape values at launch the fuse gate keeps the program unfused, still exact', async () => {
-  const softmax = compileTix(
-    'fn f(x:f32[N,C]):f32[N,C] { m[i] = max(j) x[i,j]; e[i,j] = exp(x[i,j] - m[i]); s[i] = sum(j) e[i,j]; y[i,j] = e[i,j] / s[i]; return y; }',
+test('GB10: with tiny shape values at launch the fuse gate keeps the row-phase group unfused, still exact', async () => {
+  const rowphase = compileTix(
+    'fn f(s0: f32[N], z: f32[M,C]): f32[N,C] { s[i] = s0[i] + 1; y[i,j] = tanh(s[i]) * exp(z[i+0,j]); return y; }',
   );
-  // 4 rows cannot fill the machine with one block per row; the launch-time gate plans stage 2's kernels.
-  const fn = softmax.current.value.functions[0];
-  const gated = planFusion(fn, new Map([['N', 4], ['C', 64]]));
+  // 4 rows of heavy elementwise work with no row-length fold: the launch gate plans stage 2's kernels.
+  const fn = rowphase.current.value.functions[0];
+  const gated = planFusion(fn, new Map([['N', 4], ['C', 64], ['M', 4]]));
   assert.equal(gated.unfused.length, 1);
   const random = seededRandom(33);
-  const x = { shape: [4, 64], data: Float32Array.from({ length: 256 }, () => 2 * random() - 1) };
-  const fused = await runTixCuda(softmax, 'f', { x });
-  const unfused = await runTixCuda(softmax, 'f', { x }, { fuse: false });
+  const s0 = { shape: [4], data: Float32Array.from({ length: 4 }, () => 2 * random() - 1) };
+  const z = { shape: [4, 64], data: Float32Array.from({ length: 256 }, () => 2 * random() - 1) };
+  const fused = await runTixCuda(rowphase, 'f', { s0, z });
+  const unfused = await runTixCuda(rowphase, 'f', { s0, z }, { fuse: false });
   assert.deepEqual(words(fused), words(unfused));
-  assert.deepEqual(words(fused), words(runTix(softmax, 'f', { x })));
+  assert.deepEqual(words(fused), words(runTix(rowphase, 'f', { s0, z })));
 });

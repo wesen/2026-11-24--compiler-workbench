@@ -1,0 +1,12 @@
+{"program":"rowphaseStaged","C":16384,"N":1,"fuse":true,"gpuMs":0.11311999708414078}
+{"program":"rowphaseStaged","C":16384,"N":4,"fuse":true,"gpuMs":0.1138560026884079}
+{"program":"rowphaseStaged","C":16384,"N":12,"fuse":true,"gpuMs":0.11292800307273865}
+{"program":"rowphaseStaged","C":16384,"N":32,"fuse":true,"gpuMs":0.11302399635314941}
+{"program":"rowphaseStaged","C":16384,"N":64,"fuse":true,"gpuMs":0.221343994140625}
+{"program":"rowphaseStaged","C":16384,"N":4096,"fuse":true,"gpuMs":13.140128135681152}
+{"program":"rowphaseStaged","C":16384,"N":1,"fuse":false,"gpuMs":0.011744000017642975}
+{"program":"rowphaseStaged","C":16384,"N":4,"fuse":false,"gpuMs":0.02284800074994564}
+{"program":"rowphaseStaged","C":16384,"N":12,"fuse":false,"gpuMs":0.04940799996256828}
+{"program":"rowphaseStaged","C":16384,"N":32,"fuse":false,"gpuMs":0.11964800208806992}
+{"program":"rowphaseStaged","C":16384,"N":64,"fuse":false,"gpuMs":0.23423999547958374}
+{"program":"rowphaseStaged","C":16384,"N":4096,"fuse":false,"gpuMs":14.554431915283203}

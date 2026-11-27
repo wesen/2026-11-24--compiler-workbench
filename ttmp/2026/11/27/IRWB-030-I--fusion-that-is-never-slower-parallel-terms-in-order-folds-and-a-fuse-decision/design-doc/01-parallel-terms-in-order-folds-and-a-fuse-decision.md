@@ -64,18 +64,17 @@ then carries over.
   a row member (rank > depth) already has its terms spread one output element per thread, as stage 2
   spread them; staging would need cross-thread cooperation per output element for no measured gain
   (refused, reason recorded). Thread-mode groups keep stage 2's per-element mapping; never staged.
-- **S1 (no copying).** The body is not a single load of a row-resident tensor (a staged parameter or
-  an earlier member). Then the terms already sit in shared memory; staging would copy them and add a
-  barrier to parallelize nothing — the serial fold over shared values is the same chain either way
-  (softmax's `m` and `s`, attention's `shift` and `z`). A single load of a tensor that is *not*
-  row-resident is allowed (probe; the fold's load latency is what staging removes).
-- **S2 (worth parallelizing).** The body contains at least one division or one of `exp`, `log`,
-  `tanh` — the multi-cycle operations whose serial repetition is what fusion took away. Bodies of
-  loads, adds, multiplies, min/max keep the inline fold: their per-term work is a cheap pipelined op,
-  and staging adds a buffer and a barrier for it (justified by a measured probe, not assumed).
+- **S1 (no pure addressing).** The body is not a single load. A term that is only an address adds no work to
+  parallelize. Measured (script 03, fused kernel both sides): staging a copy of a row buffer ran 3% slower
+  (softmax's `m`: the terms are loads of the staged `x`); staging single loads of a global tensor measured
+  neutral; every body that computes anything staged 1.1–2.8 times faster — a division per term
+  (layernorm-inside), a multiply of loads (1.12×), and a 20 000-term fold whose buffer pushed the row set into
+  the global scratch fallback still ran 2.8× faster than the inline fold in shared memory. So the rule is:
+  stage everything whose terms are computed; refuse only single-load bodies, with the residency stated.
 - **S3 (no nesting).** The reduction is not inside another reduction's body. A nested reduction's
   terms would need a barrier per enclosing term to be computed cooperatively; it stays inline in
-  whichever thread computes the enclosing term.
+  whichever thread computes the enclosing term. (The enclosing reduction itself stages; its terms run
+  the inner fold inline, serially, inside each term — measured exact.)
 - **S4 (no split bounds).** Every axis extent has kind `dim`. The `blocks`/`tail` extents that
   split-sum generates make the term space ragged (the tail bound depends on the enclosing block
   index); flattening them is possible but unmeasured, so they keep the inline fold, with the reason
@@ -95,18 +94,27 @@ crossovers, not round numbers):
 
 - **Lowering time, from the IR.** Thread-mode groups always fuse: the mapping is stage 2's, the
   members pass in registers, so fusion strictly removes global traffic and never removes
-  parallelism. Block-mode groups fuse by default; the risk case is the one stage 3 named: few rows.
-  One block per row cannot use more than `rows` blocks of the machine, so when `rows` is small and
-  the row phase (the elementwise work over a row) dominates, unfused wins.
+  parallelism. Block-mode groups fuse by default; the risk case is a group whose work is its row
+  phase.
 - **Launch time, from the shape values.** The block-domain extent's value is known only when the
   inputs are (`runTixCuda` receives them; `cudaSource` and `checkLowering` do not). So
   `planFusion(fn, shapeValues?)` takes the shape values when the caller has them: `runTixCuda`
   derives them from the inputs' param shapes and passes them; `cudaSource` and `checkLowering` plan
-  without values and keep stage 3's behaviour. With values, a block-mode group whose row count is
-  below the measured crossover stays unfused — its statements become stage 2's singleton kernels,
-  which are exact by stage 2's check. The rule is per group. A refused group's members are stored,
-  so later groups read them from global exactly as they would any parameter; later groups are then
-  planned on the resulting statement sequence.
+  without values and keep stage 3's behaviour. With values, a block-mode group stays unfused when
+  both hold (measured, script 02):
+  1. no member folds a serial chain as long as the row (a reduction's flattened count below the
+     longest member row), and
+  2. the row count is below the measured crossover of 64 rows.
+
+  The first condition is the measured discriminator. When a member folds the whole row — softmax,
+  layernorm, their inside variants — stage 2's row-scalar kernel runs the fold on one thread per row
+  over uncoalesced global loads, and the fused kernel's fold wins at every row count measured
+  (ratios 0.14–0.58 over N = 1…4096, C = 1024…1 048 576). When no member does — a heavy elementwise
+  row phase (`tanh·exp` per element), with or without staged rows — one block per row confines the
+  phase to `blockDim` threads: measured 9.6× slower at one row, parity at about 32 rows, ahead from
+  64 rows (ratios 0.94 at 32, 0.77–0.94 at 64, 0.52–0.62 at 96 and above; C = 1024, 4096, 16384).
+  The crossover 64 sits one measured grid point above the parity zone, with the run-to-run noise of
+  2–5% in mind; below it the gate's cost is a missed win of at most about 1.3×, never a loss.
 
 Both sides of the choice are exact lowerings, so the decision changes only time, never a bit; a
 program where the rule fires reports the unfused plan's kernel count. The decision itself is a
@@ -116,10 +124,10 @@ performance heuristic outside the checked transformation, and the report says so
 
 1. Baseline: the brief's table reproduced on this machine (six corpus programs + the inside variants
    of layernorm and attention, fused and unfused; medians of three `benchmark` calls).
-2. A shape grid (rows × row length) for softmax-like and layernorm-like programs, fused against
-   unfused, before and after staging: locates the losing region and gives the crossover for the rule.
-3. Staging probes: a mul-only reduction staged against inline (S2), a global single-load max staged
-   against inline (S1), the thread cap for contraction kernels re-checked with staging in place.
+2. A shape grid (rows × row length) for softmax-like, layernorm-like and adversarial row-phase
+   programs, fused against unfused: locates the losing region and gives the crossover for the rule.
+3. Staging probes, fused kernel both sides: a multiply-of-loads fold staged against inline; a global
+   single-load max; a pure copy of a staged row; a 20 000-term fold through the scratch fallback.
 4. Final table: kernel counts and benchmark times for all eight programs, fused and unfused, plus
    which reductions staged per block-mode kernel; `checkLowering` cost per program.
 
@@ -159,7 +167,9 @@ express, the change and its reason become a primary result.
 
 ## Open questions (resolved by measurement during the stage)
 
-- Does staging a global single-load reduction pay? (S1's carve-out)
-- Does the contraction thread cap of 64 stay right once reductions stage?
-- Where exactly is the few-rows crossover, and is one threshold enough for softmax-like and
-  layernorm-like groups?
+- Does staging a global single-load reduction pay? — No: neutral (script 03); refused.
+- Does the contraction thread cap of 64 stay right once reductions stage? — The staged reductions
+  are in row-scalar members, which the cap logic already treats as rows-only (128); the contraction
+  cap governs row members, whose emissions this stage does not change. Not re-measured.
+- Where exactly is the few-rows crossover, and is one threshold enough? — Parity at about 32 rows
+  for C = 1024, 4096 and 16384 alike; threshold 64 (script 02).

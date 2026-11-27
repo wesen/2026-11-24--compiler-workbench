@@ -1,0 +1,8 @@
+{"probe":"cheap","staged":false,"gpuMs":0.17510400712490082,"digest":"2c22c8837510142d8bea172658b116693179ec3ab9f54be34983a10f56f7c74b","exact":true}
+{"probe":"cheap","staged":true,"gpuMs":0.15587200224399567,"digest":"2c22c8837510142d8bea172658b116693179ec3ab9f54be34983a10f56f7c74b","exact":true}
+{"probe":"residentcopy","staged":false,"gpuMs":0.14259199798107147,"digest":"e2ad95e6c00b85eff5b56b2f597daf27935c2dac5014326265dac067d8723301","exact":true}
+{"probe":"residentcopy","staged":true,"gpuMs":0.1467519998550415,"digest":"e2ad95e6c00b85eff5b56b2f597daf27935c2dac5014326265dac067d8723301","exact":true}
+{"probe":"bigfold","staged":false,"gpuMs":0.9092479944229126,"digest":"24a0ff694b6aad865ea922df96ce8003f57420d4db8c755bd4abb111e2e56801","exact":true}
+{"probe":"bigfold","staged":true,"gpuMs":0.3240320086479187,"digest":"24a0ff694b6aad865ea922df96ce8003f57420d4db8c755bd4abb111e2e56801","exact":true}
+{"probe":"globalload","staged":false,"gpuMs":0.1733119934797287,"digest":"dfd6d6babbd64ea881c75ccbed2a76dbd43d161c988b4da3510d25f7c9e9be95","exact":true}
+{"probe":"globalload","staged":true,"gpuMs":0.1732800006866455,"digest":"dfd6d6babbd64ea881c75ccbed2a76dbd43d161c988b4da3510d25f7c9e9be95","exact":true}

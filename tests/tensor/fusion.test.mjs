@@ -187,16 +187,13 @@ test('IRWB-030-I: the plan stages the reductions whose terms are costly, and rec
     ],
   );
   assert.deepEqual(inside.termRefusals, []);
-  // The corpus placement divides the reduced value: its terms are a single load of the staged row, so
-  // staging would only copy shared memory.
+  // The corpus placement divides the reduced value: mean's terms are a single load of the staged row, so
+  // staging would only copy shared memory; variance's terms compute (a multiply of loads), so they stage.
   const outside = planFusion(corpus('layernorm').current.value.functions[0]);
-  assert.deepEqual(outside.groups[0].terms, []);
+  assert.deepEqual(outside.groups[0].terms.map(t => t.statement), ['variance']);
   assert.deepEqual(
     outside.termRefusals.map(r => [r.statement, r.reason]),
-    [
-      ['mean', 'its terms are loads of x, already in the row buffer; staging would copy them'],
-      ['variance', 'its terms are loads and cheap ops; the fold is not the serial cost'],
-    ],
+    [['mean', 'its terms are loads of x, already in the row buffer; staging would copy them']],
   );
   // softmax's max and sum read the row buffer; attention's row members keep one thread per element.
   const softmax = planFusion(corpus('softmax').current.value.functions[0]);
@@ -207,34 +204,34 @@ test('IRWB-030-I: the plan stages the reductions whose terms are costly, and rec
   assert.match(attention.termRefusals[1].reason, /already in the row buffer/);
 });
 
-test('IRWB-030-I: cheap bodies keep the inline fold; a single load of a global tensor stages', () => {
+test('IRWB-030-I: single-load bodies keep the inline fold; anything computed stages', () => {
+  // A body that computes anything stages, cheap or not (script 03: a multiply-of-loads fold staged 1.12x faster).
   const cheap = plan(
     'fn f(x:f32[N,C], w:f32[C]):f32[N,C] { s[i] = sum(j) x[i,j] * w[j]; y[i,j] = x[i,j] - s[i]; return y; }',
     'f',
   );
-  assert.deepEqual(cheap.groups[0].terms, []);
-  assert.match(cheap.termRefusals[0].reason, /cheap ops/);
+  assert.deepEqual(cheap.groups[0].terms.map(t => t.statement), ['s']);
   const global = plan(
     'fn f(x:f32[N,C], g:f32[C]):f32[N,C] { m[i]: f32[N] = max(j) g[j]; y[i,j] = x[i,j] - m[i]; return y; }',
     'f',
   );
-  // Even a global single load keeps the inline fold: its terms are loads, so there is no costly per-term
-  // work to spread (the probe in the ticket's scripts measures whether staging one would pay anyway).
+  // Even a global single load keeps the inline fold: staging it measured neutral (script 03).
   assert.deepEqual(global.groups[0].terms, []);
-  assert.match(global.termRefusals[0].reason, /terms are loads and cheap ops/);
+  assert.match(global.termRefusals[0].reason, /staging them measured no win/);
   // a nested reduction keeps the inline fold, and so does a split-sum reduction
   const nested = plan(
     'fn f(x:f32[N,C], z:f32[N,C]):f32[N,C] { s[i] = sum(j) (x[i,j] * sum(k) z[i,k]); y[i,j] = x[i,j] - s[i]; return y; }',
     'f',
   );
-  assert.deepEqual(nested.groups[0].terms, []);
-  assert.match(nested.termRefusals[0].reason, /cheap ops/);
-  assert.match(nested.termRefusals[1].reason, /nested inside another reduction/);
-  const split = plan(
-    'fn f(x:f32[N,C]):f32[N] { s[i] = sum(j) x[i,j] / C; y[i] = s[i] * 2; return y; }',
-    'f',
-  );
-  assert.deepEqual(split.groups[0].terms, []);
+  assert.deepEqual(nested.groups[0].terms.map(t => t.statement), ['s']);
+  assert.match(nested.termRefusals[0].reason, /nested inside another reduction/);
+  // After split-sum the fold's axes have blocks/tail extents: the term space is ragged, so no staging.
+  const split = optimizeTix(
+    compileTix('fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j] / C; y[i,j] = x[i,j] - s[i]; return y; }'),
+    ['split-sum'],
+  ).program.current.value.functions[0];
+  assert.deepEqual(planFusion(split).groups[0].terms, []);
+  assert.match(planFusion(split).termRefusals[0].reason, /split bounds/);
 });
 
 test('IRWB-030-I: thread-mode groups and singletons never stage', () => {
@@ -250,32 +247,36 @@ test('IRWB-030-I: thread-mode groups and singletons never stage', () => {
   ]);
 });
 
-test('IRWB-030-I: with the shape values at launch, a block-mode group with too few rows stays unfused', () => {
-  const softmax = corpus('softmax').current.value.functions[0];
-  const few = planFusion(softmax, new Map([['N', 8], ['C', 1024]]));
+test('IRWB-030-I: with the shape values at launch, a row-phase group with too few rows stays unfused', () => {
+  // The measured losing family (script 02): heavy elementwise row phase, no row-length fold, nothing the
+  // fusion saves at row scale. Below the crossover the group plans as stage 2's singleton kernels.
+  const rowphase = compileTix(
+    'fn f(s0: f32[N], z: f32[M,C]): f32[N,C] { s[i] = s0[i] + 1; y[i,j] = tanh(s[i]) * exp(z[i+0,j]); return y; }',
+  ).current.value.functions[0];
+  const few = planFusion(rowphase, new Map([['N', 4], ['C', 1024], ['M', 4]]));
   assert.deepEqual(
     few.groups.map(g => [g.kernel, g.mapping, g.statements.join(',')]),
     [
-      ['k0f0', 'thread', 'm'],
-      ['k0f1', 'thread', 'e'],
-      ['k0f2', 'thread', 's'],
-      ['k0f3', 'thread', 'y'],
+      ['k0f0', 'thread', 's'],
+      ['k0f1', 'thread', 'y'],
     ],
   );
-  assert.deepEqual(
-    few.unfused.map(u => [u.statements, u.rows]),
-    [[['m', 'e', 's', 'y'], 8]],
-  );
-  assert.match(few.unfused[0].reason, /fewer blocks than the machine/);
-  const many = planFusion(softmax, new Map([['N', 4096], ['C', 1024]]));
+  assert.deepEqual(few.unfused.map(u => [u.statements, u.rows]), [[['s', 'y'], 4]]);
+  assert.match(few.unfused[0].reason, /no row-length fold/);
+  const many = planFusion(rowphase, new Map([['N', 4096], ['C', 1024], ['M', 4096]]));
   assert.deepEqual(many.groups.map(g => g.mapping), ['block']);
   assert.deepEqual(many.unfused, []);
+  // A member that folds the whole row keeps the group fused even at one row (script 02: softmax, layernorm).
+  const softmax = corpus('softmax').current.value.functions[0];
+  const tiny = planFusion(softmax, new Map([['N', 1], ['C', 1024]]));
+  assert.deepEqual(tiny.groups.map(g => g.mapping), ['block']);
+  assert.deepEqual(tiny.unfused, []);
   // Without shape values (cudaSource, checkLowering) the plan is stage 3's: one fused kernel.
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax')), 1);
   // A gated group's members are stored, so a later group reads them as it reads any parameter.
   const two = compileTix(
-    'fn f(x:f32[N,C]):f32[N,C] { m[i] = max(j) x[i,j]; e[i,j] = exp(x[i,j] - m[i]); return e; }',
+    'fn f(x:f32[N,C]):f32[N,C] { s[i] = x[i,0] + 1; y[i,j] = tanh(s[i]) * exp(x[i+0,j]); return y; }',
   ).current.value.functions[0];
   const gated = planFusion(two, new Map([['N', 2], ['C', 8]]));
-  assert.deepEqual(gated.groups.map(g => g.stored), [['m'], ['e']]);
+  assert.deepEqual(gated.groups.map(g => g.stored), [['s'], ['y']]);
 });
