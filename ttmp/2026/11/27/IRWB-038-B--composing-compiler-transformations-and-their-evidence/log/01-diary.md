@@ -156,3 +156,7 @@ The coordinator asked me to revisit ownership of the proposed abstractions. I co
 > Add it to the design document as "the proposed standard library: its layering criteria and its primitives", and revise the rest where this changes your conclusions.
 >
 > Final message: the same list as before (ticket and document paths, five findings, framework concepts, fundamental changes, last commit), plus "the standard-library primitives you propose, one line each".
+
+## 5. Revise ownership and migration
+
+Checkpoint bca8943 records the follow-up measurements. The amended design assigns evidence and publication protocols to core, algorithm implementations to an optional library, and input/target semantics to the domain. It includes 15 entries and two end-to-end compositions. The first library extraction can proceed independently of the publication fix. I chose machine liveness because allocation and coalescing both supply concrete clients, with exact sets available for comparison (`src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:32`, `scripts/08-library-boundaries.mjs:40`). The catalogue is design work. The new experiments used CPU execution and did not collect GPU timings.
