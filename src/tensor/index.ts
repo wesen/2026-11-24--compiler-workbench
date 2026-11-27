@@ -7,9 +7,9 @@ import { evaluate, type Inputs, type Precision, type BufferValue } from './evalu
 import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
-import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+import { runCudaBatch, shapeValues, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { fuseAt, planFusion, unfusedPlan } from './fusion.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -63,9 +63,13 @@ export interface LoweringOptions {
   /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
   fuse?: boolean;
 }
-function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
+// With the call's inputs, the fused plan runs only where the gate (fusion.ts, IRWB-030-D) finds it not slower than
+// stage 2; otherwise the call runs stage 2's source. Both sources are the ones `checkLowering` checks.
+function lower(program: TixProgram, fn: string, options?: LoweringOptions, inputs?: CudaInputs) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  const fused = options?.fuse !== false ? planFusion(f) : undefined;
+  const fuse = fused && (!inputs || fuseAt(f, fused, shapeValues(f, inputs)).fuse);
+  return { f, source: emitCuda(f, fuse ? fused : unfusedPlan(f)) };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {
@@ -78,7 +82,7 @@ export async function runTixCuda(
   inputs: CudaInputs,
   options?: LoweringOptions & { host?: string; benchmark?: boolean },
 ): Promise<CudaResult> {
-  const { f, source } = lower(program, fn, options);
+  const { f, source } = lower(program, fn, options, inputs);
   const [result] = await runCudaBatch(source, f, [inputs], {
     host: options?.host,
     benchmark: options?.benchmark,

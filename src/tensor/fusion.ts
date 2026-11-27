@@ -9,7 +9,7 @@
 //   - block mode (some member has trailing axes): one block per point; a member's row lives in a row buffer, a
 //     member with no trailing axes is computed by thread 0, and `__syncthreads()` separates the members.
 // Every element is still computed by one thread with stage 2's scalar code, so its evaluation order is unchanged.
-import { plain, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
+import { plain, value, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
 
 export interface FusionGroup {
   kernel: string;
@@ -217,6 +217,41 @@ export function planFusion(fn: Fn, options?: { terms?: TermRule }): FusionPlan {
     };
   });
   return { fn: fn.name, groups, refusals };
+}
+
+// IRWB-030-D: the gate. A block-mode kernel runs one block per row; when every row is short, most of the block's
+// threads idle and the barriers dominate, and stage 2's lowering is faster (the ticket's M3b: softmax at 2^20 rows
+// of 4 elements took 2.93 ms fused and 0.62 ms unfused). Below this many elements in a kernel's longest row the
+// program runs stage 2's lowering. Chosen by measurement (M3b); see the ticket's report.
+export const gate = { shortestRow: 32 };
+
+/** Whether `plan` should run at these shape values, or stage 2's lowering instead (`fuse: false`). */
+export function fuseAt(
+  fn: Fn,
+  plan: FusionPlan,
+  shapes: ReadonlyMap<string, number>,
+): { fuse: boolean; reason: string } {
+  const tensors = new Map([...fn.params, ...fn.statements].map(t => [t.name, t]));
+  for (const g of plan.groups) {
+    if (g.mapping !== 'block') continue;
+    const longest = Math.max(
+      ...[...g.staged, ...g.statements].map(n =>
+        tensors
+          .get(n)!
+          .shape.slice(g.depth)
+          .reduce((k, d) => k * Math.max(0, value(d, shapes as Map<string, number>)), 1),
+      ),
+    );
+    if (longest < gate.shortestRow)
+      return {
+        fuse: false,
+        reason: `${g.kernel}'s longest row has ${longest} elements, fewer than ${gate.shortestRow}: stage 2 is faster`,
+      };
+  }
+  return {
+    fuse: true,
+    reason: 'every block-mode kernel has a row of at least ' + gate.shortestRow + ' elements',
+  };
 }
 
 /** Stage 2's plan: one thread-mode kernel per statement. */

@@ -23,27 +23,34 @@ function elements(shape: number[]): number {
   return count;
 }
 
-export function encodeCudaCases(fn: Fn, cases: readonly CudaInputs[]): Buffer {
-  const tensors = cases.flatMap(inputs => {
-    const dims = new Map<string, number>();
-    const ordered = fn.params.map(p => {
-      const tensor = Object.hasOwn(inputs, p.name) ? inputs[p.name] : undefined;
-      if (!tensor || tensor.shape.length !== p.shape.length || elements(tensor.shape) !== tensor.data.length)
-        throw Error('Invalid input shape or length for ' + p.name);
-      for (const [i, d] of p.shape.entries()) {
-        const key = plain(d);
-        if (key === undefined) continue;
-        if (dims.has(key) && dims.get(key) !== tensor.shape[i])
-          throw Error('Inconsistent input extent ' + key);
-        dims.set(key, tensor.shape[i]);
-      }
-      return tensor;
-    });
-    for (const [i, p] of fn.params.entries())
-      if (p.shape.some((d, j) => value(d, dims) !== ordered[i].shape[j]))
-        throw Error('Inconsistent affine shape for ' + p.name);
-    return ordered;
+/** The shape values of one call: each shape name's extent in the inputs (validated as in the request). */
+export function shapeValues(fn: Fn, inputs: CudaInputs): Map<string, number> {
+  return bindShapes(fn, inputs).dims;
+}
+
+function bindShapes(fn: Fn, inputs: CudaInputs) {
+  const dims = new Map<string, number>();
+  const ordered = fn.params.map(p => {
+    const tensor = Object.hasOwn(inputs, p.name) ? inputs[p.name] : undefined;
+    if (!tensor || tensor.shape.length !== p.shape.length || elements(tensor.shape) !== tensor.data.length)
+      throw Error('Invalid input shape or length for ' + p.name);
+    for (const [i, d] of p.shape.entries()) {
+      const key = plain(d);
+      if (key === undefined) continue;
+      if (dims.has(key) && dims.get(key) !== tensor.shape[i]) throw Error('Inconsistent input extent ' + key);
+      dims.set(key, tensor.shape[i]);
+    }
+    return tensor;
   });
+  for (const [i, p] of fn.params.entries())
+    if (p.shape.some((d, j) => value(d, dims) !== ordered[i].shape[j]))
+      throw Error('Inconsistent affine shape for ' + p.name);
+  return { dims, ordered };
+  return { dims, ordered };
+}
+
+export function encodeCudaCases(fn: Fn, cases: readonly CudaInputs[]): Buffer {
+  const tensors = cases.flatMap(inputs => bindShapes(fn, inputs).ordered);
   const bytes = Buffer.allocUnsafe(
     header + tensors.reduce((n, t) => n + 8 * t.shape.length + 4 * t.data.length, 0),
   );

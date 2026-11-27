@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { compileTix, cudaSource } from '../../dist/tensor/index.js';
-import { planFusion } from '../../dist/tensor/fusion.js';
+import { fuseAt, gate, planFusion } from '../../dist/tensor/fusion.js';
 
 const corpus = name =>
   compileTix(readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'));
@@ -83,5 +83,49 @@ test('reductions of members with trailing axes, of thread-mode kernels and insid
   assert.deepEqual(
     planFusion(fnOf(p, 'two'), { terms: 'none' }).groups[0].terms.map(t => t.staged),
     [false, false, false],
+  );
+});
+
+test('the gate keeps a program on stage 2 when a block-mode kernel has only short rows', () => {
+  const softmax = fnOf(corpus('softmax'));
+  const plan = planFusion(softmax);
+  const at = (N, C) =>
+    fuseAt(
+      softmax,
+      plan,
+      new Map([
+        ['N', N],
+        ['C', C],
+      ]),
+    );
+  assert.equal(at(4096, 1024).fuse, true);
+  assert.equal(at(1, 2 ** 22).fuse, true);
+  assert.equal(at(2 ** 20, gate.shortestRow).fuse, true);
+  const short = at(2 ** 20, gate.shortestRow - 1);
+  assert.equal(short.fuse, false);
+  assert.match(short.reason, /k0's longest row has \d+ elements, fewer than \d+: stage 2 is faster/);
+  // the longest row counts: attention's out rows have V elements even when the score rows (K) are short
+  const attention = fnOf(corpus('attention'));
+  const shapes = K =>
+    new Map([
+      ['Q', 4096],
+      ['K', K],
+      ['D', 64],
+      ['V', 64],
+    ]);
+  assert.equal(fuseAt(attention, planFusion(attention), shapes(4)).fuse, true);
+  // thread-mode programs have no block-mode kernel, so the gate never applies
+  const matmul = fnOf(corpus('matmul'));
+  assert.equal(
+    fuseAt(
+      matmul,
+      planFusion(matmul),
+      new Map([
+        ['M', 1],
+        ['K', 1],
+        ['N', 1],
+      ]),
+    ).fuse,
+    true,
   );
 });
