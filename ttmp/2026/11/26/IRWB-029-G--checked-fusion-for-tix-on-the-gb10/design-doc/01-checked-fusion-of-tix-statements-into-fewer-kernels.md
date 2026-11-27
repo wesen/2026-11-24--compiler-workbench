@@ -213,6 +213,25 @@ global memory (counted from the plan: every global load site times the number of
 per global output element), and the time those bytes would take at 244 GB/s. Recorded together with which fusions
 applied, which legal-looking fusions were refused, and every framework and tool change with its reason.
 
+## As built: what differed from this plan
+
+- **Both policies are tried at each group start and the larger group wins, a tie going to flat.** On the corpus that
+  means the row policy produced every fusion, including `mlp`: it covers all three statements (block per row, `h` and
+  `g` staged as rows of `H`, `y` folding over the staged `g` row) where the flat policy's `h`/`g` epilogue would have
+  stopped at two. The flat policy is what fuses chains and epilogues in programs without a per-row value; the corpus
+  has no such program.
+- **A producer read more than once is not inlined by the flat policy** (the test suite records this), but the row
+  policy stages it once and both reads share it, so a doubled use is not a barrier to fusion in general.
+- **The row policy declines to stage a tensor whose address is not the row's own coordinates** (`gamma[j]`,
+  `bias[j]`, `eps[0]`, `w[d,j]`, `v[k,c]`, `k[j,d]`), and those stay global loads. `mlp`'s `bias` and `attention`'s
+  `k` are therefore read from global memory inside the fused kernel; both are small and L2-resident.
+- **Block size 128 and no unrolling**, from the probe numbers above (0.458 ms at 128 threads against 0.558 at 256;
+  unroll 4 gives 0.438, a 4% gain not worth the emitter).
+- **Staged shared memory is dynamic and the layout is computed twice from the same expressions**, once in the kernel
+  (`so0`, `so1`, …) and once on the host (the launch's byte count, after `cudaFuncSetAttribute`), because row extents
+  are runtime values. The fused corpus kernels use 8.2 KB (softmax, layernorm), 9.2 KB (mlp) and 12.8 KB (attention).
+- **No framework change was needed.** `src/framework/` is untouched; see the final report.
+
 ## Later
 
 - Reassociating a reduction (parallel tree folds, split-K), which stage 1's `split-sum` already covers under a
