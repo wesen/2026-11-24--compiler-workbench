@@ -42,7 +42,7 @@ I therefore define best in class for Tix as **the fastest code that is bit-ident
 
 1. **Exact-meaning scheduling.** Use a schedule space in which no transformation can change a result word: tiling and binding of free indices, staging, register blocking, fusion of pointwise and row-local producers, and tree reduction of the exactly associative `max`. Lowering is then judged by f32 word equality. Hand-written kernels in this space were bit-identical to the unmodified Stage 2 code on all six corpus programs at full size. They were 2.0× to 7.6× faster (geometric mean 3.76×), and the six programs together took 0.887 ms instead of 3.763 ms.
 2. **Exhaustively proven intrinsics.** These are fast f32-only paths for `exp` and `tanh` that use a Ziv rounding test with a double-precision fallback. On the GPU I checked every one of the 2^32 inputs against the meaning in under a second: 0 mismatches. They are 2.4× (exp) and 4.9× (tanh) faster than the double routine Stage 2 uses, and they halve softmax and MLP time.
-3. **Data-universal exactness checks.** The *same kernel source* is compiled at a symbolic scalar type whose loads are hashes and whose arithmetic hashes the expression tree modulo the laws IEEE rounding obeys. Equal fingerprints at a shape mean equal words for every input of that shape. This caught a reassociation bug that numerical checks missed on two of three data streams, and the current sample recipe cannot exercise any tile of size 8 or more along a reduced axis.
+3. **Data-universal exactness checks.** The *same kernel source* is compiled at a symbolic scalar type whose loads are hashes and whose arithmetic hashes the expression tree modulo the laws IEEE rounding obeys. Equal fingerprints at a shape mean equal words for every input of that shape. This caught a reassociation bug that numerical checks missed on two of three data streams. The current sample recipe exercises no tile at all. A residue-complete recipe caught every seeded schedule bug in 1.2 s, where my first tile-aware recipe missed two.
 4. **A menu of exactly specified contraction meanings.** These are a sequential FMA fold and K-only chunk trees, together with a scale-covariant accuracy relation for meaning changes. cuBLAS's own 4096³ result equals a sequential FMA fold word for word. The FMUL+FADD meaning has half the FFMA ceiling. The Stage 1/2 tolerance accepts an all-zero output once results are small.
 
 | Program (Stage 2 sizes) | Stage 2 kernels | Exact optimized | Speedup | Words different |
@@ -255,9 +255,9 @@ The first exp sweep point that fails, at 2^-52, is x = 2^-24. There exp(x) lies 
 
 It is also *data universal*. A numerical differential check sees a bug only if the sampled data expose it. The reassociation bug below is invisible on integer-valued data, because all products and partial sums are exact, and on zeros. The fingerprint check needs no data.
 
-**Shapes from the schedule.** Fingerprints decide one shape at a time, so the shape recipe matters. The Stage 1/2 recipe uses extents 0, 1, 3, 4, 7 and a 3/5/7 mix, with at most 4,096 elements per tensor. A schedule with tile T is exercised only at extents ≥ T. The recipe should instead be *derived from the schedule*: for each tiled axis take T−1, T, T+1 and 2T+3, and for each reduced axis take values greater than the tile size. Fingerprint cost grows only linearly with size, so large shapes are affordable.
+**Shapes from the schedule.** Fingerprints decide one shape at a time, so the shape recipe matters. The Stage 1/2 recipe uses extents 0, 1, 3, 4, 7 and a 3/5/7 mix, with at most 4,096 elements per tensor. A schedule with tile T is exercised only at extents ≥ T, so the recipe has to be *derived from the schedule*. My first proposal was T−1, T, T+1 and 2T+3 per tiled axis. Experiment 08 refuted it, as recorded below. What works is a *residue-complete* recipe. Take one axis at a time and give it every extent r, T + r and 2T + r for r = 0…T−1, with the other axes at T + 1. That is 3·T shapes per axis, cheap with fingerprints: 600 shapes in 1.2 s for the 64×128×8 GEMM.
 
-The open part is the small-model hypothesis. For affine tilings, the tree of an element depends on the shape only through the quotients and residues of the extents by the tile sizes. If so, a finite set of residue classes covers all shapes. I have not proved this. Until it is proved, full-size numerical checks remain in the pipeline.
+The open part is the small-model hypothesis. Suppose the control flow of a schedule depends on extents only through comparisons with multiples of tile sizes. Then the tree of an element depends on the shape only through the quotient class of each extent (0, 1 or at least 2 tiles) and its residue. The residue-complete recipe then covers all shapes, if behaviour is separable by axis. I have not proved this. Experiment 08 is consistent with it for six variants, and full-size numerical checks remain in the pipeline until it is proved.
 
 **What is new.** Translation validation and symbolic execution are standard. The specific combination is to reuse the *very kernel source* at a symbolic scalar type, on the GPU, with an algebra containing exactly the word-level laws of RN arithmetic. I have not seen it for tensor compilers. It turns "exact" into a decidable per-shape property that takes milliseconds to check.
 
@@ -276,9 +276,19 @@ Without L2, the K-only chunk tree differed from the naive fold in fingerprint at
 
 The *numerical* check with the Stage 1/2 tolerance never caught `pair` at any shape (`results/01-exact-gemm-shapes.json`): the worst case used 15% of the budget. At the recipe shapes, neither bug is exercised at all, because no extent reaches the tile.
 
+*Which shapes?* (`scripts/08-residues`, `results/08-residues.json`, fingerprints only). Experiment 08 adds three shape-dependent mutants of the kind that unrolled or vectorized tails produce. `tail1` drops a one-term K tail in a later tile (K mod 8 = 1). `tail5rev` folds a five-term tail in reverse (K mod 8 = 5). `edge5` skips the last column when N mod 128 = 5. Each cell counts the shapes at which the mutant's fingerprints differ from the oracle's; a mutant is caught if the count is nonzero.
+
+| Recipe | Shapes (check time) | exact | pair | rowstride | tail1 | tail5rev | edge5 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| R1: Stage 1/2 recipe | 8 (12 ms) | 0 | 0 | 0 | 0 | 0 | 0 |
+| R2: {T−1, T, T+1, 2T+3}³ | 64 (137 ms) | 0 | 48 | 32 | 16 | **0** | **0** |
+| R3: residue-complete, one axis at a time | 600 (1.2 s) | 0 | 593 | 536 | 578 | 2 | 2 |
+
+R3 caught every mutant and raised no false alarm on the exact kernel at any of 672 shapes. R2 missed both residue-specific mutants: its residues are 7, 0, 1 and 3, never 5.
+
 **Risks.** The check is incomplete. A legal rewrite outside the algebra is rejected: for example, zero-skipping is exact only for finite partners. Each such case needs a proved law. A symbolic instantiation doubles shared-memory and register use, which is acceptable for checking. The small-model hypothesis is unproved. Hash collisions occur with probability around n²/2^64 for n distinct subterms, negligible for n < 10^9.
 
-**How success is measured.** All seeded mutants that change a tree are rejected (pair, rowstride, a dropped tail term and a transposed load), with zero false alarms on the exact schedules, at schedule-derived shapes, in under 1 s per kernel.
+**How success is measured.** At residue-complete shapes, every seeded mutant that changes a tree is rejected, with zero false alarms on the exact schedules and a check time of about 1 s per kernel. Experiment 08 meets this for six variants of one GEMM: 1.2 s, all mutants caught. The measure should be extended to fused row kernels, a transposed-load mutant and generated (not hand-written) schedules.
 
 **What it needs from `src/framework`.** The same widening of `DifferentialEvidence.method` (`'symbolic'`, plus the laws assumed). A differential spec whose `run` returns fingerprints instead of numbers already fits `differential()`, since `Outcome` is generic. Shape recipes derived from the schedule are domain code.
 
@@ -375,6 +385,7 @@ flowchart TD
 - **Fingerprints without the +0 law.** The plain tree hash flagged a K-only chunk tree as different from the sequential fold when K fits in one chunk (49/49 outputs at 7³), although the words are equal. That is a false alarm, removed by L2.
 - **My FMA GEMM as evidence for the 2× price.** At 4096³ the fma variant of my kernel was *slower* than the exact one (17.9 ms against 15.3 ms), so it says nothing about the semantic price. The 2× figure rests on the instruction-throughput probe, not on my GEMM.
 - **The K-only split-K kernel at large sizes.** It took 29.4 ms at 4096³, against 15.3 ms for the 128-tile exact kernel, because the partial sums go through global memory without tuning. It won only at 512³.
+- **My first schedule-derived shape recipe.** T−1, T, T+1 and 2T+3 per axis caught the tile-threshold bugs, but it missed both mutants that depend on a residue (`tail5rev` at K mod 8 = 5, `edge5` at N mod 128 = 5). The residue-complete recipe replaced it.
 - **Bugs that exact comparison caught immediately.** These are worth recording because each would have been easy to miss under a tolerance. A transposed index in the three-kernel attention made all 65,536 words differ. A stale output buffer would have hidden the `rowstride` mutant, until the kernels' outputs were NaN-filled.
 
 ## 7. Experiments
@@ -391,6 +402,7 @@ All scripts are in this ticket's `scripts/`, and their outputs are in `scripts/r
 | 05 | `05-accuracy-relation.mjs` | Tolerance versus accuracy relations | Gate accepts zeros at S ≤ 1e-7; tolerance vacuous at 2^-20; norm relation separates everywhere |
 | 06 | `06-fingerprint/main.cu` | Data-universal per-shape exactness | Exact schedules 0 fingerprint differences; `pair` caught at every shape with K ≥ 8, invisible numerically on integers and zeros |
 | 07 | `07-exact-tanh/main.cu` (`exhaust s e`, `stream`, `debug w`) | Proven fast tanh | First version 85,400 mismatches; fixed: 0; 4.9× streaming |
+| 08 | `08-residues/main.cu` | Which shape recipe exposes shape-dependent schedule bugs? | Stage recipe catches none; T−1/T/T+1/2T+3 misses residue bugs; residue-complete (600 shapes, 1.2 s) catches all, no false alarms |
 
 Example commands:
 
@@ -401,6 +413,7 @@ Example commands:
 - `node <ticket>/scripts/05-accuracy-relation.mjs`
 - `node tools/cuda-remote.mjs <ticket>/scripts/06-fingerprint`
 - `node tools/cuda-remote.mjs <ticket>/scripts/07-exact-tanh --timed -- exhaust 34 36`
+- `node tools/cuda-remote.mjs <ticket>/scripts/08-residues`
 
 Caveats. My Stage 2 timings come from the generated program's own benchmark mode, with a median of three runs. The coordinator's single runs (0.197, 0.785, 0.563, 1.81, 1.05 and 0.341 ms) differ by up to 2× for attention and conv2d. Optimized kernels used medians of 21 runs. Exactness claims are per input (seeded random data) and per shape (the corpus sizes), except the exhaustive and fingerprint results, which cover every input of the stated domain. The exhaustive proofs cover the binaries built by the runner's `nvcc` 13.0 at `-O3 -arch=sm_121`.
 
