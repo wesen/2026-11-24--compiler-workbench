@@ -44,7 +44,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | A1     | e-graph over value trees with verified rules                                | decision                                                              | L      |
 | C1     | calibrated gate                                                             | prep                                                                  | M      |
 | E1     | incremental checking per function                                           | prep                                                                  | L      |
-| F1–F20 | framework and workbench fixes found by agents                               | mostly ready                                                          | S each |
+| F1–F23 | framework and workbench fixes found by agents                               | 10 open (F1, F7–F12, F15, F18, F22)                                   | S each |
 | M1–M5  | agent methodology                                                           | running / ready                                                       | —      |
 
 ---
@@ -454,7 +454,7 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F22: the tolerance's absolute term accepts anything at small scale** _(ready, S; found by R2's Opus cell)_.
   - _Known:_ |c − r| ≤ 2e-6 + 2e-5·|r| accepts an all-zero output whenever the results are below about 2e-6 (shown at an input scale of 1e-7). It is also vacuous for inputs scaled by 2⁻²⁰.
   - _Needed:_ a scale-covariant relation, part of F15.
-- **F23: a correspondence's entity lists are self-declared** _(ready, S; found by T3's Opus and DeepSeek xhigh cells)_.
+- **F23: a correspondence's entity lists are self-declared** _(done: IRWB-031, Terra low, `fc39478`, `fab6334`, after one review; an IR type may declare `entities(value)`, and the manager then checks the declared lists and every entry ID against both revisions. Next: the tensor CUDA artifact should declare its kernels, after T3b)_.
   - _Known:_ `makeCorrespondence` (`src/framework/ir/correspondence.ts:50`) checks each entry against the `sourceEntities` and `targetEntities` lists, but the caller supplies those lists. Nothing compares them with the entities of the two artifacts.
     - DeepSeek xhigh passed no target list, and `{from: [m, s], to: [k0]}` was rejected ("Unknown target entity k0").
     - Opus passed lists with made-up IDs (or no kernels at all), and they were accepted.

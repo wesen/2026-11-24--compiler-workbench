@@ -1138,3 +1138,8 @@ The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if av
   - It adds `entities(value)` to `IRType`, and `validateCorrespondence` compares the declared lists with the enumerations.
   - Entry IDs in a directly built `Correspondence` are still unchecked, and that is how stage 3's lowering builds its correspondence.
   - Sent back with `prompts/fixes-3/review-1.md` (`scripts/47-resume-fixes-3.sh`).
+- **F23 merged** (`fc39478`, `fab6334`, then `621ffac` running Prettier on the changed manager and the new test).
+  - The revision checks the entry IDs of a directly built correspondence.
+  - `scripts/49-check-fixes-3.sh` confirmed it independently: the 4 new tests fail on the base code and pass on the agent's, and framework, typed and non-GPU tensor tests give 410 pass, 0 fail.
+  - `npm test` on main gives 450 pass, 0 fail, 3 skipped. Its GPU tests ran while the T3b cells were measuring, a brief overlap.
+  - Still open: the tensor CUDA artifact should declare its kernels via `entities`, after T3b merges.

@@ -1,0 +1,71 @@
+✖ enumerated correspondence rejects a made-up source ID (5.845735ms)
+✖ enumerated correspondence rejects a made-up target ID (1.049175ms)
+✖ enumerated correspondence rejects omitted real IDs (0.786325ms)
+✔ types without enumeration retain self-declared correspondence behavior (1.602289ms)
+✖ direct correspondences reject unknown entry IDs on enumerated sides (1.454252ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 1
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.381006
+
+✖ failing tests:
+
+test at tests/framework/correspondence-entities.test.mjs:19:1
+✖ enumerated correspondence rejects a made-up source ID (5.845735ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-031/tests/framework/correspondence-entities.test.mjs:20:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /fake-source/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/framework/correspondence-entities.test.mjs:22:1
+✖ enumerated correspondence rejects a made-up target ID (1.049175ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-031/tests/framework/correspondence-entities.test.mjs:23:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /fake-target/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/framework/correspondence-entities.test.mjs:25:1
+✖ enumerated correspondence rejects omitted real IDs (0.786325ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-031/tests/framework/correspondence-entities.test.mjs:26:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /s2/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/framework/correspondence-entities.test.mjs:34:1
+✖ direct correspondences reject unknown entry IDs on enumerated sides (1.454252ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-031/tests/framework/correspondence-entities.test.mjs:44:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /made-up-source/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

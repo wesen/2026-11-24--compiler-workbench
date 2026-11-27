@@ -1,0 +1,13 @@
+✔ enumerated correspondence rejects a made-up source ID (5.882351ms)
+✔ enumerated correspondence rejects a made-up target ID (0.971923ms)
+✔ enumerated correspondence rejects omitted real IDs (1.503941ms)
+✔ types without enumeration retain self-declared correspondence behavior (5.695339ms)
+✔ direct correspondences reject unknown entry IDs on enumerated sides (1.068413ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 98.216223
