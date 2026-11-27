@@ -29,11 +29,13 @@ for (const name of ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2
     const program = compileTix(source);
     const optimized = optimizeTix(program, ['inline', 'split-sum']);
     assert.ok(optimized.steps.every(s => s.accepted));
-    for (const revision of [program, optimized.program]) {
-      const verdict = await checkLowering(revision, name);
-      assert.equal(verdict.accepted, true, verdict.reason);
-      assert.equal(verdict.relation, 'exact');
-    }
+    // fused (the default since IRWB-029-D) and stage 2's one kernel per statement
+    for (const revision of [program, optimized.program])
+      for (const fuse of [true, false]) {
+        const verdict = await checkLowering(revision, name, { fuse });
+        assert.equal(verdict.accepted, true, verdict.reason);
+        assert.equal(verdict.relation, 'exact');
+      }
   });
 }
 
