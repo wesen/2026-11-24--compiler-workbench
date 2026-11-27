@@ -8,7 +8,7 @@ import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
-import { emitCuda } from './cuda-source.js';
+import { lowerToCuda } from './cuda-source.js';
 import { planFusion, unfusedPlan } from './fusion.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
@@ -65,7 +65,7 @@ export interface LoweringOptions {
 }
 function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  return { f, ...lowerToCuda(f, options?.fuse !== false) };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {

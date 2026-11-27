@@ -53,10 +53,13 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
     assert.equal(sha(cudaSource(optimized, name, { fuse: false })), digests[name + '+inline+split'], name);
   }
-  for (const name of ['matmul', 'conv2d']) {
-    const program = corpus(name);
-    assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
-  }
+  // IRWB-033-H: conv2d is one statement whose contraction is not a two-operand product, so the schedule leaves it
+  // exactly as stage 2 printed it; matmul is a tiled contraction now (schedule.test.mjs and tiled-gpu.test.mjs)
+  const conv = corpus('conv2d');
+  assert.equal(cudaSource(conv, 'conv2d'), cudaSource(conv, 'conv2d', { fuse: false }));
+  const matmul = corpus('matmul');
+  assert.notEqual(cudaSource(matmul, 'matmul'), cudaSource(matmul, 'matmul', { fuse: false }));
+  assert.match(cudaSource(matmul, 'matmul'), /template <int V>\n__global__ void k0\(/);
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
 });
 

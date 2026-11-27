@@ -1,0 +1,7 @@
+matmul    {"M":512,"K":512,"N":512}              fused 0.0628 ms  unfused 0.2122 ms  ratio 0.296  4.28 TFLOP/s
+matmul    {"M":4096,"K":4096,"N":4096}           fused 17.1943 ms  unfused 134.4620 ms  ratio 0.128  7.99 TFLOP/s
+matmul    {"M":1024,"K":1024,"N":1024}           fused 0.3180 ms  unfused 2.0082 ms  ratio 0.158  6.75 TFLOP/s
+matmul    {"M":300,"K":200,"N":100}              fused 0.0135 ms  unfused 0.0128 ms  ratio 1.052  0.89 TFLOP/s
+matmul    {"M":128,"K":128,"N":128}              fused 0.0106 ms  unfused 0.0107 ms  ratio 0.988  0.40 TFLOP/s
+matmul    {"M":17,"K":4096,"N":33}               fused 0.1671 ms  unfused 0.1690 ms  ratio 0.989  0.03 TFLOP/s
+attention {"Q":1024,"K":1024,"D":64,"V":64}      fused 0.7447 ms  unfused 1.0505 ms  ratio 0.709

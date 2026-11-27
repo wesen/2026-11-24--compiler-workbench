@@ -12,7 +12,14 @@ import type { AnalysisManager } from '../contracts/analysis-manager.js';
 import type { AnalysisDefinition } from '../contracts/types.js';
 import type { IRStore } from '../ir/index.js';
 import type { StrategyAlgorithm } from '../strategy/ir.js';
-import { applyPass, PassError, type Needs, type Pass, type PassResult } from './define-pass.js';
+import {
+  applyNativePassSync,
+  applyPass,
+  PassError,
+  type Needs,
+  type Pass,
+  type PassResult,
+} from './define-pass.js';
 
 export interface BridgeOptions {
   readonly manager: AnalysisManager;
@@ -55,6 +62,51 @@ export function passAlgorithm<S>(pass: Pass<S, Needs, any>, options: BridgeOptio
         // a rejected contract is an expected, recoverable outcome a strategy can handle (attempt, fork)
         if (e instanceof PassError && e.code === 'contractRejected')
           ctx.reject('contract-rejected', e.message, e.evidence);
+        throw e;
+      }
+    },
+  };
+}
+
+/**
+ * IRWB-033-H: the synchronous twin of `passAlgorithm`, for a pass applied through `applyNativePassSync` (no needs,
+ * no `preserves`, no contract of its own). The semantic gate and the claims are the caller's, because they are the
+ * pass's meaning; everything the framework enforces about a pass (declared writes, correspondence, claims) still
+ * runs, inside `applyNativePassSync`.
+ */
+export function syncPassAlgorithm<S, P>(
+  pass: Pass<S, {}, P>,
+  options: {
+    gate: (before: Artifact<S>, after: Artifact<S>) => import('../contracts/types.js').CheckResult;
+    claims?: readonly import('../contracts/types.js').AnalysisDefinition<any, any>[];
+    onResult?: (result: PassResult<S>) => void;
+  },
+): StrategyAlgorithm {
+  return {
+    id: pass.id,
+    version: pass.version,
+    kind: 'transform',
+    description: pass.description,
+    run(ctx, input, args) {
+      if (!isArtifact(input))
+        ctx.reject('not-an-artifact', `${pass.id} needs an artifact as its current value`);
+      try {
+        const result = applyNativePassSync(
+          pass,
+          input as Artifact<S>,
+          options.gate,
+          args as P,
+          options.claims ?? [],
+        );
+        options.onResult?.(result);
+        return result.artifact;
+      } catch (e) {
+        if (e instanceof PassError)
+          ctx.reject(
+            e.code === 'contractRejected' || e.code === 'preserveViolated' ? 'contract-rejected' : e.code,
+            e.message,
+            e.evidence,
+          );
         throw e;
       }
     },

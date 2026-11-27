@@ -13,15 +13,16 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitCuda, takesGate } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { lowerToCuda, takesGate } from './cuda-source.js';
+import type { Schedule } from './schedule.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 
 interface CudaKernel {
   name: string;
-  mapping: 'thread' | 'block';
+  /** `gemm` is a tiled contraction (stage 6). */
+  mapping: 'thread' | 'block' | 'gemm';
   statements: string[];
   /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
   gated?: boolean;
@@ -31,6 +32,8 @@ interface CudaUnit {
   source: string;
   /** The fusion plan the source follows: which statements each kernel computes (IRWB-029-D). */
   kernels: CudaKernel[];
+  /** The schedule the source was printed from, so the layout decisions travel with the source (stage 6). */
+  schedule?: Schedule;
 }
 
 export const CudaIR = defineIR<CudaUnit>({
@@ -47,7 +50,7 @@ export const CudaIR = defineIR<CudaUnit>({
       unit.kernels.some(
         k =>
           typeof k?.name !== 'string' ||
-          !['thread', 'block'].includes(k.mapping) ||
+          !['thread', 'block', 'gemm'].includes(k.mapping) ||
           !['boolean', 'undefined'].includes(typeof k.gated) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
@@ -75,8 +78,13 @@ const Fuse = defineType<boolean>({
   },
 });
 
-export function cudaArtifact(fn: string, source: string, kernels: CudaKernel[] = []): Artifact<CudaUnit> {
-  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source, kernels });
+export function cudaArtifact(
+  fn: string,
+  source: string,
+  kernels: CudaKernel[] = [],
+  schedule?: Schedule,
+): Artifact<CudaUnit> {
+  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source, kernels, ...(schedule && { schedule }) });
 }
 
 /** The lowering as a framework correspondence: each kernel and the Tix statement entities it computes. */
@@ -220,14 +228,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     ],
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
-      const kernels = plan.groups.map(g => ({
-        name: g.kernel,
-        mapping: g.mapping,
-        statements: g.statements,
-        ...(g.gated && { gated: true }),
+      const { source, schedule } = lowerToCuda(f, fuse);
+      const kernels = schedule.kernels.map(k => ({
+        name: k.kernel,
+        mapping: k.mapping,
+        statements: k.statements,
+        ...(k.gated && { gated: true }),
       }));
-      const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
+      const subject = cudaArtifact(fn, source, kernels, schedule);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
     },
   });

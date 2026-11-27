@@ -221,12 +221,43 @@ function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, ch
     });
 }
 
-/** Run a synchronous native kernel; the caller supplies its synchronous semantic gate. */
+/** Analyses a synchronous pass claims to keep, checked here instead of by the analysis manager. */
+export interface SyncClaim {
+  readonly analysis: AnalysisDefinition<any, any>;
+}
+
+/**
+ * IRWB-033-H: a synchronous pass can declare what it claims to keep. `applyPass` runs `pass.preserves` through
+ * the analysis manager, which is asynchronous (records, transfers, invalidation); this is the same rule reduced to
+ * what a synchronous driver can do: compute the declared analyses on the input and the output and require equal
+ * canonical values, before the semantic gate runs. A claim that the analysis cannot compute on either side throws,
+ * so a claim is never silently skipped.
+ */
+function enforceClaims(
+  before: Artifact<any>,
+  after: Artifact<any>,
+  claims: readonly AnalysisDefinition<any, any>[],
+) {
+  for (const def of claims) {
+    const old = def.run({} as never, before, undefined);
+    const fresh = def.run({} as never, after, undefined);
+    if (old instanceof Promise || fresh instanceof Promise)
+      throw new PassError('badResult', `Claim ${def.id} is asynchronous; use applyPass`);
+    if (canonical(old) !== canonical(fresh))
+      throw new PassError('preserveViolated', `Pass changed ${def.id}, which it claims to keep`, {
+        analysis: def.id,
+      });
+  }
+}
+
+/** Run a synchronous native kernel; the caller supplies its synchronous semantic gate and its claims. */
 export function applyNativePassSync<S, P>(
   pass: Pass<S, {}, P>,
   before: Artifact<S>,
   gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
   params?: P,
+  /** IRWB-033-H: analyses this application claims to keep (see `SyncClaim`). */
+  claims: readonly AnalysisDefinition<any, any>[] = [],
 ): PassResult<S> {
   if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
     throw new PassError('badResult', 'This pass requires the asynchronous analysis manager');
@@ -249,6 +280,7 @@ export function applyNativePassSync<S, P>(
   const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
   if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
   enforceWrites(pass, changes);
+  enforceClaims(before, after, claims);
   const contract = gate(before, after);
   if (contract?.ok !== true)
     throw new PassError('contractRejected', contract?.reason ?? 'Candidate rejected', contract?.evidence);

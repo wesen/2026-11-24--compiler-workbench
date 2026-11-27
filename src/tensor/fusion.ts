@@ -133,9 +133,13 @@ function work(e: Expr): number {
 //    24/24: 0.74 to 0.86, scripts 11 and 12). With 46% or less it was slower in six of seven measurements (up
 //    to 1.7 times). 19/24 is the lowest measured occupancy at which nothing lost; between is not measured.
 export const gate = { fullRow: 96, smallGrid: 1024, heavyLanes: [19, 24] };
-export function gateRule(v: { grid: string; longest: string; lanes: string[]; slots: string }): string {
-  const rows = `(${v.longest} >= ${gate.fullRow} || ${v.grid} <= ${gate.smallGrid})`;
-  const [n, d] = gate.heavyLanes;
+export function gateRule(
+  v: { grid: string; longest: string; lanes: string[]; slots: string },
+  /** The constants the rule decided; the schedule carries them, the plan's default is stage 3b's. */
+  constants: { fullRow: number; smallGrid: number; heavyLanes: readonly number[] } = gate,
+): string {
+  const rows = `(${v.longest} >= ${constants.fullRow} || ${v.grid} <= ${constants.smallGrid})`;
+  const [n, d] = constants.heavyLanes;
   return [rows, ...v.lanes.map(l => `${l} * ${d} >= ${n} * ${v.slots}`)].join(' && ');
 }
 
