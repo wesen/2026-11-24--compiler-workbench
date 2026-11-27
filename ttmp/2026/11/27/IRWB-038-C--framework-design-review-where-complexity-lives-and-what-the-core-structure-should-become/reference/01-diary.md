@@ -95,7 +95,7 @@ citations per report by reading the file at the cited line; all matched:
   pass-name class tables (`a0-sm-irwb-035-a/src/typed/edit-classification.ts:32`); the framework edit `Reason`
   field that Typed's `Tx` does not use (`src/framework/ir/types.ts:210`).
 
-Counting framework edits across the ten T6 cells: seven of ten changed `src/framework/passes` or
+Counting framework edits across the ten T6 cells (corrected in step 5 from the full T6 survey: eight of ten, all but the unfinished I and C): the first half alone shows seven of ten changed `src/framework/passes` or
 `src/framework/strategy`, and every change is one of four shapes: a precondition (`legal`), a synchronous
 postcondition or preservation check (`postcondition`, sync `preserves`, `claims`, gate with correspondence), a
 cross-IR input (`source`), or a synchronous strategy executor (two of them, `syncPassAlgorithm` twice, a bridge gate
@@ -123,3 +123,26 @@ dependence graph (a virtual entry with an edge to every local, a two-point latti
 unmodified `solve` (`src/framework/dataflow/solver.ts:90`): `{pc:S, op:S, acc:D, x:D, tmp:D}` in 7 iterations, the
 expected division. So the gap is not the solver but the missing graph builders (def-use, SSA, constraint graphs)
 and the CFG-centred naming of `dataflow()` (`src/framework/dataflow/analysis.ts:110`), which ties a spec to blocks.
+
+## Step 5: the design document
+
+Wrote `design-doc/01-framework-structure-review-composable-parts-layer-assessment-and-migration.md`: summary, method,
+the coordinator's starting points verified (a table), the inventory (four T6 framework-change shapes, 16 rows
+in the merged code, 22 recurring rows across cells), an assessment of each of the six layers, five recommended
+fundamental changes (R1-R5) and six rejected ones, eight core concepts (K1-K8) with interface sketches, the
+standard library the coordinator added to the brief (layering criteria and eighteen primitives L1-L18), a
+migration S0-S9 with what each step deletes and measures, and open questions.
+
+Corrections made while writing:
+- The full T6 count is eight of ten cells with framework changes (B, G, H, E, F, D, A, J); only the
+  unfinished I and C changed nothing. The step-3 entry said seven, from the first half; fixed there.
+- Line numbers taken from my first concatenated `cat -n` of three READMEs were continuous across files; the
+  contracts and strategy README citations were off by 66 and 229 lines. Re-grepped and fixed
+  (`contracts/README.md:117`, `strategy/README.md:42`, `:44`).
+- "Typed uses framework patterns only to display rules" was too strong: `rules/form.ts:268-284` converts rules to
+  patterns "for listing and for matching on a projection with `searchPattern`". Reworded.
+
+**Decisions in the document worth reviewing first:** R2 (sync/async decided per obligation, not per runner) and R4
+(correspondence derived from a derivation log instead of from a projection diff). Both delete the most
+duplicated machinery; both change behaviour that tests pin (`rules.test.mjs`'s edit lists, the derived
+correspondence relations).
