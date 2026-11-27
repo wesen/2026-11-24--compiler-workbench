@@ -104,7 +104,7 @@ The rerun finished with the same 11,757 edits in 493 changed applications and no
 
 ### Checks
 - `node --test tests/typed/edit-classes.test.mjs`: 4 pass.
-- `node --test --test-concurrency=4 tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs` before the footprint change: 414 tests, 411 pass, 0 fail, 3 skipped (498 s). Rerun after it: see the last commit's message.
+- `node --test --test-concurrency=4 tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs` before the footprint change: 414 tests, 411 pass, 0 fail, 3 skipped (498 s). Rerun after it, on the final build: 414 tests, 411 pass, 0 fail, 3 skipped (403 s).
 - `tools/build-site.mjs` was not run: nothing under `src/framework/` or `src/workbench/` changed.
 - Prettier was run on `src/typed/edit-classes.ts` (new); `src/typed/analyses.ts` still passes `prettier --check`. The test file follows the unformatted style of the other tests.
 
@@ -112,3 +112,6 @@ The rerun finished with the same 11,757 edits in 493 changed applications and no
 - Start with the header of `src/typed/edit-classes.ts` (the definitions), then `classifyApplication`.
 - The report is `reference/02-report-…md`; its numbers come from `various/03-tables.txt`.
 - To validate: `npm run build && node --test tests/typed/edit-classes.test.mjs` (about 15 s).
+
+### Commit
+`c8364c8` final corpus run, tables and report; the commit after it records the test rerun in this diary.
