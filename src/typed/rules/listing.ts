@@ -4,14 +4,23 @@
  */
 import { TILE_WIDTH } from '../format.js';
 import { RULE_EVIDENCE } from './evidence.js';
+import { IDENTITY_EVIDENCE } from './evidence-identities.js';
 import { FOLD_RULES } from './fold.js';
 import { ruleText, type RuleSet } from './form.js';
+import { IDENTITY_RULES } from './identities.js';
 import { SIMPLIFY_RULES } from './simplify.js';
 import { ruleFingerprint, type RuleEvidence, type Strength } from './verify.js';
 
 export const RULE_SETS: Readonly<Record<string, RuleSet>> = Object.freeze({
   simplify: SIMPLIFY_RULES,
   fold: FOLD_RULES,
+  identities: IDENTITY_RULES,
+});
+
+/** The recorded evidence of every table: simplify and fold (IRWB-006), identities (IRWB-037-G). */
+export const ALL_EVIDENCE: Readonly<Record<string, RuleEvidence>> = Object.freeze({
+  ...RULE_EVIDENCE,
+  ...IDENTITY_EVIDENCE,
 });
 
 const SHORT: Record<Strength, string> = {
@@ -44,7 +53,7 @@ const wrap = (text: string, width: number, indent = ''): string[] => {
 /** A rule set as lines of at most `width` columns: header, one line per rule, and the counts by strength. */
 export function rulesListing(
   set: RuleSet,
-  evidence: Readonly<Record<string, RuleEvidence>> = RULE_EVIDENCE,
+  evidence: Readonly<Record<string, RuleEvidence>> = ALL_EVIDENCE,
   width = TILE_WIDTH,
 ): string {
   const nameW = Math.max(...set.rules.map(r => r.name.length)) + 1,
