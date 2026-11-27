@@ -3,30 +3,29 @@ Title: 'Framework structure review: composable parts, layer assessment and migra
 Ticket: IRWB-038-C
 Status: active
 Topics:
-    - framework
-    - design-review
+    - ir
+    - compiler
+    - research
 DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: src/framework/passes/define-pass.ts
-      Note: the two runners; PassSpec is an endomorphism S -> S
+    - Path: repo://src/framework/contracts/differential.ts
+      Note: assuranceOf, the uncalled sampled/exact distinction
     - Path: src/framework/contracts/analysis-manager.ts
       Note: every invariant check is recorded as assurance 'checked' (line 1177)
-    - Path: src/tensor/fusion.ts
-      Note: planFusion, the monolithic schedule decision every T6 cell had to wrap or re-run
-    - Path: src/typed/tx.ts
-      Note: Typed's own transaction layer, edit log and provenance
-    - Path: src/typed/passes.ts
-      Note: typedPass, a domain pass DSL over definePass; correspondence rebuilt from origins
     - Path: src/framework/dataflow/solver.ts
       Note: a generic monotone solver hidden behind a CFG-shaped interface
+    - Path: src/framework/passes/define-pass.ts
+      Note: the two runners; PassSpec is an endomorphism S -> S
+    - Path: src/tensor/fusion.ts
+      Note: planFusion, the monolithic schedule decision every T6 cell had to wrap or re-run
+    - Path: src/typed/passes.ts
+      Note: typedPass, a domain pass DSL over definePass; correspondence rebuilt from origins
+    - Path: src/typed/tx.ts
+      Note: Typed's own transaction layer, edit log and provenance
 ExternalSources: []
-Summary: >-
-  Design-level review of src/framework against two domains, four merged tensor stages, one merged Typed stage and
-  about forty unmerged cells (T6, D1, A0, B1). Inventory of domain-built machinery, layer assessment, eight
-  proposed framework concepts, a standard library of compiler building blocks, five fundamental changes, and an
-  ordered migration.
+Summary: Design-level review of src/framework against two domains, four merged tensor stages, one merged Typed stage and about forty unmerged cells (T6, D1, A0, B1). Inventory of domain-built machinery, layer assessment, eight proposed framework concepts, a standard library of compiler building blocks, five fundamental changes, and an ordered migration.
 LastUpdated: 2026-11-27T15:30:00-05:00
 WhatFor: Deciding what the framework's next structure is, and in what order to get there.
 WhenToUse: Before merging T6, before any framework fix in the F27-F32 range, and before starting a stdlib module.
@@ -73,7 +72,7 @@ layer by hand seven times (D1) and seven times again (A0).
 5. **The generic algorithms the cells re-wrote are already half-present but mis-shaped.** Two B1 binding-time
    analyses and one edge-constant analysis bypass a solver that can already express them (probe 04). Dominators,
    natural loops, SSA and SCCP live in `src/typed` on top of the framework's `FlowGraph`. Four D1 cells re-merged
-   natural loops; four or five T6 cells wrote a contraction recogniser and five an accumulation-order normal form.
+   natural loops; nine T6 cells wrote a contraction recogniser and six an accumulation-order normal form.
 
 **Fundamental changes recommended** (§4):
 
@@ -186,7 +185,7 @@ the four shapes.
 | U21 | Hand-built pipeline drivers because a strategy node cannot carry an artifact parameter | `b1-ds-x-irwb-036-d/src/typed/futamura.ts:56` (uncommitted, design `:251`); `b1-fa-irwb-036-g/src/typed/specialize-buffer.ts:387`; `b1-op-irwb-036-f/src/typed/pe.ts:170-182` | Strategy values that are artifacts, and named artifact bindings | K2 |
 | U22 | Corpus before/after sweep scripts | one per D1 cell (for example `d1-am-irwb-034-b/.../scripts/02-corpus.mjs`) and per A0 cell | A corpus metric-diff runner | L16 |
 
-**What this inventory says, taken together.** About a third of the cells' new code is machinery of three kinds:
+**What this inventory says, taken together.** The recurring machinery (not measured as a share of lines) is of three kinds:
 - *recording* what a pass did and why (U8, U9, U11–U15);
 - *deciding* whether a step is allowed (U2, U3, U5, U16, U18);
 - *driving* passes (U7, U21, and §2.1's executors).
@@ -739,7 +738,7 @@ Each entry has four parts: the interface, the theory it implements, what it repl
 - *Replaces.*
   - `src/typed/rules/compile.ts:24` and following;
   - the A0 matcher copies and fake handles (U12);
-  - the eight or nine T6 contraction recognisers (U3), as patterns with affine guards from L9;
+  - the nine T6 contraction recognisers (U3), as patterns with affine guards from L9;
   - `ir/rewrites.ts`'s callback form (R5).
 - *Composes.* Steps go to K5; verifiers (L7) attach K4 evidence; the guards call L4/L3 facts as premises.
 
@@ -782,7 +781,7 @@ Each entry has four parts: the interface, the theory it implements, what it repl
 - *Theory.* A reduction is a fold over a totally ordered index set. An exact (non-reassociating) schedule must
   induce an order-isomorphism on each fold's index set. The abstraction is an abstract interpretation of the loop
   nest to its term sequence.
-- *Replaces.* The five or six T6 order normal forms (U2).
+- *Replaces.* The six T6 order normal forms (U2).
 - *Composes.* A `preserves`/`refines` clause (K3) on every schedule arrow, with evidence `structural` or `proof`
   (K4). T10 (split-K) declares the reassociation it introduces against it.
 

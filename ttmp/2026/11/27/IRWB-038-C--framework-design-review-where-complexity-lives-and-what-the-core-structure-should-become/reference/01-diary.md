@@ -3,8 +3,9 @@ Title: Diary
 Ticket: IRWB-038-C
 Status: active
 Topics:
-    - framework
-    - design-review
+    - ir
+    - compiler
+    - research
 DocType: reference
 Intent: long-term
 Owners: []
@@ -146,3 +147,11 @@ Corrections made while writing:
 (correspondence derived from a derivation log instead of from a projection diff). Both delete the most
 duplicated machinery; both change behaviour that tests pin (`rules.test.mjs`'s edit lists, the derived
 correspondence relations).
+
+## Step 6: ticket housekeeping
+
+Filled the ticket index (links to the design doc, diary and probes), a changelog entry and a task. `docmgr doctor`
+warned about unknown topics `framework` and `design-review`; rather than edit the shared `ttmp/vocabulary.yaml`
+(which other R3 cells may also touch), I switched the three documents to existing topics (`ir`, `compiler`,
+`research`). Tightened three counts in the design doc against the surveys (nine contraction recognisers, six
+order normal forms) and removed an unmeasured "about a third" claim.

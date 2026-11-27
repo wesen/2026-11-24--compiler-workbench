@@ -3,8 +3,9 @@ Title: 'Framework design review: where complexity lives and what the core struct
 Ticket: IRWB-038-C
 Status: active
 Topics:
-    - framework
-    - design-review
+    - ir
+    - compiler
+    - research
 DocType: index
 Intent: long-term
 Owners: []
@@ -20,35 +21,18 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+A design-level research review of `src/framework/` (R3, Opus cell). Evidence: the merged framework, Typed and Tix
+code, four probes in `scripts/`, and 31 unmerged cells (T6, D1, A0, B1) surveyed with spot-checked citations.
+No production code was written.
 
 ## Key Links
 
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
+- **Design document:** [design-doc/01-framework-structure-review-composable-parts-layer-assessment-and-migration.md](design-doc/01-framework-structure-review-composable-parts-layer-assessment-and-migration.md)
+- **Diary:** [reference/01-diary.md](reference/01-diary.md)
+- **Probes:** `scripts/01-tix-correspondence-and-runners.mjs`, `scripts/02-sampled-check-assurance.mjs`,
+  `scripts/03-framework-usage-census.mjs`, `scripts/04-bta-on-the-existing-solver.mjs` (each with `.out.txt`;
+  run from the worktree root after `npm run build`)
 
 ## Status
 
-Current status: **active**
-
-## Topics
-
-- framework
-- design-review
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+Complete: design document and diary committed. Not pushed.
