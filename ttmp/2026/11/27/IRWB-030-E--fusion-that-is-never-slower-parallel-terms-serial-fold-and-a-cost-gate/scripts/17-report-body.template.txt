@@ -16,7 +16,7 @@ Kernel count is the number of `__global__` definitions in `cudaSource`. GPU time
 
 TABLE
 
-"Launches" is what the fused program does at these sizes: the gate chose block mode for all six gated programs, so each runs one kernel. Matmul and conv2d have one statement; their fused and unfused sources are the same bytes, and the two columns differ by noise.
+"Launches" is what the fused program does at these sizes: by the rule below the gate chooses block mode for all six gated programs, so each runs one kernel (computed from the rule and the shapes; the program does not report its choice). Matmul and conv2d have one statement; their fused and unfused sources are the same bytes, and the two columns differ by noise.
 
 **The kernel count needs one caveat.** A block-mode kernel is one `template <int Mode>` definition, and by the brief's definition it counts 1. Its instantiations are block mode with rows in shared memory, block mode with rows in scratch, and one per member statement in stage 2's mapping. When the gate chooses the unfused side, the host launches the per-statement instantiations in order: softmax then makes four launches from one definition. At the brief's sizes that never happens.
 
@@ -92,7 +92,7 @@ It also made a separate reuse of the term buffer unnecessary. Before in-place, l
 **Block-mode groups** are decided at launch by the host, from the IR's plan and the shape values:
 
 ```
-fused = (longest row >= 32 or rows <= 2048)
+fused = (longest row >= 96 or rows <= 1024)
         and, for each heavy member m:
             resident blocks * min(threads per block, row length of m) >= 19/24 * threads per SM
 ```
@@ -101,45 +101,76 @@ fused = (longest row >= 32 or rows <= 2048)
 - *resident blocks* is how many blocks of this kernel fit on one SM: the smallest of the SM's block limit (24), its thread limit over the block's threads (1,536 / threads), and its shared memory (102,400 bytes) over the block's rows plus the 1,024 bytes the device reserves per block. The host reads these limits from the device (probe 16 prints them).
 - A *heavy* member is one with trailing axes and a reduction that the staging rule would stage but cannot (attention's `score` and `out` when the division is inside). The plan lists them.
 
-When the answer is no, the host allocates the members' buffers and launches the kernel's per-statement instantiations in order. Those are printed by the function that prints stage 2's kernels, so that side is stage 2's code. Over 105 shape and program pairs its time was 0.93 to 1.07 of stage 2's in 94. The other 11 are between 0.84 and 1.30, in both directions: nine at times of 5 to 180 µs, and two at N of 4 and 16 with serial sums of up to a million terms, where three calls of one side spread from 31 to 45 ms.
+When the answer is no, the host allocates the members' buffers and launches the kernel's per-statement instantiations in order. Those are printed by the function that prints stage 2's kernels, so that side is stage 2's code. Over 259 shape and program pairs (scripts 05, 09 to 11, 18 and 19) its time was 0.93 to 1.07 of stage 2's in 241. The other 18 are between 0.84 and 1.30, in both directions: 15 at times of 5 to 310 µs, one at 0.21 ms, and two at N of 4 and 16 with serial sums of up to a million terms, where three calls of one side spread from 31 to 45 ms.
 
 ### The measurements behind the first line (short rows)
 
-Script 05 runs one program at many shapes in one process per mode: block mode forced, the per-statement instantiations forced, and stage 2. The table gives block-mode time over stage-2 time (median of three `benchmark` runs each; `scripts/05-gate-sweep-rows.out.jsonl` and `10-short-rows-and-in-place.out.jsonl`). `div1` is a row sum with `x / 3` as its body (staged terms).
+Script 05 runs one program at many shapes in one process per mode: block mode forced, the per-statement instantiations forced, and stage 2. The tables give block-mode time over stage-2 time (medians of three or five `benchmark` runs; `scripts/05-gate-sweep-rows.out.jsonl`, `10-…`, `18-small-grids.out.jsonl`, `19-mid-size-rows.out.jsonl`). The four programs are softmax; softmax with `exp` inside the sum (staged terms, no N × C intermediate); a row sum (`s[i] = sum(j) x[i,j]; y[i,j] = x[i,j] - s[i]`); and `div1`, the same with `x[i,j] / 3` as the body (staged terms).
 
-| Rows × row length | softmax | row sum | div1 |
-| --- | ---: | ---: | ---: |
-| 1,048,576 × 4 | 4.70 | 4.91 | 4.61 |
-| 524,288 × 8 | 2.47 | 2.74 | 3.55 |
-| 262,144 × 16 | 1.10 | 1.12 | 1.41 |
-| 131,072 × 20 | 0.92 | 1.94 | |
-| 131,072 × 24 | 0.76 | 1.28 | |
-| 131,072 × 28 | 0.65 | 0.78 | |
-| 131,072 × 32 | **0.56** | **0.66** | **0.63** |
-| 65,536 × 64 | 0.55 | 0.62 | 0.61 |
-| 4,096 × 1,024 | 0.48 | 0.67 | 0.61 |
-| 16,384 × 16 | 1.22 | 1.80 | 2.41 |
-| 16,384 × 28 | 0.85 | 1.67 | |
-| 8,192 × 32 | **0.58** | **0.97** | **1.06** |
-| 4,096 × 64 | 0.51 | 0.43 | 0.75 |
-| 4,096 × 4 | 1.30 | 1.02 | 1.36 |
-| 2,048 × 4 | **0.92** | **0.79** | |
-| 2,048 × 8 | 0.82 | 0.68 | 0.97 |
-| 1,024 × 4 | 0.57 | 0.48 | |
-| 1,024 × 16 | 0.48 | 0.57 | 0.57 |
-| 3 × 7 | 0.40 | 0.52 | 0.52 |
-| 16 × 262,144 | 0.61 | 0.85 | 0.33 |
-| 4 × 1,048,576 | 0.59 | 0.80 | 0.31 |
-| 1 × 4,194,304 | 0.53 | 0.73 | 0.32 |
+**Row length, with more than 1,024 rows** (a blank cell was not measured):
 
-What the table shows:
+| Rows × row length | softmax | softmax, `exp` inside | row sum | div1 |
+| --- | ---: | ---: | ---: | ---: |
+| 1,048,576 × 4 | 4.70 | | 4.91 | 4.61 |
+| 65,536 × 4 | 4.66 | | 6.53 | 8.43 |
+| 262,144 × 16 | 1.10 | | 1.12 | 1.41 |
+| 16,384 × 16 | 1.22 | | 1.80 | 2.41 |
+| 131,072 × 32 | 0.56 | 0.84 | 0.66 | 0.63 |
+| 8,192 × 32 | 0.58 | 0.71 | 0.97 | 1.06 |
+| 32,768 × 48 | 0.93 | 1.18 | 0.83 | 1.57 |
+| 8,192 × 48 | 0.88 | 0.97 | 0.78 | 1.21 |
+| 32,768 × 64 | 0.65 | 0.89 | 0.73 | 1.14 |
+| 16,384 × 64 | 0.67 | 0.74 | 0.63 | 1.03 |
+| 8,192 × 64 | 0.65 | 0.73 | 0.61 | 1.00 |
+| 65,536 × 64 | 0.55 | | 0.62 | 0.61 |
+| **16,384 × 96** | 0.64 | 0.75 | **0.52** | **0.97** |
+| **8,192 × 96** | 0.68 | 0.74 | **0.52** | **0.91** |
+| 16,384 × 128 | 0.62 | 0.75 | 0.63 | 0.96 |
+| 8,192 × 128 | 0.66 | 0.74 | 0.57 | 0.97 |
+| 8,192 × 256 | 0.63 | 0.75 | 0.55 | 0.85 |
+| 32,768 × 128 | 0.54 | | 0.64 | 0.77 |
+| 4,096 × 1,024 | 0.48 | 0.46 | 0.67 | 0.61 |
+| 16 × 262,144 | 0.61 | | 0.85 | 0.33 |
+| 1 × 4,194,304 | 0.53 | | 0.73 | 0.32 |
 
-- **A block has a fixed cost.** Block mode's time with short rows is proportional to the number of rows: 0.371 to 0.372 ms for 131,072 softmax rows of 20, 24, 28 or 32 elements alike, which is 2.8 ns per block (0.9 to 1.2 ns for the row sums). Stage 2's time is proportional to the number of elements.
-- **32, a full warp, is the first row length with no loss,** except one point: `div1` at 8,192 rows of 32 measured 1.06 (12.4 against 11.7 µs, with calls of each side between 11.5 and 16.5 µs). I count that as a tie and kept 32. With rows of 16 to 28 and 16,384 rows or more, block mode lost in 12 of 18 measurements.
-- **Up to 2,048 rows, block mode won whatever the row length** (0.30 to 0.97 in 22 measurements, the table's and others in the output files): the whole program takes microseconds, and one launch replaces several. 2,048 is the largest measured row count where that held; at 4,096 rows of 4 it lost.
+**Number of rows, with rows shorter than 96:**
+
+| Rows × row length | softmax | softmax, `exp` inside | row sum | div1 |
+| --- | ---: | ---: | ---: | ---: |
+| 4,096 × 4 | 1.30 | | 1.02 | 1.36 |
+| 2,048 × 4 | 0.95 | 1.12 | 0.69 | 0.92 |
+| 2,048 × 16 | 0.67 | 0.47 | 0.67 | 0.87 |
+| **1,024 × 4** | **0.54** | **0.73** | **0.57** | **0.66** |
+| 1,024 × 16 | 0.43 | 0.38 | 0.59 | 0.60 |
+| 1,024 × 48 | 0.44 | 0.24 | 0.39 | 0.45 |
+| 512 × 4 | 0.39 | 0.49 | 0.51 | 0.49 |
+| 256 × 4 | 0.40 | 0.36 | 0.46 | 0.46 |
+| 3 × 7 | 0.40 | | 0.52 | 0.52 |
+
+What the tables show:
+
+- **A block has a fixed cost.** Block mode's time with short rows is proportional to the number of rows and does not depend on their length: 0.371 to 0.372 ms for 131,072 softmax rows of 20, 24, 28 or 32 elements alike (2.8 ns per block); 0.369 ms for 32,768 rows of softmax with `exp` inside at 48 and at 64 elements (11 ns); 1 to 2 ns for the row sums. Stage 2's time is proportional to the number of elements.
+- **Stage 2 is cheapest when its tensors fit the L2 cache.** `div1` in stage 2 takes 0.052 ms for 32,768 × 64 (8 MiB per tensor) and 0.239 ms for 65,536 × 64 (16 MiB per tensor; the GB10's L2 is 24 MiB), so twice the elements cost 4.6 times as much. `benchmark` launches the same kernels four times on the same buffers, so mid-size problems are measured with warm L2. That is why 64 loses at 8,192 to 32,768 rows and wins at 65,536. I found this late: my first sweep had only 4M, 256K and 16K elements, and its rule (rows of 32) lost at sizes in between.
+- **96 is the smallest measured row length with no loss:** at most 0.97 of stage 2 in 54 measurements with rows of 96 to 1,024 and more than 1,024 rows. On `div1` the margin is thin (0.91 to 0.97 at 8,192 and 16,384 rows); on the other three programs it is at most 0.75.
+- **Up to 1,024 rows, block mode won whatever the row length** (0.10 to 0.73 in 48 measurements with rows of 4 to 48, script 18): the whole program takes microseconds, and one launch replaces several. At 2,048 rows of 4, softmax with `exp` inside lost (1.12, and 1.05 in another session).
 - **Few long rows are not a loss,** down to one row. Both lowerings are then bound by one thread's serial fold per row, and the fused kernel reads the row from memory it wrote itself. The design had expected a loss here and planned a threshold; there is none.
 
-The rule run on its own (script 05 `--auto`, `12-gate-validation.out.jsonl`), softmax, time over stage 2: 262,144 × 16, 0.96 (unfused side); 131,072 × 32, 0.56; 16,384 × 28, 1.00 (unfused side); 8,192 × 32, 0.59; 4,096 × 4, 0.98 (unfused side); 2,048 × 4, 0.92; 16 × 262,144, 0.37; 3 × 7, 0.45.
+The rule run on its own (script 05 `--auto`, `20-gate-validation-final.out.jsonl`, five runs each), time over stage 2:
+
+| Rows × row length | The rule picks | softmax | softmax, `exp` inside | row sum | div1 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 131,072 × 32 | unfused | 1.01 | 1.00 | 1.00 | 0.99 |
+| 32,768 × 64 | unfused | 0.99 | 1.00 | 1.01 | 1.01 |
+| 16,384 × 96 | fused | 0.65 | 0.75 | 0.54 | 0.95 |
+| 8,192 × 128 | fused | 0.66 | 0.74 | 0.57 | 0.97 |
+| 8,192 × 64 | unfused | 0.99 | 1.00 | 0.93 | 1.02 |
+| 2,048 × 4 | unfused | 1.04 | 0.97 | 1.02 | 1.00 |
+| 1,024 × 4 | fused | 0.56 | 0.72 | 0.48 | 0.70 |
+| 1,024 × 48 | fused | 0.44 | 0.22 | 0.38 | 0.44 |
+| 4,096 × 1,024 | fused | 0.49 | 0.46 | 0.67 | 0.62 |
+| 3 × 7 | fused | 0.46 | 0.32 | 0.43 | 0.62 |
+
+On the fused side the times are 0.22 to 0.97 of stage 2 (24 measurements). On the unfused side they are 0.93 to 1.04 (16 measurements): the same kernels as stage 2, launched from the templated definition.
 
 ### The measurements behind the second line (heavy members)
 
@@ -166,8 +197,9 @@ The rule run on its own on narrow-div (`12-gate-validation.out.jsonl`): O of 1, 
 
 ### What the rule does not cover
 
-- **It is fitted to these programs on this device.** The thresholds are read from softmax, two row sums, attention and narrow-div on the GB10. Another program can have a different fixed cost per block or a different share of heavy work. "Never slower" is measured for the programs and shapes in this report, not proved.
-- **Between the measured points it is conservative, not exact:** rows of 29 to 31, 2,049 to 4,095 rows shorter than 32, and occupancies between 46% and 79% go to the unfused side unmeasured.
+- **It is fitted to these programs on this device.** The thresholds are read from softmax in two forms, two row sums, attention and narrow-div on the GB10. Another program can have a different fixed cost per block or a different share of heavy work. "Never slower" is measured for the programs and shapes in this report, not proved.
+- **Between the measured points it is conservative, not exact:** rows of 65 to 95, 1,025 to 2,047 short rows, and occupancies between 46% and 79% go to the unfused side unmeasured. Rows of 32 to 64 go there although block mode is faster for most programs and sizes (softmax: 0.55 to 0.67), because it lost on the cheapest program at sizes that fit L2.
+- **Margins near the thresholds are thin for cheap programs** (`div1` at 0.96 to 0.97 with rows of 96 and 128 near 2M elements). A session's noise can turn that into 1.0.
 - **Attention with the division inside sits exactly on the threshold** (19 resident blocks of 64 threads), because the threshold was read from it. A variant with slightly longer rows runs unfused, at stage 2's speed.
 - **A heavy member in a kernel whose rows do not fit shared memory** (scratch mode) is counted with the SM's block limit. I did not measure a heavy kernel in scratch mode.
 
@@ -179,6 +211,7 @@ Stage 3's legality refusals are unchanged (a read of a member at another row, di
 - **Fusing at launch,** by the gate, for many short rows and for heavy members with too few lanes.
 - **A thread cap of 256 for kernels with staged terms.** It was faster before in-place rows (0.194 against 0.240 ms on layernorm with the division inside) and slower after (0.226 against 0.208).
 - **A minimum number of rows.** Measured unnecessary.
+- **Rows of 32** as the threshold. It held on the first sweep's sizes and lost on `div1` and softmax with `exp` inside at sizes between them (above).
 - **Anything that reorders a reduction:** the fold over staged terms is one thread, in order. A parallel max would pass the exact check (stage 3's finding) and is still not done.
 - **General term staging for short rows of members with trailing axes** (terms for all elements of the row when the row is shorter than the block). It needs the row length, known only at launch, and a second emitted form. The gate sends those launches to the unfused side instead. Listed under Later.
 
@@ -247,7 +280,7 @@ A gated check runs the program twice, in parallel, from one compilation. The wal
 - the explanation of the heavy-member losses by resident lanes. The occupancy numbers are computed from the device's limits (probe 16), not observed. The model fits the ten rows of the table, and that is the evidence for it;
 - the gate's behaviour between measured points.
 
-**Not rerun on the final code:** scripts 03 and 05 to 11 measured intermediate builds (the diary says which). The results table, scripts 12, 14 and 15 and all tests ran on the final lowering.
+**Which build each measurement ran on.** Scripts 03 and 05 to 11 measured intermediate builds (the diary says which). Scripts 18 and 19 force a side, and scripts 14 and 15 check with both sides forced, so the gate's thresholds do not matter to them; they ran on the final kernels. Script 20, the results table and the last run of the GPU tests used the final thresholds. Script 12 ran with first-line thresholds of 32 and 2,048, which do not affect narrow-div (rows of 1,024).
 
 ## Later
 

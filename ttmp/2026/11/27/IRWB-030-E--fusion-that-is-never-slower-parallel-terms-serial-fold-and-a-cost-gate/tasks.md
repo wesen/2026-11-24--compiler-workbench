@@ -7,4 +7,4 @@
 - [x] In-place rows; block width and lanes rule for heavy members <!-- t:5ch0 -->
 - [x] Contract: every sample on both sides of the gate <!-- t:p96m -->
 - [x] Tests (plan, source, mock engine, GB10) <!-- t:n20f -->
-- [ ] Final measurements, report, diary <!-- t:d9c1 -->
+- [x] Final measurements, report, diary <!-- t:d9c1 -->
