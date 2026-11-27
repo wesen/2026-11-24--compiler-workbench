@@ -35,6 +35,11 @@ export interface FusionGroup {
    * thread reads `over` only at the element it then writes, and nothing reads `over` afterwards.
    */
   inPlace: { statement: string; over: string }[];
+  /**
+   * Block mode: members with trailing axes and a reduction whose terms would be worth staging (`staging`) but are
+   * not, because the member's own row occupies the block. The gate counts the lanes that work on them.
+   */
+  heavy: string[];
   /** Block mode: the host decides at launch (`gateRule`) between this kernel and the members one by one. */
   gated: boolean;
   /** Why the statements share this kernel, and what changed in the thread mapping. */
@@ -99,10 +104,12 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
   return { depth: k, reason };
 }
 
-// Which bodies are worth a term pass (IRWB-030-E script 03, row sums over [4096, 1024]). The pass costs a
-// barrier and a term buffer in the block's shared memory, so fewer blocks are resident. With one or two
-// single-instruction operations per term the serial loop was faster (0.136 against 0.154 ms, 0.127 against
-// 0.137); PLACEHOLDER
+// Which bodies are worth a term pass (IRWB-030-E script 03: row sums over [4096, 1024], five benchmark calls
+// each). The pass costs a barrier and a term buffer in the block's shared memory. With one or two
+// single-instruction operations per term, one thread's loop was faster (0.136 against 0.154 ms, 0.127 against
+// 0.137); with three the two were equal (0.154 against 0.157); with four and eight the term pass was faster
+// (0.135 against 0.152, 0.151 against 0.189). With one division, square root, max or min it was faster by 1.5 to
+// 2 times, and with exp by 17 times.
 export const staging = { cheapOperations: 4 };
 /** The body's work for one thread: the number of + - * and negations, or Infinity with anything costlier. */
 function work(e: Expr): number {
@@ -111,10 +118,24 @@ function work(e: Expr): number {
   return e.args.reduce((n, a) => n + work(a), ['+', '-', '*', 'neg'].includes(e.op) ? 1 : Infinity);
 }
 
-// The gate (IRWB-030-E): whether a block-mode group runs fused, from its grid (number of blocks) and its longest
-// row, as a C++ condition over the host's two values. PLACEHOLDER until script 04's measurements.
-export const gate = { minRow: 32 };
-export const gateRule = (grid: string, longest: string) => `(${longest} >= ${gate.minRow} || ${grid} < 0)`;
+// The gate (IRWB-030-E): whether a block-mode group runs fused at launch, as a C++ condition over values the host
+// computes. Block mode is slower than stage 2 in two measured regimes (the report has the tables):
+//  - Many short rows. A block costs 2 to 3 ns of GPU time whatever its row holds (scripts 05 and 10: softmax and a
+//    row sum, 4M, 256K and 16K elements). With rows of 32 or more (a full warp) fused was faster in every
+//    measurement (at most 0.97 of stage 2); with 16 to 28 it was up to 1.9 times slower once there were 16,384
+//    rows. With at most 2,048 rows it was faster whatever their length (at most 0.92), because one launch
+//    replaces several; at 4,096 rows of 4 it was slower (1.02 and 1.30).
+//  - A heavy member (the plan's `heavy`) with few lanes at work. The lanes are the blocks resident on one SM
+//    times the threads that have an element of that member. At 19/24 of the SM's threads or more, fused was
+//    faster or equal (attention with the division inside, 0.76; narrow-div with rows of 64, 128, 256: 0.75,
+//    0.75, 0.73); at 46% or less it was slower in three of four measurements (up to 2.7 times). 19/24 is the
+//    lowest measured occupancy at which nothing lost; between 46% and 79% is not measured.
+export const gate = { fullRow: 32, smallGrid: 2048, heavyLanes: [19, 24] };
+export function gateRule(v: { grid: string; longest: string; lanes: string[]; slots: string }): string {
+  const rows = `(${v.longest} >= ${gate.fullRow} || ${v.grid} <= ${gate.smallGrid})`;
+  const [n, d] = gate.heavyLanes;
+  return [rows, ...v.lanes.map(l => `${l} * ${d} >= ${n} * ${v.slots}`)].join(' && ');
+}
 
 export function planFusion(fn: Fn): FusionPlan {
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
@@ -166,7 +187,8 @@ export function planFusion(fn: Fn): FusionPlan {
     // while the other threads wait. Its outermost reductions' bodies do not depend on the accumulator, so all
     // threads compute the terms and thread 0 folds them in order. A body that is one load from a row buffer is
     // already a term in shared memory.
-    const terms: FusionGroup['terms'] = [];
+    const terms: FusionGroup['terms'] = [],
+      heavy = new Set<string>();
     const rowBuffers = new Set([...staged, ...buffered.map(m => m.name)]);
     if (block)
       for (const m of members) {
@@ -176,9 +198,11 @@ export function planFusion(fn: Fn): FusionPlan {
           const refuse = (reason: string) =>
             termRefusals.push({ statement: m.name, kernel: 'k' + g, reason: `${r.op} ${reduction}: ${reason}` });
           if (r.body.kind === 'load' && ownRow(r.body)) return;
-          if (m.axes.length > depth)
-            return refuse('every thread of the block computes elements of the row, so none is idle');
           const n = work(r.body);
+          if (m.axes.length > depth) {
+            if (n >= staging.cheapOperations) heavy.add(m.name);
+            return refuse('every thread of the block computes elements of the row, so none is idle');
+          }
           if (n < staging.cheapOperations)
             return refuse(
               `the body is ${n} single-instruction operation${n === 1 ? '' : 's'}; below ${staging.cheapOperations} one thread's loop is faster`,
@@ -238,6 +262,7 @@ export function planFusion(fn: Fn): FusionPlan {
       staged: [...staged],
       terms,
       inPlace,
+      heavy: [...heavy],
       gated: block,
       reasons: [...why, ...reasons],
     };
@@ -259,6 +284,7 @@ export function unfusedPlan(fn: Fn): FusionPlan {
       staged: [],
       terms: [],
       inPlace: [],
+      heavy: [],
       gated: false,
       reasons: [],
     })),

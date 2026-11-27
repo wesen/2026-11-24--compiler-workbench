@@ -342,7 +342,13 @@ __device__ static float max_nan(float a, float b) {
 // measurement (IRWB-029-D diary step 4, caps 64, 128 and 256 on softmax, layernorm, attention and mlp): 64 when a
 // member's reduction reads a tensor from global memory (a contraction operand: attention's k and v, mlp's w and
 // v), 128 otherwise (rows only: softmax, layernorm).
-export const blockThreads = { rows: 128, contraction: 64 };
+//
+// IRWB-030-E: when a member with trailing axes carries a costly reduction (the plan's `heavy`), the block is as
+// wide as the narrowest such row, up to 256, so that every lane works in that member's phase. Measured with the
+// division inside (scripts 06 and 09): attention (rows of 1024 and 64) 1.41 ms at 64 threads, 1.91 at 128, 1.86
+// at 32; narrow-div with rows of 128: 1.56 at 64, 1.21 at 128, 2.33 at 256. 256 is the widest block that was
+// faster than the next narrower one in any measurement (layernorm with staged terms; 512 was slower).
+export const blockThreads = { rows: 128, contraction: 64, heavy: 256 };
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 
@@ -544,9 +550,21 @@ function emitGroup(
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
-      `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
+      group.heavy.length
+        ? `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${blockThreads.heavy}, (std::max<U>(std::min<U>({${group.heavy.map(n => lengthOf(n, hostDim)).join(', ')}}), 1) + 31) / 32 * 32));`
+        : `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
       // The gate: block mode, or the members one by one. --gate=fused|unfused forces a side (the contract).
-      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : ${gateRule(`grid_${kernel}`, `longest_${kernel}`)};`,
+      // Blocks of this kernel that fit on one SM, by its block, thread and shared-memory limits (each block's
+      // shared memory includes the device's reserved part: 1 KiB on the GB10).
+      `  const U resident_${kernel} = std::min<U>({sm_blocks, sm_threads / threads_${kernel}, shared_${kernel} ? sm_shared / (row_${kernel} + sm_reserved) : sm_blocks});`,
+      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : ${gateRule({
+        grid: `grid_${kernel}`,
+        longest: `longest_${kernel}`,
+        lanes: group.heavy.map(
+          n => `resident_${kernel} * std::min<U>(threads_${kernel}, ${lengthOf(n, hostDim)})`,
+        ),
+        slots: 'sm_threads',
+      })};`,
       `  DeviceBuffer scratch_${kernel}(fused_${kernel} && !shared_${kernel} ? grid_${kernel} * (row_${kernel} / sizeof(float)) : 0);`,
       ...members
         .filter(m => !stored.has(m.name))
@@ -653,8 +671,16 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     }
     if (plan.groups.some(g => g.mapping === 'block'))
       host.push(
-        '  int shared_limit = 0;',
+        '  int shared_limit = 0, sm_shared_bytes = 0, sm_block_limit = 0, reserved_bytes = 0;',
+        '  check(cudaDeviceGetAttribute(&reserved_bytes, cudaDevAttrReservedSharedMemoryPerBlock, 0));',
         '  check(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0));',
+        // The SM's limits, for the gate (the calls of IRWB-029-D probe 01).
+        '  check(cudaDeviceGetAttribute(&sm_shared_bytes, cudaDevAttrMaxSharedMemoryPerMultiprocessor, 0));',
+        '  check(cudaDeviceGetAttribute(&sm_block_limit, cudaDevAttrMaxBlocksPerMultiprocessor, 0));',
+        '  cudaDeviceProp device;',
+        '  check(cudaGetDeviceProperties(&device, 0));',
+        '  const U sm_shared = sm_shared_bytes, sm_blocks = sm_block_limit, sm_threads = device.maxThreadsPerMultiProcessor;',
+        '  const U sm_reserved = std::max(reserved_bytes, 1);',
       );
     host.push(
       ...kernels.flatMap(k => k.host),
