@@ -3,7 +3,8 @@ Title: Step attribution of executed instructions and a per-header loop for licm
 Ticket: IRWB-034-G
 Status: active
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: design-doc
 Intent: long-term
 Owners: []

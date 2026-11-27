@@ -96,13 +96,13 @@ At n = 12 and seed = 8, Fibonacci returns 1,152 and checksum returns
 
 | Fixture | Guest | r0 | speed | Hand-specialized |
 | --- | ---: | ---: | ---: | ---: |
-| Fibonacci | 184 | 7,678 (41.73) | 6,382 (34.68) | 75 (0.41) |
-| Checksum | 160 | 6,874 (42.96) | 5,710 (35.69) | 74 (0.46) |
+| Fibonacci | 184 | 7,678 (41.73) | 6,349 (34.51) | 75 (0.41) |
+| Checksum | 160 | 6,874 (42.96) | 5,677 (35.48) | 74 (0.46) |
 
 The `speed` revision executed fewer RV32 instructions than r0 for both
 fixtures in this comparison. Across the 442 valid calls, the evaluator
-reached at most 4,131 statements at r0 and 2,445 at `speed` for
-Fibonacci, and 3,699 at r0 and 2,193 at `speed` for checksum. All
+reached at most 4,131 statements at r0 and 2,432 at `speed` for
+Fibonacci, and 3,699 at r0 and 2,180 at `speed` for checksum. All
 finished within the 20,000-statement pass-check limit.
 
 Reproduce the measurement with

@@ -3,7 +3,8 @@ Title: 'Report: why speed made the bytecode VM slower'
 Ticket: IRWB-034-G
 Status: active
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: reference
 Intent: long-term
 Owners: []
@@ -30,9 +31,9 @@ WhenToUse: ""
   now-effective hoisting spilled 20 values in regex-nfa's matcher. (3) The coalescer lets two copies of one
   register share it: (2) exposed that limit in one project.
 - **Result.** Fibonacci 9,286 to 6,349 and checksum 8,218 to 5,677 under `speed` and under O2 (r0: 7,678 and
-  6,874). Eight of the 50 corpus projects change, all downwards; no project
-  is higher under O2 or `speed` with either backend option set (totals: O2 1,124,912 to 1,090,271, `speed`
-  892,944 to 867,770 with the default options); parity is clean.
+  6,874). Eight of the 50 corpus projects change, all downwards; no project is higher under O2 or `speed` with
+  either backend option set (totals: O2 1,124,912 to 1,090,271, `speed` 892,944 to 867,770 with the default
+  options); parity is clean.
 - **Tool.** `attributeSteps` (`src/typed/attribute.ts`) and `tools/attribute.mjs` credit the difference in
   executed instructions to pass decisions with sums that equal the emulator's counts.
 
@@ -248,7 +249,7 @@ identical before and after.
 | **total** | 1,123,009 | 1,050,205 | 1,124,912 → 1,090,271 | 1,056,301 → 1,032,485 | 892,944 → 867,770 | 824,328 → 792,800 |
 
 - 8 of 50 projects change; 42 are identical in all six cells. No cell is higher than before, and no pass was
-  rejected in either pipeline (`various/corpus-table.md`, from `corpus-before.json` and `corpus-after.json`).
+  rejected in either pipeline (`various/corpus-table.txt`, from `corpus-before.json` and `corpus-after.json`).
 - Totals: O2 -3.1% (default) and -2.3% (tuned); `speed` -2.8% and -3.8%. Without the VM: O2 1,077,836 to
   1,057,976 (default), `speed` 845,868 to 835,475 (default).
 - bounds-lab and bounds-two change only under O2 with the tuned options. They were unchanged in the run with
@@ -283,7 +284,8 @@ Measured on the whole corpus under `speed`, on top of the loops change, with unc
 ### The static cost estimate as a guard (`scripts/05-estimate-vs-emulator.mjs`)
 
 Question: would "reject a pass whose output has a higher static estimate" (`backend/frequency.ts`) have caught
-this, and what else would it reject? Measured with the loops change alone (before sharing). Per function and changed revision of `speed` over the corpus (658 steps,
+this, and what else would it reject? Measured with the loops change alone (before sharing). Per function and
+changed revision of `speed` over the corpus (658 steps,
 `various/estimate-corpus.json`), the sign of the estimate's change against the emulator's:
 
 | Estimate | Emulator up | Emulator down | Emulator same |
@@ -321,6 +323,7 @@ Changes outside the framework:
 | `src/typed/backend/coalesce.ts` | two copies of one register do not interfere | fix 3 |
 | `tests/typed/attribute.test.mjs` (new) | 5 tests | loops per header, exact sums, the VM, sharing |
 | `tests/typed/speed.test.mjs` | 1 test | the orders copies coalesce, and the image agrees with r0 |
+| `tests/workbench/strategies.test.mjs` | expects `typed.loops@2` | the pinned version changed |
 | `corpus/book/08-control.md`, `corpus/reference.md` | one loop per head, `latches` | they described the old output |
 | `corpus/projects/bytecode-vm/notes.md` | the measurement table and its sentence | the numbers changed |
 
@@ -346,7 +349,29 @@ Argued, not measured beyond the checks named:
 
 ## Verification
 
-@@VERIFY@@
+All on the final compiler sources (commit f503708; 6cb091b and later change one test expectation, notes and
+this ticket), after `npm run build`:
+
+| Check | Result |
+| --- | --- |
+| `node tools/parity.mjs` | 50 projects, 135 functions, 8,286 of 8,286 decided cases agree, 14 at the limit, 0 failures (`various/parity-after.log`) |
+| `node tools/reference-check.mjs` | reference images: 8,286 of 8,286 agree |
+| `node tools/reference-check.mjs --o2` | our O2 images: 8,286 of 8,286 agree |
+| `node --test tests/typed/*.test.mjs` | 157 tests, 155 pass, 2 skipped, 0 fail |
+| `node --test tests/framework/*.test.mjs` | 234 pass |
+| `node --test tests/workbench/*.test.mjs` | 25 tests, 24 pass, 1 skipped, 0 fail |
+| `IRWB_FULL=1 node --test tests/typed/speed.test.mjs` | 9 pass: every corpus project agrees with r0 under each backend option and all together |
+| `node tools/build-site.mjs` | builds |
+| `tools/format-docs.mjs --check`, `tools/format-corpus.mjs --check` | no file would change |
+
+- wrong-shift's `div-to-shift` is rejected in the parity run, as its `broken` pipeline intends.
+- One test outside the directories of the brief changed: `tests/workbench/strategies.test.mjs` pinned licm's
+  need as `typed.loops@1`; it now expects `@2`. The first workbench run failed on exactly that line.
+- Parity was not run at the starting commit; only the instruction baseline (`various/corpus-before.json`) was
+  taken there.
+- Timing: `attributeSteps` on the VM's `speed` chain (7 revisions) is inside a test that takes about 6 s under a
+  machine load above 30, most of it the checked pipeline; the attribution itself was not timed separately.
+
 
 ## Left out
 

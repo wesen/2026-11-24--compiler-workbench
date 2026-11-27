@@ -3,7 +3,8 @@ Title: 'Why speed makes the bytecode VM slower: instruction attribution and a fi
 Ticket: IRWB-034-G
 Status: active
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: index
 Intent: long-term
 Owners: []
