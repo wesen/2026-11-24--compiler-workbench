@@ -21,3 +21,4 @@ WhenToUse: ""
 - Created the design before implementation.
 - Committed the design, extracted the original sweep into a domain-independent interface, and switched both clients. Added exact unreachable-predecessor, loop, and dependency tests.
 - Build, focused tests, TypeScript checking and formatting passed. Started the requested corpus baseline and non-GPU suites.
+- Baselines reported no differences. The non-GPU suites passed across 70 files after rerunning four Node-spawning files outside the sandbox; their initial sandbox failures were EPERM-related.

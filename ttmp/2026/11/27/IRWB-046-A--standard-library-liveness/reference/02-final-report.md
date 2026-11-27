@@ -29,3 +29,11 @@ The brief refers to a pre-existing todo for this step in the three defect files,
 - Lattices and a fixpoint solver.
 - SSA construction.
 - Affine forms.
+
+## Verification
+
+- `npm run build`, `npm run check`, and Prettier checks for changed TypeScript files passed.
+- New stdlib tests: 2 test files passed, 0 failed, including the exact unreachable predecessor.
+- Baseline check: `no differences` (RV32 and Tix corpus records).
+- Requested suites: 70 test files passed, 0 failed after reruns (63 Typed/framework/workbench files and 7 non-GPU tensor files). The initial sandbox run passed 59 of 63 files; four spawned Node and failed under sandbox restrictions. All four passed when rerun with escalation. Node's sandboxed runner reported file-level counts, so these are file counts, not individual test counts. The escalated workbench rerun included one pre-existing skipped test. Existing unrelated todo tests remain.
+- `node tools/build-site.mjs` was exercised successfully by the escalated workbench tests; no framework or workbench source changed.
