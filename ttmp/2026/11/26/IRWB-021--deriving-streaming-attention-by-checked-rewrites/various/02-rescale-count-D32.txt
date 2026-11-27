@@ -1,0 +1,8 @@
+N=64 D=32 scores increasing (max at the last j): rescales/row 64.0, drift of the streaming form vs the two-pass form 1.00u of u*max|v|, non-finite 0
+N=64 D=32 scores decreasing (max at the first j): rescales/row 1.0, drift of the streaming form vs the two-pass form 0.00u of u*max|v|, non-finite 0
+N=128 D=32 scores increasing (max at the last j): rescales/row 128.0, drift of the streaming form vs the two-pass form 0.50u of u*max|v|, non-finite 0
+N=128 D=32 scores decreasing (max at the first j): rescales/row 1.0, drift of the streaming form vs the two-pass form 0.00u of u*max|v|, non-finite 0
+N=256 D=32 scores increasing (max at the last j): rescales/row 256.0, drift of the streaming form vs the two-pass form 0.50u of u*max|v|, non-finite 0
+N=256 D=32 scores decreasing (max at the first j): rescales/row 1.0, drift of the streaming form vs the two-pass form 0.00u of u*max|v|, non-finite 0
+N=512 D=32 scores increasing (max at the last j): rescales/row 512.0, drift of the streaming form vs the two-pass form 0.50u of u*max|v|, non-finite 0
+N=512 D=32 scores decreasing (max at the first j): rescales/row 1.0, drift of the streaming form vs the two-pass form 0.00u of u*max|v|, non-finite 0

@@ -1,0 +1,4 @@
+qk-scale 1: origin vs f64 2.0u, derived vs f64 2.2u, derived vs origin 3.3u; elements where the derived form is more than 2x further from f64 than the origin: 1030/24576; largest ratio of the two distances: 6436.3x
+qk-scale 2: origin vs f64 5.7u, derived vs f64 7.3u, derived vs origin 6.0u; elements where the derived form is more than 2x further from f64 than the origin: 2232/24576; largest ratio of the two distances: 4844.7x
+qk-scale 4: origin vs f64 30.7u, derived vs f64 30.7u, derived vs origin 13.0u; elements where the derived form is more than 2x further from f64 than the origin: 2300/24576; largest ratio of the two distances: 69820.4x
+qk-scale 8: origin vs f64 109.3u, derived vs f64 109.3u, derived vs origin 4.0u; elements where the derived form is more than 2x further from f64 than the origin: 910/24576; largest ratio of the two distances: 1909.3x

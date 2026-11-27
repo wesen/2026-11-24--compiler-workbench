@@ -1,0 +1,8 @@
+N=128 D=64 qk-scale=1 u=5.960e-8
+  seed 1: R1 = P1-P0=2.25u  R2+R3 = P2-P1=0.00u  R4 = P5-P2=2.75u  R5 = P7-P5=0.00u  P5-P0 (all)=2.75u  P7-P0 (all+blocks)=2.75u  P0-ref64=1.97u  P5-ref64=1.57u  rescales/row mean 5.6 max 12
+  seed 2: R1 = P1-P0=1.75u  R2+R3 = P2-P1=0.00u  R4 = P5-P2=2.00u  R5 = P7-P5=0.00u  P5-P0 (all)=1.75u  P7-P0 (all+blocks)=1.75u  P0-ref64=1.95u  P5-ref64=2.17u  rescales/row mean 5.5 max 13
+  seed 3: R1 = P1-P0=1.75u  R2+R3 = P2-P1=0.00u  R4 = P5-P2=2.25u  R5 = P7-P5=0.00u  P5-P0 (all)=3.25u  P7-P0 (all+blocks)=3.25u  P0-ref64=1.76u  P5-ref64=2.04u  rescales/row mean 5.0 max 10
+  argmax-at-j=0 case: P5 vs P2 bit-identical = true, rescales/row max = 1
+  R2+R3 fusion P2 vs P1 bit-identical on another case = true
+  max|s| = 1.3; non-finite outputs: running-max form 0/8192, no-max form 0/8192
+  (0.3 s)
