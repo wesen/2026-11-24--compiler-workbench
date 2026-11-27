@@ -83,3 +83,18 @@ test('E5: a transformation contract can ensure a differential invariant', async 
   assert.ok(ok);
   await assert.rejects(manager.verifyTransformation({ input }, { output: createArtifact(ExpressionIR, 'e', wrong()) }, contract), /disagree/);
 });
+
+test('baseline key rejects cases that change outside the key', () => {
+  let outside = 1;
+  const spec = {
+    id: 'test.key-contract', version: '1', count: 1, seed: 1,
+    baseline: 'origin', subject: 'candidate', baselineKey: () => 'fixed-key',
+    cases: () => [{ outside }], run: (_side, _art, c) => c.outside, compare: (a, b) => a === b,
+  };
+  const origin = createArtifact(ExpressionIR, 'e', exampleExpression());
+  const inputs = { origin, candidate: origin };
+  assert.equal(runDifferential(spec, inputs).status, 'agree');
+  assert.equal(runDifferential(spec, inputs).status, 'agree');
+  outside = 2;
+  assert.throws(() => runDifferential(spec, inputs), /fixed-key/);
+});
