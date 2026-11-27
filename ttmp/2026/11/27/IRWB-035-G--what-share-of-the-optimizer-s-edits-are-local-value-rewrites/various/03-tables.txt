@@ -1,0 +1,275 @@
+# Edit classes on the corpus
+
+50 projects, pipelines O2, speed; 11757 edits in 493 changed applications; runs 1624 s in 2 process(es); problems: none.
+
+## 1. Per pipeline
+
+| pipeline | edits | local % | structural % | other % | instructions | local % | structural % | other % |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| O2 | 2021 | 19.5 | 72.1 | 8.4 | 2209 | 31.6 | 59.6 | 8.7 |
+| speed | 9736 | 10.2 | 84.1 | 5.6 | 11632 | 13.9 | 80.7 | 5.4 |
+
+Instructions with the values a `replace` rebuilt above its changed subtrees counted too (an upper bound for the value edits):
+
+| pipeline | instructions | local % | structural % | other % | rule % of all |
+|---|---:|---:|---:|---:|---:|
+| O2 | 4517 | 59.6 | 36.1 | 4.3 | 16.5 |
+| speed | 15735 | 34.3 | 61.7 | 4.0 | 9.9 |
+
+The local class by reason, and the share of value edits (`replace` records) that are local:
+
+| pipeline | local | rule | fact | uncited | rule % of all edits | rule % of all instructions | `replace` edits | local % of them | rule % of them |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| O2 | 395 | 183 | 212 | 0 | 9.1 | 18.8 | 505 | 78.2 | 36.2 |
+| speed | 997 | 362 | 635 | 0 | 3.7 | 7.1 | 1138 | 87.6 | 31.8 |
+
+## 2. Per reason
+
+### O2
+
+| class/reason | edits | % | instructions | % | passes |
+|---|---:|---:|---:|---:|---:|
+| local/fact | 212 | 10.5 | 284 | 12.9 | constprop strength subst |
+| local/rule | 183 | 9.1 | 415 | 18.8 | fold simplify |
+| other/dead-statement | 169 | 8.4 | 193 | 8.7 | dce subst |
+| structural/cfg | 1118 | 55.3 | 1100 | 49.8 | bce cfg licm |
+| structural/cfg/branch-by-fact | 13 | 0.6 | 26 | 1.2 | bce |
+| structural/motion | 226 | 11.2 | 191 | 8.6 | licm lvn |
+| structural/new-local | 100 | 4.9 | 0 | 0.0 | licm lvn |
+
+### speed
+
+| class/reason | edits | % | instructions | % | passes |
+|---|---:|---:|---:|---:|---:|
+| local/fact | 635 | 6.5 | 794 | 6.8 | constprop strength subst |
+| local/rule | 362 | 3.7 | 825 | 7.1 | fold simplify |
+| other/dead-statement | 547 | 5.6 | 631 | 5.4 | dce subst |
+| structural/cfg | 4406 | 45.3 | 3258 | 28.0 | bce cfg licm rotate |
+| structural/cfg/branch-by-fact | 13 | 0.1 | 26 | 0.2 | bce |
+| structural/cfg/test-duplicated | 192 | 2.0 | 511 | 4.4 | rotate |
+| structural/inline | 3165 | 32.5 | 5327 | 45.8 | inline |
+| structural/motion | 290 | 3.0 | 260 | 2.2 | licm lvn |
+| structural/new-local | 126 | 1.3 | 0 | 0.0 | licm lvn |
+
+## 3. Per pass
+
+### O2
+
+| pass | edits | local % | structural % | other % | instructions | local % | structural % | other % |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| cfg | 1058 | 0.0 | 100.0 | 0.0 | 1061 | 0.0 | 100.0 | 0.0 |
+| licm | 329 | 0.0 | 100.0 | 0.0 | 170 | 0.0 | 100.0 | 0.0 |
+| constprop | 141 | 100.0 | 0.0 | 0.0 | 185 | 100.0 | 0.0 | 0.0 |
+| simplify | 140 | 100.0 | 0.0 | 0.0 | 291 | 100.0 | 0.0 | 0.0 |
+| dce | 118 | 0.0 | 0.0 | 100.0 | 127 | 0.0 | 0.0 | 100.0 |
+| subst | 102 | 50.0 | 0.0 | 50.0 | 106 | 37.7 | 0.0 | 62.3 |
+| lvn | 44 | 0.0 | 100.0 | 0.0 | 47 | 0.0 | 100.0 | 0.0 |
+| fold | 43 | 100.0 | 0.0 | 0.0 | 124 | 100.0 | 0.0 | 0.0 |
+| bce | 26 | 0.0 | 100.0 | 0.0 | 39 | 0.0 | 100.0 | 0.0 |
+| strength | 20 | 100.0 | 0.0 | 0.0 | 59 | 100.0 | 0.0 | 0.0 |
+
+### speed
+
+| pass | edits | local % | structural % | other % | instructions | local % | structural % | other % |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| cfg | 4234 | 0.0 | 100.0 | 0.0 | 3074 | 0.0 | 100.0 | 0.0 |
+| inline | 3165 | 0.0 | 100.0 | 0.0 | 5327 | 0.0 | 100.0 | 0.0 |
+| subst | 662 | 50.0 | 0.0 | 50.0 | 787 | 49.0 | 0.0 | 51.0 |
+| licm | 422 | 0.0 | 100.0 | 0.0 | 217 | 0.0 | 100.0 | 0.0 |
+| rotate | 281 | 0.0 | 100.0 | 0.0 | 647 | 0.0 | 100.0 | 0.0 |
+| simplify | 258 | 100.0 | 0.0 | 0.0 | 546 | 100.0 | 0.0 | 0.0 |
+| constprop | 258 | 100.0 | 0.0 | 0.0 | 279 | 100.0 | 0.0 | 0.0 |
+| dce | 216 | 0.0 | 0.0 | 100.0 | 230 | 0.0 | 0.0 | 100.0 |
+| fold | 104 | 100.0 | 0.0 | 0.0 | 279 | 100.0 | 0.0 | 0.0 |
+| lvn | 64 | 0.0 | 100.0 | 0.0 | 78 | 0.0 | 100.0 | 0.0 |
+| strength | 46 | 100.0 | 0.0 | 0.0 | 129 | 100.0 | 0.0 | 0.0 |
+| bce | 26 | 0.0 | 100.0 | 0.0 | 39 | 0.0 | 100.0 | 0.0 |
+
+## 4. Per project
+
+### O2
+
+| project | edits | local % | structural % | other % | instructions | local % | structural % | other % |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| across-calls | 4 | 50.0 | 0.0 | 50.0 | 2 | 0.0 | 0.0 | 100.0 |
+| algebra | 11 | 72.7 | 0.0 | 27.3 | 10 | 70.0 | 0.0 | 30.0 |
+| blend | 9 | 33.3 | 55.6 | 11.1 | 10 | 50.0 | 40.0 | 10.0 |
+| bounds-lab | 40 | 10.0 | 90.0 | 0.0 | 48 | 16.7 | 83.3 | 0.0 |
+| bounds-offset | 7 | 14.3 | 85.7 | 0.0 | 10 | 20.0 | 80.0 | 0.0 |
+| bounds-param | 3 | 33.3 | 66.7 | 0.0 | 4 | 50.0 | 50.0 | 0.0 |
+| bounds-two | 13 | 7.7 | 92.3 | 0.0 | 15 | 13.3 | 86.7 | 0.0 |
+| branches | 12 | 8.3 | 83.3 | 8.3 | 12 | 33.3 | 58.3 | 8.3 |
+| bytecode-vm | 205 | 1.5 | 97.6 | 1.0 | 144 | 2.8 | 95.8 | 1.4 |
+| call-chain | 1 | 100.0 | 0.0 | 0.0 | 2 | 100.0 | 0.0 | 0.0 |
+| calls | 2 | 50.0 | 0.0 | 50.0 | 4 | 50.0 | 0.0 | 50.0 |
+| checksum | 11 | 9.1 | 90.9 | 0.0 | 13 | 15.4 | 84.6 | 0.0 |
+| chess-search | 764 | 18.1 | 78.1 | 3.8 | 890 | 30.6 | 65.3 | 4.2 |
+| collatz | 0 | - | - | - | 0 | - | - | - |
+| constants | 8 | 75.0 | 0.0 | 25.0 | 15 | 86.7 | 0.0 | 13.3 |
+| dead-code | 24 | 20.8 | 62.5 | 16.7 | 27 | 40.7 | 40.7 | 18.5 |
+| diagnostics | 3 | 66.7 | 0.0 | 33.3 | 4 | 75.0 | 0.0 | 25.0 |
+| distinct | 0 | - | - | - | 0 | - | - | - |
+| div-checks | 6 | 66.7 | 0.0 | 33.3 | 8 | 75.0 | 0.0 | 25.0 |
+| div-magic | 2 | 100.0 | 0.0 | 0.0 | 3 | 100.0 | 0.0 | 0.0 |
+| early-exit | 12 | 16.7 | 83.3 | 0.0 | 17 | 23.5 | 76.5 | 0.0 |
+| f32-dsp | 82 | 26.8 | 72.0 | 1.2 | 98 | 42.9 | 57.1 | 0.0 |
+| first-steps | 4 | 75.0 | 0.0 | 25.0 | 6 | 83.3 | 0.0 | 16.7 |
+| fixed-point | 9 | 66.7 | 0.0 | 33.3 | 18 | 72.2 | 0.0 | 27.8 |
+| fragments | 9 | 33.3 | 55.6 | 11.1 | 10 | 50.0 | 40.0 | 10.0 |
+| gcd | 1 | 100.0 | 0.0 | 0.0 | 2 | 100.0 | 0.0 | 0.0 |
+| heat-lab | 13 | 7.7 | 92.3 | 0.0 | 15 | 13.3 | 86.7 | 0.0 |
+| histogram | 17 | 5.9 | 94.1 | 0.0 | 25 | 8.0 | 92.0 | 0.0 |
+| licm-nested | 10 | 20.0 | 80.0 | 0.0 | 9 | 44.4 | 55.6 | 0.0 |
+| licm-traps | 1 | 100.0 | 0.0 | 0.0 | 2 | 100.0 | 0.0 | 0.0 |
+| lz-roundtrip | 79 | 24.1 | 57.0 | 19.0 | 76 | 28.9 | 42.1 | 28.9 |
+| match-enum | 6 | 0.0 | 83.3 | 16.7 | 5 | 0.0 | 80.0 | 20.0 |
+| my-analysis | 12 | 16.7 | 83.3 | 0.0 | 10 | 40.0 | 60.0 | 0.0 |
+| my-first-pass | 8 | 25.0 | 50.0 | 25.0 | 6 | 33.3 | 33.3 | 33.3 |
+| nested-loops | 5 | 40.0 | 60.0 | 0.0 | 5 | 80.0 | 20.0 | 0.0 |
+| orders | 36 | 44.4 | 44.4 | 11.1 | 44 | 54.5 | 36.4 | 9.1 |
+| params-demo | 9 | 33.3 | 55.6 | 11.1 | 10 | 50.0 | 40.0 | 10.0 |
+| pressure | 8 | 25.0 | 50.0 | 25.0 | 7 | 28.6 | 42.9 | 28.6 |
+| ramp | 14 | 21.4 | 71.4 | 7.1 | 20 | 35.0 | 55.0 | 10.0 |
+| records | 0 | - | - | - | 0 | - | - | - |
+| regalloc-lab | 8 | 25.0 | 75.0 | 0.0 | 9 | 44.4 | 55.6 | 0.0 |
+| regex-nfa | 252 | 6.3 | 90.5 | 3.2 | 228 | 11.0 | 85.1 | 3.9 |
+| sha-chacha | 206 | 40.3 | 21.4 | 38.3 | 247 | 53.8 | 12.6 | 33.6 |
+| sort | 13 | 7.7 | 92.3 | 0.0 | 15 | 13.3 | 86.7 | 0.0 |
+| start-here | 17 | 23.5 | 76.5 | 0.0 | 20 | 40.0 | 60.0 | 0.0 |
+| strength | 14 | 28.6 | 64.3 | 7.1 | 22 | 45.5 | 50.0 | 4.5 |
+| strings | 24 | 8.3 | 91.7 | 0.0 | 26 | 15.4 | 84.6 | 0.0 |
+| ui-gallery | 11 | 54.5 | 36.4 | 9.1 | 14 | 71.4 | 21.4 | 7.1 |
+| value-numbering | 5 | 20.0 | 80.0 | 0.0 | 8 | 25.0 | 75.0 | 0.0 |
+| wrong-shift | 11 | 9.1 | 90.9 | 0.0 | 14 | 14.3 | 85.7 | 0.0 |
+
+Local share by edits across the 47 projects with edits: minimum 0.0 %, median 25.0 %, maximum 100.0 %; projects with a local share of at least half: 13.
+
+### speed
+
+| project | edits | local % | structural % | other % | instructions | local % | structural % | other % |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| across-calls | 69 | 4.3 | 91.3 | 4.3 | 63 | 9.5 | 79.4 | 11.1 |
+| algebra | 11 | 72.7 | 0.0 | 27.3 | 10 | 70.0 | 0.0 | 30.0 |
+| blend | 12 | 25.0 | 66.7 | 8.3 | 15 | 33.3 | 60.0 | 6.7 |
+| bounds-lab | 58 | 12.1 | 82.8 | 5.2 | 80 | 10.0 | 86.3 | 3.8 |
+| bounds-offset | 10 | 10.0 | 90.0 | 0.0 | 21 | 9.5 | 90.5 | 0.0 |
+| bounds-param | 6 | 16.7 | 83.3 | 0.0 | 9 | 22.2 | 77.8 | 0.0 |
+| bounds-two | 18 | 11.1 | 83.3 | 5.6 | 24 | 8.3 | 87.5 | 4.2 |
+| branches | 12 | 8.3 | 83.3 | 8.3 | 12 | 33.3 | 58.3 | 8.3 |
+| bytecode-vm | 205 | 1.5 | 97.6 | 1.0 | 144 | 2.8 | 95.8 | 1.4 |
+| call-chain | 135 | 5.2 | 90.4 | 4.4 | 119 | 8.4 | 83.2 | 8.4 |
+| calls | 96 | 10.4 | 81.3 | 8.3 | 67 | 19.4 | 67.2 | 13.4 |
+| checksum | 16 | 12.5 | 81.3 | 6.3 | 22 | 9.1 | 86.4 | 4.5 |
+| chess-search | 7260 | 8.6 | 86.9 | 4.5 | 8757 | 12.0 | 83.9 | 4.2 |
+| collatz | 3 | 0.0 | 100.0 | 0.0 | 8 | 0.0 | 100.0 | 0.0 |
+| constants | 8 | 75.0 | 0.0 | 25.0 | 15 | 86.7 | 0.0 | 13.3 |
+| dead-code | 24 | 20.8 | 62.5 | 16.7 | 27 | 40.7 | 40.7 | 18.5 |
+| diagnostics | 3 | 66.7 | 0.0 | 33.3 | 4 | 75.0 | 0.0 | 25.0 |
+| distinct | 55 | 5.5 | 89.1 | 5.5 | 28 | 3.6 | 85.7 | 10.7 |
+| div-checks | 6 | 66.7 | 0.0 | 33.3 | 8 | 75.0 | 0.0 | 25.0 |
+| div-magic | 5 | 40.0 | 60.0 | 0.0 | 8 | 37.5 | 62.5 | 0.0 |
+| early-exit | 17 | 17.6 | 76.5 | 5.9 | 26 | 15.4 | 80.8 | 3.8 |
+| f32-dsp | 129 | 18.6 | 79.1 | 2.3 | 179 | 23.5 | 74.9 | 1.7 |
+| first-steps | 51 | 23.5 | 64.7 | 11.8 | 50 | 38.0 | 46.0 | 16.0 |
+| fixed-point | 55 | 27.3 | 56.4 | 16.4 | 70 | 40.0 | 41.4 | 18.6 |
+| fragments | 12 | 25.0 | 66.7 | 8.3 | 15 | 33.3 | 60.0 | 6.7 |
+| gcd | 4 | 25.0 | 75.0 | 0.0 | 7 | 28.6 | 71.4 | 0.0 |
+| heat-lab | 19 | 5.3 | 94.7 | 0.0 | 28 | 7.1 | 92.9 | 0.0 |
+| histogram | 22 | 9.1 | 86.4 | 4.5 | 34 | 5.9 | 91.2 | 2.9 |
+| licm-nested | 16 | 12.5 | 87.5 | 0.0 | 19 | 21.1 | 78.9 | 0.0 |
+| licm-traps | 4 | 25.0 | 75.0 | 0.0 | 7 | 28.6 | 71.4 | 0.0 |
+| lz-roundtrip | 192 | 14.6 | 74.0 | 11.5 | 305 | 9.5 | 82.3 | 8.2 |
+| match-enum | 6 | 0.0 | 83.3 | 16.7 | 5 | 0.0 | 80.0 | 20.0 |
+| my-analysis | 16 | 12.5 | 87.5 | 0.0 | 22 | 18.2 | 81.8 | 0.0 |
+| my-first-pass | 8 | 25.0 | 50.0 | 25.0 | 6 | 33.3 | 33.3 | 33.3 |
+| nested-loops | 11 | 18.2 | 81.8 | 0.0 | 15 | 26.7 | 73.3 | 0.0 |
+| orders | 39 | 41.0 | 48.7 | 10.3 | 49 | 49.0 | 42.9 | 8.2 |
+| params-demo | 12 | 25.0 | 66.7 | 8.3 | 15 | 33.3 | 60.0 | 6.7 |
+| pressure | 8 | 25.0 | 50.0 | 25.0 | 7 | 28.6 | 42.9 | 28.6 |
+| ramp | 19 | 21.1 | 68.4 | 10.5 | 29 | 24.1 | 65.5 | 10.3 |
+| records | 0 | - | - | - | 0 | - | - | - |
+| regalloc-lab | 33 | 12.1 | 81.8 | 6.1 | 40 | 17.5 | 72.5 | 10.0 |
+| regex-nfa | 288 | 6.3 | 90.3 | 3.5 | 272 | 9.9 | 86.8 | 3.3 |
+| sha-chacha | 541 | 21.4 | 60.4 | 18.1 | 701 | 26.4 | 56.5 | 17.1 |
+| sort | 19 | 5.3 | 94.7 | 0.0 | 28 | 7.1 | 92.9 | 0.0 |
+| start-here | 89 | 18.0 | 73.0 | 9.0 | 104 | 25.0 | 65.4 | 9.6 |
+| strength | 19 | 26.3 | 63.2 | 10.5 | 31 | 32.3 | 61.3 | 6.5 |
+| strings | 34 | 11.8 | 82.4 | 5.9 | 44 | 9.1 | 86.4 | 4.5 |
+| ui-gallery | 37 | 29.7 | 64.9 | 5.4 | 47 | 38.3 | 57.4 | 4.3 |
+| value-numbering | 8 | 12.5 | 87.5 | 0.0 | 13 | 15.4 | 84.6 | 0.0 |
+| wrong-shift | 16 | 12.5 | 81.3 | 6.3 | 23 | 8.7 | 87.0 | 4.3 |
+
+Local share by edits across the 49 projects with edits: minimum 0.0 %, median 16.7 %, maximum 75.0 %; projects with a local share of at least half: 4.
+
+## 5. Verified-rule coverage of the local rewrites
+
+| pipeline | local | re-derived by a verified table | % | of them made by that table's pass | by another pass | instructions of local | re-derived % |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| O2 | 395 | 183 | 46.3 | 183 | 0 | 699 | 59.4 |
+| speed | 997 | 362 | 36.3 | 362 | 0 | 1619 | 51.0 |
+
+### O2: evidence and rules of the re-derived edits
+
+| weakest evidence of the edit | edits | % of re-derived |
+|---|---:|---:|
+| proof | 71 | 38.8 |
+| reduced-width+argument | 69 | 37.7 |
+| by-construction | 43 | 23.5 |
+
+Firings: not-lt 62, mul-pow2 47, fold-shl 19, pow2-mul 19, fold-sub 13, fold-mul 9, add-zero 4, not-gt 3, mul-one 2, mul-zero 2, fold-eqz 2, not-le 2, sub-zero 1, sub-self 1, fold-add 1, fold-gt 1, not-ne 1, not-ge 1.
+
+### O2: the local rewrites no table re-derives, by shape
+
+| shape | edits | instructions | passes | coverage of local if covered, cumulative % |
+|---|---:|---:|---:|---:|
+| `get -> constant by definition` | 141 | 185 | constprop | 82.0 |
+| `get -> get by definition` | 29 | 0 | subst | 89.4 |
+| `get -> tree by definition` | 22 | 40 | subst | 94.9 |
+| `rem(get,#) -> and(get,#) by fact:ranges` | 8 | 24 | strength | 97.0 |
+| `div(get,#) -> shr(get,#) by fact:ranges` | 7 | 14 | strength | 98.7 |
+| `div(get,#) -> shr(get,#); rem(get,#) -> and(get,#) by fact:ranges` | 3 | 15 | strength | 99.5 |
+| `rem(_,#) -> and(_,#) by fact:ranges` | 2 | 6 | strength | 100.0 |
+
+### speed: evidence and rules of the re-derived edits
+
+| weakest evidence of the edit | edits | % of re-derived |
+|---|---:|---:|
+| proof | 174 | 48.1 |
+| by-construction | 104 | 28.7 |
+| reduced-width+argument | 83 | 22.9 |
+| exhaustive | 1 | 0.3 |
+
+Firings: mul-pow2 143, not-lt 72, fold-shl 54, fold-sub 33, pow2-mul 28, fold-mul 15, fold-add 11, zero-add 9, not-gt 5, add-zero 4, not-le 4, mul-one 2, mul-zero 2, fold-eqz 2, sub-zero 1, sub-self 1, fold-gt 1, not-ne 1, not-ge 1, div-one 1.
+
+### speed: the local rewrites no table re-derives, by shape
+
+| shape | edits | instructions | passes | coverage of local if covered, cumulative % |
+|---|---:|---:|---:|---:|
+| `get -> constant by definition` | 264 | 286 | constprop subst | 62.8 |
+| `get -> get by definition` | 207 | 98 | subst | 83.6 |
+| `get -> tree by definition` | 118 | 281 | subst | 95.4 |
+| `div(get,#) -> shr(get,#) by fact:ranges` | 19 | 40 | strength | 97.3 |
+| `rem(get,#) -> and(get,#) by fact:ranges` | 14 | 44 | strength | 98.7 |
+| `rem(_,#) -> and(_,#) by fact:ranges` | 12 | 40 | strength | 99.9 |
+| `div(get,#) -> shr(get,#); rem(get,#) -> and(get,#) by fact:ranges` | 1 | 5 | strength | 100.0 |
+
+## 6. Units a per-rule proof could discharge whole
+
+A unit is one function in one changed pass application (what a per-function check would cover), or one function over the whole pipeline. It is "rule only" when every edit in it is local/rule, "local only" when every edit is local.
+
+| pipeline, unit | units | rule only | % | local only (rule or fact) | % | local with other classes | no local edit |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| O2, function in one application | 335 | 105 | 31.3 | 142 | 42.4 | 34 | 159 |
+| O2, function over the pipeline | 102 | 13 | 12.7 | 13 | 12.7 | 76 | 13 |
+| speed, function in one application | 662 | 139 | 21.0 | 197 | 29.8 | 134 | 331 |
+| speed, function over the pipeline | 112 | 7 | 6.3 | 7 | 6.3 | 95 | 10 |
+
+## 7. Checks on the attribution
+
+| pipeline | changed applications | changed values and statements | neither claimed nor rebuilt | rebuilt values | instructions affected | instructions in the images before and after, summed over applications | % | edits with no instruction |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| O2 | 199 | 3628 | 0 | 1180 | 2209 | 135629 | 1.6 | 767 |
+| speed | 294 | 19086 | 0 | 2694 | 11632 | 300304 | 3.9 | 6031 |
+
+O2: unresolved, unknown or note edits: 0.
+speed: unresolved, unknown or note edits: 0.
