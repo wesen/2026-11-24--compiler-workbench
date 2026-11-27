@@ -18,7 +18,10 @@ const rejected = e => e.code === 'contractRejected' && e.evidence.disagree > 0;
 test('one genuine split candidate fails exact and passes the source-f64 tolerance', () => {
   assert.throws(() => checked(sum, splitPass, 'exact'), rejected);
   const result = optimizeTix(sum, ['split-sum', 'split-sum']);
-  assert.ok(result.steps.every(s => s.accepted));
+  assert.deepEqual(result.steps, [
+    { pass: 'split-sum', accepted: true, changed: true },
+    { pass: 'split-sum', accepted: true, changed: false },
+  ]);
   assert.notEqual(result.program.current.revision, sum.origin.revision);
   for (const k of [0, 1, 3, 4, 7, 8]) {
     const data = Float32Array.from({ length: k }, (_, i) => [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24, 1][i]);
@@ -46,9 +49,21 @@ test('passes compose across calls and preserve the source baseline', () => {
   const p = compileTix('fn f(x:f32[1,K]):f32[1]{a[i,k]=x[i,k]*1;y[i]=sum(k)a[i,k];return y;}');
   const split = optimizeTix(p, ['split-sum']).program;
   const later = optimizeTix(split, ['inline']);
-  assert.deepEqual(later.steps, [{ pass: 'inline', accepted: true }]);
+  assert.deepEqual(later.steps, [{ pass: 'inline', accepted: true, changed: true }]);
   assert.equal(later.program.origin, p.origin);
   assert.notEqual(later.program.current.revision, split.current.revision);
+});
+test('a rejected optimization step reports the first counterexample and leaves the program unchanged', () => {
+  const p = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k)((16777216+x[i,k])-16777216);return y;}');
+  const result = optimizeTix(p, ['split-sum']);
+  assert.equal(result.program.current, p.current);
+  assert.throws(() => checked(p, splitPass, 'tolerance'), error => {
+    assert.ok(rejected(error));
+    assert.deepEqual(result.steps, [
+      { pass: 'split-sum', accepted: false, changed: false, reason: error.evidence.counterexamples[0].reason },
+    ]);
+    return true;
+  });
 });
 test('coverage required per function and screening is origin-only', () => {
   const never = 'fn g(x:f32[5000]):f32[5000]{return x;}';
