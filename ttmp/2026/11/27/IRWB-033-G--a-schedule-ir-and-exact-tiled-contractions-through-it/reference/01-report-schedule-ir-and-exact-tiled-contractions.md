@@ -317,6 +317,24 @@ the same samples now run twice, in parallel, from one compilation. Everything el
 analysis and the four passes add 4 to 20 ms per program, which is invisible next to that, and the wall time is mostly
 ssh, upload and process start.
 
+## Tests
+
+`tests/tensor/schedule.test.mjs` (15 tests, no GPU): the artifact and its entities, the build naming its Tix revision,
+the strategy's four steps and its refusal list, the tile-size legality, the order claim through the strip-mine and its
+two mutants, the gate rejecting a reversed reduction (synchronously and through the framework's `preserves`), the
+staging refusals, the shape of the printed kernel (one accumulator, strip outside, `k` inside, no FMA), every corpus
+program's schedule, `fuse: false` still byte for byte stage 2, and a split sum not being tiled.
+
+`tests/tensor/tiled-gpu.test.mjs` (7 tests, its own file so the rest run without a GPU): the tiled body exact against
+the interpreter on ten shapes, 512³ fused against unfused, the other contraction forms, a refused form staying exact,
+`checkLowering` for the corpus with every launch-time side, and the corpus at small sizes.
+
+One existing assertion changed, in `tests/tensor/fusion.test.mjs`: a one-statement program used to be byte-identical
+fused and unfused, and matmul deliberately no longer is. conv2d (a one-statement program that is not a contraction)
+still is, and both `fuse: false` digests per program are unchanged. The rest of the suite — including stage 2's,
+stage 3's and stage 3b's GPU tests, the gate's, the staged terms' and the mutation checks — passes unchanged
+(`various/existing-gpu-suites.log`).
+
 ## Measured, and only argued
 
 **Measured on the GB10:**
