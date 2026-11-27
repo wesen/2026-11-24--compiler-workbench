@@ -1047,7 +1047,7 @@ Each pack was scored by two judges: Codex (Sol high) and Claude (an Opus subagen
     - Fusion is a legality analysis over the Tix IR, `planFusion`, which the emitter applies. Every program fuses to 1 kernel.
     - It folds max with PTX `max.NaN.f32`, probed equal to stage 2's max on 324 special-value pairs.
     - Finding: the correspondence manager accepts made-up entity IDs, or none. Opus proposes an optional entity list on `defineIR`, and made no change.
-  - **DeepSeek 4.1 Flash high (G)**, 45 min (04:00:50Z to 04:46Z), +626 −0 in `src/` plus tests, framework unchanged.
+  - **DeepSeek 4.1 Flash high (G)**, 45 min (04:00:50Z to 04:46Z), +878 −94 in `src/`, `tests/` and `tools/` (`git diff --shortstat`), framework unchanged.
     - Fusion is `planFusion` with a flat policy and a row policy. Every program fuses to 1 kernel.
     - Times: softmax 0.80 → 0.48 ms, layernorm 0.52 → 0.21 ms.
     - It reports 24/24 exact verdicts and 198 fuzz cases. Its design argues against both a Tix pass and a kernel IR, as Opus's does.
