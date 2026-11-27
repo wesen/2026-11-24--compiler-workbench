@@ -44,12 +44,15 @@ export const tiles = [
  *    to variant 3 at 64 and 144 terms (attention's score 0.036 against 0.032; conv2d 0.110 against 0.100) and with
  *    64 blocks (attention's out 0.055 against 0.047). The thresholds are the smallest measured values at which it won;
  *    the ranges between (2 to 5 blocks per SM, 145 to 255 terms) are not measured;
- *  - variant 3 otherwise.
+ *  - variant 3 with at least 1 block per SM: with one block (a dot product, 1 x 1 x 4096) it took 1.62 times
+ *    stage 2's time; with 64 blocks (256 x 256 x 1) 0.94 and with 128 (4096 x 1 x 1024) 0.59 (script 06);
+ *  - variant 0 (one thread per output, stage 2's mapping) otherwise.
  */
 export const selection: Selection[] = [
   { variant: 1, minBlocks: 16 },
   { variant: 2, minBlocks: 2, minTerms: 256 },
-  { variant: 3, minBlocks: 0 },
+  { variant: 3, minBlocks: 1 },
+  { variant: 0, minBlocks: 0 },
 ];
 
 export interface ScheduleStep {
