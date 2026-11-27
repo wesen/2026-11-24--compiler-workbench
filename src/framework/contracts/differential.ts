@@ -8,6 +8,7 @@
  * first counterexamples. Inconclusive cases (for example a step limit hit by either side) are counted and never
  * treated as a verdict; a check with no decided case fails, because it has established nothing.
  */
+import { isDeepStrictEqual } from 'node:util';
 import { defineInvariant } from './definitions.js';
 import type { CheckResult, InvariantDefinition, PortValue, PortValues, Ports } from './types.js';
 
@@ -178,7 +179,11 @@ function prepare<P extends Ports, Case, Outcome>(
   if (bk === undefined) return { cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count) };
   const key = `${spec.id}@${spec.version}#${seed}#${spec.count}#${bk}`;
   let reuse = REUSE.get(key);
-  if (reuse) REUSE.delete(key);
+  if (reuse) {
+    const current = spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count);
+    if (!isDeepStrictEqual(reuse.cases, current)) throw new Error(`Differential baseline key ${bk} produced different cases`);
+    REUSE.delete(key);
+  }
   else
     reuse = {
       key,
