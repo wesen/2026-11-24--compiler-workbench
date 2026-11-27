@@ -198,52 +198,67 @@ export const dominatorsAnalysis = defineAnalysis({
 export interface Loop {
   readonly id: string;
   readonly head: string;
+  /** The source of the header's first back edge (in block order); `latches` has all of them. */
   readonly latch: string;
+  readonly latches: readonly string[];
   readonly body: readonly string[];
   readonly preheader: string | null;
   readonly exits: readonly string[];
   readonly assigned: readonly number[];
 }
+/**
+ * One natural loop per header: the union of the bodies of the header's back edges (IRWB-034-G). A loop with a
+ * `continue`, or a dispatch loop whose every arm jumps back, has several back edges to one header; one loop per
+ * back edge gave them one id and bodies that exclude each other's latches, so a preheader made for one of them
+ * sat on the others' back edges and ran every iteration.
+ */
 export function loopsOf(st: Store, f: WorkFn): Loop[] {
   const dom = domView(dominatorsOf(f)),
     cfg = cfgOf(f),
-    out: Loop[] = [];
+    latchesOf = new Map<string, string[]>();
   for (const b of f.blocks)
     for (const s of b.succ)
       if (dom.dominates(s, b.id)) {
-        const body = new Set([s]),
-          work = [b.id];
-        while (work.length) {
-          const x = work.pop()!;
-          if (body.has(x)) continue;
-          body.add(x);
-          work.push(...cfg.preds[x]);
-        }
-        const outside = cfg.preds[s].filter(q => !body.has(q));
-        const pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
-        const exits = [...body].flatMap(x => cfg.succ[x].filter(y => !body.has(y)));
-        const assigned = new Set<number>();
-        for (const x of body)
-          for (const sid of (st.get(x) as BlockRec).stmts) {
-            const t = st.get(sid) as StmtRec;
-            if (t.op === 'set') assigned.add(t.local!);
-          }
-        out.push({
-          id: `loop:${f.name}@${s}`,
-          head: s,
-          latch: b.id,
-          body: [...body],
-          preheader: pre,
-          exits: [...new Set(exits)],
-          assigned: [...assigned],
-        });
+        const latches = latchesOf.get(s) ?? [];
+        if (!latches.length) latchesOf.set(s, latches);
+        if (!latches.includes(b.id)) latches.push(b.id);
       }
+  const out: Loop[] = [];
+  for (const [s, latches] of latchesOf) {
+    const body = new Set([s]),
+      work = [...latches];
+    while (work.length) {
+      const x = work.pop()!;
+      if (body.has(x)) continue;
+      body.add(x);
+      work.push(...cfg.preds[x]);
+    }
+    const outside = cfg.preds[s].filter(q => !body.has(q));
+    const pre = outside.length === 1 && cfg.succ[outside[0]].length === 1 ? outside[0] : null;
+    const exits = [...body].flatMap(x => cfg.succ[x].filter(y => !body.has(y)));
+    const assigned = new Set<number>();
+    for (const x of body)
+      for (const sid of (st.get(x) as BlockRec).stmts) {
+        const t = st.get(sid) as StmtRec;
+        if (t.op === 'set') assigned.add(t.local!);
+      }
+    out.push({
+      id: `loop:${f.name}@${s}`,
+      head: s,
+      latch: latches[0],
+      latches,
+      body: [...body],
+      preheader: pre,
+      exits: [...new Set(exits)],
+      assigned: [...assigned],
+    });
+  }
   return out;
 }
 export const loopsAnalysis = defineAnalysis({
   id: 'typed.loops',
-  version: '1',
-  description: 'natural loops from back edges, with preheaders and assigned locals',
+  version: '2',
+  description: 'natural loops, one per header, with preheaders and assigned locals',
   input: BlocksIR,
   output: JsonFacts,
   run: (_ctx, a) => perFunction(a.value, (f, st) => loopsOf(st, f)),

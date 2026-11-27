@@ -427,7 +427,7 @@ export const licm = typedPass({
   needs: { loops: 'loops' },
   writes: ['stmts', 'values', 'locals', 'cfg'],
   preserves: [],
-  body({ st, f, tx, facts }) {
+  body({ st, f, tx, facts, params }) {
     for (const L of facts.loops!) {
       let pre = L.preheader;
       if (!pre) {
@@ -474,13 +474,26 @@ export const licm = typedPass({
         if (v.op === 'get') return !assigned.has(v.imm as number);
         return v.args.every(inv);
       };
+      // experiment switches (IRWB-034-G scripts/06): share one local among equal trees; leave a bare aaddr in place
+      const share = params.share === true,
+        leaves = params.leaves === true;
+      const keyOf = (id: string): string => {
+        const v = st.get(id) as ValueRec;
+        return `${v.op}:${v.imm ?? ''}:${v.type ?? ''}(${v.args.map(keyOf).join(',')})`;
+      };
+      const hoisted = new Map<string, { t: number; set: string }>();
       const hoist = (id: string): string => {
         const v = st.get(id) as ValueRec;
-        if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
-          const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
-          const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
-          tx.insert(tx.at.end(pre!), set, { because: [L.id] });
-          return tx.get(t, { from: id, because: [set] });
+        if (v.op !== 'const' && v.op !== 'get' && !(leaves && v.op === 'aaddr') && inv(id)) {
+          const key = share ? keyOf(id) : id;
+          let h = hoisted.get(key);
+          if (!h) {
+            const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
+            const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
+            tx.insert(tx.at.end(pre!), set, { because: [L.id] });
+            hoisted.set(key, (h = { t, set }));
+          }
+          return tx.get(h.t, { from: id, because: [h.set] });
         }
         const args = v.args.map(hoist);
         return args.some((a, i) => a !== v.args[i])

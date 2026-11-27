@@ -1,0 +1,12 @@
+across-calls           same [270,210]
+algebra                same [20,20]
+blend                  same [1915,1585]
+bounds-lab             same [5012,4426]
+bounds-offset          same [1355,1258]
+bounds-param           same [499,408]
+bounds-two             same [756,665]
+branches               same [139,131]
+bytecode-vm            {"base":[32625,29228],"share":[32295,24750],"leaves":[33965,26400],"both":[33965,26400]}
+call-chain             same [350,290]
+calls                  same [288,227]
+checksum               same [1251,1110]
