@@ -818,3 +818,56 @@ I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineerin
   - The differences between models are smaller than the judge's family effect. Only the error counts, and the reproduced experiments, are free of it.
 - **Claude usage:** 4.80M subagent tokens in total. This round used the two cells (0.74M) and two judge runs (0.62M).
 - **The scorecard** has a new section, "How the two judges scored the creativity round", with the four judge runs per model, the dimension means, error totals, the family effect and the retest spread. Every number is drawn from `r2_scores`; the check passes.
+
+## Step 32: the gate fixes (F17, F21), v3 as the global Codex policy, and the Codex re-judging of stages 1 and 2
+
+The user settled the four open decisions, and I did all three that needed work. The gate is now exact for the CUDA lowering and can tell every pair of shape symbols apart. The global Codex policy is v3. Stages 1 and 2 were re-judged by a Codex judge, and the stage-1 scores turn out to depend on the judge's family as strongly as R2's did.
+
+- **The user's decisions** (verbatim): "4. yes 3. yes 2. does pi vs codex matter? 1. yes", then "but first, answer", then, about the T3 matrix, "let's just do codex, for now, and eave pi aside."
+- **Pi against Codex, from the existing data** (same model and policy, three cells per group):
+  - Designs: Codex is better for Astra in both stages, by about one point on over-engineering and fitness. For Sol the sign flips between stages.
+  - Implementations: no harness effect on correctness, size, time, exactness or kernel speed.
+  - So T3 runs Codex Sol and Codex Astra at medium effort, plus Opus and Fable.
+- **F21** (`250626e`): `cases()` cycled sizes 3, 5, 7 over the sorted shape symbols, so in `mlp` (D, H, N, O) D = O in every case. The "mixed" assignment now gives every symbol a different size. The empty-extent cases, previously only in the CUDA contract, are in the meaning gate too. They are compared, but only a case with every extent nonempty counts as coverage; without that rule, the existing test whose nonempty cases are all NaN was accepted, and its test failed.
+  - New test: Fable's D/O mutant on top of the real `inline` is rejected, and genuine `inline` is accepted. It fails on the previous build ("Missing expected exception").
+- **F17** (`885601f`): `checkLowering` compares f32 words against the current revision's f32 meaning (signed zeros and infinities included, NaN as a class) and reports `exact`. Invariant version 2. A new test checks that one ulp is rejected and a different NaN word is accepted.
+- **Validation on main after both:** tensor tests 21/21, GPU tests 10/10 (all six corpus programs, before and after optimization, accepted as exact), frozen stage-1 suite 25/25, `npm test` 426 pass, 0 fail, 3 skipped, and the stage-2 hidden evaluation on main exact everywhere ("check accepted 16/16 [exact]").
+- **v3 as the global Codex policy:** `~/.codex/config.toml`'s `developer_instructions` replaced with v3, without the experiment's isolation line. Backup: `~/.codex/config.toml.bak-2026-11-26-before-v3`. The TOML parses and its top-level keys are unchanged.
+- **The Codex re-judging** (Sol, high, read-only sandbox, same packs, rubrics and base revisions as the Claude judging; `results/judge-scores-t{1,2}-codex.json`):
+
+  | | Claude judge | Codex judge |
+  |---|---|---|
+  | Stage 1, the 4 Claude designs: fitness / over-engineering | 8.50 / 2.75 | 5.25 / 7.00 |
+  | Stage 1, the 12 OpenAI designs: fitness / over-engineering | 7.08 / 3.50 | 8.92 / 2.08 |
+  | Stage 1, rank correlation (Spearman) of fitness / over-engineering | -0.29 / 0.33 | |
+  | Stage 2, all 12 OpenAI designs: rank correlation | 0.62 / 0.60 | |
+
+  Within one family, the judges mostly agree (stage 2). Across families they disagree, and on stage 1 their fitness rankings are weakly opposed. The stage-1 headline, "Fable's designs were the fittest", holds only under the Claude judge. Under the Codex judge, Astra's are (9.17 against Fable's 5.50).
+- **Scorecard:** the designs dataset carries both judges (`judge` column). The design scatter has a judge selector, and the models table shows both judges side by side. The lede names each judge's leader, and the caveat now states the family effect. The check passes.
+- **Backlog:** F17 and F21 marked done, T3's cells recorded, M6 notes v3 as the global default (`23e87fc`).
+
+## Step 33: R1 and R2 on two more model families through Pi (R1b, R2b)
+
+The user asked for the two research rounds on DeepSeek and GLM through Pi. Neither family is the family of either judge, so these cells are scored by two out-of-family judges: the cleanest comparison the experiment has had.
+
+- **The user's request** (verbatim): "ok let's actually on R1, R2 try out pi coding agent tests with deepseek-4.1-flash high / xhigh / max, glm-5.3-flash high / max, glm-5.3-flash high / max ."
+  The GLM entry appears twice. Pi also offers `glm-5.3`, the model without "flash", which may be what the second meant. I launched the unambiguous five configurations and asked.
+- **Probes:**
+  - **The provider is an extension.** Both models come from the LunaRoute provider, which is a Pi extension (`@lunaroute/pi-extension` 0.18.0). With `--no-extensions` alone, Pi lists no DeepSeek model. With `--no-extensions --no-mcp -e <the extension>`, all six model and thinking-level combinations answered a probe. The extension also brings a `web_search` tool and four image tools.
+  - **Tools are pinned with `--tools`.** `--tools read,bash,edit,write` gives exactly Pi's four built-in tools, the set the original R1 Pi cells had. Adding `web_search` gives the R2 cells web research, as the R2 brief asks (Codex had `web_search=live`, the Claude cells WebSearch and WebFetch).
+  - **The thinking levels:** the cached catalogue (`~/.pi/agent/models-store.json`) maps DeepSeek's high, xhigh and max to three distinct levels. GLM 5.3 Flash (and GLM 5.3) maps only low, high and max to distinct levels: its `xhigh` becomes `high` or nothing. So the user's levels are exactly each model's distinct ones. Pi records the requested level in every session.
+- **The cells** (`results/r1b-config-key.json`, `results/r2b-config-key.json`; launcher `scripts/25-launch-r1b-r2b-pi.sh`):
+
+  | config | model | thinking | R1b item | R2b item |
+  |---|---|---|---|---|
+  | ds-h | DeepSeek 4.1 Flash | high | IRWB-021-M | IRWB-023-E |
+  | ds-x | DeepSeek 4.1 Flash | xhigh | IRWB-021-N | IRWB-023-F |
+  | ds-max | DeepSeek 4.1 Flash | max | IRWB-021-O | IRWB-023-G |
+  | gf-h | GLM 5.3 Flash | high | IRWB-021-P | IRWB-023-H |
+  | gf-max | GLM 5.3 Flash | max | IRWB-021-Q | IRWB-023-I |
+
+- **The same bases, policies and briefs as the originals:**
+  - R1b: base 19ad269, v1 policy, a two-hour cap (as R1's xhigh cells).
+  - R2b: base 12bc661, the R2 policy, a three-hour cap.
+  - The only brief change: R2b's common.md says the GPU machine is shared with four other agents (R2 said three).
+- **A false start of mine:** I first launched the cells in a background command with a 10-minute timeout, which the harness might enforce and so kill the cells. I stopped it within seconds, confirmed that no Pi process remained and the ten worktrees were clean at their bases, removed the partial logs, and relaunched without a timeout.
