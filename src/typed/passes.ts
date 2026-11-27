@@ -47,6 +47,7 @@ import {
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { rotateSpec } from './rotate.js';
+import { promoteFrameSpec } from './promote-frame.js';
 import { makeInline } from './inline.js';
 
 type AnalysisName = keyof typeof ANALYSES;
@@ -86,6 +87,7 @@ const ENTITY_WRITES: Record<WriteKind, { entities: string[]; relations: string[]
     relations: ['contains', 'uses', 'operand', 'reads', 'writes', 'jump'],
   },
   locals: { entities: ['local'], relations: ['declares'] },
+  frame: { entities: ['fn'], relations: [] },
   cfg: {
     entities: ['block', 'stmt.*', 'value.*'],
     relations: ['succ', 'jump', 'contains', 'uses', 'operand', 'reads'],
@@ -1049,6 +1051,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   dfe,
   rotate,
   inline,
+  'promote-frame': typedPass(promoteFrameSpec),
 });
 
 /** Compiler Workbench's pipelines, by pass name. */

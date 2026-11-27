@@ -24,8 +24,8 @@ import {
   type WorkFn,
 } from './model.js';
 
-export type WriteKind = 'values' | 'stmts' | 'locals' | 'cfg';
-export const WRITE_KINDS: readonly WriteKind[] = ['values', 'stmts', 'locals', 'cfg'];
+export type WriteKind = 'values' | 'stmts' | 'locals' | 'cfg' | 'frame';
+export const WRITE_KINDS: readonly WriteKind[] = ['values', 'stmts', 'locals', 'cfg', 'frame'];
 
 export class TxError extends Error {
   constructor(
@@ -281,6 +281,13 @@ export class Tx {
     });
     this.record('local', { local: `local:${this.fn.name}/${n}`, name: n, because: this.because(opts) });
     return index;
+  }
+
+  /** Drop private frame storage after removing all frame operations. */
+  dropFrame(because: readonly string[]): void {
+    this.may('frame', 'removed the array frame');
+    delete this.fn.arrayBytes;
+    this.record('dropFrame', { because });
   }
 
   // statements

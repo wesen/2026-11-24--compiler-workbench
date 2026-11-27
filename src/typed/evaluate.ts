@@ -335,7 +335,7 @@ const hasFrames = new WeakMap<Store, boolean>();
 let LOCALS = new Int32Array(4096);
 /** The working memory of an evaluation with a stack area (see `evaluate`). */
 let SCRATCH = new Uint8Array(0);
-const I32_BINARY = new Set(
+export const I32_BINARY: ReadonlySet<string> = new Set(
   ['add', 'sub', 'mul', 'div', 'rem', 'and', 'or', 'xor', 'shl', 'shr', 'shru'].concat([
     'eq',
     'ne',

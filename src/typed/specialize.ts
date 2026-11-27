@@ -15,8 +15,10 @@
  * with it: the program is checked against r0 only on cases that satisfy the bindings (`Program.assume`), and every
  * later pass is held to the same restricted contract.
  */
-import { defineIR } from '../framework/contracts/definitions.js';
+import { defineIR, validateArtifact } from '../framework/contracts/definitions.js';
 import type { Artifact } from '../framework/core/types.js';
+import type { Store } from './model.js';
+import { residualize } from './specialize-memory.js';
 import { TxError } from './tx.js';
 import { typedPass } from './passes.js';
 
@@ -24,7 +26,7 @@ import { typedPass } from './passes.js';
  * A parameter binding (`fn`, `param`): that parameter's value. A field binding (`record`, `field`): that field of
  * every record of the type a function receives as a parameter (Candela: `K.scene`), in every function.
  */
-export interface Binding {
+interface BindingTarget {
   /** The function whose parameter is bound. */
   readonly fn?: string;
   /** The parameter's name. */
@@ -33,12 +35,14 @@ export interface Binding {
   readonly record?: string;
   /** The field's name (field form). */
   readonly field?: string;
-  /** Its value (an enum case's value for enum parameters). */
-  readonly value: number;
   /** The entity of the outer artifact that establishes the fact (e.g. `candela:scene/cornell#K.scene`). */
   readonly entity: string;
   readonly note?: string;
 }
+export type Binding = BindingTarget &
+  ({ readonly value: number; readonly cells?: never } |
+   { readonly cells: readonly number[]; readonly value?: never });
+
 export interface Bindings {
   readonly formatVersion: 1;
   /** What produced the facts (e.g. `candela`). */
@@ -58,7 +62,10 @@ export const BindingsIR = defineIR<Bindings>({
     for (const b of v.bindings) {
       const param = typeof b.fn === 'string' && typeof b.param === 'string';
       const field = typeof b.record === 'string' && typeof b.field === 'string';
-      if (param === field || !Number.isInteger(b.value) || typeof b.entity !== 'string')
+      const scalar = Number.isInteger(b.value) && b.cells === undefined;
+      const buffer = param && !field && b.value === undefined && Array.isArray(b.cells) &&
+        b.cells.every((c: number) => Number.isInteger(c) && c >= 0 && c <= 0xffff);
+      if (param === field || !(scalar || buffer) || typeof b.entity !== 'string')
         throw new Error(`typed.bindings: malformed binding ${JSON.stringify(b)}`);
     }
   },
@@ -68,22 +75,49 @@ export const BindingsIR = defineIR<Bindings>({
 export const factRef = (art: Artifact<Bindings>, b: Binding) =>
   `fact:${art.kind}:${art.id}@${art.revision.slice(0, 12)}#${b.entity}`;
 
+/** Memory promises apply to external entries with no internal call sites. */
+export function validateMemoryBindings(st: Store, bindings: readonly Binding[]): void {
+  for (const b of bindings) {
+    if (b.cells === undefined) continue;
+    const f = st.fn(b.fn!);
+    const param = f.locals.find(l => l.param && l.name === b.param);
+    if (param?.type !== 'buffer')
+      throw new TxError('unsupported', `${f.name}.${b.param} must be a buffer parameter`);
+    for (const id of st.liveIds()) {
+      const value = st.get(id);
+      if (value.kind === 'value' && value.op === 'call' && value.imm === f.name)
+        throw new TxError('unsupported', `${f.name} has an internal caller at ${id}`);
+    }
+  }
+}
+
 export const specialize = typedPass({
   name: 'specialize',
-  about: 'specialization: reads of a parameter bound by an outer fact become that constant',
-  needs: { reach: 'reaching' },
-  writes: ['values'],
-  preserves: ['cfg', 'dominators', 'loops'],
+  about: 'specialization on scalar, field or constant-buffer facts supplied by a host',
+  needs: { reach: 'reaching', live: 'liveness' },
+  writes: ['values', 'stmts', 'cfg'],
   body({ st, f, tx, facts, params }) {
     const art = params.bindings as Artifact<Bindings> | undefined;
     if (!art || art.kind !== BindingsIR.id)
       throw new TxError('unsupported', 'specialize needs params.bindings: a typed.bindings artifact');
+    validateArtifact(BindingsIR, art);
+    const bindings = art.value.bindings;
+    const localBindings = bindings.filter(b => b.fn === f.name);
+    if (localBindings.some(b => b.cells !== undefined)) {
+      validateMemoryBindings(st, localBindings);
+      if (bindings.some(b => b.record && f.params.includes(b.record)))
+        throw new TxError('unsupported', `${f.name}: buffer specialization cannot be combined with field bindings`);
+      residualize(st, f, tx, facts.live!, localBindings, localBindings.map(b => factRef(art, b)),
+        params.maxVariants);
+      return;
+    }
     // only the parameter's own value: a read whose single reaching definition is the parameter
     const own = (v: { statement?: string | null }, i: number) => {
       const defs = facts.reach!.reachingAt(v.statement!, i);
       return defs.length === 1 && defs[0] === `param:${i}`;
     };
-    for (const b of art.value.bindings) {
+    for (const b of bindings) {
+      if (b.cells !== undefined) continue;
       if (b.record && b.field) {
         const layout = (
           st.frontEnd.records as Record<string, Record<string, { type: string; offset: number }>> | null

@@ -9,6 +9,7 @@
  * Methods that run passes, analyses or checks are async (the framework's analyses and contracts are).
  */
 import { AnalysisManager } from '../framework/contracts/analysis-manager.js';
+import { validateArtifact } from '../framework/contracts/definitions.js';
 import type { Artifact } from '../framework/core/types.js';
 import type { EntityCorrespondence } from '../framework/ir/types.js';
 import { whyEntity, type WhyNode } from '../framework/ir/correspondence.js';
@@ -28,11 +29,12 @@ import {
 import { storeOf } from './ir.js';
 import { LiftError } from './lift.js';
 import { describeText, lineage, linesOf, listing } from './listing.js';
-import type { TypedBlocks } from './model.js';
+import { copyJson, sameJson, type TypedBlocks } from './model.js';
 import { optimizationContract, PASSES, PIPELINES, type RevisionReport, type TypedPass } from './passes.js';
 import { ingestProject, projectSource, type ProjectSource } from './project.js';
 import { USER_PASSES } from './builder.js';
 import type { Edit } from './tx.js';
+import type { Binding, Bindings } from './specialize.js';
 import { createIRArtifact } from '../framework/ir/adapters.js';
 import { blocksAdapter } from './ir.js';
 import { ingest, type IngestOptions } from './lift.js';
@@ -51,6 +53,9 @@ const fail = (code: string, message: string, fix?: string): never => {
   throw new WorkbenchError(code, message, fix);
 };
 
+type Assumptions = Record<string, Record<string, number | { readonly cells: readonly number[] }>>;
+type AssumedBinding = Omit<Binding, 'entity' | 'note'>;
+
 export interface Revision {
   readonly rev: number;
   readonly pass: string;
@@ -61,7 +66,7 @@ export interface Revision {
   readonly fns?: readonly string[];
   readonly note?: string;
   /** The assumptions in force when this revision was made (see `Program.assume`). */
-  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
+  readonly assumptions?: Assumptions;
 }
 
 export interface ApplyResult {
@@ -143,14 +148,17 @@ export class Program {
     return `prog:${this.name}`;
   }
   /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
-  readonly assumptions: Record<string, Record<string, number>> = {};
+  readonly assumptions: Assumptions = {};
   /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
   get inputs(): ProgramInputs {
+    return this.inputsWith(this.assumptions);
+  }
+  private inputsWith(assumptions: Assumptions): ProgramInputs {
     const base = this.options.inputs ?? {};
     const out: Record<string, Record<string, unknown>> = Object.fromEntries(
       Object.entries(base).map(([f, v]) => [f, { ...v }]),
     );
-    for (const [f, params] of Object.entries(this.assumptions))
+    for (const [f, params] of Object.entries(assumptions))
       for (const [k, v] of Object.entries(params)) {
         const dot = k.indexOf('.');
         if (dot < 0) {
@@ -169,36 +177,53 @@ export class Program {
    * Restrict the program's meaning to inputs satisfying `bindings`: from now on the contract every pass must meet,
    * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
    */
-  assume(
-    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
-  ): Record<string, Record<string, number>> {
-    const previous = JSON.parse(JSON.stringify(this.assumptions));
+  assume(bindings: readonly AssumedBinding[]): Assumptions {
+    const previous = copyJson(this.assumptions);
+    this.setAssumptions(this.withBindings(bindings));
+    return previous;
+  }
+
+  private withBindings(bindings: readonly AssumedBinding[]): Assumptions {
+    const next = copyJson(this.assumptions);
+    const bind = (fn: string, param: string, value: Assumptions[string][string]) => {
+      const params = next[fn] ??= {};
+      if (Object.hasOwn(params, param) && !sameJson(params[param], value))
+        fail('unsupported', `conflicting assumptions for ${fn}.${param}`);
+      params[param] = value;
+    };
     for (const b of bindings) {
       if (b.record && b.field) {
-        // every parameter of that record type, in every function
         const st = storeOf(this.head.value);
         for (const f of st.fns.values())
           f.params.forEach((t, i) => {
-            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value;
+            if (t === b.record) bind(f.name, `${f.locals[i].name}.${b.field}`, b.value!);
           });
         continue;
       }
       this.fname(b.fn!);
-      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value;
+      bind(b.fn!, b.param!, b.cells === undefined ? b.value! : { cells: [...b.cells] });
     }
-    return previous;
+    return next;
   }
-  /** Specialize on an outer artifact's facts: assume them, then apply the `specialize` pass under that contract. */
-  async specialize(bindings: Artifact<import('./specialize.js').Bindings>): Promise<ApplyResult> {
-    const { specialize } = await import('./specialize.js');
-    const previous = this.assume(bindings.value.bindings);
-    try {
-      return await this.apply(specialize, { params: { bindings } });
-    } catch (e) {
-      for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
-      Object.assign(this.assumptions, previous);
-      throw e;
-    }
+
+  private setAssumptions(next: Assumptions): void {
+    for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
+    Object.assign(this.assumptions, next);
+  }
+
+  /** Apply the checked specialization under the host's facts, then publish them with the result. */
+  async specialize(bindings: Artifact<Bindings>, options: { maxVariants?: number } = {}): Promise<ApplyResult> {
+    const { BindingsIR, specialize } = await import('./specialize.js');
+    validateArtifact(BindingsIR, bindings);
+    const entries = this.options.entries;
+    for (const b of bindings.value.bindings)
+      if (b.cells !== undefined && entries && !entries.includes(b.fn!))
+        fail('unsupported', `${b.fn} is not a checked entry for buffer specialization`);
+    return this.applyWithAssumptions(
+      specialize,
+      { params: { bindings, ...options } },
+      this.withBindings(bindings.value.bindings),
+    );
   }
   get rev(): number {
     return this.revisions.length - 1;
@@ -255,19 +280,30 @@ export class Program {
     x: string | TypedPass,
     opts: { params?: Record<string, unknown>; check?: boolean; count?: number; seed?: number } = {},
   ): Promise<ApplyResult> {
+    return this.applyWithAssumptions(x, opts, this.assumptions);
+  }
+
+  private async applyWithAssumptions(
+    x: string | TypedPass,
+    opts: { params?: Record<string, unknown>; check?: boolean; count?: number; seed?: number },
+    assumptions: Assumptions,
+  ): Promise<ApplyResult> {
     this.requireOk();
+    const before = this.head;
+    const oldAssumptions = copyJson(this.assumptions);
+    const publish = assumptions !== this.assumptions;
     const pass = this.resolvePass(x),
       t0 = now();
     const contract =
       opts.check === false
         ? undefined
         : optimizationContract({
-            inputs: this.inputs,
+            inputs: this.inputsWith(assumptions),
             count: opts.count ?? 40,
             seed: opts.seed ?? 7,
             ...(this.options.entries ? { roots: this.options.entries } : {}),
           });
-    const r = await applyPass(pass, this.head, {
+    const r = await applyPass(pass, before, {
       manager: this.manager,
       params: opts.params,
       contract,
@@ -275,6 +311,9 @@ export class Program {
     });
     const ms = +(now() - t0).toFixed(2);
     if (!r.changed) return { pass: pass.typed.name, rev: `r${this.rev}`, edits: 0, changed: false, ms };
+    if (this.head !== before || !sameJson(this.assumptions, oldAssumptions))
+      fail('unsupported', 'program changed while applying a pass');
+    if (publish) this.setAssumptions(assumptions);
     const report = r.report as RevisionReport;
     this.revisions.push({
       rev: this.rev + 1,
@@ -284,7 +323,7 @@ export class Program {
       correspondence: r.correspondence,
       ms,
       fns: report.fns,
-      assumptions: JSON.parse(JSON.stringify(this.assumptions)),
+      assumptions: copyJson(assumptions),
     });
     const checks =
       (r.contract as { execution?: { checks?: { phase: string; evidence?: any }[] } } | undefined)?.execution
@@ -387,8 +426,7 @@ export class Program {
     if (!(n >= 0 && n <= this.rev)) fail('noRevision', `${this.id} has revisions r0 to r${this.rev}`);
     this.revisions.length = n + 1;
     // the head's assumptions: a specialization undone takes its restriction with it
-    for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
-    Object.assign(this.assumptions, JSON.parse(JSON.stringify(this.revisions[n].assumptions ?? {})));
+    this.setAssumptions(copyJson(this.revisions[n].assumptions ?? {}));
     return `r${this.rev}`;
   }
   revisionList() {
