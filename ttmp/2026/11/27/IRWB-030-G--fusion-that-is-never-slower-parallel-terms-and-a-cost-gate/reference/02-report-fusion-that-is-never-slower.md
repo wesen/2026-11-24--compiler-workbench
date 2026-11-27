@@ -66,7 +66,7 @@ still 1.05 times faster than stage 2.
   `split-sum`, and the fused outputs equal the unfused ones and the interpreter word for word at full size.
 
 **Which reductions use parallel terms**, per block-mode kernel (`scripts/08-plans.mjs`, output in
-`scripts/08-plans.md`; matmul and conv2d are thread-mode single kernels, so they have no block-mode kernel):
+`scripts/08-plans.out.txt`; matmul and conv2d are thread-mode single kernels, so they have no block-mode kernel):
 
 | Program | Block-mode kernel | Parallel terms | Left as a serial fold |
 | --- | --- | --- | --- |

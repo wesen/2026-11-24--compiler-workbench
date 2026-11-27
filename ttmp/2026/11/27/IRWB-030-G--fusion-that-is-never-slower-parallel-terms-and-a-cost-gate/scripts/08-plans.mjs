@@ -2,7 +2,7 @@
 // emits, the mapping of each, which reductions compute their terms in parallel, which stayed serial and why, and
 // which groups the cost gate kept out of block mode.
 //
-//   node <ticket>/scripts/08-plans.mjs [--markdown|--json]
+//   node <ticket>/scripts/08-plans.mjs [--json]   (markdown to stdout; the committed copy is 08-plans.out.txt)
 import { planFusion, unfusedPlan } from '../../../../../../dist/tensor/fusion.js';
 import { corpusSizes, load } from './01-bench.mjs';
 

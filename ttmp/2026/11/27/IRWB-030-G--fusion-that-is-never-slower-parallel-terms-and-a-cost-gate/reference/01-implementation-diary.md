@@ -260,7 +260,7 @@ path, the gated source as a candidate, four mutants).
 ## Step 5: Measurements, contract cost and the report
 
 Two rounds of five `benchmark` calls per program and lowering (`scripts/09-round1.jsonl`, `scripts/09-round2.jsonl`),
-the plan table (`scripts/08-plans.md`), the gate's own measurements (`scripts/06-plans.mjs`), and the contract's cost
+the plan table (`scripts/08-plans.out.txt`), the gate's own measurements (`scripts/06-plans.mjs`), and the contract's cost
 (`scripts/10-contract-cost.jsonl`).
 
 ### Prompt Context
@@ -279,13 +279,36 @@ the plan table (`scripts/08-plans.md`), the gate's own measurements (`scripts/06
   runner's lock) and asks for the median of several such calls.
 
 ### What worked
-- (results in the report)
+- Medians of five `benchmark` calls per lowering (`scripts/09-round1.jsonl`): layernorm-inside 0.2623 against
+  0.5716 ms (was 0.578 against 0.542 at stage 3), `exp`-in-sum 0.7479 against 1.6308 (was 12.41 against 1.62),
+  attention-inside 1.4123 against 1.4866 (was 1.4124 against 1.5546), and the corpus unchanged (softmax 0.3866,
+  layernorm 0.1977, attention 0.7531, mlp 0.7256, matmul 0.2136, conv2d 0.1659).
+- `equal: true` in all 28 cases; `scripts/09-check-*.jsonl` accepts all 13 (program, size) pairs fused and unfused as
+  `exact` and shows the full-size fused output equal to the unfused one.
+- The gate's crossover measured at rows of 4, 8, 16, 32, 64 (1.47 / 0.74 / 0.37 / 0.19 / 0.19 at stage 3; 0.29 /
+  0.27 / 0.31 / 0.19 / 0.19 now), and the gate removed (`scripts/06-plans.mjs`) shows the ungated plan is 7.5x and
+  1.9x worse than stage 2 on 4- and 16-element rows, so the threshold is not too conservative.
+- Staging a cheap body (`scripts/13-stage-everything.mjs`): the corpus layernorm 0.1977 with the rule against 0.2001
+  staging `mean` and `variance` too; softmax 0.3874 against 0.3863 (no change).
+- Contract cost, fused (`scripts/10-contract-cost.jsonl`): 28 to 40 cases per program, 0.96 to 1.16 s of nvcc, 3.1 to
+  4.9 s of wall time for a cold batch, `checkLowering` 2.8 to 5.0 s, a repeat 1 ms. Stage 2's lowering costs 2.3 to
+  3.5 s, so the extra kernels and term arrays add nothing measurable.
 
 ### What didn't work
-- (results in the report)
+- Round 1's kernel counts first disagreed with the timed lowering: my harness counted kernels from `cudaSource`
+  without shape values (the ungated plan) while `runTixCuda` ran the gated one, so gated cases printed "1 kernel" for
+  a four-kernel run. Fixed by counting from the source the run used (`sizesOf` in `scripts/01-bench.mjs`).
+- The relation "within-round spread" is meaningless on 0.015 ms kernels (0.0193 to 0.0371 ms is 480%): it is a few
+  microseconds of jitter. The report quotes spread only where it matters.
+- One fused attention run measured 0.812 ms where the previous round had 0.753; reruns came back to 0.753. Another
+  agent's untimed job can overlap a timed run (the lock only covers `--timed`).
 
 ### What I learned
-- (results in the report)
+- The corpus programs have no stageable reduction at all: their reduction bodies are loads and products. The stage's
+  win is entirely on programs that put a division or a transcendental inside a reduction, which is exactly what the
+  brief named.
+- A row-scalar reduction is the only serial work a block-mode kernel does; once its terms are staged, the fold is
+  `n` dependent adds, which is cheap enough that a 1024-element reduction no longer shows.
 
 ### What was tricky to build
 - N/A
@@ -301,4 +324,4 @@ the plan table (`scripts/08-plans.md`), the gate's own measurements (`scripts/06
 - Start with the report, then `fusion.ts`, `emitGroup` in `cuda-source.ts`, and `tests/tensor/terms-gpu.test.mjs`.
 
 ### Technical details
-- (filled in by the report)
+- Final state: local tensor tests 39/39, GB10 tensor tests 21/21 (`terms-gpu` 5, `fusion-gpu` 5, `cuda-gpu` 11).
