@@ -1,0 +1,269 @@
+<title>Framework Review Synthesis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (about 72ch); full-width tables and diagrams in their own scroll containers; status as pills. */
+:root {
+  --bg: #f4f6f6; --panel: #ffffff; --fg: #18242a; --muted: #56656c; --line: #d6dee0;
+  --accent: #1d5c6e; --accent-soft: #e3eef1; --code-bg: #eaf0f1;
+  --held: #22704a; --held-soft: #e2f2e9; --qual: #8a5a00; --qual-soft: #f8eed8; --fail: #a8322b; --fail-soft: #f8e3e1;
+  --display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1619; --panel: #151f23; --fg: #e1e9ec; --muted: #97a8ae; --line: #27363c;
+  --accent: #7cc0d2; --accent-soft: #17303a; --code-bg: #1a272c;
+  --held: #6fcf9b; --held-soft: #173326; --qual: #e6b45a; --qual-soft: #3a2d12; --fail: #f08a80; --fail-soft: #3d1c19;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1619; --panel: #151f23; --fg: #e1e9ec; --muted: #97a8ae; --line: #27363c;
+  --accent: #7cc0d2; --accent-soft: #17303a; --code-bg: #1a272c;
+  --held: #6fcf9b; --held-soft: #173326; --qual: #e6b45a; --qual-soft: #3a2d12; --fail: #f08a80; --fail-soft: #3d1c19;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15.5px; line-height: 1.6; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1040px; margin: 0 auto; padding-block: 40px 80px; display: grid; gap: 52px; }
+section { display: grid; gap: 14px; min-width: 0; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 4.4vw, 44px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.2; margin: 0; text-wrap: balance; }
+h3 { font-size: 16px; font-weight: 600; margin: 6px 0 0; }
+p, li { max-width: 72ch; }
+p { margin: 0; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 17.5px; }
+.muted { color: var(--muted); }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre.code { font-family: var(--mono); font-size: 13px; background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; margin: 0; line-height: 1.5; }
+ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+.verdict { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; display: grid; gap: 14px; }
+.verdict ol li::marker { font-family: var(--mono); color: var(--accent); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.fact { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
+.fact b { font-family: var(--display); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--muted); font-size: 13.5px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 500; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.k { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.pill { font-family: var(--mono); font-size: 11.5px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; display: inline-block; }
+.pill.held { color: var(--held); background: var(--held-soft); }
+.pill.qual { color: var(--qual); background: var(--qual-soft); }
+.pill.fail { color: var(--fail); background: var(--fail-soft); }
+.pill.e { color: var(--held); background: var(--held-soft); }
+.pill.c { color: var(--qual); background: var(--qual-soft); }
+.diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; }
+.callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; display: grid; gap: 6px; }
+.concepts { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+.concept { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.concept h3 { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.concept .label { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+ol.steps { list-style: none; padding: 0; counter-reset: s -1; gap: 10px; }
+ol.steps > li { counter-increment: s; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px 12px 56px; position: relative; max-width: none; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 16px; top: 11px; font-family: var(--mono); font-weight: 500; color: var(--accent); font-size: 15px; }
+ol.steps .meta { color: var(--muted); font-size: 13.5px; display: block; margin-top: 4px; }
+ol.steps .gate { color: var(--qual); font-size: 13.5px; display: block; margin-top: 4px; }
+.reviewers { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+footer { color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<main>
+
+<section id="verdict">
+  <div class="eyebrow">IR Workbench · IRWB-019 · round R3 · synthesis</div>
+  <h1>What forty implementations say about the framework</h1>
+  <p class="lede">Four agents reviewed the IR framework against two compilers (Typed to RV32, Tix to CUDA) and 31 unmerged implementations: Sol and Astra (OpenAI Codex), Opus and Fable (Claude). This page verifies their claims with probes, merges their proposals into one target architecture and one standard library, and orders a migration.</p>
+  <div class="verdict">
+    <div class="eyebrow">Verdict</div>
+    <ol>
+      <li><b>The outer shell held.</b> Content-addressed revisions, adapters and projections, the contract vocabulary, revision-exact analysis caching, the batched differential and the strategy plan language carried both domains and every cell.</li>
+      <li><b>The inner model of a transformation did not.</b> A pass is an endomorphism. Its record is a diff. "Checked" is one word. Acceptance is spread over two runners and several publication points. Independent agents routed around each of these in the same few shapes.</li>
+      <li><b>The coordinator was wrong about F27.</b> Tix passes run in strategy plans today. They lose the meaning gate, and the bridge's existing <code>contract</code> option restores it without a framework change.</li>
+      <li><b>v7 has six core concepts:</b> a typed transformation with one lifecycle; a derivation written by the producer; evidence as relation × method × scope; staged publication; one runner with two drivers; decisions as data. A standard library of about twenty primitives sits below them.</li>
+      <li><b>First moves:</b> honest evidence, atomic publication, Tix plans through the bridge contract, then one runner.</li>
+    </ol>
+  </div>
+  <div class="facts">
+    <div class="fact"><b>24</b><span>claims probed (scripts 01–11, on clean exports)</span></div>
+    <div class="fact"><b>19</b><span>held, some with a correction to their wording</span></div>
+    <div class="fact"><b>2</b><span>failed: the F27 statement, and D's reconciliation of 2,021 against 1,774 edits</span></div>
+    <div class="fact"><b>8 / 10</b><span>T6 cells changed <code>src/framework</code>; 0 of 21 Typed cells did</span></div>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>The target architecture</h2>
+  <p>The core knows nothing about programs. The standard library holds algorithms over one shape each (a graph, a lattice, terms, affine forms, binary32) and registers with the core only through optional wrappers. Domains supply semantics: evaluators, native transactions, emitters, measured constants.</p>
+  <div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph Core["core framework"]
+    A["Artifacts, revisions (keep)"]
+    I["IR types, adapters, projections<br/>+ named entity universes"]
+    T["Transformation&lt;In, Out&gt;<br/>eligible → prepare → obligations → publish"]
+    D["Derivation: rule or decision,<br/>site, premises, relation"]
+    E["Evidence: relation × method × scope"]
+    P["Publication: staged, all or nothing"]
+    R["One runner, sync and async drivers"]
+    Q["Analysis queries (keep)"]
+  end
+  subgraph Lib["standard library"]
+    G["graph · lattice + solvers · flow · ssa"]
+    M["terms + rule verification · affine · pe"]
+    N["num · check · measure · target"]
+  end
+  subgraph Dom["domains"]
+    TY["Typed: Tx, evaluator, rule tables, RV32"]
+    TX["Tix: evaluator, access maps, CUDA, GB10"]
+  end
+  Dom --> Lib
+  Dom --> Core
+  Lib -. "optional registration" .-> Core
+  R --> T --> D --> E --> P
+  T --> Q
+</pre>
+  </div>
+  <div class="concepts">
+    <div class="concept"><h3>K1 · Typed transformation <span class="pill e">evidenced</span></h3>
+      <p>Ports in, ports out; an endomorphic pass is the special case. Outcomes are <i>accepted, unchanged, refused, rejected, unavailable, pending</i>.</p>
+      <p><span class="label">Theory</span> Hoare triples; translation validation; composition of relations.</p>
+      <p><span class="label">Absorbs</span> <code>PassSpec</code>, T6's <code>legal</code>/<code>postcondition</code>/<code>source</code>, the CUDA lowering's special shape, <code>lowerToImage</code>.</p></div>
+    <div class="concept"><h3>K2 · Derivation <span class="pill e">evidenced</span></h3>
+      <p>The producer records steps: what it consumed and produced, the rule or decision, the premises. Correspondence is computed from the steps with a coverage policy, and the diff audits it.</p>
+      <p><span class="label">Theory</span> Proof terms of rewriting; witnessing transformations; provenance semirings.</p>
+      <p><span class="label">Absorbs</span> <code>revisionCorrespondence</code>, seven A0 re-derivers, seven D1 lineage walks, F30, F31.</p></div>
+    <div class="concept"><h3>K3 · Evidence <span class="pill e">gap evidenced</span> <span class="pill c">algebra conjecture</span></h3>
+      <p>A relation (exact, up to NaN class, within a bound, under an assumption), a method (sampled, exhaustive, by construction, certified) and a scope. Unknown evidence is never exact.</p>
+      <p><span class="label">Absorbs</span> the single <code>'checked'</code>, <code>assuranceOf</code>, the relation chosen by pass name.</p></div>
+    <div class="concept"><h3>K4 · Staged publication <span class="pill e">evidenced</span></h3>
+      <p>Prepare privately, validate, then publish every output or none. Start from the manager's <code>deferCommit</code>.</p>
+      <p><span class="label">Absorbs</span> the store retain during preparation, and the commit before the preservation checks.</p></div>
+    <div class="concept"><h3>K5 · One runner, two drivers <span class="pill e">runner</span> <span class="pill c">plans</span></h3>
+      <p>A generator that requests analyses, gates and batches; a sync driver and an async driver answer. The manager needs a synchronous path for pure analyses.</p>
+      <p><span class="label">Absorbs</span> <code>applyNativePassSync</code>'s limits, both T6 <code>sync.ts</code>, <code>optimizeTix</code>'s loop.</p></div>
+    <div class="concept"><h3>K6 · Decisions as data <span class="pill e">split</span> <span class="pill c">one signature</span></h3>
+      <p>Untrusted <code>decide</code> returns a plan; a small <code>eligible(plan)</code> decides legality; <code>prepare</code> applies it. Fusion, schedules, binding-time divisions and guarded rewrites are instances.</p>
+      <p><span class="label">Plus</span> staged choice: a launch-time variant with its guard, so the differential's arms are derived.</p></div>
+  </div>
+  <div class="callout"><p><b>Kept out of the core on purpose:</b> graph algorithms, SSA, affine dependence, specialization, f32, a universal IR, an e-graph, a polyhedral library and an SMT solver. The core must be stated without saying what a program is, and it must run with an empty library.</p></div>
+</section>
+
+<section id="stdlib">
+  <h2>The standard library</h2>
+  <p><b>Admission:</b> a named algorithm or law; input is a small shape interface, never a domain type; two clients (two IR levels of one compiler count); an executable checker or fixture; pure and synchronous, with an optional registration wrapper. <b>Promotion test:</b> name both clients, the law, the code to retire, and one input on which a careless extraction changes meaning.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Area</th><th>Primitives</th><th>Theory</th><th>Replaces</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="k">graph</td><td>Digraph orders, SCCs, call graph; dominators, frontiers, natural loops (one per header, all latches)</td><td>DFS, Tarjan, Cooper–Harvey–Kennedy</td><td><code>typed/analyses.ts:140</code>, <code>:215</code>; four D1 loop merges; the solver's <code>depthFirst</code></td><td><span class="pill e">E</span></td></tr>
+      <tr><td class="k">lattice</td><td>flat, set, interval, map, product, lifted, two-point, with widening; <code>solve</code> on a fixed graph; <code>solveFor</code> with on-demand unknowns</td><td>Kildall; Cousot; Fecht–Seidl</td><td>SCCP's private lattice; six B1 domains and worklists</td><td><span class="pill e">E</span> <span class="pill c">on-demand C</span></td></tr>
+      <tr><td class="k">flow</td><td>liveness with explicit scope, reaching definitions, ranges, <code>factsHold</code></td><td>gen/kill dataflow; intervals</td><td>machine liveness in <code>regalloc.ts:85</code> and <code>coalesce.ts:32</code> (first extraction)</td><td><span class="pill e">E</span></td></tr>
+      <tr><td class="k">ssa</td><td>construction and check; sparse conditional propagation</td><td>Cytron et al.; Wegman–Zadeck</td><td><code>typed/ssa.ts:60</code>, <code>typed/sccp.ts:47</code></td><td><span class="pill e">E</span></td></tr>
+      <tr><td class="k">terms</td><td>Signature view; structural hash and equality; match, instantiate, strategies; <code>verifyRule</code>, <code>checkApplication</code></td><td>hash-consing; strategic rewriting; Alive-style rule validation</td><td><code>sameTree</code> ×2; LVN and LICM keys; Typed's matcher; A0 matcher copies; T6 recognisers</td><td><span class="pill e">E</span> <span class="pill c">Tix C</span></td></tr>
+      <tr><td class="k">affine</td><td>exact affine forms; distance vectors; <code>commonParallelDepth</code>; <code>orderPreserved</code>; the strip-mine bijection as a symbolic check</td><td>Allen–Kennedy; Feautrier</td><td><code>joinDepth</code> (<code>fusion.ts:83-105</code>); T6 order analyses; <code>tensor/model.ts</code></td><td><span class="pill e">E</span></td></tr>
+      <tr><td class="k">pe</td><td>division and congruence; polyvariant <code>unfold</code>; budget (refuse, generalize, fall back)</td><td>Jones–Gomard–Sestoft; Futamura</td><td>six B1 analyses and memo/worklist/cloner loops</td><td><span class="pill e">E</span> <span class="pill c">unfold C</span></td></tr>
+      <tr><td class="k">num</td><td>binary32 with an explicit profile (NaN, signed zero, two kinds of max); bit-vectors; relations exact, up to NaN, within</td><td>IEEE 754; SMT-LIB bit-vectors</td><td><code>typed/f32.ts</code>; three word comparators in Tix</td><td><span class="pill e">E</span></td></tr>
+      <tr><td class="k">check</td><td>case recipes, coverage, mutants and kill rate, exhaustive comparison</td><td>QuickCheck; mutation analysis</td><td><code>cases-strong.ts</code>, <code>tensor/contract.ts:24-85</code>, <code>mutate.ts</code></td><td><span class="pill e">E</span></td></tr>
+      <tr><td class="k">measure</td><td><code>attribute</code> with Σ = total; <code>classify</code>; static frequency; paired timing</td><td>provenance; Ball–Larus; Kalibera–Jones</td><td><code>typed/attribute.ts</code>; seven D1 tools; seven A0 classifiers; per-cell timing loops</td><td><span class="pill e">E</span></td></tr>
+      <tr><td class="k">target</td><td>a resource interface read by legality; the values stay domain data</td><td>machine descriptions</td><td>four different T6 device limits</td><td><span class="pill e">E</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Not yet admitted (one client or none): a generic register allocator, out-of-SSA, equality saturation, full polyhedral scheduling, tolerance error analysis.</p>
+</section>
+
+<section id="migration">
+  <h2>The migration</h2>
+  <p>Each step is small, keeps the suites green and deletes something. Amber lines are the decision points where a measurement can withdraw a proposal.</p>
+  <ol class="steps">
+    <li><b>Baselines.</b> Framework reach, the edit and correspondence census, ms per application, and the share of accepted steps by evidence method.<span class="meta">Probes 05, 09, 11.</span></li>
+    <li><b>Honest evidence.</b> Records carry method and scope; unknown evidence is <code>unknown</code>; Typed's rule strength flows into a pass's evidence.<span class="meta">Deletes the <code>'checked'</code> constant and <code>assuranceOf</code>'s default. Check: probe 01 prints <code>sampled</code> and <code>exhaustive</code>.</span></li>
+    <li><b>Atomic publication.</b> Prepare candidates on a private view; commit nothing before the contract and the preservation checks pass.<span class="meta">Deletes the retain at <code>view.ts:190</code> during preparation. Check: probe 03 leaves the head and the facts untouched.</span></li>
+    <li><b>Tix plans now (F27 restated).</b> The meaning gate becomes a bridge contract; <code>optimizeTix</code> runs a plan.<span class="meta">Deletes the name dispatch at <code>tensor/index.ts:32-60</code> and the case for <code>executeSync</code>. Check: identical revisions; a wrong pass is rejected.</span></li>
+    <li><b>One pass runner, two drivers.</b> A generator runner, and <code>analyseSync</code> for pure analyses.<span class="meta">Deletes the restriction at <code>define-pass.ts:231</code>.</span><span class="gate">Decision: if <code>analyseSync</code> duplicates the manager's cache logic, keep one spec with two thin runners.</span></li>
+    <li><b>Derivation and scoped correspondence.</b> <code>Tx.record</code> writes rule ids; Tix <code>inline</code> records <code>merged</code>; coverage is checked, and the diff audits it.<span class="meta">Check: rule-citing records go from 0 to 183; empty and false mappings are rejected.</span><span class="gate">Decision: if a derivation costs more than about 2× today's correspondence, store local terms only on demand.</span></li>
+    <li><b>Cross-IR transformations.</b> Tix → CUDA and <code>lowerToImage</code> on K1.<span class="meta">Check: the composed correspondence equals today's; image bytes unchanged.</span></li>
+    <li><b>The first library.</b> Liveness for the allocator and the coalescer, then graph, lattice and ssa, moved, not rewritten.<span class="meta">Check: byte-identical images; unreachable-block scope.</span><span class="gate">Decision: if an adapter is larger than the algorithm it replaces, keep the domain copy.</span></li>
+    <li><b>Attribution and classification as queries.</b><span class="meta">Check: the merged D1 tables reproduce; both A0 policies (203 and 395) come from one record.</span></li>
+    <li><b>Fusion as decide, eligible, prepare, with the affine library; merge T6 on it.</b> A manifest drives the emitter and the runner's gate names.<span class="meta">Deletes the gate regex at <code>cuda-runtime.ts:142</code>. Check: byte-identical CUDA; the extent-17 counterexample.</span><span class="gate">Decision: if fusion and scheduling need different <code>eligible</code> signatures, withdraw K6's unification.</span></li>
+    <li><b><code>solveFor</code> and pe.</b> Port SCCP; restate one B1 specializer.<span class="gate">Decision: if the restatement is not at most half of the cell's 719 lines, <code>unfold</code> is not earning its place.</span></li>
+    <li><b>Rules over a term signature.</b> Typed <code>simplify</code> and <code>fold</code>; Tix <code>inline</code> and <code>split-sum</code>.<span class="gate">Decision: if the rule path is materially slower than the compiled visitor, share only the matcher and the verifier.</span></li>
+    <li><b>Keep or move</b> the rewrite engine, the transaction layer and the 1,237-line core runtime.<span class="gate">Decision: adopt the runtime only if its per-edit checking cost falls with program size (E1 benchmark).</span></li>
+    <li><b>Staged choice.</b> The fusion gate as a launch-time <code>select</code>, with differential arms derived.</li>
+  </ol>
+</section>
+
+<section id="verified">
+  <h2>Verified claims</h2>
+  <p>Probes are in <code>various/r3-synthesis/scripts/</code>, each with its output; details are in <code>verification.md</code>. They ran on clean exports of <code>a0c2199</code> (whose <code>src</code> equals the reviewers' base) and of <code>t6-base</code>.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Claim</th><th>Who</th><th>Probe</th><th>Status</th><th>Finding</th></tr></thead>
+    <tbody>
+      <tr><td>A sampled check and an exact one get the same assurance</td><td>C</td><td class="k">01</td><td><span class="pill qual">held, qualified</span></td><td>Both are <code>'checked'</code> (<code>analysis-manager.ts:1177</code>). <code>evidence.method</code> differs, and nothing reads it.</td></tr>
+      <tr><td><code>assuranceOf</code> never called; unknown evidence counts as exact</td><td>C; A, B</td><td class="k">01</td><td><span class="pill held">held</span></td><td>Only one test calls it. <code>undefined</code> and typos give <code>checked-exact</code>.</td></tr>
+      <tr><td>Tix passes run in plans and lose their gate</td><td>B, C</td><td class="k">02</td><td><span class="pill held">held</span></td><td>A wrong pass is rejected by the sync runner and accepted by the bridge (y = 6, the origin gives 4).</td></tr>
+      <tr><td>F27: no Tix pass can appear in a plan</td><td>coordinator</td><td class="k">02</td><td><span class="pill fail">failed</span></td><td>F27's test passes on the stock bridge, and with the gate passed as a bridge contract.</td></tr>
+      <tr><td>A rejected candidate stays the store head</td><td>B</td><td class="k">03</td><td><span class="pill held">held</span></td><td>Latent: no domain passes a store.</td></tr>
+      <tr><td>A fact is accepted before the pass rejects</td><td>A</td><td class="k">03</td><td><span class="pill held">held</span></td><td>The execution is <code>accepted</code> and the fact is visible after <code>preserveViolated</code>.</td></tr>
+      <tr><td>Zero mapping groups are accepted</td><td>B</td><td class="k">04</td><td><span class="pill held">held, extended</span></td><td>A false group is accepted too: the check is membership only.</td></tr>
+      <tr><td>Tix <code>inline</code> records a removal</td><td>C, D</td><td class="k">04</td><td><span class="pill held">held</span></td><td><code>f/a → []</code>, no link to the consumer.</td></tr>
+      <tr><td>Typed in-place edits are <code>retained</code> (98.5 % of 190,716)</td><td>C, D</td><td class="k">09</td><td><span class="pill qual">held, qualified</span></td><td>The 98.5 % is the total format. The real gap: 926 of 973 in-place statement edits stay <code>retained</code>; 740 value entries carry rule notes in prose.</td></tr>
+      <tr><td>No domain names rewrite, transaction or traversal; Tix is not rewritable</td><td>D</td><td class="k">05</td><td><span class="pill qual">held, qualified</span></td><td>All are loaded transitively. <code>diff</code>, grouped with them by D, runs in every pass.</td></tr>
+      <tr><td>The core runtime (about 1,240 lines) has no domain caller</td><td>C, D</td><td class="k">05</td><td><span class="pill held">held</span></td><td>1,237 lines; only labs and conformance.</td></tr>
+      <tr><td>The solver runs a binding-time analysis on Tix</td><td>C, D</td><td class="k">06</td><td><span class="pill qual">held for D</span></td><td>C's probe used a hand-written table.</td></tr>
+      <tr><td><code>planFusion</code>'s join is a dependence-distance test</td><td>D</td><td class="k">07</td><td><span class="pill held">held</span></td><td>13 of 13, close to definitional.</td></tr>
+      <tr><td>T6-D's validator misses an f32-changing permutation</td><td>B</td><td class="k">08</td><td><span class="pill held">held</span></td><td>R = 17: sums 1 against 0. The pass's own precondition refuses it.</td></tr>
+      <tr><td>2,021 (t6-base) against 1,774 (main) edits</td><td>A0, D</td><td class="k">09</td><td><span class="pill fail">D's reason failed</span></td><td>The case count changes nothing. <code>licm</code> −163, <code>cfg</code> −68, <code>lvn</code> −16: D1's merge.</td></tr>
+      <tr><td>8 of 10 T6 cells changed the framework; no Typed cell did</td><td>C, D</td><td class="k">10</td><td><span class="pill held">held</span></td><td><code>define-pass.ts</code> ×6, <code>bridge.ts</code> ×3, <code>sync.ts</code> ×2.</td></tr>
+      <tr><td>One runner, two drivers</td><td>D</td><td class="k">11</td><td><span class="pill qual">held, qualified</span></td><td>The sync driver bypasses the manager. The stock runner takes 1.45 ms per application on <code>attention</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout">
+    <p><b>F27, corrected.</b> The meaning gate is a closure on the sync runner, so a plan drops it. Wrapped as an <code>ensures</code> invariant and passed as the bridge's <code>contract</code>, it travels with the pass:</p>
+<pre class="code">passAlgorithm(inlinePass, {
+  manager, contract: gateContract('exact'),     // the Tix meaning gate as an ensures invariant
+  contractInputs: () =&gt; ({ origin }),
+});</pre>
+  </div>
+</section>
+
+<section id="reviewers">
+  <h2>The four reviews</h2>
+  <p>I am a Claude model judging two Claude reviews (Opus, Fable) and two OpenAI reviews (Sol, Astra). Earlier rounds showed that judges favour their own family, so this assessment rests on what the probes verified, not on how a review reads.</p>
+  <div class="reviewers">
+    <div class="concept"><h3>A · Sol</h3>
+      <p><span class="label">Found</span> the manager accepts a fact before the pass rejects (P6); a reuse key is a dependency claim; affine exactness.</p>
+      <p><span class="label">Errors</span> none found. <span class="label">Probes held</span> P1, P6.</p>
+      <p class="muted">Deep on acceptance semantics; dense to read.</p></div>
+    <div class="concept"><h3>B · Astra</h3>
+      <p><span class="label">Found</span> T6-D's validator miss; zero groups accepted; the rejected store head; universe as part of the type; precondition ≠ validator.</p>
+      <p><span class="label">Errors</span> none found. <span class="label">Probes held</span> 01, 05.</p>
+      <p class="muted">The sharpest counterexamples; a narrower inventory.</p></div>
+    <div class="concept"><h3>C · Opus</h3>
+      <p><span class="label">Found</span> F27's real cause; the broadest inventory (U1–U22); overlay IR; staged choice; <code>refines</code>.</p>
+      <p><span class="label">Errors</span> "the record does not say so" is too strong; the BTA probe is not on Tix.</p>
+      <p class="muted">The most readable; fewer probes.</p></div>
+    <div class="concept"><h3>D · Fable</h3>
+      <p><span class="label">Found</span> a BTA on Tix through the manager; fusion as distance vectors; the generator runner; the corpus census; the on-demand solver.</p>
+      <p><span class="label">Errors</span> the 2,021/1,774 reason; 98.5 % read as a defect; <code>diff.ts</code> listed as unused.</p>
+      <p class="muted">The most "it fits" probes; the largest catalogue (34 primitives).</p></div>
+  </div>
+  <div class="callout"><p><b>What survives if style is discounted.</b> Four conclusions rest on verified probes, and each is carried by at least one review from each family:</p>
+    <ul>
+      <li>the transformation must carry its own obligations and outcomes;</li>
+      <li>evidence must state method and scope;</li>
+      <li>correspondence must come from the pass and be checked for coverage;</li>
+      <li>most of the inventory is a library problem.</li>
+    </ul>
+    <p>Only the two OpenAI reviews found the publication defect, and it held. The conclusions resting on a single Claude review are the ones marked conjecture: overlay IR, staged choice, the on-demand solver, and the decide/eligible unification.</p></div>
+</section>
+
+<footer>
+  <p>Sources: IRWB-038-A to -D in <code>.claude/worktrees/r3-*/ttmp/2026/11/27/</code>; probes and <code>verification.md</code> in <code>ttmp/2026/11/26/IRWB-019-…/various/r3-synthesis/</code>; full report in the vault as "What Forty Implementations Say About the Framework – R3 Synthesis".</p>
+  <p>Code citations refer to <code>93ec5fc</code>.</p>
+</footer>
+
+</main>

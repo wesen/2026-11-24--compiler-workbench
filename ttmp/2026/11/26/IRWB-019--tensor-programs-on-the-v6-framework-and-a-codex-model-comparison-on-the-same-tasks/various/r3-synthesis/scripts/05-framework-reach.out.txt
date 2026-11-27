@@ -1,0 +1,42 @@
+module                                   lines named-use typed/tensor/workbench  transitively reached by
+framework/contracts/analysis-manager.ts   1669        3/1/0                       typed,tensor,workbench
+framework/contracts/definitions.ts         332        7/2/0                       typed,tensor,workbench
+framework/contracts/differential.ts        380        7/3/0                       typed,tensor,workbench
+framework/contracts/effects.ts              43        0/0/0                       typed,tensor,workbench
+framework/contracts/registry.ts             72        0/0/0                       typed,tensor,workbench
+framework/contracts/types.ts               323        2/2/0                       typed,tensor,workbench
+framework/core/data.ts                     277        7/0/0                       typed,tensor,workbench
+framework/core/query.ts                    220        0/0/0                       -
+framework/core/records.ts                  103        0/0/0                       -
+framework/core/runtime.ts                  914        0/0/0                       -
+framework/core/sha256.ts                   205        1/0/0                       typed,tensor,workbench
+framework/core/types.ts                    179       13/3/2                       typed,tensor,workbench
+framework/dataflow/analysis.ts             226        5/0/2                       typed,workbench
+framework/dataflow/lattices.ts             140        1/0/1                       typed,workbench
+framework/dataflow/solver.ts               181        1/0/0                       typed,workbench
+framework/ir/adapters.ts                   273        5/2/1                       typed,tensor,workbench
+framework/ir/common.ts                      73        0/0/0                       typed,tensor,workbench
+framework/ir/correspondence.ts             343        2/0/0                       typed,tensor,workbench
+framework/ir/diff.ts                       120        0/0/0                       typed,tensor,workbench
+framework/ir/patterns.ts                   921        1/0/0                       typed,tensor,workbench
+framework/ir/readers.ts                     34        0/0/0                       typed,tensor,workbench
+framework/ir/rewrites.ts                   855        0/0/0                       typed,tensor,workbench
+framework/ir/store.ts                      149        0/0/0                       typed,tensor,workbench
+framework/ir/transactions.ts               429        0/0/0                       typed,tensor,workbench
+framework/ir/traversal.ts                  252        0/0/0                       typed,tensor,workbench
+framework/ir/types.ts                      261        6/1/0                       typed,tensor,workbench
+framework/ir/view.ts                       192        0/0/0                       typed,tensor,workbench
+framework/passes/bridge.ts                  87        2/0/0                       typed,tensor,workbench
+framework/passes/define-pass.ts            402        6/2/0                       typed,tensor,workbench
+framework/strategy/builders.ts             104        2/0/1                       typed,workbench
+framework/strategy/editing.ts              214        0/0/0                       typed,workbench
+framework/strategy/interpreter.ts          870        1/0/0                       typed,workbench
+framework/strategy/ir.ts                   285        2/0/2                       typed,tensor,workbench
+framework/strategy/registry.ts              55        2/0/0                       typed,workbench
+framework/strategy/serialization.ts         15        1/0/0                       typed,workbench
+framework/strategy/validation.ts           318        1/0/0                       typed,workbench
+core runtime lines (runtime+query+records): 1237 | named by a domain: false | transitively reached by a domain: none
+importers of the core runtime anywhere in src/: conformance/01-runtime.ts, framework/core/index.ts, framework/core/query.ts, framework/core/runtime.ts, labs/lab.ts, labs/types.ts
+framework lines no domain names: 3670
+Tix adapter capabilities: ["Traversable","Queryable","Diffable","Verifiable"]
+Tix view.beginEdit(): ir.capability - Adapter tensor.adapter is not Rewritable

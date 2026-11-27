@@ -1,0 +1,5 @@
+binding times with x dynamic, w and b static: {"^":"S","affine/b":"S","affine/norm":"D","affine/scale":"S","affine/shift":"S","affine/w":"S","affine/x":"D","affine/y":"D"}
+visits 8 (nodes: 8)
+manager: same record reused true | has true
+with w dynamic instead: {"^":"S","affine/b":"S","affine/norm":"D","affine/scale":"D","affine/shift":"D","affine/w":"D","affine/x":"S","affine/y":"D"}
+cyclic VM-shaped division: {"pc":"S","op":"S","acc":"D","x":"D","t":"D"} | iterations 7

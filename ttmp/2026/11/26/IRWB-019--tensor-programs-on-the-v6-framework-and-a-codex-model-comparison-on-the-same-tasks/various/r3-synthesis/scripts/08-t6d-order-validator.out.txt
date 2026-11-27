@@ -1,0 +1,7 @@
+orderViolation(swapped strip-mined reduction): undefined (accepted)
+R=11: order 0,1,2,3,4,5,... | the source order: true
+R=16: order 0,1,2,3,4,5,... | the source order: true
+R=17: order 0,16,1,2,3,4,... | the source order: false
+   f32 sum of [2^24, -2^24, 0 x14, 1]: source order 1, scheduled order 0
+R=33: order 0,16,32,1,17,2,... | the source order: false
+reorderPass.legal on the same permutation: {"ok":false,"reason":"reduction loops r.0,r.1 would become r.1,r.0"}

@@ -1,0 +1,14 @@
+same   attention                      [score shift e z weight out]@1
+same   conv2d                         [out]@4
+same   layernorm                      [mean centered variance y]@1
+same   matmul                         [y]@2
+same   mlp                            [h g y]@1
+same   softmax                        [m e s y]@1
+same   shifted read across rows       [a]@2 [b]@2
+same   transposed read                [a]@2 [b]@2
+same   row then column                [m c]@1 [v]@1 [y]@2
+same   constant outer index           [a]@2 [b]@2
+same   reduction consumer             [a s]@1
+same   broadcast read                 [a b]@1
+same   shifted read in the inner axis [a b]@1
+13/13 functions: the dependence-distance test gives planFusion's groups and depths

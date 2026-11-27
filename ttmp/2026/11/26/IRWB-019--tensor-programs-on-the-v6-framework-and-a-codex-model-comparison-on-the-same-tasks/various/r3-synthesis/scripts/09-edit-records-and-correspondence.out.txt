@@ -1,0 +1,36 @@
+ROOT clean | cases per check: 2 | 46 s
+50 projects, 195 revisions, 1774 edit records (0 projects not run); naming a rule: 0
+edits per pass: cfg 990, licm 166, constprop 141, simplify 140, dce 118, subst 102, fold 43, lvn 28, bce 26, strength 20
+edit kinds: replace 492, retarget 481, unreachable 459, remove 183, insert 47, local 45, move 34, replaceStmt 17, merge 14, block 2
+correspondence entries: 190716; retained with no reason: 187889 (98.5 %)
+relations: retained 187889, removed 1618, constprop 374, simplify 214, subst 207, licm 200, fold 85, inserted 56, strength 37, lvn 23, bce 13
+entries that are not 'retained': 2827; entries carrying a rule note (prose, e.g. '!(<) is >='): 740
+in-place edits (replace/retarget naming a stmt): 973; of those whose statement's entry is 'retained' with no reason: 926
+
+ROOT clean | cases per check: default | 57 s
+50 projects, 195 revisions, 1774 edit records (0 projects not run); naming a rule: 0
+edits per pass: cfg 990, licm 166, constprop 141, simplify 140, dce 118, subst 102, fold 43, lvn 28, bce 26, strength 20
+edit kinds: replace 492, retarget 481, unreachable 459, remove 183, insert 47, local 45, move 34, replaceStmt 17, merge 14, block 2
+correspondence entries: 190716; retained with no reason: 187889 (98.5 %)
+relations: retained 187889, removed 1618, constprop 374, simplify 214, subst 207, licm 200, fold 85, inserted 56, strength 37, lvn 23, bce 13
+entries that are not 'retained': 2827; entries carrying a rule note (prose, e.g. '!(<) is >='): 740
+in-place edits (replace/retarget naming a stmt): 973; of those whose statement's entry is 'retained' with no reason: 926
+
+ROOT t6base | cases per check: 2 | 23 s
+50 projects, 199 revisions, 2021 edit records (0 projects not run); naming a rule: 0
+edits per pass: cfg 1058, licm 329, constprop 141, simplify 140, dce 118, subst 102, lvn 44, fold 43, bce 26, strength 20
+edit kinds: retarget 517, replace 505, unreachable 472, remove 191, insert 116, local 100, move 65, merge 22, replaceStmt 17, block 16
+correspondence entries: 215635; retained with no reason: 212693 (98.6 %)
+relations: retained 212693, removed 1642, constprop 374, simplify 214, subst 207, licm 200, inserted 139, fold 85, strength 37, lvn 31, bce 13
+entries that are not 'retained': 2942; entries carrying a rule note (prose, e.g. '!(<) is >='): 794
+in-place edits (replace/retarget naming a stmt): 1022; of those whose statement's entry is 'retained' with no reason: 954
+
+ROOT t6base | cases per check: default | 29 s
+50 projects, 199 revisions, 2021 edit records (0 projects not run); naming a rule: 0
+edits per pass: cfg 1058, licm 329, constprop 141, simplify 140, dce 118, subst 102, lvn 44, fold 43, bce 26, strength 20
+edit kinds: retarget 517, replace 505, unreachable 472, remove 191, insert 116, local 100, move 65, merge 22, replaceStmt 17, block 16
+correspondence entries: 215635; retained with no reason: 212693 (98.6 %)
+relations: retained 212693, removed 1642, constprop 374, simplify 214, subst 207, licm 200, inserted 139, fold 85, strength 37, lvn 31, bce 13
+entries that are not 'retained': 2942; entries carrying a rule note (prose, e.g. '!(<) is >='): 794
+in-place edits (replace/retarget naming a stmt): 1022; of those whose statement's entry is 'retained' with no reason: 954
+

@@ -1,0 +1,42 @@
+== T6: committed changes under src/framework (t6-base..HEAD), and uncommitted
+t6-am-irwb-033-b | passes/define-pass.ts  | uncommitted: 0
+t6-ds-h-irwb-033-g | passes/define-pass.ts  | uncommitted: 0
+t6-ds-x-irwb-033-h | passes/bridge.ts passes/define-pass.ts strategy/index.ts strategy/sync.ts  | uncommitted: 0
+t6-fa-irwb-033-e | passes/bridge.ts strategy/index.ts strategy/sync.ts  | uncommitted: 0
+t6-g-h-irwb-033-f | passes/define-pass.ts  | uncommitted: 0
+t6-g-max-irwb-033-j | passes/bridge.ts  | uncommitted: 0
+t6-gf-h-irwb-033-i | none | uncommitted: 0
+t6-op-irwb-033-d | passes/define-pass.ts  | uncommitted: 0
+t6-sm-irwb-033-a | passes/define-pass.ts  | uncommitted: 0
+t6-tl-irwb-033-c | none | uncommitted: 0
+== D1, A0, B1: files changed under src/framework (committed + uncommitted)
+d1-am-irwb-034-b 0 + 0
+d1-ds-x-irwb-034-d 0 + 0
+d1-fa-irwb-034-g 0 + 0
+d1-g-h-irwb-034-e 0 + 0
+d1-op-irwb-034-f 0 + 0
+d1-sm-irwb-034-a 0 + 0
+d1-tl-irwb-034-c 0 + 0
+a0-am-irwb-035-b 0 + 0
+a0-ds-x-irwb-035-d 0 + 0
+a0-fa-irwb-035-g 0 + 0
+a0-g-h-irwb-035-e 0 + 0
+a0-op-irwb-035-f 0 + 0
+a0-sm-irwb-035-a 0 + 0
+a0-tl-irwb-035-c 0 + 0
+b1-am-irwb-036-b 0 + 0
+b1-ds-x-irwb-036-d 0 + 0
+b1-fa-irwb-036-g 0 + 0
+b1-g-h-irwb-036-e 0 + 0
+b1-op-irwb-036-f 0 + 0
+b1-sm-irwb-036-a 0 + 0
+b1-tl-irwb-036-c 0 + 0
+total framework files changed by the 21 Typed cells: 0
+== B1: new or changed src/typed files whose name or content suggests binding times or residualization
+b1-am-irwb-036-b | program.ts residualize.ts specialize.ts 
+b1-ds-x-irwb-036-d | dispatch.ts program.ts specialize.ts 
+b1-fa-irwb-036-g | bta.ts frame-slots.ts program.ts specialize-buffer.ts 
+b1-g-h-irwb-036-e | bindings.ts peval.ts program.ts 
+b1-op-irwb-036-f | pe.ts program.ts promote.ts specialize.ts 
+b1-sm-irwb-036-a | evaluate.ts passes.ts program.ts specialize-memory.ts specialize.ts 
+b1-tl-irwb-036-c | none

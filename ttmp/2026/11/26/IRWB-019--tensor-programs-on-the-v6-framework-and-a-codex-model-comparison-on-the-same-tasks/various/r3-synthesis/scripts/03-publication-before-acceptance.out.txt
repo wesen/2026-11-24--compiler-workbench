@@ -1,0 +1,4 @@
+1. rejecting contract, store, fresh output id: contractRejected: [contractRejected] Pass tensor.inline output rejected: probe.no: probe
+   store.head("candidate") after the rejection: revision 27c9301c1a75 (the rejected candidate: true)
+2. pass outcome: preserveViolated | manager: last execution status accepted | facts about the rejected candidate: 1 probe.single-statement ok=true
+3. deferCommit: facts visible before commit 0 | after rollback 0

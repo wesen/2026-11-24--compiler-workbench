@@ -1,0 +1,5 @@
+1. F27 test (fork + chooseBest over inline, split-sum) through the stock bridge: succeeded | chosen statements 1
+2a. optimizeTix-style runner with the meaning gate: contractRejected - [contractRejected] at [0] expected 1065440815, got 1069678918, allowed 0
+2b. same pass through the stock bridge: succeeded | contract recorded: false | y(origin) 4 y(result) 6
+3a. F27 test with the gate as a bridge contract: succeeded | chosen statements 1 | ""
+3b. wrong pass with the gate as a bridge contract, inside attempt/fallback: succeeded | result is the input: true (the fallback ran)

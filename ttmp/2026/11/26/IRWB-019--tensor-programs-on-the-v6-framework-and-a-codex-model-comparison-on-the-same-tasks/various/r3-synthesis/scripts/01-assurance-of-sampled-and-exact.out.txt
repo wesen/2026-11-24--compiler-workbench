@@ -1,0 +1,8 @@
+1. sampled, subject wrong on every even input: ok true | assurance checked | evidence.method sampled
+2. exhaustive over u8, subject correct:        ok true | assurance checked | evidence.method exhaustive
+   same assurance recorded for both: true
+3. assuranceOf(sampled evidence) checked-sampled | assuranceOf(undefined) checked-exact | assuranceOf({method:'typo'}) checked-exact | assuranceOf({method:'exhaustive'}) checked-exact
+4. every mention of assuranceOf in src/, tests/, tools/:
+   src/framework/contracts/differential.ts:378: export function assuranceOf(evidence: unknown): 'checked-sampled' | 'checked-exact' {
+   tests/framework/ext-e5.test.mjs:11: assuranceOf,
+   tests/framework/ext-e5.test.mjs:50: assert.equal(assuranceOf(good.evidence), 'checked-sampled');

@@ -1216,3 +1216,31 @@ The user asked for the planned work, the T6 and Typed stages started in parallel
 - **Why Tix skips the strategy and dataflow layers** (the user asked): dataflow solves fixpoints over control flow, which Tix does not have; Tix's facts are read straight off the IR, but `planFusion` computes them in plain TypeScript rather than as cached `defineAnalysis` results. The strategy bridge (`passes/bridge.ts`) wraps passes with the async `applyPass` and needs an AnalysisManager, while Tix passes run through `applyNativePassSync`; and the real choices (fusion, mode, gate) are code in the planner and emitter, not alternative passes.
 - **Direction** (the user): "allow tix to make use as much as possible of existing framework concepts, buildng machinery on its own is a smell that needs bringing to the surface. and the framework should be based on fundamental theory (compiler theory, etc...) such that its machinery is as domain independent and can be reused in many different cases". Recorded in BACKLOG ("Framework first, grounded in theory"), with F27 (strategy bridge for sync passes), F28 (reuse audit of `src/tensor`, after T6 merges) and F29 (affine dependence analysis as a framework analysis). Policy v4 (`prompts/developer-instructions-v4.md`) is v3r plus three rules saying this, for stages launched from now on; T6 and the first Typed round keep v3r, so their cells stay comparable. T6's evaluation will list each cell's domain-local machinery as an axis.
 - BACKLOG also records F24–F26 done, and T6, D1, A0, B1 as running.
+
+## Step 45: Typed round 1 (D1, A0, B1) evaluated, D1 merged (Fable), D2 launched; R3 framework review and its synthesis; a correction (F27)
+
+- **Typed round 1.** Hidden D1 evaluator `various/hidden-typed/d1-eval.mjs`, written from the brief before reading any cell's code, plus `scripts/57-d1-summary.mjs`; results in `results/eval-d1.json`. It measures:
+  - RV32 instructions per corpus project, under r0, O2 and `speed`;
+  - at the agents' seed (10 cases, seed 7) and at a held-out seed (20 cases, seed 1103);
+  - with parity, the three test directories, and lines changed per area.
+- **D1 results:**
+  - Every committed cell brings the VM under `speed` below r0 at both seeds.
+  - Fable has the lowest corpus totals (`speed` 867,770 against the base's 892,944; held-out 1,921,642 against 1,961,944), with nothing slower than the base.
+  - Terra low and DeepSeek xhigh left their implementations uncommitted, and those slow down lz-roundtrip, sha-chacha and licm-nested.
+  - Fable's D1 was merged by cherry-pick (`b5742ad`..`ea77950`, Prettier on its two new files). Main's tests: 413 pass, 0 fail, 3 skipped; the site builds.
+- **D2 launched:** IRWB-037 A–G, seven cells, policy v4, base `d2-base` (`2966b9b`). Its brief points at the merged attribution tool and says to re-measure the regex and LZ numbers.
+- **A0:** every complete cell counts 2,021 O2 and 9,736 `speed` edit records, and 183 and 362 of them re-derived by verified rules. The headline shares differ only by definition. Every complete report concludes that local rewrites are a minority, and that three fact-guarded rule shapes would cover the rest.
+- **B1** (own numbers; own tests pass on each build, `scripts/59-own-tests.sh`):
+  - Opus 74/74 instructions in 36 B, GLM 76/81, Astra 77/77, Fable 79/79, Sol 161/136;
+  - Terra low incomplete; DeepSeek xhigh stuck in a non-terminating script of its own.
+- **Process.** Terra low stopped early in both D1 and A0. I killed, by PID, two hung agent scripts at the user's question about stray node processes:
+  - the GLM Flash T6 cell's `/tmp/probe-shapes.mjs`, which was computing a CPU reference for a 4096³ matmul (hours), outside its ticket;
+  - the DeepSeek B1 cell's `04-fixpoint.mjs`, after two hours.
+
+  Also killed two idle wait loops left by the Opus T6 cell. I added "never use `git stash`" to the Typed facts, after the D1 Opus cell used a stash on the shared stack (the stack was empty afterwards).
+- **R3** (the user: "launch fable/opus/sol/astra on the task of reviewing the work done and seeing how it can be consolidated and refactoed into coherent composable parts of the framework ... keeping it at design level, and then send of an opus agent to review and consolidate and write a detailed vault report and detailed artifact with the findings ... Ask them to be creative and to ponder if some fundamental changes might be useful as well"; then "alsoa ask them about creating a "standard library" of compiler building blocks ...").
+  - Setup: brief `prompts/r3/common.md`, policy `developer-instructions-r3.md`, base `r3-base` (`93ec5fc`, with this ticket and BACKLOG as material).
+  - The standard-library question reached Opus and Fable by message mid-run, and Sol and Astra as a second Codex turn (`scripts/61-r3-turn2.sh`). That is a confound for comparing them, not for the synthesis.
+  - Synthesis (Opus): 24 claims probed on clean exports, 19 held, two failed.
+  - Outputs: `various/r3-synthesis/` (page, `verification.md`, probes 00–11), published as https://claude.ai/artifact/GJoGirJU2XaKCR83mvcQAQ; the vault report in `Projects/2026/11/27/`.
+- **Correction.** I told the user that Tix stays out of strategy plans because `passAlgorithm` needs the async `applyPass` and an `AnalysisManager`, and wrote F27 on that basis. Probe 02 shows this was wrong: Tix passes run in plans through the stock bridge, and they lose only the meaning gate, which the bridge's existing `contract` option restores. F27 and F32 are restated. F33 (publication before acceptance), F34 (one `'checked'` for every assurance) and F35 (correspondence checks membership only) are added. A0 shares quoted against main must be recomputed: main has 1,774 O2 records after D1's merge; licm, cfg and lvn account for the whole difference.

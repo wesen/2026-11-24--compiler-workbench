@@ -1,0 +1,7 @@
+inline on fn f(x:f32[N]):f32[N] { a[i] = x[i] * 2; b[i] = ...: relations {"retained":3,"removed":1} | removed entries {"from":["f/a"],"relation":"removed","to":[]}
+   any entry from the inlined producer to a surviving entity: false
+inline on fn f(x:f32[N,N]):f32[N,N] { p[i,j] = x[i,j] + 1;...: relations {"retained":3,"removed":1} | removed entries {"from":["f/p"],"relation":"removed","to":[]}
+   any entry from the inlined producer to a surviving entity: false
+contract requiring a mapping, zero groups: ACCEPTED | lists {"sourceEntities":["f/p","f/y"],"targetEntities":["f/y"]}
+contract requiring a mapping, one honest group (f/p, f/y -> f/y): ACCEPTED | lists {"sourceEntities":["f/p","f/y"],"targetEntities":["f/y"]}
+contract requiring a mapping, one false group (f/y -> nothing: says the surviving statement was deleted): ACCEPTED | lists {"sourceEntities":["f/p","f/y"],"targetEntities":["f/y"]}

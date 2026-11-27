@@ -1,0 +1,4 @@
+sync driver:  changed true | fact {"f/x":1,"f/c":1} | revision 04a690a29419
+async driver: changed true | same revision true
+sync driver with an asynchronous answer: effect 'analysis' answered asynchronously; use the asynchronous driver
+applyNativePassSync(inline, attention) with a trivial gate: 1.45 ms per application (50 runs)
