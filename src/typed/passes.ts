@@ -48,8 +48,12 @@ import {
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { rotateSpec } from './rotate.js';
 import { makeInline } from './inline.js';
+import { copyReads, decideChecks, threadTests } from './guards.js';
+import { ssaAnalysis, type SsaFn } from './ssa.js';
 
-type AnalysisName = keyof typeof ANALYSES;
+/** What a pass may name as a need: the six analyses of ANALYSES, and the SSA view (IRWB-037-G). */
+const NEEDS = { ...ANALYSES, ssa: ssaAnalysis } as const;
+type AnalysisName = keyof typeof NEEDS;
 interface FactViews {
   cfg?: unknown;
   dom?: DomView;
@@ -57,6 +61,7 @@ interface FactViews {
   live?: LiveView;
   reach?: ReachView;
   ranges?: RangeView;
+  ssa?: SsaFn;
   [alias: string]: unknown;
 }
 interface BodyContext {
@@ -167,7 +172,7 @@ export type TypedPass = Pass<TypedBlocks, Record<string, any>, Record<string, un
 
 export function typedPass(spec: TypedPassSpec): TypedPass {
   const needs = Object.fromEntries(
-    Object.entries(spec.needs ?? {}).map(([alias, name]) => [alias, ANALYSES[name]]),
+    Object.entries(spec.needs ?? {}).map(([alias, name]) => [alias, NEEDS[name]]),
   );
   const writes = { entities: new Set<string>(), relations: new Set<string>() };
   for (const k of spec.writes) {
@@ -182,7 +187,7 @@ export function typedPass(spec: TypedPassSpec): TypedPass {
     adapter: blocksAdapter,
     needs,
     writes: { entities: [...writes.entities], relations: [...writes.relations] },
-    preserves: (spec.preserves ?? []).map(n => ANALYSES[n]),
+    preserves: (spec.preserves ?? []).map(n => NEEDS[n]),
     run({ before, facts, params }) {
       const st = Store.from(before.value),
         rev = before.value.rev + 1;
@@ -986,6 +991,22 @@ const copyTree = (tx: Tx, st: Store, id: string, from: string, because: string):
   });
 };
 
+/**
+ * IRWB-037-G (`subst-mem`, `params.loads`): a value that reads memory may move into its reader when no store,
+ * zeroing or call lies between the two statements and the reader makes no call: nothing writes memory between the
+ * two evaluations, so every load reads the same bytes. (Found as `t = (load32[...] == 1); if t`, which the join of an `&&` becomes once `thread` has copied
+ * its test.) A value that may trap (a division, a checked address) or that calls stays where it is.
+ */
+const NOT_MOVABLE = new Set(['call', 'result', 'div', 'rem', 'caddr']);
+const readsMemoryOnly = (st: Store, id: string): boolean => {
+  const v = st.get(id) as ValueRec;
+  return !NOT_MOVABLE.has(v.op) && v.args.every(a => readsMemoryOnly(st, a));
+};
+const calls = (st: Store, id: string): boolean => {
+  const v = st.get(id) as ValueRec;
+  return v.op === 'call' || v.args.some(a => calls(st, a));
+};
+
 export const subst = typedPass({
   name: 'subst',
   about:
@@ -994,8 +1015,9 @@ export const subst = typedPass({
   writes: ['stmts', 'values'],
   // Compiler Workbench also claims 'loops'; false: adding or removing a `set` in a loop changes its assigned locals.
   preserves: ['cfg', 'dominators'],
-  body({ st, f, tx, facts }) {
+  body({ st, f, tx, facts, params }) {
     const live = facts.live!;
+    const loads = params.loads === true;
     const defCount = new Map<number, number>();
     for (const b of f.blocks)
       for (const sid of b.stmts) {
@@ -1005,17 +1027,14 @@ export const subst = typedPass({
     for (const b of f.blocks) {
       for (let i = 0; i < b.stmts.length; i++) {
         const d = st.get(b.stmts[i]) as StmtRec;
-        if (
-          d.op !== 'set' ||
-          defCount.get(d.local!) !== 1 ||
-          f.locals[d.local!].param ||
-          !isPure(st, d.value!)
-        )
-          continue;
+        if (d.op !== 'set' || defCount.get(d.local!) !== 1 || f.locals[d.local!].param) continue;
+        const pure = isPure(st, d.value!);
+        if (!pure && !(loads && readsMemoryOnly(st, d.value!))) continue;
         const operands = readsOf(st, d.value!);
         let users = 0,
           user: StmtRec | null = null,
-          blocked = false;
+          blocked = false,
+          written = false;
         for (let j = i + 1; j < b.stmts.length; j++) {
           const s = st.get(b.stmts[j]) as StmtRec;
           const n = stmtValues(s).reduce((m, v) => m + countReads(st, v, d.local!), 0);
@@ -1023,13 +1042,15 @@ export const subst = typedPass({
             users += n;
             if (!user) user = s;
             else break;
-          }
+          } else if (!user && (s.op === 'store' || s.op === 'zero' || stmtValues(s).some(v => calls(st, v))))
+            written = true;
           if (s.op === 'set' && (operands.has(s.local!) || s.local === d.local)) {
             if (!user) blocked = true;
             break;
           }
         }
         if (blocked || users !== 1 || live.liveAfter(user!.id).has(d.local!)) continue;
+        if (!pure && (written || stmtValues(user!).some(v => calls(st, v)))) continue;
         tx.rewrite(
           v => (v.op === 'get' && v.imm === d.local ? copyTree(tx, st, d.value!, v.id, d.id) : undefined),
           [b],
@@ -1039,6 +1060,64 @@ export const subst = typedPass({
       }
     }
   },
+});
+
+// ---------- IRWB-037-G: four passes found from the hot-shape tables (src/typed/missed.ts, src/typed/guards.ts) ----------
+// They are passes of their own, used by `speed`: O2 and the passes it names stay as the book describes them.
+
+export const thread = typedPass({
+  name: 'thread',
+  about:
+    'test threading: a block that only branches on a local (the join of an && or ||) is copied into the blocks that jump to it',
+  needs: { loops: 'loops' },
+  writes: ['stmts', 'values', 'cfg'],
+  preserves: [],
+  body({ st, f, tx, facts }) {
+    threadTests({ st, f, tx }, facts.loops!);
+  },
+});
+
+export const guards = typedPass({
+  name: 'guards',
+  about:
+    'guard facts: a check whose outcome dominating branches already decide becomes a jump (intervals of SSA names; params.all: every branch)',
+  needs: { ssa: 'ssa' },
+  writes: ['stmts', 'cfg'],
+  preserves: [],
+  body({ st, f, tx, facts, params }) {
+    for (const d of decideChecks({ st, f, tx }, facts.ssa!, params.all === true))
+      tx.replaceStmt(d.stmt, { op: 'br', to: d.to }, { because: [...d.because], note: d.note });
+  },
+});
+
+export const copies = typedPass({
+  name: 'copies',
+  about: 'copy propagation: a read of a copy x = y becomes a read of y while y still holds that value',
+  needs: { ssa: 'ssa' },
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body({ st, f, tx, facts }) {
+    const ssa = facts.ssa!,
+      plan = copyReads({ st, f, tx }, ssa);
+    if (!plan.size) return;
+    tx.rewrite(v => {
+      const from = plan.get(v.id);
+      if (from === undefined) return;
+      return tx.get(from, {
+        from: v.id,
+        because: [ssa.names[ssa.uses[v.id]].stmt!],
+        note: `${f.locals[v.imm as number].name} is a copy of ${f.locals[from].name}`,
+      });
+    });
+  },
+});
+
+export const substMem = typedPass({
+  ...subst.typed,
+  name: 'subst-mem',
+  about:
+    'forward substitution as subst, and a temporary whose value reads memory moves into its reader when no store or call lies between',
+  body: ctx => subst.typed.body({ ...ctx, params: { ...ctx.params, loads: true } }),
 });
 
 /** IRWB-003: loop rotation by header duplication (src/typed/rotate.ts). */
@@ -1062,6 +1141,10 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   dfe,
   rotate,
   inline,
+  thread,
+  guards,
+  copies,
+  'subst-mem': substMem,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */
@@ -1113,14 +1196,21 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
   /**
    * IRWB-003: two levels of inlining, then O2+, then loop rotation and a cfg to merge what rotation leaves in a
    * line. Meant for the backend options chains, coalesce and homes. No dfe: it needs the program's entries.
+   *
+   * IRWB-037-G adds, inside the O2+ part: `thread` after the first cfg (so constprop and the second cfg fold the
+   * constant arms), `copies` after constprop (so the dce that follows removes the copies), `guards` after
+   * strength (it reads what licm and lvn left) and `subst-mem` in place of each subst. Without those four names,
+   * and with subst-mem read as subst, the list is still inline, inline, O2+, rotate, cfg (a test says so).
    */
   speed: [
     'inline',
     'inline',
     'cfg',
+    'thread',
     'fold',
     'simplify',
     'constprop',
+    'copies',
     'fold',
     'simplify',
     'dce',
@@ -1128,12 +1218,13 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'licm',
     'lvn',
     'strength',
+    'guards',
     'bce',
-    'subst',
-    'subst',
+    'subst-mem',
+    'subst-mem',
     'dce',
     'cfg',
-    'subst',
+    'subst-mem',
     'rotate',
     'cfg',
   ],

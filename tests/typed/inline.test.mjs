@@ -49,7 +49,15 @@ test('inline: a whole-program pass, registered, in the speed pipeline twice, and
   assert.equal(PASSES.inline.id, 'typed.inline');
   assert.deepEqual(PIPELINES.speed.slice(0, 2), ['inline', 'inline']);
   assert.deepEqual(PIPELINES.speed.slice(-2), ['rotate', 'cfg']);
-  assert.deepEqual(PIPELINES.speed.slice(2, -2), PIPELINES['O2+']);
+  // IRWB-037-G inserted thread, copies and guards, and runs subst as subst-mem; the rest is still O2+
+  const added = ['thread', 'copies', 'guards'];
+  assert.deepEqual(
+    PIPELINES.speed
+      .slice(2, -2)
+      .filter(n => !added.includes(n))
+      .map(n => (n === 'subst-mem' ? 'subst' : n)),
+    PIPELINES['O2+'],
+  );
 });
 
 test('inline on calls: energy calls nothing afterwards, the check agrees, and why reaches callee and call', async () => {

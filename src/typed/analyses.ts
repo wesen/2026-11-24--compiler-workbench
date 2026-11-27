@@ -394,7 +394,16 @@ export function reachView(result: DataflowResult, st: Store, fname: string): Rea
 
 // ranges
 type Env = ReadonlyMap<string, Interval>;
-export function evalRange(st: Store, id: string, env: Env): [number, number] {
+/**
+ * The interval of a value tree. A read takes its local's interval from `env`, or, when `read` is given, whatever
+ * `read` says for that `get` value (IRWB-037-G: bce's facts are per SSA name, so the answer depends on which read).
+ */
+export function evalRange(
+  st: Store,
+  id: string,
+  env: Env,
+  read?: (get: ValueRec) => readonly [number, number] | undefined,
+): [number, number] {
   const v = st.get(id) as ValueRec,
     I = (lo: number, hi: number): [number, number] => [Math.max(MIN, lo), Math.min(MAX, hi)];
   const full: [number, number] = [MIN, MAX];
@@ -410,7 +419,7 @@ export function evalRange(st: Store, id: string, env: Env): [number, number] {
     case 'const':
       return [v.imm as number, v.imm as number];
     case 'get': {
-      const r = env.get(String(v.imm));
+      const r = read ? read(v) : env.get(String(v.imm));
       return r ? [r[0], r[1]] : full;
     }
     case 'eqz':
@@ -427,8 +436,8 @@ export function evalRange(st: Store, id: string, env: Env): [number, number] {
       return [0, 65535];
   }
   if (v.args.length !== 2) return full;
-  const a = evalRange(st, v.args[0], env),
-    b = evalRange(st, v.args[1], env);
+  const a = evalRange(st, v.args[0], env, read),
+    b = evalRange(st, v.args[1], env, read);
   const fits = (lo: number, hi: number): [number, number] => (lo >= MIN && hi <= MAX ? [lo, hi] : full);
   switch (v.op) {
     case 'add':
