@@ -9,7 +9,13 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Parallel term emission
+    - Path: repo://tests/tensor/parallel-terms-gpu.test.mjs
+      Note: Exact GPU coverage
+    - Path: repo://ttmp/2026/11/27/IRWB-030-C--exact-parallel-reduction-terms-and-fusion-profitability/scripts/01-benchmark.mjs
+      Note: Reproducible full-size timings
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T01:22:47.802341125-05:00

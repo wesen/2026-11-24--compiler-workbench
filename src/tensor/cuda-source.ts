@@ -340,6 +340,28 @@ function emitGroup(
   ];
   const suffix = (name: string) => tensorName(name).slice(1);
   const rowBuffers = [...group.staged, ...group.buffered];
+  // Only stage a top-level, single ordinary-axis sum with a costly division in its body.
+  // Nested reductions and generated split bounds stay on the existing scalar path.
+  const parallelTerms = new Map<string, Extract<Expr, { kind: 'reduce' }>>();
+  if (block)
+    for (const m of members) {
+      const e = m.expr;
+      if (
+        m.axes.length !== depth ||
+        e.kind !== 'reduce' ||
+        e.op !== 'sum' ||
+        e.axes.length !== 1 ||
+        e.axes[0].extent.kind !== 'dim'
+      )
+        continue;
+      let division = false,
+        nested = false;
+      visit(e.body, x => {
+        if (x.kind === 'reduce') nested = true;
+        if (x.kind === 'op' && x.op === '/') division = true;
+      });
+      if (division && !nested) parallelTerms.set(m.name, e);
+    }
   const registers = new Map<string, string>();
   let current = members[0];
   const operands = (e: Expr, inReduction: boolean): boolean =>
@@ -390,13 +412,17 @@ function emitGroup(
   if (block) {
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
-    const row = rowBuffers.map(n => `n${suffix(n)}`).join(' + ');
+    const termLengths = [...parallelTerms.values()].map(e => w.dim(e.axes[0].extent.dim));
+    const termSize = termLengths.map(n => `static_cast<U>(${n})`).join(' + ') || '0';
+    const row = [...rowBuffers.map(n => `n${suffix(n)}`), termSize].join(' + ');
     w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
     rowBuffers.forEach((name, i) =>
       w.line(
         `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
       ),
     );
+    if (parallelTerms.size)
+      w.line(`float* const terms = base + (${rowBuffers.map(n => `n${suffix(n)}`).join(' + ') || '0'});`);
     for (const name of group.staged) {
       const s = suffix(name);
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) r${s}[e] = t${s}[point * n${s} + e];`);
@@ -405,6 +431,29 @@ function emitGroup(
     members.forEach((m, j) => {
       current = m;
       const s = suffix(m.name);
+      const reduction = parallelTerms.get(m.name);
+      if (reduction) {
+        const axis = w.bind(reduction.axes[0].id);
+        const end = w.dim(reduction.axes[0].extent.dim);
+        w.line(`// Parallel terms for ${m.name}; ordered fold remains on thread 0.`);
+        w.line(`for (I ${axis} = threadIdx.x; ${axis} < ${end}; ${axis} += blockDim.x) {`);
+        w.enter();
+        const term = w.scalar(reduction.body);
+        w.line(`terms[${axis}] = ${term};`);
+        w.leave();
+        w.line('}');
+        w.line('__syncthreads();');
+        w.line('if (threadIdx.x == 0) {');
+        w.enter();
+        w.line('float acc = 0.0f;');
+        w.line(`for (I j = 0; j < ${end}; ++j) acc = __fadd_rn(acc, terms[j]);`);
+        if (group.buffered.includes(m.name)) w.line(`r${s}[0] = acc;`);
+        if (stored.has(m.name)) w.line(`t${s}[point] = acc;`);
+        w.leave();
+        w.line('}');
+        if (j < members.length - 1) w.line('__syncthreads();');
+        return;
+      }
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
       if (m.axes.length > depth) w.line('U rest = e;');
@@ -423,7 +472,9 @@ function emitGroup(
     // The host computes the same lengths from the same shape values.
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
-    const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
+    const hostTermLengths = [...parallelTerms.values()].map(e => hostDim(e.axes[0].extent.dim));
+    const hostTermSize = hostTermLengths.map(n => `static_cast<U>(${n})`).join(' + ') || '0';
+    const hostRow = [...rowBuffers.map(n => lengthOf(n, hostDim)), hostTermSize].join(' + ');
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
