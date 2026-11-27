@@ -7,7 +7,7 @@ import re
 import subprocess
 
 GROUPS = {
-    "t6": ("033", "sm tl am op fa g-h ds-h ds-x gf-h g-max",
+    "t6": ("033", "sm am tl op fa g-h ds-h ds-x gf-h g-max",
            "schedule|fusion|legal|executeSync|syncPassAlgorithm|dependence"),
     "d1": ("034", "sm am tl ds-x g-h op fa",
            "attribut|trace|counter|loops|back.edge|origin"),
@@ -16,8 +16,6 @@ GROUPS = {
     "b1": ("036", "sm am tl ds-x g-h op fa",
            "binding.time|specializ|residuali|StaticValue|abstract"),
 }
-# The T6 launch assigned A–J in the same order as the matrix below.
-T6_ORDER = "sm am tl op fa g-h ds-h ds-x gf-h g-max"
 
 
 def git(tree, *args):
@@ -26,14 +24,15 @@ def git(tree, *args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("groups", nargs="*", choices=list(GROUPS))
+    parser.add_argument("groups", nargs="*", metavar="GROUP", help="t6, d1, a0, or b1")
     parser.add_argument("--anchors", action="store_true")
     args = parser.parse_args()
+    for group in args.groups:
+        if group not in GROUPS:
+            parser.error(f"unknown group: {group}")
     siblings = Path(__file__).resolve().parents[7]
     for group in args.groups or GROUPS:
         number, ordered, pattern = GROUPS[group]
-        if group == "t6":
-            ordered = T6_ORDER
         for letter, agent in zip("abcdefghij", ordered.split()):
             tree = siblings / f"{group}-{agent}-irwb-{number}-{letter}"
             head = git(tree, "rev-parse", "--short", "HEAD").strip()

@@ -7,13 +7,13 @@ Topics:
     - ir
     - verification
     - research
-DocType: log
+DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-27T12:56:04.79613931-05:00
+Summary: Chronological research and probe evidence for IRWB-038-A.
+LastUpdated: 2026-11-27T13:12:28.713030001-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -124,3 +124,29 @@ Read the merged code first, then the unmerged work as evidence. You may read eve
 - Compared all 31 named HEADs to `t6-base` with `scripts/01-cell-inventory.py`. The comparison also covers unfinished submissions because source changes and ticket documents are listed independently.
 - The strip-only invocation of `scripts/03-pass-and-evidence.mjs` failed with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` at `src/framework/ir/common.ts:5`. Running with `--experimental-transform-types` reached the probes. The first store assertion expected `ir.revision` and actually received `ir.unpublished` from `src/framework/ir/store.ts:53`. I updated the assertion to the observed error. The distinction matters because the store is enforcing its retention contract.
 - Review entry points are `scripts/03-pass-and-evidence.mjs`, `src/framework/passes/bridge.ts:29`, and the case/outcome key boundary in `src/framework/contracts/differential.ts:200`. Review the probe's synthetic key as a deliberately invalid caller key and assess what the generic API should enforce about that trust boundary.
+
+## 2. Compare the cells and test the architecture seams
+
+The checkpoint is `b580637`. The scope and authored brief are in Step 1. I compared candidate construction, checks, and records first, then used the differences to select runnable entry points. The repeated need is a place to put a particular fact, decision, or witness. Matching counts alone would have missed some of the disagreement about what constitutes one edit.
+
+### Evidence and probes
+
+- P1, run with Node 24.18.0, shows that the stock async pass path has no gate for the Tix native definition and that the explicit store refuses a fresh revision. It also confirms that identical cases can leave an aliased baseline key undetected and that missing evidence is labeled exact. See `scripts/03-pass-and-evidence.mjs`, `src/tensor/passes.ts:82`, `src/framework/passes/define-pass.ts:201`, `src/framework/ir/store.ts:53`, and `src/framework/contracts/differential.ts:377`.
+- P2 uses the coordinator's Tix fork/choice idea with native callbacks and their actual gates. The merged interpreter chose inline. T6-E and H rejected `chooseBest`. The same probe ran the merged Typed two-latch O2 case, found one loop with two latches and an external preheader, and reconciled an instruction count change of 248 → 130, with −36 on the LICM edge. See `scripts/04-strategy-and-attribution.mjs`, `src/framework/strategy/interpreter.ts:134`, `T6-E/src/framework/strategy/sync.ts:113`, `T6-H/src/framework/strategy/sync.ts:145`, and `src/typed/attribute.ts:185`.
+- P3 exercises eligibility and postvalidation in T6-D. My first mutant reassigned the outer loop's ID before looking up the inner loop. The second lookup found the outer loop again, so the test ended with `AssertionError [ERR_ASSERTION]: Missing expected exception` in `scripts/05-schedule-obligations.mjs`. Capturing both loop objects first made the mutation real. The illegal reorder then stopped before either pass kernel invocation, and an eligible but incorrect candidate was rejected by the order check. That checker combines structural tests and three finite extent simulations. See `T6-D/src/framework/passes/define-pass.ts:162` and `T6-D/src/tensor/schedule.ts:303`.
+- I inspected working copies without modifying them. Uncommitted code pointers include `A0-C/tools/edit-census.mjs:21`, `D1-C/src/typed/backend/attribution.ts:6`, `D1-D/src/typed/attribution.ts:56`, `B1-D/src/typed/dispatch.ts:76`, and `B1-D/src/typed/futamura.ts:56`. T6-F/I/J also had local changes. Committed HEADs are the denominator in the cell matrix. The matrix names unfinished or thin stages explicitly and treats draft status as observation rather than a completed result.
+
+### Decisions and review points
+
+- A pass receipt should preserve what ran, what was refused, what was checked, and which artifact pointer was advanced. Typed and Tix should use the same lifecycle. Keep the pre-kernel must-hold condition and the post-kernel evidence distinct, especially for GPU jobs.
+- The migration pairs each concept with a deletion, a correctness gate and a measurement. The high-risk decisions are visited in order: assurance and cache identities, candidate publication and branching, meaning-bearing edit units, and finally broader partial evaluation and affine analysis. Review the root alternatives in the design and compare them to the retained implementation boundaries.
+- The review used local CPU executions and source inspection. GPU timings and full-corpus data cited in the design and evidence matrix come from the stage reports. The probes did not retest the GPU and do not rank cells.
+
+- P4 used the published injection point to compare CUDA contract metadata and case scheduling independently of a GPU. Softmax requested both forced variants. The same generated unfused source was accepted with an incorrect mapping to a valid source statement, while an unknown source entity caused rejection. Membership and semantic correctness of provenance are different obligations. See `scripts/06-cross-ir-metadata.mjs`, `src/tensor/cuda-contract.ts:82`, and `src/framework/contracts/analysis-manager.ts:1110`.
+- P5 put two A0 classifiers on the exact same `blend` constant-propagation edit. A classified it as other and G as local/fact. The same probe exercised a one-variant bound in B1. A refused and retained the original revision and assumptions. G accepted a residual region with the general loop as fallback and a `40/40` differential result. See `scripts/07-cell-policy-differences.mjs`, `A0-A/src/typed/edit-classification.ts:251`, `A0-G/tests/typed/edit-classes.test.mjs:54`, `B1-A/src/typed/specialize-memory.ts:69`, and `B1-G/tests/typed/specialize-buffer.test.mjs:120`. Use this case when reviewing the design's proposed policy parameters.
+
+## 3. Validate the handoff
+
+P6 confirmed that the contract manager's accepted execution and output fact survive a later `preserveViolated` error from the enclosing pass. A separate deferred preparation let the probe roll back before exposing the fact. This changes the recommendation from aligning two runners to defining one acceptance boundary spanning pass-level checks and contract publication. See `scripts/09-acceptance-atomicity.mjs`, `src/framework/passes/define-pass.ts:347`, `src/framework/passes/define-pass.ts:367`, and `src/framework/contracts/analysis-manager.ts:1577`.
+
+The first mechanical citation audit found two unqualified paths to the T6 synchronous interpreters. I prefixed each path with its cell ID and reran the check. The citation check validates local links and full line anchors against the merged tree and frozen cell objects. It leaves interpretation of those lines to the reader. The ticket uses docmgr's `review` status and closes the research tasks while keeping the migration as design work.

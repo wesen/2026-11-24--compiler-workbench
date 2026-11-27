@@ -1,7 +1,7 @@
 ---
 Title: Framework structure after Typed and Tix
 Ticket: IRWB-038-A
-Status: active
+Status: review
 Topics:
     - compiler
     - ir
@@ -12,47 +12,20 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-11-27T12:55:24.343505004-05:00
+Summary: Design-level review of framework composability and checked execution after Typed, Tix, and the T6, D1, A0, and B1 comparison rounds.
+LastUpdated: 2026-11-27T13:12:29.685783145-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Framework structure after Typed and Tix
 
-## Overview
+The review proposes one transformation lifecycle across Typed and Tix, with independent validation and scoped lineage. It compares the merged framework to the 31 named comparison cells and records the experiments behind each recommendation.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+- [Design review and migration](design-doc/01-composable-transformations-and-independent-evidence.md)
+- [Cell evidence and historical records](analysis/01-cell-evidence.md)
+- [Research diary](log/01-research-diary.md)
+- [Tasks](tasks.md)
+- [Changelog](changelog.md)
 
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- compiler
-- ir
-- verification
-- research
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+The probes run with Node 24 and `--experimental-transform-types`. The cell-specific probes require the listed sibling worktrees.
