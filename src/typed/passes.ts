@@ -445,6 +445,7 @@ export const licm = typedPass({
         if (f.blocks[0].id === L.head) throw new TxError('unsupported', 'licm: a loop at the entry block');
       }
       const assigned = new Set(L.assigned);
+      // Keep frame addresses visible to the backend's stack-relative addressing.
       const INV = [
         'get',
         'const',
@@ -466,7 +467,6 @@ export const licm = typedPass({
         // f32 operators are pure and never trap, so hoisting one out of a loop is safe
         ...F32_OPERANDS,
         ...F32_RESULT,
-        'aaddr',
       ];
       const inv = (id: string): boolean => {
         const v = st.get(id) as ValueRec;

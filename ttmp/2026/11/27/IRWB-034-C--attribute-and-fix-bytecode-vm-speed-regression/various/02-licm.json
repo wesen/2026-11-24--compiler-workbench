@@ -1,0 +1,1174 @@
+{
+  "rev": 3,
+  "pass": "cfg",
+  "fn": {
+    "bytes": 824,
+    "entry": 0,
+    "frame": 32,
+    "insns": 206,
+    "leaf": true,
+    "name": "runVm",
+    "regs": [
+      "t0",
+      "t1",
+      "t2",
+      "a0",
+      "a1",
+      "a2",
+      "a3",
+      "t3",
+      "t4"
+    ],
+    "saved": [],
+    "spills": 0,
+    "vregs": 102
+  },
+  "steps": 6688,
+  "buckets": {
+    "frame": 2,
+    "(other)": 5594,
+    "copy": 14,
+    "capacity": 368,
+    "checked address": 368,
+    "checked address out of range": 0,
+    "unreachable": 0,
+    "frame array": 342
+  }
+}
+{
+  "rev": 4,
+  "pass": "licm",
+  "fn": {
+    "bytes": 904,
+    "entry": 0,
+    "frame": 80,
+    "insns": 226,
+    "leaf": true,
+    "name": "runVm",
+    "regs": [
+      "t0",
+      "t1",
+      "t2",
+      "s1",
+      "a0",
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5",
+      "a6",
+      "a7",
+      "s2",
+      "s3",
+      "s4",
+      "s5",
+      "s6",
+      "s7",
+      "s8",
+      "s9",
+      "s10",
+      "t3",
+      "t4"
+    ],
+    "saved": [
+      "s1",
+      "s2",
+      "s3",
+      "s4",
+      "s5",
+      "s6",
+      "s7",
+      "s8",
+      "s9",
+      "s10"
+    ],
+    "spills": 0,
+    "vregs": 102
+  },
+  "steps": 9287,
+  "buckets": {
+    "frame": 2,
+    "save s1": 1,
+    "save s2": 1,
+    "save s3": 1,
+    "save s4": 1,
+    "save s5": 1,
+    "save s6": 1,
+    "save s7": 1,
+    "save s8": 1,
+    "save s9": 1,
+    "save s10": 1,
+    "(other)": 5766,
+    "copy": 14,
+    "capacity": 368,
+    "checked address": 368,
+    "checked address out of range": 0,
+    "unreachable": 0,
+    "frame array": 2749,
+    "restore s1": 1,
+    "restore s2": 1,
+    "restore s3": 1,
+    "restore s4": 1,
+    "restore s5": 1,
+    "restore s6": 1,
+    "restore s7": 1,
+    "restore s8": 1,
+    "restore s9": 1,
+    "restore s10": 1
+  },
+  "edits": [
+    {
+      "id": "edit:r4.0",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.1",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.143",
+      "block": "bb:runVm.n0",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.2",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.6",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.3",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.41",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.4",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.54",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.5",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.74",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.6",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.94",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.7",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.114",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.8",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.121",
+      "field": "else",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.9",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.123",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.10",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.128",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n0",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.11",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv",
+      "name": "inv",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.12",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.144",
+      "block": "bb:runVm.n0",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.13",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.26",
+      "field": "addr",
+      "from": "v:runVm.48",
+      "to": "v:runVm.249",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.14",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n1",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.15",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.145",
+      "block": "bb:runVm.n1",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.16",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.28",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n1",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.17",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.143",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n1",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.18",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv1",
+      "name": "inv1",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.19",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.146",
+      "block": "bb:runVm.n1",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.20",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.39",
+      "field": "value",
+      "from": "v:runVm.73",
+      "to": "v:runVm.252",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.21",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv2",
+      "name": "inv2",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.22",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.147",
+      "block": "bb:runVm.n1",
+      "at": 1,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.23",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.34",
+      "field": "value",
+      "from": "v:runVm.63",
+      "to": "v:runVm.254",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.24",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n2",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.25",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.148",
+      "block": "bb:runVm.n2",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.26",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.145",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n2",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.27",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv3",
+      "name": "inv3",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.28",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.149",
+      "block": "bb:runVm.n2",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.29",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.53",
+      "field": "value",
+      "from": "v:runVm.100",
+      "to": "v:runVm.257",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.30",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv4",
+      "name": "inv4",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.31",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.150",
+      "block": "bb:runVm.n2",
+      "at": 1,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.32",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.48",
+      "field": "value",
+      "from": "v:runVm.90",
+      "to": "v:runVm.259",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.33",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n3",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.34",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.151",
+      "block": "bb:runVm.n3",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.35",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.148",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n3",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.36",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv5",
+      "name": "inv5",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.37",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.152",
+      "block": "bb:runVm.n3",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.38",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.72",
+      "field": "addr",
+      "from": "v:runVm.135",
+      "to": "v:runVm.261",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.39",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv6",
+      "name": "inv6",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.40",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.153",
+      "block": "bb:runVm.n3",
+      "at": 1,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.41",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.67",
+      "field": "value",
+      "from": "v:runVm.127",
+      "to": "v:runVm.264",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.42",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv7",
+      "name": "inv7",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.43",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.154",
+      "block": "bb:runVm.n3",
+      "at": 2,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.44",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.61",
+      "field": "value",
+      "from": "v:runVm.115",
+      "to": "v:runVm.267",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.45",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n4",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.46",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.155",
+      "block": "bb:runVm.n4",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.47",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.151",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n4",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.48",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv8",
+      "name": "inv8",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.49",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.156",
+      "block": "bb:runVm.n4",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.50",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.92",
+      "field": "addr",
+      "from": "v:runVm.176",
+      "to": "v:runVm.269",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.51",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv9",
+      "name": "inv9",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.52",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.157",
+      "block": "bb:runVm.n4",
+      "at": 1,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.53",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.87",
+      "field": "value",
+      "from": "v:runVm.168",
+      "to": "v:runVm.272",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.54",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv10",
+      "name": "inv10",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.55",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.158",
+      "block": "bb:runVm.n4",
+      "at": 2,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.56",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.81",
+      "field": "value",
+      "from": "v:runVm.156",
+      "to": "v:runVm.275",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.57",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n5",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.58",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.159",
+      "block": "bb:runVm.n5",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.59",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.155",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n5",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.60",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv11",
+      "name": "inv11",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.61",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.160",
+      "block": "bb:runVm.n5",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.62",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.112",
+      "field": "addr",
+      "from": "v:runVm.217",
+      "to": "v:runVm.277",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.63",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv12",
+      "name": "inv12",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.64",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.161",
+      "block": "bb:runVm.n5",
+      "at": 1,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.65",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.107",
+      "field": "value",
+      "from": "v:runVm.209",
+      "to": "v:runVm.280",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.66",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv13",
+      "name": "inv13",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.67",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.162",
+      "block": "bb:runVm.n5",
+      "at": 2,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.68",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.101",
+      "field": "value",
+      "from": "v:runVm.197",
+      "to": "v:runVm.283",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.69",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n6",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.70",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.163",
+      "block": "bb:runVm.n6",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.71",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.159",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n6",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.72",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "local",
+      "local": "local:runVm/inv14",
+      "name": "inv14",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.73",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.164",
+      "block": "bb:runVm.n6",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.74",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "replace",
+      "stmt": "s:runVm.121",
+      "field": "cond",
+      "from": "v:runVm.240",
+      "to": "v:runVm.287",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.75",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n7",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.76",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.165",
+      "block": "bb:runVm.n7",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.77",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.163",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n7",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.78",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "block",
+      "block": "bb:runVm.n8",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.79",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "insert",
+      "stmt": "s:runVm.166",
+      "block": "bb:runVm.n8",
+      "at": 0,
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    },
+    {
+      "id": "edit:r4.80",
+      "rev": 4,
+      "pass": "licm",
+      "fn": "runVm",
+      "kind": "retarget",
+      "stmt": "s:runVm.165",
+      "field": "to",
+      "from": "bb:runVm.3",
+      "to": "bb:runVm.n8",
+      "because": [
+        "loop:runVm@bb:runVm.3"
+      ]
+    }
+  ]
+}
