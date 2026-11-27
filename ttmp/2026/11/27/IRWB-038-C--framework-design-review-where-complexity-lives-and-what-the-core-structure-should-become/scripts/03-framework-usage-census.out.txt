@@ -1,0 +1,36 @@
+src/framework/contracts/analysis-manager.ts  1670 lines  tensor:1 typed:3 workbench:0  AnalysisManager ContractError
+src/framework/contracts/definitions.ts       333 lines  tensor:2 typed:7 workbench:0  createArtifact defineAnalysis defineIR defineTransformation defineType
+src/framework/contracts/differential.ts      381 lines  tensor:3 typed:7 workbench:0  Decided DifferentialEvidence DifferentialInvariant decideCase differential differentialSpec runDifferential seededRandom
+src/framework/contracts/effects.ts            44 lines  tensor:0 typed:0 workbench:0  
+src/framework/contracts/registry.ts           73 lines  tensor:0 typed:0 workbench:0  
+src/framework/contracts/types.ts             324 lines  tensor:2 typed:2 workbench:0  CheckResult Correspondence TransformationDefinition
+src/framework/core/data.ts                   278 lines  tensor:0 typed:7 workbench:0  canonical fingerprint immutable isCanonical
+src/framework/core/query.ts                  221 lines  tensor:0 typed:0 workbench:0  
+src/framework/core/records.ts                104 lines  tensor:0 typed:0 workbench:0  
+src/framework/core/runtime.ts                915 lines  tensor:0 typed:0 workbench:0  
+src/framework/core/sha256.ts                 206 lines  tensor:0 typed:1 workbench:0  sha256Parts
+src/framework/core/types.ts                  180 lines  tensor:3 typed:13 workbench:2  Artifact
+src/framework/dataflow/analysis.ts           227 lines  tensor:0 typed:5 workbench:2  DataflowResult FlowRegion dataflow
+src/framework/dataflow/lattices.ts           141 lines  tensor:0 typed:1 workbench:1  Interval intervalLattice mapLattice setLattice
+src/framework/dataflow/solver.ts             182 lines  tensor:0 typed:1 workbench:0  FlowGraph
+src/framework/ir/adapters.ts                 274 lines  tensor:2 typed:5 workbench:1  createIRArtifact defineAdapter
+src/framework/ir/common.ts                    74 lines  tensor:0 typed:0 workbench:0  
+src/framework/ir/correspondence.ts           344 lines  tensor:0 typed:2 workbench:0  WhyNode makeCorrespondence whyEntity
+src/framework/ir/diff.ts                     121 lines  tensor:0 typed:0 workbench:0  
+src/framework/ir/patterns.ts                 922 lines  tensor:0 typed:1 workbench:0  NodePattern capture entity op
+src/framework/ir/readers.ts                   35 lines  tensor:0 typed:0 workbench:0  
+src/framework/ir/rewrites.ts                 856 lines  tensor:0 typed:0 workbench:0  
+src/framework/ir/store.ts                    150 lines  tensor:0 typed:0 workbench:0  
+src/framework/ir/transactions.ts             430 lines  tensor:0 typed:0 workbench:0  
+src/framework/ir/traversal.ts                253 lines  tensor:0 typed:0 workbench:0  
+src/framework/ir/types.ts                    262 lines  tensor:1 typed:6 workbench:0  CorrespondenceEntry EntityCorrespondence IREntity IRGraph IRRelation
+src/framework/ir/view.ts                     193 lines  tensor:0 typed:0 workbench:0  
+src/framework/passes/bridge.ts                88 lines  tensor:0 typed:2 workbench:0  passAlgorithm
+src/framework/passes/define-pass.ts          403 lines  tensor:2 typed:6 workbench:0  Pass PassError PassResult applyNativePassSync applyPass definePass
+src/framework/strategy/builders.ts           105 lines  tensor:0 typed:2 workbench:1  algorithm apply attempt chooseBest fork literal plan repeatUntilStable sequence
+src/framework/strategy/editing.ts            215 lines  tensor:0 typed:0 workbench:0  
+src/framework/strategy/interpreter.ts        871 lines  tensor:0 typed:1 workbench:0  execute
+src/framework/strategy/ir.ts                 286 lines  tensor:0 typed:2 workbench:2  NodeExecution StrategyAlgorithm StrategyNode StrategyPlan TraceEvent
+src/framework/strategy/registry.ts            56 lines  tensor:0 typed:2 workbench:0  AlgorithmRegistry
+src/framework/strategy/serialization.ts       16 lines  tensor:0 typed:1 workbench:0  deserialize
+src/framework/strategy/validation.ts         319 lines  tensor:0 typed:1 workbench:0  assertValid

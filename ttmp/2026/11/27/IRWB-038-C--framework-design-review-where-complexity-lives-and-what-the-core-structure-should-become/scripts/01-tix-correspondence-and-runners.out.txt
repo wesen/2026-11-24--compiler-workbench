@@ -1,0 +1,8 @@
+(a) inline changed: true edits: 2
+    source entities: [ 'f', 'f/a', 'f/b', 'f/x' ]
+    target entities: [ 'f', 'f/b', 'f/x' ]
+    entries: [{"from":["f"],"relation":"retained","to":["f"]},{"from":["f/a"],"relation":"removed","to":[]},{"from":["f/b"],"relation":"retained","to":["f/b"]},{"from":["f/x"],"relation":"retained","to":["f/x"]}]
+    entity changes: removed:f/a, updated:f/b
+(b) applyNativePassSync: badResult - [badResult] This pass requires the asynchronous analysis manager
+(c1) applyPass on a Tix pass without contract: changed true (no meaning check ran: inlinePass has no contract)
+(c2) strategy plan over Tix passes via passAlgorithm: succeeded 

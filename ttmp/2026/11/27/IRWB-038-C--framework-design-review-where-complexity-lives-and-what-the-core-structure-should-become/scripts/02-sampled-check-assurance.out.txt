@@ -1,0 +1,1 @@
+ok: true | recorded assurance: checked | evidence.method: sampled | assuranceOf(evidence): checked-sampled

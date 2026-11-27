@@ -49,3 +49,28 @@ First observations from the merged code (to be checked by probe where they are b
 
 **What was tricky:** the import census by regex over `index.js` re-exports gives false positives; I switched to
 grepping for used symbols (`saturate`, `beginEdit`, `new Compiler`).
+
+## Step 2: three probes on the merged code
+
+Built the worktree (`tsc`, with `node_modules` linked from the main checkout; `dist/` is ignored) and ran three
+probes, each committed with its output beside it in `scripts/`:
+
+- `01-tix-correspondence-and-runners.mjs`. (a) Tix `inline` on `a[i]=x[i]*2; b[i]=a[i]+1` records
+  `f/a -> removed` and `f/b -> retained`: the framework-derived correspondence says the producer disappeared,
+  while in fact it was merged into its consumer. That is not only coarse, it is wrong for any use that pushes a
+  measure (cost, provenance) along it. (b) `applyNativePassSync` refuses a pass with `preserves`
+  (`badResult: This pass requires the asynchronous analysis manager`, `src/framework/passes/define-pass.ts:231-232`).
+  (c) **F27 as written is not the blocker.** `passAlgorithm(inlinePass, {manager})` in a two-step strategy plan
+  `succeeded`; `applyPass` runs a Tix pass fine. What Tix cannot do in a plan is keep its meaning check, because
+  that check is a synchronous closure (`meaningGate`, `src/tensor/contract.ts:121`) passed to the runner, not a
+  `TransformationDefinition`. The gap is "the gate is not a contract", not "the bridge is async".
+- `02-sampled-check-assurance.mjs`. A differential invariant whose case generator only yields odd inputs accepts
+  a function that is wrong on every even input, and the manager records the result with `assurance: 'checked'`,
+  the same word an exact checker gets (`src/framework/contracts/analysis-manager.ts:1177`). The distinction exists
+  only in `assuranceOf` (`src/framework/contracts/differential.ts:377-380`), which nothing calls. The `Assurance`
+  type has no sampled level (`src/framework/contracts/types.ts:164`).
+- `03-framework-usage-census.mjs`. By imported symbol: `core/runtime`, `core/query`, `core/records` (1,240 lines),
+  `ir/rewrites` (856), `ir/transactions`, `ir/diff`, `ir/store`, `ir/traversal`, `contracts/effects` and
+  `strategy/editing` have no direct importer in `src/tensor`, `src/typed` or `src/workbench`. Transactions and diff
+  are reached indirectly through `applyPass`; the rewrite engine and the core runtime are not reached at all.
+  Tix imports nothing from `dataflow`, `strategy` or `ir/patterns`.
