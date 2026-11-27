@@ -499,7 +499,7 @@ test('P2.4: heat, diffs, machine stages and image status', () => {
 
 // Chapter 14, "Against the reference compiler": r0, O2 and the reference compiler (typed-rv32.js, default policy,
 // with its pass groups vendored) on the same benchmarks; and image sizes over all 44 projects.
-test("P2.6: the book's table against the reference compiler, and 5160 bytes against 7628", { timeout: 600000 }, async () => {
+test("P2.6: the book's table against the reference compiler, and 5084 bytes against 7628", { timeout: 600000 }, async () => {
   const { Program } = await import('../../dist/typed/program.js');
   const { projectSource } = await import('../../dist/typed/project.js');
   const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
@@ -534,7 +534,7 @@ test("P2.6: the book's table against the reference compiler, and 5160 bytes agai
     assert.deepEqual(sizes, expected.bytes, `${id}: image bytes`);
     if (bookProjects.includes(id)) { ours += sizes[0]; theirs += sizes[1]; }
   }
-  assert.deepEqual({ ours, theirs }, { ours: 5160, theirs: 7628 });
+  assert.deepEqual({ ours, theirs }, { ours: 5084, theirs: 7628 });
 });
 
 // Chapter 13: "our evaluator at r0 agrees with the reference compiler's images on all 6986 decided cases" (44 projects;

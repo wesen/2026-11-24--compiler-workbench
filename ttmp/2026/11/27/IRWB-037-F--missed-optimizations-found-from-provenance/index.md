@@ -30,7 +30,10 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+D2: missed optimizations found from provenance. Hot statements with provenance (`hotSites`), a shape census
+and the gap to the reference found five shapes; bce, licm-lengths, two verified rule tables (reassoc, bitwise), a
+verifier extension and an lvn fix took speed from 867,770 to 847,183 instructions over the corpus (tuned 792,800 to
+772,952). Design: `design-doc/01-...`; report: `reference/02-report-...`; diary: `reference/01-...`.
 
 ## Key Links
 

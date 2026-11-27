@@ -153,3 +153,25 @@ sha-chacha down by 1,280 in both cells and changed nothing else.
 
 ### What I learned
 - The census's largest check shape, `geu(x, load)` (20,513 weighted executions), was mostly this reload.
+
+## Step 6: licm-lengths, final measurements and checks
+
+With the length hoist in licm, O2 changed for the book's projects (Checksum 366 -> 326 instructions, pinned in
+`backend.test.mjs` and chapter 14). O2 is the book's pipeline, so the hoist became the pass `licm-lengths` (licm
+with `lengths: true`), which `speed` runs in licm's place; a pipeline names passes and cannot give one a parameter.
+
+**Commit (code):** 2c913eb — "IRWB-037-F: length hoisting as the pass licm-lengths (speed only; O2 stays the book's), tests and book row, notes' benchmark counts, report draft"
+
+### What worked
+- Final corpus (`various/corpus-final.json`, table in `various/corpus-table.md`): speed 867,770 -> 847,183 default,
+  792,800 -> 772,952 tuned; O2 1,090,271 -> 1,085,269 and 1,032,485 -> 1,028,129; no cell rose, nothing rejected.
+- Benchmarks (`various/bench-final.json`): regex 6,515 default / 5,160 tuned; LZ 149,893 / 140,105; chess 9,955,027.
+- parity 8,286/8,286, both reference checks 8,286/8,286, typed 161 pass + 2 skipped, framework 234, workbench 24 + 1
+  skipped, `IRWB_FULL=1` speed 9/9 and backend 14/14, build-site builds.
+
+### What didn't work
+- `IRWB_FULL=1 node --test tests/typed/backend.test.mjs` failed on `bytecode-vm: image bytes` (908 expected, 704).
+  `scripts/15-o2-bytes.mjs` on a build of the base commit (2966b9b, extracted with `git archive` into the
+  scratchpad) showed six projects already stale there; heat-lab, histogram and sort changed here. Updated the nine
+  expectations and the book's total (5,160 -> 5,084 bytes).
+- Waiting loops that `pgrep -f` a pattern contained in their own command line never end; killed them twice.

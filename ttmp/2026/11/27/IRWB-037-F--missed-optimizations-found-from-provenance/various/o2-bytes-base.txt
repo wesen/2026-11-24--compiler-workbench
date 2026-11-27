@@ -1,0 +1,7 @@
+bytecode-vm        expected 908, now 776
+chess-search       expected 13256, now 13076
+lz-roundtrip       expected 1404, now 1300
+orders             expected 136, now 132
+regex-nfa          expected 2028, now 1760
+sha-chacha         expected 5496, now 5320
+{"across-calls":192,"algebra":8,"blend":88,"bounds-lab":280,"bounds-offset":100,"bounds-param":60,"bounds-two":84,"branches":104,"bytecode-vm":776,"call-chain":172,"calls":212,"checksum":52,"chess-search":13076,"collatz":88,"constants":28,"dead-code":12,"diagnostics":12,"distinct":112,"div-checks":88,"div-magic":136,"early-exit":60,"f32-dsp":1444,"first-steps":64,"fixed-point":128,"fragments":88,"gcd":36,"heat-lab":240,"histogram":176,"licm-nested":68,"licm-traps":68,"lz-roundtrip":1300,"match-enum":156,"my-analysis":52,"my-first-pass":20,"nested-loops":60,"orders":132,"params-demo":88,"pressure":96,"ramp":80,"records":112,"regalloc-lab":348,"regex-nfa":1760,"sha-chacha":5320,"sort":240,"start-here":312,"strength":116,"strings":228,"ui-gallery":176,"value-numbering":92,"wrong-shift":92}

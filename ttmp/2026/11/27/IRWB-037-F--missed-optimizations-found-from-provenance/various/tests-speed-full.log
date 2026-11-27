@@ -1,0 +1,17 @@
+✔ IRWB-003 options: extras are absent at their defaults, validated, and recorded when on (216.324984ms)
+✔ IRWB-003 frequencies and chains: rotated Blend runs its loop 7.33 times per call and ends it in one branch (580.219047ms)
+✔ IRWB-003 coalesce: the copy t7 = i in Blend disappears, and Blend runs in 370 with rotation (353.025603ms)
+✔ IRWB-034-G coalesce: two copies of one register (orders: a = inv, b = inv) both disappear (853.120819ms)
+✔ IRWB-003 homes: Collatz builds 1, 2 and 3 once, outside its loop (82.07489ms)
+✔ IRWB-003 rotate: Blend's header is duplicated into the preheader and the latch, checked, with provenance (362.436414ms)
+✔ IRWB-003 rotate: a header that is not the exit test (Collatz) gives a two-entry loop, still checked and analysable (196.750062ms)
+✔ IRWB-003: the benchmarks under O2+, rotate, cfg and all three options (1805.170951ms)
+✔ IRWB-003: every corpus project agrees with r0 under each option alone and all together (IRWB_FULL) (112289.846267ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117200.486838

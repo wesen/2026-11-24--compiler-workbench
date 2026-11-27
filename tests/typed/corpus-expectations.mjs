@@ -1,4 +1,5 @@
-// Per-project compiler and coverage baselines, measured by IRWB-028 scripts/02-measure.mjs.
+// Per-project compiler and coverage baselines, measured by IRWB-028 scripts/02-measure.mjs. O2 image bytes
+// re-measured by IRWB-037-F scripts/15-o2-bytes.mjs (six were already stale at its base, after IRWB-034-G).
 import assert from 'node:assert/strict';
 
 const rows = {
@@ -81,7 +82,7 @@ const rows = {
     tape: 'skipped',
     ref: { fns: 1, decided: 100, inconclusive: 0 },
     parity: { fns: 1, total: 100, agree: 100, inconclusive: 0 },
-    bytes: [908, 832],
+    bytes: [704, 832],
   },
   'call-chain': {
     fns: 3,
@@ -117,7 +118,7 @@ const rows = {
     tape: 'checked',
     ref: { fns: 2, decided: 200, inconclusive: 0 },
     parity: { fns: 50, total: 5000, agree: 5000, inconclusive: 0 },
-    bytes: [13256, 20140],
+    bytes: [12968, 20140],
   },
   collatz: {
     fns: 1,
@@ -243,7 +244,7 @@ const rows = {
     tape: 'checked',
     ref: { fns: 1, decided: 100, inconclusive: 0 },
     parity: { fns: 1, total: 100, agree: 100, inconclusive: 0 },
-    bytes: [240, 284],
+    bytes: [216, 284],
   },
   histogram: {
     fns: 1,
@@ -252,7 +253,7 @@ const rows = {
     tape: 'checked',
     ref: { fns: 1, decided: 100, inconclusive: 0 },
     parity: { fns: 1, total: 100, agree: 100, inconclusive: 0 },
-    bytes: [176, 204],
+    bytes: [152, 204],
   },
   'licm-nested': {
     fns: 1,
@@ -279,7 +280,7 @@ const rows = {
     tape: 'skipped',
     ref: { fns: 4, decided: 400, inconclusive: 0 },
     parity: { fns: 4, total: 400, agree: 400, inconclusive: 0 },
-    bytes: [1404, 1532],
+    bytes: [1288, 1532],
   },
   'match-enum': {
     fns: 2,
@@ -324,7 +325,7 @@ const rows = {
     tape: 'checked',
     ref: { fns: 2, decided: 200, inconclusive: 0 },
     parity: { fns: 2, total: 200, agree: 200, inconclusive: 0 },
-    bytes: [136, 328],
+    bytes: [132, 328],
   },
   'params-demo': {
     fns: 1,
@@ -378,7 +379,7 @@ const rows = {
     tape: 'skipped',
     ref: { fns: 1, decided: 100, inconclusive: 0 },
     parity: { fns: 2, total: 200, agree: 200, inconclusive: 0 },
-    bytes: [2028, 1572],
+    bytes: [1712, 1572],
   },
   'sha-chacha': {
     fns: 5,
@@ -387,7 +388,7 @@ const rows = {
     tape: 'skipped',
     ref: { fns: 2, decided: 200, inconclusive: 0 },
     parity: { fns: 5, total: 500, agree: 500, inconclusive: 0 },
-    bytes: [5496, 5908],
+    bytes: [5296, 5908],
   },
   sort: {
     fns: 1,
@@ -396,7 +397,7 @@ const rows = {
     tape: 'checked',
     ref: { fns: 1, decided: 100, inconclusive: 0 },
     parity: { fns: 1, total: 100, agree: 100, inconclusive: 0 },
-    bytes: [240, 284],
+    bytes: [216, 284],
   },
   'start-here': {
     fns: 4,

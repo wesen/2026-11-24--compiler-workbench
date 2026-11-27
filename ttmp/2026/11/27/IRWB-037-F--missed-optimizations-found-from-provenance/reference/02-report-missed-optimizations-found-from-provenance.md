@@ -36,7 +36,7 @@ WhenToUse: ""
   156,782 → 140,105 tuned (reference 156,405; 159,079 → 149,893 default); chess 10,038,193 → 9,955,027 tuned
   (reference 10,827,760).
 - **Corpus** (50 projects, the seeded cases `measure` uses): `speed` 867,770 → 847,183 with default options
-  (−2.4%) and 792,800 → 772,952 tuned (−2.5%); O2 TOTAL_O2. No cell is higher than before; no pass is rejected.
+  (−2.4%) and 792,800 → 772,952 tuned (−2.5%); O2 1,090,271 → 1,085,269 (default) and 1,032,485 → 1,028,129 (tuned). No cell is higher than before; no pass is rejected.
   The reference compiler: 875,417.
 - **Framework:** `src/framework/` is unchanged. Two pieces of domain machinery do what framework concepts should
   (section "Framework changes").
@@ -186,7 +186,70 @@ Summed over the seeded cases `measure` uses (10 per function, seed 7), `scripts/
 (`various/corpus-before.json`, at 2966b9b) and after (`various/corpus-final.json`). A cell with an arrow changed.
 "tuned" is chains + coalesce + homes. The reference compiler's image runs the same cases.
 
-CORPUS_TABLE
+| Project | r0 | O2 | O2 tuned | speed | speed tuned | reference |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| across-calls | 660 | 640 | 630 | 270 | 210 | 700 |
+| algebra | 100 | 20 | 20 | 20 | 20 | 170 |
+| blend | 2,255 | 1,925 | 1,750 | 1,915 | 1,585 | 1,715 |
+| bounds-lab | 5,923 | 5,333 | 4,843 | 5,012 → 4,611 | 4,426 → 4,025 | 4,234 |
+| bounds-offset | 1,364 | 1,364 | 1,268 | 1,355 → 1,145 | 1,258 → 1,048 | 894 |
+| bounds-param | 502 | 502 | 452 | 499 | 408 | 426 |
+| bounds-two | 910 | 810 | 710 | 756 → 711 | 665 → 620 | 675 |
+| branches | 165 | 139 | 131 | 139 | 131 | 211 |
+| bytecode-vm | 39,954 | 32,295 → 31,667 | 24,750 → 24,436 | 32,295 → 31,353 | 24,750 → 24,122 | 28,889 |
+| call-chain | 1,050 | 1,050 | 1,050 | 350 | 290 | 1,120 |
+| calls | 651 | 651 | 580 | 288 | 227 | 840 |
+| checksum | 1,710 | 1,410 | 1,260 | 1,251 → 1,101 | 1,110 → 960 | 1,170 |
+| chess-search | 432,856 | 423,077 → 422,675 | 406,477 → 406,085 | 327,316 → 323,686 | 297,382 → 294,562 | 334,902 |
+| collatz | 7,461 | 7,461 | 5,779 | 6,955 | 5,769 | 7,016 |
+| constants | 100 | 70 | 70 | 70 | 70 | 160 |
+| dead-code | 110 | 30 | 30 | 30 | 30 | 200 |
+| diagnostics | 30 | 30 | 30 | 30 | 30 | 90 |
+| distinct | 340 | 340 | 340 | 80 | 60 | 700 |
+| div-checks | 172 | 162 | 152 | 162 | 152 | 308 |
+| div-magic | 729 | 769 | 710 | 759 | 661 | 807 |
+| early-exit | 761 | 631 | 559 | 564 → 506 | 557 → 499 | 575 |
+| f32-dsp | 49,706 | 49,030 | 47,923 | 46,361 → 41,745 | 44,107 → 39,561 | 40,740 |
+| first-steps | 280 | 220 | 220 | 80 → 70 | 80 → 70 | 500 |
+| fixed-point | 429 | 411 | 392 | 251 | 242 | 647 |
+| fragments | 2,697 | 2,299 | 2,090 | 2,289 | 1,891 | 2,021 |
+| gcd | 324 | 324 | 314 | 314 | 265 | 365 |
+| heat-lab | 8,832 | 8,832 → 8,136 | 8,026 → 7,330 | 8,664 → 6,918 | 7,996 → 6,250 | 6,758 |
+| histogram | 2,416 | 2,292 → 2,044 | 2,008 → 1,760 | 2,222 → 1,798 | 2,000 → 1,576 | 2,036 |
+| licm-nested | 2,677 | 1,678 | 1,678 | 1,631 | 1,596 | 2,426 |
+| licm-traps | 153 | 153 | 153 | 149 | 142 | 196 |
+| lz-roundtrip | 33,646 | 34,551 → 34,195 | 33,660 → 33,304 | 28,745 → 27,124 | 28,330 → 25,416 | 28,499 |
+| match-enum | 282 | 251 | 226 | 251 | 226 | 396 |
+| my-analysis | 200,975 | 200,975 | 200,795 | 200,966 | 200,618 | 200,696 |
+| my-first-pass | 60 | 50 | 50 | 50 | 50 | 120 |
+| nested-loops | 2,634 | 2,342 | 2,342 | 2,289 | 2,252 | 2,312 |
+| orders | 1,350 | 1,194 | 1,010 | 1,185 | 952 | 1,351 |
+| params-demo | 2,697 | 2,299 | 2,090 | 2,289 | 1,891 | 2,021 |
+| pressure | 280 | 240 | 230 | 240 | 230 | 490 |
+| ramp | 1,180 | 1,040 | 790 | 962 → 892 | 780 → 710 | 1,120 |
+| records | 260 | 260 | 240 | 260 | 240 | 391 |
+| regalloc-lab | 2,614 | 2,614 | 2,462 | 2,051 | 1,716 | 2,028 |
+| regex-nfa | 41,650 | 40,212 → 38,580 | 38,745 → 37,113 | 35,638 → 33,630 | 28,128 → 26,936 | 34,041 |
+| sha-chacha | 239,636 | 232,820 → 232,176 | 211,526 → 211,204 | 125,491 → 122,233 | 107,102 → 103,866 | 136,109 |
+| sort | 5,043 | 5,043 → 4,647 | 4,589 → 4,193 | 4,950 → 3,959 | 4,563 → 3,572 | 3,898 |
+| start-here | 4,385 | 3,871 | 3,467 | 2,932 → 2,811 | 2,559 → 2,438 | 3,167 |
+| strength | 2,220 | 1,938 | 1,414 | 1,793 → 1,657 | 1,404 → 1,268 | 1,889 |
+| strings | 11,895 | 10,833 | 9,282 | 10,283 | 9,262 | 9,392 |
+| ui-gallery | 1,214 | 1,058 | 1,016 | 754 | 594 | 825 |
+| value-numbering | 3,721 | 3,082 | 2,666 | 3,073 | 2,453 | 3,771 |
+| wrong-shift | 1,950 | 1,650 | 1,490 | 1,491 → 1,341 | 1,340 → 1,190 | 1,410 |
+| **total** | 1,123,009 | 1,090,271 → 1,085,269 | 1,032,485 → 1,028,129 | 867,770 → 847,183 | 792,800 → 772,952 | 875,417 |
+
+changed: 19 projects; rose: none
+rejected passes after: none
+
+- 19 of 50 projects change; no cell is higher than before and no pass is rejected in either pipeline.
+- O2 changes only through bce (the length hoist is `licm-lengths`, which O2 does not run).
+- Above the reference under speed with the tuned options, only bounds-offset is left (1,048 against 894; before
+  this ticket: bounds-lab, bounds-offset, f32-dsp, heat-lab, sort, my-analysis). With default options 14 projects
+  are above it (blend, bounds-lab, bounds-offset, bounds-param, bounds-two, bytecode-vm, f32-dsp, fragments,
+  heat-lab, my-analysis, params-demo, regalloc-lab, sort, strings); there the constant rebuilt before each check,
+  which `homes` removes, is the shape the tool shows first.
 
 ## Rule firings
 
@@ -231,14 +294,31 @@ Argued, and checked only by the meaning contract on generated cases, parity and 
 
 ## Verification
 
-All on the final compiler (commit FINAL_HASH), after `npm run build`:
+All on the final compiler (compiler sources at commit 2c913eb; later commits change tests, expectations, the book and this ticket), after `npm run build`:
 
-VERIFICATION
+| Check | Result |
+| --- | --- |
+| `node tools/parity.mjs` | 50 projects, 135 functions, 8,286 of 8,286 decided cases agree, 14 at the limit, 0 failures (`various/parity-after.log`); wrong-shift's `div-to-shift` rejected, as its `broken` pipeline intends |
+| `node tools/reference-check.mjs` | reference images: 8,286 of 8,286 agree |
+| `node tools/reference-check.mjs --o2` | our O2 images: 8,286 of 8,286 agree |
+| `node --test tests/typed/*.test.mjs` | 163 tests, 161 pass, 2 skipped, 0 fail |
+| `node --test tests/framework/*.test.mjs` | 234 pass |
+| `node --test tests/workbench/*.test.mjs` | 25 tests, 24 pass, 1 skipped, 0 fail |
+| `IRWB_FULL=1 node --test tests/typed/speed.test.mjs` | 9 pass: every project agrees with r0 under each backend option and all together |
+| `IRWB_FULL=1 node --test tests/typed/backend.test.mjs` | 14 pass, after re-measuring nine projects' O2 image bytes (`scripts/15-o2-bytes.mjs`): six were already stale at the base (bytecode-vm, chess-search, lz-roundtrip, orders, regex-nfa, sha-chacha; `various/o2-bytes-base.txt`), three changed here (heat-lab, histogram, sort, 24 bytes each) |
+| `node tools/build-site.mjs` | builds |
+| `tools/format-docs.mjs --check`, `tools/format-corpus.mjs --check` | no file would change |
+
+Tests changed: `missed.test.mjs` (new, 6 tests); `inline.test.mjs` (speed's pass list); `backend.test.mjs` (the
+book's sort row 2,022 → 1,842 under O2, and 5,160 → 5,084 bytes); `corpus-expectations.mjs` (nine O2 byte counts);
+`workbench/strategies.test.mjs` (18 passes). The book (chapter 14: the sort row and the byte total) and the notes
+of regex-nfa and chess-search (their speed counts) say the new numbers.
 
 ## Later
 
 - bce's existing branch case compares reaching-definition sets; it should use the path condition.
 - Constants in registers by default (`homes`), the length inside `caddr` as a separate value, induction-variable
   strength reduction (the reference's pointer increments), jump threading for `&&` values.
-- f32-dsp, heat-lab, sort, bounds-offset and bounds-lab are still above the reference under some options.
+- bounds-offset is above the reference with the tuned options (pointer induction variable, the `i + 1` check the
+  reference also keeps); 14 projects are above it with default options (constants in registers).
 - An available-checks framework analysis replacing `sameDefs`; pipeline entries with parameters.

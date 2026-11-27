@@ -98,7 +98,7 @@ instruction to source lines through its covers. On Blend after O2, with
 
 Built-in projects carry the image the repo's compiler (`typed-rv32.js`,
 default policy) made from the same sources. Our O2 images are smaller
-for all 44 projects: 5160 bytes against 7628. They are usually not
+for all 44 projects: 5084 bytes against 7628. They are usually not
 faster:
 
 | run | r0 | O2 | reference |
