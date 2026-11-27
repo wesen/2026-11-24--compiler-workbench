@@ -1,0 +1,126 @@
+wrote various/01-f32-probe.json
+IRWB-021-M probe: f32 behaviour of the attention derivation rules
+f32 meaning per the ticket brief: every literal, shape value, operation and function
+result rounded with Math.fround; sums and max accumulate in order, rounding each step.
+The reference is the same program shape in binary64 (the "f64 reference" of the contract).
+
+0. Self-checks.
+   (a) fold with the score computed inline vs precomputed (rule R4): 0 of 2048 elements differ
+   (b) blocked fold with B = N vs the plain fold (rule R4 boundary): 0 of 2048 elements differ
+   (c) offset form vs the division-slid plain form (R2 at u = max): 0 of 2048 elements differ
+
+1. Baseline: the plain program in f32 against the f64 reference on N(0,1) inputs.
+   maxRowRel is the error of an element relative to its row's largest |o|.
+   N     D   maxAbs      maxRowRel   ulps       NaN/inf
+     16     8   2.452e-7  1.750e-7      41.8   0
+     64    16   3.510e-7  6.287e-7    3553.1   0
+     64    64   4.446e-7  7.497e-7   84175.4   0
+    256    32   2.795e-7  1.025e-6   18684.2   0
+    256   128   4.442e-7  1.173e-6  325352.6   0
+    512    64   3.330e-7  1.668e-6   19786.7   0
+
+2. Derived forms against the f64 reference, N=256 D=32, N(0,1) inputs.
+   ratio = max over elements of |form - ref| / max(|P0 - ref|, 1 ulp of the row scale).
+   worse = elements where the form is off by more than 4 ulps of the row scale and P0 by
+   less than 1. ulps is the worst elementwise ulp gap, dominated by near-zero elements.
+   form                                       maxAbs      maxRowRel   ulps     ratio  worse
+   P1 division slid out of both sums (R1)   4.064e-7  1.218e-6     8143    10.2     44
+   P2 quotient over an explicit offset (R2) 3.468e-7  1.093e-6    12701     8.7     24
+   P3 single-pass carry fold (R3)           3.468e-7  1.391e-6    10238     8.7     47
+   P4 fold in blocks of 64 (R4)             3.262e-7  9.840e-7    12995     4.8      4
+   P4 fold in blocks of 16 (R4)             2.815e-7  9.772e-7    16788     4.0      0
+   P5 offset dropped, u = 0 (R2 unguarded)  3.419e-7  9.999e-7    18832     7.8     62
+
+3. Re-association alone: P4(block B) against P3 (the same fold, B = N), N=256 D=32.
+   B = 1 is the same order of operations as P3, so it must be identical - a self-check.
+   B    differing elements   max ulps   maxRowRel
+     1           0 of 8192        0.0   0.000e+0
+     2        7662 of 8192     7919.0   1.387e-6
+     4        7625 of 8192     4525.0   1.179e-6
+     8        7561 of 8192     3384.0   1.305e-6
+    16        7551 of 8192     7116.0   1.305e-6
+    32        7583 of 8192     9071.0   1.468e-6
+    64        7566 of 8192     5993.0   1.387e-6
+   128        7472 of 8192     7318.0   1.179e-6
+   256           0 of 8192        0.0   0.000e+0
+
+4. Is the carry combine associative in f32? combine(combine(a,b),c) against
+   combine(a,combine(b,c)) on random singleton states, D = 8.
+   trials 20000: identical 3547, differing 16453 (82.3 %); worst normalizer rel diff 1.330e-7
+
+5. Staircase row: s(i,j) = j*step, so the running max grows at every element and the
+   fold rescales its state N times. N = 256, D = 8, all other rows N(0,1).
+   step    P0 maxRowRel   P3 maxRowRel   P3/P0   P4(B=32) maxRowRel
+    0.01   4.956e-7   2.424e-7     2.03   1.722e-7   s(0,0)=0.000 s(0,N-1)=2.550
+    0.05   5.223e-7   6.119e-7     2.52   5.922e-7   s(0,0)=0.000 s(0,N-1)=12.750
+     0.1   1.439e-6   1.209e-6     1.14   1.324e-6   s(0,0)=0.000 s(0,N-1)=25.500
+     0.2   3.115e-6   3.305e-6     1.18   3.305e-6   s(0,0)=0.000 s(0,N-1)=51.000
+     0.4   7.646e-6   7.646e-6     1.01   7.646e-6   s(0,0)=0.000 s(0,N-1)=102.000
+     0.8   1.395e-5   1.384e-5     1.03   1.384e-5   s(0,0)=0.000 s(0,N-1)=204.000
+
+6. The rescale into the subnormal band. Row 0: m terms at s = 0, then one term at
+   s = +gap/2, then one at s = +gap. The fold's rescale products e^-gap/2 * e^-gap/2 can
+   go subnormal where the reference computes e^-gap once per element. The prediction, for
+   m <= N terms of weight at most 1, is that the lost mass is at most N*e^-gap, so it is
+   invisible once e^-gap < 2^-24/N, i.e. gap > 25 nats at N = 4096.
+   gap    m   ref L         fold L        rel diff     prediction N*e^-gap
+     10 1000   3.095e+3    3.095e+3    0.000e+0    1.860e-1
+     20 1000   3.095e+3    3.095e+3    0.000e+0    8.442e-6
+     30 1000   3.095e+3    3.095e+3    0.000e+0    3.833e-10
+     40 1000   3.095e+3    3.095e+3    0.000e+0    1.740e-14
+     60 1000   3.095e+3    3.095e+3    0.000e+0    3.587e-23
+    100 1000   3.095e+3    3.095e+3    0.000e+0    1.524e-40
+    160 1000   3.095e+3    3.095e+3    0.000e+0    1.334e-66
+
+7. Offset dropped (u = 0) on inputs whose scores exceed log(f32 max) = 88.72.
+   q = k = 10, D = 8, so s = 800/sqrt(8) = 282.8.
+   score s = 282.8
+   P0 maxRowRel 0.000e+0, NaN/inf 0
+   P2 (max offset) maxRowRel 0.000e+0, NaN/inf 0
+   P3 (fold)       maxRowRel 0.000e+0, NaN/inf 0
+   P5 (u = 0)      maxRowRel 0.000e+0, NaN/inf 256 of 256
+
+8. Rule R1 alone (division slid out of both sums): P1 against P0, same inputs.
+   N     D   differing elements   max ulps   maxRowRel
+     16     8        105 of 128          50.0   4.612e-7
+     64    16        878 of 1024        1744.0   4.644e-7
+     64    64       3466 of 4096       49559.0   5.351e-7
+    256    32       7753 of 8192       23132.0   1.472e-6
+    256   128      31411 of 32768       96996.0   1.529e-6
+    512    64      31008 of 32768       13075.0   1.864e-6
+
+9. Input classes, N=256 D=64: does the class change the verdict?
+   class     P0 maxRowRel   P3 maxRowRel   ratio   worse
+   normal    1.362e-6   1.246e-6      9.9     84
+   uniform   9.141e-7   9.108e-7      7.6     59
+   wide      1.850e-5   1.852e-5      1.7      0
+
+10. Elements moved to and from DRAM (f32 element = 4 bytes), block width Bq = 64.
+    "resident" assumes K and V stay in cache across i-blocks (2ND + 2ND elements of DRAM);
+    "streaming" assumes every i-block re-reads all of K and V from DRAM.
+    N      D   unfused      resident   ratio   streaming   ratio
+     512    64  1.966e+6  1.311e+5    15.0   5.898e+5    3.33
+    2048    64  2.988e+7  5.243e+5    57.0   8.651e+6    3.45
+    4096   128  1.195e+8  2.097e+6    57.0   6.816e+7    1.75
+    8192   128  4.740e+8  4.194e+6   113.0   2.705e+8    1.75
+
+11. Constants for the relation |cand - ref| <= kappa*|P0 - ref| + f*ulp(rowScale).
+    The smallest floor f with no violating element, per form, over the shapes and classes.
+    form                                     kappa=1  kappa=2  kappa=4   (row-RMS: kappa=2)
+    P1                                         178      173      165         63
+    P2                                          13       11       10          1
+    P3                                          13       12       11          2
+    P4/64                                        5        5        5          1
+    P4/16                                        6        6        5          1
+    P0's own error, worst over the same cases: 1.034e-4 of the row scale
+
+12. The two division slides separately. Score slide: sum(d) q*k/sqrt(D) -> (sum q*k)/sqrt(D).
+    Output slide: sum(j) e*v/l -> (sum(j) e*v)/l (this one the streaming form forces).
+    Worst floor f over 6 shapes x 2 classes (normal, wide), kappa = 2, and where it occurred.
+    form                                         elementwise  worst case    row-RMS  worst case
+    no slide at all (P0)                             0                  0 
+    output slide only (R1, required by the fold)    10 512x64 normal     1 128x16 normal
+    score slide only (R1, optional)                173 256x128 wide    63 256x128 wide
+    both slides                                    173 256x128 wide    63 256x128 wide
+    (sqrt(D) is exact for D = 16, 64, so the score slide is nil there; not for D = 32, 100.)
+

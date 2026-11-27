@@ -1,0 +1,593 @@
+{
+  "meta": {
+    "node": "v24.18.0",
+    "quick": false,
+    "at": "2026-11-27T02:50:59.393Z"
+  },
+  "rows": [
+    {
+      "probe": "selfcheck",
+      "N": 128,
+      "D": 16,
+      "fusionDiff": 0,
+      "boundaryDiff": 0,
+      "offsetVsSlid": 0
+    },
+    {
+      "probe": "baseline",
+      "N": 16,
+      "D": 8,
+      "maxAbs": 2.452307650280261e-7,
+      "maxRowRel": 1.750042703617768e-7,
+      "maxRatio": 0,
+      "nNaN": 0,
+      "materiallyWorse": 0,
+      "ulps": 41.794255409389734
+    },
+    {
+      "probe": "baseline",
+      "N": 64,
+      "D": 16,
+      "maxAbs": 3.509930132095107e-7,
+      "maxRowRel": 6.286915073883358e-7,
+      "maxRatio": 0,
+      "nNaN": 0,
+      "materiallyWorse": 0,
+      "ulps": 3553.052124977112
+    },
+    {
+      "probe": "baseline",
+      "N": 64,
+      "D": 64,
+      "maxAbs": 4.4463964549157353e-7,
+      "maxRowRel": 7.49726156871572e-7,
+      "maxRatio": 0,
+      "nNaN": 0,
+      "materiallyWorse": 0,
+      "ulps": 84175.43123626709
+    },
+    {
+      "probe": "baseline",
+      "N": 256,
+      "D": 32,
+      "maxAbs": 2.7949389846959605e-7,
+      "maxRowRel": 0.0000010252561819463776,
+      "maxRatio": 0,
+      "nNaN": 0,
+      "materiallyWorse": 0,
+      "ulps": 18684.20717097819
+    },
+    {
+      "probe": "baseline",
+      "N": 256,
+      "D": 128,
+      "maxAbs": 4.4424762374317694e-7,
+      "maxRowRel": 0.0000011728236857557887,
+      "maxRatio": 0,
+      "nNaN": 0,
+      "materiallyWorse": 0,
+      "ulps": 325352.5675535202
+    },
+    {
+      "probe": "baseline",
+      "N": 512,
+      "D": 64,
+      "maxAbs": 3.3295836213143026e-7,
+      "maxRowRel": 0.0000016678866603013375,
+      "maxRatio": 0,
+      "nNaN": 0,
+      "materiallyWorse": 0,
+      "ulps": 19786.65593059361
+    },
+    {
+      "probe": "form",
+      "name": "P1 division slid out of both sums (R1)",
+      "N": 256,
+      "D": 32,
+      "maxAbs": 4.06440856803858e-7,
+      "maxRowRel": 0.0000012181095920202268,
+      "maxRatio": 10.218243868497611,
+      "nNaN": 0,
+      "materiallyWorse": 44,
+      "ulps": 8142.674523234367
+    },
+    {
+      "probe": "form",
+      "name": "P2 quotient over an explicit offset (R2)",
+      "N": 256,
+      "D": 32,
+      "maxAbs": 3.4683621202846737e-7,
+      "maxRowRel": 0.0000010934270070138158,
+      "maxRatio": 8.719736063943813,
+      "nNaN": 0,
+      "materiallyWorse": 24,
+      "ulps": 12700.711413249373
+    },
+    {
+      "probe": "form",
+      "name": "P3 single-pass carry fold (R3)",
+      "N": 256,
+      "D": 32,
+      "maxAbs": 3.4683621202846737e-7,
+      "maxRowRel": 0.0000013905892935142685,
+      "maxRatio": 8.719736063943813,
+      "nNaN": 0,
+      "materiallyWorse": 47,
+      "ulps": 10238.100768640637
+    },
+    {
+      "probe": "form",
+      "name": "P4 fold in blocks of 64 (R4)",
+      "N": 256,
+      "D": 32,
+      "maxAbs": 3.2620944370731486e-7,
+      "maxRowRel": 9.83970197370354e-7,
+      "maxRatio": 4.76777844841923,
+      "nNaN": 0,
+      "materiallyWorse": 4,
+      "ulps": 12994.711413249373
+    },
+    {
+      "probe": "form",
+      "name": "P4 fold in blocks of 16 (R4)",
+      "N": 256,
+      "D": 32,
+      "maxAbs": 2.815059601257719e-7,
+      "maxRowRel": 9.77226746179677e-7,
+      "maxRatio": 3.9866673572595426,
+      "nNaN": 0,
+      "materiallyWorse": 0,
+      "ulps": 16788.20717097819
+    },
+    {
+      "probe": "form",
+      "name": "P5 offset dropped, u = 0 (R2 unguarded)",
+      "N": 256,
+      "D": 32,
+      "maxAbs": 3.4194331521852916e-7,
+      "maxRowRel": 9.998645125068247e-7,
+      "maxRatio": 7.829522675515825,
+      "nNaN": 0,
+      "materiallyWorse": 62,
+      "ulps": 18832.20717097819
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 1,
+      "differing": 0,
+      "of": 8192,
+      "ulps": 0,
+      "maxRowRel": 0
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 2,
+      "differing": 7662,
+      "of": 8192,
+      "ulps": 7919,
+      "maxRowRel": 0.0000013866289329588565
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 4,
+      "differing": 7625,
+      "of": 8192,
+      "ulps": 4525,
+      "maxRowRel": 0.0000011786995784734567
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 8,
+      "differing": 7561,
+      "of": 8192,
+      "ulps": 3384,
+      "maxRowRel": 0.0000013050625251377474
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 16,
+      "differing": 7551,
+      "of": 8192,
+      "ulps": 7116,
+      "maxRowRel": 0.0000013050625251377474
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 32,
+      "differing": 7583,
+      "of": 8192,
+      "ulps": 9071,
+      "maxRowRel": 0.0000014681953407799657
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 64,
+      "differing": 7566,
+      "of": 8192,
+      "ulps": 5993,
+      "maxRowRel": 0.0000013866289329588565
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 128,
+      "differing": 7472,
+      "of": 8192,
+      "ulps": 7318,
+      "maxRowRel": 0.0000011786995784734567
+    },
+    {
+      "probe": "reassoc",
+      "N": 256,
+      "D": 32,
+      "B": 256,
+      "differing": 0,
+      "of": 8192,
+      "ulps": 0,
+      "maxRowRel": 0
+    },
+    {
+      "probe": "associativity",
+      "trials": 20000,
+      "agree": 3547,
+      "disagree": 16453,
+      "worstRel": 1.3302528225304387e-7
+    },
+    {
+      "probe": "staircase",
+      "step": 0.01,
+      "p0Rel": 4.955919929867635e-7,
+      "p3Rel": 2.4240530102948354e-7,
+      "ratio": 2.033443047458334,
+      "p4Rel": 1.7219767285360602e-7
+    },
+    {
+      "probe": "staircase",
+      "step": 0.05,
+      "p0Rel": 5.22329382165212e-7,
+      "p3Rel": 6.118514973938508e-7,
+      "ratio": 2.5195393693201584,
+      "p4Rel": 5.922406159676045e-7
+    },
+    {
+      "probe": "staircase",
+      "step": 0.1,
+      "p0Rel": 0.0000014390013419852806,
+      "p3Rel": 0.0000012091469719477928,
+      "ratio": 1.138258032921702,
+      "p4Rel": 0.0000013240741569665368
+    },
+    {
+      "probe": "staircase",
+      "step": 0.2,
+      "p0Rel": 0.000003115404124359387,
+      "p3Rel": 0.0000033048550445482733,
+      "ratio": 1.175057486978777,
+      "p4Rel": 0.0000033048550445482733
+    },
+    {
+      "probe": "staircase",
+      "step": 0.4,
+      "p0Rel": 0.000007645706019601369,
+      "p3Rel": 0.000007645706019601369,
+      "ratio": 1.0105517226078882,
+      "p4Rel": 0.000007645706019601369
+    },
+    {
+      "probe": "staircase",
+      "step": 0.8,
+      "p0Rel": 0.000013947962348862775,
+      "p3Rel": 0.000013844934001836579,
+      "ratio": 1.032270366179545,
+      "p4Rel": 0.000013844934001836579
+    },
+    {
+      "probe": "subnormal",
+      "N": 4096,
+      "gap": 10,
+      "m": 1000,
+      "Lref": 3095.05224609375,
+      "Lfold": 3095.05224609375,
+      "relDiff": 0,
+      "prediction": 0.18595811230713793
+    },
+    {
+      "probe": "subnormal",
+      "N": 4096,
+      "gap": 20,
+      "m": 1000,
+      "Lref": 3095,
+      "Lfold": 3095,
+      "relDiff": 0,
+      "prediction": 0.000008442485237508333
+    },
+    {
+      "probe": "subnormal",
+      "N": 4096,
+      "gap": 30,
+      "m": 1000,
+      "Lref": 3095,
+      "Lfold": 3095,
+      "relDiff": 0,
+      "prediction": 3.8328823680369356e-10
+    },
+    {
+      "probe": "subnormal",
+      "N": 4096,
+      "gap": 40,
+      "m": 1000,
+      "Lref": 3095,
+      "Lfold": 3095,
+      "relDiff": 0,
+      "prediction": 1.7401259029674348e-14
+    },
+    {
+      "probe": "subnormal",
+      "N": 4096,
+      "gap": 60,
+      "m": 1000,
+      "Lref": 3095,
+      "Lfold": 3095,
+      "relDiff": 0,
+      "prediction": 3.5866668084004946e-23
+    },
+    {
+      "probe": "subnormal",
+      "N": 4096,
+      "gap": 100,
+      "m": 1000,
+      "Lref": 3095,
+      "Lfold": 3095,
+      "relDiff": 0,
+      "prediction": 1.5237431197781345e-40
+    },
+    {
+      "probe": "subnormal",
+      "N": 4096,
+      "gap": 160,
+      "m": 1000,
+      "Lref": 3095,
+      "Lfold": 3095,
+      "relDiff": 0,
+      "prediction": 1.3342673027922007e-66
+    },
+    {
+      "probe": "overflow",
+      "score": 282.8427429199219,
+      "p0": {
+        "maxAbs": 0,
+        "maxRowRel": 0,
+        "maxRatio": 0,
+        "nNaN": 0,
+        "materiallyWorse": 0
+      },
+      "p2": {
+        "maxAbs": 0,
+        "maxRowRel": 0,
+        "maxRatio": 0,
+        "nNaN": 0,
+        "materiallyWorse": 0
+      },
+      "p3": {
+        "maxAbs": 0,
+        "maxRowRel": 0,
+        "maxRatio": 0,
+        "nNaN": 0,
+        "materiallyWorse": 0
+      },
+      "p5": {
+        "maxAbs": 0,
+        "maxRowRel": 0,
+        "maxRatio": 0,
+        "nNaN": 256,
+        "materiallyWorse": 0
+      }
+    },
+    {
+      "probe": "r1",
+      "N": 16,
+      "D": 8,
+      "differing": 105,
+      "of": 128,
+      "ulps": 50,
+      "maxRowRel": 4.6123470553952767e-7
+    },
+    {
+      "probe": "r1",
+      "N": 64,
+      "D": 16,
+      "differing": 878,
+      "of": 1024,
+      "ulps": 1744,
+      "maxRowRel": 4.6442245352524505e-7
+    },
+    {
+      "probe": "r1",
+      "N": 64,
+      "D": 64,
+      "differing": 3466,
+      "of": 4096,
+      "ulps": 49559,
+      "maxRowRel": 5.351488754440993e-7
+    },
+    {
+      "probe": "r1",
+      "N": 256,
+      "D": 32,
+      "differing": 7753,
+      "of": 8192,
+      "ulps": 23132,
+      "maxRowRel": 0.0000014720426612176046
+    },
+    {
+      "probe": "r1",
+      "N": 256,
+      "D": 128,
+      "differing": 31411,
+      "of": 32768,
+      "ulps": 96996,
+      "maxRowRel": 0.0000015287675840121486
+    },
+    {
+      "probe": "r1",
+      "N": 512,
+      "D": 64,
+      "differing": 31008,
+      "of": 32768,
+      "ulps": 13075,
+      "maxRowRel": 0.0000018636852672218496
+    },
+    {
+      "probe": "class",
+      "cls": "normal",
+      "N": 256,
+      "D": 64,
+      "p0Rel": 0.0000013620469392572358,
+      "p3Rel": 0.0000012460786180538,
+      "ratio": 9.852758326155227,
+      "materiallyWorse": 84
+    },
+    {
+      "probe": "class",
+      "cls": "uniform",
+      "N": 256,
+      "D": 64,
+      "p0Rel": 9.141071525615795e-7,
+      "p3Rel": 9.108288806596603e-7,
+      "ratio": 7.640586434932672,
+      "materiallyWorse": 59
+    },
+    {
+      "probe": "class",
+      "cls": "wide",
+      "N": 256,
+      "D": 64,
+      "p0Rel": 0.000018498224264490436,
+      "p3Rel": 0.000018515359822680777,
+      "ratio": 1.6571457708262238,
+      "materiallyWorse": 0
+    },
+    {
+      "probe": "traffic",
+      "N": 512,
+      "D": 64,
+      "unfused": 1966080,
+      "tiledResident": 131072,
+      "tiledStreaming": 589824,
+      "blocks": 8,
+      "ratioResident": 15,
+      "ratioStreaming": 3.3333333333333335
+    },
+    {
+      "probe": "traffic",
+      "N": 2048,
+      "D": 64,
+      "unfused": 29884416,
+      "tiledResident": 524288,
+      "tiledStreaming": 8650752,
+      "blocks": 32,
+      "ratioResident": 57,
+      "ratioStreaming": 3.4545454545454546
+    },
+    {
+      "probe": "traffic",
+      "N": 4096,
+      "D": 128,
+      "unfused": 119537664,
+      "tiledResident": 2097152,
+      "tiledStreaming": 68157440,
+      "blocks": 64,
+      "ratioResident": 57,
+      "ratioStreaming": 1.7538461538461538
+    },
+    {
+      "probe": "traffic",
+      "N": 8192,
+      "D": 128,
+      "unfused": 473956352,
+      "tiledResident": 4194304,
+      "tiledStreaming": 270532608,
+      "blocks": 128,
+      "ratioResident": 113,
+      "ratioStreaming": 1.751937984496124
+    },
+    {
+      "probe": "relation-constants",
+      "kappa1": {
+        "P1": 178,
+        "P2": 13,
+        "P3": 13,
+        "P4/64": 5,
+        "P4/16": 6
+      },
+      "kappa2": {
+        "P1": 173,
+        "P2": 11,
+        "P3": 12,
+        "P4/64": 5,
+        "P4/16": 6
+      },
+      "kappa4": {
+        "P1": 165,
+        "P2": 10,
+        "P3": 11,
+        "P4/64": 5,
+        "P4/16": 5
+      },
+      "rmsKappa2": {
+        "P1": 63,
+        "P2": 1,
+        "P3": 2,
+        "P4/64": 1,
+        "P4/16": 1
+      }
+    },
+    {
+      "probe": "slides",
+      "label": "no slide at all (P0)",
+      "floorElementwise": 0,
+      "whereE": "",
+      "floorRms": 0,
+      "whereR": ""
+    },
+    {
+      "probe": "slides",
+      "label": "output slide only (R1, required by the fold)",
+      "floorElementwise": 10,
+      "whereE": "512x64 normal",
+      "floorRms": 1,
+      "whereR": "128x16 normal"
+    },
+    {
+      "probe": "slides",
+      "label": "score slide only (R1, optional)",
+      "floorElementwise": 173,
+      "whereE": "256x128 wide",
+      "floorRms": 63,
+      "whereR": "256x128 wide"
+    },
+    {
+      "probe": "slides",
+      "label": "both slides",
+      "floorElementwise": 173,
+      "whereE": "256x128 wide",
+      "floorRms": 63,
+      "whereR": "256x128 wide"
+    }
+  ]
+}
