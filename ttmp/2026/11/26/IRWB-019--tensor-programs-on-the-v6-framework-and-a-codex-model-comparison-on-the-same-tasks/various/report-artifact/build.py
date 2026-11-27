@@ -5,7 +5,7 @@ import html, json, os
 HERE = os.path.dirname(os.path.abspath(__file__))
 REV = 'e72865e'
 GH = f'https://github.com/wesen/2026-11-24--compiler-workbench'
-REFS = json.load(open(os.path.join(HERE, '..', 'references.json')))
+REFS = json.load(open(os.path.join(HERE, 'references.json')))
 T19 = 'ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks'
 TK = {
     'T1': 'ttmp/2026/11/26/IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes',
