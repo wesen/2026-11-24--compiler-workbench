@@ -148,3 +148,9 @@ access); that the walk bound detects every header-less cycle.
 - Later: a flow-sensitive BTA; generalizing a local to dynamic when the budget runs out instead of refusing;
   binding buffers that callees receive; a pipeline entry for `RESIDUAL_PIPELINE` in `PIPELINES` (left out so the
   corpus-wide pipeline sweeps are unchanged).
+
+## Validation
+
+`tests/typed`, `tests/framework`, `tests/workbench`: 417 tests, 413 pass, 3 skipped; the one failure was the
+workbench's registered-pass count (15 → 17 with `promote` and `webs`), updated in
+`tests/workbench/strategies.test.mjs`, which then passes.

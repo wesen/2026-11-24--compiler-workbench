@@ -103,7 +103,10 @@ test('wb.pass: the kernel builder from a project script; applied, listed, and us
 test('wb.compiler and wb.source: declarations with ids and versions, and where each is defined', () => {
   const { wb } = makeWb();
   const c = wb.compiler();
-  assert.equal(c.passes.length, 15); // the eleven of Compiler Workbench, bcm and dfe; IRWB-003's rotate, inline
+  // the eleven of Compiler Workbench, bcm and dfe; IRWB-003's rotate, inline; IRWB-036-F's promote, webs
+  assert.equal(c.passes.length, 17);
+  assert.match(c.passes.find(x => x.name === 'promote').source, /^src\/typed\/promote\.ts:\d+$/);
+  assert.match(c.passes.find(x => x.name === 'webs').source, /^src\/typed\/webs\.ts:\d+$/);
   assert.match(c.passes.find(x => x.name === 'rotate').source, /^src\/typed\/rotate\.ts:\d+$/);
   assert.match(c.passes.find(x => x.name === 'inline').source, /^src\/typed\/inline\.ts:\d+$/);
   const licm = c.passes.find(x => x.name === 'licm');
