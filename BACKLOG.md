@@ -25,7 +25,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | T3b    | parallel terms, serial fold, and a cost gate for fusion                     | done (IRWB-030-E merged, `49cb9c7`; all exact, nine never slower)     | S–M    |
 | T4     | tolerance calibration with mutants                                          | queued 4th (before the tolerance-checked stages)                      | M      |
 | T5     | implement the streaming-attention derivation                                | queued 8th                                                            | L      |
-| T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | running (IRWB-033, ten cells, from 2026-11-27)                        | M–L    |
+| T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | done (IRWB-033, ten cells); hidden evaluation running, merge pending  | M–L    |
 | T7     | autotuning under noisy GPU cost                                             | queued 7th                                                            | M      |
 | T8     | ONNX importer into Tix                                                      | idea                                                                  | M      |
 | T9     | a GPU timing protocol                                                       | prep, queued 2nd (coordinator, during T3)                             | S      |
@@ -36,15 +36,15 @@ Keep it current: update an entry when a round finishes, move items between statu
 | T13    | exhaustively verified fast intrinsics (`exp`, `tanh`)                       | idea, from R2                                                         | M      |
 | T14    | a parallel fold that is bit-identical to the sequential one                 | idea, from R2                                                         | M      |
 | T15    | acceptance by proof: normal-form equivalence and symbolic fingerprints      | idea, from R2; with F21                                               | M      |
-| D1     | why `speed` slows the bytecode VM                                           | running (IRWB-034, seven cells)                                       | S–M    |
-| D2     | missed optimizations from provenance                                        | ready                                                                 | M      |
-| B1     | specialize the VM on its bytecode                                           | running (IRWB-036, seven cells)                                       | M–L    |
+| D1     | why `speed` slows the bytecode VM                                           | done (IRWB-034; Fable merged)                                         | S–M    |
+| D2     | missed optimizations from provenance                                        | done (IRWB-037, seven cells); hidden evaluation running, merge pending | M      |
+| B1     | specialize the VM on its bytecode                                           | done (IRWB-036, seven cells); merge pending (Opus the candidate)      | M–L    |
 | B2     | specialize Candela on its scene buffers                                     | idea                                                                  | L      |
-| A0     | measure: share of edits that are local value rewrites                       | running (IRWB-035, seven cells)                                       | S      |
+| A0     | measure: share of edits that are local value rewrites                       | done (IRWB-035, seven cells); merge pending                           | S      |
 | A1     | e-graph over value trees with verified rules                                | decision                                                              | L      |
 | C1     | calibrated gate                                                             | prep                                                                  | M      |
 | E1     | incremental checking per function                                           | prep                                                                  | L      |
-| F1–F35 | framework and workbench fixes found by agents                               | 19 open (F1, F7–F12, F15, F18, F22, F27–F35)                          | S each |
+| F1–F38 | framework and workbench fixes found by agents                               | 22 open (F1, F7–F12, F15, F18, F22, F27–F38)                          | S each |
 | M1–M5  | agent methodology                                                           | running / ready                                                       | —      |
 
 ---
@@ -336,7 +336,7 @@ T8 (ONNX) is not queued.
 
 The six programs added in IRWB-012 to 017 (bytecode VM, SHA-256/ChaCha20, LZ, regex, f32 DSP, chess) gave the earlier programmes (A to E, reports 8 to 10) concrete targets.
 
-### D1: why `speed` slows the bytecode VM _(ready)_
+### D1: why `speed` slows the bytecode VM _(done: IRWB-034, Fable merged)_
 
 - **What we know:**
   - At `n = 12, seed = 8`, `speed` takes Fibonacci from 7,678 to 9,286 RV32 instructions and checksum from 6,874 to 8,218. It is the only one of the six programs the optimizer makes worse (IRWB-012 final report).
@@ -346,7 +346,7 @@ The six programs added in IRWB-012 to 017 (bytecode VM, SHA-256/ChaCha20, LZ, re
 - **Measure:** VM instructions at or below r0; corpus totals with no regression; parity clean.
 - **Depends on:** nothing.
 
-### D2: missed optimizations from provenance _(ready)_
+### D2: missed optimizations from provenance _(done: IRWB-037, seven cells; merge pending)_
 
 - **What we know:**
   - Regex after `speed`: 8,040 instructions, against the reference compiler's 6,628.
@@ -358,7 +358,7 @@ The six programs added in IRWB-012 to 017 (bytecode VM, SHA-256/ChaCha20, LZ, re
 - **Measure:** instructions on the six programs and the corpus; every added rule verified.
 - **Depends on:** nothing. It shares its attribution method with D1.
 
-### B1: specialize the VM on its bytecode, a first Futamura projection _(ready)_
+### B1: specialize the VM on its bytecode, a first Futamura projection _(done: IRWB-036, seven cells; merge pending)_
 
 - **What we know:**
   - Hand-specialized loops take 75 and 74 instructions, against 7,678 and 6,874 for the general VM.
@@ -382,7 +382,7 @@ The six programs added in IRWB-012 to 017 (bytecode VM, SHA-256/ChaCha20, LZ, re
 - **Measure:** instructions per pixel; frames bit-identical; automatic specialization against the gallery's hand staging.
 - **Depends on:** B1.
 
-### A0: what share of edits are local value rewrites _(ready, measurement only)_
+### A0: what share of edits are local value rewrites _(done: IRWB-035, seven cells; merge pending)_
 
 - **What we know:** programme A's founding hypothesis, which is not yet measured: if most O2/`speed` value edits are local rewrites, a function's equivalence can be assembled from per-rule proofs.
 - **What we don't know:** the share, per pass and per program.
@@ -512,6 +512,9 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
     - The two findings looked contradictory, but they are one gap: the check is only as good as the declared lists. For a heterogeneous lowering, such as Tix statements into CUDA kernels, nothing derives the target list. T3's emitters produce an artifact without entities (`defineIR<{fn, source}>`).
   - _Needed:_ an optional entity enumeration on `defineIR`, as Opus proposed, so the manager can check the declared lists against both revisions.
   - _Measure:_ a probe with a made-up ID is rejected, and the existing correspondences still pass.
+- **F36: bce is unsound without its meaning gate** _(ready, S; found by IRWB-037-G, Fable, D2)_. bce accepts a dominating `i < buf.length` when the index has the same *set* of reaching definitions at the branch and at the check. In IRWB-037-G's `scripts/13-probe-bce-same-defs.mjs` the only assignment to `i` lies between the two and reaches both: bce removes the check, and only the meaning check rejects the pass (16 of 40 cases disagree). Fix: compare SSA names (values), not definition sets.
+- **F37: `typed.ranges` loses a loop counter's lower bound under an inner loop** _(ready, S–M; IRWB-037-G)_. When an inner loop's head widens, an outer counter's interval loses its lower bound (IRWB-037-G `scripts/14-probe-chess-shapes.mjs`: `dense` in [-2^31, 63]), so `strength` keeps `dense / 8`. D2's `guards` has its own rule meanwhile; one range analysis with a correct widening (and narrowing) should serve both (R3's `lattice` primitive).
+- **F38: `lvn` throws `absent` when run a second time** _(ready, S; IRWB-037-G)_. On regex-nfa, a second `lvn` before rotate throws. Where it runs, a second `lvn` saves 1,324 instructions over the 49 projects, so a pass that is not idempotent also blocks a measured gain.
 
 ## 4. Agent methodology
 
