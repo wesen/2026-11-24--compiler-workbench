@@ -20,3 +20,11 @@ Implemented, tested and measured: fusion in a planner the emitter consumes; all 
 
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3-ds-h-irwb-029-g/src/tensor/cuda-source.ts — Fused and unfused emission
 - /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3-ds-h-irwb-029-g/src/tensor/fusion.ts — Fusion planner
+
+## 2026-11-26
+
+Final report: fusion ledger, kernel counts, benchmark times, counted global traffic against the 244 GB/s floor, contract cost, and the framework finding that today's CUDA output port cannot name kernels.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t3-ds-h-irwb-029-g/ttmp/2026/11/26/IRWB-029-G--checked-fusion-for-tix-on-the-gb10/reference/02-report.md — Final report
