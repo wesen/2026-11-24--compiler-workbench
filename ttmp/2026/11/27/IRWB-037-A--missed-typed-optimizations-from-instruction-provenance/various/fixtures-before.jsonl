@@ -1,0 +1,3 @@
+{"id":"regex-nfa","cases":1,"limited":0,"bothTrap":0,"reference":6628,"O2":7882,"O2Tuned":7540,"speed":6933,"speedTuned":5405,"rejected":{"O2":[],"speed":[]},"rules":{"O2":{},"speed":{}}}
+{"id":"lz-roundtrip","cases":100,"limited":0,"bothTrap":0,"reference":156405,"O2":191399,"O2Tuned":186703,"speed":159079,"speedTuned":156782,"rejected":{"O2":[],"speed":[]},"rules":{"O2":{},"speed":{}}}
+{"id":"chess-search","cases":1,"limited":0,"bothTrap":0,"reference":10827760,"O2":14444277,"O2Tuned":13894311,"speed":11021307,"speedTuned":10038193,"rejected":{"O2":[],"speed":[]},"rules":{"O2":{},"speed":{}}}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "7fea43d935fcc7870dba1a0d220aa26ebc8be4a90b10652156c4e3d5f5a71faf",
+  "request": {
+    "ticket": "IRWB-037-A",
+    "status": "complete",
+    "intent": "",
+    "entry": "Qualified fixed-bound BCE, the verified Horner rule, and the paired corpus measurements"
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-928c822c1ed799c5340cf2ff43140f80",
+    "state": "committed",
+    "created_at": "2026-11-27T18:01:52.511738025Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "3d047f71aee26b3eb06e9ce2a468b8340b467c4b2d38ab42fd17c6cb1a94fea9",
+      "index.md": "2cfdaa5b4eb0427076ff931cfb54bde74935a115d9d5c2d3ccfcceaa8af06bbb"
+    },
+    "after": {
+      "changelog.md": "fa1a1119a64a05868cc67ea72bc581b6abd2dbbcb81c6191040d796190fc636b",
+      "index.md": "862aefc377d49e26c600270bfc62b87dbb02278fc23bae40f605f2e446d5845b"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "3d047f71aee26b3eb06e9ce2a468b8340b467c4b2d38ab42fd17c6cb1a94fea9",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKUXVhbGlmaWVkIGZpeGVkLWJvdW5kIEJDRSwgdGhlIHZlcmlmaWVkIEhvcm5lciBydWxlLCBhbmQgdGhlIHBhaXJlZCBjb3JwdXMgbWVhc3VyZW1lbnRzCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "2cfdaa5b4eb0427076ff931cfb54bde74935a115d9d5c2d3ccfcceaa8af06bbb",
+      "after": "LS0tClRpdGxlOiBNaXNzZWQgVHlwZWQgb3B0aW1pemF0aW9ucyBmcm9tIGluc3RydWN0aW9uIHByb3ZlbmFuY2UKVGlja2V0OiBJUldCLTAzNy1BClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBwZXJmb3JtYW5jZQpEb2NUeXBlOiBpbmRleApJbnRlbnQ6IGxvbmctdGVybQpPd25lcnM6IFtdClJlbGF0ZWRGaWxlczogW10KRXh0ZXJuYWxTb3VyY2VzOiBbXQpTdW1tYXJ5OiBQcm92ZW5hbmNlLWd1aWRlZCBib3VuZHMgZWxpbWluYXRpb24gYW5kIGEgdmVyaWZpZWQgbG93LWJpdCBoYXNoIHJld3JpdGUKTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjdUMTM6MDE6NTIuNTExNTk2MTc4LTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIE1pc3NlZCBUeXBlZCBvcHRpbWl6YXRpb25zIGZyb20gaW5zdHJ1Y3Rpb24gcHJvdmVuYW5jZQoKIyMgT3ZlcnZpZXcKCkluc3RydWN0aW9uIGF0dHJpYnV0aW9uIGlkZW50aWZpZWQgcmVkdW5kYW50IGZpeGVkIGJvdW5kcyBpbiB0aGUgVGhvbXBzb24gcmVnZXggbWF0Y2hlciBhbmQgTFogY29tcHJlc3Nvci4gVGhlIGNoZWNrZWQgVHlwZWQgcGlwZWxpbmUgbm93IGVsaW1pbmF0ZXMgdGhvc2UgY2hlY2tzIGFuZCBzaW1wbGlmaWVzIHRoZSBtZWFzdXJlZCBMWiBoYXNoIHdpdGggYSB2ZXJpZmllZCBydWxlLgoKLSBbRGVzaWduXShkZXNpZ24tZG9jLzAxLWZpbmQtbWlzc2VkLW9wdGltaXphdGlvbnMtZnJvbS1ob3QtcnYzMi1jb2RlLm1kKQotIFtSZXBvcnQgYW5kIGNvcnB1cyBtZWFzdXJlbWVudHNdKHJlZmVyZW5jZS8wMi1tZWFzdXJlbWVudHMtYW5kLXJlc3VsdHMubWQpCi0gW0ltcGxlbWVudGF0aW9uIGRpYXJ5XShyZWZlcmVuY2UvMDEtaW1wbGVtZW50YXRpb24tZGlhcnkubWQpCi0gW1Rhc2tzXSh0YXNrcy5tZCkKLSBbQ2hhbmdlbG9nXShjaGFuZ2Vsb2cubWQpCg=="
+    }
+  ]
+}

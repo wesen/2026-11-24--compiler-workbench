@@ -82,7 +82,7 @@ The authored request follows verbatim.
 
 ## Step 2 — Use the hot sites to find a contextual pass change and a rule
 
-The default regex image and the reference execute exactly 861 adds, 861 shifts and 134 multiplies each. The opcode subtraction therefore moved the investigation from scaled address arithmetic to branches and immediate materialization. The hot site listing identified three repeated `state >=u 9` guards and the repeated marks of `first` and `second`, with no measured direct reduction on the target guards.
+The default regex image and the reference execute exactly 861 adds, 861 shifts and 134 multiplies each. The opcode subtraction therefore moved the investigation from scaled address arithmetic to branches and immediate materialization. The hot site listing identified three repeated `state >=u 9` guards and the repeated marks of `first` and `second`, with no measured direct reduction on the copy-and-clear guards.
 
 I reused the interval dataflow analysis and BCE's existing transaction, rather than building a separate dominance search. The benchmark then exposed a hot LZ hash that did not have a simplifier edit. The constant arithmetic was visible in the statement text, although the reference uses the same two multiplies per hash. Optimizing that common inefficiency outran the reference.
 
@@ -102,3 +102,21 @@ I reused the interval dataflow analysis and BCE's existing transaction, rather t
 ### Review
 
 Check the boundary and join cases in the fixed-bounds regression, and the evaluation order of the three Horner operands on both sides. The single-rule verifier evidence is regenerated independently of the old evidence, which includes multi-billion-case checks. The paired comparisons and rejected variants are reported in the results document.
+
+## Step 3 — Run the named pipelines and qualify the result
+
+I ran the final measured pipeline through the production pass table, then replayed the isolated candidate study by omitting Horner with the existing table compiler. The replay reproduced the prototype's BCE-only and Horner counts. The CLI exposed untouched hot sites for the regex fixture, and the hottest reference-profile LZ case attributed 74 instructions of direct reduction to the rule.
+
+### What worked
+
+- Implementation committed as `16b8524`. The build and dedicated typed, framework and workbench groups passed. The only skips were the default opt-in Candela tests.
+- The parity and reference checks each agreed on 8,286 decided cases. The paired corpus benchmark found four improved projects, with no regressions in default or tuned O2 and speed.
+- The baseline and final runs used the same reference compiler, call construction and comparison mode. The measured reference totals match across both runs.
+
+### What did not work
+
+- The first targeted fixed-bounds regression used `runPipeline` without an analysis manager. It failed with `Cannot read properties of undefined (reading 'analyse')` at `applyPass`. Supplying `new AnalysisManager()` fixed the test setup. The corrected regression and the complete typed group passed.
+
+### Review
+
+Start with the [report](02-measurements-and-results.md). Run `scripts/03-candidates.mjs regex-nfa lz-roundtrip` for checked ablations and `scripts/05-summarize.mjs` on the paired JSONL inputs to regenerate the table.

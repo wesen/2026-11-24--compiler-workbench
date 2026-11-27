@@ -1,0 +1,321 @@
+Attribution call index: 93
+roundTrip(1024, 1072, 1136, 1): r0 3435 -> r10 2664 instructions (-771)
+
+revision       instructions   step
+r0 ingest              3435
+r1 inline              2983   -452
+r2 cfg                 2949   -34
+r3 simplify            2872   -77
+r4 licm                2768   -104
+r5 bce                 2708   -60
+r6 subst               2708   0
+r7 subst               2708   0
+r8 cfg                 2708   0
+r9 subst               2708   0
+r10 rotate             2664   -44
+
+   delta    after  groups  decision
+    +360      708      21  inline: indirect
+    +163     1600      23  subst: replace
+     +19       19       1  licm: insert (hoisted out of loop:compress@bb:compress.39)
+      +6       46       1  licm: indirect, frame
+      +3       44       1  rotate: replaceStmt (loop test duplicated into bb:compress.38; loop test duplicated into bb:compress.56)
+      +3        8       1  rotate: replaceStmt (loop test duplicated into bb:roundTrip.n10; loop test duplicated into bb:roundTrip.n6)
+      +2       43       1  cfg: indirect, frame
+      +2        2       2  licm: insert (hoisted out of loop:compress@bb:compress.1)
+       0      418      15  cfg: move
+       0        0       3  cfg: move+remove (merged with its only successor)
+       0       37       2  cfg: move+retarget
+       0        0       6  cfg: remove (merged with its only successor)
+       0      203      10  cfg: retarget
+       0        0       1  licm: insert+replace (hoisted out of loop:compress@bb:compress.10)
+       0       20       1  rotate: replaceStmt (loop test duplicated into bb:compress.0; loop test duplicated into bb:compress.40)
+       0       20       1  rotate: replaceStmt (loop test duplicated into bb:compress.15; loop test duplicated into bb:compress.25)
+       0       30       1  rotate: replaceStmt (loop test duplicated into bb:compress.33; loop test duplicated into bb:compress.4)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:decompress.0; loop test duplicated into bb:decompress.6)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:decompress.5; loop test duplicated into bb:decompress.9)
+       0       20       1  rotate: replaceStmt (loop test duplicated into bb:roundTrip.0; loop test duplicated into bb:roundTrip.n7)
+       0      127       6  simplify: replace (!(<) is >=)
+      -2       41       1  rotate: indirect, frame
+      -3       43       1  bce: indirect, frame
+      -3       40       1  simplify: indirect, frame
+      -5        0       1  inline: inline+remove (the call to decompress, inlined)
+     -36        0       4  cfg: indirect
+     -48        0      16  rotate: replaceStmt
+     -57        0       3  bce: replaceStmt (range is within the fixed bound 16)
+     -67       41       1  inline: indirect, frame
+     -74      111       3  simplify: replace (horner31-mask15: 31 ≡ −1 modulo 16)
+    -131      331       6  licm: replace
+    -163        0      23  subst: remove (substituted into its only reader)
+    -740        0       2  inline: inline+remove (the call to hash3, inlined)
+
+Dynamic instructions by final statement, over all cases:
+8100 s:compress.38 current = load16[caddr(input, (i + len))+4] {"add":2700,"lw":1350,"bltu":1350,"slli":1350,"lhu":1350}
+  no direct reduction on attribution call
+  6 subst 20 subst: replace
+8100 s:compress.40 earlier = load16[caddr(input, (candidate + len))+4] {"add":2700,"lw":1350,"bltu":1350,"slli":1350,"lhu":1350}
+  no direct reduction on attribution call
+  7 subst 20 subst: replace
+7400 s:compress.1 zero frame+64, 96 bytes {"addi":2600,"sw":2400,"bne":2400}
+  no direct reduction on attribution call
+6246 s:compress.115 hash3_b1 = load16[caddr(input, (p + 1))+4] {"addi":1041,"lw":1041,"bltu":1041,"slli":1041,"add":1041,"lhu":1041}
+  no direct reduction on attribution call
+  1 inline 100 inline: indirect
+  7 subst 20 subst: replace
+6246 s:compress.116 hash3_c1 = load16[caddr(input, (p + 2))+4] {"addi":1041,"lw":1041,"bltu":1041,"slli":1041,"add":1041,"lhu":1041}
+  no direct reduction on attribution call
+  1 inline 100 inline: indirect
+  9 subst 20 subst: replace
+6246 s:compress.92 store32[(inv2 + (p << 2))+0] = load32[(inv1 + (bucket << 2))+0] {"slli":2082,"add":2082,"lw":1041,"sw":1041}
+  4 licm -20 licm: replace
+  8 cfg 0 cfg: move
+  9 subst 40 subst: replace
+5510 s:compress.67 store16[caddr(packed, k)+4] = load16[caddr(input, i)+4] {"lw":1102,"bltu":1102,"slli":1102,"add":1102,"lhu":551,"sh":551}
+  no direct reduction on attribution call
+  6 subst 0 subst: replace
+  7 subst 0 subst: replace
+5205 s:compress.114 hash3_a1 = load16[caddr(input, p)+4] {"lw":1041,"bltu":1041,"slli":1041,"add":1041,"lhu":1041}
+  no direct reduction on attribution call
+  1 inline 100 inline: indirect
+  6 subst 0 subst: replace
+4500 (frame/backend) (frame/backend) {"addi":1100,"sw":1600,"lw":1600,"ret":200}
+  no direct reduction on attribution call
+4164 s:compress.97 store32[(inv1 + (bucket << 2))+0] = (p + 1) {"slli":1041,"add":1041,"addi":1041,"sw":1041}
+  4 licm -20 licm: replace
+  8 cfg 0 cfg: move
+4050 s:roundTrip.30 decompress_cell = load16[caddr(decompress_output, (decompress_written - decompress_distance))+4] {"sub":675,"lw":675,"bltu":675,"slli":675,"add":675,"lhu":675}
+  no direct reduction on attribution call
+  6 subst 4 subst: replace
+3798 s:compress.109 hash3_b = load16[caddr(input, (i + 1))+4] {"addi":633,"lw":633,"bltu":633,"slli":633,"add":633,"lhu":633}
+  no direct reduction on attribution call
+  1 inline 85 inline: indirect
+  7 subst 17 subst: replace
+3798 s:compress.110 hash3_c = load16[caddr(input, (i + 2))+4] {"addi":633,"lw":633,"bltu":633,"slli":633,"add":633,"lhu":633}
+  no direct reduction on attribution call
+  1 inline 85 inline: indirect
+  9 subst 17 subst: replace
+3675 s:roundTrip.15 decompress_token = load16[caddr(decompress_packed, decompress_k)+4] {"lw":735,"bltu":735,"slli":735,"add":735,"lhu":735}
+  no direct reduction on attribution call
+  6 subst 0 subst: replace
+3375 s:roundTrip.32 store16[caddr(decompress_output, decompress_written)+4] = decompress_cell {"lw":675,"bltu":675,"slli":675,"add":675,"sh":675}
+  no direct reduction on attribution call
+  7 subst 0 subst: replace
+3165 s:compress.108 hash3_a = load16[caddr(input, i)+4] {"lw":633,"bltu":633,"slli":633,"add":633,"lhu":633}
+  no direct reduction on attribution call
+  1 inline 85 inline: indirect
+  6 subst 0 subst: replace
+3123 s:compress.118 t33 = (((hash3_a1 - hash3_b1) + hash3_c1) & 15) {"sub":1041,"add":1041,"andi":1041}
+  2 cfg 0 cfg: move
+  3 simplify -40 simplify: replace (horner31-mask15: 31 ≡ −1 modulo 16)
+2772 s:compress.32 t32 = ((i + len) < n) {"add":1386,"slt":1386}
+  no direct reduction on attribution call
+2755 s:roundTrip.18 store16[caddr(decompress_output, decompress_written)+4] = decompress_token {"lw":551,"bltu":551,"slli":551,"add":551,"sh":551}
+  no direct reduction on attribution call
+  6 subst 0 subst: replace
+2452 s:compress.77 if ((p + 3) <= n) goto .42 else .56 {"addi":1226,"blt":1226}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: retarget
+1899 s:compress.112 t30 = (((hash3_a - hash3_b) + hash3_c) & 15) {"sub":633,"add":633,"andi":633}
+  2 cfg 0 cfg: move
+  3 simplify -34 simplify: replace (horner31-mask15: 31 ≡ −1 modulo 16)
+1899 s:compress.19 link = load32[(inv1 + (bucket << 2))+0] {"slli":633,"add":633,"lw":633}
+  4 licm -17 licm: replace
+  8 cfg 0 cfg: move
+1840 s:compress.71 store16[caddr(packed, k)+4] = ((128 | ((bestLen - 3) << 5)) | (bestDistance - 1)) {"lw":184,"bltu":184,"slli":368,"add":184,"addi":368,"ori":184,"or":184,"sh":184}
+  no direct reduction on attribution call
+  6 subst 5 subst: replace
+  7 subst 0 subst: replace
+1788 s:compress.57 link = load32[(inv + (candidate << 2))+0] {"slli":596,"add":596,"lw":596}
+  4 licm -13 licm: replace
+1717 s:compress.134 if (p >= inv3) goto .40 else .41 {"bge":1226,"jal":491}
+  3 simplify 0 simplify: replace (!(<) is >=)
+  4 licm -41 licm: replace
+  10 rotate 3 rotate: replaceStmt (loop test duplicated into bb:compress.38; loop test duplicated into bb:compress.56)
+1600 s:compress.0 zero frame+0, 64 bytes {"sw":1600}
+  no direct reduction on attribution call
+1470 s:compress.9 if ((i + 3) <= n) goto .4 else .35 {"addi":735,"blt":735}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: retarget
+1470 s:roundTrip.16 if ((decompress_token & 128) == 0) goto .n5 else .n6 {"andi":735,"bne":735}
+  no direct reduction on attribution call
+1397 s:compress.36 if !(t32) goto .20 else .21 {"bne":1397}
+  no direct reduction on attribution call
+1386 s:compress.33 goto .19 {"jal":1386}
+  no direct reduction on attribution call
+1350 s:compress.41 if (current != earlier) goto .20 else .25 {"bne":1350}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: retarget
+1229 s:compress.27 if !(t31) goto .35 else .15 {"beq":1229}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: retarget
+1226 s:compress.100 p = (p + 1) {"addi":1226}
+  no direct reduction on attribution call
+1166 s:roundTrip.39 if (decompress_copied >= decompress_len) goto .n7 else .n10 {"bge":675,"jal":491}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: retarget
+  3 simplify 0 simplify: replace (!(<) is >=)
+  10 rotate 3 rotate: replaceStmt (loop test duplicated into bb:roundTrip.n10; loop test duplicated into bb:roundTrip.n6)
+1041 s:compress.83 if (p >=u 24) goto .44 else .47 {"bgeu":1041}
+  no direct reduction on attribution call
+  1 inline -40 inline: indirect
+  2 cfg 0 cfg: move+retarget
+801 s:compress.45 len = (len + 1) {"addi":801}
+  no direct reduction on attribution call
+801 s:compress.128 if (len < 6) goto .17 else .18 {"blt":801}
+  no direct reduction on attribution call
+  1 inline -20 inline: indirect
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.15; loop test duplicated into bb:compress.25)
+770 s:compress.23 t31 = (visits < chainLimit) {"slt":770}
+  no direct reduction on attribution call
+770 s:compress.24 goto .13 {"jal":770}
+  no direct reduction on attribution call
+735 s:compress.63 advance = 1 {"addi":735}
+  no direct reduction on attribution call
+735 s:compress.64 if (bestLen < 3) goto .36 else .37 {"bge":735}
+  no direct reduction on attribution call
+  1 inline -19 inline: indirect
+735 s:compress.74 p = i {"addi":735}
+  no direct reduction on attribution call
+735 s:compress.123 inv3 = (i + advance) {"add":735}
+  no direct reduction on attribution call
+  4 licm 19 licm: insert (hoisted out of loop:compress@bb:compress.39)
+735 s:compress.133 if (p >= inv3) goto .40 else .41 {"blt":735}
+  3 simplify 0 simplify: replace (!(<) is >=)
+  4 licm -41 licm: replace
+  10 rotate 3 rotate: replaceStmt (loop test duplicated into bb:compress.38; loop test duplicated into bb:compress.56)
+735 s:compress.103 i = (i + advance) {"add":735}
+  no direct reduction on attribution call
+735 s:compress.104 k = (k + 1) {"addi":735}
+  no direct reduction on attribution call
+735 s:compress.132 if (i >= n) goto .2 else .3 {"bge":735}
+  no direct reduction on attribution call
+  3 simplify 0 simplify: replace (!(<) is >=)
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.0; loop test duplicated into bb:compress.40)
+735 s:compress.7 bestLen = 0 {"addi":735}
+  no direct reduction on attribution call
+735 s:compress.8 bestDistance = 0 {"addi":735}
+  no direct reduction on attribution call
+735 s:roundTrip.25 decompress_k = (decompress_k + 1) {"addi":735}
+  no direct reduction on attribution call
+735 s:roundTrip.37 if (decompress_k >= decompress_packedLen) goto .n3 else .n4 {"bge":735}
+  no direct reduction on attribution call
+  3 simplify 0 simplify: replace (!(<) is >=)
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:roundTrip.0; loop test duplicated into bb:roundTrip.n7)
+675 s:roundTrip.33 decompress_written = (decompress_written + 1) {"addi":675}
+  no direct reduction on attribution call
+675 s:roundTrip.34 decompress_copied = (decompress_copied + 1) {"addi":675}
+  no direct reduction on attribution call
+633 s:compress.20 visits = 0 {"addi":633}
+  no direct reduction on attribution call
+  8 cfg 0 cfg: move
+633 s:compress.129 if (link != 0) goto .11 else .12 {"beq":633}
+  no direct reduction on attribution call
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.33; loop test duplicated into bb:compress.4)
+596 s:compress.48 if (len > bestLen) goto .27 else .29 {"bge":596}
+  no direct reduction on attribution call
+  1 inline -9 inline: indirect
+  2 cfg 0 cfg: retarget
+596 s:compress.53 if (candidate >=u 24) goto .30 else .33 {"bgeu":596}
+  no direct reduction on attribution call
+  1 inline -13 inline: indirect
+  2 cfg 0 cfg: retarget
+596 s:compress.58 visits = (visits + 1) {"addi":596}
+  no direct reduction on attribution call
+596 s:compress.130 if (link != 0) goto .11 else .12 {"bne":596}
+  no direct reduction on attribution call
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.33; loop test duplicated into bb:compress.4)
+596 s:compress.28 candidate = (link - 1) {"addi":596}
+  no direct reduction on attribution call
+596 s:compress.29 len = 0 {"addi":596}
+  no direct reduction on attribution call
+596 s:compress.127 if (len < 6) goto .17 else .18 {"bge":596}
+  no direct reduction on attribution call
+  1 inline -20 inline: indirect
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.15; loop test duplicated into bb:compress.25)
+552 s:roundTrip.21 decompress_len = (((decompress_token >>> 5) & 3) + 3) {"srli":184,"andi":184,"addi":184}
+  no direct reduction on attribution call
+551 s:compress.68 goto .38 {"jal":551}
+  no direct reduction on attribution call
+551 s:roundTrip.19 decompress_written = (decompress_written + 1) {"addi":551}
+  no direct reduction on attribution call
+551 s:roundTrip.20 goto .n7 {"jal":551}
+  no direct reduction on attribution call
+500 s:roundTrip.0 t5 = compress(input, packed, chainLimit) {"addi":400,"jal":100}
+  no direct reduction on attribution call
+459 s:compress.25 t31 = 0 {"addi":459}
+  no direct reduction on attribution call
+368 s:roundTrip.22 decompress_distance = ((decompress_token & 31) + 1) {"andi":184,"addi":184}
+  no direct reduction on attribution call
+242 s:compress.49 bestLen = len {"addi":242}
+  no direct reduction on attribution call
+242 s:compress.50 bestDistance = (i - candidate) {"sub":242}
+  no direct reduction on attribution call
+200 s:compress.107 return k {"addi":100,"jal":100}
+  no direct reduction on attribution call
+200 s:roundTrip.3 return decompress_written {"addi":100,"jal":100}
+  no direct reduction on attribution call
+  1 inline 1 inline: indirect
+  2 cfg 0 cfg: move
+  6 subst 0 subst: replace
+184 s:compress.72 advance = bestLen {"addi":184}
+  no direct reduction on attribution call
+184 s:roundTrip.23 decompress_copied = 0 {"addi":184}
+  no direct reduction on attribution call
+184 s:roundTrip.38 if (decompress_copied >= decompress_len) goto .n7 else .n10 {"blt":184}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: retarget
+  3 simplify 0 simplify: replace (!(<) is >=)
+  10 rotate 3 rotate: replaceStmt (loop test duplicated into bb:roundTrip.n10; loop test duplicated into bb:roundTrip.n6)
+100 s:compress.2 n = load32[input+0] {"lw":100}
+  no direct reduction on attribution call
+100 s:compress.3 i = 0 {"addi":100}
+  no direct reduction on attribution call
+100 s:compress.4 k = 0 {"addi":100}
+  no direct reduction on attribution call
+100 s:compress.121 inv1 = frame+0 {"addi":100}
+  no direct reduction on attribution call
+  4 licm 1 licm: insert (hoisted out of loop:compress@bb:compress.1)
+100 s:compress.122 inv2 = frame+64 {"addi":100}
+  no direct reduction on attribution call
+  4 licm 1 licm: insert (hoisted out of loop:compress@bb:compress.1)
+100 s:compress.131 if (i >= n) goto .2 else .3 {"blt":100}
+  no direct reduction on attribution call
+  3 simplify 0 simplify: replace (!(<) is >=)
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.0; loop test duplicated into bb:compress.40)
+100 s:roundTrip.8 decompress_written = 0 {"addi":100}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: move
+100 s:roundTrip.9 decompress_k = 0 {"addi":100}
+  no direct reduction on attribution call
+  2 cfg 0 cfg: move
+100 s:roundTrip.36 if (decompress_k >= decompress_packedLen) goto .n3 else .n4 {"blt":100}
+  no direct reduction on attribution call
+  3 simplify 0 simplify: replace (!(<) is >=)
+  10 rotate 0 rotate: replaceStmt (loop test duplicated into bb:roundTrip.0; loop test duplicated into bb:roundTrip.n7)
+11 s:compress.34 t32 = 0 {"addi":11}
+  no direct reduction on attribution call
+
+Dynamic opcode counts (reference, workbench, difference):
+addi 43025 23825 -19200
+lw 7454 15614 8160
+bltu 15261 11644 -3617
+slli 12747 16180 3433
+mul 3348 0 -3348
+sw 10194 7682 -2512
+bne 4532 6478 1946
+beq 3808 1862 -1946
+sub 917 2591 1674
+bgeu 0 1637 1637
+blt 5427 3881 -1546
+bge 3942 5298 1356
+add 24124 23226 -898
+jal 4102 4540 438
+ret 300 200 -100
+lui 95 0 -95
+lhu 9683 9683 0
+andi 2777 2777 0
+slt 2156 2156 0
+sh 1961 1961 0
+ori 184 184 0
+or 184 184 0
+srli 184 184 0

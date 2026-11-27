@@ -1,0 +1,17 @@
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/dist/typed/tx.js:404
+            throw new TxError('absent', `${oid} is not used in ${this.fn.name} at this revision`);
+                  ^
+
+TxError: [absent] v:regexMatch.552 is not used in regexMatch at this revision
+    at Tx.replace (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/dist/typed/tx.js:404:19)
+    at visit (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/dist/typed/passes.js:458:32)
+    at Object.body (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/dist/typed/passes.js:470:33)
+    at Object.run (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/dist/typed/passes.js:115:22)
+    at applyPass (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/dist/framework/passes/define-pass.js:136:31)
+    at Program.apply (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/dist/typed/program.js:210:25)
+    at file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-sm-irwb-037-a/ttmp/2026/11/27/IRWB-037-A--missed-typed-optimizations-from-instruction-provenance/scripts/03-candidates.mjs:51:61 {
+  code: 'absent',
+  fix: undefined
+}
+
+Node.js v24.18.0

@@ -1,0 +1,212 @@
+roundTrip(1024, 1040, 1104, 2): r0 154 -> r8 144 instructions (-10)
+
+revision       instructions   step
+r0 ingest               154
+r1 inline               153   -1
+r2 cfg                  155   +2
+r3 simplify             155   0
+r4 licm                 148   -7
+r5 subst                148   0
+r6 subst                148   0
+r7 subst                148   0
+r8 rotate               144   -4
+
+   delta    after  groups  decision
+      +7       41       1  inline: indirect, frame
+      +2       43       1  cfg: indirect, frame
+      +2        2       2  licm: insert (hoisted out of loop:compress@bb:compress.1)
+       0        5       8  cfg: move
+       0        0       2  cfg: move+remove (merged with its only successor)
+       0        0       2  cfg: move+retarget
+       0        0       4  cfg: remove (merged with its only successor)
+       0        0      10  cfg: retarget
+       0        0       2  inline: inline+remove (the call to hash3, inlined)
+       0        0       1  licm: insert (hoisted out of loop:compress@bb:compress.39)
+       0        0       1  licm: insert+replace (hoisted out of loop:compress@bb:compress.10)
+       0        0       6  licm: replace
+       0        1       1  rotate: replaceStmt (loop test duplicated into bb:compress.0; loop test duplicated into bb:compress.40)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:compress.15; loop test duplicated into bb:compress.25)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:compress.33; loop test duplicated into bb:compress.9)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:compress.38; loop test duplicated into bb:compress.56)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:decompress.0; loop test duplicated into bb:decompress.6)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:decompress.5; loop test duplicated into bb:decompress.9)
+       0        1       1  rotate: replaceStmt (loop test duplicated into bb:roundTrip.0; loop test duplicated into bb:roundTrip.n7)
+       0        0       1  rotate: replaceStmt (loop test duplicated into bb:roundTrip.n10; loop test duplicated into bb:roundTrip.n6)
+       0        2       6  simplify: replace
+       0        0      22  subst: remove (substituted into its only reader)
+       0        2      22  subst: replace
+      -2       32       1  rotate: indirect, frame
+      -2        0      16  rotate: replaceStmt
+      -3        7       4  inline: indirect
+      -5        0       1  inline: inline+remove (the call to decompress, inlined)
+      -9       34       1  licm: indirect, frame
+
+Dynamic instructions by final statement, over all cases:
+8100 s:compress.38 current = load16[caddr(input, (i + len))+4] {"add":2700,"lw":1350,"bltu":1350,"slli":1350,"lhu":1350}
+  5 subst 0 subst: replace
+8100 s:compress.40 earlier = load16[caddr(input, (candidate + len))+4] {"add":2700,"lw":1350,"bltu":1350,"slli":1350,"lhu":1350}
+  6 subst 0 subst: replace
+7400 s:compress.1 zero frame+64, 96 bytes {"addi":2600,"sw":2400,"bne":2400}
+7287 s:compress.118 t33 = (((((hash3_a1 * 31) + hash3_b1) * 31) + hash3_c1) & 15) {"addi":2082,"mul":2082,"add":2082,"andi":1041}
+  2 cfg 0 cfg: move
+6246 s:compress.115 hash3_b1 = load16[caddr(input, (p + 1))+4] {"addi":1041,"lw":1041,"bltu":1041,"slli":1041,"add":1041,"lhu":1041}
+  6 subst 0 subst: replace
+6246 s:compress.116 hash3_c1 = load16[caddr(input, (p + 2))+4] {"addi":1041,"lw":1041,"bltu":1041,"slli":1041,"add":1041,"lhu":1041}
+  7 subst 0 subst: replace
+5510 s:compress.67 store16[caddr(packed, k)+4] = load16[caddr(input, i)+4] {"lw":1102,"bltu":1102,"slli":1102,"add":1102,"lhu":551,"sh":551}
+  5 subst 0 subst: replace
+  6 subst 0 subst: replace
+5205 s:compress.114 hash3_a1 = load16[caddr(input, p)+4] {"lw":1041,"bltu":1041,"slli":1041,"add":1041,"lhu":1041}
+  5 subst 0 subst: replace
+4431 s:compress.112 t30 = (((((hash3_a * 31) + hash3_b) * 31) + hash3_c) & 15) {"addi":1266,"mul":1266,"add":1266,"andi":633}
+  2 cfg 0 cfg: move
+4164 s:compress.92 store32[t34+0] = load32[(inv1 + (bucket << 2))+0] {"slli":1041,"add":1041,"lw":1041,"sw":1041}
+  4 licm 0 licm: replace
+4164 s:compress.97 store32[(inv1 + (bucket << 2))+0] = (p + 1) {"slli":1041,"add":1041,"addi":1041,"sw":1041}
+  4 licm 0 licm: replace
+4050 s:roundTrip.30 decompress_cell = load16[caddr(decompress_output, (decompress_written - decompress_distance))+4] {"sub":675,"lw":675,"bltu":675,"slli":675,"add":675,"lhu":675}
+  5 subst 0 subst: replace
+3798 s:compress.109 hash3_b = load16[caddr(input, (i + 1))+4] {"addi":633,"lw":633,"bltu":633,"slli":633,"add":633,"lhu":633}
+  6 subst 0 subst: replace
+3798 s:compress.110 hash3_c = load16[caddr(input, (i + 2))+4] {"addi":633,"lw":633,"bltu":633,"slli":633,"add":633,"lhu":633}
+  7 subst 0 subst: replace
+3675 s:roundTrip.15 decompress_token = load16[caddr(decompress_packed, decompress_k)+4] {"lw":735,"bltu":735,"slli":735,"add":735,"lhu":735}
+  5 subst 0 subst: replace
+3600 (frame/backend) (frame/backend) {"addi":800,"sw":1300,"lw":1300,"ret":200}
+3375 s:roundTrip.32 store16[caddr(decompress_output, decompress_written)+4] = decompress_cell {"lw":675,"bltu":675,"slli":675,"add":675,"sh":675}
+  6 subst 0 subst: replace
+3165 s:compress.108 hash3_a = load16[caddr(input, i)+4] {"lw":633,"bltu":633,"slli":633,"add":633,"lhu":633}
+  5 subst 0 subst: replace
+2772 s:compress.32 t32 = ((i + len) < n) {"add":1386,"slt":1386}
+2755 s:roundTrip.18 store16[caddr(decompress_output, decompress_written)+4] = decompress_token {"lw":551,"bltu":551,"slli":551,"add":551,"sh":551}
+  5 subst 0 subst: replace
+2452 s:compress.77 if ((p + 3) <= n) goto .42 else .56 {"addi":1226,"blt":1226}
+  2 cfg 0 cfg: retarget
+2082 s:compress.83 if (p >=u 24) goto .44 else .47 {"addi":1041,"bgeu":1041}
+  2 cfg 0 cfg: move+retarget
+2082 s:compress.87 t34 = (inv2 + (p << 2)) {"slli":1041,"add":1041}
+  4 licm 0 licm: replace
+2082 s:compress.88 if (bucket >=u 16) goto .48 else .51 {"addi":1041,"bgeu":1041}
+  2 cfg 0 cfg: retarget
+2082 s:compress.93 if (bucket >=u 16) goto .52 else .55 {"addi":1041,"bgeu":1041}
+  2 cfg 0 cfg: retarget
+1899 s:compress.19 link = load32[(inv1 + (bucket << 2))+0] {"slli":633,"add":633,"lw":633}
+  4 licm 0 licm: replace
+1840 s:compress.71 store16[caddr(packed, k)+4] = ((128 | ((bestLen - 3) << 5)) | (bestDistance - 1)) {"lw":184,"bltu":184,"slli":368,"add":184,"addi":368,"ori":184,"or":184,"sh":184}
+  5 subst 0 subst: replace
+  6 subst 0 subst: replace
+1788 s:compress.57 link = load32[(inv + (candidate << 2))+0] {"slli":596,"add":596,"lw":596}
+  4 licm 0 licm: replace
+1717 s:compress.131 if (p >= inv3) goto .40 else .41 {"bge":1226,"jal":491}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.38; loop test duplicated into bb:compress.56)
+1602 s:compress.125 if (len < 6) goto .17 else .18 {"addi":801,"blt":801}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.15; loop test duplicated into bb:compress.25)
+1600 s:compress.0 zero frame+0, 64 bytes {"sw":1600}
+1470 s:compress.64 if (bestLen < 3) goto .36 else .37 {"addi":735,"bge":735}
+1470 s:compress.9 if ((i + 3) <= n) goto .4 else .35 {"addi":735,"blt":735}
+  2 cfg 0 cfg: retarget
+1470 s:roundTrip.16 if ((decompress_token & 128) == 0) goto .n5 else .n6 {"andi":735,"bne":735}
+1397 s:compress.36 if !(t32) goto .20 else .21 {"bne":1397}
+1386 s:compress.33 goto .19 {"jal":1386}
+1350 s:compress.41 if (current != earlier) goto .20 else .25 {"bne":1350}
+  2 cfg 0 cfg: retarget
+1266 s:compress.15 if (bucket >=u 16) goto .6 else .9 {"addi":633,"bgeu":633}
+  2 cfg 0 cfg: move+retarget
+1229 s:compress.27 if !(t31) goto .35 else .15 {"beq":1229}
+  2 cfg 0 cfg: retarget
+1226 s:compress.100 p = (p + 1) {"addi":1226}
+1192 s:compress.53 if (candidate >=u 24) goto .30 else .33 {"addi":596,"bgeu":596}
+  2 cfg 0 cfg: retarget
+1192 s:compress.124 if (len < 6) goto .17 else .18 {"addi":596,"bge":596}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.15; loop test duplicated into bb:compress.25)
+1166 s:roundTrip.39 if (decompress_copied >= decompress_len) goto .n7 else .n10 {"bge":675,"jal":491}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:roundTrip.n10; loop test duplicated into bb:roundTrip.n6)
+801 s:compress.45 len = (len + 1) {"addi":801}
+770 s:compress.23 t31 = (visits < chainLimit) {"slt":770}
+770 s:compress.24 goto .13 {"jal":770}
+735 s:compress.63 advance = 1 {"addi":735}
+735 s:compress.74 p = i {"addi":735}
+735 s:compress.123 inv3 = (i + advance) {"add":735}
+  4 licm 0 licm: insert (hoisted out of loop:compress@bb:compress.39)
+735 s:compress.130 if (p >= inv3) goto .40 else .41 {"blt":735}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.38; loop test duplicated into bb:compress.56)
+735 s:compress.103 i = (i + advance) {"add":735}
+735 s:compress.104 k = (k + 1) {"addi":735}
+735 s:compress.129 if (i >= n) goto .2 else .3 {"bge":735}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.0; loop test duplicated into bb:compress.40)
+735 s:compress.7 bestLen = 0 {"addi":735}
+735 s:compress.8 bestDistance = 0 {"addi":735}
+735 s:roundTrip.25 decompress_k = (decompress_k + 1) {"addi":735}
+735 s:roundTrip.37 if (decompress_k >= decompress_packedLen) goto .n3 else .n4 {"bge":735}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:roundTrip.0; loop test duplicated into bb:roundTrip.n7)
+675 s:roundTrip.33 decompress_written = (decompress_written + 1) {"addi":675}
+675 s:roundTrip.34 decompress_copied = (decompress_copied + 1) {"addi":675}
+633 s:compress.20 visits = 0 {"addi":633}
+633 s:compress.126 if (link != 0) goto .11 else .12 {"beq":633}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.33; loop test duplicated into bb:compress.9)
+596 s:compress.48 if (len > bestLen) goto .27 else .29 {"bge":596}
+  2 cfg 0 cfg: retarget
+596 s:compress.58 visits = (visits + 1) {"addi":596}
+596 s:compress.127 if (link != 0) goto .11 else .12 {"bne":596}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.33; loop test duplicated into bb:compress.9)
+596 s:compress.28 candidate = (link - 1) {"addi":596}
+596 s:compress.29 len = 0 {"addi":596}
+552 s:roundTrip.21 decompress_len = (((decompress_token >>> 5) & 3) + 3) {"srli":184,"andi":184,"addi":184}
+551 s:compress.68 goto .38 {"jal":551}
+551 s:roundTrip.19 decompress_written = (decompress_written + 1) {"addi":551}
+551 s:roundTrip.20 goto .n7 {"jal":551}
+500 s:roundTrip.0 t5 = compress(input, packed, chainLimit) {"addi":400,"jal":100}
+459 s:compress.25 t31 = 0 {"addi":459}
+368 s:roundTrip.22 decompress_distance = ((decompress_token & 31) + 1) {"andi":184,"addi":184}
+242 s:compress.49 bestLen = len {"addi":242}
+242 s:compress.50 bestDistance = (i - candidate) {"sub":242}
+200 s:compress.107 return k {"addi":100,"jal":100}
+200 s:roundTrip.3 return decompress_written {"addi":100,"jal":100}
+  1 inline 1 inline: indirect
+  2 cfg 0 cfg: move
+  5 subst 0 subst: replace
+184 s:compress.72 advance = bestLen {"addi":184}
+184 s:roundTrip.23 decompress_copied = 0 {"addi":184}
+184 s:roundTrip.38 if (decompress_copied >= decompress_len) goto .n7 else .n10 {"blt":184}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:roundTrip.n10; loop test duplicated into bb:roundTrip.n6)
+100 s:compress.2 n = load32[input+0] {"lw":100}
+100 s:compress.3 i = 0 {"addi":100}
+100 s:compress.4 k = 0 {"addi":100}
+100 s:compress.121 inv1 = frame+0 {"addi":100}
+  4 licm 1 licm: insert (hoisted out of loop:compress@bb:compress.1)
+100 s:compress.122 inv2 = frame+64 {"addi":100}
+  4 licm 1 licm: insert (hoisted out of loop:compress@bb:compress.1)
+100 s:compress.128 if (i >= n) goto .2 else .3 {"blt":100}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:compress.0; loop test duplicated into bb:compress.40)
+100 s:roundTrip.8 decompress_written = 0 {"addi":100}
+  2 cfg 0 cfg: move
+100 s:roundTrip.9 decompress_k = 0 {"addi":100}
+  2 cfg 0 cfg: move
+100 s:roundTrip.36 if (decompress_k >= decompress_packedLen) goto .n3 else .n4 {"blt":100}
+  8 rotate 0 rotate: replaceStmt (loop test duplicated into bb:roundTrip.0; loop test duplicated into bb:roundTrip.n7)
+11 s:compress.34 t32 = 0 {"addi":11}
+
+Dynamic opcode counts (reference, workbench, difference):
+addi 43025 33357 -9668
+lw 7454 15314 7860
+bgeu 0 4352 4352
+bltu 15261 11644 -3617
+slli 12747 16180 3433
+sw 10194 7382 -2812
+bne 4532 6478 1946
+beq 3808 1862 -1946
+blt 5427 3881 -1546
+bge 3942 5298 1356
+add 24124 24900 776
+jal 4102 4540 438
+ret 300 200 -100
+lui 95 0 -95
+lhu 9683 9683 0
+mul 3348 3348 0
+andi 2777 2777 0
+slt 2156 2156 0
+sub 917 917 0
+sh 1961 1961 0
+ori 184 184 0
+or 184 184 0
+srli 184 184 0

@@ -26,7 +26,7 @@ The investigation uses valid Typed corpus projects with their checked named stra
 
 Start with `attributeSteps` on the regex fixture. D1 counts every executed instruction when calculating deltas, but its rows omit unchanged sites. Expose a ranked final-revision statement view with executed counts, the instruction mix, and the decisions that changed instruction counts along a statement's ancestry. Follow replacement and cloning sources to recover earlier decisions. An uncredited site means the measured history shows no direct reduction there. It does not establish that a specific optimization is legal or that earlier edits had no indirect influence. Preserve the step totals and signed differences.
 
-A PC histogram alone would identify hot loads, branches and arithmetic, but lose the IR expression and whether a pass already changed it. Conversely, scanning the simplifier's rules only identifies existing opportunities. Use the final-revision provenance to prioritize shapes and compare the dynamic opcode mix with the stock reference policy on the same call. Try the highest-count repeated shape first, then use LZ to test whether the gain transfers.
+A PC histogram alone would identify hot loads, branches and arithmetic, but lose the IR expression and whether a pass already changed it. Conversely, scanning the simplifier's rules only identifies existing opportunities. Use the final-revision provenance to prioritize shapes and compare the dynamic opcode mix with the vendored default reference policy on the same call. Try the highest-count repeated shape first, then use LZ to test whether the gain transfers.
 
 ## Candidate changes and acceptance
 
