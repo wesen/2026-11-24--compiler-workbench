@@ -103,11 +103,13 @@ test('wb.pass: the kernel builder from a project script; applied, listed, and us
 test('wb.compiler and wb.source: declarations with ids and versions, and where each is defined', () => {
   const { wb } = makeWb();
   const c = wb.compiler();
-  // the eleven of Compiler Workbench, bcm and dfe; IRWB-003's rotate, inline; IRWB-037-G's five
-  assert.equal(c.passes.length, 20);
+  // the eleven of Compiler Workbench, bcm and dfe; IRWB-003's rotate, inline; IRWB-037-G's five; IRWB-036-F's promote, webs
+  assert.equal(c.passes.length, 22);
   for (const name of ['thread', 'guards', 'copies', 'subst-mem', 'identities'])
     assert.match(c.passes.find(x => x.name === name).source, /^src\/typed\/passes\.ts:\d+$/, name);
   assert.deepEqual(c.passes.find(x => x.name === 'guards').needs, { ssa: 'typed.ssa@1' });
+  assert.match(c.passes.find(x => x.name === 'promote').source, /^src\/typed\/promote\.ts:\d+$/);
+  assert.match(c.passes.find(x => x.name === 'webs').source, /^src\/typed\/webs\.ts:\d+$/);
   assert.match(c.passes.find(x => x.name === 'rotate').source, /^src\/typed\/rotate\.ts:\d+$/);
   assert.match(c.passes.find(x => x.name === 'inline').source, /^src\/typed\/inline\.ts:\d+$/);
   const licm = c.passes.find(x => x.name === 'licm');

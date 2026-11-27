@@ -71,3 +71,9 @@ plus `load16[(b + (t1 << 1))+4]`, not `caddr`. `bufferLoad` now recognizes that 
 Prettier on the files that were formatted at the base (specialize.ts, passes.ts, tx.ts) and the new ones; not on
 program.ts (unformatted at the base). Ran `tests/typed`, `tests/framework`, `tests/workbench` (result below).
 Wrote `reference/01-final-report-...`.
+
+Suite result (`node --test tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs`, built
+from 743152c's sources): 417 tests, 413 pass, 3 skipped, 1 fail. The failure was expected:
+`tests/workbench/strategies.test.mjs` counts the registered passes (`17 !== 15`) and the two new passes
+`promote` and `webs` are registered. Updated the count and added source-location checks for both; that test
+passes. No change under `src/framework/` or `src/workbench/`, so `tools/build-site.mjs` was not rerun.
