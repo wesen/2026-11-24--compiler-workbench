@@ -551,6 +551,12 @@ export const lvn = typedPass({
             const k = key(id),
               first = seen.get(k);
             if (first && first.value !== id) {
+              // F38: a firing replaces `first.value` and `id`, and tx.replace rebuilds the parents of what it
+              // replaces, with fresh ids. An entry of `seen` for such a rebuilt parent is a value that no longer
+              // exists, and replacing it would throw `absent` (regex-nfa, a second run before rotate: this block
+              // registers `shl(@41,#2)` from a statement, fires on it there, and then the same statement's
+              // `add(@62,shl(@41,#2))` is dead). Drop those entries: the tree that held them has another shape now.
+              const gone = rebuildParents(st, f, [first.value, id]);
               const t = tx.local('vn', { because: [first.value], type: v.type ?? 'i32' });
               const set = tx.set(t, first.value, {
                 because: [first.value, id],
@@ -560,6 +566,7 @@ export const lvn = typedPass({
               tx.replace(id, tx.get(t, { from: id, because: [set] }));
               tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
               seen.delete(k);
+              for (const [kk, e] of [...seen]) if (gone.has(e.value)) seen.delete(kk);
               return true;
             }
             if (!first) seen.set(k, { stmt: sid, value: id });
@@ -573,6 +580,36 @@ export const lvn = typedPass({
     }
   },
 });
+
+/**
+ * The values whose ids die when `tx.replace` rebuilds a tree that holds one of `ids`: its strict parents (and theirs).
+ * Parents are read from the live store, so the answer is right before the replacement is made (F38).
+ */
+const rebuildParents = (st: Store, f: WorkFn, ids: readonly string[]): Set<string> => {
+  const up = new Map<string, Set<string>>();
+  const done = new Set<string>();
+  const walk = (vid: string): void => {
+    if (done.has(vid)) return;
+    done.add(vid);
+    for (const a of (st.get(vid) as ValueRec).args) {
+      const s = up.get(a) ?? new Set<string>();
+      s.add(vid);
+      up.set(a, s);
+      walk(a);
+    }
+  };
+  for (const b of f.blocks)
+    for (const sid of (st.get(b.id) as BlockRec).stmts) {
+      const s = st.get(sid) as StmtRec;
+      for (const k of ['value', 'cond', 'addr'] as const) if (s[k]) walk(s[k]!);
+    }
+  const gone = new Set<string>();
+  const mark = (vid: string): void => {
+    for (const p of up.get(vid) ?? []) if (!gone.has(p)) (gone.add(p), mark(p));
+  };
+  for (const id of ids) mark(id);
+  return gone;
+};
 
 export const strength = typedPass({
   name: 'strength',
@@ -616,27 +653,25 @@ export const bce = typedPass({
   name: 'bce',
   about:
     'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
-  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
+  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges', ssa: 'ssa' },
   writes: ['stmts', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts }) {
     const dom = facts.dom!,
       reach = facts.reach!,
-      ranges = facts.ranges!;
+      ranges = facts.ranges!,
+      ssa = facts.ssa!;
     // resolve a read through single copies: t = x  ->  x (when t has one definition)
-    const resolve = (
-      sid: string,
-      id: string,
-    ): { id: string; local: number | null; sid: string; via?: string } => {
+    const resolve = (sid: string, id: string): { id: string; local: number | null } => {
       const v = st.get(id) as ValueRec;
-      if (v.op !== 'get') return { id, local: null, sid };
+      if (v.op !== 'get') return { id, local: null };
       const defs = reach.reachingAt(sid, v.imm as number);
       if (defs.length === 1 && defs[0].startsWith('s:')) {
         const d = st.get(defs[0]) as StmtRec,
           dv = st.get(d.value!) as ValueRec;
-        if (dv.op === 'get') return { id: d.value!, local: dv.imm as number, sid: d.id, via: d.id };
+        if (dv.op === 'get') return { id: d.value!, local: dv.imm as number };
       }
-      return { id, local: v.imm as number, sid };
+      return { id, local: v.imm as number };
     };
     const isLength = (id: string, buf?: number) => {
       const v = st.get(id) as ValueRec;
@@ -674,13 +709,15 @@ export const bce = typedPass({
         if (!dom.dominates(arm, b.id)) continue;
         const x = st.get(cond.args[0]) as ValueRec;
         if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
-        // the index and the buffer are the same values at the branch and at the check
-        const same = (l: number) => {
-          const a = reach.reachingAt(t.id, l).sort().join(),
-            z = reach.reachingAt(idx.sid, l).sort().join();
-          return a === z;
-        };
-        if (!same(idx.local) || !same(buf)) continue;
+        // the index and the buffer must be the *same values* at the branch and at the check (F36). Equal sets of
+        // reaching definitions do not make them equal: an assignment between the two reaches both of them. The SSA
+        // name of each read says which value it is, so the two names must agree. A name the SSA view does not have
+        // (an unreachable block) is not evidence of anything.
+        const sameValue = (a: string | undefined, z: string | undefined) => a !== undefined && a === z;
+        const checkBuf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).id;
+        const branchBuf = (st.get((st.get(cond.args[1]) as ValueRec).args[0]) as ValueRec).id;
+        if (!sameValue(ssa.uses[cond.args[0]], ssa.uses[idx.id])) continue;
+        if (!sameValue(ssa.uses[branchBuf], ssa.uses[checkBuf])) continue;
         if (ranges.at(t.id, idx.local)[0] < 0) continue;
         tx.replaceStmt(
           last.id,

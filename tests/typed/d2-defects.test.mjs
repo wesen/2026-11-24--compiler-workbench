@@ -1,5 +1,5 @@
 // IRWB-039 phase 1a: three defects IRWB-037-G (D2) found and left unchanged, as tests of the CORRECT behaviour
-// (BACKLOG F36-F38; IRWB-037-G scripts/13 and 14). Remove `todo` in the fixing commit.
+// (BACKLOG F36-F38; IRWB-037-G scripts/13 and 14). F36 and F38 are fixed (IRWB-042-C); F37 is still a todo.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installVendor } from '../../tools/node-vendor.mjs';
@@ -11,13 +11,10 @@ const { projectSource } = await import('../../dist/typed/project.js');
 const { storeOf } = await import('../../dist/typed/ir.js');
 const { PIPELINES } = await import('../../dist/typed/passes.js');
 
-test(
-  'F36: bce keeps a bounds check when the index is reassigned between the guard and the check',
-  { todo: 'F36' },
-  async () => {
-    // the only assignment to i lies between `i < buf.length` and `buf.charCodeAt(i)`, and reaches both: the sets of
-    // reaching definitions are equal, the values are not
-    const source = `
+test('F36: bce keeps a bounds check when the index is reassigned between the guard and the check', async () => {
+  // the only assignment to i lies between `i < buf.length` and `buf.charCodeAt(i)`, and reaches both: the sets of
+  // reaching definitions are equal, the values are not
+  const source = `
 function walk(buf: buffer, c: bool): i32 {
     let i = 0;
     let s = 0;
@@ -32,21 +29,20 @@ function walk(buf: buffer, c: bool): i32 {
     }
     return s;
 }`;
-    const p = Program.fromProject(
-      projectSource('bce-probe', {
-        'main.typed': source,
-        'project.json': JSON.stringify({
-          inputs: { walk: { buf: { buffer: [1, 4], cell: [400, 600] }, c: { bool: true } } },
-        }),
+  const p = Program.fromProject(
+    projectSource('bce-probe', {
+      'main.typed': source,
+      'project.json': JSON.stringify({
+        inputs: { walk: { buf: { buffer: [1, 4], cell: [400, 600] }, c: { bool: true } } },
       }),
-    );
-    assert.equal(p.status, 'ok');
-    await p.apply('cfg');
-    await p.apply('simplify');
-    // today bce removes the check and only the meaning check rejects the pass (16 of 40 cases disagree)
-    await assert.doesNotReject(p.apply('bce'), 'bce produced a candidate the meaning check rejects');
-  },
-);
+    }),
+  );
+  assert.equal(p.status, 'ok');
+  await p.apply('cfg');
+  await p.apply('simplify');
+  // before the fix bce removed the check and only the meaning check rejected the pass (16 of 40 cases disagree)
+  await assert.doesNotReject(p.apply('bce'), 'bce produced a candidate the meaning check rejects');
+});
 
 test(
   'F37: typed.ranges keeps an outer loop counter non-negative under an inner loop',
@@ -64,17 +60,13 @@ test(
   },
 );
 
-test(
-  'F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)',
-  { todo: 'F38' },
-  async () => {
-    const p = Program.fromProject(projectSource('regex-nfa', projectFiles('regex-nfa')));
-    const speed = [...PIPELINES.speed];
-    speed.splice(speed.indexOf('rotate'), 0, 'lvn');
-    const r = await p.pipeline(speed, { count: 3 });
-    assert.deepEqual(
-      r.steps.filter(s => s.rejected).map(s => s.pass),
-      [],
-    );
-  },
-);
+test('F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)', async () => {
+  const p = Program.fromProject(projectSource('regex-nfa', projectFiles('regex-nfa')));
+  const speed = [...PIPELINES.speed];
+  speed.splice(speed.indexOf('rotate'), 0, 'lvn');
+  const r = await p.pipeline(speed, { count: 3 });
+  assert.deepEqual(
+    r.steps.filter(s => s.rejected).map(s => s.pass),
+    [],
+  );
+});
