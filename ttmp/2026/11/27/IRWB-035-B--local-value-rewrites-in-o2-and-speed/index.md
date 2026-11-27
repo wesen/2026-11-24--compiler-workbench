@@ -1,7 +1,7 @@
 ---
 Title: Local value rewrites in O2 and speed
 Ticket: IRWB-035-B
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -11,7 +11,7 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
+Summary: Census of edit records and affected RV32 instructions across 50 Typed projects.
 LastUpdated: 2026-11-27T09:43:50.277756328-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -19,38 +19,12 @@ WhenToUse: ""
 
 # Local value rewrites in O2 and speed
 
-## Overview
+## Results
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Local rewrites account for 203/2,021 O2 edits and 408/9,736 speed edits. None carries a complete verified-rule citation.
 
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- compiler
-- ir
-- verification
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design](design-doc/01-counting-local-rewrites.md)
+- [Final report](analysis/01-corpus-results.md)
+- [Per-pass, per-pipeline and per-project tables](analysis/02-measurement-tables.md)
+- [Investigation diary](log/01-investigation-diary.md)
+- [Corpus ledgers](various/census/) and [rerun scripts](scripts/)

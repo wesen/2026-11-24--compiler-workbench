@@ -14,7 +14,7 @@ const data = projects.flatMap(project => {
 const number = x => Number(x.toFixed(2)).toLocaleString('en-US');
 const sum = xs => xs.reduce((a,b) => a+b,0);
 const percent = (x,n) => n ? (100*x/n).toFixed(1)+'%' : '—';
-const lines = [];
+const lines = ['---', 'Title: Measurement tables', 'Ticket: IRWB-035-B', 'Status: complete', 'Topics: [compiler, ir, verification]', 'DocType: analysis', 'Intent: long-term', 'Owners: []', 'RelatedFiles: []', 'ExternalSources: []', 'Summary: Census grouped by preset, pass, project and rule set.', 'LastUpdated: 2026-11-27', 'WhatFor: Reproduce the grouped edit and RV32 shares.', 'WhenToUse: Read alongside the final report.', '---', ''];
 const paragraph = s => lines.push(s,'');
 const table = (cols, rows) => {
   const row = cells => '| '+cells.join(' | ')+' |';
@@ -60,6 +60,20 @@ for (const p of presets) {
   const groups = revs.flatMap(r=>[...new Set(r.edits.map(e=>e.fn))].map(fn=>r.edits.filter(e=>e.fn===fn)));
   paragraph('### '+p);
   paragraph(`Of ${locals.length} local edits, ${n(e=>e.cited)} carry complete explicit citations, ${n(e=>e.rules.every(r=>RULE_EVIDENCE[r]?.verdict==='sound'))} replay entirely with recorded sound table evidence, and ${n(e=>e.reason==='guarded arithmetic')} require guarded arithmetic shapes. There are ${firings.length} individual firings or guarded shape matches. Among ${groups.length} changed function–revision pairs, ${groups.filter(g=>g.every(e=>e.category==='local')).length} have exclusively local recorded edits. This is an upper bound for discharging a whole function at that revision.`);
+  const chains = runs.flatMap(run => {
+    const byFunction = new Map();
+    for (const rev of run.revisions) for (const edit of rev.edits) {
+      if (!byFunction.has(edit.fn)) byFunction.set(edit.fn, []);
+      byFunction.get(edit.fn).push(edit);
+    }
+    return [...byFunction.values()];
+  });
+  paragraph(`Across the complete preset, ${chains.filter(chain=>chain.every(e=>e.category==='local')).length} of ${chains.length} edited project functions have exclusively local records in their own bodies. Calls can introduce additional obligations from the callee.`);
+  const dominant = [...runs].sort((a,b)=>sum(counts([b])[0])-sum(counts([a])[0]))[0];
+  const rest = counts(runs.filter(r=>r!==dominant));
+  paragraph(`${dominant.project} contributes ${percent(sum(counts([dominant])[0]),edits.length)} of edit records. Omitting that project gives ${percent(rest[0][0],sum(rest[0]))} local by edit count and ${percent(rest[2][0],sum(rest[2]))} local by executions.`);
+  const replacements = edits.filter(e => e.kind === "replace");
+  paragraph(`Restricting the denominator to the ${replacements.length} value-field replacement records gives ${percent(locals.length,replacements.length)} local. The remaining replacements split into ${replacements.filter(e=>e.category==="structural").length} structural and ${replacements.filter(e=>e.category==="other").length} other.`);
   const extra = contextual.length;
   paragraph(`If “local” included replacements that need a binding premise, it would gain ${extra} records (${['reaching constant','forward substitution','reuse prior computation'].map(reason=>reason+' '+contextual.filter(e=>e.reason===reason).length).join(', ')}). The local edit share would become ${percent(locals.length+extra,edits.length)}. Deletions and helper declarations stay in their original classes.`);
   table(['Rule or proposed shape','Evidence strength','Firings','Local edits using it'],names.map(name=>[name,RULE_EVIDENCE[name]?.strength??'range guard required',firings.filter(r=>r===name).length,n(e=>e.rules.includes(name))]).sort((a,b)=>b[3]-a[3]||a[0].localeCompare(b[0])));
