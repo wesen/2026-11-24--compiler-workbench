@@ -20,6 +20,7 @@ import {
   type ContractionKernel,
   type Dim,
   type Schedule,
+  type Selection,
 } from './schedule.js';
 import type { Expr, Fn } from './model.js';
 
@@ -34,10 +35,20 @@ export const tiles = [
   { bm: 32, bn: 32, bk: 8, tm: 4, tn: 4 },
   { bm: 32, bn: 32, bk: 8, tm: 2, tn: 2 },
 ];
-/** Launch rule: blocks per SM a variant's grid needs to be chosen (variants 1..3 are `tiles`; see selectionNote). */
-export const selection = [
+/**
+ * Launch rule (script 03 --variants, scripts/03-variants.out.jsonl; medians of 5 benchmark calls per variant):
+ *  - variant 1 (128 x 64) only with at least 16 blocks per SM (768 on the GB10): at 4096^3 (2,048 blocks) it was
+ *    the fastest; with 128 blocks (mlp's h) it tied variant 2 and with 32 (512^3) it lost (0.062 against 0.046);
+ *  - variant 2 (32 x 32, 4 x 4) with at least 2 blocks per SM and 256 terms: it won at 256 to 1,024 terms with 256
+ *    to 1,024 blocks (512^3 0.046 against 0.066; mlp's h 0.079 against 0.110; mlp's y 0.085 against 0.127) and lost
+ *    to variant 3 at 64 and 144 terms (attention's score 0.036 against 0.032; conv2d 0.110 against 0.100) and with
+ *    64 blocks (attention's out 0.055 against 0.047). The thresholds are the smallest measured values at which it won;
+ *    the ranges between (2 to 5 blocks per SM, 145 to 255 terms) are not measured;
+ *  - variant 3 otherwise.
+ */
+export const selection: Selection[] = [
   { variant: 1, minBlocks: 16 },
-  { variant: 2, minBlocks: 2 },
+  { variant: 2, minBlocks: 2, minTerms: 256 },
   { variant: 3, minBlocks: 0 },
 ];
 

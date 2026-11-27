@@ -306,7 +306,7 @@ export function emitContraction(
   const hostSizes = (d: Dim) => product(k.dims[d].map(a => hostDim(extent.get(a)!)));
   const host = [
     `  const U count_${name} = ${product(c.shape.map(hostDim))};`,
-    `  const U extent_m_${name} = ${hostSizes('m')}, extent_n_${name} = ${hostSizes('n')}, extent_b_${name} = ${hostSizes('b')};`,
+    `  const U extent_m_${name} = ${hostSizes('m')}, extent_n_${name} = ${hostSizes('n')}, extent_b_${name} = ${hostSizes('b')}, extent_r_${name} = ${hostSizes('r')};`,
   ];
   forms.forEach((f, v) => {
     if (f === 'plain' || typeof f === 'string') return;
@@ -320,7 +320,7 @@ export function emitContraction(
     .map(e =>
       e.variant === 0
         ? '0'
-        : `fits_${name}_${e.variant} && blocks_${name}_${e.variant} >= ${e.minBlocks}ULL * sm_count ? ${e.variant} : `,
+        : `fits_${name}_${e.variant} && blocks_${name}_${e.variant} >= ${e.minBlocks}ULL * sm_count${e.minTerms ? ` && extent_r_${name} >= ${e.minTerms}ULL` : ''} ? ${e.variant} : `,
     )
     .join('');
   host.push(
