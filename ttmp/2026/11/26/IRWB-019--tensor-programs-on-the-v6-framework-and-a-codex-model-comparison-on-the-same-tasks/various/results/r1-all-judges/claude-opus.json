@@ -1,0 +1,987 @@
+[
+  {
+    "doc": "doc-A.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 1,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "For each j in A, exp(S(j)−m) = exp(S(j)−mA) exp(mA−m); distribute the common factor and repeat for B. Thus merge returns exactly H(A∪B)."
+      ],
+      "M2": [
+        "The following five numbered substitutions give intermediate programs for this row."
+      ],
+      "M3": [
+        "In f32 the tree is part of the program."
+      ],
+      "M4": [
+        "Mutate one merge to omit a rescale and one partition to drop the last partial block. The certificate must reject both; require numerical counterexamples on rows with distinct v."
+      ],
+      "M5": [
+        "Centered two-pass variance needs a different shift/merge lemma."
+      ],
+      "M6": [
+        "require derived/unfused time ≤ 0.80, derived/handwritten time ≤ 1.25 and derived/unfused measured DRAM bytes < 1."
+      ],
+      "M7": [
+        "This is a lemma about max, exp and linear payloads, rather than an attention intrinsic."
+      ]
+    },
+    "notes": "Five correct rules (inline, factor divisor, zip, lift max-shifted pair to a mergeable summary, partition) with a tagged empty state, an explicit f32 plan tree, exact/tolerance assignment per rule, certificate mutation tests and a well-specified GB10 protocol; the insight is solid but mostly the standard change-of-center lemma plus a correct storage-versus-traffic analysis."
+  },
+  {
+    "doc": "doc-B.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "The result is exactly `S(A ++ C)`."
+      ],
+      "M2": [
+        "**R6** replaces the last global max and weighted sum by `fold(b, Empty, (m_b,h_b), ⊗)`."
+      ],
+      "M3": [
+        "Associativity **over the reals** authorizes a proposed regrouping under R4. It grants no implicit parallel f32 reduction, atomic-update order, contraction to FMA, or choice of tree."
+      ],
+      "M4": [
+        "A Node scalar probe gave `0.75` for the merge, `1` for the missing scale and `0.5` for the missing tail, against `0.7500000002380818` in f64."
+      ],
+      "M5": [
+        "At the local maximum `t=m_b`, `tanh(t-m_b)=0`."
+      ],
+      "M6": [
+        "Identify the available GB10 counter(s), units and memory level with a device-to-device copy probe first."
+      ],
+      "M7": [
+        "**changing the center of an exponential multiplies every weight in the same group by one scalar**"
+      ]
+    },
+    "notes": "Six correct rules with a separate rebase step (R5) before the summary fold (R6), a verified worked example whose mutants are distinguished numerically, exact-versus-tolerance per rule, and a careful bytes/time protocol with counter validation; insight is the standard rebase lemma stated cleanly."
+  },
+  {
+    "doc": "doc-C.md",
+    "scores": {
+      "M1": 4,
+      "M2": 5,
+      "M3": 3,
+      "M4": 3,
+      "M5": 3,
+      "M6": 4,
+      "M7": 5
+    },
+    "errors": [
+      {
+        "quote": "With one block (`B = N`) the single rescale factor is `exp(-∞ - M_J) = 0` and it multiplies a zero state, so nothing is dropped; the exponentials are `exp(u - M_J)` exactly as in the premise",
+        "problem": "Under the document's own fold semantics the inner fold is a left fold of the softmax_state combine over per-element yields (u, 1, v), so it rescales the running l and t every time the running maximum grows; P3 (and P4 at B = N) is the per-element online recurrence, not exp(u - M_J) against the final maximum. A direct f32 simulation of the stated combine differs from the two-pass normalizer on 73 of 200 random rows. The 'bit-identical with one block' claim, the table entry 'P3 ... yes, vs P1', the exact single-block regression check and hypothesis H4 would all fail on a faithful implementation; the claim only holds for a closed-form block summary (block max first), which is not what the construct means.",
+        "severity": "major"
+      },
+      {
+        "quote": "So P5's f32 values **are** P4's meaning, with no additional rounding rule to check.",
+        "problem": "The target kernel of §1.2 computes each block by 'mK := max over K of u' and 'sum over K of exp(u[j] - m')', which is not the meaning of P4's per-element inner fold; the lowering therefore does change rounding and needs its own check.",
+        "severity": "minor"
+      },
+      {
+        "quote": "| `unit ⊕ s = s = s ⊕ unit` | argument over the reals (`exp(-∞-m)=0`, `max(-∞,m)=m`), plus a sampled f32 check on random states | `proof` + `sampled` |",
+        "problem": "For s = unit the combine evaluates exp(−∞ − (−∞)), which is undefined over the extended reals and NaN in f32; the identity law needs an empty tag or guard (the derivation avoids the case only because B | N keeps every block nonempty).",
+        "severity": "minor"
+      },
+      {
+        "quote": "There is **no tolerance relation anywhere in the tree** (`grep -rn tolerance src/` finds nothing).",
+        "problem": "The grep finds matches (src/framework/contracts/README.md, src/labs/lab.ts, src/labs/contracts.ts); what is true is that no numeric meaning-contract tolerance relation exists.",
+        "severity": "minor"
+      },
+      {
+        "quote": "| (c) **hand-written** | FlashAttention-2, same shapes, same `--fmad=false`, same tile sizes |",
+        "problem": "FlashAttention-2 is a half-precision tensor-core library without an f32 path to rebuild with --fmad=false; the baseline has to be an independently hand-written f32 streaming kernel.",
+        "severity": "minor"
+      },
+      {
+        "quote": "A regrouping rule cannot beat `ε√K`, and none of them does.",
+        "problem": "ε√K is a probabilistic random-walk estimate, not a bound; pairwise or blocked groupings have worst-case error O(ε log K) or O(ε(B + K/B)) and can be below it.",
+        "severity": "minor"
+      },
+      {
+        "quote": "| layernorm / variance statistics in one pass | `Factor`, `Fuse`, `Rebase`(mean) | `(n, Σx, Σx²)`, identity `Σ(x−x̄)² = Σx² − (Σx)²/n` |",
+        "problem": "None of the four rules zips independent sums, and Rebase is defined only for the max/exp premise; a 'Rebase(mean)' with a power-sum identity is a different rule, so the stated rule set does not reach this program.",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 5,
+    "overall": 6,
+    "quotes": {
+      "M1": [
+        "| `unit ⊕ s = s = s ⊕ unit` | argument over the reals (`exp(-∞-m)=0`, `max(-∞,m)=m`)"
+      ],
+      "M2": [
+        "Five applications, four rules, one new construct."
+      ],
+      "M3": [
+        "So P5's f32 values **are** P4's meaning, with no additional rounding rule to check.",
+        "With one block (`B = N`) the single rescale factor is `exp(-∞ - M_J) = 0` and it multiplies a zero state, so nothing is dropped"
+      ],
+      "M4": [
+        "exact single-block case as a regression",
+        "The derived kernel agrees with the f64 reference under §6.1's relation with `abs = ε·√K`,"
+      ],
+      "M5": [
+        "**claimed, not checked**; the two-set identity is the power-sum one, and it needs its own §4.4-style lemma",
+        "**a program is reachable iff its nested aggregation over a common index set can be rebased by a two-set identity for some declared monoid.**"
+      ],
+      "M6": [
+        "With `B = N` (one block), the derived kernel is **bit-identical** to P1",
+        "batch 8, heads 8"
+      ],
+      "M7": [
+        "Consequences: a relative-only tolerance is not a usable gate at these shapes"
+      ]
+    },
+    "notes": "Rules and the two-set lemma are correct and the derivation is explicit, and the conditioning-scaled tolerance is a real insight; but the claimed bit-exactness of Rebase at one block (and H4 built on it) contradicts the document's own per-element fold semantics, so a faithful implementation would fail its exact checks."
+  },
+  {
+    "doc": "doc-D.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "Thus `F(A) ⊗ F(B) = F(A∪B)`."
+      ],
+      "M2": [
+        "**R4** turns each inner fold into a max and the paired weighted sums in that block."
+      ],
+      "M3": [
+        "The algebraic certificate proves associativity only in the real model, never bitwise in f32."
+      ],
+      "M4": [
+        "Test that incorrect rescale signs, mismatched reduction indices, a missing tail and erasing a live use are rejected by the checker, even on inputs that would mask the error."
+      ],
+      "M5": [
+        "For plain `log(sum(j) exp(a_j))`, first introducing the stabilizing shift would need another rule; it does not match this set as written."
+      ],
+      "M6": [
+        "An interval straddling a latency threshold or unavailable byte counters leaves that part inconclusive, not successful."
+      ],
+      "M7": [
+        "A tiled two-sweep lowering could first find the row max, then recompute scores to form the two sums without storing `s/e`; it would not answer whether one sweep is derivable."
+      ]
+    },
+    "notes": "Five correct rules ending with a tile-summary expansion and producer sinking, a precise fold with an explicit tree and tagged empty state, sound checking (origin-pinned f64 gate plus certificate mutation tests) and accurate reach claims; experiment is fully specified with interval-based decisions."
+  },
+  {
+    "doc": "doc-E.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 1,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "Thus the merge returns *exactly the defining summary of the union*."
+      ],
+      "M2": [
+        "This is repeated R4: after block `b` the accumulator summarizes the prefix ending at its right endpoint, by identity then the split lemma."
+      ],
+      "M3": [
+        "In f32 **the tree is semantics**"
+      ],
+      "M4": [
+        "Negative matcher tests: divisor depends on `j`, changed score between max and exp, overlapping tiles."
+      ],
+      "M5": [
+        "The unstable spelling `log(sum exp(a))` needs a separate stabilization rule."
+      ],
+      "M6": [
+        "Primary endpoint fixed in advance: at `(4096,64)` derived median time <=80% of unfused and <=125% of hand-written, and derived DRAM bytes <=75% of unfused."
+      ],
+      "M7": [
+        "The carried `p` is *unnormalized*: merging two already divided outputs by these coefficients alone is wrong."
+      ]
+    },
+    "notes": "Compact and correct: five rules with a split lemma on summaries, precise f32 tree semantics, exact checks for inlining/packing and origin tolerance for the rest, correct reach and a preregistered single-endpoint experiment; slightly thinner on test detail than the strongest documents."
+  },
+  {
+    "doc": "doc-F.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "Thus `merge(H(A),H(C))=H(A ⊎ C)` (union retaining multiplicities)."
+      ],
+      "M2": [
+        "After `R1(score) → R1(output) → R2 → R3 → R4 → R5 → R6`, the IR denotes this row program:"
+      ],
+      "M3": [
+        "An ordered tuple fold does not need associativity to execute. Only a checked real summary law allows regrouping; a user-supplied combine is not presumed associative."
+      ],
+      "M4": [
+        "a mutated merge with a missing rescale or dropped final tile must fail the exact check; use late-max/tail cases to test that the numerical oracle can catch those mutants independently."
+      ],
+      "M5": [
+        "If written with a separate `y_j=e_j/L` and `Σ(y_j*w_j)`, this minimal catalog does not match"
+      ],
+      "M6": [
+        "A failure of any required match/acceptance, unexpected global score/weight temporary, or reproducible miss of any of those performance thresholds refutes the combined hypothesis."
+      ],
+      "M7": [
+        "Accumulating unshifted `exp(a_j)` would be simpler over the reals, but can overflow f32 even on the experimental domain."
+      ]
+    },
+    "notes": "Correct six-rule derivation with a tagged summary fold and tile-local evaluation, sound origin-pinned checking with mutants, and honest reach; it needlessly also moves /sqrt(D) out of the score sum (an extra f32 change the derivation does not need)."
+  },
+  {
+    "doc": "doc-G.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "Doing the same for `Q` and adding gives exactly `Z_(P++Q)`."
+      ],
+      "M2": [
+        "Rewrite `F(b,M)` to `exp(m_b-M) * F(b,m_b)`."
+      ],
+      "M3": [
+        "In f32 mode round every numeric literal, numeric shape value, arithmetic operation, elementary function and reduction step as in core Tix."
+      ],
+      "M4": [
+        "As negative controls try a divisor using the bound index, a partition that drops the last key, and a merge that omits the prefix scale on the value lanes. The exact verifier must reject all three."
+      ],
+      "M5": [
+        "Weights `tanh(a-M)`, or a payload that depends on the row maximum"
+      ],
+      "M6": [
+        "take at most **80% of unfused time** and at most **125% of hand-written streaming time**, and move fewer measured DRAM bytes than the unfused program"
+      ],
+      "M7": [
+        "A matcher declaring its own replacement valid would miss, for example, a merge that scales `L` correctly but omits the same factor on `U`."
+      ]
+    },
+    "notes": "Six correct rules (inline, divisor, zip, partition, rebase, fold) with verified f32 examples, exact/tolerance per rule, negative controls and a sound experiment; the byte threshold ('fewer than unfused') is weaker than the time thresholds."
+  },
+  {
+    "doc": "doc-H.md",
+    "scores": {
+      "M1": 2,
+      "M2": 3,
+      "M3": 4,
+      "M4": 3,
+      "M5": 3,
+      "M6": 4,
+      "M7": 4
+    },
+    "errors": [
+      {
+        "quote": "derive the per-step normalized step `yield (m2, l', (a*o + e2*v)/l')` (divide the freshly updated state by the freshly updated `l` inside the step) and drop the epilogue.",
+        "problem": "If the o field holds the normalized output, the correct update is o' = (a·l·o + e2·v)/l'; the stated step omits the old normalizer l, so the recurrence is wrong whenever l ≠ 1 and Lemma 3b does not hold for it.",
+        "severity": "major"
+      },
+      {
+        "quote": "over f32 `l[i]` can underflow to 0 (total underflow of every `e`), where **both** forms produce `0/0`",
+        "problem": "m is the exact f32 maximum of the same s values, so the argmax term is exp(0) = 1 exactly and l ≥ 1 in f32 (and in the streaming form); 'total underflow' cannot occur. The domain's case (iv) is impossible and the NaN-agreement clause of the relation rests on a false premise.",
+        "severity": "major"
+      },
+      {
+        "quote": "masked entries contribute `s_j = −∞`; Lemma 3 extends verbatim (`max` no-ops, `exp(−∞ − m) = 0`)",
+        "problem": "The R3 step computes a = exp(m − m2) and e2 = exp(s_j − m2) with no empty guard (only FLASH has one); with m = m2 = −∞ (leading masked keys, or any fully masked tile, since P4's inner fold restarts at init) both are exp(−∞ − (−∞)) = NaN. Causal masking does not carry over verbatim.",
+        "severity": "major"
+      },
+      {
+        "quote": "the sum of N·D such terms keeps relative error O(N·D·ε) against the real value in the worst case",
+        "problem": "The score sum has D terms, not N·D.",
+        "severity": "minor"
+      },
+      {
+        "quote": "`|s| ≤ 4·N·D` ≪ 3.4e38",
+        "problem": "With |q|,|k| ≤ 4 the bound is |s| ≤ 16√D, independent of N; 4·N·D is not even an upper bound for N = D = 1.",
+        "severity": "minor"
+      },
+      {
+        "quote": "a probe run (§6) that returns the fold's `m` component and compares bit-for-bit against P0's `m`",
+        "problem": "R1 (scale-in) has already changed the f32 scores, so the fold's m is not bit-identical to P0's m; the exact probe must compare against the predecessor.",
+        "severity": "minor"
+      },
+      {
+        "quote": "it is the compile-time certificate of the O(N·D) memory claim",
+        "problem": "Confining tile tensors to the fold bounds storage, not DRAM traffic; K and V are re-read once per query tile, Θ(N²D/Bq) bytes without cache reuse.",
+        "severity": "minor"
+      },
+      {
+        "quote": "is the placement production FlashAttention-2 kernels use",
+        "problem": "FlashAttention-2 keeps the output unnormalized and divides once at the end; per-step normalization is the FlashAttention-1 placement.",
+        "severity": "minor"
+      },
+      {
+        "quote": "the tolerance relation will *decline* the derivation on such inputs rather than silently accept it",
+        "problem": "R5 is checked by bit equality; if the source already computes s2/C − mu², the fused form is bit-identical and passes, and if the source is the centered form R5 does not apply. No tolerance gate declines anything here.",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 4,
+    "overall": 5,
+    "quotes": {
+      "M1": [
+        "derive the per-step normalized step `yield (m2, l', (a*o + e2*v)/l')`",
+        "over f32 `l[i]` can underflow to 0 (total underflow of every `e`)"
+      ],
+      "M2": [
+        "s[i, j]  = sum(d) q[i, d] * k1[j, d];          // consumed only inside the fold",
+        "The priority order `R1 → R2 → R3 → R4` finds this path with no search"
+      ],
+      "M3": [
+        "**Empty-state convention.** In the flash combine (§4, R3), when both argument states are empty (`m₁ = m₂ = −∞`) the combine yields `init`"
+      ],
+      "M4": [
+        "(iv) a total-underflow case (every `exp` argument < −104 in f32 — both forms yield `l = 0`, `o = 0/0`)",
+        "Initial parameters `rtol = 1e-4, atol = 1e-6`"
+      ],
+      "M5": [
+        "masked entries contribute `s_j = −∞`; Lemma 3 extends verbatim",
+        "the tolerance relation will *decline* the derivation on such inputs rather than silently accept it"
+      ],
+      "M6": [
+        "The derived kernel's DRAM bytes fit `a·N·D + b` (linear fit, R² ≥ 0.99, and the linear model beats the quadratic model on the sweep)"
+      ],
+      "M7": [
+        "The reported number is the smallest `rtol` at which any mutant survives"
+      ]
+    },
+    "notes": "The core streaming lemma and FLASH combine are right and the mutation-margin idea is good, but the optional R6 rule is algebraically wrong, the claimed f32 underflow of l is impossible, masking is claimed to carry over when the step yields NaN, and no rule moves the score producer into the fold between P3 and P4."
+  },
+  {
+    "doc": "doc-I.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "Thus the merge produces the summary of the concatenation."
+      ],
+      "M2": [
+        "| R6, tile max then scores | Bind `m_t` and the score tile locally in the fold body; compute `P_{J_t}(m_t)` there; no global `s`, `e` or tile-summary array |"
+      ],
+      "M3": [
+        "In particular a real monoid certificate is **not** an f32 associativity flag."
+      ],
+      "M4": [
+        "Test mutation negatives (e.g. swap merge scales, drop the last key) so a verifier or harness accepting a deliberately wrong candidate fails the study."
+      ],
+      "M5": [
+        "A two-pass centered variance does **not** match: converting it to `E[x²]-E[x]²` needs a new rule and may be numerically unacceptable near constant rows."
+      ],
+      "M6": [
+        "it moves at most half the off-chip bytes of the materialized lowering, takes at most `1/1.5` of the materialized lowering's median time, and takes at most `1.25×` the median time of the hand-written streaming comparator."
+      ],
+      "M7": [
+        "Derive the online recurrence by changing the representation of a weighted sum: a partial sum carries the maximum at which its weights were computed."
+      ]
+    },
+    "notes": "Six correct rules with a clear stage table, precise fold semantics with a lazy empty tag, exact/tolerance assignment, mutation negatives, correct generality and a preregistered experiment; competent rather than novel."
+  },
+  {
+    "doc": "doc-J.md",
+    "scores": {
+      "M1": 4,
+      "M2": 4,
+      "M3": 4,
+      "M4": 4,
+      "M5": 3,
+      "M6": 3,
+      "M7": 5
+    },
+    "errors": [
+      {
+        "quote": "measured DRAM bytes and GPU kernel time scale as O(N) in `N` (D fixed)",
+        "problem": "The derived kernel performs Θ(N²D) arithmetic, so its time cannot scale linearly in N; with fixed tiles K/V reloads are also Θ(N²D/Bq) bytes absent cache reuse. The primary hypothesis is wrong as stated.",
+        "severity": "major"
+      },
+      {
+        "quote": "what changes is memory traffic: O(N·D) instead of O(N²) bytes.",
+        "problem": "Removing s and e bounds storage; DRAM traffic stays Θ(N²D/Bq) for K/V without inter-tile reuse.",
+        "severity": "minor"
+      },
+      {
+        "quote": "**Check.** Recorded argument + **exact differential gate** (bit-identity against `P0`).",
+        "problem": "split-index and nest-max are applied after the f32-changing factor-const steps 3-4, so the candidate is not bit-identical to P0; the exact gate must compare against the predecessor or it rejects a correct derivation.",
+        "severity": "minor"
+      },
+      {
+        "quote": "no cancellation on this program because all `exp`-summands are non-negative and the normalizer is ≥ 1",
+        "problem": "nest-sum and the fold are also applied to ov = Σ e·v, whose summands have the sign of v and do cancel; the no-cancellation argument holds only for l.",
+        "severity": "minor"
+      },
+      {
+        "quote": "arithmetizing a mask with `±huge` breaks the finiteness domain through `exp`",
+        "problem": "An additive large negative bias gives exp(s − m) → 0 without overflow because the max subtraction keeps every argument ≤ 0; masked attention through a bias tensor is reached by the document's own 'arbitrary score expression S'.",
+        "severity": "minor"
+      },
+      {
+        "quote": "Check it by exact rational arithmetic at several random rational points",
+        "problem": "exp at rational points cannot be evaluated in exact rational arithmetic; the method is a high-precision numerical identity test, and Lindemann–Weierstrass needs algebraic exponents and coefficients, so the stated justification is muddled.",
+        "severity": "minor"
+      },
+      {
+        "quote": "ov[i, x] = sum(jt, jj) eb[i, jt, jj] * g[i, jt] * v[B*jt + jj, x];",
+        "problem": "This parses as ((eb·g)·v); lifting g out of the inner sum (steps 11-12) needs reassociation and commutation of the product, which factor-const's pattern (factor as the outermost layer) does not cover and which changes f32 rounding.",
+        "severity": "minor"
+      },
+      {
+        "quote": "reached *by the construct* with a different verified monoid: the pair-add combine on state `(Σx, Σx²)` (associativity trivial, `fold-intro`'s degenerate case with no maximum component)",
+        "problem": "fold-intro's pattern requires the max, exp-shift and weighted-sum statements; none of the seven rules zips two independent sums, so the stated rule set does not reach this program.",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 5,
+    "overall": 6,
+    "quotes": {
+      "M1": [
+        "no cancellation on this program because all `exp`-summands are non-negative and the normalizer is ≥ 1",
+        "a 128-bit-precision zero at 5 sampled points with distinct exponent values is evidence of the identity, not luck"
+      ],
+      "M2": [
+        "ov[i, x] = sum(jt, jj) eb[i, jt, jj] * g[i, jt] * v[B*jt + jj, x];",
+        "If `c` sits inside further operations that also avoid `d`, the rule applies to the outermost such layer."
+      ],
+      "M3": [
+        "(m[i], l[i], ov[i, x]) = fold(jt; sc_combine) (mb[i, jt], lb[i, jt], ob[i, x, jt]);",
+        "This is *checked* assurance, probabilistic in the mechanism and recorded with its sampling details — not `proof`."
+      ],
+      "M4": [
+        "**Check.** Recorded argument + **exact differential gate** (bit-identity against `P0`)."
+      ],
+      "M5": [
+        "arithmetizing a mask with `±huge` breaks the finiteness domain through `exp`",
+        "fold-intro`'s degenerate case with no maximum component"
+      ],
+      "M6": [
+        "measured DRAM bytes and GPU kernel time scale as O(N) in `N` (D fixed)"
+      ],
+      "M7": [
+        "shifting by the block *minimum* or *mean* is algebraically exact over ℝ and passes tolerance on tame inputs, but leaves the finite domain"
+      ]
+    },
+    "notes": "A detailed thirteen-step derivation with correct core identities, the useful observation that splitting j is f32-exact under lexicographic multi-index order, and good min/mean-shift negative controls; but the hypothesis that time scales as O(N) is wrong, exact gates are pinned to P0 after f32-changing steps, and several reach claims (masking, layernorm) are incorrect."
+  },
+  {
+    "doc": "doc-K.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 1,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "This proves the combine preserves canonical summaries and is associative on summaries of disjoint segments, with `Empty` as identity."
+      ],
+      "M2": [
+        "Apply R4 with `B = 32`, including a short final block. Apply R5 to the inner fold."
+      ],
+      "M3": [
+        "A combine need not be associative in f32. A regrouping rule requires an approved real associativity and identity argument on reachable states, plus the tolerance gate."
+      ],
+      "M4": [
+        "The reference output is `32*exp(-2)/(32*exp(-2)+1)`, about 0.8124."
+      ],
+      "M5": [
+        "Unshifted `log(sum(j) exp(a(j)))` likewise has no matched center."
+      ],
+      "M6": [
+        "median GPU elapsed time for the derived kernel will be at most 0.50× the unfused lowering and 1.25× the hand-written streaming kernel"
+      ],
+      "M7": [
+        "A stream operator specific to attention would be simpler to lower, but it would hide the distinction between packing, changing the centering and blocking that the experiment tests."
+      ]
+    },
+    "notes": "Concise and correct six-rule derivation with a canonical-summary combine, tag-based identity, a verified numerical negative control for the missing rescale, origin-pinned checks and a preregistered experiment."
+  },
+  {
+    "doc": "doc-L.md",
+    "scores": {
+      "M1": 4,
+      "M2": 5,
+      "M3": 5,
+      "M4": 4,
+      "M5": 4,
+      "M6": 4,
+      "M7": 4
+    },
+    "errors": [
+      {
+        "quote": "the algebra survives (masked scores are `−∞`, contributing zero weight; every lemma tolerates `−∞` emit values as long as some score is finite)",
+        "problem": "In the f32 sequential fold from init (−∞, 0, 0) a leading −∞ emit evaluates exp(−∞ − (−∞)) = NaN, and a fully masked block in the twopass schedule has m_t = −∞; the lemmas tolerate −∞ only with an explicit empty guard.",
+        "severity": "minor"
+      },
+      {
+        "quote": "with the conventions `exp(−∞) = 0`, and an empty side contributing `(−∞, 0)` identically",
+        "problem": "For both sides empty Lemma 1 needs exp(−∞ − (−∞)), which is undefined; the identity requires a tag or guard (R5's B | N side condition happens to avoid it).",
+        "severity": "minor"
+      },
+      {
+        "quote": "That is FlashAttention-2's algorithm, f32 operation for operation.",
+        "problem": "FlashAttention-2 exponentiates a block against the running maximum after the block and rescales only the old state; the twopass schedule uses the block maximum and rescales both operands, so the f32 operation sequences differ.",
+        "severity": "minor"
+      },
+      {
+        "quote": "The derived kernel moves no N²-term bytes",
+        "problem": "The document's own byte model for the derived kernel is '≈ 8·N²·D/R + O(N·D)', which has an N² term from K/V re-reads.",
+        "severity": "minor"
+      },
+      {
+        "quote": "The plain program materializes three N×N intermediates",
+        "problem": "It materializes two (s and e).",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 4,
+    "overall": 7,
+    "quotes": {
+      "M1": [
+        "with the conventions `exp(−∞) = 0`, and an empty side contributing `(−∞, 0)` identically"
+      ],
+      "M2": [
+        "Eight rule applications (`R1, R2, R2, R3, R4, R2, R5, R6` — six distinct rules), each checked independently, in six derivation steps."
+      ],
+      "M3": [
+        "**Blocked(B) twopass:** as blocked, except each block value is computed as"
+      ],
+      "M4": [
+        "i.i.d. uniform in `[−1, 1]` per element",
+        "no overflow, no underflow to subnormals, so the measured deviations are pure rounding effects"
+      ],
+      "M5": [
+        "every lemma tolerates `−∞` emit values as long as some score is finite"
+      ],
+      "M6": [
+        "The derived kernel moves no N²-term bytes"
+      ],
+      "M7": [
+        "the `b = N` corner of R5. The rule set thus derives a *family* of which FlashAttention is the `b ≪ N` member"
+      ]
+    },
+    "notes": "A precise state-reduction construct whose schedule clauses (blocked, twopass) are introduced by checked rewrites, a complete eight-application derivation and a tolerance with an explicit error model; checking uses only uniform inputs with no directed or mutation cases, and several side claims (masking, FA2 equivalence, 'no N²-term bytes') are inaccurate."
+  },
+  {
+    "doc": "doc-M.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 2,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "This proves closure, associativity on summaries and the two unit laws; induction on length proves the fold replacement."
+      ],
+      "M2": [
+        "Use **R4 in reverse** inside each block to compute `S(tile)` by its R3 expansion rather than a serial merge per score."
+      ],
+      "M3": [
+        "Operational f32 meaning is evaluation of the *recorded* tree (default increasing left fold)."
+      ],
+      "M4": [
+        "Negative controls: drop `p` on `U_A` for a rising-maximum row, or skip the tail; certificate/cover checker must reject each, and a differential-only replay should expose each on a nonconstant payload."
+      ],
+      "M5": [
+        "A contraction with `tanh(b/L)` also fails: changing the maximum/denominator no longer rescales the payload sum by a common factor."
+      ],
+      "M6": [
+        "median derived time ≤ `0.8 ×` unfused and ≤ `1.25 ×` hand-streaming; DRAM bytes derived ≤ `0.8 ×` unfused and ≤ `1.25 ×` hand-streaming."
+      ],
+      "M7": [
+        "**Linear footprint is not linear DRAM traffic.**"
+      ]
+    },
+    "notes": "Correct five-rule derivation (with R4 used in reverse inside tiles and a guard against expand/fold cycles), precise recorded-tree f32 semantics, sound origin-pinned checking with negative controls and correct reach; solid but standard insight."
+  },
+  {
+    "doc": "doc-N.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [],
+    "over_engineering": 1,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "Factoring the first term from A's sums and doing the same for B gives both fields of the merged summary."
+      ],
+      "M2": [
+        "Replace global **m**, the weights and the zipped sums by **fold(j, empty, (a_j, 1, V_j), merge)**."
+      ],
+      "M3": [
+        "The online-summary combine below is associative over reals on the specified summaries. It has a prescribed f32 operation tree and no f32 associativity promise."
+      ],
+      "M4": [
+        "Verify that a mismatched key extent, a dropped tail, an extra weight consumer and an omitted rescale fail the structural checks using mutated applications."
+      ],
+      "M5": [
+        "R2 uses **E=x, V=x** and computes both raw moments in one traversal."
+      ],
+      "M6": [
+        "its median GPU time will be at most **0.75×** that of the unfused lowering and at most **1.25×** that of an independently written streaming kernel."
+      ],
+      "M7": [
+        "Every resulting revision is compared with the same f64 evaluation of the original Tix program so that the checks do not spend the error budget again at each step."
+      ]
+    },
+    "notes": "Four correct rules (hoist, zip, max-relative summaries, tile) with verified f32 probes, a precise ordered state fold, sound checking and correct, specific reach claims; minimal and runnable."
+  },
+  {
+    "doc": "doc-O.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 4,
+      "M6": 5,
+      "M7": 4
+    },
+    "errors": [
+      {
+        "quote": "The first tile may be short, and the last tile uses just its live positions.",
+        "problem": "With the stated partition J_t = [tB, min((t+1)B, N)) only the last tile can be short.",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 1,
+    "overall": 8,
+    "quotes": {
+      "M1": [
+        "Thus `rebase(T(A),T(B)) = T(A ∪ B)` for disjoint sets, and both groupings of three disjoint sets summarize their union."
+      ],
+      "M2": [
+        "Run the following rules in order."
+      ],
+      "M3": [
+        "A combine region is executable without an associativity assertion. A rule that changes the grouping must verify the particular real identity and pass the f32 gate."
+      ],
+      "M4": [
+        "Make partition and rebase checks fail on deliberate edits such as dropping a tail position and rescaling just `l`."
+      ],
+      "M5": [
+        "The same fold construct can carry `(count,mean,M2)`, but the rebase rule only proves exponential shifts."
+      ],
+      "M6": [
+        "Prespecify success at **both** primary shapes as derived time ≤ 75% of unfused time, derived DRAM bytes ≤ 75% of unfused bytes, and derived time ≤ 125% of hand-written streaming time."
+      ],
+      "M7": [
+        "Each block contains a term with weight one, and each rebase retains a factor of one on a state whose maximum is the merged maximum."
+      ]
+    },
+    "notes": "Correct five-rule derivation with tagged rebase summary, f32-exact zip and sink steps, origin-pinned tolerance and negative controls, and a clear experiment; the layernorm entry does not say whether raw moments are reachable by its zip rule."
+  },
+  {
+    "doc": "doc-P.md",
+    "scores": {
+      "M1": 5,
+      "M2": 5,
+      "M3": 5,
+      "M4": 5,
+      "M5": 5,
+      "M6": 5,
+      "M7": 5
+    },
+    "errors": [],
+    "over_engineering": 3,
+    "overall": 9,
+    "quotes": {
+      "M1": [
+        "This proves the combine yields the specification on the concatenation."
+      ],
+      "M2": [
+        "| R7 on the block fold | Execute the tiled loop below. No tensor indexed by all `(i,j)` is live. |"
+      ],
+      "M3": [
+        "It specifies all seeds, operand orders and parentheses; it is part of the revision, not a backend hint."
+      ],
+      "M4": [
+        "Require guard/certificate rejection for invalid edits; run arithmetic mutants in the harness to verify the differential suite detects output-changing mistakes."
+      ],
+      "M5": [
+        "`Σ tanh(t-M) V` or `Σ exp(t-M) p(j,M)` with nonlinear dependence on `M` in `p`"
+      ],
+      "M6": [
+        "the geometric mean of per-shape derived/unfused **time** ratios will be ≤0.80, derived/hand time ratios ≤1.25, and derived/unfused **DRAM byte** ratios ≤0.75."
+      ],
+      "M7": [
+        "The mechanical law is transport of scale: `r(u,u)=1`, `r(u,v)r(v,h)=r(u,h)`."
+      ]
+    },
+    "notes": "Seven correct rules whose summary fold is justified by an abstract scale-transport law (generalizing beyond exp), an explicit tree semantics, a verified mutant example, an R5/R6 ablation and a well-specified GB10 protocol."
+  },
+  {
+    "doc": "doc-Q.md",
+    "scores": {
+      "M1": 2,
+      "M2": 3,
+      "M3": 4,
+      "M4": 3,
+      "M5": 4,
+      "M6": 3,
+      "M7": 3
+    },
+    "errors": [
+      {
+        "quote": "l[i]       = l[i] * g[i] + lB[i];",
+        "problem": "lB = Σ exp(s − mB) is relative to the block maximum; when mB is below the running maximum the block side must be scaled by exp(mB − max(m, mB)) < 1, exactly as the document's own flash combine (a⃗₂ · exp(m₂ − m)) says. The derived program omits this factor on l and on u, so it is wrong over the reals: scores [1 | 0] give (v1 + v2)/2 instead of (v1 + e⁻¹v2)/(1 + e⁻¹).",
+        "severity": "major"
+      },
+      {
+        "quote": "**only two rules ever leave the f32-exact world** (the rescale rule R5 and the blocking rule R6)",
+        "problem": "R2 (division hoisting) is also not f32-exact, as the document's own tier table ('EXACT-ℝ + TOL') states.",
+        "severity": "minor"
+      },
+      {
+        "quote": "Rounding differences are of order ε·log B within a block",
+        "problem": "Each block is a left fold of B terms, whose rounding error is O(ε·B) worst case (≈ ε√B typical), not ε·log B.",
+        "severity": "minor"
+      },
+      {
+        "quote": "it is the reason the derived program's traffic is O(N·D)",
+        "problem": "Fusion bounds storage; with fixed query tiles K/V are re-read Θ(N/Bq) times, so traffic is not O(N·D) without cache reuse, which H1 then asserts as the hypothesis.",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 3,
+    "overall": 4,
+    "quotes": {
+      "M1": [
+        "l[i]       = l[i] * g[i] + lB[i];"
+      ],
+      "M2": [
+        "Everything inside `step` other than the last three assignments is rule R7's plain-Tix block body"
+      ],
+      "M3": [
+        "**Sequential override semantics** inside `step`"
+      ],
+      "M4": [
+        "**Against the f64 reference**: the same program evaluated in f64 (no",
+        "Two-sided because R6 typically *reduces* accumulated error"
+      ],
+      "M5": [
+        "The rule set reaches the program; the tolerance tier is the open piece."
+      ],
+      "M6": [
+        "The derived kernel's measured DRAM traffic is within 3×"
+      ],
+      "M7": [
+        "This definitional coincidence is the pivot of the whole design"
+      ]
+    },
+    "notes": "The canonical-form proof and certified-family idea are sound, but the final derived program drops the block-side rescale factor and is therefore incorrect even over the reals; the checking plan's reference is ambiguous and the traffic hypothesis rests on a storage-equals-traffic assumption."
+  },
+  {
+    "doc": "doc-R.md",
+    "scores": {
+      "M1": 3,
+      "M2": 5,
+      "M3": 5,
+      "M4": 4,
+      "M5": 2,
+      "M6": 4,
+      "M7": 5
+    },
+    "errors": [
+      {
+        "quote": "which is *not* equal to the two-pass version's `(m, l)` state — the running maximum yields `(μ_t, λ_t)` differing by a factor.",
+        "problem": "The final running maximum is the global maximum, so the fold's final state is exactly (m, l) over the reals (the document's own §8 consequence 2 says the state is the program's own quantities); the gauge-invariance machinery is not needed for log-sum-exp.",
+        "severity": "major"
+      },
+      {
+        "quote": "| attention that also returns `l` (or `n`) | R4, condition 2 | the observation is not homogeneous of degree zero in `(λ, ν)`: it exposes the shift, so the running maximum is not allowed.",
+        "problem": "R4's final state is (m, l, n) exactly, so returning l or n is correct; side condition 2 is unnecessary and this claimed failure is false.",
+        "severity": "major"
+      },
+      {
+        "quote": "a one-pass softmax with no stored `e` — R4 optional because `m` alone can be folded with R2 into the same pass",
+        "problem": "l depends on m, so R2 (which bundles independent bodies) cannot put m and l in one pass; and y needs every weight at the final (m, l), so a returned softmax needs a second pass.",
+        "severity": "minor"
+      },
+      {
+        "quote": "Bounded by the usual `O(log N · u)` and measured at a couple of ulps.",
+        "problem": "Sequential and blocked left folds have O(N·u) worst-case error; O(log N·u) is the pairwise-tree bound.",
+        "severity": "minor"
+      },
+      {
+        "quote": "which turns elapsed time into a traffic estimate within about 10 % in the memory-bound regime",
+        "problem": "Inferring bytes from elapsed time is circular for a metric meant to explain the time result, and assumes the kernel is bandwidth bound.",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 5,
+    "overall": 6,
+    "quotes": {
+      "M1": [
+        "which is *not* equal to the two-pass version's `(m, l)` state — the running maximum yields `(μ_t, λ_t)` differing by a factor."
+      ],
+      "M2": [
+        "**P4 is the streaming form**: two statements, one pass, no N×N tensor anywhere."
+      ],
+      "M3": [
+        "`sum(j) E` is `(acc[<free indices>]) = fold(j) with (acc = 0) -> (acc + E)`"
+      ],
+      "M4": [
+        "The constants were fitted so that every measurement in §16 falls inside with headroom of at least 1.7×"
+      ],
+      "M5": [
+        "| attention that also returns `l` (or `n`) | R4, condition 2 |",
+        "a one-pass softmax with no stored `e`"
+      ],
+      "M6": [
+        "**H1 (performance).** The derived kernel's measured DRAM traffic is Θ(N·D)"
+      ],
+      "M7": [
+        "the rescaling factor multiplies `λ` and `ν` identically, so its rounding error is common-mode and cancels in `ν/λ`"
+      ]
+    },
+    "notes": "A clean, explicit derivation (P0 to P5) with a conservative fold construct, structural f32 checks and a score-range-scaled tolerance backed by probes; but it misreads the final fold state as shift-dependent, which produces false side conditions and false reach claims (LSE gauge, attention returning l, one-pass softmax)."
+  },
+  {
+    "doc": "doc-S.md",
+    "scores": {
+      "M1": 4,
+      "M2": 5,
+      "M3": 5,
+      "M4": 4,
+      "M5": 4,
+      "M6": 4,
+      "M7": 5
+    },
+    "errors": [
+      {
+        "quote": "(b) the normalizer must not be zero; both are implied by `u[i] ≥ max_j s[i,j]`",
+        "problem": "An offset far above the maximum (u − max s ≳ 104) underflows every weight to 0 in f32; a nonzero normalizer also needs an upper bound on u − max s (u = running max satisfies both).",
+        "severity": "minor"
+      },
+      {
+        "quote": "The state is `(max, index)` and the natural combine is not associative on ties",
+        "problem": "A first-wins (or last-wins) argmax combine is associative; ties make it non-commutative, not non-associative.",
+        "severity": "minor"
+      },
+      {
+        "quote": "because fewer rescales happen: a block's max is fixed for the whole block, so each element is rescaled at most once per block boundary rather than once per element.",
+        "problem": "In A5 the inner block fold is the same per-element combine from (−∞, 0, 0), so it rescales at every in-block maximum increase; the explanation contradicts the construct.",
+        "severity": "minor"
+      },
+      {
+        "quote": "| **log-sum-exp** (`lse[i] = log(Σ_j exp(x[i,j]))`) | R2 (with a `log`), R3 |",
+        "problem": "R2 only preserves the quotient t/l; moving the offset through a log needs log(Σ exp(s)) = u + log(Σ exp(s − u)), which no stated rule provides.",
+        "severity": "minor"
+      },
+      {
+        "quote": "+  v re-read per row (N²)",
+        "problem": "Re-reading v for every row is N²·D elements, not N².",
+        "severity": "minor"
+      }
+    ],
+    "over_engineering": 7,
+    "overall": 7,
+    "quotes": {
+      "M1": [
+        "(b) the normalizer must not be zero; both are implied by `u[i] ≥ max_j s[i,j]`"
+      ],
+      "M2": [
+        "**A4 is the answer to the question.**"
+      ],
+      "M3": [
+        "**two empty states do not combine**"
+      ],
+      "M4": [
+        "Plus, once per *pass*, the tolerance contract of §14.2 over its cases."
+      ],
+      "M5": [
+        "R2 (with a `log`), R3",
+        "The state is `(max, index)` and the natural combine is not associative on ties"
+      ],
+      "M6": [
+        "**Primary metric: bytes moved (DRAM), with device time second.**"
+      ],
+      "M7": [
+        "R3 and R5 are state-side and safe; R1's optional application is score-side and expensive"
+      ]
+    },
+    "notes": "Correct and explicit derivation (A0 to A5) with a well-defined fold, a measured p0-relative tolerance with a status clause, and the useful score-side versus state-side distinction; but it is far longer than the question needs (intern guide, extra rules and extensions, evidence schemas) and carries several small factual slips."
+  }
+]
