@@ -49,3 +49,4 @@ ui-gallery              5 revs  200/200 (+0 limit)
 value-numbering         2 revs  100/100 (+0 limit)
 wrong-shift             0 revs  200/200 (+0 limit)  rejected: div-to-shift
 {"projects":50,"functions":135,"cases":8300,"decided":8286,"agree":8286,"inconclusive":14,"failures":0}
+checks-done

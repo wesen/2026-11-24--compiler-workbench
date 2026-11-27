@@ -1,0 +1,16 @@
+{
+ "regex": {
+  "rejected": [],
+  "r0": 8183,
+  "speed": 6515,
+  "speedTuned": 5160,
+  "reference": 6628
+ },
+ "lz": {
+  "rejected": [],
+  "r0": 185876,
+  "speed": 149893,
+  "speedTuned": 140105,
+  "reference": 156405
+ }
+}

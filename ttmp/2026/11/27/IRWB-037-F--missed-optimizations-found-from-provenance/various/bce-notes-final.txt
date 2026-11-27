@@ -1,0 +1,3 @@
+branch           13 bounds-lab:total bounds-lab:pairs bounds-lab:tail bounds-two:dot checksum:total early-exit:find histogram:histogram ramp:ramp start-here:peak strength:meter strings:vowels strings:digits wrong-shift:bucket
+check, offset    16 bytecode-vm:runVm chess-search:chessSearch chess-search:chessPerft chess-search:chessAcceptScore chess-search:chessPrepareNode chess-search:chessSearchStep heat-lab:sort sort:sort
+check            14 chess-search:chessMake chess-search:chessPerft heat-lab:sort histogram:histogram lz-roundtrip:compress regex-nfa:regexMatch sha-chacha:sha256Block sort:sort

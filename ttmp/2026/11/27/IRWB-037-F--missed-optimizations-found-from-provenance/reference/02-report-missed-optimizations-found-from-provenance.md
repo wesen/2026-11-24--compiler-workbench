@@ -118,9 +118,11 @@ without entering the first's block.
   increment at the latch and removed 90 of the 346 instructions. The path condition removed all 346.
 - The existing case (a dominating `i < length` branch) compares reaching-definition sets; that is not enough in
   general (`A; if (c) i = i + 1; B` in a loop has one set at A and B). It is unchanged; listed under Later.
-- Indices `x + c` (a temporary whose one reaching definition is `x + c`) let `t = j - 1` twice be one index. The
-  case `x + c < length` proving `x + c` is implemented but does not fire on bounds-offset, correctly: the range of
-  `i + 1` includes the overflow at `i = MAX`, where the check must trap.
+- Indices `x + c` (a temporary whose one reaching definition is `x + c`) let `t = j - 1` twice be one index.
+- Tried and removed: the branch case extended to `x + c < length` proving the index `x + c` (with a range fact
+  excluding the overflow). It fired nowhere in the corpus (`scripts/12-bce-notes.mjs`, `various/bce-notes-final.txt`);
+  on bounds-offset it correctly does not, since the range of `i + 1` includes the overflow at `i = MAX`, where the
+  check must trap.
 - Simplest alternative: global value numbering of checks. More machinery for one target.
 
 ### licm-lengths (`src/typed/passes.ts`, licm with `lengths: true`)
@@ -268,7 +270,7 @@ either: no gap points at them.
 - **Gap to the reference as a work list** (round two) found the length reload and the offset indices. It does not
   say what the reference does differently; reading the reference's hottest instructions beside ours did.
 - Negative results: hoisting every length (a regression in one cell, fixed by the read-count guard); outermost-only
-  hoisting alone (no effect on that regression); `x + c < length` proving `x + c` (does not fire; correctly).
+  hoisting alone (no effect on that regression); `x + c < length` proving `x + c` (fired nowhere; removed).
 
 ## Framework changes
 
@@ -294,7 +296,7 @@ Argued, and checked only by the meaning contract on generated cases, parity and 
 
 ## Verification
 
-All on the final compiler (compiler sources at commit 2c913eb; later commits change tests, expectations, the book and this ticket), after `npm run build`:
+All on the final compiler (compiler sources at commit FINALSRC: 2c913eb plus the removal of the unused bce case, which fired nowhere, so the corpus counts are 2c913eb's; checked again below), after `npm run build`:
 
 | Check | Result |
 | --- | --- |

@@ -855,25 +855,18 @@ export const bce = typedPass({
             z = reach.reachingAt(idx.sid, l).sort().join();
           return a === z;
         };
+        // the branch's case takes a plain local: `x + c < length` proves the index x + c only when the ranges exclude
+        // the overflow at the top, where the check must trap; tried, it fired nowhere in the corpus (IRWB-037-F)
         const x = st.get(cond.args[0]) as ValueRec;
-        if (idx.offset === 0) {
-          if (x.op !== 'get' || x.imm !== idx.local) continue;
-          if (!same(idx.local) || !same(buf)) continue;
-          if (ranges.at(t.id, idx.local)[0] < 0) continue;
-        } else {
-          // IRWB-037-F: `x + c < length` proves the index `x + c` (the same local and constant, x unchanged
-          // between where the two read it) when the range of x + c at the branch is not negative
-          const ci = resolve(t.id, cond.args[0]);
-          if (ci.local !== idx.local || ci.offset !== idx.offset) continue;
-          if (!sameDefs(idx.local, ci.sid, idx.sid) || !sameDefs(buf, t.id, last.id)) continue;
-          if (ranges.of(t.id, cond.args[0])[0] < 0) continue;
-        }
+        if (idx.offset !== 0 || x.op !== 'get' || x.imm !== idx.local) continue;
+        if (!same(idx.local) || !same(buf)) continue;
+        if (ranges.at(t.id, idx.local)[0] < 0) continue;
         tx.replaceStmt(
           last.id,
           { op: 'br', to: last.else },
           {
             because: [t.id, `fact:ranges(${f.name}): ${f.locals[idx.local].name} ≥ 0`],
-            note: `${t.id} already proved ${f.locals[idx.local].name}${idx.offset ? ` + ${idx.offset}` : ''} < length`,
+            note: `${t.id} already proved ${f.locals[idx.local].name} < length`,
           },
         );
         break;

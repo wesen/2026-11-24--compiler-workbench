@@ -175,3 +175,11 @@ with `lengths: true`), which `speed` runs in licm's place; a pipeline names pass
   scratchpad) showed six projects already stale there; heat-lab, histogram and sort changed here. Updated the nine
   expectations and the book's total (5,160 -> 5,084 bytes).
 - Waiting loops that `pgrep -f` a pattern contained in their own command line never end; killed them twice.
+
+## Step 7: Removed the bce branch case for `x + c` (it fired nowhere)
+
+`scripts/12-bce-notes.mjs` with distinct notes showed the branch case extended to `x + c < length` fired in no
+project, so I removed it (the branch case takes a plain local, as before this ticket). Checked again after the
+removal: O2 and speed corpus totals identical to `corpus-final.json` (`various/corpus-final-o2-check.json`),
+regex and LZ benchmarks identical, parity 8,286/8,286, reference check of our O2 images 8,286/8,286, typed tests 161
+pass + 2 skipped, workbench 24 + 1 skipped.
