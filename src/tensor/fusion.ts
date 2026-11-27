@@ -52,6 +52,28 @@ export function classifyLoad(
   return 'other';
 }
 
+// A contraction over a row-free operand (a matrix read like w[d,j] inside a reduction): its per-element dot
+// needs the memory-level parallelism of one thread per output element, which the row mapping would serialize
+// into one long lane chain (measured 2.5x slower for mlp's second contraction). Such a statement may start a
+// group - a pointwise epilogue chains behind it - but never joins one (IRWB-029-F).
+function isContraction(
+  statement: Fn['statements'][number],
+  tensors: ReadonlyMap<string, Tensor>,
+  row: Affine,
+): boolean {
+  const binder = statement.axes[0].id;
+  let found = false;
+  visit(statement.expr, e => {
+    if (found || e.kind !== 'reduce') return;
+    let inner = false;
+    visit(e.body, x => {
+      if (x.kind === 'load' && classifyLoad(x as LoadExpr, binder, tensors, row) === 'row-free') inner = true;
+    });
+    if (inner) found = true;
+  });
+  return found;
+}
+
 // Why `statement` cannot join a row group with dimension `row` and the producers in `group`, or undefined when
 // it can. The candidate's in-group set is exactly the producers already admitted.
 function refusal(
@@ -74,6 +96,8 @@ function refusal(
     else if (kind === 'row-free' && group.has(load.name))
       reason = `${load.name} is read outside its row within the group`;
   });
+  if (!reason && group.size && isContraction(statement, tensors, row))
+    reason = 'contains a contraction over a row-free operand, which needs one thread per output element';
   return reason;
 }
 
@@ -106,8 +130,12 @@ export function fusionPlan(fn: Fn): FusionPlan {
     }
     if (end > i + 1) {
       const group = statements.slice(i, end);
-      const chain = group.every(s => s.axes.length === 1) && !group.some(t => visitHasReduce(t.expr));
-      segments.push({ kind: chain ? 'chain' : 'row', start: i, end: end - 1, row: row! });
+      segments.push({
+        kind: isChain(group) ? 'chain' : 'row',
+        start: i,
+        end: end - 1,
+        row: row!,
+      });
       i = end;
     } else {
       segments.push({ kind: 'single', index: i });
@@ -117,10 +145,24 @@ export function fusionPlan(fn: Fn): FusionPlan {
   return { segments, refusals };
 }
 
-function visitHasReduce(e: Expr): boolean {
-  let found = false;
-  visit(e, x => {
-    if (x.kind === 'reduce') found = true;
-  });
-  return found;
+// The register-forwarding mapping: every statement has the same shape after the row axis, and every in-group
+// read is elementwise at the reader's own coordinates, so one thread per output element can compute the whole
+// chain, passing producer values through registers. Reductions are allowed: each element runs its own loops,
+// exactly as in the stage 2 kernel. This covers elementwise chains of any rank and pointwise epilogues over
+// contractions (mlp's bias and GELU behind its dense layer).
+function isChain(group: readonly Fn['statements'][number][]): boolean {
+  const names = new Set(group.map(s => s.name));
+  const shape = JSON.stringify(group[0].axes.slice(1).map(a => a.extent.dim));
+  if (group.some(s => JSON.stringify(s.axes.slice(1).map(a => a.extent.dim)) !== shape)) return false;
+  for (const s of group) {
+    let ok = true;
+    visit(s.expr, e => {
+      if (!ok || e.kind !== 'load' || !names.has(e.name)) return;
+      const load = e as LoadExpr;
+      ok =
+        load.indices.length === s.axes.length && s.axes.every((axis, k) => isPlain(load.indices[k], axis.id));
+    });
+    if (!ok) return false;
+  }
+  return true;
 }

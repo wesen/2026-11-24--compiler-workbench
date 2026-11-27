@@ -483,7 +483,12 @@ function emitRowGroup(
   };
 }
 
-/** An elementwise chain: one thread per row, producer values forwarded through registers. */
+/**
+ * A register-forwarding chain: one thread per output element (stage 2's own mapping), computing every
+ * statement of the group in order and passing producer values through registers. All statements share the
+ * shape after the row axis, and every in-group read is elementwise, so the thread's element is the same
+ * coordinate in each statement. Reductions run as the element's own sequential loops, exactly as in stage 2.
+ */
 function emitChain(
   fn: Fn,
   seg: Extract<Segment, { kind: 'chain' }>,
@@ -494,7 +499,8 @@ function emitChain(
 ): KernelPart {
   const info = groupInfo(fn, seg, tensors);
   const names = new Set(info.statements.map(s => s.name));
-  const count = `${tensorName(info.statements[0].name)}.size`;
+  const first = info.statements[0];
+  const count = `${tensorName(first.name)}.size`;
   const args = [...dimensions.values(), ...info.pointers.map(t => tensorName(t.name) + '.ptr'), count];
   const params = [
     ...Array.from(dimensions.values(), d => `I ${d}`),
@@ -505,15 +511,20 @@ function emitChain(
   const s = new Scalar(lines, dimensions);
   s.line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
   s.line('if (thread >= count) return;');
-  s.line('const I row = static_cast<I>(thread);');
+  s.line('U coordinate = thread;');
+  for (let i = first.axes.length - 1; i >= 0; --i) {
+    const axis = s.bind(first.axes[i].id);
+    s.line(`const I ${axis} = coordinate % ${s.dim(first.shape[i])};`);
+    if (i > 0) s.line(`coordinate /= ${s.dim(first.shape[i])};`);
+  }
   const values = new Map<string, string>();
   for (const [j, statement] of info.statements.entries()) {
-    s.indices.set(statement.axes[0].id, 'row');
+    statement.axes.forEach((a, k) => s.indices.set(a.id, s.index(first.axes[k].id)));
     const value = s.scalar(statement.expr, e =>
       values.has(e.name) ? values.get(e.name)! : globalAddress(e, tensors, tensorName, s),
     );
     values.set(statement.name, value);
-    if (info.external[j]) s.line(`${tensorName(statement.name)}[(row)] = ${value};`);
+    if (info.external[j]) s.line(`${tensorName(statement.name)}[thread] = ${value};`);
   }
   lines.push('}');
   return {

@@ -20,7 +20,7 @@ test('CUDA source is deterministic and preloads every emitted kernel before timi
   assert.equal(source, cudaSource(program, 'second'));
   assert.equal((source.match(/__global__ void/g) ?? []).length, 1);
   assert.match(source, /float v0 = __double2float_rn\(exp/);
-  assert.match(source, /__fmul_rn\(v0, t0\[\(row\)\]\)/);
+  assert.match(source, /__fmul_rn\(v0, t0\[\(i0\)\]\)/);
   assert.ok(
     source.indexOf('cudaFuncGetAttributes(&attributes, k0)') < source.indexOf('gpu_ms = time_kernels'),
   );
@@ -28,8 +28,7 @@ test('CUDA source is deterministic and preloads every emitted kernel before timi
   const stage2 = cudaSource(program, 'second', { fuse: false });
   assert.equal((stage2.match(/__global__ void/g) ?? []).length, 2);
   assert.ok(
-    stage2.indexOf('cudaFuncGetAttributes(&attributes, k1)') <
-      stage2.indexOf('gpu_ms = time_kernels'),
+    stage2.indexOf('cudaFuncGetAttributes(&attributes, k1)') < stage2.indexOf('gpu_ms = time_kernels'),
   );
   assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
 });

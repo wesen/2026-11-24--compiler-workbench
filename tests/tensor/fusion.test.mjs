@@ -14,8 +14,14 @@ test('the planner groups each corpus program as the stage 3 design predicts', ()
     matmul: [['single', 0]],
     softmax: [['row', 0, 3]],
     layernorm: [['row', 0, 3]],
-    attention: [['row', 0, 5]],
-    mlp: [['row', 0, 2]],
+    attention: [
+      ['row', 0, 4],
+      ['single', 5],
+    ],
+    mlp: [
+      ['chain', 0, 1],
+      ['single', 2],
+    ],
     conv2d: [['single', 0]],
   };
   for (const [name, segments] of Object.entries(expected)) {
@@ -26,12 +32,20 @@ test('the planner groups each corpus program as the stage 3 design predicts', ()
       segments,
       name,
     );
-    assert.deepEqual(plan.refusals, [], name);
     assert.equal(kernels(cudaSource(program, name)), segments.length, name);
   }
+  // The contraction refusals keep the second dense layer and attention's output contraction on the
+  // one-thread-per-element mapping.
+  const contraction =
+    'contains a contraction over a row-free operand, which needs one thread per output element';
+  assert.deepEqual(fusionPlan(load('attention').current.value.functions[0]).refusals, [
+    { statement: 5, reason: contraction },
+  ]);
+  assert.deepEqual(fusionPlan(load('mlp').current.value.functions[0]).refusals, [
+    { statement: 2, reason: contraction },
+  ]);
   assert.equal(kernels(cudaSource(load('softmax'), 'softmax')), 1);
   assert.equal(kernels(cudaSource(load('softmax'), 'softmax', { fuse: false })), 4);
-  assert.equal(kernels(cudaSource(load('attention'), 'attention')), 1);
 });
 
 test('a cross-row read of a group tensor refuses the fusion', () => {
@@ -91,37 +105,30 @@ test('an elementwise chain fuses with register forwarding, without staging or sy
   assert.match(source, /float v1 = __fmul_rn\(v0, v0\);/);
   assert.doesNotMatch(source, /__shared__|__syncthreads/);
   // The intermediate never reaches global memory; the result does.
-  assert.doesNotMatch(source, /t1\[\(row\)\] =/);
-  assert.match(source, /t2\[\(row\)\] = v1;/);
+  assert.doesNotMatch(source, /t1\[thread\] =/);
+  assert.match(source, /t2\[thread\] = v1;/);
 });
 
-test('a two-dimensional elementwise chain uses the row mapping with staging', () => {
+test('a two-dimensional pointwise group is a register chain, stage 2 mapping, one kernel', () => {
   const program = compileTix('fn f(x:f32[N,K]):f32[N,K]{a[i,j]=x[i,j]+1;y[i,j]=a[i,j]*2;return y;}');
   const plan = fusionPlan(program.current.value.functions[0]);
-  assert.equal(plan.segments[0].kind, 'row');
+  assert.equal(plan.segments[0].kind, 'chain');
   const source = cudaSource(program, 'f');
   assert.equal(kernels(source), 1);
-  assert.match(source, /__shared__ float stage\[12288\];/);
-  assert.match(source, /__syncwarp\(\);/);
-  assert.doesNotMatch(source, /__syncthreads/);
-  assert.match(source, /for \(U l = lane; l < \(static_cast<U>\(\(d1\)\)\); l \+= 32u\)/);
-  assert.match(source, /stage\[wbase \+ off0 \+ l\] = t0\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\];/);
-  assert.match(source, /const bool fits = need <= 12288u;/);
-  // The host picks the warp count so every warp's shared slice fits the stage.
+  assert.doesNotMatch(source, /__shared__|__syncwarp|__syncthreads/);
   assert.match(
     source,
-    /const unsigned warpsk0 = \(\(\(static_cast<U>\(\(d1\)\)\) \+ \(static_cast<U>\(\(d1\)\)\)\) <= 12288u/,
+    /float v0 = __fadd_rn\(t0\[\(\(i1\) \* \(d1\) \+ \(i0\)\)\], __uint_as_float\(0x3f800000u\)\);/,
   );
-  // The intermediate is staged for the consumer and only reaches global memory in the fallback path.
-  assert.match(source, /if \(!fits\) t1\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\] = v0;/);
-  assert.match(source, /if \(fits\) stage\[wbase \+ off1 \+ l\] = v0;/);
-  // The result is written to global memory unconditionally.
-  assert.match(source, /t2\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\] = v1;/);
+  assert.match(source, /float v1 = __fmul_rn\(v0, __uint_as_float\(0x40000000u\)\);/);
+  assert.doesNotMatch(source, /t1\[thread\] =/);
+  assert.match(source, /t2\[thread\] = v1;/);
 });
 
 test('a row group stages row-local reads and reads row-free tensors from global memory', () => {
+  // The scalar m breaks the shape match, so the group takes the warp mapping with staging.
   const program = compileTix(
-    'fn f(x:f32[N,K],b:f32[K]):f32[N,K]{p[i,j]=x[i,j]*b[j];g[i,j]=p[i,j]+1;y[i,j]=g[i,j]*3;return y;}',
+    'fn f(x:f32[N,K],b:f32[K]):f32[N,K]{m[i]=sum(j)x[i,j]*b[j];g[i,j]=x[i,j]-m[i];y[i,j]=g[i,j]*3;return y;}',
   );
   const plan = fusionPlan(program.current.value.functions[0]);
   assert.deepEqual(
