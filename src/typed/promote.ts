@@ -13,7 +13,8 @@ import type { StmtRec, ValueRec } from './model.js';
 
 export const promoteSpec: TypedPassSpec = {
   name: 'promote',
-  about: 'frame-array promotion: frame array cells that are only accessed at constant addresses become locals',
+  about:
+    'frame-array promotion: frame array cells that are only accessed at constant addresses become locals',
   writes: ['stmts', 'values', 'locals', 'frame'],
   preserves: ['cfg', 'dominators'],
   body({ st, f, tx }) {
@@ -73,13 +74,18 @@ export const promoteSpec: TypedPassSpec = {
           tx.replaceStmt(sid, { op: 'set', local: local(c), value: s.value }, { because });
         } else if (s.op === 'zero') {
           const cells: number[] = [];
-          for (let byte = s.offset!; byte < s.offset! + s.bytes!; byte += 4) if (used.has(byte / 4)) cells.push(byte / 4);
+          for (let byte = s.offset!; byte < s.offset! + s.bytes!; byte += 4)
+            if (used.has(byte / 4)) cells.push(byte / 4);
           let at = sid;
           if (!cells.length) {
             tx.remove(sid, { because, note: 'zeroes only cells nothing reads' });
             continue;
           }
-          at = tx.replaceStmt(sid, { op: 'set', local: local(cells[0]), value: tx.const(0, { because }) }, { because });
+          at = tx.replaceStmt(
+            sid,
+            { op: 'set', local: local(cells[0]), value: tx.const(0, { because }) },
+            { because },
+          );
           for (const c of cells.slice(1)) {
             const n = tx.set(local(c), tx.const(0, { because }), { from: sid, because });
             tx.insert(tx.at.after(at), n, { because });
