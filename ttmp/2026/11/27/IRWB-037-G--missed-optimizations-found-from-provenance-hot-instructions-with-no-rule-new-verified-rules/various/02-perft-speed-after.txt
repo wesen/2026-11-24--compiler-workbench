@@ -1,0 +1,106 @@
+perft: 11765 instructions over 1 case(s)
+
+== chessDense: 70
+   chessDense:frame 10
+
+== chessAttacked: 4914
+ bb:chessAttacked.n50  [358]
+       358  if (at < 128) goto .n53 else .n54    {thread@r4}
+                179  addi t3, zero, 128
+                179  bge t1, t3, bb.n54
+ bb:chessAttacked.n53  [480]
+       320  chessOnBoard_t2 = ((at & 15) < 8)    {inline@r1}
+                160  andi t3, t1, 15
+                160  slti t3, t3, 8
+       160  goto .n55    {inline@r1}
+                160  jal zero, bb.n55
+ bb:chessAttacked.25  [540]
+       405  piece = load16[(board + (at << 1))+4]    {ingest@rundefined}
+                135  slli t3, t1, 1
+                135  add t3, a0, t3
+                135  lhu t3, 4(t3)
+       135  if (piece != 0) goto .26 else .55    {ingest@rundefined}
+                135  beq t3, zero, bb.55
+
+== chessMake: 2440
+   chessMake:frame 189
+   chessMake:backend 28
+ bb:chessMake.39  [371]
+       210  store16[t54+4] = load16[(board + (t17 << 1))+4]    {ingest@rundefined}
+                 42  slli t4, t4, 1
+                 42  lw t5, 4(sp)   ; spill reload
+                 42  add t4, t5, t4
+                 42  lhu t4, 4(t4)
+                 42  sh t4, 4(t3)
+        42  i = (i + 1)    {ingest@rundefined}
+                 42  addi t1, t1, 1
+       119  if (i >= 6) goto .30 else .31    {rotate@r20}
+                 42  addi t3, zero, 6
+                 42  bge t1, t3, bb.30
+                 35  jal zero, bb.31
+
+== chessUnmake: 1211
+ bb:chessUnmake.64  [329]
+       168  store16[t25+4] = load16[(board + (t20 << 1))+4]    {ingest@rundefined}
+                 42  slli t2, t2, 1
+                 42  add t2, a0, t2
+                 42  lhu t2, 4(t2)
+                 42  sh t2, 4(t1)
+        42  i = (i + 1)    {ingest@rundefined}
+                 42  addi t0, t0, 1
+       119  if (i >= 6) goto .55 else .56    {rotate@r20}
+                 42  addi t1, zero, 6
+                 42  bge t0, t1, bb.55
+                 35  jal zero, bb.56
+
+== chessPawnAdd: 74
+
+== chessPseudoMoves: 2438
+   chessPseudoMoves:frame 27
+   chessPseudoMoves:backend 4
+ bb:chessPseudoMoves.3  [960]
+       576  t9 = (dense + ((dense / 8) << 3))    {inline@r1}
+                 64  lw t5, 16(sp)   ; spill reload
+                 64  srai t0, t5, 31
+                 64  srli t0, t0, 29
+                 64  lw t5, 16(sp)   ; spill reload
+                 64  add t0, t5, t0
+                 64  srai t0, t0, 3
+                 64  slli t0, t0, 3
+                 64  lw t5, 16(sp)   ; spill reload
+                 64  add t0, t5, t0
+       128  from = t9    {ingest@rundefined}
+                 64  addi t5, t0, 0   ; copy
+                 64  sw t5, 40(sp)   ; spill store
+       256  if (from >=u load32[board+0]) goto .4 else .7    {ingest@rundefined}
+                 64  lw t5, 0(sp)   ; spill reload
+                 64  lw t1, 0(t5)
+                 64  lw t5, 40(sp)   ; spill reload
+                 64  bltu t5, t1, bb.7
+ bb:chessPseudoMoves.7  [384]
+       320  piece = load16[(board + (from << 1))+4]    {ingest@rundefined}
+                 64  lw t5, 40(sp)   ; spill reload
+                 64  slli t1, t5, 1
+                 64  lw t5, 0(sp)   ; spill reload
+                 64  add t1, t5, t1
+                 64  lhu t1, 4(t1)
+        64  if (piece != 0) goto .8 else .13    {ingest@rundefined}
+                 64  beq t1, zero, bb.13
+ bb:chessPseudoMoves.13  [447]
+       192  dense = (dense + 1)    {ingest@rundefined}
+                 64  lw t5, 16(sp)   ; spill reload
+                 64  addi t5, t5, 1
+                 64  sw t5, 16(sp)   ; spill store
+       255  if (dense >= 64) goto .2 else .3    {rotate@r20}
+                 64  addi t0, zero, 64
+                 64  lw t5, 16(sp)   ; spill reload
+                 64  bge t5, t0, bb.2
+                 63  jal zero, bb.3
+
+== chessLegal: 315
+   chessLegal:frame 91
+   chessLegal:backend 21
+
+== chessPerft: 303
+   chessPerft:frame 27
+   chessPerft:backend 3

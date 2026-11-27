@@ -1,7 +1,9 @@
 // What each new pass gives: the corpus under variants of a pipeline, pass by pass, summed over the seeded cases
 // `measure` uses (10 per function, seed 7), default and tuned backend options. The variants are pass lists: the
 // old `speed` (the four IRWB-037-G names removed, subst-mem read as subst), the old list plus each new pass alone,
-// all of them (`speed` as it is now), `guards` deciding every branch, and a second `thread` before bce.
+// all of them (`speed` as it is now), `guards` deciding every branch, `thread` once instead of twice, without `copies`, `copies` only for copies all of whose
+// reads can be read through (params.whole), and a second
+// `lvn` before rotate (after cfg has merged the blocks the removed checks separated).
 // With --pipeline O2: O2 as it is, and O2 with the same four insertions (not a registered pipeline).
 // usage: node 09-ablation.mjs out.json [--pipeline speed|O2] [id...]
 // IRWB_ROOT names another build to run (a copy of dist/ and tools/ next to links to vendor/ and corpus/), so a
@@ -36,12 +38,16 @@ const VARIANTS =
         old: without(S, []),
         thread: without(S, ['thread']),
         copies: without(S, ['copies']),
+        'copies whole': without(S, ['copies']).map(n => (n === 'copies' ? ['copies', { whole: true }] : n)),
         guards: without(S, ['guards']),
         'subst-mem': without(S, ['subst-mem']),
         'thread+subst-mem': without(S, ['thread', 'subst-mem']),
         all: S,
         'all, guards on every branch': S.map(n => (n === 'guards' ? ['guards', { all: true }] : n)),
-        'all, thread again before bce': S.flatMap(n => (n === 'bce' ? ['thread', n] : [n])),
+        'all, one thread': S.filter((n, i) => n !== 'thread' || i === S.indexOf('thread')),
+        'all but copies': S.filter(n => n !== 'copies'),
+        'all, copies whole': S.map(n => (n === 'copies' ? ['copies', { whole: true }] : n)),
+        'all, lvn again before rotate': S.flatMap(n => (n === 'rotate' ? ['lvn', n] : [n])),
       };
 const TUNED = { chains: true, coalesce: true, homes: true };
 function instructions(p, options) {
@@ -65,7 +71,7 @@ for (const id of only.length ? only : projectIds()) {
     for (const step of list) {
       const [pass, params] = Array.isArray(step) ? step : [step];
       try { await p.apply(pass, { count: 5, ...(params ? { params } : {}) }); }
-      catch (e) { if (e.code !== 'contractRejected') throw e; rejected.push(pass); }
+      catch (e) { if (!e.code) throw e; rejected.push(`${pass} (${e.code})`); } // a rejected or failing pass is skipped
     }
     const row = { default: instructions(p, {}), tuned: instructions(p, TUNED), ...(rejected.length ? { rejected } : {}) };
     rows[id][name] = row;

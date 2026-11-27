@@ -10,3 +10,52 @@ bytecode-vm          old 32295/24750  thread 32295/24750  copies 32295/24750  gu
 call-chain           old 350/290  thread 350/290  copies 330/290  guards 350/290  subst-mem 350/290  thread+subst-mem 350/290  all 330/290  all, guards on every branch 330/290  all, thread again before bce 330/290
 calls                old 288/227  thread 288/227  copies 234/227  guards 288/227  subst-mem 288/227  thread+subst-mem 288/227  all 234/227  all, guards on every branch 234/227  all, thread again before bce 234/227
 checksum             old 1251/1110  thread 1251/1110  copies 1251/1110  guards 1251/1110  subst-mem 1251/1110  thread+subst-mem 1251/1110  all 1251/1110  all, guards on every branch 1251/1110  all, thread again before bce 1251/1110
+chess-search         old 327316/297382  thread 307524/284842  copies 327296/301247  guards 327316/297382  subst-mem 327150/297382  thread+subst-mem 307300/284784  all 307360/279858  all, guards on every branch 307280/279818  all, thread again before bce 305842/278436
+collatz              old 6955/5769  thread 4861/3675  copies 6955/5769  guards 6955/5769  subst-mem 6955/5769  thread+subst-mem 4861/3675  all 4861/3675  all, guards on every branch 4861/3675  all, thread again before bce 4861/3675
+constants            old 70/70  thread 70/70  copies 70/70  guards 70/70  subst-mem 70/70  thread+subst-mem 70/70  all 70/70  all, guards on every branch 70/70  all, thread again before bce 70/70
+dead-code            old 30/30  thread 30/30  copies 30/30  guards 30/30  subst-mem 30/30  thread+subst-mem 30/30  all 30/30  all, guards on every branch 30/30  all, thread again before bce 30/30
+diagnostics          old 30/30  thread 30/30  copies 30/30  guards 30/30  subst-mem 30/30  thread+subst-mem 30/30  all 30/30  all, guards on every branch 30/30  all, thread again before bce 30/30
+distinct             old 80/60  thread 80/60  copies 50/50  guards 80/60  subst-mem 80/60  thread+subst-mem 80/60  all 50/50  all, guards on every branch 50/50  all, thread again before bce 50/50
+div-checks           old 162/152  thread 162/152  copies 160/152  guards 162/152  subst-mem 162/152  thread+subst-mem 162/152  all 160/152  all, guards on every branch 160/152  all, thread again before bce 160/152
+div-magic            old 759/661  thread 759/661  copies 739/661  guards 759/661  subst-mem 759/661  thread+subst-mem 759/661  all 739/661  all, guards on every branch 739/661  all, thread again before bce 739/661
+early-exit           old 564/557  thread 564/557  copies 564/557  guards 564/557  subst-mem 564/557  thread+subst-mem 564/557  all 564/557  all, guards on every branch 564/557  all, thread again before bce 564/557
+f32-dsp              old 46361/44107  thread 46361/44107  copies 45401/44107  guards 46361/44107  subst-mem 46361/44107  thread+subst-mem 46361/44107  all 45401/44107  all, guards on every branch 45401/44107  all, thread again before bce 45401/44107
+first-steps          old 80/80  thread 80/80  copies 80/80  guards 80/80  subst-mem 80/80  thread+subst-mem 80/80  all 80/80  all, guards on every branch 80/80  all, thread again before bce 80/80
+fixed-point          old 251/242  thread 251/242  copies 251/242  guards 251/242  subst-mem 251/242  thread+subst-mem 251/242  all 251/242  all, guards on every branch 251/242  all, thread again before bce 251/242
+fragments            old 2289/1891  thread 2289/1891  copies 2090/1891  guards 2289/1891  subst-mem 2289/1891  thread+subst-mem 2289/1891  all 2090/1891  all, guards on every branch 2090/1891  all, thread again before bce 2090/1891
+gcd                  old 314/265  thread 314/265  copies 314/265  guards 314/265  subst-mem 314/265  thread+subst-mem 314/265  all 314/265  all, guards on every branch 314/265  all, thread again before bce 314/265
+heat-lab             old 8664/7996  thread 8390/7752  copies 8087/7996  guards 8664/7996  subst-mem 8664/7996  thread+subst-mem 8161/7523  all 7584/7523  all, guards on every branch 7584/7523  all, thread again before bce 7584/7523
+histogram            old 2222/2000  thread 2222/2000  copies 2036/1910  guards 2222/2000  subst-mem 2222/2000  thread+subst-mem 2222/2000  all 2036/1910  all, guards on every branch 2036/1910  all, thread again before bce 2036/1910
+licm-nested          old 1631/1596  thread 1631/1596  copies 1631/1596  guards 1631/1596  subst-mem 1631/1596  thread+subst-mem 1631/1596  all 1631/1596  all, guards on every branch 1631/1596  all, thread again before bce 1631/1596
+licm-traps           old 149/142  thread 149/142  copies 149/142  guards 149/142  subst-mem 149/142  thread+subst-mem 149/142  all 149/142  all, guards on every branch 149/142  all, thread again before bce 149/142
+lz-roundtrip         old 28745/28330  thread 27821/27441  copies 28725/28330  guards 27783/26358  subst-mem 28745/28330  thread+subst-mem 27821/27441  all 26839/25469  all, guards on every branch 26839/25469  all, thread again before bce 26839/25469
+match-enum           old 251/226  thread 251/226  copies 231/226  guards 251/226  subst-mem 251/226  thread+subst-mem 251/226  all 231/226  all, guards on every branch 231/226  all, thread again before bce 231/226
+my-analysis          old 200966/200618  thread 200966/200618  copies 200966/200618  guards 200966/200618  subst-mem 200966/200618  thread+subst-mem 200966/200618  all 200966/200618  all, guards on every branch 200966/200618  all, thread again before bce 200966/200618
+my-first-pass        old 50/50  thread 50/50  copies 50/50  guards 50/50  subst-mem 50/50  thread+subst-mem 50/50  all 50/50  all, guards on every branch 50/50  all, thread again before bce 50/50
+nested-loops         old 2289/2252  thread 2289/2252  copies 2289/2252  guards 2289/2252  subst-mem 2289/2252  thread+subst-mem 2289/2252  all 2289/2252  all, guards on every branch 2289/2252  all, thread again before bce 2289/2252
+orders               old 1185/952  thread 1185/952  copies 1127/952  guards 1185/952  subst-mem 1185/952  thread+subst-mem 1185/952  all 1127/952  all, guards on every branch 1127/952  all, thread again before bce 1127/952
+params-demo          old 2289/1891  thread 2289/1891  copies 2090/1891  guards 2289/1891  subst-mem 2289/1891  thread+subst-mem 2289/1891  all 2090/1891  all, guards on every branch 2090/1891  all, thread again before bce 2090/1891
+pressure             old 240/230  thread 240/230  copies 240/230  guards 240/230  subst-mem 240/230  thread+subst-mem 240/230  all 240/230  all, guards on every branch 240/230  all, thread again before bce 240/230
+ramp                 old 962/780  thread 962/780  copies 962/780  guards 962/780  subst-mem 962/780  thread+subst-mem 962/780  all 962/780  all, guards on every branch 962/780  all, thread again before bce 962/780
+records              old 260/240  thread 260/240  copies 240/240  guards 260/240  subst-mem 260/240  thread+subst-mem 260/240  all 240/240  all, guards on every branch 240/240  all, thread again before bce 240/240
+regalloc-lab         old 2051/1716  thread 2051/1716  copies 1970/1716  guards 2051/1716  subst-mem 2051/1716  thread+subst-mem 2051/1716  all 1970/1716  all, guards on every branch 1970/1716  all, thread again before bce 1970/1716
+regex-nfa            old 35638/28128  thread 35188/27922  copies 35490/28128  guards 32584/26723  subst-mem 35638/28128  thread+subst-mem 34944/27434  all 31966/26029  all, guards on every branch 31966/26029  all, thread again before bce 31897/25960
+sha-chacha           old 125491/107102  thread 125491/107102  copies 115741/107862  guards 124847/106780  subst-mem 125491/107102  thread+subst-mem 125491/107102  all 115097/107540  all, guards on every branch 115097/107540  all, thread again before bce 115097/107540
+sort                 old 4950/4563  thread 4783/4422  copies 4624/4563  guards 4950/4563  subst-mem 4950/4563  thread+subst-mem 4655/4294  all 4329/4294  all, guards on every branch 4329/4294  all, thread again before bce 4329/4294
+start-here           old 2932/2559  thread 2932/2559  copies 2550/2327  guards 2932/2559  subst-mem 2932/2559  thread+subst-mem 2932/2559  all 2550/2327  all, guards on every branch 2550/2327  all, thread again before bce 2550/2327
+strength             old 1793/1404  thread 1793/1404  copies 1793/1404  guards 1793/1404  subst-mem 1793/1404  thread+subst-mem 1793/1404  all 1793/1404  all, guards on every branch 1793/1404  all, thread again before bce 1793/1404
+strings              old 10283/9262  thread 8100/6558  copies 10283/9262  guards 10283/9262  subst-mem 10283/9262  thread+subst-mem 8100/6558  all 8100/6558  all, guards on every branch 8100/6558  all, thread again before bce 8100/6558
+ui-gallery           old 754/594  thread 754/594  copies 606/572  guards 754/594  subst-mem 754/594  thread+subst-mem 754/594  all 606/572  all, guards on every branch 606/572  all, thread again before bce 606/572
+value-numbering      old 3073/2453  thread 3073/2453  copies 3073/2453  guards 3073/2453  subst-mem 3073/2453  thread+subst-mem 3073/2453  all 3073/2453  all, guards on every branch 3073/2453  all, thread again before bce 3073/2453
+wrong-shift          old 1491/1340  thread 1491/1340  copies 1491/1340  guards 1491/1340  subst-mem 1491/1340  thread+subst-mem 1491/1340  all 1491/1340  all, guards on every branch 1491/1340  all, thread again before bce 1491/1340
+
+variant              default     tuned
+old                   867770    792800
+thread                841886    773982
+copies                853990    797071
+guards                862796    788944
+subst-mem             867604    792800
+thread+subst-mem      841061    773079
+all                   822611    764703
+all, guards on every branch    822531    764663
+all, thread again before bce    821024    763212

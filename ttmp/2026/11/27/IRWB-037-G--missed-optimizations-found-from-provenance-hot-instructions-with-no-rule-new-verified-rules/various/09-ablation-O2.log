@@ -1,0 +1,54 @@
+across-calls         O2 640/630  O2 + the four 630/630
+algebra              O2 20/20  O2 + the four 20/20
+blend                O2 1925/1750  O2 + the four 1760/1750
+bounds-lab           O2 5333/4843  O2 + the four 4843/4843
+bounds-offset        O2 1364/1268  O2 + the four 1294/1268
+bounds-param         O2 502/452  O2 + the four 452/452
+bounds-two           O2 810/710  O2 + the four 710/710
+branches             O2 139/131  O2 + the four 139/131
+bytecode-vm          O2 32295/24750  O2 + the four 31981/24593
+call-chain           O2 1050/1050  O2 + the four 1050/1050
+calls                O2 651/580  O2 + the four 600/580
+checksum             O2 1410/1260  O2 + the four 1260/1260
+chess-search         O2 423077/406477  O2 + the four 406108/386502
+collatz              O2 7461/5779  O2 + the four 5367/3685
+constants            O2 70/70  O2 + the four 70/70
+dead-code            O2 30/30  O2 + the four 30/30
+diagnostics          O2 30/30  O2 + the four 30/30
+distinct             O2 340/340  O2 + the four 340/340
+div-checks           O2 162/152  O2 + the four 160/152
+div-magic            O2 769/710  O2 + the four 749/710
+early-exit           O2 631/559  O2 + the four 566/559
+f32-dsp              O2 49030/47923  O2 + the four 49030/47923
+first-steps          O2 220/220  O2 + the four 220/220
+fixed-point          O2 411/392  O2 + the four 411/392
+fragments            O2 2299/2090  O2 + the four 2100/2090
+gcd                  O2 324/314  O2 + the four 324/314
+heat-lab             O2 8832/8026  O2 + the four 7752/7692
+histogram            O2 2292/2008  O2 + the four 2044/1920
+licm-nested          O2 1678/1678  O2 + the four 1678/1678
+licm-traps           O2 153/153  O2 + the four 153/153
+lz-roundtrip         O2 34551/33660  O2 + the four 33305/32414
+match-enum           O2 251/226  O2 + the four 231/226
+my-analysis          O2 200975/200795  O2 + the four 200975/200795
+my-first-pass        O2 50/50  O2 + the four 50/50
+nested-loops         O2 2342/2342  O2 + the four 2342/2342
+orders               O2 1194/1010  O2 + the four 1136/1010
+params-demo          O2 2299/2090  O2 + the four 2100/2090
+pressure             O2 240/230  O2 + the four 240/230
+ramp                 O2 1040/790  O2 + the four 970/790
+records              O2 260/240  O2 + the four 240/240
+regalloc-lab         O2 2614/2462  O2 + the four 2533/2462
+regex-nfa            O2 40212/38745  O2 + the four 37038/35553
+sha-chacha           O2 232820/211526  O2 + the four 220136/213314
+sort                 O2 5043/4589  O2 + the four 4422/4390
+start-here           O2 3871/3467  O2 + the four 3578/3467
+strength             O2 1938/1414  O2 + the four 1802/1414
+strings              O2 10833/9282  O2 + the four 8119/6578
+ui-gallery           O2 1058/1016  O2 + the four 1016/1016
+value-numbering      O2 3082/2666  O2 + the four 3082/2666
+wrong-shift          O2 1650/1490  O2 + the four 1500/1490
+
+variant              default     tuned
+O2                   1090271   1032485
+O2 + the four        1046686   1004284

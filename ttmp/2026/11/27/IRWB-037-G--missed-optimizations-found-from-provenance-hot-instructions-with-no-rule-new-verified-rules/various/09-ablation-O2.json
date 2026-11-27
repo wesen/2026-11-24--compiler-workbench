@@ -1,0 +1,515 @@
+{
+ "pipeline": "O2",
+ "totals": {
+  "O2": {
+   "default": 1090271,
+   "tuned": 1032485
+  },
+  "O2 + the four": {
+   "default": 1046686,
+   "tuned": 1004284
+  }
+ },
+ "rows": {
+  "across-calls": {
+   "O2": {
+    "default": 640,
+    "tuned": 630
+   },
+   "O2 + the four": {
+    "default": 630,
+    "tuned": 630
+   }
+  },
+  "algebra": {
+   "O2": {
+    "default": 20,
+    "tuned": 20
+   },
+   "O2 + the four": {
+    "default": 20,
+    "tuned": 20
+   }
+  },
+  "blend": {
+   "O2": {
+    "default": 1925,
+    "tuned": 1750
+   },
+   "O2 + the four": {
+    "default": 1760,
+    "tuned": 1750
+   }
+  },
+  "bounds-lab": {
+   "O2": {
+    "default": 5333,
+    "tuned": 4843
+   },
+   "O2 + the four": {
+    "default": 4843,
+    "tuned": 4843
+   }
+  },
+  "bounds-offset": {
+   "O2": {
+    "default": 1364,
+    "tuned": 1268
+   },
+   "O2 + the four": {
+    "default": 1294,
+    "tuned": 1268
+   }
+  },
+  "bounds-param": {
+   "O2": {
+    "default": 502,
+    "tuned": 452
+   },
+   "O2 + the four": {
+    "default": 452,
+    "tuned": 452
+   }
+  },
+  "bounds-two": {
+   "O2": {
+    "default": 810,
+    "tuned": 710
+   },
+   "O2 + the four": {
+    "default": 710,
+    "tuned": 710
+   }
+  },
+  "branches": {
+   "O2": {
+    "default": 139,
+    "tuned": 131
+   },
+   "O2 + the four": {
+    "default": 139,
+    "tuned": 131
+   }
+  },
+  "bytecode-vm": {
+   "O2": {
+    "default": 32295,
+    "tuned": 24750
+   },
+   "O2 + the four": {
+    "default": 31981,
+    "tuned": 24593
+   }
+  },
+  "call-chain": {
+   "O2": {
+    "default": 1050,
+    "tuned": 1050
+   },
+   "O2 + the four": {
+    "default": 1050,
+    "tuned": 1050
+   }
+  },
+  "calls": {
+   "O2": {
+    "default": 651,
+    "tuned": 580
+   },
+   "O2 + the four": {
+    "default": 600,
+    "tuned": 580
+   }
+  },
+  "checksum": {
+   "O2": {
+    "default": 1410,
+    "tuned": 1260
+   },
+   "O2 + the four": {
+    "default": 1260,
+    "tuned": 1260
+   }
+  },
+  "chess-search": {
+   "O2": {
+    "default": 423077,
+    "tuned": 406477
+   },
+   "O2 + the four": {
+    "default": 406108,
+    "tuned": 386502
+   }
+  },
+  "collatz": {
+   "O2": {
+    "default": 7461,
+    "tuned": 5779
+   },
+   "O2 + the four": {
+    "default": 5367,
+    "tuned": 3685
+   }
+  },
+  "constants": {
+   "O2": {
+    "default": 70,
+    "tuned": 70
+   },
+   "O2 + the four": {
+    "default": 70,
+    "tuned": 70
+   }
+  },
+  "dead-code": {
+   "O2": {
+    "default": 30,
+    "tuned": 30
+   },
+   "O2 + the four": {
+    "default": 30,
+    "tuned": 30
+   }
+  },
+  "diagnostics": {
+   "O2": {
+    "default": 30,
+    "tuned": 30
+   },
+   "O2 + the four": {
+    "default": 30,
+    "tuned": 30
+   }
+  },
+  "distinct": {
+   "O2": {
+    "default": 340,
+    "tuned": 340
+   },
+   "O2 + the four": {
+    "default": 340,
+    "tuned": 340
+   }
+  },
+  "div-checks": {
+   "O2": {
+    "default": 162,
+    "tuned": 152
+   },
+   "O2 + the four": {
+    "default": 160,
+    "tuned": 152
+   }
+  },
+  "div-magic": {
+   "O2": {
+    "default": 769,
+    "tuned": 710
+   },
+   "O2 + the four": {
+    "default": 749,
+    "tuned": 710
+   }
+  },
+  "early-exit": {
+   "O2": {
+    "default": 631,
+    "tuned": 559
+   },
+   "O2 + the four": {
+    "default": 566,
+    "tuned": 559
+   }
+  },
+  "f32-dsp": {
+   "O2": {
+    "default": 49030,
+    "tuned": 47923
+   },
+   "O2 + the four": {
+    "default": 49030,
+    "tuned": 47923
+   }
+  },
+  "first-steps": {
+   "O2": {
+    "default": 220,
+    "tuned": 220
+   },
+   "O2 + the four": {
+    "default": 220,
+    "tuned": 220
+   }
+  },
+  "fixed-point": {
+   "O2": {
+    "default": 411,
+    "tuned": 392
+   },
+   "O2 + the four": {
+    "default": 411,
+    "tuned": 392
+   }
+  },
+  "fragments": {
+   "O2": {
+    "default": 2299,
+    "tuned": 2090
+   },
+   "O2 + the four": {
+    "default": 2100,
+    "tuned": 2090
+   }
+  },
+  "gcd": {
+   "O2": {
+    "default": 324,
+    "tuned": 314
+   },
+   "O2 + the four": {
+    "default": 324,
+    "tuned": 314
+   }
+  },
+  "heat-lab": {
+   "O2": {
+    "default": 8832,
+    "tuned": 8026
+   },
+   "O2 + the four": {
+    "default": 7752,
+    "tuned": 7692
+   }
+  },
+  "histogram": {
+   "O2": {
+    "default": 2292,
+    "tuned": 2008
+   },
+   "O2 + the four": {
+    "default": 2044,
+    "tuned": 1920
+   }
+  },
+  "licm-nested": {
+   "O2": {
+    "default": 1678,
+    "tuned": 1678
+   },
+   "O2 + the four": {
+    "default": 1678,
+    "tuned": 1678
+   }
+  },
+  "licm-traps": {
+   "O2": {
+    "default": 153,
+    "tuned": 153
+   },
+   "O2 + the four": {
+    "default": 153,
+    "tuned": 153
+   }
+  },
+  "lz-roundtrip": {
+   "O2": {
+    "default": 34551,
+    "tuned": 33660
+   },
+   "O2 + the four": {
+    "default": 33305,
+    "tuned": 32414
+   }
+  },
+  "match-enum": {
+   "O2": {
+    "default": 251,
+    "tuned": 226
+   },
+   "O2 + the four": {
+    "default": 231,
+    "tuned": 226
+   }
+  },
+  "my-analysis": {
+   "O2": {
+    "default": 200975,
+    "tuned": 200795
+   },
+   "O2 + the four": {
+    "default": 200975,
+    "tuned": 200795
+   }
+  },
+  "my-first-pass": {
+   "O2": {
+    "default": 50,
+    "tuned": 50
+   },
+   "O2 + the four": {
+    "default": 50,
+    "tuned": 50
+   }
+  },
+  "nested-loops": {
+   "O2": {
+    "default": 2342,
+    "tuned": 2342
+   },
+   "O2 + the four": {
+    "default": 2342,
+    "tuned": 2342
+   }
+  },
+  "orders": {
+   "O2": {
+    "default": 1194,
+    "tuned": 1010
+   },
+   "O2 + the four": {
+    "default": 1136,
+    "tuned": 1010
+   }
+  },
+  "params-demo": {
+   "O2": {
+    "default": 2299,
+    "tuned": 2090
+   },
+   "O2 + the four": {
+    "default": 2100,
+    "tuned": 2090
+   }
+  },
+  "pressure": {
+   "O2": {
+    "default": 240,
+    "tuned": 230
+   },
+   "O2 + the four": {
+    "default": 240,
+    "tuned": 230
+   }
+  },
+  "ramp": {
+   "O2": {
+    "default": 1040,
+    "tuned": 790
+   },
+   "O2 + the four": {
+    "default": 970,
+    "tuned": 790
+   }
+  },
+  "records": {
+   "O2": {
+    "default": 260,
+    "tuned": 240
+   },
+   "O2 + the four": {
+    "default": 240,
+    "tuned": 240
+   }
+  },
+  "regalloc-lab": {
+   "O2": {
+    "default": 2614,
+    "tuned": 2462
+   },
+   "O2 + the four": {
+    "default": 2533,
+    "tuned": 2462
+   }
+  },
+  "regex-nfa": {
+   "O2": {
+    "default": 40212,
+    "tuned": 38745
+   },
+   "O2 + the four": {
+    "default": 37038,
+    "tuned": 35553
+   }
+  },
+  "sha-chacha": {
+   "O2": {
+    "default": 232820,
+    "tuned": 211526
+   },
+   "O2 + the four": {
+    "default": 220136,
+    "tuned": 213314
+   }
+  },
+  "sort": {
+   "O2": {
+    "default": 5043,
+    "tuned": 4589
+   },
+   "O2 + the four": {
+    "default": 4422,
+    "tuned": 4390
+   }
+  },
+  "start-here": {
+   "O2": {
+    "default": 3871,
+    "tuned": 3467
+   },
+   "O2 + the four": {
+    "default": 3578,
+    "tuned": 3467
+   }
+  },
+  "strength": {
+   "O2": {
+    "default": 1938,
+    "tuned": 1414
+   },
+   "O2 + the four": {
+    "default": 1802,
+    "tuned": 1414
+   }
+  },
+  "strings": {
+   "O2": {
+    "default": 10833,
+    "tuned": 9282
+   },
+   "O2 + the four": {
+    "default": 8119,
+    "tuned": 6578
+   }
+  },
+  "ui-gallery": {
+   "O2": {
+    "default": 1058,
+    "tuned": 1016
+   },
+   "O2 + the four": {
+    "default": 1016,
+    "tuned": 1016
+   }
+  },
+  "value-numbering": {
+   "O2": {
+    "default": 3082,
+    "tuned": 2666
+   },
+   "O2 + the four": {
+    "default": 3082,
+    "tuned": 2666
+   }
+  },
+  "wrong-shift": {
+   "O2": {
+    "default": 1650,
+    "tuned": 1490
+   },
+   "O2 + the four": {
+    "default": 1500,
+    "tuned": 1490
+   }
+  }
+ }
+}

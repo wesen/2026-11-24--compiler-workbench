@@ -1092,13 +1092,14 @@ export const guards = typedPass({
 
 export const copies = typedPass({
   name: 'copies',
-  about: 'copy propagation: a read of a copy x = y becomes a read of y while y still holds that value',
+  about:
+    'copy propagation: a read of a copy x = y becomes a read of y while y still holds that value (params.whole: only when every read of the copy can)',
   needs: { ssa: 'ssa' },
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
-  body({ st, f, tx, facts }) {
+  body({ st, f, tx, facts, params }) {
     const ssa = facts.ssa!,
-      plan = copyReads({ st, f, tx }, ssa);
+      plan = copyReads({ st, f, tx }, ssa, params.whole === true);
     if (!plan.size) return;
     tx.rewrite(v => {
       const from = plan.get(v.id);
@@ -1197,9 +1198,10 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
    * IRWB-003: two levels of inlining, then O2+, then loop rotation and a cfg to merge what rotation leaves in a
    * line. Meant for the backend options chains, coalesce and homes. No dfe: it needs the program's entries.
    *
-   * IRWB-037-G adds, inside the O2+ part: `thread` after the first cfg (so constprop and the second cfg fold the
-   * constant arms), `copies` after constprop (so the dce that follows removes the copies), `guards` after
-   * strength (it reads what licm and lvn left) and `subst-mem` in place of each subst. Without those four names,
+   * IRWB-037-G adds, inside the O2+ part: `thread` after the first cfg, and again after strength (the inner join
+   * of a nested && is a block of its own only once cfg has merged what the first run left), `copies` after
+   * constprop (so the dce that follows removes the copies), `guards` after strength (it reads what licm and lvn
+   * left) and `subst-mem` in place of each subst. Without those four names,
    * and with subst-mem read as subst, the list is still inline, inline, O2+, rotate, cfg (a test says so).
    */
   speed: [
@@ -1218,6 +1220,7 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'licm',
     'lvn',
     'strength',
+    'thread',
     'guards',
     'bce',
     'subst-mem',
