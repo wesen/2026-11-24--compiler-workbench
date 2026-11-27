@@ -1,0 +1,10 @@
+eq-and-one     sound    sampled                eq(and(x, 1), 1) → and(x, 1)
+eq-zero        sound    reduced-width+argument eq(x, 0) → eqz(x)
+ne-zero-bool   sound    exhaustive             ne(x, 0) → x if bool x
+ne-zero        unsound  -                      ne(x, 0) → x   {"x":-128} lhs 1 rhs -128
+add-add-const  sound    sampled                add(add(x, #a), #b) → add(x, #add(a, b))
+sub-add-const  sound    sampled                sub(add(x, #a), #b) → add(x, #sub(a, b))
+shl-shl-one    sound    proof                  shl(shl(x, 1), 1) → shl(x, 2)
+lt-rem16-8     unsound  -                      lt(rem(x, 16), 8) → eqz(and(x, 8))   {"x":-1431655766} lhs 1 rhs 0
+lt-and15-8     sound    sampled                lt(and(x, 15), 8) → eqz(and(x, 8))
+shl-div8-3     unsound  -                      shl(div(x, 8), 3) → and(x, -8)   {"x":-2147483647} lhs -2147483640 rhs -2147483648

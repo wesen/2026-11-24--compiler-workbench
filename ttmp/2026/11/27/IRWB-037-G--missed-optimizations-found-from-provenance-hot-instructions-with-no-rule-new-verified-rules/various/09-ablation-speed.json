@@ -1,0 +1,73 @@
+{
+ "pipeline": "speed",
+ "totals": {
+  "none": {
+   "default": 35638,
+   "tuned": 28128
+  },
+  "thread": {
+   "default": 35119,
+   "tuned": 27853
+  },
+  "decide": {
+   "default": 32584,
+   "tuned": 26723
+  },
+  "copies": {
+   "default": 35490,
+   "tuned": 28128
+  },
+  "loads": {
+   "default": 35638,
+   "tuned": 28128
+  },
+  "thread+loads": {
+   "default": 34875,
+   "tuned": 27365
+  },
+  "all": {
+   "default": 31897,
+   "tuned": 25960
+  },
+  "all+every-branch": {
+   "default": 31587,
+   "tuned": 25650
+  }
+ },
+ "rows": {
+  "regex-nfa": {
+   "none": {
+    "default": 35638,
+    "tuned": 28128
+   },
+   "thread": {
+    "default": 35119,
+    "tuned": 27853
+   },
+   "decide": {
+    "default": 32584,
+    "tuned": 26723
+   },
+   "copies": {
+    "default": 35490,
+    "tuned": 28128
+   },
+   "loads": {
+    "default": 35638,
+    "tuned": 28128
+   },
+   "thread+loads": {
+    "default": 34875,
+    "tuned": 27365
+   },
+   "all": {
+    "default": 31897,
+    "tuned": 25960
+   },
+   "all+every-branch": {
+    "default": 31587,
+    "tuned": 25650
+   }
+  }
+ }
+}
