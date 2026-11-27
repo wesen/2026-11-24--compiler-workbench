@@ -1,7 +1,7 @@
 ---
 Title: framework and tensor fixes F14, F19, F20
 Ticket: IRWB-024
-Status: active
+Status: complete
 Topics:
     - tensor
     - verification
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T22:06:49.908021768-05:00
+LastUpdated: 2026-11-26T22:13:15.692894999-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
