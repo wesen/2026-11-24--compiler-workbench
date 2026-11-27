@@ -1,5 +1,0 @@
-IRWB-020-E is ready for design review. [Ticket](ttmp/2026/11/26/IRWB-020-E--tix-language-ir-evaluators-meaning-contract-and-checked-passes/index.md) · [Design](ttmp/2026/11/26/IRWB-020-E--tix-language-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-stage-1-design.md) · [Diary](ttmp/2026/11/26/IRWB-020-E--tix-language-ir-evaluators-meaning-contract-and-checked-passes/reference/01-diary.md)
-
-**One framework change is proposed:** add a synchronous checked-native-pass path in `src/framework/passes/` because the fixed `optimizeTix` API cannot await `applyPass`. It would share candidate validation, diff, correspondence, and write checks with `applyPass`, then use the existing synchronous differential checker before returning a candidate. No changes are proposed to the other framework modules.
-
-**Commit:** `3abc7c797ecf22b506a9fc39a8f02fe420ad1357`. Ticket validation passed. No implementation changes were made.

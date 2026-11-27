@@ -1,9 +1,0 @@
-{
- "IRWB-020-E": {
-  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t1-pi-am-irwb-020-e",
-  "branch": "t1-pi-am/irwb-020-e",
-  "harness": "pi",
-  "resumedFrom": "t1-pi-am",
-  "rev": "a0277f9"
- }
-}

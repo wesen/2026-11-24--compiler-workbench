@@ -1,6 +1,0 @@
-{
- "IRWB-023-A": { "config": "sh", "model": "gpt-6.2-sol", "effort": "high", "round": "r2-sh", "harness": "codex", "policy": "r2" },
- "IRWB-023-B": { "config": "ah", "model": "gpt-6.2-astra", "effort": "high", "round": "r2-ah", "harness": "codex", "policy": "r2" },
- "IRWB-023-C": { "config": "op", "model": "claude-opus-5-5", "effort": "default", "round": "r2-op", "harness": "claude", "policy": "r2" },
- "IRWB-023-D": { "config": "fa", "model": "claude-fable-5-2", "effort": "default", "round": "r2-fa", "harness": "claude", "policy": "r2" }
-}

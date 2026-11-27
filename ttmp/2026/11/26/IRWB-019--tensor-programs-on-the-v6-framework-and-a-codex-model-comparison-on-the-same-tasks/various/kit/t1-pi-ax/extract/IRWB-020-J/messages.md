@@ -1,7 +1,0 @@
-## 0
-
-**IRWB-020-J is ready for design review.** The [ticket](ttmp/2026/11/26/IRWB-020-J--tix-stage-1-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/index.md), [design](ttmp/2026/11/26/IRWB-020-J--tix-stage-1-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-design-tix-programs-and-checked-tensor-passes.md), and [diary](ttmp/2026/11/26/IRWB-020-J--tix-stage-1-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/01-implementation-diary.md) are committed at `1e73abc095031039217312c706bfec61ef4d80fd`.
-
-The only proposed framework change is `applySampledPassSync` in `src/framework/passes/`. The existing pass runner is asynchronous, while `optimizeTix` must return synchronously. The proposed helper reuses v6 edit validation, write checks, and differential invariants; tensor shapes and numerical tolerance stay in `src/tensor/`.
-
-`docmgr doctor` passed. No compiler or framework code changed.
