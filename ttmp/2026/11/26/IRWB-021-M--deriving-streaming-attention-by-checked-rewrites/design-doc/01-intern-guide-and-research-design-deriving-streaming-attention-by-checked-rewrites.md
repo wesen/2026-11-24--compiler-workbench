@@ -627,8 +627,8 @@ Read this carefully, because it is not what a first design would assume:
   and the aggregate statements are answering different questions, and a contract needs both: the
   aggregate to catch a systematic drift, the elementwise to catch a single grossly wrong element.
 - Since the score slide is excluded from the chain (§9.9), the constants the contract uses are
-  `κ = 2`, `f_rms = 2`, `f_elementwise = 16` (measured 2 and 12, rounded up one power of two for
-  margin). §14 states why they are in the contract's version key.
+  `κ = 2`, `f_rms = 2` (measured 2) and `f_el = 16` (measured 12, rounded up to the next power of
+  two for margin). §14 states why they are in the contract's version key.
 
 ### 9.11 What was not measured
 
@@ -1227,7 +1227,8 @@ Four properties of this relation are deliberate and each has a measured justific
 - **The yardstick is `p0`, not a constant.** "No worse than twice the plain program's own error,
   plus a floor" is a statement a domain expert can review without knowing anything about the
   derivation. It also means the contract's tightness *scales with the input class*: on `wide`
-  inputs both are 20× worse than on N(0,1), and the relation stays satisfied.
+  inputs both are an order of magnitude worse than on N(0,1) (§9.1, §9.10), and the relation stays
+  satisfied because it is stated against `p0` rather than against a constant.
 - **The floor is not zero and it is not small.** 16 ulps of the row scale elementwise is 2e-6
   relative; a contract without it would demand that the forced output slide cost nothing, which
   §9.9 shows it does not.
@@ -1528,7 +1529,7 @@ a stricter policy is computable later.
 | risk | why it is real | mitigation |
 |---|---|---|
 | **risk 1: the budget is loose in the last two digits.** The forced slide costs ~1e-6 of the row scale and the floor is 16 ulps; a user who needs 1e-7 gets nothing. | §9.9: the slide is *forced* by the one-pass form; there is no streaming form in f32 without it. | State the accuracy cost as part of the feature (the two numbers side by side, §14.5); refuse the derivation under a contract tighter than the measured floor rather than silently missing it. |
-| **risk 2: a rewrite that looks free is expensive on scores.** R1 applied to the score costs 173 ulps because `exp` amplifies by `|s|` (§9.12). | The rule is legitimate and tempting (scale `q` once). | Keep it out of the chain by default; give it its own evidence record and its own measured floor; never apply score-side rules under the same budget as state-side ones. |
+| **risk 2: a rewrite that looks free is expensive on scores.** R1 applied to the score costs 173 ulps because `exp` amplifies an absolute score error by the score's magnitude (§9.12). | The rule is legitimate and tempting (scale `q` once). | Keep it out of the chain by default; give it its own evidence record and its own measured floor; never apply score-side rules under the same budget as state-side ones. |
 | **risk 3: the fragment boundary.** R3's checker is complete for (max, exp, +, and multiplication by anything that is not a score term). Outside it, the application must come out residual — and a checker that normalizes *approximately* would silently accept a wrong derivation. | The normalizer is new code with a small theory. | Test it against a corpus of programs deliberately just outside the fragment, each of which must be residual; record the boundary in the evidence record (§14.4). |
 | **risk 4: the device's `exp` is not the language's.** `expf` with fast-math, `--use_fast_math`, or an approximate `__expf` changes the weights by more than the budget. | The contract governs the f32 evaluator; nothing in the framework notices that the *device* computed something else. | Backend flags fixed and recorded in the artifact (no fast-math, no `-ffast-math`, no FMA contraction unless the contract models it); a device-vs-evaluator equality test on a sample of the contract's cases as a gate (§16.4's last row). |
 | **risk 5: contraction.** If the backend fuses `a·b + c` into an FMA, results change exactly as IRWB-011 §6 measured for Candela. | The tuple combine is *made* of `a*b + c`. | Same as risk 4; the contract's version key includes the backend's float mode. |
@@ -1643,8 +1644,8 @@ the full list.
 | **offset** | the value subtracted inside `exp` before summing; `−∞` at the identity, the running max in the fold |
 | **real-exact** | equal over ℝ for every input; says nothing about f32 |
 | **bit-exact** | equal as f32 values for every input |
-| **row scale** | the largest `|o[i,x]|` in row `i`; the unit of every relative error in this document |
+| **row scale** | the largest absolute output element in row `i`; the unit of every relative error in this document |
 | **ulp** | unit in the last place; one step between adjacent f32 values near a given magnitude |
 | **checked-tolerance** | the assurance a tolerance contract attains: measured within a bound, not proved equal |
 | **residual** | a change a rule table could not derive; sampled, never silently accepted |
-| **score-side / state-side rewrite** | touches the expression defining the scores (sensitive to `|s|`) vs only the weights' association (first order in `u`) |
+| **score-side / state-side rewrite** | touches the expression defining the scores (sensitive to the score's magnitude) vs only the weights' association (first order in `u`) |
