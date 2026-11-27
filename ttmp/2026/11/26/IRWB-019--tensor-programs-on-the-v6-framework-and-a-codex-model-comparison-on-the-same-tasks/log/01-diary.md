@@ -1064,3 +1064,55 @@ Each pack was scored by two judges: Codex (Sol high) and Claude (an Opus subagen
   - **GLM 5.3 Flash high (I):** 77 min, +1003 −44. Softmax 0.79 → 0.39 ms, layernorm 0.47 → 0.15 ms. Attention and mlp 2 kernels each.
   - None of the three changed `src/framework/` or `tools/`.
 - **The hidden evaluator** (`scripts/42-eval-t3.sh`) is running on the nine cells, one at a time, each rebuilt from its HEAD first.
+
+## Step 40: T3 evaluated (all nine cells exact); the division-placement finding; Opus merged
+
+**Hidden evaluation** (`scripts/42-eval-t3.sh`, 05:19:47Z to 06:01:39Z, about 4.6 min per cell; the 18 min on `t3-base` included its cold reference build).
+
+- All nine cells pass every check:
+  - corpus bits, fused and unfused;
+  - optimized programs;
+  - 20 random programs;
+  - 16 `checkLowering` verdicts, all exact;
+  - large-size bits.
+- Speed-ups (unfused ÷ fused) are in `results/eval-t3-summary.txt` (script 44). The geomean over softmax, layernorm, attention and mlp, and the worst program, per cell:
+
+  | cell | geomean | worst |
+  |---|---|---|
+  | Opus | 1.26× | 0.95× |
+  | GLM Flash high | 1.17× | 0.70× |
+  | Sol medium | 1.13× | 0.80× |
+  | Fable | 1.10× | 0.75× |
+  | Astra medium | 1.10× | 0.48× |
+  | DeepSeek high | 1.09× | 0.78× |
+  | DeepSeek xhigh | 1.08× | 0.69× |
+  | GLM 5.3 high | 1.05× | 0.74× |
+  | Terra low | 1.00× | 0.97× |
+
+- Softmax roughly doubles for seven cells. Fused layernorm and attention are often slower than unfused.
+
+**Why the agents' numbers differ.** The hidden programs come from T1's hidden suite, and they divide inside the reductions (`sum(d) x[i, d] / D`, `sum(j) e[i, j] * v[j, x] / l[i]`). The visible corpus divides the reduced value. The two placements are different f32 programs; the probe checked that their results differ.
+
+`scripts/43-probe-division-placement.mjs` times both placements on four cells (`results/division-placement.txt`), as the fused speed-up with the division inside / outside the reduction:
+
+| cell | layernorm inside / outside | attention inside / outside |
+|---|---|---|
+| Opus | 1.01× / 2.53× | 1.06× / 1.37× |
+| Astra | 0.50× / 2.11× | 1.08× / 1.30× |
+| GLM Flash high | 1.05× / 3.20× | 0.70× / 1.34× |
+| Sol | 0.84× / 2.70× | 0.84× / 1.36× |
+
+**Diagnosis**, from Opus's emitter (`emitGroup`, block mode):
+- A per-row scalar statement such as `mu[i]` runs as a loop of length 1, so only thread 0 executes it. Its value inlines the whole reduction, so the per-element division sits in thread 0's serial chain.
+- Hypothesis, not measured: concurrency drops too. Stage 2 runs 4096 row folds at once, one thread each; block mode runs at most the resident blocks per SM times the SMs.
+
+**What no cell does:**
+- decide by cost whether to fuse;
+- evaluate a reduction's terms in parallel and accumulate them serially. That is exact, since each term is rounded the same way and the sum keeps its order.
+
+**Merge: Opus (IRWB-029-D).**
+- It has the best geomean and no serious slowdown. It fuses every program to one kernel, changes nothing in `src/framework` or `tools`, and `fuse: false` keeps stage 2's bytes.
+- Its 12 commits are cherry-picked onto main (`b53cded`..`e9c6ba2`). `src/tensor` and `tests/tensor` are identical to the evaluated branch, and all changed files were already Prettier-clean.
+- Follow-up candidates:
+  - **T3b**, parallel terms with a serial fold, plus a cost gate;
+  - **F23**, recorded.
