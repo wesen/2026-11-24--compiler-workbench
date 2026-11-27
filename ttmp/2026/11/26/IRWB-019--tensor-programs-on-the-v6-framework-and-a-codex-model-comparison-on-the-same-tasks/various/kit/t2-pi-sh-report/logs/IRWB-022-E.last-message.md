@@ -1,0 +1,9 @@
+[Final report: `reference/02-report.md`](ttmp/2026/11/26/IRWB-022-E--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/02-report.md) · Commit `bd8e2f21df8c92977cec0bc9e7973a1067786aac`. The evaluated code is unchanged.
+
+- **Softmax and attention:** `expf` in `src/tensor/cuda-emit.ts:13` changes shifted exponents and therefore normalized weights.
+- **MLP:** `tanhf` in `src/tensor/cuda-emit.ts:16` changes GELU activations that feed the second affine layer.
+- **Random programs:** `expf`, `logf`, and `tanhf` (`src/tensor/cuda-emit.ts:13`, `:14`, `:16`) each have confirmed mismatch witnesses, but the aggregate data cannot identify which operation caused each of the four nonidentical runs.
+
+One untimed GB10 run reproduced the corpus mismatch mechanisms and eliminated them on the probe inputs by widening only the implicated intrinsic.
+
+**Sampled tolerance is the strongest of the two proposed relations supported by the shipped backend.** Its single-precision intrinsic calls rule out exact f32 equality, and the measurements do not establish a tighter bound for arbitrary inputs. The coordinator’s exhaustive double-then-round result supports an exact-to-current-f32 check for a revised emitter, with NaNs compared by class. It does not make the shipped emitter exact or make `split-sum` bit-identical to the original program.

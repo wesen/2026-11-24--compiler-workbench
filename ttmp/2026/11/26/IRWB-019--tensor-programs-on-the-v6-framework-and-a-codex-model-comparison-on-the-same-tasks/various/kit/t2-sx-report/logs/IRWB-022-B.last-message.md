@@ -1,0 +1,10 @@
+Wrote [reference/02-report.md](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sx-irwb-022-b/ttmp/2026/11/26/IRWB-022-B--lowering-tix-to-cuda-checked-on-the-gpu-machine/reference/02-report.md) and committed it as `58a494a`. The evaluated code remains unchanged.
+
+- **Softmax:** `expf` changes the shifted exponentials used in both the numerator and the normalizing sum. [cuda-source.ts:22](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sx-irwb-022-b/src/tensor/cuda-source.ts:22)
+- **Attention:** The same `expf` difference changes the normalized weights that feed the weighted value reduction.
+- **MLP:** `tanhf` changes the GELU activation that feeds the second affine layer. [cuda-source.ts:25](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sx-irwb-022-b/src/tensor/cuda-source.ts:25)
+- **Random programs:** `expf`, `logf`, and `tanhf` are known divergence sites. The aggregate results lack the programs and inputs needed to attribute the four mismatches individually. [cuda-source.ts:23](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sx-irwb-022-b/src/tensor/cuda-source.ts:23)
+
+One untimed GB10 job reproduced the three corpus differences before and after optimization. Substituting only the identified intrinsic eliminated every mismatch in those probe cases.
+
+Of the two proposed relations, sampled tolerance is the one supported by the evaluated implementation. The observed intrinsic differences rule out exact f32 equivalence, and the measured headroom establishes the f64 budget’s sufficiency on the sampled cases while leaving its tightness open. The coordinator’s exhaustive results support exact f32 checking, with NaNs compared as a class, for a different emission policy that uses the rounded double intrinsics on the tested GB10 stack.

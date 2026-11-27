@@ -1,0 +1,3240 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a2197b-ef8d-79b0-95b8-ebc1f0fa9c5f
+--------
+user
+A reviewer has read your design for IRWB-022-I. The review:
+
+# Review of your design
+
+## Must change
+
+1. **Use the framework's batch and memo.** "Retain a bounded process-local memo of completed semantic verdicts and share one in-flight Promise per identical check", because it "avoids modifying the generic differential loop that Stage 1 uses per case". That loop needs no modification. `DifferentialSpec.decide`, run by `runDifferentialAsync`, receives all undecided indices in one async call, and `baselineKey`/`subjectKey` keep decided verdicts. A second tensor memo duplicates this, and you would maintain its seven-part key by hand. Use `differential`, or name what it lacks.
+2. **`gpuMs` includes kernel loading.** "The standalone public runner reports a kernel interval for its own call." Only the benchmark warms up. Under CUDA 13's default lazy loading, the first launch of each kernel loads its module inside the interval. In my probe on the GB10, a trivial kernel's first interval was 0.115 ms and its second 0.003 ms; after `cudaFuncGetAttributes` the first was 0.004 ms. The fixed API excludes start-up.
+
+## Cut
+
+1. "Model the pinned device/compiler configuration as a versioned read-only resource in `MemoryResources`." Nothing writes this resource, and reading it adds effect declarations. The key can carry the profile.
+2. "Allow a pinned `--nvcc` path for the contract." The tool already reads `CUDA_REMOTE_NVCC`.
+3. "Take a shared GPU lock for ordinary runs". This changes the documented behaviour ("untimed runs do not wait for it") for every user.
+4. "Include execution identity in results". Only the memo in Must change 1 uses it.
+
+## Framework and tool changes
+
+- No framework change: acceptable, but the reason given is wrong (see Must change 1).
+- `--runtime-input`, kept out of the compile key: needed, minimal, opt-in, correctly placed.
+- Per-invocation directory, compile lock, atomic install: needed once the data leaves the key.
+- `--nvcc`, the shared lock and the identity field: not needed.
+
+## Keep
+
+Keep the CUDA double `exp`/`log`/`tanh`, rounded once with `__double2float_rn`, under an honest tolerance claim: your probe found no non-NaN word mismatch, and NaN payloads are why you do not claim bit identity. Also keep the index and tail mutation tests.
+
+Now do the following in this session:
+1. **Revise the design document** according to the review. Where you disagree with a review item, keep your design and state the reason in the document. Record the revision in your diary, and commit.
+2. **Implement stage 1 as revised:** `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and any changes to `src/framework/` your design needs (record each, with its reason). After `npm run build`, the API in the brief must be exported from `dist/tensor/index.js` exactly as specified; implementations are compared on it. Commit at sensible points with messages starting `IRWB-022-I:`, and keep the diary at each significant step.
+3. **Check it.** Run your own tests (`node --test tests/tensor/*.test.mjs`; on Node 24 a bare directory argument fails with MODULE_NOT_FOUND). If you changed `src/framework/`, also run `node --test tests/framework/*.test.mjs` and the tests in `tests/typed/` that cover the change. Do not run the full suite (`npm test`): many agents share this machine.
+4. **Final message:** what you built (paths); how it was checked (commands and results); the framework changes (file: reason); deviations from the revised design; the commit hashes.
+codex
+I’ll verify the framework’s batch and memo API, revise the design and diary, then implement and test the CUDA backend. I’ll also run the six corpus measurements from the original brief.
+exec
+/usr/bin/zsh -lc 'git status --short --branch && cat src/framework/contracts/differential.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'tail -55 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md && cat tools/cuda-remote.mjs && cat tsconfig.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "rg -n 'baselineKey|subjectKey|decide:|runDifferentialAsync' src tests/framework && rg -n 'export class ContractError|export const String|export interface DifferentialSpec' src/framework/contracts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 528ms:
+## t2-sh/irwb-022-i
+/**
+ * IRWB-001 E5: differential checkers as v6 invariants.
+ *
+ * Compiler Workbench checks meaning by running two artifacts on the same generated inputs and comparing results,
+ * traps and memory. v6 knows only exact checkers. `differential()` packages the sampled method as an ordinary
+ * `InvariantDefinition`, so a transformation contract can `ensure` it like any other invariant. Its evidence records
+ * the method (`sampled`), the case count and seed, how many cases agreed, disagreed or were inconclusive, and the
+ * first counterexamples. Inconclusive cases (for example a step limit hit by either side) are counted and never
+ * treated as a verdict; a check with no decided case fails, because it has established nothing.
+ */
+import { defineInvariant } from './definitions.js';
+import type { CheckResult, InvariantDefinition, PortValue, PortValues, Ports } from './types.js';
+
+/** A small deterministic generator (mulberry32), so a reported counterexample can be run again from its seed. */
+export function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export interface CaseComparison {
+  readonly ok: boolean;
+  readonly reason?: string;
+}
+
+export interface DifferentialSpec<P extends Ports, Case, Outcome> {
+  readonly id: string;
+  readonly version: string;
+  readonly description: string;
+  readonly inputs: P;
+  /** The port whose behaviour defines the expected meaning (e.g. `origin`, r0). */
+  readonly baseline: keyof P & string;
+  /** The port being checked against it (e.g. `candidate`). */
+  readonly subject: keyof P & string;
+  readonly count: number;
+  readonly seed?: number;
+  /** The generator to seed (default `seededRandom`, mulberry32); a port may supply its tool's own generator. */
+  readonly random?: (seed: number) => () => number;
+  /** Generate the cases, deterministically from `random` and the inputs. */
+  cases(inputs: PortValues<P>, random: () => number, count: number): readonly Case[];
+  /** Run one side on one case. `side` names which port `value` came from. */
+  run(side: 'baseline' | 'subject', value: PortValue<P[keyof P]>, kase: Case, inputs: PortValues<P>): Outcome;
+  compare(baseline: Outcome, subject: Outcome, kase: Case): CaseComparison | boolean;
+  inconclusive?(outcome: Outcome): boolean;
+  describeCase?(kase: Case): unknown;
+  readonly maxCounterexamples?: number;
+  /**
+   * IRWB-004 D1: a key such that the cases, and the baseline's outcome on each, are a function of this spec (its id,
+   * version, seed and count) and the key alone; for a check against a fixed origin, the origin's revision. With a
+   * key, both are computed once per key and reused by every later check.
+   */
+  readonly baselineKey?: (inputs: PortValues<P>) => string | undefined;
+  /**
+   * IRWB-004 D1: a key such that the subject's outcome on a case is a function of the case and the key alone (for a
+   * program, a hash of the code the case can reach). Used only together with `baselineKey`: a decided verdict is
+   * kept under (baseline key, case index, subject key) and replayed instead of evaluating the case again.
+   */
+  readonly subjectKey?: (subject: PortValue<P[keyof P]>, kase: Case, inputs: PortValues<P>) => string | undefined;
+  /**
+   * IRWB-004 F4: decide the cases at the indices `todo` elsewhere (e.g. on worker threads), returning one verdict
+   * per index, in the order of `todo`, exactly as `run`, `inconclusive` and `compare` would decide them; or
+   * `undefined` to decide them here. The check's evidence is assembled in case order, whoever decided a case.
+   */
+  readonly decide?: (
+    inputs: PortValues<P>,
+    cases: readonly Case[],
+    todo: readonly number[],
+  ) => Promise<readonly Decided[]> | undefined;
+}
+
+/** One decided case: what `compare` (or `inconclusive`) concluded. */
+export type Decided =
+  | { readonly v: 'agree' }
+  | { readonly v: 'inconclusive' }
+  | { readonly v: 'disagree'; readonly reason: string };
+
+export interface DifferentialEvidence {
+  readonly method: 'sampled';
+  readonly invariant: string;
+  readonly seed: number;
+  readonly total: number;
+  readonly agree: number;
+  readonly disagree: number;
+  readonly inconclusive: number;
+  readonly status: 'agree' | 'disagree' | 'inconclusive';
+  readonly counterexamples: readonly { readonly case: unknown; readonly reason: string }[];
+}
+
+export type DifferentialInvariant<P extends Ports> = InvariantDefinition<P> & {
+  readonly method: 'sampled';
+};
+
+export function differential<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+): DifferentialInvariant<P> {
+  if (!(spec.count > 0 && Number.isInteger(spec.count)))
+    throw new Error('Differential check needs a positive case count');
+  if (!(spec.baseline in spec.inputs) || !(spec.subject in spec.inputs) || spec.baseline === spec.subject)
+    throw new Error('Differential check needs distinct baseline and subject ports');
+  const seed = spec.seed ?? 1,
+    maxCx = spec.maxCounterexamples ?? 5;
+  const result = (evidence: DifferentialEvidence): CheckResult => ({
+    ok: evidence.status === 'agree',
+    reason:
+      evidence.status === 'agree'
+        ? `${evidence.agree}/${evidence.total} sampled cases agree (${evidence.inconclusive} inconclusive)`
+        : evidence.status === 'disagree'
+          ? `${evidence.disagree}/${evidence.total} sampled cases disagree`
+          : `no decided case among ${evidence.total} (all inconclusive)`,
+    evidence,
+  });
+  const inv = defineInvariant<P>({
+    id: spec.id,
+    version: spec.version,
+    description: spec.description,
+    inputs: spec.inputs,
+    check(_ctx, inputs): CheckResult | Promise<CheckResult> {
+      if (spec.decide) return runDifferentialAsync(spec, inputs, seed, maxCx).then(result);
+      return result(runDifferential(spec, inputs, seed, maxCx));
+    },
+  });
+  const out = Object.assign(Object.create(null), inv, { method: 'sampled' as const }) as DifferentialInvariant<P>;
+  SPECS.set(out, spec as DifferentialSpec<any, any, any>);
+  return out;
+}
+
+const SPECS = new WeakMap<object, DifferentialSpec<any, any, any>>();
+/** IRWB-004 F4: the specification a differential invariant was made from (a worker decides cases with it). */
+export function differentialSpec<P extends Ports>(inv: DifferentialInvariant<P>): DifferentialSpec<P, any, any> {
+  const spec = SPECS.get(inv);
+  if (!spec) throw new Error(`${inv.id} is not a differential invariant of this realm`);
+  return spec;
+}
+
+/**
+ * IRWB-004 D1: what a check against a baseline key keeps. The cases and the baseline's outcomes (computed as cases
+ * are first evaluated) are fixed by the key; `verdicts` maps `index \0 subject key` to the decided verdict. A few
+ * keys are kept, least recently used first out.
+ */
+interface Reuse {
+  readonly cases: readonly unknown[];
+  readonly outcomes: unknown[];
+  readonly verdicts: Map<string, Decided>;
+}
+const REUSE = new Map<string, Reuse>();
+const REUSE_MAX = 4;
+let reuseEnabled = true;
+/** Turn the reuse of cases, baseline outcomes and verdicts on or off (tests and measurements compare both). */
+export function setDifferentialReuse(enabled: boolean): void {
+  reuseEnabled = enabled;
+  if (!enabled) REUSE.clear();
+}
+/** Counts since the last reset: sides run here, verdicts replayed from the memo, cases decided by `decide`. */
+const STATS = { baselineRuns: 0, subjectRuns: 0, replayed: 0, delegated: 0 };
+export function differentialStats(reset = false): Readonly<typeof STATS> {
+  const out = { ...STATS };
+  if (reset) for (const k of Object.keys(STATS) as (keyof typeof STATS)[]) STATS[k] = 0;
+  return out;
+}
+
+function prepare<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  seed: number,
+): { cases: readonly Case[]; reuse?: Reuse } {
+  const bk = reuseEnabled ? spec.baselineKey?.(inputs) : undefined;
+  if (bk === undefined) return { cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count) };
+  const key = `${spec.id}@${spec.version}#${seed}#${spec.count}#${bk}`;
+  let reuse = REUSE.get(key);
+  if (reuse) REUSE.delete(key);
+  else
+    reuse = {
+      cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),
+      outcomes: [],
+      verdicts: new Map(),
+    };
+  REUSE.set(key, reuse);
+  while (REUSE.size > REUSE_MAX) REUSE.delete(REUSE.keys().next().value!);
+  return { cases: reuse.cases as readonly Case[], reuse };
+}
+
+const AGREE: Decided = Object.freeze({ v: 'agree' }),
+  INCONCLUSIVE: Decided = Object.freeze({ v: 'inconclusive' });
+/**
+ * Decide one case: run both sides, then `inconclusive`, then `compare`, as a check always has. `outcomes`, when
+ * given, keeps the baseline's outcome by case index (it is fixed by the baseline key); a worker deciding cases for a
+ * check (IRWB-004 F4) calls this too, with its own `outcomes`.
+ */
+export function decideCase<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  kase: Case,
+  index: number,
+  outcomes?: unknown[],
+): Decided {
+  let a = outcomes?.[index] as Outcome | undefined;
+  if (a === undefined) {
+    a = spec.run('baseline', inputs[spec.baseline] as PortValue<P[keyof P]>, kase, inputs);
+    STATS.baselineRuns++;
+    if (outcomes) outcomes[index] = a;
+  }
+  STATS.subjectRuns++;
+  const b = spec.run('subject', inputs[spec.subject] as PortValue<P[keyof P]>, kase, inputs);
+  if (spec.inconclusive?.(a) || spec.inconclusive?.(b)) return INCONCLUSIVE;
+  const c = spec.compare(a, b, kase);
+  const verdict = typeof c === 'boolean' ? { ok: c } : c;
+  return verdict.ok ? AGREE : Object.freeze({ v: 'disagree', reason: verdict.reason ?? 'outcomes differ' });
+}
+
+/** The evidence of decided cases, counted in case order (so counterexamples come in case order). */
+function tally<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  seed: number,
+  cases: readonly Case[],
+  verdicts: readonly Decided[],
+  maxCounterexamples: number,
+): DifferentialEvidence {
+  let agree = 0,
+    disagree = 0,
+    inconclusive = 0;
+  const counterexamples: { case: unknown; reason: string }[] = [];
+  for (let i = 0; i < cases.length; i++) {
+    const d = verdicts[i];
+    if (d.v === 'inconclusive') inconclusive++;
+    else if (d.v === 'agree') agree++;
+    else {
+      disagree++;
+      if (counterexamples.length < maxCounterexamples)
+        counterexamples.push({
+          case: spec.describeCase ? spec.describeCase(cases[i]) : cases[i],
+          reason: d.reason,
+        });
+    }
+  }
+  return {
+    method: 'sampled',
+    invariant: spec.id,
+    seed,
+    total: cases.length,
+    agree,
+    disagree,
+    inconclusive,
+    status: disagree ? 'disagree' : agree ? 'agree' : 'inconclusive',
+    counterexamples,
+  };
+}
+
+/** The memo keys of the cases (undefined where a case has no subject key or nothing is reused). */
+function memoKeys<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  cases: readonly Case[],
+  reuse: Reuse | undefined,
+): (string | undefined)[] {
+  if (!reuse || !spec.subjectKey) return new Array(cases.length).fill(undefined);
+  const subject = inputs[spec.subject] as PortValue<P[keyof P]>;
+  return cases.map((c, i) => {
+    const sk = spec.subjectKey!(subject, c, inputs);
+    return sk === undefined ? undefined : `${i}\u0000${sk}`;
+  });
+}
+
+/**
+ * Run a differential specification directly (tools, the workbench's Checks view) without a manager. IRWB-004: with
+ * `baselineKey`, the cases and baseline outcomes are kept and reused; with `subjectKey` too, a case whose verdict is
+ * known for its subject key is not evaluated again. The evidence is the same either way.
+ */
+export function runDifferential<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  seed = spec.seed ?? 1,
+  maxCounterexamples = spec.maxCounterexamples ?? 5,
+): DifferentialEvidence {
+  const { cases, reuse } = prepare(spec, inputs, seed);
+  const keys = memoKeys(spec, inputs, cases, reuse);
+  const verdicts: Decided[] = new Array(cases.length);
+  for (let i = 0; i < cases.length; i++) {
+    const known = keys[i] === undefined ? undefined : reuse!.verdicts.get(keys[i]!);
+    if (known) {
+      verdicts[i] = known;
+      STATS.replayed++;
+      continue;
+    }
+    verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+    if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+  }
+  return tally(spec, seed, cases, verdicts, maxCounterexamples);
+}
+
+/** `runDifferential`, with the cases nobody decided yet handed to `spec.decide` (IRWB-004 F4). */
+export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  seed = spec.seed ?? 1,
+  maxCounterexamples = spec.maxCounterexamples ?? 5,
+): Promise<DifferentialEvidence> {
+  const { cases, reuse } = prepare(spec, inputs, seed);
+  const keys = memoKeys(spec, inputs, cases, reuse);
+  const verdicts: Decided[] = new Array(cases.length);
+  const todo: number[] = [];
+  for (let i = 0; i < cases.length; i++) {
+    const known = keys[i] === undefined ? undefined : reuse!.verdicts.get(keys[i]!);
+    if (known) {
+      verdicts[i] = known;
+      STATS.replayed++;
+    } else todo.push(i);
+  }
+  const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
+  if (elsewhere) {
+    const decided = await elsewhere;
+    if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
+    todo.forEach((i, k) => (verdicts[i] = decided[k]));
+    STATS.delegated += todo.length;
+  } else for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+  for (const i of todo) if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+  return tally(spec, seed, cases, verdicts, maxCounterexamples);
+}
+
+/** The assurance a check's evidence supports: sampled differential testing is weaker than an exact checker. */
+export function assuranceOf(evidence: unknown): 'checked-sampled' | 'checked-exact' {
+  return (evidence as { method?: string } | null)?.method === 'sampled' ? 'checked-sampled' : 'checked-exact';
+}
+
+ succeeded in 529ms:
+## Fixed API (additions in `dist/tensor/index.js` after the build)
+```ts
+cudaSource(program: TixProgram, fn: string): string
+  // the complete CUDA C translation unit for one function: its kernels and a main that reads the inputs and writes the result
+runTixCuda(program: TixProgram, fn: string,
+           inputs: Record<string, { shape: number[]; data: Float32Array }>,
+           options?: { host?: string }): Promise<{ shape: number[]; data: Float32Array; gpuMs: number }>
+  // runs on the GPU machine; gpuMs is the time of the function's kernels on the GPU (CUDA events), without transfers or start-up
+checkLowering(program: TixProgram, fn: string): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }>
+  // your contract's verdict on the lowering of this function
+```
+Stage 1's `compileTix`, `runTix` and `optimizeTix` keep their signatures and behaviour. Implementations are compared on this API. Anything beyond it is yours to design.
+
+## Repository facts
+- Build with `npm run build` (`tsc`, into `dist/`). Tests are `node --test tests/<dir>/<name>.test.mjs` and import from `../../dist/...`; on Node 24 pass files, not a bare directory. Prettier: 110 columns, single quotes.
+- Read `src/framework/contracts/README.md`, `src/framework/ir/README.md`, `src/framework/passes/define-pass.ts` (stage 1 added `applyNativePassSync`), and `src/tensor/`.
+- Your sandbox has network access, so `ssh` to the GPU machine works from it. Run GPU work only through the tool. Other agents share the machine: use `--timed` (a lock, so that measurements do not disturb each other) only for measurements, and keep those runs short.
+- Keep the tests that need the GPU in their own test file, so that the other tests run without the network.
+- In the sandbox, a test that spawns `node` can fail with EPERM. Request escalation for that command.
+- Scope: you may change `src/tensor/`, `tests/tensor/`, `corpus/tensor/`, and `src/framework/` and `tools/cuda-remote.mjs` where the stage needs it. Record each framework and tool change in your design. Do not modify `src/typed/`, `corpus/projects/`, other tools or existing tests outside `tests/tensor/`, except framework tests that a framework change makes necessary. Do not run the full suite (`npm test`): many agents share this machine.
+- Use your docmgr and diary skills for the ticket and diary. Commit on your current branch with messages starting `IRWB-022-I:`. Do not push.
+- Final message: the ticket and design paths, the framework and tool changes you propose, the relation you chose for the lowering and the probe that established it, the commit hash.
+Your ticket ID is IRWB-022-I. Name the ticket after the stage-2 work (lowering Tix to CUDA, checked, on the GPU machine).
+
+</details>
+
+The implementation, timing runs and report follow the review. The design turn needs executable evidence for the relation and framework decision.
+
+### Work and rationale
+
+- Read the Stage 1 [design](../../IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/design-doc/01-tix-semantics-and-checked-tensor-rewrites.md) and [report](../../IRWB-020-B--tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md). Generated uses of `blocks` and `tail` made grouping preservation a backend requirement.
+- Exercised the existing heterogeneous transformation with two artifact kinds, a read-only resource and an actual async invariant. Used the same manager to reject a replacement output. The result favored the contract API over extending the same-IR edit runner.
+- Compiled and ran a standalone numerical probe through the existing CUDA tool. The GPU received actual f32 words, and the Node harness compared the returned raw f32 words before interpreting numerical deviations.
+
+### Results and recovery
+
+- `npm ls --depth=0` initially reported `ELSPROBLEMS` and four missing dependencies in the fresh worktree. `npm ci --cache /tmp/irwb-022-i-npm-cache --no-audit --no-fund` installed them, then `npm run build` succeeded. The three explicit Stage 1 tensor test files passed all 16 tests. The optional esbuild postinstall warning did not affect the TypeScript build.
+- `node <ticket>/scripts/02-contract-probe.mjs` printed `Async cross-kind check accepted, mutant rejected, repeat re-evaluated the invariant`. Repeating the transformation called the invariant again, so evidence reuse belongs inside the domain check.
+- `node <ticket>/scripts/01-fp-probe.mjs` compiled and ran via the default tool on GB10 sm_121, nvcc 13.0.88, reported driver API version 13000. The probe's remote nvcc version query also reported compiler build `36424714_0`. The design records the operation counts. Sequential and split variants matched all eight CPU f32 words and spent at most 1.38% of the proposed f64 tolerance. NaN encodings differed even when both results were NaN.
+- A local `flock` probe using two acquisitions on one temporary lockfile succeeded for shared/shared and correctly blocked exclusive/shared. The new runner semantics still need an integration test on GB10.
+
+- The sandboxed `git add -- <ticket>` failed to create the worktree Git index lock with `Read-only file system`. Repeating that scoped staging command with escalation succeeded. The staged diff contains only the ticket and its probes.
+
+### Experiment identity
+
+The GPU run used the tool's `nvcc -O3 -arch=sm_121` and Node 24.18.0. The sample stream is xorshift32 seeded with `0x20c0ffee` plus the fixed witnesses in the replay. Remote job hash `72700c930da364c2` reported `compiled: true` and `exit: 0`. The digests cover the exact raw input and GPU output. A second replay reported `compiled: false` for the same job and returned the identical digest and comparison results. It exercised the existing identical-input compile cache.
+
+| Bytes | SHA-256 |
+| --- | --- |
+| `inputs.bin` | `747aec57f583162148d95bf94ac449d0fb020445f12c90743f407dcae380547a` |
+| `out/outputs.bin` | `5703980963e26aab99d9923a4fc381de65ead61ba503dd4eb2ee248efc3de6aa` |
+
+### Review and continuation
+
+Review the finite f64 budget and nonfinite rule, the exact revision of the candidate source used for checks, and the separation between a shared compiled binary and a run directory. The probe covered arithmetic and reduction grouping. GPU launcher behavior, runner changes, corpus cases and performance measurements remain for implementation after review.
+// Compile and run a CUDA program on the GPU machine over ssh, and bring its outputs back.
+//
+//   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121] [-- program args...]
+//
+// <dir> holds main.cu and any input files. The directory is copied to <host>:~/irwb-cuda/<hash>/, where <hash> is
+// the SHA-256 of its files, so identical inputs reuse an earlier compile. There it is compiled with
+// `nvcc -O3 -arch=<arch> -o prog main.cu` (skipped when prog already exists) and run as `./prog args...` with the
+// directory as its working directory. Files the program writes under out/ are copied back to <dir>/out/.
+// --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so that concurrent users do
+// not disturb each other's timings; untimed runs do not wait for it.
+// Prints one JSON object: { host, hash, compiled, compileMs, runMs, exit, stdout, stderr, outputs }.
+// Environment: CUDA_REMOTE_HOST (default manuel@bling, the Tailscale name; bling.local resolves only on the home
+// LAN), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
+// Inside the Codex sandbox, ssh needs network access (-c sandbox_workspace_write.network_access=true).
+import { createHash } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+const argv = process.argv.slice(2);
+const sep = argv.indexOf('--');
+const opts = sep < 0 ? argv : argv.slice(0, sep),
+  progArgs = sep < 0 ? [] : argv.slice(sep + 1);
+const flag = name => opts.includes(name);
+const value = (name, d) => (opts.includes(name) ? opts[opts.indexOf(name) + 1] : d);
+const dir = opts.find((a, i) => !a.startsWith('--') && !['--host', '--arch'].includes(opts[i - 1]));
+if (!dir)
+  throw new Error('usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [-- args]');
+const host = value('--host', process.env.CUDA_REMOTE_HOST ?? 'manuel@bling');
+const arch = value('--arch', 'sm_121');
+const nvcc = process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc';
+
+const files = [];
+const walk = d => {
+  for (const e of readdirSync(d).sort()) {
+    const p = join(d, e);
+    if (relative(dir, p) === 'out') continue;
+    statSync(p).isDirectory() ? walk(p) : files.push(relative(dir, p));
+  }
+};
+walk(dir);
+if (!files.includes('main.cu')) throw new Error(`${dir}: no main.cu`);
+const h = createHash('sha256').update(arch);
+for (const f of files)
+  h.update(f)
+    .update('\0')
+    .update(readFileSync(join(dir, f)));
+const hash = h.digest('hex').slice(0, 16);
+const remote = `irwb-cuda/${hash}`;
+const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host];
+const q = s => `'${String(s).replace(/'/g, `'\\''`)}'`;
+
+// copy the files (tar over ssh: one round trip, no rsync needed on either side)
+const tar = spawnSync('tar', ['-C', dir, '-cf', '-', ...files], { maxBuffer: 1 << 30 });
+if (tar.status !== 0) throw new Error(`tar: ${tar.stderr}`);
+const put = spawnSync('ssh', [...ssh, `mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], {
+  input: tar.stdout,
+});
+if (put.status !== 0) throw new Error(`ssh copy: ${put.stderr}`);
+
+// compile if needed, then run; timings measured on the remote side
+const lock = flag('--timed') ? 'flock ~/irwb-cuda/.gpu.lock' : '';
+const script = [
+  `cd ~/${remote}`,
+  `compiled=0; c0=$(date +%s%N)`,
+  `if [ ! -x prog ]; then ${nvcc} -O3 -arch=${arch} -o prog main.cu 2> compile.err || { echo "@@compile-failed"; cat compile.err >&2; exit 97; }; compiled=1; fi`,
+  `c1=$(date +%s%N); rm -rf out; mkdir -p out`,
+  `r0=$(date +%s%N); ${lock} ./prog ${progArgs.map(q).join(' ')}; status=$?; r1=$(date +%s%N)`,
+  `echo "@@meta $compiled $(( (c1 - c0) / 1000000 )) $(( (r1 - r0) / 1000000 )) $status"`,
+  `exit 0`,
+].join('\n');
+const run = spawnSync('ssh', [...ssh, 'bash -s'], { input: script, maxBuffer: 1 << 28, encoding: 'utf8' });
+const meta = /@@meta (\d) (\d+) (\d+) (\d+)/.exec(run.stdout ?? '');
+const stdout = (run.stdout ?? '').replace(/@@meta.*\n?/, '').replace(/@@compile-failed\n?/, '');
+const result = {
+  host,
+  hash,
+  compiled: meta ? meta[1] === '1' : false,
+  compileMs: meta ? Number(meta[2]) : null,
+  runMs: meta ? Number(meta[3]) : null,
+  exit: meta ? Number(meta[4]) : run.status,
+  stdout,
+  stderr: run.stderr ?? '',
+  outputs: [],
+};
+
+// fetch out/
+if (meta) {
+  const get = spawnSync('ssh', [...ssh, `tar -C ~/${remote}/out -cf - .`], { maxBuffer: 1 << 30 });
+  if (get.status === 0 && get.stdout.length) {
+    mkdirSync(join(dir, 'out'), { recursive: true });
+    execFileSync('tar', ['-C', join(dir, 'out'), '-xf', '-'], { input: get.stdout });
+    const outs = [];
+    const w2 = d => {
+      for (const e of readdirSync(d)) {
+        const p = join(d, e);
+        statSync(p).isDirectory() ? w2(p) : outs.push(relative(join(dir, 'out'), p));
+      }
+    };
+    w2(join(dir, 'out'));
+    result.outputs = outs.sort();
+  }
+}
+process.stdout.write(JSON.stringify(result) + '\n');
+if (result.exit !== 0) process.exitCode = 1;
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+
+ succeeded in 522ms:
+src/framework/contracts/differential.ts:57:  readonly baselineKey?: (inputs: PortValues<P>) => string | undefined;
+src/framework/contracts/differential.ts:60:   * program, a hash of the code the case can reach). Used only together with `baselineKey`: a decided verdict is
+src/framework/contracts/differential.ts:63:  readonly subjectKey?: (subject: PortValue<P[keyof P]>, kase: Case, inputs: PortValues<P>) => string | undefined;
+src/framework/contracts/differential.ts:123:      if (spec.decide) return runDifferentialAsync(spec, inputs, seed, maxCx).then(result);
+src/framework/contracts/differential.ts:171:  const bk = reuseEnabled ? spec.baselineKey?.(inputs) : undefined;
+src/framework/contracts/differential.ts:260:  if (!reuse || !spec.subjectKey) return new Array(cases.length).fill(undefined);
+src/framework/contracts/differential.ts:263:    const sk = spec.subjectKey!(subject, c, inputs);
+src/framework/contracts/differential.ts:270: * `baselineKey`, the cases and baseline outcomes are kept and reused; with `subjectKey` too, a case whose verdict is
+src/framework/contracts/differential.ts:296:export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
+src/framework/contracts/analysis-manager.ts:85:const subjectKey = (a: Artifact) =>
+src/framework/contracts/analysis-manager.ts:242:      subject: subjectKey(a),
+src/framework/contracts/analysis-manager.ts:250:      subject: subjectKey(a),
+src/framework/contracts/analysis-manager.ts:960:    if (subjectKey(from) === subjectKey(to)) {
+src/typed/evaluate.ts:634:      baselineKey: ({ origin }) => `${origin.kind}@${origin.schemaVersion}:${origin.revision}`,
+src/typed/evaluate.ts:635:      subjectKey: (art, c) => closureKey((art as Artifact<TypedBlocks>).value, c.fn),
+src/typed/evaluate.ts:637:      decide: (ports, cases, todo) =>
+src/framework/contracts/differential.ts:31:export interface DifferentialSpec<P extends Ports, Case, Outcome> {
+src/framework/contracts/analysis-manager.ts:37:export class ContractError extends Error {
+
+exec
+/usr/bin/zsh -lc "sed -n '30,55p' src/framework/contracts/analysis-manager.ts && rg -n 'Invariant rejected|rejected|check.*failed' src/framework/contracts/analysis-manager.ts | tail -20 && sed -n '1,100p' src/framework/contracts/definitions.ts && sed -n '605,651p' src/typed/evaluate.ts" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "rg -n 'String.raw|readBigUInt64LE|writeBigUInt64LE|promisify\\(execFile\\)|import.meta.url' src tools | head -35 && cat .prettierrc.json" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 353ms:
+  ResourcePort,
+  ResourceStamp,
+  ResourceWrite,
+  TransformationDefinition,
+  TransformationTransaction,
+  VersionRef,
+} from './types.js';
+export class ContractError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ContractError';
+  }
+}
+interface Store {
+  analyses: Map<string, AnalysisRecord>;
+  facts: Map<string, PropertyFact>;
+  analysisHistory: Map<string, AnalysisRecord>;
+  factHistory: Map<string, PropertyFact>;
+  resourceView?: Map<string, ResourceWrite>;
+}
+interface Frame {
+  allowed: readonly EffectDefinition[];
+  deps: Dependency[];
+763:        reason: result.reason ?? (result.ok ? 'Dynamically checked' : 'Checker rejected the proposition'),
+888:      throw new ContractError('proof-rejected', checked.reason ?? 'External verifier rejected proof');
+993:          'transfer-rejected',
+1153:        reason: result.reason ?? (result.ok ? 'Invariant checked' : 'Invariant rejected'),
+1305:      execution.status = error instanceof ContractError ? 'rejected' : 'failed';
+1311:      this.event(frame, 'transformation.rejected', execution.error, definition);
+import {
+  canonical,
+  deepFreeze,
+  fingerprint,
+  immutable,
+  isCanonical,
+  revisionOf,
+  validateOnce,
+} from '../core/data.js';
+import type { Artifact } from '../core/types.js';
+import type {
+  AnalysisDefinition,
+  AnyDefinition,
+  CheckResult,
+  DefinitionDescriptor,
+  EffectDefinition,
+  IRType,
+  InvariantDefinition,
+  ObjectiveDefinition,
+  Ports,
+  PropertyDefinition,
+  TransformationDefinition,
+  ValueType,
+  VersionRef,
+} from './types.js';
+const nonempty = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+function portType(value: unknown, category?: 'ir' | 'type'): asserts value is IRType<any> | ValueType<any> {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !['ir', 'type'].includes(
+      (
+        value as {
+          category: string;
+        }
+      ).category,
+    ) ||
+    (category &&
+      (
+        value as {
+          category: string;
+        }
+      ).category !== category) ||
+    typeof (
+      value as {
+        validate?: unknown;
+      }
+    ).validate !== 'function'
+  )
+    throw new Error(`Expected ${category ?? 'IR or scalar'} type with runtime validator`);
+}
+function ports(value: unknown): asserts value is Ports {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Expected named port definitions');
+  for (const [name, type] of Object.entries(value)) {
+    if (!nonempty(name)) throw new Error('Port name required');
+    portType(type);
+  }
+}
+function base<
+  T extends {
+    id: string;
+    version: string;
+    description: string;
+  },
+>(value: T): T {
+  if (!nonempty(value.id) || !nonempty(value.version) || typeof value.description !== 'string')
+    throw new Error('Definitions need id, version and description');
+  return deepFreeze(value);
+}
+export const defineType = <T>(d: Omit<ValueType<T>, 'category'>): ValueType<T> => {
+  if (typeof d.validate !== 'function') throw new Error('Type requires a runtime validator');
+  return base({
+    ...d,
+    category: 'type',
+  });
+};
+export const defineIR = <T>(d: Omit<IRType<T>, 'category'>): IRType<T> => {
+  if (typeof d.validate !== 'function') throw new Error('IR requires a runtime validator');
+  return base({
+    ...d,
+    category: 'ir',
+  });
+};
+export const defineEffect = <T>(d: Omit<EffectDefinition<T>, 'category'>): EffectDefinition<T> => {
+  portType(d.type, 'type');
+  if (!nonempty(d.resource) || !['read', 'write'].includes(d.access))
+    throw new Error('Effect needs resource and read/write access');
+  return base({
+    ...d,
+    category: 'effect',
+  });
+};
+export const defineAnalysis = <S, R>(
+  d: Omit<AnalysisDefinition<S, R>, 'category' | 'effects'> & {
+    effects?: readonly EffectDefinition[];
+  },
+): AnalysisDefinition<S, R> => {
+  portType(d.input, 'ir');
+  portType(d.output, 'type');
+    check = differential<{ origin: typeof BlocksIR; candidate: typeof BlocksIR }, Case, RunResult>({
+      id: 'typed.meaning-kept',
+      version: `1+${hash(key)}`,
+      description: `${roots ? `the entries ${roots.join(', ')} agree` : 'every function agrees'} with the origin on ${count} generated cases (seed ${seed})`,
+      inputs: { origin: BlocksIR, candidate: BlocksIR },
+      baseline: 'origin',
+      subject: 'candidate',
+      count,
+      seed,
+      random: rng,
+      cases: ({ origin }) => {
+        const st = storeOf(origin.value);
+        return (roots ?? [...st.fns.keys()]).flatMap(fn => casesFrom(st, fn, { count, seed, inputs: inputs[fn] ?? {} }));
+      },
+      run: (_side, art, c) =>
+        evaluate(storeOf((art as Artifact<TypedBlocks>).value), c.fn, c.args, c.memory, { limit }),
+      inconclusive: r => r.limit,
+      compare: (expected, got, c) =>
+        agrees(expected, got)
+          ? true
+          : {
+              ok: false,
+              reason: `${c.fn}#${c.n}: expected ${String(outcome(expected))}, got ${String(outcome(got))}`,
+            },
+      describeCase: c => ({ fn: c.fn, n: c.n, args: c.args }),
+      maxCounterexamples: 5,
+      // IRWB-004 D1: the cases and the origin's outcomes are a function of the origin's value (and of the parameters,
+      // which the version carries); a case's outcome on the candidate is a function of the case and the code the case
+      // can reach (closureKey). See src/typed/parts.ts.
+      baselineKey: ({ origin }) => `${origin.kind}@${origin.schemaVersion}:${origin.revision}`,
+      subjectKey: (art, c) => closureKey((art as Artifact<TypedBlocks>).value, c.fn),
+      // IRWB-004 F4: an installed executor (worker threads) decides the cases; without one, they are decided here
+      decide: (ports, cases, todo) =>
+        meaningExecutor()?.decide({ params, origin: ports.origin, candidate: ports.candidate, cases, todo }),
+    });
+    meaningChecks.set(key, check);
+  }
+  return check;
+}
+
+ succeeded in 370ms:
+tools/build-site.mjs:19:const root = fileURLToPath(new URL('..', import.meta.url));
+tools/candela.mjs:7:export const candelaDir = fileURLToPath(new URL('../corpus/candela-gallery/', import.meta.url));
+tools/corpus.mjs:6:export const corpusDir = fileURLToPath(new URL('../corpus/projects/', import.meta.url));
+tools/candela-render.mjs:100:if (import.meta.url === `file://${process.argv[1]}`) {
+tools/serve-site.mjs:8:const root = resolve(fileURLToPath(new URL('..', import.meta.url)), process.argv[2] || 'dist/site');
+tools/node-vendor.mjs:9:const root = fileURLToPath(new URL('../vendor/ds-js-os/', import.meta.url));
+tools/format-docs.mjs:9:const root = fileURLToPath(new URL('..', import.meta.url));
+src/framework/strategy/interpreter.ts:554:              !['succeeded', 'rejected'].includes(String(raw.status))
+src/typed/parallel/job-pool.ts:5: *   const pool = startJobPool(new URL('./job.mjs', import.meta.url), 'run', { threads: 4 });
+src/typed/parallel/node-pool.ts:87:    const worker = new Worker(new URL('./meaning-worker.js', import.meta.url));
+{ "printWidth": 110, "singleQuote": true, "trailingComma": "all", "arrowParens": "avoid" }
+
+exec
+/usr/bin/zsh -lc "sed -n '1170,1235p' src/framework/contracts/analysis-manager.ts && sed -n '1300,1350p' src/framework/contracts/analysis-manager.ts && rg -n 'throw new ContractError' src/framework/contracts/analysis-manager.ts | tail -17" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1185ms:
+  }
+  private async condition(
+    condition: Condition,
+    phase: CheckEvidence['phase'],
+    inputs: Record<string, unknown>,
+    outputs: Record<string, unknown>,
+    frame: Frame,
+  ): Promise<CheckEvidence> {
+    const select = (s: { from: 'inputs' | 'outputs'; port: string }) =>
+      (s.from === 'inputs' ? inputs : outputs)[s.port];
+    if ('property' in condition) {
+      const subject = select(condition.subject) as Artifact,
+        fact = await this.checkInternal(condition.property, subject, frame);
+      return immutable({
+        phase,
+        definition: definitionRef(condition.property),
+        ok: fact.ok,
+        assurance: fact.assurance,
+        reason: fact.reason,
+        evidence: fact.evidence,
+        subject: fact.subject,
+        factId: fact.id,
+      });
+    }
+    const values = Object.fromEntries(Object.entries(condition.bindings).map(([k, s]) => [k, select(s)]));
+    const result = await this.invariantInternal(condition.invariant, values, frame);
+    return immutable({
+      ...result,
+      phase,
+    });
+  }
+  async beginTransformation<I extends Ports, O extends Ports>(
+    definition: TransformationDefinition<I, O>,
+    inputs: PortValues<I>,
+    options: ExecutionOptions = {},
+  ): Promise<TransformationTransaction<I, O>> {
+    this.registry.register(definition);
+    const captured = immutable(inputs);
+    const overlay: Store = {
+        analyses: new Map(),
+        facts: new Map(),
+        analysisHistory: new Map(),
+        factHistory: new Map(),
+      },
+      frame = this.freshFrame(definition.effects, overlay),
+      checks: CheckEvidence[] = [],
+      correspondences: Correspondence[] = [];
+    const execution: MutableExecution = {
+      id: options.id ?? this.id('contract'),
+      transformation: definitionRef(definition),
+      descriptor: describeDefinition(definition),
+      status: 'prepared',
+      cached: options.cached ?? false,
+      cacheReason: options.cached
+        ? 'Compiler reused an artifact; semantic checks still run'
+        : 'New transformation verification',
+      inputs: captured,
+      dependencies: [],
+      bodyDependencies: [],
+      bodyCacheable: true,
+      checks,
+      analyses: [],
+      facts: [],
+      effects: frame.effects,
+      correspondence: correspondences,
+      events: frame.events,
+      closed = true;
+      bodyToken.open = false;
+      frame.active = false;
+      this.activeFrames.delete(execution.id);
+      discard();
+      execution.status = error instanceof ContractError ? 'rejected' : 'failed';
+      execution.error = {
+        code: error instanceof ContractError ? error.code : 'contract-error',
+        message: error instanceof Error ? error.message : String(error),
+      };
+      refresh();
+      this.event(frame, 'transformation.rejected', execution.error, definition);
+    };
+    try {
+      this.validatePorts(definition.inputs, captured);
+      for (const c of definition.requires) {
+        const check = await this.condition(c, 'requires', captured, {}, frame);
+        checks.push(check);
+        if (!check.ok || check.assurance === 'declared')
+          throw new ContractError('precondition', `${check.definition.id}: ${check.reason}`);
+      }
+    } catch (error) {
+      fail(error);
+      throw error;
+    }
+    const transaction: TransformationTransaction<I, O> = {
+      inputs: captured,
+      context: bodyContext,
+      get execution() {
+        refresh();
+        return immutable(execution);
+      },
+      settle: async () => {
+        bodyToken.open = false;
+        while (bodyFrame.pending.size || frame.pending.size)
+          await Promise.allSettled([...bodyFrame.pending, ...frame.pending]);
+      },
+      importBodyDependencies: dependencies => {
+        if (closed || verifying || prepared)
+          throw new ContractError(
+            'transaction-state',
+            'Cannot import dependencies after verification starts',
+          );
+        const imported = immutable(dependencies);
+        if (!this.canReuseDependencies(imported))
+          throw new ContractError('stale-evidence', 'Cached body dependencies are no longer reusable');
+        for (const dependency of imported) {
+          uniquePush(bodyFrame.deps, dependency);
+          if (dependency.type === 'resource') {
+            const effect = definition.effects.find(
+              e => e.resource === dependency.resource && e.access === 'read',
+1297:          throw new ContractError('committed-transaction', 'Cannot fail an accepted transformation');
+1319:          throw new ContractError('precondition', `${check.definition.id}: ${check.reason}`);
+1339:          throw new ContractError(
+1345:          throw new ContractError('stale-evidence', 'Cached body dependencies are no longer reusable');
+1353:              throw new ContractError(
+1390:          throw new ContractError(
+1410:            throw new ContractError('cache-policy', 'This transformation forbids cached output acceptance');
+1413:              throw new ContractError('correspondence', 'Duplicate correspondence id');
+1418:            if (!c) throw new ContractError('correspondence', `Missing correspondence ${requirement.id}`);
+1425:              throw new ContractError(
+1446:              throw new ContractError(
+1453:                throw new ContractError(
+1472:              throw new ContractError('preservation-failed', `${p.property.id} was not preserved`);
+1482:                throw new ContractError('postcondition', `${check.definition.id}: ${check.reason}`);
+1495:              if (closed) throw new ContractError('transaction-state', 'Transaction is already closed');
+1515:                  throw new ContractError(
+1572:      throw new ContractError(
+
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'EOF'
+import assert from 'node:assert/strict';
+import { AnalysisManager, Integer, differential } from './dist/framework/contracts/index.js';
+let generated = 0;
+const batches = [];
+const compare = differential({
+  id: 'probe.batch', version: '1', description: 'Probe batch and memo',
+  inputs: { baseline: Integer, subject: Integer }, baseline: 'baseline', subject: 'subject', count: 3,
+  cases: () => { generated++; return [0, 1, 2]; },
+  run: () => { throw Error('local fallback'); }, compare: () => true,
+  baselineKey: ({baseline}) => String(baseline), subjectKey: subject => String(subject),
+  async decide({subject}, _cases, todo) { batches.push([...todo]); return todo.map(() => subject > 0 ? { v: 'agree' } : { v: 'disagree', reason: 'mutant' }); },
+});
+const manager = new AnalysisManager();
+for (const subject of [1, 1, 0, 0]) assert.equal((await manager.checkInvariant(compare, {baseline: 1, subject})).ok, subject > 0);
+assert.equal(generated, 1);
+assert.deepEqual(batches, [[0, 1, 2], [0, 1, 2]]);
+console.log('one case generation, two delegated batches across four checks, counterexample verdicts replayed');
+EOF
+node -e 'const b=Buffer.alloc(8);b.writeBigUInt64LE(1023n);if(b.readBigUInt64LE()"'!==1023n)throw Error("wire probe");console.log("Node little-endian u64 round trip passed")'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'probe=$(mktemp -d /tmp/irwb-022-i-loading.XXXXXX)
+cat > "$probe/main.cu" <<'"'EOF'
+#include <cuda_runtime.h>
+#include <cstdio>
+#define CUDA(op) do { if ((op) "'!= cudaSuccess) return 1; } while (0)
+__global__ void bare(int *out) { *out = 1; }
+__global__ void preloaded(int *out) { *out = 2; }
+int main() {
+  int *out;
+  cudaEvent_t start, stop;
+  CUDA(cudaMalloc(&out, 4));
+  CUDA(cudaEventCreate(&start));
+  CUDA(cudaEventCreate(&stop));
+  cudaFuncAttributes a;
+  for (int i = 0; i < 3; ++i) {
+    if (i == 2) CUDA(cudaFuncGetAttributes(&a, preloaded));
+    CUDA(cudaEventRecord(start));
+    if (i == 2) preloaded<<<1, 1>>>(out);
+    else bare<<<1, 1>>>(out);
+    CUDA(cudaGetLastError());
+    CUDA(cudaEventRecord(stop));
+    CUDA(cudaEventSynchronize(stop));
+    float ms;
+    CUDA(cudaEventElapsedTime(&ms, start, stop));
+    printf("%.6f ms'"\\n\", ms);
+  }
+}
+EOF
+node tools/cuda-remote.mjs \""'$probe" --timed
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 2209ms:
+one case generation, two delegated batches across four checks, counterexample verdicts replayed
+Node little-endian u64 round trip passed
+
+ succeeded in 5556ms:
+{"host":"manuel@bling","hash":"3c0a391bfb7c0a03","compiled":true,"compileMs":514,"runMs":293,"exit":0,"stdout":"0.060768 ms\n0.003584 ms\n0.003360 ms\n","stderr":"","outputs":[]}
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md')
+s = p.read_text()
+s = s.replace('The translation unit knows ranks from the function.', 'The translation unit knows ranks from the function. Before measuring, initialize CUDA and call "'`cudaFuncGetAttributes` for each kernel that will launch to force lazy module loading outside the event interval.'"')
+start = s.index('Use a versioned "'`defineTransformation`'"')
+end = s.index('## Verification and measurements', start)
+s = s[:start] + '''Use a versioned "'`defineTransformation` from the existing Tix IR contract type plus selected function to a typed CUDA source artifact. Its body calls the same emitter as `cudaSource`. Its `ensures` invariant is `differential` with asynchronous `decide`. `AnalysisManager.execute` waits for the invariant before accepting the output. The body uses `cache: '"'never'"'`. `checkLowering` surfaces the first numerical counterexample or the execution failure.
+
+**Framework change ledger.** No source edits are required. The existing heterogeneous transformation accepts separate input and output kinds, and `runDifferentialAsync` delegates undecided cases together and records their verdicts. A direct probe issued four checks against two subjects, generated cases once, issued two batches, and replayed both accepted and rejected verdicts. The same-adapter edit pass and a separate tensor verdict cache would duplicate facilities already present here.
+
+- **Batch construction.** Reuse the Stage 1 deterministic sample recipes and limits for the selected current function. Use shape assignments 1, 3, 4, 7 and mixed, plus all-zero and one-zero-at-a-time assignments to exercise empty outputs and reductions with nonempty outputs. Deduplicate shapes. Use seed 20, signed and positive data, the half-ULP sequence and signed zero. Select cases with valid source shapes/addresses, at most 4,096 elements per tensor and at most 10''^6 metered evaluator steps per case. Keep the Stage 1 optimizer'"'s streams and selection behavior. Generate the f64 reference with the samples. The CUDA check must have at least one eligible case. "'`decide` sends the cases at the undecided indices in one request, compares every returned result, and returns verdicts in index order.
+- **Evidence reuse.** Key the framework'"'s baseline cache by current revision and function. Key the subject by CUDA artifact revision and execution profile. The framework already includes the checker version and seed, and retains the case list, reference values in the cases and decided verdicts. Use a process-stable profile for the GB10 runner settings, including its existing compiler and host overrides. Start a new process when changing those settings. Transport, compilation and malformed output errors throw from "'`decide` before it returns verdicts, so a later check can retry. Two concurrent cold checks can both run. Sequential repeated checks replay the completed evidence.
+
+## Proposed runner changes
+
+| Change in `tools/cuda-remote.mjs` | Reason and simpler alternative |
+| --- | --- |
+| Add repeatable `--runtime-input <relative-path>`. Keep those files in the job upload and outside the compile key. Retain the existing environment defaults and JSON shape. | The current all-file key recompiles identical source for each new tensor input. Defaulting every file to build input preserves header and fixture behavior. |
+| Use a unique per-invocation remote working directory through upload, launch and fetch. Share only the compiled binary by build key. Use a per-key compile lock and install successful binaries by rename. | Concurrent jobs with identical build inputs must keep their input and output files separate. A lock around only `./prog` leaves the upload and fetch race. |
+| Surface copy, compilation, run and fetch errors to the caller. Keep the GPU lock exclusive and specific to `--timed`. | The contract needs to distinguish unavailable evidence from successful execution. Ordinary runs retain the tool'"'s documented behavior. |
+
+The launch probe on GB10 recorded 0.060768 ms on a cold launch, 0.003584 ms for its repeat, and 0.003360 ms on the first launch of another kernel after querying its attributes. The generated launcher preloads kernels for public single-case calls as well as for benchmarks. Verify binary reuse when only input data changes, invalidation for changed build inputs and isolation for simultaneous jobs.
+
+''' + s[end:]
+s = s.replace('repeat/concurrent evidence reuse, failure retry and cache-key changes', 'repeat evidence reuse, failure retry and cache-key changes')
+s = s.replace(\"The standalone public runner reports a kernel interval for its own call.\", \"The public runner preloads its kernels and reports one measured invocation.\")
+p.write_text(s)
+PY
+cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md <<'EOF'
+
+## Step 2. Incorporate design review
+
+The reviewer pointed out that the differential invariant already delegates a batch and reuses decided verdicts. I switched the design to that path, cut the redundant tensor memo and its resource and identity plumbing, and retained the tool’s existing timed-only GPU lock. I also verified the reviewer’s lazy-loading observation on the GB10.
+
+### Prompt context
+
+The review in this session asks for the design revision and commit, followed by implementation, focused verification, and the corpus measurements. It calls for the framework’s "'`decide`, `baselineKey` and `subjectKey`, for preloading kernels before public timing, and for keeping the index and tail mutants.
+
+### Evidence and decisions
+
+- An inline Node probe used `differential` and `AnalysisManager.checkInvariant` with three cases and two subject keys. Four checks generated cases once and delegated two batches of three. Both true and false verdicts replayed. The Node little-endian unsigned 64-bit read/write round trip also passed.
+- The CUDA launch timing probe ran through `tools/cuda-remote.mjs <probe-dir> --timed`. GB10 event intervals were 0.060768 ms for a cold launch, 0.003584 ms for its repeat, and 0.003360 ms for the first launch of a second kernel after `cudaFuncGetAttributes`. Generated code will preload each launched kernel before the event interval.
+- The revised design uses the differential memo'"'s existing lifetime and accepts duplicate concurrent cold checks. The remote per-invocation directory and compile lock handle those concurrent requests.
+EOF
+docmgr changelog update --ticket IRWB-022-I --entry 'Revised the design after review to use framework differential batching and evidence reuse, preload kernels before public timing, and keep runner changes focused on build reuse and per-request isolation.'
+git diff --check && git diff --stat" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 2135ms:
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+ .../changelog.md                                   |  4 ++++
+ .../design-doc/01-checked-tix-to-cuda-lowering.md  | 22 +++++++++++-----------
+ .../reference/01-implementation-diary.md           | 14 ++++++++++++++
+ 3 files changed, 29 insertions(+), 11 deletions(-)
+
+exec
+/usr/bin/zsh -lc "git add -- ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md && git commit -m 'IRWB-022-I: apply lowering design review'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 956ms:
+[t2-sh/irwb-022-i 31c3b33] IRWB-022-I: apply lowering design review
+ 3 files changed, 29 insertions(+), 11 deletions(-)
+
+2026-11-26T20:45:00.683623Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/tools/cuda-remote.mjs:
+walk(dir);
+if (!files.includes('main.cu')) throw new Error(`${dir}: no main.cu`);
+const h = createHash('sha256').update(arch);
+for (const f of files)
+  h.update(f)
+    .update('\0')
+    .update(readFileSync(join(dir, f)));
+const hash = h.digest('hex').slice(0, 16);
+const remote = `irwb-cuda/${hash}`;
+const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', host];
+const q = s => `'${String(s).replace(/'/g, `'\\''`)}'`;
+
+// copy the files (tar over ssh: one round trip, no rsync needed on either side)
+const tar = spawnSync('tar', ['-C', dir, '-cf', '-', ...files], { maxBuffer: 1 << 30 });
+if (tar.status !== 0) throw new Error(`tar: ${tar.stderr}`);
+const put = spawnSync('ssh', [...ssh, `mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], {
+  input: tar.stdout,
+});
+if (put.status !== 0) throw new Error(`ssh copy: ${put.stderr}`);
+
+// compile if needed, then run; timings measured on the remote side
+const lock = flag('--timed') ? 'flock ~/irwb-cuda/.gpu.lock' : '';
+const script = [
+  `cd ~/${remote}`,
+  `compiled=0; c0=$(date +%s%N)`,
+  `if [ ! -x prog ]; then ${nvcc} -O3 -arch=${arch} -o prog main.cu 2> compile.err || { echo "@@compile-failed"; cat compile.err >&2; exit 97; }; compiled=1; fi`,
+  `c1=$(date +%s%N); rm -rf out; mkdir -p out`,
+  `r0=$(date +%s%N); ${lock} ./prog ${progArgs.map(q).join(' ')}; status=$?; r1=$(date +%s%N)`,
+  `echo "@@meta $compiled $(( (c1 - c0) / 1000000 )) $(( (r1 - r0) / 1000000 )) $status"`,
+  `exit 0`,
+].join('\n');
+const run = spawnSync('ssh', [...ssh, 'bash -s'], { input: script, maxBuffer: 1 << 28, encoding: 'utf8' });
+const meta = /@@meta (\d) (\d+) (\d+) (\d+)/.exec(run.stdout ?? '');
+const stdout = (run.stdout ?? '').replace(/@@meta.*\n?/, '').replace(/@@compile-failed\n?/, '');
+const result = {
+  host,
+  hash,
+  compiled: meta ? meta[1] === '1' : false,
+  compileMs: meta ? Number(meta[2]) : null,
+  runMs: meta ? Number(meta[3]) : null,
+  exit: meta ? Number(meta[4]) : run.status,
+  stdout,
+  stderr: run.stderr ?? '',
+  outputs: [],
+};
+
+// fetch out/
+if (meta) {
+  const get = spawnSync('ssh', [...ssh, `tar -C ~/${remote}/out -cf - .`], { maxBuffer: 1 << 30 });
+  if (get.status === 0 && get.stdout.length) {
+    mkdirSync(join(dir, 'out'), { recursive: true });
+    execFileSync('tar', ['-C', join(dir, 'out'), '-xf', '-'], { input: get.stdout });
+    const outs = [];
+    const w2 = d => {
+      for (const e of readdirSync(d)) {
+        const p = join(d, e);
+        if (statSync(p).isDirectory()) w2(p);
+        else outs.push(relative(join(dir, 'out'), p));
+      }
+    };
+    w2(join(dir, 'out'));
+    result.outputs = outs.sort();
+  }
+}
+process.stdout.write(JSON.stringify(result) + '\n');
+if (result.exit !== 0) process.exitCode = 1;
+exec
+/usr/bin/zsh -lc "cat > tools/cuda-remote.mjs <<'EOF'
+// Compile and run a CUDA program on the GPU machine over ssh, and bring its outputs back.
+//
+//   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121]
+//     [--runtime-input relative-path ...] [-- program args...]
+//
+// <dir> holds main.cu and any input files. Each invocation uploads to its own remote working directory.
+// "'`nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture and build files.
+// Each --runtime-input path marks an uploaded file that does not affect compilation. Files under out/
+// are copied back to <dir>/out/ after running ./prog from the working directory.
+// --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so concurrent timed
+// users do not disturb each other'"'s timings. Untimed runs do not wait for it.
+// Prints one JSON object: { host, hash, compiled, compileMs, runMs, exit, stdout, stderr, outputs }.
+// Environment: CUDA_REMOTE_HOST (default manuel@bling), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
+import { createHash, randomUUID } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readdirSync, readFileSync, statSync, mkdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+const argv = process.argv.slice(2);
+const sep = argv.indexOf('--');
+const opts = sep < 0 ? argv : argv.slice(0, sep);
+const progArgs = sep < 0 ? [] : argv.slice(sep + 1);
+const valued = ['--host', '--arch', '--runtime-input'];
+const dir = opts.find((a, i) => "'!a.startsWith('"'--') && "'!valued.includes(opts[i - 1]));
+if (!dir)
+  throw new Error('"'usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [--runtime-input path ...] [-- args]');
+for (const [i, opt] of opts.entries())
+  if (valued.includes(opt) && ("'!opts[i + 1] || opts[i + 1].startsWith('"'--')))
+    throw new Error('Missing argument to ' + opt);
+const value = (name, fallback) => opts.includes(name) ? opts[opts.indexOf(name) + 1] : fallback;
+const host = value('--host', process.env.CUDA_REMOTE_HOST ?? 'manuel@bling');
+const arch = value('--arch', 'sm_121');
+const nvcc = process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc';
+
+const files = [];
+function walk(d) {
+  for (const entry of readdirSync(d).sort()) {
+    const p = join(d, entry);
+    if (relative(dir, p) === 'out') continue;
+    if (statSync(p).isDirectory()) walk(p);
+    else files.push(relative(dir, p));
+  }
+}
+walk(dir);
+if ("'!files.includes('"'main.cu')) throw new Error(dir + ': no main.cu');
+const runtime = new Set(opts.flatMap((arg, i) => (arg === '--runtime-input' ? [opts[i + 1]] : [])));
+for (const path of runtime)
+  if (path === 'main.cu' || "'!files.includes(path)) throw new Error('"'Invalid runtime input: ' + path);
+const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch]));
+for (const f of files) {
+  if (runtime.has(f)) continue;
+  const bytes = readFileSync(join(dir, f));
+  h.update(JSON.stringify([f, bytes.length])).update(bytes);
+}
+const hash = h.digest('hex');
+const remote = 'irwb-cuda/run/' + randomUUID();
+const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '--', host];
+const q = s => \"'\" + String(s).replaceAll(\"'\", \"'\\\\''\") + \"'\";
+
+const tar = spawnSync('tar', ['-C', dir, '-cf', '-', '--', ...files], { maxBuffer: 1 << 30 });
+if (tar.status "'!== 0) throw new Error('"'tar: ' + (tar.error ?? tar.stderr));
+let cleaned = false;
+try {
+  const put = spawnSync('ssh', [...ssh, "'`mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], {
+    input: tar.stdout,
+  });
+  if (put.status !== 0) throw new Error('"'ssh copy: ' + (put.error ?? put.stderr));
+
+  // Hold the compile lock until the cached binary is linked into this job.
+  const lock = opts.includes('--timed') ? 'flock ~/irwb-cuda/.gpu.lock ' : '';
+  const script = [
+    'set -e',
+    "'`cd ~/${remote}`,
+    `cache=~/irwb-cuda/build/${hash}`,
+    '"'compiled=0; c0="'$(date +%s%N)'"',
+    'mkdir -p \""'$cache"'"',
+    'exec 9>\""'$cache/.lock"'"',
+    'flock 9',
+    'if [ "'! -x "$cache/prog" ]; then'"',
+    "'`  ${q(nvcc)} -O3 ${q('"'-arch=' + arch)} -o prog.tmp main.cu || exit 97"'`,
+    '"'  mv prog.tmp \""'$cache/prog"'"',
+    '  compiled=1',
+    'fi',
+    'ln \""'$cache/prog" prog'"',
+    'exec 9>&-',
+    'c1="'$(date +%s%N); mkdir -p out'"',
+    "'`r0=$(date +%s%N); status=0; ${lock}./prog ${progArgs.map(q).join('"' ')} || status="'$?; r1=$(date +%s%N)`,
+    '"'printf \"\\\\n@@meta %s %s %s %s\\\\n\" \""'$compiled" "$(( (c1 - c0) / 1000000 ))" "$(( (r1 - r0) / 1000000 ))" "$status"'"',
+  ].join('\\n');
+  const run = spawnSync('ssh', [...ssh, 'bash -s'], { input: script, maxBuffer: 1 << 28, encoding: 'utf8' });
+  const meta = run.status === 0 && /\\n@@meta (\\d) (\\d+) (\\d+) (\\d+)\\n?"'$/.exec(run.stdout ?? '"'');
+  const result = {
+    host,
+    hash,
+    compiled: meta ? meta[1] === '1' : false,
+    compileMs: meta ? Number(meta[2]) : null,
+    runMs: meta ? Number(meta[3]) : null,
+    exit: meta ? Number(meta[4]) : run.status || 1,
+    stdout: meta ? run.stdout.slice(0, meta.index) : run.stdout ?? '',
+    stderr: run.error?.message ?? run.stderr ?? '',
+    outputs: [],
+  };
+
+  if (meta) {
+    const get = spawnSync('ssh', [...ssh, "'`tar -C ~/${remote}/out -cf - . && rm -rf ~/${remote}`], {
+      maxBuffer: 1 << 30,
+    });
+    if (get.status !== 0) throw new Error('"'ssh fetch: ' + (get.error ?? get.stderr));
+    cleaned = true;
+    const out = join(dir, 'out');
+    mkdirSync(out, { recursive: true });
+    execFileSync('tar', ['-C', out, '-xf', '-'], { input: get.stdout });
+    const collect = d => {
+      for (const entry of readdirSync(d)) {
+        const p = join(d, entry);
+        if (statSync(p).isDirectory()) collect(p);
+        else result.outputs.push(relative(out, p));
+      }
+    };
+    collect(out);
+    result.outputs.sort();
+  }
+  process.stdout.write(JSON.stringify(result) + '\\n');
+  if (result.exit "'!== 0) process.exitCode = 1;
+} finally {
+  if (!cleaned) spawnSync('"'ssh', [...ssh, "'`rm -rf ~/${remote}`], { stdio: '"'ignore' });
+}
+EOF
+node --check tools/cuda-remote.mjs
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 9744ms:
+exec
+/usr/bin/zsh -lc "cat > src/tensor/cuda-source.ts <<'EOF'
+import { plain, visit, width, type Affine, type Expr, type Fn, type Tensor } from './model.js';
+
+const support = String.raw"'`
+#include <cuda_runtime.h>
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <vector>
+
+using I = int64_t;
+using U = uint64_t;
+
+static void check(cudaError_t status) {
+  if (status != cudaSuccess) throw std::runtime_error(cudaGetErrorString(status));
+}
+
+__device__ static float minmax(float a, float b, bool maximum) {
+  if (isnan(a) || isnan(b)) return __uint_as_float(0x7fc00000);
+  if (a == b) {
+    unsigned x = __float_as_uint(a), y = __float_as_uint(b);
+    return __uint_as_float(maximum ? x & y : x | y);
+  }
+  return (maximum ? a > b : a < b) ? a : b;
+}
+
+struct DeviceBuffer {
+  float* ptr = nullptr;
+  U size;
+  explicit DeviceBuffer(U n) : size(n) {
+    if (size) check(cudaMalloc(&ptr, size * sizeof(float)));
+  }
+  ~DeviceBuffer() { if (ptr) cudaFree(ptr); }
+  DeviceBuffer(const DeviceBuffer&) = delete;
+  void upload(const float* src) const {
+    if (size) check(cudaMemcpy(ptr, src, size * sizeof(float), cudaMemcpyHostToDevice));
+  }
+  void download(float* dst) const {
+    if (size) check(cudaMemcpy(dst, ptr, size * sizeof(float), cudaMemcpyDeviceToHost));
+  }
+};
+
+template <size_t N> static U elements(const std::array<I, N>& shape) {
+  U n = 1;
+  for (I extent : shape) n *= static_cast<U>(extent);
+  return n;
+}
+
+template <class T> static void read(FILE* file, T* ptr, size_t count) {
+  if (count && fread(ptr, sizeof(T), count, file) != count) throw std::runtime_error("short CUDA request");
+}
+
+template <class T> static void write(FILE* file, const T* ptr, size_t count) {
+  if (count && fwrite(ptr, sizeof(T), count, file) != count) throw std::runtime_error("short CUDA response");
+}
+
+struct Event {
+  cudaEvent_t handle;
+  Event() { check(cudaEventCreate(&handle)); }
+  ~Event() { cudaEventDestroy(handle); }
+};
+
+template <class Launch> static double time_kernels(const Launch& launch, bool benchmark) {
+  Event start, stop;
+  if (benchmark) {
+    launch();
+    check(cudaDeviceSynchronize());
+  }
+  std::array<float, 3> ms{};
+  const int repeats = benchmark ? ms.size() : 1;
+  for (int i = 0; i < repeats; ++i) {
+    check(cudaEventRecord(start.handle));
+    launch();
+    check(cudaEventRecord(stop.handle));
+    check(cudaEventSynchronize(stop.handle));
+    check(cudaEventElapsedTime(&ms[i], start.handle, stop.handle));
+  }
+  if (benchmark) std::sort(ms.begin(), ms.end());
+  return ms[repeats / 2];
+}
+`;
+
+const main = String.raw`
+int main(int argc, char** argv) {
+  try {
+    using File = std::unique_ptr<FILE, decltype(&fclose)>;
+    File input(fopen("inputs.bin", "rb"), fclose);
+    File output(fopen("out/results.bin", "wb"), fclose);
+    if (!input || !output) throw std::runtime_error("cannot open CUDA request or response");
+    const char magic[] = "TIXCUDA1";
+    char header[8];
+    read(input.get(), header, sizeof(header));
+    if (memcmp(header, magic, sizeof(header))) throw std::runtime_error("bad CUDA request header");
+    U count;
+    read(input.get(), &count, 1);
+    write(output.get(), magic, sizeof(header));
+    write(output.get(), &count, 1);
+    const bool benchmark = argc == 2 && strcmp(argv[1], "--benchmark") == 0;
+    for (U i = 0; i < count; ++i) run_case(input.get(), output.get(), benchmark);
+    if (fgetc(input.get()) != EOF || ferror(input.get())) throw std::runtime_error("trailing CUDA request data");
+    if (fclose(output.release())) throw std::runtime_error("cannot close CUDA response");
+    return 0;
+  } catch (const std::exception& error) {
+    fprintf(stderr, "%s'"\\n\", error.what());
+    return 1;
+  }
+}
+"'`;
+
+function affine(a: Affine, name: (key: string) => string): string {
+  const terms = a.terms.map(([key, coefficient]) =>
+    coefficient === 1 ? name(key) : `${coefficient}LL * ${name(key)}`,
+  );
+  if (a.constant || !terms.length) terms.unshift(`${a.constant}LL`);
+  return `(${terms.join('"' + ')})"'`;
+}
+
+function literal(text: string): string {
+  const bytes = new DataView(new ArrayBuffer(4));
+  bytes.setFloat32(0, Number(text));
+  return `__uint_as_float(0x${bytes.getUint32(0).toString(16)}u)`;
+}
+
+function emitKernel(
+  statement: Fn['"'statements'][number],
+  kernel: string,
+  dimensions: ReadonlyMap<string, string>,
+  tensors: ReadonlyMap<string, Tensor>,
+  tensorName: (name: string) => string,
+) {
+  const reads = new Set<string>();
+  visit(statement.expr, e => {
+    if (e.kind === 'load') reads.add(e.name);
+  });
+  const args = [...dimensions.values(), ...Array.from(reads, tensorName), tensorName(statement.name)];
+  const params = [
+    ...Array.from(dimensions.values(), d => "'`I ${d}`),
+    ...Array.from(reads, t => `const float* ${tensorName(t)}`),
+    '"'float* result',
+    'U count',
+  ];
+  const lines = ["'`__global__ void ${kernel}(${params.join('"', ')}) {"'`];
+  let indent = '"'  ', next = 0;
+  const line = (code: string) => lines.push(indent + code);
+  const dim = (a: Affine) => affine(a, n => dimensions.get(n)"'!);
+  const indices = new Map<string, string>();
+  const bind = (id: string) => {
+    const name = `i${indices.size}`;
+    indices.set(id, name);
+    return name;
+  };
+  const index = (id: string) => indices.get(id)!;
+  line('"'const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
+  line('if (thread >= count) return;');
+  line('U coordinate = thread;');
+  for (let i = statement.axes.length - 1; i >= 0; --i) {
+    const axis = bind(statement.axes[i].id);
+    line("'`const I ${axis} = coordinate % ${dim(statement.shape[i])};`);
+    if (i > 0) line(`coordinate /= ${dim(statement.shape[i])};`);
+  }
+
+  const temporary = (code: string) => {
+    const name = `v${next++}`;
+    line(`float ${name} = ${code};`);
+    return name;
+  };
+
+  function scalar(e: Expr): string {
+    switch (e.kind) {
+      case '"'literal':
+        return literal(e.text);
+      case 'shape':
+        return "'`__ll2float_rn(${dimensions.get(e.name)!})`;
+      case '"'load': {
+        const shape = tensors.get(e.name)"'!.shape;
+        const offset = e.indices.reduce(
+          (prior, a, i) => i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index),
+          '"'',
+        );
+        return "'`${tensorName(e.name)}[${offset}]`;
+      }
+      case '"'op': {
+        const [a, b] = e.args.map(scalar);
+        switch (e.op) {
+          case '+': return temporary("'`__fadd_rn(${a}, ${b})`);
+          case '"'-': return temporary("'`__fsub_rn(${a}, ${b})`);
+          case '"'*': return temporary("'`__fmul_rn(${a}, ${b})`);
+          case '"'/': return temporary("'`__fdiv_rn(${a}, ${b})`);
+          case '"'neg': return temporary("'`-(${a})`);
+          case '"'sqrt': return temporary("'`__fsqrt_rn(${a})`);
+          case '"'exp':
+          case 'log':
+          case 'tanh': return temporary("'`__double2float_rn(${e.op}(static_cast<double>(${a})))`);
+          case '"'max':
+          case 'min': return temporary("'`minmax(${a}, ${b}, ${e.op === '"'max'})"'`);
+        }
+      }
+      case '"'reduce': {
+        const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
+        for (const { id, extent } of e.axes) {
+          const axis = bind(id), n = dim(extent.dim);
+          let bound = n;
+          if (extent.kind === 'blocks') {
+            const tail = extent.rounding === 'ceil' ? "'` + (${n} % ${width} != 0)` : '"'';
+            bound = "'`${n} / ${width}${tail}`;
+          }
+          if (extent.kind === '"'tail') {
+            const remaining = "'`(${n} - ${width}LL * ${index(extent.block)})`;
+            bound = `(${remaining} < ${width}LL ? ${remaining} : ${width}LL)`;
+          }
+          line(`const I end_${axis} = ${bound};`);
+          line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
+          indent += '"'  ';
+        }
+        const value = scalar(e.body);
+        line("'`${acc} = ${e.op === '"'sum' ? "'`__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`);
+        for (const _axis of e.axes) {
+          indent = indent.slice(2);
+          line('"'}');
+        }
+        return acc;
+      }
+    }
+  }
+  const result = scalar(statement.expr);
+  line("'`result[thread] = ${result};`);
+  lines.push('"'}');
+  const count = "'`${tensorName(statement.name)}.size`;
+  return {
+    code: lines.join('"'\\n'),
+    preload: "'`  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
+    hasWork: count,
+    launch: `    if (${count}) {
+      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${args.map((arg, i) => i < dimensions.size ? arg : arg + '"'.ptr').join(', ')}, "'${count});
+      check(cudaGetLastError());
+    }`,
+  };
+}
+
+export function emitCuda(fn: Fn): string {
+  const all = [...fn.params, ...fn.statements];
+  const tensors = new Map(all.map(t => [t.name, t]));
+  const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
+  const name = (key: string) => names.get(key)!;
+  const dims = new Map<string, string>(), bindings: string[] = [];
+  for (const p of fn.params) {
+    for (const [i, a] of p.shape.entries()) {
+      const key = plain(a);
+      if (key === undefined || dims.has(key)) continue;
+      const d = `d${dims.size}`;
+      dims.set(key, d);
+      bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
+    }
+  }
+  const kernels = fn.statements.map((s, i) => emitKernel(s, `k${i}`, dims, tensors, name));
+  const host = ['"'static void run_case(FILE* input, FILE* output, bool benchmark) {'];
+  for (const p of fn.params) {
+    const t = name(p.name);
+    host.push(
+      "'`  std::array<I, ${p.shape.length}> shape_${t};`,
+      `  read(input, shape_${t}.data(), shape_${t}.size());`,
+      `  std::vector<float> host_${t}(elements(shape_${t}));`,
+      `  read(input, host_${t}.data(), host_${t}.size());`,
+    );
+  }
+  const result = name(fn.result);
+  let buffer = `host_${result}`;
+  host.push('"'  double gpu_ms = 0;');
+  if (kernels.length) {
+    host.push(...bindings);
+    for (const p of fn.params) {
+      const t = name(p.name);
+      host.push("'`  DeviceBuffer ${t}(host_${t}.size());`, `  ${t}.upload(host_${t}.data());`);
+    }
+    for (const s of fn.statements) {
+      const t = name(s.name);
+      const dimsText = s.shape.map(a => affine(a, key => dims.get(key)!)).join('"', ');
+      host.push("'`  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`,
+        `  DeviceBuffer ${t}(elements(shape_${t}));`);
+    }
+    host.push(
+      '"'  cudaFuncAttributes attributes;',
+      ...kernels.map(k => k.preload),
+      "'`  if (${kernels.map(k => k.hasWork).join('"' || ')}) gpu_ms = time_kernels([&] {"'`,
+      ...kernels.map(k => k.launch),
+      '"'  }, benchmark);',
+    );
+    if (fn.statements.some(s => s.name === fn.result)) {
+      buffer = "'`host_${result}`;
+      host.push(`  std::vector<float> ${buffer}(${result}.size);`, `  ${result}.download(${buffer}.data());`);
+    }
+  }
+  host.push(
+    `  write(output, shape_${result}.data(), shape_${result}.size());`,
+    `  write(output, ${buffer}.data(), ${buffer}.size());`,
+    '"'  write(output, &gpu_ms, 1);',
+    '}',
+  );
+  return [support, ...kernels.map(k => k.code), host.join('\\n'), main].join('\\n\\n');
+}
+EOF
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 4748ms:
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/01-fp-probe.mjs > /tmp/irwb-022-i-reviewed-probe.json' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 15429ms:
+exec
+/usr/bin/zsh -lc "cat > src/tensor/cuda-runtime.ts <<'EOF'
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { plain, value, type Fn } from './model.js';
+
+export type CudaInputs = Record<string, { shape: number[]; data: Float32Array }>;
+export interface CudaResult {
+  shape: number[];
+  data: Float32Array;
+  gpuMs: number;
+}
+
+const magic = Buffer.from('TIXCUDA1');
+const header = magic.length + 8;
+
+function elements(shape: number[]): number {
+  if (shape.some(dim => "'!Number.isSafeInteger(dim) || dim < 0)) throw Error('"'Invalid CUDA tensor shape');
+  const count = shape.includes(0) ? 0 : shape.reduce((n, dim) => n * dim, 1);
+  if ("'!Number.isSafeInteger(count)) throw Error('"'CUDA tensor size exceeds the host integer range');
+  return count;
+}
+
+export function encodeCudaCases(fn: Fn, cases: readonly CudaInputs[]): Buffer {
+  const tensors = cases.flatMap(inputs => {
+    const dims = new Map<string, number>();
+    const ordered = fn.params.map(p => {
+      const tensor = Object.hasOwn(inputs, p.name) ? inputs[p.name] : undefined;
+      if ("'!tensor || tensor.shape.length !== p.shape.length || elements(tensor.shape) !== tensor.data.length)
+        throw Error('"'Invalid input shape or length for ' + p.name);
+      for (const [i, d] of p.shape.entries()) {
+        const key = plain(d);
+        if (key === undefined) continue;
+        if (dims.has(key) && dims.get(key) "'!== tensor.shape[i]) throw Error('"'Inconsistent input extent ' + key);
+        dims.set(key, tensor.shape[i]);
+      }
+      return tensor;
+    });
+    for (const [i, p] of fn.params.entries())
+      if (p.shape.some((d, j) => value(d, dims) "'!== ordered[i].shape[j]))
+        throw Error('"'Inconsistent affine shape for ' + p.name);
+    return ordered;
+  });
+  const bytes = Buffer.allocUnsafe(header + tensors.reduce((n, t) => n + 8 * t.shape.length + t.data.byteLength, 0));
+  magic.copy(bytes);
+  let offset = bytes.writeBigUInt64LE(BigInt(cases.length), magic.length);
+  for (const { shape, data } of tensors) {
+    for (const dim of shape) offset = bytes.writeBigUInt64LE(BigInt(dim), offset);
+    const words = new Uint32Array(data.buffer, data.byteOffset, data.length);
+    for (const word of words) offset = bytes.writeUInt32LE(word, offset);
+  }
+  return bytes;
+}
+
+export function decodeCudaCases(bytes: Buffer, count: number, rank: number): CudaResult[] {
+  if (bytes.length < header || "'!bytes.subarray(0, magic.length).equals(magic))
+    throw Error('"'Invalid CUDA response header');
+  if (bytes.readBigUInt64LE(magic.length) "'!== BigInt(count)) throw Error('"'Wrong CUDA response case count');
+  const results: CudaResult[] = [];
+  let offset = header;
+  for (let c = 0; c < count; ++c) {
+    if (rank * 8 > bytes.length - offset) throw Error('Short CUDA response shape');
+    const shape = Array.from({ length: rank }, () => {
+      const extent = Number(bytes.readBigUInt64LE(offset));
+      offset += 8;
+      return extent;
+    });
+    const n = elements(shape);
+    if (n > (bytes.length - offset - 8) / 4) throw Error('Short CUDA response data');
+    const words = new Uint32Array(n);
+    for (let i = 0; i < n; i++) {
+      words[i] = bytes.readUInt32LE(offset);
+      offset += 4;
+    }
+    const gpuMs = bytes.readDoubleLE(offset);
+    offset += 8;
+    if ("'!Number.isFinite(gpuMs) || gpuMs < 0) throw Error('"'Invalid CUDA event time');
+    results.push({ shape, data: new Float32Array(words.buffer), gpuMs });
+  }
+  if (offset "'!== bytes.length) throw Error('"'Trailing CUDA response bytes');
+  return results;
+}
+
+const exec = promisify(execFile);
+const runner = fileURLToPath(new URL('../../tools/cuda-remote.mjs', import.meta.url));
+export async function runCudaBatch(
+  source: string,
+  fn: Fn,
+  cases: readonly CudaInputs[],
+  options?: { host?: string; benchmark?: boolean },
+): Promise<CudaResult[]> {
+  const request = encodeCudaCases(fn, cases);
+  const dir = await mkdtemp(join(tmpdir(), 'irwb-tix-cuda-'));
+  try {
+    await Promise.all([writeFile(join(dir, 'main.cu'), source), writeFile(join(dir, 'inputs.bin'), request)]);
+    const args = [runner, dir, '--runtime-input', 'inputs.bin'];
+    if (options?.host "'!== undefined) args.push('"'--host', options.host);
+    if (options?.benchmark) args.push('--timed', '--', '--benchmark');
+    try {
+      await exec(process.execPath, args);
+    } catch (error) {
+      const failure = error as Error & { stdout?: string; stderr?: string };
+      let diagnostic = failure.stderr?.trim();
+      try {
+        const result = JSON.parse(failure.stdout ?? '');
+        diagnostic ||= [result.stderr, result.stdout].filter(Boolean).join('\\n').trim();
+      } catch {
+        // Copy and fetch failures can exit before the runner prints JSON.
+      }
+      throw new Error(diagnostic || failure.message, { cause: error });
+    }
+    return decodeCudaCases(await readFile(join(dir, 'out', 'results.bin')), cases.length, fn.shape.length);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+EOF
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 9571ms:
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('src/tensor/contract.ts')
+s = p.read_text().replace(\"import { evaluate, OutsideSample, size, type Inputs, type BufferValue } from './evaluate.js';\", \"\"\"import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
+import type { CudaInputs } from './cuda-runtime.js';\"\"\")
+s = s.replace('interface Sample {','interface Sample {').replace('  inputs: Inputs;', '  inputs: CudaInputs;')
+s = s.replace('const seed = 20,\\n  half', 'export const seed = 20;\\nconst half')
+s = s.replace('function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number): Sample[] {', '''function cases(
+  fn: Fn, baseline: Fn, relation: Relation, random: () => number, cuda = false,
+): Sample[] {''')
+s = s.replace(\"\"\"  for (const n of [1, 3, 4, 7, 'mixed'] as const) {
+    const shapeValues = symbols.map((_, i) => (n === 'mixed' ? [3, 5, 7][i % 3] : n));\"\"\", \"\"\"  const assignments = [1, 3, 4, 7, 'mixed'].map(n =>
+    symbols.map((_, i) => typeof n === 'number' ? n : [3, 5, 7][i % 3]),
+  );
+  if (cuda) {
+    assignments.push(symbols.map(() => 0));
+    for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => i === zero ? 0 : 3));
+  }
+  for (const shapeValues of assignments) {\"\"\")
+s = s.replace(\"...(relation === 'exact' ? ['zero'] : [])\", \"...(relation === 'exact' || cuda ? ['zero'] : [])\")
+s = s.replace('const inputs: Inputs =', 'const inputs: CudaInputs =')
+s = s.replace(\"if (relation === 'tolerance' && "'!ref.data.every(Number.isFinite)) continue;", "if (relation === '"'tolerance' && "'!cuda && !ref.data.every(Number.isFinite)) continue;")
+s = s.replace('"'function compare(ref: BufferValue', '''export function cudaCases(fn: Fn, random: () => number): Sample[] {
+  return cases(fn, fn, 'tolerance', random, true);
+}
+
+export function coordinate(shape: number[], offset: number): number[] {
+  const coord = shape.map(() => 0);
+  for (let i = coord.length - 1; i >= 0; i--) {
+    coord[i] = offset % shape[i];
+    offset = Math.floor(offset / shape[i]);
+  }
+  return coord;
+}
+
+function compare(ref: BufferValue''')
+a = s.index('      let k = i;')
+b = s.index('      return {', a)
+s = s[:a] + '      const coord = coordinate(ref.shape, i);\\n' + s[b:]
+p.write_text(s)
+PY
+cat > src/tensor/cuda-contract.ts <<'EOF'
+import {
+  AnalysisManager,
+  ContractError,
+  createArtifact,
+  defineIR,
+  defineTransformation,
+  defineType,
+  differential,
+  type Decided,
+  type DifferentialEvidence,
+} from '../framework/contracts/index.js';
+import type { Artifact } from '../framework/core/types.js';
+import { coordinate, cudaCases, seed } from './contract.js';
+import { runCudaBatch } from './cuda-runtime.js';
+import { emitCuda } from './cuda-source.js';
+import type { BufferValue } from './evaluate.js';
+import { TixIR } from './ir.js';
+import { selectFunction, type Module } from './model.js';
+
+interface CudaUnit {
+  fn: string;
+  source: string;
+}
+
+const CudaIR = defineIR<CudaUnit>({
+  id: 'tensor.cuda-source',
+  version: '1',
+  description: 'Standalone CUDA translation unit for a Tix function',
+  validate(value) {
+    const unit = value as Partial<CudaUnit> | null;
+    if (typeof unit?.fn "'!== '"'string' || "'!unit.fn || typeof unit.source !== '"'string' || "'!unit.source)
+      throw Error('"'Invalid CUDA translation unit');
+  },
+});
+const FunctionName = defineType<string>({
+  id: 'tensor.function-name',
+  version: '1',
+  description: 'Name of the Tix function to lower',
+  validate(name) {
+    if (typeof name "'!== '"'string' || "'!name) throw Error('"'Invalid Tix function name');
+  },
+});
+
+export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
+  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
+}
+
+function compare(expected: BufferValue, got: BufferValue) {
+  if (expected.shape.length "'!== got.shape.length || expected.shape.some((n, i) => n !== got.shape[i]))
+    return { ok: false, reason: '"'Output shape differs' };
+  if (expected.data.length "'!== got.data.length) return { ok: false, reason: '"'Output length differs' };
+  for (const [i, ref] of expected.data.entries()) {
+    const actual = got.data[i];
+    const tolerance = 2e-6 + 2e-5 * Math.abs(ref);
+    const agrees = Number.isFinite(ref)
+      ? Number.isFinite(actual) && Math.abs(actual - ref) <= tolerance
+      : Object.is(actual, ref);
+    if ("'!agrees) {
+      const at = coordinate(expected.shape, i);
+      const budget = Number.isFinite(ref) ? ` (tolerance ${tolerance})` : '"'';
+      return { ok: false, reason: "'`At [${at}], expected ${ref}, got ${actual}${budget}` };
+    }
+  }
+  return { ok: true };
+}
+
+type CudaSample = ReturnType<typeof cudaCases>[number];
+
+export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
+  const inputs = { baseline: TixIR, fn: FunctionName };
+  const outputs = { subject: CudaIR };
+  const ports = { ...inputs, ...outputs };
+  const invariant = differential<typeof ports, CudaSample, BufferValue>({
+    id: '"'tensor.cuda-meaning',
+    version: '1',
+    description: 'Compare the lowered CUDA function to its current Tix f64 meaning',
+    inputs: ports,
+    baseline: 'baseline',
+    subject: 'subject',
+    // The recipe is shape-dependent and supplies its whole eligible case set.
+    count: 1,
+    seed,
+    cases: ({ baseline, fn }, random) => {
+      const samples = cudaCases(selectFunction(baseline.value, fn), random);
+      if ("'!samples.length) throw Error('"'No eligible CUDA check cases for ' + fn);
+      return samples;
+    },
+    run: (side, _artifact, sample) => {
+      if (side === 'baseline') return sample.reference;
+      throw Error('CUDA checks require the batch executor');
+    },
+    compare,
+    describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
+    baselineKey: ({ baseline, fn }) => JSON.stringify([baseline.revision, fn]),
+    subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
+    async decide({ baseline, fn, subject }, cases, todo) {
+      if (subject.value.fn "'!== fn) return todo.map(() => ({ v: '"'disagree', reason: 'CUDA function differs' }));
+      const pending = todo.map(i => cases[i]);
+      const results = await executeBatch(subject.value.source, selectFunction(baseline.value, fn), pending.map(c => c.inputs));
+      if (results.length "'!== pending.length) throw Error('"'Wrong CUDA response case count');
+      return pending.map((sample, i): Decided => {
+        const result = compare(sample.reference, results[i]);
+        return result.ok
+          ? { v: 'agree' }
+          : { v: 'disagree', reason: result.reason"'! };
+      });
+    },
+  });
+  const pass = defineTransformation({
+    id: '"'tensor.lower-cuda',
+    version: '1',
+    description: 'Lower a Tix function to CUDA and check the candidate on the GPU',
+    inputs,
+    outputs,
+    cache: 'never',
+    ensures: [{
+      invariant,
+      bindings: {
+        baseline: { from: 'inputs', port: 'baseline' },
+        fn: { from: 'inputs', port: 'fn' },
+        subject: { from: 'outputs', port: 'subject' },
+      },
+    }],
+    run(_ctx, { baseline, fn }) {
+      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+    },
+  });
+
+  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+    const relation = 'tolerance' as const;
+    const manager = new AnalysisManager();
+    try {
+      if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
+      else await manager.execute(pass, { baseline, fn });
+      return { accepted: true, relation };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (error instanceof ContractError && error.code === 'postcondition') {
+        const checks = manager.snapshot().executions.at(-1)?.checks;
+        const evidence = checks?.find(check => check.phase === 'ensures')?.evidence as DifferentialEvidence | undefined;
+        const first = evidence?.counterexamples[0];
+        const reason = first ? "'`${JSON.stringify(first.case)}: ${first.reason}` : message;
+        return { accepted: false, relation, reason };
+      }
+      return { accepted: false, relation, reason: '"'CUDA evidence unavailable: ' + message };
+    }
+  };
+}
+
+export const checkCudaLowering = createCudaLowering('cuda-remote:sm_121:-O3');
+EOF
+cat >> src/tensor/model.ts <<'EOF'
+
+export function selectFunction(module: Module, name: string): Fn {
+  const fn = module.functions.find(f => f.name === name);
+  if ("'!fn) throw Error('"'Unknown function ' + name);
+  return fn;
+}
+EOF
+python3 - <<'PY'
+from pathlib import Path
+p = Path('src/tensor/index.ts')
+s = p.read_text().replace(\"import type { Module } from './model.js';\", \"\"\"import { selectFunction, type Module } from './model.js';
+import { checkCudaLowering } from './cuda-contract.js';
+import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+import { emitCuda } from './cuda-source.js';\"\"\")
+s = s.replace(\"\"\"  const f = program.current.value.functions.find(f => f.name === fn);
+  if ("'!f) throw Error('"'Unknown function ' + fn);
+  return evaluate(f, inputs, options?.precision ?? 'f32');\"\"\", \"\"\"  return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');\"\"\")
+s += \"\"\"
+export function cudaSource(program: TixProgram, fn: string): string {
+  return emitCuda(selectFunction(program.current.value, fn));
+}
+
+export async function runTixCuda(
+  program: TixProgram,
+  fn: string,
+  inputs: CudaInputs,
+  options?: { host?: string },
+): Promise<CudaResult> {
+  const f = selectFunction(program.current.value, fn);
+  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+  return result;
+}
+
+export function checkLowering(
+  program: TixProgram,
+  fn: string,
+): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
+  return checkCudaLowering(program.current, fn);
+}
+\"\"\"
+p.write_text(s)
+PY
+npx --no-install prettier --write src/tensor/{cuda-{contract,runtime,source},index,contract,model}.ts tools/cuda-remote.mjs && npm run build
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "sed -n '1,195p' tests/tensor/corpus.test.mjs && git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 9151ms:
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import { compileTix, optimizeTix, runTix } from '../../dist/tensor/index.js';
+const buf = (shape, data) => ({ shape, data: Float32Array.from(data) });
+const gelu = x => 0.5 * x * (1 + Math.tanh(0.79788456 * (x + 0.044715 * x ** 3)));
+function check(name, inputs, shape, expected) {
+  test(name + ' agrees with the numerical oracle before and after optimization', () => {
+    const p = compileTix(
+      readFileSync(new URL('../../corpus/tensor/' + name + '/main.tix', import.meta.url), 'utf8'),
+    );
+    const optimized = optimizeTix(p, ['inline', 'split-sum']);
+    assert.ok(optimized.steps.every(s => s.accepted));
+    for (const program of [p, optimized.program])
+      for (const precision of ['f32', 'f64']) {
+        const result = runTix(program, name, inputs, { precision });
+        assert.deepEqual(result.shape, shape);
+        assert.equal(result.data.length, expected.length);
+        expected.forEach((v, i) =>
+          assert.ok(
+            Math.abs(result.data[i] - v) < (precision === 'f32' ? 2e-5 : 1e-12),
+            `at ${i}: ${v} vs ${result.data[i]}`,
+          ),
+        );
+      }
+  });
+}
+check(
+  'matmul',
+  { a: buf([2, 3], [1, 2, 3, 4, 5, 6]), b: buf([3, 2], [1, 0, 0, 2, -1, 1]) },
+  [2, 2],
+  [-2, 7, -2, 16],
+);
+const p = 1 / (1 + Math.exp(-1));
+check('softmax', { x: buf([2, 2], [1000, 999, 0, 1]) }, [2, 2], [p, 1 - p, 1 - p, p]);
+check(
+  'layernorm',
+  { x: buf([2, 2], [3, 3, 2, 4]), gamma: buf([2], [2, 3]), beta: buf([2], [1, -2]), eps: buf([1], [3]) },
+  [2, 2],
+  [1, -2, 0, -0.5],
+);
+check(
+  'attention',
+  { q: buf([1, 1], [1]), k: buf([2, 1], [0, 1]), v: buf([2, 2], [1, 0, 0, 2]) },
+  [1, 2],
+  [1 - p, 2 * p],
+);
+check(
+  'mlp',
+  {
+    x: buf([1, 1], [2]),
+    w: buf([1, 2], [-1, 2]),
+    bias: buf([2], [1, -2]),
+    v: buf([2, 1], [2, 3]),
+    outBias: buf([1], [-2]),
+  },
+  [1, 1],
+  [2 * gelu(-1) + 3 * gelu(2) - 2],
+);
+const image = Array.from({ length: 24 }, (_, i) => i + 1);
+check(
+  'conv2d',
+  {
+    x: buf([1, 2, 3, 4], image),
+    kernel: buf([1, 2, 3, 3], [1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, -1, 0, 0, 0, 0]),
+  },
+  [1, 1, 1, 2],
+  [1 + 2 * 11 - 18, 2 + 2 * 12 - 19],
+);
+ M src/tensor/contract.ts
+ M src/tensor/index.ts
+ M src/tensor/model.ts
+ M tools/cuda-remote.mjs
+?? src/tensor/cuda-contract.ts
+?? src/tensor/cuda-runtime.ts
+?? src/tensor/cuda-source.ts
+
+exec
+/usr/bin/zsh -lc "cat > ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs <<'EOF'
+// Run from the worktree root after building. Each line is one measured workload.
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+
+const root = pathToFileURL(process.cwd() + '/');
+const { compileTix, cudaSource, runTix } = await import(new URL('dist/tensor/index.js', root));
+const { runCudaBatch } = await import(new URL('dist/tensor/cuda-runtime.js', root));
+const { value } = await import(new URL('dist/tensor/model.js', root));
+const { seededRandom } = await import(new URL('dist/framework/contracts/index.js', root));
+
+const sizes = {
+  matmul: { M: 512, K: 512, N: 512 },
+  softmax: { N: 4096, C: 1024 },
+  layernorm: { N: 4096, D: 1024 },
+  attention: { Q: 1024, K: 1024, D: 64, V: 64 },
+  mlp: { N: 1024, D: 256, H: 1024, O: 256 },
+  conv2d: { N: 8, C: 16, H: 64, W: 64, O: 32 },
+};
+
+const [mode, ...names] = process.argv.slice(2);
+if ("'!['"'cpu', 'gpu'].includes(mode)) throw Error('Usage: node <ticket>/scripts/03-benchmark-cuda.mjs cpu|gpu [names...]');
+for (const name of names.length ? names : Object.keys(sizes)) {
+  if ("'!Object.hasOwn(sizes, name)) throw Error('"'Unknown corpus function ' + name);
+  const program = compileTix(await readFile(new URL("'`corpus/tensor/${name}/main.tix`, root), '"'utf8'));
+  const fn = program.current.value.functions.find(f => f.name === name);
+  const dims = new Map(Object.entries(sizes[name]));
+  const random = seededRandom(20);
+  const inputs = Object.fromEntries(fn.params.map(p => {
+    const shape = p.shape.map(d => value(d, dims));
+    const data = Float32Array.from(
+      { length: shape.reduce((n, dim) => n * dim, 1) },
+      () => name === 'layernorm' && p.name === 'eps' ? 1e-5 : 0.2 * random() - 0.1,
+    );
+    return [p.name, { shape, data }];
+  }));
+  let result, ms;
+  if (mode === 'cpu') {
+    const start = performance.now();
+    result = runTix(program, name, inputs);
+    ms = performance.now() - start;
+  } else {
+    [result] = await runCudaBatch(cudaSource(program, name), fn, [inputs], { benchmark: true });
+    ms = result.gpuMs;
+  }
+  const { data, shape } = result;
+  const outputSha256 = createHash('sha256').update(Buffer.from(data.buffer, data.byteOffset, data.byteLength)).digest('hex');
+  console.log(JSON.stringify({ name, mode, ms, shape, outputSha256 }));
+}
+EOF
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'EOF'
+import {compileTix,cudaSource,runTixCuda,checkLowering} from './dist/tensor/index.js';
+const p=compileTix('fn f(a:f32[N,K]):f32[N]{y[i]=sum(k) a[i,k];return y;}');
+console.log(cudaSource(p,'f').length);
+console.log(await runTixCuda(p,'f',{a:{shape:[2,3],data:Float32Array.of(1,2,3,4,5,6)}}));
+console.log(await checkLowering(p,'f'));
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu > /tmp/irwb-022-i-bench-cpu.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 15607ms:
+ exited 1 in 11720ms:
+node:internal/modules/esm/resolve:271
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/dist/tensor/cuda-runtime.js' imported from /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:271:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)
+    at #resolve (node:internal/modules/esm/loader:683:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)
+    at node:internal/modules/esm/loader:632:32
+    at TracingChannel.tracePromise (node:diagnostics_channel:362:14) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/dist/tensor/cuda-runtime.js'
+}
+
+Node.js v24.18.0
+
+ exited 1 in 12078ms:
+file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/[eval1]:1
+import {compileTix,cudaSource,runTixCuda,checkLowering} from './dist/tensor/index.js';
+                                         ^^^^^^^^^^^^^
+SyntaxError: The requested module './dist/tensor/index.js' does not provide an export named 'checkLowering'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:327:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+    at async node:internal/modules/esm/loader:224:26
+    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:221:20)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.18.0
+
+ succeeded in 128877ms:
+src/tensor/cuda-contract.ts 1382ms
+src/tensor/cuda-runtime.ts 517ms
+src/tensor/cuda-source.ts 336ms
+src/tensor/index.ts 67ms (unchanged)
+src/tensor/contract.ts 413ms
+src/tensor/model.ts 207ms (unchanged)
+tools/cuda-remote.mjs 827ms
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc "cat > tests/tensor/cuda.test.mjs <<'EOF'
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { checkLowering, compileTix, cudaSource, runTixCuda } from '../../dist/tensor/index.js';
+import { cudaArtifact, createCudaLowering } from '../../dist/tensor/cuda-contract.js';
+import { decodeCudaCases, encodeCudaCases } from '../../dist/tensor/cuda-runtime.js';
+import { evaluate } from '../../dist/tensor/evaluate.js';
+
+const buf = (shape, values) => ({ shape, data: Float32Array.from(values) });
+const p = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k]; return y; }');
+const fn = p.current.value.functions[0];
+
+test('CUDA source is deterministic and preloads every emitted statement kernel before timing', () => {
+  assert.equal(typeof checkLowering, 'function');
+  assert.equal(typeof runTixCuda, 'function');
+  const program = compileTix('fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }');
+  const source = cudaSource(program, 'second');
+  assert.equal(source, cudaSource(program, 'second'));
+  assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
+  assert.ok(source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'));
+  assert.match(source, /__double2float_rn\\(exp/);
+  assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
+});
+
+test('CUDA binary requests and results preserve f32 words, including subarray and zero shape', () => {
+  const a = Float32Array.of(9, -0, 2 ** -149, 99);
+  const request = encodeCudaCases(fn, [
+    { x: { shape: [1, 2], data: a.subarray(1, 3) } },
+    { x: buf([3, 0], []) },
+  ]);
+  assert.equal(request.toString('ascii', 0, 8), 'TIXCUDA1');
+  assert.deepEqual([8, 16, 24, 40, 48].map(i => request.readBigUInt64LE(i)), [2n, 1n, 2n, 3n, 0n]);
+  assert.deepEqual([request.readUInt32LE(32), request.readUInt32LE(36)], [0x80000000, 1]);
+  assert.throws(() => encodeCudaCases(fn, [{ x: buf([2, 2], [1]) }]), /shape or length/);
+
+  const response = Buffer.alloc(16 + 8 + 4 + 8 + 8 + 8);
+  response.write('TIXCUDA1');
+  response.writeBigUInt64LE(2n, 8);
+  response.writeBigUInt64LE(1n, 16);
+  response.writeUInt32LE(0x80000000, 24);
+  response.writeDoubleLE(0.03125, 28);
+  assert.deepEqual(decodeCudaCases(response, 2, 1), [
+    { ...buf([1], [-0]), gpuMs: 0.03125 },
+    { ...buf([0], []), gpuMs: 0 },
+  ]);
+  assert.throws(() => decodeCudaCases(response.subarray(0, -1), 2, 1), /Short/);
+  assert.throws(() => decodeCudaCases(response, 1, 1), /case count/);
+});
+
+test('the lowering pass delegates one batch, replays verdicts and retries transport failures', async () => {
+  const batches = [];
+  let fail = true;
+  const engine = async (source, f, cases) => {
+    batches.push(cases);
+    if (fail) {
+      fail = false;
+      throw Error('simulated transport failure');
+    }
+    return cases.map(inputs => {
+      const result = evaluate(f, inputs, 'f32');
+      if (source === 'different CUDA source' && result.data.length) result.data[0] += 1;
+      return { ...result, gpuMs: 0 };
+    });
+  };
+  const check = createCudaLowering('tensor-test-engine-1', engine);
+  const first = await check(p.current, 'f');
+  assert.equal(first.accepted, false);
+  assert.match(first.reason, /simulated transport failure/);
+  assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'tolerance' });
+  assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'tolerance' });
+  assert.equal(batches.length, 2);
+  assert.ok(batches[1].length > 1);
+  assert.ok(batches[1].some(c => c.x.shape[0] > 0 && c.x.shape[1] === 0));
+
+  const changed = cudaArtifact('f', 'different CUDA source');
+  const rejected = await check(p.current, 'f', changed);
+  assert.equal(rejected.accepted, false);
+  assert.match(rejected.reason, /At \\[0\\], expected/);
+  assert.deepEqual(await check(p.current, 'f', changed), rejected);
+  assert.equal(batches.length, 3);
+  assert.equal((await createCudaLowering('tensor-test-engine-2', engine)(p.current, 'f')).accepted, true);
+  assert.equal(batches.length, 4);
+});
+EOF
+cat > tests/tensor/cuda-gpu.test.mjs <<'EOF'
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { checkLowering, compileTix, cudaSource, optimizeTix, runTix, runTixCuda } from '../../dist/tensor/index.js';
+import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
+
+const buf = (shape, data) => ({ shape, data: Float32Array.from(data) });
+const words = ({ data }) => new Uint32Array(data.buffer, data.byteOffset, data.length);
+
+for (const name of ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2d']) {
+  test('GB10 checks ' + name + ' before and after optimization', async () => {
+    const source = await readFile(new URL('../../corpus/tensor/' + name + '/main.tix', import.meta.url), 'utf8');
+    const program = compileTix(source);
+    const optimized = optimizeTix(program, ['inline', 'split-sum']);
+    assert.ok(optimized.steps.every(s => s.accepted));
+    for (const revision of [program, optimized.program]) {
+      const verdict = await checkLowering(revision, name);
+      assert.equal(verdict.accepted, true, verdict.reason);
+      assert.equal(verdict.relation, 'tolerance');
+    }
+  });
+}
+
+test('GB10 preserves split rounding and a partial final block', async () => {
+  const p = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k]; return y; }');
+  const { program, steps } = optimizeTix(p, ['split-sum']);
+  assert.equal(steps[0].accepted, true);
+  assert.notEqual(program.current.revision, p.current.revision);
+  const inputs = { x: buf([1, 7], [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24]) };
+  const reference = runTix(program, 'f', inputs);
+  assert.equal(reference.data[0], 1 + 2 ** -22);
+  const result = await runTixCuda(program, 'f', inputs);
+  assert.deepEqual(result.shape, [1]);
+  assert.deepEqual(words(result), words(reference));
+  assert.ok(Number.isFinite(result.gpuMs) && result.gpuMs >= 0);
+
+  const source = cudaSource(program, 'f');
+  const mutant = source.replace(' + ((d1) % 4 "'!= 0)'"', '');
+  assert.notEqual(mutant, source);
+  assert.equal((await checkLowering(program, 'f')).accepted, true);
+  const verdict = await checkCudaLowering(program.current, 'f', cudaArtifact('f', mutant));
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \\[.*\\], expected/);
+});
+
+test('GB10 checks composed inline addresses and rejects a valid index mutant', async () => {
+  const p = compileTix('fn f(x:f32[N,N]):f32[N,N] { z[i,j]=x[i,j]*2; y[i,j]=z[j,i]+1; return y; }');
+  const { program } = optimizeTix(p, ['inline']);
+  assert.notEqual(p.current.revision, program.current.revision);
+  const x = { x: buf([2, 2], [1, 2, 3, 4]) };
+  assert.deepEqual((await runTixCuda(program, 'f', x)).data, Float32Array.of(3, 7, 5, 9));
+
+  const source = cudaSource(program, 'f');
+  const mutant = source.replace('t0[((i0) * (d0) + (i1))]', 't0[((i1) * (d0) + (i0))]');
+  assert.notEqual(mutant, source);
+  const verdict = await checkCudaLowering(program.current, 'f', cudaArtifact('f', mutant));
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \\[.*\\], expected/);
+});
+
+test('GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns', async () => {
+  const program = compileTix("'`
+    fn shadow(x:f32[N,K], z:f32[N,L]):f32[N] { y[i] = sum(j) x[i,j] + sum(j) z[i,j]; return y; }
+    fn empty(x:f32[N,K]):f32[N,2] { 
+      s[i] = sum(k) x[i,k]; m[i] = max(k) x[i,k];
+      y[i,j]:f32[N,2] = max(s[i], m[i]) + (log(1) * 0);
+      return y;
+    }
+    fn intrinsic(x:f32[N]):f32[N] { y[i]=min(sqrt(x[i]), 0); return y; }
+    fn direct(x:f32[N]):f32[N] { return x; }
+  `);
+  const cases = [
+    ['"'shadow', { x: buf([1, 2], [1, 2]), z: buf([1, 3], [4, 5, 6]) }, [33]],
+    ['empty', { x: buf([3, 0], []) }, [0, 0, 0, 0, 0, 0]],
+    ['empty', { x: buf([0, 3], []) }, []],
+    ['intrinsic', { x: buf([3], [-1, -0, 2]) }, [NaN, -0, 0]],
+    ['direct', { x: buf([1], [-0]) }, [-0]],
+  ];
+  for (const [name, inputs, expected] of cases) {
+    const result = await runTixCuda(program, name, inputs);
+    assert.deepEqual([...result.data], expected);
+    assert.deepEqual(result.shape, runTix(program, name, inputs).shape);
+    if (name === 'direct' || "'!expected.length) assert.equal(result.gpuMs, 0);
+  }
+  const max = compileTix('"'fn f(x:f32[N,K]):f32[N] { y[i] = max(k) x[i,k]; return y; }');
+  assert.deepEqual((await runTixCuda(max, 'f', { x: buf([2, 0], []) })).data, Float32Array.of(-Infinity, -Infinity));
+});
+
+test('remote runner shares a compile across isolated jobs and invalidates on build input changes', async () => {
+  const tool = fileURLToPath(new URL('../../tools/cuda-remote.mjs', import.meta.url));
+  const exec = promisify(execFile);
+  const dirs = await Promise.all(['A', 'B'].map(() => mkdtemp(join(tmpdir(), 'irwb-cuda-runner-test-'))));
+  const source = "'`// ${randomUUID()}
+#include <cstdio>
+#include "header.h"
+int main() {
+  FILE* in = fopen("input.txt", "r");
+  FILE* out = fopen("out/answer.txt", "w");
+  fputc(fgetc(in), out);
+  fputc(EXTRA, out);
+  fclose(in);
+  return fclose(out);
+}
+`;
+  try {
+    await Promise.all(dirs.map(async (dir, i) => {
+      await writeFile(join(dir, '"'main.cu'), source);
+      await writeFile(join(dir, 'header.h'), \"#define EXTRA '1'\\n\");
+      await writeFile(join(dir, 'input.txt'), i ? 'B' : 'A');
+    }));
+    async function run(dir) {
+      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt']);
+      return { ...JSON.parse(stdout), answer: await readFile(join(dir, 'out', 'answer.txt'), 'utf8') };
+    }
+    const [a, b] = await Promise.all(dirs.map(run));
+    assert.equal(a.hash, b.hash);
+    assert.deepEqual([a.compiled, b.compiled].sort(), [false, true]);
+    assert.deepEqual([a.answer, b.answer], ['A1', 'B1']);
+    await writeFile(join(dirs[0], 'header.h'), \"#define EXTRA '2'\\n\");
+    const changed = await run(dirs[0]);
+    assert.equal(changed.compiled, true);
+    assert.notEqual(changed.hash, a.hash);
+    assert.equal(changed.answer, 'A2');
+  } finally {
+    await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true })));
+  }
+});
+EOF
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 8813ms:
+exec
+/usr/bin/zsh -lc "cat /tmp/irwb-022-i-bench-cpu.jsonl && npx --no-install prettier --check 'src/tensor/*.ts' tools/cuda-remote.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'npx --no-install prettier --write tests/tensor/cuda*.test.mjs ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs && node --test tests/tensor/*.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu > /tmp/irwb-022-i-bench-cpu.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "rg -n 'checkLowering' dist/tensor/index.js && node --input-type=module <<'EOF'
+import {compileTix,cudaSource} from './dist/tensor/index.js';
+const p=compileTix('fn f(x:f32[N,N]):f32[N,N] { z[i,j]=x[i,j]*2; y[i,j]=z[j,i]+1; return y; }');
+console.log(cudaSource(p,'f').split('\\n').filter(s=>s.includes('t0[')));
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 20079ms:
+Checking formatting...
+All matched files use Prettier code style!
+
+ succeeded in 13020ms:
+46:export function checkLowering(program, fn) {
+[
+  '  float v0 = __fmul_rn(t0[((i1) * (d0) + (i0))], __uint_as_float(0x40000000u));',
+  '  const I d0 = shape_t0[0];'
+]
+
+codex
+The revised design is committed, and the TypeScript build now exports all three CUDA APIs. The emitter preloads each kernel before timing, and the runner separates per-request files from the shared binary cache. The focused tests and interpreter measurements are running.
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb-022-i-bench-cpu.jsonl && git diff --check && git diff --stat' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 9841ms:
+ src/tensor/contract.ts |  52 +++++++++-----
+ src/tensor/index.ts    |  31 +++++++--
+ src/tensor/model.ts    |   6 ++
+ tools/cuda-remote.mjs  | 184 ++++++++++++++++++++++++++++---------------------
+ 4 files changed, 173 insertions(+), 100 deletions(-)
+
+exec
+/usr/bin/zsh -lc "node -e 'const os=require(\"node:os\"); console.log(process.version,process.arch,os.cpus()[0].model)' && wc -l /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 11461ms:
+v24.18.0 x64 11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz
+0 /tmp/irwb-022-i-bench-cpu.jsonl
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md <<'EOF'
+
+## Step 3. Implement the CUDA backend and remote runner
+
+The emitter now turns the selected current Tix function into a standalone translation unit. Its expression walk generates one guarded row-major kernel per definition, evaluates affine indexing separately from f32 operations, and preserves both ordinary and split reduction folds. Generated code preloads each nonempty launch's kernel before recording CUDA events. The TypeScript wrapper uses a versioned batch file and a new local working directory for each call.
+
+### Implementation and framework findings
+
+- "'`src/tensor/cuda-source.ts` emits CUDA helpers, kernels, and the batch host program. `cuda-runtime.ts` encodes and decodes requests and invokes the remote tool asynchronously. `cuda-contract.ts` defines the heterogeneous pass and delegates via the existing differential invariant.
+- `src/tensor/contract.ts` shares the Stage 1 sampling recipe with the new check. CUDA includes empty shape assignments and keeps nonfinite f64 observations for classification. The Stage 1 optimizer'"'s original recipe is unchanged.
+- "'`tools/cuda-remote.mjs` now accepts repeatable runtime-only files, uploads each job to a unique remote directory, and installs and links cached binaries under a compile lock. It propagates copy and fetch errors. The GPU lock is still specific to timed runs. No framework file changed.
+
+### Validation in progress
+
+The first standalone API smoke command raced the TypeScript build and imported the prior `dist` output. Node reported that `checkLowering` was missing. The build then completed, the export was present, and the focused test run started from the rebuilt output. The arithmetic replay also ran successfully through the revised remote tool.
+EOF
+git diff --check
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 9530ms:
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb-022-i-bench-cpu.jsonl && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 9155ms:
+ M src/tensor/contract.ts
+ M src/tensor/index.ts
+ M src/tensor/model.ts
+ M tools/cuda-remote.mjs
+ M ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+?? src/tensor/cuda-contract.ts
+?? src/tensor/cuda-runtime.ts
+?? src/tensor/cuda-source.ts
+?? tests/tensor/cuda-gpu.test.mjs
+?? tests/tensor/cuda.test.mjs
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb-022-i-bench-cpu.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 12288ms:
+exec
+/usr/bin/zsh -lc "docmgr doc add --ticket IRWB-022-I --doc-type reference --title 'CUDA lowering verification and corpus timings'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 13871ms:
+created ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md
+
+codex
+All six corpus functions passed the GB10 contract checks before and after optimization. The same contract rejected both deliberately changed CUDA outputs, one with a transposed index and one with a dropped split-sum tail. The edge-case tests and full-size interpreter run are still underway.
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/src/tensor/cuda-runtime.ts
+diff --git a/src/tensor/cuda-runtime.ts b/src/tensor/cuda-runtime.ts
+index f7bcc998925bde8ad5c9a22a8e65ce537920a609..73ee724c03b6760ac10dad8b727b66022eec5899
+--- a/src/tensor/cuda-runtime.ts
++++ b/src/tensor/cuda-runtime.ts
+@@ -45,7 +45,7 @@
+     return ordered;
+   });
+   const bytes = Buffer.allocUnsafe(
+-    header + tensors.reduce((n, t) => n + 8 * t.shape.length + t.data.byteLength, 0),
++    header + tensors.reduce((n, t) => n + 8 * t.shape.length + 4 * t.data.length, 0),
+   );
+   magic.copy(bytes);
+   let offset = bytes.writeBigUInt64LE(BigInt(cases.length), magic.length);
+
+exec
+/usr/bin/zsh -lc 'npm run build && node --test tests/tensor/cuda.test.mjs tests/tensor/corpus.test.mjs tests/tensor/language.test.mjs tests/tensor/passes.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "ps -eo etime,time,args | rg 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda\\.mjs'; cat /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 10329ms:
+exec
+/usr/bin/zsh -lc "wc -lc /tmp/irwb-022-i-bench-cpu.jsonl && sed -n '1,25p' dist/tensor/index.js" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 215656ms:
+tests/tensor/cuda-gpu.test.mjs 970ms
+tests/tensor/cuda.test.mjs 284ms
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs 271ms
+✔ matmul agrees with the numerical oracle before and after optimization (567.513339ms)
+✔ softmax agrees with the numerical oracle before and after optimization (66.368619ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (25.669658ms)
+✔ attention agrees with the numerical oracle before and after optimization (168.201918ms)
+✔ mlp agrees with the numerical oracle before and after optimization (635.317607ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (7.960823ms)
+✔ GB10 checks matmul before and after optimization (16858.956482ms)
+✔ GB10 checks softmax before and after optimization (14890.970772ms)
+✔ GB10 checks layernorm before and after optimization (15050.553272ms)
+✔ GB10 checks attention before and after optimization (16694.37245ms)
+✔ GB10 checks mlp before and after optimization (16783.791255ms)
+✔ GB10 checks conv2d before and after optimization (11604.340105ms)
+✔ GB10 preserves split rounding and a partial final block (25559.39762ms)
+✔ GB10 checks composed inline addresses and rejects a valid index mutant (16840.420955ms)
+✔ GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns (47377.590265ms)
+✔ remote runner shares a compile across isolated jobs and invalidates on build input changes (12834.098185ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (79.594017ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (27.954422ms)
+✔ the lowering pass delegates one batch, replays verdicts and retries transport failures (528.052913ms)
+✔ every operation, input and literal rounds at the selected precision (187.596087ms)
+✔ lexicographic reductions, explicit grouping and nested binder scope (93.769774ms)
+✔ zero extents, empty reductions and shape values (117.809891ms)
+✔ affine shape normalization, annotations and multiple functions (1.41549ms)
+✔ invalid programs give source coordinates (57.382215ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (153.384763ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (105.63319ms)
+✔ passes compose across calls and preserve the source baseline (84.594826ms)
+✔ coverage required per function and screening is origin-only (149.557975ms)
+✔ exact comparison detects a changed zero sign (47.301546ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 195837.993959
+
+ succeeded in 8371ms:
+0 0 /tmp/irwb-022-i-bench-cpu.jsonl
+import { createIRArtifact } from '../framework/ir/index.js';
+import { applyNativePassSync, PassError } from '../framework/passes/index.js';
+import { meaningGate } from './contract.js';
+import { evaluate } from './evaluate.js';
+import { adapter } from './ir.js';
+import { selectFunction } from './model.js';
+import { checkCudaLowering } from './cuda-contract.js';
+import { runCudaBatch } from './cuda-runtime.js';
+import { emitCuda } from './cuda-source.js';
+import { parse } from './parser.js';
+import { inlinePass, splitPass } from './passes.js';
+export function compileTix(source) {
+    const origin = createIRArtifact(adapter, 'tix', parse(source));
+    return { origin, current: origin };
+}
+export function runTix(program, fn, inputs, options) {
+    return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');
+}
+export function optimizeTix(program, passes) {
+    const { origin } = program;
+    let { current } = program;
+    const steps = passes.map(pass => {
+        const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
+        if (!definition)
+            throw Error('Unknown pass ' + pass);
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md')
+head = p.read_text().split('\\n---\\n', 1)[0].replace('Summary: \"\"', 'Summary: GB10 lowering checks, six CPU and GPU corpus timings, and a reproducible benchmark.')
+p.write_text(head + '\\n---\\n\\n')
+PY
+cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md <<'EOF'
+# CUDA lowering verification and corpus timings
+
+## Method
+
+The [benchmark script](../scripts/03-benchmark-cuda.mjs) runs the original six Tix functions at the requested shapes. It resets the framework's seeded generator to seed 20 for each function and fills its inputs in declaration order with f32-rounded values in [-0.1, 0.1]. Layernorm uses eps = 1e-5. CPU and GPU runs regenerate identical input words.
+
+The CPU measurement covers one Stage 1 f32 "'`runTix` call on an Intel Core i7-1165G7 with Node 24.18.0. It includes the interpreter'"'s buffer handling and excludes compilation and input preparation. The GB10 uses CUDA 13.0.88, sm_121, "'`nvcc -O3`, and one `--timed` request per program. The executable preloads kernels, runs one warmup and records the median of three CUDA-event intervals spanning the launches on one stream. Transfers, setup, compilation and SSH are outside that interval. Ordinary callers retain the remote tool'"'s untimed behavior, so an unrelated untimed GPU run can still overlap a measurement.
+
+From the worktree root, run both halves with the same build:
+
+"'```sh
+npm run build
+node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu
+node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs gpu
+```
+
+Each output line includes the shape and the SHA-256 of its f32 output bytes, so the two runs can be compared without saving large tensors.
+EOF
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'cat /tmp/irwb-022-i-bench-cpu.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 17654ms:
+ succeeded in 12251ms:
+exec
+/usr/bin/zsh -lc 'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs gpu > /tmp/irwb-022-i-bench-gpu.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 95972ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ matmul agrees with the numerical oracle before and after optimization (105.318447ms)
+✔ softmax agrees with the numerical oracle before and after optimization (89.681046ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (61.709882ms)
+✔ attention agrees with the numerical oracle before and after optimization (478.332297ms)
+✔ mlp agrees with the numerical oracle before and after optimization (744.905922ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (8.129428ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (57.826543ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (18.581867ms)
+✔ the lowering pass delegates one batch, replays verdicts and retries transport failures (744.367719ms)
+✔ every operation, input and literal rounds at the selected precision (225.739011ms)
+✔ lexicographic reductions, explicit grouping and nested binder scope (106.857984ms)
+✔ zero extents, empty reductions and shape values (52.039072ms)
+✔ affine shape normalization, annotations and multiple functions (18.657242ms)
+✔ invalid programs give source coordinates (45.25753ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (148.162502ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (104.875824ms)
+✔ passes compose across calls and preserve the source baseline (37.773294ms)
+✔ coverage required per function and screening is origin-only (161.442035ms)
+✔ exact comparison detects a changed zero sign (105.137505ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3220.346757
+
+exec
+/usr/bin/zsh -lc 'wc -l /tmp/irwb-022-i-bench-{cpu,gpu}.jsonl && git diff --check && git status --short' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 7741ms:
+  0 /tmp/irwb-022-i-bench-cpu.jsonl
+  1 /tmp/irwb-022-i-bench-gpu.jsonl
+  1 total
+ M src/tensor/contract.ts
+ M src/tensor/index.ts
+ M src/tensor/model.ts
+ M tools/cuda-remote.mjs
+ M ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+?? src/tensor/cuda-contract.ts
+?? src/tensor/cuda-runtime.ts
+?? src/tensor/cuda-source.ts
+?? tests/tensor/cuda-gpu.test.mjs
+?? tests/tensor/cuda.test.mjs
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md <<'EOF'
+
+### Validation results
+
+- "'`npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed all 29 tests, including ten GB10 tests. All six corpus functions passed before and after their Stage 1 pass sequence. The same contract rejected the CUDA transposed-index and truncated-tail candidates.
+- The remote runner test issued simultaneous jobs with different runtime bytes and one build key. Exactly one compiled, both got their own responses, and a header change produced a new build key and output.
+- A final packet-allocation adjustment sizes f32 payloads from the number of four-byte words actually written. The subsequent build and the four network-free tensor test files passed all 19 tests. Full-size CPU and GPU runs use the same input recipe and run separately.
+EOF
+docmgr task check --ticket IRWB-022-I --id flrz
+docmgr changelog update --ticket IRWB-022-I --entry '"'Implemented the checked CUDA backend and isolated remote binary reuse. Focused tensor tests verified original and optimized corpus programs, mutation rejection, and remote compile concurrency.'
+git diff --check
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "git add -- src/tensor/contract.ts src/tensor/cuda-contract.ts src/tensor/cuda-runtime.ts src/tensor/cuda-source.ts src/tensor/index.ts src/tensor/model.ts tests/tensor/cuda.test.mjs tests/tensor/cuda-gpu.test.mjs tools/cuda-remote.mjs ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md && git diff --cached --check && git commit -m 'IRWB-022-I: implement checked Tix to CUDA lowering'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 20126ms:
+Task checked: flrz (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md)
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+
+exec
+/usr/bin/zsh -lc 'wc -l /tmp/irwb-022-i-bench-{cpu,gpu}.jsonl && cat /tmp/irwb-022-i-bench-{cpu,gpu}.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ exited 2 in 9181ms:
+tests/tensor/cuda-gpu.test.mjs:80: trailing whitespace.
++    fn empty(x:f32[N,K]):f32[N,2] { 
+
+exec
+/usr/bin/zsh -lc "sed -i 's/{ "'$/{/'"' tests/tensor/cuda-gpu.test.mjs && git diff --check" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 10848ms:
+  0 /tmp/irwb-022-i-bench-cpu.jsonl
+  4 /tmp/irwb-022-i-bench-gpu.jsonl
+  4 total
+{"name":"matmul","mode":"gpu","ms":0.2152000069618225,"shape":[512,512],"outputSha256":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"name":"softmax","mode":"gpu","ms":0.8000640273094177,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"name":"layernorm","mode":"gpu","ms":0.48473599553108215,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+{"name":"attention","mode":"gpu","ms":1.0499839782714844,"shape":[1024,64],"outputSha256":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+
+ succeeded in 11625ms:
+exec
+/usr/bin/zsh -c "git status --short && git log -2 --format='%h %s'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 88483ms:
+ succeeded in 3133ms:
+M  src/tensor/contract.ts
+A  src/tensor/cuda-contract.ts
+A  src/tensor/cuda-runtime.ts
+A  src/tensor/cuda-source.ts
+M  src/tensor/index.ts
+M  src/tensor/model.ts
+AM tests/tensor/cuda-gpu.test.mjs
+A  tests/tensor/cuda.test.mjs
+M  tools/cuda-remote.mjs
+M  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+M  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+M  ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+31c3b33 IRWB-022-I: apply lowering design review
+c7fc6d4 IRWB-022-I: design checked Tix to CUDA lowering
+
+exec
+/usr/bin/zsh -c "git add -- tests/tensor/cuda-gpu.test.mjs && git diff --cached --check && git commit -m 'IRWB-022-I: implement checked Tix to CUDA lowering'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3345ms:
+[t2-sh/irwb-022-i be85ba9] IRWB-022-I: implement checked Tix to CUDA lowering
+ 12 files changed, 1032 insertions(+), 101 deletions(-)
+ create mode 100644 src/tensor/cuda-contract.ts
+ create mode 100644 src/tensor/cuda-runtime.ts
+ create mode 100644 src/tensor/cuda-source.ts
+ create mode 100644 tests/tensor/cuda-gpu.test.mjs
+ create mode 100644 tests/tensor/cuda.test.mjs
+
+exec
+/usr/bin/zsh -c "wc -lc /tmp/irwb-022-i-bench-*.jsonl && ps -eo pid,etime,time,args | rg '[0]3-benchmark-cuda|[c]uda-gpu.test.mjs'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ exited 1 in 4476ms:
+  0   0 /tmp/irwb-022-i-bench-cpu.jsonl
+  6 944 /tmp/irwb-022-i-bench-gpu.jsonl
+  6 944 total
+
+codex
+The full tensor suite passed all 29 tests, and the implementation is committed. All six GB10 timing runs have finished. The unchanged Stage 1 interpreter is still running the full-size workloads for the CPU comparison.
+exec
+/usr/bin/zsh -c 'command -v tmux && tmux -V && cat /tmp/irwb-022-i-bench-gpu.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -c "git status --short && git log -3 --format='%h %s' && sed -n '1,85p' ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3918ms:
+/usr/bin/tmux
+tmux 3.4
+{"name":"matmul","mode":"gpu","ms":0.2152000069618225,"shape":[512,512],"outputSha256":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"name":"softmax","mode":"gpu","ms":0.8000640273094177,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"name":"layernorm","mode":"gpu","ms":0.48473599553108215,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+{"name":"attention","mode":"gpu","ms":1.0499839782714844,"shape":[1024,64],"outputSha256":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+{"name":"mlp","mode":"gpu","ms":0.9576640129089355,"shape":[1024,256],"outputSha256":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
+{"name":"conv2d","mode":"gpu","ms":0.16435199975967407,"shape":[8,32,62,62],"outputSha256":"87ea2ac715c0b7721c5b5424fc73440c30129ca1db8ce6ff4c83e8db23617cdd"}
+
+ succeeded in 4175ms:
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+be85ba9 IRWB-022-I: implement checked Tix to CUDA lowering
+31c3b33 IRWB-022-I: apply lowering design review
+c7fc6d4 IRWB-022-I: design checked Tix to CUDA lowering
+---
+Title: CUDA lowering verification and corpus timings
+Ticket: IRWB-022-I
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: GB10 lowering checks, six CPU and GPU corpus timings, and a reproducible benchmark.
+LastUpdated: 2026-11-26T15:54:57.680518881-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# CUDA lowering verification and corpus timings
+
+## Method
+
+The [benchmark script](../scripts/03-benchmark-cuda.mjs) runs the original six Tix functions at the requested shapes. It resets the framework's seeded generator to seed 20 for each function and fills its inputs in declaration order with f32-rounded values in [-0.1, 0.1]. Layernorm uses eps = 1e-5. CPU and GPU runs regenerate identical input words.
+
+The CPU measurement covers one Stage 1 f32 `runTix` call on an Intel Core i7-1165G7 with Node 24.18.0. It includes the interpreter's buffer handling and excludes compilation and input preparation. The GB10 uses CUDA 13.0.88, sm_121, `nvcc -O3`, and one `--timed` request per program. The executable preloads kernels, runs one warmup and records the median of three CUDA-event intervals spanning the launches on one stream. Transfers, setup, compilation and SSH are outside that interval. Ordinary callers retain the remote tool's untimed behavior, so an unrelated untimed GPU run can still overlap a measurement.
+
+From the worktree root, run both halves with the same build:
+
+```sh
+npm run build
+node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu
+node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs gpu
+```
+
+Each output line includes the shape and the SHA-256 of its f32 output bytes, so the two runs can be compared without saving large tensors.
+
+exec
+/usr/bin/zsh -c "ps -eo pid,etime,time,comm | rg 'node|zsh|bash' | head -25 && wc -l /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 6377ms:
+      2       00:05 00:00:00 zsh
+0 /tmp/irwb-022-i-bench-cpu.jsonl
+
+exec
+/usr/bin/zsh -c 'tmux -S /tmp/irwb-022-i-verify.sock new-session -d -s tensor-verify -c "$(pwd -P)" '"'node --test tests/tensor/*.test.mjs > /tmp/irwb-022-i-final-tests.log 2>&1; code="'$?; printf "%s'"\\n\" \""'$code" > /tmp/irwb-022-i-final-tests.exit'"' && tmux -S /tmp/irwb-022-i-verify.sock list-sessions" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 5615ms:
+tensor-verify: 1 windows (created Thu Nov 26 15:59:20 2026)
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z' && stat -c '%y %s %n' /tmp/irwb-022-i-bench-{cpu,gpu}.jsonl && cat /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 5300ms:
+15:59:37 EST
+2026-11-26 15:52:17.682091819 -0500 0 /tmp/irwb-022-i-bench-cpu.jsonl
+2026-11-26 15:57:56.504075210 -0500 944 /tmp/irwb-022-i-bench-gpu.jsonl
+
+exec
+/usr/bin/zsh -c 'tmux -S /tmp/irwb-022-i-verify.sock new-session -d -s tensor-cpu-short -c "$(pwd -P)" '"'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu softmax layernorm > /tmp/irwb-022-i-bench-cpu-short.jsonl 2> /tmp/irwb-022-i-bench-cpu-short.err; code="'$?; printf "%s'"\\n\" \""'$code" > /tmp/irwb-022-i-bench-cpu-short.exit'"' && tmux -S /tmp/irwb-022-i-verify.sock list-sessions" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -c 'tail -12 /tmp/irwb-022-i-final-tests.log && wc -l /tmp/irwb-022-i-bench-cpu.jsonl' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ exited 1 in 5925ms:
+tail: cannot open '/tmp/irwb-022-i-final-tests.log' for reading: No such file or directory
+
+ succeeded in 7262ms:
+tensor-cpu-short: 1 windows (created Thu Nov 26 16:00:03 2026)
+
+exec
+/usr/bin/zsh -c 'tmux -S /tmp/irwb-022-i-verify.sock list-sessions && wc -l /tmp/irwb-022-i-bench-cpu*.jsonl && tail -12 /tmp/irwb-022-i-final-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ exited 1 in 5719ms:
+no server running on /tmp/irwb-022-i-verify.sock
+
+exec
+/usr/bin/zsh -c "ls -l /tmp/irwb-022-i-{final-tests*,bench-cpu*}; date '+%H:%M:%S %Z'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3486ms:
+zsh:1: no matches found: /tmp/irwb-022-i-final-tests*
+16:00:46 EST
+
+exec
+/usr/bin/zsh -c 'tmux -S /tmp/irwb-022-i-verify-live.sock new-session -d -s tensor-verify -c "$(pwd -P)" '"'node --test tests/tensor/*.test.mjs > /tmp/irwb-022-i-final-tests.log 2>&1; code="'$?; printf "%s'"\\n\" \""'$code" > /tmp/irwb-022-i-final-tests.exit; tmux -S /tmp/irwb-022-i-verify-live.sock wait-for -S tensor-done'"' && tmux -S /tmp/irwb-022-i-verify-live.sock wait-for tensor-done && tail -16 /tmp/irwb-022-i-final-tests.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -c 'wc -l /tmp/irwb-022-i-bench-cpu.jsonl; if test -f /tmp/irwb-022-i-final-tests.log; then tail -8 /tmp/irwb-022-i-final-tests.log; fi' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -c 'if [ ! -s /tmp/irwb-022-i-bench-cpu.jsonl ]; then
+  tmux -S /tmp/irwb-022-i-cpu-live.sock new-session -d -s tensor-cpu-short -c "$(pwd -P)" '"'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu softmax layernorm > /tmp/irwb-022-i-bench-cpu-short.jsonl; code="'$?; printf "%s'"\\n\" \""'$code" > /tmp/irwb-022-i-bench-cpu-short.exit; tmux -S /tmp/irwb-022-i-cpu-live.sock wait-for -S cpu-done'"' && tmux -S /tmp/irwb-022-i-cpu-live.sock wait-for cpu-done && cat /tmp/irwb-022-i-bench-cpu-short.jsonl
+fi" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3229ms:
+0 /tmp/irwb-022-i-bench-cpu.jsonl
+✔ matmul agrees with the numerical oracle before and after optimization (222.329845ms)
+✔ softmax agrees with the numerical oracle before and after optimization (56.93871ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (47.526519ms)
+✔ attention agrees with the numerical oracle before and after optimization (366.801471ms)
+✔ mlp agrees with the numerical oracle before and after optimization (541.922395ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (11.428845ms)
+✔ GB10 checks matmul before and after optimization (10356.279543ms)
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu.jsonl /tmp/irwb-022-i-bench-cpu-short.jsonl; if test -f /tmp/irwb-022-i-final-tests.log; then tail -8 /tmp/irwb-022-i-final-tests.log; fi" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -c "node --input-type=module <<'EOF'
+import { readFileSync } from 'node:fs';
+import { compileTix, runTix } from './dist/tensor/index.js';
+const p = compileTix(readFileSync('corpus/tensor/matmul/main.tix', 'utf8'));
+const a = {shape:[16,512],data:new Float32Array(16*512).fill(0.125)};
+const b = {shape:[512,16],data:new Float32Array(512*16).fill(0.125)};
+const cpu = process.cpuUsage(); const wall = performance.now();
+const r = runTix(p,'matmul',{a,b});
+console.log(JSON.stringify({first:r.data[0],cpu:process.cpuUsage(cpu),wall:performance.now()-wall}));
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 4384ms:
+16:01:35 EST
+0 /tmp/irwb-022-i-bench-cpu.jsonl
+0 /tmp/irwb-022-i-bench-cpu-short.jsonl
+0 total
+✔ softmax agrees with the numerical oracle before and after optimization (56.93871ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (47.526519ms)
+✔ attention agrees with the numerical oracle before and after optimization (366.801471ms)
+✔ mlp agrees with the numerical oracle before and after optimization (541.922395ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (11.428845ms)
+✔ GB10 checks matmul before and after optimization (10356.279543ms)
+✔ GB10 checks softmax before and after optimization (10466.239652ms)
+✔ GB10 checks layernorm before and after optimization (10944.577548ms)
+
+ succeeded in 6448ms:
+{"first":8,"cpu":{"user":206102,"system":1121},"wall":1009.186142}
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu.jsonl /tmp/irwb-022-i-bench-cpu-short.jsonl; tail -10 /tmp/irwb-022-i-final-tests.log; cat /tmp/irwb-022-i-bench-cpu-short.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 4093ms:
+16:03:05 EST
+  0 /tmp/irwb-022-i-bench-cpu.jsonl
+  1 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  1 total
+✔ mlp agrees with the numerical oracle before and after optimization (541.922395ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (11.428845ms)
+✔ GB10 checks matmul before and after optimization (10356.279543ms)
+✔ GB10 checks softmax before and after optimization (10466.239652ms)
+✔ GB10 checks layernorm before and after optimization (10944.577548ms)
+✔ GB10 checks attention before and after optimization (11873.074264ms)
+✔ GB10 checks mlp before and after optimization (12001.03711ms)
+✔ GB10 checks conv2d before and after optimization (9324.63947ms)
+✔ GB10 preserves split rounding and a partial final block (16893.723884ms)
+✔ GB10 checks composed inline addresses and rejects a valid index mutant (10781.579804ms)
+{"name":"softmax","mode":"cpu","ms":61444.284287999995,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+
+ succeeded in 145526ms:
+✔ zero extents, empty reductions and shape values (24.10956ms)
+✔ affine shape normalization, annotations and multiple functions (1.4231ms)
+✔ invalid programs give source coordinates (17.674311ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (32.113651ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (28.785686ms)
+✔ passes compose across calls and preserve the source baseline (10.783959ms)
+✔ coverage required per function and screening is origin-only (16.916646ms)
+✔ exact comparison detects a changed zero sign (5.551842ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 137615.441903
+
+codex
+The GB10 kernel medians range from 0.164 ms to 1.050 ms. The first completed interpreter result, full-size softmax, produced the same output bytes as CUDA. I’m waiting on the larger interpreter workloads before recording the complete comparison.
+ succeeded in 191041ms:
+{"name":"softmax","mode":"cpu","ms":61444.284287999995,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"name":"layernorm","mode":"cpu","ms":113483.336384,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl; cat /tmp/irwb-022-i-bench-cpu*.jsonl; if test -f /tmp/irwb-022-i-final-tests.exit; then cat /tmp/irwb-022-i-final-tests.exit; tail -10 /tmp/irwb-022-i-final-tests.log; fi" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3333ms:
+16:04:50 EST
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  0 /tmp/irwb-022-i-bench-cpu.jsonl
+  2 total
+{"name":"softmax","mode":"cpu","ms":61444.284287999995,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"name":"layernorm","mode":"cpu","ms":113483.336384,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+0
+✔ coverage required per function and screening is origin-only (16.916646ms)
+✔ exact comparison detects a changed zero sign (5.551842ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 137615.441903
+
+exec
+/usr/bin/zsh -c "node --v8-options | rg -- 'always-turbofan|--jit-fuzzing|--optimize-on-next-call-optimizes-to-maglev|--maglev' | head -12; node -p 'require(\"node:os\").availableParallelism()'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 4157ms:
+  --maglev (enable the maglev optimizing compiler)
+        type: bool  default: --maglev
+  --maglev-future (enable maglev features that we want to ship in the not-too-far future (experimental))
+  --optimize-on-next-call-optimizes-to-maglev (make OptimizeFunctionOnNextCall optimize to maglev instead of turbofan)
+  --maglev-inlining (enable inlining in the maglev optimizing compiler)
+        type: bool  default: --maglev-inlining
+  --maglev-loop-peeling (enable loop peeling in the maglev optimizing compiler)
+        type: bool  default: --maglev-loop-peeling
+  --maglev-optimistic-peeled-loops (enable aggressive optimizations for loops (loop SPeeling) in the maglev optimizing compiler)
+        type: bool  default: --maglev-optimistic-peeled-loops
+  --maglev-loop-peeling-max-size (max loop size for loop peeling in the maglev optimizing compiler)
+        type: int  default: --maglev-loop-peeling-max-size=400
+8
+
+exec
+/usr/bin/zsh -c 'tmux -S /tmp/irwb-022-i-mlp.sock new-session -d -s tensor-mlp -c "$(pwd -P)" '"'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu mlp > /tmp/irwb-022-i-bench-cpu-mlp.jsonl; code="'$?; printf "%s'"\\n\" \""'$code" > /tmp/irwb-022-i-bench-cpu-mlp.exit; tmux -S /tmp/irwb-022-i-mlp.sock wait-for -S cpu-done'"' && tmux -S /tmp/irwb-022-i-mlp.sock wait-for cpu-done && cat /tmp/irwb-022-i-bench-cpu-mlp.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -c "cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md <<'EOF'
+
+## Verification
+
+"'`npm run build` compiled the fixed exports. `node --test tests/tensor/*.test.mjs` passed all 29 tests, including ten tests in the isolated GPU file. The local tests verify binary word handling, delegated batch order, reuse and retry. GB10 tests check original and reordered corpus IR, a half-ULP split witness, both valid CUDA mutants, nested binders, empty reductions and output shapes, nonfinite behavior, and a direct parameter return. The runner'"'s concurrent test verifies one compile for two isolated requests and a fresh compile when an included header changes.
+
+The lowering uses the existing transformation and differential APIs. No framework sources changed.
+EOF
+docmgr doc relate --doc ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md \\
+  --file-note \""'$(pwd -P)/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs:Reproduces the full-size timings and output digests" '"\\
+  --file-note \""'$(pwd -P)/tests/tensor/cuda-gpu.test.mjs:GB10 contract, mutation, and runner tests"
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 6628ms:
+related 2 file(s) to ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md (added 2, updated 0, removed 0)
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl; cat /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3733ms:
+16:06:58 EST
+  0 /tmp/irwb-022-i-bench-cpu-mlp.jsonl
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  2 /tmp/irwb-022-i-bench-cpu.jsonl
+  4 total
+{"name":"matmul","mode":"cpu","ms":781174.2961210001,"shape":[512,512],"outputSha256":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"name":"softmax","mode":"cpu","ms":61400.50276299997,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+
+exec
+/usr/bin/zsh -c 'tmux -S /tmp/irwb-022-i-conv.sock new-session -d -s tensor-conv -c "$(pwd -P)" '"'node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu conv2d > /tmp/irwb-022-i-bench-cpu-conv.jsonl; code="'$?; printf "%s'"\\n\" \""'$code" > /tmp/irwb-022-i-bench-cpu-conv.exit; tmux -S /tmp/irwb-022-i-conv.sock wait-for -S cpu-done'"' && tmux -S /tmp/irwb-022-i-conv.sock wait-for cpu-done && cat /tmp/irwb-022-i-bench-cpu-conv.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+codex
+All 29 tensor tests passed again on the committed implementation. The full-size matmul, softmax, and layernorm interpreter outputs match CUDA byte for byte. Matmul alone took about 13 minutes on the local host, so I’ve started the remaining long measurements in separate tmux sessions.
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl; cat /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3258ms:
+16:08:07 EST
+  0 /tmp/irwb-022-i-bench-cpu-conv.jsonl
+  0 /tmp/irwb-022-i-bench-cpu-mlp.jsonl
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  2 /tmp/irwb-022-i-bench-cpu.jsonl
+  4 total
+{"name":"matmul","mode":"cpu","ms":781174.2961210001,"shape":[512,512],"outputSha256":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"name":"softmax","mode":"cpu","ms":61400.50276299997,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl; tail -2 /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1307ms:
+16:09:31 EST
+  0 /tmp/irwb-022-i-bench-cpu-conv.jsonl
+  0 /tmp/irwb-022-i-bench-cpu-mlp.jsonl
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  3 /tmp/irwb-022-i-bench-cpu.jsonl
+  5 total
+{"name":"softmax","mode":"cpu","ms":61400.50276299997,"shape":[4096,1024],"outputSha256":"6e965523088d394fc6cf4742fa282ecfbac71cd47e412181aa9e0f8aadc5627b"}
+{"name":"layernorm","mode":"cpu","ms":103502.85987599997,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+
+exec
+/usr/bin/zsh -c "python3 - <<'PY'
+from pathlib import Path
+import json
+p=Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md')
+cpu = {}
+for source in ('short', 'conv', 'mlp', ''):
+    f = Path('/tmp/irwb-022-i-bench-cpu' + ('-' + source if source else '') + '.jsonl')
+    if f.exists():
+        for line in f.read_text().splitlines():
+            row = json.loads(line)
+            cpu[row['name']] = row
+gpu = [json.loads(line) for line in Path('/tmp/irwb-022-i-bench-gpu.jsonl').read_text().splitlines()]
+lines = ['## Results', '', '| Program | Output shape | Interpreter wall ms | GB10 kernel ms | f32 output bytes |',
+         '| --- | --- | ---: | ---: | --- |']
+for row in gpu:
+    name = row['name']
+    shape = ' × '.join(map(str, row['shape']))
+    baseline = cpu.get(name)
+    elapsed = f\"{baseline['ms']:,.3f}\" if baseline else 'running'
+    equal = 'equal' if baseline and baseline['outputSha256'] == row['outputSha256'] and baseline['shape'] == row['shape'] else 'pending'
+    lines.append(f\"| {name} | {shape} | {elapsed} | {row['ms']:.6f} | {equal} |\")
+s = p.read_text()
+s = s.replace('## Method\\n', '\\n'.join(lines) + '\\n\\n## Method\\n')
+p.write_text(s)
+PY
+git diff --check && git status --short" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 3175ms:
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+
+exec
+/usr/bin/zsh -c "node --v8-options | rg -N -- '--(always-turbofan|maglev-as-top-tier|turbofan-inlining|turbo-loop-peeling)'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1992ms:
+  --turbo-loop-peeling (TurboFan loop peeling)
+        type: bool  default: --turbo-loop-peeling
+  --always-turbofan (always try to optimize functions)
+
+exec
+/usr/bin/zsh -c 'for variant in default turbofan; do
+  if [ "$variant" = turbofan ]; then
+    set -- --always-turbofan --no-maglev
+  else
+    set --
+  fi
+  node "$@" --input-type=module - "$variant" <<'"'EOF'
+import { readFileSync } from 'node:fs';
+import { compileTix, runTix } from './dist/tensor/index.js';
+const p = compileTix(readFileSync('corpus/tensor/matmul/main.tix', 'utf8'));
+function run(n) {
+  return runTix(p, 'matmul', {
+    a: {shape:[n,512],data:new Float32Array(n*512).fill(0.125)},
+    b: {shape:[512,n],data:new Float32Array(512*n).fill(0.125)}
+  });
+}
+run(16);
+const cpu = process.cpuUsage();
+const r = run(32);
+console.log(JSON.stringify({variant:process.argv[2],first:r.data[0],cpu:process.cpuUsage(cpu)}));
+EOF
+done" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 9519ms:
+{"variant":"default","first":8,"cpu":{"user":760637,"system":469}}
+{"variant":"turbofan","first":8,"cpu":{"user":794215,"system":3797}}
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1389ms:
+16:11:52 EST
+  0 /tmp/irwb-022-i-bench-cpu-conv.jsonl
+  0 /tmp/irwb-022-i-bench-cpu-mlp.jsonl
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  3 /tmp/irwb-022-i-bench-cpu.jsonl
+  5 total
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl; tail -1 /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1968ms:
+16:14:27 EST
+  0 /tmp/irwb-022-i-bench-cpu-conv.jsonl
+  0 /tmp/irwb-022-i-bench-cpu-mlp.jsonl
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  3 /tmp/irwb-022-i-bench-cpu.jsonl
+  5 total
+{"name":"layernorm","mode":"cpu","ms":103502.85987599997,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+
+exec
+/usr/bin/zsh -c "tmux -S /tmp/irwb-022-i-mlp.sock run-shell 'ps -o etime,time,pcpu,comm -C node > /tmp/irwb-022-i-mlp-progress'; cat /tmp/irwb-022-i-mlp-progress
+tmux -S /tmp/irwb-022-i-conv.sock run-shell 'ps -o etime,time,pcpu,comm -C node > /tmp/irwb-022-i-conv-progress'; cat /tmp/irwb-022-i-conv-progress" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1692ms:
+    ELAPSED     TIME %CPU COMMAND
+    ELAPSED     TIME %CPU COMMAND
+
+exec
+/usr/bin/zsh -c "tmux -S /tmp/irwb-022-i-mlp.sock run-shell 'ps -eo pid,etime,time,pcpu,comm > /tmp/irwb-022-i-mlp-progress'; cat /tmp/irwb-022-i-mlp-progress" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1582ms:
+    PID     ELAPSED     TIME %CPU COMMAND
+      1       09:46 00:00:00  0.0 codex
+      2       09:46 00:00:00  0.0 zsh
+    199       09:43 00:00:00  0.0 tmux: server
+    206       09:43 00:00:00  0.0 zsh
+    208       09:43 00:00:00  0.0 tmux: client
+    402       09:41 00:03:42 38.2 MainThread
+    415       00:00 00:00:00  0.0 sh
+    416       00:00 00:00:00  0.0 ps
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl; tail -1 /tmp/irwb-022-i-bench-cpu.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1324ms:
+16:16:28 EST
+  0 /tmp/irwb-022-i-bench-cpu-conv.jsonl
+  0 /tmp/irwb-022-i-bench-cpu-mlp.jsonl
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  3 /tmp/irwb-022-i-bench-cpu.jsonl
+  5 total
+{"name":"layernorm","mode":"cpu","ms":103502.85987599997,"shape":[4096,1024],"outputSha256":"9b4d9efe6573503991e38acde548e3be19d3c88ac3e0cd7acc623822fd49d5de"}
+
+exec
+/usr/bin/zsh -c "date '+%H:%M:%S %Z'; wc -l /tmp/irwb-022-i-bench-cpu*.jsonl; tail -1 /tmp/irwb-022-i-bench-cpu.jsonl; cat /tmp/irwb-022-i-bench-cpu-conv.jsonl" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1321ms:
+16:17:52 EST
+  0 /tmp/irwb-022-i-bench-cpu-conv.jsonl
+  0 /tmp/irwb-022-i-bench-cpu-mlp.jsonl
+  2 /tmp/irwb-022-i-bench-cpu-short.jsonl
+  4 /tmp/irwb-022-i-bench-cpu.jsonl
+  6 total
+{"name":"attention","mode":"cpu","ms":507205.50679799996,"shape":[1024,64],"outputSha256":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
+
+ exited 130 in 1567374ms:
+exec
+/usr/bin/zsh -c "cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md <<'EOF'
+
+## Step 4. Verify the committed backend and measure the corpus
+
+The final test rerun on "'`be85ba9` passed all 29 tensor tests. The six GPU measurements ran separately from those tests, one `--timed` invocation per function. Each invocation warmed up once and took the median of three CUDA event intervals with the generated kernels preloaded.
+
+The interpreter runs the same full-size input recipe. The original serial benchmark captured matmul, softmax, layernorm and attention. I stopped it after the attention record so it would not repeat the separately started MLP and conv2d measurements. The long CPU jobs use tmux and overlap on the shared host, so their figures are observed wall times. A detached sandbox tmux launch exited with the sandbox before writing a log. Keeping the invoking shell active with `tmux wait-for` allowed the final tests and the split benchmark jobs to run and report their exit status.
+EOF
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1121ms:
+codex
+Attention’s full-size interpreter output also matches CUDA. Four CPU timings are now recorded. Conv2d and MLP are the remaining measurements, and both interpreter jobs are running.
+ succeeded in 778423ms:
+{"name":"conv2d","mode":"cpu","ms":767068.1466089999,"shape":[8,32,62,62],"outputSha256":"87ea2ac715c0b7721c5b5424fc73440c30129ca1db8ce6ff4c83e8db23617cdd"}
+
+exec
+/usr/bin/zsh -c "python3 - <<'PY'
+from pathlib import Path
+import json
+p=Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md')
+cpu = {}
+for tag in ('', '-conv'):
+    for line in Path(f'/tmp/irwb-022-i-bench-cpu{tag}.jsonl').read_text().splitlines():
+        row = json.loads(line)
+        cpu[row['name']] = row
+gpu = [json.loads(line) for line in Path('/tmp/irwb-022-i-bench-gpu.jsonl').read_text().splitlines()]
+for row in gpu:
+    baseline = cpu.get(row['name'])
+    if baseline:
+        assert (baseline['shape'], baseline['outputSha256']) == (row['shape'], row['outputSha256'])
+old = p.read_text()
+old = old.replace('| attention | 1024 × 64 | running | 1.049984 | pending |', '| attention | 1024 × 64 | 507,205.507 | 1.049984 | equal |')
+old = old.replace('| conv2d | 8 × 32 × 62 × 62 | running | 0.164352 | pending |', '| conv2d | 8 × 32 × 62 × 62 | 767,068.147 | 0.164352 | equal |')
+old = old.replace(\"It includes the interpreter's buffer handling and excludes compilation and input preparation.\", \"It includes the interpreter's buffer handling and excludes compilation and input preparation. These are observed wall times on a shared host. Some interpreter runs overlapped.\")
+p.write_text(old)
+PY
+tmux -S /tmp/irwb-022-i-mlp.sock run-shell 'ps -o etime,time,pcpu,comm -C MainThread > /tmp/irwb-022-i-mlp-progress'
+cat /tmp/irwb-022-i-mlp-progress" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1745ms:
+    ELAPSED     TIME %CPU COMMAND
+      16:09 00:07:42 47.7 MainThread
+
+codex
+Conv2d finished and its output bytes match CUDA as well. MLP is the only interpreter run still active. It evaluates two dense products totaling more than 536 million multiply-and-accumulate terms.
+ succeeded in 1291915ms:
+{"name":"mlp","mode":"cpu","ms":1285227.802586,"shape":[1024,256],"outputSha256":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
+
+codex
+MLP finished. All six full-size CPU and CUDA outputs have matching shapes and byte digests. I’ll record the timing table and commit the benchmark report.
+exec
+/usr/bin/zsh -c "python3 - <<'PY'
+from pathlib import Path
+import json
+ticket = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine')
+report = ticket / 'reference/02-cuda-lowering-verification-and-corpus-timings.md'
+cpu = {}
+for tag in ('', '-conv', '-mlp'):
+    log = Path(f'/tmp/irwb-022-i-bench-cpu{tag}.jsonl')
+    for line in log.read_text().splitlines():
+        row = json.loads(line)
+        assert row['mode'] == 'cpu' and row['name'] not in cpu
+        cpu[row['name']] = row
+gpu = [json.loads(line) for line in Path('/tmp/irwb-022-i-bench-gpu.jsonl').read_text().splitlines()]
+assert len(gpu) == len(cpu) == 6
+rows = ['## Results', '', '| Program | Output shape | Interpreter wall ms | GB10 kernel ms | f32 output bytes |',
+        '| --- | --- | ---: | ---: | --- |']
+for row in gpu:
+    name = row['name']
+    baseline = cpu[name]
+    assert row['mode'] == 'gpu'
+    assert baseline['shape'] == row['shape']
+    assert baseline['outputSha256'] == row['outputSha256']
+    shape = ' × '.join(map(str, row['shape']))
+    rows.append(f\"| {name} | {shape} | {baseline['ms']:,.3f} | {row['ms']:.6f} | equal |\")
+s = report.read_text()
+s = s[:s.index('## Results')] + '\\n'.join(rows) + '\\n\\nAll six output shapes and SHA-256 digests matched. The equality is for the measured inputs. The lowering contract remains a sampled tolerance against f64.\\n\\n' + s[s.index('## Method'):]
+report.write_text(s)
+index = ticket / 'index.md'
+s = index.read_text().replace(
+    'The design and probe are ready for review. Implementation and corpus measurements follow that review.',
+    'The reviewed lowering is implemented, tested and measured on the six corpus workloads.',
+)
+s = s.replace('- [Diary and probe evidence]', '- [Verification and corpus timings](reference/02-cuda-lowering-verification-and-corpus-timings.md)\\n- [Diary and probe evidence]')
+index.write_text(s)
+PY
+cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md <<'EOF'
+
+The [timing report](02-cuda-lowering-verification-and-corpus-timings.md) records all six CPU and GPU results and links the replay script. CPU and GPU shapes and byte digests matched on every measured case. MLP was the last interpreter job to finish and took 1,285,227.803 ms. Its median GPU kernel interval was 0.957664 ms.
+EOF
+docmgr task check --ticket IRWB-022-I --id k7o1 &&
+docmgr changelog update --ticket IRWB-022-I \\
+  --entry 'Recorded all six full-size corpus timing pairs and matching f32 output digests. The final focused suite passed 29 tests.' \\
+  --file-note \""'$(pwd -P)/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md:Benchmark method, test coverage and measured timings" &&
+docmgr doctor --ticket IRWB-022-I --stale-after 30 &&
+git diff --check &&
+sed -n '"'26,49p' ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 5096ms:
+Task checked: k7o1 (file=/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md)
+All tasks complete! Consider closing the ticket: docmgr ticket close --ticket IRWB-022-I
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+## Doctor Report (1 findings)
+
+### IRWB-022-I
+
+- ✅ All checks passed
+
+## Results
+
+| Program | Output shape | Interpreter wall ms | GB10 kernel ms | f32 output bytes |
+| --- | --- | ---: | ---: | --- |
+| matmul | 512 × 512 | 781,174.296 | 0.215200 | equal |
+| softmax | 4096 × 1024 | 61,400.503 | 0.800064 | equal |
+| layernorm | 4096 × 1024 | 103,502.860 | 0.484736 | equal |
+| attention | 1024 × 64 | 507,205.507 | 1.049984 | equal |
+| mlp | 1024 × 256 | 1,285,227.803 | 0.957664 | equal |
+| conv2d | 8 × 32 × 62 × 62 | 767,068.147 | 0.164352 | equal |
+
+All six output shapes and SHA-256 digests matched. The equality is for the measured inputs. The lowering contract remains a sampled tolerance against f64.
+
+## Method
+
+The [benchmark script](../scripts/03-benchmark-cuda.mjs) runs the original six Tix functions at the requested shapes. It resets the framework's seeded generator to seed 20 for each function and fills its inputs in declaration order with f32-rounded values in [-0.1, 0.1]. Layernorm uses eps = 1e-5. CPU and GPU runs regenerate identical input words.
+
+The CPU measurement covers one Stage 1 f32 `runTix` call on an Intel Core i7-1165G7 with Node 24.18.0. It includes the interpreter's buffer handling and excludes compilation and input preparation. These are observed wall times on a shared host. Some interpreter runs overlapped. The GB10 uses CUDA 13.0.88, sm_121, `nvcc -O3`, and one `--timed` request per program. The executable preloads kernels, runs one warmup and records the median of three CUDA-event intervals spanning the launches on one stream. Transfers, setup, compilation and SSH are outside that interval. Ordinary callers retain the remote tool's untimed behavior, so an unrelated untimed GPU run can still overlap a measurement.
+
+From the worktree root, run both halves with the same build:
+
+```sh
+npm run build
+node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu
+
+exec
+/usr/bin/zsh -c "git add -- ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/tasks.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs && git diff --cached --check && git commit -m 'IRWB-022-I: record CUDA corpus verification and timings'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1059ms:
+[t2-sh/irwb-022-i dd8b7b6] IRWB-022-I: record CUDA corpus verification and timings
+ 6 files changed, 131 insertions(+), 2 deletions(-)
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+
+exec
+/usr/bin/zsh -c "git status --short --branch && git log -4 --format='%h %s' && git diff --name-only c7fc6d4 HEAD -- src/framework" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 867ms:
+## t2-sh/irwb-022-i
+dd8b7b6 IRWB-022-I: record CUDA corpus verification and timings
+be85ba9 IRWB-022-I: implement checked Tix to CUDA lowering
+31c3b33 IRWB-022-I: apply lowering design review
+c7fc6d4 IRWB-022-I: design checked Tix to CUDA lowering
+
+codex
+Implemented IRWB-022-I. The [Tix API](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/src/tensor/index.ts) now exports `cudaSource`, `runTixCuda`, and `checkLowering`. The backend lowers both original and optimized Tix IR, preloads kernels before timing, and checks the GPU output against the f64 reference in a single batch.
+
+**Framework changes:** none. The pass uses the existing transformation and differential APIs for batching and evidence reuse. The [remote runner](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/tools/cuda-remote.mjs) now isolates each invocation and reuses compiled binaries when only runtime inputs change.
+
+`npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed all **29 tests**, including rejection of the transposed-index and dropped-tail CUDA mutants. All six full-size CPU and GPU output digests matched. GB10 kernel medians ranged from **0.164 to 1.050 ms**. The [timing report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md) records every CPU and GPU timing.
+
+The backend followed the revised design. Some interpreter measurements overlapped on the shared host, so the report identifies them as observed wall times.
+
+Local commits are `31c3b33` for the design revision, `be85ba9` for implementation and tests, and `dd8b7b6` for verification and timings. The worktree is clean.
+tokens used
+325,995
+Implemented IRWB-022-I. The [Tix API](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/src/tensor/index.ts) now exports `cudaSource`, `runTixCuda`, and `checkLowering`. The backend lowers both original and optimized Tix IR, preloads kernels before timing, and checks the GPU output against the f64 reference in a single batch.
+
+**Framework changes:** none. The pass uses the existing transformation and differential APIs for batching and evidence reuse. The [remote runner](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/tools/cuda-remote.mjs) now isolates each invocation and reuses compiled binaries when only runtime inputs change.
+
+`npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed all **29 tests**, including rejection of the transposed-index and dropped-tail CUDA mutants. All six full-size CPU and GPU output digests matched. GB10 kernel medians ranged from **0.164 to 1.050 ms**. The [timing report](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md) records every CPU and GPU timing.
+
+The backend followed the revised design. Some interpreter measurements overlapped on the shared host, so the report identifies them as observed wall times.
+
+Local commits are `31c3b33` for the design revision, `be85ba9` for implementation and tests, and `dd8b7b6` for verification and timings. The worktree is clean.

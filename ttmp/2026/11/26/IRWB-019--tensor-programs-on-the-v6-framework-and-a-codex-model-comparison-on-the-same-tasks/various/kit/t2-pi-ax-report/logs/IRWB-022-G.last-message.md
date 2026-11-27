@@ -1,0 +1,9 @@
+**Report:** [reference/02-report.md](ttmp/2026/11/26/IRWB-022-G--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/reference/02-report.md)  
+**Commit:** `6e4fa93c097cf6a879a0e0e74d5e60138112ddf8`. The evaluated implementation is unchanged.
+
+- `expf` (`src/tensor/cuda-source.ts:19`) causes the softmax and attention differences: a changed exponential propagates through normalization and, in attention, the weighted sum.
+- `tanhf` (`src/tensor/cuda-source.ts:21`) causes the MLP differences: a changed GELU activation propagates through the second affine layer.
+- `logf` (`src/tensor/cuda-source.ts:20`) differed on 902 of 16,385 probe inputs. No corpus fixture uses it; the aggregate random-suite results do not identify which intrinsic each of the four differing programs used.
+- Separate f32 product and fold rounding (`src/tensor/cuda-source.ts:15,122`) explains why even bit-identical GPU and f32 results can differ from f64. `split-sum` changes grouping relative to the origin, not relative to the optimized f32 comparator.
+
+**Relation:** Of the two whole-language API choices, sampled `tolerance` is justified for the shipped emitter: concrete float-library counterexamples rule out `exact`. The evidence does not show that the tolerance constants are tight. In one untimed GB10 job, changing only the suspect call to double followed by immediate f32 rounding eliminated every mismatch on fresh original and optimized softmax, attention and MLP cases, and on the log grid. The coordinator’s exhaustive intrinsic comparison supports targeting exactness **to the current revision’s f32 meaning** with those different calls on GB10, comparing NaNs as a class. It does not establish exactness for the shipped calls or equality to the unsplit origin.

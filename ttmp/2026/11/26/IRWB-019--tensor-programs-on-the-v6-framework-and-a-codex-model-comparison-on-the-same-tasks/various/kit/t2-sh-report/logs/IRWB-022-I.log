@@ -1,0 +1,2013 @@
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a2197b-ef8d-79b0-95b8-ebc1f0fa9c5f
+--------
+user
+Stage 2 of IRWB-022-I has been evaluated independently, at your last commit. Your results:
+
+- **Stage-1 hidden suite:** 25/25 passed. The three API functions are exported.
+- **Corpus programs, small sizes, through `runTixCuda`:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.2e-7
+  - softmax: 76/76 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 5.3e-8
+  - layernorm: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 1.3e-7
+  - attention: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 6.6e-8
+  - mlp: 24/24 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.6e-7
+  - conv: 160/160 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.1e-7
+- **After `optimizeTix(p, ['inline', 'split-sum'])`, compared with your own f32 run of the optimized program:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 2.2e-7
+  - softmax: 76/76 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 4.9e-8
+  - attention: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 6.0e-8
+  - mlp: 24/24 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 4.6e-7
+- **20 random programs from the fixed core:** 20/20 bit-identical to the f32 meaning on every element; largest difference 0.
+- **Corpus at the brief's sizes:**
+  - matmul: 262144/262144 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.197
+  - softmax: 4194304/4194304 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.785
+  - layernorm: 4194304/4194304 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.563
+  - attention: 65536/65536 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 1.810
+  - mlp: 262144/262144 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 1.051
+  - conv: 984064/984064 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.341
+- **`checkLowering` on the six corpus programs and ten random ones:** accepted 16/16, relation tolerance, 2.5 s per check on average.
+- **Independently of your work,** the coordinator compared CUDA's double-precision `exp`, `log` and `tanh`, rounded to f32 (`__double2float_rn(exp((double)x))` and so on), with the f32 meaning's `Math.fround(Math.exp(x))` and so on, for all 2³² f32 inputs on the GB10. They agree on every input, with NaN compared as a class. In IEEE mode, `+ − * /` and `sqrtf` are correctly rounded, and the f32 meaning rounds each of them in the same way.
+
+In this turn, do not change any code under `src/`, `tests/`, `corpus/` or `tools/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every result above that is not bit-identical, find which operation in your emitted code causes the difference and state it with `file:line` in your diary. Reproduce it with a short script or GPU probe in your ticket's `scripts/` if that helps; keep GPU runs few and untimed. Then state, in one paragraph, whether the relation your contract checks is the strongest one your implementation and the evidence above support, and why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - the lowering and the emitted CUDA (with a short excerpt);
+   - the form you chose (kernel IR or direct emission) and why;
+   - the contract: relation, cases, batching and reuse, and the probe behind the relation;
+   - each framework and tool change and why it was needed;
+   - the timing method and the measured times;
+   - how you checked the work;
+   - the evaluation results above, including every difference and its cause;
+   - what you would do differently.
+
+   Write prose first, with at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-022-I:`). Final message: the report's path, the commit hash, one line per difference cause, and your one-paragraph answer on the relation.
+codex
+I’ll trace the reported differences to the emitted operations, then write the publication report and update the diary. I’ll keep the evaluated code unchanged.
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git rev-parse --short HEAD && ls ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference && tail -62 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md && cat ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-cuda-lowering-verification-and-corpus-timings.md' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "for file in corpus/tensor/*/main.tix; do printf '\\n%s\\n' \""'$file"; nl -ba "$file"; done && nl -ba src/tensor/index.ts && nl -ba tools/cuda-remote.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'nl -ba src/tensor/cuda-source.ts; nl -ba src/tensor/cuda-contract.ts; nl -ba src/tensor/evaluate.ts' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 308ms:
+     1	import { plain, visit, width, type Affine, type Expr, type Fn, type Tensor } from './model.js';
+     2	
+     3	const support = String.raw`
+     4	#include <cuda_runtime.h>
+     5	#include <algorithm>
+     6	#include <array>
+     7	#include <cmath>
+     8	#include <cstdint>
+     9	#include <cstdio>
+    10	#include <cstring>
+    11	#include <memory>
+    12	#include <stdexcept>
+    13	#include <vector>
+    14	
+    15	using I = int64_t;
+    16	using U = uint64_t;
+    17	
+    18	static void check(cudaError_t status) {
+    19	  if (status != cudaSuccess) throw std::runtime_error(cudaGetErrorString(status));
+    20	}
+    21	
+    22	__device__ static float minmax(float a, float b, bool maximum) {
+    23	  if (isnan(a) || isnan(b)) return __uint_as_float(0x7fc00000);
+    24	  if (a == b) {
+    25	    unsigned x = __float_as_uint(a), y = __float_as_uint(b);
+    26	    return __uint_as_float(maximum ? x & y : x | y);
+    27	  }
+    28	  return (maximum ? a > b : a < b) ? a : b;
+    29	}
+    30	
+    31	struct DeviceBuffer {
+    32	  float* ptr = nullptr;
+    33	  U size;
+    34	  explicit DeviceBuffer(U n) : size(n) {
+    35	    if (size) check(cudaMalloc(&ptr, size * sizeof(float)));
+    36	  }
+    37	  ~DeviceBuffer() { if (ptr) cudaFree(ptr); }
+    38	  DeviceBuffer(const DeviceBuffer&) = delete;
+    39	  void upload(const float* src) const {
+    40	    if (size) check(cudaMemcpy(ptr, src, size * sizeof(float), cudaMemcpyHostToDevice));
+    41	  }
+    42	  void download(float* dst) const {
+    43	    if (size) check(cudaMemcpy(dst, ptr, size * sizeof(float), cudaMemcpyDeviceToHost));
+    44	  }
+    45	};
+    46	
+    47	template <size_t N> static U elements(const std::array<I, N>& shape) {
+    48	  U n = 1;
+    49	  for (I extent : shape) n *= static_cast<U>(extent);
+    50	  return n;
+    51	}
+    52	
+    53	template <class T> static void read(FILE* file, T* ptr, size_t count) {
+    54	  if (count && fread(ptr, sizeof(T), count, file) != count) throw std::runtime_error("short CUDA request");
+    55	}
+    56	
+    57	template <class T> static void write(FILE* file, const T* ptr, size_t count) {
+    58	  if (count && fwrite(ptr, sizeof(T), count, file) != count) throw std::runtime_error("short CUDA response");
+    59	}
+    60	
+    61	struct Event {
+    62	  cudaEvent_t handle;
+    63	  Event() { check(cudaEventCreate(&handle)); }
+    64	  ~Event() { cudaEventDestroy(handle); }
+    65	};
+    66	
+    67	template <class Launch> static double time_kernels(const Launch& launch, bool benchmark) {
+    68	  Event start, stop;
+    69	  if (benchmark) {
+    70	    launch();
+    71	    check(cudaDeviceSynchronize());
+    72	  }
+    73	  std::array<float, 3> ms{};
+    74	  const int repeats = benchmark ? ms.size() : 1;
+    75	  for (int i = 0; i < repeats; ++i) {
+    76	    check(cudaEventRecord(start.handle));
+    77	    launch();
+    78	    check(cudaEventRecord(stop.handle));
+    79	    check(cudaEventSynchronize(stop.handle));
+    80	    check(cudaEventElapsedTime(&ms[i], start.handle, stop.handle));
+    81	  }
+    82	  if (benchmark) std::sort(ms.begin(), ms.end());
+    83	  return ms[repeats / 2];
+    84	}
+    85	`;
+    86	
+    87	const main = String.raw`
+    88	int main(int argc, char** argv) {
+    89	  try {
+    90	    using File = std::unique_ptr<FILE, decltype(&fclose)>;
+    91	    File input(fopen("inputs.bin", "rb"), fclose);
+    92	    File output(fopen("out/results.bin", "wb"), fclose);
+    93	    if (!input || !output) throw std::runtime_error("cannot open CUDA request or response");
+    94	    const char magic[] = "TIXCUDA1";
+    95	    char header[8];
+    96	    read(input.get(), header, sizeof(header));
+    97	    if (memcmp(header, magic, sizeof(header))) throw std::runtime_error("bad CUDA request header");
+    98	    U count;
+    99	    read(input.get(), &count, 1);
+   100	    write(output.get(), magic, sizeof(header));
+   101	    write(output.get(), &count, 1);
+   102	    const bool benchmark = argc == 2 && strcmp(argv[1], "--benchmark") == 0;
+   103	    for (U i = 0; i < count; ++i) run_case(input.get(), output.get(), benchmark);
+   104	    if (fgetc(input.get()) != EOF || ferror(input.get())) throw std::runtime_error("trailing CUDA request data");
+   105	    if (fclose(output.release())) throw std::runtime_error("cannot close CUDA response");
+   106	    return 0;
+   107	  } catch (const std::exception& error) {
+   108	    fprintf(stderr, "%s\n", error.what());
+   109	    return 1;
+   110	  }
+   111	}
+   112	`;
+   113	
+   114	function affine(a: Affine, name: (key: string) => string): string {
+   115	  const terms = a.terms.map(([key, coefficient]) =>
+   116	    coefficient === 1 ? name(key) : `${coefficient}LL * ${name(key)}`,
+   117	  );
+   118	  if (a.constant || !terms.length) terms.unshift(`${a.constant}LL`);
+   119	  return `(${terms.join(' + ')})`;
+   120	}
+   121	
+   122	function literal(text: string): string {
+   123	  const bytes = new DataView(new ArrayBuffer(4));
+   124	  bytes.setFloat32(0, Number(text));
+   125	  return `__uint_as_float(0x${bytes.getUint32(0).toString(16)}u)`;
+   126	}
+   127	
+   128	function emitKernel(
+   129	  statement: Fn['statements'][number],
+   130	  kernel: string,
+   131	  dimensions: ReadonlyMap<string, string>,
+   132	  tensors: ReadonlyMap<string, Tensor>,
+   133	  tensorName: (name: string) => string,
+   134	) {
+   135	  const reads = new Set<string>();
+   136	  visit(statement.expr, e => {
+   137	    if (e.kind === 'load') reads.add(e.name);
+   138	  });
+   139	  const args = [...dimensions.values(), ...Array.from(reads, tensorName), tensorName(statement.name)];
+   140	  const params = [
+   141	    ...Array.from(dimensions.values(), d => `I ${d}`),
+   142	    ...Array.from(reads, t => `const float* ${tensorName(t)}`),
+   143	    'float* result',
+   144	    'U count',
+   145	  ];
+   146	  const lines = [`__global__ void ${kernel}(${params.join(', ')}) {`];
+   147	  let indent = '  ',
+   148	    next = 0;
+   149	  const line = (code: string) => lines.push(indent + code);
+   150	  const dim = (a: Affine) => affine(a, n => dimensions.get(n)!);
+   151	  const indices = new Map<string, string>();
+   152	  const bind = (id: string) => {
+   153	    const name = `i${indices.size}`;
+   154	    indices.set(id, name);
+   155	    return name;
+   156	  };
+   157	  const index = (id: string) => indices.get(id)!;
+   158	  line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
+   159	  line('if (thread >= count) return;');
+   160	  line('U coordinate = thread;');
+   161	  for (let i = statement.axes.length - 1; i >= 0; --i) {
+   162	    const axis = bind(statement.axes[i].id);
+   163	    line(`const I ${axis} = coordinate % ${dim(statement.shape[i])};`);
+   164	    if (i > 0) line(`coordinate /= ${dim(statement.shape[i])};`);
+   165	  }
+   166	
+   167	  const temporary = (code: string) => {
+   168	    const name = `v${next++}`;
+   169	    line(`float ${name} = ${code};`);
+   170	    return name;
+   171	  };
+   172	
+   173	  function scalar(e: Expr): string {
+   174	    switch (e.kind) {
+   175	      case 'literal':
+   176	        return literal(e.text);
+   177	      case 'shape':
+   178	        return `__ll2float_rn(${dimensions.get(e.name)!})`;
+   179	      case 'load': {
+   180	        const shape = tensors.get(e.name)!.shape;
+   181	        const offset = e.indices.reduce(
+   182	          (prior, a, i) => (i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index)),
+   183	          '',
+   184	        );
+   185	        return `${tensorName(e.name)}[${offset}]`;
+   186	      }
+   187	      case 'op': {
+   188	        const [a, b] = e.args.map(scalar);
+   189	        switch (e.op) {
+   190	          case '+':
+   191	            return temporary(`__fadd_rn(${a}, ${b})`);
+   192	          case '-':
+   193	            return temporary(`__fsub_rn(${a}, ${b})`);
+   194	          case '*':
+   195	            return temporary(`__fmul_rn(${a}, ${b})`);
+   196	          case '/':
+   197	            return temporary(`__fdiv_rn(${a}, ${b})`);
+   198	          case 'neg':
+   199	            return temporary(`-(${a})`);
+   200	          case 'sqrt':
+   201	            return temporary(`__fsqrt_rn(${a})`);
+   202	          case 'exp':
+   203	          case 'log':
+   204	          case 'tanh':
+   205	            return temporary(`__double2float_rn(${e.op}(static_cast<double>(${a})))`);
+   206	          case 'max':
+   207	          case 'min':
+   208	            return temporary(`minmax(${a}, ${b}, ${e.op === 'max'})`);
+   209	        }
+   210	      }
+   211	      case 'reduce': {
+   212	        const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
+   213	        for (const { id, extent } of e.axes) {
+   214	          const axis = bind(id),
+   215	            n = dim(extent.dim);
+   216	          let bound = n;
+   217	          if (extent.kind === 'blocks') {
+   218	            const tail = extent.rounding === 'ceil' ? ` + (${n} % ${width} != 0)` : '';
+   219	            bound = `${n} / ${width}${tail}`;
+   220	          }
+   221	          if (extent.kind === 'tail') {
+   222	            const remaining = `(${n} - ${width}LL * ${index(extent.block)})`;
+   223	            bound = `(${remaining} < ${width}LL ? ${remaining} : ${width}LL)`;
+   224	          }
+   225	          line(`const I end_${axis} = ${bound};`);
+   226	          line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
+   227	          indent += '  ';
+   228	        }
+   229	        const value = scalar(e.body);
+   230	        line(
+   231	          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
+   232	        );
+   233	        for (const _axis of e.axes) {
+   234	          indent = indent.slice(2);
+   235	          line('}');
+   236	        }
+   237	        return acc;
+   238	      }
+   239	    }
+   240	  }
+   241	  const result = scalar(statement.expr);
+   242	  line(`result[thread] = ${result};`);
+   243	  lines.push('}');
+   244	  const count = `${tensorName(statement.name)}.size`;
+   245	  return {
+   246	    code: lines.join('\n'),
+   247	    preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
+   248	    hasWork: count,
+   249	    launch: `    if (${count}) {
+   250	      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')}, ${count});
+   251	      check(cudaGetLastError());
+   252	    }`,
+   253	  };
+   254	}
+   255	
+   256	export function emitCuda(fn: Fn): string {
+   257	  const all = [...fn.params, ...fn.statements];
+   258	  const tensors = new Map(all.map(t => [t.name, t]));
+   259	  const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
+   260	  const name = (key: string) => names.get(key)!;
+   261	  const dims = new Map<string, string>(),
+   262	    bindings: string[] = [];
+   263	  for (const p of fn.params) {
+   264	    for (const [i, a] of p.shape.entries()) {
+   265	      const key = plain(a);
+   266	      if (key === undefined || dims.has(key)) continue;
+   267	      const d = `d${dims.size}`;
+   268	      dims.set(key, d);
+   269	      bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
+   270	    }
+   271	  }
+   272	  const kernels = fn.statements.map((s, i) => emitKernel(s, `k${i}`, dims, tensors, name));
+   273	  const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
+   274	  for (const p of fn.params) {
+   275	    const t = name(p.name);
+   276	    host.push(
+   277	      `  std::array<I, ${p.shape.length}> shape_${t};`,
+   278	      `  read(input, shape_${t}.data(), shape_${t}.size());`,
+   279	      `  std::vector<float> host_${t}(elements(shape_${t}));`,
+   280	      `  read(input, host_${t}.data(), host_${t}.size());`,
+   281	    );
+   282	  }
+   283	  const result = name(fn.result);
+   284	  let buffer = `host_${result}`;
+   285	  host.push('  double gpu_ms = 0;');
+   286	  if (kernels.length) {
+   287	    host.push(...bindings);
+   288	    for (const p of fn.params) {
+   289	      const t = name(p.name);
+   290	      host.push(`  DeviceBuffer ${t}(host_${t}.size());`, `  ${t}.upload(host_${t}.data());`);
+   291	    }
+   292	    for (const s of fn.statements) {
+   293	      const t = name(s.name);
+   294	      const dimsText = s.shape.map(a => affine(a, key => dims.get(key)!)).join(', ');
+   295	      host.push(
+   296	        `  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`,
+   297	        `  DeviceBuffer ${t}(elements(shape_${t}));`,
+   298	      );
+   299	    }
+   300	    host.push(
+   301	      '  cudaFuncAttributes attributes;',
+   302	      ...kernels.map(k => k.preload),
+   303	      `  if (${kernels.map(k => k.hasWork).join(' || ')}) gpu_ms = time_kernels([&] {`,
+   304	      ...kernels.map(k => k.launch),
+   305	      '  }, benchmark);',
+   306	    );
+   307	    if (fn.statements.some(s => s.name === fn.result)) {
+   308	      buffer = `host_${result}`;
+   309	      host.push(`  std::vector<float> ${buffer}(${result}.size);`, `  ${result}.download(${buffer}.data());`);
+   310	    }
+   311	  }
+   312	  host.push(
+   313	    `  write(output, shape_${result}.data(), shape_${result}.size());`,
+   314	    `  write(output, ${buffer}.data(), ${buffer}.size());`,
+   315	    '  write(output, &gpu_ms, 1);',
+   316	    '}',
+   317	  );
+   318	  return [support, ...kernels.map(k => k.code), host.join('\n'), main].join('\n\n');
+   319	}
+     1	import {
+     2	  AnalysisManager,
+     3	  ContractError,
+     4	  createArtifact,
+     5	  defineIR,
+     6	  defineTransformation,
+     7	  defineType,
+     8	  differential,
+     9	  type Decided,
+    10	  type DifferentialEvidence,
+    11	} from '../framework/contracts/index.js';
+    12	import type { Artifact } from '../framework/core/types.js';
+    13	import { coordinate, cudaCases, seed } from './contract.js';
+    14	import { runCudaBatch } from './cuda-runtime.js';
+    15	import { emitCuda } from './cuda-source.js';
+    16	import type { BufferValue } from './evaluate.js';
+    17	import { TixIR } from './ir.js';
+    18	import { selectFunction, type Module } from './model.js';
+    19	
+    20	interface CudaUnit {
+    21	  fn: string;
+    22	  source: string;
+    23	}
+    24	
+    25	const CudaIR = defineIR<CudaUnit>({
+    26	  id: 'tensor.cuda-source',
+    27	  version: '1',
+    28	  description: 'Standalone CUDA translation unit for a Tix function',
+    29	  validate(value) {
+    30	    const unit = value as Partial<CudaUnit> | null;
+    31	    if (typeof unit?.fn !== 'string' || !unit.fn || typeof unit.source !== 'string' || !unit.source)
+    32	      throw Error('Invalid CUDA translation unit');
+    33	  },
+    34	});
+    35	const FunctionName = defineType<string>({
+    36	  id: 'tensor.function-name',
+    37	  version: '1',
+    38	  description: 'Name of the Tix function to lower',
+    39	  validate(name) {
+    40	    if (typeof name !== 'string' || !name) throw Error('Invalid Tix function name');
+    41	  },
+    42	});
+    43	
+    44	export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
+    45	  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
+    46	}
+    47	
+    48	function compare(expected: BufferValue, got: BufferValue) {
+    49	  if (expected.shape.length !== got.shape.length || expected.shape.some((n, i) => n !== got.shape[i]))
+    50	    return { ok: false, reason: 'Output shape differs' };
+    51	  if (expected.data.length !== got.data.length) return { ok: false, reason: 'Output length differs' };
+    52	  for (const [i, ref] of expected.data.entries()) {
+    53	    const actual = got.data[i];
+    54	    const tolerance = 2e-6 + 2e-5 * Math.abs(ref);
+    55	    const agrees = Number.isFinite(ref)
+    56	      ? Number.isFinite(actual) && Math.abs(actual - ref) <= tolerance
+    57	      : Object.is(actual, ref);
+    58	    if (!agrees) {
+    59	      const at = coordinate(expected.shape, i);
+    60	      const budget = Number.isFinite(ref) ? ` (tolerance ${tolerance})` : '';
+    61	      return { ok: false, reason: `At [${at}], expected ${ref}, got ${actual}${budget}` };
+    62	    }
+    63	  }
+    64	  return { ok: true };
+    65	}
+    66	
+    67	type CudaSample = ReturnType<typeof cudaCases>[number];
+    68	
+    69	export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
+    70	  const inputs = { baseline: TixIR, fn: FunctionName };
+    71	  const outputs = { subject: CudaIR };
+    72	  const ports = { ...inputs, ...outputs };
+    73	  const invariant = differential<typeof ports, CudaSample, BufferValue>({
+    74	    id: 'tensor.cuda-meaning',
+    75	    version: '1',
+    76	    description: 'Compare the lowered CUDA function to its current Tix f64 meaning',
+    77	    inputs: ports,
+    78	    baseline: 'baseline',
+    79	    subject: 'subject',
+    80	    // The recipe is shape-dependent and supplies its whole eligible case set.
+    81	    count: 1,
+    82	    seed,
+    83	    cases: ({ baseline, fn }, random) => {
+    84	      const samples = cudaCases(selectFunction(baseline.value, fn), random);
+    85	      if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
+    86	      return samples;
+    87	    },
+    88	    run: (side, _artifact, sample) => {
+    89	      if (side === 'baseline') return sample.reference;
+    90	      throw Error('CUDA checks require the batch executor');
+    91	    },
+    92	    compare,
+    93	    describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
+    94	    baselineKey: ({ baseline, fn }) => JSON.stringify([baseline.revision, fn]),
+    95	    subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
+    96	    async decide({ baseline, fn, subject }, cases, todo) {
+    97	      if (subject.value.fn !== fn)
+    98	        return todo.map(() => ({ v: 'disagree', reason: 'CUDA function differs' }));
+    99	      const pending = todo.map(i => cases[i]);
+   100	      const results = await executeBatch(
+   101	        subject.value.source,
+   102	        selectFunction(baseline.value, fn),
+   103	        pending.map(c => c.inputs),
+   104	      );
+   105	      if (results.length !== pending.length) throw Error('Wrong CUDA response case count');
+   106	      return pending.map((sample, i): Decided => {
+   107	        const result = compare(sample.reference, results[i]);
+   108	        return result.ok ? { v: 'agree' } : { v: 'disagree', reason: result.reason! };
+   109	      });
+   110	    },
+   111	  });
+   112	  const pass = defineTransformation({
+   113	    id: 'tensor.lower-cuda',
+   114	    version: '1',
+   115	    description: 'Lower a Tix function to CUDA and check the candidate on the GPU',
+   116	    inputs,
+   117	    outputs,
+   118	    cache: 'never',
+   119	    ensures: [
+   120	      {
+   121	        invariant,
+   122	        bindings: {
+   123	          baseline: { from: 'inputs', port: 'baseline' },
+   124	          fn: { from: 'inputs', port: 'fn' },
+   125	          subject: { from: 'outputs', port: 'subject' },
+   126	        },
+   127	      },
+   128	    ],
+   129	    run(_ctx, { baseline, fn }) {
+   130	      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+   131	    },
+   132	  });
+   133	
+   134	  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+   135	    const relation = 'tolerance' as const;
+   136	    const manager = new AnalysisManager();
+   137	    try {
+   138	      if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
+   139	      else await manager.execute(pass, { baseline, fn });
+   140	      return { accepted: true, relation };
+   141	    } catch (error) {
+   142	      const message = error instanceof Error ? error.message : String(error);
+   143	      if (error instanceof ContractError && error.code === 'postcondition') {
+   144	        const checks = manager.snapshot().executions.at(-1)?.checks;
+   145	        const evidence = checks?.find(check => check.phase === 'ensures')?.evidence as
+   146	          | DifferentialEvidence
+   147	          | undefined;
+   148	        const first = evidence?.counterexamples[0];
+   149	        const reason = first ? `${JSON.stringify(first.case)}: ${first.reason}` : message;
+   150	        return { accepted: false, relation, reason };
+   151	      }
+   152	      return { accepted: false, relation, reason: 'CUDA evidence unavailable: ' + message };
+   153	    }
+   154	  };
+   155	}
+   156	
+   157	export const checkCudaLowering = createCudaLowering('cuda-remote:sm_121:-O3');
+     1	import { plain, value, width, type Axis, type Expr, type Fn, type Op } from './model.js';
+     2	export interface BufferValue {
+     3	  shape: number[];
+     4	  data: Float32Array | Float64Array;
+     5	}
+     6	export type Inputs = Record<string, BufferValue>;
+     7	export type Precision = 'f32' | 'f64';
+     8	export const size = (shape: number[]) => shape.reduce((a, b) => a * b, 1);
+     9	const operations: Record<Op, (a: number, b: number) => number> = {
+    10	  '+': (a, b) => a + b,
+    11	  '-': (a, b) => a - b,
+    12	  '*': (a, b) => a * b,
+    13	  '/': (a, b) => a / b,
+    14	  neg: a => -a,
+    15	  exp: Math.exp,
+    16	  log: Math.log,
+    17	  sqrt: Math.sqrt,
+    18	  tanh: Math.tanh,
+    19	  max: Math.max,
+    20	  min: Math.min,
+    21	};
+    22	export class OutsideSample extends Error {}
+    23	// Limits apply only when selecting the contract's cases.
+    24	export function evaluate(fn: Fn, inputs: Inputs, precision: Precision, sampling = false): BufferValue {
+    25	  const ArrayType = precision === 'f32' ? Float32Array : Float64Array;
+    26	  const round = precision === 'f32' ? Math.fround : (x: number) => x;
+    27	  const shapes = new Map<string, number>(),
+    28	    indices = new Map<string, number>(),
+    29	    tensors = new Map<string, BufferValue>();
+    30	  let work = 0;
+    31	  function tick() {
+    32	    if (sampling && ++work > 1e6) throw new OutsideSample('Sample work limit');
+    33	  }
+    34	  for (const p of fn.params) {
+    35	    const input = inputs[p.name];
+    36	    p.shape.forEach((a, i) => {
+    37	      const n = plain(a);
+    38	      if (n) shapes.set(n, input.shape[i]);
+    39	    });
+    40	    tensors.set(p.name, { shape: input.shape, data: ArrayType.from(input.data) });
+    41	  }
+    42	  function loop(axes: Axis[], i: number, body: () => void) {
+    43	    if (i === axes.length) {
+    44	      body();
+    45	      return;
+    46	    }
+    47	    const { id, extent } = axes[i],
+    48	      dim = value(extent.dim, shapes);
+    49	    const n =
+    50	      extent.kind === 'blocks'
+    51	        ? Math[extent.rounding](dim / width)
+    52	        : extent.kind === 'tail'
+    53	          ? Math.min(width, dim - width * indices.get(extent.block)!)
+    54	          : dim;
+    55	    for (let j = 0; j < n; j++) {
+    56	      tick();
+    57	      indices.set(id, j);
+    58	      loop(axes, i + 1, body);
+    59	    }
+    60	  }
+    61	  function scalar(e: Expr): number {
+    62	    tick();
+    63	    switch (e.kind) {
+    64	      case 'literal':
+    65	        return round(Number(e.text));
+    66	      case 'shape':
+    67	        return round(shapes.get(e.name)!);
+    68	      case 'load': {
+    69	        const t = tensors.get(e.name)!;
+    70	        let offset = 0;
+    71	        for (let i = 0; i < e.indices.length; i++) {
+    72	          const ix = value(e.indices[i], indices);
+    73	          if (sampling && (ix < 0 || ix >= t.shape[i]))
+    74	            throw new OutsideSample('Sample outside address domain');
+    75	          offset = offset * t.shape[i] + ix;
+    76	        }
+    77	        return t.data[offset];
+    78	      }
+    79	      case 'op':
+    80	        return round(operations[e.op](scalar(e.args[0]), e.args.length === 2 ? scalar(e.args[1]) : 0));
+    81	      case 'reduce': {
+    82	        let acc = e.op === 'sum' ? 0 : -Infinity;
+    83	        loop(e.axes, 0, () => {
+    84	          const x = scalar(e.body);
+    85	          acc = round(e.op === 'sum' ? acc + x : Math.max(acc, x));
+    86	        });
+    87	        return acc;
+    88	      }
+    89	    }
+    90	  }
+    91	  for (const s of fn.statements) {
+    92	    const shape = s.shape.map(a => value(a, shapes));
+    93	    if (sampling && (shape.some(n => n < 0) || size(shape) > 4096))
+    94	      throw new OutsideSample('Sample shape limit');
+    95	    const data = new ArrayType(size(shape));
+    96	    let offset = 0;
+    97	    loop(s.axes, 0, () => {
+    98	      data[offset++] = scalar(s.expr);
+    99	    });
+   100	    tensors.set(s.name, { shape, data });
+   101	  }
+   102	  return tensors.get(fn.result)!;
+   103	}
+
+ succeeded in 315ms:
+
+corpus/tensor/attention/main.tix
+     1	fn attention(q: f32[Q,D], k: f32[K,D], v: f32[K,V]): f32[Q,V] {
+     2	  score[i,j] = (sum(d) q[i,d] * k[j,d]) / sqrt(D);
+     3	  shift[i] = max(j) score[i,j];
+     4	  e[i,j] = exp(score[i,j] - shift[i]);
+     5	  z[i] = sum(j) e[i,j];
+     6	  weight[i,j] = e[i,j] / z[i];
+     7	  out[i,c] = sum(j) weight[i,j] * v[j,c];
+     8	  return out;
+     9	}
+
+corpus/tensor/conv2d/main.tix
+     1	fn conv2d(x: f32[N,C,H,W], kernel: f32[O,C,3,3]): f32[N,O,H-2,W-2] {
+     2	  out[n,o,y,xpos]: f32[N,O,H-2,W-2] = sum(c,dy,dx) x[n,c,y+dy,xpos+dx] * kernel[o,c,dy,dx];
+     3	  return out;
+     4	}
+
+corpus/tensor/layernorm/main.tix
+     1	fn layernorm(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {
+     2	  mean[i] = (sum(j) x[i,j]) / D;
+     3	  centered[i,j] = x[i,j] - mean[i];
+     4	  variance[i] = (sum(j) centered[i,j] * centered[i,j]) / D;
+     5	  y[i,j] = centered[i,j] / sqrt(variance[i] + eps[0]) * gamma[j] + beta[j];
+     6	  return y;
+     7	}
+
+corpus/tensor/matmul/main.tix
+     1	fn matmul(a: f32[M,K], b: f32[K,N]): f32[M,N] {
+     2	  y[i,j] = sum(k) a[i,k] * b[k,j];
+     3	  return y;
+     4	}
+
+corpus/tensor/mlp/main.tix
+     1	fn mlp(x: f32[N,D], w: f32[D,H], bias: f32[H], v: f32[H,O], outBias: f32[O]): f32[N,O] {
+     2	  h[i,j] = (sum(d) x[i,d] * w[d,j]) + bias[j];
+     3	  g[i,j] = 0.5 * h[i,j] * (1 + tanh(0.79788456 * (h[i,j] + 0.044715 * h[i,j] * h[i,j] * h[i,j])));
+     4	  y[i,j] = (sum(k) g[i,k] * v[k,j]) + outBias[j];
+     5	  return y;
+     6	}
+
+corpus/tensor/softmax/main.tix
+     1	fn softmax(x: f32[N,C]): f32[N,C] {
+     2	  m[i] = max(j) x[i,j];
+     3	  e[i,j] = exp(x[i,j] - m[i]);
+     4	  s[i] = sum(j) e[i,j];
+     5	  y[i,j] = e[i,j] / s[i];
+     6	  return y;
+     7	}
+     1	import type { Artifact } from '../framework/core/types.js';
+     2	import { createIRArtifact } from '../framework/ir/index.js';
+     3	import { applyNativePassSync, PassError } from '../framework/passes/index.js';
+     4	import { meaningGate } from './contract.js';
+     5	import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
+     6	import { adapter } from './ir.js';
+     7	import { selectFunction, type Module } from './model.js';
+     8	import { checkCudaLowering } from './cuda-contract.js';
+     9	import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+    10	import { emitCuda } from './cuda-source.js';
+    11	import { parse } from './parser.js';
+    12	import { inlinePass, splitPass } from './passes.js';
+    13	
+    14	export interface TixProgram {
+    15	  readonly origin: Artifact<Module>;
+    16	  readonly current: Artifact<Module>;
+    17	}
+    18	export function compileTix(source: string): TixProgram {
+    19	  const origin = createIRArtifact(adapter, 'tix', parse(source));
+    20	  return { origin, current: origin };
+    21	}
+    22	export function runTix(
+    23	  program: TixProgram,
+    24	  fn: string,
+    25	  inputs: Inputs,
+    26	  options?: { precision?: Precision },
+    27	): BufferValue {
+    28	  return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');
+    29	}
+    30	export function optimizeTix(program: TixProgram, passes: string[]) {
+    31	  const { origin } = program;
+    32	  let { current } = program;
+    33	  const steps = passes.map(pass => {
+    34	    const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
+    35	    if (!definition) throw Error('Unknown pass ' + pass);
+    36	    try {
+    37	      current = applyNativePassSync(
+    38	        definition,
+    39	        current,
+    40	        meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'),
+    41	      ).artifact;
+    42	      return { pass, accepted: true };
+    43	    } catch (error) {
+    44	      if (error instanceof PassError && error.code === 'contractRejected') return { pass, accepted: false };
+    45	      throw error;
+    46	    }
+    47	  });
+    48	  return { program: { origin, current }, steps };
+    49	}
+    50	
+    51	export function cudaSource(program: TixProgram, fn: string): string {
+    52	  return emitCuda(selectFunction(program.current.value, fn));
+    53	}
+    54	
+    55	export async function runTixCuda(
+    56	  program: TixProgram,
+    57	  fn: string,
+    58	  inputs: CudaInputs,
+    59	  options?: { host?: string },
+    60	): Promise<CudaResult> {
+    61	  const f = selectFunction(program.current.value, fn);
+    62	  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+    63	  return result;
+    64	}
+    65	
+    66	export function checkLowering(
+    67	  program: TixProgram,
+    68	  fn: string,
+    69	): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
+    70	  return checkCudaLowering(program.current, fn);
+    71	}
+     1	// Compile and run a CUDA program on the GPU machine over ssh, and bring its outputs back.
+     2	//
+     3	//   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121]
+     4	//     [--runtime-input relative-path ...] [-- program args...]
+     5	//
+     6	// <dir> holds main.cu and any input files. Each invocation uploads to its own remote working directory.
+     7	// `nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture and build files.
+     8	// Each --runtime-input path marks an uploaded file that does not affect compilation. Files under out/
+     9	// are copied back to <dir>/out/ after running ./prog from the working directory.
+    10	// --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so concurrent timed
+    11	// users do not disturb each other's timings. Untimed runs do not wait for it.
+    12	// Prints one JSON object: { host, hash, compiled, compileMs, runMs, exit, stdout, stderr, outputs }.
+    13	// Environment: CUDA_REMOTE_HOST (default manuel@bling), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
+    14	import { createHash, randomUUID } from 'node:crypto';
+    15	import { execFileSync, spawnSync } from 'node:child_process';
+    16	import { readdirSync, readFileSync, statSync, mkdirSync } from 'node:fs';
+    17	import { join, relative } from 'node:path';
+    18	
+    19	const argv = process.argv.slice(2);
+    20	const sep = argv.indexOf('--');
+    21	const opts = sep < 0 ? argv : argv.slice(0, sep);
+    22	const progArgs = sep < 0 ? [] : argv.slice(sep + 1);
+    23	const valued = ['--host', '--arch', '--runtime-input'];
+    24	const dir = opts.find((a, i) => !a.startsWith('--') && !valued.includes(opts[i - 1]));
+    25	if (!dir)
+    26	  throw new Error(
+    27	    'usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [--runtime-input path ...] [-- args]',
+    28	  );
+    29	for (const [i, opt] of opts.entries())
+    30	  if (valued.includes(opt) && (!opts[i + 1] || opts[i + 1].startsWith('--')))
+    31	    throw new Error('Missing argument to ' + opt);
+    32	const value = (name, fallback) => (opts.includes(name) ? opts[opts.indexOf(name) + 1] : fallback);
+    33	const host = value('--host', process.env.CUDA_REMOTE_HOST ?? 'manuel@bling');
+    34	const arch = value('--arch', 'sm_121');
+    35	const nvcc = process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc';
+    36	
+    37	const files = [];
+    38	function walk(d) {
+    39	  for (const entry of readdirSync(d).sort()) {
+    40	    const p = join(d, entry);
+    41	    if (relative(dir, p) === 'out') continue;
+    42	    if (statSync(p).isDirectory()) walk(p);
+    43	    else files.push(relative(dir, p));
+    44	  }
+    45	}
+    46	walk(dir);
+    47	if (!files.includes('main.cu')) throw new Error(dir + ': no main.cu');
+    48	const runtime = new Set(opts.flatMap((arg, i) => (arg === '--runtime-input' ? [opts[i + 1]] : [])));
+    49	for (const path of runtime)
+    50	  if (path === 'main.cu' || !files.includes(path)) throw new Error('Invalid runtime input: ' + path);
+    51	const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch]));
+    52	for (const f of files) {
+    53	  if (runtime.has(f)) continue;
+    54	  const bytes = readFileSync(join(dir, f));
+    55	  h.update(JSON.stringify([f, bytes.length])).update(bytes);
+    56	}
+    57	const hash = h.digest('hex');
+    58	const remote = 'irwb-cuda/run/' + randomUUID();
+    59	const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '--', host];
+    60	const q = s => "'" + String(s).replaceAll("'", "'\\''") + "'";
+    61	
+    62	const tar = spawnSync('tar', ['-C', dir, '-cf', '-', '--', ...files], { maxBuffer: 1 << 30 });
+    63	if (tar.status !== 0) throw new Error('tar: ' + (tar.error ?? tar.stderr));
+    64	let cleaned = false;
+    65	try {
+    66	  const put = spawnSync('ssh', [...ssh, `mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], {
+    67	    input: tar.stdout,
+    68	  });
+    69	  if (put.status !== 0) throw new Error('ssh copy: ' + (put.error ?? put.stderr));
+    70	
+    71	  // Hold the compile lock until the cached binary is linked into this job.
+    72	  const lock = opts.includes('--timed') ? 'flock ~/irwb-cuda/.gpu.lock ' : '';
+    73	  const script = [
+    74	    'set -e',
+    75	    `cd ~/${remote}`,
+    76	    `cache=~/irwb-cuda/build/${hash}`,
+    77	    'compiled=0; c0=$(date +%s%N)',
+    78	    'mkdir -p "$cache"',
+    79	    'exec 9>"$cache/.lock"',
+    80	    'flock 9',
+    81	    'if [ ! -x "$cache/prog" ]; then',
+    82	    `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu || exit 97`,
+    83	    '  mv prog.tmp "$cache/prog"',
+    84	    '  compiled=1',
+    85	    'fi',
+    86	    'ln "$cache/prog" prog',
+    87	    'exec 9>&-',
+    88	    'c1=$(date +%s%N); mkdir -p out',
+    89	    `r0=$(date +%s%N); status=0; ${lock}./prog ${progArgs.map(q).join(' ')} || status=$?; r1=$(date +%s%N)`,
+    90	    'printf "\\n@@meta %s %s %s %s\\n" "$compiled" "$(( (c1 - c0) / 1000000 ))" "$(( (r1 - r0) / 1000000 ))" "$status"',
+    91	  ].join('\n');
+    92	  const run = spawnSync('ssh', [...ssh, 'bash -s'], { input: script, maxBuffer: 1 << 28, encoding: 'utf8' });
+    93	  const meta = run.status === 0 && /\n@@meta (\d) (\d+) (\d+) (\d+)\n?$/.exec(run.stdout ?? '');
+    94	  const result = {
+    95	    host,
+    96	    hash,
+    97	    compiled: meta ? meta[1] === '1' : false,
+    98	    compileMs: meta ? Number(meta[2]) : null,
+    99	    runMs: meta ? Number(meta[3]) : null,
+   100	    exit: meta ? Number(meta[4]) : run.status || 1,
+   101	    stdout: meta ? run.stdout.slice(0, meta.index) : (run.stdout ?? ''),
+   102	    stderr: run.error?.message ?? run.stderr ?? '',
+   103	    outputs: [],
+   104	  };
+   105	
+   106	  if (meta) {
+   107	    const get = spawnSync('ssh', [...ssh, `tar -C ~/${remote}/out -cf - . && rm -rf ~/${remote}`], {
+   108	      maxBuffer: 1 << 30,
+   109	    });
+   110	    if (get.status !== 0) throw new Error('ssh fetch: ' + (get.error ?? get.stderr));
+   111	    cleaned = true;
+   112	    const out = join(dir, 'out');
+   113	    mkdirSync(out, { recursive: true });
+   114	    execFileSync('tar', ['-C', out, '-xf', '-'], { input: get.stdout });
+   115	    const collect = d => {
+   116	      for (const entry of readdirSync(d)) {
+   117	        const p = join(d, entry);
+   118	        if (statSync(p).isDirectory()) collect(p);
+   119	        else result.outputs.push(relative(out, p));
+   120	      }
+   121	    };
+   122	    collect(out);
+   123	    result.outputs.sort();
+   124	  }
+   125	  process.stdout.write(JSON.stringify(result) + '\n');
+   126	  if (result.exit !== 0) process.exitCode = 1;
+   127	} finally {
+   128	  if (!cleaned) spawnSync('ssh', [...ssh, `rm -rf ~/${remote}`], { stdio: 'ignore' });
+   129	}
+
+ succeeded in 324ms:
+## t2-sh/irwb-022-i
+dd8b7b6
+01-implementation-diary.md
+02-cuda-lowering-verification-and-corpus-timings.md
+
+- `npm ls --depth=0` initially reported `ELSPROBLEMS` and four missing dependencies in the fresh worktree. `npm ci --cache /tmp/irwb-022-i-npm-cache --no-audit --no-fund` installed them, then `npm run build` succeeded. The three explicit Stage 1 tensor test files passed all 16 tests. The optional esbuild postinstall warning did not affect the TypeScript build.
+- `node <ticket>/scripts/02-contract-probe.mjs` printed `Async cross-kind check accepted, mutant rejected, repeat re-evaluated the invariant`. Repeating the transformation called the invariant again, so evidence reuse belongs inside the domain check.
+- `node <ticket>/scripts/01-fp-probe.mjs` compiled and ran via the default tool on GB10 sm_121, nvcc 13.0.88, reported driver API version 13000. The probe's remote nvcc version query also reported compiler build `36424714_0`. The design records the operation counts. Sequential and split variants matched all eight CPU f32 words and spent at most 1.38% of the proposed f64 tolerance. NaN encodings differed even when both results were NaN.
+- A local `flock` probe using two acquisitions on one temporary lockfile succeeded for shared/shared and correctly blocked exclusive/shared. The new runner semantics still need an integration test on GB10.
+
+- The sandboxed `git add -- <ticket>` failed to create the worktree Git index lock with `Read-only file system`. Repeating that scoped staging command with escalation succeeded. The staged diff contains only the ticket and its probes.
+
+### Experiment identity
+
+The GPU run used the tool's `nvcc -O3 -arch=sm_121` and Node 24.18.0. The sample stream is xorshift32 seeded with `0x20c0ffee` plus the fixed witnesses in the replay. Remote job hash `72700c930da364c2` reported `compiled: true` and `exit: 0`. The digests cover the exact raw input and GPU output. A second replay reported `compiled: false` for the same job and returned the identical digest and comparison results. It exercised the existing identical-input compile cache.
+
+| Bytes | SHA-256 |
+| --- | --- |
+| `inputs.bin` | `747aec57f583162148d95bf94ac449d0fb020445f12c90743f407dcae380547a` |
+| `out/outputs.bin` | `5703980963e26aab99d9923a4fc381de65ead61ba503dd4eb2ee248efc3de6aa` |
+
+### Review and continuation
+
+Review the finite f64 budget and nonfinite rule, the exact revision of the candidate source used for checks, and the separation between a shared compiled binary and a run directory. The probe covered arithmetic and reduction grouping. GPU launcher behavior, runner changes, corpus cases and performance measurements remain for implementation after review.
+
+## Step 2. Incorporate design review
+
+The reviewer pointed out that the differential invariant already delegates a batch and reuses decided verdicts. I switched the design to that path, cut the redundant tensor memo and its resource and identity plumbing, and retained the tool’s existing timed-only GPU lock. I also verified the reviewer’s lazy-loading observation on the GB10.
+
+### Prompt context
+
+The review in this session asks for the design revision and commit, followed by implementation, focused verification, and the corpus measurements. It calls for the framework’s `decide`, `baselineKey` and `subjectKey`, for preloading kernels before public timing, and for keeping the index and tail mutants.
+
+### Evidence and decisions
+
+- An inline Node probe used `differential` and `AnalysisManager.checkInvariant` with three cases and two subject keys. Four checks generated cases once and delegated two batches of three. Both true and false verdicts replayed. The Node little-endian unsigned 64-bit read/write round trip also passed.
+- The CUDA launch timing probe ran through `tools/cuda-remote.mjs <probe-dir> --timed`. GB10 event intervals were 0.060768 ms for a cold launch, 0.003584 ms for its repeat, and 0.003360 ms for the first launch of a second kernel after `cudaFuncGetAttributes`. Generated code will preload each launched kernel before the event interval.
+- The revised design uses the differential memo's existing lifetime and accepts duplicate concurrent cold checks. The remote per-invocation directory and compile lock handle those concurrent requests.
+
+## Step 3. Implement the CUDA backend and remote runner
+
+The emitter now turns the selected current Tix function into a standalone translation unit. Its expression walk generates one guarded row-major kernel per definition, evaluates affine indexing separately from f32 operations, and preserves both ordinary and split reduction folds. Generated code preloads each nonempty launch's kernel before recording CUDA events. The TypeScript wrapper uses a versioned batch file and a new local working directory for each call.
+
+### Implementation and framework findings
+
+- `src/tensor/cuda-source.ts` emits CUDA helpers, kernels, and the batch host program. `cuda-runtime.ts` encodes and decodes requests and invokes the remote tool asynchronously. `cuda-contract.ts` defines the heterogeneous pass and delegates via the existing differential invariant.
+- `src/tensor/contract.ts` shares the Stage 1 sampling recipe with the new check. CUDA includes empty shape assignments and keeps nonfinite f64 observations for classification. The Stage 1 optimizer's original recipe is unchanged.
+- `tools/cuda-remote.mjs` now accepts repeatable runtime-only files, uploads each job to a unique remote directory, and installs and links cached binaries under a compile lock. It propagates copy and fetch errors. The GPU lock is still specific to timed runs. No framework file changed.
+
+### Validation in progress
+
+The first standalone API smoke command raced the TypeScript build and imported the prior `dist` output. Node reported that `checkLowering` was missing. The build then completed, the export was present, and the focused test run started from the rebuilt output. The arithmetic replay also ran successfully through the revised remote tool.
+
+### Validation results
+
+- `npm run build` succeeded. `node --test tests/tensor/*.test.mjs` passed all 29 tests, including ten GB10 tests. All six corpus functions passed before and after their Stage 1 pass sequence. The same contract rejected the CUDA transposed-index and truncated-tail candidates.
+- The remote runner test issued simultaneous jobs with different runtime bytes and one build key. Exactly one compiled, both got their own responses, and a header change produced a new build key and output.
+- A final packet-allocation adjustment sizes f32 payloads from the number of four-byte words actually written. The subsequent build and the four network-free tensor test files passed all 19 tests. Full-size CPU and GPU runs use the same input recipe and run separately.
+
+## Step 4. Verify the committed backend and measure the corpus
+
+The final test rerun on `be85ba9` passed all 29 tensor tests. The six GPU measurements ran separately from those tests, one `--timed` invocation per function. Each invocation warmed up once and took the median of three CUDA event intervals with the generated kernels preloaded.
+
+The interpreter runs the same full-size input recipe. The original serial benchmark captured matmul, softmax, layernorm and attention. I stopped it after the attention record so it would not repeat the separately started MLP and conv2d measurements. The long CPU jobs use tmux and overlap on the shared host, so their figures are observed wall times. A detached sandbox tmux launch exited with the sandbox before writing a log. Keeping the invoking shell active with `tmux wait-for` allowed the final tests and the split benchmark jobs to run and report their exit status.
+
+The [timing report](02-cuda-lowering-verification-and-corpus-timings.md) records all six CPU and GPU results and links the replay script. CPU and GPU shapes and byte digests matched on every measured case. MLP was the last interpreter job to finish and took 1,285,227.803 ms. Its median GPU kernel interval was 0.957664 ms.
+---
+Title: CUDA lowering verification and corpus timings
+Ticket: IRWB-022-I
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: repo://tests/tensor/cuda-gpu.test.mjs
+      Note: GB10 contract, mutation, and runner tests
+    - Path: repo://ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs
+      Note: Reproduces the full-size timings and output digests
+ExternalSources: []
+Summary: GB10 lowering checks, six CPU and GPU corpus timings, and a reproducible benchmark.
+LastUpdated: 2026-11-26T15:54:57.680518881-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# CUDA lowering verification and corpus timings
+
+## Results
+
+| Program | Output shape | Interpreter wall ms | GB10 kernel ms | f32 output bytes |
+| --- | --- | ---: | ---: | --- |
+| matmul | 512 × 512 | 781,174.296 | 0.215200 | equal |
+| softmax | 4096 × 1024 | 61,400.503 | 0.800064 | equal |
+| layernorm | 4096 × 1024 | 103,502.860 | 0.484736 | equal |
+| attention | 1024 × 64 | 507,205.507 | 1.049984 | equal |
+| mlp | 1024 × 256 | 1,285,227.803 | 0.957664 | equal |
+| conv2d | 8 × 32 × 62 × 62 | 767,068.147 | 0.164352 | equal |
+
+All six output shapes and SHA-256 digests matched. The equality is for the measured inputs. The lowering contract remains a sampled tolerance against f64.
+
+## Method
+
+The [benchmark script](../scripts/03-benchmark-cuda.mjs) runs the original six Tix functions at the requested shapes. It resets the framework's seeded generator to seed 20 for each function and fills its inputs in declaration order with f32-rounded values in [-0.1, 0.1]. Layernorm uses eps = 1e-5. CPU and GPU runs regenerate identical input words.
+
+The CPU measurement covers one Stage 1 f32 `runTix` call on an Intel Core i7-1165G7 with Node 24.18.0. It includes the interpreter's buffer handling and excludes compilation and input preparation. These are observed wall times on a shared host. Some interpreter runs overlapped. The GB10 uses CUDA 13.0.88, sm_121, `nvcc -O3`, and one `--timed` request per program. The executable preloads kernels, runs one warmup and records the median of three CUDA-event intervals spanning the launches on one stream. Transfers, setup, compilation and SSH are outside that interval. Ordinary callers retain the remote tool's untimed behavior, so an unrelated untimed GPU run can still overlap a measurement.
+
+From the worktree root, run both halves with the same build:
+
+```sh
+npm run build
+node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs cpu
+node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/03-benchmark-cuda.mjs gpu
+```
+
+Each output line includes the shape and the SHA-256 of its f32 output bytes, so the two runs can be compared without saving large tensors.
+
+## Verification
+
+`npm run build` compiled the fixed exports. `node --test tests/tensor/*.test.mjs` passed all 29 tests, including ten tests in the isolated GPU file. The local tests verify binary word handling, delegated batch order, reuse and retry. GB10 tests check original and reordered corpus IR, a half-ULP split witness, both valid CUDA mutants, nested binders, empty reductions and output shapes, nonfinite behavior, and a direct parameter return. The runner's concurrent test verifies one compile for two isolated requests and a fresh compile when an included header changes.
+
+The lowering uses the existing transformation and differential APIs. No framework sources changed.
+
+exec
+/usr/bin/zsh -lc "nl -ba src/tensor/cuda-source.ts | sed -n '186,330p'; nl -ba src/tensor/cuda-contract.ts | sed -n '35,110p'; nl -ba src/tensor/contract.ts | sed -n '1,108p'; nl -ba src/tensor/passes.ts | sed -n '10,87p'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "docmgr doc add --ticket IRWB-022-I --doc-type reference --title Report && git status --short && rg -n '1\\.38|NaN|NaN encodings|0.060768' ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/design-doc/01-checked-tix-to-cuda-lowering.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc 'node --version && ls dist/tensor && git ls-files -- tests/tensor' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 363ms:
+   186	      }
+   187	      case 'op': {
+   188	        const [a, b] = e.args.map(scalar);
+   189	        switch (e.op) {
+   190	          case '+':
+   191	            return temporary(`__fadd_rn(${a}, ${b})`);
+   192	          case '-':
+   193	            return temporary(`__fsub_rn(${a}, ${b})`);
+   194	          case '*':
+   195	            return temporary(`__fmul_rn(${a}, ${b})`);
+   196	          case '/':
+   197	            return temporary(`__fdiv_rn(${a}, ${b})`);
+   198	          case 'neg':
+   199	            return temporary(`-(${a})`);
+   200	          case 'sqrt':
+   201	            return temporary(`__fsqrt_rn(${a})`);
+   202	          case 'exp':
+   203	          case 'log':
+   204	          case 'tanh':
+   205	            return temporary(`__double2float_rn(${e.op}(static_cast<double>(${a})))`);
+   206	          case 'max':
+   207	          case 'min':
+   208	            return temporary(`minmax(${a}, ${b}, ${e.op === 'max'})`);
+   209	        }
+   210	      }
+   211	      case 'reduce': {
+   212	        const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
+   213	        for (const { id, extent } of e.axes) {
+   214	          const axis = bind(id),
+   215	            n = dim(extent.dim);
+   216	          let bound = n;
+   217	          if (extent.kind === 'blocks') {
+   218	            const tail = extent.rounding === 'ceil' ? ` + (${n} % ${width} != 0)` : '';
+   219	            bound = `${n} / ${width}${tail}`;
+   220	          }
+   221	          if (extent.kind === 'tail') {
+   222	            const remaining = `(${n} - ${width}LL * ${index(extent.block)})`;
+   223	            bound = `(${remaining} < ${width}LL ? ${remaining} : ${width}LL)`;
+   224	          }
+   225	          line(`const I end_${axis} = ${bound};`);
+   226	          line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
+   227	          indent += '  ';
+   228	        }
+   229	        const value = scalar(e.body);
+   230	        line(
+   231	          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
+   232	        );
+   233	        for (const _axis of e.axes) {
+   234	          indent = indent.slice(2);
+   235	          line('}');
+   236	        }
+   237	        return acc;
+   238	      }
+   239	    }
+   240	  }
+   241	  const result = scalar(statement.expr);
+   242	  line(`result[thread] = ${result};`);
+   243	  lines.push('}');
+   244	  const count = `${tensorName(statement.name)}.size`;
+   245	  return {
+   246	    code: lines.join('\n'),
+   247	    preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
+   248	    hasWork: count,
+   249	    launch: `    if (${count}) {
+   250	      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')}, ${count});
+   251	      check(cudaGetLastError());
+   252	    }`,
+   253	  };
+   254	}
+   255	
+   256	export function emitCuda(fn: Fn): string {
+   257	  const all = [...fn.params, ...fn.statements];
+   258	  const tensors = new Map(all.map(t => [t.name, t]));
+   259	  const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
+   260	  const name = (key: string) => names.get(key)!;
+   261	  const dims = new Map<string, string>(),
+   262	    bindings: string[] = [];
+   263	  for (const p of fn.params) {
+   264	    for (const [i, a] of p.shape.entries()) {
+   265	      const key = plain(a);
+   266	      if (key === undefined || dims.has(key)) continue;
+   267	      const d = `d${dims.size}`;
+   268	      dims.set(key, d);
+   269	      bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
+   270	    }
+   271	  }
+   272	  const kernels = fn.statements.map((s, i) => emitKernel(s, `k${i}`, dims, tensors, name));
+   273	  const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
+   274	  for (const p of fn.params) {
+   275	    const t = name(p.name);
+   276	    host.push(
+   277	      `  std::array<I, ${p.shape.length}> shape_${t};`,
+   278	      `  read(input, shape_${t}.data(), shape_${t}.size());`,
+   279	      `  std::vector<float> host_${t}(elements(shape_${t}));`,
+   280	      `  read(input, host_${t}.data(), host_${t}.size());`,
+   281	    );
+   282	  }
+   283	  const result = name(fn.result);
+   284	  let buffer = `host_${result}`;
+   285	  host.push('  double gpu_ms = 0;');
+   286	  if (kernels.length) {
+   287	    host.push(...bindings);
+   288	    for (const p of fn.params) {
+   289	      const t = name(p.name);
+   290	      host.push(`  DeviceBuffer ${t}(host_${t}.size());`, `  ${t}.upload(host_${t}.data());`);
+   291	    }
+   292	    for (const s of fn.statements) {
+   293	      const t = name(s.name);
+   294	      const dimsText = s.shape.map(a => affine(a, key => dims.get(key)!)).join(', ');
+   295	      host.push(
+   296	        `  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`,
+   297	        `  DeviceBuffer ${t}(elements(shape_${t}));`,
+   298	      );
+   299	    }
+   300	    host.push(
+   301	      '  cudaFuncAttributes attributes;',
+   302	      ...kernels.map(k => k.preload),
+   303	      `  if (${kernels.map(k => k.hasWork).join(' || ')}) gpu_ms = time_kernels([&] {`,
+   304	      ...kernels.map(k => k.launch),
+   305	      '  }, benchmark);',
+   306	    );
+   307	    if (fn.statements.some(s => s.name === fn.result)) {
+   308	      buffer = `host_${result}`;
+   309	      host.push(`  std::vector<float> ${buffer}(${result}.size);`, `  ${result}.download(${buffer}.data());`);
+   310	    }
+   311	  }
+   312	  host.push(
+   313	    `  write(output, shape_${result}.data(), shape_${result}.size());`,
+   314	    `  write(output, ${buffer}.data(), ${buffer}.size());`,
+   315	    '  write(output, &gpu_ms, 1);',
+   316	    '}',
+   317	  );
+   318	  return [support, ...kernels.map(k => k.code), host.join('\n'), main].join('\n\n');
+   319	}
+    35	const FunctionName = defineType<string>({
+    36	  id: 'tensor.function-name',
+    37	  version: '1',
+    38	  description: 'Name of the Tix function to lower',
+    39	  validate(name) {
+    40	    if (typeof name !== 'string' || !name) throw Error('Invalid Tix function name');
+    41	  },
+    42	});
+    43	
+    44	export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
+    45	  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
+    46	}
+    47	
+    48	function compare(expected: BufferValue, got: BufferValue) {
+    49	  if (expected.shape.length !== got.shape.length || expected.shape.some((n, i) => n !== got.shape[i]))
+    50	    return { ok: false, reason: 'Output shape differs' };
+    51	  if (expected.data.length !== got.data.length) return { ok: false, reason: 'Output length differs' };
+    52	  for (const [i, ref] of expected.data.entries()) {
+    53	    const actual = got.data[i];
+    54	    const tolerance = 2e-6 + 2e-5 * Math.abs(ref);
+    55	    const agrees = Number.isFinite(ref)
+    56	      ? Number.isFinite(actual) && Math.abs(actual - ref) <= tolerance
+    57	      : Object.is(actual, ref);
+    58	    if (!agrees) {
+    59	      const at = coordinate(expected.shape, i);
+    60	      const budget = Number.isFinite(ref) ? ` (tolerance ${tolerance})` : '';
+    61	      return { ok: false, reason: `At [${at}], expected ${ref}, got ${actual}${budget}` };
+    62	    }
+    63	  }
+    64	  return { ok: true };
+    65	}
+    66	
+    67	type CudaSample = ReturnType<typeof cudaCases>[number];
+    68	
+    69	export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
+    70	  const inputs = { baseline: TixIR, fn: FunctionName };
+    71	  const outputs = { subject: CudaIR };
+    72	  const ports = { ...inputs, ...outputs };
+    73	  const invariant = differential<typeof ports, CudaSample, BufferValue>({
+    74	    id: 'tensor.cuda-meaning',
+    75	    version: '1',
+    76	    description: 'Compare the lowered CUDA function to its current Tix f64 meaning',
+    77	    inputs: ports,
+    78	    baseline: 'baseline',
+    79	    subject: 'subject',
+    80	    // The recipe is shape-dependent and supplies its whole eligible case set.
+    81	    count: 1,
+    82	    seed,
+    83	    cases: ({ baseline, fn }, random) => {
+    84	      const samples = cudaCases(selectFunction(baseline.value, fn), random);
+    85	      if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
+    86	      return samples;
+    87	    },
+    88	    run: (side, _artifact, sample) => {
+    89	      if (side === 'baseline') return sample.reference;
+    90	      throw Error('CUDA checks require the batch executor');
+    91	    },
+    92	    compare,
+    93	    describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
+    94	    baselineKey: ({ baseline, fn }) => JSON.stringify([baseline.revision, fn]),
+    95	    subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
+    96	    async decide({ baseline, fn, subject }, cases, todo) {
+    97	      if (subject.value.fn !== fn)
+    98	        return todo.map(() => ({ v: 'disagree', reason: 'CUDA function differs' }));
+    99	      const pending = todo.map(i => cases[i]);
+   100	      const results = await executeBatch(
+   101	        subject.value.source,
+   102	        selectFunction(baseline.value, fn),
+   103	        pending.map(c => c.inputs),
+   104	      );
+   105	      if (results.length !== pending.length) throw Error('Wrong CUDA response case count');
+   106	      return pending.map((sample, i): Decided => {
+   107	        const result = compare(sample.reference, results[i]);
+   108	        return result.ok ? { v: 'agree' } : { v: 'disagree', reason: result.reason! };
+   109	      });
+   110	    },
+     1	import {
+     2	  differential,
+     3	  differentialSpec,
+     4	  runDifferential,
+     5	  seededRandom,
+     6	  type CheckResult,
+     7	} from '../framework/contracts/index.js';
+     8	import type { Artifact } from '../framework/core/types.js';
+     9	import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
+    10	import type { CudaInputs } from './cuda-runtime.js';
+    11	import { TixIR } from './ir.js';
+    12	import { plain, value, type Fn, type Module } from './model.js';
+    13	
+    14	type Relation = 'exact' | 'tolerance';
+    15	interface Sample {
+    16	  fn: string;
+    17	  shapeValues: number[];
+    18	  stream: string;
+    19	  inputs: CudaInputs;
+    20	  reference: BufferValue;
+    21	}
+    22	export const seed = 20;
+    23	const half = [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24];
+    24	function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, cuda = false): Sample[] {
+    25	  const symbols = [
+    26	    ...new Set(fn.params.flatMap(p => p.shape.map(plain).filter((n): n is string => !!n))),
+    27	  ].sort();
+    28	  const seen = new Set<string>(),
+    29	    out: Sample[] = [];
+    30	  const assignments = [1, 3, 4, 7, 'mixed'].map(n =>
+    31	    symbols.map((_, i) => (typeof n === 'number' ? n : [3, 5, 7][i % 3])),
+    32	  );
+    33	  if (cuda) {
+    34	    assignments.push(symbols.map(() => 0));
+    35	    for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
+    36	  }
+    37	  for (const shapeValues of assignments) {
+    38	    const key = JSON.stringify(shapeValues);
+    39	    if (seen.has(key)) continue;
+    40	    seen.add(key);
+    41	    const dims = new Map(symbols.map((s, i) => [s, shapeValues[i]]));
+    42	    const shapes = fn.params.map(p => p.shape.map(d => value(d, dims)));
+    43	    if (shapes.some(s => s.some(x => x < 0) || size(s) > 4096)) continue;
+    44	    for (const stream of [
+    45	      'signed',
+    46	      'positive',
+    47	      'half-ulp',
+    48	      ...(relation === 'exact' || cuda ? ['zero'] : []),
+    49	    ]) {
+    50	      const inputs: CudaInputs = Object.create(null);
+    51	      fn.params.forEach((p, j) => {
+    52	        const shape = shapes[j];
+    53	        const data = Float32Array.from({ length: size(shape) }, (_, i) => {
+    54	          switch (stream) {
+    55	            case 'signed':
+    56	              return 2 * random() - 1;
+    57	            case 'positive':
+    58	              return 0.25 + 0.75 * random();
+    59	            case 'zero':
+    60	              return i % 2 ? -0 : 0;
+    61	            default:
+    62	              return half[i % half.length];
+    63	          }
+    64	        });
+    65	        inputs[p.name] = { shape, data };
+    66	      });
+    67	      try {
+    68	        const ref = evaluate(fn, inputs, relation === 'exact' ? 'f32' : 'f64', true);
+    69	        if (relation === 'tolerance' && !cuda && !ref.data.every(Number.isFinite)) continue;
+    70	        out.push({
+    71	          fn: fn.name,
+    72	          shapeValues,
+    73	          stream,
+    74	          inputs,
+    75	          reference: fn === baseline ? ref : evaluate(baseline, inputs, 'f32'),
+    76	        });
+    77	      } catch (error) {
+    78	        if (!(error instanceof OutsideSample)) throw error;
+    79	      }
+    80	    }
+    81	  }
+    82	  return out;
+    83	}
+    84	export function cudaCases(fn: Fn, random: () => number): Sample[] {
+    85	  return cases(fn, fn, 'tolerance', random, true);
+    86	}
+    87	
+    88	export function coordinate(shape: number[], offset: number): number[] {
+    89	  const coord = shape.map(() => 0);
+    90	  for (let i = coord.length - 1; i >= 0; i--) {
+    91	    coord[i] = offset % shape[i];
+    92	    offset = Math.floor(offset / shape[i]);
+    93	  }
+    94	  return coord;
+    95	}
+    96	
+    97	function compare(ref: BufferValue, got: BufferValue, relation: Relation) {
+    98	  if (JSON.stringify(ref.shape) !== JSON.stringify(got.shape))
+    99	    return { ok: false, reason: 'Output shape differs' };
+   100	  const words = (b: BufferValue) => new Uint32Array(b.data.buffer, b.data.byteOffset, b.data.length);
+   101	  const a = relation === 'exact' ? words(ref) : ref.data,
+   102	    b = relation === 'exact' ? words(got) : got.data;
+   103	  for (let i = 0; i < a.length; i++) {
+   104	    const allowed = 2e-6 + 2e-5 * Math.abs(a[i]);
+   105	    if (relation === 'exact' ? a[i] !== b[i] : !Number.isFinite(b[i]) || Math.abs(a[i] - b[i]) > allowed) {
+   106	      const coord = coordinate(ref.shape, i);
+   107	      return {
+   108	        ok: false,
+    10	  type Affine,
+    11	  type Expr,
+    12	  type Fn,
+    13	  type Module,
+    14	} from './model.js';
+    15	
+    16	function replaceIndices(expr: Expr, bindings: Map<string, Affine>): Expr {
+    17	  return mapExpr(expr, e =>
+    18	    e.kind === 'load' ? { ...e, indices: e.indices.map(a => substitute(a, bindings)) } : e,
+    19	  );
+    20	}
+    21	function inline(fn: Fn): Fn {
+    22	  const statements = [...fn.statements];
+    23	  for (let i = 0; i < statements.length; i++) {
+    24	    const p = statements[i];
+    25	    if (p.name === fn.result) continue;
+    26	    let pointwise = true;
+    27	    visit(p.expr, e => {
+    28	      if (e.kind === 'reduce') pointwise = false;
+    29	    });
+    30	    if (!pointwise) continue;
+    31	    let uses = 0,
+    32	      consumer = -1;
+    33	    for (let j = i + 1; j < statements.length; j++)
+    34	      visit(statements[j].expr, e => {
+    35	        if (e.kind === 'load' && e.name === p.name) {
+    36	          uses++;
+    37	          consumer = j;
+    38	        }
+    39	      });
+    40	    if (uses !== 1) continue;
+    41	    const s = statements[consumer];
+    42	    statements[consumer] = {
+    43	      ...s,
+    44	      expr: mapExpr(s.expr, e => {
+    45	        if (e.kind !== 'load' || e.name !== p.name) return e;
+    46	        return replaceIndices(p.expr, new Map(p.axes.map((a, k) => [a.id, e.indices[k]])));
+    47	      }),
+    48	    };
+    49	    statements.splice(i--, 1);
+    50	  }
+    51	  return { ...fn, statements };
+    52	}
+    53	function split(fn: Fn): Fn {
+    54	  return {
+    55	    ...fn,
+    56	    statements: fn.statements.map(s => ({
+    57	      ...s,
+    58	      expr: mapExpr(s.expr, e => {
+    59	        if (e.kind !== 'reduce' || e.op !== 'sum' || e.axes.length !== 1) return e;
+    60	        const [{ id, extent }] = e.axes;
+    61	        if (extent.kind !== 'dim') return e;
+    62	        const { dim } = extent,
+    63	          block = id + '/block',
+    64	          lane = id + '/lane';
+    65	        const address = add(variable(lane), variable(block), width);
+    66	        const body = replaceIndices(e.body, new Map([[id, address]]));
+    67	        return {
+    68	          kind: 'reduce',
+    69	          op: 'sum',
+    70	          axes: [{ id: block, extent: { kind: 'blocks', dim, rounding: 'ceil' } }],
+    71	          body: {
+    72	            kind: 'reduce',
+    73	            op: 'sum',
+    74	            axes: [{ id: lane, extent: { kind: 'tail', dim, block } }],
+    75	            body,
+    76	          },
+    77	        };
+    78	      }),
+    79	    })),
+    80	  };
+    81	}
+    82	function pass(name: string, transform: (fn: Fn) => Fn) {
+    83	  return definePass<Module>({
+    84	    id: 'tensor.' + name,
+    85	    version: '1',
+    86	    description: name,
+    87	    ir: TixIR,
+
+ succeeded in 369ms:
+v24.18.0
+contract.d.ts
+contract.js
+contract.js.map
+cuda-contract.d.ts
+cuda-contract.js
+cuda-contract.js.map
+cuda-runtime.d.ts
+cuda-runtime.js
+cuda-runtime.js.map
+cuda-source.d.ts
+cuda-source.js
+cuda-source.js.map
+evaluate.d.ts
+evaluate.js
+evaluate.js.map
+index.d.ts
+index.js
+index.js.map
+ir.d.ts
+ir.js
+ir.js.map
+model.d.ts
+model.js
+model.js.map
+parser.d.ts
+parser.js
+parser.js.map
+passes.d.ts
+passes.js
+passes.js.map
+tests/tensor/corpus.test.mjs
+tests/tensor/cuda-gpu.test.mjs
+tests/tensor/cuda.test.mjs
+tests/tensor/language.test.mjs
+tests/tensor/passes.test.mjs
+
+ succeeded in 590ms:
+created ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/03-report.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/03-report.md
+36:Lower the named function in `program.current` from a `compileTix` or `optimizeTix` result. Support the Stage 1 checked core, including affine shapes and addresses, shadowed reduction indices, zero extents, and generated block/tail bounds. Concrete calls have the same valid shapes, finite f32 inputs and in-bounds row-major reads as Stage 1. The target is a GB10 CUDA 13.0 environment with sufficient memory and launch capacity for the selected function and shape. Finite inputs can produce signed zeros, infinities and NaNs. The contract's sampled domain is specified below.
+63:For a nonfinite reference, require the same signed infinity or that both values are NaN. This covers an empty maximum and domain errors such as a negative square root. The tolerance gives zero sign and NaN payload no checking role. The emitter still implements signed-zero semantics. An already ill-conditioned f32 program can exceed the finite budget even when correctly lowered. This bound is for the contract's reproducible cases. A universal forward-error bound would depend on sizes, conditioning, intermediate overflow and the operations involved.
+65:Keep Stage 1 f32 rounding sites despite the tolerance. Use the runner's `nvcc -O3 -arch=sm_121`, with the default gradual underflow and no fast-math flag. Emit f32 literal words computed from `Math.fround(Number(text))`, round shape values from integer with `__ll2float_rn`, and load and store f32. Use `__fadd_rn`, `__fsub_rn`, `__fmul_rn`, `__fdiv_rn`, unary sign flip and `__fsqrt_rn`. The explicit add/multiply intrinsics prevent contraction at the Tix rounding sites, including reductions. Compute `exp`, `log` and `tanh` on double arguments with the CUDA double routines and round once with `__double2float_rn`. Implement min/max with NaN propagation and tie handling that chooses +0 for a mixed-zero max and -0 for a mixed-zero min. Use that same max operation for the reduction fold.
+73:| Explicit arithmetic, separate multiply/add, double transcendental path | Zero non-NaN word mismatches against the JS f32 reference. The worst selected primitive used about 0.30% of the finite tolerance. |
+74:| Plain `a*b+c` and CUDA single-precision transcendentals | Plain arithmetic differed in 2,556 cases. `expf`, `logf` and `tanhf` differed on 16,615, 2,255 and 3,553 non-NaN results respectively. |
+75:| NaN encodings | For `sqrt(-2^-149)` the GPU wrote `0x7fffffff` and JS wrote `0xffc00000`. The NaN word differences make strict bit equality unsuitable for the whole domain with these operations. |
+76:| Ordered and split reductions | All eight matched the respective Stage 1 f32 words. The largest absolute error against the respective f64 reference was 6.95e-5 at a reference of about 400.62. The worst budget fraction across the eight was 1.38%. The half-ULP row gave 1 sequentially and 1.000000238418579 when split. |
+97:The launch probe on GB10 recorded 0.060768 ms on a cold launch, 0.003584 ms for its repeat, and 0.003360 ms on the first launch of another kernel after querying its attributes. The generated launcher preloads kernels for public single-case calls as well as for benchmarks. Verify binary reuse when only input data changes, invalidation for changed build inputs and isolation for simultaneous jobs.
+102:- Keep remote assertions in their own `tests/tensor/cuda-gpu.test.mjs`. Check each small corpus function before and after actual accepted rewrites, including permuted inline addresses and the split half-ULP witness. Check nested shadowing, affine convolution offsets, empty outputs, empty reductions, a direct parameter return, signed zeros, NaN propagation and changed compiler inputs. Run only the relevant Node test files.
+
+exec
+/usr/bin/zsh -lc "mv ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/03-report.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md
+cat > ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs <<'EOF'
+// From the worktree root, after npm run build. CPU-only witnesses on the actual corpus IR.
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+
+const root = pathToFileURL(process.cwd() + '/');
+const { compileTix, cudaSource, optimizeTix, runTix } = await import(new URL('dist/tensor/index.js', root));
+const { evaluate } = await import(new URL('dist/tensor/evaluate.js', root));
+const buf = (shape, data) => ({ shape, data: Float32Array.from(data) });
+const programs = new Map();
+function program(name, optimized) {
+  if ("'!programs.has(name))
+    programs.set(name, compileTix(readFileSync(new URL('"'corpus/tensor/' + name + '/main.tix', root), 'utf8')));
+  const original = programs.get(name);
+  if ("'!optimized) return original;
+  const result = optimizeTix(original, ['"'inline', 'split-sum']);
+  assert.ok(result.steps.every(step => step.accepted));
+  assert.notEqual(result.program.current.revision, original.current.revision);
+  return result.program;
+}
+
+const f = Math.fround;
+const identity = x => x;
+const small = 2 ** -24;
+const a = 1 + 2 ** -23;
+const b = 1 - 2 ** -23;
+
+function check(name, optimized, inputs, token, inspect) {
+  const p = program(name, optimized);
+  assert.ok(cudaSource(p, name).includes(token));
+  const [f32, f64] = ['f32', 'f64'].map(precision => [...runTix(p, name, inputs, { precision }).data]);
+  assert.ok(f32.some((x, i) => x "'!== f64[i]));
+  const fn = p.current.value.functions.find(fn => fn.name === name);
+  function intermediate(tensor) {
+    const i = fn.statements.findIndex(s => s.name === tensor);
+    assert.ok(i >= 0, tensor);
+    const { shape } = fn.statements[i];
+    const prefix = { ...fn, statements: fn.statements.slice(0, i + 1), result: tensor, shape };
+    return ['"'f32', 'f64'].map(precision => [...evaluate(prefix, inputs, precision).data]);
+  }
+  const witness = inspect(f32, f64, intermediate);
+  console.log(JSON.stringify({ name, optimized, f32, f64, witness }));
+}
+
+function product(f32, f64) {
+  assert.deepEqual([f32, f64], [[1], [1 - 2 ** -46]]);
+  return { operation: '__fmul_rn', f32: f(a * b), f64: a * b };
+}
+check('matmul', false, { a: buf([1, 1], [a]), b: buf([1, 1], [b]) }, '__fmul_rn', product);
+check(
+  'matmul', true,
+  { a: buf([1, 7], [1, 0, 0, 0, small, small, small]), b: buf([7, 1], Array(7).fill(1)) },
+  '__fadd_rn',
+  (f32, f64) => {
+    assert.deepEqual([f32, f64], [[1 + 2 ** -22], [1 + 3 * small]]);
+    return { operation: 'outer __fadd_rn', operands: [1, 3 * small] };
+  },
+);
+check(
+  'conv2d', false,
+  { x: buf([1, 1, 3, 3], [a, ...Array(8).fill(0)]), kernel: buf([1, 1, 3, 3], [b, ...Array(8).fill(0)]) },
+  '__fmul_rn', product,
+);
+
+function exponential(_f32, _f64, intermediate) {
+  const e = Math.exp(-1);
+  assert.deepEqual(intermediate('e'), [[1, f(e)], [1, e]]);
+  return { operation: '__double2float_rn(exp(...))', argument: -1, f32: f(e), f64: e };
+}
+for (const optimized of [false, true]) {
+  check('softmax', optimized, { x: buf([1, 2], [0, -1]) }, '__double2float_rn(exp', exponential);
+  check(
+    'attention', optimized,
+    { q: buf([1, 1], [1]), k: buf([2, 1], [1, 0]), v: buf([2, 1], [0, 1]) },
+    '__double2float_rn(exp', exponential,
+  );
+}
+check(
+  'layernorm', false,
+  { x: buf([1, 2], [0, 2]), gamma: buf([2], [1, 1]), beta: buf([2], [0, 0]), eps: buf([1], [1]) },
+  '__fsqrt_rn',
+  (f32, f64, intermediate) => {
+    assert.deepEqual(intermediate('variance'), [[1], [1]]);
+    const root = Math.sqrt(2);
+    assert.deepEqual([f32[1], f64[1]], [f(1 / f(root)), 1 / root]);
+    return { operation: '__fsqrt_rn', argument: 2, f32: f(root), f64: root };
+  },
+);
+function geluAtOne(round) {
+  const cubic = round(0.044715);
+  const argument = round(round(0.79788456) * round(1 + cubic));
+  return round(0.5 * round(1 + round(Math.tanh(argument))));
+}
+for (const optimized of [false, true]) {
+  check(
+    'mlp', optimized,
+    { x: buf([1, 1], [1]), w: buf([1, 1], [1]), bias: buf([1], [0]), v: buf([1, 1], [1]), outBias: buf([1], [0]) },
+    '__double2float_rn(tanh',
+    (f32, f64, intermediate) => {
+      assert.deepEqual(intermediate('h'), [[1], [1]]);
+      assert.deepEqual([f32[0], f64[0]], [geluAtOne(f), geluAtOne(identity)]);
+      return { operation: 'GELU literal conversion and rounded arithmetic', literal: 0.79788456, f32: f(0.79788456) };
+    },
+  );
+}
+EOF
+npx --no-install prettier --write ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs && node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'EOF'
+import {readFileSync} from 'node:fs';
+import {compileTix,cudaSource} from './dist/tensor/index.js';
+const p = compileTix(readFileSync('corpus/tensor/matmul/main.tix', 'utf8'));
+const cu = cudaSource(p, 'matmul');
+console.log(cu.slice(cu.indexOf('__global__ void'), cu.indexOf('static void run_case')));
+EOF" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 459ms:
+__global__ void k0(I d0, I d1, I d2, const float* t0, const float* t1, float* result, U count) {
+  const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (thread >= count) return;
+  U coordinate = thread;
+  const I i0 = coordinate % (d2);
+  coordinate /= (d2);
+  const I i1 = coordinate % (d0);
+  float v0 = 0.0f;
+  const I end_i2 = (d1);
+  for (I i2 = 0; i2 < end_i2; ++i2) {
+    float v1 = __fmul_rn(t0[((i1) * (d1) + (i2))], t1[((i2) * (d2) + (i0))]);
+    v0 = __fadd_rn(v0, v1);
+  }
+  result[thread] = v0;
+}
+
+
+
+ succeeded in 923ms:
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs 61ms
+{"name":"matmul","optimized":false,"f32":[1],"f64":[0.9999999999999858],"witness":{"operation":"__fmul_rn","f32":1,"f64":0.9999999999999858}}
+{"name":"matmul","optimized":true,"f32":[1.000000238418579],"f64":[1.0000001788139343],"witness":{"operation":"outer __fadd_rn","operands":[1,1.7881393432617188e-7]}}
+{"name":"conv2d","optimized":false,"f32":[1],"f64":[0.9999999999999858],"witness":{"operation":"__fmul_rn","f32":1,"f64":0.9999999999999858}}
+{"name":"softmax","optimized":false,"f32":[0.7310585975646973,0.2689414322376251],"f64":[0.7310585786300049,0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"name":"attention","optimized":false,"f32":[0.2689414322376251],"f64":[0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"name":"softmax","optimized":true,"f32":[0.7310585975646973,0.2689414322376251],"f64":[0.7310585786300049,0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"name":"attention","optimized":true,"f32":[0.2689414322376251],"f64":[0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"name":"layernorm","optimized":false,"f32":[-0.7071067690849304,0.7071067690849304],"f64":[-0.7071067811865475,0.7071067811865475],"witness":{"operation":"__fsqrt_rn","argument":2,"f32":1.4142135381698608,"f64":1.4142135623730951}}
+{"name":"mlp","optimized":false,"f32":[0.8411920070648193],"f64":[0.8411919903841787],"witness":{"operation":"GELU literal conversion and rounded arithmetic","literal":0.79788456,"f32":0.7978845834732056}}
+{"name":"mlp","optimized":true,"f32":[0.8411920070648193],"f64":[0.8411919903841787],"witness":{"operation":"GELU literal conversion and rounded arithmetic","literal":0.79788456,"f32":0.7978845834732056}}
+
+apply patch
+patch: completed
+/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs
+diff --git a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs
+index 95c3c3b8a16453a550866c0090872d4409e5f120..463e3ef67a08ac1c1edef901e974e0343f4739aa
+--- a/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs
++++ b/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs
+@@ -1,10 +1,10 @@
+-// From the worktree root, after npm run build. CPU-only witnesses on the actual corpus IR.
++// From the worktree root, after npm run build. Add --nan-gpu for one untimed launch.
+ import assert from 'node:assert/strict';
+ import { readFileSync } from 'node:fs';
+ import { pathToFileURL } from 'node:url';
+ 
+ const root = pathToFileURL(process.cwd() + '/');
+-const { compileTix, cudaSource, optimizeTix, runTix } = await import(new URL('dist/tensor/index.js', root));
++const { compileTix, cudaSource, optimizeTix, runTix, runTixCuda } = await import(new URL('dist/tensor/index.js', root));
+ const { evaluate } = await import(new URL('dist/tensor/evaluate.js', root));
+ const buf = (shape, data) => ({ shape, data: Float32Array.from(data) });
+ const programs = new Map();
+@@ -86,6 +86,19 @@
+     exponential,
+   );
+ }
++
++if (process.argv.includes('--nan-gpu')) {
++  const p = compileTix('fn root(x:f32[N]):f32[N] { y[i] = sqrt(x[i]); return y; }');
++  const inputs = { x: buf([3], [-(2 ** -149), -0, 0]) };
++  const cpu = runTix(p, 'root', inputs).data;
++  const gpu = (await runTixCuda(p, 'root', inputs)).data;
++  const words = data =>
++    Array.from(new Uint32Array(data.buffer, data.byteOffset, data.length), x => x.toString(16).padStart(8, '0'));
++  assert.ok(Number.isNaN(cpu[0]) && Number.isNaN(gpu[0]));
++  assert.deepEqual(words(cpu).slice(1), ['80000000', '00000000']);
++  assert.deepEqual(words(gpu).slice(1), ['80000000', '00000000']);
++  console.log(JSON.stringify({ operation: '__fsqrt_rn', cpuWords: words(cpu), gpuWords: words(gpu) }));
++}
+ check(
+   'layernorm',
+   false,
+
+exec
+/usr/bin/zsh -lc 'npx --no-install prettier --write ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs && npm run build && node ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs --nan-gpu' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 8310ms:
+ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs 79ms
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+{"name":"matmul","optimized":false,"f32":[1],"f64":[0.9999999999999858],"witness":{"operation":"__fmul_rn","f32":1,"f64":0.9999999999999858}}
+{"name":"matmul","optimized":true,"f32":[1.000000238418579],"f64":[1.0000001788139343],"witness":{"operation":"outer __fadd_rn","operands":[1,1.7881393432617188e-7]}}
+{"name":"conv2d","optimized":false,"f32":[1],"f64":[0.9999999999999858],"witness":{"operation":"__fmul_rn","f32":1,"f64":0.9999999999999858}}
+{"name":"softmax","optimized":false,"f32":[0.7310585975646973,0.2689414322376251],"f64":[0.7310585786300049,0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"name":"attention","optimized":false,"f32":[0.2689414322376251],"f64":[0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"name":"softmax","optimized":true,"f32":[0.7310585975646973,0.2689414322376251],"f64":[0.7310585786300049,0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"name":"attention","optimized":true,"f32":[0.2689414322376251],"f64":[0.2689414213699951],"witness":{"operation":"__double2float_rn(exp(...))","argument":-1,"f32":0.3678794503211975,"f64":0.36787944117144233}}
+{"operation":"__fsqrt_rn","cpuWords":["ffc00000","80000000","00000000"],"gpuWords":["7fffffff","80000000","00000000"]}
+{"name":"layernorm","optimized":false,"f32":[-0.7071067690849304,0.7071067690849304],"f64":[-0.7071067811865475,0.7071067811865475],"witness":{"operation":"__fsqrt_rn","argument":2,"f32":1.4142135381698608,"f64":1.4142135623730951}}
+{"name":"mlp","optimized":false,"f32":[0.8411920070648193],"f64":[0.8411919903841787],"witness":{"operation":"GELU literal conversion and rounded arithmetic","literal":0.79788456,"f32":0.7978845834732056}}
+{"name":"mlp","optimized":true,"f32":[0.8411920070648193],"f64":[0.8411919903841787],"witness":{"operation":"GELU literal conversion and rounded arithmetic","literal":0.79788456,"f32":0.7978845834732056}}
+
+codex
+Every reported CUDA result matched the corresponding f32 result bit for bit. I reproduced the f32 rounding sites behind the f64 gaps on small corpus inputs. The supplied maxima don’t identify an input or intermediate trace, so those witnesses establish the causes without attributing each maximum to a single instruction. One untimed GB10 run also reproduced different NaN words through the generated `sqrt` kernel.
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md')
+header = p.read_text().split('\\n---\\n', 1)[0]
+header = header.replace('Title: Report', \"Title: Preserving Tix's f32 meaning on the GB10\")
+header = header.replace('Summary: \"\"', 'Summary: Direct CUDA lowering, checked execution, numerical evidence and full-size corpus timings at revision dd8b7b6.')
+p.write_text(header + '\\n---\\n\\n')
+PY
+cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md <<'EOF'
+# Preserving Tix’s f32 meaning on the GB10
+
+A dot product in Tix defines more than a set of terms. It defines where each product rounds, in what order the sum visits the terms, and where the accumulator rounds again. Give the interpreter the seven terms "'`[1, 0, 0, 0, 2''^-24, 2''^-24, 2''^-24]` and it returns 1 in f32. Each of the three small additions is halfway to the next representable number and rounds back to 1. Tix'"'s checked split-sum pass can change the reduction tree so the three small terms add to each other first. The resulting f32 sum is 1.000000238418579. The CUDA backend reproduces the rounding points of whichever tree it receives. The split result is part of the optimized program's meaning.
+
+IR Workbench is a TypeScript framework for representing immutable program revisions and checking compiler passes against executable contracts. Tix is its tensor language, with index notation, affine shapes and addresses, and scalar arithmetic and reductions. Its first stage built the front end, an interpreter in two precisions, and checked inlining and split-sum passes. Stage 2 lowered the same IR to CUDA C++ and made execution on an NVIDIA GB10 part of the lowering's acceptance condition. This report describes the evaluated implementation at "'`dd8b7b6`.
+
+## A thread computes one output element
+
+A Tix function names its inputs and defines tensors in order. A tensor definition contains its shape, output axes and a scalar expression with resolved binder identities. In a matrix multiply, the expression for a cell multiplies two indexed reads and reduces along the shared dimension. A convolution uses the same expression machinery with affine input addresses such as `y + dy`. The checker has already resolved which axis supplies each bound. The emitter'"'s work is to render those choices as index arithmetic, scalar instructions and ordered loops.
+
+I emitted CUDA directly from that IR. A separate kernel IR would have needed its own representation and validation for much of the same information. The lowering fixes the placement of each definition and gives every output element its own thread. Once those choices are fixed, the expression tree carries everything needed to print a kernel. The contract still needs a typed output to identify the exact candidate being judged. That output is a versioned artifact containing the function name and CUDA translation unit. It carries source text and identity for the framework, with no second graph of kernel operations.
+
+The generated host code allocates parameter and statement buffers and launches one kernel per statement in definition order on a single stream. A block has 256 threads. A guard excludes threads beyond the output size, and each remaining thread decodes its linear index into row-major coordinates. The following excerpt is the emitted matmul kernel. Here "'`d0`, `d1` and `d2` are M, K and N. `I` and `U` are signed and unsigned 64-bit integers.
+
+```cpp
+__global__ void k0(I d0, I d1, I d2, const float* t0, const float* t1,
+                   float* result, U count) {
+  const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (thread >= count) return;
+  U coordinate = thread;
+  const I i0 = coordinate % (d2);
+  coordinate /= (d2);
+  const I i1 = coordinate % (d0);
+  float v0 = 0.0f;
+  const I end_i2 = (d1);
+  for (I i2 = 0; i2 < end_i2; ++i2) {
+    float v1 = __fmul_rn(t0[((i1) * (d1) + (i2))], t1[((i2) * (d2) + (i0))]);
+    v0 = __fadd_rn(v0, v1);
+  }
+  result[thread] = v0;
+}
+```
+
+A reduction with several binders becomes a loop nest in lexical order, with the first binder outermost. The Stage 1 split rewrite uses two separate sums, one across blocks of four and one across terms within a block. The emitter honors the ceiling block count, short final block and separate accumulators already present in the IR. It reads composed affine addresses after inlining in exactly the way it reads source addresses. Unique binder identities keep a shadowing reduction distinct from an enclosing one. An empty sum returns positive zero and an empty maximum returns negative infinity. A definition with an empty output has no launch. A direct parameter return can run with zero kernel milliseconds.
+
+The emitter encodes numeric literals as f32 words, converts shape values with `__ll2float_rn`, and uses explicit round-to-nearest CUDA intrinsics for addition, subtraction, multiplication, division and square root. The compiler invocation is `nvcc -O3 -arch=sm_121` with default IEEE underflow behavior. Explicit multiplication and addition preserve the two rounding points of a multiply followed by a sum step. Calls to `exp`, `log` and `tanh` use the CUDA double routines, followed by `__double2float_rn`. The min/max helper propagates a NaN and selects the required signed zero when its inputs are mixed zeros. The same helper serves scalar and reduction maxima.
+
+```mermaid
+flowchart LR
+    T["Current Tix IR and selected function"] --> E["Emit CUDA source"]
+    E --> A["CUDA source artifact"]
+    T --> C["Generate sampled inputs"]
+    C --> F["Run the Tix f64 interpreter"]
+    C --> B["Batch undecided inputs"]
+    A --> B
+    B --> G["Compile and execute on GB10"]
+    G --> V["Compare shape and values"]
+    F --> V
+    V --> M["Record and reuse case verdicts"]
+```
+
+The three public functions share the emitter. `cudaSource` returns the translation unit, and `runTixCuda` runs a concrete input case with an optional remote host override. `checkLowering` executes the checked transformation for the selected function. The generated executable gets its inputs from a versioned little-endian batch file with shapes and f32 words. It returns shapes, f32 words and device event times. The same host program handles a concrete call with one case and a differential check with many cases.
+
+## What the contract measures
+
+The implemented relation compares the candidate against the **current** Tix revision evaluated in f64 with the same f32 input words. It requires equal output shapes and lengths. For each finite reference value `r`, the GPU value `g` must be finite and satisfy `abs(g - r) <= 2e-6 + 2e-5 * abs(r)`. Signed infinities must match. A NaN matches a NaN. The budget comes from the Stage 1 numeric check, and a failed comparison records a reproducible case description and the first differing coordinate.
+
+The original arithmetic probe ran 102,461 input triples on the GB10 and used raw finite words and bounded ranges, including zeros, subnormals and a multiply-add contraction witness. Explicit arithmetic and the double transcendental paths matched every compared non-NaN f32 word. The ordinary CUDA single-precision functions `expf`, `logf` and `tanhf` differed on 16,615, 2,255 and 3,553 non-NaN outputs, respectively. A plain multiply followed by addition also differed on 2,556 inputs when compiled in that probe. A separate part of the same run computed four dot products of length 1,023 with both sequential and split folding. All eight outputs matched their Stage 1 f32 words, and the worst used 1.38% of the f64 tolerance. Those observations supported a useful f64 budget over the sampled cases. They gave evidence for the explicit rounding implementation as well. [Arithmetic probe](../scripts/01-fp-probe.mjs)
+
+Cases use a seed of 20 and deterministic shapes and values. Assignments include 1, 3, 4 and 7, a mixed assignment to expose index errors, and zero assignments to exercise empty outputs or empty reductions. Signed, positive, half-ULP and alternating signed-zero streams exercise different arithmetic and indexing behavior. The generator deduplicates shapes and uses the Stage 1 evaluator'"'s sampled address and work checks, with a limit of 4,096 elements per tensor and one million metered steps per case. An empty eligible case set yields no acceptance. The contract returns a sampled verdict for the function.
+
+The framework already supports both heterogeneous transformations and remote batches. "'`AnalysisManager.execute` awaits the asynchronous invariant on the CUDA artifact. `differential` passes all undecided case indices to its `decide` callback in one call. The callback runs the candidate'"'s source, compares each returned case with its precomputed f64 reference and returns the verdicts in index order. The framework memo retains case lists and verdicts. Its baseline key identifies the Tix revision and function, and its subject key identifies the CUDA revision and execution profile. This replays a completed agreement or disagreement on a repeat check. Errors in transport, compilation or decoding leave the check retryable. Concurrent cold checks can both issue a batch.
+
+No framework source changed in this stage. Its transformation interfaces were sufficient for a cross-kind output and its differential checker already delegated batches and memoized verdicts. The Stage 1 passes continue to use the synchronous native pass path for same-kind IR edits. The CUDA pass consumes the current revision, regardless of which Stage 1 checks produced it.
+
+## What changed in remote execution
+
+The original remote tool used the same directory for compilation, execution and the fetched output. It reused a binary only if the directory's entire contents matched. CUDA source is unchanged between cases with different tensor values, so including the tensor payload in the compile key wasted compilation. The repeatable "'`--runtime-input` option excludes named runtime files from the build hash and still uploads them. The key includes the compiler path, architecture, compile flags, and names and contents of build files. This retains dependency tracking for inputs such as headers.
+
+Excluding runtime files from the key means identical build inputs can run concurrently with different tensors. Each invocation now uploads, executes and fetches outputs in a unique remote directory. A per-key compile lock protects the shared binary. The first successful compiler run atomically installs its executable, and each job links that executable into its own directory before releasing the lock. That directory gives the job its own relative paths and output files. The tool removes it after fetching. It surfaces upload, compile, run and fetch failures so the checker can distinguish unavailable evidence from a completed comparison. Only `--timed` runs take the tool'"'s GPU lock. The concurrent runner test verified that two jobs with different data compiled once and each received its own output, and that changing a header triggered a new compile.
+
+## Timing and verification
+
+CUDA events surround the stream's launches. An early launch timing probe exposed the timing cost of lazy module loading. On the GB10, the first launch interval of a trivial kernel was 0.060768 ms and its repeat was 0.003584 ms. Querying a second kernel with "'`cudaFuncGetAttributes` made its first launch interval 0.003360 ms. The generated host calls that API on every kernel it will launch before recording the starting event. Input allocation, transfers and output downloads also take place outside the event interval.
+
+For our corpus measurements, each original function ran at the brief'"'s sizes with seeded f32 inputs. The local interval covered one call to the Stage 1 f32 interpreter on an Intel Core i7-1165G7 with Node 24.18.0. It included the interpreter's buffer handling and excluded compilation and input preparation. Some CPU runs overlapped on the shared host, so these are observed wall times. The remote run used one short timed invocation per function on the GB10 with CUDA 13.0.88. Each invocation ran a warmup followed by three measured intervals and returned their median. The independent evaluator later reported the public "'`gpuMs` values shown alongside them.
+
+| Program and dimensions | Local interpreter wall ms | GB10 kernel median ms | Independent `gpuMs` |
+| --- | ---: | ---: | ---: |
+| matmul, M = K = N = 512 | 781,174.296 | 0.215200 | 0.197 |
+| softmax, N = 4096, C = 1024 | 61,400.503 | 0.800064 | 0.785 |
+| layernorm, N = 4096, D = 1024 | 103,502.860 | 0.484736 | 0.563 |
+| attention, Q = K = 1024, D = V = 64 | 507,205.507 | 1.049984 | 1.810 |
+| mlp, N = 1024, D = 256, H = 1024, O = 256 | 1,285,227.803 | 0.957664 | 1.051 |
+| conv2d, N = 8, C = 16, H = W = 64, O = 32, 3 × 3 kernel | 767,068.147 | 0.164352 | 0.341 |
+
+Our CPU and GPU output shapes and SHA-256 digests matched in all six runs. The independent column uses its own concrete API runs. It gives separate single-interval observations from the public runner. [Timing method and replay](02-cuda-lowering-verification-and-corpus-timings.md)
+
+The TypeScript build and all 29 focused tensor tests passed. Network-free tests checked source generation, the binary protocol, batching, evidence replay and retry. Ten GB10 tests exercised the original and optimized corpus, zero extents, a direct return, signed zero and reduction scoping. Two mutations changed otherwise runnable CUDA source. One substituted a transposed address for the correct inlined address. The other discarded a partial last block in a split sum. The same lowering contract rejected both with numeric counterexamples. [GPU tests](../../../../../../tests/tensor/cuda-gpu.test.mjs)
+
+## Independent evaluation and the f64 gaps
+
+The independent run passed all 25 hidden Stage 1 tests and found the three CUDA exports. All 20 random programs agreed bit for bit with the f32 meaning at every element. The independent checks accepted all six corpus programs and ten random programs under the implemented tolerance, at 2.5 seconds per check on average. At full corpus sizes the independent f32 equality counts were 262,144/262,144 for matmul, 4,194,304/4,194,304 for softmax, 4,194,304/4,194,304 for layernorm, 65,536/65,536 for attention, 262,144/262,144 for mlp and 984,064/984,064 for conv2d. The maximum f32 difference scaled by `max(1, |r|)` was zero in each case.
+
+The small results also matched f32 on every element. The evaluator reported the following largest differences from f64. Its optimized comparison used the f32 interpreter on the optimized program.
+
+| Program | Original f32 words equal | Largest reported f64 gap | Optimized f32 words equal | Largest reported optimized f64 gap |
+| --- | ---: | ---: | ---: | ---: |
+| matmul | 35/35 | 3.2e-7 | 35/35 | 2.2e-7 |
+| softmax | 76/76 | 5.3e-8 | 76/76 | 4.9e-8 |
+| layernorm | 72/72 | 1.3e-7 | — | — |
+| attention | 72/72 | 6.6e-8 | 72/72 | 6.0e-8 |
+| mlp | 24/24 | 3.6e-7 | 24/24 | 4.6e-7 |
+| conv2d | 160/160 | 3.1e-7 | — | — |
+
+Every gap in the table is between f32 and f64 evaluation. Equality with the f32 interpreter pins the GPU result for each reported input. The reported maxima are aggregates, so attributing a particular maximum to a specific intermediate instruction would require the input and an execution trace. I reproduced the rounding mechanisms on the actual corpus IR using small inputs with known prefixes. The source locations and the ten witness runs are in the diary and its replay. [Operation-level diagnosis](01-implementation-diary.md), [rounding witnesses](../scripts/04-rounding-witnesses.mjs)
+
+In matmul and conv2d, the f32 product can differ before the sum even begins. A single nonzero term `(1 + 2''^-23) * (1 - 2''^-23)` rounds to 1, while its f64 product is `1 - 2''^-46`. Longer dots also round after each `__fadd_rn`. In the optimized matmul witness, the three half-ULP terms sum exactly within their block and the outer addition is the rounding site. The two-level fold changes where accumulated error can enter while preserving the optimized expression.
+
+In softmax and attention, `__double2float_rn(exp(...))` introduces a rounding site after the shifted exponential. A two-term witness makes the shift exact and produces 0.3678794503211975 in f32 for `exp(-1)`, versus 0.36787944117144233 in f64. The subsequent sum and normalization division also round, including the inner and outer sums after splitting. Attention additionally rounds the products and sums in the score and value contractions and the square root and division used to scale scores. The witness uses a feature width of one so the score calculation is exact and the difference reaches the output through the weight. Both optimized programs exhibit the same exponential rounding on these inputs.
+
+In layernorm, a row with mean and variance exactly one makes the emitted square root of `variance + eps` the first differing operation when `eps` is one. The f32 root is 1.4142135381698608 and the f64 root is 1.4142135623730951. The following division carries the difference into the output. More general rows also round the mean, subtraction, variance products and sum, and final scale and shift.
+
+In the MLP, the two dense products round their multiplies and folds, and their bias additions round. Inside GELU, the literals 0.79788456 and 0.044715 are converted to f32. Each arithmetic operation rounds and the result of the double `tanh` rounds once. Setting the dense layers to pass through a single activation of one isolates GELU. The literal 0.79788456 becomes 0.7978845834732056 at emission, and the final activation is 0.8411920070648193 in f32 and 0.8411919903841787 in f64. Inlining moves the activation into the final contraction and preserves those rounding points. Splitting changes the dense folds. The optimized witness gives the same local result.
+
+## What I would do differently
+
+I would choose f32 equality with NaNs compared by class for the lowering contract on this toolchain. The coordinator independently compared CUDA double `exp`, `log` and `tanh` rounded to f32 against Node'"'s f32 meaning for all 2³² f32 input words, treating NaNs as a class. Together with the correctly rounded arithmetic and square root, the emitted rounding sites and the agreement of the independent whole-program tests, that supports a more direct preservation check. Strict bit identity across all outputs remains false. An untimed replay through the generated "'`__fsqrt_rn` on `-2''^-149` returned `0x7fffffff` on GB10 and `0xffc00000` in Node, with both outputs NaN. The same replay returned identical words for both signed zeros. This stronger sampled relation would judge the lowering against the exact f32 tree it receives, including trees already reassociated by Stage 1. The f64 budget measures a separate numerical property and can admit an incorrect f32 result or reject a correctly lowered f32 program with large rounding error.
+
+I would also retain the input or case ID, worst coordinate and compared values beside each reported maximum. An output summary is enough to check how far apart results were. Replaying the worst case with intermediate tensors makes the difference attributable. For timings, I would save the three GPU intervals and collect the interpreter wall times with the workloads scheduled separately from one another on the local host. That would make the variation visible alongside the device medians. The implemented runner and checker already provide the separation between execution and acceptance needed to repeat those measurements.
+EOF
+wc -w ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md
+' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 388ms:
+3059 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md <<'EOF'
+
+## Step 5. Diagnose the independent evaluation and publish the report
+
+I traced the independent results at "'`dd8b7b6` to the two precision paths. All reported E2E outputs agree with the corresponding f32 interpreter. The nonzero differences were comparisons with f64. I added a replay for the rounding sites on small inputs to the actual corpus IR and ran one untimed GB10 case to check the NaN representation through the generated kernel.
+
+### Prompt context
+
+<details>
+<summary>User prompt, verbatim</summary>
+
+Stage 2 of IRWB-022-I has been evaluated independently, at your last commit. Your results:
+
+- **Stage-1 hidden suite:** 25/25 passed. The three API functions are exported.
+- **Corpus programs, small sizes, through `runTixCuda`:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.2e-7
+  - softmax: 76/76 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 5.3e-8
+  - layernorm: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 1.3e-7
+  - attention: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 6.6e-8
+  - mlp: 24/24 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.6e-7
+  - conv: 160/160 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 3.1e-7
+- **After `optimizeTix(p, ['"'inline', 'split-sum'])"'`, compared with your own f32 run of the optimized program:**
+  - matmul: 35/35 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 2.2e-7
+  - softmax: 76/76 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 4.9e-8
+  - attention: 72/72 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 6.0e-8
+  - mlp: 24/24 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)), largest difference from f64 4.6e-7
+- **20 random programs from the fixed core:** 20/20 bit-identical to the f32 meaning on every element; largest difference 0.
+- **Corpus at the brief'"'s sizes:**
+  - matmul: 262144/262144 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your "'`gpuMs` 0.197
+  - softmax: 4194304/4194304 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.785
+  - layernorm: 4194304/4194304 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.563
+  - attention: 65536/65536 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 1.810
+  - mlp: 262144/262144 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 1.051
+  - conv: 984064/984064 elements bit-identical to the f32 meaning, largest difference 0 (scaled by max(1, |r|)); your `gpuMs` 0.341
+- **`checkLowering` on the six corpus programs and ten random ones:** accepted 16/16, relation tolerance, 2.5 s per check on average.
+- **Independently of your work,** the coordinator compared CUDA'"'s double-precision "'`exp`, `log` and `tanh`, rounded to f32 (`__double2float_rn(exp((double)x))` and so on), with the f32 meaning'"'s "'`Math.fround(Math.exp(x))` and so on, for all 2³² f32 inputs on the GB10. They agree on every input, with NaN compared as a class. In IEEE mode, `+ − * /` and `sqrtf` are correctly rounded, and the f32 meaning rounds each of them in the same way.
+
+In this turn, do not change any code under `src/`, `tests/`, `corpus/` or `tools/`. The evaluated revision must stay as it is.
+
+1. **Diagnose.** For every result above that is not bit-identical, find which operation in your emitted code causes the difference and state it with `file:line` in your diary. Reproduce it with a short script or GPU probe in your ticket'"'s "'`scripts/` if that helps; keep GPU runs few and untimed. Then state, in one paragraph, whether the relation your contract checks is the strongest one your implementation and the evidence above support, and why.
+2. **Write your final report** as `reference/02-report.md` in your ticket. It is for a reader who knows compilers but not this repository, and it will be published as written. Cover:
+   - the lowering and the emitted CUDA (with a short excerpt);
+   - the form you chose (kernel IR or direct emission) and why;
+   - the contract: relation, cases, batching and reuse, and the probe behind the relation;
+   - each framework and tool change and why it was needed;
+   - the timing method and the measured times;
+   - how you checked the work;
+   - the evaluation results above, including every difference and its cause;
+   - what you would do differently.
+
+   Write prose first, with at least one diagram (Mermaid). Aim for 2,000 to 3,500 words. Report only what you built and measured.
+3. **Commit** (message starting `IRWB-022-I:`). Final message: the report'"'s path, the commit hash, one line per difference cause, and your one-paragraph answer on the relation.
+
+</details>
+
+### Operation-level diagnosis
+
+The f32 interpreter rounds literals, scalar operations and fold steps at "'`src/tensor/evaluate.ts:65`, `src/tensor/evaluate.ts:80` and `src/tensor/evaluate.ts:85`. Its f64 mode omits those f32 rounding steps. Every nonzero reported gap is already present between these two precision paths, because CUDA matched the f32 outputs. The independent report provides aggregate maximums without the input values, worst coordinates or intermediate traces. The locations below identify reachable rounding sites and the operation isolated on a different, reproducible input for each comparison.
+
+| Independent comparison | Largest f64 gap | Emitted rounding sites and reproduced difference |
+| --- | ---: | --- |
+| Original matmul | 3.2e-7 | `src/tensor/cuda-source.ts:195` rounds each product and `src/tensor/cuda-source.ts:231` rounds the row sum. A single `(1 + 2''^-23) * (1 - 2''^-23)` isolates the multiply, with f32 result 1 and f64 result `1 - 2''^-46`. |
+| Original softmax | 5.3e-8 | `src/tensor/cuda-source.ts:193` rounds the shift, `src/tensor/cuda-source.ts:205` rounds the exponential, `src/tensor/cuda-source.ts:231` rounds the denominator fold, and `src/tensor/cuda-source.ts:197` rounds division. For logits `[0,-1]`, the first gap is at the exponential, 0.3678794503211975 versus 0.36787944117144233. |
+| Original layernorm | 1.3e-7 | `src/tensor/cuda-source.ts:193`, `src/tensor/cuda-source.ts:195`, `src/tensor/cuda-source.ts:231` and `src/tensor/cuda-source.ts:197` round the centering, products, reductions and divisions. The `variance + eps` addition and final scale and shift also round. With mean and variance exactly one and epsilon one, `src/tensor/cuda-source.ts:201` is the first differing step. It rounds sqrt(2) to 1.4142135381698608, versus the f64 root 1.4142135623730951. |
+| Original attention | 6.6e-8 | `src/tensor/cuda-source.ts:195` and `src/tensor/cuda-source.ts:231` round both contractions. Score scaling uses `src/tensor/cuda-source.ts:201` and `src/tensor/cuda-source.ts:197`. The softmax has the same sites as above. Feature width one and scores 1 and 0 isolate the first gap at `src/tensor/cuda-source.ts:205`, which rounds exp(-1). |
+| Original mlp | 3.6e-7 | `src/tensor/cuda-source.ts:195`, `src/tensor/cuda-source.ts:231` and `src/tensor/cuda-source.ts:191` round the dense products, folds and biases. In GELU, `src/tensor/cuda-source.ts:124` rounds constants, scalar arithmetic rounds, and `src/tensor/cuda-source.ts:205` rounds tanh. An exact dense input of one exposes 0.79788456 becoming 0.7978845834732056 before the activation arithmetic. The final activation is 0.8411920070648193 in f32 versus 0.8411919903841787 in f64. |
+| Original conv2d | 3.1e-7 | `src/tensor/cuda-source.ts:195` and `src/tensor/cuda-source.ts:231` round products and each step of the channel and spatial fold. A single nonzero tap isolates the same `1 - 2''^-46` product rounding as matmul. |
+| Optimized matmul | 2.2e-7 | `src/tensor/cuda-source.ts:231` rounds both levels of the split fold. The seven-term witness first differs at the outer addition of 1 and `3 * 2''^-24`. The result is 1.000000238418579 in f32 and 1.0000001788139343 in f64. Product rounding remains reachable at `src/tensor/cuda-source.ts:195`. |
+| Optimized softmax | 4.9e-8 | `src/tensor/cuda-source.ts:231` now rounds the two denominator folds. The shifted exponential at `src/tensor/cuda-source.ts:205` is still the first differing step on the two-logit witness, and normalization at `src/tensor/cuda-source.ts:197` rounds again. |
+| Optimized attention | 6.0e-8 | The score, denominator and value folds at `src/tensor/cuda-source.ts:231` have the split grouping. The inlined weighting division still uses `src/tensor/cuda-source.ts:197`. The width-one witness still first differs at the exponential conversion at `src/tensor/cuda-source.ts:205`. |
+| Optimized mlp | 4.6e-7 | The inlined GELU still rounds its literals at `src/tensor/cuda-source.ts:124`, its arithmetic and its tanh at `src/tensor/cuda-source.ts:205`. Dense sums round in both levels at `src/tensor/cuda-source.ts:231`. The single-activation witness isolates the same GELU difference as the original. |
+
+The independent comparison treated NaNs as a class in its intrinsic sweep. In a separate API witness, `src/tensor/cuda-source.ts:201` emitted `__fsqrt_rn` for an input of `-2''^-149`. The CPU and GPU returned NaNs with words `0xffc00000` and `0x7fffffff`, respectively. Square root of negative zero and positive zero returned the corresponding zero words on both sides.
+
+### Relation supported by this evidence
+
+The implemented sampled f64 tolerance is weaker as a claim about preservation of the Tix f32 calculation. The coordinator'"'s exhaustive rounded transcendental comparison, the correctly rounded IEEE arithmetic and square root, the emitted rounding sites, and the whole-program comparisons together support checking output shape and exact f32 words where the output is numeric, including signed zeros and infinities, with NaNs compared by class. The generated square-root replay rules out strict NaN word equality. Comparing to the current f32 tree would enforce its actual roundings and fold order, while the existing f64 budget measures numerical accuracy across precisions and can accept a different f32 result or reject a correct f32 result with a large f64 gap. That stronger sampled relation is a recommendation for a subsequent revision.
+
+### Replay and scope
+
+"'`npm run build` succeeded. `node <ticket>/scripts/04-rounding-witnesses.mjs --nan-gpu` passed ten CPU corpus witnesses and the single untimed GPU probe above. The new [publication report](02-report.md) records the independent evaluation separately from our measurements. The evaluated source, tests, corpus and tools were preserved at `dd8b7b6`.
+EOF
+python3 - <<'"'PY'
+from pathlib import Path
+ticket = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine')
+p = ticket / 'index.md'
+s = p.read_text()
+s = s.replace('- [Verification and corpus timings]', '- [Final report](reference/02-report.md)\\n- [Verification and corpus timings]')
+p.write_text(s)
+p = ticket / 'reference/02-report.md'
+s = p.read_text()
+s = s.replace(\"A Tix function names its inputs and defines tensors in order.\", \"A Tix function names its inputs and defines tensors in order. The calling domain uses finite f32 inputs, consistent nonnegative dimensions and in-bounds affine reads that fit the target's buffers and launches.\")
+p.write_text(s)
+PY
+" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 367ms:
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+import re
+ticket = Path('ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine')
+report = ticket / 'reference/02-report.md'
+s = report.read_text().replace(\"The key includes the compiler path, architecture, compile flags, and names and contents of build files.\", \"The SHA-256 key includes the compiler path, architecture, compile flags, and names and contents of build files.\")
+report.write_text(s)
+assert 2000 <= len(s.split()) <= 3500
+assert s.count('"'```mermaid'"') == 1 and s.count('"'```cpp'"') == 1 and s.count('"'```'"') == 4
+for name in ('reference/02-report.md', 'index.md'):
+    path = ticket / name
+    for target in re.findall(r'\\]\\((["'^)]+)'"\\)', path.read_text()):
+        if '://' not in target:
+            assert (path.parent / target.split('#')[0]).is_file(), (path, target)
+print('Report word count, diagram fences, and local links checked.')
+PY
+root="'$(pwd -P)
+docmgr doc relate --doc ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md '"\\
+  --file-note \""'$root/src/tensor/cuda-source.ts:Direct kernel and host code emission" '"\\
+  --file-note \""'$root/src/tensor/cuda-contract.ts:Cross-kind pass and batched differential check" '"\\
+  --file-note \""'$root/tools/cuda-remote.mjs:Remote job isolation and binary cache" '"\\
+  --file-note \""'$root/tests/tensor/cuda-gpu.test.mjs:GB10 tests and mutation checks" '"\\
+  --file-note \""'$root/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs:Precision witnesses and generated NaN probe" &&
+docmgr changelog update --ticket IRWB-022-I '"\\
+  --entry 'Published the Stage 2 report and recorded the independent evaluation and f32 rounding diagnosis. Preserved the evaluated backend and reproduced NaN word differences through the generated square root.' \\
+  --file-note \""'$root/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md:Final publication report" &&
+docmgr validate frontmatter --doc ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md &&
+docmgr doctor --ticket IRWB-022-I --stale-after 30 &&
+git diff --check && git status --short --untracked-files=all &&
+git diff --exit-code dd8b7b6 -- src tests corpus tools' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 1127ms:
+Report word count, diagram fences, and local links checked.
+related 5 file(s) to ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md (added 5, updated 0, removed 0)
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+Frontmatter OK: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md (Ticket=IRWB-022-I DocType=reference)
+## Doctor Report (1 findings)
+
+### IRWB-022-I
+
+- ✅ All checks passed
+
+ M ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md
+ M ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md
+ M ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md
+?? ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs
+
+exec
+/usr/bin/zsh -lc "git add -- ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/changelog.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/index.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs && git diff --cached --check && git diff --cached --exit-code -- src tests corpus tools && git commit -m 'IRWB-022-I: publish Stage 2 evaluation and final report'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 260ms:
+[t2-sh/irwb-022-i ff1c4e7] IRWB-022-I: publish Stage 2 evaluation and final report
+ 5 files changed, 383 insertions(+)
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md
+ create mode 100644 ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/scripts/04-rounding-witnesses.mjs
+
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git rev-parse --short HEAD && git diff --exit-code dd8b7b6 HEAD -- src tests corpus tools' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i
+ succeeded in 279ms:
+## t2-sh/irwb-022-i
+ff1c4e7
+
+codex
+Wrote [reference/02-report.md](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md) and committed it as `ff1c4e7`. The evaluated code remains identical to `dd8b7b6`.
+
+Every independently reported CUDA output matched f32 bit for bit. The [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md) records the emitter locations and ten reproducible witnesses. The aggregate f64 maxima came without the inputs or traces needed to pinpoint their individual rounding steps.
+
+- **Matmul and conv2d** round products and each sum step.
+- **Split sums** round separately in their inner and outer folds.
+- **Softmax** rounds the shifted exponential, denominator and division.
+- **Attention** adds rounded score and value contractions around the same normalization.
+- **Layernorm** rounds the square root and subsequent normalization arithmetic.
+- **MLP** rounds GELU constants, arithmetic and `tanh`, along with both dense contractions.
+- **NaN encoding** differed in one untimed replay of generated `sqrt`. CUDA returned `0x7fffffff` and Node returned `0xffc00000`.
+
+The evidence supports a stronger preservation check than the implemented f64 tolerance. Compare output shapes and exact f32 words against the current Tix revision, including signed zeros and signed infinities, and compare NaNs by class. The exhaustive rounded transcendental comparison and correctly rounded IEEE arithmetic support that relation on the tested toolchain. The square-root replay rules out strict NaN word equality.
+tokens used
+392,668
+Wrote [reference/02-report.md](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/02-report.md) and committed it as `ff1c4e7`. The evaluated code remains identical to `dd8b7b6`.
+
+Every independently reported CUDA output matched f32 bit for bit. The [diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t2-sh-irwb-022-i/ttmp/2026/11/26/IRWB-022-I--lowering-tix-to-cuda-with-checked-execution-on-the-gpu-machine/reference/01-implementation-diary.md) records the emitter locations and ten reproducible witnesses. The aggregate f64 maxima came without the inputs or traces needed to pinpoint their individual rounding steps.
+
+- **Matmul and conv2d** round products and each sum step.
+- **Split sums** round separately in their inner and outer folds.
+- **Softmax** rounds the shifted exponential, denominator and division.
+- **Attention** adds rounded score and value contractions around the same normalization.
+- **Layernorm** rounds the square root and subsequent normalization arithmetic.
+- **MLP** rounds GELU constants, arithmetic and `tanh`, along with both dense contractions.
+- **NaN encoding** differed in one untimed replay of generated `sqrt`. CUDA returned `0x7fffffff` and Node returned `0xffc00000`.
+
+The evidence supports a stronger preservation check than the implemented f64 tolerance. Compare output shapes and exact f32 words against the current Tix revision, including signed zeros and signed infinities, and compare NaNs by class. The exhaustive rounded transcendental comparison and correctly rounded IEEE arithmetic support that relation on the tested toolchain. The square-root replay rules out strict NaN word equality.

@@ -1,0 +1,12 @@
+Warning: No models match pattern "lunaroute/glm-5.3"
+Warning: No models match pattern "lunaroute/glm-5.3-flash"
+Warning: No models match pattern "lunaroute/deepseek-4.1-flash"
+Warning: No models match pattern "lunaroute/deepseek-4.1-flash-background"
+[Final report](ttmp/2026/11/26/IRWB-022-H--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/reference/02-report.md) · Commit `f299d6808f59`. Only ticket documentation changed; the evaluated code is unchanged.
+
+- **`expf` — `src/tensor/cuda-source.ts:104`:** causes the f32 differences in softmax and attention at small and full sizes, including after optimization. Normalization propagates a changed exponential to other outputs.
+- **`tanhf` — `src/tensor/cuda-source.ts:107`:** causes the MLP differences in GELU; the second matrix product propagates the changed activations.
+- **`logf` — `src/tensor/cuda-source.ts:105`:** also differs from rounded `Math.log` in isolation. The aggregate random-program results do not identify which of `expf`, `logf`, or `tanhf` caused each of the four non-exact runs.
+- **Per-operation f32 rounding — `src/tensor/evaluate.ts:80,85`:** explains why outputs can match the f32 interpreter bit-for-bit yet differ from f64, including matmul, layernorm, and convolution.
+
+Of the two relations offered, **sampled tolerance against origin f64 is the strongest defensible choice for the evaluated backend**: the GB10 probe directly falsifies bit identity for its emitted float transcendental calls. The allowance is not a proven global bound or the tightest possible tolerance. The coordinator’s exhaustive result supports a stronger check for a *different* lowering: use double `exp`, `log`, and `tanh` followed by f32 rounding, compare against the **current** f32 meaning with NaNs treated as a class, and retain the origin-f64 budget separately for rewrites that change reduction grouping.

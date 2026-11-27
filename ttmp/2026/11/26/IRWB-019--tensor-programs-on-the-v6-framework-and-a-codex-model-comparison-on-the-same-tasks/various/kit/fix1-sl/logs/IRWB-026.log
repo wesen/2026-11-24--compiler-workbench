@@ -1,0 +1,2630 @@
+Reading additional input from stdin...
+OpenAI Codex v0.172.0
+--------
+workdir: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+model: gpt-6.2-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/manuel/code/wesen/2026-11-24--compiler-workbench/.git] (network access enabled)
+reasoning effort: low
+reasoning summaries: none
+session id: 01a21afd-e77d-7833-ac8e-ebbb92adb8f2
+--------
+user
+You are working in a git worktree of the IR Workbench repository (TypeScript, Node 24): a reusable IR framework (`src/framework/`) in which every pass is checked, with two domains on it. One is Typed, compiled to RISC-V. The other is Tix, an index-notation tensor language (`src/tensor/`) compiled to CUDA for an NVIDIA GB10 GPU.
+
+Your ticket is IRWB-026. Make three small fixes, each with a regression test. Create the ticket with docmgr ("framework and tensor fixes F14, F19, F20"), keep a short diary, and commit each fix separately, with messages starting `IRWB-026:`. Do not push.
+
+## The fixes
+
+**F14: `optimizeTix` steps carry no reason and no "changed" flag.** `optimizeTix` (`src/tensor/index.ts`) returns `steps` of `{pass, accepted}`. A pass that changes nothing reports `accepted: true`, so acceptance counts overstate how often a pass applies. A rejection's reason exists inside the contract error, but it is not returned.
+- Needed: each step is `{pass, accepted, changed, reason?}`. `reason` is present when the step was rejected, and it says what disagreed (the first counterexample's reason).
+- Keep `accepted`'s meaning exactly as it is. External test suites check `steps.length` and `s.accepted` on programs where a pass may not apply.
+- Update the existing assertion in `tests/tensor/passes.test.mjs` that compares a whole step.
+
+**F19: concurrent cold checks both issue a batch.** The CUDA lowering check (`src/tensor/cuda-contract.ts`) runs its cases on the GPU in one batch, through the differential contract's `decide` (`src/framework/contracts/`). Its memo records verdicts only after a batch completes. So two concurrent checks of the same (baseline, function, subject) both send a batch.
+- Needed: concurrent checks with the same key share the in-flight batch.
+- Put the change where the memo is, and keep it general. Failure must not be cached: a check that follows a failed batch retries, as now.
+- `tests/tensor/cuda.test.mjs` has a counting fake engine that you can reuse.
+
+**F20: `tools/cuda-remote.mjs` cannot link libraries.** A cuBLAS baseline needs `-lcublas`, so it had to run over `ssh` directly, outside the tool's lock and compile cache.
+- Needed: a repeatable `--link <lib>` option. It is part of the build cache key, and the tool's header documents it.
+- Show that it works with a small probe in your ticket's `scripts/` directory: a program that calls `cublasSgemm` on the GPU machine and checks a small product against a CPU computation. Report the result.
+
+## How
+
+- **Read before changing:** the code in question, and the header of `tools/cuda-remote.mjs`.
+- **Tests first:** for each fix, write the regression test first, run it on the unfixed code, and record in the diary how it fails. Then make the smallest change that passes it.
+- **Do not change** the f32 meaning, the relations the gates use, or any other behaviour the fixes do not need.
+- **Build:** `npm run build` (`tsc`, into `dist/`).
+- **Tests:** `node --test tests/<dir>/<name>.test.mjs`; on Node 24, pass files, not a bare directory. Run `tests/framework/*.test.mjs` and `tests/tensor/*.test.mjs` before your last commit. Do not run the full suite (`npm test`): other agents share this machine.
+- **The GPU machine** is shared with seven other agents. Keep runs short, and do not use `--timed`.
+- **Sandboxed sessions:** a test that spawns `node`, or the `ssh` to the GPU machine, can fail with EPERM or a network error. Request escalation for that command.
+- **Outside your worktree,** use only the GPU machine.
+
+## Your final message
+
+For each fix:
+- the commit hash;
+- the test that failed before the fix, and how it failed;
+- the files changed.
+
+Then the result of the cuBLAS probe, and the test counts from your last run.
+codex
+I’ll use the docmgr and diary skills to track each failing regression, then commit the three fixes separately.
+exec
+/usr/bin/zsh -lc "git status --short; rg --files -g AGENTS.md -g '*differ*'; cat /home/manuel/.codex/skills/{docmgr,diary}/SKILL.md; cat src/tensor/index.ts; cat tools/cuda-remote.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 1602ms:
+src/framework/contracts/differential.ts
+---
+description: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+metadata:
+    title: Docmgr
+    topics:
+        - imported-skill
+    what_for: 'Documentation management with the `docmgr` CLI: create and work in ticket workspaces (`ttmp/...`), add documents, relate code/files to docs, manage tasks/changelogs/metadata/vocabulary, and search/validate docs. Use when a user mentions `docmgr`, ticket docs, `docmgr doc relate`, `docmgr doc search`, YAML frontmatter validation, or asks to turn ad-hoc markdown into a structured, searchable knowledge base.'
+    when_to_use: Use when working with Docmgr.
+name: docmgr
+---
+
+# Docmgr
+
+## Overview
+
+Use `docmgr` to keep documentation organized into ticket workspaces, with consistent metadata and bidirectional links between code/files and docs.
+
+## Quick Start
+
+### Shell safety: never paste unquoted backticks
+
+Bash/zsh treat backticks as command substitution. If you see a path rendered as `` `ttmp/.../doc.md` ``:
+- Prefer removing the backticks: `ttmp/.../doc.md`
+- Or quote the whole argument: ``'`ttmp/.../doc.md`'``
+
+### First-time setup (one-time)
+
+```bash
+docmgr status --summary-only
+docmgr init --seed-vocabulary
+docmgr vocab list
+```
+
+### Create a ticket
+
+```bash
+docmgr ticket create-ticket \
+  --ticket TICKET-ID \
+  --title "Descriptive Title" \
+  --topics topic1,topic2
+```
+
+### Add a document + relate files immediately
+
+```bash
+docmgr doc add --ticket TICKET-ID --doc-type analysis --title "Document Title"
+docmgr doc relate --ticket TICKET-ID \
+  --file-note "/abs/path/to/file.go:Why this file matters"
+```
+
+## Core Conventions (strict)
+
+- Use `docmgr doc relate` (not `docmgr relate`).
+- Do not pass `--doc-type` to `doc relate`; target either `--ticket TICKET-ID` (ticket index) or `--doc PATH` (specific doc).
+- Always format related files as `--file-note "path:reason"` (colon separator, not dash).
+- Prefer absolute paths in `--file-note` for clarity and copy/paste safety.
+- Prefer "subdocument-first" linking: relate most files to the focused subdoc, keep `index.md` as the overview.
+- Keep "RelatedFiles" tight (roughly 3-7 per ticket, not 20+).
+- Store any ad-hoc scripts you create for a ticket in that ticket's `scripts/` directory under `ttmp/.../scripts` so they are tracked. Name scripts with a numerical prefix (`01-...`, `02-...`) to preserve execution order and trace investigation steps.
+- Every active ticket should have a **diary**. On resume, read its latest relevant checkpoint and current files; expand earlier steps when needed rather than automatically rereading the entire history. An explicit detailed-diary request uses investigation mode from the diary skill.
+- Keep one authoritative current-state source per fact. A milestone receipt can own task/history effects while the diary owns reasoning; do not duplicate the same progress paragraph across every projection.
+
+## Milestones and compact resume
+
+A verified binary with `milestone record` can consolidate task/history bookkeeping and `ticket resume` can derive the current checkpoint. Check command availability once for an unfamiliar binary; this repository's implemented contract uses Glazed v1.3.6, including `--with-glaze-output --output json`. Follow installed help if that output API changes. Older binaries require the existing task/changelog workflow; never invoke a proposed API from a design sketch as though installed.
+
+Read [milestone commands and safety](references/milestones.md) when using these operations. A receipt is not proof of the underlying claim and does not replace a requested diary. Retry interrupted operations using the same ID/request; do not bypass conflicts or overwrite human edits.
+
+## Common Workflows
+
+### Get oriented on an existing ticket
+
+```bash
+docmgr ticket list --ticket TICKET-ID
+docmgr doc list --ticket TICKET-ID
+docmgr task list --ticket TICKET-ID
+docmgr vocab list
+```
+
+### Task bookkeeping
+
+```bash
+docmgr task add --ticket TICKET-ID --text "New task"
+docmgr task check --ticket TICKET-ID --id 1,2
+```
+
+### Changelog update (what + why + related files)
+
+```bash
+docmgr changelog update --ticket TICKET-ID \
+  --entry "What changed and why" \
+  --file-note "/abs/path/to/file.go:Reason"
+```
+
+### Search
+
+```bash
+docmgr doc search --query "search term"
+docmgr doc search --query "term" --topics backend --doc-type design-doc
+docmgr doc search --file path/to/file.go
+docmgr doc search --dir path/to/dir/
+```
+
+### Validate / hygiene
+
+```bash
+docmgr doctor --ticket TICKET-ID --stale-after 30
+docmgr validate frontmatter --doc path/to/doc.md --suggest-fixes
+```
+
+## Vocabulary
+
+If a `doctor` warning indicates an unknown topic/doc-type/category, add it to the vocabulary (or ignore if it's intentionally out-of-vocab):
+
+```bash
+docmgr vocab add --category topics --slug my-topic --description "Description"
+```
+
+## Reference
+
+Load `references/docmgr.md` for the full (long-form) docmgr workflow, command reference, and best practices.
+---
+name: diary
+description: Write and maintain chronological implementation diaries with evidence, failures, decisions, commits and review instructions. Use when asked to keep a diary, dev log, ticket work history or debugging record; detailed diary requests use the full investigation format.
+---
+
+# Diary
+
+## Select the entry mode
+
+- **Investigation:** substantive implementation, debugging, design decisions, or an explicit detailed diary request. Use the full [investigation format](references/investigation-entry.md).
+- **Milestone:** routine successful validation, publication or bookkeeping without substantive debugging. Use the compact [milestone format](references/milestone-entry.md).
+- When uncertain, preserve the meaningful failure/decision context rather than compressing it away. Higher-priority instructions and an explicit user format override these defaults.
+
+Each numbered step begins with 1–2 short prose paragraphs explaining intent and outcome. Record failures promptly, including the exact command and relevant diagnostic. Keep historical entries intact; change future entry conventions prospectively.
+
+## Prompt and evidence discipline
+
+Record the actual authored user request verbatim the first time it appears; later steps link to that entry. Do not fabricate a verbatim quote from a summary. Distinguish user-authored instructions from automatically injected runtime metadata; avoid repeating counters or budget notices. If only a summary survives, label it as a summary and link the original source when available.
+
+Use [evidence levels](references/evidence-levels.md): routine success needs command/result/revision, experiments need configuration and measurements, and failures need exact relevant diagnostics. Preserve raw bytes when identity matters, not just to archive decorative successful CLI output.
+
+## Working loop
+
+Implement toward a major feature or integration milestone, then validate its affected behavior at that boundary. Commit boundaries and validation boundaries are not the same: smaller focused commits are useful checkpoints and do not warrant extensive checks, full builds or broad test suites merely because a commit is being made. Prioritize visible feature progress over repeated validation and bookkeeping loops.
+
+At a major boundary, run the relevant validation gate. If it fails, collect the diagnostics, fix the issues together where practical, and rerun the narrow checks needed to verify those fixes rather than restarting the entire validation pipeline after each edit. Run an earlier targeted check only when it resolves a concrete uncertainty or material risk; honor explicit project-required checks. Record which checks passed, failed or were deferred, and never describe an unvalidated checkpoint as qualified.
+
+Update the detailed diary, tasks and changelog at meaningful milestones, preserving failure evidence as it occurs without requiring a full bookkeeping cycle for every small edit. Code and documentation may share a focused commit when that is clearer; two separate commits per small edit are not mandatory. Record the code hash in the subsequent checkpoint when available.
+
+Use `docmgr` for ticket creation, task updates and relations. If a verified local binary provides `milestone record`, it can consolidate task/history updates; it does not author the diary or judge evidence. Follow the docmgr skill's actual API and capability check, not a proposed command from a design sketch.
+
+Keep RelatedFiles focused on primary implementation and evidence files, with absolute `--file-note "path:reason"` arguments. A commit or bounded receipt supplies the full changed-path inventory; do not duplicate every path in metadata. Never hide review-critical files merely to hit an arbitrary count.
+
+## Resume and review
+
+Resume from the latest relevant checkpoint, current request and current files, then expand the necessary earlier investigation. Do not reread an entire long diary automatically. Unchanged instruction hashes are change signals, not proof the model still remembers the text; reload absent instructions and obey higher-priority full-read rules.
+
+The [workflow reference](references/diary.md) points to the canonical formats and evidence rules. No runtime phase loader or automatic policy enforcement is implied by this prose.
+import type { Artifact } from '../framework/core/types.js';
+import { createIRArtifact } from '../framework/ir/index.js';
+import { applyNativePassSync, PassError } from '../framework/passes/index.js';
+import { meaningGate } from './contract.js';
+import { evaluate, type Inputs, type Precision, type BufferValue } from './evaluate.js';
+import { adapter } from './ir.js';
+import { selectFunction, type Module } from './model.js';
+import { checkCudaLowering } from './cuda-contract.js';
+import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+import { emitCuda } from './cuda-source.js';
+import { parse } from './parser.js';
+import { inlinePass, splitPass } from './passes.js';
+
+export interface TixProgram {
+  readonly origin: Artifact<Module>;
+  readonly current: Artifact<Module>;
+}
+export function compileTix(source: string): TixProgram {
+  const origin = createIRArtifact(adapter, 'tix', parse(source));
+  return { origin, current: origin };
+}
+export function runTix(
+  program: TixProgram,
+  fn: string,
+  inputs: Inputs,
+  options?: { precision?: Precision },
+): BufferValue {
+  return evaluate(selectFunction(program.current.value, fn), inputs, options?.precision ?? 'f32');
+}
+export function optimizeTix(program: TixProgram, passes: string[]) {
+  const { origin } = program;
+  let { current } = program;
+  const steps = passes.map(pass => {
+    const definition = pass === 'inline' ? inlinePass : pass === 'split-sum' ? splitPass : undefined;
+    if (!definition) throw Error('Unknown pass ' + pass);
+    try {
+      current = applyNativePassSync(
+        definition,
+        current,
+        meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'),
+      ).artifact;
+      return { pass, accepted: true };
+    } catch (error) {
+      if (error instanceof PassError && error.code === 'contractRejected') return { pass, accepted: false };
+      throw error;
+    }
+  });
+  return { program: { origin, current }, steps };
+}
+
+export function cudaSource(program: TixProgram, fn: string): string {
+  return emitCuda(selectFunction(program.current.value, fn));
+}
+
+export async function runTixCuda(
+  program: TixProgram,
+  fn: string,
+  inputs: CudaInputs,
+  options?: { host?: string },
+): Promise<CudaResult> {
+  const f = selectFunction(program.current.value, fn);
+  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+  return result;
+}
+
+export function checkLowering(
+  program: TixProgram,
+  fn: string,
+): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
+  return checkCudaLowering(program.current, fn);
+}
+// Compile and run a CUDA program on the GPU machine over ssh, and bring its outputs back.
+//
+//   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121]
+//     [--runtime-input relative-path ...] [-- program args...]
+//
+// <dir> holds main.cu and any input files. Each invocation uploads to its own remote working directory.
+// `nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture and build files.
+// Each --runtime-input path marks an uploaded file that does not affect compilation. Files under out/
+// are copied back to <dir>/out/ after running ./prog from the working directory.
+// --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so concurrent timed
+// users do not disturb each other's timings. Untimed runs do not wait for it.
+// Prints one JSON object: { host, hash, compiled, compileMs, runMs, exit, stdout, stderr, outputs }.
+// Environment: CUDA_REMOTE_HOST (default manuel@bling, the Tailscale name; bling.local resolves only on the home
+// LAN), CUDA_REMOTE_NVCC (default /usr/local/cuda-13.0/bin/nvcc).
+// Inside the Codex sandbox, ssh needs network access (-c sandbox_workspace_write.network_access=true); without it,
+// agents request escalation instead.
+import { createHash, randomUUID } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readdirSync, readFileSync, statSync, mkdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+const argv = process.argv.slice(2);
+const sep = argv.indexOf('--');
+const opts = sep < 0 ? argv : argv.slice(0, sep);
+const progArgs = sep < 0 ? [] : argv.slice(sep + 1);
+const valued = ['--host', '--arch', '--runtime-input'];
+const dir = opts.find((a, i) => !a.startsWith('--') && !valued.includes(opts[i - 1]));
+if (!dir)
+  throw new Error(
+    'usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [--runtime-input path ...] [-- args]',
+  );
+for (const [i, opt] of opts.entries())
+  if (valued.includes(opt) && (!opts[i + 1] || opts[i + 1].startsWith('--')))
+    throw new Error('Missing argument to ' + opt);
+const value = (name, fallback) => (opts.includes(name) ? opts[opts.indexOf(name) + 1] : fallback);
+const host = value('--host', process.env.CUDA_REMOTE_HOST ?? 'manuel@bling');
+const arch = value('--arch', 'sm_121');
+const nvcc = process.env.CUDA_REMOTE_NVCC ?? '/usr/local/cuda-13.0/bin/nvcc';
+
+const files = [];
+function walk(d) {
+  for (const entry of readdirSync(d).sort()) {
+    const p = join(d, entry);
+    if (relative(dir, p) === 'out') continue;
+    if (statSync(p).isDirectory()) walk(p);
+    else files.push(relative(dir, p));
+  }
+}
+walk(dir);
+if (!files.includes('main.cu')) throw new Error(dir + ': no main.cu');
+const runtime = new Set(opts.flatMap((arg, i) => (arg === '--runtime-input' ? [opts[i + 1]] : [])));
+for (const path of runtime)
+  if (path === 'main.cu' || !files.includes(path)) throw new Error('Invalid runtime input: ' + path);
+const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch]));
+for (const f of files) {
+  if (runtime.has(f)) continue;
+  const bytes = readFileSync(join(dir, f));
+  h.update(JSON.stringify([f, bytes.length])).update(bytes);
+}
+const hash = h.digest('hex');
+const remote = 'irwb-cuda/run/' + randomUUID();
+const ssh = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '--', host];
+const q = s => "'" + String(s).replaceAll("'", "'\\''") + "'";
+
+const tar = spawnSync('tar', ['-C', dir, '-cf', '-', '--', ...files], { maxBuffer: 1 << 30 });
+if (tar.status !== 0) throw new Error('tar: ' + (tar.error ?? tar.stderr));
+let cleaned = false;
+try {
+  const put = spawnSync('ssh', [...ssh, `mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], {
+    input: tar.stdout,
+  });
+  if (put.status !== 0) throw new Error('ssh copy: ' + (put.error ?? put.stderr));
+
+  // Hold the compile lock until the cached binary is linked into this job.
+  const lock = opts.includes('--timed') ? 'flock ~/irwb-cuda/.gpu.lock ' : '';
+  const script = [
+    'set -e',
+    `cd ~/${remote}`,
+    `cache=~/irwb-cuda/build/${hash}`,
+    'compiled=0; c0=$(date +%s%N)',
+    'mkdir -p "$cache"',
+    'exec 9>"$cache/.lock"',
+    'flock 9',
+    'if [ ! -x "$cache/prog" ]; then',
+    `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu || exit 97`,
+    '  mv prog.tmp "$cache/prog"',
+    '  compiled=1',
+    'fi',
+    'ln "$cache/prog" prog',
+    'exec 9>&-',
+    'c1=$(date +%s%N); mkdir -p out',
+    `r0=$(date +%s%N); status=0; ${lock}./prog ${progArgs.map(q).join(' ')} || status=$?; r1=$(date +%s%N)`,
+    'printf "\\n@@meta %s %s %s %s\\n" "$compiled" "$(( (c1 - c0) / 1000000 ))" "$(( (r1 - r0) / 1000000 ))" "$status"',
+  ].join('\n');
+  const run = spawnSync('ssh', [...ssh, 'bash -s'], { input: script, maxBuffer: 1 << 28, encoding: 'utf8' });
+  const meta = run.status === 0 && /\n@@meta (\d) (\d+) (\d+) (\d+)\n?$/.exec(run.stdout ?? '');
+  const result = {
+    host,
+    hash,
+    compiled: meta ? meta[1] === '1' : false,
+    compileMs: meta ? Number(meta[2]) : null,
+    runMs: meta ? Number(meta[3]) : null,
+    exit: meta ? Number(meta[4]) : run.status || 1,
+    stdout: meta ? run.stdout.slice(0, meta.index) : (run.stdout ?? ''),
+    stderr: run.error?.message ?? run.stderr ?? '',
+    outputs: [],
+  };
+
+  if (meta) {
+    const get = spawnSync('ssh', [...ssh, `tar -C ~/${remote}/out -cf - . && rm -rf ~/${remote}`], {
+      maxBuffer: 1 << 30,
+    });
+    if (get.status !== 0) throw new Error('ssh fetch: ' + (get.error ?? get.stderr));
+    cleaned = true;
+    const out = join(dir, 'out');
+    mkdirSync(out, { recursive: true });
+    execFileSync('tar', ['-C', out, '-xf', '-'], { input: get.stdout });
+    const collect = d => {
+      for (const entry of readdirSync(d)) {
+        const p = join(d, entry);
+        if (statSync(p).isDirectory()) collect(p);
+        else result.outputs.push(relative(out, p));
+      }
+    };
+    collect(out);
+    result.outputs.sort();
+  }
+  process.stdout.write(JSON.stringify(result) + '\n');
+  if (result.exit !== 0) process.exitCode = 1;
+} finally {
+  if (!cleaned) spawnSync('ssh', [...ssh, `rm -rf ~/${remote}`], { stdio: 'ignore' });
+}
+
+exec
+/usr/bin/zsh -lc "ls -a; node -v; docmgr ticket create-ticket --ticket IRWB-026 --title 'framework and tensor fixes F14, F19, F20'; docmgr doc add --ticket IRWB-026 --doc-type reference --title 'Diary'; cat src/framework/contracts/differential.ts src/tensor/cuda-contract.ts tests/tensor/passes.test.mjs; rg -n 'contractRejected|changed:' src/framework/passes; rg -n 'count|batch|memo' tests/tensor/cuda.test.mjs; rg --files tests | rg 'remote|tool'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 1 in 962ms:
+.
+..
+.agents
+.aws
+.codex
+.git
+.gitignore
+.prettierrc.json
+.ttmp.yaml
+BACKLOG.md
+corpus
+package-lock.json
+package.json
+site-src
+src
+tests
+tools
+tsconfig.json
+ttmp
+vendor
+v24.18.0
+created IRWB-026 at ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20 (9 dirs, 4 files)
+created ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+/**
+ * IRWB-001 E5: differential checkers as v6 invariants.
+ *
+ * Compiler Workbench checks meaning by running two artifacts on the same generated inputs and comparing results,
+ * traps and memory. v6 knows only exact checkers. `differential()` packages the sampled method as an ordinary
+ * `InvariantDefinition`, so a transformation contract can `ensure` it like any other invariant. Its evidence records
+ * the method (`sampled`), the case count and seed, how many cases agreed, disagreed or were inconclusive, and the
+ * first counterexamples. Inconclusive cases (for example a step limit hit by either side) are counted and never
+ * treated as a verdict; a check with no decided case fails, because it has established nothing.
+ */
+import { defineInvariant } from './definitions.js';
+import type { CheckResult, InvariantDefinition, PortValue, PortValues, Ports } from './types.js';
+
+/** A small deterministic generator (mulberry32), so a reported counterexample can be run again from its seed. */
+export function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export interface CaseComparison {
+  readonly ok: boolean;
+  readonly reason?: string;
+}
+
+export interface DifferentialSpec<P extends Ports, Case, Outcome> {
+  readonly id: string;
+  readonly version: string;
+  readonly description: string;
+  readonly inputs: P;
+  /** The port whose behaviour defines the expected meaning (e.g. `origin`, r0). */
+  readonly baseline: keyof P & string;
+  /** The port being checked against it (e.g. `candidate`). */
+  readonly subject: keyof P & string;
+  readonly count: number;
+  readonly seed?: number;
+  /** The generator to seed (default `seededRandom`, mulberry32); a port may supply its tool's own generator. */
+  readonly random?: (seed: number) => () => number;
+  /** Generate the cases, deterministically from `random` and the inputs. */
+  cases(inputs: PortValues<P>, random: () => number, count: number): readonly Case[];
+  /** Run one side on one case. `side` names which port `value` came from. */
+  run(side: 'baseline' | 'subject', value: PortValue<P[keyof P]>, kase: Case, inputs: PortValues<P>): Outcome;
+  compare(baseline: Outcome, subject: Outcome, kase: Case): CaseComparison | boolean;
+  inconclusive?(outcome: Outcome): boolean;
+  describeCase?(kase: Case): unknown;
+  readonly maxCounterexamples?: number;
+  /**
+   * IRWB-004 D1: a key such that the cases, and the baseline's outcome on each, are a function of this spec (its id,
+   * version, seed and count) and the key alone; for a check against a fixed origin, the origin's revision. With a
+   * key, both are computed once per key and reused by every later check.
+   */
+  readonly baselineKey?: (inputs: PortValues<P>) => string | undefined;
+  /**
+   * IRWB-004 D1: a key such that the subject's outcome on a case is a function of the case and the key alone (for a
+   * program, a hash of the code the case can reach). Used only together with `baselineKey`: a decided verdict is
+   * kept under (baseline key, case index, subject key) and replayed instead of evaluating the case again.
+   */
+  readonly subjectKey?: (subject: PortValue<P[keyof P]>, kase: Case, inputs: PortValues<P>) => string | undefined;
+  /**
+   * IRWB-004 F4: decide the cases at the indices `todo` elsewhere (e.g. on worker threads), returning one verdict
+   * per index, in the order of `todo`, exactly as `run`, `inconclusive` and `compare` would decide them; or
+   * `undefined` to decide them here. The check's evidence is assembled in case order, whoever decided a case.
+   */
+  readonly decide?: (
+    inputs: PortValues<P>,
+    cases: readonly Case[],
+    todo: readonly number[],
+  ) => Promise<readonly Decided[]> | undefined;
+}
+
+/** One decided case: what `compare` (or `inconclusive`) concluded. */
+export type Decided =
+  | { readonly v: 'agree' }
+  | { readonly v: 'inconclusive' }
+  | { readonly v: 'disagree'; readonly reason: string };
+
+export interface DifferentialEvidence {
+  readonly method: 'sampled';
+  readonly invariant: string;
+  readonly seed: number;
+  readonly total: number;
+  readonly agree: number;
+  readonly disagree: number;
+  readonly inconclusive: number;
+  readonly status: 'agree' | 'disagree' | 'inconclusive';
+  readonly counterexamples: readonly { readonly case: unknown; readonly reason: string }[];
+}
+
+export type DifferentialInvariant<P extends Ports> = InvariantDefinition<P> & {
+  readonly method: 'sampled';
+};
+
+export function differential<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+): DifferentialInvariant<P> {
+  if (!(spec.count > 0 && Number.isInteger(spec.count)))
+    throw new Error('Differential check needs a positive case count');
+  if (!(spec.baseline in spec.inputs) || !(spec.subject in spec.inputs) || spec.baseline === spec.subject)
+    throw new Error('Differential check needs distinct baseline and subject ports');
+  const seed = spec.seed ?? 1,
+    maxCx = spec.maxCounterexamples ?? 5;
+  const result = (evidence: DifferentialEvidence): CheckResult => ({
+    ok: evidence.status === 'agree',
+    reason:
+      evidence.status === 'agree'
+        ? `${evidence.agree}/${evidence.total} sampled cases agree (${evidence.inconclusive} inconclusive)`
+        : evidence.status === 'disagree'
+          ? `${evidence.disagree}/${evidence.total} sampled cases disagree`
+          : `no decided case among ${evidence.total} (all inconclusive)`,
+    evidence,
+  });
+  const inv = defineInvariant<P>({
+    id: spec.id,
+    version: spec.version,
+    description: spec.description,
+    inputs: spec.inputs,
+    check(_ctx, inputs): CheckResult | Promise<CheckResult> {
+      if (spec.decide) return runDifferentialAsync(spec, inputs, seed, maxCx).then(result);
+      return result(runDifferential(spec, inputs, seed, maxCx));
+    },
+  });
+  const out = Object.assign(Object.create(null), inv, { method: 'sampled' as const }) as DifferentialInvariant<P>;
+  SPECS.set(out, spec as DifferentialSpec<any, any, any>);
+  return out;
+}
+
+const SPECS = new WeakMap<object, DifferentialSpec<any, any, any>>();
+/** IRWB-004 F4: the specification a differential invariant was made from (a worker decides cases with it). */
+export function differentialSpec<P extends Ports>(inv: DifferentialInvariant<P>): DifferentialSpec<P, any, any> {
+  const spec = SPECS.get(inv);
+  if (!spec) throw new Error(`${inv.id} is not a differential invariant of this realm`);
+  return spec;
+}
+
+/**
+ * IRWB-004 D1: what a check against a baseline key keeps. The cases and the baseline's outcomes (computed as cases
+ * are first evaluated) are fixed by the key; `verdicts` maps `index \0 subject key` to the decided verdict. A few
+ * keys are kept, least recently used first out.
+ */
+interface Reuse {
+  readonly cases: readonly unknown[];
+  readonly outcomes: unknown[];
+  readonly verdicts: Map<string, Decided>;
+}
+const REUSE = new Map<string, Reuse>();
+const REUSE_MAX = 4;
+let reuseEnabled = true;
+/** Turn the reuse of cases, baseline outcomes and verdicts on or off (tests and measurements compare both). */
+export function setDifferentialReuse(enabled: boolean): void {
+  reuseEnabled = enabled;
+  if (!enabled) REUSE.clear();
+}
+/** Counts since the last reset: sides run here, verdicts replayed from the memo, cases decided by `decide`. */
+const STATS = { baselineRuns: 0, subjectRuns: 0, replayed: 0, delegated: 0 };
+export function differentialStats(reset = false): Readonly<typeof STATS> {
+  const out = { ...STATS };
+  if (reset) for (const k of Object.keys(STATS) as (keyof typeof STATS)[]) STATS[k] = 0;
+  return out;
+}
+
+function prepare<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  seed: number,
+): { cases: readonly Case[]; reuse?: Reuse } {
+  const bk = reuseEnabled ? spec.baselineKey?.(inputs) : undefined;
+  if (bk === undefined) return { cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count) };
+  const key = `${spec.id}@${spec.version}#${seed}#${spec.count}#${bk}`;
+  let reuse = REUSE.get(key);
+  if (reuse) REUSE.delete(key);
+  else
+    reuse = {
+      cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),
+      outcomes: [],
+      verdicts: new Map(),
+    };
+  REUSE.set(key, reuse);
+  while (REUSE.size > REUSE_MAX) REUSE.delete(REUSE.keys().next().value!);
+  return { cases: reuse.cases as readonly Case[], reuse };
+}
+
+const AGREE: Decided = Object.freeze({ v: 'agree' }),
+  INCONCLUSIVE: Decided = Object.freeze({ v: 'inconclusive' });
+/**
+ * Decide one case: run both sides, then `inconclusive`, then `compare`, as a check always has. `outcomes`, when
+ * given, keeps the baseline's outcome by case index (it is fixed by the baseline key); a worker deciding cases for a
+ * check (IRWB-004 F4) calls this too, with its own `outcomes`.
+ */
+export function decideCase<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  kase: Case,
+  index: number,
+  outcomes?: unknown[],
+): Decided {
+  let a = outcomes?.[index] as Outcome | undefined;
+  if (a === undefined) {
+    a = spec.run('baseline', inputs[spec.baseline] as PortValue<P[keyof P]>, kase, inputs);
+    STATS.baselineRuns++;
+    if (outcomes) outcomes[index] = a;
+  }
+  STATS.subjectRuns++;
+  const b = spec.run('subject', inputs[spec.subject] as PortValue<P[keyof P]>, kase, inputs);
+  if (spec.inconclusive?.(a) || spec.inconclusive?.(b)) return INCONCLUSIVE;
+  const c = spec.compare(a, b, kase);
+  const verdict = typeof c === 'boolean' ? { ok: c } : c;
+  return verdict.ok ? AGREE : Object.freeze({ v: 'disagree', reason: verdict.reason ?? 'outcomes differ' });
+}
+
+/** The evidence of decided cases, counted in case order (so counterexamples come in case order). */
+function tally<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  seed: number,
+  cases: readonly Case[],
+  verdicts: readonly Decided[],
+  maxCounterexamples: number,
+): DifferentialEvidence {
+  let agree = 0,
+    disagree = 0,
+    inconclusive = 0;
+  const counterexamples: { case: unknown; reason: string }[] = [];
+  for (let i = 0; i < cases.length; i++) {
+    const d = verdicts[i];
+    if (d.v === 'inconclusive') inconclusive++;
+    else if (d.v === 'agree') agree++;
+    else {
+      disagree++;
+      if (counterexamples.length < maxCounterexamples)
+        counterexamples.push({
+          case: spec.describeCase ? spec.describeCase(cases[i]) : cases[i],
+          reason: d.reason,
+        });
+    }
+  }
+  return {
+    method: 'sampled',
+    invariant: spec.id,
+    seed,
+    total: cases.length,
+    agree,
+    disagree,
+    inconclusive,
+    status: disagree ? 'disagree' : agree ? 'agree' : 'inconclusive',
+    counterexamples,
+  };
+}
+
+/** The memo keys of the cases (undefined where a case has no subject key or nothing is reused). */
+function memoKeys<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  cases: readonly Case[],
+  reuse: Reuse | undefined,
+): (string | undefined)[] {
+  if (!reuse || !spec.subjectKey) return new Array(cases.length).fill(undefined);
+  const subject = inputs[spec.subject] as PortValue<P[keyof P]>;
+  return cases.map((c, i) => {
+    const sk = spec.subjectKey!(subject, c, inputs);
+    return sk === undefined ? undefined : `${i}\u0000${sk}`;
+  });
+}
+
+/**
+ * Run a differential specification directly (tools, the workbench's Checks view) without a manager. IRWB-004: with
+ * `baselineKey`, the cases and baseline outcomes are kept and reused; with `subjectKey` too, a case whose verdict is
+ * known for its subject key is not evaluated again. The evidence is the same either way.
+ */
+export function runDifferential<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  seed = spec.seed ?? 1,
+  maxCounterexamples = spec.maxCounterexamples ?? 5,
+): DifferentialEvidence {
+  const { cases, reuse } = prepare(spec, inputs, seed);
+  const keys = memoKeys(spec, inputs, cases, reuse);
+  const verdicts: Decided[] = new Array(cases.length);
+  for (let i = 0; i < cases.length; i++) {
+    const known = keys[i] === undefined ? undefined : reuse!.verdicts.get(keys[i]!);
+    if (known) {
+      verdicts[i] = known;
+      STATS.replayed++;
+      continue;
+    }
+    verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+    if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+  }
+  return tally(spec, seed, cases, verdicts, maxCounterexamples);
+}
+
+/** `runDifferential`, with the cases nobody decided yet handed to `spec.decide` (IRWB-004 F4). */
+export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
+  spec: DifferentialSpec<P, Case, Outcome>,
+  inputs: PortValues<P>,
+  seed = spec.seed ?? 1,
+  maxCounterexamples = spec.maxCounterexamples ?? 5,
+): Promise<DifferentialEvidence> {
+  const { cases, reuse } = prepare(spec, inputs, seed);
+  const keys = memoKeys(spec, inputs, cases, reuse);
+  const verdicts: Decided[] = new Array(cases.length);
+  const todo: number[] = [];
+  for (let i = 0; i < cases.length; i++) {
+    const known = keys[i] === undefined ? undefined : reuse!.verdicts.get(keys[i]!);
+    if (known) {
+      verdicts[i] = known;
+      STATS.replayed++;
+    } else todo.push(i);
+  }
+  const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
+  if (elsewhere) {
+    const decided = await elsewhere;
+    if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
+    todo.forEach((i, k) => (verdicts[i] = decided[k]));
+    STATS.delegated += todo.length;
+  } else for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+  for (const i of todo) if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+  return tally(spec, seed, cases, verdicts, maxCounterexamples);
+}
+
+/** The assurance a check's evidence supports: sampled differential testing is weaker than an exact checker. */
+export function assuranceOf(evidence: unknown): 'checked-sampled' | 'checked-exact' {
+  return (evidence as { method?: string } | null)?.method === 'sampled' ? 'checked-sampled' : 'checked-exact';
+}
+import {
+  AnalysisManager,
+  ContractError,
+  createArtifact,
+  defineIR,
+  defineTransformation,
+  defineType,
+  differential,
+  type Decided,
+  type DifferentialEvidence,
+} from '../framework/contracts/index.js';
+import type { Artifact } from '../framework/core/types.js';
+import { coordinate, cudaCases, seed } from './contract.js';
+import { runCudaBatch } from './cuda-runtime.js';
+import { emitCuda } from './cuda-source.js';
+import type { BufferValue } from './evaluate.js';
+import { TixIR } from './ir.js';
+import { selectFunction, type Module } from './model.js';
+
+interface CudaUnit {
+  fn: string;
+  source: string;
+}
+
+const CudaIR = defineIR<CudaUnit>({
+  id: 'tensor.cuda-source',
+  version: '1',
+  description: 'Standalone CUDA translation unit for a Tix function',
+  validate(value) {
+    const unit = value as Partial<CudaUnit> | null;
+    if (typeof unit?.fn !== 'string' || !unit.fn || typeof unit.source !== 'string' || !unit.source)
+      throw Error('Invalid CUDA translation unit');
+  },
+});
+const FunctionName = defineType<string>({
+  id: 'tensor.function-name',
+  version: '1',
+  description: 'Name of the Tix function to lower',
+  validate(name) {
+    if (typeof name !== 'string' || !name) throw Error('Invalid Tix function name');
+  },
+});
+
+export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
+  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
+}
+
+// The relation is exact: the lowered function must give the current revision's f32 meaning bit for bit, signed
+// zeros and infinities included (IRWB-019 F17). The emitter makes that possible: explicit round-to-nearest
+// arithmetic, so nothing contracts, and exp, log and tanh in double, rounded, which equal Math.fround(Math.exp(x))
+// and so on for all 2^32 f32 inputs on the GB10 (IRWB-019 diary step 23). NaN is compared as a class, because the
+// GPU and V8 produce different NaN words (sqrt of -2^-149: 0x7fffffff against 0xffc00000).
+function compare(expected: BufferValue, got: BufferValue) {
+  if (expected.shape.length !== got.shape.length || expected.shape.some((n, i) => n !== got.shape[i]))
+    return { ok: false, reason: 'Output shape differs' };
+  if (expected.data.length !== got.data.length) return { ok: false, reason: 'Output length differs' };
+  const f32 = (d: ArrayLike<number>) => (d instanceof Float32Array ? d : Float32Array.from(d));
+  const a = f32(expected.data),
+    b = f32(got.data);
+  const wa = new Uint32Array(a.buffer, a.byteOffset, a.length),
+    wb = new Uint32Array(b.buffer, b.byteOffset, b.length);
+  const hex = (w: number) => '0x' + w.toString(16).padStart(8, '0');
+  for (let i = 0; i < a.length; i++) {
+    if (wa[i] === wb[i] || (Number.isNaN(a[i]) && Number.isNaN(b[i]))) continue;
+    const at = coordinate(expected.shape, i);
+    return { ok: false, reason: `At [${at}], expected ${a[i]} (${hex(wa[i])}), got ${b[i]} (${hex(wb[i])})` };
+  }
+  return { ok: true };
+}
+
+type CudaSample = ReturnType<typeof cudaCases>[number];
+
+export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
+  const inputs = { baseline: TixIR, fn: FunctionName };
+  const outputs = { subject: CudaIR };
+  const ports = { ...inputs, ...outputs };
+  const invariant = differential<typeof ports, CudaSample, BufferValue>({
+    id: 'tensor.cuda-meaning',
+    version: '2',
+    description:
+      'Compare the lowered CUDA function to its current Tix f32 meaning, bit for bit (NaN as a class)',
+    inputs: ports,
+    baseline: 'baseline',
+    subject: 'subject',
+    // The recipe is shape-dependent and supplies its whole eligible case set.
+    count: 1,
+    seed,
+    cases: ({ baseline, fn }, random) => {
+      const samples = cudaCases(selectFunction(baseline.value, fn), random);
+      if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
+      return samples;
+    },
+    run: (side, _artifact, sample) => {
+      if (side === 'baseline') return sample.reference;
+      throw Error('CUDA checks require the batch executor');
+    },
+    compare,
+    describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
+    baselineKey: ({ baseline, fn }) => JSON.stringify([baseline.revision, fn]),
+    subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
+    async decide({ baseline, fn, subject }, cases, todo) {
+      if (subject.value.fn !== fn)
+        return todo.map(() => ({ v: 'disagree', reason: 'CUDA function differs' }));
+      const pending = todo.map(i => cases[i]);
+      const results = await executeBatch(
+        subject.value.source,
+        selectFunction(baseline.value, fn),
+        pending.map(c => c.inputs),
+      );
+      if (results.length !== pending.length) throw Error('Wrong CUDA response case count');
+      return pending.map((sample, i): Decided => {
+        const result = compare(sample.reference, results[i]);
+        return result.ok ? { v: 'agree' } : { v: 'disagree', reason: result.reason! };
+      });
+    },
+  });
+  const pass = defineTransformation({
+    id: 'tensor.lower-cuda',
+    version: '1',
+    description: 'Lower a Tix function to CUDA and check the candidate on the GPU',
+    inputs,
+    outputs,
+    cache: 'never',
+    ensures: [
+      {
+        invariant,
+        bindings: {
+          baseline: { from: 'inputs', port: 'baseline' },
+          fn: { from: 'inputs', port: 'fn' },
+          subject: { from: 'outputs', port: 'subject' },
+        },
+      },
+    ],
+    run(_ctx, { baseline, fn }) {
+      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+    },
+  });
+
+  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+    const relation = 'exact' as const;
+    const manager = new AnalysisManager();
+    try {
+      if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
+      else await manager.execute(pass, { baseline, fn });
+      return { accepted: true, relation };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (error instanceof ContractError && error.code === 'postcondition') {
+        const checks = manager.snapshot().executions.at(-1)?.checks;
+        const evidence = checks?.find(check => check.phase === 'ensures')?.evidence as
+          | DifferentialEvidence
+          | undefined;
+        const first = evidence?.counterexamples[0];
+        const reason = first ? `${JSON.stringify(first.case)}: ${first.reason}` : message;
+        return { accepted: false, relation, reason };
+      }
+      return { accepted: false, relation, reason: 'CUDA evidence unavailable: ' + message };
+    }
+  };
+}
+
+export const checkCudaLowering = createCudaLowering('cuda-remote:sm_121:-O3');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { compileTix, optimizeTix, runTix } from '../../dist/tensor/index.js';
+import { meaningGate } from '../../dist/tensor/contract.js';
+import { inlinePass, splitPass } from '../../dist/tensor/passes.js';
+import { applyNativePassSync } from '../../dist/framework/passes/index.js';
+const checked = (p, pass, relation) => applyNativePassSync(pass, p.current, meaningGate(p.origin, relation));
+const sum = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k)x[i,k];return y;}');
+const mutate = (pass, change) => ({
+  ...pass,
+  run(ctx) {
+    const native = structuredClone(pass.run(ctx).native);
+    change(native.functions[0].statements.at(-1).expr);
+    return { native };
+  },
+});
+const rejected = e => e.code === 'contractRejected' && e.evidence.disagree > 0;
+test('one genuine split candidate fails exact and passes the source-f64 tolerance', () => {
+  assert.throws(() => checked(sum, splitPass, 'exact'), rejected);
+  const result = optimizeTix(sum, ['split-sum', 'split-sum']);
+  assert.ok(result.steps.every(s => s.accepted));
+  assert.notEqual(result.program.current.revision, sum.origin.revision);
+  for (const k of [0, 1, 3, 4, 7, 8]) {
+    const data = Float32Array.from({ length: k }, (_, i) => [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24, 1][i]);
+    const x = { shape: [1, k], data };
+    const fold = a => a.reduce((v, w) => Math.fround(v + w), 0);
+    assert.equal(
+      runTix(result.program, 'f', { x }).data[0],
+      fold([fold(data.slice(0, 4)), fold(data.slice(4))]),
+    );
+  }
+  const bad = mutate(splitPass, e => {
+    e.axes[0].extent.rounding = 'floor';
+  });
+  assert.throws(() => checked(sum, bad, 'tolerance'), rejected);
+});
+test('inline composes permuted addresses, and rejects identity-order substitution', () => {
+  const p = compileTix('fn f(x:f32[N,N]):f32[N,N]{p[i,j]=x[i,j]+1;y[i,j]=p[j,i];return y;}');
+  const good = checked(p, inlinePass, 'exact');
+  assert.equal(good.artifact.value.functions[0].statements.length, 1);
+  const bad = mutate(inlinePass, e => e.args[0].indices.reverse());
+  assert.throws(() => checked(p, bad, 'exact'), rejected);
+  assert.equal(p.origin.value.functions[0].statements.length, 2);
+});
+test('passes compose across calls and preserve the source baseline', () => {
+  const p = compileTix('fn f(x:f32[1,K]):f32[1]{a[i,k]=x[i,k]*1;y[i]=sum(k)a[i,k];return y;}');
+  const split = optimizeTix(p, ['split-sum']).program;
+  const later = optimizeTix(split, ['inline']);
+  assert.deepEqual(later.steps, [{ pass: 'inline', accepted: true }]);
+  assert.equal(later.program.origin, p.origin);
+  assert.notEqual(later.program.current.revision, split.current.revision);
+});
+test('coverage required per function and screening is origin-only', () => {
+  const never = 'fn g(x:f32[5000]):f32[5000]{return x;}';
+  const p = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k)x[i,k];return y;}' + never);
+  const r = optimizeTix(p, ['split-sum', 'inline']);
+  assert.deepEqual(
+    r.steps.map(s => s.accepted),
+    [false, true],
+  );
+  assert.equal(r.program.current, p.current);
+  const bad = mutate(splitPass, e => {
+    e.body.body = { kind: 'literal', text: '1e999' };
+  });
+  assert.throws(() => checked(sum, bad, 'tolerance'), rejected);
+  const nan = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k) sqrt(-1)*x[i,k];return y;}');
+  assert.equal(optimizeTix(nan, ['split-sum']).steps[0].accepted, false);
+});
+
+test('exact comparison detects a changed zero sign', () => {
+  const p = compileTix('fn f(x:f32[N]):f32[N]{p[i]=-x[i];y[i]=p[i];return y;}');
+  const bad = mutate(inlinePass, expr => {
+    // Adding +0 preserves finite nonzero values and flips -0 to +0.
+    const original = structuredClone(expr);
+    expr.op = '+';
+    expr.args = [original, { kind: 'literal', text: '0' }];
+  });
+  assert.throws(
+    () => checked(p, bad, 'exact'),
+    e => rejected(e) && e.evidence.counterexamples.some(c => c.reason.includes('2147483648')),
+  );
+});
+
+test('the meaning gate tells every pair of shape symbols apart (IRWB-019 F21)', () => {
+  // inline on mlp, plus a mutation that sums the first contraction over extent O instead of D. The sampled
+  // sizes used to make D = O in every case, so the gate accepted it.
+  const mlp =
+    compileTix(`fn mlp(x: f32[N, D], w: f32[D, H], bias: f32[H], v: f32[H, O], outBias: f32[O]): f32[N, O] {
+  h[i, j] = (sum(d) x[i, d] * w[d, j]) + bias[j];
+  g[i, j] = 0.5 * h[i, j] * (1 + tanh(0.79788456 * (h[i, j] + 0.044715 * h[i, j] * h[i, j] * h[i, j])));
+  y[i, j] = (sum(k) g[i, k] * v[k, j]) + outBias[j];
+  return y;
+}`);
+  const isD = dim => JSON.stringify(dim) === JSON.stringify({ constant: 0, terms: [['D', 1]] });
+  const shorten = e => {
+    if (!e || typeof e !== 'object') return;
+    if (e.kind === 'reduce')
+      for (const a of e.axes)
+        if (a.extent?.kind === 'dim' && isD(a.extent.dim)) a.extent.dim = { constant: 0, terms: [['O', 1]] };
+    for (const v of Object.values(e)) if (v && typeof v === 'object') shorten(v);
+  };
+  const alias = {
+    ...inlinePass,
+    run(ctx) {
+      const native = structuredClone(inlinePass.run(ctx).native);
+      for (const s of native.functions[0].statements) shorten(s.expr);
+      return { native };
+    },
+  };
+  assert.throws(() => checked(mlp, alias, 'exact'), rejected);
+  assert.doesNotThrow(() => checked(mlp, inlinePass, 'exact'));
+});
+src/framework/passes/bridge.ts:49:          changed: result.changed,
+src/framework/passes/bridge.ts:56:        if (e instanceof PassError && e.code === 'contractRejected')
+src/framework/passes/define-pass.ts:45:    readonly code: 'undeclaredWrite' | 'preserveViolated' | 'contractRejected' | 'badResult' | 'passFailed',
+src/framework/passes/define-pass.ts:137:  readonly changed: boolean;
+src/framework/passes/define-pass.ts:248:  if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
+src/framework/passes/define-pass.ts:252:    throw new PassError('contractRejected', contract?.reason ?? 'Candidate rejected', contract?.evidence);
+src/framework/passes/define-pass.ts:255:    changed: true,
+src/framework/passes/define-pass.ts:319:        changed: false,
+src/framework/passes/define-pass.ts:336:      changed: false,
+src/framework/passes/define-pass.ts:359:      throw new PassError('contractRejected', `Pass ${pass.id} output rejected: ${(e as Error).message}`, {
+src/framework/passes/define-pass.ts:390:    changed: true,
+53:  assert.throws(() => decodeCudaCases(response, 1, 1), /case count/);
+56:test('the lowering pass delegates one batch, replays verdicts and retries transport failures', async () => {
+57:  const batches = [];
+60:    batches.push(cases);
+77:  assert.equal(batches.length, 2);
+78:  assert.ok(batches[1].length > 1);
+79:  assert.ok(batches[1].some(c => c.x.shape[0] > 0 && c.x.shape[1] === 0));
+86:  assert.equal(batches.length, 3);
+88:  assert.equal(batches.length, 4);
+
+exec
+/usr/bin/zsh -lc "cat tests/tensor/cuda.test.mjs; rg -n 'reason:|meaningGate' src/tensor/contract.ts; cat package.json; git status --short; cat .ttmp.yaml; cat /home/manuel/.codex/skills/diary/references/investigation-entry.md; npm run build" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 6037ms:
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { checkLowering, compileTix, cudaSource, runTixCuda } from '../../dist/tensor/index.js';
+import { cudaArtifact, createCudaLowering } from '../../dist/tensor/cuda-contract.js';
+import { decodeCudaCases, encodeCudaCases } from '../../dist/tensor/cuda-runtime.js';
+import { evaluate } from '../../dist/tensor/evaluate.js';
+
+const buf = (shape, values) => ({ shape, data: Float32Array.from(values) });
+const p = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k]; return y; }');
+const fn = p.current.value.functions[0];
+
+test('CUDA source is deterministic and preloads every emitted statement kernel before timing', () => {
+  assert.equal(typeof checkLowering, 'function');
+  assert.equal(typeof runTixCuda, 'function');
+  const program = compileTix(
+    'fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }',
+  );
+  const source = cudaSource(program, 'second');
+  assert.equal(source, cudaSource(program, 'second'));
+  assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
+  assert.ok(
+    source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
+  );
+  assert.match(source, /__double2float_rn\(exp/);
+  assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
+});
+
+test('CUDA binary requests and results preserve f32 words, including subarray and zero shape', () => {
+  const a = Float32Array.of(9, -0, 2 ** -149, 99);
+  const request = encodeCudaCases(fn, [
+    { x: { shape: [1, 2], data: a.subarray(1, 3) } },
+    { x: buf([3, 0], []) },
+  ]);
+  assert.equal(request.toString('ascii', 0, 8), 'TIXCUDA1');
+  assert.deepEqual(
+    [8, 16, 24, 40, 48].map(i => request.readBigUInt64LE(i)),
+    [2n, 1n, 2n, 3n, 0n],
+  );
+  assert.deepEqual([request.readUInt32LE(32), request.readUInt32LE(36)], [0x80000000, 1]);
+  assert.throws(() => encodeCudaCases(fn, [{ x: buf([2, 2], [1]) }]), /shape or length/);
+
+  const response = Buffer.alloc(16 + 8 + 4 + 8 + 8 + 8);
+  response.write('TIXCUDA1');
+  response.writeBigUInt64LE(2n, 8);
+  response.writeBigUInt64LE(1n, 16);
+  response.writeUInt32LE(0x80000000, 24);
+  response.writeDoubleLE(0.03125, 28);
+  assert.deepEqual(decodeCudaCases(response, 2, 1), [
+    { ...buf([1], [-0]), gpuMs: 0.03125 },
+    { ...buf([0], []), gpuMs: 0 },
+  ]);
+  assert.throws(() => decodeCudaCases(response.subarray(0, -1), 2, 1), /Short/);
+  assert.throws(() => decodeCudaCases(response, 1, 1), /case count/);
+});
+
+test('the lowering pass delegates one batch, replays verdicts and retries transport failures', async () => {
+  const batches = [];
+  let fail = true;
+  const engine = async (source, f, cases) => {
+    batches.push(cases);
+    if (fail) {
+      fail = false;
+      throw Error('simulated transport failure');
+    }
+    return cases.map(inputs => {
+      const result = evaluate(f, inputs, 'f32');
+      if (source === 'different CUDA source' && result.data.length) result.data[0] += 1;
+      return { ...result, gpuMs: 0 };
+    });
+  };
+  const check = createCudaLowering('tensor-test-engine-1', engine);
+  const first = await check(p.current, 'f');
+  assert.equal(first.accepted, false);
+  assert.match(first.reason, /simulated transport failure/);
+  assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'exact' });
+  assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'exact' });
+  assert.equal(batches.length, 2);
+  assert.ok(batches[1].length > 1);
+  assert.ok(batches[1].some(c => c.x.shape[0] > 0 && c.x.shape[1] === 0));
+
+  const changed = cudaArtifact('f', 'different CUDA source');
+  const rejected = await check(p.current, 'f', changed);
+  assert.equal(rejected.accepted, false);
+  assert.match(rejected.reason, /At \[0\], expected/);
+  assert.deepEqual(await check(p.current, 'f', changed), rejected);
+  assert.equal(batches.length, 3);
+  assert.equal((await createCudaLowering('tensor-test-engine-2', engine)(p.current, 'f')).accepted, true);
+  assert.equal(batches.length, 4);
+});
+
+test('the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17)', async () => {
+  const nudge = (data, step) => {
+    const w = new Uint32Array(data.buffer, data.byteOffset, data.length);
+    for (let i = 0; i < w.length; i++)
+      if (Number.isFinite(data[i]) && data[i] !== 0) {
+        w[i] += step;
+        return;
+      }
+  };
+  const engine = mode => async (_source, f, cases) =>
+    cases.map(inputs => {
+      const result = evaluate(f, inputs, 'f32');
+      if (mode === 'ulp') nudge(result.data, 1);
+      if (mode === 'nan') {
+        const w = new Uint32Array(result.data.buffer, result.data.byteOffset, result.data.length);
+        for (let i = 0; i < w.length; i++) if (Number.isNaN(result.data[i])) w[i] = 0x7fffffff;
+      }
+      return { ...result, gpuMs: 0 };
+    });
+  const ulp = await createCudaLowering('tensor-test-ulp', engine('ulp'))(p.current, 'f');
+  assert.equal(ulp.accepted, false);
+  assert.equal(ulp.relation, 'exact');
+  assert.match(ulp.reason, /expected .* \(0x[0-9a-f]{8}\), got .* \(0x[0-9a-f]{8}\)/);
+  const nan = compileTix('fn g(x:f32[N]):f32[N]{y[i]=sqrt(x[i]-2);return y;}');
+  assert.deepEqual(await createCudaLowering('tensor-test-nan', engine('nan'))(nan.current, 'g'), {
+    accepted: true,
+    relation: 'exact',
+  });
+});
+102:    return { ok: false, reason: 'Output shape differs' };
+112:        reason: `at [${coord}] expected ${a[i]}, got ${b[i]}, allowed ${relation === 'exact' ? 0 : allowed}`,
+121:export function meaningGate(origin: Artifact<Module>, relation: Relation) {
+124:      return { ok: false, reason: 'Function signatures differ' };
+132:        return { ok: false, reason: 'No comparable case for ' + fn.name };
+154:    return { ok: evidence.status === 'agree', reason: evidence.counterexamples[0]?.reason, evidence };
+{
+  "name": "compiler-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An inspectable compiler workbench: the IR Workbench v6 framework extended for a complete Typed -> RV32 compiler",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "build:site": "node tools/build-site.mjs",
+    "serve:site": "node tools/serve-site.mjs",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
+    "test:only": "node --test \"tests/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "esbuild": "0.25.12",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3"
+  }
+}
+?? ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/
+root: ttmp
+defaults:
+    owners: []
+    intent: ""
+filenamePrefixPolicy: ""
+vocabulary: ttmp/vocabulary.yaml
+# Investigation entry
+
+Use this full format for substantive implementation, design, debugging, or an explicit detailed-diary request. Begin each step with 1–2 prose paragraphs. The prompt is verbatim once, then referenced. Preserve exact failures, not invented or reconstructed diagnostics.
+
+```markdown
+## Step N: Descriptive title
+
+One or two short paragraphs explaining intent, change and outcome.
+
+### Prompt Context
+**User prompt (verbatim):** "Actual authored request" (or: see Step N)
+**Assistant interpretation:** What is being requested.
+**Inferred user intent:** Intended outcome and reason.
+**Commit (code):** hash — "message" (when available)
+
+### What I did
+- Concrete files, symbols and commands.
+
+### Why
+- Rationale and considered alternatives.
+
+### What worked
+- Evidence-backed outcomes.
+
+### What didn't work
+- Exact command, diagnostic, scope and recovery; or no failures observed.
+
+### What I learned
+- Corrected assumptions and constraints.
+
+### What was tricky to build
+- Underlying cause, symptoms and exact solution, including ordering/lifetime boundaries.
+
+### What warrants a second pair of eyes
+- Review-critical correctness, concurrency, security or performance questions.
+
+### What should be done in the future
+- Follow-ups implied by this step; N/A if none.
+
+### Code review instructions
+- Starting files/symbols and validation commands.
+
+### Technical details
+- Concrete contracts, snippets, limits and references.
+```
+
+Do not add compatibility shims unless required. Record behavior changes and update tests/docs. A passing test alone does not prove all user requirements are satisfied.
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('tests/tensor/passes.test.mjs')
+s=p.read_text().replace(\"{ pass: 'inline', accepted: true }\", \"{ pass: 'inline', accepted: true, changed: true }\")
+s += \"\"\"
+test('optimization steps report no-ops and the first rejection reason', () => {
+  const p = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k) sqrt(-1)*x[i,k];return y;}');
+  let reason;
+  assert.throws(() => checked(p, splitPass, 'tolerance'), error => {
+    reason = error.evidence.counterexamples[0].reason;
+    return rejected(error);
+  });
+  assert.deepEqual(optimizeTix(p, ['split-sum', 'inline']).steps, [
+    { pass: 'split-sum', accepted: false, changed: false, reason },
+    { pass: 'inline', accepted: true, changed: false },
+  ]);
+});
+\"\"\"
+p.write_text(s)
+PY
+node --test tests/tensor/passes.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 1 in 2072ms:
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (36.583962ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (8.664678ms)
+✖ passes compose across calls and preserve the source baseline (6.296837ms)
+✔ coverage required per function and screening is origin-only (5.218183ms)
+✔ exact comparison detects a changed zero sign (3.273519ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (87.514303ms)
+✖ optimization steps report no-ops and the first rejection reason (6.251763ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 5
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 523.036967
+
+✖ failing tests:
+
+test at tests/tensor/passes.test.mjs:45:1
+✖ passes compose across calls and preserve the source baseline (6.296837ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        accepted: true,
+  -     changed: true,
+        pass: 'inline'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/tests/tensor/passes.test.mjs:49:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { pass: 'inline', accepted: true } ],
+    expected: [ { pass: 'inline', accepted: true, changed: true } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/passes.test.mjs:114:1
+✖ optimization steps report no-ops and the first rejection reason (6.251763ms)
+  TypeError: Cannot read properties of undefined (reading 'counterexamples')
+      at Object.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/tests/tensor/passes.test.mjs:118:29)
+      at expectedException (node:assert:578:17)
+      at expectsError (node:assert:703:21)
+      at strict.throws (node:assert:759:3)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/tests/tensor/passes.test.mjs:117:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+
+exec
+/usr/bin/zsh -lc "sed -n '120,160p' src/tensor/contract.ts; sed -n '38,57p;230,260p' src/framework/passes/define-pass.ts; cat ttmp/2026/11/26/IRWB-026*/reference/*" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 673ms:
+}
+export function meaningGate(origin: Artifact<Module>, relation: Relation) {
+  return (before: Artifact<Module>, candidate: Artifact<Module>): CheckResult => {
+    if (signature(origin.value) !== signature(candidate.value))
+      return { ok: false, reason: 'Function signatures differ' };
+    const baseline = relation === 'exact' ? before : origin;
+    const samples: Sample[] = [];
+    const random = seededRandom(seed);
+    for (const [i, fn] of origin.value.functions.entries()) {
+      const group = cases(fn, baseline.value.functions[i], relation, random);
+      // empty-extent cases are compared, but only a case with every extent nonempty counts as coverage
+      if (!group.some(c => c.shapeValues.every(v => v > 0)))
+        return { ok: false, reason: 'No comparable case for ' + fn.name };
+      samples.push(...group);
+    }
+    const ports = { baseline: TixIR, subject: TixIR };
+    const invariant = differential<typeof ports, Sample, BufferValue>({
+      id: 'tensor.meaning.' + relation,
+      version: '1',
+      description: 'Compare returned tensor on origin-derived cases',
+      inputs: ports,
+      baseline: 'baseline',
+      subject: 'subject',
+      seed,
+      count: samples.length,
+      cases: () => samples,
+      run: (side, artifact, s) =>
+        side === 'baseline'
+          ? s.reference
+          : evaluate(artifact.value.functions.find(f => f.name === s.fn)!, s.inputs, 'f32'),
+      compare: (a, b) => compare(a, b, relation),
+      describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
+    });
+    const evidence = runDifferential(differentialSpec(invariant), { baseline, subject: candidate });
+    return { ok: evidence.status === 'agree', reason: evidence.counterexamples[0]?.reason, evidence };
+  };
+}
+  Ports,
+  TransformationDefinition,
+} from '../contracts/types.js';
+import type { AnalysisManager } from '../contracts/analysis-manager.js';
+
+export class PassError extends Error {
+  constructor(
+    readonly code: 'undeclaredWrite' | 'preserveViolated' | 'contractRejected' | 'badResult' | 'passFailed',
+    message: string,
+    readonly evidence?: unknown,
+  ) {
+    super(`[${code}] ${message}`);
+    this.name = 'PassError';
+  }
+}
+
+export type Needs = Readonly<Record<string, AnalysisDefinition<any, any>>>;
+export type FactValues<N extends Needs> = {
+  readonly [K in keyof N]: N[K] extends AnalysisDefinition<any, infer R> ? R : never;
+};
+    throw new PassError('badResult', 'This pass requires the asynchronous analysis manager');
+  const view = openIR(before, pass.adapter);
+  const produced = pass.run({
+    before,
+    view,
+    params: params as P,
+    facts: {},
+    records: {},
+    get edit(): IREdit<S> {
+      throw new PassError('badResult', 'A native pass must return its native result');
+    },
+  });
+  if (!produced || !('native' in produced)) {
+    if (produced instanceof Promise) void produced.catch(() => {});
+    throw new PassError('badResult', 'Expected a synchronous native result');
+  }
+  const base = { pass: { id: pass.id, version: pass.version }, before, preserved: [] };
+  const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
+  if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
+  enforceWrites(pass, changes);
+  const contract = gate(before, after);
+  if (contract?.ok !== true)
+    throw new PassError('contractRejected', contract?.reason ?? 'Candidate rejected', contract?.evidence);
+  return {
+    ...base,
+    changed: true,
+    artifact: after,
+    edits,
+    changes,
+    correspondence,
+    contract,
+---
+Title: Diary
+Ticket: IRWB-026
+Status: active
+Topics: []
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T22:13:11.47058452-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Diary
+
+## Goal
+
+<!-- What is the purpose of this reference document? -->
+
+## Context
+
+<!-- Provide background context needed to use this reference -->
+
+## Quick Reference
+
+<!-- Provide copy/paste-ready content, API contracts, or quick-look tables -->
+
+## Usage Examples
+
+<!-- Show how to use this reference in practice -->
+
+## Related
+
+<!-- Link to related documents or resources -->
+
+exec
+/usr/bin/zsh -lc "sed -i \"/let reason;/i\\  const candidate = { origin: sum.origin, current: p.current };\" tests/tensor/passes.test.mjs
+sed -i \"s/checked(p, splitPass, 'tolerance'), error/checked(candidate, splitPass, 'tolerance'), error/; s/optimizeTix(p, \\['split-sum', 'inline'\\]).steps/optimizeTix(candidate, ['split-sum', 'inline']).steps/\" tests/tensor/passes.test.mjs
+node --test tests/tensor/passes.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 1 in 1763ms:
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (9.910102ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (5.565473ms)
+✖ passes compose across calls and preserve the source baseline (4.234361ms)
+✔ coverage required per function and screening is origin-only (4.279728ms)
+✔ exact comparison detects a changed zero sign (2.107313ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (63.324915ms)
+✖ optimization steps report no-ops and the first rejection reason (3.303072ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 5
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 228.849165
+
+✖ failing tests:
+
+test at tests/tensor/passes.test.mjs:45:1
+✖ passes compose across calls and preserve the source baseline (4.234361ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        accepted: true,
+  -     changed: true,
+        pass: 'inline'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/tests/tensor/passes.test.mjs:49:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { pass: 'inline', accepted: true } ],
+    expected: [ { pass: 'inline', accepted: true, changed: true } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/passes.test.mjs:114:1
+✖ optimization steps report no-ops and the first rejection reason (3.303072ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        accepted: false,
+  -     changed: false,
+        pass: 'split-sum',
+  -     reason: 'at [0] expected 0.5052213072776794, got NaN, allowed 0.00001210442614555359'
+      },
+      {
+        accepted: true,
+  -     changed: false,
+        pass: 'inline'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/tests/tensor/passes.test.mjs:122:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { pass: 'split-sum', accepted: false }, { pass: 'inline', accepted: true } ],
+    expected: [ { pass: 'split-sum', accepted: false, changed: false, reason: 'at [0] expected 0.5052213072776794, got NaN, allowed 0.00001210442614555359' }, { pass: 'inline', accepted: true, changed: false } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+exec
+/usr/bin/zsh -lc 'ticket=$(find ttmp/2026/11/26 -maxdepth 1 -name '"'IRWB-026--*')
+diary=\""'$ticket/reference/01-diary.md"
+sed -i '"'/"'^## Goal/,$d'"' \""'$diary"
+cat >> "$diary" <<'"'EOF'
+## 1. Report optimization decisions
+
+Node v24.18.0 and the initial "'`npm run build` worked. The first test fixture rejected during coverage screening and had no counterexample. The revised fixture supplies a covered origin and a current program whose split candidate disagrees with it.
+
+Before the fix, `node --test tests/tensor/passes.test.mjs` reported 5 passes and 2 failures. The new regression'"'s deep equality check found neither "'`changed` nor the counterexample reason (`at [0] expected 0.5052213072776794, got NaN, allowed 0.00001210442614555359`). The updated composition assertion also found no `changed: true`.
+EOF
+python3 - <<'"'PY'
+from pathlib import Path
+p=Path('src/tensor/index.ts')
+s=p.read_text()
+s=\"import type { DifferentialEvidence } from '../framework/contracts/index.js';\\n\"+s
+s=s.replace('current = applyNativePassSync(', 'const result = applyNativePassSync(').replace(').artifact;\\n      return { pass, accepted: true };', ');\\n      current = result.artifact;\\n      return { pass, accepted: true, changed: result.changed };')
+s=s.replace(\"if (error instanceof PassError && error.code === 'contractRejected') return { pass, accepted: false };\", \"\"\"if (error instanceof PassError && error.code === 'contractRejected') {
+        const evidence = error.evidence as DifferentialEvidence | undefined;
+        const reason = evidence?.counterexamples[0]?.reason ?? error.message;
+        return { pass, accepted: false, changed: false, reason };
+      }\"\"\")
+p.write_text(s)
+PY
+npm run build && node --test tests/tensor/passes.test.mjs && {
+  echo 'After the fix, the build and all 7 pass tests succeeded. Accepted steps use the native pass result. Rejected steps report the first counterexample, or the gate error when screening provides no counterexample.' >> \""'$diary"
+  git add src/tensor/index.ts tests/tensor/passes.test.mjs "$ticket" && git commit -m '"'IRWB-026: Report Tix optimization changes and rejection reasons'
+}" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 128 in 10883ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (11.412679ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (5.821575ms)
+✔ passes compose across calls and preserve the source baseline (3.558782ms)
+✔ coverage required per function and screening is origin-only (4.281175ms)
+✔ exact comparison detects a changed zero sign (2.679862ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (38.835982ms)
+✔ optimization steps report no-ops and the first rejection reason (2.651755ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 167.532922
+fatal: Unable to create '/home/manuel/code/wesen/2026-11-24--compiler-workbench/.git/worktrees/fix1-sl-irwb-026/index.lock': Read-only file system
+
+exec
+/usr/bin/zsh -lc "git add src/tensor/index.ts tests/tensor/passes.test.mjs ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20 && git commit -m 'IRWB-026: Report Tix optimization changes and rejection reasons'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 955ms:
+[fix1-sl/irwb-026 3977b0b] IRWB-026: Report Tix optimization changes and rejection reasons
+ 7 files changed, 129 insertions(+), 5 deletions(-)
+ create mode 100644 ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/README.md
+ create mode 100644 ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/changelog.md
+ create mode 100644 ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/index.md
+ create mode 100644 ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+ create mode 100644 ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/tasks.md
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('tests/tensor/cuda.test.mjs')
+s=p.read_text().replace(\"delegates one batch, replays verdicts\", \"shares concurrent batches, replays verdicts\")
+s=s.replace(\"  const first = await check(p.current, 'f');\", \"\"\"  const pair = () => Promise.all([check(p.current, 'f'), check(p.current, 'f')]);
+  const [first, joinedFailure] = await pair();\"\"\")
+s=s.replace(\"  assert.match(first.reason, /simulated transport failure/);\\n  assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'exact' });\\n  assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'exact' });\", \"\"\"  assert.match(first.reason, /simulated transport failure/);
+  assert.equal(batches.length, 1);
+  assert.deepEqual(joinedFailure, first);
+  const accepted = { accepted: true, relation: 'exact' };
+  assert.deepEqual(await pair(), [accepted, accepted]);
+  assert.deepEqual(await check(p.current, 'f'), accepted);\"\"\")
+p.write_text(s)
+PY
+node --test tests/tensor/cuda.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 1 in 1262ms:
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (3.351451ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (1.742164ms)
+✖ the lowering pass shares concurrent batches, replays verdicts and retries transport failures (12.026154ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (10.439627ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 272.04238
+
+✖ failing tests:
+
+test at tests/tensor/cuda.test.mjs:56:1
+✖ the lowering pass shares concurrent batches, replays verdicts and retries transport failures (12.026154ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/tests/tensor/cuda.test.mjs:76:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+codex
+F14 is committed after all seven pass tests succeeded. The F19 regression reproduced the race with the counting fake engine. Two concurrent cold checks issued two batches.
+exec
+/usr/bin/zsh -lc 'diary=(ttmp/2026/11/26/IRWB-026--*/reference/01-diary.md)
+cat >> "$diary" <<'"'EOF'
+
+## 2. Share in-flight differential verdicts
+
+F14 was committed as "'`3977b0b`. The F19 regression starts two cold checks together, first with a simulated transport failure and then with a successful retry.
+
+Before the fix, `node --test tests/tensor/cuda.test.mjs` reported 3 passes and 1 failure. The batch-count assertion found `2 !== 1` for the concurrent failed checks.
+EOF
+python3 - <<'"'PY'
+from pathlib import Path
+p=Path('src/framework/contracts/differential.ts')
+s=p.read_text().replace('  readonly verdicts: Map<string, Decided>;', '  readonly verdicts: Map<string, Decided>;\\n  readonly pending: Map<string, Promise<Decided>>;').replace('      verdicts: new Map(),', '      verdicts: new Map(),\\n      pending: new Map(),')
+start=s.index('  const todo: number[] = [];', s.index('export async function runDifferentialAsync'))
+end=s.index('  return tally',start)
+s=s[:start]+'''  const todo: number[] = [];
+  const waiting: Promise<void>[] = [];
+  const collect = (i: number, pending: Promise<Decided>) => {
+    waiting.push(pending.then(verdict => { verdicts[i] = verdict; }));
+  };
+  for (let i = 0; i < cases.length; i++) {
+    const key = keys[i];
+    const known = key === undefined ? undefined : reuse"'!.verdicts.get(key);
+    if (known) {
+      verdicts[i] = known;
+      STATS.replayed++;
+      continue;
+    }
+    const pending = key === undefined ? undefined : reuse!.pending.get(key);
+    if (pending) collect(i, pending);
+    else todo.push(i);
+  }
+  try {
+    const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
+    if (elsewhere) {
+      const batch = elsewhere.then(decided => {
+        if (decided.length !== todo.length)
+          throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
+        STATS.delegated += todo.length;
+        return decided;
+      });
+      todo.forEach((i, k) => {
+        const key = keys[i];
+        let pending = batch.then(decided => decided[k]);
+        if (key !== undefined) {
+          pending = pending.then(verdict => {
+            reuse!.verdicts.set(key, verdict);
+            return verdict;
+          }).finally(() => { reuse!.pending.delete(key); });
+          reuse!.pending.set(key, pending);
+        }
+        collect(i, pending);
+      });
+    } else {
+      for (const i of todo) {
+        verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
+        if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
+      }
+    }
+  } catch (error) {
+    // A synchronous failure can occur while this check is also joining another batch.
+    void Promise.all(waiting).catch(() => {});
+    throw error;
+  }
+  await Promise.all(waiting);
+'"'''+s[end:]
+p.write_text(s)
+PY
+npm run build && node --test tests/tensor/cuda.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 6242ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (4.093089ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (2.246468ms)
+✔ the lowering pass shares concurrent batches, replays verdicts and retries transport failures (30.419524ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (4.873083ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 162.444414
+
+exec
+/usr/bin/zsh -lc "rg -n 'spawnSync|execFileSync|mkdtemp|PATH:' tests/framework tests/tensor; git status --short; rg -n '\\-\\-link|cublas' BACKLOG.md tools" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 435ms:
+tests/tensor/cuda-gpu.test.mjs:4:import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+tests/tensor/cuda-gpu.test.mjs:111:  const dirs = await Promise.all(['A', 'B'].map(() => mkdtemp(join(tmpdir(), 'irwb-cuda-runner-test-'))));
+tests/framework/conformance.test.mjs:5:import { spawnSync } from 'node:child_process';
+tests/framework/conformance.test.mjs:11:    const run = spawnSync(process.execPath, [`${root}dist/conformance/${id}.js`], { encoding: 'utf8', maxBuffer: 16 << 20 });
+ M src/framework/contracts/differential.ts
+ M tests/tensor/cuda.test.mjs
+ M ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+BACKLOG.md:421:  - _Known:_ the cuBLAS baseline needed `-lcublas`, so I ran it over `ssh` directly, outside the tool's lock and cache.
+BACKLOG.md:422:  - _Needed:_ a `--link` option that is part of the build key, so baselines go through the tool.
+
+exec
+/usr/bin/zsh -lc "cat tests/tensor/cuda-gpu.test.mjs; sed -n '405,425p' BACKLOG.md" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 332ms:
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import {
+  checkLowering,
+  compileTix,
+  cudaSource,
+  optimizeTix,
+  runTix,
+  runTixCuda,
+} from '../../dist/tensor/index.js';
+import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
+
+const buf = (shape, data) => ({ shape, data: Float32Array.from(data) });
+const words = ({ data }) => new Uint32Array(data.buffer, data.byteOffset, data.length);
+
+for (const name of ['matmul', 'softmax', 'layernorm', 'attention', 'mlp', 'conv2d']) {
+  test('GB10 checks ' + name + ' before and after optimization', async () => {
+    const source = await readFile(
+      new URL('../../corpus/tensor/' + name + '/main.tix', import.meta.url),
+      'utf8',
+    );
+    const program = compileTix(source);
+    const optimized = optimizeTix(program, ['inline', 'split-sum']);
+    assert.ok(optimized.steps.every(s => s.accepted));
+    for (const revision of [program, optimized.program]) {
+      const verdict = await checkLowering(revision, name);
+      assert.equal(verdict.accepted, true, verdict.reason);
+      assert.equal(verdict.relation, 'exact');
+    }
+  });
+}
+
+test('GB10 preserves split rounding and a partial final block', async () => {
+  const p = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k]; return y; }');
+  const { program, steps } = optimizeTix(p, ['split-sum']);
+  assert.equal(steps[0].accepted, true);
+  assert.notEqual(program.current.revision, p.current.revision);
+  const inputs = { x: buf([1, 7], [1, 0, 0, 0, 2 ** -24, 2 ** -24, 2 ** -24]) };
+  const reference = runTix(program, 'f', inputs);
+  assert.equal(reference.data[0], 1 + 2 ** -22);
+  const result = await runTixCuda(program, 'f', inputs);
+  assert.deepEqual(result.shape, [1]);
+  assert.deepEqual(words(result), words(reference));
+  assert.ok(Number.isFinite(result.gpuMs) && result.gpuMs >= 0);
+
+  const source = cudaSource(program, 'f');
+  const mutant = source.replace(' + ((d1) % 4 != 0)', '');
+  assert.notEqual(mutant, source);
+  assert.equal((await checkLowering(program, 'f')).accepted, true);
+  const verdict = await checkCudaLowering(program.current, 'f', cudaArtifact('f', mutant));
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \[.*\], expected/);
+});
+
+test('GB10 checks composed inline addresses and rejects a valid index mutant', async () => {
+  const p = compileTix('fn f(x:f32[N,N]):f32[N,N] { z[i,j]=x[i,j]*2; y[i,j]=z[j,i]+1; return y; }');
+  const { program } = optimizeTix(p, ['inline']);
+  assert.notEqual(p.current.revision, program.current.revision);
+  const x = { x: buf([2, 2], [1, 2, 3, 4]) };
+  assert.deepEqual((await runTixCuda(program, 'f', x)).data, Float32Array.of(3, 7, 5, 9));
+
+  const source = cudaSource(program, 'f');
+  const mutant = source.replace('t0[((i0) * (d0) + (i1))]', 't0[((i1) * (d0) + (i0))]');
+  assert.notEqual(mutant, source);
+  const verdict = await checkCudaLowering(program.current, 'f', cudaArtifact('f', mutant));
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \[.*\], expected/);
+});
+
+test('GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns', async () => {
+  const program = compileTix(`
+    fn shadow(x:f32[N,K], z:f32[N,L]):f32[N] { y[i] = sum(j) x[i,j] + sum(j) z[i,j]; return y; }
+    fn empty(x:f32[N,K]):f32[N,2] {
+      s[i] = sum(k) x[i,k]; m[i] = max(k) x[i,k];
+      y[i,j]:f32[N,2] = max(s[i], m[i]) + (log(1) * 0);
+      return y;
+    }
+    fn intrinsic(x:f32[N]):f32[N] { y[i]=min(sqrt(x[i]), 0); return y; }
+    fn direct(x:f32[N]):f32[N] { return x; }
+  `);
+  const cases = [
+    ['shadow', { x: buf([1, 2], [1, 2]), z: buf([1, 3], [4, 5, 6]) }, [33]],
+    ['empty', { x: buf([3, 0], []) }, [0, 0, 0, 0, 0, 0]],
+    ['empty', { x: buf([0, 3], []) }, []],
+    ['intrinsic', { x: buf([3], [-1, -0, 2]) }, [NaN, -0, 0]],
+    ['direct', { x: buf([1], [-0]) }, [-0]],
+  ];
+  for (const [name, inputs, expected] of cases) {
+    const result = await runTixCuda(program, name, inputs);
+    assert.deepEqual([...result.data], expected);
+    assert.deepEqual(result.shape, runTix(program, name, inputs).shape);
+    if (name === 'direct' || !expected.length) assert.equal(result.gpuMs, 0);
+  }
+  const max = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = max(k) x[i,k]; return y; }');
+  assert.deepEqual(
+    (await runTixCuda(max, 'f', { x: buf([2, 0], []) })).data,
+    Float32Array.of(-Infinity, -Infinity),
+  );
+});
+
+test('remote runner shares a compile across isolated jobs and invalidates on build input changes', async () => {
+  const tool = fileURLToPath(new URL('../../tools/cuda-remote.mjs', import.meta.url));
+  const exec = promisify(execFile);
+  const dirs = await Promise.all(['A', 'B'].map(() => mkdtemp(join(tmpdir(), 'irwb-cuda-runner-test-'))));
+  const source = `// ${randomUUID()}
+#include <cstdio>
+#include "header.h"
+int main() {
+  FILE* in = fopen("input.txt", "r");
+  FILE* out = fopen("out/answer.txt", "w");
+  fputc(fgetc(in), out);
+  fputc(EXTRA, out);
+  fclose(in);
+  return fclose(out);
+}
+`;
+  try {
+    await Promise.all(
+      dirs.map(async (dir, i) => {
+        await writeFile(join(dir, 'main.cu'), source);
+        await writeFile(join(dir, 'header.h'), "#define EXTRA '1'\n");
+        await writeFile(join(dir, 'input.txt'), i ? 'B' : 'A');
+      }),
+    );
+    async function run(dir) {
+      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt']);
+      return { ...JSON.parse(stdout), answer: await readFile(join(dir, 'out', 'answer.txt'), 'utf8') };
+    }
+    const [a, b] = await Promise.all(dirs.map(run));
+    assert.equal(a.hash, b.hash);
+    assert.deepEqual([a.compiled, b.compiled].sort(), [false, true]);
+    assert.deepEqual([a.answer, b.answer], ['A1', 'B1']);
+    await writeFile(join(dirs[0], 'header.h'), "#define EXTRA '2'\n");
+    const changed = await run(dirs[0]);
+    assert.equal(changed.compiled, true);
+    assert.notEqual(changed.hash, a.hash);
+    assert.equal(changed.answer, 'A2');
+  } finally {
+    await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true })));
+  }
+});
+- **F15: the base's tolerance is a fixed bound** _(ready, M; before or with T2)_.
+  - _Known:_ B checks |c − r| ≤ 2e-6 + 2e-5·|r| against the origin's f64 on its own sampled cases, "without a worst-case error derivation" (its report). The same rule falsely rejected correct passes in K. E and H rejected on ill-conditioned sampled cases where the origin itself fails the bound. Two designs handle this: P's running first-order error bound accepted every correct pass, and N's "inconclusive when the origin fails".
+  - _Needed:_ a bound derived from the computation, or the inconclusive rule; treat identical non-finite values as agreeing.
+- **F16: unspecified rules in the Tix core** _(done: stated in the T2 brief)_.
+  - _Known:_ fourteen implementations divided on whether an index may share a tensor's name (the Claude cells said no). The brief is also silent on shadowing (`sum(j) a[i, j] + sum(j) b[i, j]` parses as a nested reduction rebinding `j`) and on zero-size extents.
+  - _Needed:_ state all three in the T2 brief's fixed core, and test them. _(Done in the T2 brief; all twelve T2 implementations implement them.)_
+- **F17: the lowering's relation should be exact for an exact emitter** _(done: `885601f`; `checkLowering` reports `exact`, NaN as a class; GPU tests 10/10)_.
+  - _Known:_ the merged base (I) is bit-exact by construction but checks under tolerance against f64. NaN words differ between the GPU and Node: `__fsqrt_rn(-2⁻¹⁴⁹)` gives `0x7fffffff` on the GB10 and `0xffc00000` in Node (I's report).
+  - _Needed:_ compare f32 words exactly against the current revision, with NaN as a class. Keep the f64 tolerance as a separate numerical check. This makes T3's exact fusion checks direct.
+- **F18: a batch-only differential spec** _(idea, S)_.
+  - _Known:_ K and G each added one to `src/framework/contracts`. Ten others batched through `decide` without a framework change.
+  - _Needed:_ decide whether the framework should offer it.
+- **F19: concurrent cold checks both issue a batch** _(idea, S)_.
+  - _Known:_ the differential memo records verdicts only after a batch completes (I's report).
+  - _Needed:_ share an in-flight batch per key.
+- **F20: `tools/cuda-remote.mjs` cannot link libraries** _(ready, S)_.
+  - _Known:_ the cuBLAS baseline needed `-lcublas`, so I ran it over `ssh` directly, outside the tool's lock and cache.
+  - _Needed:_ a `--link` option that is part of the build key, so baselines go through the tool.
+- **F21: the stage-1 meaning gate cannot tell some shape symbols apart** _(done: `250626e`; distinct sizes, empty extents checked but not counted as coverage; regression test)_.
+  - _Known:_ `cases()` in `src/tensor/contract.ts:25-36` sorts the shape symbols. Its assignments are all-equal (1, 3, 4, 7) or "mixed", which cycles `[3, 5, 7][i % 3]`, so symbols three apart in sorted order are always equal. The zero cases that would separate them are added only for the CUDA contract.
+    - For `mlp` ([D, H, N, O]), D = O in every case. A mutant that sums the first contraction over O instead of D passes `meaningGate` (reproduced with `IRWB-023-D/scripts/05-normal-form-proof.mjs`).
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/framework/contracts/differential.ts')
+s=p.read_text().replace('    waiting.push(pending.then(verdict => { verdicts[i] = verdict; }));','''    waiting.push(
+      pending.then(verdict => {
+        verdicts[i] = verdict;
+      }),
+    );''').replace('''          pending = pending.then(verdict => {
+            reuse"'!.verdicts.set(key, verdict);
+            return verdict;
+          }).finally(() => { reuse!.pending.delete(key); });'"''','''          pending = pending
+            .then(verdict => {
+              reuse"'!.verdicts.set(key, verdict);
+              return verdict;
+            })
+            .finally(() => {
+              reuse!.pending.delete(key);
+            });'"''')
+p.write_text(s)
+PY
+echo 'After the fix, the build and all 4 CUDA unit tests passed. The memo shares promises by case key, writes successful verdicts once, and clears pending entries on either outcome.' >> ttmp/2026/11/26/IRWB-026--*/reference/01-diary.md
+git add src/framework/contracts/differential.ts tests/tensor/cuda.test.mjs ttmp/2026/11/26/IRWB-026--*/reference/01-diary.md && git commit -m 'IRWB-026: Share in-flight differential verdicts'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 441ms:
+[fix1-sl/irwb-026 f53fb7a] IRWB-026: Share in-flight differential verdicts
+ 3 files changed, 69 insertions(+), 14 deletions(-)
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('tests/tensor/cuda-gpu.test.mjs')
+s=p.read_text().replace(\"invalidates on build input changes\", \"invalidates on build input and library changes\")
+s=s.replace(\"async function run(dir) {\\n      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt']);\", \"\"\"async function run(dir, ...linkArgs) {
+      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt', ...linkArgs]);\"\"\")
+s=s.replace('dirs.map(run)', 'dirs.map(dir => run(dir))')
+s=s.replace(\"    assert.equal(changed.answer, 'A2');\", \"\"\"    assert.equal(changed.answer, 'A2');
+    const linked = await run(dirs[0], '--link', 'cublas');
+    assert.notEqual(linked.hash, changed.hash);
+    assert.equal(linked.compiled, true);
+    const linkedTwice = await run(dirs[0], '--link', 'cublas', '--link', 'cudart');
+    assert.notEqual(linkedTwice.hash, linked.hash);
+    assert.equal(linkedTwice.compiled, true);
+    assert.equal(linkedTwice.answer, 'A2');\"\"\")
+p.write_text(s)
+PY
+node --test --test-name-pattern 'remote runner' tests/tensor/cuda-gpu.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 1 in 7937ms:
+✖ remote runner shares a compile across isolated jobs and invalidates on build input and library changes (6931.960107ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7011.155956
+
+✖ failing tests:
+
+test at tests/tensor/cuda-gpu.test.mjs:108:1
+✖ remote runner shares a compile across isolated jobs and invalidates on build input and library changes (6931.960107ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  'a705b565cb886647e641a91ca4102e20995f014d28c423326ae80f3300ce7573'
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/tests/tensor/cuda-gpu.test.mjs:146:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'a705b565cb886647e641a91ca4102e20995f014d28c423326ae80f3300ce7573',
+    expected: 'a705b565cb886647e641a91ca4102e20995f014d28c423326ae80f3300ce7573',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+codex
+F19 is committed. The CUDA unit tests passed, including shared failure, retry, and warm replay. The F20 regression reached the GPU host and confirmed that adding `--link cublas` left the compile hash unchanged on the unfixed runner.
+exec
+/usr/bin/zsh -lc 'ticket=(ttmp/2026/11/26/IRWB-026--*/)
+cat >> "${ticket}reference/01-diary.md" <<'"'EOF'
+
+## 3. Link libraries through the CUDA runner
+
+F19 was committed as "'`f53fb7a`. The runner regression now compares build hashes with zero, one and two library options using the same source files.
+
+Before the fix, `node --test --test-name-pattern '"'remote runner' tests/tensor/cuda-gpu.test.mjs"'` failed its only test. The no-library build and the `--link cublas` build both returned hash `a705b565cb886647e641a91ca4102e20995f014d28c423326ae80f3300ce7573`. This run also verified that the test could spawn Node and reach the GPU host.
+EOF
+python3 - <<'"'PY'
+from pathlib import Path
+p=Path('tools/cuda-remote.mjs')
+s=p.read_text().replace('[--runtime-input relative-path ...] [-- program args...]','[--link lib ...] [--runtime-input relative-path ...] [-- program args...]')
+s=s.replace('// "'`nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture and build files.'"', '''// "'`nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture, libraries and build files.
+// Each --link lib appends -l<lib> to nvcc in the order given (for example, --link cublas).'"''')
+s=s.replace(\"['--host', '--arch', '--runtime-input']\", \"['--host', '--arch', '--runtime-input', '--link']\")
+s=s.replace('[--arch a] [--runtime-input path ...]', '[--arch a] [--link lib ...] [--runtime-input path ...]')
+s=s.replace(\"const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch]));\", \"\"\"const links = opts.flatMap((arg, i) => (arg === '--link' ? ['-l' + opts[i + 1]] : []));
+const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch, ...links]));\"\"\")
+s=s.replace('-o prog.tmp main.cu || exit 97', \"-o prog.tmp main.cu "'${links.map(q).join('"' ')} || exit 97\")
+p.write_text(s)
+PY
+mkdir -p \""'${ticket}scripts/01-cublas-probe"
+cat > "${ticket}scripts/01-cublas-probe/main.cu" <<'"'EOF'
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
+#include <cstdio>
+#include <cstdlib>
+
+static void check(int status, const char *operation) {
+  if (status == 0) return;
+  std::fprintf(stderr, \"%s failed with status %d\\n\", operation, status);
+  std::exit(1);
+}
+
+int main() {
+  // Column-major: multiply a 2x3 matrix by a 3x2 matrix.
+  constexpr int m = 2, n = 2, k = 3;
+  const float a[m * k] = {1, 2, 3, 4, 5, 6};
+  const float b[k * n] = {7, 8, 9, 10, 11, 12};
+  float c[m * n];
+  float *da, *db, *dc;
+  check(cudaMalloc(&da, sizeof a), \"cudaMalloc A\");
+  check(cudaMalloc(&db, sizeof b), \"cudaMalloc B\");
+  check(cudaMalloc(&dc, sizeof c), \"cudaMalloc C\");
+  check(cudaMemcpy(da, a, sizeof a, cudaMemcpyHostToDevice), \"copy A\");
+  check(cudaMemcpy(db, b, sizeof b, cudaMemcpyHostToDevice), \"copy B\");
+
+  cublasHandle_t handle;
+  check(cublasCreate(&handle), \"cublasCreate\");
+  const float one = 1, zero = 0;
+  check(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
+                    &one, da, m, db, k, &zero, dc, m), \"cublasSgemm\");
+  check(cudaMemcpy(c, dc, sizeof c, cudaMemcpyDeviceToHost), \"copy C\");
+  check(cublasDestroy(handle), \"cublasDestroy\");
+  check(cudaFree(da), \"cudaFree A\");
+  check(cudaFree(db), \"cudaFree B\");
+  check(cudaFree(dc), \"cudaFree C\");
+
+  // These small integer products and sums are exactly representable in f32.
+  for (int col = 0; col < n; ++col) {
+    for (int row = 0; row < m; ++row) {
+      float expected = 0;
+      for (int p = 0; p < k; ++p)
+        expected += a[row + p * m] * b[p + col * k];
+      if (c[row + col * m] "'!= expected) {
+        std::fprintf(stderr, "C[%d,%d]: expected %g, got %g'"\\n\",
+                     row, col, expected, c[row + col * m]);
+        return 1;
+      }
+    }
+  }
+  std::printf(\"cublasSgemm matches CPU: [%g, %g, %g, %g] (column-major)\\n\",
+              c[0], c[1], c[2], c[3]);
+}
+EOF
+node tools/cuda-remote.mjs \""'${ticket}scripts/01-cublas-probe" --link cublas && node tools/cuda-remote.mjs "${ticket}scripts/01-cublas-probe" --link cublas' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 6853ms:
+{"host":"manuel@bling","hash":"1cafceca3a6a93459ee33f4054087a4b49ec2d6524b9beb6f08aa40839bf0f76","compiled":true,"compileMs":700,"runMs":476,"exit":0,"stdout":"cublasSgemm matches CPU: [76, 100, 103, 136] (column-major)\n","stderr":"","outputs":[]}
+{"host":"manuel@bling","hash":"1cafceca3a6a93459ee33f4054087a4b49ec2d6524b9beb6f08aa40839bf0f76","compiled":false,"compileMs":4,"runMs":498,"exit":0,"stdout":"cublasSgemm matches CPU: [76, 100, 103, 136] (column-major)\n","stderr":"","outputs":[]}
+
+exec
+/usr/bin/zsh -lc "git diff --check; git status --short; cat ttmp/2026/11/26/IRWB-026--*/index.md; rg --files --hidden -g AGENTS.md -g '"'!.git'"' -g '"'!node_modules'"'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 1 in 839ms:
+ M tests/tensor/cuda-gpu.test.mjs
+ M tools/cuda-remote.mjs
+ M ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+?? ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/scripts/
+---
+Title: framework and tensor fixes F14, F19, F20
+Ticket: IRWB-026
+Status: active
+Topics: []
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-11-26T22:13:11.069860121-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# framework and tensor fixes F14, F19, F20
+
+## Overview
+
+<!-- Provide a brief overview of the ticket, its goals, and current status -->
+
+## Key Links
+
+- **Related Files**: See frontmatter RelatedFiles field
+- **External Sources**: See frontmatter ExternalSources field
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts
+
+exec
+/usr/bin/zsh -lc 'npm run build && node --test tests/framework/*.test.mjs tests/tensor/*.test.mjs > dist/irwb-026-tests.log 2>&1
+status=$?
+if [ "$status" -ne 0 ]; then tail -100 dist/irwb-026-tests.log; else tail -8 dist/irwb-026-tests.log; fi
+exit "$status"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+codex
+The cuBLAS probe matched the CPU result on the GB10, and its second invocation reused the cached binary. The final framework and tensor test run is underway.
+exec
+/usr/bin/zsh -lc "ticket=(ttmp/2026/11/26/IRWB-026--*/)
+sed -i 's/<"'!-- Provide a brief overview of the ticket, its goals, and current status -->/Report Tix optimization decisions, share in-flight differential verdicts, and add library linking to the remote CUDA runner. See the [diary](reference'"\\/01-diary.md) for regression evidence and the [cuBLAS probe](scripts\\/01-cublas-probe\\/main.cu)./' \""'${ticket}index.md"
+cat >> "${ticket}reference/01-diary.md" <<'"'EOF'
+
+The runner passes each library to nvcc in argument order and includes the resulting flags in the build key. With no libraries, the original key is preserved.
+
+From the repository root, "'`node tools/cuda-remote.mjs ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/scripts/01-cublas-probe --link cublas` exited 0 on the GB10. All four results matched the CPU computation exactly, yielding `[76, 100, 103, 136]` in column-major order. The first invocation compiled in 700 ms. The second reused the same hash with `compiled: false`. Neither invocation took the timed GPU lock.
+EOF
+git diff --check
+git log -2 --format='"'%h %s'
+tail -10 dist/irwb-026-tests.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 472ms:
+f53fb7a IRWB-026: Share in-flight differential verdicts
+3977b0b IRWB-026: Report Tix optimization changes and rejection reasons
+✔ plan requirements pin hidden host dependencies independently of directly edited call nodes (1.60929ms)
+✔ walk visitor and find predicate expose typed traversal context without modifying the plan (0.602654ms)
+✔ choice evidence bindings retain exact earlier decisions across later scoring of the same candidates (3.774571ms)
+✔ matmul agrees with the numerical oracle before and after optimization (60.000168ms)
+✔ softmax agrees with the numerical oracle before and after optimization (22.858646ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (23.741261ms)
+✔ attention agrees with the numerical oracle before and after optimization (95.349964ms)
+✔ mlp agrees with the numerical oracle before and after optimization (104.654634ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (7.932458ms)
+✔ GB10 checks matmul before and after optimization (5249.703138ms)
+
+exec
+/usr/bin/zsh -lc 'docmgr ticket --help; git diff --stat; git show --stat --oneline HEAD' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 979ms:
+
+  # ticket - Ticket workspace management                                      
+                                                                              
+  Ticket workspace management: create tickets, list and show them, and manage 
+  lifecycle operations.                                                       
+                                                                              
+  Examples:                                                                   
+                                                                              
+  # Create a ticket workspace                                                 
+                                                                              
+  docmgr ticket create --ticket MEN-4242 --title "Normalize chat API paths" --
+  topics                                                                      
+  chat,backend                                                                
+                                                                              
+  # Show one ticket's detail                                                  
+                                                                              
+  docmgr ticket show MEN-4242                                                 
+                                                                              
+  # Close a ticket and record a changelog entry                               
+                                                                              
+  docmgr ticket close --ticket MEN-4242 --changelog-entry "Implementation     
+  complete"                                                                   
+                                                                              
+  For more help, run: docmgr help ticket                                      
+                                                                              
+  Run docmgr help --ui to open the interactive help TUI.                      
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  docmgr ticket [command]                                                     
+                                                                              
+  ## Available Commands:                                                      
+                                                                              
+  • **close**       Close a ticket with recoverable status and changelog      
+  projections                                                                 
+  • **create**      Create a new ticket workspace under the docs root         
+  • **graph**       Render a Mermaid graph for a ticket (docs ↔ related files)
+  • **list**        List ticket workspaces                                    
+  • **move**        Move a ticket directory to the current path template      
+  • **rename**      Rename a ticket identifier and move its workspace         
+  directory                                                                   
+  • **resume**      Derive current tasks, checkpoint and stale evidence       
+  without writing                                                             
+  • **show**        Show one ticket's detail (metadata, docs, tasks,          
+  changelog)                                                                  
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+        -h, --help    help for ticket                                         
+       --long-help    Show long help                                          
+                                                                              
+  ## Global flags:                                                            
+                                                                              
+         --verbose    Show workspace banner and coaching output (off by       
+  default)                                                                    
+                                                                              
+  Use docmgr ticket [command] --help for more information about a command. Use
+  docmgr ticket --help --long-help for information about all flags.           
+                                                                              
+  ## General topics                                                           
+                                                                              
+  Run docmgr help <topic> to view a topic's page.                             
+                                                                              
+  • milestone-workflows - Recoverable milestones and ticket resumption        
+
+ tests/tensor/cuda-gpu.test.mjs                            | 15 +++++++++++----
+ tools/cuda-remote.mjs                                     | 14 ++++++++------
+ .../index.md                                              |  2 +-
+ .../reference/01-diary.md                                 | 10 ++++++++++
+ 4 files changed, 30 insertions(+), 11 deletions(-)
+f53fb7a IRWB-026: Share in-flight differential verdicts
+ src/framework/contracts/differential.ts            | 64 ++++++++++++++++++----
+ tests/tensor/cuda.test.mjs                         | 12 ++--
+ .../reference/01-diary.md                          |  7 +++
+ 3 files changed, 69 insertions(+), 14 deletions(-)
+
+exec
+/usr/bin/zsh -lc 'tail -16 dist/irwb-026-tests.log; git diff -- tools/cuda-remote.mjs tests/tensor/cuda-gpu.test.mjs' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 626ms:
+✔ node budget includes skipped subtrees and bounds trace allocation during repeated branches (9.000397ms)
+✔ cooperatively aborted host algorithms retain completed-task links and report cancellation (1.095015ms)
+✔ plan requirements pin hidden host dependencies independently of directly edited call nodes (1.60929ms)
+✔ walk visitor and find predicate expose typed traversal context without modifying the plan (0.602654ms)
+✔ choice evidence bindings retain exact earlier decisions across later scoring of the same candidates (3.774571ms)
+✔ matmul agrees with the numerical oracle before and after optimization (60.000168ms)
+✔ softmax agrees with the numerical oracle before and after optimization (22.858646ms)
+✔ layernorm agrees with the numerical oracle before and after optimization (23.741261ms)
+✔ attention agrees with the numerical oracle before and after optimization (95.349964ms)
+✔ mlp agrees with the numerical oracle before and after optimization (104.654634ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (7.932458ms)
+✔ GB10 checks matmul before and after optimization (5249.703138ms)
+✔ GB10 checks softmax before and after optimization (4912.175225ms)
+✔ GB10 checks layernorm before and after optimization (4782.462854ms)
+✔ GB10 checks attention before and after optimization (4878.22362ms)
+✔ GB10 checks mlp before and after optimization (5565.256331ms)
+diff --git a/tests/tensor/cuda-gpu.test.mjs b/tests/tensor/cuda-gpu.test.mjs
+index 04b9475..7eeeece 100644
+--- a/tests/tensor/cuda-gpu.test.mjs
++++ b/tests/tensor/cuda-gpu.test.mjs
+@@ -105,7 +105,7 @@ test('GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and
+   );
+ });
+ 
+-test('remote runner shares a compile across isolated jobs and invalidates on build input changes', async () => {
++test('remote runner shares a compile across isolated jobs and invalidates on build input and library changes', async () => {
+   const tool = fileURLToPath(new URL('../../tools/cuda-remote.mjs', import.meta.url));
+   const exec = promisify(execFile);
+   const dirs = await Promise.all(['A', 'B'].map(() => mkdtemp(join(tmpdir(), 'irwb-cuda-runner-test-'))));
+@@ -129,11 +129,11 @@ int main() {
+         await writeFile(join(dir, 'input.txt'), i ? 'B' : 'A');
+       }),
+     );
+-    async function run(dir) {
+-      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt']);
++    async function run(dir, ...linkArgs) {
++      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt', ...linkArgs]);
+       return { ...JSON.parse(stdout), answer: await readFile(join(dir, 'out', 'answer.txt'), 'utf8') };
+     }
+-    const [a, b] = await Promise.all(dirs.map(run));
++    const [a, b] = await Promise.all(dirs.map(dir => run(dir)));
+     assert.equal(a.hash, b.hash);
+     assert.deepEqual([a.compiled, b.compiled].sort(), [false, true]);
+     assert.deepEqual([a.answer, b.answer], ['A1', 'B1']);
+@@ -142,6 +142,13 @@ int main() {
+     assert.equal(changed.compiled, true);
+     assert.notEqual(changed.hash, a.hash);
+     assert.equal(changed.answer, 'A2');
++    const linked = await run(dirs[0], '--link', 'cublas');
++    assert.notEqual(linked.hash, changed.hash);
++    assert.equal(linked.compiled, true);
++    const linkedTwice = await run(dirs[0], '--link', 'cublas', '--link', 'cudart');
++    assert.notEqual(linkedTwice.hash, linked.hash);
++    assert.equal(linkedTwice.compiled, true);
++    assert.equal(linkedTwice.answer, 'A2');
+   } finally {
+     await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true })));
+   }
+diff --git a/tools/cuda-remote.mjs b/tools/cuda-remote.mjs
+index b12a847..7b24293 100644
+--- a/tools/cuda-remote.mjs
++++ b/tools/cuda-remote.mjs
+@@ -1,10 +1,11 @@
+ // Compile and run a CUDA program on the GPU machine over ssh, and bring its outputs back.
+ //
+ //   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121]
+-//     [--runtime-input relative-path ...] [-- program args...]
++//     [--link lib ...] [--runtime-input relative-path ...] [-- program args...]
+ //
+ // <dir> holds main.cu and any input files. Each invocation uploads to its own remote working directory.
+-// `nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture and build files.
++// `nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture, libraries and build files.
++// Each --link lib appends -l<lib> to nvcc in the order given (for example, --link cublas).
+ // Each --runtime-input path marks an uploaded file that does not affect compilation. Files under out/
+ // are copied back to <dir>/out/ after running ./prog from the working directory.
+ // --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so concurrent timed
+@@ -23,11 +24,11 @@ const argv = process.argv.slice(2);
+ const sep = argv.indexOf('--');
+ const opts = sep < 0 ? argv : argv.slice(0, sep);
+ const progArgs = sep < 0 ? [] : argv.slice(sep + 1);
+-const valued = ['--host', '--arch', '--runtime-input'];
++const valued = ['--host', '--arch', '--runtime-input', '--link'];
+ const dir = opts.find((a, i) => !a.startsWith('--') && !valued.includes(opts[i - 1]));
+ if (!dir)
+   throw new Error(
+-    'usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [--runtime-input path ...] [-- args]',
++    'usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [--link lib ...] [--runtime-input path ...] [-- args]',
+   );
+ for (const [i, opt] of opts.entries())
+   if (valued.includes(opt) && (!opts[i + 1] || opts[i + 1].startsWith('--')))
+@@ -51,7 +52,8 @@ if (!files.includes('main.cu')) throw new Error(dir + ': no main.cu');
+ const runtime = new Set(opts.flatMap((arg, i) => (arg === '--runtime-input' ? [opts[i + 1]] : [])));
+ for (const path of runtime)
+   if (path === 'main.cu' || !files.includes(path)) throw new Error('Invalid runtime input: ' + path);
+-const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch]));
++const links = opts.flatMap((arg, i) => (arg === '--link' ? ['-l' + opts[i + 1]] : []));
++const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch, ...links]));
+ for (const f of files) {
+   if (runtime.has(f)) continue;
+   const bytes = readFileSync(join(dir, f));
+@@ -82,7 +84,7 @@ try {
+     'exec 9>"$cache/.lock"',
+     'flock 9',
+     'if [ ! -x "$cache/prog" ]; then',
+-    `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu || exit 97`,
++    `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu ${links.map(q).join(' ')} || exit 97`,
+     '  mv prog.tmp "$cache/prog"',
+     '  compiled=1',
+     'fi',
+
+exec
+/usr/bin/zsh -lc "python3 - <<'PY'
+from pathlib import Path
+p=Path('src/framework/contracts/differential.ts')
+s=p.read_text().replace('let reuseEnabled = true;', '''let reuseEnabled = true;
+
+function trimReuse(active?: Reuse): void {
+  for (const [key, reuse] of REUSE) {
+    if (REUSE.size <= REUSE_MAX) break;
+    if (reuse "'!== active && reuse.pending.size === 0) REUSE.delete(key);
+  }
+}
+'"''').replace('  while (REUSE.size > REUSE_MAX) REUSE.delete(REUSE.keys().next().value"'!);'"','  trimReuse(reuse);').replace('              reuse"'!.pending.delete(key);'"','              reuse"'!.pending.delete(key);'"\\n              if (reuse"'!.pending.size === 0) trimReuse();'"')
+p.write_text(s)
+PY
+git diff --check && npm run build && node --test tests/tensor/cuda.test.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 6504ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (3.590651ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (1.993501ms)
+✔ the lowering pass shares concurrent batches, replays verdicts and retries transport failures (26.255989ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (4.526085ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 138.669879
+
+exec
+/usr/bin/zsh -lc 'git add src/framework/contracts/differential.ts && git commit --amend --no-edit && git rev-parse --short HEAD' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ exited 1 in 70955ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+zsh:2: read-only variable: status
+
+ succeeded in 311ms:
+[fix1-sl/irwb-026 d4f7283] IRWB-026: Share in-flight differential verdicts
+ Date: Thu Nov 26 22:15:08 2026 -0500
+ 3 files changed, 79 insertions(+), 15 deletions(-)
+d4f7283
+
+exec
+/usr/bin/zsh -lc "tail -12 dist/irwb-026-tests.log; sed -i 's/f53fb7a/d4f7283/; s/clears pending entries on either outcome./clears pending entries on either outcome. Active entries stay discoverable during memo eviction./' ttmp/2026/11/26/IRWB-026--*/reference/01-diary.md
+docmgr doc relate --doc \""'$(realpath ttmp/2026/11/26/IRWB-026--*/reference/01-diary.md)" --file-note "$PWD/src/tensor/index.ts:Tix step reporting" --file-note "$PWD/src/framework/contracts/differential.ts:Differential memo" --file-note "$PWD/tools/cuda-remote.mjs:Remote linker options"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 1271ms:
+✔ coverage required per function and screening is origin-only (13.149015ms)
+✔ exact comparison detects a changed zero sign (11.237502ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (83.283638ms)
+✔ optimization steps report no-ops and the first rejection reason (5.413691ms)
+ℹ tests 259
+ℹ suites 0
+ℹ pass 259
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64925.771171
+related 3 file(s) to ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md (added 3, updated 0, removed 0)
+
+exec
+/usr/bin/zsh -lc 'npm run build && node --test tests/framework/*.test.mjs tests/tensor/*.test.mjs > dist/irwb-026-tests.log 2>&1
+test_exit=$?
+tail -12 dist/irwb-026-tests.log
+exit "$test_exit"' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+exec
+/usr/bin/zsh -lc "node --input-type=module <<'JS'
+import assert from 'node:assert/strict';
+import { compileTix } from './dist/tensor/index.js';
+import { createCudaLowering } from './dist/tensor/cuda-contract.js';
+import { evaluate } from './dist/tensor/evaluate.js';
+
+const source = 'fn f(x:f32[N]):f32[N]{return x;}';
+const first = compileTix(source);
+const target = first.current.value.functions[0];
+let release;
+let started;
+const gate = new Promise(resolve => { release = resolve; });
+const running = new Promise(resolve => { started = resolve; });
+let targetBatches = 0;
+const checkTarget = createCudaLowering('eviction-probe-active', async (_src, fn, cases) => {
+  targetBatches++;
+  started();
+  await gate;
+  return cases.map(inputs => ({ ...evaluate(fn, inputs, 'f32'), gpuMs: 0 }));
+});
+const checkOther = createCudaLowering('eviction-probe-pressure', async (_src, fn, cases) =>
+  cases.map(inputs => ({ ...evaluate(fn, inputs, 'f32'), gpuMs: 0 })),
+);
+const active = checkTarget(first.current, target.name);
+await running;
+// Fill all four settled memo slots while the target batch is still active.
+for (const name of ['a', 'b', 'c', 'd']) {
+  const other = compileTix(source + 'fn ' + name + '(x:f32[N]):f32[N]{return x;}');
+  assert.equal((await checkOther(other.current, 'f')).accepted, true);
+}
+const joined = checkTarget(first.current, 'f');
+release();
+assert.deepEqual((await Promise.all([active, joined])).map(result => result.accepted), [true, true]);
+assert.equal(targetBatches, 1);
+console.log('One active batch after four other baseline keys');
+JS" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 470ms:
+One active batch after four other baseline keys
+
+codex
+The first combined run passed all 259 tests. Review exposed one more F19 edge case: memo eviction could hide a batch that was still running. I amended F19 and verified with a fake-engine probe that a matching check still joins the batch after four other baseline keys enter the memo. The combined suite is running again on the amended code.
+exec
+/usr/bin/zsh -lc "sed -i '/"'^After the fix, the build and all 4 CUDA unit tests passed/ s/$/ A delayed fake-engine probe kept one batch active while four other baseline keys filled the memo, then joined it without issuing another batch./'"' ttmp/2026/11/26/IRWB-026--*/reference/01-diary.md
+git diff --check
+git status --short
+git show --format= --name-only 3977b0b
+git show --format= --name-only d4f7283
+tail -6 dist/irwb-026-tests.log" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 225ms:
+ M tests/tensor/cuda-gpu.test.mjs
+ M tools/cuda-remote.mjs
+ M ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/index.md
+ M ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+?? ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/scripts/
+src/tensor/index.ts
+tests/tensor/passes.test.mjs
+ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/README.md
+ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/changelog.md
+ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/index.md
+ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/tasks.md
+src/framework/contracts/differential.ts
+tests/tensor/cuda.test.mjs
+ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+✔ layernorm agrees with the numerical oracle before and after optimization (23.049321ms)
+✔ attention agrees with the numerical oracle before and after optimization (117.421542ms)
+✔ mlp agrees with the numerical oracle before and after optimization (104.085464ms)
+✔ conv2d agrees with the numerical oracle before and after optimization (6.478675ms)
+✔ GB10 checks matmul before and after optimization (4898.465406ms)
+✔ GB10 checks softmax before and after optimization (4942.997348ms)
+
+exec
+/usr/bin/zsh -lc "docmgr changelog update --ticket IRWB-026 --entry 'Implemented F14 optimization step reporting, F19 in-flight memo reuse, and F20 CUDA library linking. The diary records the failing regressions and the GB10 cuBLAS probe.'; git diff --check; node --check tools/cuda-remote.mjs" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 625ms:
+changelog updated: /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/changelog.md
+
+exec
+/usr/bin/zsh -lc 'git diff --numstat; git ls-files --others --exclude-standard; tail -8 dist/irwb-026-tests.log' in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 473ms:
+11	4	tests/tensor/cuda-gpu.test.mjs
+8	6	tools/cuda-remote.mjs
+4	0	ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/changelog.md
+1	1	ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/index.md
+18	2	ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md
+ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/scripts/01-cublas-probe/main.cu
+✔ conv2d agrees with the numerical oracle before and after optimization (6.478675ms)
+✔ GB10 checks matmul before and after optimization (4898.465406ms)
+✔ GB10 checks softmax before and after optimization (4942.997348ms)
+✔ GB10 checks layernorm before and after optimization (4845.522815ms)
+✔ GB10 checks attention before and after optimization (4705.552464ms)
+✔ GB10 checks mlp before and after optimization (4841.756816ms)
+✔ GB10 checks conv2d before and after optimization (2594.981733ms)
+✔ GB10 preserves split rounding and a partial final block (7279.008473ms)
+
+ succeeded in 71084ms:
+
+> compiler-workbench@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ coverage required per function and screening is origin-only (8.174167ms)
+✔ exact comparison detects a changed zero sign (3.986164ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (63.77004ms)
+✔ optimization steps report no-ops and the first rejection reason (3.923704ms)
+ℹ tests 259
+ℹ suites 0
+ℹ pass 259
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65230.147877
+
+exec
+/usr/bin/zsh -lc "cat >> ttmp/2026/11/26/IRWB-026--*/reference/01-diary.md <<'EOF'
+
+The final "'`npm run build` succeeded. The final `node --test tests/framework/*.test.mjs tests/tensor/*.test.mjs` completed with 259 tests passed and zero failures, skips, or cancellations.
+EOF
+git diff --check && git add tools/cuda-remote.mjs tests/tensor/cuda-gpu.test.mjs ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20 && git diff --cached --check && git commit -m '"'IRWB-026: Link libraries in the remote CUDA runner' && git status --short && git log -3 --format='%H %s'" in /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026
+ succeeded in 772ms:
+[fix1-sl/irwb-026 6351b92] IRWB-026: Link libraries in the remote CUDA runner
+ 6 files changed, 95 insertions(+), 13 deletions(-)
+ create mode 100644 ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/scripts/01-cublas-probe/main.cu
+6351b92f0df186f3d7078697f82021be57c25647 IRWB-026: Link libraries in the remote CUDA runner
+d4f72835c1207152c58e8b9be36bf25eaace8703 IRWB-026: Share in-flight differential verdicts
+3977b0b463f418a7246d6a29df2b95fcc6f5bc25 IRWB-026: Report Tix optimization changes and rejection reasons
+
+codex
+Completed IRWB-026 in three local commits. The worktree is clean, and no commits were pushed.
+
+| Fix | Commit | Regression on unfixed code | Files changed |
+|---|---|---|---|
+| F14 | `3977b0b` | `optimization steps report no-ops and the first rejection reason` failed because steps omitted `changed` and the counterexample reason. The updated composition assertion also failed because the applied step omitted `changed: true`. | `src/tensor/index.ts`, `tests/tensor/passes.test.mjs`, and ticket scaffold files `README.md`, `index.md`, `changelog.md`, `tasks.md`, and `reference/01-diary.md` |
+| F19 | `d4f7283` | `the lowering pass shares concurrent batches, replays verdicts and retries transport failures` failed because two concurrent cold checks issued two batches, where one was expected. | `src/framework/contracts/differential.ts`, `tests/tensor/cuda.test.mjs`, and the ticket diary |
+| F20 | `6351b92` | `remote runner shares a compile across isolated jobs and invalidates on build input and library changes` failed because adding `--link cublas` produced the same build hash. | `tools/cuda-remote.mjs`, `tests/tensor/cuda-gpu.test.mjs`, and the ticket’s `index.md`, `changelog.md`, diary, and `scripts/01-cublas-probe/main.cu` |
+
+The cuBLAS probe ran on the GB10 with `--link cublas`. `cublasSgemm` matched the CPU result exactly, yielding `[76, 100, 103, 136]` in column-major order. The second run reused the cached binary.
+
+The final `npm run build` succeeded, and the combined framework and tensor run passed **259 tests**, with **0 failures, skips, or cancellations**. [IRWB-026 diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md)
+tokens used
+121,849
+Completed IRWB-026 in three local commits. The worktree is clean, and no commits were pushed.
+
+| Fix | Commit | Regression on unfixed code | Files changed |
+|---|---|---|---|
+| F14 | `3977b0b` | `optimization steps report no-ops and the first rejection reason` failed because steps omitted `changed` and the counterexample reason. The updated composition assertion also failed because the applied step omitted `changed: true`. | `src/tensor/index.ts`, `tests/tensor/passes.test.mjs`, and ticket scaffold files `README.md`, `index.md`, `changelog.md`, `tasks.md`, and `reference/01-diary.md` |
+| F19 | `d4f7283` | `the lowering pass shares concurrent batches, replays verdicts and retries transport failures` failed because two concurrent cold checks issued two batches, where one was expected. | `src/framework/contracts/differential.ts`, `tests/tensor/cuda.test.mjs`, and the ticket diary |
+| F20 | `6351b92` | `remote runner shares a compile across isolated jobs and invalidates on build input and library changes` failed because adding `--link cublas` produced the same build hash. | `tools/cuda-remote.mjs`, `tests/tensor/cuda-gpu.test.mjs`, and the ticket’s `index.md`, `changelog.md`, diary, and `scripts/01-cublas-probe/main.cu` |
+
+The cuBLAS probe ran on the GB10 with `--link cublas`. `cublasSgemm` matched the CPU result exactly, yielding `[76, 100, 103, 136]` in column-major order. The second run reused the cached binary.
+
+The final `npm run build` succeeded, and the combined framework and tensor run passed **259 tests**, with **0 failures, skips, or cancellations**. [IRWB-026 diary](/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-sl-irwb-026/ttmp/2026/11/26/IRWB-026--framework-and-tensor-fixes-f14-f19-f20/reference/01-diary.md)

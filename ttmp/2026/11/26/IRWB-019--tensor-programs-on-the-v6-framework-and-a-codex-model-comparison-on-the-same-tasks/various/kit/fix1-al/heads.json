@@ -1,0 +1,8 @@
+{
+ "IRWB-025": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/fix1-al-irwb-025",
+  "branch": "fix1-al/irwb-025",
+  "base": "bc7702c",
+  "rev": "a30c60f"
+ }
+}

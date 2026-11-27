@@ -1,0 +1,9 @@
+{
+ "IRWB-023-G": {
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r2b-ds-max-irwb-023-g",
+  "branch": "r2b-ds-max/irwb-023-g",
+  "base": "12bc661",
+  "harness": "pi",
+  "rev": "5e73dc5"
+ }
+}
