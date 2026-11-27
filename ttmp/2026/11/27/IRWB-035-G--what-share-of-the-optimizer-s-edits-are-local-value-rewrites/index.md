@@ -7,7 +7,13 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/analyses.ts
+      Note: IMPURE exported for the tree guard
+    - Path: repo://src/typed/edit-classes.ts
+      Note: the classifier (classifyApplication, instructionWeights, rederive)
+    - Path: repo://tests/typed/edit-classes.test.mjs
+      Note: its test
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T10:03:49.868654301-05:00

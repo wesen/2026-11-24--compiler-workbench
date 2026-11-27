@@ -52,6 +52,11 @@ A class is decided from the records and the two revisions, never from the pass's
 
 A chain of `replace` edits on one statement field gets, for every member, the class of the net change (first `from`, last `to`).
 
+Two rules were added after the first corpus run:
+
+- The removal of a statement that is in neither revision is structural when a `replaceStmt` of the same application made that statement (it is then a terminator the application made and merged away), otherwise `other/unresolved`. One `cfg` application on `dead-code` does this.
+- Re-derivation tries the table named after the pass first. Two `fold` edits on `chess-search` are instances of both tables (`0 * k + 0` with constant `k`), and were counted for `simplify` before.
+
 ### Borderline cases and how they are decided
 
 | case | decision | reason |
@@ -79,19 +84,21 @@ Every revision of a run is lowered with `lowerToImage` (default options). An edi
 
 | kind | claims |
 |---|---|
-| `replace` | nodes of A absent from the revision after; nodes of B absent from the revision before (a chain: its first edit) |
+| `replace` | the subtrees where A and B part (walking both from the root while operator, immediate and type agree): their nodes absent from the other revision (a chain: its first edit) |
 | `remove`, `replaceStmt`, `insert` | the statement and its trees, on the side(s) it exists |
 | `unreachable` | the statements of the dropped block |
 | `inline` | new entities of the function whose origin names the call |
 | `retarget`, `move` | the statement itself, in the image after |
 | `local`, `block`, `merge`, `note` | nothing |
 
-An entity belongs to the first edit that claims it. An instruction counts once, for the edit owning the first entry of its `covers` that is claimed. The weight of an edit is its instructions in the image before plus its instructions in the image after. This is a static count. The simplest alternative, counting entities of the diff, needs no lowering, but the brief asks for instructions and a folded constant often costs none.
+An entity belongs to the first edit that claims it. An instruction counts once, for the edit owning the first entry of its `covers` that is claimed. The weight of an edit is its instructions in the image before plus its instructions in the image after. A `replace` deep in a tree makes every value above the change again (`Tx.rewrite`, "rebuilt around a changed argument"). Those values are listed apart as `rebuilt` and are not in the weight: their instructions compute what they did. `instructionWeights(…, { rebuilt: true })` counts them too, which gives an upper bound; the first corpus run counted them by default and gave value edits 9 instructions each for `constprop` (step 3 of the diary), which is the size of the surrounding expression, not of the edit. Not counted in either form: an instruction of an unchanged parent whose encoding changes because its operand did (`add` becoming `addi`).
+
+This is a static count. The simplest alternative, counting entities of the diff, needs no lowering, but the brief asks for instructions and a folded constant often costs none.
 
 ## The tool, the test and the scripts
 
 - `src/typed/edit-classes.ts`: `classifyApplication(app)`, `instructionWeights(classified, imageBefore, imageAfter)`, `rederive(a, b)`, `tallyInto`. No dependency on Node, so the workbench can call it.
-- `tests/typed/edit-classes.test.mjs`: fixed small programs with known classes; every `simplify` and `fold` edit of four corpus projects re-derives; classes agree with the (pass, kind) table on those projects.
+- `tests/typed/edit-classes.test.mjs`: `rederive` on hand-made trees; the classes of each pass of `blend` under O2; on six corpus projects under `speed`, classes agree with the (pass, kind) table, every `simplify` and `fold` edit re-derives by its own table, and every changed value and statement is claimed or rebuilt; `div-to-shift` (no table, no `because`) is `local/uncited`.
 - `scripts/02-classify-corpus.mjs` runs both pipelines once and writes every classified edit with its weight to JSON; `scripts/03-tables.mjs` makes the tables from the JSON, so the 10-minute run is not repeated per table.
 
 One change outside the new file: `IMPURE` in `src/typed/analyses.ts` is exported, so the tree guard uses the same operator set as `isPure`.
