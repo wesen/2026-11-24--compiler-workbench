@@ -1,0 +1,158 @@
+✔ GB10 checks matmul before and after optimization (4611.750636ms)
+✔ GB10 checks softmax before and after optimization (4483.410596ms)
+✔ GB10 checks layernorm before and after optimization (5053.453182ms)
+✔ GB10 checks attention before and after optimization (4716.134583ms)
+✔ GB10 checks mlp before and after optimization (4714.54888ms)
+✔ GB10 checks conv2d before and after optimization (3067.15383ms)
+✔ GB10 preserves split rounding and a partial final block (6874.18172ms)
+✔ GB10 checks composed inline addresses and rejects a valid index mutant (5643.808674ms)
+✔ GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns (13004.875932ms)
+✖ remote runner links repeated libraries and keys the build by their order (2505.451705ms)
+✔ remote runner shares a compile across isolated jobs and invalidates on build input changes (4877.876392ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (2.600174ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (1.404428ms)
+✖ concurrent lowering checks share a batch, retry transport failures and replay verdicts (8.907997ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (8.629222ms)
+✖ one genuine split candidate fails exact and passes the source-f64 tolerance (7.984173ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (5.269137ms)
+✖ passes compose across calls and preserve the source baseline (3.919728ms)
+✖ a rejected optimization step reports the first counterexample and leaves the program unchanged (4.050218ms)
+✔ coverage required per function and screening is origin-only (3.690632ms)
+✔ exact comparison detects a changed zero sign (1.136125ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (29.422169ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 17
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 59622.660805
+
+✖ failing tests:
+
+test at tests/tensor/cuda-gpu.test.mjs:108:1
+✖ remote runner links repeated libraries and keys the build by their order (2505.451705ms)
+  Error: Command failed: /home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/tools/cuda-remote.mjs /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/ttmp/2026/11/26/IRWB-024--framework-and-tensor-fixes-f14-f19-f20/scripts/01-cublas-product/ --link m --link cublas
+  
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:509:28)
+      at maybeClose (node:internal/child_process:1124:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: '/home/manuel/.nvm/versions/node/v24.18.0/bin/node /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/tools/cuda-remote.mjs /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/ttmp/2026/11/26/IRWB-024--framework-and-tensor-fixes-f14-f19-f20/scripts/01-cublas-product/ --link m --link cublas',
+    stdout: '{"host":"manuel@bling","hash":"c623960dc105a8b6c240fa1781a6c48ef97deeb62bb1ce95f6ba4a23353e9201","compiled":false,"compileMs":null,"runMs":null,"exit":97,"stdout":"","stderr":"/usr/bin/ld: /tmp/tmpxft_002067cc_00000000-11_main.o: in function `main\':\\ntmpxft_002067cc_00000000-6_main.cudafe1.cpp:(.text.startup+0x8c): undefined reference to `cublasCreate_v2\'\\n/usr/bin/ld: tmpxft_002067cc_00000000-6_main.cudafe1.cpp:(.text.startup+0xdc): undefined reference to `cublasSgemm_v2\'\\n/usr/bin/ld: tmpxft_002067cc_00000000-6_main.cudafe1.cpp:(.text.startup+0x100): undefined reference to `cublasDestroy_v2\'\\ncollect2: error: ld returned 1 exit status\\n","outputs":[]}\n',
+    stderr: ''
+  }
+
+test at tests/tensor/cuda.test.mjs:56:1
+✖ concurrent lowering checks share a batch, retry transport failures and replay verdicts (8.907997ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/tests/tensor/cuda.test.mjs:75:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/passes.test.mjs:18:1
+✖ one genuine split candidate fails exact and passes the source-f64 tolerance (7.984173ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        accepted: true,
+  -     changed: true,
+        pass: 'split-sum'
+      },
+      {
+        accepted: true,
+  -     changed: false,
+        pass: 'split-sum'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/tests/tensor/passes.test.mjs:21:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { pass: 'split-sum', accepted: true }, { pass: 'split-sum', accepted: true } ],
+    expected: [ { pass: 'split-sum', accepted: true, changed: true }, { pass: 'split-sum', accepted: true, changed: false } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/passes.test.mjs:48:1
+✖ passes compose across calls and preserve the source baseline (3.919728ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        accepted: true,
+  -     changed: true,
+        pass: 'inline'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/tests/tensor/passes.test.mjs:52:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { pass: 'inline', accepted: true } ],
+    expected: [ { pass: 'inline', accepted: true, changed: true } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/passes.test.mjs:56:1
+✖ a rejected optimization step reports the first counterexample and leaves the program unchanged (4.050218ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        accepted: false,
+  -     changed: false,
+        pass: 'split-sum',
+  -     reason: 'at [0] expected 0.5052213072776794, got 0, allowed 0.00001210442614555359'
+      }
+    ]
+  
+      at Object.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/tests/tensor/passes.test.mjs:62:12)
+      at expectedException (node:assert:578:17)
+      at expectsError (node:assert:703:21)
+      at strict.throws (node:assert:759:3)
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-024/tests/tensor/passes.test.mjs:60:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { pass: 'split-sum', accepted: false } ],
+    expected: [ { pass: 'split-sum', accepted: false, changed: false, reason: 'at [0] expected 0.5052213072776794, got 0, allowed 0.00001210442614555359' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

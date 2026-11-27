@@ -1,0 +1,30 @@
+✔ GB10 checks matmul before and after optimization (4348.100395ms)
+✔ GB10 checks softmax before and after optimization (4285.700141ms)
+✔ GB10 checks layernorm before and after optimization (5085.522521ms)
+✔ GB10 checks attention before and after optimization (4480.477747ms)
+✔ GB10 checks mlp before and after optimization (4489.900199ms)
+✔ GB10 checks conv2d before and after optimization (2569.148087ms)
+✔ GB10 preserves split rounding and a partial final block (6929.802032ms)
+✔ GB10 checks composed inline addresses and rejects a valid index mutant (4481.838998ms)
+✔ GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns (13737.705695ms)
+✔ remote runner links repeated libraries and keys the build by their order (4708.256097ms)
+✔ remote runner shares a compile across isolated jobs and invalidates on build input changes (5214.992828ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (4.328126ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (2.417205ms)
+✔ concurrent lowering checks share a batch, retry transport failures and replay verdicts (25.825888ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (3.177305ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (13.338912ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (4.326007ms)
+✔ passes compose across calls and preserve the source baseline (5.936547ms)
+✔ a rejected optimization step reports the first counterexample and leaves the program unchanged (2.243329ms)
+✔ coverage required per function and screening is origin-only (4.037354ms)
+✔ exact comparison detects a changed zero sign (1.60303ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (27.578142ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 60412.899232

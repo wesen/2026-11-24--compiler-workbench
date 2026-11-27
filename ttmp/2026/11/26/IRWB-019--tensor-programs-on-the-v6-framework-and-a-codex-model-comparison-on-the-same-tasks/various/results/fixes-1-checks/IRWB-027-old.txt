@@ -1,0 +1,108 @@
+✖ remote builds include repeated link libraries in the command and cache key (141.386812ms)
+✔ CUDA source is deterministic and preloads every emitted statement kernel before timing (4.270883ms)
+✔ CUDA binary requests and results preserve f32 words, including subarray and zero shape (2.019099ms)
+✔ the lowering pass delegates one batch, replays verdicts and retries transport failures (24.162012ms)
+✔ the lowering relation is exact: one ulp is rejected, a different NaN word is not (IRWB-019 F17) (4.851115ms)
+✖ concurrent cold lowering checks share a batch and retry failures (10.523834ms)
+✔ one genuine split candidate fails exact and passes the source-f64 tolerance (13.865473ms)
+✔ inline composes permuted addresses, and rejects identity-order substitution (9.954411ms)
+✖ passes compose across calls and preserve the source baseline (6.553175ms)
+✖ coverage required per function and screening is origin-only (3.94799ms)
+✔ exact comparison detects a changed zero sign (2.328428ms)
+✔ the meaning gate tells every pair of shape symbols apart (IRWB-019 F21) (51.025107ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 8
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 219.848494
+
+✖ failing tests:
+
+test at tests/tensor/cuda-remote.test.mjs:8:1
+✖ remote builds include repeated link libraries in the command and cache key (141.386812ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  'a6b75535ba3ac53a72d3c9dd65cd2107746a188db401535a326c3acadedac08f'
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-027/tests/tensor/cuda-remote.test.mjs:19:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'a6b75535ba3ac53a72d3c9dd65cd2107746a188db401535a326c3acadedac08f',
+    expected: 'a6b75535ba3ac53a72d3c9dd65cd2107746a188db401535a326c3acadedac08f',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/cuda.test.mjs:121:1
+✖ concurrent cold lowering checks share a batch and retry failures (10.523834ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-027/tests/tensor/cuda.test.mjs:133:10)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/passes.test.mjs:45:1
+✖ passes compose across calls and preserve the source baseline (6.553175ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        accepted: true,
+  -     changed: true,
+        pass: 'inline'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-027/tests/tensor/passes.test.mjs:49:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { pass: 'inline', accepted: true } ],
+    expected: [ { pass: 'inline', accepted: true, changed: true } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/tensor/passes.test.mjs:53:1
+✖ coverage required per function and screening is origin-only (3.94799ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - false
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/check-irwb-027/tests/tensor/passes.test.mjs:62:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
