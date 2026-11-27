@@ -168,3 +168,16 @@ general; if it does not, report the disagreement. This is an experiment; the fix
 - Value-level sites and attribution to rewrite rules (`because` rule ids) for the missed-optimization stage.
 - Attribution across backend options (the same revision under two option sets).
 - Attribution summed over a case set with weights, for whole-corpus tables.
+
+## Outcome (added after the implementation)
+
+The report (`reference/02-report-why-speed-made-the-bytecode-vm-slower.md`) has the results. Where the work
+departed from this design:
+
+- The loops change alone met the VM's target and raised one corpus cell (regex-nfa under O2 with the tuned
+  options). Refinement 2 (one local per equal invariant tree) became part of the fix, on by default.
+- That exposed a coalescer limit in orders, fixed in `backend/coalesce.ts`. The design did not foresee a
+  backend change.
+- Refinement 1 (do not hoist a bare `aaddr`) was measured and dropped.
+- The estimate guard was measured and is not used.
+- The tool takes `--backend JSON` in addition to `--coalesce`.

@@ -1,0 +1,41 @@
+pass            coalesce: fib  chk  bytes | default: fib chk bytes
+r0               7678   6874   840B   7863   7035   848B  123 stmts
+0:inline =       7678   6874   840B   7863   7035   848B  123 stmts
+1:inline =       7678   6874   840B   7863   7035   848B  123 stmts
+2:cfg            7055   6287   828B   7240   6448   836B   95 stmts
+3:fold           6871   6127   824B   7056   6288   832B   95 stmts
+4:simplify =     6871   6127   824B   7056   6288   832B   95 stmts
+5:constprop =    6871   6127   824B   7056   6288   832B   95 stmts
+6:fold =         6871   6127   824B   7056   6288   832B   95 stmts
+7:simplify =     6871   6127   824B   7056   6288   832B   95 stmts
+8:dce =          6871   6127   824B   7056   6288   832B   95 stmts
+9:cfg            6688   5968   824B   6873   6129   832B   94 stmts
+10:licm          6349   5677   772B   6534   5838   780B   96 stmts
+11:lvn =         6349   5677   772B   6534   5838   780B   96 stmts
+12:strength =    6349   5677   772B   6534   5838   780B   96 stmts
+13:bce =         6349   5677   772B   6534   5838   780B   96 stmts
+14:subst         6349   5677   772B   6350   5678   776B   95 stmts
+15:subst         6349   5677   772B   6350   5678   776B   94 stmts
+16:dce =         6349   5677   772B   6350   5678   776B   94 stmts
+17:cfg =         6349   5677   772B   6350   5678   776B   94 stmts
+18:subst =       6349   5677   772B   6350   5678   776B   94 stmts
+19:rotate =      6349   5677   772B   6350   5678   776B   94 stmts
+20:cfg =         6349   5677   772B   6350   5678   776B   94 stmts
+pass            coalesce: fib  chk  bytes | default: fib chk bytes
+r0               7678   6874   840B   7863   7035   848B  123 stmts
+0:cfg            7055   6287   828B   7240   6448   836B   95 stmts
+1:fold           6871   6127   824B   7056   6288   832B   95 stmts
+2:simplify =     6871   6127   824B   7056   6288   832B   95 stmts
+3:constprop =    6871   6127   824B   7056   6288   832B   95 stmts
+4:fold =         6871   6127   824B   7056   6288   832B   95 stmts
+5:simplify =     6871   6127   824B   7056   6288   832B   95 stmts
+6:dce =          6871   6127   824B   7056   6288   832B   95 stmts
+7:cfg            6688   5968   824B   6873   6129   832B   94 stmts
+8:licm           6349   5677   772B   6534   5838   780B   96 stmts
+9:lvn =          6349   5677   772B   6534   5838   780B   96 stmts
+10:strength =    6349   5677   772B   6534   5838   780B   96 stmts
+11:bce =         6349   5677   772B   6534   5838   780B   96 stmts
+12:subst         6349   5677   772B   6350   5678   776B   95 stmts
+13:subst         6349   5677   772B   6350   5678   776B   94 stmts
+14:dce =         6349   5677   772B   6350   5678   776B   94 stmts
+15:cfg =         6349   5677   772B   6350   5678   776B   94 stmts

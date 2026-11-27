@@ -1,5 +1,6 @@
 // Credit the change in executed RV32 instructions along a pipeline to the passes' decisions, for one call.
-// node tools/attribute.mjs <project> <pipeline> <fn> [--input '{"n":12}'] [--coalesce] [--rows] [--json]
+// node tools/attribute.mjs <project> <pipeline> <fn> [--input '{"n":12}'] [--backend '{"coalesce":true}'] [--rows] [--json]
+// --coalesce is short for --backend '{"coalesce":true}'.
 // Parameters not in --input take the project's own input when that is a fixed value (a buffer's cells), else 0.
 import { installVendor } from './node-vendor.mjs';
 import { projectAllFiles } from './corpus.mjs';
@@ -14,9 +15,9 @@ const { attributeSteps, formatAttribution } = await import('../dist/typed/attrib
 const argv = process.argv.slice(2);
 const flag = name => argv.includes(name);
 const option = name => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined);
-const [id, pipeline, fn] = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--input');
+const [id, pipeline, fn] = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--input' && argv[i - 1] !== '--backend');
 if (!id || !pipeline || !fn) {
-  console.error("usage: node tools/attribute.mjs <project> <pipeline> <fn> [--input JSON] [--coalesce] [--rows] [--json]");
+  console.error("usage: node tools/attribute.mjs <project> <pipeline> <fn> [--input JSON] [--backend JSON] [--coalesce] [--rows] [--json]");
   process.exit(2);
 }
 const project = projectSource(id, projectAllFiles(id));
@@ -28,7 +29,8 @@ const call = benchCase(storeOf(p.origin.value), fn, { ...fixed, ...JSON.parse(op
 const run = await p.pipeline(pipeline);
 const rejected = run.steps.filter(s => s.rejected).map(s => s.pass);
 if (rejected.length) console.error(`rejected: ${rejected.join(', ')}`);
-const a = attributeSteps(p.revisions, call, { backend: flag('--coalesce') ? { coalesce: true } : {} });
+const backend = { ...(flag('--coalesce') ? { coalesce: true } : {}), ...JSON.parse(option('--backend') ?? '{}') };
+const a = attributeSteps(p.revisions, call, { backend });
 if (flag('--json')) console.log(JSON.stringify(a, null, 1));
 else {
   console.log(formatAttribution(a));
