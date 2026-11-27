@@ -156,6 +156,8 @@ test('the lowering records which statements each kernel computes, and fused and 
     const correspondence = checks.find(c => c.phase === 'correspondence');
     assert.equal(correspondence.ok, true);
     assert.equal(correspondence.evidence.relation, 'statements-to-kernels');
+    // IRWB-030-E: the record says which kernels the host may also run statement by statement
+    assert.deepEqual(correspondence.evidence.evidence.gated, fuse ? [true] : [false, false, false, false]);
     assert.deepEqual(
       correspondence.evidence.entities,
       fuse
