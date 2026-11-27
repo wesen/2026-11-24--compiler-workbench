@@ -128,24 +128,45 @@ export function bufferPromiseBroken(st: Store, f: WorkFn, param: number): string
 }
 
 /**
- * A cell load from a bound buffer: `load16u(caddr(get b, p), 4)` reads cell p, `load(get b, 0)` the length.
- * Returns the buffer parameter's index and the position value (null for the length), or undefined.
+ * A load from a bound buffer, in the forms the two front ends lift `charCodeAt` to: the checked
+ * `load16u(caddr(get b, p), 4)` (tape ingest), the unchecked `load16u(get b + (p << 1), 4)` after an explicit
+ * length check, and the folded `load16u(get b + 2k, 4)` / `load16u(get b, 4 + 2k)`; or `load(get b, 0)`, the
+ * length. Returns the buffer parameter, the position (a value id, a constant, or null for the length) and whether
+ * the load checks the position itself.
  */
 export function bufferLoad(
   st: Store,
   v: ValueRec,
   bound: ReadonlyMap<number, readonly number[]>,
-): { param: number; position: string | null } | undefined {
-  if (v.op === 'load16u' && v.imm === 4) {
-    const a = st.get(v.args[0]) as ValueRec;
-    if (a.op !== 'caddr') return;
-    const r = st.get(a.args[0]) as ValueRec;
-    if (r.op === 'get' && bound.has(r.imm as number)) return { param: r.imm as number, position: a.args[1] };
-  }
+): { param: number; position: string | number | null; checked: boolean } | undefined {
+  const param = (id: string) => {
+    const r = st.get(id) as ValueRec;
+    return r.op === 'get' && bound.has(r.imm as number) ? (r.imm as number) : undefined;
+  };
+  const lit = (id: string) => {
+    const c = st.get(id) as ValueRec;
+    return c.op === 'const' && !c.type ? (c.imm as number) : undefined;
+  };
   if (v.op === 'load' && v.imm === 0 && !v.type) {
-    const r = st.get(v.args[0]) as ValueRec;
-    if (r.op === 'get' && bound.has(r.imm as number)) return { param: r.imm as number, position: null };
+    const b = param(v.args[0]);
+    return b === undefined ? undefined : { param: b, position: null, checked: false };
   }
+  if (v.op !== 'load16u' || typeof v.imm !== 'number') return;
+  const a = st.get(v.args[0]) as ValueRec;
+  if (a.op === 'caddr' && v.imm === 4) {
+    const b = param(a.args[0]);
+    return b === undefined ? undefined : { param: b, position: a.args[1], checked: true };
+  }
+  const direct = param(v.args[0]);
+  if (direct !== undefined)
+    return v.imm >= 4 && v.imm % 2 === 0 ? { param: direct, position: (v.imm - 4) / 2, checked: false } : undefined;
+  if (a.op !== 'add' || v.imm !== 4) return;
+  const b = param(a.args[0]);
+  if (b === undefined) return;
+  const off = st.get(a.args[1]) as ValueRec;
+  const k = lit(a.args[1]);
+  if (k !== undefined) return k >= 0 && k % 2 === 0 ? { param: b, position: k / 2, checked: false } : undefined;
+  if (off.op === 'shl' && lit(off.args[1]) === 1) return { param: b, position: off.args[0], checked: false };
   return;
 }
 
@@ -220,12 +241,20 @@ export const specialize = typedPass({
           if (!v.statement) return;
           const at = bufferLoad(st, st.get(v.id) as ValueRec, bound);
           if (!at || !own(v, i)) return;
-          const p = at.position === null ? null : (st.get(at.position) as ValueRec);
-          if (p && (p.op !== 'const' || p.type || (p.imm as number) >>> 0 >= cells.length)) return;
-          const k = p ? (p.imm as number) : -1;
-          return tx.const(p ? cells[k] : cells.length, {
+          let k: number | null = null;
+          if (typeof at.position === 'number') k = at.position;
+          else if (at.position !== null) {
+            const p = st.get(at.position) as ValueRec;
+            if (p.op !== 'const' || p.type) return;
+            k = p.imm as number;
+          }
+          if (k !== null && k >>> 0 >= cells.length) return;
+          return tx.const(k !== null ? cells[k] : cells.length, {
             because: [factRef(art, b)],
-            note: p ? `${b.param}[${k}] = ${cells[k]} (${art.value.source})` : `${b.param}.length = ${cells.length}`,
+            note:
+              k !== null
+                ? `${b.param}[${k}] = ${cells[k]} (${art.value.source})`
+                : `${b.param}.length = ${cells.length}`,
           });
         });
         continue;

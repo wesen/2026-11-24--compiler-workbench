@@ -1,0 +1,82 @@
+[
+ {
+  "entry": 0,
+  "r0": {
+   "result": 1152,
+   "instructions": 7678,
+   "bytes": 840
+  },
+  "speed": {
+   "result": 1152,
+   "instructions": 9286,
+   "bytes": 904
+  },
+  "hand": {
+   "result": 1152,
+   "instructions": 75,
+   "bytes": 40
+  },
+  "promote+speed": {
+   "result": 1152,
+   "instructions": 161,
+   "bytes": 64,
+   "variants": 20,
+   "residual": 42
+  },
+  "webs+speed": {
+   "result": 1152,
+   "instructions": 74,
+   "bytes": 36,
+   "variants": 20,
+   "residual": 42
+  },
+  "RESIDUAL_PIPELINE": {
+   "result": 1152,
+   "instructions": 74,
+   "bytes": 36,
+   "variants": 20,
+   "residual": 42
+  }
+ },
+ {
+  "entry": 34,
+  "r0": {
+   "result": 1298667478,
+   "instructions": 6874,
+   "bytes": 840
+  },
+  "speed": {
+   "result": 1298667478,
+   "instructions": 8218,
+   "bytes": 904
+  },
+  "hand": {
+   "result": 1298667478,
+   "instructions": 74,
+   "bytes": 36
+  },
+  "promote+speed": {
+   "result": 1298667478,
+   "instructions": 136,
+   "bytes": 52,
+   "variants": 18,
+   "residual": 40
+  },
+  "webs+speed": {
+   "result": 1298667478,
+   "instructions": 86,
+   "bytes": 40,
+   "variants": 18,
+   "residual": 40
+  },
+  "RESIDUAL_PIPELINE": {
+   "result": 1298667478,
+   "instructions": 74,
+   "bytes": 36,
+   "variants": 18,
+   "residual": 40
+  }
+ }
+]
+{"entry":0,"smallestBudget":42,"below":"[unsupported] pe: runVm needs more than 41 residual statements (params.budget); the static store does not repeat"}
+{"entry":34,"smallestBudget":40,"below":"[unsupported] pe: runVm needs more than 39 residual statements (params.budget); the static store does not repeat"}

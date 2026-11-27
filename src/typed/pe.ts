@@ -14,7 +14,7 @@
 import type { Artifact } from '../framework/core/types.js';
 import { binop, Trap } from './evaluate.js';
 import type { BlockRec, StmtRec, Store, ValueRec, WorkFn } from './model.js';
-import { typedPass } from './passes.js';
+import { PIPELINES, typedPass } from './passes.js';
 import { bufferLoad, bufferPromiseBroken, factRef, type Binding, type Bindings } from './specialize.js';
 import { TxError, type Tx } from './tx.js';
 
@@ -123,7 +123,8 @@ function kindOf(
   if (v.op === 'get') return S.get(v.imm as number) ?? (optimistic ? 'n' : null);
   if (v.op === 'aaddr') return 'f';
   const at = bufferLoad(st, v, buffers);
-  if (at) return at.position === null || kindOf(st, at.position, S, buffers, optimistic) === 'n' ? 'n' : null;
+  if (at)
+    return typeof at.position !== 'string' || kindOf(st, at.position, S, buffers, optimistic) === 'n' ? 'n' : null;
   if (!STATIC_OPS.has(v.op)) return null;
   const ks = v.args.map(a => kindOf(st, a, S, buffers, optimistic));
   if (ks.every(k => k === 'n')) return 'n';
@@ -149,7 +150,9 @@ function staticValue(
   if (at) {
     const cells = buffers.get(at.param)!;
     if (at.position === null) return cells.length;
-    const p = staticValue(st, at.position, env, buffers);
+    const p = typeof at.position === 'number' ? at.position : staticValue(st, at.position, env, buffers);
+    // a checked load traps here; an unchecked one is only reached after the front end's own length check, which
+    // the specialization has already decided, so past the end it is not folded (the Trap keeps it residual)
     if (p >>> 0 >= cells.length) throw new Trap('checked address out of range');
     return cells[p];
   }
@@ -157,8 +160,24 @@ function staticValue(
   return binop(v.op, staticValue(st, v.args[0], env, buffers), staticValue(st, v.args[1], env, buffers));
 }
 
-/** Measured on the bytecode VM's fixtures (see the ticket's report): the larger needs 1,097 residual statements. */
-export const DEFAULT_BUDGET = 4096;
+/**
+ * The passes that turn `pe`'s residual code into a loop over scalars (measured on the bytecode VM, see the ticket's
+ * report): cfg merges the residual blocks, promote turns the constant-address frame cells into locals, webs splits
+ * the reused stack slots, `speed` optimizes, and a second webs and subst round forwards the copies left by the first.
+ */
+export const RESIDUAL_PIPELINE: readonly string[] = Object.freeze([
+  'cfg',
+  'promote',
+  'webs',
+  ...PIPELINES.speed,
+  'webs',
+  'subst',
+  'subst',
+  'subst',
+  'subst',
+  'dce',
+  'cfg',
+]);
 
 export const pe = typedPass({
   name: 'pe',
@@ -178,7 +197,10 @@ export const pe = typedPass({
         const broken = bufferPromiseBroken(st, f, param);
         if (broken) throw new TxError('unsupported', broken);
       }
-    const budget = (params.budget as number | undefined) ?? DEFAULT_BUDGET;
+    // default budget: the residual code may not be larger than the function it specializes (a host that accepts
+    // growth passes a larger one); the bytecode VM's fixtures need 42 and 40 of runVm's 123 statements
+    const budget =
+      (params.budget as number | undefined) ?? f.blocks.reduce((n, b) => n + b.stmts.length, 0);
     const live = facts.live!;
     const bt = bindingTimes(st, f, art.value.bindings, live.liveIn(f.blocks[0].id));
     const S = bt.static;
@@ -191,12 +213,11 @@ export const pe = typedPass({
         .map(l => `${f.locals[l].name}=${env.get(l)}`)
         .join(' ');
 
-    let emitted = 0,
-      visited = 0;
+    let emitted = 0;
     const over = () =>
       new TxError(
         'unsupported',
-        `pe: ${f.name} needs more than ${budget} residual statements (params.budget); the static store does not repeat`,
+        `pe: ${f.name} needs more than ${budget} residual statements (params.budget) before its static stores repeat`,
       );
     const memo = new Map<string, string>();
     const queue: { bid: string; env: Map<number, number>; rid: string }[] = [];
@@ -249,9 +270,13 @@ export const pe = typedPass({
         if (++emitted > budget) throw over();
         tx.insert({ block: R, index: R.stmts.length }, tx.stmt(fields, { from, because }), { because });
       };
-      let bid: string | undefined = start;
+      let bid: string | undefined = start,
+        walked = 0;
       for (;;) {
-        if (++visited > budget) throw over();
+        // a walk between specialization points that visits more blocks than the function has went around a cycle
+        // without a loop header (an irreducible loop): it would not stop
+        if (++walked > f.blocks.length)
+          throw new TxError('unsupported', `pe: ${f.name} has a cycle through ${start} without a loop header`);
         const b = st.get(bid) as BlockRec;
         let next: string | undefined;
         for (const sid of b.stmts) {

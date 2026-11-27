@@ -1,0 +1,11 @@
+(a) static without entry: sp t10
+(a) code only, default budget refused: [unsupported] pe: runVm needs more than 123 residual statements (params.budget) before its static stores repeat
+(a) code only, budget 4096 {"variants":111,"residual":197,"rejected":0}
+(a) entry 0 {"result":1152,"trap":false,"instructions":9821,"bytes":2364}
+(a) entry 34 {"result":1298667478,"trap":false,"instructions":8705,"bytes":2364}
+(a) static with entry: entry opcode operand pc sp t10 t17 t18 t6 t8 | kinds f: t17 t18
+(b) push loop {"variants":10,"residual":18,"rejected":0}
+(b) residual: bb:runVm.0  -> [] |     s:runVm.159  trap
+(c) static counter refused: [unsupported] pe: count needs more than 11 residual statements (params.budget) before its static stores repeat
+(d) status ok 
+(d) buffer written elsewhere refused: [unsupported] poke stores outside its frame arrays (s:poke.5); it could write b
