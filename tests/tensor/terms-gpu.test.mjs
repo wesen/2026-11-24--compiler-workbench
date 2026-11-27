@@ -57,6 +57,11 @@ const inside = compileTix(`
     e[i,j]: f32[N,C] = z[i,j] - s[i];
     return e;
   }
+  fn two(x: f32[N,C], z: f32[N,C]): f32[N,C] {
+    s[i] = (sum(j) x[i,j] / C) + (sum(j) z[i,j] / C);
+    y[i,j] = x[i,j] - s[i];
+    return y;
+  }
   fn short(x: f32[N,C]): f32[N,C] {
     s[i] = sum(j) x[i,j] / C;
     y[i,j] = x[i,j] - s[i];
@@ -65,7 +70,7 @@ const inside = compileTix(`
 `);
 
 test('GB10: staged terms keep the exact meaning, for costly bodies of one and of several axes', async () => {
-  for (const name of ['layernorm_inside', 'attention_inside', 'exp_in_sum', 'multi', 'longterm'])
+  for (const name of ['layernorm_inside', 'attention_inside', 'exp_in_sum', 'multi', 'longterm', 'two'])
     assert.deepEqual(
       await checkLowering(inside, name),
       { accepted: true, relation: 'exact' },

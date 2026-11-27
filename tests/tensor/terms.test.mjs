@@ -78,6 +78,29 @@ test('staged terms are written by the block and folded in order by one thread', 
   assert.match(text, /a0\[q0\] = v\d+;\s*\n\s*\}\s*\n\s*__syncthreads\(\);/);
 });
 
+test('two staged reductions in one member get an array each and one barrier after both', () => {
+  const p = source(`
+    fn two(x: f32[N,C], z: f32[N,C]): f32[N,C] {
+      s[i] = (sum(j) x[i,j] / C) + (sum(j) z[i,j] / C);
+      y[i,j] = x[i,j] - s[i];
+      return y;
+    }`);
+  const group = plan(p, 'two').groups[0];
+  assert.deepEqual(group.terms.map(t => [t.member, t.reduction]), [
+    ['s', 'sum(C)'],
+    ['s', 'sum(C)'],
+  ]);
+  const text = cudaSource(p, 'two');
+  // both arrays live in the row buffer, after the members' rows
+  assert.match(text, /float\* const a0 = r2 \+ n2;\s*\n\s*float\* const a1 = a0 \+ na0;/);
+  // each staging loop is followed by the next one, and a single barrier separates them from the fold
+  assert.match(text, /a0\[q0\] = v\d+;\s*\n\s*\}\s*\n\s*for \(U q1 = threadIdx\.x;/);
+  assert.match(text, /a1\[q1\] = v\d+;\s*\n\s*\}\s*\n\s*__syncthreads\(\);/);
+  // and the fold keeps its own counter per reduction
+  assert.match(text, /U f0 = 0;/);
+  assert.match(text, /U f1 = 0;/);
+});
+
 test('a reduction in a row member is refused: its terms are per element, and each fold keeps its order', () => {
   const p = plan(attentionInside, 'attention_inside');
   assert.deepEqual(p.groups[0].terms, []);

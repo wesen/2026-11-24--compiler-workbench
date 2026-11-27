@@ -1,0 +1,8 @@
+// IRWB-030-G: one block-mode member with two staged reductions, so two term arrays, plus a row member that reads it.
+// The parentheses matter: `sum(j) x[i,j] / C` puts the division inside the reduction, so the `+` would join the first
+// reduction's body instead of starting a second one.
+fn two(x: f32[N,C], z: f32[N,C]): f32[N,C] {
+  s[i] = (sum(j) x[i,j] / C) + (sum(j) z[i,j] / C);
+  y[i,j] = x[i,j] - s[i];
+  return y;
+}

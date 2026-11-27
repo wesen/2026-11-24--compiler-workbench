@@ -35,6 +35,8 @@ add('softmax', { N: 1, C: 65536 });
 add('softmax', { N: 64, C: 65536 });
 // a long reduction with a costly term: 2 * 16384 staged floats per row, in 256 rows
 add(here + '01-layernorm-inside.tix', { N: 256, D: 16384 }, { fn: 'layernorm_inside' });
+// a short row whose staged reduction is long: the gate must measure the wider of the two
+for (const c of [8, 16, 32]) add(here + '06-long-term.tix', { N: 2048, D: 1024, C: c }, { fn: 'longterm' });
 // few rows of the attention-shaped program
 add(here + '01-attention-inside.tix', { Q: 64, K: 1024, D: 64, V: 64 }, { fn: 'attention_inside' });
 add('attention', { Q: 64, K: 1024, D: 64, V: 64 });

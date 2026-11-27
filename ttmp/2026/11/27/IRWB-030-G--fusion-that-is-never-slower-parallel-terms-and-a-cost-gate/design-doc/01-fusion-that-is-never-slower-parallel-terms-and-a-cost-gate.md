@@ -84,8 +84,10 @@ Decided from the Tix IR alone, by `planTerms(member, depth)`:
   - a reduction in a member with trailing axes: its terms are per row element, so the array would need one slot per
     (element, term) pair (1024 × 64 floats for the corpus attention) and each element's fold would still have to run
     in its own order;
-  - an axis whose extent split-sum generated (`blocks`, `tail`), because a term's position in the fold is then not a
-    product of known extents (a one-pass counter cannot be reproduced from a flat index);
+  - a reduction of several axes where split-sum generated one of them, because a term's position in the fold is then
+    not a product of known extents. A single generated axis is fine and is staged: after `split-sum`,
+    `sum(j) x[i,j] / D` is `sum(b) sum(i) x[4*b + i] / D`, whose terms are the blocks of the split and whose count
+    is `ceil(D/4)`;
   - a body with no costly operation: the block computes such a term no slower than it can write and read it, and
     measured, staging such a body loses (softmax's `s`, attention's `z`, layernorm's `mean` and `variance` as the
     corpus writes them, whose bodies are a load or a product).
@@ -135,6 +137,21 @@ One weakening to state plainly: a gated lowering is chosen from shape values, so
 (planned without values) is not always the artifact a benchmark runs. Both come from the same emitter, a gated group
 is exactly stage 2's kernel for that statement (checked whenever `fuse: false` is checked), and a GPU test checks a
 gated program's output at its short-row sizes word for word against the interpreter.
+
+## As built
+
+The implementation follows this design. Differences and additions, each measured:
+
+- A staged reduction also covers the split-sum form (one `blocks` axis whose body is the `tail` reduction), so
+  `optimizeTix(program, ['inline', 'split-sum'])` keeps its parallel terms. Measured: the plan's `terms` entry reads
+  `ceil(D/4)`, and the contract accepts the split lowering exactly.
+- `bind` in the scalar writer named indices `i${indices.size}`, which collides when a staging loop and a fold bind the
+  same axis; it now names them from a counter. Identical output for every kernel that binds an axis once, which is
+  every stage-2 kernel and every kernel this stage does not stage.
+- Several reductions of one member are staged together: one array each, one barrier after them, one counter each in
+  the fold (`scripts/11-two-terms.tix`).
+- The ruled-out alternative "decide at launch between two emitted kernels" is what the gate replaces: the plan is
+  chosen before emission, from the values, and `cudaSource` without values prints the ungated plan.
 
 ## Out of scope (as the brief fixes it)
 
