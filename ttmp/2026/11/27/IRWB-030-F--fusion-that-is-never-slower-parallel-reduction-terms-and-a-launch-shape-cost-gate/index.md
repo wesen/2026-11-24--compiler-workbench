@@ -10,16 +10,22 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: repo://src/tensor/fusion.ts
-      Note: Staged reductions in the plan and the launch-shape cost gate (gatedPlan)
+    - Path: repo://corpus/tensor/layernorm-inside/main.tix
+      Note: The inside division placement that motivates parallel terms
     - Path: repo://src/tensor/cuda-source.ts
       Note: Fill-and-fold emitter for staged reductions, template on Shared and Staged
+    - Path: repo://src/tensor/fusion.ts
+      Note: Staged reductions in the plan and the launch-shape cost gate (gatedPlan)
     - Path: repo://src/tensor/index.ts
       Note: runTixCuda lowers through the gated plan from the input shapes
+    - Path: repo://tests/tensor/staging-gpu.test.mjs
+      Note: GB10 exactness of staged, serial-fallback, scratch and gated lowerings
+    - Path: repo://tests/tensor/staging.test.mjs
+      Note: CPU tests of the staging decisions, the gate clauses and the emitted source structure
     - Path: repo://ttmp/2026/11/27/IRWB-030-F--fusion-that-is-never-slower-parallel-reduction-terms-and-a-launch-shape-cost-gate/reference/02-report-fusion-that-is-never-slower.md
       Note: Final report
 ExternalSources: []
-Summary: "Stage 3b: compute a row reduction's terms in parallel and fold them in order on one thread (bit-identical by construction), and gate block-mode fusion on the launch shapes so fusion is never slower than stage 2."
+Summary: 'Stage 3b: compute a row reduction''s terms in parallel and fold them in order on one thread (bit-identical by construction), and gate block-mode fusion on the launch shapes so fusion is never slower than stage 2.'
 LastUpdated: 2026-11-27T02:00:00-05:00
 WhatFor: ""
 WhenToUse: ""

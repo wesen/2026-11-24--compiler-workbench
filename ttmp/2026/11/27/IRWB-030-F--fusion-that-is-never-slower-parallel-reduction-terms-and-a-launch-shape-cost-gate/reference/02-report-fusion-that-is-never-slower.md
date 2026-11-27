@@ -74,8 +74,8 @@ sessions): layernorm-inside improved from 0.569 to 0.202 ms fused - the 2.4x tha
 division per term - and layernorm from 0.191 to 0.186. The programs whose reductions are all refused
 (softmax, attention, attention-inside, mlp) are unchanged in structure and within session noise of stage 3's
 numbers. Attention-inside's margin over unfused is the thinnest (4% this session, 6% in the brief's
-measurements); its fused kernel is byte-for-byte stage 3's structure (no staged reduction, single `Shared`
-template), so this stage did not change it.
+measurements); its fused kernel keeps stage 3's structure (no staged reduction, so the single `Shared` template; only
+the host lines that pick the instantiation read differently), and its time is unchanged.
 
 Matmul and conv2d are single statements; their lowering is stage 2's, one kernel either way.
 
