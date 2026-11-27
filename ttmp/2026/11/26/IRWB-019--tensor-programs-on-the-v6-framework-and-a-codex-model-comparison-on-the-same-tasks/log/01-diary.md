@@ -962,3 +962,12 @@ The user set the cells for implementation tasks from now on, and asked to start 
   - The corpus does not encode the book's 44 projects: `index.json` lists 47 projects in the book's order, and the corpus has 50. So the totals the tests assert cover the current corpus.
 - **The review** (`prompts/fixes-2/review-1.md`) asks for per-project expectation tables, so that a new project adds a row. It also asks to keep the inconclusive bound per project, and to keep the book's figures where a test states them as the book's. The same session was resumed (`scripts/34-resume-fixes-2.sh`, round `fix2-tl-r1`).
   - The kit's `02-resume-codex-round.sh` now also gives `codex exec` `/dev/null` as stdin (vault `85345d8`).
+- **F2–F6 merged** (`8905642` to `5921f4e`, follow-up `594e592` running Prettier on the two new test files):
+  - `scripts/35-check-fixes-2.sh` confirmed it independently. On the base code, the new tests fail for F2, F3, F4 and F6, and F5 is test-only. They pass on the agent's code, and all Typed, workbench and framework tests pass (400; 0 fail; 3 skipped).
+  - F5's revision keeps a per-project table (`tests/typed/corpus-expectations.mjs`, measured by the agent's `scripts/02-measure.mjs`) and the book's figures over a named `bookProjects` list. A temporary copy of a project needed only its row.
+  - Terra low took one review round.
+  - `npm test` on main afterwards: 433 pass, 0 fail, 3 skipped.
+- **The hidden T3 evaluator on `t3-base`** (where `fuse` and `benchmark` are ignored): everything exact, check 16/16 exact, kernels 1/4/4/5/3/1.
+  - Medians: matmul 0.197, softmax 0.772, layernorm 0.566, attention 1.762, mlp 1.066, conv 0.342 ms.
+  - 18 minutes per implementation, so ten cells take about three hours, run one at a time.
+- **Backlog:** "Eleven cells" corrected to ten. F2–F6 marked done.

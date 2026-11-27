@@ -160,7 +160,7 @@ T8 (ONNX) is not queued.
 - **Pi with only the LunaRoute extension:** GLM 5.3 high; DeepSeek 4.1 Flash high and xhigh; GLM 5.3 Flash high and max.
   - The user asked for GLM 5.3 Flash at xhigh, but Pi's catalogue maps its `xhigh` to `high`. Asked, they chose max instead.
 - **Small specified fixes** (such as F2–F6) go to one cheap Codex agent (Terra low), not all eleven cells (the user's choice, 2026-11-27).
-- **Eleven cells per task.** Only Opus and Fable use Claude tokens.
+- **Ten cells per task.** Only Opus and Fable use Claude tokens.
 
 ### T3: checked fusion _(ready; base `2e035c6`; queued first)_
 
@@ -373,17 +373,17 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
   - _Known:_ five of six implementers each wrote the same private harness (evaluator, RV32 image, `speed`, reference compiler, compare), with 4 to 17 helper functions per test file. P2.6 left out the calling signatures, so an f32 entry looked 100% wrong (IRWB-018 step 10).
   - _Needed:_ one framework call that handles signatures. Then delete the copies.
   - _Measure:_ test lines removed; suites green.
-- **F2: make `imageFromCode` signatures impossible to omit** _(ready, S)_.
+- **F2: make `imageFromCode` signatures impossible to omit** _(done: IRWB-028 `8905642`, `17ac408`; signatures required, every caller passes them)_.
   - _Known:_ `dot3`'s 100 "disagreements" came from the missing `signatures` (fixed in `d2e198f`).
   - _Needed:_ require them, or carry them with the compile result.
-- **F3: `tools/reference-check.mjs` ignores its project argument** _(ready, S)_.
+- **F3: `tools/reference-check.mjs` ignores its project argument** _(done: IRWB-028 `33b22f9`; ids on the command line select projects, unknown ids are an error)_.
   - _Known:_ four of six implementers worked around it.
-- **F4: `wrapProse` mis-wraps already-wrapped list items** _(ready, S)_.
+- **F4: `wrapProse` mis-wraps already-wrapped list items** _(done: IRWB-028 `8e1d519`; continuation indent kept, wrapping idempotent)_.
   - _Known:_ it drops the continuation indent and splits the item, so `tools/format-corpus.mjs` refuses the file (chess `notes.md`).
-- **F5: corpus-wide tests hard-code totals** _(ready, S)_.
+- **F5: corpus-wide tests hard-code totals** _(done: IRWB-028 `6361db5`, `5921f4e` after review; per-project expectation tables (`tests/typed/corpus-expectations.mjs`), the book's figures over its 44 projects)_.
   - _Known:_ five tests broke when six projects were added (44 projects, 70 functions, 6,986 cases), while every per-function assertion passed.
   - _Needed:_ assert per-project properties, or derive the totals.
-- **F6: one parser for `project.json`** _(ready, S)_.
+- **F6: one parser for `project.json`** _(done: IRWB-028 `c94107d`; one `parseProjectMeta` for `projectSource` and the workbench)_.
   - _Known:_ `projectSource` and the workbench's `metaOf` each read it, so `ingest` and `entries` had to be wired twice (`6ad38d0`).
 - **F7: focus links by label, not by line** _(idea, S)_.
   - _Known:_ the chess focus line moved when its files were reformatted.
