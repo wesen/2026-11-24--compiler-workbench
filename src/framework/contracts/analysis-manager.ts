@@ -946,7 +946,7 @@ export class AnalysisManager {
     to = this.snapshotArtifact(to, definition.input);
     correspondence = immutable(correspondence);
     params = immutable(params);
-    this.validateCorrespondence(correspondence, from, to);
+    this.validateCorrespondence(correspondence, from, to, definition.input, definition.input);
     const epoch = this.epoch(definition, to),
       store = parent?.store ?? this.store,
       source = this.lookupAnalysis(this.analysisKey(definition, from, params), store);
@@ -1084,7 +1084,13 @@ export class AnalysisManager {
       }
     }
   }
-  private validateCorrespondence(c: Correspondence, from: Artifact, to: Artifact) {
+  private validateCorrespondence(
+    c: Correspondence,
+    from: Artifact,
+    to: Artifact,
+    sourceType: IRType<any>,
+    targetType: IRType<any>,
+  ) {
     canonical(c);
     if (!c.id || !c.relation || !sameRef(c.from, from) || !sameRef(c.to, to))
       throw new ContractError(
@@ -1101,6 +1107,22 @@ export class AnalysisManager {
       )
     )
       throw new ContractError('correspondence', 'Correspondence entities must be string lists');
+    for (const [label, type, artifact, declared] of [
+      ['source', sourceType, from, c.sourceEntities],
+      ['target', targetType, to, c.targetEntities],
+    ] as const) {
+      if (!type.entities) continue;
+      const actual = new Set(type.entities(artifact.value));
+      const listed = new Set(declared ?? []);
+      const mismatch = [...actual]
+        .filter(id => !listed.has(id))
+        .concat([...listed].filter(id => !actual.has(id)));
+      if (mismatch.length)
+        throw new ContractError(
+          'correspondence',
+          `Correspondence ${label} entity mismatch: ${mismatch.join(', ')}`,
+        );
+    }
   }
   async checkInvariant<P extends Ports>(
     definition: InvariantDefinition<P>,
@@ -1420,6 +1442,8 @@ export class AnalysisManager {
               c,
               captured[requirement.from] as Artifact,
               after[requirement.to] as Artifact,
+              definition.inputs[requirement.from] as IRType<any>,
+              definition.outputs[requirement.to] as IRType<any>,
             );
             if (requirement.relation && c.relation !== requirement.relation)
               throw new ContractError(
