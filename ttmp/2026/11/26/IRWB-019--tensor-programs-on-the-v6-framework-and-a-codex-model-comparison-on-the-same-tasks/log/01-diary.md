@@ -1149,3 +1149,9 @@ The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if av
   - **The gate:** `runTixCuda` falls back to stage 2's source when the longest block-mode row has fewer than 24 elements at the call's shapes (measured: rows of 4 are 4.7× slower fused). `cudaSource` and `checkLowering` always give the fused source.
   - **Results:** layernorm-inside 0.567 → 0.211 ms. Attention-inside is only 6% faster: its divisions sit in per-element reductions.
   - **Framework finding:** nothing records that a run chose one checked artifact over another by a rule at given shapes.
+- **T3b Fable (E) done** (90 min, 457K tokens, +743 −74; self-reported):
+  - **Staged terms:** a body is staged if it has a division, `sqrt`, `exp`, `log`, `tanh`, `max`, `min` or an inner reduction, or at least four cheap operations (measured). It also writes rows in place where nothing reads them later, which helps attention-inside and mlp.
+  - **The gate:** chosen at launch (longest row ≥ 96 or rows ≤ 1024, plus an occupancy condition for heavy members). The unfused side consists of per-statement instantiations of the same template kernel. `checkLowering` checks both sides.
+  - **Results:** fused takes 0.36–0.80 of the unfused time on every multi-statement program, including attention-inside, at 0.80 (Opus: 0.94).
+  - **Framework finding:** the differential's `baselineKey` contract (cases depend on the key alone) is not checked.
+- **By 07:52Z**, Terra low (C), Sol (A), Astra (B), DeepSeek xhigh (H) and GLM 5.3 high (F) are also done. DeepSeek high, GLM Flash high and GLM 5.3 max are still running.
