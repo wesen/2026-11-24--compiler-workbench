@@ -9,20 +9,27 @@ const buf = (shape, values) => ({ shape, data: Float32Array.from(values) });
 const p = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k]; return y; }');
 const fn = p.current.value.functions[0];
 
-test('CUDA source is deterministic and preloads every emitted statement kernel before timing', () => {
+test('CUDA source is deterministic and preloads every emitted kernel before timing', () => {
   assert.equal(typeof checkLowering, 'function');
   assert.equal(typeof runTixCuda, 'function');
   const program = compileTix(
     'fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }',
   );
-  const source = cudaSource(program, 'second');
-  assert.equal(source, cudaSource(program, 'second'));
+  const source = cudaSource(program, 'second', { fuse: false });
+  assert.equal(source, cudaSource(program, 'second', { fuse: false }));
   assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
   assert.ok(
     source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
   );
   assert.match(source, /__double2float_rn\(exp/);
   assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
+  // IRWB-029-G: the default is the fused lowering, one kernel for the chain, and `fuse` is part of the text
+  const fused = cudaSource(program, 'second');
+  assert.equal(fused, cudaSource(program, 'second', { fuse: true }));
+  assert.equal((fused.match(/__global__ void/g) ?? []).length, 1);
+  // the intermediate is inlined, so the fused kernel never reads it from global memory
+  assert.doesNotMatch(fused, /const float\* t1/);
+  assert.match(cudaSource(program, 'second', { fuse: false }), /const float\* t1/);
 });
 
 test('CUDA binary requests and results preserve f32 words, including subarray and zero shape', () => {
