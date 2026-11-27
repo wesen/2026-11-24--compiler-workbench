@@ -59,7 +59,7 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
   const reads = loads(s).filter(e => names.has(e.name));
   if (!reads.length) return { depth: 0, reason: 'reads no tensor of the kernel (no horizontal fusion)' };
   let k = Math.min(depth, s.axes.length),
-    reason = '';
+    reason = `it has ${s.axes.length} ${s.axes.length === 1 ? 'axis' : 'axes'}`;
   for (let p = 0; p < k; p++)
     if (!same(s.shape[p], members[0].shape[p])) {
       [k, reason] = [
@@ -87,7 +87,9 @@ export function planFusion(fn: Fn): FusionPlan {
       const join = joinDepth(s, current.members, current.depth);
       if (join.depth > 0) {
         if (join.depth < current.depth)
-          current.reasons.push(`${s.name} narrows the block domain to ${join.depth} axes: ${join.reason}`);
+          current.reasons.push(
+            `${s.name} narrows the block domain to ${join.depth} ${join.depth === 1 ? 'axis' : 'axes'}: ${join.reason}`,
+          );
         current.members.push(s);
         current.depth = join.depth;
         continue;
