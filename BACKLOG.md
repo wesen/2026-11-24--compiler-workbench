@@ -396,10 +396,10 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 
 ---
 
-- **F13: `applyPass` opens its edit eagerly** _(ready, S)_.
+- **F13: `applyPass` opens its edit eagerly** _(done: `bc7702c`; the edit opens on the first read of `ctx.edit`; regression test)_.
   - _Known:_ `beginEdit()` runs for every pass and throws `ir.capability` for an adapter without `rebuild`, even when the pass returns a native value. All sixteen T1 designs found it, but only four implementations fixed it; the merged base (B) did not, because its synchronous path avoids it.
   - _Needed:_ open the edit on the first read of `ctx.edit` (I, K, N and P show the change).
-- **F14: `optimizeTix` steps carry no reason and no "changed" flag** _(ready, S)_.
+- **F14: `optimizeTix` steps carry no reason and no "changed" flag** _(done: IRWB-024 `7499416`; steps are `{pass, accepted, changed, reason?}`, `accepted` unchanged)_.
   - _Known:_ an unchanged pass reports `accepted: true`, so acceptance counts overstate coverage (`split-sum` applies to 32 of the 60 cross-check programs, `inline` to 15). Rejection reasons exist inside the contracts but are not returned.
   - _Needed:_ `{pass, accepted, changed, reason?}` in each step.
 - **F15: the base's tolerance is a fixed bound** _(ready, M; before or with T2)_.
@@ -414,10 +414,10 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F18: a batch-only differential spec** _(idea, S)_.
   - _Known:_ K and G each added one to `src/framework/contracts`. Ten others batched through `decide` without a framework change.
   - _Needed:_ decide whether the framework should offer it.
-- **F19: concurrent cold checks both issue a batch** _(idea, S)_.
+- **F19: concurrent cold checks both issue a batch** _(done: IRWB-024 `9244bd8`; one in-flight batch per key, outside the bounded memo; failures not cached)_.
   - _Known:_ the differential memo records verdicts only after a batch completes (I's report).
   - _Needed:_ share an in-flight batch per key.
-- **F20: `tools/cuda-remote.mjs` cannot link libraries** _(ready, S)_.
+- **F20: `tools/cuda-remote.mjs` cannot link libraries** _(done: IRWB-024 `c219cd9`; `--link <lib>`, ordered, in the build key; cuBLAS fixture test)_.
   - _Known:_ the cuBLAS baseline needed `-lcublas`, so I ran it over `ssh` directly, outside the tool's lock and cache.
   - _Needed:_ a `--link` option that is part of the build key, so baselines go through the tool.
 - **F21: the stage-1 meaning gate cannot tell some shape symbols apart** _(done: `250626e`; distinct sizes, empty extents checked but not counted as coverage; regression test)_.

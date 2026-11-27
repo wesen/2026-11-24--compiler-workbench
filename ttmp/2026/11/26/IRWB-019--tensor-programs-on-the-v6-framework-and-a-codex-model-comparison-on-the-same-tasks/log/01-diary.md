@@ -891,3 +891,40 @@ The user asked whether the remaining fixes could go to an agent, to save Claude 
   - `gpt-6.2-terra` fails at once: "The 'gpt-6.2-terra' model is not supported when using Codex with a ChatGPT account".
   - Codex's model cache lists `gpt-6.1-terra` ("Efficient model that excels at visual understanding and computer use", default effort low), and a probe answered. So the Terra cell is GPT-6.1, one version behind the others.
   - Four fixes agents in all: Astra high, Astra low, Sol low, Terra 6.1 low.
+
+## Step 35: four Codex agents on the same three fixes; a launcher bug of mine; Astra high merged; scripts kept in the ticket
+
+All four fixes agents fixed all three items correctly. The differences were in size, robustness and speed, and the merge went to Astra high for one robustness point. Along the way I found that editing a running launcher had re-run two finished agents. Separately, the user asked that every script live in a ticket.
+
+- **The user's messages** (verbatim): "compare with sol low and terra low as well"; "ues save temporary programs and scripts in teh scripts/ folder of the relevant ticket, and tell agents to do the same as well, so that we don't lose important parts".
+- **The launcher bug:** I edited `scripts/26-launch-fixes.sh` twice while launchers that were running it waited on their agents. Bash reads a script as it runs it. When an agent exited, its launcher resumed at its old byte offset in the edited file and reached the launch line again:
+  - Astra high was re-run at 03:13:58Z, and Astra low at 03:15:32Z. Neither re-run overlapped its first session (those ended at 03:13:57Z and 03:15:30Z). Each re-run made 3 tool calls, no commits, and said the work was "already complete", but it overwrote its agent's kit log. The full sessions survive in Codex's rollouts.
+  - I killed the Sol and Terra launchers' outer bash processes before their agents finished, keeping the agents and the kit's inner launcher (`kill <pid>` on the two exact PIDs, after checking their command lines).
+  - A first claim of mine to the user, that Astra low's re-run overlapped its first session, was wrong, and I corrected it.
+  - The playbook now has this under pitfalls.
+- **The four agents** (sessions from `scripts/28-codex-sessions.py`; tests from `scripts/29-check-fix-tests.sh`, which runs each agent's new tests against the base's `src/` and `tools/` and against the agent's code, plus all framework and tensor tests):
+
+  | | Astra high (024) | Astra low (025) | Sol low (026) | Terra 6.1 low (027) |
+  |---|---|---|---|---|
+  | minutes / tokens (agent session) | 7.7 / 2.81M | 4.9 / 1.22M | 6.1 / 2.10M | 4.7 / 1.62M |
+  | lines changed, code and tests | +80 −21 | +45 −22 | +116 −30 | +93 −18 |
+  | new tests on the old code | 5 of 22 fail | 4 of 20 fail | 4 of 21 fail | 4 of 12 fail |
+  | on its own code; all framework and tensor tests | 22/22; 260/260 | 20/20; 258/258 | 21/21; 259/259 | 12/12; 260/260 |
+  | F19's design | one in-flight map outside the bounded memo | pending batch inside the memo entry (lost on eviction) | per-case pending, eviction deferred while pending | per-case pending |
+  | other | GPU test read its program from the ticket | made `PassError`'s message a public `reason` field (unrequested) | memo can exceed its bound while batches are in flight | `reason` keeps the `[contractRejected]` prefix |
+
+  In every column, the failing tests cover all three fixes.
+- **Reading of the comparison** (one task, one run each):
+  - Astra at low against high: 36% less time, 57% fewer tokens and a smaller diff. It cost one robustness gap and one unrequested API change.
+  - Sol at low still wrote the most code.
+  - Terra (GPT-6.1, the only Terra this account can run) was correct, mid-sized and fastest.
+  - For small, specified fixes, low effort was enough for every model.
+- **Merged** (`7499416`, `9244bd8`, `c219cd9`, follow-up `08d9555`): Astra high. Astra low's F19 would miss the in-flight batch whenever more than four checks are cold at once, which T3's six programs would hit.
+  - The follow-up runs Prettier on the three files that were clean before, and leaves `differential.ts` unformatted, as it was on the base.
+  - It also moves the cuBLAS program into `tests/tensor/fixtures/cublas-product/`, so no test reads a ticket's scripts.
+- **Scripts in the ticket.** The user's rule is now a memory and a playbook rule. The kit's brief skeleton tells agents to keep every probe, prototype and temporary program in the ticket's `scripts/` and commit it, and its probe rule names the place. Applied to my own work:
+  - `scripts/27-scratchpad-archive/`: 38 scratchpad scripts with no ticket copy, with an index (the judges' tools matched to their sessions by rubric, document count and file time);
+  - `28-codex-sessions.py`, `29-check-fix-tests.sh`, `30-probe-agent-models.sh` and `31-compare-judges.py`: this segment's inline analyses. 31 and 30's maps reproduce the earlier output exactly.
+- **R1b and R2b so far:** 11 of 14 cells done.
+  - The DeepSeek R1b designs are long: 16,841 and 12,131 words, against 2,600–3,700 for the Codex R1 cells.
+  - GLM 5.3 Flash at high (IRWB-021-P) wrote its design to `design/` and its diary to `various/diary.md`, not the docmgr layout. The blind pack's pattern must include it.
