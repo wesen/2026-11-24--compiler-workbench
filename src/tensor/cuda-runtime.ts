@@ -11,6 +11,7 @@ export interface CudaResult {
   shape: number[];
   data: Float32Array;
   gpuMs: number;
+  gates?: Record<string, 'fused' | 'unfused'>;
 }
 
 const magic = Buffer.from('TIXCUDA1');
@@ -57,7 +58,7 @@ export function encodeCudaCases(fn: Fn, cases: readonly CudaInputs[]): Buffer {
   return bytes;
 }
 
-export function decodeCudaCases(bytes: Buffer, count: number, rank: number): CudaResult[] {
+export function decodeCudaCases(bytes: Buffer, count: number, rank: number, gates: string[] = []): CudaResult[] {
   if (bytes.length < header || !bytes.subarray(0, magic.length).equals(magic))
     throw Error('Invalid CUDA response header');
   if (bytes.readBigUInt64LE(magic.length) !== BigInt(count)) throw Error('Wrong CUDA response case count');
@@ -80,7 +81,9 @@ export function decodeCudaCases(bytes: Buffer, count: number, rank: number): Cud
     const gpuMs = bytes.readDoubleLE(offset);
     offset += 8;
     if (!Number.isFinite(gpuMs) || gpuMs < 0) throw Error('Invalid CUDA event time');
-    results.push({ shape, data: new Float32Array(words.buffer), gpuMs });
+    if (gates.length > bytes.length - offset) throw Error('Short CUDA gate response');
+    const choices: Record<string, 'fused' | 'unfused'> = Object.fromEntries(gates.map(name => [name, bytes[offset++] ? 'fused' : 'unfused']));
+    results.push({ shape, data: new Float32Array(words.buffer), gpuMs, ...(gates.length && { gates: choices }) });
   }
   if (offset !== bytes.length) throw Error('Trailing CUDA response bytes');
   return results;
@@ -120,7 +123,7 @@ export async function runCudaBatch(
       }
       throw new Error(diagnostic || failure.message, { cause: error });
     }
-    return decodeCudaCases(await readFile(join(dir, 'out', 'results.bin')), cases.length, fn.shape.length);
+    return decodeCudaCases(await readFile(join(dir, 'out', 'results.bin')), cases.length, fn.shape.length, [...source.matchAll(/const bool fused_(k\d+) =/g)].map(m => m[1]));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
