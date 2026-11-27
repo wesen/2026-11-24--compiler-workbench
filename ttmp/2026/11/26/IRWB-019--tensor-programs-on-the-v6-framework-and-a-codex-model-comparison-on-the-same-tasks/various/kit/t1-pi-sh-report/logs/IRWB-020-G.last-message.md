@@ -1,3 +1,0 @@
-[Stage 1 report](ttmp/2026/11/26/IRWB-020-G--stage-1-tix-language-tensor-ir-evaluators-meaning-contract-and-checked-passes/reference/02-report.md) committed as `10326fd45aedb4cf09c81d2f110657af63fa90c6`. No changes to `src/`, `tests/`, or `corpus/`.
-
-**Failure causes:** None. The independent evaluation reported no failures, mismatches, or pass rejections.

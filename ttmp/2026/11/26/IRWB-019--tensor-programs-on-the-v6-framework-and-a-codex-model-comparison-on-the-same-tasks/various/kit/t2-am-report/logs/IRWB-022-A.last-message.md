@@ -1,9 +1,0 @@
-[Final report](ttmp/2026/11/26/IRWB-022-A--checked-lowering-of-tix-to-cuda-on-the-gpu-machine/reference/02-report.md) committed as `e12122f`. The commit changes only ticket files. One untimed GB10 run reproduced a one-ULP difference for each of three emitted operations.
-
-- **`expf`** causes the softmax and attention differences. A changed exponential propagates through normalization and, in attention, the final weighted sum. [cuda-source.ts:29](src/tensor/cuda-source.ts#L29)
-- **`logf`** differs from rounded JavaScript `Math.log` on a direct witness. None of the six corpus functions calls it. [cuda-source.ts:30](src/tensor/cuda-source.ts#L30)
-- **`tanhf`** causes the MLP differences. A changed GELU activation propagates through the second matrix multiplication. [cuda-source.ts:31](src/tensor/cuda-source.ts#L31)
-
-The independent random-program results identify four non-identical programs but omit their expressions and operands, so individual attribution among these operations remains undetermined.
-
-**Relation.** Of the two uniform relations in the brief, sampled tolerance against origin f64 is the strongest supported by the evaluated backend across the full language. The three witnesses rule out exact f32 agreement, while the measurements establish the budget only on the sampled cases. The coordinator’s exhaustive result supports exact agreement with the *current revision’s* f32 meaning for an alternative lowering that evaluates these three functions in double and explicitly rounds to f32, treating NaNs as one class. An earlier `split-sum` still carries its own obligation to the origin.
