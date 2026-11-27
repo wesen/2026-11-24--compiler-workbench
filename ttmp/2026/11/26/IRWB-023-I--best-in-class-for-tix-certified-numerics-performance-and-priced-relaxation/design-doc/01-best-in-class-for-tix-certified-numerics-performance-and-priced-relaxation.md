@@ -31,8 +31,8 @@ Tix is the only tensor compiler in its class whose f32 meaning is exactly specif
 
 The three proposals, ranked:
 
-1. **A schedule tier in the Tix IR with provably exact schedule passes** (output tiling, shared-memory staging, statement fusion by replication). Theory: a schedule-only change that keeps each output element's operation sequence, plus replication of pure subtrees, preserves every output bit. Experiments on the GB10 (this round): an exact register-tiled matmul at **[pending]** TFLOP/s versus 1.36 today, and an exact fused softmax at **[pending]** ms versus 0.785, both bit-identical to the f32 meaning.
-2. **Numerical budgets as a first-class compilation target**: tiered meaning relations (exact / user budget), checked fast-math passes (FMA contraction, `expf`), and production-size budget checks. Experiments: the price of exactness measured as **[pending]**, and the fraction of outputs an FFMA kernel moves **[pending]**.
+1. **A schedule tier in the Tix IR with provably exact schedule passes** (output tiling, shared-memory staging, statement fusion by replication). Theory: a schedule-only change that keeps each output element's operation sequence, plus replication of pure subtrees, preserves every output bit. Experiments on the GB10 (this round): an exact register-tiled matmul at **3.52 TFLOP/s (0.0763 ms)** versus 1.26 today — 2.8× — and an exact fused softmax at **0.399 ms** versus 0.795 and an exact fused layernorm at **0.173 ms** versus 0.484 (2.8×), all **bit-identical to the f32 meaning at production size** (0 mismatches in 262,144 / 4,194,304 / 4,194,304 / 65,536 output words).
+2. **Numerical budgets as a first-class compilation target**: tiered meaning relations (exact / user budget), checked fast-math passes (FMA contraction, `expf`), and production-size budget checks. Experiments: contraction moved 84.7% of matmul output words and **exceeded the stage-2 budget on 0.12% of outputs (worst 4.4×)**; `expf` moved 40% of softmax words but used at most **0.17% of the budget** and bought 3× over the exact fused kernel; warp-tree summation bought *nothing* at these shapes.
 3. **Static exactness certificates**: a rounding-site preservation analysis that accepts exact-class rewrites without sampled execution, cutting check cost; sampled gates remain as spot checks of the certificates themselves.
 
 ## Problem statement
@@ -60,7 +60,7 @@ The measurable form is the **certified throughput table**: for each corpus progr
 | mlp 1024×256×1024×256 | 1.05 ms | 1.02 TFLOP/s | — |
 | conv2d 8×16×64²×32 | 0.341 ms | 0.83 TFLOP/s | — |
 
-The gap is not the cost of exactness in principle. As argued below, output tiling and replication preserve the meaning *exactly*; only sum reassociation and FMA contraction do not. The current lowering simply has no schedule dimension to optimize.
+The gap is not the cost of exactness in principle. As argued below — and now measured — output tiling and replication preserve the meaning *exactly*; only sum reassociation and FMA contraction do not. The current lowering simply has no schedule dimension to optimize. This round's prototype kernels (same meaning, new schedules) cut matmul to 0.076 ms, softmax to 0.399 ms, layernorm to 0.173 ms and attention to 0.833 ms — all bit-identical to the meaning.
 
 ## Proposal 1: a schedule tier with provably exact passes
 
@@ -103,24 +103,24 @@ This calculus is where the novelty lives. Halide's schedules are *checked by tra
 
 ### Evidence
 
-- **E2 (GPU, timed)** — matmul variants at 512³, median of 20 event-timed runs, each variant word-compared against the E1 exact-f32 reference: naive replica (baseline), shared-staged naive, register-tiled exact (`4×4` per thread, sequential k), register-tiled FMA (budget tier). *Result: pending.*
-- **E3 (GPU, timed)** — softmax and layernorm: stage-2 emitted baseline vs one-warp-per-row fused exact kernel (lane-parallel max; sequential per-row sum by one lane; replicated `m`/`s`), vs a tree-sum budget variant, vs an `expf` variant. Word-compared against E1. *Result: pending.*
-- **E4 (GPU, timed)** — attention: fused score+softmax kernel plus tiled `out` GEMM vs stage-2 baseline. *Result: pending.*
-- **E1 (local)** — purpose-built exact-f32 references for the benchmark shapes (mirroring the meaning per operator), cross-validated against `runTix` f32 at interpreter-feasible sizes (matmul 128³, softmax 512×256, attention 256). *Result: pending.*
+- **E2 (GPU, timed, GPU-locked `--timed`, median of 20 event-timed reps)** — matmul variants at 512³, each word-compared at production size against the E1 exact-f32 reference: stage-2 baseline kernel 0.2131 ms; shared-staged naive 0.1848 ms (1.15×, exact); register-tiled exact 0.0763 ms (**2.8×, exact, 0/262,144 mismatches**); register-tiled FMA 0.0662 ms (the price of the two-rounding meaning: 15.2%); naive-with-FMA 0.2131 ms (identical to naive-rn: the naive schedule is memory-bound, so contraction is free there — the FMA price only appears once the schedule is compute-bound).
+- **E3 (GPU, timed)** — softmax 4096×1024: stage-2 four-kernel baseline 0.7949 ms; fused exact (one warp per row; tree max; lane-0 sequential sum; double-path exp) 0.3987 ms (**2.0×, bit-exact, 0/4,194,304**); fused tree-sum 0.3974 ms (reassociation bought *nothing*); fused `expf` 0.1334 ms (**6.0× over stage 2**, 3× over exact-fused). Layernorm: baseline 0.4836 ms, fused exact 0.1733 ms (**2.8×, bit-exact**).
+- **E4 (GPU, timed)** — attention: stage-2 six-kernel baseline 1.0492 ms; fused score+softmax kernel + tiled `out` GEMM 0.8329 ms (1.26×, bit-exact, 0/65,536). The modest gain has a measured explanation: the fused kernel re-reads all of K per row through L2 (≈268 MB of cache traffic at this shape); a shared-memory k-staging variant is the identified next schedule pass.
+- **E1 (local)** — purpose-built exact-f32 references cross-validated against `runTix` f32: 0 word mismatches for all four programs at interpreter-feasible sizes (matmul 64×80×48, softmax 128×64, layernorm 64×32, attention 16/24/8/12); production-size references generated in ≤1.1 s each. Big-tile timing at 4096³: exact 34.19 ms (4.02 TFLOP/s), FMA 33.02 ms (4.16) — the rn/fma gap collapses to 3.5% once the *schedule* (32×32 tiles) is the binding constraint, not the arithmetic discipline.
 
 ### Risks and mitigations
 
-- **Sequential per-row sums are latency-bound** (a dependent FADD chain of C steps). Mitigated by one-warp-per-row occupancy (many rows in flight); measured in E3. If the exact chain is slower than the budget variant by more than the fusion win, the honest report is a measured crossover — that is what tiers are for.
-- **Register pressure** in the tiled kernel could tank occupancy; measured, not assumed.
+- **Sequential per-row sums are latency-bound** (a dependent FADD chain of C steps). Measured in E3: the exact chain costs nothing over the tree variant (0.3987 vs 0.3974 ms) — with one warp per row the chain hides behind other warps. The risk is retired for C ≤ 1024 shapes; it remains open for very wide rows.
+- **Register pressure / occupancy**: mm_rt32 launches 64-thread blocks (16,384 threads total at 512³) — low occupancy, compensated by 16 independent FADD chains per thread; measured 2.8×. A better thread-tile schedule is the obvious next knob, not a risk to the claim.
 - **Certificates can be wrong** (the certificate checker is itself code). Mitigation: certificates are *checked* claims, and the sampled spot check stays; a certificate that ever disagrees with the sampled gate is a framework bug, exactly the class of finding this workbench wants.
 - **The emitter changes**: schedule fields touch `emitKernel` — additive, default = today's mapping.
 
 ### Success measures
 
-- matmul: exact tier ≥ 4 TFLOP/s at 512³ (≥ 3× today's certified rate; within ~2× of cuBLAS's *uncertified* 8.15).
-- softmax/layernorm: exact tier ≥ 3× over stage 2 (≥ 123 GB/s certified).
-- attention: ≥ 5× over stage 2 with exact softmax stages.
-- Zero word mismatches against the meaning in every exact-tier variant.
+- matmul: exact tier ≥ 4 TFLOP/s at 512³ — **not met: 3.52 achieved (2.8× over stage 2)**; the shortfall is my tile schedule (256 blocks on 48 SMs), not exactness; the FMA variant of the same schedule reaches 4.05, bounding what schedule work adds.
+- softmax/layernorm: exact tier ≥ 3× over stage 2 — **partially met**: layernorm 2.8× ✓, softmax 2.0×; the softmax shortfall is the meaning's own double-precision `exp` (E6), not the schedule.
+- attention: ≥ 5× over stage 2 — **not met this round: 1.26×**, with the bottleneck (k restaging) identified and the fix specified.
+- Zero word mismatches against the meaning in every exact-tier variant — **met: 0 mismatches in 8,716,288 compared words across all exact-tier kernels**.
 
 ## Proposal 2: numerical budgets as a first-class compilation target
 
@@ -142,8 +142,8 @@ Fast-math in every production compiler is a flag that silently changes meaning [
 
 ### Evidence
 
-- **E2/E3 FMA and `expf` variants** — timing deltas and word-diff fractions vs the exact reference; whether each stays inside the stage-2 budget at production size. *Result: pending.*
-- **E7 (local)** — blind-spot quantification: for sequential vs split f32 summation over K = 10⁴…10⁶ on the half-ULP stream, max deviation from the f64 sum vs the 4096-element sampling cap. *Result: pending.*
+- **E2/E3 FMA and `expf` variants** — at production size, with the stage-2 budget `2e-6 + 2e-5·|r|` against the f64 meaning: FMA-contraction matmul exceeds the budget on **321 of 262,144 outputs (0.12%; worst 4.4× the allowance)** — even this mild, familiar relaxation is *not free* under a fixed budget, and a budget-tier pipeline must either negotiate the budget per program or reject contraction. `expf` softmax: worst case 1.7e-3× the allowance (≈600× margin) while buying 3× over the exact fused kernel; tree-sum softmax: worst 2.0e-4× the allowance and **no time benefit** (0.3974 vs 0.3987 ms) — the first budget-tier candidate the measurements say *not* to ship at these shapes.
+- **E7 (local)** — blind-spot quantification: for sequential vs width-4-split f32 summation over K = 4…2²⁰ on the half-ULP stream, both stay inside the budget at every size (error and budget both grow; measured in `results/blind-spot.json`) — the size-cap hypothesis is **refuted for this stream family**. The refined finding: cancellation inputs *within the sampled size class* (`[2²⁴, 1, −2²⁴]`, K = 3) give f32 = 0 against f64 = 1 — the stage-2 tolerance would reject a bit-identical lowering on such an input. The check's validity rests on the **stream family**, not the size cap; production-size checks must inherit the streams and their exclusions, and the *exact* tier is immune to this entire class of problem.
 
 ### Risks
 
@@ -171,7 +171,7 @@ Proof-carrying schedule rewrites for an *exactly specified f32 meaning*. The fra
 
 ### Evidence
 
-- **E5 (local)** — current check costs: `optimizeTix` (inline+split) per corpus program, gate time vs transformation time, interpreter reference-generation time; then the same with a prototype certificate checker for a schedule-only rewrite. *Result: pending.*
+- **E5 (local)** — current check costs, per corpus program (`results/check-cost.json`): parse 0.6–4.0 ms; `optimizeTix(['inline'])` 0.5–16.9 ms; `optimizeTix(['inline','split-sum'])` 3.4–23.0 ms; the sampled exact gate alone 2.3–10.8 ms — except **conv2d: 629.3 ms exact gate / 470.8 ms tolerance gate**, interpreter-dominated (four nested loops per case). A bare pass run with a stub gate costs ~1 ms. Against this, Stage 2 measured the remote CUDA check at ≈2.5 s average. The certificate's value is therefore: (a) it removes the remote round-trip for exact-class schedule passes (seconds → the ~1 ms pass + certificate); (b) it removes the conv2d-class interpreter outliers; (c) it makes checking **total** — a proof covers all inputs, not the sampled ones.
 
 ### Risks
 
@@ -179,7 +179,7 @@ Proof-carrying schedule rewrites for an *exactly specified f32 meaning*. The fra
 
 ### Success measures
 
-- Certificate check < 50 ms for the six corpus programs combined, vs [pending] ms for sampled gates; zero disagreements with the sampled gate on the mutation suite.
+- Certificate check < 50 ms for the six corpus programs combined, vs 2.3–629 ms per sampled gate today plus the ≈2.5 s remote round-trip it avoids; zero disagreements with the sampled gate on the mutation suite.
 
 ## What each proposal needs from `src/framework`
 
@@ -195,9 +195,9 @@ No change to the contract runner, the differential evidence format, or the trans
 
 ## Staged plan
 
-1. **Stage A (next implementation ticket): schedule tier + exact schedule passes.** The schedule fields, the three passes, the certificate classes `schedule-only`/`replicate`/`max-reassoc`, and the emitter changes. Rationale: biggest measured wins (E2–E4), zero semantics change, and it builds the `writes`-scoped machinery that tier 2 reuses. Acceptance: the certified table with exact-tier entries; all existing tests green; mutation checks for the new passes.
-2. **Stage B: budgets.** Budget parameters, `contract-fma`/`approx-expf`/`warp-tree-sum` passes, f64 oracle emitter, production-size checks. Rationale: needs Stage A's schedule tier to be worth tuning; the price table from this round is the design's acceptance data.
-3. **Stage C: certificates.** The structural analysis, spot-check-only gates, and the certificate-vs-gate disagreement monitor. Rationale: pure checking-speed work, safe to do last; Stage A can ship with full sampled gates.
+1. **Stage A (next implementation ticket): schedule tier + exact schedule passes.** The schedule fields, the passes in measured-value order — `fuse-statements` (replication; softmax/layernorm 2.0–2.8×), `tile-outputs` (matmul 2.8×), `stage-through-shared` — plus `warp-parallel-max` (free, exact by E8), the certificate classes `schedule-only`/`replicate`/`max-reassoc`, and the emitter changes. **Attention's next prototype is specified by this round's measurement: stage K in shared memory inside the fused kernel** (the 0.83 ms is L2-bound k re-reading; the fix is mechanical and stays exact). Matmul's next knob is the thread-tile/block shape (48 SMs want ≥ 48×(threads/SM) resident; 16,384 threads today). Rationale: biggest measured wins, zero semantics change, builds the `writes`-scoped machinery Stage B reuses. Acceptance: the certified table with exact-tier entries from the *product* passes; all existing tests green; mutation checks for the new passes.
+2. **Stage B: budgets.** Budget parameters, `contract-fma`/`approx-expf` passes, f64 oracle emitter, production-size checks over the *stream family* (E7's refined finding). The measured price list from this round is the design's acceptance data: ship `approx-expf` (3× softmax, 600× margin); treat `contract-fma` as a *negotiated* relaxation (it violates the current budget on 0.12% of matmul outputs at 512³); drop tree-sum reassociation where it buys nothing.
+3. **Stage C: certificates.** The structural analysis, spot-check-only gates, and the certificate-vs-gate disagreement monitor, aimed first at the conv2d-class interpreter-heavy gates (629 ms) and the ≈2.5 s remote round-trip. Rationale: pure checking-speed work, safe to do last; Stage A can ship with full sampled gates.
 
 ## Alternatives considered
 
@@ -263,8 +263,42 @@ flowchart LR
 
 ## Results
 
-*(pending)*
+### The certified-throughput table, before and after this round's prototypes
+
+Same machine, same sizes, same seeded inputs; "certified" = the numeric relation was checked at production size against the exact-f32 meaning (word comparison) for the exact tier, or against the f64 meaning under the stage-2 budget for budget-tier variants. Stage-2 baseline kernels are the *actual emitted kernels and host code*, extracted and re-driven through the real request protocol inside one bench binary.
+
+| Program | Stage 2 (baseline, this round's re-measurement) | Exact-tier prototype (this round) | Budget-tier prototype | Uncertified reference |
+|---|---|---|---|---|
+| matmul 512³ | 0.2131 ms · 1.26 TFLOP/s · exact | **0.0763 ms · 3.52 TFLOP/s · exact (2.8×)** | 0.0662 ms · 4.05 TFLOP/s · FMA (fails stage-2 budget on 0.12% of outputs) | cuBLAS SGEMM 0.0329 ms · 8.15 TFLOP/s · FFMA |
+| softmax 4096×1024 | 0.7949 ms · 40 GB/s · exact | **0.3987 ms · 80 GB/s · exact (2.0×)** | 0.1334 ms · 240 GB/s · `expf` (6.0×; ≤0.17% of budget) | 244 GB/s streaming |
+| layernorm 4096×1024 | 0.4836 ms · 66 GB/s · exact | **0.1733 ms · 185 GB/s · exact (2.8×)** | — | 244 GB/s streaming |
+| attention 1024²·64 | 1.0492 ms · 0.26 TFLOP/s · exact | **0.8329 ms · 0.32 TFLOP/s · exact (1.26×)** | — (k-staging identified as next step) | — |
+| matmul 4096³ | — | 34.19 ms · 4.02 TFLOP/s · exact | 33.02 ms · 4.16 TFLOP/s (FMA price 3.5% here) | cuBLAS 19.2 TFLOP/s (FFMA) |
+
+Reading: the exact tier already buys 2–2.8× at bit-exactness with the *current* prototype schedules; the certified rate is now within 2.3× of cuBLAS's uncertified FFMA rate at 512³ and within 4.8× at 4096³, where my tile size — not the arithmetic discipline — is the measured binding constraint.
+
+### Device facts measured this round
+
+NVIDIA GB10, sm_121, **48 SMs**, clock attribute 2,418,000 kHz, `sharedMemPerBlockOptin` = 101,376 B, `regsPerBlock` = 65,536, CUDA 13.0.88, nvcc -O3. The 48-SM count explains the small-grid effects: a 256-block tiled matmul is ~5 blocks/SM, and the fused row kernels (512–1024 blocks) already cover the device.
+
+### What each experiment established
+
+| ID | Result |
+|---|---|
+| E0 | Tool works from the ticket; compile ~2.5 s per changed unit, cached otherwise |
+| E1 | Exact-f32 references: 0 word mismatches vs the interpreter at 4 programs' small sizes; full-size refs in ≤1.1 s each |
+| E2 | Register tiling is bit-exact and 2.8×; staging alone 1.15×; FMA free when memory-bound, 15% when compute-bound; 4096³ bounded by tile schedule, not rn |
+| E3 | Fused softmax/layernorm bit-exact: 2.0× / 2.8×; tree-sum free but worthless here; `expf` 6× end-to-end with ≤0.17% budget use |
+| E4 | Fused attention bit-exact, 1.26×; bottleneck = per-row k re-reads through L2 (≈268 MB at this shape) |
+| E5 | Local sampled gates 2.3–10.8 ms (conv2d 629/471 ms, interpreter-bound); remote check ≈2.5 s; bare pass ≈1 ms |
+| E6 | Price of the meaning's double-precision exp inside fused softmax: 0.399 → 0.133 ms when relaxed (3×) |
+| E7 | Budget holds at all K on the stream family (hypothesis refuted); cancellation inputs inside the size class would reject a correct lowering — validity rests on the streams, not the cap |
+| E8 | max/min reassociation: 0 word mismatches in 2×100,000 tree evaluations incl. NaN/±0/±∞; sum: 80 in 5,250 — the `max-reassoc` exact class is real |
 
 ## What did not work
 
-*(pending)*
+1. **"Production-size budget checks would reject correct lowerings because error grows with K"** — refuted by E7 on the stream family the checker actually uses: the relative budget term tracks the growing |r| and stays ahead of the linear error growth up to K = 2²⁰. The real exposure is cancellation inputs (found at K = 3), which the stream family already excludes; the conclusion moved from "add size-scaled budgets" to "keep the streams, document their exclusions".
+2. **"Tree/parallel sum reduction is where the budget tier earns its keep"** — refuted by E3 at these shapes: the warp-tree softmax sum ran at the exact chain's speed (0.3974 vs 0.3987 ms) with no accuracy headroom spent. The measured valuable relaxation is `expf`, not reassociation. (Split-K-style reassociation may still pay in the tiled matmul at larger K; untested here.)
+3. **First attention fusion attempt: 1.26×, far under the 5× target.** The fused kernel's per-warp re-read of all K rows (no shared-memory k staging) dominates. Not a failure of the exactness theory — the kernel is bit-exact — but a schedule failure, recorded as the top item for the next prototype round.
+4. **Bench-engineering failures** (all fixed, each cost a remote trip): a 9-byte `char[8]` string literal; the emitted `main` colliding with mine; `cudaDeviceProp::clockRate` removed in CUDA 13; `fread` element-size packing u32s into int64s; a request layout that put all shapes before all data while `run_case` reads interleaved (masked by softmax's single parameter until layernorm); `Kd` bound to D instead of K (illegal memory access in the attention weight buffer).
+5. **cuBLAS in the bench binary**: `cuda-remote.mjs` compiles with fixed flags (no `-lcublas`), so vendor-library timings in-run were not possible; the coordinator's measured cuBLAS numbers are used as the uncertified reference column, and my own FFMA regtile kernel stands in as the contraction proxy for error statistics.
