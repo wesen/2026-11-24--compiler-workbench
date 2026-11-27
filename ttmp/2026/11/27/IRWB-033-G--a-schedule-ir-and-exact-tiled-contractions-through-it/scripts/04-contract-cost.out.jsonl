@@ -1,0 +1,12 @@
+{"program":"matmul","fuse":true,"accepted":true,"relation":"exact","gates":false,"tiles":true,"firstMs":4627,"repeatMs":82}
+{"program":"matmul","fuse":false,"accepted":true,"relation":"exact","gates":false,"tiles":false,"firstMs":3638,"repeatMs":55}
+{"program":"softmax","fuse":true,"accepted":true,"relation":"exact","gates":true,"tiles":false,"firstMs":4391,"repeatMs":113}
+{"program":"softmax","fuse":false,"accepted":true,"relation":"exact","gates":false,"tiles":false,"firstMs":3091,"repeatMs":32}
+{"program":"layernorm","fuse":true,"accepted":true,"relation":"exact","gates":true,"tiles":false,"firstMs":3972,"repeatMs":55}
+{"program":"layernorm","fuse":false,"accepted":true,"relation":"exact","gates":false,"tiles":false,"firstMs":3591,"repeatMs":41}
+{"program":"attention","fuse":true,"accepted":true,"relation":"exact","gates":true,"tiles":false,"firstMs":4043,"repeatMs":85}
+{"program":"attention","fuse":false,"accepted":true,"relation":"exact","gates":false,"tiles":false,"firstMs":3504,"repeatMs":73}
+{"program":"mlp","fuse":true,"accepted":true,"relation":"exact","gates":true,"tiles":false,"firstMs":3605,"repeatMs":95}
+{"program":"mlp","fuse":false,"accepted":true,"relation":"exact","gates":false,"tiles":false,"firstMs":3212,"repeatMs":32}
+{"program":"conv2d","fuse":true,"accepted":true,"relation":"exact","gates":false,"tiles":false,"firstMs":4123,"repeatMs":1630}
+{"program":"conv2d","fuse":false,"accepted":true,"relation":"exact","gates":false,"tiles":false,"firstMs":1075,"repeatMs":1287}

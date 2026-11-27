@@ -8,9 +8,10 @@ import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
-import { emitCuda } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { emitSchedule } from './cuda-source.js';
 import { parse } from './parser.js';
+import { scheduleStrategy } from './schedule-strategy.js';
+import type { ScheduleFunction } from './schedule.js';
 import { inlinePass, splitPass } from './passes.js';
 
 export interface TixProgram {
@@ -63,9 +64,14 @@ export interface LoweringOptions {
   /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
   fuse?: boolean;
 }
+/** The schedule the strategy picks for `fn`, and the source printed from it. */
+export function tixSchedule(program: TixProgram, fn: string, options?: LoweringOptions): ScheduleFunction {
+  const f = selectFunction(program.current.value, fn);
+  return scheduleStrategy(f, { fuse: options?.fuse !== false, baseline: program.current }).schedule;
+}
 function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  return { f, source: emitSchedule(f, tixSchedule(program, fn, options)) };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {

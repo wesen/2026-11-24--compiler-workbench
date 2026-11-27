@@ -13,8 +13,8 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitCuda, takesGate } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { emitSchedule, takesGate, takesTile } from './cuda-source.js';
+import { scheduleStrategy } from './schedule-strategy.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -25,6 +25,8 @@ interface CudaKernel {
   statements: string[];
   /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
   gated?: boolean;
+  /** The host decides at launch between this kernel's tiled body and one thread per element (IRWB-033-G). */
+  tiled?: boolean;
 }
 interface CudaUnit {
   fn: string;
@@ -35,7 +37,7 @@ interface CudaUnit {
 
 export const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '2',
+  version: '3',
   description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
   entities: unit => unit.kernels.map(k => k.name),
   validate(value) {
@@ -49,6 +51,7 @@ export const CudaIR = defineIR<CudaUnit>({
           typeof k?.name !== 'string' ||
           !['thread', 'block'].includes(k.mapping) ||
           !['boolean', 'undefined'].includes(typeof k.gated) ||
+          !['boolean', 'undefined'].includes(typeof k.tiled) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
           k.statements.some(s => typeof s !== 'string'),
@@ -93,7 +96,11 @@ export function kernelCorrespondence(
     sourceEntities: baseline.value.functions.flatMap(f => f.statements.map(s => f.name + '/' + s.name)),
     targetEntities: kernels.map(k => k.name),
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
-    evidence: { mappings: kernels.map(k => k.mapping), gated: kernels.map(k => k.gated === true) },
+    evidence: {
+      mappings: kernels.map(k => k.mapping),
+      gated: kernels.map(k => k.gated === true),
+      tiled: kernels.map(k => k.tiled === true),
+    },
   };
 }
 
@@ -125,8 +132,14 @@ function compare(expected: BufferValue, got: BufferValue) {
 // program with a gate, every sample is therefore a case on each side, and the program is run once with each side
 // forced. A program without a gate has one case per sample.
 type Gate = 'fused' | 'unfused';
-const sides: readonly Gate[] = ['fused', 'unfused'];
-type CudaSample = ReturnType<typeof cudaCases>[number] & { gate?: Gate };
+type Tile = 'tiled' | 'plain';
+/** Every side a subject with a launch-time choice is checked on: the gate's two, the tiling's two, and all four. */
+function sides(source: string): { gate?: Gate; tile?: Tile }[] {
+  const gates: (Gate | undefined)[] = takesGate(source) ? ['fused', 'unfused'] : [undefined];
+  const tiles: (Tile | undefined)[] = takesTile(source) ? ['tiled', 'plain'] : [undefined];
+  return gates.flatMap(gate => tiles.map(tile => ({ ...(gate && { gate }), ...(tile && { tile }) })));
+}
+type CudaSample = ReturnType<typeof cudaCases>[number] & { gate?: Gate; tile?: Tile };
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
   const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
@@ -146,25 +159,33 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     cases: ({ baseline, fn, subject }, random): CudaSample[] => {
       const samples = cudaCases(selectFunction(baseline.value, fn), random);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
-      return takesGate(subject.value.source)
-        ? samples.flatMap(s => sides.map(gate => ({ ...s, gate })))
-        : samples;
+      const variants = sides(subject.value.source);
+      return variants.length === 1 && !variants[0].gate && !variants[0].tile
+        ? samples
+        : samples.flatMap(s => variants.map(variant => ({ ...s, ...variant })));
     },
     run: (side, _artifact, sample) => {
       if (side === 'baseline') return sample.reference;
       throw Error('CUDA checks require the batch executor');
     },
     compare,
-    describeCase: ({ fn, shapeValues, stream, gate }) => ({
+    describeCase: ({ fn, shapeValues, stream, gate, tile }) => ({
       fn,
       shapeValues,
       stream,
       seed,
       ...(gate && { gate }),
+      ...(tile && { tile }),
     }),
-    // The case list depends on the subject only through whether it has a gate.
+    // The case list depends on the subject only through whether it has a gate and whether it has a tiling (the
+    // IRWB-030-E finding: a key that does not name its dependence shares one cached case list between subjects).
     baselineKey: ({ baseline, fn, subject }) =>
-      JSON.stringify([baseline.revision, fn, takesGate(subject.value.source)]),
+      JSON.stringify([
+        baseline.revision,
+        fn,
+        takesGate(subject.value.source),
+        takesTile(subject.value.source),
+      ]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
     async decide({ baseline, fn, subject }, cases, todo) {
       if (subject.value.fn !== fn)
@@ -173,23 +194,25 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       const f = selectFunction(baseline.value, fn);
       const { source } = subject.value;
       const results = new Map<CudaSample, BufferValue>();
-      const run = async (batch: CudaSample[], gate?: Gate) => {
+      const run = async (batch: CudaSample[], gate?: Gate, tile?: Tile) => {
         if (!batch.length) return;
         const out = await executeBatch(
           source,
           f,
           batch.map(c => c.inputs),
-          { gate },
+          { gate, tile },
         );
         if (out.length !== batch.length) throw Error('Wrong CUDA response case count');
         batch.forEach((c, i) => results.set(c, out[i]));
       };
-      if (takesGate(source))
+      const variants = sides(source);
+      if (variants.length > 1)
         await Promise.all(
-          sides.map(g =>
+          variants.map(v =>
             run(
-              pending.filter(c => c.gate === g),
-              g,
+              pending.filter(c => c.gate === v.gate && c.tile === v.tile),
+              v.gate,
+              v.tile,
             ),
           ),
         );
@@ -202,7 +225,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
+    version: '3',
     description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
     inputs,
     outputs,
@@ -220,14 +243,16 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     ],
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
-      const kernels = plan.groups.map(g => ({
-        name: g.kernel,
-        mapping: g.mapping,
-        statements: g.statements,
-        ...(g.gated && { gated: true }),
+      // The strategy picks the schedule; the emitter prints it (IRWB-033-G).
+      const { schedule } = scheduleStrategy(f, { fuse, baseline });
+      const kernels = schedule.kernels.map(k => ({
+        name: k.name,
+        mapping: k.mapping,
+        statements: k.members,
+        ...(k.gated && { gated: true }),
+        ...(k.contraction && { tiled: true }),
       }));
-      const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
+      const subject = cudaArtifact(fn, emitSchedule(f, schedule), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
     },
   });

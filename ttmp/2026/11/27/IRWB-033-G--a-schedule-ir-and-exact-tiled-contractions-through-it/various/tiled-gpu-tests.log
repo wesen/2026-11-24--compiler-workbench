@@ -1,0 +1,31 @@
+✔ the tiled body is exact against the f32 meaning on every shape, including non-multiples and short sums (98026.938134ms)
+✔ a full-size contraction launches the tiled body and matches the per-element one word for word (11125.660302ms)
+✖ the other contraction forms are exact: a transposed operand, an epilogue, a shifted read (29110.478162ms)
+✔ a contraction form the IR refuses keeps the fusion plan’s kernel and stays exact (5014.164191ms)
+✔ checkLowering accepts the corpus, fused and unfused, with both sides of every launch-time choice (42817.56509ms)
+✔ the whole corpus runs fused and unfused with the same words at the corpus sizes (52136.694571ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 239118.154748
+
+✖ failing tests:
+
+test at tests/tensor/tiled-gpu.test.mjs:70:1
+✖ the other contraction forms are exact: a transposed operand, an epilogue, a shifted read (29110.478162ms)
+  AssertionError [ERR_ASSERTION]: fn f(a: f32[M,K], b: f32[K,N]): f32[M,N] { y[i,j] = sum(k) a[i,k] * (b[k,j] * b[k,j]); return y; }
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/t6-ds-h-irwb-033-g/tests/tensor/tiled-gpu.test.mjs:84:12)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+EXIT 1

@@ -1,11 +1,12 @@
+import { gateRule, outerReductions, unfusedPlan, type FusionPlan, type Reduce } from './fusion.js';
 import {
-  gateRule,
-  outerReductions,
-  unfusedPlan,
-  type FusionGroup,
-  type FusionPlan,
-  type Reduce,
-} from './fusion.js';
+  blockThreads,
+  contractionOf,
+  scheduleFromPlan,
+  type ContractionTiling,
+  type ScheduleFunction,
+  type ScheduleKernel,
+} from './schedule.js';
 import {
   plain,
   visit,
@@ -129,23 +130,41 @@ int main(int argc, char** argv) {
 }
 `;
 
-// A source with a gated kernel also takes --gate=fused or --gate=unfused, which forces every gate to that side.
+// A source with a gated kernel also takes --gate=fused or --gate=unfused, which forces every gate to that side; a
+// source with a tiled contraction kernel takes --tile=tiled or --tile=plain (IRWB-033-G).
 const benchmarkFlag = '    const bool benchmark = argc == 2 && strcmp(argv[1], "--benchmark") == 0;\n';
-const gatedMain = main.replace(
-  benchmarkFlag,
-  String.raw`    bool benchmark = false;
-    for (int a = 1; a < argc; ++a) {
-      if (!strcmp(argv[a], "--benchmark")) benchmark = true;
-      else if (!strcmp(argv[a], "--gate=fused")) gate_mode = 1;
-      else if (!strcmp(argv[a], "--gate=unfused")) gate_mode = 2;
-      else throw std::runtime_error("unknown argument");
-    }
-`,
-);
-if (gatedMain === main) throw Error('The CUDA main no longer has the benchmark flag line');
+function programMain(flags: { gate: boolean; tile: boolean }): string {
+  if (!flags.gate && !flags.tile) return main;
+  const parse = [
+    '    bool benchmark = false;',
+    '    for (int a = 1; a < argc; ++a) {',
+    '      if (!strcmp(argv[a], "--benchmark")) benchmark = true;',
+    ...(flags.gate
+      ? [
+          '      else if (!strcmp(argv[a], "--gate=fused")) gate_mode = 1;',
+          '      else if (!strcmp(argv[a], "--gate=unfused")) gate_mode = 2;',
+        ]
+      : []),
+    ...(flags.tile
+      ? [
+          '      else if (!strcmp(argv[a], "--tile=tiled")) tile_mode = 1;',
+          '      else if (!strcmp(argv[a], "--tile=plain")) tile_mode = 2;',
+        ]
+      : []),
+    '      else throw std::runtime_error("unknown argument");',
+    '    }',
+    '',
+  ].join('\n');
+  const text = main.replace(benchmarkFlag, parse);
+  if (text === main) throw Error('The CUDA main no longer has the benchmark flag line');
+  return text;
+}
 const gateSupport = '\nstatic int gate_mode = 0;';
+const tileSupport = '\nstatic int tile_mode = 0;';
 /** Whether a generated program has a gated kernel, and so takes --gate=fused|unfused. */
 export const takesGate = (source: string) => source.includes(gateSupport);
+/** Whether a generated program has a tiled contraction kernel, and so takes --tile=tiled|plain. */
+export const takesTile = (source: string) => source.includes(tileSupport);
 
 function affine(a: Affine, name: (key: string) => string): string {
   const terms = a.terms.map(([key, coefficient]) =>
@@ -172,6 +191,8 @@ function kernelWriter(
   maxFold = 'minmax(ACC, VALUE, true)',
   /** A reduction whose terms are already in a buffer: its count and pointer (IRWB-030-E). */
   stagedTerms: (e: Reduce) => { count: string; terms: string } | undefined = () => undefined,
+  /** A reduction whose nest this caller emits itself; the expression to use for its accumulator (IRWB-033-G). */
+  reduceValue: (e: Reduce) => string | undefined = () => undefined,
 ) {
   const lines: string[] = [];
   let indent = '  ',
@@ -239,6 +260,8 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const folded = reduceValue(e);
+        if (folded) return folded;
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         const step = (value: string) =>
           line(
@@ -355,7 +378,6 @@ __device__ static float max_nan(float a, float b) {
 // division inside (scripts 06 and 09): attention (rows of 1024 and 64) 1.41 ms at 64 threads, 1.91 at 128, 1.86
 // at 32; narrow-div with rows of 128: 1.56 at 64, 1.21 at 128, 2.33 at 256. 256 is the widest block that was
 // faster than the next narrower one in any measurement (layernorm with staged terms; 512 was slower).
-export const blockThreads = { rows: 128, contraction: 64, heavy: 256 };
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 
@@ -366,14 +388,15 @@ const product = (dims: string[]) =>
 // values in registers; block mode runs one block per block-domain point with rows in shared memory, or in a
 // global scratch area when they do not fit.
 function emitGroup(
-  group: FusionGroup,
+  group: ScheduleKernel,
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
 ) {
-  const { kernel, depth } = group;
-  const members = group.statements.map(n => tensors.get(n) as Statement);
-  const inGroup = new Set(group.statements),
+  const kernel = group.name,
+    { depth } = group;
+  const members = group.members.map(n => tensors.get(n) as Statement);
+  const inGroup = new Set(group.members),
     stored = new Set(group.stored),
     staged = new Set(group.staged);
   const block = group.mapping === 'block';
@@ -395,13 +418,8 @@ function emitGroup(
   const rowBuffers = [...group.staged, ...group.buffered];
   const registers = new Map<string, string>();
   let current = members[0];
-  const operands = (e: Expr, inReduction: boolean): boolean =>
-    e.kind === 'load'
-      ? inReduction && !rowBuffers.includes(e.name)
-      : e.kind === 'op'
-        ? e.args.some(a => operands(a, inReduction))
-        : e.kind === 'reduce' && operands(e.body, true);
-  const cap = members.some(m => operands(m.expr, false)) ? blockThreads.contraction : blockThreads.rows;
+  // The block width is the schedule's rule over the shapes (schedule.ts, `threads`), printed here.
+  const cap = group.threads.cap;
   // Staged terms (fusion.ts): reduction -> the name suffix of its count and pointer.
   const termIds = new Map<Reduce, string>();
   const memberTerms = members.map(m => {
@@ -427,7 +445,7 @@ function emitGroup(
     'max_nan(ACC, VALUE)',
     e => (termIds.has(e) ? { count: `c${termIds.get(e)}`, terms: `q${termIds.get(e)}` } : undefined),
   );
-  w.lines.push(`// ${kernel}: ${group.statements.join(', ')}; ${group.reasons.join('; ')}`);
+  w.lines.push(`// ${kernel}: ${group.members.join(', ')}; ${group.reasons.join('; ')}`);
   // Block mode is a template; the host picks the instantiation. Modes 0 and 1 say where the rows live, so that
   // shared-memory rows are addressed as shared memory (generic addressing cost 25% on a row max, IRWB-029-D script
   // 06). Mode 2 + s is member s alone in stage 2's mapping and scalar code, for launches where the gate
@@ -473,7 +491,7 @@ function emitGroup(
   const host: string[] = [];
   let hasWork: string;
   if (block) {
-    for (const name of new Set([...group.staged, ...group.statements]))
+    for (const name of new Set([...group.staged, ...group.members]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
     // A term count is the product of the reduction's extents; the host computes the same expressions. The term
     // area holds one member's terms at a time, so its length is the largest member's.
@@ -551,7 +569,7 @@ function emitGroup(
     });
     // The host computes the same lengths from the same shape values.
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
-    const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
+    const lengths = [...new Set([...group.staged, ...group.members])].map(n => lengthOf(n, hostDim));
     lengths.push(...staging.flat().map(count));
     const hostRow = [...owners.map(n => lengthOf(n, hostDim)), ...(staging.length ? [area(count)] : [])].join(
       ' + ',
@@ -635,8 +653,258 @@ ${members
   };
 }
 
-/** The CUDA translation unit for `fn`, one kernel per group of `plan` (default: stage 2, one per statement). */
-export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
+// IRWB-033-G: a tiled contraction, printed from the schedule's `contraction`.
+//
+// One block computes a BI x BJ tile of the member's outputs, one lane a TM x TN patch of them in registers; the
+// reduction advances in strips of KC, and the operands' strips are copied into shared memory. Every output element
+// still accumulates its terms one at a time in the meaning's order: the strip loop climbs k0 and the inner loop
+// climbs kk from k0, with one register per output across both, and the product and the sum are rounded separately
+// (__fmul_rn then __fadd_rn, never fused). The tail of a strip is bounded by `kend = min(k0 + KC, K)`, so a
+// reduction over a single index or a non-multiple of KC visits exactly the meaning's indices.
+//
+// The same definition has a `Tiled = false` body: stage 2's mapping, one thread per output element. The host picks
+// between them from the shape values (`M*N*K`), so a small contraction never pays for tile copies it cannot use.
+function emitTiledContraction(
+  kernel: ScheduleKernel,
+  dimensions: ReadonlyMap<string, string>,
+  tensors: ReadonlyMap<string, Tensor>,
+  tensorName: (name: string) => string,
+  tiling: ContractionTiling,
+) {
+  const c = kernel.contraction!;
+  const { statement, reduction } = tiling;
+  const [BI, BJ] = c.block,
+    [TM, TN] = c.lane,
+    KC = c.kTile;
+  const stages = new Set(c.stage);
+  const kAxis = reduction.axes[0].id;
+  const [rowAxis, columnAxis] = statement.axes.map(a => a.id);
+  const dimOf = (a: Affine) => affine(a, n => dimensions.get(n)!);
+  const rows = dimOf(statement.shape[0]),
+    columns = dimOf(statement.shape[1]),
+    kDim = dimOf(reduction.axes[0].extent.dim);
+  const reads = new Set<string>();
+  visit(statement.expr, e => {
+    if (e.kind === 'load') reads.add(e.name);
+  });
+  const outputs = [tensorName(statement.name)];
+  const args = [
+    ...dimensions.values(),
+    ...Array.from(reads, t => tensorName(t) + '.ptr'),
+    ...outputs.map(t => t + '.ptr'),
+    'count_' + kernel.name,
+  ];
+  const params = [
+    ...Array.from(dimensions.values(), d => `I ${d}`),
+    ...Array.from(reads, t => `const float* ${tensorName(t)}`),
+    ...outputs.map(t => `float* ${t}`),
+    'U count',
+  ];
+  // An operand's address and its bounds test, with the reduction axis, the row axis and the column axis bound to
+  // the C++ expressions of the tile element being copied.
+  const at = (a: Affine, env: ReadonlyMap<string, string>) => affine(a, key => env.get(key)!);
+  const address = (e: Load, env: ReadonlyMap<string, string>) => {
+    const shape = tensors.get(e.name)!.shape;
+    return e.indices.reduce(
+      (prior, a, i) => (i ? `(${prior} * ${dimOf(shape[i])} + ${at(a, env)})` : at(a, env)),
+      '',
+    );
+  };
+  const inRange = (e: Load, env: ReadonlyMap<string, string>) => {
+    const shape = tensors.get(e.name)!.shape;
+    return e.indices.map((a, i) => `(${at(a, env)} >= 0 && ${at(a, env)} < ${dimOf(shape[i])})`).join(' && ');
+  };
+  const patch = { m: 0, n: 0 };
+  const w = kernelWriter(
+    dimensions,
+    (e, offset) => `${tensorName(e.name)}[${offset(e.indices, tensors.get(e.name)!.shape)}]`,
+    'max_nan(ACC, VALUE)',
+    undefined,
+    e => (e === reduction ? `acc[${patch.m}][${patch.n}]` : undefined),
+  );
+  w.lines.push(`// ${kernel.name}: ${statement.name}, a tiled contraction; ${kernel.reasons.join('; ')}`);
+  w.lines.push('template <bool Tiled>');
+  w.lines.push(`__global__ void ${kernel.name}(${params.join(', ')}) {`);
+  // The untiled body: stage 2's mapping and scalar code, for launches where the tiles do not pay for themselves.
+  w.line('if (!Tiled) {');
+  w.line('  const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
+  w.line('  if (thread >= count) return;');
+  const alone = kernelWriter(
+    dimensions,
+    (e, offset) => `${tensorName(e.name)}[${offset(e.indices, tensors.get(e.name)!.shape)}]`,
+  );
+  elementOfThread(alone, statement, tensorName(statement.name));
+  w.lines.push(...alone.lines.map(l => '  ' + l));
+  w.line('  return;');
+  w.line('}');
+  w.line('const unsigned lane = threadIdx.x;');
+  w.line('const I ib = static_cast<I>(blockIdx.y) * ' + BI + ';');
+  w.line('const I jb = static_cast<I>(blockIdx.x) * ' + BJ + ';');
+  w.line('const int ti = static_cast<int>(lane / ' + BJ / TN + 'u);');
+  w.line('const int tj = static_cast<int>(lane % ' + BJ / TN + 'u);');
+  w.line('const I i0 = ib + ti * ' + TM + ';');
+  w.line('const I j0 = jb + tj * ' + TN + ';');
+  if (stages.size) {
+    w.line('extern __shared__ float shared[];');
+    if (stages.has('a')) w.line('float* const sa = shared;');
+    if (stages.has('b')) w.line(`float* const sb = shared + ${stages.has('a') ? BI * KC : 0};`);
+  }
+  w.line(`float acc[${TM}][${TN}];`);
+  w.line('#pragma unroll');
+  w.line(`for (int m = 0; m < ${TM}; ++m) {`);
+  w.line('#pragma unroll');
+  w.line(`  for (int n = 0; n < ${TN}; ++n) acc[m][n] = 0.0f;`);
+  w.line('}');
+  w.line(`for (I k0 = 0; k0 < ${kDim}; k0 += ${KC}) {`);
+  w.enter();
+  if (stages.size) w.line('__syncthreads();');
+  // The strip of the rows operand, [BI][KC]. The copy walks the operand's own innermost index fastest, so the
+  // global reads are in order whatever the operand's layout; the shared tile's layout does not change.
+  if (stages.has('a')) {
+    const env = new Map([
+      [rowAxis, 'ra'],
+      [kAxis, 'ka'],
+    ]);
+    w.line(`for (U e = threadIdx.x; e < ${BI * KC}u; e += blockDim.x) {`);
+    w.line(
+      tiling.rowsKLast
+        ? `  const U rl = e / ${KC}u, kl = e % ${KC}u;`
+        : `  const U kl = e / ${BI}u, rl = e % ${BI}u;`,
+    );
+    w.line('  const I ra = ib + static_cast<I>(rl), ka = k0 + static_cast<I>(kl);');
+    w.line(
+      `  sa[rl * ${KC}u + kl] = ${inRange(tiling.rows, env)} ? ${tensorName(tiling.rows.name)}[${address(tiling.rows, env)}] : 0.0f;`,
+    );
+    w.line('}');
+  }
+  // The strip of the columns operand, [KC][BJ], copied the same way: the operand's innermost index fastest.
+  if (stages.has('b')) {
+    const env = new Map([
+      [kAxis, 'kb'],
+      [columnAxis, 'cb'],
+    ]);
+    w.line(`for (U e = threadIdx.x; e < ${KC * BJ}u; e += blockDim.x) {`);
+    w.line(
+      tiling.columnsKLast
+        ? `  const U cl = e / ${KC}u, kl = e % ${KC}u;`
+        : `  const U kl = e / ${BJ}u, cl = e % ${BJ}u;`,
+    );
+    w.line('  const I kb = k0 + static_cast<I>(kl), cb = jb + static_cast<I>(cl);');
+    w.line(
+      `  sb[kl * ${BJ}u + cl] = ${inRange(tiling.columns, env)} ? ${tensorName(tiling.columns.name)}[${address(tiling.columns, env)}] : 0.0f;`,
+    );
+    w.line('}');
+  }
+  if (stages.size) w.line('__syncthreads();');
+  w.line(`const I kend = ${kDim} - k0 < ${KC} ? k0 + (${kDim} - k0) : k0 + ${KC};`);
+  w.line('for (I kk = k0; kk < kend; ++kk) {');
+  w.enter();
+  w.line(`float va[${TM}];`);
+  w.line('#pragma unroll');
+  w.line(`for (int m = 0; m < ${TM}; ++m) {`);
+  w.line(
+    stages.has('a')
+      ? `  va[m] = sa[(ti * ${TM} + m) * ${KC} + static_cast<int>(kk - k0)];`
+      : `  va[m] = ${inRange(
+          tiling.rows,
+          new Map([
+            [rowAxis, '(i0 + m)'],
+            [kAxis, 'kk'],
+          ]),
+        )} ? ${tensorName(tiling.rows.name)}[${address(
+          tiling.rows,
+          new Map([
+            [rowAxis, '(i0 + m)'],
+            [kAxis, 'kk'],
+          ]),
+        )}] : 0.0f;`,
+  );
+  w.line('}');
+  w.line(`float vb[${TN}];`);
+  w.line('#pragma unroll');
+  w.line(`for (int n = 0; n < ${TN}; ++n) {`);
+  w.line(
+    stages.has('b')
+      ? `  vb[n] = sb[static_cast<int>(kk - k0) * ${BJ} + tj * ${TN} + n];`
+      : `  vb[n] = ${inRange(
+          tiling.columns,
+          new Map([
+            [kAxis, 'kk'],
+            [columnAxis, '(j0 + n)'],
+          ]),
+        )} ? ${tensorName(tiling.columns.name)}[${address(
+          tiling.columns,
+          new Map([
+            [kAxis, 'kk'],
+            [columnAxis, '(j0 + n)'],
+          ]),
+        )}] : 0.0f;`,
+  );
+  w.line('}');
+  w.line('#pragma unroll');
+  w.line(`for (int m = 0; m < ${TM}; ++m) {`);
+  w.line('#pragma unroll');
+  w.line(`  for (int n = 0; n < ${TN}; ++n)`);
+  w.line('    acc[m][n] = __fadd_rn(acc[m][n], __fmul_rn(va[m], vb[n]));');
+  w.line('}');
+  w.leave();
+  w.line('}');
+  w.leave();
+  w.line('}');
+  // The epilogue (if the member's expression is more than the reduction) and the store, element by element.
+  for (let m = 0; m < TM; ++m)
+    for (let n = 0; n < TN; ++n) {
+      patch.m = m;
+      patch.n = n;
+      w.alias(rowAxis, `i0 + ${m}`);
+      w.alias(columnAxis, `j0 + ${n}`);
+      const value = w.scalar(statement.expr);
+      w.line(
+        `if (i0 + ${m} < ${rows} && j0 + ${n} < ${columns}) ${tensorName(statement.name)}[(i0 + ${m}) * ${columns} + (j0 + ${n})] = ${value};`,
+      );
+    }
+  w.lines.push('}');
+  const lanes = (BI / TM) * (BJ / TN);
+  const sharedBytes = 4 * ((stages.has('a') ? BI * KC : 0) + (stages.has('b') ? KC * BJ : 0));
+  const k = kernel.name;
+  const grid = `gx_${k}`;
+  const host = [
+    `  const U count_${k} = elements(shape_${tensorName(statement.name)});`,
+    `  const U gx_${k} = (static_cast<U>(${columns}) + ${BJ - 1}u) / ${BJ}u;`,
+    `  const U gy_${k} = (static_cast<U>(${rows}) + ${BI - 1}u) / ${BI}u;`,
+    // The launch-time choice of body, from the shapes alone (probe 01 and the report's tables): below the threshold,
+    // and with fewer blocks than the device has SMs (16 blocks measured 4% slower, 64 blocks 3x faster), the tile
+    // copies cost more than the reuse saves.
+    `  int sms_${k} = 0;`,
+    `  check(cudaDeviceGetAttribute(&sms_${k}, cudaDevAttrMultiProcessorCount, 0));`,
+    `  const bool tiled_${k} = tile_mode ? tile_mode == 1 : static_cast<I>(${rows}) * static_cast<I>(${columns}) * static_cast<I>(${kDim}) >= ${tileThreshold}LL && ${grid} * gy_${k} >= static_cast<U>(sms_${k});`,
+    `  const unsigned lane_${k} = ${lanes}u;`,
+    `  const U smem_${k} = ${sharedBytes}u;`,
+  ];
+  const optIn = sharedBytes > defaultShared;
+  return {
+    code: w.lines.join('\n'),
+    host,
+    preload: `  if (count_${k} && tiled_${k} && ${grid} && gy_${k}) {
+    check(cudaFuncGetAttributes(&attributes, ${k}<true>));
+${optIn ? `    check(cudaFuncSetAttribute(${k}<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, ${sharedBytes}));\n` : ''}  }
+  if (count_${k} && !(tiled_${k} && ${grid} && gy_${k})) check(cudaFuncGetAttributes(&attributes, ${k}<false>));`,
+    hasWork: `count_${k}`,
+    launch: `    if (count_${k}) {
+      if (tiled_${k} && ${grid} && gy_${k})
+        ${k}<true><<<dim3(static_cast<unsigned>(${grid}), static_cast<unsigned>(gy_${k})), lane_${k}, smem_${k}>>>(${args.join(', ')});
+      else ${k}<false><<<(count_${k} - 1) / 256 + 1, 256>>>(${args.join(', ')});
+      check(cudaGetLastError());
+    }`,
+  };
+}
+
+/** The measured point below which a tiled contraction is slower than one thread per output element (probe 01). */
+const tileThreshold = '15000000';
+
+/** The CUDA translation unit for `fn`: one kernel per kernel of `schedule`, printed and nothing decided. */
+export function emitSchedule(fn: Fn, schedule: ScheduleFunction): string {
+  if (schedule.fn !== fn.name) throw Error(`Schedule is of ${schedule.fn}, not ${fn.name}`);
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -652,12 +920,17 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
       bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
     }
   }
-  const kernels = plan.groups.map(g =>
-    g.statements.length === 1
-      ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
-      : emitGroup(g, dims, tensors, name),
-  );
-  const stored = new Set(plan.groups.flatMap(g => g.stored));
+  const kernels = schedule.kernels.map(k => {
+    if (k.contraction) {
+      const legal = contractionOf(k, fn);
+      if (!legal.ok) throw Error(`Schedule tiles ${k.name}, but ${legal.reason}`);
+      return emitTiledContraction(k, dims, tensors, name, legal.tiling);
+    }
+    return k.members.length === 1
+      ? emitKernel(tensors.get(k.members[0]) as Statement, k.name, dims, tensors, name)
+      : emitGroup(k, dims, tensors, name);
+  });
+  const stored = new Set(schedule.kernels.flatMap(k => k.stored));
   const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
   for (const p of fn.params) {
     const t = name(p.name);
@@ -683,7 +956,7 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
       host.push(`  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`);
       if (stored.has(s.name)) host.push(`  DeviceBuffer ${t}(elements(shape_${t}));`);
     }
-    if (plan.groups.some(g => g.mapping === 'block'))
+    if (schedule.kernels.some(k => k.mapping === 'block'))
       host.push(
         '  int shared_limit = 0, sm_shared_bytes = 0, sm_block_limit = 0, reserved_bytes = 0;',
         '  check(cudaDeviceGetAttribute(&reserved_bytes, cudaDevAttrReservedSharedMemoryPerBlock, 0));',
@@ -713,15 +986,29 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     `  write(output, shape_${result}.data(), shape_${result}.size());`,
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
     '  write(output, &gpu_ms, 1);',
-    ...plan.groups
-      .filter(g => g.statements.length > 1 && g.mapping === 'block')
-      .map(g => `  { const unsigned char choice = fused_${g.kernel} ? 1 : 0; write(output, &choice, 1); }`),
+    ...schedule.kernels
+      .filter(k => k.members.length > 1 && k.mapping === 'block')
+      .map(k => `  { const unsigned char choice = fused_${k.name} ? 1 : 0; write(output, &choice, 1); }`),
+    ...schedule.kernels
+      .filter(k => k.contraction)
+      .map(k => `  { const unsigned char choice = tiled_${k.name} ? 1 : 0; write(output, &choice, 1); }`),
     '}',
   );
-  const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
-  const gated = plan.groups.some(g => g.statements.length > 1 && g.mapping === 'block');
+  const fused = schedule.kernels.some(k => k.members.length > 1 || k.contraction) ? [fusedSupport] : [];
+  const gated = schedule.kernels.some(k => k.members.length > 1 && k.mapping === 'block');
+  const tiled = schedule.kernels.some(k => k.contraction);
   if (gated) fused.push(gateSupport);
-  return [support, ...fused, ...kernels.map(k => k.code), host.join('\n'), gated ? gatedMain : main].join(
-    '\n\n',
-  );
+  if (tiled) fused.push(tileSupport);
+  return [
+    support,
+    ...fused,
+    ...kernels.map(k => k.code),
+    host.join('\n'),
+    programMain({ gate: gated, tile: tiled }),
+  ].join('\n\n');
+}
+
+/** The translation unit for `fn` under `plan` (default: stage 2's, one kernel per statement). */
+export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
+  return emitSchedule(fn, scheduleFromPlan(fn, plan));
 }

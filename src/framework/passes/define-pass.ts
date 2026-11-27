@@ -82,6 +82,12 @@ export interface PassSpec<S, N extends Needs, P = unknown> {
   readonly description: string;
   readonly ir: IRType<S>;
   readonly adapter: IRAdapter<S>;
+  /**
+   * The kind of the pass's input, when it differs from its output's (a cross-kind pass: Tix to a schedule). The
+   * framework used to open the input with the pass's own adapter, so a pass whose input was of another kind could
+   * not be written at all (IRWB-033-G).
+   */
+  readonly source?: { readonly ir: IRType<any>; readonly adapter: IRAdapter<any> };
   readonly needs?: N;
   /** Entity kinds (glob `prefix*`) and relation kinds the pass may change. */
   readonly writes: { readonly entities: readonly string[]; readonly relations: readonly string[] };
@@ -227,10 +233,12 @@ export function applyNativePassSync<S, P>(
   before: Artifact<S>,
   gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
   params?: P,
+  /** Artifact id of the output, when the pass writes another kind (a cross-kind pass, IRWB-033-G). */
+  outputId?: string,
 ): PassResult<S> {
   if (Object.keys(pass.needs ?? {}).length || pass.preserves?.length || pass.contract)
     throw new PassError('badResult', 'This pass requires the asynchronous analysis manager');
-  const view = openIR(before, pass.adapter);
+  const view = openIR(before, (pass.source?.adapter ?? pass.adapter) as IRAdapter<S>);
   const produced = pass.run({
     before,
     view,
@@ -246,7 +254,12 @@ export function applyNativePassSync<S, P>(
     throw new PassError('badResult', 'Expected a synchronous native result');
   }
   const base = { pass: { id: pass.id, version: pass.version }, before, preserved: [] };
-  const { after, changes, correspondence, edits } = prepareNative(pass, view, produced, before.id);
+  const { after, changes, correspondence, edits } = prepareNative(
+    pass,
+    view,
+    produced,
+    outputId ?? before.id,
+  );
   if (after.revision === before.revision) return { ...base, changed: false, artifact: before, edits: 0 };
   enforceWrites(pass, changes);
   const contract = gate(before, after);
@@ -270,7 +283,7 @@ export async function applyPass<S, N extends Needs, P>(
   options: ApplyOptions<P>,
 ): Promise<PassResult<S>> {
   const { manager } = options;
-  const view = openIR(before, pass.adapter, options.store);
+  const view = openIR(before, (pass.source?.adapter ?? pass.adapter) as IRAdapter<S>, options.store);
   const facts: Record<string, unknown> = {},
     records: Record<string, AnalysisRecord<unknown>> = {};
   for (const [name, def] of Object.entries(pass.needs ?? {})) {

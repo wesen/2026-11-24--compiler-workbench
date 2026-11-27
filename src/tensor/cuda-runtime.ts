@@ -12,6 +12,8 @@ export interface CudaResult {
   data: Float32Array;
   gpuMs: number;
   gates?: Record<string, 'fused' | 'unfused'>;
+  /** Which body each tiled contraction kernel ran (IRWB-033-G). */
+  tiles?: Record<string, 'tiled' | 'plain'>;
 }
 
 const magic = Buffer.from('TIXCUDA1');
@@ -63,6 +65,7 @@ export function decodeCudaCases(
   count: number,
   rank: number,
   gates: string[] = [],
+  tiles: string[] = [],
 ): CudaResult[] {
   if (bytes.length < header || !bytes.subarray(0, magic.length).equals(magic))
     throw Error('Invalid CUDA response header');
@@ -86,15 +89,19 @@ export function decodeCudaCases(
     const gpuMs = bytes.readDoubleLE(offset);
     offset += 8;
     if (!Number.isFinite(gpuMs) || gpuMs < 0) throw Error('Invalid CUDA event time');
-    if (gates.length > bytes.length - offset) throw Error('Short CUDA gate response');
+    if (gates.length + tiles.length > bytes.length - offset) throw Error('Short CUDA gate response');
     const choices: Record<string, 'fused' | 'unfused'> = Object.fromEntries(
       gates.map(name => [name, bytes[offset++] ? 'fused' : 'unfused']),
+    );
+    const bodies: Record<string, 'tiled' | 'plain'> = Object.fromEntries(
+      tiles.map(name => [name, bytes[offset++] ? 'tiled' : 'plain']),
     );
     results.push({
       shape,
       data: new Float32Array(words.buffer),
       gpuMs,
       ...(gates.length && { gates: choices }),
+      ...(tiles.length && { tiles: bodies }),
     });
   }
   if (offset !== bytes.length) throw Error('Trailing CUDA response bytes');
@@ -107,8 +114,11 @@ export async function runCudaBatch(
   source: string,
   fn: Fn,
   cases: readonly CudaInputs[],
-  /** `gate` forces every gated kernel of the source to one side; only for sources that take it (`takesGate`). */
-  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused' },
+  /**
+   * `gate` forces every gated kernel of the source to one side, and `tile` every tiled contraction kernel; only for
+   * sources that take them (`takesGate`, `takesTile`).
+   */
+  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused'; tile?: 'tiled' | 'plain' },
 ): Promise<CudaResult[]> {
   const request = encodeCudaCases(fn, cases);
   const dir = await mkdtemp(join(tmpdir(), 'irwb-tix-cuda-'));
@@ -120,6 +130,7 @@ export async function runCudaBatch(
     const program = [
       ...(options?.benchmark ? ['--benchmark'] : []),
       ...(options?.gate ? ['--gate=' + options.gate] : []),
+      ...(options?.tile ? ['--tile=' + options.tile] : []),
     ];
     if (program.length) args.push('--', ...program);
     try {
@@ -140,6 +151,7 @@ export async function runCudaBatch(
       cases.length,
       fn.shape.length,
       [...source.matchAll(/const bool fused_(k\d+) =/g)].map(m => m[1]),
+      [...source.matchAll(/const bool tiled_(k\d+) =/g)].map(m => m[1]),
     );
   } finally {
     await rm(dir, { recursive: true, force: true });

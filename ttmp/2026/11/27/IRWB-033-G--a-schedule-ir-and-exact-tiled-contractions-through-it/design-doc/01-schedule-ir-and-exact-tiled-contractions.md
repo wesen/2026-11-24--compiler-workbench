@@ -152,7 +152,7 @@ list of steps taken (pass, parameters, legality, whether it changed anything):
 That is the whole rule: no timing, no candidate search. It is a function of the IR.
 
 **Why a static tile size.** The extents are symbolic at compile time (`M`, `N`, `K`), so the choice is either a
-static size or a launch-time choice between instantiations. The measurements (probe 01, one session, medians of
+static size or a launch-time choice between instantiations. The measurements (script 01, one session, medians of
 three) say the best size is shape-dependent: 64×64×32×4×4 gives 0.0637 ms at 512³ and 18.9 ms at 4096³, while
 128×128×32×8×8 gives 0.125 ms and 15.8 ms. Two instantiations chosen at launch by `M·N·K` would give both, at the
 cost of a second body in the kernel and a second forced side in the contract. This stage keeps one static size —
@@ -200,7 +200,7 @@ the tiled reduction returning its accumulator.
   but the order analysis rejects the shape of the loop nest, which is the point of having it.
 - **FMA, tensor cores, reduced precision**: different bits or a different problem; a later stage.
 - **Vector loads and stores** (`float4`): implemented as a schedule field only if a pass can be checked for it;
-  measured first, and in probe 01 vector loads were 0.0756 ms against 0.0637 ms at 512³ (KC = 32), so the strategy
+  measured first, and in script 01 vector loads were 0.0756 ms against 0.0637 ms at 512³ (KC = 32), so the strategy
   does not choose them. A schedule step that no rule selects is not worth its check.
 - **Double buffering**: it needs a prefetch that overlaps the copy with the arithmetic (an `async` copy or a
   rotated buffer the compiler can software-pipeline). With two barriers per k-tile the copy of the next tile cannot
@@ -226,3 +226,16 @@ the tiled reduction returning its accumulator.
 - every corpus program, fused and unfused, against the base, so that nothing got slower.
 - the order analysis: what it rejects (a mutant that reverses the inner loop, a split-K schedule), and what it costs.
 - the contract: cases and wall time per program with a tiled contraction, with both sides forced.
+
+## What changed from this design while implementing it
+
+- **A second launch condition.** The design had one threshold (`M·N·K`). Measuring attention's out (1024×64, a grid of
+  16 blocks on a 48-SM device) showed the tiled body 4% slower there, so the rule also requires at least one block
+  per SM, which the host reads from the device. Recorded with its measurement in the report.
+- **`buffer: double` stays in the IR and the staging pass refuses it**, rather than the field being dropped: the IR
+  leaves room for the prefetch, and the refusal says why it is not there yet.
+- **The tiled contraction is one `template <bool Tiled>` definition**, so the kernel count does not change and the
+  contract can force each body with `--tile=`, instead of two kernels or one body.
+- **`schedule-build` writes the schedule's `orders`** (the visit order of each outermost reduction, from the plan's
+  mapping) because the analysis that checks the steps must read the schedule alone; the bodies stay in the Tix
+  artifact, which the schedule names by revision.

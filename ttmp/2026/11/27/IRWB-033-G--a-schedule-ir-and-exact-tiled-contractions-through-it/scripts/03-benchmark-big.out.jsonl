@@ -1,0 +1,2 @@
+{"program":"matmul-4096","fusedMs":21.5653,"unfusedMs":134.0437,"ratio":0.161,"fusedCalls":[21.6355,22.0156,21.5653,21.4297,21.4232],"unfusedCalls":[133.3586,134.0437,135.7966,133.203,135.6686],"tflopsFused":6.37,"tflopsUnfused":1.03,"cublasMs":0.007158278826666666,"fusedOverCublas":3012.644,"sameOutput":true}
+EXIT 0

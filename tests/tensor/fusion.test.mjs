@@ -53,10 +53,15 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
     assert.equal(sha(cudaSource(optimized, name, { fuse: false })), digests[name + '+inline+split'], name);
   }
-  for (const name of ['matmul', 'conv2d']) {
-    const program = corpus(name);
-    assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
-  }
+  // A one-statement program that is not a contraction is stage 2's source either way. matmul is the exception
+  // IRWB-033-G introduces on purpose: the fused lowering tiles it, in one kernel definition with two bodies.
+  assert.equal(
+    cudaSource(corpus('conv2d'), 'conv2d'),
+    cudaSource(corpus('conv2d'), 'conv2d', { fuse: false }),
+  );
+  const matmul = corpus('matmul');
+  assert.notEqual(cudaSource(matmul, 'matmul'), cudaSource(matmul, 'matmul', { fuse: false }));
+  assert.equal(kernels(cudaSource(matmul, 'matmul')), 1);
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
 });
 
