@@ -214,6 +214,31 @@ the assignment list is cheap compared with the 2.5 s remote round trip a lowerin
 check already pays (warm compile 3 ms, cold 1.5 s, plus transport, upload and
 download).
 
+## Step 6b. Experiment 5: a prediction, only half confirmed
+
+With the time left I tested the prediction that the price of exactness explodes when
+the fold is the only parallelism. `prototypes/03-reduction-limited/main.cu` times a
+matrix-vector product four ways, 200 launches per timed interval (a single launch is
+too close to overhead to measure):
+
+| problem | exact | 2 accumulators | 4 accumulators | warp tree |
+| --- | ---: | ---: | ---: | ---: |
+| M=1024, K=1024 | 0.0594 ms | 0.0594 ms | 0.0594 ms | 0.00615 ms |
+| M=1024, K=8192 | 0.4932 ms | 0.7150 ms | 0.7147 ms | 0.1159 ms |
+
+The warp tree is 9.7× faster and 4.3× faster, and differs on 971–1007 of 1024
+outputs. But the experiment does not isolate the fold: the interleaved accumulators
+are dynamically indexed (`acc[k & (W-1)]`), spill to local memory, and at K=8192 are
+*slower* than the exact kernel, so they are not a valid upper bound; and the warp
+variant also fixes the coalescing, since one-thread-per-output with row-major `A`
+makes a warp read 32 rows at stride K. I recorded this in the design document as
+failure (e) and left the prediction explicitly untested. The experiment I would run
+next is an exact kernel that keeps the fold order but stages an `A` tile through
+shared memory with coalesced loads — permitted by Theorem 1.
+
+Compile errors in this step: `uint64_t`/`uint32_t` needed `<cstdint>` (951 ms cold
+compile, then 2995 ms of measurement).
+
 ## Step 7. Decisions about what to propose, and what to leave out
 
 I decided early to define best in class on two axes (guarantee strength and the

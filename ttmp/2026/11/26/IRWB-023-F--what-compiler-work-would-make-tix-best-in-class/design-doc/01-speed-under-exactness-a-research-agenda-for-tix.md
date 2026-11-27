@@ -482,6 +482,16 @@ discrepancy between a serial f32 fold and the exact value grows with K and with
 cancellation, so "how much a reassociation may cost" is not a constant — it is a
 function of the shape, which is precisely what an exact mode makes unnecessary.
 
+A partial fifth measurement (experiment 5, §6.5e) makes the barrier concrete on a
+matrix-vector product, where the fold is the only parallelism: at 1024 rows by
+1024 columns the exact one-thread-per-row kernel runs in 0.0594 ms and a
+warp-per-row tree reduction in 0.00615 ms — a 9.7× gap — while two or four
+interleaved accumulators in the same thread mapping give exactly 0%. The gap is
+not attributable to the fold alone (the warp variant also changes the memory
+access pattern, and §6.6 documents why the experiment does not isolate the two),
+but it shows the order of magnitude that the fold-plus-its-forced-thread-mapping
+can cost when outputs are scarce.
+
 **Risks.** (i) Cost: exact accumulation is 2–4× the FLOPs of a naive fold and needs
 extra registers. (ii) The product of two f32 values is exact in f64 but the sum may
 not be, so a correct implementation needs care (this is exactly where my
@@ -704,7 +714,32 @@ reach. Lesson: shape-dependent specialisation is a *lowering/scheduling* decisio
 made where shapes are known — which is exactly where the current check samples
 least. That asymmetry is the reason the evasion works.
 
-**(e) A shared-memory bug of my own.** The first fused-softmax kernel staged each
+**(e) Experiment 5 did not isolate what I wanted it to isolate.** I predicted that
+the price of exactness explodes where the fold is the only parallelism, and built a
+matrix-vector probe (`prototypes/03-reduction-limited/`,
+[`scripts/05-reduction-limited.mjs`](../scripts/05-reduction-limited.mjs)) with four
+timings:
+
+| problem | exact (1 accumulator) | 2 accumulators | 4 accumulators | warp tree |
+| --- | ---: | ---: | ---: | ---: |
+| M=1024, K=1024 | 0.0594 ms | 0.0594 ms | 0.0594 ms | **0.00615 ms (9.7×)** |
+| M=1024, K=8192 | 0.4932 ms | 0.7150 ms | 0.7147 ms | **0.1159 ms (4.3×)** |
+| words differing from exact | — | 981 and 999 of 1024 | 971 and 1003 | 971 and 1007 |
+
+The prediction is *not* confirmed as stated, for two reasons I can name. First, the
+interleaved-accumulator variants are not a valid upper bound here: `acc[k & (W-1)]`
+is a dynamically indexed local array, so it spills to local memory and at K=8192 the
+"reassociated" kernel is *slower* than the exact one. Second, the warp variant
+changes the memory access pattern as well as the fold: one thread per output element
+with row-major `A` makes the 32 threads of a warp read 32 rows at a stride of K
+floats, which is uncoalesced, whereas the warp-per-row kernel reads consecutively.
+So the 9.7× is the price of *the thread mapping that the fold forces*, not the price
+of the fold. A fair test needs an exact kernel that keeps the fold order but stages
+an `A` tile through shared memory with coalesced loads — a schedule that Theorem 1
+permits — and I did not write it. This is the one prediction in the document left
+untested, and it is also the first experiment I would run next.
+
+**(f) A shared-memory bug of my own.** The first fused-softmax kernel staged each
 row in a per-block shared buffer while 256 threads each worked on a different row;
 every thread clobbered its neighbours' staging area, and every output differed.
 The fix (read the row from global; it is 4 KiB and stays in cache) is what the
@@ -782,7 +817,10 @@ no vectorised global loads, no double buffering, and no autotuned tile shape, so
 an upper bound on the price of exactness — the true price could be smaller. I
 measured two of the six corpus programs (matmul, softmax); the layernorm, attention,
 mlp and conv2d claims are extrapolations from their instruction mix, not
-measurements. The §6.4 mutant is one defect, not a mutation-score study. The
+measurements. Experiment 5's matrix-vector probe is confounded (§6.5e): its exact
+kernel is under-scheduled for coalescing and its reassociated kernels spill, so the
+"price of exactness when the reduction is the only parallelism" remains a
+prediction rather than a measurement. The §6.4 mutant is one defect, not a mutation-score study. The
 tolerance sweep in §6.3 uses one seeded input distribution per shape; the budget
 fraction is an extreme-value statistic and would grow with more inputs, so the
 reported violations are lower bounds. Finally, my Ziv experiment is a refutation of

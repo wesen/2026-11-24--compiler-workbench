@@ -1,0 +1,17 @@
+compileMs 3 runMs 2991 stderr 
+{
+
+  "M=1024,K=1024": {
+    "exact": {"ms": 0.059386, "gflops": 0.035, "differ": 0, "total": 1024, "max_ulp": 0},
+    "r2": {"ms": 0.059387, "gflops": 0.035, "differ": 981, "total": 1024, "max_ulp": 11136},
+    "r4": {"ms": 0.059393, "gflops": 0.035, "differ": 971, "total": 1024, "max_ulp": 4864},
+    "warp": {"ms": 0.006146, "gflops": 0.341, "differ": 971, "total": 1024, "max_ulp": 3840}
+  },
+  "M=1024,K=8192": {
+    "exact": {"ms": 0.488569, "gflops": 0.034, "differ": 0, "total": 1024, "max_ulp": 0},
+    "r2": {"ms": 0.725166, "gflops": 0.023, "differ": 999, "total": 1024, "max_ulp": 87232},
+    "r4": {"ms": 0.723159, "gflops": 0.023, "differ": 1003, "total": 1024, "max_ulp": 73536},
+    "warp": {"ms": 0.093368, "gflops": 0.180, "differ": 1007, "total": 1024, "max_ulp": 54464}
+  }
+}
+
