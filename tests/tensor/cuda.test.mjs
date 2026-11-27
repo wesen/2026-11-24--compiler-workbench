@@ -9,19 +9,28 @@ const buf = (shape, values) => ({ shape, data: Float32Array.from(values) });
 const p = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k]; return y; }');
 const fn = p.current.value.functions[0];
 
-test('CUDA source is deterministic and preloads every emitted statement kernel before timing', () => {
+test('CUDA source is deterministic and preloads every emitted kernel before timing', () => {
   assert.equal(typeof checkLowering, 'function');
   assert.equal(typeof runTixCuda, 'function');
   const program = compileTix(
     'fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }',
   );
+  // IRWB-029-F: the elementwise chain fuses into one register-forwarding kernel by default.
   const source = cudaSource(program, 'second');
   assert.equal(source, cudaSource(program, 'second'));
-  assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
+  assert.equal((source.match(/__global__ void/g) ?? []).length, 1);
+  assert.match(source, /float v0 = __double2float_rn\(exp/);
+  assert.match(source, /__fmul_rn\(v0, t0\[\(row\)\]\)/);
   assert.ok(
-    source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
+    source.indexOf('cudaFuncGetAttributes(&attributes, k0)') < source.indexOf('gpu_ms = time_kernels'),
   );
   assert.match(source, /__double2float_rn\(exp/);
+  const stage2 = cudaSource(program, 'second', { fuse: false });
+  assert.equal((stage2.match(/__global__ void/g) ?? []).length, 2);
+  assert.ok(
+    stage2.indexOf('cudaFuncGetAttributes(&attributes, k1)') <
+      stage2.indexOf('gpu_ms = time_kernels'),
+  );
   assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
 });
 
