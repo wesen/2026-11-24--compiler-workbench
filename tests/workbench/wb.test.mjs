@@ -105,3 +105,15 @@ test('events: views hear revisions, focus and files', async () => {
   pr.files.write('notes.md', 'x\n');
   for (const e of ['program', 'revision', 'focus', 'files']) assert.ok(seen.includes(e), e);
 });
+
+test('projects: shared metadata parser matches workbench metadata across the corpus', async () => {
+  const { parseProjectMeta, projectSource } = await import('../../dist/typed/project.js');
+  const { projectIds, projectFiles } = await import('../../tools/corpus.mjs');
+  const { wb } = makeWb();
+  for (const id of projectIds()) {
+    const files = projectFiles(id);
+    const meta = parseProjectMeta(id, files);
+    assert.deepEqual(meta, projectSource(id, files).meta, id);
+    assert.deepEqual(wb.projects.get(id).meta, { scripts: {}, ui: {}, ...meta }, id);
+  }
+});
