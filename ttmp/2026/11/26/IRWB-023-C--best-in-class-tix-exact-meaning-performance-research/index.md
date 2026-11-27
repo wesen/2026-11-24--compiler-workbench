@@ -10,9 +10,15 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: Lowering relation that stage A changes
+    - Path: repo://ttmp/2026/11/26/IRWB-023-C--best-in-class-tix-exact-meaning-performance-research/design-doc/01-exact-meaning-performance-for-tix.md
+      Note: Design document
+    - Path: repo://ttmp/2026/11/26/IRWB-023-C--best-in-class-tix-exact-meaning-performance-research/scripts/03-fused-exact.mjs
+      Note: Corpus-wide exact kernels
 ExternalSources: []
-Summary: ""
+Summary: Best in class defined as exact-meaning performance; four ranked proposals with GB10 evidence.
 LastUpdated: 2026-11-26T18:30:23.459194992-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -20,39 +26,10 @@ WhenToUse: ""
 
 # Best-in-class Tix: exact-meaning performance research
 
-## Overview
+Research round (no product-code changes). The thesis: Tix should be the fastest compiler whose output is bit-identical to its portable f32 meaning, with evidence for every step. GB10 experiments back four ranked proposals. Hand-written exact kernels for the six corpus programs are bit-identical to Stage 2 and 3.76× faster in geometric mean. Fast `exp` and `tanh` paths are proven equal to the meaning on all 2^32 inputs. Symbolic fingerprints decide exactness per shape for all data.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
-
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- compiler
-- research
-- performance
-- verification
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design document](design-doc/01-exact-meaning-performance-for-tix.md)
+- [Research diary](reference/01-research-diary.md)
+- Experiments: `scripts/` (results in `scripts/results/`)
+- [Tasks](tasks.md)
+- [Changelog](changelog.md)

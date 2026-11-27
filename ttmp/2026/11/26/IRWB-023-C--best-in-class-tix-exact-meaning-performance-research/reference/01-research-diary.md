@@ -241,3 +241,137 @@ A Node generator (`scripts/03-fused-exact.mjs`) builds one translation unit from
 
 ### Code review instructions
 - `scripts/03-fused/fused.cuh` (kernels and harness), `scripts/03-fused-exact.mjs` (generator), `scripts/results/03-fused-exact.jsonl`.
+
+## Step 6: cuBLAS versus a sequential FMA fold, and an exact interpreter reference for FMA
+
+Two questions drove this step. Does cuBLAS compute a fixed function? And could Tix specify an FMA-contracted contraction exactly? I re-ran experiment 01 with a direct comparison of cuBLAS against my sequential-k `fmaf` kernel, and wrote experiment 04, which compares two JavaScript FMA references with the GB10's `__fmaf_rn`. At 4096³, cuBLAS equals the sequential FMA fold in every one of 16,777,216 words. At 512–2048³ it differs from it in 92–96% of words. The exact error-free-transformation (EFT) reference had 0 mismatches. The obvious `Math.fround(a*b + c)` passed every random triple and failed every constructed hard case.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Test whether an FMA meaning is both implementable on the interpreter and worth having.
+**Inferred user intent:** Ideas that lift the price of exactness, with refutation tests.
+**Commit (code):** be6b4a7 — "IRWB-023-C: FMA meaning reference, cuBLAS vs sequential FMA, tolerance vs accuracy relations"
+
+### What I did
+- Added `cublasVsSequentialFma` to `perf()`, then ran `--timed -- perf 512 1024 2048 4096` (`results/01-exact-gemm-perf-run2.json`).
+- `scripts/04-fma-meaning.mjs` writes triples to `04-fma-meaning/triples.bin` (a `--runtime-input`), runs `main.cu` remotely, and compares. The triple families are 2^20 random words, 2^18 random normals and 2^16 constructed cases: c odd, a·b = ±h(1 − 2^-46), h = ulp(c)/2.
+
+### What worked
+- cuBLAS vs sequential FMA: 242,386/262,144 (512³), 992,461/1,048,576 (1024³), 4,036,086/4,194,304 (2048³) and **0/16,777,216 (4096³)** words different.
+- EFT `fma32`: 0 mismatches in all families. Naive: 0, 0 and **65,536/65,536**.
+
+### What didn't work
+- None in this step.
+
+### What I learned
+- At large sizes cuBLAS's meaning is a sequential FMA fold. An FMA meaning in Tix would therefore be bit-compatible with cuBLAS exactly where cuBLAS runs at full speed.
+- Random testing cannot validate a reference for a fused operation: the double-rounding cases occur with probability about 2^-29.
+
+### What was tricky to build
+- The midpoint argument. f32 midpoints are representable in f64, so a sum s that is not a midpoint is at least an f64 ulp away from one, while |e| ≤ ulp64(s)/2. Only an exact midpoint needs the sign of e. Overflow at the 2^128 − 2^103 midpoint is handled separately.
+
+### Code review instructions
+- `fma32()` in `scripts/04-fma-meaning.mjs`; `results/04-fma-meaning.json`.
+
+## Step 7: Experiment 05, the tolerance is not scale covariant
+
+I drove the real Stage 1 gate (`meaningGate(origin, 'tolerance')`) with an all-zero candidate on `y[i] = sum(k) x[i,k] * S`, and evaluated three relations offline on the six corpus programs. The relations are the Stage 1/2 tolerance, an elementwise accuracy relation and a per-case norm accuracy relation. Each was applied to split-sum, the Stage 1 floor-split mutant and all zeros, at the gate's cases plus one large case per program, unscaled and with inputs scaled by 2^-20. The gate accepted zeros for S ≤ 1e-7. The tolerance accepted both bugs on every program with small outputs at scale 2^-20, and rejected split-sum on a 4,093-term matmul. The elementwise relation was refuted. The norm relation with k = 2 separated legitimate from buggy candidates everywhere.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Measure the meaning-change judge that Stage 1 and 2 use, and propose a replacement.
+**Inferred user intent:** Strength of correctness guarantees, with experiments that can refute.
+**Commit (code):** be6b4a7
+
+### What I did
+- `node <ticket>/scripts/05-accuracy-relation.mjs` (Node 24, imports from `dist/`); `results/05-accuracy-relation.jsonl`.
+
+### What worked
+- Part A: zero candidate rejected at S = 1e-3, 1e-5, 2e-6; **accepted** at 1e-7 and 1e-9.
+- Part B: the norm relation `max|C−R| ≤ 2(max|O−R| + ulp32(max|R|)/2)` accepted split-sum everywhere (max ratio 0.95) and rejected the floor mutant wherever it changed the output and zeros everywhere, at both scales.
+
+### What didn't work
+- The first relation I tried, elementwise `|C−R| ≤ 8(|O−R| + ulp32(R))`, falsely rejected split-sum on matmul (max ratio 12.6) and layernorm (127). It is refuted: where the origin happens to be very accurate at one element, any change looks unboundedly worse there.
+- My first minimum-ratio statistic for mutants was meaningless (0 for the zeros candidate on the all-zero stream, where zeros is correct). A candidate is rejected if *any* case fails, so I report the number of failing cases instead.
+
+### What I learned
+- The absolute term 2e-6 makes the Stage 1/2 tolerance vacuous for small-magnitude programs, and the relative term makes it too strict for long reductions with cancellation.
+
+### Code review instructions
+- `scripts/05-accuracy-relation.mjs`, `floorMutant()` and the loop computing `normFail`.
+
+## Step 8: Experiment 06, fingerprints of the same kernel source
+
+I rewrote the experiment-01 kernels generically in their scalar type and instantiated them at `Sym`. In `Sym` a load is a hash of (tensor, index), `mul`/`add` are commutative hash combiners, and a "may be −0" bit carries the +0-identity law. Fingerprints of the exact tiled and split-K kernels matched their oracles at all six shapes. The `pair` mutant was caught at every shape with K ≥ 8, including on small-integer and all-zero data, where the numerical comparison saw 0 differences.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Find out what the compiler can *prove* about an exact schedule beyond sampled data.
+**Inferred user intent:** Stronger guarantees, specific to Tix.
+**Commit (code):** 83a921c — "IRWB-023-C: symbolic fingerprints decide per-shape exactness for all data"
+
+### What I did
+- `node tools/cuda-remote.mjs <ticket>/scripts/06-fingerprint` (untimed; a check, not a measurement); `results/06-fingerprint.json`.
+
+### What didn't work
+- The first fingerprint algebra had only commutativity. It flagged the K-only chunk tree as different from the sequential fold when K ≤ 128 (49/49 at 7³), although the words are equal: RN(+0 + s) = s for any fold value s. Adding the law with a "may be −0" bit removed the false alarm and kept the genuine difference at K = 300.
+
+### What I learned
+- The fingerprint is sound and incomplete by design. Every legal rewrite outside its algebra needs a proved law, and associativity of `+` must never be added.
+
+### Code review instructions
+- `struct Sym`, `tadd`, `LAW` in `scripts/06-fingerprint/main.cu`.
+
+## Step 9: Experiment 07, a fast tanh, its first failure, and the fix
+
+The MLP epilogue spent 0.211 ms in Stage 2's double `tanh`, half of the exact MLP's 0.442 ms. I wrote a fast tanh: a series below 2^-6, otherwise 1 − 2/(e^{2|x|} + 1) using the exp core as a float-float, a one-step float-float division and the same rounding test. The first version had **85,400 mismatches** over all 2^32 inputs. The fixed version has 0, runs 4.9× faster than the double path in streaming, and brings the MLP to 0.270 ms.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Extend Proposal 2 to the second transcendental in the corpus.
+**Inferred user intent:** Depth on one idea, including its failures.
+**Commit (code):** e3eb1a0 — "IRWB-023-C: exhaustively checked fast tanh; exact kernels for all six corpus programs"
+
+### What I did
+- `scripts/07-exact-tanh/main.cu` with modes `exhaust <series-bits> <exp-bits>`, `stream` and `debug <hexword>`.
+- Diagnosis: `debug 3c952178` printed the intermediates at 17 digits, and a 60-digit Decimal computation gave the true values.
+
+### What didn't work
+- First exhaustive run: `{"mismatches":85400,"fallbacks":17523292,"firstMismatchWord":"0x3c952178"}`. My attempt to loosen the bounds appeared to change nothing, because zsh does not word-split unquoted `$b`, so `exhaust $b` with `b="30 30"` passed a single argument. With separate arguments, (30, 30) and (34, 26) gave 0 mismatches, which showed that the exp-path bound was the problem.
+- Root cause: `exp_ff` returns an *unnormalized* float-float whose low word holds the whole polynomial tail (7.97e-6 at x = 0.018). The division correction q2 = (2 − q1·D)/dh assumes dl ≪ ulp(dh). With dl/dh ≈ 3.9e-6 it carried a relative error of about 3.9e-6 on q2 ≈ 3.8e-6, about 1.5e-11 in t. That is just above the bound of 1.48e-11. The exp result itself was accurate (relative error 3.8e-13).
+- Fix: renormalize D = exp + 1 with a second Fast2Sum. After the fix: (34, 36) gave 0 mismatches and 17,523,060 fallbacks, of which 16,777,214 are NaN words. (34, 38) and (36, 38) gave 0; (34, 40) gave 6.
+
+### What I learned
+- An exhaustive check can find an algorithm bug that a careful error analysis missed, and debugging it took one high-precision replay of the first failing word.
+- Exp's exhaustive pass did not prove exp_ff's float-float accurate. It proved only that the *rounded* results are right. Reusing an intermediate in another function needs its own proof.
+
+### Technical details
+- Streaming, 2^24 arguments in [−3, 3]: double 3.30 ms, fast 0.668 ms (0 words different), `tanhf` 0.544 ms (3,397,679 different).
+
+## Step 10: Exact kernels for all six corpus programs
+
+I extended the experiment-03 generator to all six programs. It now copies the experiment-01 GEMM and the experiment-07 tanh verbatim (by markers), and the MLP and conv2d schedules are new. MLP is GEMM, fused bias+GELU, GEMM, then bias. conv2d is an implicit GEMM with k = (c·3 + dy)·3 + dx. All six were bit-identical to the Stage 2 output at full size. Speedups: matmul 3.50×, softmax 4.73×, layernorm 2.90×, attention 7.56×, mlp 3.93×, conv2d 1.98×; geometric mean 3.76×, and 3.763 ms total became 0.887 ms.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Corpus-wide evidence for Proposal 1.
+**Inferred user intent:** Claims backed by experiments at realistic sizes.
+**Commit (code):** e3eb1a0
+
+### What didn't work
+- The first conv2d version took 0.110 ms (1.50×), because it decomposed the pixel index with runtime integer division for every tile element. Hoisting the decomposition out of the k loop gave 0.083 ms.
+
+### Code review instructions
+- `node <ticket>/scripts/03-fused-exact.mjs --timed`; `results/03-fused-exact.jsonl`.
+
+## Step 11: Literature check and the design document
+
+I checked each citation with web searches or by fetching the source page. Three details changed as a result. The Halide reductions paper's DOI could not be confirmed, so it is cited by its researchr record. Ziv's TOMS DOI could not be confirmed, so it is cited by its index record. The Thinking Machines post is cited from the page itself, including its about 20% matmul cost relative to cuBLAS and its fixed-split-size rule for split-KV. Then I wrote the design document: the definition of best in class, the exact ceiling, four ranked proposals with theory, novelty, evidence, risks, success measures and framework needs, a staged plan, failures and the experiment index.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Commit (code):** 73bcfe8 — "IRWB-023-C: design document - exact-meaning performance, four ranked proposals"
+
+### What warrants a second pair of eyes
+- The ranking. Proposal 3 (fingerprints) is arguably the most novel, but it enables Proposal 1 rather than delivering speed, so it is ranked third.
+- The norm relation's k = 2 is fitted to six programs.
