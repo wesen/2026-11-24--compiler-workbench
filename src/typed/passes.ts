@@ -559,7 +559,15 @@ export const lvn = typedPass({
               tx.replace(first.value, tx.get(t, { from: first.value, because: [set] }));
               tx.replace(id, tx.get(t, { from: id, because: [set] }));
               tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
-              seen.delete(k);
+              // Replacing a tree also removes its descendants and rebuilds its ancestors. Forget candidates
+              // whose recorded value no longer occurs in their statement.
+              const contains = (root: string | undefined, target: string): boolean =>
+                !!root && (root === target || (st.get(root) as ValueRec).args.some(a => contains(a, target)));
+              for (const [candidate, entry] of seen) {
+                const stmt = st.get(entry.stmt) as StmtRec;
+                if (!contains(stmt.addr, entry.value) && !contains(stmt.value, entry.value) &&
+                    !contains(stmt.cond, entry.value)) seen.delete(candidate);
+              }
               return true;
             }
             if (!first) seen.set(k, { stmt: sid, value: id });
@@ -616,13 +624,14 @@ export const bce = typedPass({
   name: 'bce',
   about:
     'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
-  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
+  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges', ssa: 'ssa' },
   writes: ['stmts', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts }) {
     const dom = facts.dom!,
       reach = facts.reach!,
-      ranges = facts.ranges!;
+      ranges = facts.ranges!,
+      ssa = facts.ssa!;
     // resolve a read through single copies: t = x  ->  x (when t has one definition)
     const resolve = (
       sid: string,
@@ -674,13 +683,11 @@ export const bce = typedPass({
         if (!dom.dominates(arm, b.id)) continue;
         const x = st.get(cond.args[0]) as ValueRec;
         if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
-        // the index and the buffer are the same values at the branch and at the check
-        const same = (l: number) => {
-          const a = reach.reachingAt(t.id, l).sort().join(),
-            z = reach.reachingAt(idx.sid, l).sort().join();
-          return a === z;
-        };
-        if (!same(idx.local) || !same(buf)) continue;
+        // Equal reaching-definition sets can describe different loop iterations. Compare the reads' SSA names.
+        const guardBuf = (st.get(cond.args[1]) as ValueRec).args[0],
+          checkBuf = (st.get(c.args[1]) as ValueRec).args[0];
+        if (!ssa.uses[x.id] || ssa.uses[x.id] !== ssa.uses[idx.id]) continue;
+        if (!ssa.uses[guardBuf] || ssa.uses[guardBuf] !== ssa.uses[checkBuf]) continue;
         if (ranges.at(t.id, idx.local)[0] < 0) continue;
         tx.replaceStmt(
           last.id,

@@ -13,7 +13,6 @@ const { PIPELINES } = await import('../../dist/typed/passes.js');
 
 test(
   'F36: bce keeps a bounds check when the index is reassigned between the guard and the check',
-  { todo: 'F36' },
   async () => {
     // the only assignment to i lies between `i < buf.length` and `buf.charCodeAt(i)`, and reaches both: the sets of
     // reaching definitions are equal, the values are not
@@ -66,7 +65,6 @@ test(
 
 test(
   'F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)',
-  { todo: 'F38' },
   async () => {
     const p = Program.fromProject(projectSource('regex-nfa', projectFiles('regex-nfa')));
     const speed = [...PIPELINES.speed];
