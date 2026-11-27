@@ -114,3 +114,9 @@ Interpretation written into the design doc: (a) the exact tier is not a small co
 ## Step 7. Write-up
 
 Design doc updated with the results tables, the certified-throughput table (before/after), risks, staged plan and the refuted hypotheses. Commits stay on `r2b-gf-max/irwb-023-i`; no push.
+
+## Step 8. E5b: the certificate checker, actually built
+
+`scripts/06-certificate.mjs` implements the `substitute`-class certificate for inline: a lockstep walk of the before/after expression trees (modulo a renaming of after-side binder identities to before-side ones), allowing divergence only at load sites of removed single-use pointwise producers and requiring the substituted producer tree there. Measured: holds on the real inline candidates of all six corpus programs in 0.04-0.54 ms; accepts a hand-built correct inline; rejects the identity-order mutant and a duplicated-tree mutant with precise structural reasons.
+
+Failure recorded: the first version compared raw binder identities and rejected the *correct* control — binder ids are assigned per parse (`i0, i1, ...` in statement order), so structural equality must be modulo alpha-renaming. Fixed by pairing binder ids by occurrence during the walk; the lesson generalizes to any structural certificate over this IR.

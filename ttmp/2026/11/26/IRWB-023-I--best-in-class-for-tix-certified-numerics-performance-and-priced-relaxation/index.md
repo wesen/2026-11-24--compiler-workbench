@@ -29,7 +29,7 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Research round (design + experiment, no product changes). The design document defines **certified throughput** — kernel speed achieved while a machine-checked relation to Tix's exactly specified f32 meaning holds — as the best-in-class criterion, and proposes a schedule tier with provably exact schedule passes, numerical budgets as a first-class compilation target, and static exactness certificates, each backed by GB10 experiments run in this ticket's `scripts/` and `prototype/`. The diary records the full loop including failures.
 
 ## Key Links
 

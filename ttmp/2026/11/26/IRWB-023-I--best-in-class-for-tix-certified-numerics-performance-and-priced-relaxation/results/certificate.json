@@ -1,0 +1,116 @@
+[
+  {
+    "name": "matmul",
+    "certMs": 0.54,
+    "violations": [],
+    "selfCheckViolations": 0,
+    "controls": {
+      "correctInline": {
+        "holds": true
+      },
+      "wrongIdentityOrder": {
+        "holds": false,
+        "first": "y: substituted tree differs from the producer's tree at a p site"
+      },
+      "wrongDuplicatedTree": {
+        "holds": false,
+        "first": "y: node kind literal -> op"
+      }
+    }
+  },
+  {
+    "name": "softmax",
+    "certMs": 0.16,
+    "violations": [],
+    "selfCheckViolations": 0,
+    "controls": {
+      "correctInline": {
+        "holds": true
+      },
+      "wrongIdentityOrder": {
+        "holds": false,
+        "first": "y: substituted tree differs from the producer's tree at a p site"
+      },
+      "wrongDuplicatedTree": {
+        "holds": false,
+        "first": "y: node kind literal -> op"
+      }
+    }
+  },
+  {
+    "name": "layernorm",
+    "certMs": 0.14,
+    "violations": [],
+    "selfCheckViolations": 0,
+    "controls": {
+      "correctInline": {
+        "holds": true
+      },
+      "wrongIdentityOrder": {
+        "holds": false,
+        "first": "y: substituted tree differs from the producer's tree at a p site"
+      },
+      "wrongDuplicatedTree": {
+        "holds": false,
+        "first": "y: node kind literal -> op"
+      }
+    }
+  },
+  {
+    "name": "attention",
+    "certMs": 0.24,
+    "violations": [],
+    "selfCheckViolations": 0,
+    "controls": {
+      "correctInline": {
+        "holds": true
+      },
+      "wrongIdentityOrder": {
+        "holds": false,
+        "first": "y: substituted tree differs from the producer's tree at a p site"
+      },
+      "wrongDuplicatedTree": {
+        "holds": false,
+        "first": "y: node kind literal -> op"
+      }
+    }
+  },
+  {
+    "name": "mlp",
+    "certMs": 0.47,
+    "violations": [],
+    "selfCheckViolations": 0,
+    "controls": {
+      "correctInline": {
+        "holds": true
+      },
+      "wrongIdentityOrder": {
+        "holds": false,
+        "first": "y: substituted tree differs from the producer's tree at a p site"
+      },
+      "wrongDuplicatedTree": {
+        "holds": false,
+        "first": "y: node kind literal -> op"
+      }
+    }
+  },
+  {
+    "name": "conv2d",
+    "certMs": 0.09,
+    "violations": [],
+    "selfCheckViolations": 0,
+    "controls": {
+      "correctInline": {
+        "holds": true
+      },
+      "wrongIdentityOrder": {
+        "holds": false,
+        "first": "y: substituted tree differs from the producer's tree at a p site"
+      },
+      "wrongDuplicatedTree": {
+        "holds": false,
+        "first": "y: node kind literal -> op"
+      }
+    }
+  }
+]

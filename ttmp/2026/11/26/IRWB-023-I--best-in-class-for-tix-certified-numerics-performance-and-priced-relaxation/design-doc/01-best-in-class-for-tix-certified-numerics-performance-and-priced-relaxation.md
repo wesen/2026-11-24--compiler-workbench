@@ -51,7 +51,7 @@ Three properties make this the right definition for Tix:
 
 The measurable form is the **certified throughput table**: for each corpus program, the kernel time together with the numeric relation the compiler *certified* for it. Two columns matter: certified TFLOP/s (contraction programs) and certified GB/s (streaming programs). Today's stage-2 kernels are fully certified (bit-identical on every measured case) but slow:
 
-| Program | Stage 2 measured | Certified rate today | Uncertified reference |
+| Program | Stage 2 measured (coordinator's single runs; this round's median-of-20 re-measurements below agree within run-to-run variance) | Certified rate today | Uncertified reference |
 |---|---|---|---|
 | matmul 512³ | 0.197 ms | 1.36 TFLOP/s | cuBLAS SGEMM 0.0329 ms, 8.15 TFLOP/s |
 | softmax 4096×1024 | 0.785 ms | 41 GB/s | 244 GB/s streaming |
@@ -91,9 +91,9 @@ The f32 meaning of a statement is a pure function `f(loads) → output words`, e
 And two classes are **not exact** and must remain budget-tier:
 
 - `sum-reassoc`: changing a `sum`'s evaluation tree (split-sum, tree/warp reductions, split-K) — Higham's analysis bounds the error of blocked summation [(Higham 1993)](https://nhigham.com/wp-content/uploads/2023/10/high93s.pdf); the checked budget decides acceptance per program, exactly as `split-sum` already does at width 4.
-- `contract-fma`: merging multiply and add into one rounding (FFMA). nvcc contracts by default (`--fmad=true` [(CUDA nvcc 13.5 docs](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html)), and Stage 2 explicitly suppressed it with `__fmul_rn`/`__fadd_rn`. FMA is typically *more accurate* — but accuracy is not the contract; the spec is.
+- `contract-fma`: merging multiply and add into one rounding (FFMA). nvcc contracts by default (`--fmad=true`; [CUDA nvcc 13.5 docs](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html)), and Stage 2 explicitly suppressed it with `__fmul_rn`/`__fadd_rn`. FMA is typically *more accurate* — but accuracy is not the contract; the spec is.
 
-This calculus is where the novelty lives. Halide's schedules are *checked by translation validation after the fact* [(Clément and Cohen, OOPSLA 2022)](https://cambium.inria.fr/~bclement/papers/tv-oopsla-2022.pdf); Triton tiles by construction and checks nothing about numerics [(Tillet, Kung and Cox, MAPL 2019)](https://dl.acm.org/doi/10.1145/3315508.3329973); TVM/Ansor autotune against a tolerance oracle [(Chen et al., OSDI 2018](https://www.usenix.org/conference/osdi18/presentation/chen-tianqi); [(Zheng et al., OSDI 2020)](https://arxiv.org/abs/2002.10967). In Tix the schedule tier is *classified up front*: a pass either lands in a proven-exact class (certificate, spot-checked) or in a budget class (checked against the specified budget). "Sound autotuning" then falls out: an autotuner is just a strategy over checked passes, and no candidate can publish without passing its gate.
+This calculus is where the novelty lives. Halide's schedules are *checked by translation validation after the fact* [(Clément and Cohen, OOPSLA 2022)](https://cambium.inria.fr/~bclement/papers/tv-oopsla-2022.pdf); Triton tiles by construction and checks nothing about numerics [(Tillet, Kung and Cox, MAPL 2019)](https://dl.acm.org/doi/10.1145/3315508.3329973); TVM/Ansor autotune against a tolerance oracle ([Chen et al., OSDI 2018](https://www.usenix.org/conference/osdi18/presentation/chen-tianqi); [(Zheng et al., OSDI 2020)](https://arxiv.org/abs/2002.10967). In Tix the schedule tier is *classified up front*: a pass either lands in a proven-exact class (certificate, spot-checked) or in a budget class (checked against the specified budget). "Sound autotuning" then falls out: an autotuner is just a strategy over checked passes, and no candidate can publish without passing its gate.
 
 ### What is new here
 
@@ -163,7 +163,7 @@ For exact-class rewrites, replace (most of) the sampled gate with a structural c
 
 ### Why it works
 
-The exactness calculus makes exactness a *syntactic property* of the pair (before, after). This is translation validation's shape [(Necula and Lee, POPL 1998](https://dl.acm.org/doi/10.1145/276698.276712); [(Necula, PLDI 2000)](https://dl.acm.org/doi/10.1145/349299.349312); [(Pnueli and Zuck, 1998)](https://link.springer.com/chapter/10.1007/BFb0028757)) — but validated over a semantics that is *total and exactly specified*, so the validator is a small structural matcher rather than an SMT call. Clément and Cohen need refinement mappings over Halide's interval semantics [(Clément and Cohen 2022)](https://dl.acm.org/doi/10.1145/3527328); Tix's meaning is simpler — no overflow rules, fixed fold order — so the certificate is decidable by tree matching.
+The exactness calculus makes exactness a *syntactic property* of the pair (before, after). This is translation validation's shape ([Necula and Lee, POPL 1998](https://dl.acm.org/doi/10.1145/276698.276712); [(Necula, PLDI 2000)](https://dl.acm.org/doi/10.1145/349299.349312); [(Pnueli and Zuck, 1998)](https://link.springer.com/chapter/10.1007/BFb0028757)) — but validated over a semantics that is *total and exactly specified*, so the validator is a small structural matcher rather than an SMT call. Clément and Cohen need refinement mappings over Halide's interval semantics [(Clément and Cohen 2022)](https://dl.acm.org/doi/10.1145/3527328); Tix's meaning is simpler — no overflow rules, fixed fold order — so the certificate is decidable by tree matching.
 
 ### What is new
 
@@ -172,6 +172,7 @@ Proof-carrying schedule rewrites for an *exactly specified f32 meaning*. The fra
 ### Evidence
 
 - **E5 (local)** — current check costs, per corpus program (`results/check-cost.json`): parse 0.6–4.0 ms; `optimizeTix(['inline'])` 0.5–16.9 ms; `optimizeTix(['inline','split-sum'])` 3.4–23.0 ms; the sampled exact gate alone 2.3–10.8 ms — except **conv2d: 629.3 ms exact gate / 470.8 ms tolerance gate**, interpreter-dominated (four nested loops per case). A bare pass run with a stub gate costs ~1 ms. Against this, Stage 2 measured the remote CUDA check at ≈2.5 s average. The certificate's value is therefore: (a) it removes the remote round-trip for exact-class schedule passes (seconds → the ~1 ms pass + certificate); (b) it removes the conv2d-class interpreter outliers; (c) it makes checking **total** — a proof covers all inputs, not the sampled ones.
+- **E5b (local, prototype)** — a working certificate checker for the `substitute` class (`scripts/06-certificate.mjs`): it walks the before/after trees in lockstep (modulo binder renaming, since binder identities are per-parse), allows divergence only at load sites of removed single-use pointwise producers, and there requires the after-subtree to equal the producer's tree with the consumer's index tuple substituted — no node kind, operator, literal or reduction header may change, so no rounding site can be added, removed or moved. Measured: the certificate **holds on the real inline candidate of all six corpus programs in 0.04–0.54 ms**; it **accepts** a hand-built correct inline control, and **rejects** the identity-order substitution mutant (the Stage 1 falsifier) and a duplicated-tree mutant (a removed shared rounding site), each with a precise structural reason. A first version compared raw binder identities and wrongly rejected the correct control — fixed by α-renaming; the lesson (certificates must compare modulo binder identity) is recorded in the diary.
 
 ### Risks
 
@@ -290,7 +291,7 @@ NVIDIA GB10, sm_121, **48 SMs**, clock attribute 2,418,000 kHz, `sharedMemPerBlo
 | E2 | Register tiling is bit-exact and 2.8×; staging alone 1.15×; FMA free when memory-bound, 15% when compute-bound; 4096³ bounded by tile schedule, not rn |
 | E3 | Fused softmax/layernorm bit-exact: 2.0× / 2.8×; tree-sum free but worthless here; `expf` 6× end-to-end with ≤0.17% budget use |
 | E4 | Fused attention bit-exact, 1.26×; bottleneck = per-row k re-reads through L2 (≈268 MB at this shape) |
-| E5 | Local sampled gates 2.3–10.8 ms (conv2d 629/471 ms, interpreter-bound); remote check ≈2.5 s; bare pass ≈1 ms |
+| E5 | Local sampled gates 2.3–10.8 ms (conv2d 629/471 ms, interpreter-bound); remote check ≈2.5 s; bare pass ≈1 ms; certificate prototype holds on all six inline candidates in ≤0.54 ms and rejects both mutants |
 | E6 | Price of the meaning's double-precision exp inside fused softmax: 0.399 → 0.133 ms when relaxed (3×) |
 | E7 | Budget holds at all K on the stream family (hypothesis refuted); cancellation inputs inside the size class would reject a correct lowering — validity rests on the streams, not the cap |
 | E8 | max/min reassociation: 0 word mismatches in 2×100,000 tree evaluations incl. NaN/±0/±∞; sum: 80 in 5,250 — the `max-reassoc` exact class is real |
