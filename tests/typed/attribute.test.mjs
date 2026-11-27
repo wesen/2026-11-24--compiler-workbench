@@ -47,7 +47,10 @@ function assertExact(a) {
     assert.equal(sum, step.instructions - a.totals[i - 1].instructions, `r${step.rev} ${step.pass}`);
   }
   const whole = a.totals.at(-1).instructions - a.totals[0].instructions;
-  assert.equal(a.decisions.reduce((n, d) => n + d.delta, 0), whole);
+  assert.equal(
+    a.decisions.reduce((n, d) => n + d.delta, 0),
+    whole,
+  );
   for (const r of a.rows) assert.equal(r.delta, r.after - r.before);
 }
 
@@ -65,13 +68,22 @@ test('a header with two back edges is one loop, and its preheader is outside it'
 test('the rows of an attribution sum to the emulator counts, and licm hoists out of a two-latch loop', async () => {
   const p = open();
   const run = await p.pipeline('O2');
-  assert.deepEqual(run.steps.filter(s => s.rejected), []);
+  assert.deepEqual(
+    run.steps.filter(s => s.rejected),
+    [],
+  );
   const call = benchCase(storeOf(p.origin.value), 'steps', { n: 20, k: 7 });
   const a = attributeSteps(p.revisions, call);
-  assert.deepEqual(a.totals.map(t => t.rev), p.revisions.map(r => r.rev));
+  assert.deepEqual(
+    a.totals.map(t => t.rev),
+    p.revisions.map(r => r.rev),
+  );
   // the totals are what the emulator counts on each revision's image
   for (const [i, r] of p.revisions.entries())
-    assert.equal(a.totals[i].instructions, runImage(lowerToImage(r.artifact).image, call.fn, call.args, call.memory).steps);
+    assert.equal(
+      a.totals[i].instructions,
+      runImage(lowerToImage(r.artifact).image, call.fn, call.args, call.memory).steps,
+    );
   assertExact(a);
   const hoisted = a.decisions.filter(d => d.decision.startsWith('licm: insert (hoisted out of loop:steps@'));
   assert.equal(hoisted.length, 1);
@@ -93,9 +105,20 @@ test('bytecode VM: speed runs no more instructions than r0, and no licm decision
   const project = projectSource('bytecode-vm', projectAllFiles('bytecode-vm'));
   const p = Program.fromProject(project);
   const run = await p.pipeline('speed', { count: 10 });
-  assert.deepEqual(run.steps.filter(s => s.rejected), []);
-  for (const [entry, dispatches] of [[0, 184], [34, 160]]) {
-    const call = benchCase(storeOf(p.origin.value), 'runVm', { code: project.meta.inputs.runVm.code, entry, n: 12, seed: 8 });
+  assert.deepEqual(
+    run.steps.filter(s => s.rejected),
+    [],
+  );
+  for (const [entry, dispatches] of [
+    [0, 184],
+    [34, 160],
+  ]) {
+    const call = benchCase(storeOf(p.origin.value), 'runVm', {
+      code: project.meta.inputs.runVm.code,
+      entry,
+      n: 12,
+      seed: 8,
+    });
     const a = attributeSteps(p.revisions, call, { backend: { coalesce: true } });
     assertExact(a);
     assert.ok(a.totals.at(-1).instructions <= a.totals[0].instructions, formatAttribution(a));

@@ -15,26 +15,38 @@ const { attributeSteps, formatAttribution } = await import('../dist/typed/attrib
 const argv = process.argv.slice(2);
 const flag = name => argv.includes(name);
 const option = name => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined);
-const [id, pipeline, fn] = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--input' && argv[i - 1] !== '--backend');
+const [id, pipeline, fn] = argv.filter(
+  (a, i) => !a.startsWith('--') && argv[i - 1] !== '--input' && argv[i - 1] !== '--backend',
+);
 if (!id || !pipeline || !fn) {
-  console.error("usage: node tools/attribute.mjs <project> <pipeline> <fn> [--input JSON] [--backend JSON] [--coalesce] [--rows] [--json]");
+  console.error(
+    'usage: node tools/attribute.mjs <project> <pipeline> <fn> [--input JSON] [--backend JSON] [--coalesce] [--rows] [--json]',
+  );
   process.exit(2);
 }
 const project = projectSource(id, projectAllFiles(id));
 const p = Program.fromProject(project);
 const fixed = Object.fromEntries(
-  Object.entries(project.meta.inputs?.[fn] ?? {}).filter(([, v]) => v && typeof v === 'object' && !Array.isArray(v) && !v.oneOf),
+  Object.entries(project.meta.inputs?.[fn] ?? {}).filter(
+    ([, v]) => v && typeof v === 'object' && !Array.isArray(v) && !v.oneOf,
+  ),
 );
 const call = benchCase(storeOf(p.origin.value), fn, { ...fixed, ...JSON.parse(option('--input') ?? '{}') });
 const run = await p.pipeline(pipeline);
 const rejected = run.steps.filter(s => s.rejected).map(s => s.pass);
 if (rejected.length) console.error(`rejected: ${rejected.join(', ')}`);
-const backend = { ...(flag('--coalesce') ? { coalesce: true } : {}), ...JSON.parse(option('--backend') ?? '{}') };
+const backend = {
+  ...(flag('--coalesce') ? { coalesce: true } : {}),
+  ...JSON.parse(option('--backend') ?? '{}'),
+};
 const a = attributeSteps(p.revisions, call, { backend });
 if (flag('--json')) console.log(JSON.stringify(a, null, 1));
 else {
   console.log(formatAttribution(a));
   if (flag('--rows'))
     for (const r of a.rows.filter(r => r.delta))
-      console.log(`\nr${r.rev} ${String(r.delta > 0 ? '+' + r.delta : r.delta).padStart(6)}  ${r.decision}  [${r.because.join(', ')}]\n` + r.sites.map(s => `          ${s.id.padEnd(14)} ${s.text}`).join('\n'));
+      console.log(
+        `\nr${r.rev} ${String(r.delta > 0 ? '+' + r.delta : r.delta).padStart(6)}  ${r.decision}  [${r.because.join(', ')}]\n` +
+          r.sites.map(s => `          ${s.id.padEnd(14)} ${s.text}`).join('\n'),
+      );
 }
