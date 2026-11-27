@@ -975,3 +975,17 @@ The user set the cells for implementation tasks from now on, and asked to start 
   - IRWB-021-O (DeepSeek max, R1b) hit the two-hour cap (exit 124), but its design was committed at 23:05 local, before it idled.
   - Two R1b cells (O, and P from GLM Flash high) put their design in `design/`, not `design-doc/`.
   - **The launcher bug, a second time:** when its first ten cells finished, `25-launch-r1b-r2b-pi.sh`'s first run resumed in a file I had edited while it ran (adding GLM 5.3). It stopped with "line 36: syntax error near unexpected token `)'", so this time nothing was relaunched. No stray Pi process.
+
+## Step 37: R1b and R2b packed blind with their rounds' original cells; four judges started
+
+- **R1** (`scripts/36-pack-r1-all.sh`, seed 18; key `results/blind-key-r1-all.json`): all 19 designs, the twelve originals and the seven R1b cells, in one pack.
+  - The design is any `.md` under `design-doc/` or `design/`. One cell (IRWB-021-N) named its ticket `IRWB-021` without its letter.
+  - Every ticket id becomes `TICKET`, since the letters M–S would mark the new batch.
+  - The leak scan found nothing.
+  - Length differs and cannot be hidden: 2.0–4.1k words for the OpenAI cells, 6.0–16.5k for the new ones.
+- **R2** (`scripts/37-pack-r2-all.mjs`, seed 13; key `results/blind-key-r2-all.json`): all 11 whole tickets.
+  - First build: IRWB-023-E packed empty. Its worktree holds an empty directory literally named `IRWB-023-E--*` (an unexpanded glob of the agent's) that sorted first. The packer now picks the matching directory with the most files.
+  - The leak scan matched substrings: "fable" in "diffable", "Glm" in base64 inside docmgr records. It now uses word boundaries.
+  - A real leak, a lowercase `irwb-023e` in a script, is now neutralized.
+  - Completeness: every text file is packed (for example A 55/55, I 90/90). The difference elsewhere is binary data files, which are skipped by design.
+- **Judges** (prompts in `prompts/judges/`): each pack goes to one Codex judge (Sol high, read-only, with live web search for R2) and one Claude judge (Opus subagent). One run each, to keep Claude usage down. Neither judge's family wrote the new cells, so on those cells neither judge has an own-family bias.
