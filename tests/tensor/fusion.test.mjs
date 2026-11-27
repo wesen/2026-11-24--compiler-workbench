@@ -7,7 +7,7 @@ import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js'
 import { takesGate } from '../../dist/tensor/cuda-source.js';
 import { createCudaLowering } from '../../dist/tensor/cuda-contract.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
-import { planFusion } from '../../dist/tensor/fusion.js';
+import { gate, planFusion } from '../../dist/tensor/fusion.js';
 
 const corpus = name =>
   compileTix(readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'));
@@ -312,4 +312,28 @@ test('a member is written over the row it is computed from when nothing reads th
       [],
       read,
     );
+});
+
+test('the gate is a host condition on the grid, the longest row and the lanes of heavy members', () => {
+  assert.deepEqual(gate, { fullRow: 32, smallGrid: 2048, heavyLanes: [19, 24] });
+  // softmax has no heavy member: rows of a warp or more, or few rows
+  const softmax = cudaSource(corpus('softmax'), 'softmax');
+  assert.ok(softmax.includes('const bool fused_k0 = gate_mode ? gate_mode == 1 : (longest_k0 >= 32 || grid_k0 <= 2048);'));
+  assert.match(softmax, /threads_k0 = static_cast<unsigned>\(std::min<U>\(128, \(longest_k0 \+ 31\) \/ 32 \* 32\)\);/);
+  // attention with the division inside each term: score and out carry divisions that cannot be staged, so the
+  // block is as wide as the narrower of their rows and the gate asks for 19/24 of an SM's lanes on each
+  const inner = `fn f(q:f32[Q,D], k:f32[K,D], v:f32[K,V]):f32[Q,V] {
+    score[i,j] = sum(d) q[i,d] * k[j,d] / sqrt(D);
+    z[i] = sum(j) score[i,j];
+    out[i,c] = sum(j) score[i,j] * v[j,c] / z[i];
+    return out;
+  }`;
+  const plan = planFusion(fnOf(inner));
+  assert.deepEqual(plan.groups[0].heavy, ['score', 'out']);
+  const source = cudaSource(compileTix(inner), 'f');
+  assert.match(source, /threads_k0 = static_cast<unsigned>\(std::min<U>\(256, \(std::max<U>\(std::min<U>\(\{/);
+  assert.match(source, /resident_k0 = std::min<U>\(\{sm_blocks, sm_threads \/ threads_k0, shared_k0 \? sm_shared \/ \(row_k0 \+ sm_reserved\) : sm_blocks\}\);/);
+  assert.equal(source.match(/\* 24 >= 19 \* sm_threads/g).length, 2);
+  // the corpus attention multiplies inside and divides outside: one multiplication per term is not heavy
+  assert.deepEqual(planFusion(corpus('attention').current.value.functions[0]).groups[0].heavy, []);
 });

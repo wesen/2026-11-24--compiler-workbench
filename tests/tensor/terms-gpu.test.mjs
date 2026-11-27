@@ -70,11 +70,12 @@ test('GB10: the gate picks a side by shape, and both give the interpreter words;
   const random = seededRandom(31);
   const source = cudaSource(features, 'inside');
   const fn = features.current.value.functions.find(f => f.name === 'inside');
-  // [3, 200]: rows long enough for the rule to fuse; [200, 3]: short rows, run statement by statement;
-  // [2, 30000]: x, the terms and two scalars are 240 008 bytes per block, above the 99 KiB opt-in limit
+  // [3, 200]: rows of a warp or more, fused; [3000, 3]: more than 2,048 rows shorter than a warp, run statement
+  // by statement; [2, 30000]: x, the terms and two scalars are 240 008 bytes per block, above the 99 KiB
+  // opt-in limit
   for (const shape of [
     [3, 200],
-    [200, 3],
+    [3000, 3],
     [2, 30000],
   ]) {
     const x = { shape, data: Float32Array.from({ length: shape[0] * shape[1] }, () => 8 * random() - 4) };

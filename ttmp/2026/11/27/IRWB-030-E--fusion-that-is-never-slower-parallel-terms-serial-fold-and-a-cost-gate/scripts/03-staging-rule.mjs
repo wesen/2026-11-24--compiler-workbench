@@ -1,12 +1,14 @@
 // IRWB-030-E script 03: which reduction bodies should have their terms staged? Times the fused source of a
 // program with the plan's staged terms ("staged"), with none ("serial": stage 3's thread-0 loop), and with a
-// chosen subset (--keep=statement,statement: only these statements' terms stay staged).
+// chosen subset (--keep=statement,statement: only these statements' terms stay staged). --all adds a variant
+// "all" that stages every outermost reduction of every one-element member, whatever the plan's cost rule says
+// (the rule was added after the first run; a body the rule keeps serial is measured staged this way).
 //   node <ticket>/scripts/03-staging-rule.mjs [--calls=N] [--keep=a,b] [--sizes=N=..,C=..] name ...
 // Programs and inputs are script 01's. Each call is one `benchmark` run (warm-up, median of three, --timed).
 import { compileTix } from '../../../../../../dist/tensor/index.js';
 import { runCudaBatch } from '../../../../../../dist/tensor/cuda-runtime.js';
 import { emitCuda } from '../../../../../../dist/tensor/cuda-source.js';
-import { planFusion } from '../../../../../../dist/tensor/fusion.js';
+import { outerReductions, planFusion } from '../../../../../../dist/tensor/fusion.js';
 import { digest, inputsFor, median, programs } from './01-benchmark.mjs';
 
 const args = process.argv.slice(2);
@@ -22,6 +24,20 @@ for (const name of args.filter(a => !a.startsWith('--'))) {
   const variants = {
     staged: plan,
     serial: { ...plan, groups: plan.groups.map(g => ({ ...g, terms: [] })) },
+    ...(args.includes('--all')
+      ? {
+          all: {
+            ...plan,
+            groups: plan.groups.map(g => ({
+              ...g,
+              terms: g.statements
+                .map(n => fn.statements.find(s => s.name === n))
+                .filter(m => g.mapping === 'block' && m.axes.length === g.depth)
+                .flatMap(m => outerReductions(m.expr).map((_, reduction) => ({ statement: m.name, reduction }))),
+            })),
+          },
+        }
+      : {}),
     ...(keep ? { keep: { ...plan, groups: plan.groups.map(g => ({ ...g, terms: g.terms.filter(t => keep.includes(t.statement)) })) } } : {}),
   };
   const row = { name, sizes: { ...spec.sizes, ...sizes }, terms: plan.groups.flatMap(g => g.terms.map(t => `${t.statement}/${t.reduction}`)) };

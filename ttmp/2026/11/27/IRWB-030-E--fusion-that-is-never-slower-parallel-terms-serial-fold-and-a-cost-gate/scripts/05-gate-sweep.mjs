@@ -4,6 +4,8 @@
 //   fused    the fused source with --gate=fused (block mode forced)
 //   members  the fused source with --gate=unfused (the kernel's per-statement instantiations)
 //   stage2   the fuse: false source
+// and, with --auto, instead of fused and members:
+//   auto     the fused source with no --gate (the rule decides per shape)
 // and reports the median over --calls runs. Shapes: --shapes=N=4096:C=1024,N=1048576:C=4,...
 //   node <ticket>/scripts/05-gate-sweep.mjs [--calls=N] --shapes=... name ...
 import { compileTix, cudaSource } from '../../../../../../dist/tensor/index.js';
@@ -22,8 +24,9 @@ for (const name of args.filter(a => !a.startsWith('--'))) {
   const fn = cases[0].fn;
   const fusedSource = cudaSource(program, fnName);
   const modes = {
-    fused: [fusedSource, { gate: 'fused' }],
-    members: [fusedSource, { gate: 'unfused' }],
+    ...(args.includes('--auto')
+      ? { auto: [fusedSource, {}] }
+      : { fused: [fusedSource, { gate: 'fused' }], members: [fusedSource, { gate: 'unfused' }] }),
     stage2: [cudaSource(program, fnName, { fuse: false }), {}],
   };
   const times = {}, shas = {};
@@ -38,8 +41,8 @@ for (const name of args.filter(a => !a.startsWith('--'))) {
   shapes.forEach((shape, i) => {
     const row = { name, shape };
     for (const mode of Object.keys(modes)) row[mode] = median(times[mode][i]);
-    row.fusedOverStage2 = +(row.fused / row.stage2).toFixed(3);
-    row.membersOverStage2 = +(row.members / row.stage2).toFixed(3);
+    for (const mode of Object.keys(modes).slice(0, -1))
+      row[mode + 'OverStage2'] = +(row[mode] / row.stage2).toFixed(3);
     row.equal = new Set(Object.keys(modes).map(m => shas[m][i])).size === 1;
     row.times = Object.fromEntries(Object.keys(modes).map(m => [m, times[m][i]]));
     console.log(JSON.stringify(row));
