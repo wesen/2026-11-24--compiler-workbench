@@ -526,7 +526,7 @@ function emitGroup(
       const list = group.parallelTerms.filter(t => t.statement === m.name);
       if (!list.length) return 'static_cast<U>(0)';
       return list
-        .map(t => `(${reduceAt(m.expr, t.path).axes.map(hostCount).join(' * ')})`)
+        .map(t => `static_cast<U>((${reduceAt(m.expr, t.path).axes.map(hostCount).join(' * ')}))`)
         .join(' + ');
     });
     host.push(
@@ -553,8 +553,8 @@ function emitGroup(
   }
   w.lines.push('}');
   const instance = termStaged
-    ? `${kernel}<shared_${kernel}, staged_${kernel}>`
-    : `${kernel}<shared_${kernel}>`;
+    ? `shared_${kernel} ? (staged_${kernel} ? ${kernel}<true, true> : ${kernel}<true, false>) : (staged_${kernel} ? ${kernel}<false, true> : ${kernel}<false, false>)`
+    : `shared_${kernel} ? ${kernel}<true> : ${kernel}<false>`;
   const args = [
     ...dimensions.values(),
     ...Array.from(reads, t => tensorName(t) + '.ptr'),
@@ -572,10 +572,15 @@ function emitGroup(
       : `  if (count_${kernel}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork,
     launch: block
-      ? `    if (grid_${kernel}) {
-      ${instance}<<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
-      check(cudaGetLastError());
-    }`
+      ? termStaged
+        ? `    if (grid_${kernel} && shared_${kernel} && staged_${kernel}) ${kernel}<true, true><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
+    if (grid_${kernel} && shared_${kernel} && !staged_${kernel}) ${kernel}<true, false><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
+    if (grid_${kernel} && !shared_${kernel} && staged_${kernel}) ${kernel}<false, true><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
+    if (grid_${kernel} && !shared_${kernel} && !staged_${kernel}) ${kernel}<false, false><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
+    if (grid_${kernel}) check(cudaGetLastError());`
+        : `    if (grid_${kernel} && shared_${kernel}) ${kernel}<true><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
+    if (grid_${kernel} && !shared_${kernel}) ${kernel}<false><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
+    if (grid_${kernel}) check(cudaGetLastError());`
       : `    if (count_${kernel}) {
       ${kernel}<<<(count_${kernel} - 1) / 256 + 1, 256>>>(${args});
       check(cudaGetLastError());
