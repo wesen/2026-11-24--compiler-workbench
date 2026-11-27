@@ -34,6 +34,9 @@ const BY_PASS = {
   'licm insert': 'structural/motion', 'lvn insert': 'structural/motion',
   'licm local': 'structural/new-local', 'lvn local': 'structural/new-local',
   'dce remove': 'other/dead-statement', 'subst remove': 'other/dead-statement',
+  // D2's speed passes (IRWB-037-G), added when A0 was merged after D2
+  'copies replace': 'local/fact', 'subst-mem replace': 'local/fact', 'subst-mem remove': 'other/dead-statement',
+  'identities replace': 'local/rule',
 };
 const expected = e =>
   BY_PASS[`${e.pass} ${e.kind}`] ?? (e.pass === 'inline' ? 'structural/inline' : 'structural/cfg');

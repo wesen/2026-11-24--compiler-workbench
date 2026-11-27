@@ -36,7 +36,8 @@ import { F32_RESULT } from './f32.js';
 import { COMPARE } from './listing.js';
 import type { StmtRec, TypedBlocks, ValueOp, ValueRec } from './model.js';
 import { firstMatch, indexRules, numOf, type Bindings } from './rules/compile.js';
-import { RULE_EVIDENCE } from './rules/evidence.js';
+import { IDENTITY_RULES } from './rules/identities.js';
+import { ALL_EVIDENCE } from './rules/listing.js';
 import { FOLD_RULES } from './rules/fold.js';
 import type { Rule, RuleSet, Tpl } from './rules/form.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
@@ -158,7 +159,7 @@ export function normalize(t: Tree, index: ReadonlyMap<string, readonly Rule[]>, 
 }
 
 /** The verified tables an edit may be an instance of. */
-export const VERIFIED_TABLES: readonly RuleSet[] = [SIMPLIFY_RULES, FOLD_RULES];
+export const VERIFIED_TABLES: readonly RuleSet[] = [SIMPLIFY_RULES, FOLD_RULES, IDENTITY_RULES];
 const STRENGTHS = ['proof', 'exhaustive', 'by-construction', 'reduced-width+argument', 'sampled', 'none'];
 const INDEXES = new Map<RuleSet, Map<string, Rule[]>>();
 
@@ -174,7 +175,7 @@ export function rederive(
     const fired: string[] = [];
     if (!sameTree(normalize(a, index, fired), b) || !fired.length) continue;
     const weakest = fired
-      .map(n => RULE_EVIDENCE[n]?.strength ?? 'none')
+      .map(n => ALL_EVIDENCE[n]?.strength ?? 'none')
       .reduce((w, s) => (STRENGTHS.indexOf(s) > STRENGTHS.indexOf(w) ? s : w), 'proof');
     return { table: table.name, fired, weakest };
   }
