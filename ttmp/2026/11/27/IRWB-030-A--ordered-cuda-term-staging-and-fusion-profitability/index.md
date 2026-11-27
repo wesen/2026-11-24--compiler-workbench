@@ -1,7 +1,7 @@
 ---
 Title: Ordered CUDA term staging and fusion profitability
 Ticket: IRWB-030-A
-Status: active
+Status: complete
 Topics:
     - tensor
     - gpu
@@ -12,7 +12,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T01:22:32.252649366-05:00
+LastUpdated: 2026-11-27T01:36:41.187678648-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -21,12 +21,13 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Stage 3b adds ordered CUDA term staging and a measured IR-based fusion policy.
 
 ## Key Links
 
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
+- [Design](design-doc/01-ordered-terms-and-fusion-selection.md)
+- [Final report](reference/02-final-report.md)
+- [Implementation diary](reference/01-implementation-diary.md)
 
 ## Status
 
@@ -48,7 +49,7 @@ See [changelog.md](./changelog.md) for recent changes and decisions.
 
 ## Structure
 
-- design/ - Architecture and design documents
+- design-doc/ - Architecture and design documents
 - reference/ - Prompt packs, API contracts, context summaries
 - playbooks/ - Command sequences and test procedures
 - scripts/ - Temporary code and tooling

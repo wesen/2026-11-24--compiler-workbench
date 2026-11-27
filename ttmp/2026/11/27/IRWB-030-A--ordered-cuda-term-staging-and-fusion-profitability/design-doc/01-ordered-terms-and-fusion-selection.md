@@ -38,3 +38,7 @@ Verify both routes against the existing contract and use targeted cases for orde
 ## Later
 
 Reassociated folds, contraction tiling, FMA, tensor cores, approximate intrinsics, streaming attention and autotuning are outside the requested stage. Correspondence entity validation is assigned to another ticket.
+
+## As built
+
+The static rule leaves reduction-free block groups on the element grid. It also leaves costly per-element reductions and costly row-scalar reductions whose terms cannot be staged on the element grid. Thread-mode joins continue to use that grid. In inside attention the two outer contractions stay separate, and the three middle statements share one block kernel. The report gives the supporting timing comparisons and the opportunities the static rule leaves unused.
