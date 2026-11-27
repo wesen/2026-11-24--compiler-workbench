@@ -1,0 +1,1002 @@
+{
+ "across-calls": {
+  "r0": {
+   "n": 660,
+   "limited": 0,
+   "bytes": 200
+  },
+  "O2": {
+   "n": 640,
+   "limited": 0,
+   "bytes": 192
+  },
+  "speed": {
+   "n": 270,
+   "limited": 0,
+   "bytes": 108
+  },
+  "reference": {
+   "n": 700
+  }
+ },
+ "algebra": {
+  "r0": {
+   "n": 100,
+   "limited": 0,
+   "bytes": 40
+  },
+  "O2": {
+   "n": 20,
+   "limited": 0,
+   "bytes": 8
+  },
+  "speed": {
+   "n": 20,
+   "limited": 0,
+   "bytes": 8
+  },
+  "reference": {
+   "n": 170
+  }
+ },
+ "blend": {
+  "r0": {
+   "n": 2255,
+   "limited": 0,
+   "bytes": 96
+  },
+  "O2": {
+   "n": 1925,
+   "limited": 0,
+   "bytes": 88
+  },
+  "speed": {
+   "n": 1915,
+   "limited": 0,
+   "bytes": 92
+  },
+  "reference": {
+   "n": 1715
+  }
+ },
+ "bounds-lab": {
+  "r0": {
+   "n": 5923,
+   "limited": 0,
+   "bytes": 316
+  },
+  "O2": {
+   "n": 5333,
+   "limited": 0,
+   "bytes": 280
+  },
+  "speed": {
+   "n": 5012,
+   "limited": 0,
+   "bytes": 296
+  },
+  "reference": {
+   "n": 4234
+  }
+ },
+ "bounds-offset": {
+  "r0": {
+   "n": 1364,
+   "limited": 0,
+   "bytes": 100
+  },
+  "O2": {
+   "n": 1364,
+   "limited": 0,
+   "bytes": 100
+  },
+  "speed": {
+   "n": 1355,
+   "limited": 0,
+   "bytes": 112
+  },
+  "reference": {
+   "n": 894
+  }
+ },
+ "bounds-param": {
+  "r0": {
+   "n": 502,
+   "limited": 0,
+   "bytes": 60
+  },
+  "O2": {
+   "n": 502,
+   "limited": 0,
+   "bytes": 60
+  },
+  "speed": {
+   "n": 499,
+   "limited": 0,
+   "bytes": 64
+  },
+  "reference": {
+   "n": 426
+  }
+ },
+ "bounds-two": {
+  "r0": {
+   "n": 910,
+   "limited": 0,
+   "bytes": 96
+  },
+  "O2": {
+   "n": 810,
+   "limited": 0,
+   "bytes": 84
+  },
+  "speed": {
+   "n": 756,
+   "limited": 0,
+   "bytes": 88
+  },
+  "reference": {
+   "n": 675
+  }
+ },
+ "branches": {
+  "r0": {
+   "n": 165,
+   "limited": 0,
+   "bytes": 116
+  },
+  "O2": {
+   "n": 139,
+   "limited": 0,
+   "bytes": 104
+  },
+  "speed": {
+   "n": 139,
+   "limited": 0,
+   "bytes": 104
+  },
+  "reference": {
+   "n": 211
+  }
+ },
+ "bytecode-vm": {
+  "r0": {
+   "n": 39954,
+   "limited": 0,
+   "bytes": 848
+  },
+  "O2": {
+   "n": 32295,
+   "limited": 0,
+   "bytes": 776
+  },
+  "speed": {
+   "n": 32295,
+   "limited": 0,
+   "bytes": 776
+  },
+  "reference": {
+   "n": 28889
+  }
+ },
+ "call-chain": {
+  "r0": {
+   "n": 1050,
+   "limited": 0,
+   "bytes": 172
+  },
+  "O2": {
+   "n": 1050,
+   "limited": 0,
+   "bytes": 172
+  },
+  "speed": {
+   "n": 350,
+   "limited": 0,
+   "bytes": 140
+  },
+  "reference": {
+   "n": 1120
+  }
+ },
+ "calls": {
+  "r0": {
+   "n": 651,
+   "limited": 0,
+   "bytes": 212
+  },
+  "O2": {
+   "n": 651,
+   "limited": 0,
+   "bytes": 212
+  },
+  "speed": {
+   "n": 288,
+   "limited": 0,
+   "bytes": 136
+  },
+  "reference": {
+   "n": 840
+  }
+ },
+ "checksum": {
+  "r0": {
+   "n": 1710,
+   "limited": 0,
+   "bytes": 64
+  },
+  "O2": {
+   "n": 1410,
+   "limited": 0,
+   "bytes": 52
+  },
+  "speed": {
+   "n": 1251,
+   "limited": 0,
+   "bytes": 56
+  },
+  "reference": {
+   "n": 1170
+  }
+ },
+ "chess-search": {
+  "r0": {
+   "n": 432856,
+   "limited": 0,
+   "bytes": 13476
+  },
+  "O2": {
+   "n": 423077,
+   "limited": 0,
+   "bytes": 13076
+  },
+  "speed": {
+   "n": 327316,
+   "limited": 0,
+   "bytes": 25128
+  },
+  "reference": {
+   "n": 334902
+  }
+ },
+ "collatz": {
+  "r0": {
+   "n": 7461,
+   "limited": 0,
+   "bytes": 88
+  },
+  "O2": {
+   "n": 7461,
+   "limited": 0,
+   "bytes": 88
+  },
+  "speed": {
+   "n": 6955,
+   "limited": 0,
+   "bytes": 96
+  },
+  "reference": {
+   "n": 7016
+  }
+ },
+ "constants": {
+  "r0": {
+   "n": 100,
+   "limited": 0,
+   "bytes": 40
+  },
+  "O2": {
+   "n": 70,
+   "limited": 0,
+   "bytes": 28
+  },
+  "speed": {
+   "n": 70,
+   "limited": 0,
+   "bytes": 28
+  },
+  "reference": {
+   "n": 160
+  }
+ },
+ "dead-code": {
+  "r0": {
+   "n": 110,
+   "limited": 0,
+   "bytes": 60
+  },
+  "O2": {
+   "n": 30,
+   "limited": 0,
+   "bytes": 12
+  },
+  "speed": {
+   "n": 30,
+   "limited": 0,
+   "bytes": 12
+  },
+  "reference": {
+   "n": 200
+  }
+ },
+ "diagnostics": {
+  "r0": {
+   "n": 30,
+   "limited": 0,
+   "bytes": 12
+  },
+  "O2": {
+   "n": 30,
+   "limited": 0,
+   "bytes": 12
+  },
+  "speed": {
+   "n": 30,
+   "limited": 0,
+   "bytes": 12
+  },
+  "reference": {
+   "n": 90
+  }
+ },
+ "distinct": {
+  "r0": {
+   "n": 340,
+   "limited": 0,
+   "bytes": 112
+  },
+  "O2": {
+   "n": 340,
+   "limited": 0,
+   "bytes": 112
+  },
+  "speed": {
+   "n": 80,
+   "limited": 0,
+   "bytes": 32
+  },
+  "reference": {
+   "n": 700
+  }
+ },
+ "div-checks": {
+  "r0": {
+   "n": 172,
+   "limited": 0,
+   "bytes": 92
+  },
+  "O2": {
+   "n": 162,
+   "limited": 0,
+   "bytes": 88
+  },
+  "speed": {
+   "n": 162,
+   "limited": 0,
+   "bytes": 88
+  },
+  "reference": {
+   "n": 308
+  }
+ },
+ "div-magic": {
+  "r0": {
+   "n": 729,
+   "limited": 0,
+   "bytes": 120
+  },
+  "O2": {
+   "n": 769,
+   "limited": 0,
+   "bytes": 136
+  },
+  "speed": {
+   "n": 759,
+   "limited": 0,
+   "bytes": 140
+  },
+  "reference": {
+   "n": 807
+  }
+ },
+ "early-exit": {
+  "r0": {
+   "n": 761,
+   "limited": 0,
+   "bytes": 72
+  },
+  "O2": {
+   "n": 631,
+   "limited": 0,
+   "bytes": 60
+  },
+  "speed": {
+   "n": 564,
+   "limited": 0,
+   "bytes": 64
+  },
+  "reference": {
+   "n": 575
+  }
+ },
+ "f32-dsp": {
+  "r0": {
+   "n": 49706,
+   "limited": 0,
+   "bytes": 1448
+  },
+  "O2": {
+   "n": 49030,
+   "limited": 0,
+   "bytes": 1444
+  },
+  "speed": {
+   "n": 46361,
+   "limited": 0,
+   "bytes": 1324
+  },
+  "reference": {
+   "n": 40740
+  }
+ },
+ "first-steps": {
+  "r0": {
+   "n": 280,
+   "limited": 0,
+   "bytes": 72
+  },
+  "O2": {
+   "n": 220,
+   "limited": 0,
+   "bytes": 64
+  },
+  "speed": {
+   "n": 80,
+   "limited": 0,
+   "bytes": 32
+  },
+  "reference": {
+   "n": 500
+  }
+ },
+ "fixed-point": {
+  "r0": {
+   "n": 429,
+   "limited": 0,
+   "bytes": 128
+  },
+  "O2": {
+   "n": 411,
+   "limited": 0,
+   "bytes": 128
+  },
+  "speed": {
+   "n": 251,
+   "limited": 0,
+   "bytes": 124
+  },
+  "reference": {
+   "n": 647
+  }
+ },
+ "fragments": {
+  "r0": {
+   "n": 2697,
+   "limited": 0,
+   "bytes": 96
+  },
+  "O2": {
+   "n": 2299,
+   "limited": 0,
+   "bytes": 88
+  },
+  "speed": {
+   "n": 2289,
+   "limited": 0,
+   "bytes": 92
+  },
+  "reference": {
+   "n": 2021
+  }
+ },
+ "gcd": {
+  "r0": {
+   "n": 324,
+   "limited": 0,
+   "bytes": 36
+  },
+  "O2": {
+   "n": 324,
+   "limited": 0,
+   "bytes": 36
+  },
+  "speed": {
+   "n": 314,
+   "limited": 0,
+   "bytes": 40
+  },
+  "reference": {
+   "n": 365
+  }
+ },
+ "heat-lab": {
+  "r0": {
+   "n": 8832,
+   "limited": 0,
+   "bytes": 240
+  },
+  "O2": {
+   "n": 8832,
+   "limited": 0,
+   "bytes": 240
+  },
+  "speed": {
+   "n": 8664,
+   "limited": 0,
+   "bytes": 252
+  },
+  "reference": {
+   "n": 6758
+  }
+ },
+ "histogram": {
+  "r0": {
+   "n": 2416,
+   "limited": 0,
+   "bytes": 188
+  },
+  "O2": {
+   "n": 2292,
+   "limited": 0,
+   "bytes": 176
+  },
+  "speed": {
+   "n": 2222,
+   "limited": 0,
+   "bytes": 180
+  },
+  "reference": {
+   "n": 2036
+  }
+ },
+ "licm-nested": {
+  "r0": {
+   "n": 2677,
+   "limited": 0,
+   "bytes": 68
+  },
+  "O2": {
+   "n": 1678,
+   "limited": 0,
+   "bytes": 68
+  },
+  "speed": {
+   "n": 1631,
+   "limited": 0,
+   "bytes": 76
+  },
+  "reference": {
+   "n": 2426
+  }
+ },
+ "licm-traps": {
+  "r0": {
+   "n": 153,
+   "limited": 0,
+   "bytes": 68
+  },
+  "O2": {
+   "n": 153,
+   "limited": 0,
+   "bytes": 68
+  },
+  "speed": {
+   "n": 149,
+   "limited": 0,
+   "bytes": 72
+  },
+  "reference": {
+   "n": 196
+  }
+ },
+ "lz-roundtrip": {
+  "r0": {
+   "n": 33646,
+   "limited": 0,
+   "bytes": 1260
+  },
+  "O2": {
+   "n": 34551,
+   "limited": 0,
+   "bytes": 1300
+  },
+  "speed": {
+   "n": 28745,
+   "limited": 0,
+   "bytes": 1372
+  },
+  "reference": {
+   "n": 28499
+  }
+ },
+ "match-enum": {
+  "r0": {
+   "n": 282,
+   "limited": 0,
+   "bytes": 176
+  },
+  "O2": {
+   "n": 251,
+   "limited": 0,
+   "bytes": 156
+  },
+  "speed": {
+   "n": 251,
+   "limited": 0,
+   "bytes": 156
+  },
+  "reference": {
+   "n": 396
+  }
+ },
+ "my-analysis": {
+  "r0": {
+   "n": 200975,
+   "limited": 1,
+   "bytes": 52
+  },
+  "O2": {
+   "n": 200975,
+   "limited": 1,
+   "bytes": 52
+  },
+  "speed": {
+   "n": 200966,
+   "limited": 1,
+   "bytes": 68
+  },
+  "reference": {
+   "n": 200696
+  }
+ },
+ "my-first-pass": {
+  "r0": {
+   "n": 60,
+   "limited": 0,
+   "bytes": 24
+  },
+  "O2": {
+   "n": 50,
+   "limited": 0,
+   "bytes": 20
+  },
+  "speed": {
+   "n": 50,
+   "limited": 0,
+   "bytes": 20
+  },
+  "reference": {
+   "n": 120
+  }
+ },
+ "nested-loops": {
+  "r0": {
+   "n": 2634,
+   "limited": 0,
+   "bytes": 60
+  },
+  "O2": {
+   "n": 2342,
+   "limited": 0,
+   "bytes": 60
+  },
+  "speed": {
+   "n": 2289,
+   "limited": 0,
+   "bytes": 68
+  },
+  "reference": {
+   "n": 2312
+  }
+ },
+ "orders": {
+  "r0": {
+   "n": 1350,
+   "limited": 0,
+   "bytes": 156
+  },
+  "O2": {
+   "n": 1194,
+   "limited": 0,
+   "bytes": 132
+  },
+  "speed": {
+   "n": 1185,
+   "limited": 0,
+   "bytes": 136
+  },
+  "reference": {
+   "n": 1351
+  }
+ },
+ "params-demo": {
+  "r0": {
+   "n": 2697,
+   "limited": 0,
+   "bytes": 96
+  },
+  "O2": {
+   "n": 2299,
+   "limited": 0,
+   "bytes": 88
+  },
+  "speed": {
+   "n": 2289,
+   "limited": 0,
+   "bytes": 92
+  },
+  "reference": {
+   "n": 2021
+  }
+ },
+ "pressure": {
+  "r0": {
+   "n": 280,
+   "limited": 0,
+   "bytes": 112
+  },
+  "O2": {
+   "n": 240,
+   "limited": 0,
+   "bytes": 96
+  },
+  "speed": {
+   "n": 240,
+   "limited": 0,
+   "bytes": 96
+  },
+  "reference": {
+   "n": 490
+  }
+ },
+ "ramp": {
+  "r0": {
+   "n": 1180,
+   "limited": 0,
+   "bytes": 88
+  },
+  "O2": {
+   "n": 1040,
+   "limited": 0,
+   "bytes": 80
+  },
+  "speed": {
+   "n": 962,
+   "limited": 0,
+   "bytes": 84
+  },
+  "reference": {
+   "n": 1120
+  }
+ },
+ "records": {
+  "r0": {
+   "n": 260,
+   "limited": 0,
+   "bytes": 112
+  },
+  "O2": {
+   "n": 260,
+   "limited": 0,
+   "bytes": 112
+  },
+  "speed": {
+   "n": 260,
+   "limited": 0,
+   "bytes": 112
+  },
+  "reference": {
+   "n": 391
+  }
+ },
+ "regalloc-lab": {
+  "r0": {
+   "n": 2614,
+   "limited": 0,
+   "bytes": 348
+  },
+  "O2": {
+   "n": 2614,
+   "limited": 0,
+   "bytes": 348
+  },
+  "speed": {
+   "n": 2051,
+   "limited": 0,
+   "bytes": 260
+  },
+  "reference": {
+   "n": 2028
+  }
+ },
+ "regex-nfa": {
+  "r0": {
+   "n": 41650,
+   "limited": 0,
+   "bytes": 1728
+  },
+  "O2": {
+   "n": 40212,
+   "limited": 0,
+   "bytes": 1760
+  },
+  "speed": {
+   "n": 35638,
+   "limited": 0,
+   "bytes": 1616
+  },
+  "reference": {
+   "n": 34041
+  }
+ },
+ "sha-chacha": {
+  "r0": {
+   "n": 239636,
+   "limited": 0,
+   "bytes": 5864
+  },
+  "O2": {
+   "n": 232820,
+   "limited": 0,
+   "bytes": 5320
+  },
+  "speed": {
+   "n": 125491,
+   "limited": 0,
+   "bytes": 4748
+  },
+  "reference": {
+   "n": 136109
+  }
+ },
+ "sort": {
+  "r0": {
+   "n": 5043,
+   "limited": 0,
+   "bytes": 240
+  },
+  "O2": {
+   "n": 5043,
+   "limited": 0,
+   "bytes": 240
+  },
+  "speed": {
+   "n": 4950,
+   "limited": 0,
+   "bytes": 252
+  },
+  "reference": {
+   "n": 3898
+  }
+ },
+ "start-here": {
+  "r0": {
+   "n": 4385,
+   "limited": 0,
+   "bytes": 332
+  },
+  "O2": {
+   "n": 3871,
+   "limited": 0,
+   "bytes": 312
+  },
+  "speed": {
+   "n": 2932,
+   "limited": 0,
+   "bytes": 244
+  },
+  "reference": {
+   "n": 3167
+  }
+ },
+ "strength": {
+  "r0": {
+   "n": 2220,
+   "limited": 0,
+   "bytes": 132
+  },
+  "O2": {
+   "n": 1938,
+   "limited": 0,
+   "bytes": 116
+  },
+  "speed": {
+   "n": 1793,
+   "limited": 0,
+   "bytes": 120
+  },
+  "reference": {
+   "n": 1889
+  }
+ },
+ "strings": {
+  "r0": {
+   "n": 11895,
+   "limited": 0,
+   "bytes": 252
+  },
+  "O2": {
+   "n": 10833,
+   "limited": 0,
+   "bytes": 228
+  },
+  "speed": {
+   "n": 10283,
+   "limited": 0,
+   "bytes": 236
+  },
+  "reference": {
+   "n": 9392
+  }
+ },
+ "ui-gallery": {
+  "r0": {
+   "n": 1214,
+   "limited": 0,
+   "bytes": 188
+  },
+  "O2": {
+   "n": 1058,
+   "limited": 0,
+   "bytes": 176
+  },
+  "speed": {
+   "n": 754,
+   "limited": 0,
+   "bytes": 128
+  },
+  "reference": {
+   "n": 825
+  }
+ },
+ "value-numbering": {
+  "r0": {
+   "n": 3721,
+   "limited": 0,
+   "bytes": 104
+  },
+  "O2": {
+   "n": 3082,
+   "limited": 0,
+   "bytes": 92
+  },
+  "speed": {
+   "n": 3073,
+   "limited": 0,
+   "bytes": 96
+  },
+  "reference": {
+   "n": 3771
+  }
+ },
+ "wrong-shift": {
+  "r0": {
+   "n": 1950,
+   "limited": 0,
+   "bytes": 104
+  },
+  "O2": {
+   "n": 1650,
+   "limited": 0,
+   "bytes": 92
+  },
+  "speed": {
+   "n": 1491,
+   "limited": 0,
+   "bytes": 96
+  },
+  "reference": {
+   "n": 1410
+  }
+ }
+}

@@ -1,0 +1,6 @@
+regex-nfa                      8183 r0      6933 speed      6628 reference   regexMatch(/[a-c]*[b-d]*a*d/, "abccabbd")
+lz-roundtrip hash3              800 r0       700 speed       900 reference   hash3: 100 seed-7 cases
+lz-roundtrip compress        163694 r0    136640 speed    137618 reference   compress: 100 seed-7 cases
+lz-roundtrip decompress       27800 r0     24800 speed     22900 reference   decompress: 100 seed-7 cases
+lz-roundtrip roundTrip       185876 r0    156782 speed    156405 reference   roundTrip: 100 seed-7 cases
+lz-roundtrip                 378170 r0    318922 speed    317823 reference   100 seed-7 cases of every function, speed with chains+coalesce+homes
