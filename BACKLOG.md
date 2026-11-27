@@ -160,7 +160,11 @@ T8 (ONNX) is not queued.
   - **The order-preserving steps:** shared-memory tiling, register tiling (each thread an 8×8 patch), vector and coalesced loads, a transposed A tile, double buffering, and per-shape tile sizes. All keep each output's additions in the order k = 0, 1, … and so stay bit-exact. Expert hand-written SGEMMs reach 80–95% of cuBLAS with these steps alone.
   - **The ceiling:** the f32 meaning rounds the product and the sum separately, so an exact kernel issues two instructions per multiply-add. Its ceiling is about half of cuBLAS on large matrices, around 9.6 TFLOP/s; T11 covers the rest.
   - **What cuBLAS adds beyond these steps:** a kernel chosen per shape from many variants, plus low-level tuning (register allocation, instruction scheduling, software pipelining). CUTLASS shows the approach in the open: templates over tile shapes and pipeline depth.
-- **Hypothesis:** an exact tiled kernel matches cuBLAS at 512³, where cuBLAS reaches only 8.15 TFLOP/s. A hand-written probe can test this before the stage is briefed.
+- **Hypothesis, refuted by R2:** that an exact tiled kernel matches cuBLAS at 512³.
+  - Three R2 cells measured an exact tiled 512³ matmul independently, all bit-identical: Sol 0.0537 ms (reproduced), Fable 0.0576 ms, Opus 1.8–2.2× cuBLAS from 512³ to 4096³. That is 3.9× faster than stage 2, but 1.6–1.75× slower than cuBLAS (0.033 ms).
+  - The arithmetic ceiling, measured by Opus: FFMA 26.98 TFLOP/s; FMUL+FADD (the Tix meaning) 14.39.
+  - Opus's tuned GEMM reached 10.32 TFLOP/s exact, against 14.92 for the same code with an FMA fold.
+  - Fable and Opus found independently that cuBLAS at 4096³ equals a sequential FMA fold bit for bit, and that cuBLAS is not batch invariant (Opus).
 - **What we don't know:**
   - how close a _generated_ exact kernel gets;
   - what the schedule IR must express;
@@ -383,6 +387,13 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F20: `tools/cuda-remote.mjs` cannot link libraries** _(ready, S)_.
   - _Known:_ the cuBLAS baseline needed `-lcublas`, so I ran it over `ssh` directly, outside the tool's lock and cache.
   - _Needed:_ a `--link` option that is part of the build key, so baselines go through the tool.
+- **F21: the stage-1 meaning gate cannot tell some shape symbols apart** _(ready, S; found by R2's Fable cell, root cause confirmed)_.
+  - _Known:_ `cases()` in `src/tensor/contract.ts:25-36` sorts the shape symbols. Its assignments are all-equal (1, 3, 4, 7) or "mixed", which cycles `[3, 5, 7][i % 3]`, so symbols three apart in sorted order are always equal. The zero cases that would separate them are added only for the CUDA contract.
+    - For `mlp` ([D, H, N, O]), D = O in every case. A mutant that sums the first contraction over O instead of D passes `meaningGate` (reproduced with `IRWB-023-D/scripts/05-normal-form-proof.mjs`).
+  - _Needed:_ pairwise-distinct sizes in at least one assignment, and the zero cases in the meaning gate too, plus a test with this mutant.
+- **F22: the tolerance's absolute term accepts anything at small scale** _(ready, S; found by R2's Opus cell)_.
+  - _Known:_ |c − r| ≤ 2e-6 + 2e-5·|r| accepts an all-zero output whenever the results are below about 2e-6 (shown at an input scale of 1e-7). It is also vacuous for inputs scaled by 2⁻²⁰.
+  - _Needed:_ a scale-covariant relation, part of F15.
 
 ## 4. Agent methodology
 

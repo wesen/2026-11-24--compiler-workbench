@@ -728,3 +728,33 @@ I wins on 3 and 4. Its *design* was the worst-scored in stage 2 (over-engineerin
   
   Both may read the r2-base worktree to check claims about the code, and neither runs GPU jobs.
 - **Scorecard:** the R2 cells show as done, with minutes and design words. The check passes.
+
+## Step 29: the Claude judge's scores; the Codex judge stalled on stdin; four load-bearing claims reproduced
+
+- **The Claude judge** (Opus, 310K subagent tokens, 14 minutes; `results/r2-judges/claude-opus.md`). Mapped through the blind key:
+
+  | model | overall | ingenuity | creativity | depth | evidence | correctness | grounding | padding |
+  |---|---|---|---|---|---|---|---|---|
+  | **Opus** | **9** | 8 | 7 | 8 | 9 | 7 | 9 | 3 |
+  | Fable | 8 | 8 | 8 | 7 | 8 | 7 | 8 | 2 |
+  | Astra | 7 | 8 | 7 | 8 | 9 | 9 | 8 | 4 |
+  | Sol | 6 | 6 | 5 | 7 | 7 | 9 | 8 | 5 |
+
+  Padding is lower-is-better.
+  - The two Claude cells rank first and second under a Claude judge. That is the self-preference the second judge tests, so these scores stay provisional.
+  - The judge reproduced the local experiments it could, and found errors in Fable's and Opus's documents:
+    - Opus wrote "no schedule can parallelize the fold", which is refuted by Fable and Astra, who both built a bit-identical parallel fold.
+    - Two documents misquote Kapre and DeHon.
+    - Several documents miss KLEE-FP and KLEE-CL as prior art.
+    - Fable's 33× is measured against an unstaged one-thread baseline.
+- **The Codex judge** sat for 14 minutes on "Reading additional input from stdin…". `codex exec` reads extra prompt input from a non-terminal stdin, and a command run inside a backgrounded shell inherits an open one. The kit's launcher escapes this because its jobs run with `&`, which gives them /dev/null. I stopped it and relaunched with `< /dev/null`. This goes in the playbook.
+- **Four load-bearing claims, reproduced by me** (`results/r2-verify/`):
+  - **Fable: the merged stage-1 gate accepts a wrong mutant.** Rerunning `05-normal-form-proof.mjs` gives `sampledGateAccepted: true` for `mlp` summed over O instead of D, with differing outputs at D = 4, O = 2.
+    - Root cause, read in `src/tensor/contract.ts:25-36`: sorted symbols with sizes cycling [3, 5, 7], so D = O in every case. Logged as BACKLOG F21. Opus's absolute-tolerance finding is F22.
+  - **Opus: exhaustively verified fast `exp` and `tanh`.** Rerun on the GB10 from a copy: 0 mismatches over 4,294,967,296 inputs for each (0.59 s and 0.46 s). The reference is stage 2's double routine, which step 23 proved equal to the f32 meaning.
+  - **Astra: exact attention.** Its benchmark rerun on the GB10 gives medians of 1.050 ms (generated) against 0.760 ms (three kernels), 1.38× faster. The GPU output hash `1a7e0197…` equals the Node interpreter's, which I recomputed myself (38 s).
+  - **Sol: exact tiling.** Its benchmark rerun gives the 512³ exact tile at 0.0537 ms against 0.2092 ms for the ordered kernel (3.9×), all 262,144 words equal. The guarded INT8 route is also exact but slower than the FP32 tile.
+- **Convergent findings across cells** (BACKLOG T6 updated):
+  - An exact tiled 512³ matmul takes 0.054–0.058 ms in three independent cells, 1.6–1.75× cuBLAS. My hypothesis of exact parity with cuBLAS at 512³ is refuted.
+  - cuBLAS at 4096³ equals a sequential FMA fold bit for bit (Fable and Opus).
+  - A parallel fold that stays bit-identical to the sequential one (Fable's parity transducer; Astra's even-translation certificate) was found by two cells. The judge found no published version.
