@@ -1,0 +1,240 @@
+{
+  "partA": [
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        4
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.0066,
+      "budgetFractionSplit": 0.0066,
+      "elementsChangedBySplit": 0
+    },
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        8
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.0055,
+      "budgetFractionSplit": 0.0055,
+      "elementsChangedBySplit": 4
+    },
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        16
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.0285,
+      "budgetFractionSplit": 0.0241,
+      "elementsChangedBySplit": 5
+    },
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        64
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.0467,
+      "budgetFractionSplit": 0.1753,
+      "elementsChangedBySplit": 7
+    },
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        256
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.0176,
+      "budgetFractionSplit": 0.0217,
+      "elementsChangedBySplit": 7
+    },
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        1024
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.0742,
+      "budgetFractionSplit": 0.0648,
+      "elementsChangedBySplit": 7
+    },
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        4096
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.6404,
+      "budgetFractionSplit": 0.1411,
+      "elementsChangedBySplit": 8
+    },
+    {
+      "fn": "reduce",
+      "shape": [
+        8,
+        16384
+      ],
+      "elements": 8,
+      "budgetFractionSequential": 0.1726,
+      "budgetFractionSplit": 0.505,
+      "elementsChangedBySplit": 8
+    },
+    {
+      "fn": "matmul",
+      "shape": [
+        64,
+        64,
+        64
+      ],
+      "elements": 4096,
+      "budgetFractionSequential": 0.2684,
+      "budgetFractionSplit": 0.2287,
+      "elementsChangedBySplit": 3371
+    },
+    {
+      "fn": "matmul",
+      "shape": [
+        64,
+        256,
+        64
+      ],
+      "elements": 4096,
+      "budgetFractionSequential": 1.6197,
+      "budgetFractionSplit": 0.7319,
+      "elementsChangedBySplit": 3697
+    },
+    {
+      "fn": "matmul",
+      "shape": [
+        64,
+        512,
+        64
+      ],
+      "elements": 4096,
+      "budgetFractionSequential": 1.704,
+      "budgetFractionSplit": 1.2404,
+      "elementsChangedBySplit": 3858
+    },
+    {
+      "fn": "matmul",
+      "shape": [
+        64,
+        1024,
+        64
+      ],
+      "elements": 4096,
+      "budgetFractionSequential": 3.6494,
+      "budgetFractionSplit": 2.1131,
+      "elementsChangedBySplit": 3897
+    },
+    {
+      "fn": "softmax",
+      "shape": [
+        8,
+        128
+      ],
+      "elements": 1024,
+      "budgetFractionSequential": 0.0091,
+      "budgetFractionSplit": 0.0039,
+      "elementsChangedBySplit": 605
+    },
+    {
+      "fn": "softmax",
+      "shape": [
+        8,
+        1024
+      ],
+      "elements": 8192,
+      "budgetFractionSequential": 0.0145,
+      "budgetFractionSplit": 0.0026,
+      "elementsChangedBySplit": 8192
+    },
+    {
+      "fn": "softmax",
+      "shape": [
+        8,
+        4096
+      ],
+      "elements": 32768,
+      "budgetFractionSequential": 0.0089,
+      "budgetFractionSplit": 0.0029,
+      "elementsChangedBySplit": 32768
+    },
+    {
+      "fn": "softmax",
+      "shape": [
+        8,
+        16384
+      ],
+      "elements": 131072,
+      "budgetFractionSequential": 0.0086,
+      "budgetFractionSplit": 0.0018,
+      "elementsChangedBySplit": 131072
+    }
+  ],
+  "partB": {
+    "reduce": {
+      "honestAccepted": true,
+      "mutantAccepted": false,
+      "mutantReason": "at [0] expected 0.5052213072776794, got 0, allowed 0.00001210442614555359",
+      "mutantBudgetFractionAtK9": 4674.558
+    },
+    "softmax": {
+      "honestAccepted": true,
+      "mutantAccepted": false,
+      "mutantReason": "at [0,0] expected 1, got Infinity, allowed 0.000022000000000000003",
+      "mutantBudgetFractionAtK9": 2138.221
+    }
+  },
+  "partC": [
+    {
+      "K": 1,
+      "microsecondsPerCase": 6.7463
+    },
+    {
+      "K": 3,
+      "microsecondsPerCase": 11.70515
+    },
+    {
+      "K": 4,
+      "microsecondsPerCase": 13.631
+    },
+    {
+      "K": 7,
+      "microsecondsPerCase": 26.20245
+    },
+    {
+      "K": 8,
+      "microsecondsPerCase": 20.8879
+    },
+    {
+      "K": 9,
+      "microsecondsPerCase": 27.4269
+    },
+    {
+      "K": 16,
+      "microsecondsPerCase": 68.3994
+    },
+    {
+      "K": 64,
+      "microsecondsPerCase": 154.6302
+    },
+    {
+      "K": 65,
+      "microsecondsPerCase": 146.9875
+    },
+    {
+      "K": 1024,
+      "microsecondsPerCase": 1948.4689
+    }
+  ]
+}

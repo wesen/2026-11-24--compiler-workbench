@@ -1,0 +1,137 @@
+prepared /home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r2b-ds-x-irwb-023-f/ttmp/2026/11/26/IRWB-023-F--what-compiler-work-would-make-tix-best-in-class/prototypes/work/
+{
+  "host": "manuel@bling",
+  "problems": {
+    "matmul": {
+      "emittedCompileMs": 3,
+      "emittedRunMs": 292,
+      "emittedGpuMs": 0.2202560007572174
+    },
+    "softmax": {
+      "emittedCompileMs": 3,
+      "emittedRunMs": 314,
+      "emittedGpuMs": 0.8101119995117188
+    }
+  },
+  "probeCompileMs": 1500,
+  "probeRunMs": 406,
+  "kernels": {
+    "mm_v0": {
+      "ms": 0.206848,
+      "tflops": 1.2977,
+      "gbps": 0,
+      "differ": 0,
+      "total": 262144,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "mm_t4": {
+      "ms": 0.111744,
+      "tflops": 2.4022,
+      "gbps": 0,
+      "differ": 0,
+      "total": 262144,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "mm_t8": {
+      "ms": 0.167936,
+      "tflops": 1.5984,
+      "gbps": 0,
+      "differ": 0,
+      "total": 262144,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "mm_t4s": {
+      "ms": 0.102688,
+      "tflops": 2.6141,
+      "gbps": 0,
+      "differ": 0,
+      "total": 262144,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "mm_t8s": {
+      "ms": 0.13744,
+      "tflops": 1.9531,
+      "gbps": 0,
+      "differ": 0,
+      "total": 262144,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "mm_r4": {
+      "ms": 0.0904,
+      "tflops": 2.9694,
+      "gbps": 0,
+      "differ": 245020,
+      "total": 262144,
+      "max_ulp": 1000000000,
+      "max_abs": 0.0000343322754
+    },
+    "sm_s0": {
+      "ms": 0.812768,
+      "tflops": 0,
+      "gbps": 41.28,
+      "differ": 0,
+      "total": 4194304,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "sm_row": {
+      "ms": 1.344608,
+      "tflops": 0,
+      "gbps": 24.95,
+      "differ": 0,
+      "total": 4194304,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "sm_row256": {
+      "ms": 2.376064,
+      "tflops": 0,
+      "gbps": 14.12,
+      "differ": 0,
+      "total": 4194304,
+      "max_ulp": 0,
+      "max_abs": 0
+    },
+    "sm_block": {
+      "ms": 0.713056,
+      "tflops": 0,
+      "gbps": 47.06,
+      "differ": 4078860,
+      "total": 4194304,
+      "max_ulp": 33,
+      "max_abs": 5.40167093e-8
+    }
+  },
+  "crossChecks": {
+    "probeV0VsEmittedMatmul": {
+      "differ": 0,
+      "total": 262144,
+      "maxUlp": 0
+    },
+    "tile4x4VsEmitted": {
+      "differ": 0,
+      "total": 262144,
+      "maxUlp": 0
+    },
+    "reassociatedR4VsEmitted": {
+      "differ": 245020,
+      "total": 262144,
+      "maxUlp": 2160590848
+    },
+    "probeS0VsEmittedSoftmax": {
+      "differ": 0,
+      "total": 4194304,
+      "maxUlp": 0
+    },
+    "fusedRowVsEmitted": {
+      "differ": 0,
+      "total": 4194304,
+      "maxUlp": 0
+    }
+  }
+}

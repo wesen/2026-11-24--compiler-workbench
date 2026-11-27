@@ -1,0 +1,20 @@
+{
+  "mutation": "k loop bound shortened by one when the extent is at least 8",
+  "sampledVerdictAccepted": true,
+  "relation": "tolerance",
+  "atExtent16": {
+    "reference": [
+      168,
+      185,
+      190,
+      199
+    ],
+    "mutant": [
+      166,
+      177,
+      186,
+      183
+    ],
+    "worstBudgetFraction": 4018.08
+  }
+}

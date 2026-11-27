@@ -1,0 +1,23 @@
+compileMs 12 runMs 1408 stderr 
+{
+  "softmax": {"rows": 4096, "cols": 1024},
+  "kernels": {
+    "s0_four_kernels_double": {"ms": 0.790048, "fallbacks": 0},
+    "fused_row_double": {"ms": 1.340768, "fallbacks": 0},
+    "fused_row_expf": {"ms": 0.483808, "fallbacks": 0},
+    "fused_row_ziv": {"ms": 1.741120, "fallbacks": 67108864},
+    "block_row_double": {"ms": 0.713216, "fallbacks": 0},
+    "block_row_ziv": {"ms": 0.946336, "fallbacks": 67108864}
+  },
+  "diffAgainstBaseline": {
+    "s0_four_kernels_double": {"differ": 0, "total": 4194304},
+    "fused_row_double": {"differ": 0, "total": 4194304},
+    "fused_row_expf": {"differ": 1573649, "total": 4194304},
+    "fused_row_ziv": {"differ": 0, "total": 4194304},
+    "block_row_double": {"differ": 4078860, "total": 4194304},
+    "block_row_ziv": {"differ": 4078860, "total": 4194304}
+  },
+  "sweep": {"sampled": 2147483648, "stride": 4, "ms": 506.4, "nanInputs": 8388604, "expfMismatch": 79955956, "tanhfMismatch": 19753052, "expZivMismatch": 1262, "tanhZivMismatch": 0, "expFallbacks": 1119107042, "tanhFallbacks": 2139095044, "expfMaxRelError": 1.010101e-02, "tanhfMaxRelError": 2.226031e-07}
+}
+
+{"fusedRowZivVsReference":{"differ":0,"total":4194304}}
