@@ -1,52 +1,26 @@
 ---
 Title: Attribute and fix the bytecode VM slowdown
 Ticket: IRWB-034-B
-Status: active
+Status: complete
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T09:43:53.039461759-05:00
+LastUpdated: 2026-11-27T10:00:49.818610889-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Attribute and fix the bytecode VM slowdown
 
-## Overview
+The checked LICM pass created a chain of preheaders on VM dispatch backedges. The fix skips headers shared by multiple natural-loop facts. The profiler replays each revision and explains executed RV32 instructions using the existing correspondence chain.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
-
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- typed
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design](design-doc/01-measuring-the-cost-of-each-revision.md)
+- [Final report and per-project counts](analysis/01-instruction-attribution-and-corpus-results.md)
+- [Investigation diary](reference/01-investigation-diary.md)
+- [Reproduction scripts](scripts/)

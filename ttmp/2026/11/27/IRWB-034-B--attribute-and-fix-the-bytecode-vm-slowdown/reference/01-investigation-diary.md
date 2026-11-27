@@ -3,7 +3,8 @@ Title: Investigation diary
 Ticket: IRWB-034-B
 Status: active
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: reference
 Intent: long-term
 Owners: []
@@ -72,3 +73,11 @@ Node reported v24.18.0. The worktree had no installed compiler. `npm ci --offlin
 Script 01 replayed both entries for every published revision. r4 was the first increase. Disabling only LICM gave 6,688 and 5,968 at the end of speed. Zero allocator spills and nine blocks inserted for the same header led to testing control-flow placement directly.
 
 Script 03 joined inserted statements to hot machine words and requested the reverse provenance of a frame-address instruction. The nine loop facts each had a different latch. Splitting one fact's incoming edges makes another latch execute its preheader. A shared-header guard is local to LICM and preserves the existing per-backedge facts consumed by other passes. Review the causal table and limitations in the analysis document.
+
+## Step 3 — Validate the guard and retain the evidence
+
+The baseline profiler and the exact compiler it diagnosed are in 3a4cc49. The guard and compiler tests are in ca9e3cd. The same guard improved regex-nfa as well as the VM. The corpus table, individual PC records and fixture-domain measurements are linked from the report.
+
+One after-run started before TypeScript finished emitting the guard and reproduced the old VM counts. I stopped that session, waited for a successful build, checked that dist contained the guard, then reran the entire measurement script. Only the rerun is retained as after evidence.
+
+The tests cover the accounting identity, both dispatch entries and a positive single-latch hoist with provenance. Check the CFG reasoning in passes.ts, then the gross-versus-net table in the report. Further work, if valuable, is to find profitable hoists over the union of a shared header's latch bodies.

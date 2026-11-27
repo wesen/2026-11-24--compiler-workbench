@@ -1,0 +1,5 @@
+{ entry: 0, cases: 221, minSaved: 18, maxSaved: 990 }
+{ entry: 34, cases: 221, minSaved: 18, maxSaved: 906 }
+O0 2 [ -6, 0 ] instruction limit 200000 reached at 0x1c
+O2 2 [ -6, 0 ] instruction limit 200000 reached at 0x1c
+speed 2 [ -6, 0 ] instruction limit 200000 reached at 0x40

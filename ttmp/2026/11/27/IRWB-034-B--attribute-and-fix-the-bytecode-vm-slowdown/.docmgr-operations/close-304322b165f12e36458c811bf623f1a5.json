@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "0069044c499094d1d86a6e23aa06d50d9277b7d876734e48d2f27ac68ccaf902",
+  "request": {
+    "ticket": "IRWB-034-B",
+    "status": "complete",
+    "intent": "",
+    "entry": "Measured, fixed and verified the shared-header LICM regression. Published the reusable profiler and all 50 project comparisons."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-304322b165f12e36458c811bf623f1a5",
+    "state": "committed",
+    "created_at": "2026-11-27T15:00:49.818747122Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "3d047f71aee26b3eb06e9ce2a468b8340b467c4b2d38ab42fd17c6cb1a94fea9",
+      "index.md": "22fcc78160f96567e239e5ed60480f84d6d816f621cc6151200cbc616d5d6b0e"
+    },
+    "after": {
+      "changelog.md": "f3cfeb8e8e42c825b5d962148b63e22bddbe8b3cecd8dce734f914256d281863",
+      "index.md": "b2b5d3c1180b995238f2c306a0aa77f475bdbb77bc2be9f48712239a2d0b3513"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "3d047f71aee26b3eb06e9ce2a468b8340b467c4b2d38ab42fd17c6cb1a94fea9",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKTWVhc3VyZWQsIGZpeGVkIGFuZCB2ZXJpZmllZCB0aGUgc2hhcmVkLWhlYWRlciBMSUNNIHJlZ3Jlc3Npb24uIFB1Ymxpc2hlZCB0aGUgcmV1c2FibGUgcHJvZmlsZXIgYW5kIGFsbCA1MCBwcm9qZWN0IGNvbXBhcmlzb25zLgo="
+    },
+    {
+      "path": "index.md",
+      "before": "22fcc78160f96567e239e5ed60480f84d6d816f621cc6151200cbc616d5d6b0e",
+      "after": "LS0tClRpdGxlOiBBdHRyaWJ1dGUgYW5kIGZpeCB0aGUgYnl0ZWNvZGUgVk0gc2xvd2Rvd24KVGlja2V0OiBJUldCLTAzNC1CClN0YXR1czogY29tcGxldGUKVG9waWNzOgogICAgLSBjb21waWxlcgogICAgLSBwZXJmb3JtYW5jZQpEb2NUeXBlOiBpbmRleApJbnRlbnQ6IGxvbmctdGVybQpPd25lcnM6IFtdClJlbGF0ZWRGaWxlczogW10KRXh0ZXJuYWxTb3VyY2VzOiBbXQpTdW1tYXJ5OiAiIgpMYXN0VXBkYXRlZDogMjAyNi0xMS0yN1QxMDowMDo0OS44MTg2MTA4ODktMDU6MDAKV2hhdEZvcjogIiIKV2hlblRvVXNlOiAiIgotLS0KCiMgQXR0cmlidXRlIGFuZCBmaXggdGhlIGJ5dGVjb2RlIFZNIHNsb3dkb3duCgpUaGUgY2hlY2tlZCBMSUNNIHBhc3MgY3JlYXRlZCBhIGNoYWluIG9mIHByZWhlYWRlcnMgb24gVk0gZGlzcGF0Y2ggYmFja2VkZ2VzLiBUaGUgZml4IHNraXBzIGhlYWRlcnMgc2hhcmVkIGJ5IG11bHRpcGxlIG5hdHVyYWwtbG9vcCBmYWN0cy4gVGhlIHByb2ZpbGVyIHJlcGxheXMgZWFjaCByZXZpc2lvbiBhbmQgZXhwbGFpbnMgZXhlY3V0ZWQgUlYzMiBpbnN0cnVjdGlvbnMgdXNpbmcgdGhlIGV4aXN0aW5nIGNvcnJlc3BvbmRlbmNlIGNoYWluLgoKLSBbRGVzaWduXShkZXNpZ24tZG9jLzAxLW1lYXN1cmluZy10aGUtY29zdC1vZi1lYWNoLXJldmlzaW9uLm1kKQotIFtGaW5hbCByZXBvcnQgYW5kIHBlci1wcm9qZWN0IGNvdW50c10oYW5hbHlzaXMvMDEtaW5zdHJ1Y3Rpb24tYXR0cmlidXRpb24tYW5kLWNvcnB1cy1yZXN1bHRzLm1kKQotIFtJbnZlc3RpZ2F0aW9uIGRpYXJ5XShyZWZlcmVuY2UvMDEtaW52ZXN0aWdhdGlvbi1kaWFyeS5tZCkKLSBbUmVwcm9kdWN0aW9uIHNjcmlwdHNdKHNjcmlwdHMvKQo="
+    }
+  ]
+}

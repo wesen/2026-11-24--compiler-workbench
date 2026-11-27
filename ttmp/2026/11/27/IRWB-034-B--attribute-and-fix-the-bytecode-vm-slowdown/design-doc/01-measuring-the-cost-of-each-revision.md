@@ -3,7 +3,8 @@ Title: Measuring the cost of each revision
 Ticket: IRWB-034-B
 Status: active
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: design-doc
 Intent: long-term
 Owners: []
