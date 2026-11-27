@@ -1,0 +1,2 @@
+speed                n=12: fib 6382 checksum 5710   n=0: fib 178 checksum 178  saved 10
+speed without licm   n=12: fib 6688 checksum 5968   n=0: fib 148 checksum 148  saved 0

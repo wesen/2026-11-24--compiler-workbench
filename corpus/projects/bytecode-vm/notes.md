@@ -96,14 +96,19 @@ At n = 12 and seed = 8, Fibonacci returns 1,152 and checksum returns
 
 | Fixture | Guest | r0 | speed | Hand-specialized |
 | --- | ---: | ---: | ---: | ---: |
-| Fibonacci | 184 | 7,678 (41.73) | 9,286 (50.47) | 75 (0.41) |
-| Checksum | 160 | 6,874 (42.96) | 8,218 (51.36) | 74 (0.46) |
+| Fibonacci | 184 | 7,678 (41.73) | 6,382 (34.68) | 75 (0.41) |
+| Checksum | 160 | 6,874 (42.96) | 5,710 (35.69) | 74 (0.46) |
 
-The `speed` revision executed more RV32 instructions for both fixtures
-in this comparison. Across the 442 valid calls, the evaluator reached
-at most 4,131 statements at r0 and 5,350 at `speed` for Fibonacci, and
-3,699 at r0 and 4,690 at `speed` for checksum. All finished within the
-20,000-statement pass-check limit.
+Until IRWB-034-F the `speed` revision executed more RV32 instructions
+than r0 (9,286 and 8,218): licm treated the dispatch loop's nine back
+edges as nine loops and put the hoisted frame addresses on every back
+edge. It now treats a head once, and `speed` is faster than r0 on
+every call with n ≥ 1; at n = 0 (four dispatches) the hoisting
+prologue costs 12 more instructions than it saves. Across the 442
+valid calls, the evaluator reached at most 4,131 statements at r0 and
+2,445 at `speed` for Fibonacci, and 3,699 at r0 and 2,193 at `speed`
+for checksum. All finished within the 20,000-statement pass-check
+limit.
 
 Reproduce the measurement with
 `node --test --test-isolation=none tests/typed/bytecode-vm.test.mjs`

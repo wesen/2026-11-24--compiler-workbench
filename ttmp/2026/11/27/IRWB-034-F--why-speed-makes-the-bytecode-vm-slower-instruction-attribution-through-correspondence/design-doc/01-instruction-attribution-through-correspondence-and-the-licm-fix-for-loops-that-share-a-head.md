@@ -192,3 +192,17 @@ recorded as an entry with its reason), that is a Typed change in `revisionCorres
 
 - Missed-optimization reports from provenance (the next stage) on top of the per-instruction rows.
 - Merged natural loops in `typed.loops`, version 2, with the workbench view updated.
+
+## Amendments during implementation
+
+Recorded here rather than rewriting the plan above; the report has the measurements.
+
+- **Step-by-step attribution added** (`attributeSteps`). The whole-chain attribution's per-pass sums did not
+  match the prefix replay (up to 344 instructions moved between two cfg runs), because the earliest-change rule
+  gives a term to the first pass that touched a statement. Applying the same function to each consecutive pair
+  of revisions gives per-step nets that equal the replay by construction. One implementation, two callers.
+- **Tried and not kept: licm hoists each distinct expression once.** The merge alone leaves 15 hoisted copies
+  of two expressions in the VM, each holding a register across the loop (ten callee-saved), so `speed` is slower
+  than r0 at n = 0. Reusing one local per expression shape fixed that and improved five projects, but made
+  `orders` slower under `coalesce: true` (a copy from the shared local stays in the loop). Kept as
+  `scripts/09-licm-hoist-once.patch`; the report has the measurements.

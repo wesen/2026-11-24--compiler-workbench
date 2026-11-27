@@ -1,0 +1,34 @@
+# IRWB-034-F experiment (not kept): licm hoists each distinct invariant expression once per loop. Apply with git apply on top of 73f047c; measured in results/03-after-dedupe.log.
+diff --git a/src/typed/passes.ts b/src/typed/passes.ts
+index 02abe86..acf0230 100644
+--- a/src/typed/passes.ts
++++ b/src/typed/passes.ts
+@@ -499,13 +499,24 @@ export const licm = typedPass({
+         if (v.op === 'get') return !assigned.has(v.imm as number);
+         return v.args.every(inv);
+       };
++      // one local per distinct invariant expression: the same tree used twice in the loop is hoisted once
++      const shape = (id: string): string => {
++        const v = st.get(id) as ValueRec;
++        return JSON.stringify([v.op, v.imm ?? null, v.type ?? 'i32', ...v.args.map(shape)]);
++      };
++      const hoisted = new Map<string, { t: number; set: string }>();
+       const hoist = (id: string): string => {
+         const v = st.get(id) as ValueRec;
+         if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
+-          const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
+-          const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
+-          tx.insert(tx.at.end(pre!), set, { because: [L.id] });
+-          return tx.get(t, { from: id, because: [set] });
++          const k = shape(id);
++          let h = hoisted.get(k);
++          if (!h) {
++            const t = tx.local('inv', { because: [L.id], type: v.type ?? 'i32' });
++            const set = tx.set(t, id, { because: [L.id], note: `hoisted out of ${L.id}` });
++            tx.insert(tx.at.end(pre!), set, { because: [L.id] });
++            hoisted.set(k, (h = { t, set }));
++          }
++          return tx.get(h.t, { from: id, because: [h.set] });
+         }
+         const args = v.args.map(hoist);
+         return args.some((a, i) => a !== v.args[i])

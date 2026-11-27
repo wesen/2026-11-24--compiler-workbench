@@ -1,0 +1,20 @@
+r1 cfg: 1292 -> 1292 (0)
+r2 fold: 1292 -> 1252 (-40)
+r3 simplify: 1252 -> 1232 (-20)
+r4 constprop: 1232 -> 1262 (30)
+r5 simplify: 1262 -> 1262 (0)
+r6 dce: 1262 -> 1242 (-20)
+r7 licm: 1242 -> 1050 (-192)
+     -116       0     116  r7 licm [loop:kernel@bb:kernel.1]  {replace}
+      -38      20      58  r7 licm [loop:kernel@bb:kernel.1, s:kernel.17]  {licm}
+      -38      20      58  r7 licm [loop:kernel@bb:kernel.1, s:kernel.18]  {licm}
+        0      10      10  frame rescale  {}
+        0    1000    1000  unchanged  {}
+       10 slli t2, a2, 4             v:kernel.55,s:kernel.17  r7 licm [loop:kernel@bb:kernel.1, s:kernel.17]
+       10 addi t2, t2, 3             v:kernel.56,s:kernel.17  r7 licm [loop:kernel@bb:kernel.1, s:kernel.17]
+       10 slli t3, a2, 4             v:kernel.58,s:kernel.18  r7 licm [loop:kernel@bb:kernel.1, s:kernel.18]
+       10 addi t3, t3, 3             v:kernel.59,s:kernel.18  r7 licm [loop:kernel@bb:kernel.1, s:kernel.18]
+       10 ret                        fn:rescale               frame rescale
+r8 lvn: 1050 -> 1040 (-10)
+r9 subst: 1040 -> 1030 (-10)
+r10 subst: 1030 -> 1030 (0)
