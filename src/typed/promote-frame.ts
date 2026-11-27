@@ -6,7 +6,7 @@ export const promoteFrameSpec: TypedPassSpec = {
   name: 'promote-frame',
   about: 'replace fixed, initialized i32 frame slots with scalar locals',
   writes: ['frame', 'locals', 'stmts', 'values'],
-  preserves: ['cfg', 'dominators', 'loops'],
+  preserves: ['cfg', 'dominators'],
   body({ st, f, tx }) {
     if (!f.arrayBytes) return;
     const frameBytes = f.arrayBytes;

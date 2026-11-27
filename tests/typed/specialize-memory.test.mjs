@@ -6,6 +6,7 @@ import { installVendor } from '../../tools/node-vendor.mjs';
 await installVendor();
 const { createArtifact } = await import('../../dist/framework/contracts/index.js');
 const { meaningKept } = await import('../../dist/typed/evaluate.js');
+const { promoteFrame } = await import('../../dist/typed/passes.js');
 const { Program } = await import('../../dist/typed/program.js');
 const { projectSource } = await import('../../dist/typed/project.js');
 const { BindingsIR, factRef } = await import('../../dist/typed/specialize.js');
@@ -27,6 +28,7 @@ test('buffer facts fix u16 cells independently of the project generator and carr
   const art = facts([buffer('read', [0, 65535]), { fn: 'read', param: 'index', value: 1, entity: 'host/index' }]);
   assert.equal((await p.specialize(art)).check, '40/40');
   assert.deepEqual(p.assumptions, { read: { code: { cells: [0, 65535] }, index: 1 } });
+  p.inputs.read.code.cells[1] = 3;
   assert.equal(p.check().status, 'agree');
   const loaded = Object.values(p.head.value.values).find(v => v.op === 'const' && v.imm === 65535);
   assert.equal(p.origin.value.values[loaded.origin[0].from].op, 'load16u');
@@ -64,6 +66,23 @@ test('unsupported dispatch states preserve the original revision and its generat
   await assert.rejects(caller.specialize(code), /internal caller/);
 });
 
+test('a reachable write through a buffer alias invalidates the entry promise', async () => {
+  const p = new Program('mutating-buffer', `
+    function read(code: buffer, mutate: i32): i32 {
+      const alias = code;
+      if (mutate !== 0) {
+        alias.setCharCodeAt(0, 9);
+      }
+      return code.charCodeAt(0);
+    }
+  `, { ...tape, inputs: { read: { mutate: { oneOf: [0, 1] } } } });
+  await assert.rejects(p.specialize(facts([buffer('read', [7])])), /store may alias the promised buffer/);
+  assert.equal(p.rev, 0);
+  assert.deepEqual(p.assumptions, {});
+  assert.equal(p.exec('read', [[7], 0]).result, 7);
+  assert.equal(p.exec('read', [[7], 1]).result, 9);
+});
+
 test('VM dispatch becomes guest control flow, with both dynamic branch outcomes', async () => {
   const ps = projectSource('bytecode-vm', projectFiles('bytecode-vm'));
   const { code, n, seed } = ps.meta.inputs.runVm;
@@ -80,7 +99,8 @@ test('VM dispatch becomes guest control flow, with both dynamic branch outcomes'
 
     const cleaned = await p.pipeline(['dce', 'cfg']);
     assert.deepEqual(cleaned.steps.filter(s => s.rejected), []);
-    assert.equal((await p.apply('promote-frame')).check, '40/40');
+    await p.fact('loops', 'runVm');
+    assert.equal((await p.apply(promoteFrame)).check, '40/40');
     assert.ok(!p.head.value.fns.runVm.arrayBytes);
     assert.equal(p.check().status, 'agree');
     const r0 = Program.fromProject(ps);

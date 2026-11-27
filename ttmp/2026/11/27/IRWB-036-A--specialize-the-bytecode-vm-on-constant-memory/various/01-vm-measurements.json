@@ -1,0 +1,130 @@
+[
+  {
+    "entry": 0,
+    "stage": "general r0",
+    "instructions": 7678,
+    "bytes": 840,
+    "imageBytes": 840,
+    "result": 1152
+  },
+  {
+    "entry": 0,
+    "stage": "general speed",
+    "instructions": 9286,
+    "bytes": 904,
+    "imageBytes": 904,
+    "result": 1152
+  },
+  {
+    "entry": 0,
+    "stage": "entry scalar + speed",
+    "instructions": 9287,
+    "bytes": 908,
+    "imageBytes": 908,
+    "result": 1152
+  },
+  {
+    "entry": 0,
+    "stage": "dispatch raw",
+    "instructions": 2154,
+    "bytes": 932,
+    "imageBytes": 932,
+    "result": 1152,
+    "stateBlocks": 244,
+    "stateStatements": 386,
+    "foldedLoads": 34,
+    "staticBranches": 116
+  },
+  {
+    "entry": 0,
+    "stage": "dispatch + speed",
+    "instructions": 548,
+    "bytes": 452,
+    "imageBytes": 452,
+    "result": 1152,
+    "cases": 221,
+    "blocks": 4
+  },
+  {
+    "entry": 0,
+    "stage": "dispatch + promotion + speed",
+    "instructions": 161,
+    "bytes": 64,
+    "imageBytes": 64,
+    "result": 1152,
+    "cases": 221,
+    "blocks": 4
+  },
+  {
+    "entry": 0,
+    "stage": "hand speed",
+    "instructions": 75,
+    "bytes": 40,
+    "imageBytes": 76,
+    "result": 1152
+  },
+  {
+    "entry": 34,
+    "stage": "general r0",
+    "instructions": 6874,
+    "bytes": 840,
+    "imageBytes": 840,
+    "result": 1298667478
+  },
+  {
+    "entry": 34,
+    "stage": "general speed",
+    "instructions": 8218,
+    "bytes": 904,
+    "imageBytes": 904,
+    "result": 1298667478
+  },
+  {
+    "entry": 34,
+    "stage": "entry scalar + speed",
+    "instructions": 8219,
+    "bytes": 908,
+    "imageBytes": 908,
+    "result": 1298667478
+  },
+  {
+    "entry": 34,
+    "stage": "dispatch raw",
+    "instructions": 1914,
+    "bytes": 852,
+    "imageBytes": 852,
+    "result": 1298667478,
+    "stateBlocks": 222,
+    "stateStatements": 350,
+    "foldedLoads": 30,
+    "staticBranches": 105
+  },
+  {
+    "entry": 34,
+    "stage": "dispatch + speed",
+    "instructions": 468,
+    "bytes": 396,
+    "imageBytes": 396,
+    "result": 1298667478,
+    "cases": 221,
+    "blocks": 4
+  },
+  {
+    "entry": 34,
+    "stage": "dispatch + promotion + speed",
+    "instructions": 136,
+    "bytes": 52,
+    "imageBytes": 52,
+    "result": 1298667478,
+    "cases": 221,
+    "blocks": 4
+  },
+  {
+    "entry": 34,
+    "stage": "hand speed",
+    "instructions": 74,
+    "bytes": 36,
+    "imageBytes": 76,
+    "result": 1298667478
+  }
+]

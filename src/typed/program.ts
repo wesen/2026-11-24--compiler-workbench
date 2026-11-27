@@ -162,7 +162,7 @@ export class Program {
       for (const [k, v] of Object.entries(params)) {
         const dot = k.indexOf('.');
         if (dot < 0) {
-          out[f] = { ...(out[f] ?? {}), [k]: v };
+          out[f] = { ...(out[f] ?? {}), [k]: typeof v === 'number' ? v : { cells: [...v.cells] } };
           continue;
         }
         // a record field: fix it inside the parameter's record specification

@@ -4,6 +4,7 @@ import { projectFiles } from '../../../../../../tools/corpus.mjs';
 import { installVendor } from '../../../../../../tools/node-vendor.mjs';
 
 await installVendor();
+const { promoteFrame } = await import('../../../../../../dist/typed/passes.js');
 const { Program } = await import('../../../../../../dist/typed/program.js');
 const { projectSource } = await import('../../../../../../dist/typed/project.js');
 const { BindingsIR } = await import('../../../../../../dist/typed/specialize.js');
@@ -74,11 +75,11 @@ for (const [entry, handName] of [[0, 'seededFib'], [34, 'rollingChecksum']]) {
   await optimize(p);
   const images = [['dispatch + speed', image(p), storeOf(p.head.value)]];
   if (process.argv.includes('--promote')) {
-    const latePromotion = await p.apply('promote-frame');
+    const latePromotion = await p.apply(promoteFrame);
     if (!latePromotion.changed) console.error(`entry ${entry}: promotion after speed was inapplicable`);
     p.checkout(specialized.rev);
     await optimize(p, ['dce', 'cfg']);
-    const promoted = await p.apply('promote-frame');
+    const promoted = await p.apply(promoteFrame);
     assert.equal(promoted.check, '40/40');
     await optimize(p);
     images.push(['dispatch + promotion + speed', image(p), storeOf(p.head.value)]);

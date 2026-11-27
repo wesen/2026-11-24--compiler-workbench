@@ -1032,6 +1032,8 @@ export const subst = typedPass({
 
 /** IRWB-003: loop rotation by header duplication (src/typed/rotate.ts). */
 export const rotate = typedPass(rotateSpec);
+/** IRWB-036-A: opt-in scalar promotion for residualized frame accesses. */
+export const promoteFrame = typedPass(promoteFrameSpec);
 /** IRWB-003: inlining, a whole-program pass like dfe (src/typed/inline.ts). */
 export const inline = makeInline(revisionCorrespondence);
 
@@ -1051,7 +1053,6 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   dfe,
   rotate,
   inline,
-  'promote-frame': typedPass(promoteFrameSpec),
 });
 
 /** Compiler Workbench's pipelines, by pass name. */

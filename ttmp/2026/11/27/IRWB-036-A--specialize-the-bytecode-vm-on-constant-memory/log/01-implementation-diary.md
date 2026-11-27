@@ -82,3 +82,19 @@ The first focused run passed five of six tests. The VM test expected the promoti
 ### Code review and reproduction
 
 Start with `Program.specialize` and `residualize` for assumptions and relevance of the static state. Inspect `promoteFrameSpec` for the address and initialization audit. Run `npm run build`, then `node --test --test-isolation=none tests/typed/specialize{,-memory}.test.mjs`. The benchmark and result counts are in the final report.
+
+
+## Step 3. Verify alias rejection and analysis invalidation
+
+The implementation checkpoint was `1f8ee9c`. A follow-up test wrote through a buffer alias on one arm of a runtime branch. The residualizer refused it and the original revision still read 7 without the write and 9 with it. The tested promise therefore depends on writes reachable in the static walk, including either arm of a dynamic branch.
+
+Code review found two state issues before the final test run. A caller editing the input specification returned by `Program.inputs` could change the active buffer assumption through a shared array. The getter now copies the assumed cells. Frame promotion changes loop-assigned locals, so the promotion pass no longer declares loop analysis preserved. The regression runs promotion with the old loop analysis already requested. Rebuild and the requested test groups run after these corrections.
+
+
+## Step 4. Keep the experiment opt-in
+
+The first completed 56-file suite reported 410 passes, one failure and three skips. `tests/workbench/strategies.test.mjs` expected 15 built-in passes from `wb.compiler()` and received 16. Frame promotion now exports a checked `TypedPass` for explicit application, as the benchmark needs it at one specific point in the pipeline. The named built-in pass catalog keeps the existing workbench contract. The benchmark and regression test use the explicit pass, and the same file selections are running again on that revision.
+
+## Step 5. Publish the measured results
+
+The catalog regression passed in isolation and in the final 56-file run. The final build, requested test selections, browser bundle, and benchmark exited successfully. The suite reported 411 passes, no failures, and three opt-in skips. The benchmark again confirmed both cleaned variants against r0 across all 442 calls and reproduced the RV32 sizes and instruction counts in the report.
