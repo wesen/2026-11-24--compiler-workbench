@@ -441,3 +441,26 @@ Proposal 1's risk section estimated the cost of a long fold from FADD latency al
 
 ### What warrants a second pair of eyes
 - My chunk-tree kernel reaches only 57 GB/s; a better phase 1 would widen the gap further.
+
+## Step 16: Experiment 12, a planner that splits at contractions
+
+Experiment 10's single template could not handle contractions, so I added a contraction template and a planner. Both live in `scripts/lib/tix-cuda-gen.mjs`. To share the row-kernel generator, I first moved it there verbatim from `10-rowfuse.mjs`, and checked that experiment 10's generated `main.cu` was byte-identical after the move (`cmp`). The contraction template matches `t[i,j] = E(sum(k) X·Y)` with X and Y indexed by (i,k) and (k,j) in either order, and emits a 64×64×8 tiled kernel with the epilogue E. The planner splits each function at contraction statements and row-fuses the runs between them. Five of six programs were planned, all bit-identical to Stage 2, at a geometric mean of 3.19× (hand-written: 4.27× on the same five).
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Reduce Proposal 1's main risk by showing that a planner, not a human, can find the profitable exact schedules.
+**Commit (code):** this step's commit
+
+### What worked
+- The plans matched the hand designs: attention became *contraction score | row weight | contraction out* and mlp *contraction h | row g | contraction y*.
+- `results/12-planner.jsonl`: matmul 2.24×, softmax 4.44×, layernorm 2.49×, attention 4.21×, mlp 3.15×; 0 words different in every case and with both transcendental paths.
+
+### What didn't work
+- My first host-code template launched kernels through a parenthesized conditional, `(FAST ? k<1> : k<0>)<<<…>>>`, and built the download argument with string surgery. I replaced both with a named function-pointer variable and a direct reference to the materialized buffer before the first run, so there is no failure output to record.
+- conv2d is refused: its single statement is rank 4, and neither template handles it.
+
+### What I learned
+- Exactness of generated code comes from the templates, so no per-program reasoning is needed. The remaining gap to the hand kernels is schedule quality: the contraction template's 64-bit index arithmetic, its lack of vector loads, and the separate GELU pass.
+
+### Code review instructions
+- `matchContraction`, `emitContraction` and `planFunction` in `scripts/lib/tix-cuda-gen.mjs`; generated `scripts/12-planner/main.cu` (`ct_attention_0`, `rg_attention_1`, `ct_attention_5`).

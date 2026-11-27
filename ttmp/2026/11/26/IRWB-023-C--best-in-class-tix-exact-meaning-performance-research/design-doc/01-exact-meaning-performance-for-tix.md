@@ -40,7 +40,7 @@ Tix specifies the result of a tensor program bit for bit. Every operator rounds 
 
 I therefore define best in class for Tix as **the fastest code that is bit-identical to a portable, exactly specified meaning, with every step carrying evidence of that equality as strong as the step allows.** Raw speed is still measured, but against the ceiling that the meaning itself imposes. This document argues for that definition, measures the ceiling on the GB10, and proposes four lines of work, ranked:
 
-1. **Exact-meaning scheduling.** Use a schedule space in which no transformation can change a result word: tiling and binding of free indices, staging, register blocking, fusion of pointwise and row-local producers, and tree reduction of the exactly associative `max`. Lowering is then judged by f32 word equality. Hand-written kernels in this space were bit-identical to the unmodified Stage 2 code on all six corpus programs at full size. They were 2.0× to 7.6× faster (geometric mean 3.76×), and the six programs together took 0.887 ms instead of 3.763 ms.
+1. **Exact-meaning scheduling.** Use a schedule space in which no transformation can change a result word: tiling and binding of free indices, staging, register blocking, fusion of pointwise and row-local producers, and tree reduction of the exactly associative `max`. Lowering is then judged by f32 word equality. Hand-written kernels in this space were bit-identical to the unmodified Stage 2 code on all six corpus programs at full size. They were 2.0× to 7.6× faster (geometric mean 3.76×), and the six programs together took 0.887 ms instead of 3.763 ms. A prototype planner that generates schedules from the Tix IR, rather than hand-writing them, covers five of the six programs. Its output is bit-identical and 3.19× faster in geometric mean.
 2. **Exhaustively proven intrinsics.** These are fast f32-only paths for `exp` and `tanh` that use a Ziv rounding test with a double-precision fallback. On the GPU I checked every one of the 2^32 inputs against the meaning in under a second: 0 mismatches. They are 2.4× (exp) and 4.9× (tanh) faster than the double routine Stage 2 uses. In the fused kernels they halve softmax time and cut MLP time by 39%.
 3. **Data-universal exactness checks.** The *same kernel source* is compiled at a symbolic scalar type whose loads are hashes and whose arithmetic hashes the expression tree modulo the laws IEEE rounding obeys. Equal fingerprints at a shape mean equal words for every input of that shape. This caught a reassociation bug that numerical checks missed on two of three data streams. The current sample recipe exercises no tile at all. A residue-complete recipe caught every seeded schedule bug in 1.2 s, where my first tile-aware recipe missed two.
 4. **A menu of exactly specified contraction meanings.** These are a sequential FMA fold and K-only chunk trees, together with a scale-covariant accuracy relation for meaning changes. cuBLAS's own 4096³ result equals a sequential FMA fold word for word. The FMUL+FADD meaning has half the FFMA ceiling. In one tuned kernel, the FMA fold ran 1.45× faster than the current meaning and came within 1.22× of cuBLAS at 4096³. The Stage 1/2 tolerance accepts an all-zero output once results are small.
@@ -190,7 +190,20 @@ All six were bit-identical to Stage 2 at full size.
 | mlp | 1.061 ms | 1.046 ms | 1.01× | 0.270 ms | 0 |
 | conv2d | refused: rank-4 statement, not row-local | | | | |
 
-The generator recognized five of the six corpus functions as row-local, and every generated kernel was bit-identical to Stage 2 with both transcendental paths. On the memory-bound programs, generated code comes within 10–17% of the hand-written kernels. On the contraction-bound programs it does not, because row fusion leaves each dot product as one thread's latency-bound chain. A real generator therefore needs two templates, row fusion and the tiled contraction, plus a cost model that chooses between them and splits fusion groups at contractions. Experiment 03's three-kernel attention is the target for that choice.
+The generator recognized five of the six corpus functions as row-local, and every generated kernel was bit-identical to Stage 2 with both transcendental paths. On the memory-bound programs, generated code comes within 10–17% of the hand-written kernels. On the contraction-bound programs it does not, because row fusion leaves each dot product as one thread's latency-bound chain. A real generator therefore needs two templates, row fusion and the tiled contraction, plus a rule that splits fusion groups at contractions.
+
+*Experiment 12 (a planner: `scripts/12-planner.mjs`, `scripts/lib/tix-cuda-gen.mjs`).* I added two pieces. The first is a contraction template: a statement `t[i,j] = E(sum(k) X·Y)` gets a tiled 64×64×8 kernel that folds k in order per output and applies the epilogue E with the Stage 2 intrinsics. Here X and Y are loads indexed by (i,k) and (k,j) in either order. The second is a planner that splits each function at contraction statements, row-fuses the runs in between, and materializes only the tensors that cross kernels. The plans came out as the hand-written ones had been designed. Attention became *contraction score | row group producing weight | contraction out*, and mlp *contraction h | row g | contraction y*. One `--timed` run (`results/12-planner.jsonl`):
+
+| Program | Plan | Stage 2 | Planned | Speedup | Hand-written | Words different |
+|---|---|---:|---:|---:|---:|---:|
+| matmul | contraction | 0.216 ms | 0.097 ms | 2.24× | 3.50× | 0 |
+| softmax | row | 0.802 ms | 0.181 ms | 4.44× | 4.73× | 0 |
+| layernorm | row | 0.485 ms | 0.195 ms | 2.49× | 2.90× | 0 |
+| attention | contraction, row, contraction | 1.049 ms | 0.249 ms | 4.21× | 7.56× | 0 |
+| mlp | contraction, row, contraction | 1.066 ms | 0.339 ms | 3.15× | 3.93× | 0 |
+| conv2d | refused (rank 4) | | | | 1.98× | |
+
+The planner's geometric mean over the five programs is 3.19×, against 4.27× for the hand-written kernels on the same five. The gap is mostly in the contraction template, which uses 64-bit index arithmetic and no vector loads (0.097 ms against the experiment-01 kernel's 0.062 ms on matmul), and in the MLP's separate GELU pass. Both are schedule-quality problems, not exactness problems: every planned kernel is in the exact space by construction, and every result word matched.
 
 *What the measurements say about where the time goes.* In softmax the fused kernel with Stage 2's double exp took 0.352 ms, and it took 0.168 ms with the proven exp of Proposal 2. Half of the gain is the intrinsic. In the MLP the bias+GELU epilogue alone took 0.211 ms with the double tanh and 0.040 ms with the proven tanh. The one-thread ordered row sum is not a bottleneck at these sizes: the softmax kernel runs at 82% of streaming bandwidth.
 
@@ -200,7 +213,7 @@ The generator recognized five of the six corpus functions as row-local, and ever
 - *Engineering distance to cuBLAS.* The exact ceiling is reachable only with cuBLAS-class tiling, double buffering, warp tiling and vectorized loads. My best kernel sits at 72% of the ceiling. The 128-tile kernel is poor at 512³ (0.090 ms, 16 blocks for 48 SMs), where the 64-tile kernel took 0.062 ms. Tile choice has to depend on shape, which is safe precisely because every tile choice has the same meaning.
 - *Fusion granularity.* My single-kernel attention, one block per query row, was *slower* than Stage 2 at first (1.69 ms against 1.05 ms). After three fixes it still took 0.72 ms, against 0.139 ms for the three-kernel version (§6). A schedule space needs a cost model or a tuner, not a fixed "fuse everything" rule.
 
-**How success is measured.** The compiler, rather than a human, generates schedules for the six programs (experiment 10 already does this for two of them at within 17% of the hand kernels) that are bit-identical at full size and at least 3× faster than Stage 2 in geometric mean. The hand-written result is 3.76×. Contractions reach at least 85% of the exact ceiling, which is about 12 TFLOP/s on the GB10, or within 1.5× of cuBLAS at 4096³. Batch-invariance differences are 0 in a standing test.
+**How success is measured.** The compiler, rather than a human, generates schedules for all six programs that are bit-identical at full size and at least 3.5× faster than Stage 2 in geometric mean. The hand-written result is 3.76×. The prototype planner reaches 3.19× on five programs. Contractions reach at least 85% of the exact ceiling, which is about 12 TFLOP/s on the GB10, or within 1.5× of cuBLAS at 4096³. Batch-invariance differences are 0 in a standing test.
 
 **What it needs from `src/framework`.**
 
@@ -393,7 +406,7 @@ flowchart TD
 
 **Stage A, first.** A1 is a few lines in `cuda-contract.ts`. It turns every later backend step into a bit-for-bit check, and the Stage 2 report recommended it on independent grounds. A2 is the only framework change most proposals need. A3 is the cheapest large win: it is local to the emitter, already proven, and halves softmax, attention rows and the MLP epilogue. A4 fixes a measured blind spot: no current case reaches a tile.
 
-**Stage B** is the core engineering. The order is the schedule representation first, then the fingerprint gate, so that every generated schedule is checked data-universally from day one, and only then generation of all six programs. The hand kernels of experiment 03 are the acceptance targets: equal words and equal or better time.
+**Stage B** is the core engineering. The order is the schedule representation first, then the fingerprint gate, so that every generated schedule is checked data-universally from day one, and only then generation of all six programs. Experiment 12's planner is a working starting point: two templates and a split rule, already at 3.19×. The hand kernels of experiment 03 are the acceptance targets: equal words and equal or better time.
 
 **Stage C** comes after B because tuning is only safe once the space is exact. The payoff is that tuning can never cause numerical regressions.
 
@@ -431,6 +444,7 @@ All scripts are in this ticket's `scripts/`, and their outputs are in `scripts/r
 | 09 | `09-gemm-v2/main.cu` | The price of exactness on one tuned kernel | RN–RN 10.32 TFLOP/s and FMA fold 14.92 at 4096³ (1.45×); FMA fold within 1.22× of cuBLAS; both 0 words different from their own oracles |
 | 10 | `10-rowfuse.mjs` | Can a generator produce exact fused schedules from Tix IR? | Five of six functions recognized; all bit-identical to Stage 2; softmax 4.44×, layernorm 2.46×; contractions need a tiled template and a cost model |
 | 11 | `11-fold-wall/main.cu` | The sequential-fold wall and K-only chunk trees | 4 × 2^22 sum: best exact sequential 18.6 ms; chunk tree (C = 128) 1.19 ms; all match their own oracles |
+| 12 | `12-planner.mjs` + `lib/tix-cuda-gen.mjs` | Can a planner split at contractions and generate both templates from Tix IR? | Five of six functions planned; all bit-identical; geometric mean 3.19× (hand-written 4.27× on the same five) |
 
 Example commands:
 
@@ -445,6 +459,7 @@ Example commands:
 - `node tools/cuda-remote.mjs <ticket>/scripts/09-gemm-v2 --timed -- 512 1024 2048 4096`
 - `node <ticket>/scripts/10-rowfuse.mjs --timed` (after `03-fused-exact.mjs`, which writes the copied fast-path headers)
 - `node tools/cuda-remote.mjs <ticket>/scripts/11-fold-wall --timed`
+- `node <ticket>/scripts/12-planner.mjs --timed`
 
 Caveats. My Stage 2 timings come from the generated program's own benchmark mode, with a median of three runs. The coordinator's single runs (0.197, 0.785, 0.563, 1.81, 1.05 and 0.341 ms) differ by up to 2× for attention and conv2d. Optimized kernels used medians of 21 runs. Exactness claims are per input (seeded random data) and per shape (the corpus sizes), except the exhaustive and fingerprint results, which cover every input of the stated domain. The exhaustive proofs cover the binaries built by the runner's `nvcc` 13.0 at `-O3 -arch=sm_121`.
 

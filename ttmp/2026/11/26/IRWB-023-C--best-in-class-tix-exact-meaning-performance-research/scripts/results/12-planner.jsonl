@@ -1,0 +1,6 @@
+{"refused":{"conv2d":"conv2d_g0: not row-local (out)"},"plans":{"matmul":["contraction:y"],"softmax":["row:y"],"layernorm":["row:y"],"attention":["contraction:score","row:weight","contraction:out"],"mlp":["contraction:h","row:g","contraction:y"]}}
+{"program":"matmul","plan":"contraction:y","stage2Ms":0.2162,"plannedDoubleMs":0.0965,"plannedFastMs":0.0965,"speedupVsStage2":2.24,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"softmax","plan":"row:y","stage2Ms":0.8022,"plannedDoubleMs":0.3546,"plannedFastMs":0.1805,"speedupVsStage2":4.44,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"layernorm","plan":"row:y","stage2Ms":0.4847,"plannedDoubleMs":0.1948,"plannedFastMs":0.1947,"speedupVsStage2":2.49,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"attention","plan":"contraction:score | row:weight | contraction:out","stage2Ms":1.0492,"plannedDoubleMs":0.2963,"plannedFastMs":0.2490,"speedupVsStage2":4.21,"wordsDifferentFromStage2":{"double":0,"fast":0}}
+{"program":"mlp","plan":"contraction:h | row:g | contraction:y","stage2Ms":1.0662,"plannedDoubleMs":0.5201,"plannedFastMs":0.3389,"speedupVsStage2":3.15,"wordsDifferentFromStage2":{"double":0,"fast":0}}
