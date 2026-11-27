@@ -1,0 +1,364 @@
+✔ Thompson NFA agrees with RegExp in the evaluator and both RV32 backends (4096.39882ms)
+ℹ Maximal active-set IR statements: r0 5290, speed 3703
+ℹ Benchmark r0: 8183 RV32 instructions
+ℹ Benchmark speed: 6933 RV32 instructions
+ℹ Benchmark reference: 6628 RV32 instructions
+✔ the workbench opens the project and runs the exploration script on a fresh copy (3364.268571ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7673.517895
+regexMatch(1024, 1072): r0 8183 -> r11 6933 instructions (-1250)
+
+revision       instructions   step
+r0 ingest              8183
+r1 inline              8002   -181
+r2 cfg                 7663   -339
+r3 fold                7654   -9
+r4 simplify            7654   0
+r5 constprop           7720   +66
+r6 dce                 7717   -3
+r7 cfg                 7709   -8
+r8 licm                6974   -735
+r9 subst               6959   -15
+r10 subst              6959   0
+r11 rotate             6933   -26
+
+   delta    after  groups  decision
+    +157      164       4  inline: indirect
+     +70      748       5  constprop: replace
+     +64      136       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.122; loop test duplicated into bb:regexMatch.172)
+     +63      144       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.48; loop test duplicated into bb:regexMatch.62)
+     +56      128       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.120; loop test duplicated into bb:regexMatch.156)
+     +28       99       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.113; loop test duplicated into bb:regexMatch.n5)
+     +27       27       3  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)
+     +24       24       3  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)
+     +20       23       1  licm: indirect, frame
+     +18       18       2  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.49)
+      +9        9       1  licm: insert
+      +4        4       4  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)
+      +4      169       7  subst: replace
+      +3       13       1  rotate: replaceStmt (loop test duplicated into bb:regexMatch.0; loop test duplicated into bb:regexMatch.40)
+      +2        6       1  licm: indirect
+      +1        1       1  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.1)
+       0       32       1  cfg: move
+       0       32       1  cfg: move+retarget
+       0        0       2  cfg: remove (merged with its only successor)
+       0       81       1  licm: retarget
+       0      306       5  simplify: replace
+      -3        0       3  dce: remove
+      -4        3       1  constprop: indirect, frame
+      -9        0       1  cfg: replaceStmt
+      -9        9       1  fold: replace
+     -19        0       7  subst: remove (substituted into its only reader)
+     -50        7       1  inline: indirect, frame
+    -160        0       6  cfg: indirect
+    -178     2947      46  cfg: retarget
+    -240        0      10  rotate: replaceStmt
+    -288        0       1  inline: inline+remove (the call to inRange, inlined)
+    -840     3278      28  licm: replace
+
+r1   +128  inline: indirect  []
+          s:regexMatch.265 inRange_high = load32[(frame+0 + (t38 << 2))+0]
+
+r1    +32  inline: indirect  []
+          s:regexMatch.263 inRange_code = code
+
+r1     -1  inline: indirect  []
+          s:regexMatch.262 return load32[(frame+180 + (accept << 2))+0]
+
+r1     -2  inline: indirect  []
+          backend        backend
+
+r1    -50  inline: indirect, frame  []
+          frame          frame
+
+r1   -288  inline: inline+remove (the call to inRange, inlined)  [fn:inRange, v:regexMatch.391]
+          s:regexMatch.214 t45 = inRange(code, t44, load32[(frame+0 + (t38 << 2))+0])
+
+r2    +19  cfg: retarget  [bb:regexMatch.114]
+          s:regexMatch.173 goto .64
+
+r2     -1  cfg: indirect  []
+          s:regexMatch.180 goto .47
+
+r2     -1  cfg: indirect  []
+          s:regexMatch.50 goto .24
+
+r2     -3  cfg: retarget  [bb:regexMatch.13]
+          s:regexMatch.29 if (split >=u 45) goto .12 else .15
+
+r2     -7  cfg: retarget  [bb:regexMatch.114]
+          s:regexMatch.174 goto .114
+
+r2     -9  cfg: indirect  []
+          s:regexMatch.114 goto .64
+
+r2    -16  cfg: retarget  [bb:regexMatch.148]
+          s:regexMatch.217 if (t39 >=u 45) goto .147 else .150
+
+r2    -16  cfg: retarget  [bb:regexMatch.155]
+          s:regexMatch.228 goto .155
+
+r2    -17  cfg: retarget  [bb:regexMatch.59]
+          s:regexMatch.103 if (tail >=u 9) goto .58 else .61
+
+r2    -19  cfg: retarget  [bb:regexMatch.107]
+          s:regexMatch.162 if (second >=u 9) goto .106 else .109
+
+r2    -26  cfg: retarget  [bb:regexMatch.78]
+          s:regexMatch.128 if (t29 >=u 45) goto .77 else .80
+
+r2    -26  cfg: retarget  [bb:regexMatch.92]
+          s:regexMatch.144 if (first >=u 9) goto .91 else .94
+
+r2    -32  cfg: retarget  [bb:regexMatch.138]
+          s:regexMatch.204 if (t37 >=u 45) goto .137 else .140
+
+r2    -32  cfg: indirect  []
+          s:regexMatch.230 goto .156
+
+r2    -36  cfg: retarget  [bb:regexMatch.115]
+          s:regexMatch.176 goto .115
+
+r2    -55  cfg: indirect  []
+          s:regexMatch.110 goto .62
+
+r2    -62  cfg: indirect  []
+          s:regexMatch.177 goto .64
+
+r3     -9  fold: replace  []
+          s:regexMatch.92 if 0 goto .47 else .48
+
+r5    +62  constprop: replace  []
+          s:regexMatch.126 if (load32[(frame+0 + (row << 2))+0] == 2) goto .75 else .64
+
+r5     +4  constprop: replace  []
+          s:regexMatch.56 store32[(frame+0 + (range << 2))+0] = 1
+
+r5     +3  constprop: replace  []
+          s:regexMatch.33 store32[(frame+0 + (split << 2))+0] = 2
+
+r5     +1  constprop: replace  []
+          s:regexMatch.84 store32[(frame+0 + (t22 << 2))+0] = 3
+
+r5     -4  constprop: indirect, frame  []
+          frame          frame
+
+r6     -1  dce: remove  [fact:liveness(regexMatch)@r5]
+          s:regexMatch.0 RANGE = 1
+
+r6     -1  dce: remove  [fact:liveness(regexMatch)@r5]
+          s:regexMatch.1 SPLIT = 2
+
+r6     -1  dce: remove  [fact:liveness(regexMatch)@r5]
+          s:regexMatch.2 ACCEPT = 3
+
+r7     +1  cfg: retarget  [bb:regexMatch.46]
+          s:regexMatch.91 goto .48
+
+r7     -9  cfg: replaceStmt  [v:regexMatch.472]
+          s:regexMatch.92 if 0 goto .47 else .48
+
+r8    +20  licm: indirect, frame  []
+          frame          frame
+
+r8     +9  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.49)  [loop:regexMatch@bb:regexMatch.48, loop:regexMatch@bb:regexMatch.49]
+          s:regexMatch.276 inv1 = inv9
+
+r8     +9  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.49)  [loop:regexMatch@bb:regexMatch.48, loop:regexMatch@bb:regexMatch.49]
+          s:regexMatch.277 inv2 = inv10
+
+r8     +9  licm: insert  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.278 goto .64
+
+r8     +9  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.279 inv3 = frame+252
+
+r8     +9  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.280 inv4 = frame+180
+
+r8     +9  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.64)  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.281 inv5 = frame+0
+
+r8     +8  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)  [loop:regexMatch@bb:regexMatch.121, loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.282 inv6 = inv11
+
+r8     +8  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)  [loop:regexMatch@bb:regexMatch.121, loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.283 inv7 = inv12
+
+r8     +8  licm: insert+replace (hoisted out of loop:regexMatch@bb:regexMatch.121)  [loop:regexMatch@bb:regexMatch.121, loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.284 inv8 = inv10
+
+r8     +2  licm: indirect  []
+          s:regexMatch.262 return load32[(frame+180 + (accept << 2))+0]
+
+r8     +1  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.1)  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.275 inv = frame+0
+
+r8     +1  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)  [loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.285 inv9 = frame+252
+
+r8     +1  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)  [loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.286 inv10 = frame+180
+
+r8     +1  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)  [loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.287 inv11 = frame+216
+
+r8     +1  licm: insert (hoisted out of loop:regexMatch@bb:regexMatch.48)  [loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.288 inv12 = frame+0
+
+r8     -3  licm: replace  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.33 store32[(inv + (split << 2))+0] = 2
+
+r8     -3  licm: replace  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.39 store32[(inv + (t15 << 2))+0] = (s + 1)
+
+r8     -3  licm: replace  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.45 store32[(inv + (t16 << 2))+0] = (s + 2)
+
+r8     -4  licm: replace  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.56 store32[(inv + (range << 2))+0] = 1
+
+r8     -4  licm: replace  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.62 store32[(inv + (t18 << 2))+0] = low
+
+r8     -4  licm: replace  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.68 store32[(inv + (t19 << 2))+0] = high
+
+r8     -4  licm: replace  [loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.74 store32[(inv + (t20 << 2))+0] = out
+
+r8    -16  licm: replace  [loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.221 t40 = load32[(inv7 + (t39 << 2))+0]
+
+r8    -16  licm: replace  [loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.226 store32[(inv6 + (t40 << 2))+0] = 1
+
+r8    -17  licm: replace  [loop:regexMatch@bb:regexMatch.49]
+          s:regexMatch.107 store32[(inv1 + (tail << 2))+0] = state
+
+r8    -19  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.166 store32[(inv4 + (second << 2))+0] = 1
+
+r8    -19  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.171 store32[(inv3 + (tail << 2))+0] = second
+
+r8    -26  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.132 first = load32[(inv5 + (t29 << 2))+0]
+
+r8    -26  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.138 second = load32[(inv5 + (t31 << 2))+0]
+
+r8    -26  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.143 if (load32[(inv4 + (first << 2))+0] == 0) goto .89 else .99
+
+r8    -26  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.148 store32[(inv4 + (first << 2))+0] = 1
+
+r8    -26  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.153 store32[(inv3 + (tail << 2))+0] = first
+
+r8    -26  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.161 if (load32[(inv4 + (second << 2))+0] == 0) goto .104 else .64
+
+r8    -32  licm: replace  [loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.209 t44 = load32[(inv7 + (t37 << 2))+0]
+
+r8    -32  licm: replace  [loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.265 inRange_high = load32[(inv7 + (t38 << 2))+0]
+
+r8    -56  licm: replace  [loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.198 t43 = (load32[(inv7 + (row << 2))+0] == 1)
+
+r8    -62  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.120 row = (5 * load32[(inv3 + (head << 2))+0])
+
+r8    -62  licm: replace  [loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.126 if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64
+
+r8    -64  licm: replace  [loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.193 if (load32[(inv8 + (state << 2))+0] == 1) goto .128 else .129
+
+r8    -64  licm: replace  [loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.241 t46 = (inv10 + (state << 2))
+
+r8    -64  licm: replace  [loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.246 store32[t46+0] = load32[(inv11 + (state << 2))+0]
+
+r8    -64  licm: replace  [loop:regexMatch@bb:regexMatch.48]
+          s:regexMatch.251 store32[(inv11 + (state << 2))+0] = 0
+
+r8    -72  licm: replace  [loop:regexMatch@bb:regexMatch.49]
+          s:regexMatch.102 if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62
+
+r9     +2  subst: replace  []
+          s:regexMatch.13 low = load16[caddr(pattern, (p + 1))+4]
+
+r9     -2  subst: remove (substituted into its only reader)  [s:regexMatch.13]
+          s:regexMatch.12 t10 = (p + 1)
+
+r9     -3  subst: remove (substituted into its only reader)  [s:regexMatch.23]
+          s:regexMatch.22 t13 = p
+
+r9     -4  subst: remove (substituted into its only reader)  [s:regexMatch.9]
+          s:regexMatch.8 t7 = p
+
+r9     -8  subst: remove (substituted into its only reader)  [s:regexMatch.184]
+          s:regexMatch.183 t33 = i
+
+r10     +2  subst: replace  []
+          s:regexMatch.15 high = load16[caddr(pattern, (p + 3))+4]
+
+r10     -2  subst: remove (substituted into its only reader)  [s:regexMatch.15]
+          s:regexMatch.14 t11 = (p + 3)
+
+r11    +64  rotate: replaceStmt (loop test duplicated into bb:regexMatch.122; loop test duplicated into bb:regexMatch.172)  [bb:regexMatch.158, loop:regexMatch@bb:regexMatch.158]
+          s:regexMatch.236 if (state >= stateCount) goto .159 else .160
+          s:regexMatch.297 if (state >= stateCount) goto .159 else .160
+          s:regexMatch.298 if (state >= stateCount) goto .159 else .160
+
+r11    +63  rotate: replaceStmt (loop test duplicated into bb:regexMatch.48; loop test duplicated into bb:regexMatch.62)  [bb:regexMatch.49, loop:regexMatch@bb:regexMatch.49]
+          s:regexMatch.291 if (state >= stateCount) goto .n5 else .51
+          s:regexMatch.292 if (state >= stateCount) goto .n5 else .51
+          s:regexMatch.97 if (state >= stateCount) goto .n5 else .51
+
+r11    +56  rotate: replaceStmt (loop test duplicated into bb:regexMatch.120; loop test duplicated into bb:regexMatch.156)  [bb:regexMatch.121, loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.187 if (state >= stateCount) goto .122 else .123
+          s:regexMatch.295 if (state >= stateCount) goto .122 else .123
+          s:regexMatch.296 if (state >= stateCount) goto .122 else .123
+
+r11    +28  rotate: replaceStmt (loop test duplicated into bb:regexMatch.113; loop test duplicated into bb:regexMatch.n5)  [bb:regexMatch.64, loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.115 if (head >= tail) goto .65 else .66
+          s:regexMatch.293 if (head >= tail) goto .65 else .66
+          s:regexMatch.294 if (head >= tail) goto .65 else .66
+
+r11     +3  rotate: replaceStmt (loop test duplicated into bb:regexMatch.0; loop test duplicated into bb:regexMatch.40)  [bb:regexMatch.1, loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.289 if (p >= load32[pattern+0]) goto .2 else .3
+          s:regexMatch.290 if (p >= load32[pattern+0]) goto .2 else .3
+          s:regexMatch.7 if (p >= load32[pattern+0]) goto .2 else .3
+
+r11     -4  rotate: replaceStmt  [bb:regexMatch.1, loop:regexMatch@bb:regexMatch.1]
+          s:regexMatch.76 goto .1
+
+r11     -8  rotate: replaceStmt  [bb:regexMatch.158, loop:regexMatch@bb:regexMatch.158]
+          s:regexMatch.235 goto .158
+
+r11     -9  rotate: replaceStmt  [bb:regexMatch.64, loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.278 goto .64
+
+r11    -19  rotate: replaceStmt  [bb:regexMatch.64, loop:regexMatch@bb:regexMatch.64]
+          s:regexMatch.173 goto .64
+
+r11    -64  rotate: replaceStmt  [bb:regexMatch.121, loop:regexMatch@bb:regexMatch.121]
+          s:regexMatch.232 goto .121
+
+r11    -64  rotate: replaceStmt  [bb:regexMatch.158, loop:regexMatch@bb:regexMatch.158]
+          s:regexMatch.253 goto .158
+
+r11    -72  rotate: replaceStmt  [bb:regexMatch.49, loop:regexMatch@bb:regexMatch.49]
+          s:regexMatch.112 goto .49

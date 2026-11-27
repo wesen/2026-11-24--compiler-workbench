@@ -1,0 +1,153 @@
+s:regexMatch.102 360 if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62 72 slli, 72 add, 72 lw, 72 addi, 72 bne
+s:regexMatch.193 320 if (load32[(inv8 + (state << 2))+0] == 1) goto .128 else .129 64 slli, 64 add, 64 lw, 64 addi, 64 bne
+s:regexMatch.120 310 row = (5 * load32[(inv3 + (head << 2))+0]) 62 addi, 62 slli, 62 add, 62 lw, 62 mul
+s:regexMatch.126 310 if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64 62 slli, 62 add, 62 lw, 62 addi, 62 bne
+s:regexMatch.198 280 t43 = (load32[(inv7 + (row << 2))+0] == 1) 56 slli, 56 add, 56 lw, 56 xori, 56 sltiu
+s:regexMatch.246 256 store32[t46+0] = load32[(inv11 + (state << 2))+0] 64 slli, 64 add, 64 lw, 64 sw
+s:regexMatch.251 192 store32[(inv11 + (state << 2))+0] = 0 64 slli, 64 add, 64 sw
+s:regexMatch.194 168 if (row >=u 45) goto .130 else .133 56 addi, 56 bgeu, 56 j
+s:regexMatch.98 144 if (state >=u 9) goto .52 else .55 72 addi, 72 bltu
+s:regexMatch.3 137 zero frame+0, 180 bytes 1 addi, 1 addi, 45 sw, 45 addi, 45 bne
+s:regexMatch.292 135 if (state >= stateCount) goto .n5 else .51 72 bge, 63 j
+s:regexMatch.188 128 row = (5 * state) 64 addi, 64 mul
+s:regexMatch.189 128 if (state >=u 9) goto .124 else .127 64 addi, 64 bltu
+s:regexMatch.237 128 if (state >=u 9) goto .161 else .164 64 addi, 64 bltu
+s:regexMatch.241 128 t46 = (inv10 + (state << 2)) 64 slli, 64 add
+s:regexMatch.242 128 if (state >=u 9) goto .165 else .168 64 addi, 64 bltu
+s:regexMatch.247 128 if (state >=u 9) goto .169 else .172 64 addi, 64 bltu
+s:regexMatch.116 124 if (head >=u 9) goto .67 else .70 62 addi, 62 bltu
+s:regexMatch.122 124 if (row >=u 45) goto .71 else .74 62 addi, 62 bltu
+s:regexMatch.296 120 if (state >= stateCount) goto .122 else .123 64 bge, 56 j
+s:regexMatch.298 120 if (state >= stateCount) goto .159 else .160 64 bge, 56 j
+s:regexMatch.143 104 if (load32[(inv4 + (first << 2))+0] == 0) goto .89 else .99 26 slli, 26 add, 26 lw, 26 bne
+s:regexMatch.148 104 store32[(inv4 + (first << 2))+0] = 1 26 slli, 26 add, 26 addi, 26 sw
+s:regexMatch.161 104 if (load32[(inv4 + (second << 2))+0] == 0) goto .104 else .64 26 slli, 26 add, 26 lw, 26 bne
+s:regexMatch.209 96 t44 = load32[(inv7 + (t37 << 2))+0] 32 slli, 32 add, 32 lw
+s:regexMatch.265 96 inRange_high = load32[(inv7 + (t38 << 2))+0] 32 slli, 32 add, 32 lw
+s:regexMatch.132 78 first = load32[(inv5 + (t29 << 2))+0] 26 slli, 26 add, 26 lw
+s:regexMatch.138 78 second = load32[(inv5 + (t31 << 2))+0] 26 slli, 26 add, 26 lw
+s:regexMatch.153 78 store32[(inv3 + (tail << 2))+0] = first 26 slli, 26 add, 26 sw
+s:regexMatch.166 76 store32[(inv4 + (second << 2))+0] = 1 19 slli, 19 add, 19 addi, 19 sw
+s:regexMatch.111 72 state = (state + 1) 72 addi
+s:regexMatch.202 64 if t43 goto .135 else .156 64 beq
+s:regexMatch.204 64 if (t37 >=u 45) goto .137 else .140 32 addi, 32 bltu
+s:regexMatch.210 64 if (t38 >=u 45) goto .141 else .144 32 addi, 32 bltu
+s:regexMatch.226 64 store32[(inv6 + (t40 << 2))+0] = 1 16 slli, 16 add, 16 addi, 16 sw
+s:regexMatch.231 64 state = (state + 1) 64 addi
+s:regexMatch.252 64 state = (state + 1) 64 addi
+s:regexMatch.121 62 head = (head + 1) 62 addi
+s:regexMatch.171 57 store32[(inv3 + (tail << 2))+0] = second 19 slli, 19 add, 19 sw
+s:regexMatch.128 52 if (t29 >=u 45) goto .77 else .80 26 addi, 26 bltu
+s:regexMatch.134 52 if (t31 >=u 45) goto .81 else .84 26 addi, 26 bltu
+s:regexMatch.139 52 if (first >=u 9) goto .85 else .88 26 addi, 26 bltu
+s:regexMatch.144 52 if (first >=u 9) goto .91 else .94 26 addi, 26 bltu
+s:regexMatch.149 52 if (tail >=u 9) goto .95 else .98 26 addi, 26 bltu
+s:regexMatch.157 52 if (second >=u 9) goto .100 else .103 26 addi, 26 bltu
+s:regexMatch.107 51 store32[(inv1 + (tail << 2))+0] = state 17 slli, 17 add, 17 sw
+s:regexMatch.221 48 t40 = load32[(inv7 + (t39 << 2))+0] 16 slli, 16 add, 16 lw
+s:regexMatch.268 46 inRange_t3 = (inRange_code <= inRange_high) 23 slt, 23 xori
+s:regexMatch.115 43 if (head >= tail) goto .65 else .66 43 blt
+s:regexMatch.184 40 code = load16[caddr(text, i)+4] 8 lw, 8 bltu, 8 slli, 8 add, 8 lhu
+s:regexMatch.162 38 if (second >=u 9) goto .106 else .109 19 addi, 19 bltu
+s:regexMatch.167 38 if (tail >=u 9) goto .110 else .113 19 addi, 19 bltu
+s:regexMatch.293 38 if (head >= tail) goto .65 else .66 19 bge, 19 j
+s:regexMatch.103 34 if (tail >=u 9) goto .58 else .61 17 addi, 17 bltu
+s:regexMatch.203 32 t37 = (row + 1) 32 addi
+s:regexMatch.208 32 t38 = (row + 2) 32 addi
+s:regexMatch.263 32 inRange_code = code 32 addi
+s:regexMatch.267 32 if (inRange_code >= t44) goto .n2 else .n3 32 blt
+s:regexMatch.215 32 if inRange_t3 goto .145 else .156 32 beq
+s:regexMatch.217 32 if (t39 >=u 45) goto .147 else .150 16 addi, 16 bltu
+s:regexMatch.222 32 if (t40 >=u 9) goto .151 else .154 16 addi, 16 bltu
+s:regexMatch.179 26 if (i == load32[text+0]) goto .47 else .120 9 lw, 9 beq, 8 j
+s:regexMatch.127 26 t29 = (row + 3) 26 addi
+s:regexMatch.133 26 t31 = (row + 4) 26 addi
+s:regexMatch.154 26 tail = (tail + 1) 26 addi
+frame/backend 23  1 addi, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 lw, 1 lw, 1 lw, 1 lw, 1 lw, 1 lw, 1 lw, 1 lw, 1 lw, 1 lw, 1 addi, 1 ret
+s:regexMatch.269 23 goto .n4 23 j
+s:regexMatch.23 21 t42 = (load16[caddr(pattern, p)+4] == 42) 3 lw, 3 bltu, 3 slli, 3 add, 3 lhu, 3 xori, 3 sltiu
+s:regexMatch.9 20 low = load16[caddr(pattern, p)+4] 4 lw, 4 bltu, 4 slli, 4 add, 4 lhu
+s:regexMatch.172 19 tail = (tail + 1) 19 addi
+s:regexMatch.294 18 if (head >= tail) goto .65 else .66 9 bge, 9 j
+s:regexMatch.108 17 tail = (tail + 1) 17 addi
+s:regexMatch.56 16 store32[(inv + (range << 2))+0] = 1 4 slli, 4 add, 4 addi, 4 sw
+s:regexMatch.297 16 if (state >= stateCount) goto .159 else .160 8 bge, 8 j
+s:regexMatch.216 16 t39 = (row + 3) 16 addi
+s:regexMatch.13 12 low = load16[caddr(pattern, (p + 1))+4] 2 addi, 2 lw, 2 bltu, 2 slli, 2 add, 2 lhu
+s:regexMatch.15 12 high = load16[caddr(pattern, (p + 3))+4] 2 addi, 2 lw, 2 bltu, 2 slli, 2 add, 2 lhu
+s:regexMatch.33 12 store32[(inv + (split << 2))+0] = 2 3 slli, 3 add, 3 addi, 3 sw
+s:regexMatch.39 12 store32[(inv + (t15 << 2))+0] = (s + 1) 3 slli, 3 add, 3 addi, 3 sw
+s:regexMatch.45 12 store32[(inv + (t16 << 2))+0] = (s + 2) 3 slli, 3 add, 3 addi, 3 sw
+s:regexMatch.62 12 store32[(inv + (t18 << 2))+0] = low 4 slli, 4 add, 4 sw
+s:regexMatch.68 12 store32[(inv + (t19 << 2))+0] = high 4 slli, 4 add, 4 sw
+s:regexMatch.74 12 store32[(inv + (t20 << 2))+0] = out 4 slli, 4 add, 4 sw
+s:regexMatch.290 11 if (p >= load32[pattern+0]) goto .2 else .3 4 lw, 4 bge, 3 j
+s:regexMatch.86 9 zero frame+180, 36 bytes 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw
+s:regexMatch.87 9 zero frame+216, 36 bytes 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw
+s:regexMatch.88 9 zero frame+252, 36 bytes 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw, 1 sw
+s:regexMatch.93 9 head = 0 9 addi
+s:regexMatch.94 9 tail = 0 9 addi
+s:regexMatch.95 9 state = 0 9 addi
+s:regexMatch.276 9 inv1 = inv9 9 addi
+s:regexMatch.277 9 inv2 = inv10 9 addi
+s:regexMatch.291 9 if (state >= stateCount) goto .n5 else .51 9 bge
+s:regexMatch.270 9 inRange_t3 = 0 9 addi
+s:regexMatch.279 9 inv3 = frame+252 9 addi
+s:regexMatch.280 9 inv4 = frame+180 9 addi
+s:regexMatch.281 9 inv5 = frame+0 9 addi
+s:regexMatch.11 8 if (low == 91) goto .4 else .5 4 addi, 4 bne
+s:regexMatch.21 8 if (p < load32[pattern+0]) goto .7 else .8 4 lw, 4 bge
+s:regexMatch.51 8 range = (5 * s) 4 addi, 4 mul
+s:regexMatch.52 8 if (range >=u 45) goto .25 else .28 4 addi, 4 bltu
+s:regexMatch.58 8 if (t18 >=u 45) goto .29 else .32 4 addi, 4 bltu
+s:regexMatch.64 8 if (t19 >=u 45) goto .33 else .36 4 addi, 4 bltu
+s:regexMatch.70 8 if (t20 >=u 45) goto .37 else .40 4 addi, 4 bltu
+s:regexMatch.185 8 state = 0 8 addi
+s:regexMatch.282 8 inv6 = inv11 8 addi
+s:regexMatch.283 8 inv7 = inv12 8 addi
+s:regexMatch.284 8 inv8 = inv10 8 addi
+s:regexMatch.295 8 if (state >= stateCount) goto .122 else .123 8 blt
+s:regexMatch.234 8 state = 0 8 addi
+s:regexMatch.200 8 t43 = 0 8 addi
+s:regexMatch.201 8 goto .134 8 j
+s:regexMatch.255 8 i = (i + 1) 8 addi
+s:regexMatch.256 8 goto .48 8 j
+s:regexMatch.28 6 split = (5 * s) 3 addi, 3 mul
+s:regexMatch.29 6 if (split >=u 45) goto .12 else .15 3 addi, 3 bltu
+s:regexMatch.35 6 if (t15 >=u 45) goto .16 else .19 3 addi, 3 bltu
+s:regexMatch.41 6 if (t16 >=u 45) goto .20 else .23 3 addi, 3 bltu
+s:regexMatch.262 6 return load32[(frame+180 + (accept << 2))+0] 1 addi, 1 slli, 1 add, 1 lw, 1 addi, 1 j
+s:regexMatch.84 5 store32[(frame+0 + (t22 << 2))+0] = 3 1 addi, 1 slli, 1 add, 1 addi, 1 sw
+s:regexMatch.10 4 high = low 4 addi
+s:regexMatch.20 4 out = (s + 1) 4 addi
+s:regexMatch.27 4 if t42 goto .10 else .24 4 beq
+s:regexMatch.57 4 t18 = (range + 1) 4 addi
+s:regexMatch.63 4 t19 = (range + 2) 4 addi
+s:regexMatch.69 4 t20 = (range + 3) 4 addi
+s:regexMatch.75 4 s = (s + 1) 4 addi
+s:regexMatch.80 3 if (t22 >=u 45) goto .42 else .45 1 addi, 1 bgeu, 1 j
+s:regexMatch.24 3 goto .9 3 j
+s:regexMatch.34 3 t15 = (split + 3) 3 addi
+s:regexMatch.40 3 t16 = (split + 4) 3 addi
+s:regexMatch.46 3 out = s 3 addi
+s:regexMatch.47 3 s = (s + 1) 3 addi
+s:regexMatch.48 3 p = (p + 1) 3 addi
+s:regexMatch.258 3 if (accept >=u 9) goto .175 else .178 1 addi, 1 bgeu, 1 j
+s:regexMatch.289 2 if (p >= load32[pattern+0]) goto .2 else .3 1 lw, 1 blt
+s:regexMatch.79 2 t22 = (5 * accept) 1 addi, 1 mul
+s:regexMatch.16 2 p = (p + 5) 2 addi
+s:regexMatch.17 2 goto .6 2 j
+s:regexMatch.18 2 p = (p + 1) 2 addi
+s:regexMatch.89 2 store32[frame+180+0] = 1 1 addi, 1 sw
+s:regexMatch.4 1 p = 0 1 addi
+s:regexMatch.5 1 s = 0 1 addi
+s:regexMatch.275 1 inv = frame+0 1 addi
+s:regexMatch.78 1 accept = s 1 addi
+s:regexMatch.25 1 t42 = 0 1 addi
+s:regexMatch.85 1 stateCount = (accept + 1) 1 addi
+s:regexMatch.90 1 i = 0 1 addi
+s:regexMatch.285 1 inv9 = frame+252 1 addi
+s:regexMatch.286 1 inv10 = frame+180 1 addi
+s:regexMatch.287 1 inv11 = frame+216 1 addi
+s:regexMatch.288 1 inv12 = frame+0 1 addi
+s:regexMatch.91 1 goto .48 1 j

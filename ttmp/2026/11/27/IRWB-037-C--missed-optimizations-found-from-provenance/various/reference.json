@@ -1,0 +1,202 @@
+{
+  "across-calls": {
+    "n": 700,
+    "limited": 0
+  },
+  "algebra": {
+    "n": 170,
+    "limited": 0
+  },
+  "blend": {
+    "n": 1715,
+    "limited": 0
+  },
+  "bounds-lab": {
+    "n": 4234,
+    "limited": 0
+  },
+  "bounds-offset": {
+    "n": 894,
+    "limited": 0
+  },
+  "bounds-param": {
+    "n": 426,
+    "limited": 0
+  },
+  "bounds-two": {
+    "n": 675,
+    "limited": 0
+  },
+  "branches": {
+    "n": 211,
+    "limited": 0
+  },
+  "bytecode-vm": {
+    "n": 28889,
+    "limited": 0
+  },
+  "call-chain": {
+    "n": 1120,
+    "limited": 0
+  },
+  "calls": {
+    "n": 840,
+    "limited": 0
+  },
+  "checksum": {
+    "n": 1170,
+    "limited": 0
+  },
+  "chess-search": {
+    "n": 334902,
+    "limited": 0
+  },
+  "collatz": {
+    "n": 7016,
+    "limited": 0
+  },
+  "constants": {
+    "n": 160,
+    "limited": 0
+  },
+  "dead-code": {
+    "n": 200,
+    "limited": 0
+  },
+  "diagnostics": {
+    "n": 90,
+    "limited": 0
+  },
+  "distinct": {
+    "n": 700,
+    "limited": 0
+  },
+  "div-checks": {
+    "n": 308,
+    "limited": 0
+  },
+  "div-magic": {
+    "n": 807,
+    "limited": 0
+  },
+  "early-exit": {
+    "n": 575,
+    "limited": 0
+  },
+  "f32-dsp": {
+    "n": 40740,
+    "limited": 0
+  },
+  "first-steps": {
+    "n": 500,
+    "limited": 0
+  },
+  "fixed-point": {
+    "n": 647,
+    "limited": 0
+  },
+  "fragments": {
+    "n": 2021,
+    "limited": 0
+  },
+  "gcd": {
+    "n": 365,
+    "limited": 0
+  },
+  "heat-lab": {
+    "n": 6758,
+    "limited": 0
+  },
+  "histogram": {
+    "n": 2036,
+    "limited": 0
+  },
+  "licm-nested": {
+    "n": 2426,
+    "limited": 0
+  },
+  "licm-traps": {
+    "n": 196,
+    "limited": 0
+  },
+  "lz-roundtrip": {
+    "n": 28499,
+    "limited": 0
+  },
+  "match-enum": {
+    "n": 396,
+    "limited": 0
+  },
+  "my-analysis": {
+    "n": 200696,
+    "limited": 1
+  },
+  "my-first-pass": {
+    "n": 120,
+    "limited": 0
+  },
+  "nested-loops": {
+    "n": 2312,
+    "limited": 0
+  },
+  "orders": {
+    "n": 1351,
+    "limited": 0
+  },
+  "params-demo": {
+    "n": 2021,
+    "limited": 0
+  },
+  "pressure": {
+    "n": 490,
+    "limited": 0
+  },
+  "ramp": {
+    "n": 1120,
+    "limited": 0
+  },
+  "records": {
+    "n": 391,
+    "limited": 0
+  },
+  "regalloc-lab": {
+    "n": 2028,
+    "limited": 0
+  },
+  "regex-nfa": {
+    "n": 34041,
+    "limited": 0
+  },
+  "sha-chacha": {
+    "n": 136109,
+    "limited": 0
+  },
+  "sort": {
+    "n": 3898,
+    "limited": 0
+  },
+  "start-here": {
+    "n": 3167,
+    "limited": 0
+  },
+  "strength": {
+    "n": 1889,
+    "limited": 0
+  },
+  "strings": {
+    "n": 9392,
+    "limited": 0
+  },
+  "ui-gallery": {
+    "n": 825,
+    "limited": 0
+  },
+  "value-numbering": {
+    "n": 3771,
+    "limited": 0
+  },
+  "wrong-shift": {
+    "n": 1410,
+    "limited": 0
+  }
+}
