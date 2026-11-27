@@ -776,9 +776,17 @@ function emitTileKernel(
   // The patch loop variables are named p<a> deterministically, so the text is valid wherever a patch loop is
   // in scope (every use of a coordinate is inside one).
   const coordOf = (a: number) => {
+    // A strided axis spreads the thread's elements over the tile (consecutive threads hold consecutive
+    // coordinates, so tile reads and stores coalesce); a contiguous axis gives each thread a block.
+    const lanes = block[a] / patch[a];
     const parts = [origins[a]];
-    if (block[a] / patch[a] > 1) parts.push(threadOf[a]);
-    if (patch[a] > 1) parts.push(patchMap[a] === 'strided' ? `p${a} * ${block[a] / patch[a]}` : `p${a}`);
+    if (patchMap[a] === 'strided') {
+      if (lanes > 1) parts.push(threadOf[a]);
+      if (patch[a] > 1) parts.push(`p${a} * ${lanes}`);
+    } else {
+      if (lanes > 1) parts.push(`${threadOf[a]} * ${patch[a]}`);
+      if (patch[a] > 1) parts.push(`p${a}`);
+    }
     const live = parts.filter(p => p !== '0');
     return live.length > 1 ? `(${live.join(' + ')})` : (live[0] ?? '0');
   };
@@ -889,7 +897,8 @@ function emitTileKernel(
     guardChunk: boolean,
     elementExtent: string,
   ) => {
-    stageTiles(m, chunk, kBase, elementExtent, guardChunk);
+    w.line(`const I kBase = ${kBase};`);
+    stageTiles(m, chunk, 'kBase', elementExtent, guardChunk);
     w.line('__syncthreads();');
     const foldInto = (term: string) =>
       w.line(
@@ -1023,7 +1032,7 @@ function emitTileKernel(
     }),
   );
   const rowElems = sharedExprs.reduce((a, b) => (a ? `((${a}) > (${b}) ? (${a}) : (${b}))` : b), '');
-  const row = `${rowElems} * sizeof(float)`;
+  const row = `(${rowElems}) * sizeof(float)`;
   const fits = `row_${kernel.id} <= static_cast<U>(shared_limit)`;
   const align = aligns.join(' && ');
   const rule = `${tilesExpr} >= ${tileGate.minTiles}`;
