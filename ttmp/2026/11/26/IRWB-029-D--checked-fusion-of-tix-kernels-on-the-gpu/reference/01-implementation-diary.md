@@ -302,7 +302,7 @@ Three rounds of script 04 give stable medians (spread under 6%); script 10 count
 **User prompt (verbatim):** see Step 1.
 **Assistant interpretation:** Measure kernel counts, times, bytes and contract cost.
 **Inferred user intent:** A report that separates measurement from argument.
-**Commit (code):** see the commit after 0b217d3 (scripts 10-12, GPU output).
+**Commit (code):** 6d3d59a — "IRWB-029-D: scripts 10-12 (bytes per kernel, contract cost, correspondence probe) and the three-round GPU benchmark output"
 
 ### What I did
 - `for r in 1 2 3; do node <ticket>/scripts/04-benchmark.mjs gpu; done > .../04-benchmark-gpu.out.jsonl` at 0b217d3 (source unchanged since b31f270).
@@ -336,3 +336,42 @@ Three rounds of script 04 give stable medians (spread under 6%); script 10 count
 
 ### Technical details
 - The GPU lock covers only `--timed` runs; untimed jobs of other agents can overlap a timed one (step 4's 1.27 ms outlier).
+
+## Step 8: Full-size references, last fixes and final validation
+
+The f32 interpreter, run at full size for all six programs, produced the same output digest as the fused and the unfused GPU lowerings in each of the three benchmark rounds. After the measurements I changed only the planner's reason text (a statement that narrows the block domain because of its rank now says so; attention's comment ended in an empty reason) and added two GB10 feature programs (a fused group whose results are all dead, an affine block domain). Then I wrote the report and reran every tensor test at the last code commit.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Close the evidence and validate the final state.
+**Inferred user intent:** The last commit holds working, validated code.
+**Commit (code):** 7ffecec — "IRWB-029-D: name the reason when a statement's rank narrows the block domain ..."; report 616691d.
+
+### What I did
+- `nice -n 10 node <ticket>/scripts/04-benchmark.mjs cpu softmax layernorm attention mlp`, then `... cpu matmul conv2d` (output appended to `scripts/04-benchmark-cpu.out.jsonl`).
+- `npm run build`; script 02 with `--fuse-false` against its JSON; `node --test tests/tensor/corpus.test.mjs tests/tensor/cuda.test.mjs tests/tensor/language.test.mjs tests/tensor/passes.test.mjs tests/tensor/fusion.test.mjs`; `node --test tests/tensor/fusion-gpu.test.mjs tests/tensor/cuda-gpu.test.mjs`.
+
+### What worked
+- Interpreter at full size (local wall ms): softmax 4,048, layernorm 7,793, attention 59,180, mlp 212,420, matmul 51,385, conv2d 114,005; each digest equal to the fused and unfused GPU digests of all three rounds.
+- Stage-2 bytes identical; local tensor tests 29/29; GB10 tensor tests 16/16.
+
+### What didn't work
+- No failures.
+
+### What I learned
+- This host runs the interpreter roughly 10 times faster than the stage-2 report's (softmax 4 s against 61 s), so full-size references were cheap.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- The fused sources measured at 0b217d3 differ from the final ones only in the kernel comment line.
+
+### What should be done in the future
+- See the report's Later list.
+
+### Code review instructions
+- Start with the report, then `src/tensor/fusion.ts`, `emitGroup` in `src/tensor/cuda-source.ts`, and `tests/tensor/fusion-gpu.test.mjs`.
+
+### Technical details
+- Framework source unchanged: `git diff f706115 -- src/framework tools` is empty.
