@@ -989,3 +989,14 @@ The user set the cells for implementation tasks from now on, and asked to start 
   - A real leak, a lowercase `irwb-023e` in a script, is now neutralized.
   - Completeness: every text file is packed (for example A 55/55, I 90/90). The difference elsewhere is binary data files, which are skipped by design.
 - **Judges** (prompts in `prompts/judges/`): each pack goes to one Codex judge (Sol high, read-only, with live web search for R2) and one Claude judge (Opus subagent). One run each, to keep Claude usage down. Neither judge's family wrote the new cells, so on those cells neither judge has an own-family bias.
+
+## Step 38: T3's first cells finish; one Pi cell relaunched
+
+- **Codex cells**, all done within about an hour and a half of launch, with small diffs to `src/`, `tests/` and `tools/`:
+  - Sol medium (A): +386 −37. Fused kernels softmax 1, layernorm 1, attention 2, mlp 2.
+  - Astra medium (B): +264 −39. Fused kernels softmax 1, layernorm 1, attention 3, mlp 2.
+  - Terra low (C): +69 −12. It reports itself incomplete: only pointwise chains and some epilogues are fused, softmax and layernorm still have 4 kernels each, and per-kernel bytes are missing.
+- **Fable (E)**: +1114 −88. It adds a kernel-plan artifact (`tensor.kernels`) between Tix and CUDA, with legality as that IR's validator, row kernels with a shared-memory or global-scratch path, and new contract cases (long rows, a spilled run) shown necessary by mutants. Every program fuses to 1 kernel. It reports six framework findings.
+- **Kernel counts differ in the reports.** Every agent counts 6 unfused kernels for attention. The hidden evaluator counts 5 `__global__` definitions on `t3-base`, perhaps because the agents count launches. The evaluator counts the same way for every cell, so this changes how the report reads, not which cell ranks higher.
+- **Cell J (GLM 5.3 Flash max) failed at launch.** LunaRoute returned "the upstream stream failed before completion" within seconds, with no commits. Its first attempt is kept in `kit/t3-gf-max/attempt-1/`. It was relaunched alone with `scripts/41-relaunch-t3-j.sh`, a new file because 33- is still running. J starts about 5.5 hours after the others, so the GPU will be quieter for it and its wall-clock time is not comparable.
+- **Evaluation waits for all ten cells,** then runs one cell at a time so benchmark times are not perturbed.
