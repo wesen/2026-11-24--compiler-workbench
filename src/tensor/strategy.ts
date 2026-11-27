@@ -103,8 +103,10 @@ function schedule(fn: Fn, plan: FusionPlan, fuse: boolean) {
       apply(reorderPass, { ...v, order: ['b.0', 'm.0', 'n.0', 'm.1', 'n.1', 'r.0', 'r.1', 'm.2', 'n.2'] });
       for (const [loop, target] of [
         ['b.0', 'block.z'],
-        ['m.0', 'block.x'],
-        ['n.0', 'block.y'],
+        // n tiles on blockIdx.x, so consecutive blocks share the m operand's tile row (probe 04 at 512^3: 0.050 to
+        // 0.044 ms for variant 2; blockIdx.y also bounds the m tiles at 65,535, past which the host takes variant 0)
+        ['m.0', 'block.y'],
+        ['n.0', 'block.x'],
         ['m.1', 'thread.y'],
         ['n.1', 'thread.x'],
         ['r.1', 'unroll'],

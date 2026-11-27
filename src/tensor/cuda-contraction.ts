@@ -35,11 +35,13 @@ export interface TiledForm {
   tm: number;
   tn: number;
   fast: { m: Dim; n: Dim };
+  /** The dim whose tiles blockIdx.x numbers (the other is blockIdx.y). */
+  gridX: 'm' | 'n';
 }
-const printable: [string, Loop['bind']][] = [
+const printable: [string, Loop['bind'] | 'block.x|y'][] = [
   ['b.0', 'block.z'],
-  ['m.0', 'block.x'],
-  ['n.0', 'block.y'],
+  ['m.0', 'block.x|y'],
+  ['n.0', 'block.x|y'],
   ['m.1', 'thread.y'],
   ['n.1', 'thread.x'],
   ['r.0', 'serial'],
@@ -56,7 +58,10 @@ export function variantForm(v: Variant): 'plain' | TiledForm | string {
   )
     return 'plain';
   for (const [i, [id, bind]] of printable.entries())
-    if (v.loops[i]?.id !== id || v.loops[i].bind !== bind)
+    if (
+      v.loops[i]?.id !== id ||
+      (bind === 'block.x|y' ? !['block.x', 'block.y'].includes(v.loops[i].bind) : v.loops[i].bind !== bind)
+    )
       return `schedule not printable: expected loop ${i} to be ${id} bound to ${bind}, found ${v.loops[i]?.id ?? 'none'}`;
   if (v.loops.length !== printable.length) return 'schedule not printable: extra loops';
   const stage = (o: 'm' | 'n') => v.stages.find(s => s.operand === o && s.at === 'r.0');
@@ -64,7 +69,16 @@ export function variantForm(v: Variant): 'plain' | TiledForm | string {
     sn = stage('n');
   if (!sm || !sn || v.stages.length !== 2) return 'schedule not printable: both operands must be staged at r.0';
   const f = (id: string) => at(id)!.factor!;
-  return { bm: f('m.1') * f('m.2'), bn: f('n.1') * f('n.2'), bk: f('r.1'), tm: f('m.2'), tn: f('n.2'), fast: { m: sm.fast, n: sn.fast } };
+  if (at('m.0')!.bind === at('n.0')!.bind) return 'schedule not printable: m.0 and n.0 share a block index';
+  return {
+    bm: f('m.1') * f('m.2'),
+    bn: f('n.1') * f('n.2'),
+    bk: f('r.1'),
+    tm: f('m.2'),
+    tn: f('n.2'),
+    fast: { m: sm.fast, n: sn.fast },
+    gridX: at('m.0')!.bind === 'block.x' ? 'm' : 'n',
+  };
 }
 
 const product = (dims: string[]) =>
@@ -118,7 +132,11 @@ export function emitContraction(
       .map(f => (typeof f === 'string' ? f : `${f.bm}x${f.bn}x${f.bk}/${f.tm}x${f.tn}`))
       .join(', ')}`,
     'template <int V>',
-    `__global__ void ${name}(${params.join(', ')}) {`,
+    // Registers are allocated for the variant's block size (probe 04: without the bound, variants 1 and 2 ran 1.7
+    // and 2.2 times slower at 512^3).
+    `__global__ void __launch_bounds__(${forms
+      .map((f, v) => (typeof f === 'string' ? '' : `V == ${v} ? ${(f.bm / f.tm) * (f.bn / f.tn)} : `))
+      .join('')}256) ${name}(${params.join(', ')}) {`,
   ];
   // Members after the accumulator: in order, a member read later is a register, the stored ones are written.
   const epilogue = (w: Writer, registers: Map<string, string>, store: (m: Statement, value: string) => void) => {
@@ -161,7 +179,8 @@ export function emitContraction(
       w.line('__shared__ __align__(16) float Bs[BK][BN + 4];');
       w.line(`const U extent_m = ${product(sizes('m'))}, extent_n = ${product(sizes('n'))}, extent_r = ${product(sizes('r'))};`);
       w.line('const int tx = threadIdx.x % TX, ty = threadIdx.x / TX;');
-      w.line('const U m0 = static_cast<U>(blockIdx.x) * BM, n0 = static_cast<U>(blockIdx.y) * BN;');
+      const [mx, nx] = f.gridX === 'm' ? ['x', 'y'] : ['y', 'x'];
+      w.line(`const U m0 = static_cast<U>(blockIdx.${mx}) * BM, n0 = static_cast<U>(blockIdx.${nx}) * BN;`);
       // Decode a flattened dim value into its axes, row-major (the dim's list order, the last fastest).
       const decode = (value: string, d: Dim, prefix: string) => {
         const axes = k.dims[d];
@@ -280,7 +299,7 @@ export function emitContraction(
     if (f === 'plain' || typeof f === 'string') return;
     host.push(
       `  const U grid_x_${name}_${v} = (extent_m_${name} + ${f.bm - 1}) / ${f.bm}, grid_y_${name}_${v} = (extent_n_${name} + ${f.bn - 1}) / ${f.bn};`,
-      `  const bool fits_${name}_${v} = grid_x_${name}_${v} < (1ULL << 31) && grid_y_${name}_${v} <= 65535 && extent_b_${name} <= 65535;`,
+      `  const bool fits_${name}_${v} = grid_${f.gridX === 'm' ? 'x' : 'y'}_${name}_${v} < (1ULL << 31) && grid_${f.gridX === 'm' ? 'y' : 'x'}_${name}_${v} <= 65535 && extent_b_${name} <= 65535;`,
       `  const U blocks_${name}_${v} = grid_x_${name}_${v} * grid_y_${name}_${v} * extent_b_${name};`,
     );
   });
@@ -302,7 +321,8 @@ export function emitContraction(
     if (f === 'plain')
       return `      if (variant_${name} == ${v}) ${name}<${v}><<<(count_${name} - 1) / 256 + 1, 256>>>(${args});`;
     const t = f as TiledForm;
-    return `      if (variant_${name} == ${v}) ${name}<${v}><<<dim3(static_cast<unsigned>(grid_x_${name}_${v}), static_cast<unsigned>(grid_y_${name}_${v}), static_cast<unsigned>(extent_b_${name})), ${(t.bm / t.tm) * (t.bn / t.tn)}>>>(${args});`;
+    const [gx, gy] = t.gridX === 'm' ? ['x', 'y'] : ['y', 'x'];
+    return `      if (variant_${name} == ${v}) ${name}<${v}><<<dim3(static_cast<unsigned>(grid_${gx}_${name}_${v}), static_cast<unsigned>(grid_${gy}_${name}_${v}), static_cast<unsigned>(extent_b_${name})), ${(t.bm / t.tm) * (t.bn / t.tn)}>>>(${args});`;
   });
   return {
     code: lines.join('\n'),
