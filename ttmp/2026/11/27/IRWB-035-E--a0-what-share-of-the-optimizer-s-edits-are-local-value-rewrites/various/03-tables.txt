@@ -1,0 +1,202 @@
+corpus: 50 projects (of 50), pipelines O2 speed
+
+headline, by edit count / by instruction weight (owned + dropped)
+pipeline   edits   local  struct   other | weight  local  struct   other
+O2          2021   19.5   72.1    8.4 |  5599    7.1   26.0    3.0
+             395   1457    169 |  5599    395   1457    169
+speed       9736   10.2   84.1    5.6 | 20366    4.9   40.2    2.7
+             997   8192    547 | 20366    997   8192    547
+both        11757   11.8   82.1    6.1 | 25965    5.4   37.2    2.8
+
+O2: per pass (edits, classes in %, instruction weight, justifications)
+pass        edits  local struct  other | weight  own   drop  | rule  fact  none
+cfg         1058    0.0  100.0   0.0 |   2091   983  1108 |     0     0     0
+licm         329    0.0  100.0   0.0 |    509   342   167 |     0     0     0
+constprop    141  100.0    0.0   0.0 |   1272   643   629 |     0   141     0
+simplify     140  100.0    0.0   0.0 |    505   248   257 |   140     0     0
+dce          118    0.0    0.0 100.0 |    127     0   127 |     0     0     0
+subst        102   50.0    0.0  50.0 |    616   296   320 |     0    51     0
+lvn           44    0.0  100.0   0.0 |     75    43    32 |     0     0     0
+fold          43  100.0    0.0   0.0 |    240    81   159 |    43     0     0
+bce           26    0.0  100.0   0.0 |     39     0    39 |     0     0     0
+strength      20  100.0    0.0   0.0 |    125    56    69 |     0    20     0
+
+speed: per pass (edits, classes in %, instruction weight, justifications)
+pass        edits  local struct  other | weight  own   drop  | rule  fact  none
+cfg         4234    0.0  100.0   0.0 |   6553  3193  3360 |     0     0     0
+inline      3165    0.0  100.0   0.0 |   6413  4241  2172 |     0     0     0
+subst        662   50.0    0.0  50.0 |   2255  1042  1213 |     0   331     0
+licm         422    0.0  100.0   0.0 |    579   394   185 |     0     0     0
+rotate       281    0.0  100.0   0.0 |    647   404   243 |     0     0     0
+simplify     258  100.0    0.0   0.0 |    956   468   488 |   258     0     0
+constprop    258  100.0    0.0   0.0 |   1761   921   840 |     0   258     0
+dce          216    0.0    0.0 100.0 |    230     0   230 |     0     0     0
+fold         104  100.0    0.0   0.0 |    594   202   392 |   104     0     0
+lvn           64    0.0  100.0   0.0 |    106    63    43 |     0     0     0
+strength      46  100.0    0.0   0.0 |    233   103   130 |     0    46     0
+bce           26    0.0  100.0   0.0 |     39     0    39 |     0     0     0
+
+the local rewrites: verified-rule coverage (both pipelines together)
+  O2: 395 local edits; rule 183 (46.3 %), fact 212 (53.7 %), none 0
+  speed: 997 local edits; rule 362 (36.3 %), fact 635 (63.7 %), none 0
+  rules fired (both pipelines):
+    mul-pow2: 190
+    not-lt: 134
+    fold-shl: 73
+    pow2-mul: 47
+    fold-sub: 46
+    fold-mul: 22
+    add-zero: 10
+    fold-add: 10
+    zero-add: 9
+    not-gt: 8
+    not-le: 6
+    mul-one: 4
+    mul-zero: 4
+    fold-eqz: 4
+    sub-zero: 2
+    sub-self: 2
+    not-ge: 2
+    not-ne: 2
+    fold-gt: 2
+    zero-mul: 2
+    div-one: 1
+  fact shapes (the rule shapes that would cover the rest):
+    constprop: every reaching definition of the read assigns this constant: 399
+    subst: the read has one definition, this pure tree, and this is its only read: 382
+    strength: a range fact proves the operand non-negative: 66
+  not re-derived (none): none
+
+O2: per project (edits by class in %, image sizes r0 -> head)
+project            edits local struct other | r0 head
+across-calls          4  50.0    0.0  50.0 | 50 48
+algebra              11  72.7    0.0  27.3 | 10 2
+blend                 9  33.3   55.6  11.1 | 24 22
+bounds-lab           40  10.0   90.0   0.0 | 79 70
+bounds-offset         7  14.3   85.7   0.0 | 25 25
+bounds-param          3  33.3   66.7   0.0 | 15 15
+bounds-two           13   7.7   92.3   0.0 | 24 21
+branches             12   8.3   83.3   8.3 | 29 26
+bytecode-vm         205   1.5   97.6   1.0 | 212 227
+call-chain            1 100.0    0.0   0.0 | 43 43
+calls                 2  50.0    0.0  50.0 | 53 53
+checksum             11   9.1   90.9   0.0 | 16 13
+chess-search        764  18.1   78.1   3.8 | 3369 3314
+collatz               0   0.0    0.0   0.0 | 22 22
+constants             8  75.0    0.0  25.0 | 10 7
+dead-code            24  20.8   62.5  16.7 | 15 3
+diagnostics           3  66.7    0.0  33.3 | 3 3
+distinct              0   0.0    0.0   0.0 | 28 28
+div-checks            6  66.7    0.0  33.3 | 23 22
+div-magic             2 100.0    0.0   0.0 | 30 34
+early-exit           12  16.7   83.3   0.0 | 18 15
+f32-dsp              82  26.8   72.0   1.2 | 362 361
+first-steps           4  75.0    0.0  25.0 | 18 16
+fixed-point           9  66.7    0.0  33.3 | 32 32
+fragments             9  33.3   55.6  11.1 | 24 22
+gcd                   1 100.0    0.0   0.0 | 9 9
+heat-lab             13   7.7   92.3   0.0 | 60 60
+histogram            17   5.9   94.1   0.0 | 47 44
+licm-nested          10  20.0   80.0   0.0 | 17 17
+licm-traps            1 100.0    0.0   0.0 | 17 17
+lz-roundtrip         79  24.1   57.0  19.0 | 315 351
+match-enum            6   0.0   83.3  16.7 | 44 39
+my-analysis          12  16.7   83.3   0.0 | 13 13
+my-first-pass         8  25.0   50.0  25.0 | 6 5
+nested-loops          5  40.0   60.0   0.0 | 15 15
+orders               36  44.4   44.4  11.1 | 39 34
+params-demo           9  33.3   55.6  11.1 | 24 22
+pressure              8  25.0   50.0  25.0 | 28 24
+ramp                 14  21.4   71.4   7.1 | 22 20
+records               0   0.0    0.0   0.0 | 28 28
+regalloc-lab          8  25.0   75.0   0.0 | 87 87
+regex-nfa           252   6.3   90.5   3.2 | 432 507
+sha-chacha          206  40.3   21.4  38.3 | 1466 1374
+sort                 13   7.7   92.3   0.0 | 60 60
+start-here           17  23.5   76.5   0.0 | 83 78
+strength             14  28.6   64.3   7.1 | 33 29
+strings              24   8.3   91.7   0.0 | 63 57
+ui-gallery           11  54.5   36.4   9.1 | 47 44
+value-numbering       5  20.0   80.0   0.0 | 26 23
+wrong-shift          11   9.1   90.9   0.0 | 26 23
+
+speed: per project (edits by class in %, image sizes r0 -> head)
+project            edits local struct other | r0 head
+across-calls         69   4.3   91.3   4.3 | 50 27
+algebra              11  72.7    0.0  27.3 | 10 2
+blend                12  25.0   66.7   8.3 | 24 23
+bounds-lab           58  12.1   82.8   5.2 | 79 74
+bounds-offset        10  10.0   90.0   0.0 | 25 28
+bounds-param          6  16.7   83.3   0.0 | 15 16
+bounds-two           18  11.1   83.3   5.6 | 24 22
+branches             12   8.3   83.3   8.3 | 29 26
+bytecode-vm         205   1.5   97.6   1.0 | 212 227
+call-chain          135   5.2   90.4   4.4 | 43 35
+calls                96  10.4   81.3   8.3 | 53 34
+checksum             16  12.5   81.3   6.3 | 16 14
+chess-search       7260   8.6   86.9   4.5 | 3369 6364
+collatz               3   0.0  100.0   0.0 | 22 24
+constants             8  75.0    0.0  25.0 | 10 7
+dead-code            24  20.8   62.5  16.7 | 15 3
+diagnostics           3  66.7    0.0  33.3 | 3 3
+distinct             55   5.5   89.1   5.5 | 28 8
+div-checks            6  66.7    0.0  33.3 | 23 22
+div-magic             5  40.0   60.0   0.0 | 30 35
+early-exit           17  17.6   76.5   5.9 | 18 16
+f32-dsp             129  18.6   79.1   2.3 | 362 331
+first-steps          51  23.5   64.7  11.8 | 18 8
+fixed-point          55  27.3   56.4  16.4 | 32 31
+fragments            12  25.0   66.7   8.3 | 24 23
+gcd                   4  25.0   75.0   0.0 | 9 10
+heat-lab             19   5.3   94.7   0.0 | 60 63
+histogram            22   9.1   86.4   4.5 | 47 45
+licm-nested          16  12.5   87.5   0.0 | 17 19
+licm-traps            4  25.0   75.0   0.0 | 17 18
+lz-roundtrip        192  14.6   74.0  11.5 | 315 352
+match-enum            6   0.0   83.3  16.7 | 44 39
+my-analysis          16  12.5   87.5   0.0 | 13 17
+my-first-pass         8  25.0   50.0  25.0 | 6 5
+nested-loops         11  18.2   81.8   0.0 | 15 17
+orders               39  41.0   48.7  10.3 | 39 35
+params-demo          12  25.0   66.7   8.3 | 24 23
+pressure              8  25.0   50.0  25.0 | 28 24
+ramp                 19  21.1   68.4  10.5 | 22 21
+records               0   0.0    0.0   0.0 | 28 28
+regalloc-lab         33  12.1   81.8   6.1 | 87 65
+regex-nfa           288   6.3   90.3   3.5 | 432 474
+sha-chacha          541  21.4   60.4  18.1 | 1466 1204
+sort                 19   5.3   94.7   0.0 | 60 63
+start-here           89  18.0   73.0   9.0 | 83 61
+strength             19  26.3   63.2  10.5 | 33 30
+strings              34  11.8   82.4   5.9 | 63 59
+ui-gallery           37  29.7   64.9   5.4 | 47 32
+value-numbering       8  12.5   87.5   0.0 | 26 24
+wrong-shift          16  12.5   81.3   6.3 | 26 24
+
+O2: instruction weight by pass and class (owned + dropped, in % of the pipeline's total weight 5599)
+pass        local struct  other | weight
+cfg          0.0   50.6   0.0 | 2091
+constprop   11.1    0.0   0.0 | 1272
+subst        8.3    0.0   8.3 | 616
+licm         0.0   64.6   0.0 | 509
+simplify    27.7    0.0   0.0 | 505
+fold        17.9    0.0   0.0 | 240
+dce          0.0    0.0  92.9 | 127
+strength    16.0    0.0   0.0 | 125
+lvn          0.0   58.7   0.0 | 75
+bce          0.0   66.7   0.0 | 39
+
+speed: instruction weight by pass and class (owned + dropped, in % of the pipeline's total weight 20366)
+pass        local struct  other | weight
+cfg          0.0   64.6   0.0 | 6553
+inline       0.0   49.4   0.0 | 6413
+subst       14.7    0.0  14.7 | 2255
+constprop   14.7    0.0   0.0 | 1761
+simplify    27.0    0.0   0.0 | 956
+rotate       0.0   43.4   0.0 | 647
+fold        17.5    0.0   0.0 | 594
+licm         0.0   72.9   0.0 | 579
+strength    19.7    0.0   0.0 | 233
+dce          0.0    0.0  93.9 | 230
+lvn          0.0   60.4   0.0 | 106
+bce          0.0   66.7   0.0 | 39

@@ -30,3 +30,30 @@ motion; subst/constprop/strength/fold/simplify replaces are pure value rewrites)
 (dead statement elimination is neither a value rewrite nor one of the listed structural transformations — and
 it is a third, per-site-provable shape worth counting); instruction weight as owned+dropped image instructions
 around each edit, using the backend's per-instruction `covers`.
+
+## Step 2: the classifier's three surprises, the test, and the census (2026-11-27)
+
+Implemented `src/typed/edit-class.ts` (classifyApplication, rederive) and `tests/typed/edit-class.test.mjs`
+(5 tests, all pass). The test corpus taught the decision procedure three cases the design's first draft missed;
+all three are now pinned in the design (§3.4) and handled by rules the edit records prove:
+
+1. **Chained replaces (lvn).** lvn numbers one field twice: its first `replace`'s result tree is itself replaced
+   by its second, so one tree exists only in the pass's working copy. The motion test now runs on the chain's
+   surviving tree; a chained replace that is not motion bookkeeping is local with justification `none`
+   (unverifiable from published data).
+2. **A hoist of a hoist (licm on chess-search).** licm can hoist a hoist: the set it moved into an outer loop's
+   body is itself hoisted out of that loop, giving a `replace` on a statement that exists in *neither* published
+   revision as a pair. An edit on a statement the same application inserted is structural bookkeeping.
+3. **Pruned blocks (licm on chess-search, lz-roundtrip, regex-nfa).** licm's own commit can prune the block of a
+   statement it just rewrote; the edit is proved part of the pruning by the application's `unreachable` records.
+
+Failure evidence for each was collected with inline probes (the reasons printed by the classifier) before fixing;
+the census re-ran the three affected projects (chess-search, lz-roundtrip, regex-nfa) after the fix.
+
+Census 02 ran over all 50 projects x O2/speed (946 s under load average ~37; chess-search alone is ~640 s —
+inlining grows one caller past a thousand statements and every later analysis walks it). A second full run added
+per-class instruction weights (the first run recorded owned/dropped per pass only, which cannot split subst's
+50/50 mixes); the numbers below are from the second run.
+
+Early sanity: no local rewrite is justification `none` anywhere on the corpus, and every fold/simplify replace
+re-derives — the classifier agrees with IRWB-008's 394-of-394 measurement on the O2-family pipelines.

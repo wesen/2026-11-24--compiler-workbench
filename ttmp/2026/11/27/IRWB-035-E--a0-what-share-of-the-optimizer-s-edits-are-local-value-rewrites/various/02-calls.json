@@ -13,6 +13,20 @@
       "structural": 0,
       "other": 1
      },
+     "wcls": {
+      "local": {
+       "owned": 7,
+       "dropped": 5
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 2
+      }
+     },
      "just": {
       "rule": 0,
       "fact": 1,
@@ -33,6 +47,20 @@
     "structural": 0,
     "other": 1
    },
+   "wcls": {
+    "local": {
+     "owned": 7,
+     "dropped": 5
+    },
+    "structural": {
+     "owned": 0,
+     "dropped": 0
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 2
+    }
+   },
    "images": {
     "r0": 53,
     "head": 53
@@ -48,6 +76,20 @@
       "local": 0,
       "structural": 34,
       "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 15,
+       "dropped": 32
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
      },
      "just": {
       "rule": 0,
@@ -67,6 +109,20 @@
       "structural": 44,
       "other": 0
      },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 14,
+       "dropped": 14
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
      "just": {
       "rule": 0,
       "fact": 0,
@@ -84,6 +140,20 @@
       "local": 6,
       "structural": 0,
       "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 10,
+       "dropped": 4
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
      },
      "just": {
       "rule": 0,
@@ -105,6 +175,20 @@
       "structural": 0,
       "other": 4
      },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 6
+      }
+     },
      "just": {
       "rule": 0,
       "fact": 0,
@@ -122,6 +206,20 @@
       "local": 4,
       "structural": 0,
       "other": 4
+     },
+     "wcls": {
+      "local": {
+       "owned": 9,
+       "dropped": 6
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 3
+      }
      },
      "just": {
       "rule": 0,
@@ -143,11 +241,25 @@
     "structural": 78,
     "other": 8
    },
+   "wcls": {
+    "local": {
+     "owned": 19,
+     "dropped": 10
+    },
+    "structural": {
+     "owned": 29,
+     "dropped": 46
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 9
+    }
+   },
    "images": {
     "r0": 53,
     "head": 34
    }
   }
  },
- "ms": 1072
+ "ms": 1092
 }

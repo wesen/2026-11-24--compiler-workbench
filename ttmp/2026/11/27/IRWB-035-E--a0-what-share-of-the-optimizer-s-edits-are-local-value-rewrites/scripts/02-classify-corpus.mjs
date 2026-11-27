@@ -147,9 +147,15 @@ function ownedDropped(edits, before, after) {
 }
 
 // ---------- the census ----------
+const wcls = () => ({
+  local: { owned: 0, dropped: 0 },
+  structural: { owned: 0, dropped: 0 },
+  other: { owned: 0, dropped: 0 },
+});
 const zero = () => ({
   edits: 0,
   cls: { local: 0, structural: 0, other: 0 },
+  wcls: wcls(),
   just: { rule: 0, fact: 0, none: 0 },
   facts: {},
   rules: {},
@@ -172,6 +178,7 @@ for (const id of ids) {
       byPass: {},
       edits: 0,
       cls: { local: 0, structural: 0, other: 0 },
+      wcls: wcls(),
       images: {},
     };
     let cur = r0,
@@ -196,8 +203,14 @@ for (const id of ids) {
         row.edits++;
         pipe.cls[c.cls]++;
         row.cls[c.cls]++;
-        row.owned += covering(nextIdx, owned.get(e));
-        row.dropped += covering(prevIdx, dropped.get(e));
+        const own = covering(nextIdx, owned.get(e)),
+          drop = covering(prevIdx, dropped.get(e));
+        row.owned += own;
+        row.dropped += drop;
+        row.wcls[c.cls].owned += own;
+        row.wcls[c.cls].dropped += drop;
+        pipe.wcls[c.cls].owned += own;
+        pipe.wcls[c.cls].dropped += drop;
         if (c.cls === 'local') {
           row.just[c.local.kind]++;
           if (c.local.kind === 'rule')

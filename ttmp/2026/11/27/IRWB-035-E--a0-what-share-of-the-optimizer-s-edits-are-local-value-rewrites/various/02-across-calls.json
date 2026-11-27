@@ -13,6 +13,20 @@
       "structural": 0,
       "other": 2
      },
+     "wcls": {
+      "local": {
+       "owned": 14,
+       "dropped": 14
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 2
+      }
+     },
      "just": {
       "rule": 0,
       "fact": 2,
@@ -33,6 +47,20 @@
     "structural": 0,
     "other": 2
    },
+   "wcls": {
+    "local": {
+     "owned": 14,
+     "dropped": 14
+    },
+    "structural": {
+     "owned": 0,
+     "dropped": 0
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 2
+    }
+   },
    "images": {
     "r0": 50,
     "head": 48
@@ -48,6 +76,20 @@
       "local": 0,
       "structural": 20,
       "other": 0
+     },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 16,
+       "dropped": 24
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
      },
      "just": {
       "rule": 0,
@@ -67,6 +109,20 @@
       "structural": 43,
       "other": 0
      },
+     "wcls": {
+      "local": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "structural": {
+       "owned": 22,
+       "dropped": 22
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 0
+      }
+     },
      "just": {
       "rule": 0,
       "fact": 0,
@@ -84,6 +140,20 @@
       "local": 3,
       "structural": 0,
       "other": 3
+     },
+     "wcls": {
+      "local": {
+       "owned": 14,
+       "dropped": 8
+      },
+      "structural": {
+       "owned": 0,
+       "dropped": 0
+      },
+      "other": {
+       "owned": 0,
+       "dropped": 7
+      }
      },
      "just": {
       "rule": 0,
@@ -105,11 +175,25 @@
     "structural": 63,
     "other": 3
    },
+   "wcls": {
+    "local": {
+     "owned": 14,
+     "dropped": 8
+    },
+    "structural": {
+     "owned": 38,
+     "dropped": 46
+    },
+    "other": {
+     "owned": 0,
+     "dropped": 7
+    }
+   },
    "images": {
     "r0": 50,
     "head": 27
    }
   }
  },
- "ms": 1360
+ "ms": 737
 }
