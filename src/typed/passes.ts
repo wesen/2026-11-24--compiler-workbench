@@ -420,30 +420,38 @@ export const cfg = typedPass({
   },
 });
 
+/**
+ * IRWB-034-D: what makes a hoist a win rather than a loss.
+ *
+ * Hoisting a computation from a block `D` to the preheader `P` replaces `count(D)` executions by `count(P)`. `P`
+ * runs once per *entry* into the loop, `D` once per *iteration* that reaches it, and those are two different
+ * counts. A hoist is kept only when both hold:
+ *
+ *   - the loop's head has a single back edge. Otherwise the CFG splits one loop into several natural loops that
+ *     share a head (one per back edge — the bytecode VM's dispatch loop has nine), each with its own preheader,
+ *     and every preheader sits on the path of the *other* back edges, so it runs once per re-entry rather than
+ *     once per iteration. A nested loop still has a single back edge per head: it is re-entered once per outer
+ *     iteration, which is a real entry and runs the whole inner loop;
+ *   - `D` dominates the loop's latch: every iteration that reaches the back edge computes `D`.
+ *
+ * Then `count(D) ≥ count(iterations) ≥ count(entries) − count(entries that leave before the latch)`, so the hoist
+ * can only lose the executions of the entries that leave the loop before reaching the latch — at most one per
+ * entry, which is what every LICM pays for a loop that runs zero times. It cannot lose in proportion to the trip
+ * count, which is what the bytecode VM did: its opcode arms ran 12 times while their preheader ran 172.
+ */
 export const licm = typedPass({
   name: 'licm',
   about:
-    'loop-invariant code motion: pure expressions whose operands the loop never assigns move to the preheader',
-  needs: { loops: 'loops' },
+    'loop-invariant code motion: pure expressions whose operands the loop never assigns, and that are certain to execute, move to the preheader',
+  needs: { loops: 'loops', dom: 'dominators' },
   writes: ['stmts', 'values', 'locals', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts }) {
+    const dom = facts.dom!;
+    // the pass's input graph: the head's predecessors, which the hoists themselves would change
+    const preds = new Map(f.blocks.map(b => [b.id, [] as string[]]));
+    for (const b of f.blocks) for (const s of b.succ) preds.get(s)?.push(b.id);
     for (const L of facts.loops!) {
-      let pre = L.preheader;
-      if (!pre) {
-        pre = tx.block({ because: [L.id], note: 'preheader' });
-        tx.insert(tx.at.start(pre), tx.stmt({ op: 'br', to: L.head }, { because: [L.id] }), {
-          because: [L.id],
-        });
-        for (const b of f.blocks) {
-          if (L.body.includes(b.id) || b.id === pre) continue;
-          const last = lastStmt(st, b);
-          if (!last) continue;
-          for (const field of ['to', 'then', 'else'] as const)
-            if (last[field] === L.head) tx.setField(last.id, field, pre, { because: [L.id] });
-        }
-        if (f.blocks[0].id === L.head) throw new TxError('unsupported', 'licm: a loop at the entry block');
-      }
       const assigned = new Set(L.assigned);
       const INV = [
         'get',
@@ -474,6 +482,61 @@ export const licm = typedPass({
         if (v.op === 'get') return !assigned.has(v.imm as number);
         return v.args.every(inv);
       };
+      /** The values the hoist would lift out of this tree: the largest invariant ones that are not leaves. */
+      const hoistable = (id: string, out: string[] = []): string[] => {
+        const v = st.get(id) as ValueRec;
+        if (v.op !== 'const' && v.op !== 'get' && inv(id)) out.push(id);
+        else v.args.forEach(a => hoistable(a, out));
+        return out;
+      };
+      // how many natural loops this head has: more than one means the preheader is on the other back edges' path
+      const latches = (preds.get(L.head) ?? []).filter(p => dom.dominates(L.head, p)).length;
+      const oneLatched = latches <= 1;
+      // which statements may hoist at all: those whose block runs on every iteration that reaches the latch
+      const certain = (bid: string) => oneLatched && dom.dominates(bid, L.latch);
+      const why = oneLatched
+        ? `not certain to execute on every iteration of ${L.id}`
+        : `${L.head} is the head of ${latches} natural loops: the preheader of ${L.id} runs once per re-entry`;
+      const work: { sid: string; field: 'value' | 'cond' | 'addr' }[] = [];
+      for (const bid of L.body) {
+        const may = certain(bid);
+        for (const sid of (st.get(bid) as BlockRec).stmts.slice()) {
+          const s = st.get(sid) as StmtRec;
+          for (const k of ['value', 'cond', 'addr'] as const) {
+            if (!s[k]) continue;
+            const found = hoistable(s[k]!);
+            if (!found.length) continue;
+            if (may) work.push({ sid, field: k });
+            else
+              // a decision not taken, recorded so it can be found later (a missed optimization, a refused one)
+              for (const value of found) {
+                tx.record('skip', {
+                  stmt: sid,
+                  value,
+                  block: bid,
+                  why,
+                });
+              }
+          }
+        }
+      }
+      if (!work.length) continue;
+      // the preheader is worth its `br` only when something moves into it
+      let pre = L.preheader;
+      if (!pre) {
+        pre = tx.block({ because: [L.id], note: 'preheader' });
+        tx.insert(tx.at.start(pre), tx.stmt({ op: 'br', to: L.head }, { because: [L.id] }), {
+          because: [L.id],
+        });
+        for (const b of f.blocks) {
+          if (L.body.includes(b.id) || b.id === pre) continue;
+          const last = lastStmt(st, b);
+          if (!last) continue;
+          for (const field of ['to', 'then', 'else'] as const)
+            if (last[field] === L.head) tx.setField(last.id, field, pre, { because: [L.id] });
+        }
+        if (f.blocks[0].id === L.head) throw new TxError('unsupported', 'licm: a loop at the entry block');
+      }
       const hoist = (id: string): string => {
         const v = st.get(id) as ValueRec;
         if (v.op !== 'const' && v.op !== 'get' && inv(id)) {
@@ -487,15 +550,12 @@ export const licm = typedPass({
           ? tx.make(v.op, ...args, { imm: v.imm, from: id, type: v.type ?? 'i32' })
           : id;
       };
-      for (const bid of L.body)
-        for (const sid of (st.get(bid) as BlockRec).stmts.slice()) {
-          const s = st.get(sid) as StmtRec;
-          for (const k of ['value', 'cond', 'addr'] as const)
-            if (s[k]) {
-              const n = hoist(s[k]!);
-              if (n !== s[k]) tx.setField(sid, k, n, { because: [L.id] });
-            }
-        }
+      for (const { sid, field } of work) {
+        const cur = (st.get(sid) as StmtRec)[field];
+        if (!cur) continue;
+        const n = hoist(cur);
+        if (n !== cur) tx.setField(sid, field, n, { because: [L.id] });
+      }
     }
   },
 });

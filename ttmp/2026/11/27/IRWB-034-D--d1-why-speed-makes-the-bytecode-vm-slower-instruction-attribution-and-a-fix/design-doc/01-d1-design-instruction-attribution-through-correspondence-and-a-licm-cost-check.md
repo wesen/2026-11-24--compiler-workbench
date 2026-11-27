@@ -149,16 +149,38 @@ executions. `P` executes once per **entry** into the loop; `D` executes once per
 block is reached. Entries can exceed iterations (an entry may leave the loop without ever reaching the
 latch), which is exactly what happens in the bytecode VM: `D` ran 12 times, `P` ran 172 times.
 
-Guard: hoist out of loop `L` only when the defining block `D` **dominates every exit of `L`**.
+Guard, first draft: hoist out of loop `L` only when the defining block `D` **dominates every exit of `L`**.
 
 Argument (no profile, no threshold): if `D` dominates all exits then every path from the head to an exit
 runs `D`, hence every entry into `L` that reaches an exit executes `D` at least once, hence
 `count(D) ≥ count(entries) = count(P)`. The hoist therefore never increases the number of executions, and
 strictly decreases it when `D` executes on more iterations than the loop is entered, or when `D` computes
 values with more than one use. This is the same structural property LLVM's `isGuaranteedToExecute` uses
-(there for trap safety, here for cost), and it is precise enough to keep the profitable hoists: a value
-computed in a block on every dispatch dominates the loop's exits; a value computed in one opcode arm does
-not.
+(there for trap safety, here for cost).
+
+### Revision after measuring: the rule is two checks, not one (deviation from the plan)
+
+The exit-dominance guard is too strong, and the corpus says so. `D` must also dominate the *trap* and
+*return* exits, and Typed's loops have a bounds-check trap inside them by construction, so the guard refused
+Blend's hoist — the running example of the spec, whose O2 image is pinned by `tests/typed/backend.test.mjs`
+(88 bytes / 451 instructions) — and every hoist in `licm-nested`, which is the project that exists to show
+hoisting through two loops (1,678 → 2,677 instructions, i.e. back to r0). An exit that leaves the loop for
+good (a trap, a return, a loop exit) costs at most one extra execution per entry; it cannot cost in
+proportion to the trip count, which is what the bytecode VM did.
+
+The rule that ships has two checks:
+
+1. **The loop's head has a single back edge.** When the CFG gives one head several back edges (the
+   bytecode VM's dispatch loop has nine), each natural loop is a fragment, and every preheader sits on the
+   path of the *other* back edges: it runs once per **re-entry**, not once per iteration. This is the
+   defect; it is also what the nine overlapping natural loops are.
+2. **`D` dominates the loop's latch.** Every iteration that reaches the back edge computes `D`, so the
+   hoist saves on every iteration and can only lose the entries that leave the loop before the latch — at
+   most one per entry, the zero-trip cost every LICM pays.
+
+A nested loop passes both: its inner head has a single back edge (the outer latch jumps to the outer head),
+and its body dominates its latch. The bytecode VM's arms pass neither: nine back edges, and the arm that
+computes `sp + 0` does not dominate the dispatch loop's latch.
 
 ### Lazy preheader
 
@@ -169,10 +191,11 @@ bytecode VM, each costing a jump per dispatch. The 18 `retarget` edits are part 
 
 ### What licm records
 
-Each accepted hoist already records `note: "hoisted out of loop:…"`. Each refused hoist will record
-`tx.record('skip', { value, block, why })` with `why: 'not guaranteed to execute'`, so the next stage can
-find a missed optimization (or a refused one) from the compiler's records rather than by guessing, and the
-attribution can show the decision as made.
+Each accepted hoist already records `note: "hoisted out of loop:…"`. Each refused hoist records
+`tx.record('skip', { stmt, value, block, why })` with one of two reasons (`not certain to execute on every
+iteration of …`, `<head> is the head of N natural loops: the preheader of … runs once per re-entry`), so the
+next stage can find a missed optimization — or a refused one — from the compiler's records rather than by
+guessing, and the attribution can show the decision as made.
 
 ## Alternatives considered
 
@@ -185,7 +208,7 @@ attribution can show the decision as made.
   measurement. Kept as a later option (see the report's "Later" list).
 - **Only hoist when the loop has a unique preheader** (`L.preheader !== null`). Smaller change, and it
   removes the 9 bogus preheaders, but it refuses profitable hoists in exactly the loops where the CFG has
-  several back edges, and it does not state the cost property. The dominance check subsumes it: with no
+  several back edges, and it does not state the cost property. The back-edge count subsumes it: with no
   guaranteed execution, no hoist; when a hoist survives, the preheader it needs is created.
 - **Hoist to the innermost loop containing all uses.** Does not help here: the single use of `sp + 0` is in
   the same block as its definition, and any enclosing loop still runs it more often than the arm does.

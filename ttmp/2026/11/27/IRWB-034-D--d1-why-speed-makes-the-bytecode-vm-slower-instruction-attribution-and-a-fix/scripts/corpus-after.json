@@ -1,0 +1,1061 @@
+{
+ "total": {
+  "r0": 1123009,
+  "O2": 1098211,
+  "speed": 878198,
+  "projects": 50,
+  "ms": 124169
+ },
+ "rows": [
+  {
+   "id": "across-calls",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 640,
+    "speed": 270,
+    "r0": 660
+   },
+   "bytes": {
+    "O2": 192,
+    "speed": 108,
+    "r0": 200
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "algebra",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 20,
+    "speed": 20,
+    "r0": 100
+   },
+   "bytes": {
+    "O2": 8,
+    "speed": 8,
+    "r0": 40
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "blend",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1925,
+    "speed": 1915,
+    "r0": 2255
+   },
+   "bytes": {
+    "O2": 88,
+    "speed": 92,
+    "r0": 96
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "bounds-lab",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 5333,
+    "speed": 5012,
+    "r0": 5923
+   },
+   "bytes": {
+    "O2": 280,
+    "speed": 296,
+    "r0": 316
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "bounds-offset",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1364,
+    "speed": 1355,
+    "r0": 1364
+   },
+   "bytes": {
+    "O2": 100,
+    "speed": 112,
+    "r0": 100
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "bounds-param",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 502,
+    "speed": 499,
+    "r0": 502
+   },
+   "bytes": {
+    "O2": 60,
+    "speed": 64,
+    "r0": 60
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "bounds-two",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 810,
+    "speed": 756,
+    "r0": 910
+   },
+   "bytes": {
+    "O2": 84,
+    "speed": 88,
+    "r0": 96
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "branches",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 139,
+    "speed": 139,
+    "r0": 165
+   },
+   "bytes": {
+    "O2": 104,
+    "speed": 104,
+    "r0": 116
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "bytecode-vm",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 33965,
+    "speed": 33965,
+    "r0": 39954
+   },
+   "bytes": {
+    "O2": 828,
+    "speed": 828,
+    "r0": 848
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "call-chain",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1050,
+    "speed": 350,
+    "r0": 1050
+   },
+   "bytes": {
+    "O2": 172,
+    "speed": 140,
+    "r0": 172
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "calls",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 651,
+    "speed": 288,
+    "r0": 651
+   },
+   "bytes": {
+    "O2": 212,
+    "speed": 136,
+    "r0": 212
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "checksum",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1410,
+    "speed": 1251,
+    "r0": 1710
+   },
+   "bytes": {
+    "O2": 52,
+    "speed": 56,
+    "r0": 64
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "chess-search",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 423027,
+    "speed": 328042,
+    "r0": 432856
+   },
+   "bytes": {
+    "O2": 13052,
+    "speed": 25136,
+    "r0": 13476
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "collatz",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 7461,
+    "speed": 6955,
+    "r0": 7461
+   },
+   "bytes": {
+    "O2": 88,
+    "speed": 96,
+    "r0": 88
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "constants",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 70,
+    "speed": 70,
+    "r0": 100
+   },
+   "bytes": {
+    "O2": 28,
+    "speed": 28,
+    "r0": 40
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "dead-code",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 30,
+    "speed": 30,
+    "r0": 110
+   },
+   "bytes": {
+    "O2": 12,
+    "speed": 12,
+    "r0": 60
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "diagnostics",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 30,
+    "speed": 30,
+    "r0": 30
+   },
+   "bytes": {
+    "O2": 12,
+    "speed": 12,
+    "r0": 12
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "distinct",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 340,
+    "speed": 80,
+    "r0": 340
+   },
+   "bytes": {
+    "O2": 112,
+    "speed": 32,
+    "r0": 112
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "div-checks",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 162,
+    "speed": 162,
+    "r0": 172
+   },
+   "bytes": {
+    "O2": 88,
+    "speed": 88,
+    "r0": 92
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "div-magic",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 769,
+    "speed": 759,
+    "r0": 729
+   },
+   "bytes": {
+    "O2": 136,
+    "speed": 140,
+    "r0": 120
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "early-exit",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 631,
+    "speed": 564,
+    "r0": 761
+   },
+   "bytes": {
+    "O2": 60,
+    "speed": 64,
+    "r0": 72
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "f32-dsp",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 49310,
+    "speed": 46661,
+    "r0": 49706
+   },
+   "bytes": {
+    "O2": 1436,
+    "speed": 1324,
+    "r0": 1448
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "first-steps",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 220,
+    "speed": 80,
+    "r0": 280
+   },
+   "bytes": {
+    "O2": 64,
+    "speed": 32,
+    "r0": 72
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "fixed-point",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 411,
+    "speed": 251,
+    "r0": 429
+   },
+   "bytes": {
+    "O2": 128,
+    "speed": 124,
+    "r0": 128
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "fragments",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 2299,
+    "speed": 2289,
+    "r0": 2697
+   },
+   "bytes": {
+    "O2": 88,
+    "speed": 92,
+    "r0": 96
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "gcd",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 324,
+    "speed": 314,
+    "r0": 324
+   },
+   "bytes": {
+    "O2": 36,
+    "speed": 40,
+    "r0": 36
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "heat-lab",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 8832,
+    "speed": 8664,
+    "r0": 8832
+   },
+   "bytes": {
+    "O2": 240,
+    "speed": 252,
+    "r0": 240
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "histogram",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 2292,
+    "speed": 2222,
+    "r0": 2416
+   },
+   "bytes": {
+    "O2": 176,
+    "speed": 180,
+    "r0": 188
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "licm-nested",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 2677,
+    "speed": 2630,
+    "r0": 2677
+   },
+   "bytes": {
+    "O2": 68,
+    "speed": 76,
+    "r0": 68
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "licm-traps",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 153,
+    "speed": 149,
+    "r0": 153
+   },
+   "bytes": {
+    "O2": 68,
+    "speed": 72,
+    "r0": 68
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "lz-roundtrip",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 32084,
+    "speed": 29436,
+    "r0": 33646
+   },
+   "bytes": {
+    "O2": 1200,
+    "speed": 1360,
+    "r0": 1260
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "match-enum",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 251,
+    "speed": 251,
+    "r0": 282
+   },
+   "bytes": {
+    "O2": 156,
+    "speed": 156,
+    "r0": 176
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "my-analysis",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 200975,
+    "speed": 200966,
+    "r0": 200975
+   },
+   "bytes": {
+    "O2": 52,
+    "speed": 68,
+    "r0": 52
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "my-first-pass",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 50,
+    "speed": 50,
+    "r0": 60
+   },
+   "bytes": {
+    "O2": 20,
+    "speed": 20,
+    "r0": 24
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "nested-loops",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 2634,
+    "speed": 2581,
+    "r0": 2634
+   },
+   "bytes": {
+    "O2": 60,
+    "speed": 68,
+    "r0": 60
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "orders",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1204,
+    "speed": 1195,
+    "r0": 1350
+   },
+   "bytes": {
+    "O2": 136,
+    "speed": 140,
+    "r0": 156
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "params-demo",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 2299,
+    "speed": 2289,
+    "r0": 2697
+   },
+   "bytes": {
+    "O2": 88,
+    "speed": 92,
+    "r0": 96
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "pressure",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 240,
+    "speed": 240,
+    "r0": 280
+   },
+   "bytes": {
+    "O2": 96,
+    "speed": 96,
+    "r0": 112
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "ramp",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1040,
+    "speed": 962,
+    "r0": 1180
+   },
+   "bytes": {
+    "O2": 80,
+    "speed": 84,
+    "r0": 88
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "records",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 260,
+    "speed": 260,
+    "r0": 260
+   },
+   "bytes": {
+    "O2": 112,
+    "speed": 112,
+    "r0": 112
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "regalloc-lab",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 2614,
+    "speed": 2051,
+    "r0": 2614
+   },
+   "bytes": {
+    "O2": 348,
+    "speed": 260,
+    "r0": 348
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "regex-nfa",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 40048,
+    "speed": 38688,
+    "r0": 41650
+   },
+   "bytes": {
+    "O2": 1660,
+    "speed": 1600,
+    "r0": 1728
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "sha-chacha",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 240190,
+    "speed": 128181,
+    "r0": 239636
+   },
+   "bytes": {
+    "O2": 5496,
+    "speed": 4816,
+    "r0": 5864
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "sort",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 5043,
+    "speed": 4950,
+    "r0": 5043
+   },
+   "bytes": {
+    "O2": 240,
+    "speed": 252,
+    "r0": 240
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "start-here",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 3871,
+    "speed": 2932,
+    "r0": 4385
+   },
+   "bytes": {
+    "O2": 312,
+    "speed": 244,
+    "r0": 332
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "strength",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1938,
+    "speed": 1793,
+    "r0": 2220
+   },
+   "bytes": {
+    "O2": 116,
+    "speed": 120,
+    "r0": 132
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "strings",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 10833,
+    "speed": 10283,
+    "r0": 11895
+   },
+   "bytes": {
+    "O2": 228,
+    "speed": 236,
+    "r0": 252
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "ui-gallery",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1058,
+    "speed": 754,
+    "r0": 1214
+   },
+   "bytes": {
+    "O2": 176,
+    "speed": 128,
+    "r0": 188
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "value-numbering",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 3082,
+    "speed": 3073,
+    "r0": 3721
+   },
+   "bytes": {
+    "O2": 92,
+    "speed": 96,
+    "r0": 104
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  },
+  {
+   "id": "wrong-shift",
+   "status": {
+    "O2": "ok",
+    "speed": "ok"
+   },
+   "instructions": {
+    "O2": 1650,
+    "speed": 1491,
+    "r0": 1950
+   },
+   "bytes": {
+    "O2": 92,
+    "speed": 96,
+    "r0": 104
+   },
+   "rejected": {
+    "O2": [],
+    "speed": []
+   }
+  }
+ ]
+}
