@@ -1,0 +1,59 @@
+across-calls         old 270/210  thread 270/210  copies 240/210  guards 270/210  subst-mem 270/210  guards+identities 270/210  all but identities 240/210  all 240/210
+algebra              old 20/20  thread 20/20  copies 20/20  guards 20/20  subst-mem 20/20  guards+identities 20/20  all but identities 20/20  all 20/20
+blend                old 1915/1585  thread 1915/1585  copies 1750/1585  guards 1915/1585  subst-mem 1915/1585  guards+identities 1915/1585  all but identities 1750/1585  all 1750/1585
+bounds-lab           old 5012/4426  thread 5012/4426  copies 4817/4426  guards 5012/4426  subst-mem 5012/4426  guards+identities 5012/4426  all but identities 4817/4426  all 4817/4426
+bounds-offset        old 1355/1258  thread 1355/1258  copies 1285/1258  guards 1355/1258  subst-mem 1355/1258  guards+identities 1355/1258  all but identities 1285/1258  all 1285/1258
+bounds-param         old 499/408  thread 499/408  copies 449/408  guards 499/408  subst-mem 499/408  guards+identities 499/408  all but identities 449/408  all 449/408
+bounds-two           old 756/665  thread 756/665  copies 706/665  guards 756/665  subst-mem 756/665  guards+identities 756/665  all but identities 706/665  all 706/665
+branches             old 139/131  thread 139/131  copies 139/131  guards 139/131  subst-mem 139/131  guards+identities 139/131  all but identities 139/131  all 139/131
+bytecode-vm          old 32295/24750  thread 32295/24750  copies 32295/24750  guards 31981/24593  subst-mem 32295/24750  guards+identities 31981/24593  all but identities 31981/24593  all 31981/24593
+call-chain           old 350/290  thread 350/290  copies 330/290  guards 350/290  subst-mem 350/290  guards+identities 350/290  all but identities 330/290  all 330/290
+calls                old 288/227  thread 288/227  copies 234/227  guards 288/227  subst-mem 288/227  guards+identities 288/227  all but identities 234/227  all 234/227
+checksum             old 1251/1110  thread 1251/1110  copies 1251/1110  guards 1251/1110  subst-mem 1251/1110  guards+identities 1251/1110  all but identities 1251/1110  all 1251/1110
+collatz              old 6955/5769  thread 4861/3675  copies 6955/5769  guards 6955/5769  subst-mem 6955/5769  guards+identities 6955/5769  all but identities 4861/3675  all 4861/3675
+constants            old 70/70  thread 70/70  copies 70/70  guards 70/70  subst-mem 70/70  guards+identities 70/70  all but identities 70/70  all 70/70
+dead-code            old 30/30  thread 30/30  copies 30/30  guards 30/30  subst-mem 30/30  guards+identities 30/30  all but identities 30/30  all 30/30
+diagnostics          old 30/30  thread 30/30  copies 30/30  guards 30/30  subst-mem 30/30  guards+identities 30/30  all but identities 30/30  all 30/30
+distinct             old 80/60  thread 80/60  copies 50/50  guards 80/60  subst-mem 80/60  guards+identities 80/60  all but identities 50/50  all 50/50
+div-checks           old 162/152  thread 162/152  copies 160/152  guards 162/152  subst-mem 162/152  guards+identities 162/152  all but identities 160/152  all 160/152
+div-magic            old 759/661  thread 759/661  copies 739/661  guards 759/661  subst-mem 759/661  guards+identities 759/661  all but identities 739/661  all 739/661
+early-exit           old 564/557  thread 564/557  copies 564/557  guards 564/557  subst-mem 564/557  guards+identities 564/557  all but identities 564/557  all 564/557
+f32-dsp              old 46361/44107  thread 46361/44107  copies 45401/44107  guards 46361/44107  subst-mem 46361/44107  guards+identities 46169/43915  all but identities 45401/44107  all 45209/43915
+first-steps          old 80/80  thread 80/80  copies 80/80  guards 80/80  subst-mem 80/80  guards+identities 80/80  all but identities 80/80  all 80/80
+fixed-point          old 251/242  thread 251/242  copies 251/242  guards 251/242  subst-mem 251/242  guards+identities 251/242  all but identities 251/242  all 251/242
+fragments            old 2289/1891  thread 2289/1891  copies 2090/1891  guards 2289/1891  subst-mem 2289/1891  guards+identities 2289/1891  all but identities 2090/1891  all 2090/1891
+gcd                  old 314/265  thread 314/265  copies 314/265  guards 314/265  subst-mem 314/265  guards+identities 314/265  all but identities 314/265  all 314/265
+heat-lab             old 8664/7996  thread 8390/7752  copies 8087/7996  guards 8664/7996  subst-mem 8664/7996  guards+identities 8664/7996  all but identities 7584/7523  all 7584/7523
+histogram            old 2222/2000  thread 2222/2000  copies 2036/1910  guards 2222/2000  subst-mem 2222/2000  guards+identities 2222/2000  all but identities 2036/1910  all 2036/1910
+licm-nested          old 1631/1596  thread 1631/1596  copies 1631/1596  guards 1631/1596  subst-mem 1631/1596  guards+identities 1631/1596  all but identities 1631/1596  all 1631/1596
+licm-traps           old 149/142  thread 149/142  copies 149/142  guards 149/142  subst-mem 149/142  guards+identities 149/142  all but identities 149/142  all 149/142
+lz-roundtrip         old 28745/28330  thread 27821/27441  copies 28725/28330  guards 27783/26358  subst-mem 28745/28330  guards+identities 27783/26358  all but identities 26839/25469  all 26839/25469
+match-enum           old 251/226  thread 251/226  copies 231/226  guards 251/226  subst-mem 251/226  guards+identities 251/226  all but identities 231/226  all 231/226
+my-analysis          old 200966/200618  thread 200966/200618  copies 200966/200618  guards 200966/200618  subst-mem 200966/200618  guards+identities 200966/200618  all but identities 200966/200618  all 200966/200618
+my-first-pass        old 50/50  thread 50/50  copies 50/50  guards 50/50  subst-mem 50/50  guards+identities 50/50  all but identities 50/50  all 50/50
+nested-loops         old 2289/2252  thread 2289/2252  copies 2289/2252  guards 2289/2252  subst-mem 2289/2252  guards+identities 2289/2252  all but identities 2289/2252  all 2289/2252
+orders               old 1185/952  thread 1185/952  copies 1127/952  guards 1185/952  subst-mem 1185/952  guards+identities 1185/952  all but identities 1127/952  all 1127/952
+params-demo          old 2289/1891  thread 2289/1891  copies 2090/1891  guards 2289/1891  subst-mem 2289/1891  guards+identities 2289/1891  all but identities 2090/1891  all 2090/1891
+pressure             old 240/230  thread 240/230  copies 240/230  guards 240/230  subst-mem 240/230  guards+identities 240/230  all but identities 240/230  all 240/230
+ramp                 old 962/780  thread 962/780  copies 962/780  guards 962/780  subst-mem 962/780  guards+identities 962/780  all but identities 962/780  all 962/780
+records              old 260/240  thread 260/240  copies 240/240  guards 260/240  subst-mem 260/240  guards+identities 260/240  all but identities 240/240  all 240/240
+regalloc-lab         old 2051/1716  thread 2051/1716  copies 1970/1716  guards 2051/1716  subst-mem 2051/1716  guards+identities 2051/1716  all but identities 1970/1716  all 1970/1716
+regex-nfa            old 35638/28128  thread 35188/27922  copies 35490/28128  guards 32584/26723  subst-mem 35638/28128  guards+identities 32584/26723  all but identities 31587/25650  all 31587/25650
+sha-chacha           old 125491/107102  thread 125491/107102  copies 115741/107862  guards 121007/104860  subst-mem 125491/107102  guards+identities 121007/104860  all but identities 111277/105620  all 111277/105620
+sort                 old 4950/4563  thread 4783/4422  copies 4624/4563  guards 4950/4563  subst-mem 4950/4563  guards+identities 4950/4563  all but identities 4329/4294  all 4329/4294
+start-here           old 2932/2559  thread 2932/2559  copies 2550/2327  guards 2932/2559  subst-mem 2932/2559  guards+identities 2932/2559  all but identities 2550/2327  all 2550/2327
+strength             old 1793/1404  thread 1793/1404  copies 1793/1404  guards 1793/1404  subst-mem 1793/1404  guards+identities 1793/1404  all but identities 1793/1404  all 1793/1404
+strings              old 10283/9262  thread 8100/6558  copies 10283/9262  guards 10283/9262  subst-mem 10283/9262  guards+identities 10283/9262  all but identities 8100/6558  all 8100/6558
+ui-gallery           old 754/594  thread 754/594  copies 606/572  guards 754/594  subst-mem 754/594  guards+identities 754/594  all but identities 606/572  all 606/572
+value-numbering      old 3073/2453  thread 3073/2453  copies 3073/2453  guards 3073/2453  subst-mem 3073/2453  guards+identities 3073/2453  all but identities 3073/2453  all 3073/2453
+wrong-shift          old 1491/1340  thread 1491/1340  copies 1491/1340  guards 1491/1340  subst-mem 1491/1340  guards+identities 1491/1340  all but identities 1491/1340  all 1491/1340
+
+variant              default     tuned
+old                   540454    495418
+thread                534362    489140
+copies                526694    495824
+guards                531640    489642
+subst-mem             540454    495418
+guards+identities     531448    489450
+all but identities    511052    482546
+all                   510860    482354

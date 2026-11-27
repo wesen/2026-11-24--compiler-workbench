@@ -1,7 +1,7 @@
 {
  "pipeline": "speed",
- "total": 608957,
- "untouched": 184603,
+ "total": 576334,
+ "untouched": 179989,
  "fired": {
   "mul-pow2": 143,
   "not-lt": 72,
@@ -10,13 +10,13 @@
   "pow2-mul": 28,
   "fold-mul": 15,
   "fold-add": 11,
-  "fold-eqz": 10,
   "zero-add": 9,
   "not-gt": 5,
   "add-zero": 4,
   "not-le": 4,
   "mul-one": 2,
   "mul-zero": 2,
+  "fold-eqz": 2,
   "sub-zero": 1,
   "sub-self": 1,
   "not-ge": 1,
@@ -42,7 +42,7 @@
  "statements": [
   {
    "shape": "if geu(x, load(x))",
-   "instructions": 49982,
+   "instructions": 49172,
    "untouched": 20530,
    "sites": 142,
    "projects": [
@@ -109,24 +109,9 @@
     "strings"
    ],
    "example": {
-    "id": "s:chessPseudoMoves.571",
+    "id": "s:chessPseudoMoves.558",
     "text": "if (dense >= 64) goto .2 else .3",
     "instructions": 10200
-   },
-   "exampleIn": "chess-search"
-  },
-  {
-   "shape": "x = add(x, shl(div(x, #), #))",
-   "instructions": 26520,
-   "untouched": 0,
-   "sites": 8,
-   "projects": [
-    "chess-search"
-   ],
-   "example": {
-    "id": "s:chessPseudoMoves.38",
-    "text": "t9 = (dense + ((dense / 8) << 3))",
-    "instructions": 23040
    },
    "exampleIn": "chess-search"
   },
@@ -195,7 +180,7 @@
    ],
    "example": {
     "id": "s:chessAttacked.237",
-    "text": "if (at < 128) goto .n53 else .n54",
+    "text": "if (at < 128) goto .n53 else .20",
     "instructions": 6648
    },
    "exampleIn": "chess-search"
@@ -264,28 +249,10 @@
    "exampleIn": "chess-search"
   },
   {
-   "shape": "if geu(x, #)",
-   "instructions": 14458,
-   "untouched": 14428,
-   "sites": 43,
-   "projects": [
-    "bytecode-vm",
-    "lz-roundtrip",
-    "regex-nfa",
-    "sha-chacha"
-   ],
-   "example": {
-    "id": "s:runVm.30",
-    "text": "if (sp >=u 4) goto .21 else .24",
-    "instructions": 1008
-   },
-   "exampleIn": "bytecode-vm"
-  },
-  {
    "shape": "if eq(x, #)",
-   "instructions": 11230,
+   "instructions": 11382,
    "untouched": 7757,
-   "sites": 44,
+   "sites": 45,
    "projects": [
     "bytecode-vm",
     "chess-search",
@@ -297,6 +264,39 @@
     "id": "s:runVm.29",
     "text": "if (opcode == 2) goto .19 else .20",
     "instructions": 2121
+   },
+   "exampleIn": "bytecode-vm"
+  },
+  {
+   "shape": "x = add(x, and(x, #))",
+   "instructions": 11008,
+   "untouched": 0,
+   "sites": 2,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessPseudoMoves.38",
+    "text": "t9 = (dense + (dense & -8))",
+    "instructions": 10240
+   },
+   "exampleIn": "chess-search"
+  },
+  {
+   "shape": "if geu(x, #)",
+   "instructions": 10618,
+   "untouched": 10588,
+   "sites": 39,
+   "projects": [
+    "bytecode-vm",
+    "lz-roundtrip",
+    "regex-nfa",
+    "sha-chacha"
+   ],
+   "example": {
+    "id": "s:runVm.30",
+    "text": "if (sp >=u 4) goto .21 else .24",
+    "instructions": 1008
    },
    "exampleIn": "bytecode-vm"
   },
@@ -333,50 +333,19 @@
    "exampleIn": "regex-nfa"
   },
   {
-   "shape": "br",
-   "instructions": 8907,
-   "untouched": 1772,
-   "sites": 89,
-   "projects": [
-    "branches",
-    "bytecode-vm",
-    "calls",
-    "chess-search",
-    "collatz",
-    "div-checks",
-    "div-magic",
-    "early-exit",
-    "fixed-point",
-    "histogram",
-    "lz-roundtrip",
-    "match-enum",
-    "ramp",
-    "records",
-    "regex-nfa",
-    "start-here",
-    "strength"
-   ],
-   "example": {
-    "id": "s:chessAttacked.182",
-    "text": "goto .n55",
-    "instructions": 3026
-   },
-   "exampleIn": "chess-search"
-  },
-  {
-   "shape": "x = lt(and(x, #), #)",
-   "instructions": 8578,
+   "shape": "x = or(shru(x, #), shl(x, #))",
+   "instructions": 8640,
    "untouched": 0,
-   "sites": 10,
+   "sites": 5,
    "projects": [
-    "chess-search"
+    "sha-chacha"
    ],
    "example": {
-    "id": "s:chessAttacked.181",
-    "text": "chessOnBoard_t2 = ((at & 15) < 8)",
-    "instructions": 6052
+    "id": "s:sha256Block.195",
+    "text": "t72 = ((e >>> 6) | (e << 26))",
+    "instructions": 1920
    },
-   "exampleIn": "chess-search"
+   "exampleIn": "sha-chacha"
   },
   {
    "shape": "store[x] = load16u(add(x, shl(x, 1)))",
@@ -458,21 +427,6 @@
    "exampleIn": "sha-chacha"
   },
   {
-   "shape": "x = or(shru(x, #), shl(x, #))",
-   "instructions": 7200,
-   "untouched": 0,
-   "sites": 4,
-   "projects": [
-    "sha-chacha"
-   ],
-   "example": {
-    "id": "s:sha256Block.195",
-    "text": "t72 = ((e >>> 6) | (e << 26))",
-    "instructions": 1920
-   },
-   "exampleIn": "sha-chacha"
-  },
-  {
    "shape": "x = load16u(caddr(x, x))",
    "instructions": 7150,
    "untouched": 0,
@@ -503,6 +457,21 @@
     "instructions": 7040
    },
    "exampleIn": "sha-chacha"
+  },
+  {
+   "shape": "if eqz(eqz(and(x, #)))",
+   "instructions": 6546,
+   "untouched": 0,
+   "sites": 4,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessAttacked.256",
+    "text": "if !(!((at & 8))) goto .20 else .21",
+    "instructions": 6052
+   },
+   "exampleIn": "chess-search"
   },
   {
    "shape": "x = load(add(x, shl(x, 1)))",
@@ -610,8 +579,8 @@
     "chess-search"
    ],
    "example": {
-    "id": "s:chessAttacked.259",
-    "text": "if (at >= 0) goto .n50 else .n54",
+    "id": "s:chessAttacked.267",
+    "text": "if (at >= 0) goto .n50 else .20",
     "instructions": 2480
    },
    "exampleIn": "chess-search"
@@ -652,7 +621,7 @@
     "wrong-shift"
    ],
    "example": {
-    "id": "s:vowels.52",
+    "id": "s:vowels.48",
     "text": "if (i >= load32[s+0]) goto .2 else .7",
     "instructions": 1220
    },
@@ -678,86 +647,6 @@
    "exampleIn": "chess-search"
   },
   {
-   "shape": "x = eq(load16u(add(x, shl(x, 1))), x)",
-   "instructions": 4840,
-   "untouched": 0,
-   "sites": 4,
-   "projects": [
-    "chess-search"
-   ],
-   "example": {
-    "id": "s:chessAttacked.153",
-    "text": "chessIsPiece_t52 = (load16[(board + (chessIsPiece_square2 << 1))+4] == chessIsPiece_piece2)",
-    "instructions": 3320
-   },
-   "exampleIn": "chess-search"
-  },
-  {
-   "shape": "x = load(add(x, shl(x, #)))",
-   "instructions": 4830,
-   "untouched": 0,
-   "sites": 9,
-   "projects": [
-    "bytecode-vm",
-    "lz-roundtrip",
-    "regex-nfa",
-    "sha-chacha"
-   ],
-   "example": {
-    "id": "s:sha256Block.40",
-    "text": "x = load32[(inv1 + (t9 << 2))+0]",
-    "instructions": 1440
-   },
-   "exampleIn": "sha-chacha"
-  },
-  {
-   "shape": "x = 0",
-   "instructions": 4767,
-   "untouched": 2906,
-   "sites": 145,
-   "projects": [
-    "blend",
-    "bounds-lab",
-    "bounds-offset",
-    "bounds-param",
-    "bounds-two",
-    "bytecode-vm",
-    "checksum",
-    "chess-search",
-    "collatz",
-    "div-magic",
-    "early-exit",
-    "f32-dsp",
-    "fragments",
-    "heat-lab",
-    "histogram",
-    "licm-nested",
-    "licm-traps",
-    "lz-roundtrip",
-    "my-analysis",
-    "nested-loops",
-    "orders",
-    "params-demo",
-    "ramp",
-    "regalloc-lab",
-    "regex-nfa",
-    "sha-chacha",
-    "sort",
-    "start-here",
-    "strength",
-    "strings",
-    "ui-gallery",
-    "value-numbering",
-    "wrong-shift"
-   ],
-   "example": {
-    "id": "s:chessAttacked.149",
-    "text": "chessIsPiece_t52 = 0",
-    "instructions": 520
-   },
-   "exampleIn": "chess-search"
-  },
-  {
    "shape": "if eq(load(add(x, shl(x, #))), 1)",
    "instructions": 4580,
    "untouched": 0,
@@ -771,23 +660,6 @@
     "instructions": 1880
    },
    "exampleIn": "regex-nfa"
-  },
-  {
-   "shape": "if x",
-   "instructions": 4561,
-   "untouched": 57,
-   "sites": 31,
-   "projects": [
-    "chess-search",
-    "my-analysis",
-    "regex-nfa"
-   ],
-   "example": {
-    "id": "s:chessAttacked.146",
-    "text": "if chessOnBoard_t23 goto .n31 else .n32",
-    "instructions": 1184
-   },
-   "exampleIn": "chess-search"
   },
   {
    "shape": "x = add(add(add(add(x, x), x), x), load(add(x, shl(x, #))))",
@@ -851,19 +723,35 @@
    "exampleIn": "bytecode-vm"
   },
   {
-   "shape": "if eqz(x)",
-   "instructions": 3873,
-   "untouched": 0,
-   "sites": 9,
+   "shape": "br",
+   "instructions": 3921,
+   "untouched": 1696,
+   "sites": 76,
    "projects": [
-    "chess-search"
+    "branches",
+    "bytecode-vm",
+    "calls",
+    "chess-search",
+    "collatz",
+    "div-checks",
+    "div-magic",
+    "early-exit",
+    "fixed-point",
+    "histogram",
+    "lz-roundtrip",
+    "match-enum",
+    "ramp",
+    "records",
+    "regex-nfa",
+    "start-here",
+    "strength"
    ],
    "example": {
-    "id": "s:chessAttacked.34",
-    "text": "if !(chessOnBoard_t2) goto .20 else .21",
-    "instructions": 3384
+    "id": "s:collatz.11",
+    "text": "goto .9",
+    "instructions": 348
    },
-   "exampleIn": "chess-search"
+   "exampleIn": "collatz"
   },
   {
    "shape": "x = result",
@@ -879,6 +767,22 @@
     "instructions": 200
    },
    "exampleIn": "sha-chacha"
+  },
+  {
+   "shape": "if eq(load16u(add(x, shl(x, 1))), x)",
+   "instructions": 3500,
+   "untouched": 0,
+   "sites": 3,
+   "projects": [
+    "chess-search",
+    "early-exit"
+   ],
+   "example": {
+    "id": "s:chessAttacked.255",
+    "text": "if (load16[(board + (chessIsPiece_square2 << 1))+4] == chessIsPiece_piece2) goto .11 else .14",
+    "instructions": 2656
+   },
+   "exampleIn": "chess-search"
   },
   {
    "shape": "x = add(x, #)",
@@ -899,6 +803,21 @@
    "exampleIn": "bytecode-vm"
   },
   {
+   "shape": "x = add(x, shl(div(x, #), #))",
+   "instructions": 3480,
+   "untouched": 0,
+   "sites": 7,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessMake.315",
+    "text": "chessFrom_t1 = (chessSquare_dense + ((chessSquare_dense / 8) << 3))",
+    "instructions": 756
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "x = add(x, mul(load16u(add(x, shl(x, 1))), x))",
    "instructions": 3445,
    "untouched": 0,
@@ -915,6 +834,24 @@
     "instructions": 995
    },
    "exampleIn": "fragments"
+  },
+  {
+   "shape": "x = load(add(x, shl(x, #)))",
+   "instructions": 3390,
+   "untouched": 0,
+   "sites": 8,
+   "projects": [
+    "bytecode-vm",
+    "lz-roundtrip",
+    "regex-nfa",
+    "sha-chacha"
+   ],
+   "example": {
+    "id": "s:sha256Block.46",
+    "text": "y = load32[(inv1 + (t11 << 2))+0]",
+    "instructions": 1440
+   },
+   "exampleIn": "sha-chacha"
   },
   {
    "shape": "x = add(shl(x, 1), 1)",
@@ -962,6 +899,53 @@
    "exampleIn": "sha-chacha"
   },
   {
+   "shape": "x = 0",
+   "instructions": 3107,
+   "untouched": 2840,
+   "sites": 132,
+   "projects": [
+    "blend",
+    "bounds-lab",
+    "bounds-offset",
+    "bounds-param",
+    "bounds-two",
+    "bytecode-vm",
+    "checksum",
+    "chess-search",
+    "collatz",
+    "div-magic",
+    "early-exit",
+    "f32-dsp",
+    "fragments",
+    "heat-lab",
+    "histogram",
+    "licm-nested",
+    "licm-traps",
+    "lz-roundtrip",
+    "my-analysis",
+    "nested-loops",
+    "orders",
+    "params-demo",
+    "ramp",
+    "regalloc-lab",
+    "regex-nfa",
+    "sha-chacha",
+    "sort",
+    "start-here",
+    "strength",
+    "strings",
+    "ui-gallery",
+    "value-numbering",
+    "wrong-shift"
+   ],
+   "example": {
+    "id": "s:chessAttacked.14",
+    "text": "i = 0",
+    "instructions": 148
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "x = fsub(fsub(fadd(fadd(fmul(x, x), fmul(x, x)), fmul(x, x)), fmul(x, x)), fmul(x, x))",
    "instructions": 2880,
    "untouched": 0,
@@ -987,21 +971,6 @@
    "example": {
     "id": "s:sha256Block.69",
     "text": "store32[t67+0] = ((t68 + load32[(inv1 + (t20 << 2))+0]) + s1)",
-    "instructions": 2880
-   },
-   "exampleIn": "sha-chacha"
-  },
-  {
-   "shape": "x = xor(xor(or(shru(x, #), shl(x, #)), x), shru(x, #))",
-   "instructions": 2880,
-   "untouched": 0,
-   "sites": 1,
-   "projects": [
-    "sha-chacha"
-   ],
-   "example": {
-    "id": "s:sha256Block.56",
-    "text": "s1 = ((((y >>> 17) | (y << 15)) ^ t66) ^ (y >>> 10))",
     "instructions": 2880
    },
    "exampleIn": "sha-chacha"
@@ -1197,6 +1166,21 @@
    "exampleIn": "chess-search"
   },
   {
+   "shape": "if eqz(and(x, #))",
+   "instructions": 2024,
+   "untouched": 0,
+   "sites": 5,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessAttacked.252",
+    "text": "if !((chessIsPiece_square2 & 8)) goto .n31 else .14",
+    "instructions": 1352
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "x = add(x, shl(x, #))",
    "instructions": 2012,
    "untouched": 0,
@@ -1244,17 +1228,17 @@
    "exampleIn": "sha-chacha"
   },
   {
-   "shape": "x = sub(x, #)",
+   "shape": "x = load(add(x, shl(sub(x, #), #)))",
    "instructions": 1920,
-   "untouched": 1920,
-   "sites": 4,
+   "untouched": 0,
+   "sites": 1,
    "projects": [
     "sha-chacha"
    ],
    "example": {
-    "id": "s:sha256Block.35",
-    "text": "t9 = (t - 15)",
-    "instructions": 480
+    "id": "s:sha256Block.40",
+    "text": "x = load32[(inv1 + ((t - 15) << 2))+0]",
+    "instructions": 1920
    },
    "exampleIn": "sha-chacha"
   },
@@ -1423,6 +1407,53 @@
     "id": "s:chessLegal.22",
     "text": "chessInCheck_t3 = chessAttacked(board, load16[(board + (chessInCheck_t2 << 1))+4], (1 - side))",
     "instructions": 880
+   },
+   "exampleIn": "chess-search"
+  },
+  {
+   "shape": "x = sub(x, #)",
+   "instructions": 1440,
+   "untouched": 1440,
+   "sites": 3,
+   "projects": [
+    "sha-chacha"
+   ],
+   "example": {
+    "id": "s:sha256Block.41",
+    "text": "t11 = (t - 2)",
+    "instructions": 480
+   },
+   "exampleIn": "sha-chacha"
+  },
+  {
+   "shape": "x = xor(xor(x, x), shru(x, #))",
+   "instructions": 1440,
+   "untouched": 0,
+   "sites": 1,
+   "projects": [
+    "sha-chacha"
+   ],
+   "example": {
+    "id": "s:sha256Block.56",
+    "text": "s1 = ((t65 ^ t66) ^ (y >>> 10))",
+    "instructions": 1440
+   },
+   "exampleIn": "sha-chacha"
+  },
+  {
+   "shape": "if x",
+   "instructions": 1402,
+   "untouched": 57,
+   "sites": 21,
+   "projects": [
+    "chess-search",
+    "my-analysis",
+    "regex-nfa"
+   ],
+   "example": {
+    "id": "s:chessPseudoMoves.70",
+    "text": "if inv3 goto .n21 else .n23",
+    "instructions": 320
    },
    "exampleIn": "chess-search"
   },
@@ -1687,21 +1718,6 @@
    "exampleIn": "sha-chacha"
   },
   {
-   "shape": "x = add(x, shl(shr(x, #), #))",
-   "instructions": 1152,
-   "untouched": 0,
-   "sites": 1,
-   "projects": [
-    "chess-search"
-   ],
-   "example": {
-    "id": "s:chessEvaluate.110",
-    "text": "t20 = (i + ((i >> 3) << 3))",
-    "instructions": 1152
-   },
-   "exampleIn": "chess-search"
-  },
-  {
    "shape": "x = sub(1, shl(x, 1))",
    "instructions": 1146,
    "untouched": 0,
@@ -1799,7 +1815,7 @@
     "collatz"
    ],
    "example": {
-    "id": "s:collatz.22",
+    "id": "s:collatz.21",
     "text": "if (x > 1) goto .2 else .5",
     "instructions": 1039
    },
@@ -1959,6 +1975,21 @@
     "instructions": 592
    },
    "exampleIn": "regex-nfa"
+  },
+  {
+   "shape": "x = eq(load16u(add(x, shl(x, 1))), x)",
+   "instructions": 790,
+   "untouched": 0,
+   "sites": 2,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessAttacked.121",
+    "text": "chessIsPiece_t51 = (load16[(board + (chessIsPiece_square1 << 1))+4] == chessIsPiece_piece1)",
+    "instructions": 730
+   },
+   "exampleIn": "chess-search"
   },
   {
    "shape": "x = fadd(fmul(x, x), fmul(x, x))",
@@ -2163,21 +2194,6 @@
     "instructions": 580
    },
    "exampleIn": "orders"
-  },
-  {
-   "shape": "x = add(shl(shl(x, 1), 1), 1)",
-   "instructions": 576,
-   "untouched": 0,
-   "sites": 4,
-   "projects": [
-    "f32-dsp"
-   ],
-   "example": {
-    "id": "s:fft.14",
-    "text": "t7 = (((i << 1) << 1) + 1)",
-    "instructions": 144
-   },
-   "exampleIn": "f32-dsp"
   },
   {
    "shape": "store[add(x, shl(x, 1))] = add(add(shl(x, #), shl(x, #)), x)",
@@ -2407,7 +2423,7 @@
     "sort"
    ],
    "example": {
-    "id": "s:sort.61",
+    "id": "s:sort.60",
     "text": "if (j > 0) goto .5 else .16",
     "instructions": 189
    },
@@ -2519,6 +2535,21 @@
    "exampleIn": "chess-search"
   },
   {
+   "shape": "x = add(shl(x, #), 1)",
+   "instructions": 384,
+   "untouched": 0,
+   "sites": 4,
+   "projects": [
+    "f32-dsp"
+   ],
+   "example": {
+    "id": "s:fft.14",
+    "text": "t7 = ((i << 2) + 1)",
+    "instructions": 96
+   },
+   "exampleIn": "f32-dsp"
+  },
+  {
    "shape": "store[add(x, #)] = #",
    "instructions": 378,
    "untouched": 0,
@@ -2585,21 +2616,6 @@
    "exampleIn": "chess-search"
   },
   {
-   "shape": "if eq(div(x, #), sub(#, mul(x, #)))",
-   "instructions": 360,
-   "untouched": 0,
-   "sites": 1,
-   "projects": [
-    "chess-search"
-   ],
-   "example": {
-    "id": "s:chessPseudoMoves.161",
-    "text": "if ((chessPieceMoves_from / 16) == (6 - (chessPieceMoves_side * 5))) goto .n71 else .n85",
-    "instructions": 360
-   },
-   "exampleIn": "chess-search"
-  },
-  {
    "shape": "x = add(add(x, x), 1)",
    "instructions": 360,
    "untouched": 360,
@@ -2645,21 +2661,6 @@
     "instructions": 207
    },
    "exampleIn": "lz-roundtrip"
-  },
-  {
-   "shape": "x = eq(x, #)",
-   "instructions": 332,
-   "untouched": 152,
-   "sites": 5,
-   "projects": [
-    "chess-search"
-   ],
-   "example": {
-    "id": "s:chessAttacked.57",
-    "text": "t22 = (kind == 4)",
-    "instructions": 152
-   },
-   "exampleIn": "chess-search"
   },
   {
    "shape": "if ne(x, sub(#, mul(x, #)))",
@@ -2782,7 +2783,7 @@
     "sha-chacha"
    ],
    "example": {
-    "id": "s:regexMatch.285",
+    "id": "s:regexMatch.283",
     "text": "inv3 = frame+252",
     "instructions": 47
    },
@@ -2818,21 +2819,6 @@
     "instructions": 276
    },
    "exampleIn": "regex-nfa"
-  },
-  {
-   "shape": "if eq(load16u(add(x, shl(x, 1))), x)",
-   "instructions": 260,
-   "untouched": 0,
-   "sites": 1,
-   "projects": [
-    "early-exit"
-   ],
-   "example": {
-    "id": "s:find.9",
-    "text": "if (load16[(work + (i << 1))+4] == target) goto .8 else .11",
-    "instructions": 260
-   },
-   "exampleIn": "early-exit"
   },
   {
    "shape": "store[caddr(x, x)] = or(or(#, shl(sub(x, #), #)), sub(x, 1))",
@@ -2879,6 +2865,21 @@
     "instructions": 162
    },
    "exampleIn": "regalloc-lab"
+  },
+  {
+   "shape": "if eq(shr(x, #), sub(#, mul(x, #)))",
+   "instructions": 240,
+   "untouched": 0,
+   "sites": 1,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessPseudoMoves.161",
+    "text": "if ((chessPieceMoves_from >> 4) == (6 - (chessPieceMoves_side * 5))) goto .n71 else .n85",
+    "instructions": 240
+   },
+   "exampleIn": "chess-search"
   },
   {
    "shape": "x = add(1, mul(#, x))",
@@ -3002,21 +3003,6 @@
    "exampleIn": "regex-nfa"
   },
   {
-   "shape": "x = le(x, x)",
-   "instructions": 210,
-   "untouched": 4,
-   "sites": 2,
-   "projects": [
-    "regex-nfa"
-   ],
-   "example": {
-    "id": "s:regexMatch.268",
-    "text": "inRange_t3 = (code <= inRange_high)",
-    "instructions": 206
-   },
-   "exampleIn": "regex-nfa"
-  },
-  {
    "shape": "x = 1",
    "instructions": 209,
    "untouched": 207,
@@ -3109,6 +3095,21 @@
     "id": "s:chessSearch.202",
     "text": "chessSearchStep_t28 = (160 + (chessSearchStep_ply << 4))",
     "instructions": 116
+   },
+   "exampleIn": "chess-search"
+  },
+  {
+   "shape": "x = eq(x, #)",
+   "instructions": 180,
+   "untouched": 0,
+   "sites": 4,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessPseudoMoves.541",
+    "text": "inv2 = (chessPieceMoves_kind == 6)",
+    "instructions": 80
    },
    "exampleIn": "chess-search"
   },
@@ -3247,7 +3248,7 @@
     "chess-search"
    ],
    "example": {
-    "id": "s:chessPseudoMoves.561",
+    "id": "s:chessPseudoMoves.540",
     "text": "inv1 = (1 + ((1 - chessPieceMoves_side) << 3))",
     "instructions": 150
    },
@@ -3606,6 +3607,21 @@
    "exampleIn": "chess-search"
   },
   {
+   "shape": "if le(x, x)",
+   "instructions": 103,
+   "untouched": 0,
+   "sites": 1,
+   "projects": [
+    "regex-nfa"
+   ],
+   "example": {
+    "id": "s:regexMatch.293",
+    "text": "if (code <= inRange_high) goto .145 else .156",
+    "instructions": 103
+   },
+   "exampleIn": "regex-nfa"
+  },
+  {
    "shape": "x = add(and(shru(x, #), #), #)",
    "instructions": 102,
    "untouched": 60,
@@ -3634,6 +3650,21 @@
     "instructions": 100
    },
    "exampleIn": "regalloc-lab"
+  },
+  {
+   "shape": "if eqz(x)",
+   "instructions": 98,
+   "untouched": 0,
+   "sites": 4,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessPseudoMoves.351",
+    "text": "if !(chessCastle_t18) goto .n174 else .n181",
+    "instructions": 40
+   },
+   "exampleIn": "chess-search"
   },
   {
    "shape": "if le(x, 0)",
@@ -3997,7 +4028,7 @@
     "chess-search"
    ],
    "example": {
-    "id": "s:chessPrepareNode.467",
+    "id": "s:chessPrepareNode.464",
     "text": "if (load32[state+4] <= 0) goto .n3 else .n4",
     "instructions": 32
    },
@@ -5215,6 +5246,21 @@
    "exampleIn": "early-exit"
   },
   {
+   "shape": "x = eqz(and(x, #))",
+   "instructions": 8,
+   "untouched": 0,
+   "sites": 1,
+   "projects": [
+    "chess-search"
+   ],
+   "example": {
+    "id": "s:chessOnBoard.6",
+    "text": "t2 = !((square & 8))",
+    "instructions": 8
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "return sub(x, x)",
    "instructions": 6,
    "untouched": 6,
@@ -5245,6 +5291,21 @@
    "exampleIn": "match-enum"
   },
   {
+   "shape": "x = le(x, x)",
+   "instructions": 4,
+   "untouched": 4,
+   "sites": 1,
+   "projects": [
+    "regex-nfa"
+   ],
+   "example": {
+    "id": "s:inRange.1",
+    "text": "t3 = (code <= high)",
+    "instructions": 4
+   },
+   "exampleIn": "regex-nfa"
+  },
+  {
    "shape": "x = ne(x, 0)",
    "instructions": 2,
    "untouched": 2,
@@ -5263,9 +5324,9 @@
  "nodes": [
   {
    "shape": "add(x, shl)",
-   "instructions": 44079,
+   "instructions": 38575,
    "untouched": 11061,
-   "sites": 222,
+   "sites": 220,
    "projects": [
     "blend",
     "bounds-lab",
@@ -5296,8 +5357,8 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPseudoMoves.934",
-    "text": "t9 = (dense + ((dense / 8) << 3))",
+    "id": "v:chessPseudoMoves.898",
+    "text": "piece = load16[(board + (from << 1))+4]",
     "instructions": 5120
    },
    "exampleIn": "chess-search"
@@ -5359,50 +5420,9 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessPseudoMoves.1525",
+    "id": "v:chessPseudoMoves.1532",
     "text": "if (dense >= 64) goto .2 else .3",
     "instructions": 10200
-   },
-   "exampleIn": "chess-search"
-  },
-  {
-   "shape": "shl(x, 1)",
-   "instructions": 28256,
-   "untouched": 10677,
-   "sites": 187,
-   "projects": [
-    "blend",
-    "bounds-lab",
-    "bounds-offset",
-    "bounds-param",
-    "bounds-two",
-    "call-chain",
-    "checksum",
-    "chess-search",
-    "diagnostics",
-    "early-exit",
-    "f32-dsp",
-    "fragments",
-    "heat-lab",
-    "histogram",
-    "my-analysis",
-    "orders",
-    "params-demo",
-    "ramp",
-    "regalloc-lab",
-    "sha-chacha",
-    "sort",
-    "start-here",
-    "strength",
-    "strings",
-    "ui-gallery",
-    "wrong-shift"
-   ],
-   "rules": 2,
-   "example": {
-    "id": "v:chessPseudoMoves.939",
-    "text": "piece = load16[(board + (from << 1))+4]",
-    "instructions": 5120
    },
    "exampleIn": "chess-search"
   },
@@ -5457,35 +5477,49 @@
    "exampleIn": "chess-search"
   },
   {
-   "shape": "div(x, #)",
-   "instructions": 24405,
-   "untouched": 1115,
-   "sites": 41,
+   "shape": "shl(x, 1)",
+   "instructions": 28064,
+   "untouched": 10677,
+   "sites": 183,
    "projects": [
     "blend",
+    "bounds-lab",
+    "bounds-offset",
+    "bounds-param",
+    "bounds-two",
+    "call-chain",
+    "checksum",
     "chess-search",
-    "div-magic",
+    "diagnostics",
+    "early-exit",
     "f32-dsp",
     "fragments",
+    "heat-lab",
+    "histogram",
+    "my-analysis",
     "orders",
     "params-demo",
+    "ramp",
+    "regalloc-lab",
     "sha-chacha",
+    "sort",
     "start-here",
     "strength",
-    "value-numbering",
+    "strings",
+    "ui-gallery",
     "wrong-shift"
    ],
    "rules": 2,
    "example": {
-    "id": "v:chessPseudoMoves.932",
-    "text": "t9 = (dense + ((dense / 8) << 3))",
-    "instructions": 15360
+    "id": "v:chessPseudoMoves.897",
+    "text": "piece = load16[(board + (from << 1))+4]",
+    "instructions": 5120
    },
    "exampleIn": "chess-search"
   },
   {
    "shape": "if geu(x, load)",
-   "instructions": 23800,
+   "instructions": 22990,
    "untouched": 9269,
    "sites": 142,
    "projects": [
@@ -5508,7 +5542,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessPseudoMoves.937",
+    "id": "v:chessPseudoMoves.895",
     "text": "if (from >=u load32[board+0]) goto .4 else .7",
     "instructions": 5120
    },
@@ -5531,8 +5565,8 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessAttacked.517",
-    "text": "if (at < 128) goto .n53 else .n54",
+    "id": "v:chessAttacked.510",
+    "text": "if (at < 128) goto .n53 else .20",
     "instructions": 6648
    },
    "exampleIn": "chess-search"
@@ -5579,9 +5613,9 @@
   },
   {
    "shape": "shl(x, #)",
-   "instructions": 20093,
+   "instructions": 19805,
    "untouched": 10,
-   "sites": 106,
+   "sites": 109,
    "projects": [
     "bytecode-vm",
     "chess-search",
@@ -5631,7 +5665,7 @@
    ],
    "rules": 0,
    "example": {
-    "id": "v:chessPseudoMoves.941",
+    "id": "v:chessPseudoMoves.899",
     "text": "piece = load16[(board + (from << 1))+4]",
     "instructions": 2560
    },
@@ -5664,30 +5698,30 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessAttacked.480",
+    "id": "v:chessAttacked.464",
     "text": "at = (at + t18)",
     "instructions": 2420
    },
    "exampleIn": "chess-search"
   },
   {
-   "shape": "if geu(x, #)",
-   "instructions": 14458,
-   "untouched": 14428,
-   "sites": 43,
+   "shape": "and(x, #)",
+   "instructions": 16389,
+   "untouched": 70,
+   "sites": 49,
    "projects": [
-    "bytecode-vm",
+    "chess-search",
     "lz-roundtrip",
-    "regex-nfa",
-    "sha-chacha"
+    "sha-chacha",
+    "strength"
    ],
-   "rules": 1,
+   "rules": 3,
    "example": {
-    "id": "v:runVm.58",
-    "text": "if (sp >=u 4) goto .21 else .24",
-    "instructions": 1008
+    "id": "v:chessAttacked.569",
+    "text": "if !(!((at & 8))) goto .20 else .21",
+    "instructions": 6052
    },
-   "exampleIn": "bytecode-vm"
+   "exampleIn": "chess-search"
   },
   {
    "shape": "caddr(x, x)",
@@ -5710,9 +5744,9 @@
   },
   {
    "shape": "if eq(x, #)",
-   "instructions": 11230,
+   "instructions": 11382,
    "untouched": 7757,
-   "sites": 44,
+   "sites": 45,
    "projects": [
     "bytecode-vm",
     "chess-search",
@@ -5744,6 +5778,25 @@
     "instructions": 810
    },
    "exampleIn": "sha-chacha"
+  },
+  {
+   "shape": "if geu(x, #)",
+   "instructions": 10618,
+   "untouched": 10588,
+   "sites": 39,
+   "projects": [
+    "bytecode-vm",
+    "lz-roundtrip",
+    "regex-nfa",
+    "sha-chacha"
+   ],
+   "rules": 1,
+   "example": {
+    "id": "v:runVm.58",
+    "text": "if (sp >=u 4) goto .21 else .24",
+    "instructions": 1008
+   },
+   "exampleIn": "bytecode-vm"
   },
   {
    "shape": "if ge(x, x)",
@@ -5799,34 +5852,29 @@
    "exampleIn": "bytecode-vm"
   },
   {
-   "shape": "br",
-   "instructions": 8907,
-   "untouched": 1772,
-   "sites": 89,
+   "shape": "div(x, #)",
+   "instructions": 8865,
+   "untouched": 1115,
+   "sites": 39,
    "projects": [
-    "branches",
-    "bytecode-vm",
-    "calls",
+    "blend",
     "chess-search",
-    "collatz",
-    "div-checks",
     "div-magic",
-    "early-exit",
-    "fixed-point",
-    "histogram",
-    "lz-roundtrip",
-    "match-enum",
-    "ramp",
-    "records",
-    "regex-nfa",
+    "f32-dsp",
+    "fragments",
+    "orders",
+    "params-demo",
+    "sha-chacha",
     "start-here",
-    "strength"
+    "strength",
+    "value-numbering",
+    "wrong-shift"
    ],
-   "rules": 0,
+   "rules": 2,
    "example": {
-    "id": "s:chessAttacked.182",
-    "text": "goto .n55",
-    "instructions": 3026
+    "id": "v:chessDense.3",
+    "text": "return (square - ((square / 16) << 3))",
+    "instructions": 1640
    },
    "exampleIn": "chess-search"
   },
@@ -5847,25 +5895,6 @@
     "instructions": 3692
    },
    "exampleIn": "bytecode-vm"
-  },
-  {
-   "shape": "and(x, #)",
-   "instructions": 6600,
-   "untouched": 70,
-   "sites": 47,
-   "projects": [
-    "chess-search",
-    "lz-roundtrip",
-    "sha-chacha",
-    "strength"
-   ],
-   "rules": 3,
-   "example": {
-    "id": "v:chessAttacked.492",
-    "text": "chessOnBoard_t2 = ((at & 15) < 8)",
-    "instructions": 3026
-   },
-   "exampleIn": "chess-search"
   },
   {
    "shape": "if ne(x, 0)",
@@ -5936,6 +5965,22 @@
    "exampleIn": "bytecode-vm"
   },
   {
+   "shape": "add(x, and)",
+   "instructions": 5504,
+   "untouched": 0,
+   "sites": 2,
+   "projects": [
+    "chess-search"
+   ],
+   "rules": 3,
+   "example": {
+    "id": "v:chessPseudoMoves.1497",
+    "text": "t9 = (dense + (dense & -8))",
+    "instructions": 5120
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "zero",
    "instructions": 5460,
    "untouched": 5460,
@@ -5964,57 +6009,9 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessAttacked.540",
-    "text": "if (at >= 0) goto .n50 else .n54",
+    "id": "v:chessAttacked.589",
+    "text": "if (at >= 0) goto .n50 else .20",
     "instructions": 2480
-   },
-   "exampleIn": "chess-search"
-  },
-  {
-   "shape": "set 0",
-   "instructions": 4767,
-   "untouched": 2906,
-   "sites": 145,
-   "projects": [
-    "blend",
-    "bounds-lab",
-    "bounds-offset",
-    "bounds-param",
-    "bounds-two",
-    "bytecode-vm",
-    "checksum",
-    "chess-search",
-    "collatz",
-    "div-magic",
-    "early-exit",
-    "f32-dsp",
-    "fragments",
-    "heat-lab",
-    "histogram",
-    "licm-nested",
-    "licm-traps",
-    "lz-roundtrip",
-    "my-analysis",
-    "nested-loops",
-    "orders",
-    "params-demo",
-    "ramp",
-    "regalloc-lab",
-    "regex-nfa",
-    "sha-chacha",
-    "sort",
-    "start-here",
-    "strength",
-    "strings",
-    "ui-gallery",
-    "value-numbering",
-    "wrong-shift"
-   ],
-   "rules": 0,
-   "example": {
-    "id": "s:chessAttacked.149",
-    "text": "chessIsPiece_t52 = 0",
-    "instructions": 520
    },
    "exampleIn": "chess-search"
   },
@@ -6040,38 +6037,20 @@
    "exampleIn": "bytecode-vm"
   },
   {
-   "shape": "br_if x",
-   "instructions": 4561,
-   "untouched": 57,
-   "sites": 31,
-   "projects": [
-    "chess-search",
-    "my-analysis",
-    "regex-nfa"
-   ],
-   "rules": 0,
-   "example": {
-    "id": "s:chessAttacked.146",
-    "text": "if chessOnBoard_t23 goto .n31 else .n32",
-    "instructions": 1184
-   },
-   "exampleIn": "chess-search"
-  },
-  {
-   "shape": "lt(and, #)",
-   "instructions": 4289,
+   "shape": "xor(x, x)",
+   "instructions": 4360,
    "untouched": 0,
-   "sites": 10,
+   "sites": 6,
    "projects": [
-    "chess-search"
+    "sha-chacha"
    ],
-   "rules": 1,
+   "rules": 2,
    "example": {
-    "id": "v:chessAttacked.493",
-    "text": "chessOnBoard_t2 = ((at & 15) < 8)",
-    "instructions": 3026
+    "id": "v:quarter.109",
+    "text": "rotl_x = (d ^ qa)",
+    "instructions": 810
    },
-   "exampleIn": "chess-search"
+   "exampleIn": "sha-chacha"
   },
   {
    "shape": "add(shl, 1)",
@@ -6109,41 +6088,41 @@
    "exampleIn": "bytecode-vm"
   },
   {
-   "shape": "xor(x, x)",
-   "instructions": 3880,
-   "untouched": 0,
-   "sites": 5,
+   "shape": "br",
+   "instructions": 3921,
+   "untouched": 1696,
+   "sites": 76,
    "projects": [
-    "sha-chacha"
+    "branches",
+    "bytecode-vm",
+    "calls",
+    "chess-search",
+    "collatz",
+    "div-checks",
+    "div-magic",
+    "early-exit",
+    "fixed-point",
+    "histogram",
+    "lz-roundtrip",
+    "match-enum",
+    "ramp",
+    "records",
+    "regex-nfa",
+    "start-here",
+    "strength"
    ],
-   "rules": 2,
+   "rules": 0,
    "example": {
-    "id": "v:quarter.109",
-    "text": "rotl_x = (d ^ qa)",
-    "instructions": 810
+    "id": "s:collatz.11",
+    "text": "goto .9",
+    "instructions": 348
    },
-   "exampleIn": "sha-chacha"
-  },
-  {
-   "shape": "if eqz(x)",
-   "instructions": 3873,
-   "untouched": 0,
-   "sites": 9,
-   "projects": [
-    "chess-search"
-   ],
-   "rules": 10,
-   "example": {
-    "id": "v:chessAttacked.467",
-    "text": "if !(chessOnBoard_t2) goto .20 else .21",
-    "instructions": 3384
-   },
-   "exampleIn": "chess-search"
+   "exampleIn": "collatz"
   },
   {
    "shape": "sub(x, #)",
    "instructions": 3798,
-   "untouched": 1940,
+   "untouched": 1460,
    "sites": 21,
    "projects": [
     "chess-search",
@@ -6161,22 +6140,6 @@
    "exampleIn": "sha-chacha"
   },
   {
-   "shape": "shl(div, #)",
-   "instructions": 3794,
-   "untouched": 0,
-   "sites": 16,
-   "projects": [
-    "chess-search"
-   ],
-   "rules": 2,
-   "example": {
-    "id": "v:chessPseudoMoves.933",
-    "text": "t9 = (dense + ((dense / 8) << 3))",
-    "instructions": 2560
-   },
-   "exampleIn": "chess-search"
-  },
-  {
    "shape": "sub(#, mul)",
    "instructions": 3788,
    "untouched": 36,
@@ -6186,7 +6149,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessAttacked.400",
+    "id": "v:chessAttacked.384",
     "text": "t16 = (14 - (i * 28))",
     "instructions": 592
    },
@@ -6253,7 +6216,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:vowels.86",
+    "id": "v:vowels.78",
     "text": "if (i >= load32[s+0]) goto .2 else .7",
     "instructions": 810
    },
@@ -6269,7 +6232,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.599",
+    "id": "v:chessMake.594",
     "text": "if (130 >=u load32[board+0]) goto .5 else .8",
     "instructions": 252
    },
@@ -6290,6 +6253,54 @@
     "instructions": 810
    },
    "exampleIn": "sha-chacha"
+  },
+  {
+   "shape": "set 0",
+   "instructions": 3107,
+   "untouched": 2840,
+   "sites": 132,
+   "projects": [
+    "blend",
+    "bounds-lab",
+    "bounds-offset",
+    "bounds-param",
+    "bounds-two",
+    "bytecode-vm",
+    "checksum",
+    "chess-search",
+    "collatz",
+    "div-magic",
+    "early-exit",
+    "f32-dsp",
+    "fragments",
+    "heat-lab",
+    "histogram",
+    "licm-nested",
+    "licm-traps",
+    "lz-roundtrip",
+    "my-analysis",
+    "nested-loops",
+    "orders",
+    "params-demo",
+    "ramp",
+    "regalloc-lab",
+    "regex-nfa",
+    "sha-chacha",
+    "sort",
+    "start-here",
+    "strength",
+    "strings",
+    "ui-gallery",
+    "value-numbering",
+    "wrong-shift"
+   ],
+   "rules": 0,
+   "example": {
+    "id": "s:chessAttacked.14",
+    "text": "i = 0",
+    "instructions": 148
+   },
+   "exampleIn": "chess-search"
   },
   {
    "shape": "caddr(x, #)",
@@ -6317,7 +6328,7 @@
    ],
    "rules": 7,
    "example": {
-    "id": "v:chessAttacked.405",
+    "id": "v:chessAttacked.389",
     "text": "t16 = (18 - ((i - 2) * 36))",
     "instructions": 592
    },
@@ -6360,7 +6371,7 @@
    ],
    "rules": 7,
    "example": {
-    "id": "v:chessAttacked.399",
+    "id": "v:chessAttacked.383",
     "text": "t16 = (14 - (i * 28))",
     "instructions": 592
    },
@@ -6454,22 +6465,6 @@
    "exampleIn": "chess-search"
   },
   {
-   "shape": "eq(load16u, x)",
-   "instructions": 1932,
-   "untouched": 0,
-   "sites": 4,
-   "projects": [
-    "chess-search"
-   ],
-   "rules": 1,
-   "example": {
-    "id": "v:chessAttacked.434",
-    "text": "chessIsPiece_t52 = (load16[(board + (chessIsPiece_square2 << 1))+4] == chessIsPiece_piece2)",
-    "instructions": 1328
-   },
-   "exampleIn": "chess-search"
-  },
-  {
    "shape": "if eq(load, 1)",
    "instructions": 1832,
    "untouched": 0,
@@ -6479,7 +6474,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:regexMatch.536",
+    "id": "v:regexMatch.532",
     "text": "if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62",
     "instructions": 752
    },
@@ -6511,11 +6506,29 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:fft.467",
+    "id": "v:fft.479",
     "text": "if (bits <= 1) goto .5 else .6",
     "instructions": 1424
    },
    "exampleIn": "f32-dsp"
+  },
+  {
+   "shape": "br_if x",
+   "instructions": 1402,
+   "untouched": 57,
+   "sites": 21,
+   "projects": [
+    "chess-search",
+    "my-analysis",
+    "regex-nfa"
+   ],
+   "rules": 0,
+   "example": {
+    "id": "s:chessPseudoMoves.70",
+    "text": "if inv3 goto .n21 else .n23",
+    "instructions": 320
+   },
+   "exampleIn": "chess-search"
   },
   {
    "shape": "shr(x, 1)",
@@ -6609,6 +6622,22 @@
    "exampleIn": "value-numbering"
   },
   {
+   "shape": "shl(div, #)",
+   "instructions": 1234,
+   "untouched": 0,
+   "sites": 15,
+   "projects": [
+    "chess-search"
+   ],
+   "rules": 2,
+   "example": {
+    "id": "v:chessDense.8",
+    "text": "return (square - ((square / 16) << 3))",
+    "instructions": 410
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "call(x)",
    "instructions": 1200,
    "untouched": 0,
@@ -6618,29 +6647,29 @@
    ],
    "rules": 0,
    "example": {
-    "id": "v:chessPseudoMoves.1140",
+    "id": "v:chessPseudoMoves.1098",
     "text": "chessAdd_chessMove_t3 = chessDense(chessAdd_from)",
     "instructions": 600
    },
    "exampleIn": "chess-search"
   },
   {
-   "shape": "shr(x, #)",
-   "instructions": 1194,
+   "shape": "shl(sub, #)",
+   "instructions": 1180,
    "untouched": 0,
-   "sites": 9,
+   "sites": 8,
    "projects": [
     "chess-search",
-    "sha-chacha",
-    "strength"
+    "lz-roundtrip",
+    "sha-chacha"
    ],
    "rules": 2,
    "example": {
-    "id": "v:chessEvaluate.485",
-    "text": "t20 = (i + ((i >> 3) << 3))",
-    "instructions": 384
+    "id": "v:sha256Block.823",
+    "text": "x = load32[(inv1 + ((t - 15) << 2))+0]",
+    "instructions": 480
    },
-   "exampleIn": "chess-search"
+   "exampleIn": "sha-chacha"
   },
   {
    "shape": "xor(or, or)",
@@ -6696,7 +6725,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:collatz.49",
+    "id": "v:collatz.44",
     "text": "if (x > 1) goto .2 else .5",
     "instructions": 1039
    },
@@ -6761,7 +6790,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:collatz.42",
+    "id": "v:collatz.37",
     "text": "if !((steps < 1000)) goto .5 else .6",
     "instructions": 1030
    },
@@ -6777,8 +6806,8 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:sha256Block.800",
-    "text": "s0 = ((((x >>> 7) | (x << 25)) ^ ((x >>> 18) | (x << 14))) ^ (x >>> 3))",
+    "id": "v:sha256Block.671",
+    "text": "s1 = ((t65 ^ t66) ^ (y >>> 10))",
     "instructions": 480
    },
    "exampleIn": "sha-chacha"
@@ -6870,11 +6899,46 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessMake.778",
+    "id": "v:chessMake.768",
     "text": "store16[(board + 256)+4] = (1 - t49)",
     "instructions": 504
    },
    "exampleIn": "chess-search"
+  },
+  {
+   "shape": "if eq(load16u, x)",
+   "instructions": 875,
+   "untouched": 0,
+   "sites": 3,
+   "projects": [
+    "chess-search",
+    "early-exit"
+   ],
+   "rules": 1,
+   "example": {
+    "id": "v:chessAttacked.546",
+    "text": "if (load16[(board + (chessIsPiece_square2 << 1))+4] == chessIsPiece_piece2) goto .11 else .14",
+    "instructions": 664
+   },
+   "exampleIn": "chess-search"
+  },
+  {
+   "shape": "shr(x, #)",
+   "instructions": 870,
+   "untouched": 0,
+   "sites": 9,
+   "projects": [
+    "chess-search",
+    "sha-chacha",
+    "strength"
+   ],
+   "rules": 2,
+   "example": {
+    "id": "v:sha256Block.773",
+    "text": "word = (i >> 2)",
+    "instructions": 312
+   },
+   "exampleIn": "sha-chacha"
   },
   {
    "shape": "or(load16u, shl)",
@@ -6902,7 +6966,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessAttacked.440",
+    "id": "v:chessAttacked.424",
     "text": "t18 = (1 - (i << 1))",
     "instructions": 592
    },
@@ -6935,7 +6999,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.748",
+    "id": "v:chessMake.738",
     "text": "if ((t47 - t48) == 2) goto .74 else .85",
     "instructions": 240
    },
@@ -7060,7 +7124,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.667",
+    "id": "v:chessMake.657",
     "text": "chessSquare_dense = ((move / 64) % 64)",
     "instructions": 252
    },
@@ -7103,24 +7167,6 @@
     "instructions": 252
    },
    "exampleIn": "chess-search"
-  },
-  {
-   "shape": "shl(sub, #)",
-   "instructions": 700,
-   "untouched": 0,
-   "sites": 7,
-   "projects": [
-    "chess-search",
-    "lz-roundtrip",
-    "sha-chacha"
-   ],
-   "rules": 2,
-   "example": {
-    "id": "v:sha256Block.531",
-    "text": "store32[(inv + (word << 2))+0] = (load32[(inv + (word << 2))+0] | (load16[caddr(message, i)+4] << ((3 - (i & 3)) << 3)))",
-    "instructions": 312
-   },
-   "exampleIn": "sha-chacha"
   },
   {
    "shape": "set #",
@@ -7174,7 +7220,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessAttacked.446",
+    "id": "v:chessAttacked.430",
     "text": "t18 = (16 - ((i - 2) << 5))",
     "instructions": 472
    },
@@ -7223,7 +7269,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:collatz.37",
+    "id": "v:collatz.32",
     "text": "if ((x & 1) == 0) goto .7 else .8",
     "instructions": 515
    },
@@ -7303,7 +7349,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:sha256Block.836",
+    "id": "v:sha256Block.833",
     "text": "sum0 = ((((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19))) ^ ((a >>> 22) | (a << 10)))",
     "instructions": 640
    },
@@ -7401,7 +7447,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:regexMatch.562",
+    "id": "v:regexMatch.558",
     "text": "if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64",
     "instructions": 606
    },
@@ -7417,7 +7463,7 @@
    ],
    "rules": 7,
    "example": {
-    "id": "v:regexMatch.566",
+    "id": "v:regexMatch.562",
     "text": "row = (5 * load32[(inv3 + (head << 2))+0])",
     "instructions": 606
    },
@@ -7469,7 +7515,7 @@
    ],
    "rules": 0,
    "example": {
-    "id": "v:chessPseudoMoves.985",
+    "id": "v:chessPseudoMoves.943",
     "text": "chessPawnMoves_t21 = chessPawnAdd(chessPieceMoves_board, chessPieceMoves_list, chessPawnMoves_count, chessPieceMoves_from, chessPawnMoves_next)",
     "instructions": 300
    },
@@ -7502,7 +7548,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.637",
+    "id": "v:chessMake.628",
     "text": "if (65535 < t33) goto .114 else .115",
     "instructions": 378
    },
@@ -7518,7 +7564,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.844",
+    "id": "v:chessMake.834",
     "text": "if ((captured & 7) == 4) goto .89 else .91",
     "instructions": 252
    },
@@ -7541,22 +7587,6 @@
    "exampleIn": "sha-chacha"
   },
   {
-   "shape": "xor(or, x)",
-   "instructions": 480,
-   "untouched": 0,
-   "sites": 1,
-   "projects": [
-    "sha-chacha"
-   ],
-   "rules": 2,
-   "example": {
-    "id": "v:sha256Block.827",
-    "text": "s1 = ((((y >>> 17) | (y << 15)) ^ t66) ^ (y >>> 10))",
-    "instructions": 480
-   },
-   "exampleIn": "sha-chacha"
-  },
-  {
    "shape": "if gt(x, 0)",
    "instructions": 475,
    "untouched": 6,
@@ -7569,7 +7599,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:sort.146",
+    "id": "v:sort.141",
     "text": "if (j > 0) goto .5 else .16",
     "instructions": 189
    },
@@ -7603,7 +7633,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPseudoMoves.1410",
+    "id": "v:chessPseudoMoves.1381",
     "text": "store16[(chessPieceMoves_board + (chessAdd_t6 << 1))+4] = ((chessAdd_chessMove_t3 << 6) + chessAdd_chessMove_t4)",
     "instructions": 400
    },
@@ -7619,7 +7649,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessPseudoMoves.1368",
+    "id": "v:chessPseudoMoves.1339",
     "text": "if ((piece >> 3) == t8) goto .11 else .13",
     "instructions": 280
    },
@@ -7637,7 +7667,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:sort.131",
+    "id": "v:sort.126",
     "text": "if !((t12 > load16[(work + (j << 1))+4])) goto .16 else .17",
     "instructions": 229
    },
@@ -7661,22 +7691,6 @@
     "instructions": 337
    },
    "exampleIn": "nested-loops"
-  },
-  {
-   "shape": "shl(shr, #)",
-   "instructions": 384,
-   "untouched": 0,
-   "sites": 1,
-   "projects": [
-    "chess-search"
-   ],
-   "rules": 2,
-   "example": {
-    "id": "v:chessEvaluate.486",
-    "text": "t20 = (i + ((i >> 3) << 3))",
-    "instructions": 384
-   },
-   "exampleIn": "chess-search"
   },
   {
    "shape": "return 0",
@@ -7706,7 +7720,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:chessMake.867",
+    "id": "v:chessMake.857",
     "text": "chessRemoveRight_t21 = (((t55 / chessRemoveRight_mask1) % 2) == 1)",
     "instructions": 80
    },
@@ -7760,7 +7774,7 @@
    ],
    "rules": 0,
    "example": {
-    "id": "v:chessPrepareNode.885",
+    "id": "v:chessPrepareNode.873",
     "text": "chessPriority_t8 = chessCapture(chessOrder_board, chessOrder_move)",
     "instructions": 208
    },
@@ -7794,7 +7808,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:regexMatch.544",
+    "id": "v:regexMatch.540",
     "text": "if (load32[(inv4 + (second << 2))+0] == 0) goto .109 else .64",
     "instructions": 125
    },
@@ -7816,22 +7830,6 @@
     "instructions": 207
    },
    "exampleIn": "lz-roundtrip"
-  },
-  {
-   "shape": "eq(x, #)",
-   "instructions": 332,
-   "untouched": 152,
-   "sites": 5,
-   "projects": [
-    "chess-search"
-   ],
-   "rules": 1,
-   "example": {
-    "id": "v:chessAttacked.106",
-    "text": "t22 = (kind == 4)",
-    "instructions": 152
-   },
-   "exampleIn": "chess-search"
   },
   {
    "shape": "aaddr()",
@@ -7896,7 +7894,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.887",
+    "id": "v:chessMake.877",
     "text": "chessRemoveRight_t2 = (((rights / first) & 1) == 1)",
     "instructions": 160
    },
@@ -7951,6 +7949,22 @@
    "exampleIn": "lz-roundtrip"
   },
   {
+   "shape": "eq(load16u, x)",
+   "instructions": 312,
+   "untouched": 0,
+   "sites": 2,
+   "projects": [
+    "chess-search"
+   ],
+   "rules": 1,
+   "example": {
+    "id": "v:chessAttacked.377",
+    "text": "chessIsPiece_t51 = (load16[(board + (chessIsPiece_square1 << 1))+4] == chessIsPiece_piece1)",
+    "instructions": 292
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "shl(load16u, shl)",
    "instructions": 312,
    "untouched": 0,
@@ -7977,7 +7991,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessAttacked.503",
+    "id": "v:chessAttacked.496",
     "text": "pawn = (square - ((side << 5) - 16))",
     "instructions": 148
    },
@@ -7994,7 +8008,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessMake.826",
+    "id": "v:chessMake.816",
     "text": "t33 = (load16[(board + 266)+4] + 1)",
     "instructions": 126
    },
@@ -8098,7 +8112,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:regexMatch.619",
+    "id": "v:regexMatch.616",
     "text": "t44 = load32[(inv7 + ((row + 1) << 2))+0]",
     "instructions": 138
    },
@@ -8114,7 +8128,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:compress.308",
+    "id": "v:compress.298",
     "text": "if !(((i + len) < n)) goto .20 else .21",
     "instructions": 214
    },
@@ -8135,22 +8149,6 @@
     "instructions": 213
    },
    "exampleIn": "value-numbering"
-  },
-  {
-   "shape": "le(x, x)",
-   "instructions": 210,
-   "untouched": 4,
-   "sites": 2,
-   "projects": [
-    "regex-nfa"
-   ],
-   "rules": 1,
-   "example": {
-    "id": "v:regexMatch.511",
-    "text": "inRange_t3 = (code <= inRange_high)",
-    "instructions": 206
-   },
-   "exampleIn": "regex-nfa"
   },
   {
    "shape": "set 1",
@@ -8184,7 +8182,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.869",
+    "id": "v:chessMake.859",
     "text": "chessRemoveRight_t21 = (((t55 / chessRemoveRight_mask1) % 2) == 1)",
     "instructions": 160
    },
@@ -8216,27 +8214,27 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:digits.49",
+    "id": "v:digits.47",
     "text": "if (c <= 57) goto .11 else .13",
     "instructions": 198
    },
    "exampleIn": "strings"
   },
   {
-   "shape": "shl(shl, 1)",
-   "instructions": 192,
+   "shape": "eq(x, #)",
+   "instructions": 180,
    "untouched": 0,
    "sites": 4,
    "projects": [
-    "f32-dsp"
+    "chess-search"
    ],
-   "rules": 2,
+   "rules": 1,
    "example": {
-    "id": "v:fft.412",
-    "text": "t7 = (((i << 1) << 1) + 1)",
-    "instructions": 48
+    "id": "v:chessPseudoMoves.158",
+    "text": "inv3 = (chessPieceMoves_kind == 2)",
+    "instructions": 80
    },
-   "exampleIn": "f32-dsp"
+   "exampleIn": "chess-search"
   },
   {
    "shape": "add(add, 1)",
@@ -8296,7 +8294,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessMake.886",
+    "id": "v:chessMake.876",
     "text": "chessRemoveRight_t2 = (((rights / first) & 1) == 1)",
     "instructions": 80
    },
@@ -8312,7 +8310,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessAttacked.504",
+    "id": "v:chessAttacked.497",
     "text": "pawn = (square - ((side << 5) - 16))",
     "instructions": 148
    },
@@ -8329,7 +8327,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessMake.882",
+    "id": "v:chessMake.872",
     "text": "moved = ((t49 << 3) + (6 - promotion))",
     "instructions": 52
    },
@@ -8345,7 +8343,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:compress.302",
+    "id": "v:compress.292",
     "text": "if !((visits < chainLimit)) goto .35 else .15",
     "instructions": 151
    },
@@ -8394,7 +8392,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessPrepareNode.882",
+    "id": "v:chessPrepareNode.870",
     "text": "if (chessOrder_move == chessOrder_previous) goto .n95 else .n97",
     "instructions": 56
    },
@@ -8458,7 +8456,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:compress.357",
+    "id": "v:compress.347",
     "text": "link = load32[(inv1 + ((((((hash3_a * 31) + hash3_b) * 31) + hash3_c) & 15) << 2))+0]",
     "instructions": 125
    },
@@ -8474,7 +8472,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessMake.718",
+    "id": "v:chessMake.708",
     "text": "first = (1 + (3 * t49))",
     "instructions": 80
    },
@@ -8546,6 +8544,38 @@
    "exampleIn": "gcd"
   },
   {
+   "shape": "if le(x, x)",
+   "instructions": 103,
+   "untouched": 0,
+   "sites": 1,
+   "projects": [
+    "regex-nfa"
+   ],
+   "rules": 1,
+   "example": {
+    "id": "v:regexMatch.621",
+    "text": "if (code <= inRange_high) goto .145 else .156",
+    "instructions": 103
+   },
+   "exampleIn": "regex-nfa"
+  },
+  {
+   "shape": "if eqz(x)",
+   "instructions": 98,
+   "untouched": 0,
+   "sites": 4,
+   "projects": [
+    "chess-search"
+   ],
+   "rules": 10,
+   "example": {
+    "id": "v:chessPseudoMoves.1472",
+    "text": "if !(chessCastle_t20) goto .n179 else .n181",
+    "instructions": 40
+   },
+   "exampleIn": "chess-search"
+  },
+  {
    "shape": "if le(x, 0)",
    "instructions": 98,
    "untouched": 0,
@@ -8571,7 +8601,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPawnAdd.229",
+    "id": "v:chessPawnAdd.227",
     "text": "store16[(board + (chessAdd_t61 << 1))+4] = (((chessAdd_promotion1 << 12) + (chessMove_t31 << 6)) + chessMove_t41)",
     "instructions": 80
    },
@@ -8587,7 +8617,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessPseudoMoves.1418",
+    "id": "v:chessPseudoMoves.1389",
     "text": "if (chessPieceMoves_from != (116 - (chessPieceMoves_side * 112))) goto .n166 else .n168",
     "instructions": 80
    },
@@ -8778,22 +8808,6 @@
    "exampleIn": "chess-search"
   },
   {
-   "shape": "if eq(load16u, x)",
-   "instructions": 65,
-   "untouched": 0,
-   "sites": 1,
-   "projects": [
-    "early-exit"
-   ],
-   "rules": 1,
-   "example": {
-    "id": "v:find.35",
-    "text": "if (load16[(work + (i << 1))+4] == target) goto .8 else .11",
-    "instructions": 65
-   },
-   "exampleIn": "early-exit"
-  },
-  {
    "shape": "mul(load, x)",
    "instructions": 62,
    "untouched": 0,
@@ -8836,7 +8850,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:regexMatch.499",
+    "id": "v:regexMatch.495",
     "text": "t42 = (load16[caddr(pattern, p)+4] == 42)",
     "instructions": 60
    },
@@ -8868,7 +8882,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessCapture.194",
+    "id": "v:chessCapture.190",
     "text": "if (t7 == load16[(board + 260)+4]) goto .13 else .26",
     "instructions": 52
    },
@@ -8884,7 +8898,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:compress.325",
+    "id": "v:compress.315",
     "text": "store16[caddr(packed, k)+4] = ((128 | ((bestLen - 3) << 5)) | (bestDistance - 1))",
     "instructions": 52
    },
@@ -9004,7 +9018,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPrepareNode.1007",
+    "id": "v:chessPrepareNode.994",
     "text": "chessOrder_t9 = ((inv + chessOrder_at) - 1)",
     "instructions": 48
    },
@@ -9020,7 +9034,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.898",
+    "id": "v:chessMake.888",
     "text": "if ((t48 - t47) == (((side << 5) - 16) << 1)) goto .103 else .109",
     "instructions": 46
    },
@@ -9036,7 +9050,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessAttacked.522",
+    "id": "v:chessAttacked.515",
     "text": "if (at == (square + t18)) goto .33 else .36",
     "instructions": 46
    },
@@ -9052,7 +9066,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:chessMake.897",
+    "id": "v:chessMake.887",
     "text": "if ((t48 - t47) == (((side << 5) - 16) << 1)) goto .103 else .109",
     "instructions": 46
    },
@@ -9151,7 +9165,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:chessPseudoMoves.1422",
+    "id": "v:chessPseudoMoves.1393",
     "text": "chessCastle_t20 = (((chessCastle_rights / (chessCastle_mask << 1)) & 1) == 1)",
     "instructions": 40
    },
@@ -9167,7 +9181,7 @@
    ],
    "rules": 7,
    "example": {
-    "id": "v:chessPrepareNode.1029",
+    "id": "v:chessPrepareNode.1017",
     "text": "chessStopSearch_t5 = (384 + (load32[state+4] * 10))",
     "instructions": 28
    },
@@ -9183,7 +9197,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPrepareNode.772",
+    "id": "v:chessPrepareNode.760",
     "text": "store32[state+4] = (load32[state+4] - 1)",
     "instructions": 28
    },
@@ -9248,7 +9262,7 @@
    ],
    "rules": 0,
    "example": {
-    "id": "v:chessPrepareNode.1020",
+    "id": "v:chessPrepareNode.1007",
     "text": "chessPriority_chessFrom_t1 = chessSquare(((chessPriority_move >> 6) & 63))",
     "instructions": 36
    },
@@ -9264,7 +9278,7 @@
    ],
    "rules": 0,
    "example": {
-    "id": "v:chessCompleteNode.154",
+    "id": "v:chessCompleteNode.152",
     "text": "t16 = chessAcceptScore(board, t13, move, (0 - score))",
     "instructions": 36
    },
@@ -9314,7 +9328,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessPrepareNode.1069",
+    "id": "v:chessPrepareNode.1060",
     "text": "if (load32[state+4] <= 0) goto .n3 else .n4",
     "instructions": 18
    },
@@ -9396,7 +9410,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPrepareNode.912",
+    "id": "v:chessPrepareNode.900",
     "text": "chessPriority_key = ((1200 + (chessPriority_t13 << 3)) - chessPriority_t12)",
     "instructions": 12
    },
@@ -9430,7 +9444,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPseudoMoves.1055",
+    "id": "v:chessPseudoMoves.1013",
     "text": "inv1 = (1 + ((1 - chessPieceMoves_side) << 3))",
     "instructions": 30
    },
@@ -9453,7 +9467,7 @@
    "exampleIn": "chess-search"
   },
   {
-   "shape": "if eq(div, sub)",
+   "shape": "if eq(shr, sub)",
    "instructions": 30,
    "untouched": 0,
    "sites": 1,
@@ -9462,8 +9476,8 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessPseudoMoves.1380",
-    "text": "if ((chessPieceMoves_from / 16) == (6 - (chessPieceMoves_side * 5))) goto .n71 else .n85",
+    "id": "v:chessPseudoMoves.1351",
+    "text": "if ((chessPieceMoves_from >> 4) == (6 - (chessPieceMoves_side * 5))) goto .n71 else .n85",
     "instructions": 30
    },
    "exampleIn": "chess-search"
@@ -9494,7 +9508,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessMake.883",
+    "id": "v:chessMake.873",
     "text": "moved = ((t49 << 3) + (6 - promotion))",
     "instructions": 26
    },
@@ -9510,7 +9524,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:compress.321",
+    "id": "v:compress.311",
     "text": "store16[caddr(packed, k)+4] = ((128 | ((bestLen - 3) << 5)) | (bestDistance - 1))",
     "instructions": 26
    },
@@ -9526,7 +9540,7 @@
    ],
    "rules": 7,
    "example": {
-    "id": "v:chessEvaluate.377",
+    "id": "v:chessEvaluate.376",
     "text": "value = (value + (score * (1 - (side << 1))))",
     "instructions": 18
    },
@@ -9575,7 +9589,7 @@
    ],
    "rules": 1,
    "example": {
-    "id": "v:chessMake.700",
+    "id": "v:chessMake.690",
     "text": "t52 = ((t47 % 16) != (t48 % 16))",
     "instructions": 20
    },
@@ -9591,7 +9605,7 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:chessPrepareNode.1059",
+    "id": "v:chessPrepareNode.1047",
     "text": "chessStopSearch_t2 = ((160 + (load32[state+4] << 4)) + 7)",
     "instructions": 14
    },
@@ -9771,7 +9785,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPrepareNode.1022",
+    "id": "v:chessPrepareNode.1009",
     "text": "chessPriority_chessValue_kind = (load16[(chessOrder_board + (chessPriority_t11 << 1))+4] & 7)",
     "instructions": 12
    },
@@ -9787,7 +9801,7 @@
    ],
    "rules": 3,
    "example": {
-    "id": "v:chessPrepareNode.1019",
+    "id": "v:chessPrepareNode.1006",
     "text": "chessPriority_chessFrom_t1 = chessSquare(((chessPriority_move >> 6) & 63))",
     "instructions": 12
    },
@@ -10011,11 +10025,43 @@
    ],
    "rules": 2,
    "example": {
-    "id": "v:chessEvaluate.532",
+    "id": "v:chessEvaluate.530",
     "text": "return (value * (1 - (load16[(board + 256)+4] << 1)))",
     "instructions": 6
    },
    "exampleIn": "chess-search"
+  },
+  {
+   "shape": "eqz(and)",
+   "instructions": 4,
+   "untouched": 0,
+   "sites": 1,
+   "projects": [
+    "chess-search"
+   ],
+   "rules": 10,
+   "example": {
+    "id": "v:chessOnBoard.24",
+    "text": "t2 = !((square & 8))",
+    "instructions": 4
+   },
+   "exampleIn": "chess-search"
+  },
+  {
+   "shape": "le(x, x)",
+   "instructions": 4,
+   "untouched": 4,
+   "sites": 1,
+   "projects": [
+    "regex-nfa"
+   ],
+   "rules": 1,
+   "example": {
+    "id": "v:inRange.5",
+    "text": "t3 = (code <= high)",
+    "instructions": 4
+   },
+   "exampleIn": "regex-nfa"
   },
   {
    "shape": "ne(x, 0)",

@@ -5,7 +5,9 @@
 // reads can be read through (params.whole), and a second
 // `lvn` before rotate (after cfg has merged the blocks the removed checks separated).
 // With --pipeline O2: O2 as it is, and O2 with the same insertions (not a registered pipeline).
-// usage: node 09-ablation.mjs out.json [--pipeline speed|O2] [id...]
+// usage: node 09-ablation.mjs out.json [--pipeline speed|O2] [--variants 'a;b'] [--skip 'id;id'] [id...]
+// --variants keeps the named variants (in the table's order); --skip leaves projects out (chess-search takes
+// most of the time, so the long runs were split: it alone, and the rest).
 // IRWB_ROOT names another build to run (a copy of dist/ and tools/ next to links to vendor/ and corpus/), so a
 // long run is not disturbed by `npm run build`; made with 10-snapshot.sh.
 import { writeFileSync } from 'node:fs';
@@ -24,7 +26,9 @@ const { PIPELINES } = await import(D + 'typed/passes.js');
 
 const argv = process.argv.slice(2);
 const pipeline = argv.includes('--pipeline') ? argv[argv.indexOf('--pipeline') + 1] : 'speed';
-const [out, ...only] = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--pipeline');
+const VALUED = ['--pipeline', '--variants', '--skip'];
+const option = n => (argv.includes(n) ? argv[argv.indexOf(n) + 1].split(';') : null);
+const [out, ...only] = argv.filter((a, i) => !a.startsWith('--') && !VALUED.includes(argv[i - 1]));
 const NEW = ['thread', 'copies', 'guards', 'subst-mem', 'identities'];
 const S = PIPELINES.speed;
 const without = (list, keep) => list.flatMap(n => (!NEW.includes(n) || keep.includes(n) ? [n] : n === 'subst-mem' ? ['subst'] : []));
@@ -53,6 +57,8 @@ const VARIANTS =
         'all, copies whole': S.map(n => (n === 'copies' ? ['copies', { whole: true }] : n)),
         'all, lvn again before rotate': S.flatMap(n => (n === 'rotate' ? ['lvn', n] : [n])),
       };
+if (option('--variants')) for (const k of Object.keys(VARIANTS)) if (!option('--variants').includes(k)) delete VARIANTS[k];
+const skip = option('--skip') ?? [];
 const TUNED = { chains: true, coalesce: true, homes: true };
 function instructions(p, options) {
   const st = storeOf(p.origin.value), { image } = lowerToImage(p.head, options);
@@ -65,7 +71,7 @@ function instructions(p, options) {
   return n;
 }
 const rows = {}, totals = {};
-for (const id of only.length ? only : projectIds()) {
+for (const id of (only.length ? only : projectIds()).filter(x => !skip.includes(x))) {
   const ps = projectSource(id, projectFiles(id));
   rows[id] = {};
   for (const [name, list] of Object.entries(VARIANTS)) {

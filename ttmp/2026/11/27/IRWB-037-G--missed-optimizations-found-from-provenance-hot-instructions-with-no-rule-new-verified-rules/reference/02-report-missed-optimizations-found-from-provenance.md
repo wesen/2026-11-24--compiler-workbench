@@ -109,12 +109,44 @@ cases that finish (653,178 instructions, 43.1% at untouched statements).
 13 of the 27 simplify rules never fire under `speed` on the corpus (`various/07-corpus-shapes-before.json`):
 `one-mul zero-mul or-zero xor-zero shl-zero shr-zero shru-zero and-zero and-ones not-eq not-ltu not-geu not-not`.
 
+### The same patterns after this work
+
+Corpus under `speed`, default options, the seeded cases that finish (`various/07-corpus-shapes-after.json`):
+576,334 instructions (653,178 before), 31.2% at statements no pass touched (43.1%).
+
+| Node pattern | Before | After |
+| --- | ---: | ---: |
+| `set x` | 56,172 | 22,643 |
+| `br` | 18,760 | 3,921 |
+| `br_if x` | 15,996 | 1,402 |
+| `set 0` | 8,374 | 3,107 |
+| `lt(x, #)` stored, and `if eqz(x)` on it | 5,566 + 5,236 | 1,030 + 98 |
+| `if lt(x, #)` (the same comparisons, now in their branches) | 12,637 | 22,739 |
+| `if geu(x, #)` | 19,432 | 10,618 |
+| `div(x, #)` | 20,617 | 8,865 |
+| `rem(x, #)` | 10,867 | 1,254 |
+| `if geu(x, load)` (not addressed) | 21,641 | 22,990 |
+| `caddr(x, x)`, `caddr(x, add)` (not addressed) | 14,280 + 7,932 | 14,280 + 7,932 |
+
+- In the regex matcher the `if geu(x, #)` that remain are the first check of an index in each iteration, and
+  checks such as `5 * queue[head] + 3 <u 45`, which intervals cannot decide. I did not classify the remaining
+  ones in the other projects (the before-table's hottest example was the bytecode VM's `sp >=u 4`).
+- The remaining `div(x, #)` were not broken down either. The pattern includes divisors that are not powers of
+  two (histogram's `/ 10`), which the backend already handles with a multiplication.
+
 ## What was added, and what each gave
 
 @@ABLATION_SPEED@@
 
-Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablation.mjs`,
-`various/09-ablation-speed.json`). `old` is the list before this ticket and reproduces the baseline totals.
+Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablation.mjs`; chess-search and
+the other 49 projects ran as two processes, `various/09-ablation-speed-chess.json` and `-rest.json`, merged by
+`scripts/20-ablation-table.mjs`). `old` is the list before this ticket and reproduces the baseline totals. A
+row with one name is the old list plus that pass.
+
+Variants of the parameters and of the order, on the 49 projects other than chess-search (the run with all
+variants on chess-search did not finish in the session; `various/09-ablation-extras-rest.json`):
+
+@@ABLATION_EXTRAS@@
 
 ### `thread`: a block that only tests a local is copied into the blocks that jump to it
 
@@ -125,7 +157,7 @@ Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablat
 - **Why it is valid.** It is tail duplication, as `rotate` does for loop heads: each path runs a copy of the
   test where it ran the original. Loop heads are left to `rotate`, which must run after licm.
 - **Why twice in `speed`.** The inner join of a nested `&&` is a block of its own only after the outer one is
-  gone and cfg has merged. One run gives @@ONE_THREAD@@.
+  gone and cfg has merged. On the 49 projects, one run gives @@ONE_THREAD@@.
 - **What follows from it.** subst folds `t = c; if t` into `if c`, and then `typed.ranges` and `guards` refine
   on `c`. Collatz under `speed`: 6,955 to 4,861. strings: 10,283 to 8,100.
 - **Simplest alternative:** the backend's `chains` removes the jump. It keeps the stored boolean and the lost
@@ -153,7 +185,7 @@ Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablat
   cover `row`, which is assigned before the check on `state`: an interval per local cannot narrow `row`
   afterwards. And `typed.ranges` loses the lower bound of an outer loop counter when an inner loop's head
   widens it (`scripts/14-probe-chess-shapes.mjs`: `dense` in [-2^31, 63]), so `strength` leaves `dense / 8`.
-- **`params.all`** decides every branch, not only checks: @@ALL_BRANCH@@ on the corpus. Off.
+- **`params.all`** decides every branch, not only checks: @@ALL_BRANCH@@ on the 49 projects. Off.
 - **Attribution.** `tools/attribute.mjs regex-nfa speed regexMatch` now has rows such as
   `guards: replaceStmt (always false: geu([0, 40], [45, 45]))  -112`.
 
@@ -167,14 +199,16 @@ Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablat
   tuned options the backend's `coalesce` already removes these copies, and `copies` alone costs there
   (sha-chacha's `chacha20Block`: 34 spills against 19, `scripts/15-per-function.mjs`). In the full list no
   project is higher than before in either column.
-- **`params.whole`** (only copies all of whose reads can be replaced): worse, @@COPIES_WHOLE@@. Off.
+- **`params.whole`** (only copies all of whose reads can be replaced): worse on the 49 projects,
+  @@COPIES_WHOLE@@. Off.
 
 ### `subst-mem`: subst, and a load may move into its reader
 
 - **Shape.** `t43 = (load32[…] == 1)` and `if t43` after `thread`.
 - **Change.** `subst` with `params.loads`: a value that reads memory (no call, division or checked address)
   moves into its only reader when no store, zeroing or call lies between and the reader makes no call.
-- **Measured.** Alone @@SUBST_ALONE@@; with `thread`, @@THREAD_SUBST@@ against `thread` alone.
+- **Measured.** Alone @@SUBST_ALONE@@; with `thread`, @@THREAD_SUBST@@ against `thread` alone (49
+  projects).
 
 ### `identities`: three rules for what `guards` leaves
 
@@ -218,8 +252,8 @@ Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablat
 - The two hottest patterns are unsound as written, and the verifier said so with a negative x. They became
   sound and hot once `guards` had proved the operand non-negative and replaced the division: a rule that needs
   a fact is a pass plus a rule.
-- So the missed optimizations of this corpus are mostly not rules: 78,060 instructions came off through the
-  four passes and about 7,600 through the three rules.
+- So the missed optimizations of this corpus are mostly not rules: @@PASSES_GAIN@@ instructions came off
+  through the four passes and @@RULES_GAIN@@ through the three rules (default options; the ablation table).
 
 ## Corpus: instructions per project
 
@@ -284,7 +318,11 @@ Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablat
 - `speed` with the default options is at or below the reference in 36 of 50 projects (31 before), with the
   tuned options in 45 (45 before). In total: 789,710 and 724,721 against the reference's 875,417.
 - Still above the reference under `speed` tuned: f32-dsp (43,915 against 40,740), heat-lab (7,523 against
-  6,758), sort (4,294 against 3,898), div-checks, my-analysis and one more small project (see the table).
+  6,758), sort (4,294 against 3,898), bounds-lab (4,426 against 4,234), bounds-offset (1,258 against 894).
+- Above r0 under `speed`: div-magic with the default options (739 against 729; 759 before).
+- Cost: the list has 26 steps instead of 21, and more of them change the program. The checked pipeline took
+  1.2 to 2 times as long on three projects (`various/22-pipeline-time.txt`: regex-nfa 1.8 s to 3.8 s, lz-roundtrip
+  1.0 s to 1.7 s, sha-chacha 3.8 s to 4.6 s, second runs, on a loaded machine).
 
 ## Where the passes live, and why O2 did not change
 
@@ -341,8 +379,8 @@ Changes outside the framework:
   rejects the pass (16 of 40 cases disagree). Comparing SSA names instead of sets would fix it.
 - **`typed.ranges` loses a counter's lower bound** under an inner loop (above). It is an O2 analysis, so I did
   not change it; `guards` has its own rule.
-- **lvn throws `absent`** on regex-nfa when run a second time before rotate. On five projects where it runs, a
-  second lvn saves 1,010 instructions (`all, lvn again before rotate` in the ablation).
+- **lvn throws `absent`** on regex-nfa when run a second time before rotate (the ablation skips a pass that
+  throws and says so). Where it runs, a second lvn saves @@LVN_AGAIN@@.
 
 ## Measured and argued
 
@@ -367,7 +405,30 @@ Argued, and checked only by the meaning checks of the runs above:
 
 ## Verification
 
-@@VERIFY@@
+After `npm run build`, on the final compiler sources (the passes and rules of commit 22bf2f7; later commits
+change comments, the recorded evidence, tests and this ticket):
+
+| Check | Result |
+| --- | --- |
+| `scripts/21-speed-full-check.mjs`: `speed` on all 50 projects, every pass checked on 40 cases per function, then the default and the tuned image against the evaluator at r0 on 100 cases per function | 368 revisions, none rejected; 16,572 of 16,572 decided cases agree, 28 at the limit (`various/21-speed-full-check.log`) |
+| `node tools/parity.mjs` (every project's own pipeline) | 50 projects, 135 functions, 8,286 of 8,286 decided cases agree, 14 at the limit, 0 failures (`various/18-parity.log`) |
+| `node tools/reference-check.mjs` | reference images: 8,286 of 8,286 agree |
+| `node tools/reference-check.mjs --o2` | our O2 images: 8,286 of 8,286 agree |
+| `IRWB_FULL=1 node --test tests/typed/speed.test.mjs` | 9 pass (it runs O2+, rotate, cfg, not `speed`; script 21 is the check of `speed`) |
+| `node --test tests/typed/*.test.mjs` | 174 tests, 172 pass, 2 skipped, 0 fail |
+| `node --test tests/framework/*.test.mjs` | 237 pass |
+| `node --test tests/workbench/*.test.mjs` | 25 tests, 24 pass, 1 skipped, 0 fail |
+| `node tools/build-site.mjs` | builds |
+| `docmgr doctor --ticket IRWB-037-G` | all checks passed |
+
+- wrong-shift's `div-to-shift` is rejected in the parity run, as its `broken` pipeline intends.
+- Three pinned expectations changed: `speed`'s list in `tests/typed/inline.test.mjs`, the pass count in
+  `tests/workbench/strategies.test.mjs` (15 to 20), and nothing in the corpus.
+- The measurement runs check each pass with 5 cases per function (the benchmark run with 20); script 21 and
+  parity use the full 40 and 100.
+- The typed suite was last run after the recorded evidence was regenerated; parity, the reference checks and
+  script 21 ran before that, on the same passes.
+- Not run: `npm test` (the brief excludes it), Candela (`IRWB_CANDELA=1`).
 
 ## Left out
 
@@ -377,7 +438,7 @@ Argued, and checked only by the meaning checks of the runs above:
 
 ## Later
 
-- `if geu(x, load)`, 23,800 instructions after this work: buffer checks against a loaded length.
+- `if geu(x, load)`, @@GEU_LOAD_AFTER@@ instructions after this work: buffer checks against a loaded length.
 - `caddr` checks merged across blocks (LZ).
 - Congruences: `5 * queue[head] + 3 <u 45` needs "a multiple of 5 below 45 is at most 40".
 - A template number over a literal and a constant variable in `rules/form.ts`, so the three identities become

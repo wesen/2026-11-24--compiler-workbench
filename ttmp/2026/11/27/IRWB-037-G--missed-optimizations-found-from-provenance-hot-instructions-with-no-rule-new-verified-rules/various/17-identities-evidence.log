@@ -1,1 +1,4 @@
 shl-shr3-mask    sound    exhaustive     562505 ms  structural,random-32,exhaustive-32
+lt-and15-8       sound    exhaustive     728636 ms  structural,random-32,exhaustive-32
+shl-shl-one      sound    proof             195 ms  structural,symbolic-linear,random-32
+{"rules":3,"ms":1291338}

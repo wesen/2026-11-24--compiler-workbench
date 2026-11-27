@@ -5,9 +5,9 @@
    "default": 1090271,
    "tuned": 1032485
   },
-  "O2 + the four": {
-   "default": 1046686,
-   "tuned": 1004284
+  "O2 + the new passes": {
+   "default": 1042444,
+   "tuned": 1001200
   }
  },
  "rows": {
@@ -16,7 +16,7 @@
     "default": 640,
     "tuned": 630
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 630,
     "tuned": 630
    }
@@ -26,7 +26,7 @@
     "default": 20,
     "tuned": 20
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 20,
     "tuned": 20
    }
@@ -36,7 +36,7 @@
     "default": 1925,
     "tuned": 1750
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1760,
     "tuned": 1750
    }
@@ -46,7 +46,7 @@
     "default": 5333,
     "tuned": 4843
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 4843,
     "tuned": 4843
    }
@@ -56,7 +56,7 @@
     "default": 1364,
     "tuned": 1268
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1294,
     "tuned": 1268
    }
@@ -66,7 +66,7 @@
     "default": 502,
     "tuned": 452
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 452,
     "tuned": 452
    }
@@ -76,7 +76,7 @@
     "default": 810,
     "tuned": 710
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 710,
     "tuned": 710
    }
@@ -86,7 +86,7 @@
     "default": 139,
     "tuned": 131
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 139,
     "tuned": 131
    }
@@ -96,7 +96,7 @@
     "default": 32295,
     "tuned": 24750
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 31981,
     "tuned": 24593
    }
@@ -106,7 +106,7 @@
     "default": 1050,
     "tuned": 1050
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1050,
     "tuned": 1050
    }
@@ -116,7 +116,7 @@
     "default": 651,
     "tuned": 580
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 600,
     "tuned": 580
    }
@@ -126,7 +126,7 @@
     "default": 1410,
     "tuned": 1260
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1260,
     "tuned": 1260
    }
@@ -136,9 +136,9 @@
     "default": 423077,
     "tuned": 406477
    },
-   "O2 + the four": {
-    "default": 406108,
-    "tuned": 386502
+   "O2 + the new passes": {
+    "default": 405898,
+    "tuned": 385368
    }
   },
   "collatz": {
@@ -146,7 +146,7 @@
     "default": 7461,
     "tuned": 5779
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 5367,
     "tuned": 3685
    }
@@ -156,7 +156,7 @@
     "default": 70,
     "tuned": 70
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 70,
     "tuned": 70
    }
@@ -166,7 +166,7 @@
     "default": 30,
     "tuned": 30
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 30,
     "tuned": 30
    }
@@ -176,7 +176,7 @@
     "default": 30,
     "tuned": 30
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 30,
     "tuned": 30
    }
@@ -186,7 +186,7 @@
     "default": 340,
     "tuned": 340
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 340,
     "tuned": 340
    }
@@ -196,7 +196,7 @@
     "default": 162,
     "tuned": 152
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 160,
     "tuned": 152
    }
@@ -206,7 +206,7 @@
     "default": 769,
     "tuned": 710
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 749,
     "tuned": 710
    }
@@ -216,7 +216,7 @@
     "default": 631,
     "tuned": 559
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 566,
     "tuned": 559
    }
@@ -226,9 +226,9 @@
     "default": 49030,
     "tuned": 47923
    },
-   "O2 + the four": {
-    "default": 49030,
-    "tuned": 47923
+   "O2 + the new passes": {
+    "default": 48838,
+    "tuned": 47731
    }
   },
   "first-steps": {
@@ -236,7 +236,7 @@
     "default": 220,
     "tuned": 220
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 220,
     "tuned": 220
    }
@@ -246,7 +246,7 @@
     "default": 411,
     "tuned": 392
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 411,
     "tuned": 392
    }
@@ -256,7 +256,7 @@
     "default": 2299,
     "tuned": 2090
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 2100,
     "tuned": 2090
    }
@@ -266,7 +266,7 @@
     "default": 324,
     "tuned": 314
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 324,
     "tuned": 314
    }
@@ -276,7 +276,7 @@
     "default": 8832,
     "tuned": 8026
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 7752,
     "tuned": 7692
    }
@@ -286,7 +286,7 @@
     "default": 2292,
     "tuned": 2008
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 2044,
     "tuned": 1920
    }
@@ -296,7 +296,7 @@
     "default": 1678,
     "tuned": 1678
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1678,
     "tuned": 1678
    }
@@ -306,7 +306,7 @@
     "default": 153,
     "tuned": 153
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 153,
     "tuned": 153
    }
@@ -316,7 +316,7 @@
     "default": 34551,
     "tuned": 33660
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 33305,
     "tuned": 32414
    }
@@ -326,7 +326,7 @@
     "default": 251,
     "tuned": 226
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 231,
     "tuned": 226
    }
@@ -336,7 +336,7 @@
     "default": 200975,
     "tuned": 200795
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 200975,
     "tuned": 200795
    }
@@ -346,7 +346,7 @@
     "default": 50,
     "tuned": 50
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 50,
     "tuned": 50
    }
@@ -356,7 +356,7 @@
     "default": 2342,
     "tuned": 2342
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 2342,
     "tuned": 2342
    }
@@ -366,7 +366,7 @@
     "default": 1194,
     "tuned": 1010
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1136,
     "tuned": 1010
    }
@@ -376,7 +376,7 @@
     "default": 2299,
     "tuned": 2090
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 2100,
     "tuned": 2090
    }
@@ -386,7 +386,7 @@
     "default": 240,
     "tuned": 230
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 240,
     "tuned": 230
    }
@@ -396,7 +396,7 @@
     "default": 1040,
     "tuned": 790
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 970,
     "tuned": 790
    }
@@ -406,7 +406,7 @@
     "default": 260,
     "tuned": 240
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 240,
     "tuned": 240
    }
@@ -416,7 +416,7 @@
     "default": 2614,
     "tuned": 2462
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 2533,
     "tuned": 2462
    }
@@ -426,7 +426,7 @@
     "default": 40212,
     "tuned": 38745
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 37038,
     "tuned": 35553
    }
@@ -436,9 +436,9 @@
     "default": 232820,
     "tuned": 211526
    },
-   "O2 + the four": {
-    "default": 220136,
-    "tuned": 213314
+   "O2 + the new passes": {
+    "default": 216296,
+    "tuned": 211556
    }
   },
   "sort": {
@@ -446,7 +446,7 @@
     "default": 5043,
     "tuned": 4589
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 4422,
     "tuned": 4390
    }
@@ -456,7 +456,7 @@
     "default": 3871,
     "tuned": 3467
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 3578,
     "tuned": 3467
    }
@@ -466,7 +466,7 @@
     "default": 1938,
     "tuned": 1414
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1802,
     "tuned": 1414
    }
@@ -476,7 +476,7 @@
     "default": 10833,
     "tuned": 9282
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 8119,
     "tuned": 6578
    }
@@ -486,7 +486,7 @@
     "default": 1058,
     "tuned": 1016
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1016,
     "tuned": 1016
    }
@@ -496,7 +496,7 @@
     "default": 3082,
     "tuned": 2666
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 3082,
     "tuned": 2666
    }
@@ -506,7 +506,7 @@
     "default": 1650,
     "tuned": 1490
    },
-   "O2 + the four": {
+   "O2 + the new passes": {
     "default": 1500,
     "tuned": 1490
    }

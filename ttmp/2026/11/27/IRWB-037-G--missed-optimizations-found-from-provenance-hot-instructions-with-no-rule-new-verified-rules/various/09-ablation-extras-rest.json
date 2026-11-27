@@ -1,0 +1,1908 @@
+{
+ "pipeline": "speed",
+ "totals": {
+  "old": {
+   "default": 540454,
+   "tuned": 495418
+  },
+  "thread": {
+   "default": 534362,
+   "tuned": 489140
+  },
+  "thread+subst-mem": {
+   "default": 533761,
+   "tuned": 488295
+  },
+  "all": {
+   "default": 510860,
+   "tuned": 482354
+  },
+  "all, guards on every branch": {
+   "default": 510860,
+   "tuned": 482354
+  },
+  "all, guards without divisions": {
+   "default": 510860,
+   "tuned": 482354
+  },
+  "all, one thread": {
+   "default": 511239,
+   "tuned": 482733
+  },
+  "all, copies whole": {
+   "default": 520779,
+   "tuned": 483077
+  },
+  "all, lvn again before rotate": {
+   "default": 509536,
+   "tuned": 481030
+  }
+ },
+ "rows": {
+  "across-calls": {
+   "old": {
+    "default": 270,
+    "tuned": 210
+   },
+   "thread": {
+    "default": 270,
+    "tuned": 210
+   },
+   "thread+subst-mem": {
+    "default": 270,
+    "tuned": 210
+   },
+   "all": {
+    "default": 240,
+    "tuned": 210
+   },
+   "all, guards on every branch": {
+    "default": 240,
+    "tuned": 210
+   },
+   "all, guards without divisions": {
+    "default": 240,
+    "tuned": 210
+   },
+   "all, one thread": {
+    "default": 240,
+    "tuned": 210
+   },
+   "all, copies whole": {
+    "default": 240,
+    "tuned": 210
+   },
+   "all, lvn again before rotate": {
+    "default": 240,
+    "tuned": 210
+   }
+  },
+  "algebra": {
+   "old": {
+    "default": 20,
+    "tuned": 20
+   },
+   "thread": {
+    "default": 20,
+    "tuned": 20
+   },
+   "thread+subst-mem": {
+    "default": 20,
+    "tuned": 20
+   },
+   "all": {
+    "default": 20,
+    "tuned": 20
+   },
+   "all, guards on every branch": {
+    "default": 20,
+    "tuned": 20
+   },
+   "all, guards without divisions": {
+    "default": 20,
+    "tuned": 20
+   },
+   "all, one thread": {
+    "default": 20,
+    "tuned": 20
+   },
+   "all, copies whole": {
+    "default": 20,
+    "tuned": 20
+   },
+   "all, lvn again before rotate": {
+    "default": 20,
+    "tuned": 20
+   }
+  },
+  "blend": {
+   "old": {
+    "default": 1915,
+    "tuned": 1585
+   },
+   "thread": {
+    "default": 1915,
+    "tuned": 1585
+   },
+   "thread+subst-mem": {
+    "default": 1915,
+    "tuned": 1585
+   },
+   "all": {
+    "default": 1750,
+    "tuned": 1585
+   },
+   "all, guards on every branch": {
+    "default": 1750,
+    "tuned": 1585
+   },
+   "all, guards without divisions": {
+    "default": 1750,
+    "tuned": 1585
+   },
+   "all, one thread": {
+    "default": 1750,
+    "tuned": 1585
+   },
+   "all, copies whole": {
+    "default": 1915,
+    "tuned": 1585
+   },
+   "all, lvn again before rotate": {
+    "default": 1750,
+    "tuned": 1585
+   }
+  },
+  "bounds-lab": {
+   "old": {
+    "default": 5012,
+    "tuned": 4426
+   },
+   "thread": {
+    "default": 5012,
+    "tuned": 4426
+   },
+   "thread+subst-mem": {
+    "default": 5012,
+    "tuned": 4426
+   },
+   "all": {
+    "default": 4817,
+    "tuned": 4426
+   },
+   "all, guards on every branch": {
+    "default": 4817,
+    "tuned": 4426
+   },
+   "all, guards without divisions": {
+    "default": 4817,
+    "tuned": 4426
+   },
+   "all, one thread": {
+    "default": 4817,
+    "tuned": 4426
+   },
+   "all, copies whole": {
+    "default": 5012,
+    "tuned": 4426
+   },
+   "all, lvn again before rotate": {
+    "default": 4817,
+    "tuned": 4426
+   }
+  },
+  "bounds-offset": {
+   "old": {
+    "default": 1355,
+    "tuned": 1258
+   },
+   "thread": {
+    "default": 1355,
+    "tuned": 1258
+   },
+   "thread+subst-mem": {
+    "default": 1355,
+    "tuned": 1258
+   },
+   "all": {
+    "default": 1285,
+    "tuned": 1258
+   },
+   "all, guards on every branch": {
+    "default": 1285,
+    "tuned": 1258
+   },
+   "all, guards without divisions": {
+    "default": 1285,
+    "tuned": 1258
+   },
+   "all, one thread": {
+    "default": 1285,
+    "tuned": 1258
+   },
+   "all, copies whole": {
+    "default": 1355,
+    "tuned": 1258
+   },
+   "all, lvn again before rotate": {
+    "default": 1285,
+    "tuned": 1258
+   }
+  },
+  "bounds-param": {
+   "old": {
+    "default": 499,
+    "tuned": 408
+   },
+   "thread": {
+    "default": 499,
+    "tuned": 408
+   },
+   "thread+subst-mem": {
+    "default": 499,
+    "tuned": 408
+   },
+   "all": {
+    "default": 449,
+    "tuned": 408
+   },
+   "all, guards on every branch": {
+    "default": 449,
+    "tuned": 408
+   },
+   "all, guards without divisions": {
+    "default": 449,
+    "tuned": 408
+   },
+   "all, one thread": {
+    "default": 449,
+    "tuned": 408
+   },
+   "all, copies whole": {
+    "default": 499,
+    "tuned": 408
+   },
+   "all, lvn again before rotate": {
+    "default": 449,
+    "tuned": 408
+   }
+  },
+  "bounds-two": {
+   "old": {
+    "default": 756,
+    "tuned": 665
+   },
+   "thread": {
+    "default": 756,
+    "tuned": 665
+   },
+   "thread+subst-mem": {
+    "default": 756,
+    "tuned": 665
+   },
+   "all": {
+    "default": 706,
+    "tuned": 665
+   },
+   "all, guards on every branch": {
+    "default": 706,
+    "tuned": 665
+   },
+   "all, guards without divisions": {
+    "default": 706,
+    "tuned": 665
+   },
+   "all, one thread": {
+    "default": 706,
+    "tuned": 665
+   },
+   "all, copies whole": {
+    "default": 756,
+    "tuned": 665
+   },
+   "all, lvn again before rotate": {
+    "default": 706,
+    "tuned": 665
+   }
+  },
+  "branches": {
+   "old": {
+    "default": 139,
+    "tuned": 131
+   },
+   "thread": {
+    "default": 139,
+    "tuned": 131
+   },
+   "thread+subst-mem": {
+    "default": 139,
+    "tuned": 131
+   },
+   "all": {
+    "default": 139,
+    "tuned": 131
+   },
+   "all, guards on every branch": {
+    "default": 139,
+    "tuned": 131
+   },
+   "all, guards without divisions": {
+    "default": 139,
+    "tuned": 131
+   },
+   "all, one thread": {
+    "default": 139,
+    "tuned": 131
+   },
+   "all, copies whole": {
+    "default": 139,
+    "tuned": 131
+   },
+   "all, lvn again before rotate": {
+    "default": 139,
+    "tuned": 131
+   }
+  },
+  "bytecode-vm": {
+   "old": {
+    "default": 32295,
+    "tuned": 24750
+   },
+   "thread": {
+    "default": 32295,
+    "tuned": 24750
+   },
+   "thread+subst-mem": {
+    "default": 32295,
+    "tuned": 24750
+   },
+   "all": {
+    "default": 31981,
+    "tuned": 24593
+   },
+   "all, guards on every branch": {
+    "default": 31981,
+    "tuned": 24593
+   },
+   "all, guards without divisions": {
+    "default": 31981,
+    "tuned": 24593
+   },
+   "all, one thread": {
+    "default": 31981,
+    "tuned": 24593
+   },
+   "all, copies whole": {
+    "default": 31981,
+    "tuned": 24593
+   },
+   "all, lvn again before rotate": {
+    "default": 31667,
+    "tuned": 24279
+   }
+  },
+  "call-chain": {
+   "old": {
+    "default": 350,
+    "tuned": 290
+   },
+   "thread": {
+    "default": 350,
+    "tuned": 290
+   },
+   "thread+subst-mem": {
+    "default": 350,
+    "tuned": 290
+   },
+   "all": {
+    "default": 330,
+    "tuned": 290
+   },
+   "all, guards on every branch": {
+    "default": 330,
+    "tuned": 290
+   },
+   "all, guards without divisions": {
+    "default": 330,
+    "tuned": 290
+   },
+   "all, one thread": {
+    "default": 330,
+    "tuned": 290
+   },
+   "all, copies whole": {
+    "default": 330,
+    "tuned": 290
+   },
+   "all, lvn again before rotate": {
+    "default": 330,
+    "tuned": 290
+   }
+  },
+  "calls": {
+   "old": {
+    "default": 288,
+    "tuned": 227
+   },
+   "thread": {
+    "default": 288,
+    "tuned": 227
+   },
+   "thread+subst-mem": {
+    "default": 288,
+    "tuned": 227
+   },
+   "all": {
+    "default": 234,
+    "tuned": 227
+   },
+   "all, guards on every branch": {
+    "default": 234,
+    "tuned": 227
+   },
+   "all, guards without divisions": {
+    "default": 234,
+    "tuned": 227
+   },
+   "all, one thread": {
+    "default": 234,
+    "tuned": 227
+   },
+   "all, copies whole": {
+    "default": 234,
+    "tuned": 227
+   },
+   "all, lvn again before rotate": {
+    "default": 234,
+    "tuned": 227
+   }
+  },
+  "checksum": {
+   "old": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "thread": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "thread+subst-mem": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "all": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "all, guards on every branch": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "all, guards without divisions": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "all, one thread": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "all, copies whole": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "all, lvn again before rotate": {
+    "default": 1251,
+    "tuned": 1110
+   }
+  },
+  "collatz": {
+   "old": {
+    "default": 6955,
+    "tuned": 5769
+   },
+   "thread": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "thread+subst-mem": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "all": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "all, guards on every branch": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "all, guards without divisions": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "all, one thread": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "all, copies whole": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "all, lvn again before rotate": {
+    "default": 4861,
+    "tuned": 3675
+   }
+  },
+  "constants": {
+   "old": {
+    "default": 70,
+    "tuned": 70
+   },
+   "thread": {
+    "default": 70,
+    "tuned": 70
+   },
+   "thread+subst-mem": {
+    "default": 70,
+    "tuned": 70
+   },
+   "all": {
+    "default": 70,
+    "tuned": 70
+   },
+   "all, guards on every branch": {
+    "default": 70,
+    "tuned": 70
+   },
+   "all, guards without divisions": {
+    "default": 70,
+    "tuned": 70
+   },
+   "all, one thread": {
+    "default": 70,
+    "tuned": 70
+   },
+   "all, copies whole": {
+    "default": 70,
+    "tuned": 70
+   },
+   "all, lvn again before rotate": {
+    "default": 70,
+    "tuned": 70
+   }
+  },
+  "dead-code": {
+   "old": {
+    "default": 30,
+    "tuned": 30
+   },
+   "thread": {
+    "default": 30,
+    "tuned": 30
+   },
+   "thread+subst-mem": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, guards on every branch": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, guards without divisions": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, one thread": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, copies whole": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, lvn again before rotate": {
+    "default": 30,
+    "tuned": 30
+   }
+  },
+  "diagnostics": {
+   "old": {
+    "default": 30,
+    "tuned": 30
+   },
+   "thread": {
+    "default": 30,
+    "tuned": 30
+   },
+   "thread+subst-mem": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, guards on every branch": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, guards without divisions": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, one thread": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, copies whole": {
+    "default": 30,
+    "tuned": 30
+   },
+   "all, lvn again before rotate": {
+    "default": 30,
+    "tuned": 30
+   }
+  },
+  "distinct": {
+   "old": {
+    "default": 80,
+    "tuned": 60
+   },
+   "thread": {
+    "default": 80,
+    "tuned": 60
+   },
+   "thread+subst-mem": {
+    "default": 80,
+    "tuned": 60
+   },
+   "all": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, guards on every branch": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, guards without divisions": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, one thread": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, copies whole": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, lvn again before rotate": {
+    "default": 50,
+    "tuned": 50
+   }
+  },
+  "div-checks": {
+   "old": {
+    "default": 162,
+    "tuned": 152
+   },
+   "thread": {
+    "default": 162,
+    "tuned": 152
+   },
+   "thread+subst-mem": {
+    "default": 162,
+    "tuned": 152
+   },
+   "all": {
+    "default": 160,
+    "tuned": 152
+   },
+   "all, guards on every branch": {
+    "default": 160,
+    "tuned": 152
+   },
+   "all, guards without divisions": {
+    "default": 160,
+    "tuned": 152
+   },
+   "all, one thread": {
+    "default": 160,
+    "tuned": 152
+   },
+   "all, copies whole": {
+    "default": 160,
+    "tuned": 152
+   },
+   "all, lvn again before rotate": {
+    "default": 160,
+    "tuned": 152
+   }
+  },
+  "div-magic": {
+   "old": {
+    "default": 759,
+    "tuned": 661
+   },
+   "thread": {
+    "default": 759,
+    "tuned": 661
+   },
+   "thread+subst-mem": {
+    "default": 759,
+    "tuned": 661
+   },
+   "all": {
+    "default": 739,
+    "tuned": 661
+   },
+   "all, guards on every branch": {
+    "default": 739,
+    "tuned": 661
+   },
+   "all, guards without divisions": {
+    "default": 739,
+    "tuned": 661
+   },
+   "all, one thread": {
+    "default": 739,
+    "tuned": 661
+   },
+   "all, copies whole": {
+    "default": 739,
+    "tuned": 661
+   },
+   "all, lvn again before rotate": {
+    "default": 739,
+    "tuned": 661
+   }
+  },
+  "early-exit": {
+   "old": {
+    "default": 564,
+    "tuned": 557
+   },
+   "thread": {
+    "default": 564,
+    "tuned": 557
+   },
+   "thread+subst-mem": {
+    "default": 564,
+    "tuned": 557
+   },
+   "all": {
+    "default": 564,
+    "tuned": 557
+   },
+   "all, guards on every branch": {
+    "default": 564,
+    "tuned": 557
+   },
+   "all, guards without divisions": {
+    "default": 564,
+    "tuned": 557
+   },
+   "all, one thread": {
+    "default": 564,
+    "tuned": 557
+   },
+   "all, copies whole": {
+    "default": 564,
+    "tuned": 557
+   },
+   "all, lvn again before rotate": {
+    "default": 564,
+    "tuned": 557
+   }
+  },
+  "f32-dsp": {
+   "old": {
+    "default": 46361,
+    "tuned": 44107
+   },
+   "thread": {
+    "default": 46361,
+    "tuned": 44107
+   },
+   "thread+subst-mem": {
+    "default": 46361,
+    "tuned": 44107
+   },
+   "all": {
+    "default": 45209,
+    "tuned": 43915
+   },
+   "all, guards on every branch": {
+    "default": 45209,
+    "tuned": 43915
+   },
+   "all, guards without divisions": {
+    "default": 45209,
+    "tuned": 43915
+   },
+   "all, one thread": {
+    "default": 45209,
+    "tuned": 43915
+   },
+   "all, copies whole": {
+    "default": 46169,
+    "tuned": 43915
+   },
+   "all, lvn again before rotate": {
+    "default": 45209,
+    "tuned": 43915
+   }
+  },
+  "first-steps": {
+   "old": {
+    "default": 80,
+    "tuned": 80
+   },
+   "thread": {
+    "default": 80,
+    "tuned": 80
+   },
+   "thread+subst-mem": {
+    "default": 80,
+    "tuned": 80
+   },
+   "all": {
+    "default": 80,
+    "tuned": 80
+   },
+   "all, guards on every branch": {
+    "default": 80,
+    "tuned": 80
+   },
+   "all, guards without divisions": {
+    "default": 80,
+    "tuned": 80
+   },
+   "all, one thread": {
+    "default": 80,
+    "tuned": 80
+   },
+   "all, copies whole": {
+    "default": 80,
+    "tuned": 80
+   },
+   "all, lvn again before rotate": {
+    "default": 80,
+    "tuned": 80
+   }
+  },
+  "fixed-point": {
+   "old": {
+    "default": 251,
+    "tuned": 242
+   },
+   "thread": {
+    "default": 251,
+    "tuned": 242
+   },
+   "thread+subst-mem": {
+    "default": 251,
+    "tuned": 242
+   },
+   "all": {
+    "default": 251,
+    "tuned": 242
+   },
+   "all, guards on every branch": {
+    "default": 251,
+    "tuned": 242
+   },
+   "all, guards without divisions": {
+    "default": 251,
+    "tuned": 242
+   },
+   "all, one thread": {
+    "default": 251,
+    "tuned": 242
+   },
+   "all, copies whole": {
+    "default": 251,
+    "tuned": 242
+   },
+   "all, lvn again before rotate": {
+    "default": 251,
+    "tuned": 242
+   }
+  },
+  "fragments": {
+   "old": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "thread": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "thread+subst-mem": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "all": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, guards on every branch": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, guards without divisions": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, one thread": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, copies whole": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "all, lvn again before rotate": {
+    "default": 2090,
+    "tuned": 1891
+   }
+  },
+  "gcd": {
+   "old": {
+    "default": 314,
+    "tuned": 265
+   },
+   "thread": {
+    "default": 314,
+    "tuned": 265
+   },
+   "thread+subst-mem": {
+    "default": 314,
+    "tuned": 265
+   },
+   "all": {
+    "default": 314,
+    "tuned": 265
+   },
+   "all, guards on every branch": {
+    "default": 314,
+    "tuned": 265
+   },
+   "all, guards without divisions": {
+    "default": 314,
+    "tuned": 265
+   },
+   "all, one thread": {
+    "default": 314,
+    "tuned": 265
+   },
+   "all, copies whole": {
+    "default": 314,
+    "tuned": 265
+   },
+   "all, lvn again before rotate": {
+    "default": 314,
+    "tuned": 265
+   }
+  },
+  "heat-lab": {
+   "old": {
+    "default": 8664,
+    "tuned": 7996
+   },
+   "thread": {
+    "default": 8390,
+    "tuned": 7752
+   },
+   "thread+subst-mem": {
+    "default": 8161,
+    "tuned": 7523
+   },
+   "all": {
+    "default": 7584,
+    "tuned": 7523
+   },
+   "all, guards on every branch": {
+    "default": 7584,
+    "tuned": 7523
+   },
+   "all, guards without divisions": {
+    "default": 7584,
+    "tuned": 7523
+   },
+   "all, one thread": {
+    "default": 7584,
+    "tuned": 7523
+   },
+   "all, copies whole": {
+    "default": 8161,
+    "tuned": 7523
+   },
+   "all, lvn again before rotate": {
+    "default": 7584,
+    "tuned": 7523
+   }
+  },
+  "histogram": {
+   "old": {
+    "default": 2222,
+    "tuned": 2000
+   },
+   "thread": {
+    "default": 2222,
+    "tuned": 2000
+   },
+   "thread+subst-mem": {
+    "default": 2222,
+    "tuned": 2000
+   },
+   "all": {
+    "default": 2036,
+    "tuned": 1910
+   },
+   "all, guards on every branch": {
+    "default": 2036,
+    "tuned": 1910
+   },
+   "all, guards without divisions": {
+    "default": 2036,
+    "tuned": 1910
+   },
+   "all, one thread": {
+    "default": 2036,
+    "tuned": 1910
+   },
+   "all, copies whole": {
+    "default": 2222,
+    "tuned": 2000
+   },
+   "all, lvn again before rotate": {
+    "default": 2036,
+    "tuned": 1910
+   }
+  },
+  "licm-nested": {
+   "old": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "thread": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "thread+subst-mem": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "all": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "all, guards on every branch": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "all, guards without divisions": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "all, one thread": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "all, copies whole": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "all, lvn again before rotate": {
+    "default": 1631,
+    "tuned": 1596
+   }
+  },
+  "licm-traps": {
+   "old": {
+    "default": 149,
+    "tuned": 142
+   },
+   "thread": {
+    "default": 149,
+    "tuned": 142
+   },
+   "thread+subst-mem": {
+    "default": 149,
+    "tuned": 142
+   },
+   "all": {
+    "default": 149,
+    "tuned": 142
+   },
+   "all, guards on every branch": {
+    "default": 149,
+    "tuned": 142
+   },
+   "all, guards without divisions": {
+    "default": 149,
+    "tuned": 142
+   },
+   "all, one thread": {
+    "default": 149,
+    "tuned": 142
+   },
+   "all, copies whole": {
+    "default": 149,
+    "tuned": 142
+   },
+   "all, lvn again before rotate": {
+    "default": 149,
+    "tuned": 142
+   }
+  },
+  "lz-roundtrip": {
+   "old": {
+    "default": 28745,
+    "tuned": 28330
+   },
+   "thread": {
+    "default": 27821,
+    "tuned": 27441
+   },
+   "thread+subst-mem": {
+    "default": 27821,
+    "tuned": 27441
+   },
+   "all": {
+    "default": 26839,
+    "tuned": 25469
+   },
+   "all, guards on every branch": {
+    "default": 26839,
+    "tuned": 25469
+   },
+   "all, guards without divisions": {
+    "default": 26839,
+    "tuned": 25469
+   },
+   "all, one thread": {
+    "default": 26839,
+    "tuned": 25469
+   },
+   "all, copies whole": {
+    "default": 26839,
+    "tuned": 25469
+   },
+   "all, lvn again before rotate": {
+    "default": 26483,
+    "tuned": 25113
+   }
+  },
+  "match-enum": {
+   "old": {
+    "default": 251,
+    "tuned": 226
+   },
+   "thread": {
+    "default": 251,
+    "tuned": 226
+   },
+   "thread+subst-mem": {
+    "default": 251,
+    "tuned": 226
+   },
+   "all": {
+    "default": 231,
+    "tuned": 226
+   },
+   "all, guards on every branch": {
+    "default": 231,
+    "tuned": 226
+   },
+   "all, guards without divisions": {
+    "default": 231,
+    "tuned": 226
+   },
+   "all, one thread": {
+    "default": 231,
+    "tuned": 226
+   },
+   "all, copies whole": {
+    "default": 231,
+    "tuned": 226
+   },
+   "all, lvn again before rotate": {
+    "default": 231,
+    "tuned": 226
+   }
+  },
+  "my-analysis": {
+   "old": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "thread": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "thread+subst-mem": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "all": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "all, guards on every branch": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "all, guards without divisions": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "all, one thread": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "all, copies whole": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "all, lvn again before rotate": {
+    "default": 200966,
+    "tuned": 200618
+   }
+  },
+  "my-first-pass": {
+   "old": {
+    "default": 50,
+    "tuned": 50
+   },
+   "thread": {
+    "default": 50,
+    "tuned": 50
+   },
+   "thread+subst-mem": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, guards on every branch": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, guards without divisions": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, one thread": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, copies whole": {
+    "default": 50,
+    "tuned": 50
+   },
+   "all, lvn again before rotate": {
+    "default": 50,
+    "tuned": 50
+   }
+  },
+  "nested-loops": {
+   "old": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "thread": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "thread+subst-mem": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "all": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "all, guards on every branch": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "all, guards without divisions": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "all, one thread": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "all, copies whole": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "all, lvn again before rotate": {
+    "default": 2289,
+    "tuned": 2252
+   }
+  },
+  "orders": {
+   "old": {
+    "default": 1185,
+    "tuned": 952
+   },
+   "thread": {
+    "default": 1185,
+    "tuned": 952
+   },
+   "thread+subst-mem": {
+    "default": 1185,
+    "tuned": 952
+   },
+   "all": {
+    "default": 1127,
+    "tuned": 952
+   },
+   "all, guards on every branch": {
+    "default": 1127,
+    "tuned": 952
+   },
+   "all, guards without divisions": {
+    "default": 1127,
+    "tuned": 952
+   },
+   "all, one thread": {
+    "default": 1127,
+    "tuned": 952
+   },
+   "all, copies whole": {
+    "default": 1185,
+    "tuned": 952
+   },
+   "all, lvn again before rotate": {
+    "default": 1127,
+    "tuned": 952
+   }
+  },
+  "params-demo": {
+   "old": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "thread": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "thread+subst-mem": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "all": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, guards on every branch": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, guards without divisions": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, one thread": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "all, copies whole": {
+    "default": 2289,
+    "tuned": 1891
+   },
+   "all, lvn again before rotate": {
+    "default": 2090,
+    "tuned": 1891
+   }
+  },
+  "pressure": {
+   "old": {
+    "default": 240,
+    "tuned": 230
+   },
+   "thread": {
+    "default": 240,
+    "tuned": 230
+   },
+   "thread+subst-mem": {
+    "default": 240,
+    "tuned": 230
+   },
+   "all": {
+    "default": 240,
+    "tuned": 230
+   },
+   "all, guards on every branch": {
+    "default": 240,
+    "tuned": 230
+   },
+   "all, guards without divisions": {
+    "default": 240,
+    "tuned": 230
+   },
+   "all, one thread": {
+    "default": 240,
+    "tuned": 230
+   },
+   "all, copies whole": {
+    "default": 240,
+    "tuned": 230
+   },
+   "all, lvn again before rotate": {
+    "default": 240,
+    "tuned": 230
+   }
+  },
+  "ramp": {
+   "old": {
+    "default": 962,
+    "tuned": 780
+   },
+   "thread": {
+    "default": 962,
+    "tuned": 780
+   },
+   "thread+subst-mem": {
+    "default": 962,
+    "tuned": 780
+   },
+   "all": {
+    "default": 962,
+    "tuned": 780
+   },
+   "all, guards on every branch": {
+    "default": 962,
+    "tuned": 780
+   },
+   "all, guards without divisions": {
+    "default": 962,
+    "tuned": 780
+   },
+   "all, one thread": {
+    "default": 962,
+    "tuned": 780
+   },
+   "all, copies whole": {
+    "default": 962,
+    "tuned": 780
+   },
+   "all, lvn again before rotate": {
+    "default": 962,
+    "tuned": 780
+   }
+  },
+  "records": {
+   "old": {
+    "default": 260,
+    "tuned": 240
+   },
+   "thread": {
+    "default": 260,
+    "tuned": 240
+   },
+   "thread+subst-mem": {
+    "default": 260,
+    "tuned": 240
+   },
+   "all": {
+    "default": 240,
+    "tuned": 240
+   },
+   "all, guards on every branch": {
+    "default": 240,
+    "tuned": 240
+   },
+   "all, guards without divisions": {
+    "default": 240,
+    "tuned": 240
+   },
+   "all, one thread": {
+    "default": 240,
+    "tuned": 240
+   },
+   "all, copies whole": {
+    "default": 240,
+    "tuned": 240
+   },
+   "all, lvn again before rotate": {
+    "default": 240,
+    "tuned": 240
+   }
+  },
+  "regalloc-lab": {
+   "old": {
+    "default": 2051,
+    "tuned": 1716
+   },
+   "thread": {
+    "default": 2051,
+    "tuned": 1716
+   },
+   "thread+subst-mem": {
+    "default": 2051,
+    "tuned": 1716
+   },
+   "all": {
+    "default": 1970,
+    "tuned": 1716
+   },
+   "all, guards on every branch": {
+    "default": 1970,
+    "tuned": 1716
+   },
+   "all, guards without divisions": {
+    "default": 1970,
+    "tuned": 1716
+   },
+   "all, one thread": {
+    "default": 1970,
+    "tuned": 1716
+   },
+   "all, copies whole": {
+    "default": 2051,
+    "tuned": 1716
+   },
+   "all, lvn again before rotate": {
+    "default": 1970,
+    "tuned": 1716
+   }
+  },
+  "regex-nfa": {
+   "old": {
+    "default": 35638,
+    "tuned": 28128
+   },
+   "thread": {
+    "default": 35188,
+    "tuned": 27922
+   },
+   "thread+subst-mem": {
+    "default": 34944,
+    "tuned": 27434
+   },
+   "all": {
+    "default": 31587,
+    "tuned": 25650
+   },
+   "all, guards on every branch": {
+    "default": 31587,
+    "tuned": 25650
+   },
+   "all, guards without divisions": {
+    "default": 31587,
+    "tuned": 25650
+   },
+   "all, one thread": {
+    "default": 31966,
+    "tuned": 26029
+   },
+   "all, copies whole": {
+    "default": 32124,
+    "tuned": 26029
+   },
+   "all, lvn again before rotate": {
+    "default": 31587,
+    "tuned": 25650,
+    "rejected": [
+     "lvn (absent)"
+    ]
+   }
+  },
+  "sha-chacha": {
+   "old": {
+    "default": 125491,
+    "tuned": 107102
+   },
+   "thread": {
+    "default": 125491,
+    "tuned": 107102
+   },
+   "thread+subst-mem": {
+    "default": 125491,
+    "tuned": 107102
+   },
+   "all": {
+    "default": 111277,
+    "tuned": 105620
+   },
+   "all, guards on every branch": {
+    "default": 111277,
+    "tuned": 105620
+   },
+   "all, guards without divisions": {
+    "default": 111277,
+    "tuned": 105620
+   },
+   "all, one thread": {
+    "default": 111277,
+    "tuned": 105620
+   },
+   "all, copies whole": {
+    "default": 117037,
+    "tuned": 105620
+   },
+   "all, lvn again before rotate": {
+    "default": 110623,
+    "tuned": 104966
+   }
+  },
+  "sort": {
+   "old": {
+    "default": 4950,
+    "tuned": 4563
+   },
+   "thread": {
+    "default": 4783,
+    "tuned": 4422
+   },
+   "thread+subst-mem": {
+    "default": 4655,
+    "tuned": 4294
+   },
+   "all": {
+    "default": 4329,
+    "tuned": 4294
+   },
+   "all, guards on every branch": {
+    "default": 4329,
+    "tuned": 4294
+   },
+   "all, guards without divisions": {
+    "default": 4329,
+    "tuned": 4294
+   },
+   "all, one thread": {
+    "default": 4329,
+    "tuned": 4294
+   },
+   "all, copies whole": {
+    "default": 4655,
+    "tuned": 4294
+   },
+   "all, lvn again before rotate": {
+    "default": 4329,
+    "tuned": 4294
+   }
+  },
+  "start-here": {
+   "old": {
+    "default": 2932,
+    "tuned": 2559
+   },
+   "thread": {
+    "default": 2932,
+    "tuned": 2559
+   },
+   "thread+subst-mem": {
+    "default": 2932,
+    "tuned": 2559
+   },
+   "all": {
+    "default": 2550,
+    "tuned": 2327
+   },
+   "all, guards on every branch": {
+    "default": 2550,
+    "tuned": 2327
+   },
+   "all, guards without divisions": {
+    "default": 2550,
+    "tuned": 2327
+   },
+   "all, one thread": {
+    "default": 2550,
+    "tuned": 2327
+   },
+   "all, copies whole": {
+    "default": 2908,
+    "tuned": 2559
+   },
+   "all, lvn again before rotate": {
+    "default": 2550,
+    "tuned": 2327
+   }
+  },
+  "strength": {
+   "old": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "thread": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "thread+subst-mem": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "all": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "all, guards on every branch": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "all, guards without divisions": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "all, one thread": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "all, copies whole": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "all, lvn again before rotate": {
+    "default": 1793,
+    "tuned": 1404
+   }
+  },
+  "strings": {
+   "old": {
+    "default": 10283,
+    "tuned": 9262
+   },
+   "thread": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "thread+subst-mem": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "all": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "all, guards on every branch": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "all, guards without divisions": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "all, one thread": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "all, copies whole": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "all, lvn again before rotate": {
+    "default": 8100,
+    "tuned": 6558
+   }
+  },
+  "ui-gallery": {
+   "old": {
+    "default": 754,
+    "tuned": 594
+   },
+   "thread": {
+    "default": 754,
+    "tuned": 594
+   },
+   "thread+subst-mem": {
+    "default": 754,
+    "tuned": 594
+   },
+   "all": {
+    "default": 606,
+    "tuned": 572
+   },
+   "all, guards on every branch": {
+    "default": 606,
+    "tuned": 572
+   },
+   "all, guards without divisions": {
+    "default": 606,
+    "tuned": 572
+   },
+   "all, one thread": {
+    "default": 606,
+    "tuned": 572
+   },
+   "all, copies whole": {
+    "default": 754,
+    "tuned": 594
+   },
+   "all, lvn again before rotate": {
+    "default": 606,
+    "tuned": 572
+   }
+  },
+  "value-numbering": {
+   "old": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "thread": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "thread+subst-mem": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "all": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "all, guards on every branch": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "all, guards without divisions": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "all, one thread": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "all, copies whole": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "all, lvn again before rotate": {
+    "default": 3073,
+    "tuned": 2453
+   }
+  },
+  "wrong-shift": {
+   "old": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "thread": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "thread+subst-mem": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "all": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "all, guards on every branch": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "all, guards without divisions": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "all, one thread": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "all, copies whole": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "all, lvn again before rotate": {
+    "default": 1491,
+    "tuned": 1340
+   }
+  }
+ }
+}
