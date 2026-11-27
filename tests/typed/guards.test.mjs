@@ -194,14 +194,15 @@ function wander(n: i32, back: bool): i32 {
 test('guards: a counter that only goes up is not negative, so x / 8 and x % 8 are a shift and a mask', async () => {
   const p = open('counter', COUNTER, { sum: { n: [0, 3] }, wander: { n: [0, 40], back: { bool: true } } });
   await run(p, ['cfg', 'simplify']);
-  // typed.ranges loses d's lower bound here: the inner loop's head widens d while the outer loop is still rising
-  assert.equal((await p.apply('strength')).changed, false);
+  // typed.ranges keeps d's lower bound under the inner loop (IRWB-043-B), so strength itself makes the shift
+  // and the mask; guards has nothing left to decide here
+  assert.equal((await p.apply('strength')).changed, true);
   const { changed, text } = await run(p, ['guards']);
-  assert.deepEqual(changed, ['guards']);
+  assert.deepEqual(changed, []);
   assert.match(text, /\(s \+ \(d >> 3\)\) \+ \(d & 7\)/, text);
   // wander's d goes down as well as up: it can be negative, and its division stays
   assert.match(text, /s = \(s \+ \(d \/ 8\)\)/, text);
-  const edits = p.revisions.find(r => r.pass === 'guards').edits;
+  const edits = p.revisions.find(r => r.pass === 'strength').edits;
   assert.ok(edits.length >= 1);
 });
 

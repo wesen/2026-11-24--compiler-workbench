@@ -50,7 +50,6 @@ function walk(buf: buffer, c: bool): i32 {
 
 test(
   'F37: typed.ranges keeps an outer loop counter non-negative under an inner loop',
-  { todo: 'F37' },
   async () => {
     const p = Program.fromProject(projectSource('chess-search', projectFiles('chess-search')));
     for (const pass of PIPELINES.speed.slice(0, PIPELINES.speed.indexOf('strength')))

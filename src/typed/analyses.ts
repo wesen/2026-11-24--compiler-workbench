@@ -9,10 +9,12 @@
  *   typed.reaching    reaching definitions                                   (dataflow, forward, set lattice)
  *   typed.ranges      an interval per local, branch refinement, widening    (dataflow, forward, map(interval))
  *
- * Results are finite JSON keyed by function name. Pass code reads them through views (`liveView`, `reachView`,
+ * Results are finite JSON keyed by function name. Pass code reads them through views (`liveView`, `reachView,
  * `rangeView`, `domView`) that rebuild Compiler Workbench's query methods (liveAfter, reachingAt, ranges.at/of,
  * dominates) from the stored block facts. The three dataflow analyses use the round-robin schedule and, for
- * ranges, widening after three visits of a loop head, as the prototype does, so their facts are the prototype's.
+ * ranges, widening after three visits of a loop head, as the prototype does. Since IRWB-043-B its widening is
+ * up-to powers of two, so ranges facts are the prototype's except where a loop counter is bounded: there they
+ * are strictly more precise (the prototype loses the counter's other bound when an inner loop widens it).
  */
 import { defineAnalysis, defineType } from '../framework/contracts/definitions.js';
 import { canonical } from '../framework/core/data.js';
@@ -491,11 +493,25 @@ const rangeStep = (st: Store, env: Env, sid: string): Env => {
   m.set(String(s.local), evalRange(st, s.value!, env));
   return m;
 };
-const interval = intervalLattice();
+// Widening with thresholds (the interval lattice's up-to widening, IRWB-043-B/F37): without it, an inner loop's
+// head widens a rising outer-loop counter's upper bound to the i32 extreme; the counter's increment then
+// overflows i32 in the abstract (evalRange models the wraparound, so x + 1 at hi = MAX is the full interval),
+// and that full interval flows around the outer back edge and widening keeps its lower bound lost forever —
+// chessPseudoMoves' dense counts 0..63 but arrived as [-2^31, 63]. A narrowing phase cannot recover it: the
+// full interval is a fixpoint of the plain join iteration (the overflowing increment re-supplies MIN), so the
+// widening must not reach the extreme in the first place. The ladder is the powers of two, both signs, with 0:
+// the corpus's loop bounds are powers of two (board sizes 8/16/64/128, buffers 512, frames 4096, 16-bit units),
+// a threshold overshoots the observed growth by under 2x, and the loop condition's branch refinement
+// re-tightens the body interval to the constant anyway. A finite ladder keeps widening sequences finite, and a
+// bound past 2^30 still reaches the extreme in one step.
+const RANGE_THRESHOLDS = [0];
+for (let k = 0; k < 31; k++) RANGE_THRESHOLDS.push(2 ** k, -(2 ** k));
+const interval = intervalLattice(MIN, MAX, RANGE_THRESHOLDS);
 export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
   id: 'typed.ranges',
-  version: '1',
-  description: 'an interval for each local at each statement, with branch refinement and widening',
+  version: '2',
+  description:
+    'an interval for each local at each statement, with branch refinement and widening up to powers of two',
   input: BlocksIR,
   adapter: blocksAdapter,
   direction: 'forward',
