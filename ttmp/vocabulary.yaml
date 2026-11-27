@@ -21,6 +21,8 @@ topics:
       description: Meaning checks, oracles, mutation testing and proofs of passes and rules
     - slug: research
       description: Research-grade directions, sketch tickets and design spaces
+    - slug: gpu
+      description: GPU execution and measurement
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
