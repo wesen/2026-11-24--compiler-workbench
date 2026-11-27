@@ -1,0 +1,347 @@
+matmul kernels 1 -> 1 | ms 0.2122 -> 0.2091 | MB 3.1 -> 3.1 | floor ms 0.0129 | identical true
+softmax kernels 4 -> 1 | ms 0.7984 -> 0.3900 | MB 100.7 -> 33.6 | floor ms 0.1375 | identical true
+layernorm kernels 4 -> 1 | ms 0.4784 -> 0.1519 | MB 100.7 -> 33.6 | floor ms 0.1376 | identical true
+attention kernels 6 -> 2 | ms 1.0528 -> 0.7817 | MB 34.6 -> 9.4 | floor ms 0.0387 | identical true
+mlp kernels 3 -> 2 | ms 1.0078 -> 0.8727 | MB 21.0 -> 12.6 | floor ms 0.0516 | identical true
+conv2d kernels 1 -> 1 | ms 0.1670 -> 0.1644 | MB 6.1 -> 6.1 | floor ms 0.0248 | identical true
+
+[
+ {
+  "name": "matmul",
+  "kernelsUnfused": 1,
+  "kernelsFused": 1,
+  "unfusedMs": 0.21216000616550446,
+  "fusedMs": 0.2091200053691864,
+  "bytesUnfused": 3145728,
+  "bytesFused": 3145728,
+  "identical": true,
+  "unfusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "y"
+    ],
+    "readBytes": 2097152,
+    "writeBytes": 1048576
+   }
+  ],
+  "fusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "y"
+    ],
+    "readBytes": 2097152,
+    "writeBytes": 1048576
+   }
+  ]
+ },
+ {
+  "name": "softmax",
+  "kernelsUnfused": 4,
+  "kernelsFused": 1,
+  "unfusedMs": 0.798367977142334,
+  "fusedMs": 0.39004799723625183,
+  "bytesUnfused": 100728832,
+  "bytesFused": 33554432,
+  "identical": true,
+  "unfusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "m"
+    ],
+    "readBytes": 16777216,
+    "writeBytes": 16384
+   },
+   {
+    "kernel": "k1",
+    "form": "single",
+    "statements": [
+     "e"
+    ],
+    "readBytes": 16793600,
+    "writeBytes": 16777216
+   },
+   {
+    "kernel": "k2",
+    "form": "single",
+    "statements": [
+     "s"
+    ],
+    "readBytes": 16777216,
+    "writeBytes": 16384
+   },
+   {
+    "kernel": "k3",
+    "form": "single",
+    "statements": [
+     "y"
+    ],
+    "readBytes": 16793600,
+    "writeBytes": 16777216
+   }
+  ],
+  "fusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "row",
+    "statements": [
+     "m",
+     "e",
+     "s",
+     "y"
+    ],
+    "readBytes": 16777216,
+    "writeBytes": 16777216
+   }
+  ]
+ },
+ {
+  "name": "layernorm",
+  "kernelsUnfused": 4,
+  "kernelsFused": 1,
+  "unfusedMs": 0.47839999198913574,
+  "fusedMs": 0.15187199413776398,
+  "bytesUnfused": 100737028,
+  "bytesFused": 33562628,
+  "identical": true,
+  "unfusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "mean"
+    ],
+    "readBytes": 16777216,
+    "writeBytes": 16384
+   },
+   {
+    "kernel": "k1",
+    "form": "single",
+    "statements": [
+     "centered"
+    ],
+    "readBytes": 16793600,
+    "writeBytes": 16777216
+   },
+   {
+    "kernel": "k2",
+    "form": "single",
+    "statements": [
+     "variance"
+    ],
+    "readBytes": 16777216,
+    "writeBytes": 16384
+   },
+   {
+    "kernel": "k3",
+    "form": "single",
+    "statements": [
+     "y"
+    ],
+    "readBytes": 16801796,
+    "writeBytes": 16777216
+   }
+  ],
+  "fusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "row",
+    "statements": [
+     "mean",
+     "centered",
+     "variance",
+     "y"
+    ],
+    "readBytes": 16785412,
+    "writeBytes": 16777216
+   }
+  ]
+ },
+ {
+  "name": "attention",
+  "kernelsUnfused": 6,
+  "kernelsFused": 2,
+  "unfusedMs": 1.0528000593185425,
+  "fusedMs": 0.7816640138626099,
+  "bytesUnfused": 34619392,
+  "bytesFused": 9437184,
+  "identical": true,
+  "unfusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "score"
+    ],
+    "readBytes": 524288,
+    "writeBytes": 4194304
+   },
+   {
+    "kernel": "k1",
+    "form": "single",
+    "statements": [
+     "shift"
+    ],
+    "readBytes": 4194304,
+    "writeBytes": 4096
+   },
+   {
+    "kernel": "k2",
+    "form": "single",
+    "statements": [
+     "e"
+    ],
+    "readBytes": 4198400,
+    "writeBytes": 4194304
+   },
+   {
+    "kernel": "k3",
+    "form": "single",
+    "statements": [
+     "z"
+    ],
+    "readBytes": 4194304,
+    "writeBytes": 4096
+   },
+   {
+    "kernel": "k4",
+    "form": "single",
+    "statements": [
+     "weight"
+    ],
+    "readBytes": 4198400,
+    "writeBytes": 4194304
+   },
+   {
+    "kernel": "k5",
+    "form": "single",
+    "statements": [
+     "out"
+    ],
+    "readBytes": 4456448,
+    "writeBytes": 262144
+   }
+  ],
+  "fusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "row",
+    "statements": [
+     "score",
+     "shift",
+     "e",
+     "z",
+     "weight"
+    ],
+    "readBytes": 524288,
+    "writeBytes": 4194304
+   },
+   {
+    "kernel": "k1",
+    "form": "single",
+    "statements": [
+     "out"
+    ],
+    "readBytes": 4456448,
+    "writeBytes": 262144
+   }
+  ]
+ },
+ {
+  "name": "mlp",
+  "kernelsUnfused": 3,
+  "kernelsFused": 2,
+  "unfusedMs": 1.0077760219573975,
+  "fusedMs": 0.8727359771728516,
+  "bytesUnfused": 20976640,
+  "bytesFused": 12588032,
+  "identical": true,
+  "unfusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "h"
+    ],
+    "readBytes": 2101248,
+    "writeBytes": 4194304
+   },
+   {
+    "kernel": "k1",
+    "form": "single",
+    "statements": [
+     "g"
+    ],
+    "readBytes": 4194304,
+    "writeBytes": 4194304
+   },
+   {
+    "kernel": "k2",
+    "form": "single",
+    "statements": [
+     "y"
+    ],
+    "readBytes": 5243904,
+    "writeBytes": 1048576
+   }
+  ],
+  "fusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "flat",
+    "statements": [
+     "h",
+     "g"
+    ],
+    "readBytes": 2101248,
+    "writeBytes": 4194304
+   },
+   {
+    "kernel": "k1",
+    "form": "single",
+    "statements": [
+     "y"
+    ],
+    "readBytes": 5243904,
+    "writeBytes": 1048576
+   }
+  ]
+ },
+ {
+  "name": "conv2d",
+  "kernelsUnfused": 1,
+  "kernelsFused": 1,
+  "unfusedMs": 0.16704000532627106,
+  "fusedMs": 0.16435199975967407,
+  "bytesUnfused": 6051840,
+  "bytesFused": 6051840,
+  "identical": true,
+  "unfusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "out"
+    ],
+    "readBytes": 2115584,
+    "writeBytes": 3936256
+   }
+  ],
+  "fusedPlan": [
+   {
+    "kernel": "k0",
+    "form": "single",
+    "statements": [
+     "out"
+    ],
+    "readBytes": 2115584,
+    "writeBytes": 3936256
+   }
+  ]
+ }
+]

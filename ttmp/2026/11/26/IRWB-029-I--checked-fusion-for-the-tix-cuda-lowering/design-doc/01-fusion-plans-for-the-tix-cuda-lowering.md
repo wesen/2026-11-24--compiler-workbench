@@ -86,11 +86,23 @@ last, and threads cover the last axis. Members are classified by shape:
 - **row-element member**: shape equals the driver's. Its elements are staged in a dynamic shared array,
   computed cooperatively (thread `t` takes `j = t, t + blockDim, …`, each element's own tree, sequential
   inner loops preserved per element, e.g. `attention`'s `score` contraction).
-- **row-scalar member**: shape equals the driver's minus the last axis. Computed by thread 0 alone. If
-  its expression contains a reduction, thread 0 folds sequentially in the reduction's own axis order with
-  the meaning's initializer and one rounding per step — the exact order and grouping of the tree, only
-  executed once per row instead of per thread. Non-reduction row-scalars (pointwise over the row) are
-  thread 0 as well. Results land in a shared scalar slot when another member reads them.
+- **row-scalar member**: shape equals the driver's minus the last axis. Computed by thread 0 alone. Its
+  expression is evaluated as a whole by thread 0 — any tree, including several reductions and the
+  split-sum block/tail bounds — with each fold sequential in the reduction's own axis order, the
+  meaning's initializer and one rounding per step. Non-reduction row-scalars are thread 0 as well.
+  Results land in a shared scalar slot when another member reads them.
+
+**As built:** threads per block is 128, not 256 — measured on the GB10 (softmax fused 0.59 ms at 256,
+0.39 ms at 128; layernorm 0.17 ms at both); the serial single-thread phases hide their latency better
+when more blocks are resident.
+
+**As built (staged inputs):** the row kernel also stages *parameters and outside statements* that a
+row-scalar member reads along the row: one coalesced cooperative load per block puts the row in shared
+memory, and thread 0's folds then read shared instead of streaming global memory with a single thread.
+Without this the fused softmax was *slower* than stage 2 (1.32 ms against 0.80 ms): one thread per block
+issuing dependent global loads has almost no memory-level parallelism, while stage 2's one-thread-per-row
+kernel has one concurrent reader per row. A load of a staged input is served from shared memory only when
+the plan's locality rules show it stays on the current row; otherwise it reads global memory.
 
 Phases run in definition order with a `__syncthreads()` between consecutive phases; there is no early
 `return` (all threads reach every barrier). Loads of group members obey locality rules (next section);
@@ -105,6 +117,15 @@ dynamically at launch. The host computes the row length from the shape values, r
 `cudaFuncAttributeMaxDynamicSharedMemorySize` up to the device's opt-in maximum once per run, and fails
 with a clear error if a row does not fit. Rows in the checked domain are at most 4,096 elements, so every
 checked case fits; an extreme uncheckcased shape can set `fuse: false`, which stays exactly stage 2.
+
+**As built (minmax):** the shared max/min helper is now branchless — a totally-ordered-integer key
+comparison with a final NaN select. It is equivalent to the branchy stage-2 helper on every input
+(NaN in either argument yields the canonical quiet NaN; for the mixed zeros the ordered key of −0 lies
+below the key of +0, so max picks +0 and min picks −0, the bitwise AND and OR of the old form), and the
+branchless form lets the compiler pipeline the sequential fold's loads: the fused softmax's thread-0 max
+phase cost ~0.35 ms with the branchy helper and ~0.05 ms after. Script `04-minmax-probe.mjs` certifies
+the helper the lowering actually ships over 160,256 pairs on the GB10 (boundary words crossed with each
+other and with random words): zero word mismatches, zero NaN-class mismatches.
 
 ## Legality, decided from the IR
 
@@ -189,3 +210,13 @@ avoids multi-minute interpreter runs at full size.
   never correctness). Measured on the corpus; revisited only if a corpus program stays unfused.
 - Whether attention's fused first kernel should stage parameters (`q`, `k` rows) in shared memory; measured
   both ways only if the first number is far from the prototype's ratio.
+
+## As built — answers
+
+- The greedy run formation fuses every corpus program as designed; the only corpus refusals are the ones
+  the brief reserves for later stages (contraction into contraction, tiling).
+- Attention does not stage `q`/`k`: their loads come from an element member (the `score` contraction) and
+  are already coalesced per thread. Attention's remaining time is the uncoalesced `k` reads inside the
+  contraction — reduction/contraction tiling, out of scope. The prototype's 4.25× softmax ratio is not
+  reachable for this lowering: stage 2's bit-exactness fixes the exponentials to the double-precision
+  `exp` path (~0.2–0.3 ms for 4·10⁶ exps, measured by the phase probe), which the prototype did not pay.
