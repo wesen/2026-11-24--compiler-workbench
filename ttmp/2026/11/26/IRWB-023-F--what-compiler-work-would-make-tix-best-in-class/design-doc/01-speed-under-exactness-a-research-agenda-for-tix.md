@@ -29,6 +29,8 @@ RelatedFiles:
         Where the emitted kernel text and certificate would come from
     - Path: repo://src/tensor/evaluate.ts
       Note: The f32 meaning every proposal must preserve
+    - Path: repo://ttmp/2026/11/26/IRWB-023-F--what-compiler-work-would-make-tix-best-in-class/prototypes/03-reduction-limited/main.cu
+      Note: Matrix-vector probe for the reduction-limited prediction
 ExternalSources:
     - https://dl.acm.org/doi/10.1145/114697.116813
     - https://dl.acm.org/doi/10.1145/1356052.1356053
