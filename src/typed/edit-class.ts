@@ -78,7 +78,11 @@ const treeOf = (values: Readonly<Record<string, ValueRec>>, id: string): Tree =>
     args: v.args.map(a => treeOf(values, a)),
   };
 };
-const idsOf = (values: Readonly<Record<string, ValueRec>>, id: string, out: Set<string> = new Set()): Set<string> => {
+const idsOf = (
+  values: Readonly<Record<string, ValueRec>>,
+  id: string,
+  out: Set<string> = new Set(),
+): Set<string> => {
   out.add(id);
   for (const a of values[id].args) idsOf(values, a, out);
   return out;
@@ -102,7 +106,7 @@ type Bindings = Record<string, Tree>;
 
 function match(p: unknown, t: Tree, b: Bindings): boolean {
   const p0 = p as Record<string, unknown>;
-  if ('var' in p0) return (b[p0.var as string] = t), true;
+  if ('var' in p0) return ((b[p0.var as string] = t), true);
   if ('constVar' in p0) return t.op === 'const' ? ((b[p0.constVar as string] = t), true) : false;
   if ('const' in p0) return t.op === 'const' && t.imm === p0.const;
   if ('same' in p0) return sameT(t, b[p0.same as string]);
@@ -173,13 +177,10 @@ function normalize(t: Tree, index: ReadonlyMap<string, readonly Rule[]>, fired: 
 /** The evidence-strength order of IRWB-008 guide §19; the weakest of a set is the one furthest down. */
 const STRENGTH_ORDER = ['proof', 'exhaustive', 'by-construction', 'reduced-width+argument', 'sampled'];
 const weakest = (names: readonly string[]): string =>
-  names.reduce(
-    (w, n) => {
-      const s = RULE_EVIDENCE[n]?.strength ?? 'sampled';
-      return STRENGTH_ORDER.indexOf(s) > STRENGTH_ORDER.indexOf(w) ? s : w;
-    },
-    'proof',
-  );
+  names.reduce((w, n) => {
+    const s = RULE_EVIDENCE[n]?.strength ?? 'sampled';
+    return STRENGTH_ORDER.indexOf(s) > STRENGTH_ORDER.indexOf(w) ? s : w;
+  }, 'proof');
 
 export interface Rederivation {
   readonly ok: boolean;
@@ -265,8 +266,37 @@ function classifyEdit(e: Edit, ctx: EditContext): EditClassification {
       return { cls: 'other', reason: `replace of field ${e.field} is not a value field` };
     const sb = before.stmts[e.stmt as string],
       sa = after.stmts[e.stmt as string];
-    if (!sb || !sa || sb.op !== sa.op)
-      return { cls: 'other', reason: 'replace on a statement that is not the same statement in both revisions' };
+    if (!sa) {
+      // the same application's commit can prune the edited statement's block (licm hoists, then unreachable
+      // blocks go): the edit is part of that pruning, proved by the application's own `unreachable` records
+      const pruned = ctx.edits.some(
+        x => x.kind === 'unreachable' && before.blocks[x.block as string]?.stmts.includes(e.stmt as string),
+      );
+      if (pruned)
+        return {
+          cls: 'structural',
+          reason: 'motion bookkeeping inside a block the same application pruned as unreachable',
+        };
+      return { cls: 'other', reason: 'replace on a statement absent from the output revision' };
+    }
+    if (!sb) {
+      // a value edit on a statement this application inserted (licm can hoist a hoist: the set it moved into an
+      // outer loop's body is itself hoisted out of that loop): bookkeeping of what made the statement
+      const inserted = ctx.edits.some(x => (x.kind === 'insert' || x.kind === 'inline') && x.stmt === e.stmt);
+      if (inserted)
+        return {
+          cls: 'structural',
+          reason: ctx.readsCreated(e.to as string)
+            ? 'motion: a value edit on a statement this application inserted (a hoist of a hoist)'
+            : 'a value edit on a statement this application inserted (bookkeeping of what made it)',
+        };
+      return { cls: 'other', reason: 'replace on a statement absent from the input revision' };
+    }
+    if (sb.op !== sa.op)
+      return {
+        cls: 'other',
+        reason: 'replace on a statement that is not the same statement in both revisions',
+      };
     // a chained replace (lvn numbers a field twice): this edit's own tree may have been replaced again later in
     // the same application, so the motion test runs on the chain's surviving tree
     let effTo: string | undefined = after.values[e.to as string] ? (e.to as string) : undefined;
@@ -310,7 +340,11 @@ function classifyEdit(e: Edit, ctx: EditContext): EditClassification {
       };
     const fact = FACTS[pass];
     return fact
-      ? { cls: 'local', reason: `a value replaced by an equal one on a local hypothesis`, local: { kind: 'fact', fact } }
+      ? {
+          cls: 'local',
+          reason: `a value replaced by an equal one on a local hypothesis`,
+          local: { kind: 'fact', fact },
+        }
       : {
           cls: 'local',
           reason: 'a value replaced by an equal one, but no verified rule or named hypothesis covers it',

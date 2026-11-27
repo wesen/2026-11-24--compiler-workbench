@@ -1,0 +1,171 @@
+{
+ "project": "my-analysis",
+ "fns": 1,
+ "pipelines": {
+  "O2": {
+   "applications": 4,
+   "changed": 4,
+   "byPass": {
+    "cfg": {
+     "edits": 6,
+     "cls": {
+      "local": 0,
+      "structural": 6,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 4
+    },
+    "simplify": {
+     "edits": 2,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 2,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-pow2": 1,
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 2
+    },
+    "licm": {
+     "edits": 4,
+     "cls": {
+      "local": 0,
+      "structural": 4,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 1
+    }
+   },
+   "edits": 12,
+   "cls": {
+    "local": 2,
+    "structural": 10,
+    "other": 0
+   },
+   "images": {
+    "r0": 13,
+    "head": 13
+   }
+  },
+  "speed": {
+   "applications": 5,
+   "changed": 5,
+   "byPass": {
+    "cfg": {
+     "edits": 6,
+     "cls": {
+      "local": 0,
+      "structural": 6,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 4
+    },
+    "simplify": {
+     "edits": 2,
+     "cls": {
+      "local": 2,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 2,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "mul-pow2": 1,
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 2,
+     "dropped": 2
+    },
+    "licm": {
+     "edits": 4,
+     "cls": {
+      "local": 0,
+      "structural": 4,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 1
+    },
+    "rotate": {
+     "edits": 4,
+     "cls": {
+      "local": 0,
+      "structural": 4,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 8,
+     "dropped": 4
+    }
+   },
+   "edits": 16,
+   "cls": {
+    "local": 2,
+    "structural": 14,
+    "other": 0
+   },
+   "images": {
+    "r0": 13,
+    "head": 17
+   }
+  }
+ },
+ "ms": 1699
+}

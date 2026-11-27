@@ -1,0 +1,94 @@
+{
+ "project": "distinct",
+ "fns": 2,
+ "pipelines": {
+  "O2": {
+   "applications": 0,
+   "changed": 0,
+   "byPass": {},
+   "edits": 0,
+   "cls": {
+    "local": 0,
+    "structural": 0,
+    "other": 0
+   },
+   "images": {
+    "r0": 28,
+    "head": 28
+   }
+  },
+  "speed": {
+   "applications": 5,
+   "changed": 5,
+   "byPass": {
+    "inline": {
+     "edits": 18,
+     "cls": {
+      "local": 0,
+      "structural": 18,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 7,
+     "dropped": 24
+    },
+    "cfg": {
+     "edits": 31,
+     "cls": {
+      "local": 0,
+      "structural": 31,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 5,
+     "dropped": 5
+    },
+    "subst": {
+     "edits": 6,
+     "cls": {
+      "local": 3,
+      "structural": 0,
+      "other": 3
+     },
+     "just": {
+      "rule": 0,
+      "fact": 3,
+      "none": 0
+     },
+     "facts": {
+      "subst: the read has one definition, this pure tree, and this is its only read": 3
+     },
+     "rules": {},
+     "notRederived": [],
+     "owned": 3,
+     "dropped": 5
+    }
+   },
+   "edits": 55,
+   "cls": {
+    "local": 3,
+    "structural": 49,
+    "other": 3
+   },
+   "images": {
+    "r0": 28,
+    "head": 8
+   }
+  }
+ },
+ "ms": 533
+}

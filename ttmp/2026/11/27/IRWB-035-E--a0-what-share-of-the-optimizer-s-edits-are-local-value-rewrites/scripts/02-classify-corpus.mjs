@@ -70,8 +70,7 @@ const covering = (index, entities) => {
 function ownedDropped(edits, before, after) {
   const newAt = new Set(),
     idsInA = new Set();
-  const inBefore = id =>
-    !!before.values[id] || !!before.stmts[id] || !!before.blocks[id];
+  const inBefore = id => !!before.values[id] || !!before.stmts[id] || !!before.blocks[id];
   for (const table of [after.values, after.stmts, after.blocks])
     for (const id of Object.keys(table)) {
       idsInA.add(id);
@@ -167,7 +166,14 @@ for (const id of ids) {
   const rec = { project: id, fns: Object.keys(r0.value.fns).length, pipelines: {} };
   for (const pl of pipes) {
     const manager = new AnalysisManager();
-    const pipe = { applications: 0, changed: 0, byPass: {}, edits: 0, cls: { local: 0, structural: 0, other: 0 }, images: {} };
+    const pipe = {
+      applications: 0,
+      changed: 0,
+      byPass: {},
+      edits: 0,
+      cls: { local: 0, structural: 0, other: 0 },
+      images: {},
+    };
     let cur = r0,
       prevImage = lowerToImage(r0).image;
     pipe.images.r0 = prevImage.value.insns.length;
@@ -194,7 +200,8 @@ for (const id of ids) {
         row.dropped += covering(prevIdx, dropped.get(e));
         if (c.cls === 'local') {
           row.just[c.local.kind]++;
-          if (c.local.kind === 'rule') for (const rn of c.local.rules) row.rules[rn] = (row.rules[rn] ?? 0) + 1;
+          if (c.local.kind === 'rule')
+            for (const rn of c.local.rules) row.rules[rn] = (row.rules[rn] ?? 0) + 1;
           if (c.local.kind === 'fact') row.facts[c.local.fact] = (row.facts[c.local.fact] ?? 0) + 1;
           if (c.local.kind === 'none')
             row.notRederived.push(`${name} ${e.id} ${e.fn} ${(e.text ?? '').slice(0, 40)}`);

@@ -7,7 +7,8 @@ import { projectSource, ingestProject } from '../../dist/typed/project.js';
 import { PASSES, PIPELINES } from '../../dist/typed/passes.js';
 import { applyPass } from '../../dist/framework/passes/index.js';
 import { AnalysisManager } from '../../dist/framework/contracts/index.js';
-import { classifyApplication, rederive } from '../../dist/typed/edit-class.js';import test from 'node:test';
+import { classifyApplication, rederive } from '../../dist/typed/edit-class.js';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 
 await installVendor();
@@ -69,8 +70,7 @@ test('blend under O2: every edit placed, each pass in its class', async () => {
     }
   // cfg: structural (branch structure)
   const cfg = byPass.get('cfg');
-  if (cfg)
-    for (const c of cfg.c) assert.equal(c.cls, 'structural');
+  if (cfg) for (const c of cfg.c) assert.equal(c.cls, 'structural');
   // dce: other (dead statement removal)
   const dce = byPass.get('dce');
   if (dce)
@@ -88,7 +88,9 @@ test('value-numbering under O2: lvn is intra-block motion, both chained replaces
   for (const c of cls) assert.equal(c.cls, 'structural', 'value numbering is code motion');
   // the chained replace: the first replace of a twice-numbered field is still motion bookkeeping
   const fields = new Map();
-  for (const e of edits) if (e.kind === 'replace') fields.set(`${e.stmt}/${e.field}`, (fields.get(`${e.stmt}/${e.field}`) ?? 0) + 1);
+  for (const e of edits)
+    if (e.kind === 'replace')
+      fields.set(`${e.stmt}/${e.field}`, (fields.get(`${e.stmt}/${e.field}`) ?? 0) + 1);
   if ([...fields.values()].some(n => n > 1)) {
     const chained = cls.find(c => /chained/.test(c.reason));
     assert.ok(chained === undefined, 'a chained lvn replace is structural, not local-with-none');
@@ -108,7 +110,8 @@ test('subst and strength: local rewrites on named hypotheses, not rule-derivable
   if (subst)
     for (const [e, c] of subst[1].map((e, i) => [e, subst[2][i]]))
       if (e.kind === 'replace') assert.equal(c.cls, 'local', 'a copy substituted into its only reader');
-      else if (e.kind === 'remove') assert.equal(c.cls, 'other', 'the substituted-away definition is dead code');
+      else if (e.kind === 'remove')
+        assert.equal(c.cls, 'other', 'the substituted-away definition is dead code');
 });
 
 test('the motion test alone: a replace reading a local the application created is structural', () => {
@@ -138,7 +141,15 @@ test('the motion test alone: a replace reading a local the application created i
     blocks: ['bb:f.0'],
   };
   const shape = v => ({ id: 'blocks', kind: 'block', fn: 'fn:f', stmts: v, succ: [], origin: [] });
-  const mk = (id, op, args, imm) => ({ id, kind: 'value', fn: 'fn:f', op, args, ...(imm !== undefined ? { imm } : {}), origin: [] });
+  const mk = (id, op, args, imm) => ({
+    id,
+    kind: 'value',
+    fn: 'fn:f',
+    op,
+    args,
+    ...(imm !== undefined ? { imm } : {}),
+    origin: [],
+  });
   const stmt = (id, value) => ({ id, kind: 'stmt', fn: 'fn:f', op: 'set', local: 1, value, origin: [] });
   const before = {
     formatVersion: 1,
@@ -188,7 +199,11 @@ test('rederive: a fold edit re-derives; the same edit with the constant off by o
       assert.equal(d.ok, true, 'the fold edit re-derives from its table');
       const wrong = JSON.parse(JSON.stringify(r.artifact.value));
       wrong.values[e.to].imm = (wrong.values[e.to].imm | 0) + 1;
-      assert.equal(rederive(cur.value, wrong, e.from, e.to).ok, false, 'an off-by-one constant is not a derivation');
+      assert.equal(
+        rederive(cur.value, wrong, e.from, e.to).ok,
+        false,
+        'an off-by-one constant is not a derivation',
+      );
       break;
     }
     cur = r.artifact;

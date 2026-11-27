@@ -1,0 +1,133 @@
+{
+ "project": "heat-lab",
+ "fns": 1,
+ "pipelines": {
+  "O2": {
+   "applications": 2,
+   "changed": 2,
+   "byPass": {
+    "cfg": {
+     "edits": 12,
+     "cls": {
+      "local": 0,
+      "structural": 12,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 13,
+     "dropped": 13
+    },
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    }
+   },
+   "edits": 13,
+   "cls": {
+    "local": 1,
+    "structural": 12,
+    "other": 0
+   },
+   "images": {
+    "r0": 60,
+    "head": 60
+   }
+  },
+  "speed": {
+   "applications": 3,
+   "changed": 3,
+   "byPass": {
+    "cfg": {
+     "edits": 12,
+     "cls": {
+      "local": 0,
+      "structural": 12,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 13,
+     "dropped": 13
+    },
+    "simplify": {
+     "edits": 1,
+     "cls": {
+      "local": 1,
+      "structural": 0,
+      "other": 0
+     },
+     "just": {
+      "rule": 1,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {
+      "not-lt": 1
+     },
+     "notRederived": [],
+     "owned": 1,
+     "dropped": 1
+    },
+    "rotate": {
+     "edits": 6,
+     "cls": {
+      "local": 0,
+      "structural": 6,
+      "other": 0
+     },
+     "just": {
+      "rule": 0,
+      "fact": 0,
+      "none": 0
+     },
+     "facts": {},
+     "rules": {},
+     "notRederived": [],
+     "owned": 8,
+     "dropped": 5
+    }
+   },
+   "edits": 19,
+   "cls": {
+    "local": 1,
+    "structural": 18,
+    "other": 0
+   },
+   "images": {
+    "r0": 60,
+    "head": 63
+   }
+  }
+ },
+ "ms": 2879
+}
