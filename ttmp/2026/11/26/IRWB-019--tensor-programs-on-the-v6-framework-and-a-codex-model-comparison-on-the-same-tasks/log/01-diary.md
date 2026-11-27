@@ -887,3 +887,7 @@ The user asked whether the remaining fixes could go to an agent, to save Claude 
   Both run from `bc7702c` with the brief `prompts/fixes-1/common.md`, through `scripts/26-launch-fixes.sh`, with network access for the cuBLAS probe and the global v3 policy. A running `codex exec` cannot change its effort level, so the low cell is a second agent rather than a switch. A probe confirmed that `model_reasoning_effort=low` works for gpt-6.2-astra.
 - **Kit fix** (vault `b6efb26`): `01-launch-codex-round.sh` now gives `codex exec` `/dev/null` as stdin.
 - **To compare after both exit:** whether each fix is correct and its regression test really fails before the fix, the diff size, wall time, and the test counts. I review both and merge the better one, then run the full suite and the frozen stage-1 suite.
+- **Sol low and Terra low added** on the user's request ("compare with sol low and terra low as well"): IRWB-026 (Sol low, `fix1-sl`) and IRWB-027 (Terra low, `fix1-tl`), with the same brief and base, about 20 minutes after the first fixes agent.
+  - `gpt-6.2-terra` fails at once: "The 'gpt-6.2-terra' model is not supported when using Codex with a ChatGPT account".
+  - Codex's model cache lists `gpt-6.1-terra` ("Efficient model that excels at visual understanding and computer use", default effort low), and a probe answered. So the Terra cell is GPT-6.1, one version behind the others.
+  - Four fixes agents in all: Astra high, Astra low, Sol low, Terra 6.1 low.
