@@ -320,6 +320,9 @@ per-case subject are the shape of that change.
   `scripts/10-contract-cost-unfused.jsonl`).
 - Full-size equality with the interpreter for the staged lowerings, including a scratch-path case (16,384-term
   reductions in 64 rows) and a split lowering.
+- 48 random lowerings accepted exactly: 12 generated functions x (original, inline + split-sum) x (fused, unfused),
+  of which 3 stage a reduction's terms (one a `max`, two a `sum`) and 7 gated groups at the short shape values
+  (`scripts/14-random-programs.jsonl`).
 - Four mutants rejected.
 - `fuse: false` byte-identical to stage 2 for the corpus.
 
