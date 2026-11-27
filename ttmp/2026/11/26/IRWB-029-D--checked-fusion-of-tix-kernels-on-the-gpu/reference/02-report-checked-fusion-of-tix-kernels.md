@@ -31,7 +31,7 @@ WhenToUse: Reviewing what fusion does, what it costs, what was measured and what
 
 Stage 2 lowered each Tix statement to its own CUDA kernel, one thread per output element. Stage 3 merges statements into fewer kernels and must not change a single result bit. All six corpus programs now lower to one kernel each. The fused outputs are bit-identical to the f32 meaning, both on the contract's cases and at full size. Softmax runs 2.1 times faster than stage 2, layernorm 2.9, attention 1.4 and mlp 1.3. Matmul and conv2d have one statement each, so their lowering is unchanged. No framework source changed. The framework can express "four statements became one kernel" as a correspondence. It checks the record's revisions but not its entity IDs, and that is the stage's framework finding.
 
-The code is at the last commit of branch `t3-op/irwb-029-d`. The measurements were taken at `0b217d3`, and later commits changed only kernel comments and tests (diary steps 7 and 8).
+The code is at the last commit of branch `t3-op/irwb-029-d`. The measurements were taken at `0b217d3`, and later commits changed only kernel comments, tests and documents (diary step 8).
 
 ## Results
 
