@@ -13,7 +13,7 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitCuda } from './cuda-source.js';
+import { emitCuda, takesGate } from './cuda-source.js';
 import { planFusion, unfusedPlan } from './fusion.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
@@ -114,7 +114,11 @@ function compare(expected: BufferValue, got: BufferValue) {
   return { ok: true };
 }
 
-type CudaSample = ReturnType<typeof cudaCases>[number];
+// A fused kernel in block mode has a gate: at launch the host runs it fused, or its statements one by one, by the
+// shapes (fusion.ts). The recipe's shapes are small, so the rule alone would only ever show one side. Every sample
+// is therefore a case on each side, and a program with a gate is run once with each side forced.
+type Gate = 'fused' | 'unfused';
+type CudaSample = ReturnType<typeof cudaCases>[number] & { gate: Gate };
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
   const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
@@ -134,28 +138,39 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     cases: ({ baseline, fn }, random) => {
       const samples = cudaCases(selectFunction(baseline.value, fn), random);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
-      return samples;
+      return samples.flatMap(s => (['fused', 'unfused'] as const).map(gate => ({ ...s, gate })));
     },
     run: (side, _artifact, sample) => {
       if (side === 'baseline') return sample.reference;
       throw Error('CUDA checks require the batch executor');
     },
     compare,
-    describeCase: ({ fn, shapeValues, stream }) => ({ fn, shapeValues, stream, seed }),
+    describeCase: ({ fn, shapeValues, stream, gate }) => ({ fn, shapeValues, stream, seed, gate }),
     baselineKey: ({ baseline, fn }) => JSON.stringify([baseline.revision, fn]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
     async decide({ baseline, fn, subject }, cases, todo) {
       if (subject.value.fn !== fn)
         return todo.map(() => ({ v: 'disagree', reason: 'CUDA function differs' }));
       const pending = todo.map(i => cases[i]);
-      const results = await executeBatch(
-        subject.value.source,
-        selectFunction(baseline.value, fn),
-        pending.map(c => c.inputs),
-      );
-      if (results.length !== pending.length) throw Error('Wrong CUDA response case count');
-      return pending.map((sample, i): Decided => {
-        const result = compare(sample.reference, results[i]);
+      const f = selectFunction(baseline.value, fn);
+      const { source } = subject.value;
+      const results = new Map<CudaSample, BufferValue>();
+      const run = async (batch: CudaSample[], gate?: Gate) => {
+        if (!batch.length) return;
+        const out = await executeBatch(source, f, batch.map(c => c.inputs), { gate });
+        if (out.length !== batch.length) throw Error('Wrong CUDA response case count');
+        batch.forEach((c, i) => results.set(c, out[i]));
+      };
+      if (takesGate(source))
+        await Promise.all((['fused', 'unfused'] as const).map(g => run(pending.filter(c => c.gate === g), g)));
+      else {
+        // No gate: the two cases of a sample are the same run.
+        const once = new Map(pending.map(c => [c.inputs, c]));
+        await run([...once.values()]);
+        for (const c of pending) results.set(c, results.get(once.get(c.inputs)!)!);
+      }
+      return pending.map((sample): Decided => {
+        const result = compare(sample.reference, results.get(sample)!);
         return result.ok ? { v: 'agree' } : { v: 'disagree', reason: result.reason! };
       });
     },

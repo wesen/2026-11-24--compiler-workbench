@@ -92,7 +92,8 @@ export async function runCudaBatch(
   source: string,
   fn: Fn,
   cases: readonly CudaInputs[],
-  options?: { host?: string; benchmark?: boolean },
+  /** `gate` forces every gated kernel of the source to one side; only for sources that take it (`takesGate`). */
+  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused' },
 ): Promise<CudaResult[]> {
   const request = encodeCudaCases(fn, cases);
   const dir = await mkdtemp(join(tmpdir(), 'irwb-tix-cuda-'));
@@ -100,7 +101,12 @@ export async function runCudaBatch(
     await Promise.all([writeFile(join(dir, 'main.cu'), source), writeFile(join(dir, 'inputs.bin'), request)]);
     const args = [runner, dir, '--runtime-input', 'inputs.bin'];
     if (options?.host !== undefined) args.push('--host', options.host);
-    if (options?.benchmark) args.push('--timed', '--', '--benchmark');
+    if (options?.benchmark) args.push('--timed');
+    const program = [
+      ...(options?.benchmark ? ['--benchmark'] : []),
+      ...(options?.gate ? ['--gate=' + options.gate] : []),
+    ];
+    if (program.length) args.push('--', ...program);
     try {
       await exec(process.execPath, args);
     } catch (error) {

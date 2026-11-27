@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { AnalysisManager } from '../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js';
+import { takesGate } from '../../dist/tensor/cuda-source.js';
 import { createCudaLowering } from '../../dist/tensor/cuda-contract.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
 import { planFusion } from '../../dist/tensor/fusion.js';
@@ -137,8 +138,8 @@ test('a staged row needs the block domain as its leading extents, not just a pla
 
 test('the lowering records which statements each kernel computes, and fused and unfused share their cases', async () => {
   const batches = [];
-  const engine = async (source, f, cases) => {
-    batches.push({ fused: /max_nan/.test(source), count: cases.length });
+  const engine = async (source, f, cases, options) => {
+    batches.push({ fused: /max_nan/.test(source), count: cases.length, gate: options?.gate });
     return cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
   };
   const check = createCudaLowering('tensor-test-fusion', engine);
@@ -160,10 +161,125 @@ test('the lowering records which statements each kernel computes, and fused and 
         : ['m', 'e', 's', 'y'].map((s, i) => ({ from: ['softmax/' + s], to: ['k' + i] })),
     );
   }
+  // IRWB-030-E: the fused softmax kernel has a gate, so its cases run once with each side forced; the unfused
+  // lowering has none and runs each sample once
   assert.deepEqual(
-    batches.map(b => b.fused),
-    [true, false],
+    batches.map(b => [b.fused, b.gate]),
+    [
+      [true, 'fused'],
+      [true, 'unfused'],
+      [false, undefined],
+    ],
   );
-  assert.equal(batches[0].count, batches[1].count);
+  assert.ok(batches.every(b => b.count === batches[0].count));
   assert.ok(batches[0].count > 10);
 });
+
+// IRWB-030-E
+const fnOf = (source, name = 'f') => compileTix(source).current.value.functions.find(f => f.name === name);
+const inside = `fn f(x:f32[N,C]):f32[N,C] {
+  m[i] = max(j) x[i,j];
+  s[i] = sum(j) exp(x[i,j] - m[i]);
+  y[i,j] = exp(x[i,j] - m[i]) / s[i];
+  return y;
+}`;
+
+test('terms are staged for reductions of one-element members, unless the terms are a row already', () => {
+  const p = planFusion(fnOf(inside));
+  // m's body is a load of the staged row of x: its terms are in shared memory already
+  assert.deepEqual(p.groups[0].terms, [{ statement: 's', reduction: 0 }]);
+  assert.deepEqual(p.termRefusals, []);
+  assert.ok(p.groups[0].gated);
+  assert.match(p.groups[0].reasons.join('; '), /all threads compute the terms of s's reduction 0/);
+  const source = cudaSource(compileTix(inside), 'f');
+  // a term pass over the body's scalar code, then thread 0's fold over the term buffer in increasing order
+  assert.match(source, /for \(U e = threadIdx\.x; e < c2_0; e \+= blockDim\.x\) \{[^}]*exp\([^}]*q2_0\[e\] = v\d+;/);
+  assert.match(source, /for \(U t = 0; t < c2_0; \+\+t\) \{\s*(v\d+) = __fadd_rn\(\1, q2_0\[t\]\);/);
+
+  // two reductions of one member share the term area; a costly max is staged too; the corpus programs with
+  // the division outside keep stage 3's kernels except where a body does work
+  const two = planFusion(
+    fnOf('fn f(x:f32[N,C]):f32[N,C] { s[i] = (sum(j) x[i,j] / C) + max(j) sqrt(x[i,j]); y[i,j] = x[i,j] - s[i]; return y; }'),
+  );
+  assert.deepEqual(two.groups[0].terms, [
+    { statement: 's', reduction: 0 },
+    { statement: 's', reduction: 1 },
+  ]);
+  // only the outer reduction of a nest is staged: the inner one is part of each term
+  const nested = planFusion(
+    fnOf('fn f(x:f32[N,C], z:f32[N,C]):f32[N,C] { s[i] = sum(j) (x[i,j] * sum(j) z[i,j]); y[i,j] = x[i,j] / s[i]; return y; }'),
+  );
+  assert.deepEqual(nested.groups[0].terms, [{ statement: 's', reduction: 0 }]);
+});
+
+test('terms are refused for members whose row occupies the block, and thread-mode kernels have none', () => {
+  const attention = planFusion(corpus('attention').current.value.functions[0]);
+  assert.deepEqual(attention.groups[0].terms, []);
+  assert.deepEqual(
+    attention.termRefusals.map(r => [r.statement, r.kernel]),
+    [
+      ['score', 'k0'],
+      ['out', 'k0'],
+    ],
+  );
+  assert.match(attention.termRefusals[0].reason, /sum 0: every thread of the block computes elements of the row/);
+  const chain = planFusion(fnOf('fn f(x:f32[N,C]):f32[N] { s[i] = sum(j) exp(x[i,j]); t[i] = s[i] * 2; return t; }'));
+  assert.deepEqual([chain.groups[0].mapping, chain.groups[0].terms, chain.groups[0].gated], ['thread', [], false]);
+  assert.deepEqual(chain.termRefusals, []);
+});
+
+test('after split-sum the outer block reduction is staged and each term is a tail sum', () => {
+  const { program } = optimizeTix(
+    compileTix('fn f(x:f32[N,C]):f32[N,C] { s[i] = sum(j) x[i,j] / C; y[i,j] = x[i,j] - s[i]; return y; }'),
+    ['split-sum'],
+  );
+  const p = planFusion(program.current.value.functions[0]);
+  assert.deepEqual(p.groups[0].terms, [{ statement: 's', reduction: 0 }]);
+  const source = cudaSource(program, 'f');
+  assert.match(source, /const U c1_0 = \(static_cast<U>\(\(\(d1\) \/ 4 \+ \(\(d1\) % 4 != 0\) > 0 \?/);
+});
+
+test('a block-mode kernel is one definition that also holds its statements in stage 2 form, behind a gate', () => {
+  const program = corpus('softmax');
+  const source = cudaSource(program, 'softmax');
+  assert.equal(kernels(source), 1);
+  assert.match(source, /template <int Mode>\n__global__ void k0\(/);
+  // one instantiation per member with stage 2's mapping, launched in order when the gate says no
+  for (const mode of [2, 3, 4, 5]) {
+    assert.ok(source.includes(`if (Mode == ${mode}) {`), 'mode ' + mode);
+    assert.ok(source.includes(`if (!fused_k0 && elements(shape_t${mode - 1})) k0<${mode}><<<`), 'launch ' + mode);
+  }
+  assert.match(source, /const bool fused_k0 = gate_mode \? gate_mode == 1 : /);
+  assert.match(source, /"--gate=fused"/);
+  assert.equal(takesGate(source), true);
+  // thread-mode fusion and the unfused lowering have no gate and keep stage 2's main
+  const chain = compileTix('fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }');
+  for (const plain of [cudaSource(chain, 'f'), cudaSource(program, 'softmax', { fuse: false })]) {
+    assert.equal(takesGate(plain), false);
+    assert.doesNotMatch(plain, /gate/);
+  }
+});
+
+test('the check runs every sample on both sides of the gate and names the side that disagrees', async () => {
+  const program = compileTix(inside);
+  const calls = [];
+  const engine = wrong => async (source, f, cases, options) => {
+    calls.push(options?.gate);
+    return cases.map(inputs => {
+      const out = evaluate(f, inputs, 'f32');
+      if (options?.gate === wrong && out.data.length) out.data[0] += 1;
+      return { ...out, gpuMs: 0 };
+    });
+  };
+  assert.deepEqual(await createCudaLowering('tensor-test-gate-ok', engine())(program.current, 'f'), {
+    accepted: true,
+    relation: 'exact',
+  });
+  assert.deepEqual(calls.sort(), ['fused', 'unfused']);
+  for (const side of ['fused', 'unfused']) {
+    const verdict = await createCudaLowering('tensor-test-gate-' + side, engine(side))(program.current, 'f');
+    assert.equal(verdict.accepted, false);
+    assert.match(verdict.reason, new RegExp(`"gate":"${side}".*: At \\[`));
+  }
+});
+
