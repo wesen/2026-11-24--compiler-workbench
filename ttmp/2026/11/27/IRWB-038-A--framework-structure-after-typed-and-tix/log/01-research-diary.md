@@ -150,3 +150,36 @@ The checkpoint is `b580637`. The scope and authored brief are in Step 1. I compa
 P6 confirmed that the contract manager's accepted execution and output fact survive a later `preserveViolated` error from the enclosing pass. A separate deferred preparation let the probe roll back before exposing the fact. This changes the recommendation from aligning two runners to defining one acceptance boundary spanning pass-level checks and contract publication. See `scripts/09-acceptance-atomicity.mjs`, `src/framework/passes/define-pass.ts:347`, `src/framework/passes/define-pass.ts:367`, and `src/framework/contracts/analysis-manager.ts:1577`.
 
 The first mechanical citation audit found two unqualified paths to the T6 synchronous interpreters. I prefixed each path with its cell ID and reran the check. The citation check validates local links and full line anchors against the merged tree and frozen cell objects. It leaves interpretation of those lines to the reader. The ticket uses docmgr's `review` status and closes the research tasks while keeping the migration as design work.
+
+## 4. Separate the compiler standard library from the execution framework
+
+The coordinator's follow-up asks where portable compiler algorithms belong. I extended the design at `b84ad23` and revised the original recommendations about dataflow, scheduling, evidence and measurement. The proposed library owns algorithms specified over ordinary graphs, values or observations. Revision semantics, acceptance, publication and strategy execution remain framework protocols. Domains supply the language and target meaning.
+
+<details>
+<summary>Authored follow-up</summary>
+
+One more question for IRWB-038-A, from the coordinator, at the user's request. The other reviewers received it during their first turn. Continue in the same worktree and ticket, extend your design document, keep your diary, and commit.
+
+**A standard library of compiler building blocks.** Some reusable parts do not belong in the framework's generic core but are still common to many compilers and analyses. Examples: dominators and natural loops, SSA construction, liveness and other lattices, value numbering, affine expressions and dependence tests, binding-time analysis and a partial-evaluation core, exact f32 arithmetic, rule verifiers, case generators, instruction attribution, edit classification, and cost and timing measurement, plus others the material shows.
+
+Propose a standard library of such primitives, so the project starts building a clean, composable, reusable set of them. Cover:
+- what belongs in the generic core, what in the standard library, what stays in a domain, and the criteria that decide it;
+- for each primitive: its interface, the theory it implements, the existing code (in either domain or any cell) it would replace, and how it composes with other primitives and with the framework.
+
+Add it to the design document as "the proposed standard library: its layering criteria and its primitives", and revise the rest where this changes your conclusions.
+
+Final message: the same list as before (ticket and document paths, five findings, framework concepts, fundamental changes, last commit), plus "the standard-library primitives you propose, one line each".
+
+</details>
+
+### Observations and decisions
+
+- The fixed-point solver can already run on a plain graph. A new probe assembled the RV32 CFG from a four-block machine diamond and supplied machine definitions and uses to the existing solver. The four live-out sets matched the backend's loop. The allocator and coalescer have separate liveness loops. This gives the extraction two machine clients alongside source-level liveness. `scripts/10-standard-library-boundaries.mjs`, `src/framework/dataflow/solver.ts:90`, `src/typed/backend/regalloc.ts:85`, `src/typed/backend/coalesce.ts:32`, `src/typed/analyses.ts:296`.
+- The two-entry CFG produced a DFS retreating target and no natural loop. This keeps DFS, SCCs and dominance as separate outputs with different clients. `scripts/10-standard-library-boundaries.mjs`, `src/framework/dataflow/solver.ts:64`, `src/typed/analyses.ts:215`.
+- The binary32 fixture had a deliberate semantic difference. Typed returned the finite operand for `max(NaN, 7)` while Tix propagated NaN. Both preserved the same sign of zero for the tested max. Common conversion, classification and explicitly named arithmetic are useful. Canonical operations and comparison policy must stay visible in the client. `scripts/10-standard-library-boundaries.mjs`, `src/typed/f32.ts:40`, `src/tensor/evaluate.ts:19`, `src/tensor/evaluate.ts:79`.
+- The direct affine arithmetic fixture uncovered rounding even when the final integer is safe. The addition test used a scaled coefficient with an unrepresentable intermediate. The evaluation test used cancellation. This supports exact intermediate arithmetic in the library interface. The probe does not establish a difference on an accepted corpus input. `scripts/10-standard-library-boundaries.mjs`, `src/tensor/model.ts:8`, `src/tensor/model.ts:25`.
+- The design now gives the solver, liveness, dominators, SSA and other algorithms explicit library interfaces. I also kept observation collection, policy thresholds and domain legality with their owners. The initial extractions need parity on actual fixtures. Broader scheduling and specialization reuse remain conditional on a useful second client.
+
+### Verification
+
+Run `node --experimental-transform-types scripts/10-standard-library-boundaries.mjs` from this ticket directory and `python3 scripts/08-check-evidence.py` for the citation checks. P7 uses the merged CPU implementations and direct helper calls. No GPU timing or entire-corpus extrapolation follows from these runs.
