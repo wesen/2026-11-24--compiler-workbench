@@ -43,7 +43,7 @@ I therefore define best in class for Tix as **the fastest code that is bit-ident
 1. **Exact-meaning scheduling.** Use a schedule space in which no transformation can change a result word: tiling and binding of free indices, staging, register blocking, fusion of pointwise and row-local producers, and tree reduction of the exactly associative `max`. Lowering is then judged by f32 word equality. Hand-written kernels in this space were bit-identical to the unmodified Stage 2 code on all six corpus programs at full size. They were 2.0× to 7.6× faster (geometric mean 3.76×), and the six programs together took 0.887 ms instead of 3.763 ms.
 2. **Exhaustively proven intrinsics.** These are fast f32-only paths for `exp` and `tanh` that use a Ziv rounding test with a double-precision fallback. On the GPU I checked every one of the 2^32 inputs against the meaning in under a second: 0 mismatches. They are 2.4× (exp) and 4.9× (tanh) faster than the double routine Stage 2 uses, and they halve softmax and MLP time.
 3. **Data-universal exactness checks.** The *same kernel source* is compiled at a symbolic scalar type whose loads are hashes and whose arithmetic hashes the expression tree modulo the laws IEEE rounding obeys. Equal fingerprints at a shape mean equal words for every input of that shape. This caught a reassociation bug that numerical checks missed on two of three data streams. The current sample recipe exercises no tile at all. A residue-complete recipe caught every seeded schedule bug in 1.2 s, where my first tile-aware recipe missed two.
-4. **A menu of exactly specified contraction meanings.** These are a sequential FMA fold and K-only chunk trees, together with a scale-covariant accuracy relation for meaning changes. cuBLAS's own 4096³ result equals a sequential FMA fold word for word. The FMUL+FADD meaning has half the FFMA ceiling. The Stage 1/2 tolerance accepts an all-zero output once results are small.
+4. **A menu of exactly specified contraction meanings.** These are a sequential FMA fold and K-only chunk trees, together with a scale-covariant accuracy relation for meaning changes. cuBLAS's own 4096³ result equals a sequential FMA fold word for word. The FMUL+FADD meaning has half the FFMA ceiling. In one tuned kernel, the FMA fold ran 1.45× faster than the current meaning and came within 1.22× of cuBLAS at 4096³. The Stage 1/2 tolerance accepts an all-zero output once results are small.
 
 | Program (Stage 2 sizes) | Stage 2 kernels | Exact optimized | Speedup | Words different |
 |---|---:|---:|---:|---:|
@@ -164,7 +164,8 @@ It also makes **autotuning semantically inert**. Every point in the exact schedu
 | 4096³ | 271.2 ms | 15.27 ms (9.00) | 17.89 ms | 7.38 ms | 2.07× |
 
 - The exact tiled kernels differed from the naive kernel in **0 of 262,144 to 16,777,216 words** at every size, on random data in [−1, 1].
-- At 4096³ my exact kernel reached 9.00 TFLOP/s, which is 63% of the 14.39 exact ceiling. cuBLAS reached 18.6, which is 69% of the FFMA ceiling. The two kernels are similarly efficient relative to their own ceilings. The remaining gap to cuBLAS is about 1.6× of engineering on top of the 1.29× that the semantics forces.
+- At 4096³ my first exact kernel reached 9.00 TFLOP/s, which is 63% of the 14.39 exact ceiling. cuBLAS reached 18.6, which is 69% of the FFMA ceiling.
+- A second kernel (experiment 09) adds float4 global and shared loads to the 128×128×8 layout. It reached **10.32 TFLOP/s at 4096³**, 72% of the exact ceiling, still with 0 words different, and 9.62 TFLOP/s at 2048³. That is 1.76× of cuBLAS's time at 4096³. Of that factor, 1.29× is forced by the semantics and the rest is engineering.
 - **cuBLAS is not batch invariant on the GB10.** Row 0 computed as a 1×N problem differs from row 0 of the N×N problem in 471/512, 924/1024, 1928/2048 and 4014/4096 words. The exact kernels and the K-only split-K kernel differ in 0.
 - cuBLAS differs from the Tix meaning in 93% of words at every size. At 4096³ it equals my sequential-k FMA kernel in every word (0 of 16,777,216 differ), whereas at 512³ to 2048³ it differs from that kernel in 92–96% of words. cuBLAS thus computes a different function at different sizes. That is the property Tix forbids.
 
@@ -183,7 +184,7 @@ All six were bit-identical to Stage 2 at full size.
 **Risks.**
 
 - *The sequential-fold wall.* A fold is a dependent chain of FADDs, about 4 cycles each, or about 0.6 G terms/s per output at 2.4 GHz. A reduction of 2^20 terms into one output takes at least 1.7 ms however the rest is scheduled. Programs with few outputs and long reductions need a meaning-level tree (Proposal 4); scheduling cannot remove this limit.
-- *Engineering distance to cuBLAS.* The exact ceiling is reachable only with cuBLAS-class tiling, double buffering and vectorized loads. My kernel sits at 63% of the ceiling.
+- *Engineering distance to cuBLAS.* The exact ceiling is reachable only with cuBLAS-class tiling, double buffering, warp tiling and vectorized loads. My best kernel sits at 72% of the ceiling. The 128-tile kernel is poor at 512³ (0.090 ms, 16 blocks for 48 SMs), where the 64-tile kernel took 0.062 ms. Tile choice has to depend on shape, which is safe precisely because every tile choice has the same meaning.
 - *Fusion granularity.* My single-kernel attention, one block per query row, was *slower* than Stage 2 at first (1.69 ms against 1.05 ms). After three fixes it still took 0.72 ms, against 0.139 ms for the three-kernel version (§6). A schedule space needs a cost model or a tuner, not a fixed "fuse everything" rule.
 
 **How success is measured.** The compiler, rather than a human, generates schedules for the six programs that are bit-identical at full size and at least 3× faster than Stage 2 in geometric mean. The hand-written result is 3.76×. Contractions reach at least 85% of the exact ceiling, which is about 12 TFLOP/s on the GB10, or within 1.5× of cuBLAS at 4096³. Batch-invariance differences are 0 in a standing test.
@@ -312,7 +313,17 @@ Moving between them is a meaning change, judged once at the IR level. The judge 
 
 **Evidence.**
 
-*Ceilings and cuBLAS* (§2.3 and experiment 01). FMUL+FADD runs at 53% of FFMA, and cuBLAS at 4096³ equals the sequential FMA fold in 0 differing words. The K-only split-K kernel (chunk 128) equalled its tree oracle in 0 words at every size and was batch invariant. My implementation of it was slower than the unsplit kernel (29.4 ms at 4096³), because I wrote the partials to global memory without tuning. At 512³ it was faster than the 64-tile exact kernel: 0.0546 ms against 0.0617 ms.
+*Ceilings and cuBLAS* (§2.3 and experiment 01). FMUL+FADD runs at 53% of FFMA, and cuBLAS at 4096³ equals the sequential FMA fold in 0 differing words.
+
+*The price, measured on one kernel* (experiment 09, `results/09-gemm-v2.json`). The same 128×128×8 float4 kernel was compiled twice, differing only in the inner operation, and each version was checked against a naive oracle of its own meaning:
+
+| Size | RN–RN (current meaning) | FMA fold | cuBLAS | RN–RN / FMA | FMA / cuBLAS | Words ≠ own oracle |
+|---|---:|---:|---:|---:|---:|---:|
+| 1024³ | 0.299 ms (7.17 TFLOP/s) | 0.205 ms (10.48) | 0.138 ms (15.61) | 1.46× | 1.49× | 0 / 0 |
+| 2048³ | 1.787 ms (9.62) | 1.209 ms (14.21) | 1.020 ms (16.85) | 1.48× | 1.19× | 0 / 0 |
+| 4096³ | 13.31 ms (10.32) | 9.21 ms (14.92) | 7.56 ms (18.18) | 1.45× | 1.22× | 0 / 0 |
+
+The measured price of the current meaning in a realistic kernel is therefore about 1.45×, below the 2× instruction-count bound, because the kernel also spends issue slots on shared-memory loads and addressing. The FMA fold, an exactly specified and batch-invariant meaning, comes within 1.2× of cuBLAS at large sizes, and at 4096³ it is cuBLAS's own function. The K-only split-K kernel (chunk 128) equalled its tree oracle in 0 words at every size and was batch invariant. My implementation of it was slower than the unsplit kernel (29.4 ms at 4096³), because I wrote the partials to global memory without tuning. At 512³ it was faster than the 64-tile exact kernel: 0.0546 ms against 0.0617 ms.
 
 *The FMA meaning reference* (`scripts/04-fma-meaning.mjs`, GPU `__fmaf_rn` as oracle):
 
@@ -383,7 +394,7 @@ flowchart TD
 - **An elementwise accuracy relation.** `|C−R| ≤ 8(|O−R| + ulp(R))` per element falsely rejected split-sum on matmul (ratio 12.6) and layernorm (ratio 127). Wherever the origin happens to be very accurate at one element, any legitimate change looks infinitely worse there. The per-case norm relation fixed this.
 - **The obvious FMA reference.** `Math.fround(a*b + c)` passed 1.31 million random triples and failed all 65,536 constructed near-midpoint triples. Random testing cannot validate a reference for a fused operation.
 - **Fingerprints without the +0 law.** The plain tree hash flagged a K-only chunk tree as different from the sequential fold when K fits in one chunk (49/49 outputs at 7³), although the words are equal. That is a false alarm, removed by L2.
-- **My FMA GEMM as evidence for the 2× price.** At 4096³ the fma variant of my kernel was *slower* than the exact one (17.9 ms against 15.3 ms), so it says nothing about the semantic price. The 2× figure rests on the instruction-throughput probe, not on my GEMM.
+- **My first FMA GEMM as evidence for the price.** At 4096³ the fma variant of the experiment-01 kernel was *slower* than the exact one (17.9 ms against 15.3 ms), so it said nothing about the semantic price, which the kernel's other bottlenecks masked. Experiment 09's tuned kernel replaced it: about 1.45× at every size from 1024³ to 4096³.
 - **The K-only split-K kernel at large sizes.** It took 29.4 ms at 4096³, against 15.3 ms for the 128-tile exact kernel, because the partial sums go through global memory without tuning. It won only at 512³.
 - **My first schedule-derived shape recipe.** T−1, T, T+1 and 2T+3 per axis caught the tile-threshold bugs, but it missed both mutants that depend on a residue (`tail5rev` at K mod 8 = 5, `edge5` at N mod 128 = 5). The residue-complete recipe replaced it.
 - **Bugs that exact comparison caught immediately.** These are worth recording because each would have been easy to miss under a tolerance. A transposed index in the three-kernel attention made all 65,536 words differ. A stale output buffer would have hidden the `rowstride` mutant, until the kernels' outputs were NaN-filled.
@@ -403,6 +414,7 @@ All scripts are in this ticket's `scripts/`, and their outputs are in `scripts/r
 | 06 | `06-fingerprint/main.cu` | Data-universal per-shape exactness | Exact schedules 0 fingerprint differences; `pair` caught at every shape with K ≥ 8, invisible numerically on integers and zeros |
 | 07 | `07-exact-tanh/main.cu` (`exhaust s e`, `stream`, `debug w`) | Proven fast tanh | First version 85,400 mismatches; fixed: 0; 4.9× streaming |
 | 08 | `08-residues/main.cu` | Which shape recipe exposes shape-dependent schedule bugs? | Stage recipe catches none; T−1/T/T+1/2T+3 misses residue bugs; residue-complete (600 shapes, 1.2 s) catches all, no false alarms |
+| 09 | `09-gemm-v2/main.cu` | The price of exactness on one tuned kernel | RN–RN 10.32 TFLOP/s and FMA fold 14.92 at 4096³ (1.45×); FMA fold within 1.22× of cuBLAS; both 0 words different from their own oracles |
 
 Example commands:
 
@@ -414,6 +426,7 @@ Example commands:
 - `node tools/cuda-remote.mjs <ticket>/scripts/06-fingerprint`
 - `node tools/cuda-remote.mjs <ticket>/scripts/07-exact-tanh --timed -- exhaust 34 36`
 - `node tools/cuda-remote.mjs <ticket>/scripts/08-residues`
+- `node tools/cuda-remote.mjs <ticket>/scripts/09-gemm-v2 --timed -- 512 1024 2048 4096`
 
 Caveats. My Stage 2 timings come from the generated program's own benchmark mode, with a median of three runs. The coordinator's single runs (0.197, 0.785, 0.563, 1.81, 1.05 and 0.341 ms) differ by up to 2× for attention and conv2d. Optimized kernels used medians of 21 runs. Exactness claims are per input (seeded random data) and per shape (the corpus sizes), except the exhaustive and fingerprint results, which cover every input of the stated domain. The exhaustive proofs cover the binaries built by the runner's `nvcc` 13.0 at `-O3 -arch=sm_121`.
 
