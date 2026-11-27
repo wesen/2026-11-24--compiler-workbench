@@ -9,7 +9,11 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/dataflow/lattices.ts
+      Note: the interval lattice gained widening up-to (thresholds parameter)
+    - Path: repo://src/typed/analyses.ts
+      Note: typed.ranges widens up-to powers of two; version 2
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T17:32:22.442572543-05:00
