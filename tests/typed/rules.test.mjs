@@ -27,7 +27,7 @@ const SUBSET = ['blend', 'algebra', 'checksum', 'dead-code', 'strength', 'value-
 const sig = r => [r.artifact.revision, canonical(r.report?.edits ?? []), canonical(r.correspondence?.entries ?? [])];
 
 /** Every pipeline with simplify or fold; at each such step, apply `alt[name]` to the same input and compare. */
-async function compareOnCorpus(ids, alt) {
+async function compareOnCorpus(ids, alt, passes = {}) {
   let compared = 0, changed = 0;
   const differ = [];
   for (const id of ids) {
@@ -37,7 +37,7 @@ async function compareOnCorpus(ids, alt) {
       const manager = new AnalysisManager(), contract = optimizationContract({ inputs: p.meta.inputs });
       let cur = r0;
       for (const name of PIPELINES[pl]) {
-        const r = await applyPass(PASSES[name], cur, { manager, contract, contractInputs: { origin: r0 } });
+        const r = await applyPass(passes[name] ?? PASSES[name], cur, { manager, contract, contractInputs: { origin: r0 } });
         if (alt[name]) {
           const got = sig(await applyPass(alt[name], cur, { manager: new AnalysisManager() }));
           compared++;
@@ -51,8 +51,10 @@ async function compareOnCorpus(ids, alt) {
   return { compared, changed, differ };
 }
 
-test(`B1: the tables give the hand-written passes' revisions, edits and correspondences (${FULL ? 'all projects' : 'subset'})`, { timeout: 600000 }, async () => {
-  const res = await compareOnCorpus(FULL ? projectIds() : SUBSET, { simplify: R.simplifyHandwritten, fold: R.foldHandwritten });
+test(`B1: the original rules reproduce the hand-written passes (${FULL ? 'all projects' : 'subset'})`, { timeout: 600000 }, async () => {
+  const res = await compareOnCorpus(FULL ? projectIds() : SUBSET, { simplify: R.simplifyHandwritten, fold: R.foldHandwritten }, {
+    simplify: typedPass({ ...simplify.typed, body: tableBody(SIMPLIFY_RULES.rules.filter(r => r.name !== 'horner31-mask15')) }),
+  });
   assert.deepEqual(res.differ, []);
   assert.ok(res.changed > 0, 'some steps change the program, so the comparison has something to compare');
   if (FULL) assert.equal(res.compared, 792); // 616 on IRWB-006's five pipelines, 176 more (4 steps x 44) on speed
@@ -68,8 +70,8 @@ test('B1: the comparison sees a one-rule difference (a rule with another note ch
   assert.ok(i < SIMPLIFY_RULES.rules.findIndex(r => r.name === 'mul-pow2'));
 });
 
-test('B1: the tables are data: names, text, 27 simplify and 40 fold rules, patterns convertible to the framework', () => {
-  assert.equal(SIMPLIFY_RULES.rules.length, 27);
+test('B1: the tables are data: names, text, 28 simplify and 40 fold rules, patterns convertible to the framework', () => {
+  assert.equal(SIMPLIFY_RULES.rules.length, 28);
   assert.equal(FOLD_RULES.rules.length, 40);
   const byName = Object.fromEntries(SIMPLIFY_RULES.rules.map(r => [r.name, r]));
   assert.equal(ruleText(byName['mul-pow2']), 'mul(x, #k) → shl(x, #log2 k) if pow2 k');
@@ -79,6 +81,16 @@ test('B1: the tables are data: names, text, 27 simplify and 40 fold rules, patte
   assert.deepEqual(toNodePattern(byName['add-zero']).exact, true);
   assert.deepEqual(toNodePattern(byName['sub-self']).exact, false, 'the framework has no structural repeat');
   assert.throws(() => rule('bad', { x: 'i32' }, op('add', v('x'), v('y')), v('x')), /no declared type|not bound|y/);
+});
+
+test('B2: linear forms under the same low-bit mask must agree modulo that mask plus one', () => {
+  const horner = SIMPLIFY_RULES.rules.find(r => r.name === 'horner31-mask15');
+  const proof = verifyRule(horner, { random: 0 });
+  assert.equal(proof.strength, 'proof');
+  assert.match(proof.methods.find(m => m.method === 'symbolic-linear').detail, /modulo 16/);
+
+  const wrong = { ...horner, rhs: op('and', op('add', op('add', v('a'), v('b')), v('c')), c(15)) };
+  assert.equal(verifyRule(wrong).verdict, 'unsound');
 });
 
 test('B2: binopW at 32 bits is the evaluator\'s binop (boundary values crossed, every i32 operator)', () => {

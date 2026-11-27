@@ -1,6 +1,7 @@
 // Run from the worktree. With --fixtures, repeat the earlier tickets' headline cases.
 // Otherwise use ten seed-7 cases per declared entry (all functions when there are no entries).
 import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
 import { projectIds, projectFiles } from '../../../../../../tools/corpus.mjs';
 import { installVendor } from '../../../../../../tools/node-vendor.mjs';
 import { encodeBoard, fixture, SEARCH_CELLS, zeroState } from '../../../../../../corpus/projects/chess-search/scripts/fixtures.mjs';
@@ -37,8 +38,6 @@ export function fixtureCases(id, p) {
   }
 }
 
-import { pathToFileURL } from 'node:url';
-
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const fixtures = process.argv.includes('--fixtures');
   const ids = process.argv.slice(2).filter(arg => arg !== '--fixtures');
@@ -50,33 +49,37 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const cases = fixtures ? fixtureCases(id, base) : (ps.meta.entries ?? base.fns()).flatMap(fn =>
       casesFrom(st, fn, { count: 10, seed: 7, inputs: base.inputs[fn] }));
     const images = { reference: reference(ps) };
-    const rules = {};
+    const changes = {};
     const rejected = {};
     for (const name of ['O2', 'speed']) {
       const p = Program.fromProject(ps);
       const run = await p.pipeline(name);
       rejected[name] = run.steps.filter(s => s.rejected).map(s => s.pass);
-      rules[name] = {};
-      for (const rev of p.revisions)
-        for (const edit of rev.edits)
-          for (const reason of edit.because ?? [])
-            if (reason.startsWith('rule:')) rules[name][reason] = (rules[name][reason] ?? 0) + 1;
+      changes[name] = {
+        fixedChecks: p.revisions.filter(r => r.pass === 'bce').reduce((n, r) => n +
+          r.edits.filter(e => e.kind === 'replaceStmt' &&
+            r.artifact.value.stmts[e.to]?.origin[0]?.note?.startsWith('range is within the fixed bound')).length, 0),
+        horner: p.revisions.filter(r => r.pass === 'simplify').reduce((n, r) => n +
+          Object.values(r.artifact.value.values).filter(v => v.origin[0]?.rev === r.artifact.value.rev &&
+            v.origin[0].note?.startsWith('horner31-mask15:')).length, 0),
+        checked: run.steps.filter(s => s.changed && ['simplify', 'bce'].includes(s.pass)).map(s => [s.pass, s.check]),
+      };
       images[name] = lowerToImage(p.head).image;
       images[name + 'Tuned'] = lowerToImage(p.head, tuned).image;
     }
     const counts = Object.fromEntries(Object.keys(images).map(name => [name, 0]));
-    let limited = 0;
+    const limitedCases = [];
     let bothTrap = 0;
     for (const c of cases) {
       const runs = Object.entries(images).map(([name, image]) => [name, runImage(image, c.fn, c.args, c.memory, {
         limit: fixtures ? 30_000_000 : 200_000, counts: false,
       })]);
-      if (runs.some(([, r]) => r.limit)) { limited++; continue; }
+      if (runs.some(([, r]) => r.limit)) { limitedCases.push([c.fn, c.n]); continue; }
       for (const [name, r] of runs)
         assert.ok(agrees(runs[0][1], r), `${id} ${c.fn} ${c.n} ${name}: reference disagreement`);
       if (runs[0][1].trap) bothTrap++;
       for (const [name, r] of runs) counts[name] += r.steps;
     }
-    console.log(JSON.stringify({ id, cases: cases.length, limited, bothTrap, ...counts, rejected, rules }));
+    console.log(JSON.stringify({ id, cases: cases.length, limited: limitedCases.length, limitedCases, bothTrap, ...counts, rejected, changes }));
   }
 }

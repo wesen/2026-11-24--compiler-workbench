@@ -13,7 +13,7 @@ const zeroRight = (o: 'or' | 'xor' | 'shl' | 'shr' | 'shru') =>
 
 export const SIMPLIFY_RULES = ruleSet(
   'simplify',
-  'algebraic identities: x+0, x*1, x*2^k, x-x, !!x and inverted comparisons',
+  'algebraic identities: x+0, x*1, x*2^k, x-x, !!x, inverted comparisons and a low-bit hash',
   [
     rule('add-zero', X, op('add', v('x'), c(0)), v('x')),
     rule('zero-add', X, op('add', c(0), v('x')), v('x')),
@@ -69,6 +69,17 @@ export const SIMPLIFY_RULES = ruleSet(
       note: 'x & 0',
     }),
     rule('and-ones', X, op('and', v('x'), c(-1)), v('x')),
+    rule(
+      'horner31-mask15',
+      { a: 'i32', b: 'i32', c: 'i32' },
+      op(
+        'and',
+        op('add', op('mul', op('add', op('mul', v('a'), c(31)), v('b')), c(31)), v('c')),
+        c(15),
+      ),
+      op('and', op('add', op('sub', v('a'), v('b')), v('c')), c(15)),
+      { note: 'horner31-mask15: 31 ≡ −1 modulo 16' },
+    ),
     ...COMPARE_INVERSE.map(([a, b]) =>
       rule(`not-${a}`, { a: 'i32', b: 'i32' }, op('eqz', op(a, v('a'), v('b'))), op(b, v('a'), v('b')), {
         note: inversionNote(a, b),

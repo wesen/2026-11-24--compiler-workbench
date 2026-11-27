@@ -8,6 +8,35 @@ import type { RuleEvidence } from './verify.js';
 
 export const EVIDENCE_OPTIONS = { random: 1000000, seed: 7, exhaustive32: true } as const;
 export const RULE_EVIDENCE: Readonly<Record<string, RuleEvidence>> = {
+  // IRWB-037-A scripts/04-verify-horner.mjs
+  'horner31-mask15': {
+    "rule": "horner31-mask15",
+    "version": "1",
+    "fingerprint": "0d97c3b27468017434d28df9579ee6257dbc7ab10e7949de9587642c3b9ad42f",
+    "verdict": "sound",
+    "strength": "proof",
+    "methods": [
+      {
+        "method": "structural",
+        "verdict": "pass",
+        "ms": 2
+      },
+      {
+        "method": "symbolic-linear",
+        "verdict": "pass",
+        "instances": 1,
+        "detail": "normal forms equal modulo 16 under their shared low-bit mask",
+        "ms": 1
+      },
+      {
+        "method": "random-32",
+        "verdict": "pass",
+        "cases": 1110592,
+        "detail": "boundary values crossed (110592), then random",
+        "ms": 944
+      }
+    ]
+  },
   'add-zero': {
     rule: 'add-zero',
     version: '1',

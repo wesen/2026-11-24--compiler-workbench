@@ -7,7 +7,7 @@
  *
  *   structural       effects (a dropped, duplicated or reordered variable needs pure), types      side condition
  *   by-construction  fold: R is the evaluator's own value of L; the guard excludes every trap      relative proof
- *   symbolic-linear  both sides are degree-one polynomials over Z/2^32 with equal coefficients    proof
+ *   symbolic-linear  linear forms agree modulo 2^32, or modulo 2^k under a shared low-bit mask    proof
  *   bitwise-w1       both sides use only and/or/xor and 0/-1; checked at width 1                  proof
  *   exhaustive-w8    every assignment at 8 bits (width-generic rules)          complete at 8 bits only
  *   exhaustive-32    every assignment at 32 bits (one full variable, or small guarded domains)      complete
@@ -293,31 +293,35 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
     if (!ok) return done();
   }
 
-  // 3. symbolic linear: degree-one polynomials over Z/2^32, once per instance of the guarded constants
-  if (!hasF32 && [...ops].every(o => LINEAR.has(o))) {
+  // 3. symbolic linear: compare coefficients, once per instance of the guarded constants.
+  const masked = commonLowMask(r.lhs, r.rhs);
+  if (!hasF32 && (masked || [...ops].every(o => LINEAR.has(o)))) {
     const finite = vars.filter(x => x.constVar);
     if (finite.every(x => x.pow2)) {
       const ok = timed('symbolic-linear', () => {
         const instances = product(finite.map(x => domainAt(x, 32)!));
+        const modulo = masked ? ` modulo ${masked.mask + 1}` : '';
         for (const inst of instances) {
           const at = new Map(finite.map((x, i) => [x.name, inst[i]]));
-          const L = lin(r.lhs, at),
-            R = lin(r.rhs, at);
+          const L = lin(masked?.left ?? r.lhs, at),
+            R = lin(masked?.right ?? r.rhs, at);
           if (!L || !R) return { verdict: 'n/a', detail: 'not linear' };
-          if (!sameLin(L, R))
+          if (!sameLin(L, R, masked?.mask ?? -1))
             return {
               verdict: 'fail',
               instances: instances.length,
-              detail: `instance ${JSON.stringify(Object.fromEntries(at))}: ${linText(L)} ≠ ${linText(R)}`,
+              detail: `instance ${JSON.stringify(Object.fromEntries(at))}: ${linText(L)} ≠ ${linText(R)}${modulo}`,
             };
         }
         return {
           verdict: 'pass',
           instances: instances.length,
           detail:
-            instances.length > 1
-              ? `normal forms equal for all ${instances.length} guard instances`
-              : 'normal forms equal',
+            masked
+              ? `normal forms equal${modulo} under their shared low-bit mask`
+              : instances.length > 1
+                ? `normal forms equal for all ${instances.length} guard instances`
+                : 'normal forms equal',
         };
       });
       if (!ok) {
@@ -543,6 +547,15 @@ interface Lin {
   readonly c0: number;
   readonly coef: ReadonlyMap<string, number>;
 }
+function commonLowMask(left: Pat, right: Tpl): { left: Pat; right: Tpl; mask: number } | undefined {
+  if (!('op' in left) || left.op !== 'and' || !('op' in right) || right.op !== 'and') return;
+  const [a, m] = left.args;
+  const [b, n] = right.args;
+  if (!('const' in m) || !('const' in n) || typeof m.const !== 'number' || m.const !== n.const) return;
+  const mask = m.const | 0;
+  // Low k bits of coefficients suffice because reduction modulo 2^k commutes with add and multiply modulo 2^32.
+  if (mask >= 0 && (mask & (mask + 1)) === 0) return { left: a, right: b, mask };
+}
 function lin(n: Pat | Tpl, at: ReadonlyMap<string, number>): Lin | null {
   if ('var' in n) return { c0: 0, coef: new Map([[n.var, 1]]) };
   if ('same' in n) return { c0: 0, coef: new Map([[n.same, 1]]) };
@@ -576,10 +589,10 @@ function lin(n: Pat | Tpl, at: ReadonlyMap<string, number>): Lin | null {
   }
   return null;
 }
-const sameLin = (a: Lin, b: Lin): boolean => {
-  if (a.c0 !== b.c0) return false;
+const sameLin = (a: Lin, b: Lin, mask: number): boolean => {
+  if ((a.c0 & mask) !== (b.c0 & mask)) return false;
   const keys = new Set([...a.coef.keys(), ...b.coef.keys()]);
-  for (const k of keys) if ((a.coef.get(k) ?? 0) !== (b.coef.get(k) ?? 0)) return false;
+  for (const k of keys) if (((a.coef.get(k) ?? 0) & mask) !== ((b.coef.get(k) ?? 0) & mask)) return false;
   return true;
 };
 const linText = (x: Lin) =>

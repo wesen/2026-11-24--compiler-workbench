@@ -8,7 +8,7 @@ import { projectFiles, projectIds } from '../../tools/corpus.mjs';
 await installVendor();
 const { projectSource, ingestProject, runPipeline } = await import('../../dist/typed/project.js');
 const P = await import('../../dist/typed/passes.js');
-const { meaningKept } = await import('../../dist/typed/evaluate.js');
+const { benchCase, evaluate, meaningKept } = await import('../../dist/typed/evaluate.js');
 const { listing } = await import('../../dist/typed/listing.js');
 const { storeOf } = await import('../../dist/typed/ir.js');
 const { AnalysisManager } = await import('../../dist/framework/contracts/index.js');
@@ -44,6 +44,49 @@ test('P2.6: pipelines are deterministic: the same input gives the same revisions
   const a = await runPipeline(r0, 'O2', { manager: new AnalysisManager(), inputs: p.meta.inputs });
   const b = await runPipeline(r0, 'O2', { manager: new AnalysisManager(), inputs: p.meta.inputs });
   assert.equal(a.artifact.revision, b.artifact.revision);
+});
+
+test('fixed bounds propagate along the success edge and are lost at a join or reassignment', async () => {
+  const p = projectSource('fixed-bounds', {
+    'main.typed': `
+function lookup(i: i32, j: i32, choose: bool): i32 {
+    const cells = new Int32Array(4);
+    let index = i;
+    if (choose) {
+        cells[index] = 7;
+        cells[index] = 8;
+    }
+    const value = cells[index];
+    index = j;
+    return value + cells[index];
+}
+`,
+    'project.json': JSON.stringify({
+      ingest: { tape: true },
+      inputs: { lookup: { i: [-1, 4], j: [-1, 4], choose: { bool: true } } },
+    }),
+  });
+  const origin = ingestProject(p);
+  const { artifact, steps } = await runPipeline(origin, ['cfg', 'bce'], {
+    inputs: p.meta.inputs,
+    manager: new AnalysisManager(),
+  });
+  const checkCount = subject => Object.values(subject.value.stmts).filter(
+    s => s.op === 'br_if' && subject.value.values[s.cond].op === 'geu',
+  ).length;
+  assert.equal(checkCount(origin), 4);
+  assert.equal(checkCount(artifact), 3);
+  const { result } = steps.find(s => s.pass === 'bce');
+  assert.ok(result.report.edits.some(e => e.kind === 'replaceStmt' &&
+    /fixed bound 4/.test(result.artifact.value.stmts[e.to].origin[0].note)));
+  const before = storeOf(origin.value), after = storeOf(artifact.value);
+  for (const choose of [0, 1])
+    for (const [i, j, expected] of [[3, 3, choose ? 16 : 0], [-1, 0, null], [4, 0, null], [0, 4, null]]) {
+      const k = benchCase(before, 'lookup', { i, j, choose });
+      const r = evaluate(after, k.fn, k.args, k.memory);
+      if (expected === null) assert.ok(r.trap);
+      else assert.equal(r.result, expected);
+    }
 });
 
 test('P2.4: the deliberately wrong pass is rejected with a counterexample; nothing is published', async () => {

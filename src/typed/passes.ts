@@ -606,7 +606,7 @@ export const divToShift = typedPass({
 export const bce = typedPass({
   name: 'bce',
   about:
-    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
+    'bounds-check elimination: skip a trap check when ranges prove a fixed bound or a dominating branch proves the buffer bound',
   needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
   writes: ['stmts', 'cfg'],
   preserves: [],
@@ -642,9 +642,21 @@ export const bce = typedPass({
       const last = lastStmt(st, b);
       if (!last || last.op !== 'br_if') continue;
       const c = st.get(last.cond!) as ValueRec;
-      if (c.op !== 'geu' || !isLength(c.args[1])) continue;
+      if (c.op !== 'geu') continue;
       const trapB = st.get(last.then!) as BlockRec;
       if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') continue;
+      const index = st.get(c.args[0]) as ValueRec,
+        bound = st.get(c.args[1]) as ValueRec;
+      if (index.op === 'get' && bound.op === 'const') {
+        const [lo, hi] = ranges.at(last.id, index.imm as number);
+        if (lo >= 0 && hi < (bound.imm as number))
+          tx.replaceStmt(last.id, { op: 'br', to: last.else }, {
+            because: [`fact:ranges(${f.name}): ${f.locals[index.imm as number].name} ∈ [${lo}, ${hi}]`],
+            note: `range is within the fixed bound ${bound.imm}`,
+          });
+        continue;
+      }
+      if (!isLength(c.args[1])) continue;
       const idx = resolve(last.id, c.args[0]),
         buf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number;
       if (idx.local === null) continue;

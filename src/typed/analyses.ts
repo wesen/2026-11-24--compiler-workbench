@@ -455,6 +455,17 @@ export function evalRange(st: Store, id: string, env: Env): [number, number] {
 function refine(st: Store, cond: string, env: Env, taken: boolean): Env {
   const v = st.get(cond) as ValueRec;
   if (v.op === 'eqz') return refine(st, v.args[0], env, !taken);
+  if ((v.op === 'ltu' && taken) || (v.op === 'geu' && !taken)) {
+    const x = st.get(v.args[0]) as ValueRec,
+      y = st.get(v.args[1]) as ValueRec;
+    // For a positive signed bound, the unsigned interval [0, y) is also a signed interval.
+    if (x.op !== 'get' || y.op !== 'const' || (y.imm as number) <= 0) return env;
+    const key = String(x.imm);
+    const [oldLo, oldHi] = env.get(key) ?? [MIN, MAX];
+    const lo = Math.max(0, oldLo),
+      hi = Math.min((y.imm as number) - 1, oldHi);
+    return lo <= hi ? new Map(env).set(key, [lo, hi]) : env;
+  }
   if (!['lt', 'le', 'gt', 'ge'].includes(v.op)) return env;
   const [x, y] = v.args.map(a => st.get(a) as ValueRec);
   let op = v.op as string;
@@ -485,7 +496,7 @@ const rangeStep = (st: Store, env: Env, sid: string): Env => {
 const interval = intervalLattice();
 export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
   id: 'typed.ranges',
-  version: '1',
+  version: '2',
   description: 'an interval for each local at each statement, with branch refinement and widening',
   input: BlocksIR,
   adapter: blocksAdapter,

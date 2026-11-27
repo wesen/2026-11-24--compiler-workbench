@@ -85,6 +85,13 @@ test('the rows of an attribution sum to the emulator counts, and licm hoists out
       runImage(lowerToImage(r.artifact).image, call.fn, call.args, call.memory).steps,
     );
   assertExact(a);
+  assert.equal(a.hotSites.reduce((sum, site) => sum + site.instructions, 0), a.totals.at(-1).instructions);
+  for (const site of a.hotSites) {
+    assert.equal(Object.values(site.ops).reduce((sum, n) => sum + n, 0), site.instructions);
+  }
+  const untouched = attributeSteps(p.revisions.slice(0, 1), call);
+  assert.ok(untouched.hotSites.some(site => site.id.startsWith('s:') && site.instructions > 0));
+  assert.ok(untouched.hotSites.every(site => site.history.length === 0));
   const hoisted = a.decisions.filter(d => d.decision.startsWith('licm: insert (hoisted out of loop:steps@'));
   assert.equal(hoisted.length, 1);
   assert.equal(hoisted[0].groups, 2);

@@ -17,7 +17,7 @@ import type { Artifact } from '../framework/core/types.js';
 import { lowerToImage, runImage, type BackendOptionsInput } from './backend/index.js';
 import { storeOf } from './ir.js';
 import { showStmt } from './listing.js';
-import type { StmtRec, Store, TypedBlocks } from './model.js';
+import type { StmtRec, Store, TypedBlocks, ValueRec } from './model.js';
 import type { Edit } from './tx.js';
 
 /** What `attributeSteps` needs of a revision (`Program.revisions` has it). */
@@ -41,6 +41,7 @@ export interface AttributionRow {
   readonly pass: string;
   /** `<pass>: <edit kinds> (<note>)`, or `<pass>: indirect` for a group no edit names. */
   readonly decision: string;
+  readonly edited: boolean;
   readonly because: readonly string[];
   /** Executed instructions after the pass minus before it. */
   readonly delta: number;
@@ -67,6 +68,18 @@ export interface Attribution {
   readonly rows: readonly AttributionRow[];
   /** The rows summed by decision, largest cost first. */
   readonly decisions: readonly DecisionRow[];
+  /** Every executed final-revision site, hottest first, including sites with no edits. */
+  readonly hotSites: readonly HotSite[];
+}
+
+export interface HotSite {
+  readonly id: string;
+  readonly text: string;
+  readonly instructions: number;
+  /** Mnemonics, with a separate key for spill traffic. */
+  readonly ops: Readonly<Record<string, number>>;
+  /** Measured group changes along this site's statement ancestry, oldest first. */
+  readonly history: readonly Pick<AttributionRow, 'rev' | 'pass' | 'decision' | 'edited' | 'delta'>[];
 }
 
 const FRAME = 'frame',
@@ -76,6 +89,7 @@ interface Measured {
   readonly st: Store;
   readonly total: number;
   readonly bySite: Map<string, number>;
+  readonly opsBySite: Map<string, Record<string, number>>;
 }
 
 function measureSites(r: AttributedRevision, call: AttributedCall, backend: BackendOptionsInput): Measured {
@@ -85,6 +99,7 @@ function measureSites(r: AttributedRevision, call: AttributedCall, backend: Back
   if (run.trap || run.limit || run.fault || !run.counts)
     throw new Error(`attribute: ${call.fn} did not finish at r${r.rev}`);
   const bySite = new Map<string, number>();
+  const opsBySite = new Map<string, Record<string, number>>();
   let total = 0;
   for (const m of image.value.insns) {
     const n = run.counts[m.offset >>> 2];
@@ -92,9 +107,13 @@ function measureSites(r: AttributedRevision, call: AttributedCall, backend: Back
     const stmt = m.covers.find(c => st.has(c) && (st.get(c) as { kind?: string }).kind === 'stmt');
     const site = stmt ?? (m.covers.length ? FRAME : BACKEND);
     bySite.set(site, (bySite.get(site) ?? 0) + n);
+    const ops = opsBySite.get(site) ?? {};
+    const op = m.why?.startsWith('spill ') ? `${m.why}/${m.op}` : m.op;
+    ops[op] = (ops[op] ?? 0) + n;
+    opsBySite.set(site, ops);
     total += n;
   }
-  return { st, total, bySite };
+  return { st, total, bySite, opsBySite };
 }
 
 const isStmt = (st: Store, id: unknown): id is string =>
@@ -137,6 +156,15 @@ function stepRows(A: Measured, B: Measured, r: AttributedRevision): AttributionR
   };
   for (const [site, n] of A.bySite) group(site).before += n;
   for (const [site, n] of B.bySite) group(site).after += n;
+  const collectValueReasons = (id: string, g: Group): void => {
+    const v = B.st.get(id) as ValueRec | undefined;
+    if (v?.kind !== 'value') return;
+    const o = v.origin[0];
+    if (!o || o.rev !== r.artifact.value.rev) return;
+    if (o.note && o.note !== 'rebuilt around a changed argument') g.notes.add(o.note);
+    for (const cause of o.because ?? []) g.because.add(cause);
+    for (const child of v.args) collectValueReasons(child, g);
+  };
   for (const e of r.edits) {
     const named = [e.stmt, ...(e.kind === 'replaceStmt' ? [e.from, e.to] : [])].filter(
       (x): x is string => isStmt(A.st, x) || isStmt(B.st, x),
@@ -146,6 +174,7 @@ function stepRows(A: Measured, B: Measured, r: AttributedRevision): AttributionR
       g.kinds.add(e.kind);
       if (typeof e.note === 'string') g.notes.add(e.note);
       for (const b of (e.because as string[] | undefined) ?? []) g.because.add(b);
+      if (e.kind === 'replace' && typeof e.to === 'string') collectValueReasons(e.to, g);
       // a statement the pass made says why in its origin
       if (isStmt(B.st, id) && !isStmt(A.st, id)) {
         const o = (B.st.get(id) as StmtRec).origin[0];
@@ -168,6 +197,7 @@ function stepRows(A: Measured, B: Measured, r: AttributedRevision): AttributionR
       rev: r.rev,
       pass: r.pass,
       decision: `${r.pass}: ${what}`,
+      edited: g.kinds.size > 0,
       because: [...g.because].sort(),
       delta: g.after - g.before,
       before: g.before,
@@ -176,6 +206,40 @@ function stepRows(A: Measured, B: Measured, r: AttributedRevision): AttributionR
     });
   }
   return rows.sort((a, b) => b.delta - a.delta || (a.sites[0].id < b.sites[0].id ? -1 : 1));
+}
+
+function finalHotSites(
+  head: Measured,
+  revisions: readonly AttributedRevision[],
+  steps: readonly (readonly AttributionRow[])[],
+): HotSite[] {
+  const changes = steps.map(rows => new Map(rows.flatMap(row => row.sites.map(site => [site.id, row]))));
+  return [...head.bySite]
+    .sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
+    .map(([id, instructions]) => {
+      const history: HotSite['history'][number][] = [];
+      let ancestor = id;
+      for (let i = revisions.length - 1; i > 0; i--) {
+        const row = changes[i - 1].get(ancestor);
+        if (row) {
+          const { rev, pass, decision, edited, delta } = row;
+          history.push({ rev, pass, decision, edited, delta });
+        }
+        if (ancestor === FRAME || ancestor === BACKEND) continue;
+        const before = revisions[i - 1].artifact.value.stmts;
+        if (before[ancestor]) continue;
+        const from = revisions[i].artifact.value.stmts[ancestor]?.origin[0]?.from;
+        if (!from || !before[from]) break;
+        ancestor = from;
+      }
+      return {
+        id,
+        text: isStmt(head.st, id) ? showStmt(head.st, id) : id,
+        instructions,
+        ops: head.opsBySite.get(id)!,
+        history: history.reverse(),
+      };
+    });
 }
 
 /**
@@ -189,15 +253,16 @@ export function attributeSteps(
 ): Attribution {
   if (!revisions.length) throw new Error('attribute: no revisions');
   const backend = options.backend ?? {};
-  const rows: AttributionRow[] = [];
+  const steps: AttributionRow[][] = [];
   let prev = measureSites(revisions[0], call, backend);
   const totals = [{ rev: revisions[0].rev, pass: revisions[0].pass, instructions: prev.total }];
   for (const r of revisions.slice(1)) {
     const cur = measureSites(r, call, backend);
-    rows.push(...stepRows(prev, cur, r));
+    steps.push(stepRows(prev, cur, r));
     totals.push({ rev: r.rev, pass: r.pass, instructions: cur.total });
     prev = cur;
   }
+  const rows = steps.flat();
   const byDecision = new Map<string, { pass: string; delta: number; after: number; groups: number }>();
   for (const row of rows) {
     let d = byDecision.get(row.decision);
@@ -209,7 +274,13 @@ export function attributeSteps(
   const decisions = [...byDecision]
     .map(([decision, d]) => ({ decision, ...d }))
     .sort((a, b) => b.delta - a.delta || (a.decision < b.decision ? -1 : 1));
-  return { call: { fn: call.fn, args: [...call.args] }, totals, rows, decisions };
+  return {
+    call: { fn: call.fn, args: [...call.args] },
+    totals,
+    rows,
+    decisions,
+    hotSites: finalHotSites(prev, revisions, steps),
+  };
 }
 
 /** The totals per revision and the decisions table, as text. */
