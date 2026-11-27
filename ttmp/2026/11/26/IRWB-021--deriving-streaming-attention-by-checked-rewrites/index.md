@@ -1,7 +1,7 @@
 ---
 Title: Deriving streaming attention by checked rewrites
 Ticket: IRWB-021
-Status: active
+Status: review
 Topics:
     - research
     - compiler
@@ -12,10 +12,10 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: "Research design: five checked rewrite rules (plus one optional) and one Tix construct that carry the plain O(N^2) Tix attention program to the streaming O(N*D) form, with per-rule real-arithmetic obligations, measured f32 deviations, a tolerance relation scaled by the problem conditioning, the programs the rules reach and fail on, and a falsifiable GB10 experiment."
-LastUpdated: 2026-11-26T21:40:22.131799414-05:00
-WhatFor: "Before implementing a Tix pass that derives streaming kernels, or generalising the framework contracts to a second domain with a tolerance relation."
-WhenToUse: "When asked whether the compiler can derive FlashAttention, what Tix lacks for it, or how a non-bit-exact rewrite chain can be checked in this framework."
+Summary: 'Research design: five checked rewrite rules (plus one optional) and one Tix construct that carry the plain O(N^2) Tix attention program to the streaming O(N*D) form, with per-rule real-arithmetic obligations, measured f32 deviations, a tolerance relation scaled by the problem conditioning, the programs the rules reach and fail on, and a falsifiable GB10 experiment.'
+LastUpdated: 2026-11-26T22:03:02.270759442-05:00
+WhatFor: Before implementing a Tix pass that derives streaming kernels, or generalising the framework contracts to a second domain with a tolerance relation.
+WhenToUse: When asked whether the compiler can derive FlashAttention, what Tix lacks for it, or how a non-bit-exact rewrite chain can be checked in this framework.
 ---
 
 # Deriving streaming attention by checked rewrites

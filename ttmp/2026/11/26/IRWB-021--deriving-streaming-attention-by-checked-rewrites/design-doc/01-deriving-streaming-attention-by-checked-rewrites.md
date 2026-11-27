@@ -1,7 +1,7 @@
 ---
 Title: Deriving streaming attention by checked rewrites
 Ticket: IRWB-021
-Status: draft
+Status: review
 Topics:
     - research
     - compiler
@@ -41,7 +41,7 @@ ExternalSources:
     - FlashAttention (Dao, Fu, Ermon, Rudra, Ré, 2022), and the online-softmax note of Milakov and Gimelshein (2018)
 Summary: |
     Research design, no implementation. A rule set of five rewrites, each with an exact real-arithmetic side condition, its f32 status and the mechanism that checks it, that carries the plain O(N^2) attention program of Tix to the streaming O(N*D) form with a running maximum, a running normaliser and a running output; the fold construct Tix needs for it, with its f32 meaning; the tolerance relation the derivation's two value-changing steps require, with measured constants; the programs the rules do and do not reach; and a falsifiable GPU experiment on the GB10.
-LastUpdated: 2026-11-26T22:30:00-05:00
+LastUpdated: 2026-11-26T22:03:01.944428288-05:00
 WhatFor: Before implementing a Tix pass that derives streaming kernels, or generalising the framework's contracts to a second domain with a tolerance relation.
 WhenToUse: When asked whether the compiler can derive FlashAttention, what Tix lacks for it, or how a non-bit-exact rewrite chain can be checked in this framework.
 ---
