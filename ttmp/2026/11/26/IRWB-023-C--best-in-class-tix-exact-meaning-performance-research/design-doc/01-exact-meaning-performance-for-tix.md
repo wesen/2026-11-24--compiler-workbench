@@ -196,7 +196,7 @@ The generator recognized five of the six corpus functions as row-local, and ever
 
 **Risks.**
 
-- *The sequential-fold wall.* A fold is a dependent chain of FADDs, about 4 cycles each, or about 0.6 G terms/s per output at 2.4 GHz. A reduction of 2^20 terms into one output takes at least 1.7 ms however the rest is scheduled. Programs with few outputs and long reductions need a meaning-level tree (Proposal 4); scheduling cannot remove this limit.
+- *The sequential-fold wall.* A fold is a dependent chain of RN additions in one thread, and no schedule can parallelize it. Experiment 11 measures this on y[i] = sum(k) x[i,k] with 4 rows and K = 2^22. In the best exact schedule I found, the block stages tiles through shared memory and one thread folds them. It took **18.6 ms (3.6 GB/s)**, about 10.6 cycles per term, so roughly 4.6 ms per 2^20 terms. A K-only chunk tree of width 128 took 1.19 ms, 15.7× faster, and was bit-identical to its own oracle. Programs with few outputs and long reductions therefore need a meaning-level tree (Proposal 4).
 - *Engineering distance to cuBLAS.* The exact ceiling is reachable only with cuBLAS-class tiling, double buffering, warp tiling and vectorized loads. My best kernel sits at 72% of the ceiling. The 128-tile kernel is poor at 512³ (0.090 ms, 16 blocks for 48 SMs), where the 64-tile kernel took 0.062 ms. Tile choice has to depend on shape, which is safe precisely because every tile choice has the same meaning.
 - *Fusion granularity.* My single-kernel attention, one block per query row, was *slower* than Stage 2 at first (1.69 ms against 1.05 ms). After three fixes it still took 0.72 ms, against 0.139 ms for the three-kernel version (§6). A schedule space needs a cost model or a tuner, not a fixed "fuse everything" rule.
 
@@ -336,7 +336,7 @@ Moving between them is a meaning change, judged once at the IR level. The judge 
 | 2048³ | 1.787 ms (9.62) | 1.209 ms (14.21) | 1.020 ms (16.85) | 1.48× | 1.19× | 0 / 0 |
 | 4096³ | 13.31 ms (10.32) | 9.21 ms (14.92) | 7.56 ms (18.18) | 1.45× | 1.22× | 0 / 0 |
 
-The measured price of the current meaning in a realistic kernel is therefore about 1.45×, below the 2× instruction-count bound, because the kernel also spends issue slots on shared-memory loads and addressing. The FMA fold, an exactly specified and batch-invariant meaning, comes within 1.2× of cuBLAS at large sizes, and at 4096³ it is cuBLAS's own function. The K-only split-K kernel (chunk 128) equalled its tree oracle in 0 words at every size and was batch invariant. My implementation of it was slower than the unsplit kernel (29.4 ms at 4096³), because I wrote the partials to global memory without tuning. At 512³ it was faster than the 64-tile exact kernel: 0.0546 ms against 0.0617 ms.
+The measured price of the current meaning in a realistic kernel is therefore about 1.45×, below the 2× instruction-count bound, because the kernel also spends issue slots on shared-memory loads and addressing. The FMA fold, an exactly specified and batch-invariant meaning, comes within 1.2× of cuBLAS at large sizes, and at 4096³ it is cuBLAS's own function. The K-only split-K kernel (chunk 128) equalled its tree oracle in 0 words at every size and was batch invariant. My implementation of it was slower than the unsplit kernel (29.4 ms at 4096³), because I wrote the partials to global memory without tuning. At 512³ it was faster than the 64-tile exact kernel: 0.0546 ms against 0.0617 ms. Where the chunk tree is decisive is the fold wall: in experiment 11 (4 rows of 2^22 terms) it took 1.19 ms at width 128 and 2.18 ms at width 4096, against 18.6 ms for the best exact sequential schedule, with 0 words different from each tree's own oracle.
 
 *The FMA meaning reference* (`scripts/04-fma-meaning.mjs`, GPU `__fmaf_rn` as oracle):
 
@@ -430,6 +430,7 @@ All scripts are in this ticket's `scripts/`, and their outputs are in `scripts/r
 | 08 | `08-residues/main.cu` | Which shape recipe exposes shape-dependent schedule bugs? | Stage recipe catches none; T−1/T/T+1/2T+3 misses residue bugs; residue-complete (600 shapes, 1.2 s) catches all, no false alarms |
 | 09 | `09-gemm-v2/main.cu` | The price of exactness on one tuned kernel | RN–RN 10.32 TFLOP/s and FMA fold 14.92 at 4096³ (1.45×); FMA fold within 1.22× of cuBLAS; both 0 words different from their own oracles |
 | 10 | `10-rowfuse.mjs` | Can a generator produce exact fused schedules from Tix IR? | Five of six functions recognized; all bit-identical to Stage 2; softmax 4.44×, layernorm 2.46×; contractions need a tiled template and a cost model |
+| 11 | `11-fold-wall/main.cu` | The sequential-fold wall and K-only chunk trees | 4 × 2^22 sum: best exact sequential 18.6 ms; chunk tree (C = 128) 1.19 ms; all match their own oracles |
 
 Example commands:
 
@@ -443,6 +444,7 @@ Example commands:
 - `node tools/cuda-remote.mjs <ticket>/scripts/08-residues`
 - `node tools/cuda-remote.mjs <ticket>/scripts/09-gemm-v2 --timed -- 512 1024 2048 4096`
 - `node <ticket>/scripts/10-rowfuse.mjs --timed` (after `03-fused-exact.mjs`, which writes the copied fast-path headers)
+- `node tools/cuda-remote.mjs <ticket>/scripts/11-fold-wall --timed`
 
 Caveats. My Stage 2 timings come from the generated program's own benchmark mode, with a median of three runs. The coordinator's single runs (0.197, 0.785, 0.563, 1.81, 1.05 and 0.341 ms) differ by up to 2× for attention and conv2d. Optimized kernels used medians of 21 runs. Exactness claims are per input (seeded random data) and per shape (the corpus sizes), except the exhaustive and fingerprint results, which cover every input of the stated domain. The exhaustive proofs cover the binaries built by the runner's `nvcc` 13.0 at `-O3 -arch=sm_121`.
 

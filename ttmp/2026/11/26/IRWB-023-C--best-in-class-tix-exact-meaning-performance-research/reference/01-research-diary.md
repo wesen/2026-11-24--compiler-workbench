@@ -427,3 +427,17 @@ The main risk to Proposal 1 is that hand-written kernels prove nothing about a c
 
 ### Code review instructions
 - `emitRowKernel()` in `scripts/10-rowfuse.mjs`; the generated `scripts/10-rowfuse/main.cu` (`row_softmax` is the easiest to read); `results/10-rowfuse.jsonl`.
+
+## Step 15: Experiment 11, measuring the sequential-fold wall
+
+Proposal 1's risk section estimated the cost of a long fold from FADD latency alone. I measured it instead on y[i] = sum(k) x[i,k] with 4 rows and K = 2^22. The best exact sequential schedule I could write (block-staged tiles, a thread-0 fold) took 18.6 ms, about 10.6 cycles per term, 2.7× worse than my estimate. K-only chunk trees took 1.19 ms (width 128) and 2.18 ms (width 4096). All three matched their own oracles word for word, and the trees differ from the sequential meaning in every output, as a meaning change must.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Commit (code):** this step's commit
+
+### What I learned
+- The one-thread fold costs a shared-memory load plus an add per term, not just the add latency. The wall is real and large, so Proposal 4's chunk trees are needed for long reductions, not merely nice to have.
+
+### What warrants a second pair of eyes
+- My chunk-tree kernel reaches only 57 GB/s; a better phase 1 would widen the gap further.
