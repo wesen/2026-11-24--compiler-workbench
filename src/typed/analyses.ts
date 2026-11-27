@@ -534,9 +534,7 @@ const guardConstants = (st: Store, f: WorkFn): ReadonlyMap<string, readonly numb
       }
     }
   }
-  const frozen = new Map(
-    [...lists].map(([k, v]) => [k, [...new Set(v)].sort((a, b) => a - b)] as const),
-  );
+  const frozen = new Map([...lists].map(([k, v]) => [k, [...new Set(v)].sort((a, b) => a - b)] as const));
   byFn.set(f.name, frozen);
   return frozen;
 };

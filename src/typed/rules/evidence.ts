@@ -2084,69 +2084,71 @@ export const RULE_EVIDENCE: Readonly<Record<string, RuleEvidence>> = {
     ],
   },
   'shl-shru-mask': {
-    "rule": "shl-shru-mask",
-    "version": "1",
-    "fingerprint": "5e38172254f3b52bfbd7ac352908b3c747ab1e80211954d87bdb939a6d2e861b",
-    "verdict": "sound",
-    "strength": "reduced-width+argument",
-    "methods": [
+    rule: 'shl-shru-mask',
+    version: '1',
+    fingerprint: '5e38172254f3b52bfbd7ac352908b3c747ab1e80211954d87bdb939a6d2e861b',
+    verdict: 'sound',
+    strength: 'reduced-width+argument',
+    methods: [
       {
-        "method": "structural",
-        "verdict": "pass",
-        "ms": 1
+        method: 'structural',
+        verdict: 'pass',
+        ms: 1,
       },
       {
-        "method": "exhaustive-w8",
-        "verdict": "pass",
-        "cases": 2048,
-        "ms": 5
+        method: 'exhaustive-w8',
+        verdict: 'pass',
+        cases: 2048,
+        ms: 5,
       },
       {
-        "method": "random-32",
-        "verdict": "pass",
-        "cases": 1001536,
-        "detail": "boundary values crossed (1536), then random",
-        "ms": 3791
+        method: 'random-32',
+        verdict: 'pass',
+        cases: 1001536,
+        detail: 'boundary values crossed (1536), then random',
+        ms: 3791,
       },
       {
-        "method": "exhaustive-32",
-        "verdict": "n/a",
-        "detail": "more than 2^32 inputs"
-      }
+        method: 'exhaustive-32',
+        verdict: 'n/a',
+        detail: 'more than 2^32 inputs',
+      },
     ],
-    "argument": "At every width w, shl and shru mask their counts to log2(w) bits and the shift guard restricts k to 0..w-1, so (x >>> k) << k clears exactly the low k bits of the w-bit x and the mask constants are the width's own; the identity does not depend on w. The 8-bit exhaustive check confirms the shifts compose as stated; the 32-bit sample checks k up to 31 directly."
+    argument:
+      "At every width w, shl and shru mask their counts to log2(w) bits and the shift guard restricts k to 0..w-1, so (x >>> k) << k clears exactly the low k bits of the w-bit x and the mask constants are the width's own; the identity does not depend on w. The 8-bit exhaustive check confirms the shifts compose as stated; the 32-bit sample checks k up to 31 directly.",
   },
   'sub-shl-shru-mask': {
-    "rule": "sub-shl-shru-mask",
-    "version": "1",
-    "fingerprint": "95c5f31f4f469690f39a7cd63a0acc1b954a98d24eb3ddd6cf3806eb55969f5c",
-    "verdict": "sound",
-    "strength": "reduced-width+argument",
-    "methods": [
+    rule: 'sub-shl-shru-mask',
+    version: '1',
+    fingerprint: '95c5f31f4f469690f39a7cd63a0acc1b954a98d24eb3ddd6cf3806eb55969f5c',
+    verdict: 'sound',
+    strength: 'reduced-width+argument',
+    methods: [
       {
-        "method": "structural",
-        "verdict": "pass",
-        "ms": 0
+        method: 'structural',
+        verdict: 'pass',
+        ms: 0,
       },
       {
-        "method": "exhaustive-w8",
-        "verdict": "pass",
-        "cases": 2048,
-        "ms": 8
+        method: 'exhaustive-w8',
+        verdict: 'pass',
+        cases: 2048,
+        ms: 8,
       },
       {
-        "method": "random-32",
-        "verdict": "pass",
-        "cases": 1001536,
-        "detail": "boundary values crossed (1536), then random",
-        "ms": 3458
+        method: 'random-32',
+        verdict: 'pass',
+        cases: 1001536,
+        detail: 'boundary values crossed (1536), then random',
+        ms: 3458,
       },
       {
-        "method": "exhaustive-32",
-        "verdict": "n/a",
-        "detail": "more than 2^32 inputs"
-      }
+        method: 'exhaustive-32',
+        verdict: 'n/a',
+        detail: 'more than 2^32 inputs',
+      },
     ],
-    "argument": "At every width w, shl and shru mask their counts to log2(w) bits and the shift guard restricts k to 0..w-1, so (x >>> k) << k clears exactly the low k bits of the w-bit x and the mask constants are the width's own; the identity does not depend on w. The 8-bit exhaustive check confirms the shifts compose as stated; the 32-bit sample checks k up to 31 directly."
+    argument:
+      "At every width w, shl and shru mask their counts to log2(w) bits and the shift guard restricts k to 0..w-1, so (x >>> k) << k clears exactly the low k bits of the w-bit x and the mask constants are the width's own; the identity does not depend on w. The 8-bit exhaustive check confirms the shifts compose as stated; the 32-bit sample checks k up to 31 directly.",
   },
 };

@@ -1,6 +1,7 @@
 // Credit the change in executed RV32 instructions along a pipeline to the passes' decisions, for one call.
-// node tools/attribute.mjs <project> <pipeline> <fn> [--input '{"n":12}'] [--backend '{"coalesce":true}'] [--rows] [--json]
-// --coalesce is short for --backend '{"coalesce":true}'.
+// node tools/attribute.mjs <project> <pipeline> <fn> [--input '{"n":12}'] [--backend '{"coalesce":true}'] [--limit N] [--rows] [--json]
+// --coalesce is short for --backend '{"coalesce":true}'; --limit raises the emulator's step limit (default 2e5)
+// for calls that run longer (IRWB-037-E: the chess search needs 3e7).
 // Parameters not in --input take the project's own input when that is a fixed value (a buffer's cells), else 0.
 import { installVendor } from './node-vendor.mjs';
 import { projectAllFiles } from './corpus.mjs';
@@ -16,7 +17,7 @@ const argv = process.argv.slice(2);
 const flag = name => argv.includes(name);
 const option = name => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined);
 const [id, pipeline, fn] = argv.filter(
-  (a, i) => !a.startsWith('--') && argv[i - 1] !== '--input' && argv[i - 1] !== '--backend',
+  (a, i) => !a.startsWith('--') && !['--input', '--backend', '--limit'].includes(argv[i - 1]),
 );
 if (!id || !pipeline || !fn) {
   console.error(
@@ -39,7 +40,8 @@ const backend = {
   ...(flag('--coalesce') ? { coalesce: true } : {}),
   ...JSON.parse(option('--backend') ?? '{}'),
 };
-const a = attributeSteps(p.revisions, call, { backend });
+const limit = option('--limit') ? Number(option('--limit')) : undefined;
+const a = attributeSteps(p.revisions, call, { backend, ...(limit ? { limit } : {}) });
 if (flag('--json')) console.log(JSON.stringify(a, null, 1));
 else {
   console.log(formatAttribution(a));

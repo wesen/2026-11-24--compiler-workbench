@@ -697,7 +697,8 @@ export const bce = typedPass({
           break;
         }
         if (buf === null) continue; // the lt/ge case needs the buffer's own length load
-        if (cond.op === 'ge') onTrue = !onTrue; // x >= len taken means x < len on the other arm
+        if (cond.op === 'ge')
+          onTrue = !onTrue; // x >= len taken means x < len on the other arm
         else if (cond.op !== 'lt') continue;
         const arm = onTrue ? t.then! : t.else!;
         if (!dom.dominates(arm, b.id)) continue;

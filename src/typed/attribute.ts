@@ -78,10 +78,15 @@ interface Measured {
   readonly bySite: Map<string, number>;
 }
 
-function measureSites(r: AttributedRevision, call: AttributedCall, backend: BackendOptionsInput): Measured {
+function measureSites(
+  r: AttributedRevision,
+  call: AttributedCall,
+  backend: BackendOptionsInput,
+  limit: number,
+): Measured {
   const st = storeOf(r.artifact.value);
   const { image } = lowerToImage(r.artifact, backend);
-  const run = runImage(image, call.fn, call.args, call.memory);
+  const run = runImage(image, call.fn, call.args, call.memory, { limit });
   if (run.trap || run.limit || run.fault || !run.counts)
     throw new Error(`attribute: ${call.fn} did not finish at r${r.rev}`);
   const bySite = new Map<string, number>();
@@ -185,15 +190,18 @@ function stepRows(A: Measured, B: Measured, r: AttributedRevision): AttributionR
 export function attributeSteps(
   revisions: readonly AttributedRevision[],
   call: AttributedCall,
-  options: { readonly backend?: BackendOptionsInput } = {},
+  options: { readonly backend?: BackendOptionsInput; readonly limit?: number } = {},
 ): Attribution {
   if (!revisions.length) throw new Error('attribute: no revisions');
   const backend = options.backend ?? {};
+  // IRWB-037-E: a call may run longer than runImage's own default (the chess search: 14M instructions), so the
+  // step limit is an option; the run must still finish on every revision or the attribution refuses it
+  const limit = options.limit ?? 2e5;
   const rows: AttributionRow[] = [];
-  let prev = measureSites(revisions[0], call, backend);
+  let prev = measureSites(revisions[0], call, backend, limit);
   const totals = [{ rev: revisions[0].rev, pass: revisions[0].pass, instructions: prev.total }];
   for (const r of revisions.slice(1)) {
-    const cur = measureSites(r, call, backend);
+    const cur = measureSites(r, call, backend, limit);
     rows.push(...stepRows(prev, cur, r));
     totals.push({ rev: r.rev, pass: r.pass, instructions: cur.total });
     prev = cur;

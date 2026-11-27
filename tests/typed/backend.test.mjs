@@ -96,11 +96,18 @@ test('P2.6: after O2 the images match the book: Blend 88 bytes / 451, Checksum 5
   // "the instruction mul t2, a2, a3 in the O2 image of Blend covers v:blend.23 and s:blend.15"
   const mul = blend.image.value.insns.find(m => m.text === 'mul t2, a2, a3');
   assert.ok(mul, blend.image.value.insns.map(m => m.text).join('\n'));
-  assert.ok(mul.covers.includes('s:blend.15') && mul.covers.includes('v:blend.23'), JSON.stringify(mul.covers));
+  assert.ok(
+    mul.covers.includes('s:blend.15') && mul.covers.includes('v:blend.23'),
+    JSON.stringify(mul.covers),
+  );
   const checksum = await o2('checksum');
   assert.equal(checksum.image.value.bytes, 52);
   const fn = checksum.p.fns()[0];
-  const bench = Object.fromEntries(checksum.st.fn(fn).params.map((t, i) => [checksum.st.fn(fn).locals[i].name, t === 'buffer' ? cells(40) : 40]));
+  const bench = Object.fromEntries(
+    checksum.st
+      .fn(fn)
+      .params.map((t, i) => [checksum.st.fn(fn).locals[i].name, t === 'buffer' ? cells(40) : 40]),
+  );
   assert.equal(steps(checksum.image, checksum.st, fn, bench).steps, 366);
 });
 
@@ -177,7 +184,11 @@ test("P2.4: the book's other r0 numbers reproduce", () => {
 test('P2.4: rv32.image-agrees holds for every function of every corpus project at r0', async () => {
   const m = new AnalysisManager();
   for (const id of projects) expectation(id);
-  assert.deepEqual([...projects].sort(), [...expectedProjects].sort(), 'corpus projects match expectation rows');
+  assert.deepEqual(
+    [...projects].sort(),
+    [...expectedProjects].sort(),
+    'corpus projects match expectation rows',
+  );
   for (const id of projects) {
     const expected = expectation(id);
     const { meta, r0, st } = load(id);
@@ -499,42 +510,52 @@ test('P2.4: heat, diffs, machine stages and image status', () => {
 
 // Chapter 14, "Against the reference compiler": r0, O2 and the reference compiler (typed-rv32.js, default policy,
 // with its pass groups vendored) on the same benchmarks; and image sizes over all 44 projects.
-test("P2.6: the book's table against the reference compiler, and 5160 bytes against 7628", { timeout: 600000 }, async () => {
-  const { Program } = await import('../../dist/typed/program.js');
-  const { projectSource } = await import('../../dist/typed/project.js');
-  const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
-  const rows = [
-    ['blend', 'blend', { work: cells(40), n: 40, a: 3, b: 5 }, [531, 451, 383]],
-    ['checksum', 'total', { work: cells(40) }, [446, 366, 292]],
-    ['sort', 'sort', { work: { cells: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1] } }, [2022, 2022, 1533]],
-    ['collatz', 'collatz', { n: 27 }, [1590, 1590, 1486]],
-    ['value-numbering', 'halves', { n: 40 }, [690, 570, 695]],
-  ];
-  const refImage = (id, source) => {
-    const r = globalThis.typedRv32.compile(source, [], undefined);
-    return B.imageFromCode(id, r.image, r.entries, r.signatures);
-  };
-  for (const [id, fn, bench, expected] of rows) {
-    const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
-    const st0 = storeOf(p.head.value);
-    const r0 = steps(B.lowerToImage(p.head).image, st0, fn, bench).steps;
-    await p.pipeline(ps.meta.pipeline);
-    const o2 = steps(B.lowerToImage(p.head).image, storeOf(p.head.value), fn, bench).steps;
-    const ref = steps(refImage(id, ps.source), st0, fn, bench).steps;
-    assert.deepEqual([r0, o2, ref], expected, id);
-  }
-  if (process.env.IRWB_FULL !== '1') return; // the corpus-wide sizes run O2 on every project
-  let ours = 0, theirs = 0;
-  for (const id of projectIds()) {
-    const expected = expectation(id);
-    const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
-    await p.pipeline('O2');
-    const sizes = [B.lowerToImage(p.head).image.value.bytes, refImage(id, ps.source).bytes];
-    assert.deepEqual(sizes, expected.bytes, `${id}: image bytes`);
-    if (bookProjects.includes(id)) { ours += sizes[0]; theirs += sizes[1]; }
-  }
-  assert.deepEqual({ ours, theirs }, { ours: 5160, theirs: 7628 });
-});
+test(
+  "P2.6: the book's table against the reference compiler, and 5160 bytes against 7628",
+  { timeout: 600000 },
+  async () => {
+    const { Program } = await import('../../dist/typed/program.js');
+    const { projectSource } = await import('../../dist/typed/project.js');
+    const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
+    const rows = [
+      ['blend', 'blend', { work: cells(40), n: 40, a: 3, b: 5 }, [531, 451, 383]],
+      ['checksum', 'total', { work: cells(40) }, [446, 366, 292]],
+      ['sort', 'sort', { work: { cells: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1] } }, [2022, 1932, 1533]], // IRWB-037-E: bce's dominating-check case and the widened ranges remove sort's duplicate bounds checks, so O2 is 1932 (was 2022)
+      ['collatz', 'collatz', { n: 27 }, [1590, 1590, 1486]],
+      ['value-numbering', 'halves', { n: 40 }, [690, 570, 695]],
+    ];
+    const refImage = (id, source) => {
+      const r = globalThis.typedRv32.compile(source, [], undefined);
+      return B.imageFromCode(id, r.image, r.entries, r.signatures);
+    };
+    for (const [id, fn, bench, expected] of rows) {
+      const ps = projectSource(id, projectFiles(id)),
+        p = Program.fromProject(ps);
+      const st0 = storeOf(p.head.value);
+      const r0 = steps(B.lowerToImage(p.head).image, st0, fn, bench).steps;
+      await p.pipeline(ps.meta.pipeline);
+      const o2 = steps(B.lowerToImage(p.head).image, storeOf(p.head.value), fn, bench).steps;
+      const ref = steps(refImage(id, ps.source), st0, fn, bench).steps;
+      assert.deepEqual([r0, o2, ref], expected, id);
+    }
+    if (process.env.IRWB_FULL !== '1') return; // the corpus-wide sizes run O2 on every project
+    let ours = 0,
+      theirs = 0;
+    for (const id of projectIds()) {
+      const expected = expectation(id);
+      const ps = projectSource(id, projectFiles(id)),
+        p = Program.fromProject(ps);
+      await p.pipeline('O2');
+      const sizes = [B.lowerToImage(p.head).image.value.bytes, refImage(id, ps.source).bytes];
+      assert.deepEqual(sizes, expected.bytes, `${id}: image bytes`);
+      if (bookProjects.includes(id)) {
+        ours += sizes[0];
+        theirs += sizes[1];
+      }
+    }
+    assert.deepEqual({ ours, theirs }, { ours: 5160, theirs: 7628 });
+  },
+);
 
 // Chapter 13: "our evaluator at r0 agrees with the reference compiler's images on all 6986 decided cases" (44 projects;
 // 8286 with the six IRWB-012..017 projects).
@@ -542,22 +563,33 @@ test('P2.6: the evaluator at r0 agrees with the reference images on 8286 decided
   const { Program } = await import('../../dist/typed/program.js');
   const { projectSource } = await import('../../dist/typed/project.js');
   const { projectFiles, projectIds } = await import('../../tools/corpus.mjs');
-  let fns = 0, decided = 0, inconclusive = 0;
+  let fns = 0,
+    decided = 0,
+    inconclusive = 0;
   for (const id of projectIds()) {
     const expected = expectation(id);
-    const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
+    const ps = projectSource(id, projectFiles(id)),
+      p = Program.fromProject(ps);
     const r = globalThis.typedRv32.compile(ps.source, [], undefined);
     // signatures: entries with f32 scalars are called by ilp32f (fa registers), as the reference compiled them
     const image = B.imageFromCode(id, r.image, r.entries, r.signatures);
-    const checks = p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) }).fns;
+    const checks = p.check({
+      count: 100,
+      against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }),
+    }).fns;
     const actual = { fns: checks.length, decided: 0, inconclusive: 0 };
     for (const f of checks) {
       assert.equal(f.agree, f.total, `${id}.${f.fn}: agreement`);
-      actual.decided += f.total; actual.inconclusive += f.inconclusive;
+      actual.decided += f.total;
+      actual.inconclusive += f.inconclusive;
     }
     assert.deepEqual(actual, expected.ref, `${id}: reference cases`);
     assert.equal(actual.decided + actual.inconclusive, actual.fns * 100, `${id}: case coverage`);
-    if (bookProjects.includes(id)) { fns += actual.fns; decided += actual.decided; inconclusive += actual.inconclusive; }
+    if (bookProjects.includes(id)) {
+      fns += actual.fns;
+      decided += actual.decided;
+      inconclusive += actual.inconclusive;
+    }
   }
   assert.deepEqual({ fns, decided, inconclusive }, { fns: 70, decided: 6986, inconclusive: 14 });
 });

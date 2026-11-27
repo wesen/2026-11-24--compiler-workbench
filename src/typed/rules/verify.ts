@@ -97,10 +97,7 @@ export function argumentFor(r: Rule): string | undefined {
       'does not depend on w. The 8-bit exhaustive check confirms the operators implement the relations; ' +
       'the 32-bit sample checks the 32-bit operators directly.'
     );
-  if (
-    [...ops].every(o => ['shl', 'shru', 'and', 'sub'].includes(o)) &&
-    varsOf(r).some(x => x.shift)
-  )
+  if ([...ops].every(o => ['shl', 'shru', 'and', 'sub'].includes(o)) && varsOf(r).some(x => x.shift))
     return (
       'At every width w, shl and shru mask their counts to log2(w) bits and the shift guard restricts k to ' +
       '0..w-1, so (x >>> k) << k clears exactly the low k bits of the w-bit x and the mask constants are the ' +

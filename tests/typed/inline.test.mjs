@@ -49,7 +49,10 @@ test('inline: a whole-program pass, registered, in the speed pipeline twice, and
   assert.equal(PASSES.inline.id, 'typed.inline');
   assert.deepEqual(PIPELINES.speed.slice(0, 2), ['inline', 'inline']);
   assert.deepEqual(PIPELINES.speed.slice(-2), ['rotate', 'cfg']);
-  assert.deepEqual(PIPELINES.speed.slice(2, -2), PIPELINES['O2+']);
+  // IRWB-037-E: the rest is O2+ with one simplify inserted after strength, so the shift-mask rules fire on
+  // strength's logical shifts (O2+ itself stays as the book defines it)
+  const withShiftMasks = PIPELINES['O2+'].flatMap(n => (n === 'strength' ? ['strength', 'simplify'] : [n]));
+  assert.deepEqual(PIPELINES.speed.slice(2, -2), withShiftMasks);
 });
 
 test('inline on calls: energy calls nothing afterwards, the check agrees, and why reaches callee and call', async () => {
@@ -74,7 +77,9 @@ test('inline on calls: energy calls nothing afterwards, the check agrees, and wh
     assert.match(o.because[1], /^s:energy\./);
     assert.match(o.note, /^inlined from sq into energy at s:energy\.\d+$/);
   }
-  const sid = [...st.fn('energy').blocks.flatMap(b => b.stmts)].find(s => st.get(s).origin[0].from === 's:sq.0');
+  const sid = [...st.fn('energy').blocks.flatMap(b => b.stmts)].find(
+    s => st.get(s).origin[0].from === 's:sq.0',
+  );
   const why = p.why(sid);
   assert.equal(why.via, 'inline');
   assert.equal(why.from.id, 's:sq.0');
@@ -101,7 +106,9 @@ test('inline: record results become locals; leaf reads read them; f32 code stays
     if (v.op === 'result') reads.push(id);
     v.args.forEach(walk);
   };
-  for (const b of bigSum.blocks) for (const sid of b.stmts) for (const k of ['value', 'cond', 'addr']) if (st.get(sid)[k]) walk(st.get(sid)[k]);
+  for (const b of bigSum.blocks)
+    for (const sid of b.stmts)
+      for (const k of ['value', 'cond', 'addr']) if (st.get(sid)[k]) walk(st.get(sid)[k]);
   assert.deepEqual(reads, [], 'no leaf read is left');
   for (const o of [{}, { chains: true, coalesce: true, homes: true }]) {
     const [agree, decided] = againstOrigin(p, B.lowerToImage(p.head, o).image);
@@ -136,10 +143,14 @@ function twice(x: i32): i32 { return tiny(x) + tiny(x + 2); }
 });
 
 test('inline under an entry-only contract, then dfe: the inlined callees disappear', async () => {
-  const p = new Program('entries', `function sq(x: i32): i32 { return x * x; }
+  const p = new Program(
+    'entries',
+    `function sq(x: i32): i32 { return x * x; }
 function clamp(v: i32, lo: i32, hi: i32): i32 { return Math.min(Math.max(v, lo), hi); }
 function energy(a: i32, b: i32): i32 { return clamp(sq(a) + sq(b), 0, 5000); }
-`, { entries: ['energy'] });
+`,
+    { entries: ['energy'] },
+  );
   await p.apply('inline');
   assert.deepEqual(calls(p, 'energy'), []);
   await p.apply('dfe', { params: { roots: ['energy'] } });
@@ -191,19 +202,26 @@ function sum(n: i32): i32 {
   assert.equal(zeroes.length, 1);
   assert.equal(st.fn('sum').locals[zeroes[0].local].name, 'last_t');
   await p.pipeline('O2');
-  const [agree, decided] = againstOrigin(p, B.lowerToImage(p.head, { chains: true, coalesce: true, homes: true }).image);
+  const [agree, decided] = againstOrigin(
+    p,
+    B.lowerToImage(p.head, { chains: true, coalesce: true, homes: true }).image,
+  );
   assert.equal(agree, decided);
 });
 
-test('speed on every corpus project agrees with r0 under the default and the new backend options (IRWB_FULL)', { timeout: 600000 }, async () => {
-  if (process.env.IRWB_FULL !== '1') return;
-  for (const id of projectIds()) {
-    const p = open(id);
-    const run = await p.pipeline('speed');
-    assert.ok(!run.some?.(x => x.rejected), id);
-    for (const o of [{}, { chains: true, coalesce: true, homes: true }]) {
-      const [agree, decided] = againstOrigin(p, B.lowerToImage(p.head, o).image);
-      assert.equal(agree, decided, `${id} ${JSON.stringify(o)}`);
+test(
+  'speed on every corpus project agrees with r0 under the default and the new backend options (IRWB_FULL)',
+  { timeout: 600000 },
+  async () => {
+    if (process.env.IRWB_FULL !== '1') return;
+    for (const id of projectIds()) {
+      const p = open(id);
+      const run = await p.pipeline('speed');
+      assert.ok(!run.some?.(x => x.rejected), id);
+      for (const o of [{}, { chains: true, coalesce: true, homes: true }]) {
+        const [agree, decided] = againstOrigin(p, B.lowerToImage(p.head, o).image);
+        assert.equal(agree, decided, `${id} ${JSON.stringify(o)}`);
+      }
     }
-  }
-});
+  },
+);
