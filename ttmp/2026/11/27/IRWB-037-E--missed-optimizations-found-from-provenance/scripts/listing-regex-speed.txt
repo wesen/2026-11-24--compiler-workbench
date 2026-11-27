@@ -1,0 +1,290 @@
+regexMatch: 6933 instructions at r11
+function regexMatch(pattern: buffer, text: buffer): i32
+bb:regexMatch.0  -> [.2, .3]
+    137      s:regexMatch.3 zero frame+0, 180 bytes
+      1      s:regexMatch.4 p = 0
+      1      s:regexMatch.5 s = 0
+      1      s:regexMatch.275 inv = frame+0
+      2      s:regexMatch.289 if (p >= load32[pattern+0]) goto .2 else .3
+bb:regexMatch.2  -> [.42, .45]
+      1      s:regexMatch.78 accept = s
+      2      s:regexMatch.79 t22 = (5 * accept)
+      3      s:regexMatch.80 if (t22 >=u 45) goto .42 else .45
+bb:regexMatch.3  -> [.4, .5]
+     20      s:regexMatch.9 low = load16[caddr(pattern, p)+4]
+      4      s:regexMatch.10 high = low
+      8      s:regexMatch.11 if (low == 91) goto .4 else .5
+bb:regexMatch.4  -> [.6]
+     12      s:regexMatch.13 low = load16[caddr(pattern, (p + 1))+4]
+     12      s:regexMatch.15 high = load16[caddr(pattern, (p + 3))+4]
+      2      s:regexMatch.16 p = (p + 5)
+      2      s:regexMatch.17 goto .6
+bb:regexMatch.5  -> [.6]
+      2      s:regexMatch.18 p = (p + 1)
+    s:regexMatch.19 goto .6
+bb:regexMatch.6  -> [.7, .8]
+      4      s:regexMatch.20 out = (s + 1)
+      8      s:regexMatch.21 if (p < load32[pattern+0]) goto .7 else .8
+bb:regexMatch.7  -> [.9]
+     21      s:regexMatch.23 t42 = (load16[caddr(pattern, p)+4] == 42)
+      3      s:regexMatch.24 goto .9
+bb:regexMatch.8  -> [.9]
+      1      s:regexMatch.25 t42 = 0
+    s:regexMatch.26 goto .9
+bb:regexMatch.9  -> [.10, .24]
+      4      s:regexMatch.27 if t42 goto .10 else .24
+bb:regexMatch.10  -> [.12, .15]
+      6      s:regexMatch.28 split = (5 * s)
+      6      s:regexMatch.29 if (split >=u 45) goto .12 else .15
+bb:regexMatch.12  -> []
+    s:regexMatch.30 trap
+bb:regexMatch.15  -> [.16, .19]
+     12      s:regexMatch.33 store32[(inv + (split << 2))+0] = 2
+      3      s:regexMatch.34 t15 = (split + 3)
+      6      s:regexMatch.35 if (t15 >=u 45) goto .16 else .19
+bb:regexMatch.16  -> []
+    s:regexMatch.36 trap
+bb:regexMatch.19  -> [.20, .23]
+     12      s:regexMatch.39 store32[(inv + (t15 << 2))+0] = (s + 1)
+      3      s:regexMatch.40 t16 = (split + 4)
+      6      s:regexMatch.41 if (t16 >=u 45) goto .20 else .23
+bb:regexMatch.20  -> []
+    s:regexMatch.42 trap
+bb:regexMatch.23  -> [.24]
+     12      s:regexMatch.45 store32[(inv + (t16 << 2))+0] = (s + 2)
+      3      s:regexMatch.46 out = s
+      3      s:regexMatch.47 s = (s + 1)
+      3      s:regexMatch.48 p = (p + 1)
+    s:regexMatch.49 goto .24
+bb:regexMatch.24  -> [.25, .28]
+      8      s:regexMatch.51 range = (5 * s)
+      8      s:regexMatch.52 if (range >=u 45) goto .25 else .28
+bb:regexMatch.25  -> []
+    s:regexMatch.53 trap
+bb:regexMatch.28  -> [.29, .32]
+     16      s:regexMatch.56 store32[(inv + (range << 2))+0] = 1
+      4      s:regexMatch.57 t18 = (range + 1)
+      8      s:regexMatch.58 if (t18 >=u 45) goto .29 else .32
+bb:regexMatch.29  -> []
+    s:regexMatch.59 trap
+bb:regexMatch.32  -> [.33, .36]
+     12      s:regexMatch.62 store32[(inv + (t18 << 2))+0] = low
+      4      s:regexMatch.63 t19 = (range + 2)
+      8      s:regexMatch.64 if (t19 >=u 45) goto .33 else .36
+bb:regexMatch.33  -> []
+    s:regexMatch.65 trap
+bb:regexMatch.36  -> [.37, .40]
+     12      s:regexMatch.68 store32[(inv + (t19 << 2))+0] = high
+      4      s:regexMatch.69 t20 = (range + 3)
+      8      s:regexMatch.70 if (t20 >=u 45) goto .37 else .40
+bb:regexMatch.37  -> []
+    s:regexMatch.71 trap
+bb:regexMatch.40  -> [.2, .3]
+     12      s:regexMatch.74 store32[(inv + (t20 << 2))+0] = out
+      4      s:regexMatch.75 s = (s + 1)
+     11      s:regexMatch.290 if (p >= load32[pattern+0]) goto .2 else .3
+bb:regexMatch.42  -> []
+    s:regexMatch.81 trap
+bb:regexMatch.45  -> [.48]
+      5      s:regexMatch.84 store32[(frame+0 + (t22 << 2))+0] = 3
+      1      s:regexMatch.85 stateCount = (accept + 1)
+      9      s:regexMatch.86 zero frame+180, 36 bytes
+      9      s:regexMatch.87 zero frame+216, 36 bytes
+      9      s:regexMatch.88 zero frame+252, 36 bytes
+      2      s:regexMatch.89 store32[frame+180+0] = 1
+      1      s:regexMatch.90 i = 0
+      1      s:regexMatch.285 inv9 = frame+252
+      1      s:regexMatch.286 inv10 = frame+180
+      1      s:regexMatch.287 inv11 = frame+216
+      1      s:regexMatch.288 inv12 = frame+0
+      1      s:regexMatch.91 goto .48
+bb:regexMatch.47  -> [.175, .178]
+      3      s:regexMatch.258 if (accept >=u 9) goto .175 else .178
+bb:regexMatch.48  -> [.n5, .51]
+      9      s:regexMatch.93 head = 0
+      9      s:regexMatch.94 tail = 0
+      9      s:regexMatch.95 state = 0
+      9      s:regexMatch.276 inv1 = inv9
+      9      s:regexMatch.277 inv2 = inv10
+      9      s:regexMatch.291 if (state >= stateCount) goto .n5 else .51
+bb:regexMatch.51  -> [.52, .55]
+    144      s:regexMatch.98 if (state >=u 9) goto .52 else .55
+bb:regexMatch.52  -> []
+    s:regexMatch.99 trap
+bb:regexMatch.55  -> [.56, .62]
+    360      s:regexMatch.102 if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62
+bb:regexMatch.56  -> [.58, .61]
+     34      s:regexMatch.103 if (tail >=u 9) goto .58 else .61
+bb:regexMatch.58  -> []
+    s:regexMatch.104 trap
+bb:regexMatch.61  -> [.62]
+     51      s:regexMatch.107 store32[(inv1 + (tail << 2))+0] = state
+     17      s:regexMatch.108 tail = (tail + 1)
+    s:regexMatch.109 goto .62
+bb:regexMatch.62  -> [.n5, .51]
+     72      s:regexMatch.111 state = (state + 1)
+    135      s:regexMatch.292 if (state >= stateCount) goto .n5 else .51
+bb:regexMatch.64  -> [.65, .66]
+     43      s:regexMatch.115 if (head >= tail) goto .65 else .66
+bb:regexMatch.65  -> [.47, .120]
+     26      s:regexMatch.179 if (i == load32[text+0]) goto .47 else .120
+bb:regexMatch.66  -> [.67, .70]
+    124      s:regexMatch.116 if (head >=u 9) goto .67 else .70
+bb:regexMatch.67  -> []
+    s:regexMatch.117 trap
+bb:regexMatch.70  -> [.71, .74]
+    310      s:regexMatch.120 row = (5 * load32[(inv3 + (head << 2))+0])
+     62      s:regexMatch.121 head = (head + 1)
+    124      s:regexMatch.122 if (row >=u 45) goto .71 else .74
+bb:regexMatch.71  -> []
+    s:regexMatch.123 trap
+bb:regexMatch.74  -> [.75, .64]
+    310      s:regexMatch.126 if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64
+bb:regexMatch.75  -> [.77, .80]
+     26      s:regexMatch.127 t29 = (row + 3)
+     52      s:regexMatch.128 if (t29 >=u 45) goto .77 else .80
+bb:regexMatch.77  -> []
+    s:regexMatch.129 trap
+bb:regexMatch.80  -> [.81, .84]
+     78      s:regexMatch.132 first = load32[(inv5 + (t29 << 2))+0]
+     26      s:regexMatch.133 t31 = (row + 4)
+     52      s:regexMatch.134 if (t31 >=u 45) goto .81 else .84
+bb:regexMatch.81  -> []
+    s:regexMatch.135 trap
+bb:regexMatch.84  -> [.85, .88]
+     78      s:regexMatch.138 second = load32[(inv5 + (t31 << 2))+0]
+     52      s:regexMatch.139 if (first >=u 9) goto .85 else .88
+bb:regexMatch.85  -> []
+    s:regexMatch.140 trap
+bb:regexMatch.88  -> [.89, .99]
+    104      s:regexMatch.143 if (load32[(inv4 + (first << 2))+0] == 0) goto .89 else .99
+bb:regexMatch.89  -> [.91, .94]
+     52      s:regexMatch.144 if (first >=u 9) goto .91 else .94
+bb:regexMatch.91  -> []
+    s:regexMatch.145 trap
+bb:regexMatch.94  -> [.95, .98]
+    104      s:regexMatch.148 store32[(inv4 + (first << 2))+0] = 1
+     52      s:regexMatch.149 if (tail >=u 9) goto .95 else .98
+bb:regexMatch.95  -> []
+    s:regexMatch.150 trap
+bb:regexMatch.98  -> [.99]
+     78      s:regexMatch.153 store32[(inv3 + (tail << 2))+0] = first
+     26      s:regexMatch.154 tail = (tail + 1)
+    s:regexMatch.155 goto .99
+bb:regexMatch.99  -> [.100, .103]
+     52      s:regexMatch.157 if (second >=u 9) goto .100 else .103
+bb:regexMatch.100  -> []
+    s:regexMatch.158 trap
+bb:regexMatch.103  -> [.104, .64]
+    104      s:regexMatch.161 if (load32[(inv4 + (second << 2))+0] == 0) goto .104 else .64
+bb:regexMatch.104  -> [.106, .109]
+     38      s:regexMatch.162 if (second >=u 9) goto .106 else .109
+bb:regexMatch.106  -> []
+    s:regexMatch.163 trap
+bb:regexMatch.109  -> [.110, .113]
+     76      s:regexMatch.166 store32[(inv4 + (second << 2))+0] = 1
+     38      s:regexMatch.167 if (tail >=u 9) goto .110 else .113
+bb:regexMatch.110  -> []
+    s:regexMatch.168 trap
+bb:regexMatch.113  -> [.65, .66]
+     57      s:regexMatch.171 store32[(inv3 + (tail << 2))+0] = second
+     19      s:regexMatch.172 tail = (tail + 1)
+     38      s:regexMatch.293 if (head >= tail) goto .65 else .66
+bb:regexMatch.120  -> [.122, .123]
+     40      s:regexMatch.184 code = load16[caddr(text, i)+4]
+      8      s:regexMatch.185 state = 0
+      8      s:regexMatch.282 inv6 = inv11
+      8      s:regexMatch.283 inv7 = inv12
+      8      s:regexMatch.284 inv8 = inv10
+      8      s:regexMatch.295 if (state >= stateCount) goto .122 else .123
+bb:regexMatch.122  -> [.159, .160]
+      8      s:regexMatch.234 state = 0
+     16      s:regexMatch.297 if (state >= stateCount) goto .159 else .160
+bb:regexMatch.123  -> [.124, .127]
+    128      s:regexMatch.188 row = (5 * state)
+    128      s:regexMatch.189 if (state >=u 9) goto .124 else .127
+bb:regexMatch.124  -> []
+    s:regexMatch.190 trap
+bb:regexMatch.127  -> [.128, .129]
+    320      s:regexMatch.193 if (load32[(inv8 + (state << 2))+0] == 1) goto .128 else .129
+bb:regexMatch.128  -> [.130, .133]
+    168      s:regexMatch.194 if (row >=u 45) goto .130 else .133
+bb:regexMatch.129  -> [.134]
+      8      s:regexMatch.200 t43 = 0
+      8      s:regexMatch.201 goto .134
+bb:regexMatch.130  -> []
+    s:regexMatch.195 trap
+bb:regexMatch.133  -> [.134]
+    280      s:regexMatch.198 t43 = (load32[(inv7 + (row << 2))+0] == 1)
+    s:regexMatch.199 goto .134
+bb:regexMatch.134  -> [.135, .156]
+     64      s:regexMatch.202 if t43 goto .135 else .156
+bb:regexMatch.135  -> [.137, .140]
+     32      s:regexMatch.203 t37 = (row + 1)
+     64      s:regexMatch.204 if (t37 >=u 45) goto .137 else .140
+bb:regexMatch.137  -> []
+    s:regexMatch.205 trap
+bb:regexMatch.140  -> [.141, .144]
+     32      s:regexMatch.208 t38 = (row + 2)
+     96      s:regexMatch.209 t44 = load32[(inv7 + (t37 << 2))+0]
+     64      s:regexMatch.210 if (t38 >=u 45) goto .141 else .144
+bb:regexMatch.141  -> []
+    s:regexMatch.211 trap
+bb:regexMatch.144  -> [.n2, .n3]
+     32      s:regexMatch.263 inRange_code = code
+     96      s:regexMatch.265 inRange_high = load32[(inv7 + (t38 << 2))+0]
+     32      s:regexMatch.267 if (inRange_code >= t44) goto .n2 else .n3
+bb:regexMatch.n2  -> [.n4]
+     46      s:regexMatch.268 inRange_t3 = (inRange_code <= inRange_high)
+     23      s:regexMatch.269 goto .n4
+bb:regexMatch.n3  -> [.n4]
+      9      s:regexMatch.270 inRange_t3 = 0
+    s:regexMatch.271 goto .n4
+bb:regexMatch.n4  -> [.145, .156]
+     32      s:regexMatch.215 if inRange_t3 goto .145 else .156
+bb:regexMatch.145  -> [.147, .150]
+     16      s:regexMatch.216 t39 = (row + 3)
+     32      s:regexMatch.217 if (t39 >=u 45) goto .147 else .150
+bb:regexMatch.147  -> []
+    s:regexMatch.218 trap
+bb:regexMatch.150  -> [.151, .154]
+     48      s:regexMatch.221 t40 = load32[(inv7 + (t39 << 2))+0]
+     32      s:regexMatch.222 if (t40 >=u 9) goto .151 else .154
+bb:regexMatch.151  -> []
+    s:regexMatch.223 trap
+bb:regexMatch.154  -> [.156]
+     64      s:regexMatch.226 store32[(inv6 + (t40 << 2))+0] = 1
+    s:regexMatch.227 goto .156
+bb:regexMatch.156  -> [.122, .123]
+     64      s:regexMatch.231 state = (state + 1)
+    120      s:regexMatch.296 if (state >= stateCount) goto .122 else .123
+bb:regexMatch.159  -> [.48]
+      8      s:regexMatch.255 i = (i + 1)
+      8      s:regexMatch.256 goto .48
+bb:regexMatch.160  -> [.161, .164]
+    128      s:regexMatch.237 if (state >=u 9) goto .161 else .164
+bb:regexMatch.161  -> []
+    s:regexMatch.238 trap
+bb:regexMatch.164  -> [.165, .168]
+    128      s:regexMatch.241 t46 = (inv10 + (state << 2))
+    128      s:regexMatch.242 if (state >=u 9) goto .165 else .168
+bb:regexMatch.165  -> []
+    s:regexMatch.243 trap
+bb:regexMatch.168  -> [.169, .172]
+    256      s:regexMatch.246 store32[t46+0] = load32[(inv11 + (state << 2))+0]
+    128      s:regexMatch.247 if (state >=u 9) goto .169 else .172
+bb:regexMatch.169  -> []
+    s:regexMatch.248 trap
+bb:regexMatch.172  -> [.159, .160]
+    192      s:regexMatch.251 store32[(inv11 + (state << 2))+0] = 0
+     64      s:regexMatch.252 state = (state + 1)
+    120      s:regexMatch.298 if (state >= stateCount) goto .159 else .160
+bb:regexMatch.175  -> []
+    s:regexMatch.259 trap
+bb:regexMatch.178  -> []
+      6      s:regexMatch.262 return load32[(frame+180 + (accept << 2))+0]
+bb:regexMatch.n5  -> [.65, .66]
+      9      s:regexMatch.279 inv3 = frame+252
+      9      s:regexMatch.280 inv4 = frame+180
+      9      s:regexMatch.281 inv5 = frame+0
+     18      s:regexMatch.294 if (head >= tail) goto .65 else .66
