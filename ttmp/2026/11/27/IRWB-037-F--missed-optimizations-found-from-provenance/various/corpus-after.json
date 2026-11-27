@@ -1,0 +1,902 @@
+{
+ "across-calls": {
+  "r0": {
+   "default": 660,
+   "tuned": 630,
+   "limited": 0
+  },
+  "O2": {
+   "default": 640,
+   "tuned": 630,
+   "limited": 0
+  },
+  "speed": {
+   "default": 270,
+   "tuned": 210,
+   "limited": 0
+  },
+  "reference": 700
+ },
+ "algebra": {
+  "r0": {
+   "default": 100,
+   "tuned": 100,
+   "limited": 0
+  },
+  "O2": {
+   "default": 20,
+   "tuned": 20,
+   "limited": 0
+  },
+  "speed": {
+   "default": 20,
+   "tuned": 20,
+   "limited": 0
+  },
+  "reference": 170
+ },
+ "blend": {
+  "r0": {
+   "default": 2255,
+   "tuned": 2080,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1925,
+   "tuned": 1750,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1915,
+   "tuned": 1585,
+   "limited": 0
+  },
+  "reference": 1715
+ },
+ "bounds-lab": {
+  "r0": {
+   "default": 5923,
+   "tuned": 5495,
+   "limited": 0
+  },
+  "O2": {
+   "default": 5333,
+   "tuned": 4843,
+   "limited": 0
+  },
+  "speed": {
+   "default": 5012,
+   "tuned": 4426,
+   "limited": 0
+  },
+  "reference": 4234
+ },
+ "bounds-offset": {
+  "r0": {
+   "default": 1364,
+   "tuned": 1268,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1364,
+   "tuned": 1268,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1355,
+   "tuned": 1258,
+   "limited": 0
+  },
+  "reference": 894
+ },
+ "bounds-param": {
+  "r0": {
+   "default": 502,
+   "tuned": 452,
+   "limited": 0
+  },
+  "O2": {
+   "default": 502,
+   "tuned": 452,
+   "limited": 0
+  },
+  "speed": {
+   "default": 499,
+   "tuned": 408,
+   "limited": 0
+  },
+  "reference": 426
+ },
+ "bounds-two": {
+  "r0": {
+   "default": 910,
+   "tuned": 860,
+   "limited": 0
+  },
+  "O2": {
+   "default": 810,
+   "tuned": 710,
+   "limited": 0
+  },
+  "speed": {
+   "default": 756,
+   "tuned": 665,
+   "limited": 0
+  },
+  "reference": 675
+ },
+ "branches": {
+  "r0": {
+   "default": 165,
+   "tuned": 148,
+   "limited": 0
+  },
+  "O2": {
+   "default": 139,
+   "tuned": 131,
+   "limited": 0
+  },
+  "speed": {
+   "default": 139,
+   "tuned": 131,
+   "limited": 0
+  },
+  "reference": 211
+ },
+ "bytecode-vm": {
+  "r0": {
+   "default": 39954,
+   "tuned": 29483,
+   "limited": 0
+  },
+  "O2": {
+   "default": 31981,
+   "tuned": 24593,
+   "limited": 0
+  },
+  "speed": {
+   "default": 31667,
+   "tuned": 24279,
+   "limited": 0
+  },
+  "reference": 28889
+ },
+ "call-chain": {
+  "r0": {
+   "default": 1050,
+   "tuned": 1050,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1050,
+   "tuned": 1050,
+   "limited": 0
+  },
+  "speed": {
+   "default": 350,
+   "tuned": 290,
+   "limited": 0
+  },
+  "reference": 1120
+ },
+ "calls": {
+  "r0": {
+   "default": 651,
+   "tuned": 580,
+   "limited": 0
+  },
+  "O2": {
+   "default": 651,
+   "tuned": 580,
+   "limited": 0
+  },
+  "speed": {
+   "default": 288,
+   "tuned": 227,
+   "limited": 0
+  },
+  "reference": 840
+ },
+ "checksum": {
+  "r0": {
+   "default": 1710,
+   "tuned": 1560,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1410,
+   "tuned": 1260,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1251,
+   "tuned": 1110,
+   "limited": 0
+  },
+  "reference": 1170
+ },
+ "chess-search": {
+  "r0": {
+   "default": 432856,
+   "tuned": 412676,
+   "limited": 0
+  },
+  "O2": {
+   "default": 422785,
+   "tuned": 406185,
+   "limited": 0
+  },
+  "speed": {
+   "default": 326868,
+   "tuned": 297090,
+   "limited": 0
+  },
+  "reference": 334902
+ },
+ "collatz": {
+  "r0": {
+   "default": 7461,
+   "tuned": 5779,
+   "limited": 0
+  },
+  "O2": {
+   "default": 7461,
+   "tuned": 5779,
+   "limited": 0
+  },
+  "speed": {
+   "default": 6955,
+   "tuned": 5769,
+   "limited": 0
+  },
+  "reference": 7016
+ },
+ "constants": {
+  "r0": {
+   "default": 100,
+   "tuned": 100,
+   "limited": 0
+  },
+  "O2": {
+   "default": 70,
+   "tuned": 70,
+   "limited": 0
+  },
+  "speed": {
+   "default": 70,
+   "tuned": 70,
+   "limited": 0
+  },
+  "reference": 160
+ },
+ "dead-code": {
+  "r0": {
+   "default": 110,
+   "tuned": 100,
+   "limited": 0
+  },
+  "O2": {
+   "default": 30,
+   "tuned": 30,
+   "limited": 0
+  },
+  "speed": {
+   "default": 30,
+   "tuned": 30,
+   "limited": 0
+  },
+  "reference": 200
+ },
+ "diagnostics": {
+  "r0": {
+   "default": 30,
+   "tuned": 30,
+   "limited": 0
+  },
+  "O2": {
+   "default": 30,
+   "tuned": 30,
+   "limited": 0
+  },
+  "speed": {
+   "default": 30,
+   "tuned": 30,
+   "limited": 0
+  },
+  "reference": 90
+ },
+ "distinct": {
+  "r0": {
+   "default": 340,
+   "tuned": 340,
+   "limited": 0
+  },
+  "O2": {
+   "default": 340,
+   "tuned": 340,
+   "limited": 0
+  },
+  "speed": {
+   "default": 80,
+   "tuned": 60,
+   "limited": 0
+  },
+  "reference": 700
+ },
+ "div-checks": {
+  "r0": {
+   "default": 172,
+   "tuned": 152,
+   "limited": 0
+  },
+  "O2": {
+   "default": 162,
+   "tuned": 152,
+   "limited": 0
+  },
+  "speed": {
+   "default": 162,
+   "tuned": 152,
+   "limited": 0
+  },
+  "reference": 308
+ },
+ "div-magic": {
+  "r0": {
+   "default": 729,
+   "tuned": 670,
+   "limited": 0
+  },
+  "O2": {
+   "default": 769,
+   "tuned": 710,
+   "limited": 0
+  },
+  "speed": {
+   "default": 759,
+   "tuned": 661,
+   "limited": 0
+  },
+  "reference": 807
+ },
+ "early-exit": {
+  "r0": {
+   "default": 761,
+   "tuned": 689,
+   "limited": 0
+  },
+  "O2": {
+   "default": 631,
+   "tuned": 559,
+   "limited": 0
+  },
+  "speed": {
+   "default": 564,
+   "tuned": 557,
+   "limited": 0
+  },
+  "reference": 575
+ },
+ "f32-dsp": {
+  "r0": {
+   "default": 49706,
+   "tuned": 48551,
+   "limited": 0
+  },
+  "O2": {
+   "default": 49030,
+   "tuned": 47923,
+   "limited": 0
+  },
+  "speed": {
+   "default": 44789,
+   "tuned": 42535,
+   "limited": 0
+  },
+  "reference": 40740
+ },
+ "first-steps": {
+  "r0": {
+   "default": 280,
+   "tuned": 280,
+   "limited": 0
+  },
+  "O2": {
+   "default": 220,
+   "tuned": 220,
+   "limited": 0
+  },
+  "speed": {
+   "default": 70,
+   "tuned": 70,
+   "limited": 0
+  },
+  "reference": 500
+ },
+ "fixed-point": {
+  "r0": {
+   "default": 429,
+   "tuned": 410,
+   "limited": 0
+  },
+  "O2": {
+   "default": 411,
+   "tuned": 392,
+   "limited": 0
+  },
+  "speed": {
+   "default": 251,
+   "tuned": 242,
+   "limited": 0
+  },
+  "reference": 647
+ },
+ "fragments": {
+  "r0": {
+   "default": 2697,
+   "tuned": 2488,
+   "limited": 0
+  },
+  "O2": {
+   "default": 2299,
+   "tuned": 2090,
+   "limited": 0
+  },
+  "speed": {
+   "default": 2289,
+   "tuned": 1891,
+   "limited": 0
+  },
+  "reference": 2021
+ },
+ "gcd": {
+  "r0": {
+   "default": 324,
+   "tuned": 314,
+   "limited": 0
+  },
+  "O2": {
+   "default": 324,
+   "tuned": 314,
+   "limited": 0
+  },
+  "speed": {
+   "default": 314,
+   "tuned": 265,
+   "limited": 0
+  },
+  "reference": 365
+ },
+ "heat-lab": {
+  "r0": {
+   "default": 8832,
+   "tuned": 8026,
+   "limited": 0
+  },
+  "O2": {
+   "default": 8484,
+   "tuned": 7678,
+   "limited": 0
+  },
+  "speed": {
+   "default": 8142,
+   "tuned": 7648,
+   "limited": 0
+  },
+  "reference": 6758
+ },
+ "histogram": {
+  "r0": {
+   "default": 2416,
+   "tuned": 2132,
+   "limited": 0
+  },
+  "O2": {
+   "default": 2044,
+   "tuned": 1760,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1912,
+   "tuned": 1690,
+   "limited": 0
+  },
+  "reference": 2036
+ },
+ "licm-nested": {
+  "r0": {
+   "default": 2677,
+   "tuned": 2677,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1678,
+   "tuned": 1678,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1631,
+   "tuned": 1596,
+   "limited": 0
+  },
+  "reference": 2426
+ },
+ "licm-traps": {
+  "r0": {
+   "default": 153,
+   "tuned": 153,
+   "limited": 0
+  },
+  "O2": {
+   "default": 153,
+   "tuned": 153,
+   "limited": 0
+  },
+  "speed": {
+   "default": 149,
+   "tuned": 142,
+   "limited": 0
+  },
+  "reference": 196
+ },
+ "lz-roundtrip": {
+  "r0": {
+   "default": 33646,
+   "tuned": 32210,
+   "limited": 0
+  },
+  "O2": {
+   "default": 34195,
+   "tuned": 33304,
+   "limited": 0
+  },
+  "speed": {
+   "default": 27124,
+   "tuned": 25416,
+   "limited": 0
+  },
+  "reference": 28499
+ },
+ "match-enum": {
+  "r0": {
+   "default": 282,
+   "tuned": 239,
+   "limited": 0
+  },
+  "O2": {
+   "default": 251,
+   "tuned": 226,
+   "limited": 0
+  },
+  "speed": {
+   "default": 251,
+   "tuned": 226,
+   "limited": 0
+  },
+  "reference": 396
+ },
+ "my-analysis": {
+  "r0": {
+   "default": 200975,
+   "tuned": 200795,
+   "limited": 1
+  },
+  "O2": {
+   "default": 200975,
+   "tuned": 200795,
+   "limited": 1
+  },
+  "speed": {
+   "default": 200966,
+   "tuned": 200618,
+   "limited": 1
+  },
+  "reference": 200696
+ },
+ "my-first-pass": {
+  "r0": {
+   "default": 60,
+   "tuned": 60,
+   "limited": 0
+  },
+  "O2": {
+   "default": 50,
+   "tuned": 50,
+   "limited": 0
+  },
+  "speed": {
+   "default": 50,
+   "tuned": 50,
+   "limited": 0
+  },
+  "reference": 120
+ },
+ "nested-loops": {
+  "r0": {
+   "default": 2634,
+   "tuned": 2634,
+   "limited": 0
+  },
+  "O2": {
+   "default": 2342,
+   "tuned": 2342,
+   "limited": 0
+  },
+  "speed": {
+   "default": 2289,
+   "tuned": 2252,
+   "limited": 0
+  },
+  "reference": 2312
+ },
+ "orders": {
+  "r0": {
+   "default": 1350,
+   "tuned": 1272,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1194,
+   "tuned": 1010,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1185,
+   "tuned": 952,
+   "limited": 0
+  },
+  "reference": 1351
+ },
+ "params-demo": {
+  "r0": {
+   "default": 2697,
+   "tuned": 2488,
+   "limited": 0
+  },
+  "O2": {
+   "default": 2299,
+   "tuned": 2090,
+   "limited": 0
+  },
+  "speed": {
+   "default": 2289,
+   "tuned": 1891,
+   "limited": 0
+  },
+  "reference": 2021
+ },
+ "pressure": {
+  "r0": {
+   "default": 280,
+   "tuned": 280,
+   "limited": 0
+  },
+  "O2": {
+   "default": 240,
+   "tuned": 230,
+   "limited": 0
+  },
+  "speed": {
+   "default": 240,
+   "tuned": 230,
+   "limited": 0
+  },
+  "reference": 490
+ },
+ "ramp": {
+  "r0": {
+   "default": 1180,
+   "tuned": 1050,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1040,
+   "tuned": 790,
+   "limited": 0
+  },
+  "speed": {
+   "default": 962,
+   "tuned": 780,
+   "limited": 0
+  },
+  "reference": 1120
+ },
+ "records": {
+  "r0": {
+   "default": 260,
+   "tuned": 240,
+   "limited": 0
+  },
+  "O2": {
+   "default": 260,
+   "tuned": 240,
+   "limited": 0
+  },
+  "speed": {
+   "default": 260,
+   "tuned": 240,
+   "limited": 0
+  },
+  "reference": 391
+ },
+ "regalloc-lab": {
+  "r0": {
+   "default": 2614,
+   "tuned": 2472,
+   "limited": 0
+  },
+  "O2": {
+   "default": 2614,
+   "tuned": 2462,
+   "limited": 0
+  },
+  "speed": {
+   "default": 2051,
+   "tuned": 1716,
+   "limited": 0
+  },
+  "reference": 2028
+ },
+ "regex-nfa": {
+  "r0": {
+   "default": 41650,
+   "tuned": 37294,
+   "limited": 0
+  },
+  "O2": {
+   "default": 38580,
+   "tuned": 37113,
+   "limited": 0
+  },
+  "speed": {
+   "default": 33710,
+   "tuned": 27016,
+   "limited": 0
+  },
+  "reference": 34041
+ },
+ "sha-chacha": {
+  "r0": {
+   "default": 239636,
+   "tuned": 213138,
+   "limited": 0
+  },
+  "O2": {
+   "default": 232176,
+   "tuned": 211204,
+   "limited": 0
+  },
+  "speed": {
+   "default": 123513,
+   "tuned": 105146,
+   "limited": 0
+  },
+  "reference": 136109
+ },
+ "sort": {
+  "r0": {
+   "default": 5043,
+   "tuned": 4589,
+   "limited": 0
+  },
+  "O2": {
+   "default": 4845,
+   "tuned": 4391,
+   "limited": 0
+  },
+  "speed": {
+   "default": 4653,
+   "tuned": 4365,
+   "limited": 0
+  },
+  "reference": 3898
+ },
+ "start-here": {
+  "r0": {
+   "default": 4385,
+   "tuned": 3981,
+   "limited": 0
+  },
+  "O2": {
+   "default": 3871,
+   "tuned": 3467,
+   "limited": 0
+  },
+  "speed": {
+   "default": 2932,
+   "tuned": 2559,
+   "limited": 0
+  },
+  "reference": 3167
+ },
+ "strength": {
+  "r0": {
+   "default": 2220,
+   "tuned": 1792,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1938,
+   "tuned": 1414,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1793,
+   "tuned": 1404,
+   "limited": 0
+  },
+  "reference": 1889
+ },
+ "strings": {
+  "r0": {
+   "default": 11895,
+   "tuned": 10344,
+   "limited": 0
+  },
+  "O2": {
+   "default": 10833,
+   "tuned": 9282,
+   "limited": 0
+  },
+  "speed": {
+   "default": 10283,
+   "tuned": 9262,
+   "limited": 0
+  },
+  "reference": 9392
+ },
+ "ui-gallery": {
+  "r0": {
+   "default": 1214,
+   "tuned": 1172,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1058,
+   "tuned": 1016,
+   "limited": 0
+  },
+  "speed": {
+   "default": 754,
+   "tuned": 594,
+   "limited": 0
+  },
+  "reference": 825
+ },
+ "value-numbering": {
+  "r0": {
+   "default": 3721,
+   "tuned": 3092,
+   "limited": 0
+  },
+  "O2": {
+   "default": 3082,
+   "tuned": 2666,
+   "limited": 0
+  },
+  "speed": {
+   "default": 3073,
+   "tuned": 2453,
+   "limited": 0
+  },
+  "reference": 3771
+ },
+ "wrong-shift": {
+  "r0": {
+   "default": 1950,
+   "tuned": 1790,
+   "limited": 0
+  },
+  "O2": {
+   "default": 1650,
+   "tuned": 1490,
+   "limited": 0
+  },
+  "speed": {
+   "default": 1491,
+   "tuned": 1340,
+   "limited": 0
+  },
+  "reference": 1410
+ }
+}

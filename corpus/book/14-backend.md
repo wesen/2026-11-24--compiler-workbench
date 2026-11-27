@@ -105,7 +105,7 @@ faster:
 |---|---|---|---|
 | Blend, 40 cells | 531 | 451 | 383 |
 | Checksum, 40 cells | 446 | 366 | 292 |
-| Insertion sort, 10 reversed | 2022 | 2022 | 1533 |
+| Insertion sort, 10 reversed | 2022 | 1932 | 1533 |
 | Collatz, n = 27 | 1590 | 1590 | 1486 |
 | Value numbering, n = 40 | 690 | 570 | 695 |
 

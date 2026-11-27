@@ -1,0 +1,24 @@
+simplify: 27 rules, 12 fire, 15 never
+  add-zero               4  algebra 3, orders 1
+  sub-zero               1  algebra 1
+  sub-self               1  algebra 1
+  mul-one                2  algebra 2
+  mul-zero               2  algebra 1, orders 1
+  mul-pow2              47  call-chain 1, chess-search 29, constants 1, dead-code 1, diagnostics 1, first-steps 1, my-analysis 1, orders 5, regalloc-lab 1, sha-chacha 3, start-here 1, ui-gallery 2
+  pow2-mul              19  chess-search 3, f32-dsp 14, sha-chacha 2
+  not-lt                62  blend 1, bounds-lab 4, bounds-offset 1, bounds-param 1, bounds-two 1, checksum 1, chess-search 12, early-exit 1, f32-dsp 5, fragments 1, heat-lab 1, histogram 1, licm-nested 2, licm-traps 1, lz-roundtrip 4, my-analysis 1, nested-loops 2, orders 1, params-demo 1, ramp 1, regalloc-lab 1, regex-nfa 5, sha-chacha 4, sort 1, start-here 2, strength 1, strings 2, ui-gallery 1, value-numbering 1, wrong-shift 1
+  not-ge                 1  chess-search 1
+  not-gt                 3  chess-search 1, div-magic 1, f32-dsp 1
+  not-le                 2  chess-search 1, f32-dsp 1
+  not-ne                 1  gcd 1
+  never: zero-add, one-mul, zero-mul, div-one, or-zero, xor-zero, shl-zero, shr-zero, shru-zero, and-zero, and-ones, not-eq, not-ltu, not-geu, not-not
+fold: 40 rules, 6 fire, 34 never
+  fold-eqz               2  bytecode-vm 1, regex-nfa 1
+  fold-add               1  constants 1
+  fold-sub              13  branches 1, chess-search 6, dead-code 1, div-magic 1, early-exit 1, fixed-point 1, orders 1, sha-chacha 1
+  fold-mul               9  blend 1, constants 1, first-steps 1, fragments 1, orders 2, params-demo 1, start-here 1, ui-gallery 1
+  fold-shl              19  chess-search 18, constants 1
+  fold-gt                1  dead-code 1
+  never: fold-fadd, fold-fsub, fold-fmul, fold-fdiv, fold-fmin, fold-fmax, fold-fcopysign, fold-feq, fold-fne, fold-flt, fold-fgt, fold-fle, fold-fge, fold-fneg, fold-fabs, fold-fsqrt, fold-i2f, fold-u2f, fold-f2bits, fold-bits2f, fold-and, fold-or, fold-xor, fold-shr, fold-shru, fold-eq, fold-ne, fold-lt, fold-le, fold-ge, fold-ltu, fold-geu, fold-div, fold-rem
+reassoc: 3 rules, 0 fire, 3 never
+  never: add-add-const, shl-add-const, add-inner-const
