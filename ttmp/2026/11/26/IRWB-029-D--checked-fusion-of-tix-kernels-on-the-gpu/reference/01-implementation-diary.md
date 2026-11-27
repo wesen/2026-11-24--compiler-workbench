@@ -214,3 +214,125 @@ I measured the block-mode thread cap at 64, 128 and 256 on the four block-mode p
 
 ### Technical details
 - Thread mode keeps stage 2's 256 threads per block.
+
+## Step 5: Tests, local and on the GB10
+
+I added `tests/tensor/fusion.test.mjs` (no GPU: plans, refusals, stage-2 bytes, the correspondence, shared cases) and `tests/tensor/fusion-gpu.test.mjs` (GB10: feature programs, generated bounds, shared-memory limits, mutants, benchmark mode), and extended the existing corpus GPU test to check both `fuse` settings. One existing assertion (two kernels for a two-statement program) now needs `fuse: false`.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Test the fused lowering, keeping GPU tests in their own files.
+**Inferred user intent:** Evidence that fusion keeps every bit, and that the check would notice if it did not.
+**Commit (code):** 6439aad — "IRWB-029-D: tests: fusion plans, refusals, stage-2 bytes ..."
+
+### What I did
+- `node --test tests/tensor/corpus.test.mjs tests/tensor/cuda.test.mjs tests/tensor/language.test.mjs tests/tensor/passes.test.mjs tests/tensor/fusion.test.mjs`
+- `node --test tests/tensor/fusion-gpu.test.mjs` and `node --test tests/tensor/cuda-gpu.test.mjs`.
+
+### What worked
+- Local: 29/29. GB10: fusion-gpu 5/5 (54 s), cuda-gpu 11/11 (91 s, the corpus now checked fused and unfused, original and inline+split).
+- Feature programs accepted exactly, fused: a stencil narrowed to a 2-axis block domain with affine trailing reads, a 3-axis softmax over its last axis (2-axis block domain), nested shadowed sums, a middle member stored for a later kernel and buffered for a later member, shifted reads `e[i,j+1] - e[i,j+0]`, a matmul epilogue in thread mode, a function returning a middle member.
+- Rows of 64,000 bytes (opt-in shared memory) and 240,000 bytes (global scratch, `k0<false>`) equal the interpreter word for word.
+- Mutants of a fused row-sum kernel, both rejected with a coordinate: the sum loop reversed (`r0[(end_i - 1 - i)]`), and every block staging row 0 (`r0[e] = t0[e]`).
+
+### What didn't work
+- My first stencil test failed to compile: `Error: 3:62 Inconsistent extent`. A plain `a[n,c,y,w]` inside `b[...]: f32[N,C,H-2,W-2]` unifies `H-2` with `H`. Then `y[i,j] = e[j,i] + t[i]` on `x: f32[N,C]` failed with `1:112 Inconsistent extent` (the transposed read unifies N and C). Both were test-program errors; I used affine reads and a square input.
+- `CUDA source is deterministic and preloads every emitted statement kernel before timing` failed with `actual: 1, expected: 2` once fusion became the default; the stage-2 assertion now passes `{ fuse: false }` and a fused assertion was added.
+
+### What I learned
+- The case recipe's all-7 assignment puts the half-ulp row `[1,0,0,0,2^-24,2^-24,2^-24]` exactly in each row of a `[N,7]` input, so reversing a serial sum always changes a bit.
+
+### What was tricky to build
+- N/A beyond the test-program extents.
+
+### What warrants a second pair of eyes
+- A race (a missing barrier) is not a deterministic mutant; the suite has none. The barriers are emitted unconditionally between members and after staging.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- `tests/tensor/fusion.test.mjs`, `tests/tensor/fusion-gpu.test.mjs`, the corpus loop in `tests/tensor/cuda-gpu.test.mjs`.
+
+### Technical details
+- GPU test wall time is dominated by remote compiles (about 1 s each) and ssh.
+
+## Step 6: Random programs
+
+Script 09 generates functions over `x, z: f32[N,C]`, `v: f32[C]`, `w: f32[C,D]` mixing elementwise statements, row sums and maxima, contractions with `w`, maxima over the contraction and rank-1 chains, biased to read the latest definition. Each is checked fused before and after inline + split-sum.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Exercise the planner beyond the corpus, as the hidden tests will.
+**Inferred user intent:** No surprises on random programs.
+**Commit (code):** 0b217d3 — "IRWB-029-D: script 09, random programs fused and checked on the GB10 (40/40 exact)"
+
+### What I did
+- `node <ticket>/scripts/09-random-programs.mjs 20 29 > .../09-random-programs.out.jsonl`
+
+### What worked
+- `{"accepted":40,"total":40}`; 19 of the 40 lowerings have a multi-statement kernel, 14 a block-mode one; 116 statements became 88 kernels.
+
+### What didn't work
+- The first generator version produced programs the checker rejects (`Cannot infer extent`): unannotated statements whose expressions never read `i`, and reductions whose bodies never read `j`. Annotating every statement's type and forcing a `j` witness into each row reduction made 100 of 100 compile.
+
+### What I learned
+- Random chains fuse less than the corpus because many statements read only parameters.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- The generator has no rank-3 tensors or affine addresses; the GPU feature test covers those by hand.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- `scripts/09-random-programs.mjs`, its output `scripts/09-random-programs.out.jsonl`.
+
+### Technical details
+- 40 checks took 2 min 3 s.
+
+## Step 7: Measurements and the correspondence probe
+
+Three rounds of script 04 give stable medians (spread under 6%); script 10 counts bytes per kernel; script 11 measures the contract; probe 12 shows what the manager checks of the correspondence. The full-size f32 interpreter runs for softmax, layernorm, attention and mlp in the background to compare against the GPU outputs.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Measure kernel counts, times, bytes and contract cost.
+**Inferred user intent:** A report that separates measurement from argument.
+**Commit (code):** see the commit after 0b217d3 (scripts 10-12, GPU output).
+
+### What I did
+- `for r in 1 2 3; do node <ticket>/scripts/04-benchmark.mjs gpu; done > .../04-benchmark-gpu.out.jsonl` at 0b217d3 (source unchanged since b31f270).
+- `node <ticket>/scripts/10-traffic.mjs --markdown`, `node <ticket>/scripts/11-contract-cost.mjs`, `node <ticket>/scripts/12-correspondence-probe.mjs`.
+- `nice -n 10 node <ticket>/scripts/04-benchmark.mjs cpu softmax layernorm attention mlp > .../04-benchmark-cpu.out.jsonl` (background).
+
+### What worked
+- Medians (ms, fused / unfused, kernels): matmul 0.213 / 0.216 (1/1), softmax 0.381 / 0.809 (1/4), layernorm 0.169 / 0.491 (1/4), attention 0.751 / 1.048 (1/6), mlp 0.725 / 0.939 (1/3), conv2d 0.165 / 0.166 (1/1). Fused and unfused outputs identical in every round.
+- Bytes (script 10): softmax and layernorm 96 MiB unfused to 32 MiB fused (0.413 to 0.138 ms at 244 GB/s); attention 33 MiB to 1 MiB; mlp 20 MiB to 4 MiB.
+- Contract (script 11): 28 to 40 cases per program (7 to 10 shape assignments × 4 streams), built locally in 2 to 242 ms; a cold batch compiles in 0.88 to 1.05 s and runs in 0.29 to 0.56 s on the GB10, 3.1 to 3.6 s wall with ssh; `checkLowering` 2.2 to 3.7 s; a repeat 1 to 2 ms.
+- Probe 12: a candidate whose kernel list names `softmax/nonexistent` → `k7`, or no kernels at all, passes the correspondence check (`Exact input/output revisions and relation match`) and the transformation is accepted.
+
+### What didn't work
+- No failures.
+
+### What I learned
+- Softmax fused (0.381 ms) sits on the cost of its 4M double `exp` calls (0.368 ms measured alone), layernorm fused at 1.2× its streaming time, attention and mlp far from theirs: their contractions re-read `k`, `v`, `w` from L2 in every block, which only tiling would change.
+- The framework expresses the merge but checks only revisions and the relation name of a correspondence; entity IDs are unchecked strings.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Script 10's count ignores L2-served re-reads; for attention and mlp the L2 traffic is about 1,000 times the counted bytes.
+
+### What should be done in the future
+- Propose an entity universe for `defineIR` so the manager can check correspondence IDs (report).
+
+### Code review instructions
+- Scripts 04, 10, 11, 12 and their outputs in `scripts/`.
+
+### Technical details
+- The GPU lock covers only `--timed` runs; untimed jobs of other agents can overlap a timed one (step 4's 1.27 ms outlier).
