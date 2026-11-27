@@ -1,5 +1,14 @@
 import { expandStatements, unfusedPlan, type Kernel, type KernelPlan } from './kernels.js';
-import { plain, visit, width, type Affine, type Expr, type Fn, type Statement, type Tensor } from './model.js';
+import {
+  plain,
+  visit,
+  width,
+  type Affine,
+  type Expr,
+  type Fn,
+  type Statement,
+  type Tensor,
+} from './model.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -162,6 +171,9 @@ interface Context {
 type Load = Extract<Expr, { kind: 'load' }>;
 type Env = ReadonlyMap<string, string>;
 interface Emitted {
+  /** The tensors the kernel reads from and writes to global memory. */
+  reads: string[];
+  writes: string[];
   code: string;
   /** Host statements before the timed region. */
   setup: string[];
@@ -199,7 +211,12 @@ function scalarEmitter(ctx: Context, lines: string[], maxStep: string) {
     if (key) shared.set(key, result);
     return result;
   }
-  function compute(e: Expr, env: Env, place: (e: Load, env: Env) => string | undefined, depth: number): string {
+  function compute(
+    e: Expr,
+    env: Env,
+    place: (e: Load, env: Env) => string | undefined,
+    depth: number,
+  ): string {
     switch (e.kind) {
       case 'literal':
         return literal(e.text);
@@ -252,7 +269,9 @@ function scalarEmitter(ctx: Context, lines: string[], maxStep: string) {
           indent += '  ';
         }
         const value = scalar(e.body, inner, place, depth + 1);
-        line(`${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : maxStep.replace('$', `${acc}, ${value}`)};`);
+        line(
+          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : maxStep.replace('$', `${acc}, ${value}`)};`,
+        );
         for (const _axis of e.axes) {
           indent = indent.slice(2);
           line('}');
@@ -312,6 +331,8 @@ function emitElement(statement: Statement, kernel: string, ctx: Context): Emitte
   lines.push('}');
   const count = `${tensorName(statement.name)}.size`;
   return {
+    reads: [...reads],
+    writes: [statement.name],
     code: lines.join('\n'),
     setup: [],
     preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
@@ -442,13 +463,16 @@ function emitRow(
         if (keep) line(`${scalarAt(s.name)} = ${value};`);
         if (materialized.has(s.name)) line(`${element(s)} = ${value};`);
       });
-    if (keep) line('__syncthreads();');
+    // Always, not only when this step stored a value: the next step may overwrite a slot this step still reads.
+    if (k < group.length - 1) line('__syncthreads();');
   });
   lines.push('}');
   const work = `work_${name}`,
     bytes = `per_${name} * sizeof(float)`;
   const args = [...dimensions.values(), ...[...reads, ...outputs].map(t => tensorName(t) + '.ptr')];
   return {
+    reads: [...reads],
+    writes: outputs,
     code: lines.join('\n'),
     setup: [
       `  const bool ${work} = ${outputs.map(t => tensorName(t) + '.size').join(' || ') || 'false'};`,
@@ -468,6 +492,13 @@ function emitRow(
 }
 
 export function emitPlan(plan: KernelPlan): string {
+  return lower(plan).source;
+}
+/** Per kernel, in order: the tensors it reads from and writes to global memory (the report counts their bytes). */
+export function kernelTraffic(plan: KernelPlan): { reads: string[]; writes: string[] }[] {
+  return lower(plan).kernels.map(({ reads, writes }) => ({ reads, writes }));
+}
+function lower(plan: KernelPlan) {
   const { fn } = plan;
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
@@ -555,9 +586,13 @@ export function emitPlan(plan: KernelPlan): string {
     '  write(output, &gpu_ms, 1);',
     '}',
   );
-  return [support + (rows ? rowSupport : ''), ...kernels.map(k => k.code), host.join('\n'), main(rows)].join(
-    '\n\n',
-  );
+  const source = [
+    support + (rows ? rowSupport : ''),
+    ...kernels.map(k => k.code),
+    host.join('\n'),
+    main(rows),
+  ].join('\n\n');
+  return { source, kernels };
 }
 
 /** Stage 2's lowering: one kernel per statement. */

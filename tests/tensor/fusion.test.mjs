@@ -18,13 +18,19 @@ const count = source => (source.match(/__global__ void/g) ?? []).length;
 const plan = (source, fn = 'f') => kernelPlan(compileTix(source), fn);
 
 test('fuse: false gives the stage-2 source byte for byte', async () => {
-  const expected = JSON.parse(await readFile(new URL('./fixtures/stage2-sources.json', import.meta.url), 'utf8'));
+  const expected = JSON.parse(
+    await readFile(new URL('./fixtures/stage2-sources.json', import.meta.url), 'utf8'),
+  );
   const sha = s => createHash('sha256').update(s).digest('hex');
   for (const name of corpus) {
     const program = await load(name);
     assert.equal(sha(cudaSource(program, name, { fuse: false })), expected[name], name);
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
-    assert.equal(sha(cudaSource(optimized, name, { fuse: false })), expected[name + '+inline+split-sum'], name);
+    assert.equal(
+      sha(cudaSource(optimized, name, { fuse: false })),
+      expected[name + '+inline+split-sum'],
+      name,
+    );
   }
   // the programs of ticket script 01
   const extra = {
@@ -51,14 +57,19 @@ test('every corpus program is one kernel when fused', async () => {
   ]);
   // the epilogue: h (a contraction read five times at one index) is inlined into g; g and y share rows
   const mlp = kernelPlan(await load('mlp'), 'mlp').plan;
-  assert.deepEqual([mlp.inlined, mlp.kernels], [['h'], [{ mapping: 'row', outer: 1, statements: ['g', 'y'] }]]);
+  assert.deepEqual(
+    [mlp.inlined, mlp.kernels],
+    [['h'], [{ mapping: 'row', outer: 1, statements: ['g', 'y'] }]],
+  );
   // nothing to fuse: the lowering is stage 2's
   for (const name of ['matmul', 'conv2d'])
     assert.equal(cudaSource(await load(name), name), cudaSource(await load(name), name, { fuse: false }));
 });
 
 test('the planner inlines elementwise chains and epilogues, and reports what it refuses', () => {
-  const chain = plan('fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]+y[i]; w[i]=z[i]-y[i]; return w; }');
+  const chain = plan(
+    'fn f(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]+y[i]; w[i]=z[i]-y[i]; return w; }',
+  );
   assert.deepEqual([chain.plan.inlined, chain.plan.kernels.length], [['y', 'z'], 1]);
   // y is computed once per element although it is read three times
   const source = cudaSource(
@@ -71,16 +82,21 @@ test('the planner inlines elementwise chains and epilogues, and reports what it 
   assert.deepEqual(transpose.plan.inlined, ['z']);
 
   // a reduction read by two statements is not repeated: a is inlined into b, and s and b share rows
-  const twice = plan('fn f(x:f32[N,K]):f32[N] { s[i]=sum(k) x[i,k]; a[i]=s[i]*2; b[i]=s[i]+a[i]; return b; }');
+  const twice = plan(
+    'fn f(x:f32[N,K]):f32[N] { s[i]=sum(k) x[i,k]; a[i]=s[i]*2; b[i]=s[i]+a[i]; return b; }',
+  );
   assert.deepEqual(twice.plan.inlined, ['a']);
   assert.deepEqual(twice.plan.kernels, [{ mapping: 'row', outer: 1, statements: ['s', 'b'] }]);
   assert.throws(
-    () => validatePlan({ ...twice.plan, inlined: ['s', 'a'], kernels: [{ mapping: 'element', statement: 'b' }] }),
+    () =>
+      validatePlan({ ...twice.plan, inlined: ['s', 'a'], kernels: [{ mapping: 'element', statement: 'b' }] }),
     /s cannot be inlined: it contains a reduction and has 2 readers/,
   );
 
   // a broadcast would evaluate z once per element of y, N times as often: not inlined; and K is not y's row key
-  const broadcast = plan('fn f(x:f32[K], w:f32[N,K]):f32[N,K] { z[k]=exp(x[k]); y[i,k]=w[i,k]*z[k]; return y; }');
+  const broadcast = plan(
+    'fn f(x:f32[K], w:f32[N,K]):f32[N,K] { z[k]=exp(x[k]); y[i,k]=w[i,k]*z[k]; return y; }',
+  );
   assert.deepEqual([broadcast.plan.inlined, broadcast.plan.kernels.length], [[], 2]);
   assert.match(broadcast.refused[0].reason, /one element of it per element/);
   assert.match(broadcast.refused[1].reason, /rows differ/);
@@ -109,7 +125,11 @@ test('an illegal plan is not an artifact', async () => {
   const fn = (await load('softmax')).current.value.functions[0];
   const artifact = value => createArtifact(KernelIR, 'plan', value);
   const element = statement => ({ mapping: 'element', statement });
-  const legal = { fn, inlined: [], kernels: [{ mapping: 'row', outer: 1, statements: ['m', 'e', 's', 'y'] }] };
+  const legal = {
+    fn,
+    inlined: [],
+    kernels: [{ mapping: 'row', outer: 1, statements: ['m', 'e', 's', 'y'] }],
+  };
   assert.equal(artifact(legal).kind, 'tensor.kernels');
   const reject = (plan, pattern) => assert.throws(() => artifact({ fn, inlined: [], ...plan }), pattern);
   // e inside s's reduction would be evaluated once per term; m into e would repeat the max per element
@@ -118,14 +138,21 @@ test('an illegal plan is not an artifact', async () => {
   reject({ inlined: ['y'], kernels: ['m', 'e', 's'].map(element) }, /it is the result/);
   // rows keyed by two axes: m has rank 1
   reject({ kernels: [{ mapping: 'row', outer: 2, statements: ['m', 'e', 's', 'y'] }] }, /rank 1/);
-  reject({ kernels: [{ mapping: 'row', outer: 1, statements: ['m'] }, ...['e', 's', 'y'].map(element)] }, /two/);
+  reject(
+    { kernels: [{ mapping: 'row', outer: 1, statements: ['m'] }, ...['e', 's', 'y'].map(element)] },
+    /two/,
+  );
   reject({ kernels: ['e', 'm', 's', 'y'].map(element) }, /in order/);
   reject({ kernels: ['m', 'e', 's'].map(element) }, /in order/);
-  const square = compileTix(
-    'fn f(x:f32[N,N]):f32[N,N] { m[i]=max(j) x[i,j]; e[i,j]=x[j,i]-m[j]; return e; }',
-  ).current.value.functions[0];
+  const square = compileTix('fn f(x:f32[N,N]):f32[N,N] { m[i]=max(j) x[i,j]; e[i,j]=x[j,i]-m[j]; return e; }')
+    .current.value.functions[0];
   assert.throws(
-    () => validatePlan({ fn: square, inlined: [], kernels: [{ mapping: 'row', outer: 1, statements: ['m', 'e'] }] }),
+    () =>
+      validatePlan({
+        fn: square,
+        inlined: [],
+        kernels: [{ mapping: 'row', outer: 1, statements: ['m', 'e'] }],
+      }),
     /another row of m/,
   );
 });
@@ -171,7 +198,10 @@ test('a source with row kernels is checked twice, the second time with spilled r
   };
   const program = await load('softmax');
   const accepted = { accepted: true, relation: 'exact' };
-  assert.deepEqual(await createCudaLowering('fusion-test-1', engine(false))(program.current, 'softmax'), accepted);
+  assert.deepEqual(
+    await createCudaLowering('fusion-test-1', engine(false))(program.current, 'softmax'),
+    accepted,
+  );
   assert.deepEqual(runs.sort(), [false, true]);
   runs.length = 0;
   const unfused = createCudaLowering('fusion-test-2', engine(false));

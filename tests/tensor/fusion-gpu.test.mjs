@@ -4,7 +4,14 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { checkLowering, compileTix, cudaSource, optimizeTix, runTix, runTixCuda } from '../../dist/tensor/index.js';
+import {
+  checkLowering,
+  compileTix,
+  cudaSource,
+  optimizeTix,
+  runTix,
+  runTixCuda,
+} from '../../dist/tensor/index.js';
 import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
 import { rowThreads } from '../../dist/tensor/cuda-source.js';
 import { randomProgram } from './fixtures/random-programs.mjs';
@@ -42,7 +49,10 @@ test('GB10 fused rows longer than a block, and longer than shared memory, give t
   ]) {
     const x = { x: tensor(shape, noise) };
     for (const fuse of [true, false])
-      assert.deepEqual(words(await runTixCuda(softmax, 'softmax', x, { fuse })), words(runTix(softmax, 'softmax', x)));
+      assert.deepEqual(
+        words(await runTixCuda(softmax, 'softmax', x, { fuse })),
+        words(runTix(softmax, 'softmax', x)),
+      );
     const [n, d] = shape;
     const inputs = {
       x: tensor([n, d], noise),
@@ -57,13 +67,35 @@ test('GB10 fused rows longer than a block, and longer than shared memory, give t
   }
 });
 
+test('GB10 a step that stores nothing in the block still ends with a barrier', async () => {
+  // p reads the staged row of x at j + 1 and is read only outside the kernel; q then takes x's slot. Without a
+  // barrier after p, a thread already computing q would overwrite elements another thread's p still reads.
+  const program = compileTix(`fn f(x:f32[N,M], w:f32[M]):f32[M-1] {
+    m[i] = max(j) x[i,j];
+    p[i,j]:f32[N,M-1] = x[i,j+1] - m[i];
+    q[i,j] = m[i] * w[j];
+    r[i] = sum(j) q[i,j];
+    fin[j] = sum(i) p[i,j] * r[i];
+    return fin;
+  }`);
+  const source = cudaSource(program, 'f');
+  assert.equal(source.match(/__global__ void/g).length, 2);
+  assert.equal(source.match(/__syncthreads/g).length, 4);
+  assert.deepEqual(await checkLowering(program, 'f'), { accepted: true, relation: 'exact' });
+  const inputs = { x: tensor([3, 500], noise), w: tensor([500], i => noise(i + 1)) };
+  assert.deepEqual(words(await runTixCuda(program, 'f', inputs)), words(runTix(program, 'f', inputs)));
+});
+
 test('GB10 rejects mutants of a fused kernel: fold order, the stride, and the spilled rows only', async () => {
   const program = await load('softmax');
   const source = cudaSource(program, 'softmax');
   assert.equal(source.match(/__global__ void/g).length, 1);
   const mutants = {
     // the sum of e accumulates from the last element down
-    order: [/for \(I (i\d+) = 0; \1 < (end_\1); \+\+\1\) \{\n(\s+v\d+ = __fadd_rn)/, 'for (I $1 = $2 - 1; $1 >= 0; --$1) {\n$3'],
+    order: [
+      /for \(I (i\d+) = 0; \1 < (end_\1); \+\+\1\) \{\n(\s+v\d+ = __fadd_rn)/,
+      'for (I $1 = $2 - 1; $1 >= 0; --$1) {\n$3',
+    ],
     // a thread computes only its first element of e: seen only by the cases with a row longer than a block
     stride: [/(exp\(static_cast<double>\(v\d+\)\)\);\n\s+staged\[0 \+ i\d+\] = v\d+;\n)/, '$1    break;\n'],
     // every block uses the first row's scratch: seen only by the run with spilled rows

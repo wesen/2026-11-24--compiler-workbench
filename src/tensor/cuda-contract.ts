@@ -169,12 +169,16 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         );
       // A source with row kernels has a second path for rows too long for shared memory. No small case reaches
       // it, so the batch runs again with that path forced, and a case agrees only if both runs do.
-      const runs = await Promise.all(/\bspill_all\b/.test(subject.value.source) ? [run(false), run(true)] : [run(false)]);
-      if (runs.some(results => results.length !== pending.length)) throw Error('Wrong CUDA response case count');
+      const runs = await Promise.all(
+        /\bspill_all\b/.test(subject.value.source) ? [run(false), run(true)] : [run(false)],
+      );
+      if (runs.some(results => results.length !== pending.length))
+        throw Error('Wrong CUDA response case count');
       return pending.map((sample, i): Decided => {
         for (const [spilled, results] of runs.entries()) {
           const result = compare(sample.reference, results[i]);
-          if (!result.ok) return { v: 'disagree', reason: (spilled ? 'With spilled rows: ' : '') + result.reason! };
+          if (!result.ok)
+            return { v: 'disagree', reason: (spilled ? 'With spilled rows: ' : '') + result.reason! };
         }
         return { v: 'agree' };
       });

@@ -2,7 +2,7 @@
 // (elementwise chains, broadcasts of row and column reductions, epilogues, contractions that read a row).
 export function randomProgram(seed) {
   let state = Math.imul(seed + 1, 2654435761) >>> 0;
-  const random = () => ((state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 2 ** 32);
+  const random = () => (state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 2 ** 32;
   // tensors: the newest half of the time, so that statements tend to feed each other
   const pick = list => (random() < 0.5 ? list.at(-1) : list[Math.floor(random() * list.length)]);
   // every tensor has one of these shapes
@@ -11,7 +11,8 @@ export function randomProgram(seed) {
   let last = 'x',
     lastShape = 'NM',
     count = 0;
-  const unary = a => pick([`exp(${a})`, `tanh(${a})`, `sqrt(${a} * ${a})`, `-${a}`, `${a}`, `log(${a} * ${a} + 1)`]);
+  const unary = a =>
+    pick([`exp(${a})`, `tanh(${a})`, `sqrt(${a} * ${a})`, `-${a}`, `${a}`, `log(${a} * ${a} + 1)`]);
   const op = () => pick(['+', '-', '*', '/']);
   const templates = [
     () => ['NM', `[i,j] = ${unary(`${pick(pool.NM)}[i,j]`)} ${op()} ${pick(pool.NM)}[i,j]`],
@@ -19,7 +20,10 @@ export function randomProgram(seed) {
     () => pool.N.length && ['NM', `[i,j] = ${pick(pool.NM)}[i,j] ${op()} ${pick(pool.N)}[i]`],
     () => pool.N.length && ['NM', `[i,j] = ${unary(`${pick(pool.NM)}[i,j] - ${pick(pool.N)}[i]`)}`],
     () => ['N', `[i] = ${pick(['sum', 'max'])}(j) ${pick(pool.NM)}[i,j]`],
-    () => ['N', `[i] = (sum(j) ${pick(pool.NM)}[i,j] * ${pick(pool.NM)}[i,j]) / M + ${pick(['1', 'N', '0.25'])}`],
+    () => [
+      'N',
+      `[i] = (sum(j) ${pick(pool.NM)}[i,j] * ${pick(pool.NM)}[i,j]) / M + ${pick(['1', 'N', '0.25'])}`,
+    ],
     () => ['N', `[i] = sum(j) ${pick(pool.NM)}[i,j] * ${pick(pool.M)}[j]`],
     () => pool.N.length && ['N', `[i] = ${unary(`${pick(pool.N)}[i]`)} ${op()} ${pick(pool.N)}[i]`],
     () => ['M', `[j] = ${pick(['sum', 'max'])}(i) ${pick(pool.NM)}[i,j]`],
