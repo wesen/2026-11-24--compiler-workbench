@@ -35,6 +35,7 @@ import { BlocksIR, blocksAdapter, blocksEntities, entityIdSet } from './ir.js';
 import { hash, meaningKept, type MeaningParams } from './evaluate.js';
 import { tableBody } from './rules/compile.js';
 import { FOLD_RULES } from './rules/fold.js';
+import { REASSOC_RULES } from './rules/reassoc.js';
 import { SIMPLIFY_RULES } from './rules/simplify.js';
 import {
   Store,
@@ -285,6 +286,20 @@ export const simplify = typedPass({
   writes: ['values'],
   preserves: ['cfg', 'dominators', 'loops'],
   body: tableBody(SIMPLIFY_RULES.rules),
+});
+
+/**
+ * IRWB-037-F: the rule table REASSOC_RULES (rules/reassoc.ts), each rule proved by the verifier: constants move
+ * outwards, where the backend folds them into an address offset. Placed after the substitutions that build the
+ * trees it matches (bcm's `caddr(r, p + Δ) - 2Δ` after subst).
+ */
+export const reassoc = typedPass({
+  name: 'reassoc',
+  about:
+    'reassociation: constants move outwards, (x+a)+b → x+(a+b), (x+a)<<k → (x<<k)+(a<<k), y+(x+c) → (y+x)+c',
+  writes: ['values'],
+  preserves: ['cfg', 'dominators', 'loops'],
+  body: tableBody(REASSOC_RULES.rules),
 });
 
 export const constprop = typedPass({
@@ -550,7 +565,9 @@ export const lvn = typedPass({
               tx.replace(first.value, tx.get(t, { from: first.value, because: [set] }));
               tx.replace(id, tx.get(t, { from: id, because: [set] }));
               tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
-              seen.delete(k);
+              // IRWB-037-F: the two replacements rebuilt the trees of both statements with new ids, so an entry
+              // for an enclosing tree of either names a value no statement uses any more
+              for (const [key, e] of [...seen]) if (e.stmt === first.stmt || e.stmt === sid) seen.delete(key);
               return true;
             }
             if (!first) seen.set(k, { stmt: sid, value: id });
@@ -606,7 +623,7 @@ export const divToShift = typedPass({
 export const bce = typedPass({
   name: 'bce',
   about:
-    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
+    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0, or a dominating check of i proved it against a bound no larger',
   needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
   writes: ['stmts', 'cfg'],
   preserves: [],
@@ -638,16 +655,103 @@ export const bce = typedPass({
         (buf === undefined || (st.get(v.args[0]) as ValueRec).imm === buf)
       );
     };
+    // a bounds check: `if (i >=u bound) trap`, the bound a constant (a frame array) or a buffer's length
+    const checkOf = (s: StmtRec | undefined) => {
+      if (!s || s.op !== 'br_if') return undefined;
+      const c = st.get(s.cond!) as ValueRec;
+      if (c.op !== 'geu') return undefined;
+      const bound = st.get(c.args[1]) as ValueRec;
+      if (bound.op !== 'const' && !isLength(c.args[1])) return undefined;
+      const trapB = st.get(s.then!) as BlockRec;
+      if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') return undefined;
+      const idx = resolve(s.id, c.args[0]);
+      if (idx.local === null) return undefined;
+      return bound.op === 'const'
+        ? { idx, k: (bound.imm as number) >>> 0 }
+        : { idx, buf: (st.get(bound.args[0]) as ValueRec).imm as number };
+    };
+    type Check = NonNullable<ReturnType<typeof checkOf>>;
+    const where = new Map<string, { block: string; index: number }>();
+    for (const blk of f.blocks) blk.stmts.forEach((id, index) => where.set(id, { block: blk.id, index }));
+    /** Statement a runs before b on every path to b (a's block dominates b's, or a is earlier in b's block). */
+    const before = (a: string, z: string) => {
+      const x = where.get(a),
+        y = where.get(z);
+      if (!x || !y) return false;
+      return x.block === y.block ? x.index < y.index : dom.dominates(x.block, y.block);
+    };
+    const preds = new Map<string, string[]>(f.blocks.map(blk => [blk.id, []]));
+    for (const blk of f.blocks) for (const x of blk.succ) preds.get(x)?.push(blk.id);
+    const sets = (blk: string, from: number, to: number, l: number) =>
+      (st.get(blk) as BlockRec).stmts
+        .slice(from, to)
+        .some(id => (st.get(id) as StmtRec).op === 'set' && (st.get(id) as StmtRec).local === l);
+    /**
+     * Local l holds the same value at statement z as at statement a: a runs before z on every path (so it ran),
+     * and no path from a to z that does not pass a again assigns l. The blocks of such paths are those reachable
+     * from a's block without entering it and from which z's block is reachable without passing a's block.
+     */
+    const sameDefs = (l: number, a: string, z: string): boolean => {
+      if (a === z) return true;
+      if (!before(a, z)) return false;
+      const A = where.get(a)!,
+        Z = where.get(z)!;
+      if (A.block === Z.block) return !sets(A.block, A.index + 1, Z.index, l);
+      if (sets(A.block, A.index + 1, Infinity, l) || sets(Z.block, 0, Z.index, l)) return false;
+      const walk = (start: readonly string[], next: (id: string) => readonly string[]) => {
+        const seen = new Set<string>(),
+          todo = [...start];
+        while (todo.length) {
+          const x = todo.pop()!;
+          if (x === A.block || seen.has(x)) continue;
+          seen.add(x);
+          todo.push(...next(x));
+        }
+        return seen;
+      };
+      const forward = walk((st.get(A.block) as BlockRec).succ, x => (st.get(x) as BlockRec).succ);
+      const backward = walk(preds.get(Z.block)!, x => preds.get(x)!);
+      for (const x of forward) if (backward.has(x) && x !== Z.block && sets(x, 0, Infinity, l)) return false;
+      // z's block on a cycle that avoids a: the rest of it is on a path from a to z
+      return !(backward.has(Z.block) && forward.has(Z.block) && sets(Z.block, Z.index, Infinity, l));
+    };
+    /**
+     * IRWB-037-F: a dominating bounds check of the same index proves this one, `i <u k` on the dominating check's
+     * fall-through arm giving `i <u k'` for every k' >= k (unsigned, so no range fact is needed): the same local
+     * holding the same value at both checks (sameDefs), and a constant bound no larger, or the same buffer's
+     * length with the buffer holding the same value. The nearest such check is cited.
+     */
+    const dominatingCheck = (b: BlockRec, last: StmtRec, here: Check): boolean => {
+      for (let d = dom.idom.get(b.id), child = b.id; d && d !== child; child = d, d = dom.idom.get(d)) {
+        const t = lastStmt(st, st.get(d) as BlockRec);
+        const there = checkOf(t);
+        if (!there || !dom.dominates(t!.else!, b.id)) continue;
+        if (there.idx.local !== here.idx.local) continue;
+        if (!sameDefs(here.idx.local!, there.idx.sid, here.idx.sid)) continue;
+        if ('k' in here ? !('k' in there) || there.k! > here.k! : !('buf' in there) || there.buf !== here.buf)
+          continue;
+        if ('buf' in here && !sameDefs(here.buf!, t!.id, last.id)) continue;
+        tx.replaceStmt(
+          last.id,
+          { op: 'br', to: last.else },
+          {
+            because: [t!.id],
+            note: `${t!.id} already checked ${f.locals[here.idx.local!].name} against a bound no larger`,
+          },
+        );
+        return true;
+      }
+      return false;
+    };
     for (const b of f.blocks) {
       const last = lastStmt(st, b);
-      if (!last || last.op !== 'br_if') continue;
+      const check = checkOf(last);
+      if (!check || !last) continue;
+      if (dominatingCheck(b, last, check)) continue;
+      if (!('buf' in check)) continue;
       const c = st.get(last.cond!) as ValueRec;
-      if (c.op !== 'geu' || !isLength(c.args[1])) continue;
-      const trapB = st.get(last.then!) as BlockRec;
-      if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') continue;
-      const idx = resolve(last.id, c.args[0]),
-        buf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number;
-      if (idx.local === null) continue;
+      const idx = check.idx,
+        buf = check.buf!;
       // walk up the dominator tree for a branch whose taken edge proves idx < buf.length
       for (let d = dom.idom.get(b.id), child = b.id; d && d !== child; child = d, d = dom.idom.get(d)) {
         const t = lastStmt(st, st.get(d) as BlockRec);
@@ -1062,6 +1166,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   dfe,
   rotate,
   inline,
+  reassoc,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */
@@ -1113,6 +1218,9 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
   /**
    * IRWB-003: two levels of inlining, then O2+, then loop rotation and a cfg to merge what rotation leaves in a
    * line. Meant for the backend options chains, coalesce and homes. No dfe: it needs the program's entries.
+   * IRWB-037-F: bcm after bce merges the checked text addresses inlining puts in one block; after the last subst
+   * has built the trees, reassoc moves constants out to address offsets, simplify takes the `x + 0` it leaves,
+   * and lvn shares the subtrees the substitutions duplicated. Each placement measured on the corpus (ticket).
    */
   speed: [
     'inline',
@@ -1129,11 +1237,15 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'lvn',
     'strength',
     'bce',
+    'bcm',
     'subst',
     'subst',
     'dce',
     'cfg',
     'subst',
+    'reassoc',
+    'simplify',
+    'lvn',
     'rotate',
     'cfg',
   ],

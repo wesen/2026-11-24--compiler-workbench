@@ -1,7 +1,8 @@
 // (From IRWB-034-G scripts/03, with a reference column.) Measurement: executed RV32 instructions per corpus project at r0 and after O2 and speed, summed over the seeded
 // cases `measure` uses (10 per function, seed 7), under the default backend options and under the options `speed`
 // is meant for (chains, coalesce, homes). Passes are checked with 5 cases each (parity.mjs does the full check).
-// usage: node 03-corpus-measure.mjs out.json [--licm '{"share":true}'] [id...]
+// usage: node 03-corpus-measure.mjs out.json [--licm '{"share":true}'] [--pipelines r0,O2,speed] [--speed a,b,c] [id...]
+// --speed replaces the passes of `speed` (a variant); --pipelines limits the columns (the reference is always measured).
 import { writeFileSync } from 'node:fs';
 import { projectIds, projectFiles } from '../../../../../../tools/corpus.mjs';
 import { installVendor } from '../../../../../../tools/node-vendor.mjs';
@@ -15,7 +16,10 @@ const { lowerToImage, runImage } = await import(D + 'typed/backend/index.js');
 
 const argv = process.argv.slice(2);
 const licmParams = argv.includes('--licm') ? JSON.parse(argv[argv.indexOf('--licm') + 1]) : null;
-const [out, ...only] = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--licm');
+const value = n => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : undefined);
+const pipelines = (value('--pipelines') ?? 'r0,O2,speed').split(',');
+const speedPasses = value('--speed')?.split(',');
+const [out, ...only] = argv.filter((a, i) => !a.startsWith('--') && !['--licm', '--pipelines', '--speed'].includes(argv[i - 1]));
 const { PIPELINES } = await import(D + 'typed/passes.js');
 const TUNED = { chains: true, coalesce: true, homes: true };
 function instructions(p, options) {
@@ -50,11 +54,12 @@ for (const id of only.length ? only : projectIds()) {
   const ps = projectSource(id, projectFiles(id));
   const row = {};
   try {
-    for (const pipeline of ['r0', 'O2', 'speed']) {
+    for (const pipeline of pipelines) {
       const p = Program.fromProject(ps);
       if (p.status !== 'ok') throw new Error(p.status);
       let rejected = [];
-      if (pipeline !== 'r0' && !licmParams) rejected = (await p.pipeline(pipeline, { count: 5 })).steps.filter(s => s.rejected).map(s => s.pass);
+      const named = pipeline === 'speed' && speedPasses ? speedPasses : pipeline;
+      if (pipeline !== 'r0' && !licmParams) rejected = (await p.pipeline(named, { count: 5 })).steps.filter(s => s.rejected).map(s => s.pass);
       else if (pipeline !== 'r0')
         // the same pipeline pass by pass, with parameters for licm (the experiment switches of scripts/06)
         for (const pass of PIPELINES[pipeline]) {

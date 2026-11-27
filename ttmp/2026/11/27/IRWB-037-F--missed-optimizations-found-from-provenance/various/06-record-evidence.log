@@ -1,0 +1,4 @@
+add-add-const sound proof structural:pass symbolic-linear:pass exhaustive-w8:pass random-32:pass
+shl-add-const sound proof structural:pass symbolic-linear:pass exhaustive-w8:pass random-32:pass
+add-inner-const sound proof structural:pass symbolic-linear:pass exhaustive-w8:pass random-32:pass
+{"rules":70,"ms":103495}

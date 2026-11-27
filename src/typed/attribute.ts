@@ -76,6 +76,8 @@ interface Measured {
   readonly st: Store;
   readonly total: number;
   readonly bySite: Map<string, number>;
+  /** The executed machine instructions of each site, with their counts, in address order. */
+  readonly insns: Map<string, { readonly text: string; readonly count: number }[]>;
 }
 
 function measureSites(r: AttributedRevision, call: AttributedCall, backend: BackendOptionsInput): Measured {
@@ -85,6 +87,7 @@ function measureSites(r: AttributedRevision, call: AttributedCall, backend: Back
   if (run.trap || run.limit || run.fault || !run.counts)
     throw new Error(`attribute: ${call.fn} did not finish at r${r.rev}`);
   const bySite = new Map<string, number>();
+  const insns = new Map<string, { text: string; count: number }[]>();
   let total = 0;
   for (const m of image.value.insns) {
     const n = run.counts[m.offset >>> 2];
@@ -92,9 +95,12 @@ function measureSites(r: AttributedRevision, call: AttributedCall, backend: Back
     const stmt = m.covers.find(c => st.has(c) && (st.get(c) as { kind?: string }).kind === 'stmt');
     const site = stmt ?? (m.covers.length ? FRAME : BACKEND);
     bySite.set(site, (bySite.get(site) ?? 0) + n);
+    let list = insns.get(site);
+    if (!list) insns.set(site, (list = []));
+    list.push({ text: m.text, count: n });
     total += n;
   }
-  return { st, total, bySite };
+  return { st, total, bySite, insns };
 }
 
 const isStmt = (st: Store, id: unknown): id is string =>
@@ -210,6 +216,71 @@ export function attributeSteps(
     .map(([decision, d]) => ({ decision, ...d }))
     .sort((a, b) => b.delta - a.delta || (a.decision < b.decision ? -1 : 1));
   return { call: { fn: call.fn, args: [...call.args] }, totals, rows, decisions };
+}
+
+/** One statement of the last revision, by executed instructions, with what the chain did to it (IRWB-037-F). */
+export interface HotSite {
+  /** The statement id at the last revision (or `frame`, `backend`). */
+  readonly id: string;
+  readonly text: string;
+  /** Executed instructions credited to it at the last revision. */
+  readonly count: number;
+  /** Its ancestor at the first revision (through statement origins), and that statement's count there. */
+  readonly ancestor?: string;
+  readonly first?: number;
+  /** The decisions of the chain that name it or an ancestor: `r<rev> <pass>: <edit kinds> (<note>)`. */
+  readonly decisions: readonly string[];
+  /** Its executed machine instructions with their counts. */
+  readonly insns: readonly { readonly text: string; readonly count: number }[];
+}
+
+/**
+ * The hot statements of the last revision of a chain, with their provenance: the machine instructions they
+ * execute, the statement they descend from at the first revision and its count there, and every edit of the chain
+ * that names them or an ancestor. A hot statement whose decisions are empty, or whose count did not fall, is code no
+ * pass improved: the starting point for a missed optimization (IRWB-037-F). The counts sum to the emulator's total
+ * of the last revision.
+ */
+export function hotSites(
+  revisions: readonly AttributedRevision[],
+  call: AttributedCall,
+  options: { readonly backend?: BackendOptionsInput } = {},
+): { readonly total: number; readonly sites: readonly HotSite[] } {
+  if (!revisions.length) throw new Error('attribute: no revisions');
+  const backend = options.backend ?? {};
+  const first = measureSites(revisions[0], call, backend);
+  const last = measureSites(revisions.at(-1)!, call, backend);
+  const stores = revisions.map(r => storeOf(r.artifact.value));
+  const sites: HotSite[] = [];
+  for (const [id, count] of last.bySite) {
+    const decisions: string[] = [];
+    let cur: string | undefined = id;
+    if (id !== FRAME && id !== BACKEND)
+      for (let i = revisions.length - 1; i >= 1 && cur; i--) {
+        const r = revisions[i],
+          here: string = cur;
+        for (const e of r.edits)
+          if ([e.stmt, e.from, e.to].includes(here))
+            decisions.push(
+              `r${r.rev} ${r.pass}: ${e.kind}${typeof e.note === 'string' ? ` (${e.note})` : ''}`,
+            );
+        if (!isStmt(stores[i - 1], here)) {
+          const from = (stores[i].get(here) as StmtRec).origin[0]?.from;
+          cur = isStmt(stores[i - 1], from) ? from : undefined;
+        }
+      }
+    const ancestor = id === FRAME || id === BACKEND ? id : cur;
+    sites.push({
+      id,
+      text: isStmt(last.st, id) ? showStmt(last.st, id) : id,
+      count,
+      ...(ancestor ? { ancestor, first: first.bySite.get(ancestor) ?? 0 } : {}),
+      decisions: [...new Set(decisions)].reverse(),
+      insns: last.insns.get(id) ?? [],
+    });
+  }
+  sites.sort((a, b) => b.count - a.count || (a.id < b.id ? -1 : 1));
+  return { total: last.total, sites };
 }
 
 /** The totals per revision and the decisions table, as text. */

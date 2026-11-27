@@ -1,0 +1,6 @@
+speed      {"regex":{"rejected":[],"r0":8183,"speed":6843,"speedTuned":5360,"reference":6628},"lz":{"rejected":[],"r0":185876,"speed":156997,"speedTuned":154700,"reference":156405}}
+bcm        {"regex":{"rejected":[],"r0":8183,"speed":6843,"speedTuned":5360,"reference":6628},"lz":{"rejected":[],"r0":185876,"speed":156997,"speedTuned":147209,"reference":156405}}
+bcm+ra     {"regex":{"rejected":[],"r0":8183,"speed":6843,"speedTuned":5360,"reference":6628},"lz":{"rejected":[],"r0":185876,"speed":153649,"speedTuned":143861,"reference":156405}}
+bcm+ras    {"regex":{"rejected":[],"r0":8183,"speed":6843,"speedTuned":5360,"reference":6628},"lz":{"rejected":[],"r0":185876,"speed":151975,"speedTuned":142187,"reference":156405}}
+bcm+rasl   {"regex":{"rejected":[],"r0":8183,"speed":6843,"speedTuned":5360,"reference":6628},"lz":{"rejected":[],"r0":185876,"speed":149893,"speedTuned":140105,"reference":156405}}
+ra         {"regex":{"rejected":[],"r0":8183,"speed":6843,"speedTuned":5360,"reference":6628},"lz":{"rejected":[],"r0":185876,"speed":156997,"speedTuned":154700,"reference":156405}}

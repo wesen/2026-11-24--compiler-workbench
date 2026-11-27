@@ -293,12 +293,14 @@ export function verifyRule(r: Rule, opts: VerifyOptions = {}): RuleEvidence {
     if (!ok) return done();
   }
 
-  // 3. symbolic linear: degree-one polynomials over Z/2^32, once per instance of the guarded constants
-  if (!hasF32 && [...ops].every(o => LINEAR.has(o))) {
-    const finite = vars.filter(x => x.constVar);
-    if (finite.every(x => x.pow2)) {
+  // 3. symbolic linear: degree-one polynomials over Z/2^32, once per instance of the finite constants. A constant
+  // variable guarded pow2 takes its 31 values; one read only as a shift amount takes 0..31, since every operator
+  // that reads it masks it to five bits (IRWB-037-F); any other constant variable is a symbol of degree one.
+  if (!hasF32 && !byConstruction && [...ops].every(o => LINEAR.has(o))) {
+    const finite = vars.filter(x => x.constVar && (x.pow2 || shiftOnly(r, x.name)));
+    {
       const ok = timed('symbolic-linear', () => {
-        const instances = product(finite.map(x => domainAt(x, 32)!));
+        const instances = product(finite.map(x => (x.pow2 ? domainAt(x, 32)! : range(0, 31))));
         for (const inst of instances) {
           const at = new Map(finite.map((x, i) => [x.name, inst[i]]));
           const L = lin(r.lhs, at),
@@ -491,7 +493,9 @@ function structuralProblem(r: Rule, vars: readonly Var[]): string | undefined {
     else if ('op' in p) p.args.forEach(walk);
   };
   walk(r.lhs);
-  const rhsSeq = templateVars(r.rhs).uses;
+  // a constant variable is bound to a constant, which has no effect: the right side may use it anywhere (IRWB-037-F)
+  const constants = new Set(vars.filter(x => x.constVar).map(x => x.name));
+  const rhsSeq = templateVars(r.rhs).uses.filter(x => !constants.has(x));
   const count = (s: string[], x: string) => s.filter(y => y === x).length;
   for (const x of new Set(lhsSeq)) {
     const nL = count(lhsSeq, x),
@@ -544,14 +548,24 @@ interface Lin {
   readonly coef: ReadonlyMap<string, number>;
 }
 function lin(n: Pat | Tpl, at: ReadonlyMap<string, number>): Lin | null {
-  if ('var' in n) return { c0: 0, coef: new Map([[n.var, 1]]) };
+  // a constant variable used as a tree (`{ var: k }` on the right) is its instance when it has one
+  if ('var' in n)
+    return at.has(n.var)
+      ? { c0: at.get(n.var)! | 0, coef: new Map() }
+      : { c0: 0, coef: new Map([[n.var, 1]]) };
   if ('same' in n) return { c0: 0, coef: new Map([[n.same, 1]]) };
-  if ('constVar' in n) return at.has(n.constVar) ? { c0: at.get(n.constVar)! | 0, coef: new Map() } : null;
+  // a constant variable without an instance is a symbol of degree one, like a variable (IRWB-037-F)
+  if ('constVar' in n)
+    return at.has(n.constVar)
+      ? { c0: at.get(n.constVar)! | 0, coef: new Map() }
+      : { c0: 0, coef: new Map([[n.constVar, 1]]) };
   if ('const' in n) {
     const c = n.const;
     if (typeof c === 'number') return { c0: c | 0, coef: new Map() };
     if ('log2' in c) return at.has(c.log2) ? { c0: log2(at.get(c.log2)!), coef: new Map() } : null;
-    return null;
+    // the evaluator's value of a linear operator on constant variables is the same polynomial in them
+    if (!LINEAR.has(c.eval) || c.args.length !== 2) return null;
+    return lin({ op: c.eval, args: c.args.map(x => ({ constVar: x })) } as Pat, at);
   }
   const [a, b] = (n.args as readonly (Pat | Tpl)[]).map(x => lin(x, at));
   if (!a || !b) return null;
@@ -575,6 +589,32 @@ function lin(n: Pat | Tpl, at: ReadonlyMap<string, number>): Lin | null {
       return b.coef.size ? null : scale(a, 1 << (b.c0 & 31));
   }
   return null;
+}
+/** The constant variable is read only as the shift amount of shl (in the pattern or an evaluated constant). */
+function shiftOnly(r: Rule, name: string): boolean {
+  let ok = true,
+    seen = false;
+  const walk = (n: Pat | Tpl, asShift: boolean) => {
+    if ('constVar' in n && n.constVar === name) {
+      seen = true;
+      if (!asShift) ok = false;
+    } else if ('var' in n && n.var === name) {
+      seen = true;
+      if (!asShift) ok = false;
+    } else if ('const' in n && typeof n.const === 'object') {
+      const c = n.const;
+      if ('log2' in c) {
+        if (c.log2 === name) ok = false;
+      } else
+        c.args.forEach((x, i) => {
+          if (x === name && !(c.eval === 'shl' && i === 1)) ok = false;
+        });
+    } else if ('op' in n)
+      (n.args as readonly (Pat | Tpl)[]).forEach((a, i) => walk(a, n.op === 'shl' && i === 1));
+  };
+  walk(r.lhs, false);
+  walk(r.rhs, false);
+  return ok && seen;
 }
 const sameLin = (a: Lin, b: Lin): boolean => {
   if (a.c0 !== b.c0) return false;
