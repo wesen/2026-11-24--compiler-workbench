@@ -15,11 +15,13 @@ import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitCuda, takesGate } from './cuda-source.js';
 import {
+  defaultPipelineParams,
   defaultTileParams,
   FunctionName,
   planTransformation,
   ScheduleIR,
   type Mapping,
+  type PipelineParams,
   type ScheduleUnit,
   type TileParams,
 } from './schedule.js';
@@ -244,7 +246,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     baseline: Artifact<Module>,
     fn: string,
     candidate?: Artifact<CudaUnit>,
-    options?: { fuse?: boolean; manager?: AnalysisManager; tile?: TileParams },
+    options?: { fuse?: boolean; manager?: AnalysisManager; tile?: TileParams; pipeline?: PipelineParams },
   ) => {
     const relation = 'exact' as const;
     const manager = options?.manager ?? new AnalysisManager();
@@ -257,6 +259,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         schedule: planned.outputs.subject as Artifact<ScheduleUnit>,
         fuse,
         tile: options?.tile ?? defaultTileParams,
+        pipeline: options?.pipeline ?? defaultPipelineParams,
       });
       if (candidate)
         await manager.verifyTransformation(

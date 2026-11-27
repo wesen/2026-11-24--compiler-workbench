@@ -411,9 +411,12 @@ export function checkOrder(unit: ScheduleUnit): CheckResult & { certificate: Ord
 }
 const sameReduction = (a: OrderEntry, b: OrderEntry) =>
   a.statement === b.statement && a.axes.join() === b.axes.join();
-/** Which classes a scheduling step may move a reduction between: only to a form with its own order argument. */
+/** Which classes a scheduling step may move a reduction between: all three carry an order argument (serial is
+ * stage 2's nest, staged-terms stage 3b's fold, tiled-serial the proven tile), so a step may move a reduction
+ * between them; what the gate forbids is a reduction appearing, disappearing, changing its axes, or ending up
+ * outside the three — `checkOrder` re-verifies every tiled classification structurally. */
 const allowedMove = (from: OrderClass, to: OrderClass) =>
-  from === to || (from === 'serial' && (to === 'tiled-serial' || to === 'staged-terms'));
+  ['serial', 'staged-terms', 'tiled-serial'].includes(from) && ['serial', 'staged-terms', 'tiled-serial'].includes(to);
 
 /** The gate of every scheduling pass: the candidate must classify, and keep every output's accumulation order,
  * class for class. A step may move a reduction to a tiled or staged form; the classes carry the argument. */
@@ -648,9 +651,18 @@ export interface TileParams {
   gemm: { block: [number, number]; chunk: number; patch: [number, number]; pad: number };
   member: { chunk: number; pad: number };
 }
+// The shipped tile sizes (scripts 03 and 04 of this ticket, five timed calls each, digests equal in every
+// call): matmul 512^3 was fastest at block 64x64, chunk 64, patch 4x4, pad 1, single-buffered (0.0577 ms,
+// 4.65 TFLOP/s). Chunk 32 cost 0.0605, chunk 16 0.0846; pad 4 cost 0.0605; patch 2x2 0.1008 and 8x8 0.1588;
+// 128x128 tiles lost (0.152). Double buffering lost at every chunk (0.0638 against 0.0605 at 32, 0.0864 against
+// 0.0577 at 64). The operand tile for a block-mode contraction member — attention's score is the corpus case —
+// measured slower at every chunk (0.798 ms at 8, 1.010 at 16, against 0.746 with it off), so the shipped member
+// chunk is 0: the tile stays legal (the coalescing rule in the tile pass) and checked (the GPU tests run it with
+// a positive chunk), but no program the measurements cover asks for it. Both are the schedule-picking rule's
+// Both are the schedule-picking rule's constants, data in the strategy plan, not code in the emitter.
 export const defaultTileParams: TileParams = {
-  gemm: { block: [64, 64], chunk: 32, patch: [4, 4], pad: 1 },
-  member: { chunk: 16, pad: 1 },
+  gemm: { block: [64, 64], chunk: 64, patch: [4, 4], pad: 1 },
+  member: { chunk: 0, pad: 1 },
 };
 export const tilePass = definePass<ScheduleUnit, {}, TileParams>({
   id: 'tensor.schedule.tile',
@@ -747,6 +759,11 @@ export const tilePass = definePass<ScheduleUnit, {}, TileParams>({
           );
           continue;
         }
+        // the tile is legal; chunk <= 0 is the rule's off switch (script 04: slower on attention at every chunk)
+        if (params.member.chunk <= 0) {
+          refuse(m.name, `legal for an operand tile, but the rule's member chunk is 0`);
+          continue;
+        }
         memberTiles.push({
           statement: m.name,
           reduction: c.axis.id,
@@ -778,19 +795,26 @@ export const tilePass = definePass<ScheduleUnit, {}, TileParams>({
 });
 
 // Double buffering for gemm kernels: the two tile buffers must fit shared memory (a constant check: both tiles
-// are compile-time sized; the opt-in limit of the GB10, as the row path already assumes).
-export const pipelinePass = definePass<ScheduleUnit>({
+// are compile-time sized; the opt-in limit of the GB10, as the row path already assumes). `off` disables it,
+// for measurement and for programs where the barrier saving does not pay.
+export interface PipelineParams {
+  off?: boolean;
+}
+// The shipped pipeline rule: double buffering lost every measurement above, so the strategy leaves it off; the
+// pass stays (legal, gated, measured), and a later stage that finds shapes where it pays flips this constant.
+export const defaultPipelineParams: PipelineParams = { off: true };
+export const pipelinePass = definePass<ScheduleUnit, {}, PipelineParams>({
   id: 'tensor.schedule.pipeline',
   version: '1',
   description: 'Double-buffer the gemm tiles where two buffers fit shared memory',
   ir: ScheduleIR,
   adapter: scheduleAdapter,
   writes: { entities: ['kernel', 'member'], relations: [] },
-  run: ({ before }) => {
+  run: ({ before, params }) => {
     const unit = before.value;
     const optin = 99 * 1024;
     const kernels = unit.kernels.map(k => {
-      if (k.mapping !== 'gemm' || !k.tile) return k;
+      if (k.mapping !== 'gemm' || !k.tile || params?.off) return k;
       const [BM, BN] = k.tile.block,
         chunk = k.tile.chunk,
         pad = k.tile.pad;
@@ -807,7 +831,11 @@ export const pipelinePass = definePass<ScheduleUnit>({
         relation: 'replace' as const,
       })),
       edits: changed,
-      report: changed ? `double buffering on ${changed} kernel${changed === 1 ? '' : 's'}` : 'no kernel double-buffered',
+      report: changed
+        ? `double buffering on ${changed} kernel${changed === 1 ? '' : 's'}`
+        : params?.off
+          ? 'disabled by parameter'
+          : 'no kernel double-buffered',
     };
   },
 });
@@ -838,7 +866,7 @@ export function applySchedulePass<P = unknown>(
 /** The schedule pipeline as the plain (synchronous) path runs it: plan, fuse, tile, pipeline. */
 export function scheduleTixFn(
   fn: Fn,
-  options?: { fuse?: boolean; tile?: TileParams },
+  options?: { fuse?: boolean; tile?: TileParams; pipeline?: PipelineParams },
 ): {
   schedule: ReturnType<typeof scheduleArtifact>;
   steps: ScheduleStep[];
@@ -859,7 +887,7 @@ export function scheduleTixFn(
     results.push(tiled.result);
     steps.push(tiled.step);
     current = tiled.result.artifact;
-    const piped = applySchedulePass(pipelinePass, current);
+    const piped = applySchedulePass(pipelinePass, current, options?.pipeline ?? defaultPipelineParams);
     results.push(piped.result);
     steps.push(piped.step);
     current = piped.result.artifact;

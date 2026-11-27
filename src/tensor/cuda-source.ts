@@ -601,6 +601,8 @@ function emitGroup(
         if (stored.has(m.name)) w.line(`t${s}[point * n${s} + own${s}] = ${value};`);
         w.leave();
         w.line('}');
+        w.leave();
+        w.line('}');
       } else {
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
@@ -687,6 +689,7 @@ function emitGroup(
       ? `  if (grid_${kernel} && fused_${kernel}) {
     check(cudaFuncGetAttributes(&attributes, shared_${kernel} ? ${kernel}<1> : ${kernel}<0>));
     if (${optIn}) check(cudaFuncSetAttribute(${kernel}<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(row_${kernel} + tiles_${kernel})));
+    if (tiles_${kernel} > ${defaultShared}) check(cudaFuncSetAttribute(${kernel}<0>, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(tiles_${kernel})));
   }
   if (grid_${kernel} && !fused_${kernel}) {
 ${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${kernel}<${2 + j}>));`).join('\n')}
@@ -695,7 +698,7 @@ ${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${kernel}
     hasWork,
     launch: block
       ? `    if (grid_${kernel} && fused_${kernel} && shared_${kernel}) ${kernel}<1><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, ${sharedSize}>>>(${blockArgs});
-    if (grid_${kernel} && fused_${kernel} && !shared_${kernel}) ${kernel}<0><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}>>>(${blockArgs});
+    if (grid_${kernel} && fused_${kernel} && !shared_${kernel}) ${kernel}<0><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, tiles_${kernel}>>>(${blockArgs});
 ${members
   .map(
     (m, j) =>

@@ -19,10 +19,12 @@ import {
 import { execute as executePlan } from '../framework/strategy/index.js';
 import { AlgorithmRegistry } from '../framework/strategy/registry.js';
 import {
+  defaultPipelineParams,
   fusePass,
   orderGate,
   pipelinePass,
   tilePass,
+  type PipelineParams,
   type ScheduleStep,
   type ScheduleUnit,
   type TileParams,
@@ -52,9 +54,11 @@ export const schedulePlan = plan(
         'fused',
         apply('fuse', algorithm('tensor.schedule.fuse', '1'), { input: ref('input', ['schedule']) }),
         apply('tile', algorithm('tensor.schedule.tile', '1'), {
-          args: { tile: ref('input', ['tile']) },
+          args: ref('input', ['tile']),
         }),
-        apply('double-buffer', algorithm('tensor.schedule.pipeline', '1')),
+        apply('double-buffer', algorithm('tensor.schedule.pipeline', '1'), {
+          args: ref('input', ['pipeline']),
+        }),
       ),
       sequence('plain'),
       { args: { fuse: ref('input', ['fuse']) } },
@@ -68,8 +72,12 @@ export async function runScheduleStrategy(input: {
   schedule: Artifact<ScheduleUnit>;
   fuse: boolean;
   tile: TileParams;
+  pipeline?: PipelineParams;
 }): Promise<{ schedule: Artifact<ScheduleUnit>; steps: ScheduleStep[]; execution: unknown }> {
-  const execution = await executePlan(schedulePlan, registry, input, { id: 'tensor-schedule-pipeline' });
+  const execution = await executePlan(schedulePlan, registry, {
+    ...input,
+    pipeline: input.pipeline ?? defaultPipelineParams,
+  }, { id: 'tensor-schedule-pipeline' });
   if (execution.status !== 'succeeded')
     throw Error(`The schedule plan ${execution.status}: ${execution.error?.message ?? execution.status}`);
   const value = execution.value as Artifact<ScheduleUnit> | { schedule: Artifact<ScheduleUnit> };
