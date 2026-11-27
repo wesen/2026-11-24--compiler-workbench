@@ -36,8 +36,8 @@ test('the row plan stages row-element members and gives row reductions to thread
   assert.match(s, /extern __shared__ float sh\[\];/);
   assert.match(s, /__syncthreads\(\);/);
   assert.match(s, /if \(threadIdx\.x == 0\) \{/);
-  // the row max folds sequentially over global x, the staged exponent sum over shared memory
-  assert.match(s, /v1 = minmax\(v1, t0\[/);
+  // the row max folds sequentially over the staged input row, the staged exponent sum over shared memory
+  assert.match(s, /v1 = minmax\(v1, s1\[\(i2\)\], true\);/);
   assert.match(s, /v5 = __fadd_rn\(v5, s0\[\(i6\)\]\);/);
   assert.match(s, /v7 = __fdiv_rn\(s0\[\(j\)\], c1\[0\]\);/);
   // no early return: every thread reaches every barrier
@@ -110,10 +110,17 @@ test('fusion is refused where the IR cannot show order preservation', () => {
 
 test('the CUDA artifact records the kernel plan it was emitted from', () => {
   const unit = lowerCuda(program('softmax').current.value.functions[0], true);
-  assert.deepEqual(unit.kernels, [{ form: 'row', statements: ['m', 'e', 's', 'y'] }]);
+  assert.deepEqual(unit.kernels, [
+    { form: 'row', statements: ['m', 'e', 's', 'y'], reads: ['x'], writes: ['y'] },
+  ]);
   assert.deepEqual(lowerCuda(program('attention').current.value.functions[0], true).kernels, [
-    { form: 'row', statements: ['score', 'shift', 'e', 'z', 'weight'] },
-    { form: 'single', statements: ['out'] },
+    {
+      form: 'row',
+      statements: ['score', 'shift', 'e', 'z', 'weight'],
+      reads: ['q', 'k'],
+      writes: ['weight'],
+    },
+    { form: 'single', statements: ['out'], reads: ['weight', 'v'], writes: ['out'] },
   ]);
 });
 

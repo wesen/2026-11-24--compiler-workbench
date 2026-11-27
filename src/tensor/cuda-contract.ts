@@ -28,7 +28,9 @@ const CudaIR = defineIR<CudaUnit>({
     const kernel = (k: Partial<CudaKernel>) =>
       (['single', 'flat', 'row'] as const).includes(k.form as 'single') &&
       Array.isArray(k.statements) &&
-      k.statements.every(s => typeof s === 'string');
+      Array.isArray(k.reads) &&
+      Array.isArray(k.writes) &&
+      [...k.statements, ...k.reads, ...k.writes].every(s => typeof s === 'string');
     if (!Array.isArray(unit.kernels) || !unit.kernels.every(kernel)) throw Error('Invalid CUDA kernel plan');
   },
 });

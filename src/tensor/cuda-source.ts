@@ -20,13 +20,16 @@ static void check(cudaError_t status) {
   if (status != cudaSuccess) throw std::runtime_error(cudaGetErrorString(status));
 }
 
+// IRWB-029-I: the ordered-integer form of max/min is branchless, so a sequential fold's loads can be
+// pipelined, and it is equivalent to the branchy form on every input: NaN in either argument yields the
+// canonical quiet NaN; equal values pick one of them, which for the mixed zeros is +0 for max (the
+// bitwise AND) and -0 for min (the bitwise OR), because the ordered key of -0 is below the key of +0.
 __device__ static float minmax(float a, float b, bool maximum) {
-  if (isnan(a) || isnan(b)) return __uint_as_float(0x7fc00000);
-  if (a == b) {
-    unsigned x = __float_as_uint(a), y = __float_as_uint(b);
-    return __uint_as_float(maximum ? x & y : x | y);
-  }
-  return (maximum ? a > b : a < b) ? a : b;
+  const U ia = __float_as_uint(a), ib = __float_as_uint(b);
+  const U ka = ia ^ ((((int)ia) >> 31) | 0x80000000u);
+  const U kb = ib ^ ((((int)ib) >> 31) | 0x80000000u);
+  const float picked = maximum ? (ka > kb ? a : b) : (ka < kb ? a : b);
+  return (isnan(a) || isnan(b)) ? __uint_as_float(0x7fc00000u) : picked;
 }
 
 struct DeviceBuffer {
@@ -156,7 +159,7 @@ function scalar(
     bind: (id: string) => string;
     index: (id: string) => string;
     dim: (a: Affine) => string;
-    resolve: (name: string, indices: string[]) => string | undefined;
+    resolve: (e: Expr & { kind: 'load' }, indices: string[]) => string | undefined;
     dims: ReadonlyMap<string, string>;
     tensors: ReadonlyMap<string, Tensor>;
     tensorName: (name: string) => string;
@@ -175,7 +178,7 @@ function scalar(
     case 'load': {
       const shape = env.tensors.get(e.name)!.shape;
       const indices = e.indices.map(a => affine(a, env.index));
-      const fused = env.resolve(e.name, indices);
+      const fused = env.resolve(e, indices);
       if (fused !== undefined) return fused;
       const offset = indices.reduce(
         (prior, a, i) => (i ? `(${prior} * ${env.dim(shape[i])} + ${a})` : a),
@@ -272,6 +275,7 @@ function makeBinders(pre: readonly [string, string][], state: { next: number }) 
       }
       return name;
     },
+    lookup: (id: string) => map.get(id),
     index: (id: string) => {
       const name = map.get(id);
       if (name === undefined) throw Error('Unbound binder ' + id);
@@ -312,7 +316,7 @@ function emitFlatKernel(g: KernelPlan, kernel: string, names: Names): Emitted {
       bind: bound.bind,
       index: bound.index,
       dim,
-      resolve: t => locals.get(t),
+      resolve: e => locals.get(e.name),
       dims,
       tensors: names.tensors,
       tensorName,
@@ -367,20 +371,44 @@ function emitRowKernel(g: KernelPlan, kernel: string, names: Names): Emitted {
   line('const U span = rowLen < 1 ? 1 : rowLen;');
   const arrays = new Map<string, string>();
   g.staged.forEach((t, k) => arrays.set(t, `s${k}`));
+  g.stagedInputs.forEach((t, k) => arrays.set(t, `s${g.staged.length + k}`));
   arrays.forEach((s, t) => line(`float* ${s} = sh + ${kOffset(arrays, t)};`));
   const cells = new Map<string, string>();
   g.slots.forEach((t, k) => cells.set(t, `c${k}`));
-  cells.forEach((c, t) => line(`float* ${c} = sh + ${g.staged.length} * span + ${cellsIndexOf(cells, t)};`));
+  cells.forEach((c, t) => line(`float* ${c} = sh + ${arrays.size} * span + ${cellsIndexOf(cells, t)};`));
+  if (g.stagedInputs.length) {
+    for (const t of g.stagedInputs) {
+      line('{');
+      state.indent += '  ';
+      line(
+        'for (I j = static_cast<I>(threadIdx.x); j < static_cast<I>(rowLen); j += static_cast<I>(blockDim.x)) {',
+      );
+      state.indent += '  ';
+      line(`${arrays.get(t)!}[j] = ${tensorName(t)}[rowBase + j];`);
+      state.indent = state.indent.slice(2);
+      line('}');
+      state.indent = state.indent.slice(2);
+      line('}');
+    }
+    line('__syncthreads();');
+  }
   const pre: [string, string][] = g.members.flatMap(m =>
     m.axes.map((a, k) => [a.id, k < rank - 1 ? coordinate[k] : 'j'] as [string, string]),
   );
   const bound = makeBinders(pre, state);
-  const resolve = (t: string, indices: string[]) =>
-    arrays.get(t) !== undefined
-      ? `${arrays.get(t)!}[${indices[rank - 1]}]`
-      : cells.get(t) !== undefined
-        ? `${cells.get(t)!}[0]`
-        : undefined;
+  const resolve = (e: Expr & { kind: 'load' }, indices: string[]) => {
+    const array = arrays.get(e.name);
+    if (array !== undefined) {
+      if (g.roles.has(e.name)) return `${array}[${indices[rank - 1]}]`;
+      // A staged input is served from shared memory only when the load stays on this row.
+      const local = e.indices
+        .slice(0, rank - 1)
+        .every((a, k) => plain(a) !== undefined && bound.lookup(plain(a)!) === coordinate[k]);
+      if (local) return `${array}[${indices[rank - 1]}]`;
+    }
+    const cell = cells.get(e.name);
+    return cell === undefined ? undefined : `${cell}[0]`;
+  };
   for (const m of g.members) {
     if (g.roles.get(m.name) === 'element') {
       line('{');
@@ -440,9 +468,9 @@ function emitRowKernel(g: KernelPlan, kernel: string, names: Names): Emitted {
     hasWork: rows,
     launch: `    if (${rows}) {
       const U rowLenHost = static_cast<U>(${shape}[${rank - 1}]);
-      const U shared = (${g.staged.length} * (rowLenHost < 1 ? 1 : rowLenHost) + ${g.slots.length}) * sizeof(float);
+      const U shared = (${arrays.size} * (rowLenHost < 1 ? 1 : rowLenHost) + ${g.slots.length}) * sizeof(float);
       if (shared > static_cast<U>(smemMax)) throw std::runtime_error("fused row exceeds shared memory");
-      ${kernel}<<<static_cast<unsigned>(${rows}), 256, static_cast<unsigned>(shared)>>>(
+      ${kernel}<<<static_cast<unsigned>(${rows}), 128, static_cast<unsigned>(shared)>>>(
           ${args}, rowLenHost);
       check(cudaGetLastError());
     }`,
@@ -590,6 +618,10 @@ function emitKernel(
 export interface CudaKernel {
   readonly form: 'single' | 'flat' | 'row';
   readonly statements: readonly string[];
+  /** Tensors this kernel reads from global memory (parameters and statements outside the kernel). */
+  readonly reads: readonly string[];
+  /** Members whose values this kernel writes to global memory. */
+  readonly writes: readonly string[];
 }
 export interface CudaUnit {
   readonly fn: string;
@@ -689,7 +721,12 @@ export function lowerCuda(fn: Fn, fuse = true): CudaUnit {
   return {
     fn: fn.name,
     source: [support, ...emitted.map(k => k.code), host.join('\n'), main].join('\n\n'),
-    kernels: plans.map(g => ({ form: g.form, statements: g.members.map(m => m.name) })),
+    kernels: plans.map(g => ({
+      form: g.form,
+      statements: g.members.map(m => m.name),
+      reads: [...readPointers(g)],
+      writes: [...g.writes],
+    })),
   };
 }
 

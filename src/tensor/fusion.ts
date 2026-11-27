@@ -30,6 +30,12 @@ export interface KernelPlan {
   readonly staged: readonly string[];
   /** Row form: row-scalar members with a shared slot, in member order. */
   readonly slots: readonly string[];
+  /**
+   * Row form: non-member tensors (parameters or statements outside the kernel) that the row-scalar
+   * phases read along the row, staged once per block through shared memory so the single-thread folds
+   * read shared rather than streaming global memory with no memory-level parallelism.
+   */
+  readonly stagedInputs: readonly string[];
   /** Members whose values reach global memory (an outside consumer or the function result). */
   readonly writes: readonly string[];
 }
@@ -103,6 +109,20 @@ function plan(
       (inside ? readLater : readOutside).add(e.name);
     });
   }
+  const rank = driver.shape.length;
+  const rowExtent = key(driver.shape[rank - 1]);
+  const stagedInputs = new Set<string>();
+  if (form === 'row')
+    for (const m of members) {
+      if (roles.get(m.name) !== 'scalar') continue;
+      visit(m.expr, e => {
+        if (e.kind !== 'load' || names.has(e.name)) return;
+        const shape = [...fn.params, ...fn.statements].find(t => t.name === e.name)!.shape;
+        // row-shaped, row-varying reads are worth one coalesced staging pass per block
+        if (shape.length === rank && key(shape[rank - 1]) === rowExtent && e.indices[rank - 1].terms.length)
+          stagedInputs.add(e.name);
+      });
+    }
   return {
     form,
     members,
@@ -110,6 +130,7 @@ function plan(
     roles,
     staged: members.filter(m => roles.get(m.name) === 'element' && readLater.has(m.name)).map(m => m.name),
     slots: members.filter(m => roles.get(m.name) === 'scalar' && readLater.has(m.name)).map(m => m.name),
+    stagedInputs: [...stagedInputs],
     writes: members.filter(m => m.name === fn.result || readOutside.has(m.name)).map(m => m.name),
   };
 }
@@ -171,6 +192,7 @@ export function planKernels(fn: Fn, fuse: boolean): KernelPlan[] {
     roles: new Map([[s.name, 'element' as const]]),
     staged: [],
     slots: [],
+    stagedInputs: [],
     writes: [s.name],
   });
   if (!fuse) return fn.statements.map(single);
