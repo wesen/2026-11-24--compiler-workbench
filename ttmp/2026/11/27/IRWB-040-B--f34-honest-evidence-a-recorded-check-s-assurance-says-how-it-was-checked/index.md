@@ -8,7 +8,15 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/contracts/analysis-manager.ts
+      Note: invariantInternal stamps assuranceOf(result.evidence); assuranceOf moved here and made honest
+    - Path: repo://src/framework/contracts/differential.ts
+      Note: old assuranceOf replaced by an honest re-export from analysis-manager
+    - Path: repo://src/framework/contracts/types.ts
+      Note: Assurance gains checked-sampled and checked-exact
+    - Path: repo://tests/framework/r3-defects.test.mjs
+      Note: the F34 test, its todo removed in the fix commit
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T17:29:26.017047326-05:00
