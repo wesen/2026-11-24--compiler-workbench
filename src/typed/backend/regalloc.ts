@@ -24,6 +24,7 @@ import {
   isTerminal,
   type MInsn,
 } from './encode.js';
+import { liveness } from '../../stdlib/flow/liveness.js';
 
 export const usesOf = (m: MInsn): number[] =>
   [m.rs1, m.rs2].filter((r): r is number => r !== undefined && r >= 64);
@@ -75,12 +76,15 @@ export interface Intervals {
   /** Sorted by start, then register. */
   readonly list: Interval[];
   readonly blocks: MachineBlock[];
-  readonly liveOut: Set<number>[];
+  readonly liveOut: ReadonlySet<number>[];
 }
 
 /**
  * One interval per virtual register, from its first definition or use to its last, stretched over whole blocks
- * where it is live in (to the block's start) or live out (to just past its end).
+ * where it is live in (to the block's start) or live out (to just past its end). Liveness is the standard
+ * library's (`stdlib/flow/liveness.ts`) under the machine scope 'all-blocks': the sweep has always run over
+ * every block, and a block no path from the entry reaches still has instructions whose registers must be
+ * allocated, so its live-out is computed like any other block's.
  */
 export function intervals(code: readonly MInsn[]): Intervals {
   const blocks = machineBlocks(code);
@@ -92,22 +96,10 @@ export function intervals(code: readonly MInsn[]): Intervals {
       for (const r of defsOf(code[i])) def[k].add(r);
     }
   });
-  const IN = blocks.map(() => new Set<number>()),
-    OUT = blocks.map(() => new Set<number>());
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (let k = blocks.length - 1; k >= 0; k--) {
-      const out = new Set<number>();
-      for (const s of blocks[k].succ) for (const r of IN[s]) out.add(r);
-      const inn = new Set(use[k]);
-      for (const r of out) if (!def[k].has(r)) inn.add(r);
-      if (inn.size !== IN[k].size || out.size !== OUT[k].size) {
-        IN[k] = inn;
-        OUT[k] = out;
-        changed = true;
-      }
-    }
-  }
+  const { in: IN, out: OUT } = liveness(
+    { blocks: blocks.map((b, k) => ({ uses: use[k], defs: def[k], succ: b.succ })) },
+    'all-blocks',
+  );
   const iv = new Map<number, Interval>();
   const touch = (r: number, i: number) => {
     const x = iv.get(r);
