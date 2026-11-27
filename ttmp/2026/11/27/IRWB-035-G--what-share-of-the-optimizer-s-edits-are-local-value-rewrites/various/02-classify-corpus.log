@@ -1,0 +1,5 @@
+across-calls O2: r2, 2 s
+across-calls speed: r5, 5 s
+algebra O2: r6, 6 s
+algebra speed: r6, 7 s
+blend O2: r6, 9 s

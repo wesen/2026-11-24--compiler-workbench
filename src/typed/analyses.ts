@@ -61,7 +61,7 @@ export function isPure(st: Store, id: string): boolean {
   if (IMPURE.has(v.op)) return false;
   return v.args.every(a => isPure(st, a));
 }
-const IMPURE = new Set(['call', 'load', 'load16u', 'div', 'rem', 'caddr', 'result']);
+export const IMPURE = new Set(['call', 'load', 'load16u', 'div', 'rem', 'caddr', 'result']);
 export const stmtValues = (s: StmtRec): string[] => [s.value, s.cond, s.addr].filter((x): x is string => !!x);
 
 // ---------- cfg ----------
