@@ -173,3 +173,17 @@ express, the change and its reason become a primary result.
   cap governs row members, whose emissions this stage does not change. Not re-measured.
 - Where exactly is the few-rows crossover, and is one threshold enough? — Parity at about 32 rows
   for C = 1024, 4096 and 16384 alike; threshold 64 (script 02).
+
+## As built
+
+The implementation follows this design, with three points changed by measurement (diary steps 3–4, scripts
+02–03), all described in the report:
+
+- S2 was dropped: the probes showed every computed body stages faster (1.1–2.8×), so the rule became "stage
+  unless the body is a single load", with the residency recorded in the refusal.
+- The gate is not a row-count threshold alone: the measured discriminator is whether a member folds a serial
+  chain as long as the row. Fold-dominated groups never lose at any row count; row-phase groups lose below
+  about 32 rows and win from 64, so the gate is `rows < 64 AND no row-length fold`, evaluated from the shape
+  values at launch.
+- The stage-3 "few, long rows" case (softmax over one long row) was measured and does not lose: the fused
+  kernel wins it by 2.8×, because stage 2's per-row fold thread reads uncoalesced global memory.
