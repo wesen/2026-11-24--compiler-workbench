@@ -319,7 +319,7 @@ which changed five numeric statements.
 **User prompt (verbatim):** see Step 1.
 **Assistant interpretation:** Same as Step 1.
 **Inferred user intent:** Same as Step 1.
-**Commit (code):** see the ticket's final commit (`IRWB-021-O: …`).
+**Commit (code):** `15ee696` — "IRWB-021-O: research design - deriving streaming attention by checked rewrites".
 
 ### What I did
 - Wrote `design/01-deriving-streaming-attention-by-checked-rewrites.md`: executive summary, the program and what
@@ -385,7 +385,8 @@ work was committed on the current branch.
 **Assistant interpretation:** Same as Step 1 ("Create the ticket, write the design document, keep a diary, and
 commit").
 **Inferred user intent:** Same as Step 1.
-**Commit (code):** the final commit on this branch, message starting `IRWB-021-O:`.
+**Commit (code):** `15ee696` — "IRWB-021-O: research design - deriving streaming attention by checked rewrites"
+(the ticket's content, ten files; this step's own bookkeeping follows in a second `IRWB-021-O:` commit).
 
 ### What I did
 - `docmgr ticket create-ticket --ticket IRWB-021-O --title "Deriving streaming attention by checked rewrites"
