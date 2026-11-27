@@ -1,12 +1,13 @@
 // IRWB-030-J: the term-staging and decline decisions, without the GPU (the GB10 file is parallel-terms-gpu).
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { AnalysisManager } from '../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js';
 import { createCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
 import { evaluate } from '../../dist/tensor/evaluate.js';
 import { emitCuda } from '../../dist/tensor/cuda-source.js';
-import { blockThreads, fuseThreads, planFusion } from '../../dist/tensor/fusion.js';
+import { planFusion } from '../../dist/tensor/fusion.js';
 import { caseShapeValues } from '../../dist/tensor/cuda-runtime.js';
 
 const fn = (source, name) => compileTix(source).current.value.functions.find(f => f.name === name);
@@ -79,57 +80,59 @@ test('members with trailing axes and thread-mode groups refuse staging, with the
   assert.deepEqual(chain.groups[0].termRefusals, []);
 });
 
-test('the decline rule keeps a block group unfused only when the launch shapes starve the machine', () => {
-  const softmax = 'fn f(x: f32[N,C]): f32[N,C] { m[i] = max(j) x[i,j]; e[i,j] = exp(x[i,j] - m[i]); s[i] = sum(j) e[i,j]; y[i,j] = e[i,j] / s[i]; return y; }';
-  // few points, long row: declined; without shapes, or at the corpus size, or with short rows: fused
-  const few = shapePlan(softmax, 'f', { N: 4, C: 1024 });
-  assert.equal(few.groups.length, 4);
+test('the decline rule keeps a contraction group unfused only when the launch shapes starve the machine', () => {
+  const mlp = readFileSync('corpus/tensor/mlp/main.tix', 'utf8');
+  // a contraction group (a trailing member's reduction streams w and v) is declined at few points, fused at the
+  // corpus size, and never when the row fits under the cap or the grid is empty
+  const few = shapePlan(mlp, 'mlp', { N: 16, D: 256, H: 8192, O: 256 });
+  assert.equal(few.groups.length, 3);
   assert.equal(few.declined.length, 1);
-  assert.match(few.declined[0].reason, /4 points x 128 threads.*cannot fill the machine/);
-  // at the corpus size nothing is declined; without shapes the default plan fuses everything
-  const corpus = shapePlan(softmax, 'f', { N: 4096, C: 1024 });
+  assert.match(few.declined[0].reason, /16 points x 64 threads.*contraction streams a global operand/);
+  const corpus = shapePlan(mlp, 'mlp', { N: 1024, D: 256, H: 1024, O: 256 });
   assert.deepEqual(corpus.declined, []);
   assert.equal(corpus.groups.length, 1);
-  assert.equal(planFusion(fn(softmax, 'f')).declined.length, 0);
-  assert.equal(shapePlan(softmax, 'f', { N: 4, C: 16 }).declined.length, 0); // short row: no parallelism is lost
-  assert.equal(shapePlan(softmax, 'f', { N: 0, C: 1024 }).declined.length, 0); // empty grid: nothing runs either way
+  assert.equal(shapePlan(mlp, 'mlp', { N: 16, D: 8, H: 32, O: 8 }).declined.length, 0); // short rows
+  assert.equal(shapePlan(mlp, 'mlp', { N: 0, D: 256, H: 8192, O: 256 }).declined.length, 0); // empty grid
+  assert.equal(planFusion(fn(mlp, 'mlp')).declined.length, 0); // no shape values: the default plan fuses
+  // rows-only groups are never declined: measured faster fused at every rung down to 1 point x 128 threads
+  const softmax = 'fn f(x: f32[N,C]): f32[N,C] { m[i] = max(j) x[i,j]; e[i,j] = exp(x[i,j] - m[i]); s[i] = sum(j) e[i,j]; y[i,j] = e[i,j] / s[i]; return y; }';
+  for (const dims of [{ N: 1, C: 65536 }, { N: 64, C: 4096 }, { N: 4096, C: 1024 }])
+    assert.deepEqual(shapePlan(softmax, 'f', dims).declined, [], JSON.stringify(dims));
   // thread-mode groups are never declined: same threads, less traffic, fewer launches
   const chain = 'fn f(x: f32[N,K]): f32[N] { s[i] = sum(k) x[i,k] * 2; y[i] = s[i] + 1; return y; }';
   assert.equal(shapePlan(chain, 'f', { N: 1, K: 4096 }).declined.length, 0);
 });
 
 test('a declined group runs stage 2 byte for byte, and a mixed plan stores what the declined kernels read', () => {
-  // group 1 is rows-only (cap 128) and stays fused; group 2's reduction reads global tensors (cap 64) and is
-  // declined at these shapes; its singleton kernel reads group 1's `e`, so `e` must be stored.
-  const points = Math.ceil(fuseThreads / blockThreads.rows);
-  const softmax = 'fn f(x: f32[N,C]): f32[N,C] { m[i] = max(j) x[i,j]; e[i,j] = exp(x[i,j] - m[i]); s[i] = sum(j) e[i,j]; y[i,j] = e[i,j] / s[i]; return y; }';
-  const declined = shapePlan(softmax, 'f', { N: 4, C: 1024 });
+  // a fully declined plan is exactly stage 2's source
+  const mlp = readFileSync('corpus/tensor/mlp/main.tix', 'utf8');
+  const declined = shapePlan(mlp, 'mlp', { N: 16, D: 256, H: 8192, O: 256 });
   assert.equal(
-    emitCuda(fn(softmax, 'f'), declined),
-    cudaSource(compileTix(softmax), 'f', { fuse: false }),
+    emitCuda(fn(mlp, 'mlp'), declined),
+    cudaSource(compileTix(mlp), 'mlp', { fuse: false }),
   );
-  const mixed = `fn f(x: f32[N,C], w: f32[N-1,C]): f32[N-1,C] {
+  // group 1 is rows-only and stays fused; group 2's contraction (h reads u from global memory) is declined at
+  // these shapes, and its singleton kernel reads group 1's `e`, so `e` must be stored
+  const mixed = `fn f(x: f32[N,C], w: f32[N-1,C], u: f32[C,C]): f32[N-1] {
     m[i] = max(j) x[i,j];
     e[i,j] = x[i,j] - m[i];
-    p[i]: f32[N-1] = max(j) (w[i,j] * e[i+1,j]);
-    q[i]: f32[N-1] = p[i] + 1;
-    r[i,j]: f32[N-1,C] = q[i] + w[i,j];
-    return r;
+    h[i,j]: f32[N-1,C] = (sum(k) u[k,j] * w[i,k]) + e[i+1,j];
+    q[i]: f32[N-1] = sum(j) h[i,j] * 2;
+    return q;
   }`;
   const f = fn(mixed, 'f');
-  const plan = planFusion(f, new Map(Object.entries({ N: points, C: 1024 })));
+  const plan = planFusion(f, new Map(Object.entries({ N: 300, C: 1024 })));
   assert.deepEqual(
     plan.groups.map(g => [g.kernel, g.mapping, g.statements.join(','), g.stored.join(',')]),
     [
       ['k0', 'block', 'm,e', 'e'],
-      ['k1', 'thread', 'p', 'p'],
+      ['k1', 'thread', 'h', 'h'],
       ['k2', 'thread', 'q', 'q'],
-      ['k3', 'thread', 'r', 'r'],
     ],
   );
   assert.deepEqual(
     plan.declined.map(d => d.statements),
-    [['p', 'q', 'r']],
+    [['h', 'q']],
   );
   assert.match(plan.declined[0].reason, /cannot fill the machine/);
   assert.match(plan.refusals[0].reason, /its axis 0 has extent N \+ -1, the kernel's N/);

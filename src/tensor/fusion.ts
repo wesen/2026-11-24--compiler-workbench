@@ -232,9 +232,11 @@ const termCount = (r: Reduce, shapes: Map<string, number>) =>
 const rowLength = (t: Tensor, depth: number, shapes: Map<string, number>) =>
   t.shape.slice(depth).reduce((n, a) => n * Math.max(0, value(a, shapes)), 1);
 
-/** Why the group should keep stage 2's kernels at these shape values, or undefined to fuse (IRWB-030-J): fusion
- * loses when the row exceeds the thread cap (unfused would run points x row threads per statement) and the block
- * grid cannot fill the machine (points x threads below the measured `fuseThreads`). */
+/** Why the group should keep stage 2's kernels at these shape values, or undefined to fuse (IRWB-030-J). The
+ * measured loss class is the contraction chain: a member with trailing axes whose reduction streams a global
+ * operand (mlp's h and y, attention's score and out). Unfused, such a statement runs one thread per element, so
+ * its per-element fold chains fill the machine; fused block mode runs points x threads and serializes the chains
+ * when that starves the machine. Rows-only groups never lose this way (script 03), so they are never declined. */
 function declineReason(
   members: Statement[],
   depth: number,
@@ -244,19 +246,22 @@ function declineReason(
   buffered: string[],
   terms: StagedTerms[],
 ): string | undefined {
+  const rowBuffers = [...staged, ...buffered];
+  const chains = members.some(m => m.axes.length > depth && readsGlobalInReduction(m, rowBuffers));
+  if (!chains) return undefined; // rows-only: measured faster fused at every rung down to 128 threads
   const points = members[0].shape.slice(0, depth).reduce((n, a) => n * Math.max(0, value(a, shapes)), 1);
   if (points === 0) return undefined; // nothing runs either way
   const rows = [...staged, ...members.map(m => m.name)];
   let longest = rows.reduce((n, t) => Math.max(n, rowLength(tensors.get(t)!, depth, shapes)), 1);
   for (const t of terms)
     longest = Math.max(longest, termCount(reduces(tensors.get(t.member) as Statement)[t.index], shapes));
-  const cap = members.some(m => readsGlobalInReduction(m, [...staged, ...buffered]))
+  const cap = members.some(m => readsGlobalInReduction(m, rowBuffers))
     ? blockThreads.contraction
     : blockThreads.rows;
   const threads = blockThreadsFor(longest, cap);
   if (longest <= cap) return undefined; // fused already runs at least as many threads as unfused
   if (points * threads >= fuseThreads) return undefined;
-  return `${points} points x ${threads} threads (${Math.round((points * threads) / 737.28) / 100}% of the 48 SMs' 73 728 threads) cannot fill the machine, and the ${longest}-long row exceeds the ${cap}-thread cap; stage 2's per-statement kernels run ${points * longest} threads`;
+  return `${points} points x ${threads} threads (${Math.round((points * threads) / 737.28) / 100}% of the 48 SMs' 73 728 threads) cannot fill the machine, and the ${longest}-long row exceeds the ${cap}-thread cap while a member's contraction streams a global operand; stage 2's per-statement kernels run one thread per element (${points * longest} for the longest statement)`;
 }
 
 export function planFusion(fn: Fn, shapes?: Map<string, number>): FusionPlan {

@@ -2,6 +2,7 @@
 // (tools/cuda-remote.mjs). The no-GPU decisions are in parallel-terms.test.mjs.
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { seededRandom } from '../../dist/framework/contracts/index.js';
 import { checkLowering, compileTix, cudaSource, optimizeTix, runTix, runTixCuda } from '../../dist/tensor/index.js';
 import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
@@ -124,26 +125,36 @@ test('GB10: a staged max with a nested sum in its body, and split-sum refusing t
 });
 
 test('GB10: declined groups at few points run stage 2 and stay exact, including mixed plans', async () => {
+  // rows-only groups are never declined (measured faster fused down to 1 point), so softmax stays fused and exact
   const program = compileTix(softmax);
   const fn = program.current.value.functions[0];
   for (const dims of [{ N: 4, C: 1024 }, { N: 64, C: 4096 }, { N: 4096, C: 1024 }]) {
     const inputs = inputsOf(fn, dims, 13);
     assert.equal(
       planFusion(fn, caseShapeValues(fn, inputs)).declined.length,
-      dims.N <= 64 ? 1 : 0,
+      0,
       JSON.stringify(dims),
     );
     const got = await runTixCuda(program, 'softmax', inputs);
     assert.deepEqual(words(got), words(runTix(program, 'softmax', inputs)), JSON.stringify(dims));
   }
+  // a contraction program at few points is declined and runs stage 2's kernels
+  const mlpProgram = compileTix(readFileSync('corpus/tensor/mlp/main.tix', 'utf8'));
+  const mlpFn = mlpProgram.current.value.functions[0];
+  const mlpDims = { N: 4, D: 8, H: 128, O: 8 };
+  const mlpInputs = inputsOf(mlpFn, mlpDims, 19);
+  assert.equal(planFusion(mlpFn, caseShapeValues(mlpFn, mlpInputs)).declined.length, 1);
+  assert.deepEqual(
+    words(await runTixCuda(mlpProgram, 'mlp', mlpInputs)),
+    words(runTix(mlpProgram, 'mlp', mlpInputs)),
+  );
   // a fused group followed by a declined one: the declined kernels read the fused group's stored member
-  const mixed = `fn f(x: f32[N,C], w: f32[N-1,C]): f32[N-1,C] {
+  const mixed = `fn f(x: f32[N,C], w: f32[N-1,C], u: f32[C,C]): f32[N-1] {
     m[i] = max(j) x[i,j];
     e[i,j] = x[i,j] - m[i];
-    p[i]: f32[N-1] = max(j) (w[i,j] * e[i+1,j]);
-    q[i]: f32[N-1] = p[i] + 1;
-    r[i,j]: f32[N-1,C] = q[i] + w[i,j];
-    return r;
+    h[i,j]: f32[N-1,C] = (sum(k) u[k,j] * w[i,k]) + e[i+1,j];
+    q[i]: f32[N-1] = sum(j) h[i,j] * 2;
+    return q;
   }`;
   const mixedProgram = compileTix(mixed);
   const mixedFn = mixedProgram.current.value.functions[0];
