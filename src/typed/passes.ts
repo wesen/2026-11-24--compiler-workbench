@@ -46,7 +46,6 @@ import {
   type WorkFn,
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
-import { splitRangesSpec } from './split-ranges.js';
 import { rotateSpec } from './rotate.js';
 import { makeInline } from './inline.js';
 
@@ -1050,7 +1049,6 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   lvn,
   strength,
   'div-to-shift': divToShift,
-  'split-local-ranges': typedPass(splitRangesSpec),
   bce,
   subst,
   bcm,

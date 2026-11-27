@@ -43,3 +43,9 @@ Probe 01 built the project under Node 24.18.0 and loaded the real VM. Its r0 lis
 
 - Interprocedural effects and internally called specializations need a separate call-site contract.
 - Dynamic frame indexing and escaping arrays need alias analysis for safe promotion.
+
+## Amendment after measurement
+
+The first residual measured 164 and 139 instructions after speed. Repeating subst alone saved zero instructions because distinct uses of a VM stack slot shared a multiply assigned local. A checked pass that gives short-lived definitions separate locals unlocked substitution and reduced both results to 77. This pass uses ordinary reaching definitions and live-out sets. It is exported for explicit application to a residual.
+
+The Typed transaction adapter also needed a source edge for fresh locals. Recording the initializing statement and projected local index closes that gap without changing the shared IR or contract framework.

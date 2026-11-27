@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "948817115039d87869fdfa9cffdb4aa37c451ce2e40815249326d41d53c8e2aa",
+  "request": {
+    "ticket": "IRWB-036-B",
+    "status": "complete",
+    "intent": "",
+    "entry": "Verified the final build, all requested test groups and exhaustive RV32 comparisons; recorded results and remaining frame overhead."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-60bddc7cd4142c90dc39bbd59bd4b55c",
+    "state": "committed",
+    "created_at": "2026-11-27T15:18:37.646622313Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "c30c3379b13526d4e7eaf1f6070d36193316a26fe07eee32ecaf5c3d28b66678",
+      "index.md": "7bac95abb4409ca5479eeef176f4bec89c99a3164625beecf6c05b861f01e1ef"
+    },
+    "after": {
+      "changelog.md": "4fc7fdd9a4702ca15b19c464bc2c6fd2afe44ab8a688a4b20ef494d6a6289fe5",
+      "index.md": "253f6f33b18be6c9ae10de27dba67482c474b2d0dfa70c350ede340071428424"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "c30c3379b13526d4e7eaf1f6070d36193316a26fe07eee32ecaf5c3d28b66678",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjcKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNwoKTWVhc3VyZWQgNzcgaW5zdHJ1Y3Rpb25zIGFuZCA0OCBlbWl0dGVkIGJ5dGVzIGZvciBlYWNoIGNoZWNrZWQgc3BlY2lhbGl6ZWQgaW1hZ2UuIEFkZGVkIGJ1ZmZlciBiaW5kaW5nLCBibG9jayB2ZXJzaW9uaW5nLCBmcmFtZS13b3JkIHByb21vdGlvbiBhbmQgb3B0aW9uYWwgbGl2ZS1yYW5nZSBzcGxpdHRpbmcuCgojIyAyMDI2LTExLTI3CgpWZXJpZmllZCB0aGUgZmluYWwgYnVpbGQsIGFsbCByZXF1ZXN0ZWQgdGVzdCBncm91cHMgYW5kIGV4aGF1c3RpdmUgUlYzMiBjb21wYXJpc29uczsgcmVjb3JkZWQgcmVzdWx0cyBhbmQgcmVtYWluaW5nIGZyYW1lIG92ZXJoZWFkLgo="
+    },
+    {
+      "path": "index.md",
+      "before": "7bac95abb4409ca5479eeef176f4bec89c99a3164625beecf6c05b861f01e1ef",
+      "after": "LS0tClRpdGxlOiBTcGVjaWFsaXppbmcgdGhlIGJ5dGVjb2RlIFZNClRpY2tldDogSVJXQi0wMzYtQgpTdGF0dXM6IGNvbXBsZXRlClRvcGljczoKICAgIC0gY29tcGlsZXIKICAgIC0gaXIKICAgIC0gcGVyZm9ybWFuY2UKRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6CiAgICAtIFBhdGg6IHJlcG86Ly9zcmMvdHlwZWQvcmVzaWR1YWxpemUudHMKICAgICAgTm90ZTogQmluZGluZy10aW1lIGFuYWx5c2lzIGFuZCBibG9jayB2ZXJzaW9uaW5nCiAgICAtIFBhdGg6IHJlcG86Ly9zcmMvdHlwZWQvc3BlY2lhbGl6ZS50cwogICAgICBOb3RlOiBIb3N0IGJpbmRpbmdzIGFuZCBjaGVja2VkIHBhc3MKICAgIC0gUGF0aDogcmVwbzovL3NyYy90eXBlZC9zcGxpdC1yYW5nZXMudHMKICAgICAgTm90ZTogTG9jYWwgbGlmZXRpbWUgc3BsaXR0aW5nIGZvciByZXNpZHVhbCBjbGVhbnVwCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogQ2hlY2tlZCBzcGVjaWFsaXphdGlvbiBvZiB0aGUgVHlwZWQgVk0geWllbGRzIHR3byA0OC1ieXRlIFJWMzIgaW1hZ2VzLgpMYXN0VXBkYXRlZDogMjAyNi0xMS0yN1QxMDoxODozNy42NDM4NjI3NDktMDU6MDAKV2hhdEZvcjogIiIKV2hlblRvVXNlOiAiIgotLS0KCiMgU3BlY2lhbGl6aW5nIHRoZSBieXRlY29kZSBWTQoKIyMgUmVzdWx0CgpBIGZpeGVkIHUxNiBieXRlY29kZSBpbWFnZSBhbmQgYSBmaXhlZCBlbnRyeSBhcmUgZW5vdWdoIHRvIGNvbXBpbGUgdGhlIGludGVycHJldGVyIHRvIGEgc2NhbGFyIGxvb3AuIEZpYm9uYWNjaSBhbmQgY2hlY2tzdW0gZWFjaCBleGVjdXRlIDc3IFJWMzIgaW5zdHJ1Y3Rpb25zIGF0IG49MTIgYW5kIHNlZWQ9OC4gRWFjaCBnZW5lcmF0ZWQgZnVuY3Rpb24gc3RpbGwgYWNjZXB0cyB0aGUgb3JpZ2luYWwgVk0gYXJndW1lbnRzLgoKLSBbRGVzaWduIGFuZCBzdXBwb3J0ZWQgZG9tYWluXShkZXNpZ24tZG9jLzAxLWJpbmRpbmctdGltZS1hbmQtcmVzaWR1YWwtY29udHJvbC1mbG93Lm1kKQotIFtNZWFzdXJlbWVudHMsIGNoZWNrcyBhbmQgbGltaXRzXShhbmFseXNpcy8wMS1tZWFzdXJlbWVudC1yZXBvcnQubWQpCi0gW0ltcGxlbWVudGF0aW9uIGRpYXJ5XShsb2cvMDEtaW1wbGVtZW50YXRpb24tZGlhcnkubWQpCi0gW0JlbmNobWFya10oc2NyaXB0cy8wMi1tZWFzdXJlLm1qcykgYW5kIFtSVjMyIGxpc3RpbmdzXSh2YXJpb3VzLzA0LXNwbGl0LXJlc3VsdHMudHh0KQo="
+    }
+  ]
+}

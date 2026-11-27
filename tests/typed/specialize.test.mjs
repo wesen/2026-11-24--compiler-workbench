@@ -8,6 +8,7 @@ await installVendor();
 const { Program } = await import('../../dist/typed/program.js');
 const { projectSource } = await import('../../dist/typed/project.js');
 const { BindingsIR, factRef } = await import('../../dist/typed/specialize.js');
+const { splitLocalRanges } = await import('../../dist/typed/split-ranges.js');
 const { meaningKept } = await import('../../dist/typed/evaluate.js');
 const { createArtifact } = await import('../../dist/framework/contracts/index.js');
 
@@ -143,6 +144,6 @@ test('dispatch specialization follows a changed bytecode image and ties the dyna
 
 test('split-local-ranges preserves a value live across both arms of a branch', async () => {
   const p = bufferProgram('let a = pos; let b = a + 1; a = b * 2; if (pos > 0) { a = b - a; } return a + b;');
-  assert.equal((await p.apply('split-local-ranges')).check, '40/40');
+  assert.equal((await p.apply(splitLocalRanges)).check, '40/40');
   assert.match(p.listing(), /Version/);
 });

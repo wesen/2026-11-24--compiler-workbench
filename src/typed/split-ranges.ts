@@ -1,8 +1,8 @@
 /** Split block-local lifetimes so subst can forward expressions through reused VM stack slots. */
 import type { StmtRec } from './model.js';
-import type { TypedPassSpec } from './passes.js';
+import { typedPass } from './passes.js';
 
-export const splitRangesSpec: TypedPassSpec = {
+export const splitLocalRanges = typedPass({
   name: 'split-local-ranges',
   about: 'give short-lived definitions of a multiply assigned scalar separate locals',
   needs: { live: 'liveness', reach: 'reaching' },
@@ -44,4 +44,4 @@ export const splitRangesSpec: TypedPassSpec = {
       tx.replaceStmt(sid, { op: 'set', local, value: s.value }, { from: sid, because: [sid] });
     }
   },
-};
+});
