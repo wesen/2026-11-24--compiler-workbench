@@ -6,6 +6,7 @@ import {
   defineTransformation,
   defineType,
   differential,
+  type Correspondence,
   type Decided,
   type DifferentialEvidence,
 } from '../framework/contracts/index.js';
@@ -13,23 +14,43 @@ import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
+import { planFusion, unfusedPlan } from './fusion.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 
+interface CudaKernel {
+  name: string;
+  mapping: 'thread' | 'block';
+  statements: string[];
+}
 interface CudaUnit {
   fn: string;
   source: string;
+  /** The fusion plan the source follows: which statements each kernel computes (IRWB-029-D). */
+  kernels: CudaKernel[];
 }
 
 const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '1',
-  description: 'Standalone CUDA translation unit for a Tix function',
+  version: '2',
+  description: 'Standalone CUDA translation unit for a Tix function, with its kernels\' statements',
   validate(value) {
     const unit = value as Partial<CudaUnit> | null;
     if (typeof unit?.fn !== 'string' || !unit.fn || typeof unit.source !== 'string' || !unit.source)
       throw Error('Invalid CUDA translation unit');
+    if (
+      !Array.isArray(unit.kernels) ||
+      unit.kernels.some(
+        k =>
+          typeof k?.name !== 'string' ||
+          !['thread', 'block'].includes(k.mapping) ||
+          !Array.isArray(k.statements) ||
+          !k.statements.length ||
+          k.statements.some(s => typeof s !== 'string'),
+      )
+    )
+      throw Error('Invalid CUDA kernel list');
   },
 });
 const FunctionName = defineType<string>({
@@ -41,8 +62,30 @@ const FunctionName = defineType<string>({
   },
 });
 
-export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
-  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
+const Fuse = defineType<boolean>({
+  id: 'tensor.fuse',
+  version: '1',
+  description: 'Whether the lowering fuses statements into fewer kernels',
+  validate(fuse) {
+    if (typeof fuse !== 'boolean') throw Error('Invalid fuse flag');
+  },
+});
+
+export function cudaArtifact(fn: string, source: string, kernels: CudaKernel[] = []): Artifact<CudaUnit> {
+  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source, kernels });
+}
+
+/** The lowering as a framework correspondence: each kernel and the Tix statement entities it computes. */
+export function kernelCorrespondence(baseline: Artifact<Module>, subject: Artifact<CudaUnit>): Correspondence {
+  const { fn, kernels } = subject.value;
+  return {
+    id: 'kernels',
+    from: { artifact: baseline.id, revision: baseline.revision },
+    to: { artifact: subject.id, revision: subject.revision },
+    relation: 'statements-to-kernels',
+    entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
+    evidence: { mappings: kernels.map(k => k.mapping) },
+  };
 }
 
 // The relation is exact: the lowered function must give the current revision's f32 meaning bit for bit, signed
@@ -71,9 +114,9 @@ function compare(expected: BufferValue, got: BufferValue) {
 type CudaSample = ReturnType<typeof cudaCases>[number];
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
-  const inputs = { baseline: TixIR, fn: FunctionName };
+  const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
   const outputs = { subject: CudaIR };
-  const ports = { ...inputs, ...outputs };
+  const ports = { baseline: TixIR, fn: FunctionName, ...outputs };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
     id: 'tensor.cuda-meaning',
     version: '2',
@@ -116,11 +159,12 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '1',
-    description: 'Lower a Tix function to CUDA and check the candidate on the GPU',
+    version: '2',
+    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
     inputs,
     outputs,
     cache: 'never',
+    correspondence: [{ id: 'kernels', from: 'baseline', to: 'subject', relation: 'statements-to-kernels' }],
     ensures: [
       {
         invariant,
@@ -131,17 +175,30 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         },
       },
     ],
-    run(_ctx, { baseline, fn }) {
-      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+    run(_ctx, { baseline, fn, fuse }) {
+      const f = selectFunction(baseline.value, fn);
+      const plan = fuse ? planFusion(f) : unfusedPlan(f);
+      const kernels = plan.groups.map(g => ({ name: g.kernel, mapping: g.mapping, statements: g.statements }));
+      const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
+      return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
     },
   });
 
-  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+  return async (
+    baseline: Artifact<Module>,
+    fn: string,
+    candidate?: Artifact<CudaUnit>,
+    options?: { fuse?: boolean; manager?: AnalysisManager },
+  ) => {
     const relation = 'exact' as const;
-    const manager = new AnalysisManager();
+    const manager = options?.manager ?? new AnalysisManager();
+    const fuse = options?.fuse !== false;
     try {
-      if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
-      else await manager.execute(pass, { baseline, fn });
+      if (candidate)
+        await manager.verifyTransformation({ baseline, fn, fuse }, { subject: candidate }, pass, [
+          kernelCorrespondence(baseline, candidate),
+        ]);
+      else await manager.execute(pass, { baseline, fn, fuse });
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
