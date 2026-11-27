@@ -482,6 +482,16 @@ const rangeStep = (st: Store, env: Env, sid: string): Env => {
   m.set(String(s.local), evalRange(st, s.value!, env));
   return m;
 };
+/**
+ * The block transfer. An empty environment is the map lattice's bottom: no values, which is an unreachable block
+ * or one whose predecessors have no facts yet. Transferring it must give bottom again, because `evalRange` reads a
+ * local the environment does not hold as the full range, so `i = i + 1` on bottom would produce "i is anything"
+ * instead of nothing. IRWB-037-D: without this the round-robin sweep is order-dependent — a latch visited before
+ * its head first swept poisoned the head with the full range, and neither join nor widening can descend from it,
+ * so `ranges` reported no bound at all for every loop counter of a function shaped like `bounds-offset`'s.
+ */
+const rangeBlock = (st: Store, env: Env, block: BlockRec): Env =>
+  env.size ? block.stmts.reduce((e, sid) => rangeStep(st, e, sid), env) : env;
 const interval = intervalLattice();
 export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval>, FnContext>({
   id: 'typed.ranges',
@@ -501,8 +511,7 @@ export const rangesAnalysis = dataflow<TypedBlocks, ReadonlyMap<string, Interval
         (l.param ? (l.type === 'bool' ? [0, 1] : [MIN, MAX]) : [0, 0]) as Interval,
       ]),
     ),
-  transfer: (block, inn, { st }) =>
-    (st.get(block) as BlockRec).stmts.reduce((env, sid) => rangeStep(st, env, sid), inn),
+  transfer: (block, inn, { st }) => rangeBlock(st, inn, st.get(block) as BlockRec),
   edge(from, to, out, { st }) {
     const b = st.get(from) as BlockRec,
       last = st.get(b.stmts.at(-1)!) as StmtRec | undefined;

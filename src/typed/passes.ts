@@ -16,6 +16,7 @@ import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
   domView,
+  MAX,
   hasEffect,
   isPure,
   liveView,
@@ -48,6 +49,8 @@ import {
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { rotateSpec } from './rotate.js';
 import { makeInline } from './inline.js';
+import { formDifference, linearForm } from './linear.js';
+import { show } from './listing.js';
 
 type AnalysisName = keyof typeof ANALYSES;
 interface FactViews {
@@ -606,7 +609,7 @@ export const divToShift = typedPass({
 export const bce = typedPass({
   name: 'bce',
   about:
-    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
+    'bounds-check elimination: a check x >=u buf.length goes when a dominating branch proved x + k < buf.length (k ≥ 0, x not negative) and both read the same values',
   needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
   writes: ['stmts', 'cfg'],
   preserves: [],
@@ -614,20 +617,21 @@ export const bce = typedPass({
     const dom = facts.dom!,
       reach = facts.reach!,
       ranges = facts.ranges!;
-    // resolve a read through single copies: t = x  ->  x (when t has one definition)
-    const resolve = (
-      sid: string,
-      id: string,
-    ): { id: string; local: number | null; sid: string; via?: string } => {
-      const v = st.get(id) as ValueRec;
-      if (v.op !== 'get') return { id, local: null, sid };
-      const defs = reach.reachingAt(sid, v.imm as number);
-      if (defs.length === 1 && defs[0].startsWith('s:')) {
-        const d = st.get(defs[0]) as StmtRec,
-          dv = st.get(d.value!) as ValueRec;
-        if (dv.op === 'get') return { id: d.value!, local: dv.imm as number, sid: d.id, via: d.id };
-      }
-      return { id, local: v.imm as number, sid };
+    /**
+     * What a local read stands for: a local with exactly one reaching definition is that definition's value,
+     * computed where the definition is; any other read is named by the statements that reach it. Two sites that
+     * name a read the same way read the same value, which is how a check and the branch that guards it are
+     * compared.
+     */
+    const reader = {
+      read(site: string, local: number) {
+        const defs = reach.reachingAt(site, local);
+        if (defs.length === 1 && defs[0].startsWith('s:')) {
+          const d = st.get(defs[0]) as StmtRec;
+          if (d.value) return { value: d.value, site: d.id };
+        }
+        return defs.length ? { name: `${local}@${[...defs].sort().join(',')}` } : null;
+      },
     };
     const isLength = (id: string, buf?: number) => {
       const v = st.get(id) as ValueRec;
@@ -638,6 +642,18 @@ export const bce = typedPass({
         (buf === undefined || (st.get(v.args[0]) as ValueRec).imm === buf)
       );
     };
+    const bufOf = (length: string) =>
+      (st.get((st.get(length) as ValueRec).args[0]) as ValueRec).imm as number;
+    /**
+     * A local read at `sid`, named by the statements that define it there: two sites with the same name read the
+     * same value whenever both run, which is what lets a check's index be compared with a branch's.
+     */
+    const nameAt =
+      (sid: string) =>
+      (l: number): string | null => {
+        const defs = reach.reachingAt(sid, l);
+        return defs.length ? [...defs].sort().join(',') : null;
+      };
     for (const b of f.blocks) {
       const last = lastStmt(st, b);
       if (!last || last.op !== 'br_if') continue;
@@ -645,10 +661,12 @@ export const bce = typedPass({
       if (c.op !== 'geu' || !isLength(c.args[1])) continue;
       const trapB = st.get(last.then!) as BlockRec;
       if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') continue;
-      const idx = resolve(last.id, c.args[0]),
-        buf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number;
-      if (idx.local === null) continue;
-      // walk up the dominator tree for a branch whose taken edge proves idx < buf.length
+      const buf = bufOf(c.args[1]);
+      const checked = linearForm(st, reader, last.id, c.args[0]);
+      if (!checked) continue;
+      const bufName = nameAt(last.id)(buf);
+      if (bufName === null) continue;
+      // walk up the dominator tree for a branch whose taken edge proves checked + k < buf.length
       for (let d = dom.idom.get(b.id), child = b.id; d && d !== child; child = d, d = dom.idom.get(d)) {
         const t = lastStmt(st, st.get(d) as BlockRec);
         if (!t || t.op !== 'br_if') continue;
@@ -663,22 +681,25 @@ export const bce = typedPass({
         else if (cond.op !== 'lt') continue;
         const arm = onTrue ? t.then! : t.else!;
         if (!dom.dominates(arm, b.id)) continue;
-        const x = st.get(cond.args[0]) as ValueRec;
-        if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
-        // the index and the buffer are the same values at the branch and at the check
-        const same = (l: number) => {
-          const a = reach.reachingAt(t.id, l).sort().join(),
-            z = reach.reachingAt(idx.sid, l).sort().join();
-          return a === z;
-        };
-        if (!same(idx.local) || !same(buf)) continue;
-        if (ranges.at(t.id, idx.local)[0] < 0) continue;
+        if (!isLength(cond.args[1], buf) || nameAt(t.id)(buf) !== bufName) continue;
+        // the branch's index is the check's index plus a non-negative constant, over the same values
+        const testedForm = linearForm(st, reader, t.id, cond.args[0]);
+        if (!testedForm) continue;
+        const offset = formDifference(testedForm, checked);
+        if (offset === null || offset < 0) continue;
+        const [lo, hi] = ranges.of(last.id, c.args[0]);
+        // x + k cannot wrap: x ∈ [0, MAX] (an index) and k ≤ MAX give x + k ≤ 2^32 - 2, so x ≤ x + k < len.
+        // With k = 0 the two indices are the same value and no range is needed, which is the plain match.
+        if (offset > 0 && (lo < 0 || hi > MAX || offset > MAX)) continue;
+        const why = offset
+          ? `the checked index ${offset} below it does not wrap`
+          : `the checked index is the branch's index`;
         tx.replaceStmt(
           last.id,
           { op: 'br', to: last.else },
           {
-            because: [t.id, `fact:ranges(${f.name}): ${f.locals[idx.local].name} ≥ 0`],
-            note: `${t.id} already proved ${f.locals[idx.local].name} < length`,
+            because: [t.id, `fact:ranges(${f.name}): ${show(st, c.args[0])} in [${lo}, ${hi}]`],
+            note: `${t.id} already proved ${show(st, cond.args[0])} < length (${why})`,
           },
         );
         break;
