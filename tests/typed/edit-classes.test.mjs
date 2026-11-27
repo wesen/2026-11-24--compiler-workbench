@@ -17,7 +17,9 @@ const classified = p => {
   return p.revisions.slice(1).map((r, i) => {
     const app = { pass: r.pass, before: p.revisions[i].artifact.value, after: r.artifact.value, edits: r.edits };
     const edits = EC.classifyApplication(app);
-    return { app, edits, weights: EC.instructionWeights(edits, images[i], images[i + 1]), images: [images[i], images[i + 1]] };
+    const weights = EC.instructionWeights(edits, images[i], images[i + 1]);
+    const upper = EC.instructionWeights(edits, images[i], images[i + 1], { rebuilt: true });
+    return { app, edits, weights, upper, images: [images[i], images[i + 1]] };
   });
 };
 const T = (op, ...args) => ({ op, imm: undefined, type: undefined, args });
@@ -67,12 +69,13 @@ test('blend under O2: the classes of each pass, by edits', async () => {
   ]);
 });
 
-test('speed on five projects: classes agree with the per-pass table, rule edits re-derive, every change is claimed', async () => {
+test('speed on six projects: classes agree with the per-pass table, rule edits re-derive, every change is accounted for', async () => {
   const seen = new Set();
-  for (const id of ['blend', 'strength', 'value-numbering', 'calls', 'algebra']) {
+  // dead-code: cfg replaces a constant branch by a `br` and merges it away in the same application
+  for (const id of ['blend', 'strength', 'value-numbering', 'calls', 'algebra', 'dead-code']) {
     const p = open(id);
     await p.pipeline('speed');
-    for (const { app, edits, weights, images } of classified(p)) {
+    for (const { app, edits, weights, upper, images } of classified(p)) {
       for (const e of edits) {
         const got = `${e.class}/${e.sub}`;
         seen.add(got.split('/').slice(0, 2).join('/'));
@@ -82,15 +85,16 @@ test('speed on five projects: classes agree with the per-pass table, rule edits 
       }
       // the attribution accounts for the whole diff of values and statements
       const { before, after } = app;
-      const claimed = new Set(edits.flatMap(e => [...e.removed, ...e.added]));
+      const claimed = new Set(edits.flatMap(e => [...e.removed, ...e.added, ...(e.rebuilt ?? [])]));
       const changed = [
         ...[...Object.keys(before.values), ...Object.keys(before.stmts)].filter(x => !(x in after.values) && !(x in after.stmts)),
         ...[...Object.keys(after.values), ...Object.keys(after.stmts)].filter(x => !(x in before.values) && !(x in before.stmts)),
       ];
       assert.deepEqual(changed.filter(x => !claimed.has(x)), [], `${id} ${app.pass}: unclaimed entities`);
       // an instruction counts at most once per image
-      const total = weights.reduce((a, b) => a + b, 0);
+      const total = upper.reduce((a, b) => a + b, 0);
       assert.ok(total <= images[0].insns.length + images[1].insns.length);
+      weights.forEach((w, i) => assert.ok(w <= upper[i] || edits[i].class !== 'local'));
     }
   }
   for (const c of ['local/rule', 'local/fact', 'structural/cfg', 'structural/motion', 'structural/inline', 'other/dead-statement'])

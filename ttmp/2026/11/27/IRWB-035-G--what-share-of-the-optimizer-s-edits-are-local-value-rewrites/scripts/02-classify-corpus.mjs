@@ -2,7 +2,8 @@
 // Each project is run through Program.pipeline (the meaning gate on, so only accepted applications are counted);
 // every revision is lowered with the default backend options; every edit record is classified by
 // dist/typed/edit-classes.js and weighted by the instructions it affects. One JSON row per edit.
-// usage: node 02-classify-corpus.mjs --json out.json [--projects a,b] [--pipelines O2,speed]
+// `insns` counts the entities where the trees of a `replace` part; `insnsUpper` also the values rebuilt above them.
+// usage: node 02-classify-corpus.mjs --json out.json [--projects a,b | --skip a,b] [--pipelines O2,speed]
 const root = new URL('../../../../../../', import.meta.url).pathname;
 const { installVendor } = await import(root + 'tools/node-vendor.mjs');
 await installVendor();
@@ -15,7 +16,8 @@ const { writeFileSync } = await import('node:fs');
 
 const argv = process.argv.slice(2);
 const opt = n => (argv.indexOf(n) >= 0 ? argv[argv.indexOf(n) + 1] : undefined);
-const ids = opt('--projects') ? opt('--projects').split(',') : projectIds();
+const skip = (opt('--skip') ?? '').split(',');
+const ids = opt('--projects') ? opt('--projects').split(',') : projectIds().filter(id => !skip.includes(id));
 const pipelines = (opt('--pipelines') ?? 'O2,speed').split(',');
 const edits = [], applications = [], problems = [];
 const t0 = performance.now();
@@ -30,8 +32,9 @@ for (const project of ids)
       const r = p.revisions[i], before = p.revisions[i - 1].artifact.value, after = r.artifact.value;
       const classified = classifyApplication({ pass: r.pass, before, after, edits: r.edits });
       const weights = instructionWeights(classified, images[i - 1], images[i]);
-      // entities the diff changed that no edit claimed (a check on the attribution)
-      const claimed = new Set(classified.flatMap(c => [...c.removed, ...c.added]));
+      const upper = instructionWeights(classified, images[i - 1], images[i], { rebuilt: true });
+      // entities the diff changed that no edit claimed or rebuilt (a check on the attribution)
+      const claimed = new Set(classified.flatMap(c => [...c.removed, ...c.added, ...(c.rebuilt ?? [])]));
       const gone = [...Object.keys(before.values), ...Object.keys(before.stmts)].filter(x => !(x in after.values) && !(x in after.stmts));
       const made = [...Object.keys(after.values), ...Object.keys(after.stmts)].filter(x => !(x in before.values) && !(x in before.stmts));
       applications.push({
@@ -45,7 +48,8 @@ for (const project of ids)
           project, pipeline, rev: i, pass: c.pass, fn: c.fn, kind: c.kind, class: c.class, sub: c.sub,
           ...(c.rule ? { table: c.rule.table, fired: c.rule.fired, weakest: c.rule.weakest } : {}),
           ...(c.shape ? { shape: c.shape } : {}),
-          removed: c.removed.length, added: c.added.length, insns: weights[k],
+          removed: c.removed.length, added: c.added.length, rebuilt: c.rebuilt?.length ?? 0,
+          insns: weights[k], insnsUpper: upper[k],
         }),
       );
     }
