@@ -61,3 +61,45 @@ WhenToUse: ""
   against the union; `typed.loops` is version 2.
 - VM under `speed`, coalesce on: Fibonacci 6,382, checksum 5,710. licm's step is now -306: the fifteen hoisted
   statements cost 15 instructions in total.
+
+## Step 6: tests, and the tables before and after (14803c8)
+
+- `tests/typed/attribute.test.mjs`: a two-latch loop is one loop; rows sum to the emulator's differences; a call
+  that hits the limit is refused; the VM under `speed` is at or below r0 and no licm decision costs a dispatch.
+- `scripts/04-attribution-tables.sh` writes the report's tables. For the "before" tables I rebuilt `dist/` with
+  the old `analyses.ts`, ran the tool, and rebuilt. That flips the build under anything else running; for later
+  "before" numbers `scripts/07-build-old-loops.sh` builds the old analysis into `out/old-loops/dist` and scripts
+  take `IRWB_DIST`.
+
+## Step 7: the estimate as a guard (script 05), a negative result
+
+- On the VM with the old loops the static estimate rises at licm, as a guard would need. It also rises at the
+  correct licm and at a helpful cfg step.
+- Over the corpus under `speed`: 658 function steps; the estimate rises on 129, and on 65 of those the emulator
+  count falls. Not usable as a per-pass gate.
+
+## Step 8: licm variants (script 06), and a wrong first conclusion
+
+- Variants `share` (one local per equal invariant tree) and `leaves` (do not hoist a bare frame address), as
+  licm parameters, measured unchecked under `speed`. share lowers five projects and raises orders by 48 under
+  the tuned options; leaves is mixed and was removed.
+- `scripts/08-orders-share.mjs` shows why orders rises: `a = inv; b = inv`, and the coalescer merges only one
+  of the two copies.
+- First decision: keep share as an option, off, because of orders (commit 1810915).
+- Then the checked corpus run for the loops fix alone finished (`various/corpus-after-loops.json`): only the VM
+  and regex-nfa change, and regex-nfa under O2 with the tuned options goes from 41,695 to 45,933. The fix alone
+  fails the acceptance in one cell. Script 08 on regex-nfa: with a local per hoisted use `regexMatch` has 20
+  spilled values, with share 6. The correct hoisting needs share, so the decision was wrong.
+
+## Step 9: share by default, and the coalescer
+
+- licm shares by default (`share: false` restores a local per use).
+- `backend/coalesce.ts`: a copy `rd <- rs` no longer interferes with a register that an earlier copy in the same
+  block set from the same `rs`, when neither was redefined since. The argument is the one for the existing copy
+  exception: at this definition both hold the same value. It applies only under the `coalesce` option, so default
+  images are unchanged.
+- orders under the tuned options: O2 1,020 to 1,010, `speed` 962 to 952. Test added in
+  `tests/typed/speed.test.mjs` (the copies are gone and the image agrees with r0 on 200 cases).
+- VM, coalesce on: Fibonacci 6,349, checksum 5,677 under O2 and `speed`.
+- A mistake in the test runs: I ended a background command with `tail -9 a b c`, which this `tail` rejects, so
+  the command reported failure although the logs were complete. The logs are read directly since.

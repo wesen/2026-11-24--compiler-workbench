@@ -12,11 +12,12 @@ const { casesFrom } = await import(D + 'typed/evaluate.js');
 const { lowerToImage, runImage, variantChoices, machineCode } = await import(D + 'typed/backend/index.js');
 const { PIPELINES } = await import(D + 'typed/passes.js');
 const id = process.argv[2] ?? 'orders';
+const pipeline = process.argv[3] ?? 'speed'; // usage: node 08-orders-share.mjs [project] [pipeline]
 const TUNED = { chains: true, coalesce: true, homes: true };
 const out = {};
-for (const [name, params] of Object.entries({ base: {}, share: { share: true } })) {
+for (const [name, params] of Object.entries({ base: { share: false }, share: { share: true } })) {
   const p = Program.fromProject(projectSource(id, projectFiles(id)));
-  for (const pass of PIPELINES.speed) await p.apply(pass, { check: false, ...(pass === 'licm' ? { params } : {}) });
+  for (const pass of PIPELINES[pipeline]) await p.apply(pass, { check: false, ...(pass === 'licm' ? { params } : {}) });
   const st = storeOf(p.head.value), { image } = lowerToImage(p.head, TUNED), choice = variantChoices(p.head, TUNED);
   for (const fn of p.head.value.fnOrder) {
     let n = 0;

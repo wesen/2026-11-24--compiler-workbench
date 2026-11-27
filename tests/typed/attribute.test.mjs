@@ -104,7 +104,7 @@ test('bytecode VM: speed runs no more instructions than r0, and no licm decision
   }
 });
 
-test('licm with share: true hoists equal invariant trees into one local', async () => {
+test('licm hoists equal invariant trees into one local (share: false gives one per use)', async () => {
   const twice = `
 function twice(n: i32, k: i32): i32 {
     let s = 0;
@@ -127,6 +127,6 @@ function twice(n: i32, k: i32): i32 {
     assert.equal(r.check, '40/40');
     return r.kinds.local;
   };
-  assert.equal(await locals({}), 2);
-  assert.equal(await locals({ share: true }), 1);
+  assert.equal(await locals({}), 1);
+  assert.equal(await locals({ share: false }), 2);
 });

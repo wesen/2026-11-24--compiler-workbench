@@ -87,6 +87,17 @@ test('IRWB-003 coalesce: the copy t7 = i in Blend disappears, and Blend runs in 
   assert.ok(choice.cost.chosen < choice.cost.plain);
 });
 
+test('IRWB-034-G coalesce: two copies of one register (orders: a = inv, b = inv) both disappear', async () => {
+  const p = open('orders');
+  const run = await p.pipeline('speed');
+  assert.deepEqual(run.steps.filter(s => s.rejected), []);
+  const on = B.lowerToImage(p.head, { coalesce: true }).image;
+  const moves = img => img.value.insns.filter(i => i.fn === 'kernel' && /^addi (?!a0,)\w+, (?!zero)\w+, 0$/.test(i.sym)); // not the move of the result to a0
+  assert.ok(moves(B.lowerToImage(p.head).image).length >= 1, 'without coalescing the copies are there');
+  assert.deepEqual(moves(on).map(i => i.sym), []);
+  assert.deepEqual(againstOrigin(p, on), [200, 200]);
+});
+
 test('IRWB-003 homes: Collatz builds 1, 2 and 3 once, outside its loop', async () => {
   const p = open('collatz');
   await p.pipeline('O2');

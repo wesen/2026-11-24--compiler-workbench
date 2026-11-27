@@ -474,8 +474,9 @@ export const licm = typedPass({
         if (v.op === 'get') return !assigned.has(v.imm as number);
         return v.args.every(inv);
       };
-      // `share: true` (IRWB-034-G, off by default): structurally equal invariant trees of a loop get one local
-      const share = params.share === true;
+      // IRWB-034-G: structurally equal invariant trees of a loop get one local (the bytecode VM's dispatch loop has
+      // fifteen uses of two frame addresses; a local per use filled the registers). `share: false` is the old way.
+      const share = params.share !== false;
       const keyOf = (id: string): string => {
         const v = st.get(id) as ValueRec;
         return `${v.op}:${v.imm ?? ''}:${v.type ?? ''}(${v.args.map(keyOf).join(',')})`;

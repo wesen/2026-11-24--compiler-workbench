@@ -1,18 +1,17 @@
-runVm(1024, 0, 12, 8): r0 7678 -> r6 6382 instructions (-1296)
+runVm(1024, 0, 12, 8): r0 7678 -> r6 6349 instructions (-1329)
 
 revision       instructions   step
 r0 ingest              7678   
 r1 cfg                 7055   -623
 r2 fold                6871   -184
 r3 cfg                 6688   -183
-r4 licm                6382   -306
-r5 subst               6382   0
-r6 subst               6382   0
+r4 licm                6349   -339
+r5 subst               6349   0
+r6 subst               6349   0
 
    delta    after  groups  decision
     +184     2024       2  subst: replace
-     +20       23       1  licm: indirect, frame
-     +15       15      15  licm: insert (hoisted out of loop:runVm@bb:runVm.3)
+      +2        2       2  licm: insert (hoisted out of loop:runVm@bb:runVm.3)
     -183        0       1  cfg: indirect
     -184        0       1  cfg: replaceStmt
     -184      184       1  fold: replace
@@ -74,89 +73,47 @@ r3     +1  cfg: retarget  [bb:runVm.1]
 r3   -184  cfg: replaceStmt  [v:runVm.247]
           s:runVm.7      if 0 goto .2 else .3
 
-r4    +20  licm: indirect, frame  []
-          frame          frame
-
 r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
           s:runVm.143    inv = frame+0
 
 r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.144    inv1 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.145    inv2 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.146    inv3 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.147    inv4 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.148    inv5 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.149    inv6 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.150    inv7 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.151    inv8 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.152    inv9 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.153    inv10 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.154    inv11 = frame+16
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.155    inv12 = frame+16
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.156    inv13 = frame+0
-
-r4     +1  licm: insert (hoisted out of loop:runVm@bb:runVm.3)  [loop:runVm@bb:runVm.3]
-          s:runVm.157    inv14 = frame+0
+          s:runVm.144    inv1 = frame+16
 
 r4    -12  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.26     store32[(inv14 + (sp << 2))+0] = operand
+          s:runVm.26     store32[(inv + (sp << 2))+0] = operand
 
 r4    -12  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.61     right = load32[(inv9 + (sp << 2))+0]
+          s:runVm.61     right = load32[(inv + (sp << 2))+0]
 
 r4    -12  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.67     left = load32[(inv8 + (sp << 2))+0]
+          s:runVm.67     left = load32[(inv + (sp << 2))+0]
 
 r4    -12  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.72     store32[(inv7 + (sp << 2))+0] = (left + right)
+          s:runVm.72     store32[(inv + (sp << 2))+0] = (left + right)
 
 r4    -12  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.81     right = load32[(inv6 + (sp << 2))+0]
+          s:runVm.81     right = load32[(inv + (sp << 2))+0]
 
 r4    -12  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.87     left = load32[(inv5 + (sp << 2))+0]
+          s:runVm.87     left = load32[(inv + (sp << 2))+0]
 
 r4    -12  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.92     store32[(inv4 + (sp << 2))+0] = (left - right)
+          s:runVm.92     store32[(inv + (sp << 2))+0] = (left - right)
 
 r4    -13  licm: replace  [loop:runVm@bb:runVm.3]
           s:runVm.121    if (load32[(inv + (sp << 2))+0] == 0) goto .92 else .3
 
 r4    -48  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.48     t18 = (inv11 + (operand << 2))
+          s:runVm.48     t18 = (inv1 + (operand << 2))
 
 r4    -48  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.53     store32[t18+0] = load32[(inv10 + (sp << 2))+0]
+          s:runVm.53     store32[t18+0] = load32[(inv + (sp << 2))+0]
 
 r4    -74  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.34     t17 = (inv13 + (sp << 2))
+          s:runVm.34     t17 = (inv + (sp << 2))
 
 r4    -74  licm: replace  [loop:runVm@bb:runVm.3]
-          s:runVm.39     store32[t17+0] = load32[(inv12 + (operand << 2))+0]
+          s:runVm.39     store32[t17+0] = load32[(inv1 + (operand << 2))+0]
 
 r6   +184  subst: replace  []
           s:runVm.11     operand = load16[caddr(code, (pc + 1))+4]
