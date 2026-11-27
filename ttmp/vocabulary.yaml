@@ -27,6 +27,8 @@ topics:
       description: GPU backends (CUDA on the GB10 machine)
     - slug: agents
       description: Coding agents as designers and implementers; model comparisons
+    - slug: cuda
+      description: CUDA lowering and GPU execution
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

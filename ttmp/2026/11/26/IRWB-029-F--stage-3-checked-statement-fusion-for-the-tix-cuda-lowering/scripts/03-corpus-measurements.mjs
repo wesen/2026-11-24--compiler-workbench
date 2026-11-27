@@ -123,7 +123,7 @@ for (const name of process.argv.slice(2).length ? process.argv.slice(2) : Object
     row[fuse ? 'fused' : 'unfused'] = {
       kernels: (source.match(/__global__ void/g) ?? []).length,
       gpuMs: result.gpuMs,
-      perKernel: countBytes(fn, dims),
+      perKernel: countBytes(fn, dims, fuse),
       sha256: createHash('sha256')
         .update(Buffer.from(result.data.buffer, result.data.byteOffset, result.data.byteLength))
         .digest('hex'),
