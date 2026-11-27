@@ -12,7 +12,15 @@ import type { AnalysisManager } from '../contracts/analysis-manager.js';
 import type { AnalysisDefinition } from '../contracts/types.js';
 import type { IRStore } from '../ir/index.js';
 import type { StrategyAlgorithm } from '../strategy/ir.js';
-import { applyPass, PassError, type Needs, type Pass, type PassResult } from './define-pass.js';
+import {
+  applyNativePassSync,
+  applyPass,
+  PassError,
+  type Needs,
+  type Pass,
+  type PassResult,
+} from './define-pass.js';
+import type { CheckResult } from '../contracts/types.js';
 
 export interface BridgeOptions {
   readonly manager: AnalysisManager;
@@ -53,6 +61,43 @@ export function passAlgorithm<S>(pass: Pass<S, Needs, any>, options: BridgeOptio
         return result.artifact;
       } catch (e) {
         // a rejected contract is an expected, recoverable outcome a strategy can handle (attempt, fork)
+        if (e instanceof PassError && e.code === 'contractRejected')
+          ctx.reject('contract-rejected', e.message, e.evidence);
+        throw e;
+      }
+    },
+  };
+}
+
+/**
+ * IRWB-033-E: a synchronous native pass as a strategy transform, for `executeSync`. The node's `args` are the
+ * pass's parameters, and `gate` is the synchronous check every changed revision must pass (as in
+ * `applyNativePassSync`). A rejected candidate is a strategy rejection, as with `passAlgorithm`.
+ */
+export function syncPassAlgorithm<S, P>(
+  pass: Pass<S, {}, P>,
+  gate: (before: Artifact<S>, candidate: Artifact<S>) => CheckResult,
+  onResult?: (result: PassResult<S>) => void,
+): StrategyAlgorithm {
+  return {
+    id: pass.id,
+    version: pass.version,
+    kind: 'transform',
+    description: pass.description,
+    run(ctx, input, args) {
+      if (!isArtifact(input))
+        ctx.reject('not-an-artifact', `${pass.id} needs an artifact as its current value`);
+      try {
+        const result = applyNativePassSync(pass, input as Artifact<S>, gate, args as P);
+        onResult?.(result);
+        ctx.record('pass', {
+          pass: pass.id,
+          changed: result.changed,
+          edits: result.edits,
+          revision: result.artifact.revision,
+        });
+        return result.artifact;
+      } catch (e) {
         if (e instanceof PassError && e.code === 'contractRejected')
           ctx.reject('contract-rejected', e.message, e.evidence);
         throw e;

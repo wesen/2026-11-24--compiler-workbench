@@ -133,20 +133,30 @@ function work(e: Expr): number {
 //    24/24: 0.74 to 0.86, scripts 11 and 12). With 46% or less it was slower in six of seven measurements (up
 //    to 1.7 times). 19/24 is the lowest measured occupancy at which nothing lost; between is not measured.
 export const gate = { fullRow: 96, smallGrid: 1024, heavyLanes: [19, 24] };
-export function gateRule(v: { grid: string; longest: string; lanes: string[]; slots: string }): string {
-  const rows = `(${v.longest} >= ${gate.fullRow} || ${v.grid} <= ${gate.smallGrid})`;
-  const [n, d] = gate.heavyLanes;
+export function gateRule(
+  v: { grid: string; longest: string; lanes: string[]; slots: string },
+  constants: { fullRow: number; smallGrid: number; heavyLanes: readonly number[] } = gate,
+): string {
+  const rows = `(${v.longest} >= ${constants.fullRow} || ${v.grid} <= ${constants.smallGrid})`;
+  const [n, d] = constants.heavyLanes;
   return [rows, ...v.lanes.map(l => `${l} * ${d} >= ${n} * ${v.slots}`)].join(' && ');
 }
 
-export function planFusion(fn: Fn): FusionPlan {
+/**
+ * `isolated` (IRWB-033-E): statements that are kernels of their own (tiled contractions); nothing joins them and
+ * they join nothing.
+ */
+export function planFusion(fn: Fn, isolated: ReadonlySet<string> = new Set()): FusionPlan {
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
   const refusals: FusionRefusal[] = [],
     termRefusals: FusionRefusal[] = [];
   for (const s of fn.statements) {
     const current = runs.at(-1);
     if (current) {
-      const join = joinDepth(s, current.members, current.depth);
+      const alone = isolated.has(s.name) || isolated.has(current.members[0].name);
+      const join = alone
+        ? { depth: 0, reason: 'a tiled contraction is a kernel of its own' }
+        : joinDepth(s, current.members, current.depth);
       if (join.depth > 0) {
         if (join.depth < current.depth)
           current.reasons.push(

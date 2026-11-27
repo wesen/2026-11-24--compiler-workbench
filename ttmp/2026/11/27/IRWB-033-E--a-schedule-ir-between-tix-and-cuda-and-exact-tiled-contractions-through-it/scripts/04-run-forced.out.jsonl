@@ -1,0 +1,13 @@
+{"name":"attention","side":{"gate":"fused","tile":0},"identical":true,"firstDifference":-1,"tiles":{"k0":0,"k2":0},"gates":{"k1":"fused"}}
+{"name":"attention","side":{"gate":"unfused","tile":1},"identical":true,"firstDifference":-1,"tiles":{"k0":1,"k2":1},"gates":{"k1":"unfused"}}
+{"name":"attention","side":{"gate":"fused","tile":2},"identical":true,"firstDifference":-1,"tiles":{"k0":2,"k2":2},"gates":{"k1":"fused"}}
+{"name":"mlp","side":{"tile":0},"identical":true,"firstDifference":-1,"tiles":{"k0":0,"k2":0}}
+{"name":"mlp","side":{"tile":1},"identical":true,"firstDifference":-1,"tiles":{"k0":1,"k2":1}}
+{"name":"mlp","side":{"tile":2},"identical":true,"firstDifference":-1,"tiles":{"k0":2,"k2":2}}
+{"name":"conv2d","side":{"tile":0},"identical":true,"firstDifference":-1,"tiles":{"k0":0}}
+{"name":"conv2d","side":{"tile":1},"identical":true,"firstDifference":-1,"tiles":{"k0":1}}
+{"name":"conv2d","side":{"tile":2},"identical":true,"firstDifference":-1,"tiles":{"k0":2}}
+{"name":"softmax","side":{"gate":"fused"},"identical":true,"firstDifference":-1,"gates":{"k0":"fused"}}
+{"name":"softmax","side":{"gate":"unfused"},"identical":true,"firstDifference":-1,"gates":{"k0":"unfused"}}
+{"name":"layernorm","side":{"gate":"fused"},"identical":true,"firstDifference":-1,"gates":{"k0":"fused"}}
+{"name":"layernorm","side":{"gate":"unfused"},"identical":true,"firstDifference":-1,"gates":{"k0":"unfused"}}

@@ -36,6 +36,10 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, c
   );
   assignments.push(symbols.map(() => 0));
   for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
+  // The lowering's cases also take shapes that cross a tile and a chunk of the tiled contractions (IRWB-033-E:
+  // tiles of 32 and 64, chunks of 16 and 32). 37 fits a rank-2 tensor in the 4,096-element limit; 6 is for
+  // functions whose tensors have more axes (conv2d: 96 rows, 54 terms).
+  if (cuda) for (const n of [37, 6]) assignments.push(symbols.map(() => n));
   for (const shapeValues of assignments) {
     const key = JSON.stringify(shapeValues);
     if (seen.has(key)) continue;
