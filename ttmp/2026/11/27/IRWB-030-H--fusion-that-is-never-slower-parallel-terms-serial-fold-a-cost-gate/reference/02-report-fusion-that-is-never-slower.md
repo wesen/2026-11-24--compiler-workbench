@@ -203,8 +203,9 @@ program lost 9%, the traffic-bound one won 53%), and wins from `L = 32` on (no w
 boundary. It is **deliberately conservative**: at `L = 16` it also refuses `normalize` and `layernorm`, where fusion
 would have won 1.4–1.5×, because at 2× waste the sign of the outcome depends on how compute-bound the body is, and a
 gate that is wrong in the other direction would break this stage's promise. The measured cost of that conservatism
-is visible in the stress table: `layernorm-short-rows` (D = 16) ran 0.410 ms gated where the ungated fused kernel ran
-0.301 ms, and it is still not slower than unfused.
+is visible in the stress table: `layernorm-short-rows` (D = 16) ran 0.410 ms gated, where the ungated fused kernel
+measured 0.301 ms in the pre-gate session (`scripts/02-baseline-variants.out.jsonl`); gated it is still not slower
+than unfused.
 
 **Where it lives, and what that costs.** `fusionGate(plan, fn, dims)` is pure, in `src/tensor/fusion.ts`.
 `runTixCuda` calls it with the extents of the launch's own inputs; `cudaSource` applies it when given the optional
