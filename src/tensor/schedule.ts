@@ -233,13 +233,11 @@ export function scheduleOrder(unit: ScheduleUnit): FoldOrder[] {
       // Stage 3b's term staging is keyed by outermost-reduction index (fusion.ts `outerReductions`).
       const outer = new Map(outerReductions(statement.expr).map((r, i) => [r, i] as const));
       reductions.forEach((r, i) => {
-        const isTiled =
-          kernel.tile !== undefined &&
-          kernel.tile.statement === name &&
-          reductions.length === 1 &&
-          r.axes.length === 1 &&
-          r.axes[0].id === kernel.tile.reduce.axis &&
-          r.op === kernel.tile.reduce.op;
+        const t = kernel.tile;
+        // a tile schedule replaces exactly one reduction of one statement; it must fold that reduction's own
+        // axis and operation, or the schedule is invalid regardless of anything else
+        const isTiled = t !== undefined && t.statement === name && reductions.length === 1;
+        const matches = isTiled && r.op === t.reduce.op && r.axes[0].id === t.reduce.axis;
         out.push({
           kernel: kernel.kernel,
           statement: name,
@@ -247,14 +245,16 @@ export function scheduleOrder(unit: ScheduleUnit): FoldOrder[] {
           op: r.op,
           axes: r.axes.map(a => a.id),
           enumeration: isTiled
-            ? kernel.tile!.configs.every(c => ascendingChunks(c.bk))
-              ? 'ascending'
-              : 'invalid: the chunking does not cover the reduction extent as an ascending partition'
+            ? !matches
+              ? 'invalid: the tiled fold does not match the reduction it replaces'
+              : t.configs.every(c => ascendingChunks(c.bk))
+                ? 'ascending'
+                : 'invalid: the chunking does not cover the reduction extent as an ascending partition'
             : 'ascending',
           rounding: 'per-term',
           via: isTiled
             ? 'tiles'
-            : kernel.terms.some(t => t.statement === name && outer.get(r) === t.reduction)
+            : kernel.terms.some(t2 => t2.statement === name && outer.get(r) === t2.reduction)
               ? 'terms'
               : 'serial',
         });
@@ -270,13 +270,12 @@ export const ScheduleIR = defineIR<ScheduleUnit>({
   entities: unit => unit.kernels.map(k => k.kernel),
   validate(value) {
     const unit = value as Partial<ScheduleUnit> | null;
+    // A function that returns a parameter has no statements and no kernels (stage 2: zero launches).
     requireSchedule(
       typeof unit?.fn === 'string' &&
         !!unit.fn &&
         Array.isArray(unit.statements) &&
-        unit.statements.length &&
         Array.isArray(unit.kernels) &&
-        unit.kernels.length &&
         Array.isArray(unit.refusals),
       'Invalid schedule',
     );
@@ -417,7 +416,7 @@ export const ScheduleOrdered = defineProperty({
 });
 
 // The gate every scheduling pass is applied under: the whole candidate schedule must still be meaning-ordered.
-const meaningOrdered = (_before: Artifact<ScheduleUnit>, candidate: Artifact<ScheduleUnit>): CheckResult =>
+export const meaningOrdered = (_before: Artifact<ScheduleUnit>, candidate: Artifact<ScheduleUnit>): CheckResult =>
   orderedCheck.run(undefined as never, candidate, undefined) as CheckResult;
 
 type Load = Extract<Expr, { kind: 'load' }>;

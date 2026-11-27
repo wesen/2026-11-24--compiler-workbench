@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AnalysisManager, defineIR } from '../../dist/framework/contracts/index.js';
+import { AnalysisManager, defineAnalysis, defineIR, Check } from '../../dist/framework/contracts/index.js';
 import { createIRArtifact, defineAdapter } from '../../dist/framework/ir/index.js';
 import { definePass, applyNativePassSync, applyPass } from '../../dist/framework/passes/index.js';
 
@@ -46,6 +46,38 @@ test('synchronous native passes share validation and write checks, and skip the 
   );
   assert.throws(() => applyNativePassSync({ ...pass, needs: { x: {} } }, before, gate), /analysis manager/);
   assert.throws(() => applyNativePassSync({ ...pass, preserves: [{}] }, before, gate), /analysis manager/);
+  // IRWB-033-F: a pass may declare `preserves` for an analysis with no effects; the synchronous path checks
+  // the claim by recomputing the analysis on both revisions and comparing canonical values.
+  const wrong = defineAnalysis({
+    id: 'probe.wrong',
+    version: '1',
+    description: 'changes with the value',
+    input: ir,
+    output: Check,
+    effects: [],
+    run: (_ctx, artifact) => artifact.value.n,
+  });
+  const constant = defineAnalysis({
+    id: 'probe.constant',
+    version: '1',
+    description: 'ignores the value',
+    input: ir,
+    output: Check,
+    effects: [],
+    run: () => 'always',
+  });
+  assert.throws(
+    () => applyNativePassSync({ ...pass, preserves: [wrong] }, before, gate),
+    /preserveViolated/,
+  );
+  const preserved = applyNativePassSync({ ...pass, preserves: [constant] }, before, gate);
+  assert.deepEqual(preserved.preserved, [
+    { analysis: 'probe.constant', how: 'confirmed-by-recompute', evidence: { equalValue: true } },
+  ]);
+  assert.throws(
+    () => applyNativePassSync({ ...pass, preserves: [{ ...constant, effects: [{}] }] }, before, gate),
+    /analysis manager/,
+  );
   assert.throws(() => applyNativePassSync({ ...pass, run: () => ({ native: { n: 'two' } }) }, before, gate));
   assert.equal(
     applyNativePassSync({ ...pass, run: () => ({ native: before.value }) }, before, assert.fail).artifact,

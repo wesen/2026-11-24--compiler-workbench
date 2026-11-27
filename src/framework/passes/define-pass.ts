@@ -258,10 +258,10 @@ export function applyNativePassSync<S, P>(
   // declare no effects and do not use the contract context may be preserved this way; anything else needs the
   // manager, as before.
   for (const definition of pass.preserves ?? []) {
-    if (definition.effects?.length)
+    if (definition?.effects?.length || typeof definition?.run !== 'function')
       throw new PassError(
         'badResult',
-        `Pass ${pass.id} preserves ${definition.id}, which declares effects; use the asynchronous manager`,
+        `Pass ${pass.id} preserves ${definition?.id ?? 'an analysis'}, which needs the asynchronous analysis manager`,
       );
     const recompute = (artifact: Artifact<S>) =>
       definition.run(undefined as never, artifact, undefined);

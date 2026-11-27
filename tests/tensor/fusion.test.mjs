@@ -53,10 +53,15 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
     assert.equal(sha(cudaSource(optimized, name, { fuse: false })), digests[name + '+inline+split'], name);
   }
-  for (const name of ['matmul', 'conv2d']) {
-    const program = corpus(name);
-    assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
-  }
+  // IRWB-033-F: conv2d's contraction is refused by the tile pass (three reduction axes, affine reads), so it
+  // keeps stage 2's bytes; matmul's fused default is now the tiled kernel (still one definition, a template)
+  const conv = corpus('conv2d');
+  assert.equal(cudaSource(conv, 'conv2d'), cudaSource(conv, 'conv2d', { fuse: false }));
+  const matmul = corpus('matmul');
+  const tiled = cudaSource(matmul, 'matmul');
+  assert.match(tiled, /template <int Mode, int Dbl, int BM, int BN, int BK, int TM, int TN>\n__global__ void k0\(/);
+  assert.equal((tiled.match(/__global__ void/g) ?? []).length, 1);
+  assert.notEqual(tiled, cudaSource(matmul, 'matmul', { fuse: false }));
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
 });
 
