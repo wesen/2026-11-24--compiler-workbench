@@ -1,0 +1,28 @@
+{
+ "IRWB-046-A": {
+  "task": "lib",
+  "config": "tl",
+  "model": "gpt-6.1-terra",
+  "effort": "low",
+  "round": "v7-lib-tl",
+  "harness": "codex"
+ },
+ "IRWB-046-B": {
+  "task": "lib",
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "v7-lib-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-046-C": {
+  "task": "lib",
+  "config": "ds-x",
+  "model": "lunaroute/deepseek-4.1-flash",
+  "effort": "xhigh",
+  "round": "v7-lib-ds-x",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ }
+}
