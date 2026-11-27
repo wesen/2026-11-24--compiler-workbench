@@ -115,10 +115,12 @@ function compare(expected: BufferValue, got: BufferValue) {
 }
 
 // A fused kernel in block mode has a gate: at launch the host runs it fused, or its statements one by one, by the
-// shapes (fusion.ts). The recipe's shapes are small, so the rule alone would only ever show one side. Every sample
-// is therefore a case on each side, and a program with a gate is run once with each side forced.
+// shapes (fusion.ts). The recipe's shapes are small, so the rule alone would show little of one side. For a
+// program with a gate, every sample is therefore a case on each side, and the program is run once with each side
+// forced. A program without a gate has one case per sample.
 type Gate = 'fused' | 'unfused';
-type CudaSample = ReturnType<typeof cudaCases>[number] & { gate: Gate };
+const sides: readonly Gate[] = ['fused', 'unfused'];
+type CudaSample = ReturnType<typeof cudaCases>[number] & { gate?: Gate };
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
   const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
@@ -135,18 +137,28 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     // The recipe is shape-dependent and supplies its whole eligible case set.
     count: 1,
     seed,
-    cases: ({ baseline, fn }, random) => {
+    cases: ({ baseline, fn, subject }, random): CudaSample[] => {
       const samples = cudaCases(selectFunction(baseline.value, fn), random);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
-      return samples.flatMap(s => (['fused', 'unfused'] as const).map(gate => ({ ...s, gate })));
+      return takesGate(subject.value.source)
+        ? samples.flatMap(s => sides.map(gate => ({ ...s, gate })))
+        : samples;
     },
     run: (side, _artifact, sample) => {
       if (side === 'baseline') return sample.reference;
       throw Error('CUDA checks require the batch executor');
     },
     compare,
-    describeCase: ({ fn, shapeValues, stream, gate }) => ({ fn, shapeValues, stream, seed, gate }),
-    baselineKey: ({ baseline, fn }) => JSON.stringify([baseline.revision, fn]),
+    describeCase: ({ fn, shapeValues, stream, gate }) => ({
+      fn,
+      shapeValues,
+      stream,
+      seed,
+      ...(gate && { gate }),
+    }),
+    // The case list depends on the subject only through whether it has a gate.
+    baselineKey: ({ baseline, fn, subject }) =>
+      JSON.stringify([baseline.revision, fn, takesGate(subject.value.source)]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
     async decide({ baseline, fn, subject }, cases, todo) {
       if (subject.value.fn !== fn)
@@ -157,18 +169,25 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       const results = new Map<CudaSample, BufferValue>();
       const run = async (batch: CudaSample[], gate?: Gate) => {
         if (!batch.length) return;
-        const out = await executeBatch(source, f, batch.map(c => c.inputs), { gate });
+        const out = await executeBatch(
+          source,
+          f,
+          batch.map(c => c.inputs),
+          { gate },
+        );
         if (out.length !== batch.length) throw Error('Wrong CUDA response case count');
         batch.forEach((c, i) => results.set(c, out[i]));
       };
       if (takesGate(source))
-        await Promise.all((['fused', 'unfused'] as const).map(g => run(pending.filter(c => c.gate === g), g)));
-      else {
-        // No gate: the two cases of a sample are the same run.
-        const once = new Map(pending.map(c => [c.inputs, c]));
-        await run([...once.values()]);
-        for (const c of pending) results.set(c, results.get(once.get(c.inputs)!)!);
-      }
+        await Promise.all(
+          sides.map(g =>
+            run(
+              pending.filter(c => c.gate === g),
+              g,
+            ),
+          ),
+        );
+      else await run(pending);
       return pending.map((sample): Decided => {
         const result = compare(sample.reference, results.get(sample)!);
         return result.ok ? { v: 'agree' } : { v: 'disagree', reason: result.reason! };

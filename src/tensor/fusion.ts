@@ -196,7 +196,11 @@ export function planFusion(fn: Fn): FusionPlan {
           rowBuffers.has(e.name) && e.indices.slice(0, depth).every((a, p) => plain(a) === m.axes[p].id);
         outerReductions(m.expr).forEach((r, reduction) => {
           const refuse = (reason: string) =>
-            termRefusals.push({ statement: m.name, kernel: 'k' + g, reason: `${r.op} ${reduction}: ${reason}` });
+            termRefusals.push({
+              statement: m.name,
+              kernel: 'k' + g,
+              reason: `${r.op} ${reduction}: ${reason}`,
+            });
           if (r.body.kind === 'load' && ownRow(r.body)) return;
           const n = work(r.body);
           if (m.axes.length > depth) {
@@ -218,7 +222,8 @@ export function planFusion(fn: Fn): FusionPlan {
     if (block)
       members.forEach((b, at) => {
         if (b.axes.length === depth || !rowBuffers.has(b.name)) return;
-        const own = (e: Load) => e.indices.length === b.axes.length && e.indices.every((a, p) => plain(a) === b.axes[p].id);
+        const own = (e: Load) =>
+          e.indices.length === b.axes.length && e.indices.every((a, p) => plain(a) === b.axes[p].id);
         const over = [...rowBuffers].find(a => {
           const reads = loads(b).filter(e => e.name === a);
           const rest = tensors.get(a)!.shape.slice(depth);
@@ -246,7 +251,8 @@ export function planFusion(fn: Fn): FusionPlan {
             ...(staged.size ? [`rows of ${[...staged].join(', ')} are staged in the row buffer`] : []),
             ...inPlace.map(p => `${p.statement} is written over the row of ${p.over}`),
             ...terms.map(
-              t => `all threads compute the terms of ${t.statement}'s reduction ${t.reduction}; thread 0 folds them in order`,
+              t =>
+                `all threads compute the terms of ${t.statement}'s reduction ${t.reduction}; thread 0 folds them in order`,
             ),
           ]
         : [

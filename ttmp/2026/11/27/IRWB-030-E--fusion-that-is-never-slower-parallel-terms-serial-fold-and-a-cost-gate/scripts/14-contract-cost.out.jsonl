@@ -1,0 +1,8 @@
+{"name":"matmul","fused":{"accepted":true,"cases":72,"agree":72,"firstMs":3034,"repeatMs":5},"unfused":{"accepted":true,"cases":72,"agree":72,"firstMs":8,"repeatMs":3}}
+{"name":"softmax","fused":{"accepted":true,"cases":64,"agree":64,"firstMs":4554,"repeatMs":1},"unfused":{"accepted":true,"cases":64,"agree":64,"firstMs":3494,"repeatMs":2}}
+{"name":"layernorm","fused":{"accepted":true,"cases":64,"agree":64,"firstMs":5448,"repeatMs":1},"unfused":{"accepted":true,"cases":64,"agree":64,"firstMs":3829,"repeatMs":1}}
+{"name":"layernorm-inside","fused":{"accepted":true,"cases":64,"agree":64,"firstMs":4137,"repeatMs":2},"unfused":{"accepted":true,"cases":64,"agree":64,"firstMs":2656,"repeatMs":1}}
+{"name":"attention","fused":{"accepted":true,"cases":80,"agree":80,"firstMs":4250,"repeatMs":2},"unfused":{"accepted":true,"cases":80,"agree":80,"firstMs":2886,"repeatMs":1}}
+{"name":"attention-inside","fused":{"accepted":true,"cases":80,"agree":80,"firstMs":3218,"repeatMs":1},"unfused":{"accepted":true,"cases":80,"agree":80,"firstMs":3008,"repeatMs":1}}
+{"name":"mlp","fused":{"accepted":true,"cases":80,"agree":80,"firstMs":4154,"repeatMs":1},"unfused":{"accepted":true,"cases":80,"agree":80,"firstMs":2781,"repeatMs":1}}
+{"name":"conv2d","fused":{"accepted":true,"cases":56,"agree":56,"firstMs":3902,"repeatMs":1},"unfused":{"accepted":true,"cases":56,"agree":56,"firstMs":1,"repeatMs":1}}

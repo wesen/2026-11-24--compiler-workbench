@@ -83,3 +83,80 @@ I read stage 3's design and report (IRWB-029-D), stage 2's lowering code, `src/t
 
 ### What I learned
 - The differential check needed no change for a subject with a launch-time choice: cases are opaque to it, so "sample x side" is just a longer case list, and `decide` may batch them as it likes. The evidence then counts each side as a case.
+
+## Step 4: Which bodies to stage (script 03)
+
+Staging every body slowed the cheap ones, so I measured row sums `s[i] = sum(j) <body>; y[i,j] = x[i,j] - s[i]` over [4096, 1024] with bodies of graded cost, staged against serial, five `benchmark` calls each.
+
+### What I did
+- `node <ticket>/scripts/03-staging-rule.mjs --calls=5 mul1 mul2 mul4 mul8 relu relu2 sqrt1 div1 weighted layernorm softmax-temperature` (output `03-staging-rule.out.jsonl`), later `--all mul3` (`03-staging-rule-mul3.out.jsonl`).
+- Put the rule in `fusion.ts` (`work`, `staging.cheapOperations = 4`).
+
+### What worked
+
+| Body | Staged ms | Serial ms |
+| --- | ---: | ---: |
+| `x*x` (1 multiplication) | 0.154 | 0.136 |
+| 2 multiplications | 0.137 | 0.127 |
+| 3 multiplications | 0.157 | 0.154 |
+| 4 multiplications | 0.135 | 0.152 |
+| 8 multiplications | 0.151 | 0.189 |
+| `max(x, 0)` | 0.142 | 0.226 |
+| `max(x, 0) * min(x, 1)` | 0.160 | 0.331 |
+| `sqrt(x*x)` | 0.163 | 0.292 |
+| `x / 3` | 0.154 | 0.239 |
+| `x * w[j]` (a load from global memory) | 0.176 | 0.170 |
+| layernorm (corpus), variance `c*c` | 0.219 | 0.198 |
+| softmax with `m[i] = max(j) x[i,j] / 0.7` | 0.392 | 0.434 |
+
+### What didn't work
+- My first `mul3` run was useless: I had already built the cost rule, so the plan staged nothing and "staged" and "serial" were the same source (0.159 and 0.152, both serial). I deleted those two lines from `06-thread-cap-2.out.jsonl`, added `--all` to script 03 (stage every outermost reduction of one-element members, whatever the rule says) and ran `mul3` again.
+
+### What I learned
+- Individual calls of the same source vary by up to 15% at these 0.15 ms times on the shared machine (0.133 to 0.163 for one source), more than the brief's 2%. Medians of five separate the classes; the 3-multiplication row is a tie.
+- The rule: stage when the body has a division, `sqrt`, `exp`, `log`, `tanh`, `max`, `min` or an inner reduction, or at least four of `+ - *` and negation.
+
+## Step 5: The gate's sweeps, and two things they showed (scripts 05 to 11)
+
+### What I did
+- Script 05 times one program at many shapes in one process per mode: block mode forced, the per-statement instantiations forced, and stage 2.
+- Rows sweep, softmax and a row sum, N·C = 4M, 256K and 16K, C from 4 to 1024, and N of 1, 4 and 16 with long rows (`05-gate-sweep-rows.out.jsonl`); more points at C of 20, 24, 28 and small N (`10-short-rows-and-in-place.out.jsonl`).
+- Script 06: thread caps on the "inside" variants. Scripts 07 and 08: hand-patched sources that reuse row buffers. Scripts 09 and 11: a program with a narrow, costly member (`narrow-div`: `e[i,j] = x[i,j] * 2; y[i,o] = sum(j) e[i,j] * w[j,o] / 3`).
+
+### What worked
+- **The per-statement side is stage 2.** Its time over stage 2's is 0.93 to 1.07 in 94 of 105 shape-program pairs. The other 11 are between 0.84 and 1.30, in both directions: nine at times of 5 to 180 microseconds, and the row sum at N of 4 and 16 with serial sums of 1,048,576 and 262,144 terms, where three calls of one side spread from 31 to 45 ms.
+- **Short rows.** With rows of 32 or more, block mode was at most 0.97 of stage 2 in every measurement. With rows of 16 to 28 and 16,384 rows or more it lost in 10 of 16 measurements (up to 1.94); with rows of 4 and 8 and 32,768 rows or more it lost in all eight (2.4 to 6.5). With at most 2,048 rows it won whatever the row length (0.30 to 0.92, 18 measurements). At 4,096 rows of 4 it lost (1.02, 1.30).
+- **Few long rows are a win** down to one row (softmax 0.53, row sum 0.73 at N = 1).
+
+### What I learned
+- **A block's rows decide how many blocks an SM holds.** Script 08 wrote `e` over `score` and `weight` over `e` by hand in attention: with the division inside, 1.41 to 1.15 ms; mlp with `g` over `h`, 0.727 to 0.628; attention as in the corpus unchanged (0.753, 0.756). I made it a plan decision (`inPlace`): B takes A's buffer when the rows have equal extents, every read of A in B is at B's own element, and no later member reads A.
+- With that, the term buffer no longer costs occupancy in layernorm with the division inside (0.208 at 128 threads, 0.226 at 256; before, 0.240 and 0.194), so the cap for row kernels stays stage 3's 128.
+- **The narrow member.** `narrow-div` in block mode was 1.3 to 2.7 times slower than stage 2 for every O from 1 to 128. Two causes, separated by the in-place change and the cap runs: (a) before in-place the block held the staged `x` and `e` (8 KiB), so 11 blocks of 64 threads were resident, under half the SM; (b) with O below the block width only O lanes work during `y`. After in-place: O = 64, 0.75; O = 32, 1.06; O = 16, 1.58; O = 128, 1.00 at 64 threads but 1.21 ms against 1.57 at 128 threads.
+- The same program with a multiplication only (`narrow-mul`) is faster fused at every O (0.47 to 0.82 after in-place). So only costly, unstaged reductions need a rule.
+- Each block's shared memory includes 1 KiB the device reserves (`cudaDevAttrReservedSharedMemoryPerBlock`): 4,096-byte rows give 20 resident blocks, not 24. With that, block mode's throughput on `narrow-div` (0.0122 ms per unit of O against stage 2's 0.0096) matches 20 x 64 = 1,280 of 1,536 threads.
+
+### What didn't work
+- I expected few long rows to lose (the design said so) and planned a `G_min`. The measurement says the opposite; the gate has no such term.
+- A thread cap of 256 for kernels with staged terms looked right before in-place (layernorm inside 0.194 against 0.240) and wrong after (0.226 against 0.208). Not adopted.
+
+## Step 6: The gate's rule, block width for heavy members
+
+### What I did
+- `fusion.ts`: `FusionGroup.heavy` (members with trailing axes and a reduction that the cost rule would stage), `gate = { fullRow: 32, smallGrid: 2048, heavyLanes: [19, 24] }`, `gateRule`.
+- `cuda-source.ts`: the host reads the SM's block, thread and shared-memory limits and the reserved shared memory; `resident_k`; for a group with heavy members the block is `min(256, ceil32(narrowest heavy row))` threads wide.
+- Script 05 gained `--auto` (the rule decides); `12-gate-validation.out.jsonl` runs it over shapes on both sides of each threshold.
+
+### Why
+- The lanes at work on a heavy member are `resident blocks x min(threads, row length)`. Fused won at 19/24 of the SM's threads (attention with the division inside, 1,216 lanes) and lost at 46% and below in three of four cases. The threshold is the lowest occupancy measured with no loss.
+
+## Step 7: Evidence per side only for programs with a gate
+
+### What I did
+- First version: every sample was two cases (`gate: fused | unfused`) for every subject; a program without a gate ran once and the result served both cases. Script 14 then showed 72 cases for matmul, which has no gate and ran 36.
+- Changed `cases` to double the samples only when the subject takes a gate, and `baselineKey` to include that flag (the case list now depends on it).
+
+### What didn't work
+- `CUDA evidence unavailable: IR data cannot contain undefined` in two tests of `cuda.test.mjs`: `describeCase` returned `gate: undefined` for programs without a gate. The key is now left out.
+
+### What I learned
+- The differential's `baselineKey` contract ("the cases are a function of the key alone") is easy to break silently: nothing checks that two subjects under one key produce the same case list. I changed the key because I read the comment, not because anything failed.

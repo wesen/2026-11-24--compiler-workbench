@@ -1,4 +1,11 @@
-import { gateRule, outerReductions, unfusedPlan, type FusionGroup, type FusionPlan, type Reduce } from './fusion.js';
+import {
+  gateRule,
+  outerReductions,
+  unfusedPlan,
+  type FusionGroup,
+  type FusionPlan,
+  type Reduce,
+} from './fusion.js';
 import {
   plain,
   visit,
@@ -470,12 +477,15 @@ function emitGroup(
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
     // A term count is the product of the reduction's extents; the host computes the same expressions. The term
     // area holds one member's terms at a time, so its length is the largest member's.
-    const count = (r: Reduce) => product(r.axes.map(a => `(${w.bound(a.extent)} > 0 ? ${w.bound(a.extent)} : 0)`));
+    const count = (r: Reduce) =>
+      product(r.axes.map(a => `(${w.bound(a.extent)} > 0 ? ${w.bound(a.extent)} : 0)`));
     const staging = memberTerms.filter(rs => rs.length);
     for (const r of staging.flat()) w.line(`const U c${termIds.get(r)} = ${count(r)};`);
     const area = (c: (r: Reduce) => string) =>
       // (a ternary: std::max is not callable in device code, probe in diary step 2)
-      staging.map(rs => rs.map(c).join(' + ')).reduce((a, b) => (a ? `((${a}) > (${b}) ? (${a}) : (${b}))` : b), '');
+      staging
+        .map(rs => rs.map(c).join(' + '))
+        .reduce((a, b) => (a ? `((${a}) > (${b}) ? (${a}) : (${b}))` : b), '');
     // A member written in place (fusion.ts) has no buffer of its own.
     const over = new Map(group.inPlace.map(p => [p.statement, p.over]));
     const owners = rowBuffers.filter(n => !over.has(n));
@@ -494,7 +504,8 @@ function emitGroup(
       w.line(`float* const r${suffix(name)} = ${at};`);
     }
     const last = owners.at(-1);
-    if (staging.length) w.line(`float* const terms = ${last ? `r${suffix(last)} + n${suffix(last)}` : 'base'};`);
+    if (staging.length)
+      w.line(`float* const terms = ${last ? `r${suffix(last)} + n${suffix(last)}` : 'base'};`);
     for (const name of group.staged) {
       const s = suffix(name);
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) r${s}[e] = t${s}[point * n${s} + e];`);
@@ -568,7 +579,10 @@ function emitGroup(
       `  DeviceBuffer scratch_${kernel}(fused_${kernel} && !shared_${kernel} ? grid_${kernel} * (row_${kernel} / sizeof(float)) : 0);`,
       ...members
         .filter(m => !stored.has(m.name))
-        .map(m => `  DeviceBuffer ${tensorName(m.name)}(fused_${kernel} ? 0 : elements(shape_${tensorName(m.name)}));`),
+        .map(
+          m =>
+            `  DeviceBuffer ${tensorName(m.name)}(fused_${kernel} ? 0 : elements(shape_${tensorName(m.name)}));`,
+        ),
     );
     hasWork = `grid_${kernel}`;
   } else {
@@ -704,5 +718,7 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
   const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
   const gated = plan.groups.some(g => g.statements.length > 1 && g.mapping === 'block');
   if (gated) fused.push(gateSupport);
-  return [support, ...fused, ...kernels.map(k => k.code), host.join('\n'), gated ? gatedMain : main].join('\n\n');
+  return [support, ...fused, ...kernels.map(k => k.code), host.join('\n'), gated ? gatedMain : main].join(
+    '\n\n',
+  );
 }
