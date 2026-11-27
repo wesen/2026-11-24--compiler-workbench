@@ -1,0 +1,16 @@
+import {installVendor} from '../../../../../../tools/node-vendor.mjs';
+import {projectFiles} from '../../../../../../tools/corpus.mjs';
+import {Program} from '../../../../../../dist/typed/program.js';
+import {projectSource} from '../../../../../../dist/typed/project.js';
+import {planFromSpec, PRESETS, runStrategy} from '../../../../../../dist/typed/strategies.js';
+import {lowerToImage,runImage} from '../../../../../../dist/typed/backend/index.js';
+import {casesFrom} from '../../../../../../dist/typed/evaluate.js';
+import {storeOf} from '../../../../../../dist/typed/ir.js';
+await installVendor();
+const p=Program.fromProject(projectSource('algebra',projectFiles('algebra')));
+const run=await runStrategy(p,planFromSpec('O2',PRESETS.O2));
+const r=p.revisions.find(x=>x.pass==='simplify');
+const {image}=lowerToImage(r.artifact);
+const c=casesFrom(storeOf(p.origin.value),'tidy',{count:10,seed:7,inputs:p.inputs.tidy})[0];
+const res=runImage(image,'tidy',c.args,c.memory);
+console.log(run.status,r.edits[0],r.correspondence.entries.length,image.value.insns.find(i=>i.covers.length),res.steps,Boolean(res.counts));
