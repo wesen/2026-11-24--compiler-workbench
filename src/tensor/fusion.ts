@@ -185,20 +185,43 @@ function costly(body: Expr): boolean {
 /** Which of a block-mode group's reductions get parallel terms (IRWB-030-J design): a reduction of a row-scalar
  * member, with plain `dim` extents and a body that computes something per term. Everything else is refused with a
  * reason, and keeps stage 3's serial fold. */
+/** A member's reductions, split into those no other reduction encloses (the only stageable ones: a
+ * reduction nested in another's body is computed per term, inside the enclosing term's phase, by that term's
+ * thread) and the nested ones. Both are in pre-order, the order `reduces` numbers them by. */
+function topReduces(s: Statement): { top: Reduce[]; nested: Reduce[] } {
+  const top: Reduce[] = [],
+    nested: Reduce[] = [];
+  const walk = (e: Expr, inReduction: boolean) => {
+    if (e.kind === 'reduce') {
+      (inReduction ? nested : top).push(e);
+      walk(e.body, true);
+    } else if (e.kind === 'op') e.args.forEach(a => walk(a, inReduction));
+  };
+  walk(s.expr, false);
+  return { top, nested };
+}
+
 function termPlan(members: Statement[], depth: number): { terms: StagedTerms[]; refusals: TermRefusal[] } {
   const terms: StagedTerms[] = [];
   const refusals: TermRefusal[] = [];
   for (const m of members) {
-    const all = reduces(m);
-    if (!all.length) continue;
+    const { top, nested } = topReduces(m);
+    if (!top.length && !nested.length) continue;
     if (m.axes.length > depth) {
       refusals.push({
         member: m.name,
-        reason: `its elements are already spread over the block's threads; staging ${name(all[0])} would fold one element at a time behind a barrier per element`,
+        reason: `its elements are already spread over the block's threads; staging ${name(top[0] ?? nested[0])} would fold one element at a time behind a barrier per element`,
       });
       continue;
     }
-    for (const [index, r] of all.entries()) {
+    // a reduction nested in another's body is computed per term, inside the enclosing term's phase
+    for (const r of nested)
+      refusals.push({
+        member: m.name,
+        reason: `${name(r)} is nested in another reduction, so it is computed per term by the term's thread`,
+      });
+    for (const r of top) {
+      const index = reduces(m).indexOf(r);
       const generated = r.axes.some(a => a.extent.kind !== 'dim');
       if (generated) {
         refusals.push({

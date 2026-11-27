@@ -65,7 +65,7 @@ export function inputsOf(name) {
   return { program, fn, inputs };
 }
 const withCap = (source, n) =>
-  n ? source.replace(/std::min<U>\(\d+, \(longest_/g, `std::min<U>(${n}, (longest_`) : source);
+  n ? source.replace(/std::min<U>\(\d+, \(longest_/g, `std::min<U>(${n}, (longest_`) : source;
 const digest = ({ data }) =>
   createHash('sha256').update(Buffer.from(data.buffer, data.byteOffset, data.byteLength)).digest('hex');
 

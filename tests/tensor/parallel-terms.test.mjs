@@ -53,13 +53,17 @@ test('a row-scalar reduction with a rounding body gets parallel terms; bare load
     ['m', 's'],
   );
   assert.match(softmax[1][0].reason, /body is a single load/);
-  // split-sum's generated bounds keep stage 3's serial fold
+  // split-sum's generated bounds keep stage 3's serial fold: the outer reduction's space is not rectangular,
+  // and the inner tail reduction is nested inside it
   const split = optimizeTix(compileTix(insideLayernorm), ['split-sum']).program;
   const plan = planFusion(split.current.value.functions[0]);
   assert.equal(plan.groups[0].terms.length, 0);
+  assert.ok(plan.groups[0].termRefusals.length >= 4);
+  assert.ok(plan.groups[0].termRefusals.some(r => /not rectangular/.test(r.reason)));
   assert.ok(
-    plan.groups[0].termRefusals.length >= 4 &&
-      plan.groups[0].termRefusals.every(r => /not rectangular/.test(r.reason)),
+    plan.groups[0].termRefusals.every(r =>
+      /not rectangular|nested in another reduction/.test(r.reason),
+    ),
   );
 });
 
@@ -138,12 +142,32 @@ test('a declined group runs stage 2 byte for byte, and a mixed plan stores what 
   assert.match(plan.refusals[0].reason, /its axis 0 has extent N \+ -1, the kernel's N/);
 });
 
+test('a reduction nested in another is computed per term by the term\'s thread, not staged', () => {
+  const nested = staged(
+    `fn f(x: f32[N,C], v: f32[C]): f32[N] {
+      t[i] = max(j) ((x[i,j] * 2) + sum(k) v[k] * 3);
+      z[i,j] = x[i,j] - t[i];
+      y[i] = t[i] - 1;
+      return y;
+    }`,
+    'f',
+  );
+  assert.deepEqual(nested[0], ['t:max(i1)']);
+  assert.deepEqual(
+    nested[1].map(r => r.reason),
+    ["sum(i2) is nested in another reduction, so it is computed per term by the term's thread"],
+  );
+});
+
 test('the emitted kernel stages the terms on every thread and folds them in order on thread 0', () => {
   const source = cudaSource(compileTix(insideLayernorm), 'layernorm');
   assert.match(source, /const U nterm0 = \(static_cast<U>\(\(d1\) > 0LL \? \(d1\) : 0LL\)\);/);
-  assert.match(source, /for \(U t = threadIdx\.x; t < nterm0; t \+= blockDim\.x\) \{/);
-  assert.match(source, /rterm\[t\] = v0;/);
-  assert.match(source, /if \(threadIdx\.x == 0\) \{\n    float v1 = 0\.0f;\n    for \(U t = 0; t < nterm0; \+\+t\) v1 = __fadd_rn\(v1, rterm\[t\]\);/);
+  assert.match(source, /float v\d+ = 0\.0f;\n  for \(U t = threadIdx\.x; t < nterm0; t \+= blockDim\.x\) \{/);
+  assert.match(source, /rterm\[t\] = v\d+;/);
+  assert.match(
+    source,
+    /if \(threadIdx\.x == 0\) \{\n    for \(U t = 0; t < nterm0; \+\+t\) v\d+ = __fadd_rn\(v\d+, rterm\[t\]\);\n    r4\[0\] = v\d+;/,
+  );
   assert.match(source, /float\* const rterm = r6 \+ n6;/);
   // the terms buffer is part of the row: shared memory or scratch, with the host computing the same size
   assert.match(source, /scratch \+ point \* \(n0 \+ n4 \+ n5 \+ n6 \+ nterms\)/);

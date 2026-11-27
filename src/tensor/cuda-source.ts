@@ -445,8 +445,10 @@ function emitGroup(
       const s = suffix(m.name);
       const mine = stagedReductions.filter(x => x.entry.member === m.name);
       if (mine.length) {
-        // IRWB-030-J: any thread computes a term (they are independent of the accumulator), thread 0 folds them in
-        // the meaning's order, and every barrier is reached by every thread.
+        // IRWB-030-J: any thread computes a term (they are independent of the accumulator), thread 0 folds them
+        // in the meaning's order, and every barrier is reached by every thread. The accumulators live at member
+        // scope so the final fold's combine sees the ones earlier folds produced.
+        const accumulators = mine.map(({ node }) => w.temp(node.op === 'sum' ? '0.0f' : '-INFINITY'));
         for (const [i, { node, count }] of mine.entries()) {
           w.line(`for (U t = threadIdx.x; t < ${count}; t += blockDim.x) {`);
           w.enter();
@@ -466,7 +468,7 @@ function emitGroup(
           w.line('__syncthreads();');
           w.line('if (threadIdx.x == 0) {');
           w.enter();
-          const acc = w.temp(node.op === 'sum' ? '0.0f' : '-INFINITY');
+          const acc = accumulators[i];
           w.line(
             `for (U t = 0; t < ${count}; ++t) ${acc} = ${node.op === 'sum' ? `__fadd_rn(${acc}, rterm[t])` : `max_nan(${acc}, rterm[t])`};`,
           );

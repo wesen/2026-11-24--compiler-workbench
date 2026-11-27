@@ -1,0 +1,14 @@
+{"program":"softmax","variant":"rule (m and s refused)","staged":0,"gpuMs":0.39852800965309143}
+{"program":"softmax","variant":"m and s staged by force","staged":2,"gpuMs":0.3925440013408661}
+{"program":"layernorm-inside","variant":"staged (the rule)","gpuMs":0.22649599611759186}
+{"program":"layernorm-inside","variant":"unstaged (stage 3 fold)","gpuMs":0.592960000038147}
+{"program":"layernorm-inside","variant":"staged, cap 64","gpuMs":0.25328001379966736}
+{"program":"layernorm-inside","variant":"staged, cap 128","gpuMs":0.20691199600696564}
+{"program":"layernorm-inside","variant":"staged, cap 256","gpuMs":0.19603200256824493}
+{"program":"softmax","variant":"rule (m and s refused)","staged":0,"gpuMs":0.38732799887657166}
+{"program":"softmax","variant":"m and s staged by force","staged":2,"gpuMs":0.38736000657081604}
+{"program":"layernorm-inside","variant":"staged (the rule)","gpuMs":0.2173759937286377}
+{"program":"layernorm-inside","variant":"unstaged (stage 3 fold)","gpuMs":0.5849599838256836}
+{"program":"layernorm-inside","variant":"staged, cap 64","gpuMs":0.255840003490448}
+{"program":"layernorm-inside","variant":"staged, cap 128","gpuMs":0.16816000640392303}
+{"program":"layernorm-inside","variant":"staged, cap 256","gpuMs":0.1993280053138733}

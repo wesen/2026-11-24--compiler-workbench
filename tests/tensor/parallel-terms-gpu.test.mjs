@@ -58,7 +58,7 @@ const stagedSum = `fn f(x: f32[N,C]): f32[N,C] {
   return y;
 }`;
 const stagedMaxNested = `fn f(x: f32[N,C], w: f32[C]): f32[N] {
-  t[i] = max(j) (x[i,j] * 2 + sum(k) w[k]);
+  t[i] = max(j) (x[i,j] * 2 + sum(k) w[k] * 3);
   z[i,j] = x[i,j] - t[i];
   y[i] = t[i] - 1;
   return y;
@@ -113,9 +113,15 @@ test('GB10: a staged max with a nested sum in its body, and split-sum refusing t
   assert.deepEqual(words(await runTixCuda(program, 'f', inputs)), words(runTix(program, 'f', inputs)));
   const optimized = optimizeTix(program, ['split-sum']).program;
   const splitPlan = planFusion(optimized.current.value.functions[0]);
-  // split-sum rewrote the inner sum with generated bounds; the staged max is untouched and still staged
+  // split-sum rewrote the inner sum with generated bounds; both of its parts sit inside the max's body, so they
+  // are refused as nested (the max is untouched and still staged)
   assert.deepEqual(splitPlan.groups[0].terms.map(t => t.member), ['t']);
-  assert.ok(splitPlan.groups[0].termRefusals.some(r => /not rectangular/.test(r.reason)));
+  assert.ok(splitPlan.groups[0].termRefusals.length >= 2);
+  assert.ok(
+    splitPlan.groups[0].termRefusals.every(r =>
+      /nested in another reduction/.test(r.reason),
+    ),
+  );
   assert.deepEqual(await checkLowering(optimized, 'f'), { accepted: true, relation: 'exact' });
   const x2 = inputsOf(optimized.current.value.functions[0], { N: 2, C: 7 }, 11);
   assert.deepEqual(

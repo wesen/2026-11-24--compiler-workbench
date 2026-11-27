@@ -1,0 +1,8 @@
+{"name":"matmul","accepted":true,"relation":"exact","cases":36,"elements":1292,"buildMs":4,"coldMs":2661,"repeatMs":1}
+{"name":"softmax","accepted":true,"relation":"exact","cases":32,"elements":720,"buildMs":10,"coldMs":2783,"repeatMs":1}
+{"name":"layernorm","accepted":true,"relation":"exact","cases":32,"elements":920,"buildMs":3,"coldMs":4129,"repeatMs":1}
+{"name":"attention","accepted":true,"relation":"exact","cases":40,"elements":1728,"buildMs":4,"coldMs":2633,"repeatMs":1}
+{"name":"mlp","accepted":true,"relation":"exact","cases":40,"elements":1948,"buildMs":5,"coldMs":2763,"repeatMs":1}
+{"name":"conv2d","accepted":true,"relation":"exact","cases":28,"elements":22900,"buildMs":254,"coldMs":3111,"repeatMs":1}
+{"name":"layernorm-inside","accepted":true,"relation":"exact","cases":32,"elements":920,"buildMs":1,"coldMs":3457,"repeatMs":1}
+{"name":"attention-inside","accepted":true,"relation":"exact","cases":40,"elements":1728,"buildMs":4,"coldMs":2595,"repeatMs":1}
