@@ -11,6 +11,7 @@ const support = String.raw`
 #include <cstring>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 using I = int64_t;
@@ -464,7 +465,14 @@ function rowKernel(
   return {
     code: lines.join('\n'),
     preload: `  if (${rows}) {
-    check(cudaFuncSetAttribute(${name}, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(${shared})));
+    // A fused kernel stages one row per block, so its footprint has to fit the device's shared memory. The limit is
+    // asked for rather than assumed, and the error names what the lowering needs.
+    int limit_${name} = 0;
+    check(cudaDeviceGetAttribute(&limit_${name}, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0));
+    const U need_${name} = static_cast<U>(${shared});
+    if (need_${name} > static_cast<U>(limit_${name}))
+      throw std::runtime_error("${name} needs " + std::to_string(need_${name}) + " bytes of shared memory per block; the device allows " + std::to_string(limit_${name}));
+    if (need_${name}) check(cudaFuncSetAttribute(${name}, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(need_${name})));
     check(cudaFuncGetAttributes(&attributes, ${name}));
   }`,
     hasWork: rows,
