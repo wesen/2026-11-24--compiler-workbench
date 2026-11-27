@@ -11,6 +11,9 @@ import {
   type DifferentialEvidence,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
+import { applyPass } from '../framework/passes/index.js';
+import { semanticCorrespondence } from '../framework/passes/index.js';
+import { composeCorrespondence, createIRArtifact, type EntityCorrespondence } from '../framework/ir/index.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitCuda, takesGate } from './cuda-source.js';
@@ -18,10 +21,12 @@ import { planFusion, unfusedPlan } from './fusion.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
+import { schedulePasses, scheduleFor, tileConfigDefault, type TileConfig } from './schedule-passes.js';
+import { SchedIR, scheduleAdapter, toSchedule, type ScheduleUnit } from './schedule.js';
 
 interface CudaKernel {
   name: string;
-  mapping: 'thread' | 'block';
+  mapping: 'thread' | 'block' | 'tile';
   statements: string[];
   /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
   gated?: boolean;
@@ -35,7 +40,7 @@ interface CudaUnit {
 
 export const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '2',
+  version: '3',
   description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
   entities: unit => unit.kernels.map(k => k.name),
   validate(value) {
@@ -47,7 +52,7 @@ export const CudaIR = defineIR<CudaUnit>({
       unit.kernels.some(
         k =>
           typeof k?.name !== 'string' ||
-          !['thread', 'block'].includes(k.mapping) ||
+          !['thread', 'block', 'tile'].includes(k.mapping) ||
           !['boolean', 'undefined'].includes(typeof k.gated) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
@@ -94,6 +99,132 @@ export function kernelCorrespondence(
     targetEntities: kernels.map(k => k.name),
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
     evidence: { mappings: kernels.map(k => k.mapping), gated: kernels.map(k => k.gated === true) },
+  };
+}
+
+// The schedule pipeline (IRWB-033-I): Tix → schedule IR → CUDA source, each step a checked artifact step.
+//
+// `tensor.plan-schedule` builds the initial schedule from the fusion plan; the schedule passes refine it
+// (each through the framework's pass machinery, with its own diff and correspondence); `tensor.emit-cuda`
+// prints the final schedule. The chain's correspondences compose into one statement → kernel record, which
+// the `tensor.lower-cuda` acceptance verifies together with the exact meaning invariant on the GPU.
+function scheduleEntityList(unit: ScheduleUnit): string[] {
+  return unit.kernels.flatMap(k => k.statements.map(s => unit.fn.name + '/' + s));
+}
+function memberCorrespondence(baseline: Artifact<Module>, schedule: Artifact<ScheduleUnit>): Correspondence {
+  const unit = schedule.value;
+  return {
+    id: 'members',
+    from: { artifact: baseline.id, revision: baseline.revision },
+    to: { artifact: schedule.id, revision: schedule.revision },
+    relation: 'statements-to-members',
+    sourceEntities: baseline.value.functions.flatMap(f => f.statements.map(s => f.name + '/' + s.name)),
+    targetEntities: scheduleEntityList(unit),
+    entities: unit.fn.statements.map(s => ({
+      from: [unit.fn.name + '/' + s.name],
+      to: [unit.fn.name + '/' + s.name],
+    })),
+    evidence: { kernels: unit.kernels.map(k => ({ id: k.id, mode: k.mode, statements: k.statements })) },
+  };
+}
+function asEntityCorrespondence(c: Correspondence): EntityCorrespondence {
+  return {
+    formatVersion: 1,
+    from: c.from,
+    to: c.to,
+    sourceEntities: c.sourceEntities ?? [],
+    targetEntities: c.targetEntities ?? [],
+    entries: (c.entities ?? []).map(e => ({ from: e.from, to: e.to, relation: c.relation })),
+  };
+}
+const PlanSchedule = defineTransformation({
+  id: 'tensor.plan-schedule',
+  version: '1',
+  description: 'Build the initial schedule of a Tix function from its fusion plan',
+  inputs: { baseline: TixIR, fn: FunctionName, fuse: Fuse },
+  outputs: { schedule: SchedIR },
+  cache: 'pure',
+  correspondence: [{ id: 'members', from: 'baseline', to: 'schedule', relation: 'statements-to-members' }],
+  run(_ctx, { baseline, fn, fuse }) {
+    const f = selectFunction(baseline.value, fn);
+    const schedule = createIRArtifact(
+      scheduleAdapter,
+      'tix-sched/' + fn,
+      toSchedule(f, fuse ? planFusion(f) : unfusedPlan(f)),
+    );
+    return { outputs: { schedule }, correspondence: [memberCorrespondence(baseline, schedule)] };
+  },
+});
+const EmitCuda = defineTransformation({
+  id: 'tensor.emit-cuda',
+  version: '1',
+  description: 'Print a schedule as a CUDA translation unit (the emitter makes no decisions)',
+  inputs: { schedule: SchedIR },
+  outputs: { subject: CudaIR },
+  cache: 'pure',
+  correspondence: [{ id: 'kernels', from: 'schedule', to: 'subject', relation: 'members-to-kernels' }],
+  run(_ctx, { schedule }) {
+    const unit = schedule.value;
+    const kernels = unit.kernels.map(k => ({
+      name: k.id,
+      mapping: k.mode,
+      statements: k.statements,
+      ...(k.gated && { gated: true }),
+    }));
+    const subject = cudaArtifact(unit.fn.name, emitCuda(unit.fn, unit), kernels);
+    return {
+      outputs: { subject },
+      correspondence: [
+        {
+          id: 'kernels',
+          from: { artifact: schedule.id, revision: schedule.revision },
+          to: { artifact: subject.id, revision: subject.revision },
+          relation: 'members-to-kernels',
+          sourceEntities: scheduleEntityList(unit),
+          targetEntities: kernels.map(k => k.name),
+          entities: kernels.map(k => ({ from: k.statements.map(s => unit.fn.name + '/' + s), to: [k.name] })),
+          evidence: { mappings: kernels.map(k => k.mapping), gated: kernels.map(k => k.gated === true) },
+        },
+      ],
+    };
+  },
+});
+
+/** The schedule chain: plan, the passes (when fusing), emit; returns the CUDA artifact and the composed
+ *  statement → kernel correspondence over the whole chain. */
+export async function lowerThroughSchedule(
+  baseline: Artifact<Module>,
+  fn: string,
+  fuse: boolean,
+  manager: AnalysisManager,
+  config: TileConfig = tileConfigDefault,
+): Promise<{ subject: Artifact<CudaUnit>; correspondence: Correspondence }> {
+  const opened = await manager.execute(PlanSchedule, { baseline, fn, fuse });
+  let schedule = opened.outputs.schedule as Artifact<ScheduleUnit>;
+  const chain: EntityCorrespondence[] = [asEntityCorrespondence(opened.execution.correspondence[0])];
+  if (fuse)
+    for (const pass of schedulePasses) {
+      const result = await applyPass(pass, schedule, { manager, params: config });
+      if (result.changed) {
+        schedule = result.artifact;
+        chain.push(result.correspondence!);
+      }
+    }
+  const emitted = await manager.execute(EmitCuda, { schedule });
+  chain.push(asEntityCorrespondence(emitted.execution.correspondence[0]));
+  const composed = chain.reduce((a, b) => composeCorrespondence(a, b));
+  const final = schedule.value;
+  return {
+    subject: emitted.outputs.subject as Artifact<CudaUnit>,
+    correspondence: {
+      ...semanticCorrespondence(composed, 'kernels', 'statements-to-kernels'),
+      evidence: {
+        steps: chain.map(c => c.from.revision + '->' + c.to.revision),
+        mappings: final.kernels.map(k => k.mode),
+        gated: final.kernels.map(k => k.gated),
+        refusals: final.refusals,
+      },
+    },
   };
 }
 
@@ -220,14 +351,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     ],
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
-      const kernels = plan.groups.map(g => ({
-        name: g.kernel,
-        mapping: g.mapping,
-        statements: g.statements,
-        ...(g.gated && { gated: true }),
+      const unit = scheduleFor(f, fuse);
+      const kernels = unit.kernels.map(k => ({
+        name: k.id,
+        mapping: k.mode,
+        statements: k.statements,
+        ...(k.gated && { gated: true }),
       }));
-      const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
+      const subject = cudaArtifact(fn, emitCuda(f, unit), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
     },
   });
@@ -246,7 +377,12 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         await manager.verifyTransformation({ baseline, fn, fuse }, { subject: candidate }, pass, [
           kernelCorrespondence(baseline, candidate),
         ]);
-      else await manager.execute(pass, { baseline, fn, fuse });
+      else {
+        // The schedule chain: plan, tile/bind/unroll passes, emit; the composed correspondence and the exact
+        // meaning invariant judge the final artifact (IRWB-033-I).
+        const { subject, correspondence } = await lowerThroughSchedule(baseline, fn, fuse, manager);
+        await manager.verifyTransformation({ baseline, fn, fuse }, { subject }, pass, [correspondence]);
+      }
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

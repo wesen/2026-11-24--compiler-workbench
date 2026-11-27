@@ -9,6 +9,9 @@
 //   - block mode (some member has trailing axes): one block per point; a member's row lives in a row buffer, a
 //     member with no trailing axes is computed by thread 0, and `__syncthreads()` separates the members.
 // Every element is still computed by one thread with stage 2's scalar code, so its evaluation order is unchanged.
+//
+// IRWB-033-I: the per-group analysis is factored into `groupDetails`, so the schedule passes can rebuild it for
+// the members that stay behind when a tiled run leaves the group.
 import { plain, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
 
 export interface FusionGroup {
@@ -139,10 +142,132 @@ export function gateRule(v: { grid: string; longest: string; lanes: string[]; sl
   return [rows, ...v.lanes.map(l => `${l} * ${d} >= ${n} * ${v.slots}`)].join(' && ');
 }
 
+/** The per-group analysis of stages 3 and 3b: stored, buffered, staged, terms, in place, heavy. Factored out for
+ *  the schedule passes (IRWB-033-I), which rebuild it for the members that stay behind when a tiled run leaves a
+ *  group. `g` is the kernel's index in the final kernel list; `readerGroups` maps a tensor name to the indices of
+ *  the kernels whose members read it. `why` carries reasons collected before the analysis (depth narrowing). */
+export function groupDetails(
+  fn: Fn,
+  members: Statement[],
+  depth: number,
+  readerGroups: ReadonlyMap<string, number[]>,
+  g: number,
+  why: string[],
+): {
+  details: Omit<FusionGroup, 'kernel' | 'statements' | 'depth' | 'mapping' | 'gated'>;
+  termRefusals: FusionRefusal[];
+} {
+  const names = new Set(members.map(m => m.name));
+  const single = members.length === 1;
+  const stored = members
+    .filter(m => single || m.name === fn.result || (readerGroups.get(m.name) ?? []).some(r => r > g))
+    .map(m => m.name);
+  const block = members.some(m => m.axes.length > depth);
+  const buffered = block
+    ? members.filter((m, i) => members.slice(i + 1).some(r => loads(r).some(e => e.name === m.name)))
+    : [];
+  const staged = new Set<string>();
+  const tensors = new Map([...fn.params, ...fn.statements].map(t => [t.name, t]));
+  if (block)
+    for (const m of members)
+      for (const e of loads(m)) {
+        const t = tensors.get(e.name)!;
+        if (names.has(e.name) || t.shape.length <= depth) continue;
+        const rows = members[0].shape.slice(0, depth);
+        if (rows.every((d, p) => same(d, t.shape[p]) && plain(e.indices[p]) === m.axes[p].id))
+          staged.add(e.name);
+      }
+  // Term staging (IRWB-030-E). A member with no trailing axes has one element per block, computed by thread 0
+  // while the other threads wait. Its outermost reductions' bodies do not depend on the accumulator, so all
+  // threads compute the terms and thread 0 folds them in order. A body that is one load from a row buffer is
+  // already a term in shared memory.
+  const terms: FusionGroup['terms'] = [],
+    heavy = new Set<string>(),
+    termRefusals: FusionRefusal[] = [];
+  const rowBuffers = new Set([...staged, ...buffered.map(m => m.name)]);
+  if (block)
+    for (const m of members) {
+      const ownRow = (e: Load) =>
+        rowBuffers.has(e.name) && e.indices.slice(0, depth).every((a, p) => plain(a) === m.axes[p].id);
+      outerReductions(m.expr).forEach((r, reduction) => {
+        const refuse = (reason: string) =>
+          termRefusals.push({
+            statement: m.name,
+            kernel: 'k' + g,
+            reason: `${r.op} ${reduction}: ${reason}`,
+          });
+        if (r.body.kind === 'load' && ownRow(r.body)) return;
+        const n = work(r.body);
+        if (m.axes.length > depth) {
+          if (n >= staging.cheapOperations) heavy.add(m.name);
+          return refuse('every thread of the block computes elements of the row, so none is idle');
+        }
+        if (n < staging.cheapOperations)
+          return refuse(
+            `the body is ${n} single-instruction operation${n === 1 ? '' : 's'}; below ${staging.cheapOperations} one thread's loop is faster`,
+          );
+        terms.push({ statement: m.name, reduction });
+      });
+    }
+  // Writing a member over the row it is computed from (IRWB-030-E script 08: attention with the division inside
+  // 1.41 to 1.15 ms, mlp 0.727 to 0.628, because more blocks fit in an SM's shared memory). B takes A's buffer
+  // when both rows have the same extents, every read of A in B is at B's own element, and no later member
+  // reads A. A may be a staged row or an earlier member, itself possibly in place.
+  const inPlace: FusionGroup['inPlace'] = [];
+  if (block)
+    members.forEach((b, at) => {
+      if (b.axes.length === depth || !rowBuffers.has(b.name)) return;
+      const own = (e: Load) =>
+        e.indices.length === b.axes.length && e.indices.every((a, p) => plain(a) === b.axes[p].id);
+      const over = [...rowBuffers].find(a => {
+        const reads = loads(b).filter(e => e.name === a);
+        const rest = tensors.get(a)!.shape.slice(depth);
+        return (
+          a !== b.name &&
+          reads.length > 0 &&
+          reads.every(own) &&
+          rest.length === b.shape.length - depth &&
+          rest.every((d, p) => same(d, b.shape[depth + p])) &&
+          !members.slice(at + 1).some(m => loads(m).some(e => e.name === a))
+        );
+      });
+      if (over) inPlace.push({ statement: b.name, over });
+    });
+  const axes = members[0].shape.slice(0, depth).map(text).join(', ');
+  const whyGroup = single
+    ? []
+    : block
+      ? [
+          `one block per point of [${axes}] instead of one thread per element; the members run in order, ` +
+            'separated by barriers, each element by one thread',
+          ...members
+            .filter(m => m.axes.length === depth)
+            .map(m => `thread 0 computes ${m.name} (one element per row) in the meaning's order`),
+          ...(staged.size ? [`rows of ${[...staged].join(', ')} are staged in the row buffer`] : []),
+          ...inPlace.map(p => `${p.statement} is written over the row of ${p.over}`),
+          ...terms.map(
+            t =>
+              `all threads compute the terms of ${t.statement}'s reduction ${t.reduction}; thread 0 folds them in order`,
+          ),
+        ]
+      : [`one thread per element of [${axes}] computes ${members.map(m => m.name).join(', ')} in registers`];
+  return {
+    details: {
+      stored,
+      buffered: buffered.map(m => m.name),
+      staged: [...staged],
+      terms,
+      inPlace,
+      heavy: [...heavy],
+      reasons: [...whyGroup, ...why],
+    },
+    termRefusals,
+  };
+}
+
 export function planFusion(fn: Fn): FusionPlan {
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
-  const refusals: FusionRefusal[] = [],
-    termRefusals: FusionRefusal[] = [];
+  const refusals: FusionRefusal[] = [];
   for (const s of fn.statements) {
     const current = runs.at(-1);
     if (current) {
@@ -164,115 +289,17 @@ export function planFusion(fn: Fn): FusionPlan {
   runs.forEach((run, g) =>
     run.members.forEach(s => loads(s).forEach(e => readers.set(e.name, [...(readers.get(e.name) ?? []), g]))),
   );
+  const termRefusals: FusionRefusal[] = [];
   const groups = runs.map(({ members, depth, reasons }, g): FusionGroup => {
-    const names = new Set(members.map(m => m.name));
-    const single = members.length === 1;
-    const stored = members
-      .filter(m => single || m.name === fn.result || (readers.get(m.name) ?? []).some(r => r > g))
-      .map(m => m.name);
-    const block = members.some(m => m.axes.length > depth);
-    const buffered = block
-      ? members.filter((m, i) => members.slice(i + 1).some(r => loads(r).some(e => e.name === m.name)))
-      : [];
-    const staged = new Set<string>();
-    const tensors = new Map([...fn.params, ...fn.statements].map(t => [t.name, t]));
-    if (block)
-      for (const m of members)
-        for (const e of loads(m)) {
-          const t = tensors.get(e.name)!;
-          if (names.has(e.name) || t.shape.length <= depth) continue;
-          const rows = members[0].shape.slice(0, depth);
-          if (rows.every((d, p) => same(d, t.shape[p]) && plain(e.indices[p]) === m.axes[p].id))
-            staged.add(e.name);
-        }
-    // Term staging (IRWB-030-E). A member with no trailing axes has one element per block, computed by thread 0
-    // while the other threads wait. Its outermost reductions' bodies do not depend on the accumulator, so all
-    // threads compute the terms and thread 0 folds them in order. A body that is one load from a row buffer is
-    // already a term in shared memory.
-    const terms: FusionGroup['terms'] = [],
-      heavy = new Set<string>();
-    const rowBuffers = new Set([...staged, ...buffered.map(m => m.name)]);
-    if (block)
-      for (const m of members) {
-        const ownRow = (e: Load) =>
-          rowBuffers.has(e.name) && e.indices.slice(0, depth).every((a, p) => plain(a) === m.axes[p].id);
-        outerReductions(m.expr).forEach((r, reduction) => {
-          const refuse = (reason: string) =>
-            termRefusals.push({
-              statement: m.name,
-              kernel: 'k' + g,
-              reason: `${r.op} ${reduction}: ${reason}`,
-            });
-          if (r.body.kind === 'load' && ownRow(r.body)) return;
-          const n = work(r.body);
-          if (m.axes.length > depth) {
-            if (n >= staging.cheapOperations) heavy.add(m.name);
-            return refuse('every thread of the block computes elements of the row, so none is idle');
-          }
-          if (n < staging.cheapOperations)
-            return refuse(
-              `the body is ${n} single-instruction operation${n === 1 ? '' : 's'}; below ${staging.cheapOperations} one thread's loop is faster`,
-            );
-          terms.push({ statement: m.name, reduction });
-        });
-      }
-    // Writing a member over the row it is computed from (IRWB-030-E script 08: attention with the division inside
-    // 1.41 to 1.15 ms, mlp 0.727 to 0.628, because more blocks fit in an SM's shared memory). B takes A's buffer
-    // when both rows have the same extents, every read of A in B is at B's own element, and no later member
-    // reads A. A may be a staged row or an earlier member, itself possibly in place.
-    const inPlace: FusionGroup['inPlace'] = [];
-    if (block)
-      members.forEach((b, at) => {
-        if (b.axes.length === depth || !rowBuffers.has(b.name)) return;
-        const own = (e: Load) =>
-          e.indices.length === b.axes.length && e.indices.every((a, p) => plain(a) === b.axes[p].id);
-        const over = [...rowBuffers].find(a => {
-          const reads = loads(b).filter(e => e.name === a);
-          const rest = tensors.get(a)!.shape.slice(depth);
-          return (
-            a !== b.name &&
-            reads.length > 0 &&
-            reads.every(own) &&
-            rest.length === b.shape.length - depth &&
-            rest.every((d, p) => same(d, b.shape[depth + p])) &&
-            !members.slice(at + 1).some(m => loads(m).some(e => e.name === a))
-          );
-        });
-        if (over) inPlace.push({ statement: b.name, over });
-      });
-    const axes = members[0].shape.slice(0, depth).map(text).join(', ');
-    const why = single
-      ? []
-      : block
-        ? [
-            `one block per point of [${axes}] instead of one thread per element; the members run in order, ` +
-              'separated by barriers, each element by one thread',
-            ...members
-              .filter(m => m.axes.length === depth)
-              .map(m => `thread 0 computes ${m.name} (one element per row) in the meaning's order`),
-            ...(staged.size ? [`rows of ${[...staged].join(', ')} are staged in the row buffer`] : []),
-            ...inPlace.map(p => `${p.statement} is written over the row of ${p.over}`),
-            ...terms.map(
-              t =>
-                `all threads compute the terms of ${t.statement}'s reduction ${t.reduction}; thread 0 folds them in order`,
-            ),
-          ]
-        : [
-            `one thread per element of [${axes}] computes ${members.map(m => m.name).join(', ')} in registers`,
-          ];
+    const { details, termRefusals: refused } = groupDetails(fn, members, depth, readers, g, reasons);
+    termRefusals.push(...refused);
     return {
       kernel: 'k' + g,
       statements: members.map(m => m.name),
       depth,
-      mapping: block ? 'block' : 'thread',
-      stored,
-      buffered: buffered.map(m => m.name),
-      staged: [...staged],
-      terms,
-      inPlace,
-      heavy: [...heavy],
-      gated: block,
-      reasons: [...why, ...reasons],
+      mapping: members.some(m => m.axes.length > depth) ? 'block' : 'thread',
+      gated: members.some(m => m.axes.length > depth),
+      ...details,
     };
   });
   return { fn: fn.name, groups, refusals, termRefusals };
@@ -286,7 +313,7 @@ export function unfusedPlan(fn: Fn): FusionPlan {
       kernel: 'k' + g,
       statements: [s.name],
       depth: s.axes.length,
-      mapping: 'thread',
+      mapping: 'thread' as const,
       stored: [s.name],
       buffered: [],
       staged: [],

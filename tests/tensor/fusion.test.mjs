@@ -29,8 +29,15 @@ test('every corpus program is one kernel; the row programs run one block per row
     const p = planFusion(program.current.value.functions[0]);
     assert.deepEqual(summary(p), groups, name);
     assert.deepEqual(p.refusals, [], name);
-    assert.equal(kernels(cudaSource(program, name)), 1, name);
   }
+  // IRWB-033-I: the tile pass turns the contractions into tile kernels; softmax and layernorm have no
+  // tileable run and keep their one block-mode kernel; conv2d's halo reads refuse the tile pass.
+  assert.equal(kernels(cudaSource(corpus('matmul'), 'matmul')), 1, 'matmul');
+  assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax')), 1, 'softmax');
+  assert.equal(kernels(cudaSource(corpus('layernorm'), 'layernorm')), 1, 'layernorm');
+  assert.equal(kernels(cudaSource(corpus('attention'), 'attention')), 3, 'attention');
+  assert.equal(kernels(cudaSource(corpus('mlp'), 'mlp')), 2, 'mlp');
+  assert.equal(kernels(cudaSource(corpus('conv2d'), 'conv2d')), 1, 'conv2d');
   const softmax = planFusion(corpus('softmax').current.value.functions[0]).groups[0];
   assert.deepEqual([softmax.buffered, softmax.staged], [['m', 'e', 's'], ['x']]);
   assert.ok(softmax.reasons.some(r => /thread 0 computes m/.test(r)));
@@ -53,8 +60,10 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
     assert.equal(sha(cudaSource(optimized, name, { fuse: false })), digests[name + '+inline+split'], name);
   }
-  for (const name of ['matmul', 'conv2d']) {
+  for (const name of ['conv2d']) {
     const program = corpus(name);
+    // IRWB-033-I: conv2d's halo reads refuse the tile pass, so its fused schedule is stage 2's exactly;
+    // matmul's fused schedule is now a gated tile kernel and differs.
     assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
   }
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
@@ -156,13 +165,13 @@ test('the lowering records which statements each kernel computes, and fused and 
     const correspondence = checks.find(c => c.phase === 'correspondence');
     assert.equal(correspondence.ok, true);
     assert.equal(correspondence.evidence.relation, 'statements-to-kernels');
-    // IRWB-030-E: the record says which kernels the host may also run statement by statement
-    assert.deepEqual(correspondence.evidence.evidence.gated, fuse ? [true] : [false, false, false, false]);
+    // IRWB-033-I: the composed chain's record pairs every statement with its kernel (composition splits the
+    // fused kernel's grouped entry into per-statement pairs)
     assert.deepEqual(
       correspondence.evidence.entities,
       fuse
-        ? [{ from: ['softmax/m', 'softmax/e', 'softmax/s', 'softmax/y'], to: ['k0'] }]
-        : ['m', 'e', 's', 'y'].map((s, i) => ({ from: ['softmax/' + s], to: ['k' + i] })),
+        ? ['e', 'm', 's', 'y'].map(s => ({ from: ['softmax/' + s], to: ['k0'] }))
+        : [['e', 'k1'], ['m', 'k0'], ['s', 'k2'], ['y', 'k3']].map(([s, k]) => ({ from: ['softmax/' + s], to: [k] })),
     );
   }
   // IRWB-030-E: the fused softmax kernel has a gate, so every sample is a case on each side and the program
@@ -315,11 +324,10 @@ test('a member is written over the row it is computed from when nothing reads th
   assert.deepEqual(inPlace('softmax'), [{ statement: 'e', over: 'x' }]);
   assert.deepEqual(inPlace('layernorm'), [{ statement: 'centered', over: 'x' }]);
   assert.deepEqual(inPlace('mlp'), [{ statement: 'g', over: 'h' }]);
-  const source = cudaSource(corpus('attention'), 'attention');
-  // score, e and weight share one row; the block's row area is q, that row and the two scalars
-  assert.match(source, /float\* const r5 = r3;/);
-  assert.match(source, /float\* const r7 = r5;/);
-  assert.match(source, /scratch \+ point \* \(n0 \+ n3 \+ n4 \+ n6\);/);
+  const source = cudaSource(corpus('softmax'), 'softmax');
+  // e is written over x's row buffer; the block's row area is x, m and s
+  assert.match(source, /float\* const r2 = r0;/);
+  assert.match(source, /scratch \+ point \* \(n0 \+ n1 \+ n3\);/);
   // refused: x is read again by y; e is read at another element; the rows have different extents
   const none = source => planFusion(fnOf(source)).groups[0].inPlace;
   assert.deepEqual(
@@ -351,17 +359,17 @@ test('the gate is a host condition on the grid, the longest row and the lanes of
     softmax,
     /threads_k0 = static_cast<unsigned>\(std::min<U>\(128, \(longest_k0 \+ 31\) \/ 32 \* 32\)\);/,
   );
-  // attention with the division inside each term: score and out carry divisions that cannot be staged, so the
-  // block is as wide as the narrower of their rows and the gate asks for 19/24 of an SM's lanes on each
-  const inner = `fn f(q:f32[Q,D], k:f32[K,D], v:f32[K,V]):f32[Q,V] {
-    score[i,j] = sum(d) q[i,d] * k[j,d] / sqrt(D);
-    z[i] = sum(j) score[i,j];
-    out[i,c] = sum(j) score[i,j] * v[j,c] / z[i];
-    return out;
+  // IRWB-033-I: a contraction whose reads are chunkable becomes a tile kernel, with the tile gate; a member
+  // the tile pass cannot tile (here: three output axes) keeps the block-mode gate with its heavy-lane line.
+  const inner = `fn f(x:f32[N,C], z:f32[N,C,K,M]):f32[N,C,K] {
+    m[i] = max(j) z[i,j,0,0];
+    u[i,j,l] = sum(k) z[i,j,l,k] / 3 + m[i];
+    return u;
   }`;
   const plan = planFusion(fnOf(inner));
-  assert.deepEqual(plan.groups[0].heavy, ['score', 'out']);
+  assert.deepEqual(plan.groups[0].heavy, ['u']);
   const source = cudaSource(compileTix(inner), 'f');
+  assert.match(source, /template <int Mode>\n__global__ void k0/); // m and u share one block-mode kernel
   assert.match(
     source,
     /threads_k0 = static_cast<unsigned>\(std::min<U>\(256, \(std::max<U>\(std::min<U>\(\{/,
@@ -370,7 +378,12 @@ test('the gate is a host condition on the grid, the longest row and the lanes of
     source,
     /resident_k0 = std::min<U>\(\{sm_blocks, sm_threads \/ threads_k0, shared_k0 \? sm_shared \/ \(row_k0 \+ sm_reserved\) : sm_blocks\}\);/,
   );
-  assert.equal(source.match(/\* 24 >= 19 \* sm_threads/g).length, 2);
+  assert.equal(source.match(/\* 24 >= 19 \* sm_threads/g).length, 1);
+  // a chunkable two-axis contraction leaves as a tile kernel and takes the tile gate
+  const gemm = `fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = sum(k) a[i,k] * b[k,j]; return y; }`;
+  const tiled = cudaSource(compileTix(gemm), 'f');
+  assert.match(tiled, /template <int Mode>\n__global__ void k0/);
+  assert.ok(tiled.includes('const bool fused_k0 = gate_mode == 2 ? false : gate_mode == 1 ? fits_k0 && aligned_k0 : ('));
   // the corpus attention multiplies inside and divides outside: one multiplication per term is not heavy
   assert.deepEqual(planFusion(corpus('attention').current.value.functions[0]).groups[0].heavy, []);
 });
