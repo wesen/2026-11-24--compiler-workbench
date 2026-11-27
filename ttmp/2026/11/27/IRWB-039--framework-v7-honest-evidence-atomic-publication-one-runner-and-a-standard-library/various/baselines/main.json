@@ -425,7 +425,7 @@
     }
    },
    "speed": {
-    "image": "12d8744b6c5a7c04",
+    "image": "90252eb4fa3731fc",
     "bytes": 30940,
     "instructions": 278850,
     "heldout": 555142,
@@ -439,8 +439,8 @@
      "copies": 1024,
      "dce": 567,
      "licm": 73,
-     "strength": 58,
-     "guards": 4,
+     "strength": 60,
+     "guards": 2,
      "subst-mem": 392,
      "identities": 17,
      "rotate": 104
@@ -1789,6 +1789,6 @@
   }
  },
  "timing": {
-  "inlineAttentionMs": 0.527
+  "inlineAttentionMs": 1.465
  }
 }
