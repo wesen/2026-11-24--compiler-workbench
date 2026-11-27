@@ -1124,8 +1124,7 @@ export class AnalysisManager {
         );
       for (const entry of c.entities ?? [])
         for (const id of label === 'source' ? entry.from : entry.to)
-          if (!actual.has(id))
-            throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
+          if (!actual.has(id)) throw new ContractError('correspondence', `Unknown ${label} entity ${id}`);
     }
   }
   async checkInvariant<P extends Ports>(
