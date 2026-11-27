@@ -142,6 +142,7 @@ test('the lowering records which statements each kernel computes, and fused and 
     batches.push({ fused: /max_nan/.test(source), count: cases.length, gate: options?.gate });
     return cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
   };
+  const totals = [];
   const check = createCudaLowering('tensor-test-fusion', engine);
   const program = corpus('softmax');
   for (const fuse of [true, false]) {
@@ -151,6 +152,7 @@ test('the lowering records which statements each kernel computes, and fused and 
       relation: 'exact',
     });
     const checks = manager.snapshot().executions.at(-1).checks;
+    totals.push(checks.find(c => c.phase === 'ensures').evidence.total);
     const correspondence = checks.find(c => c.phase === 'correspondence');
     assert.equal(correspondence.ok, true);
     assert.equal(correspondence.evidence.relation, 'statements-to-kernels');
@@ -161,8 +163,8 @@ test('the lowering records which statements each kernel computes, and fused and 
         : ['m', 'e', 's', 'y'].map((s, i) => ({ from: ['softmax/' + s], to: ['k' + i] })),
     );
   }
-  // IRWB-030-E: the fused softmax kernel has a gate, so its cases run once with each side forced; the unfused
-  // lowering has none and runs each sample once
+  // IRWB-030-E: the fused softmax kernel has a gate, so every sample is a case on each side and the program
+  // runs once per side; the unfused lowering has no gate and one case per sample
   assert.deepEqual(
     batches.map(b => [b.fused, b.gate]),
     [
@@ -173,6 +175,7 @@ test('the lowering records which statements each kernel computes, and fused and 
   );
   assert.ok(batches.every(b => b.count === batches[0].count));
   assert.ok(batches[0].count > 10);
+  assert.deepEqual(totals, [2 * batches[0].count, batches[0].count]);
 });
 
 // IRWB-030-E
@@ -193,13 +196,18 @@ test('terms are staged for reductions of one-element members, unless the terms a
   assert.match(p.groups[0].reasons.join('; '), /all threads compute the terms of s's reduction 0/);
   const source = cudaSource(compileTix(inside), 'f');
   // a term pass over the body's scalar code, then thread 0's fold over the term buffer in increasing order
-  assert.match(source, /for \(U e = threadIdx\.x; e < c2_0; e \+= blockDim\.x\) \{[^}]*exp\([^}]*q2_0\[e\] = v\d+;/);
+  assert.match(
+    source,
+    /for \(U e = threadIdx\.x; e < c2_0; e \+= blockDim\.x\) \{[^}]*exp\([^}]*q2_0\[e\] = v\d+;/,
+  );
   assert.match(source, /for \(U t = 0; t < c2_0; \+\+t\) \{\s*(v\d+) = __fadd_rn\(\1, q2_0\[t\]\);/);
 
   // two reductions of one member share the term area; a costly max is staged too; the corpus programs with
   // the division outside keep stage 3's kernels except where a body does work
   const two = planFusion(
-    fnOf('fn f(x:f32[N,C]):f32[N,C] { s[i] = (sum(j) x[i,j] / C) + max(j) sqrt(x[i,j]); y[i,j] = x[i,j] - s[i]; return y; }'),
+    fnOf(
+      'fn f(x:f32[N,C]):f32[N,C] { s[i] = (sum(j) x[i,j] / C) + max(j) sqrt(x[i,j]); y[i,j] = x[i,j] - s[i]; return y; }',
+    ),
   );
   assert.deepEqual(two.groups[0].terms, [
     { statement: 's', reduction: 0 },
@@ -207,7 +215,9 @@ test('terms are staged for reductions of one-element members, unless the terms a
   ]);
   // only the outer reduction of a nest is staged: the inner one is part of each term
   const nested = planFusion(
-    fnOf('fn f(x:f32[N,C], z:f32[N,C]):f32[N,C] { s[i] = sum(j) (x[i,j] * sum(j) z[i,j]); y[i,j] = x[i,j] / s[i]; return y; }'),
+    fnOf(
+      'fn f(x:f32[N,C], z:f32[N,C]):f32[N,C] { s[i] = sum(j) (x[i,j] * sum(j) z[i,j]); y[i,j] = x[i,j] / s[i]; return y; }',
+    ),
   );
   assert.deepEqual(nested.groups[0].terms, [{ statement: 's', reduction: 0 }]);
 });
@@ -222,9 +232,17 @@ test('terms are refused for members whose row occupies the block, and thread-mod
       ['out', 'k0'],
     ],
   );
-  assert.match(attention.termRefusals[0].reason, /sum 0: every thread of the block computes elements of the row/);
-  const chain = planFusion(fnOf('fn f(x:f32[N,C]):f32[N] { s[i] = sum(j) exp(x[i,j]); t[i] = s[i] * 2; return t; }'));
-  assert.deepEqual([chain.groups[0].mapping, chain.groups[0].terms, chain.groups[0].gated], ['thread', [], false]);
+  assert.match(
+    attention.termRefusals[0].reason,
+    /sum 0: every thread of the block computes elements of the row/,
+  );
+  const chain = planFusion(
+    fnOf('fn f(x:f32[N,C]):f32[N] { s[i] = sum(j) exp(x[i,j]); t[i] = s[i] * 2; return t; }'),
+  );
+  assert.deepEqual(
+    [chain.groups[0].mapping, chain.groups[0].terms, chain.groups[0].gated],
+    ['thread', [], false],
+  );
   assert.deepEqual(chain.termRefusals, []);
 });
 
@@ -247,7 +265,10 @@ test('a block-mode kernel is one definition that also holds its statements in st
   // one instantiation per member with stage 2's mapping, launched in order when the gate says no
   for (const mode of [2, 3, 4, 5]) {
     assert.ok(source.includes(`if (Mode == ${mode}) {`), 'mode ' + mode);
-    assert.ok(source.includes(`if (!fused_k0 && elements(shape_t${mode - 1})) k0<${mode}><<<`), 'launch ' + mode);
+    assert.ok(
+      source.includes(`if (!fused_k0 && elements(shape_t${mode - 1})) k0<${mode}><<<`),
+      'launch ' + mode,
+    );
   }
   assert.match(source, /const bool fused_k0 = gate_mode \? gate_mode == 1 : /);
   assert.match(source, /"--gate=fused"/);
@@ -283,7 +304,6 @@ test('the check runs every sample on both sides of the gate and names the side t
   }
 });
 
-
 test('a member is written over the row it is computed from when nothing reads that row afterwards', () => {
   const inPlace = name => planFusion(corpus(name).current.value.functions[0]).groups[0].inPlace;
   assert.deepEqual(inPlace('attention'), [
@@ -301,7 +321,9 @@ test('a member is written over the row it is computed from when nothing reads th
   // refused: x is read again by y; e is read at another element; the rows have different extents
   const none = source => planFusion(fnOf(source)).groups[0].inPlace;
   assert.deepEqual(
-    none('fn f(x:f32[N,C]):f32[N,C] { e[i,j] = x[i,j] * 2; m[i] = max(j) e[i,j]; y[i,j] = e[i,j] - m[i] + x[i,j]; return y; }'),
+    none(
+      'fn f(x:f32[N,C]):f32[N,C] { e[i,j] = x[i,j] * 2; m[i] = max(j) e[i,j]; y[i,j] = e[i,j] - m[i] + x[i,j]; return y; }',
+    ),
     [],
   );
   for (const read of ['e[i,j+1]', 'e[i,j+0]'])
@@ -318,8 +340,15 @@ test('the gate is a host condition on the grid, the longest row and the lanes of
   assert.deepEqual(gate, { fullRow: 32, smallGrid: 2048, heavyLanes: [19, 24] });
   // softmax has no heavy member: rows of a warp or more, or few rows
   const softmax = cudaSource(corpus('softmax'), 'softmax');
-  assert.ok(softmax.includes('const bool fused_k0 = gate_mode ? gate_mode == 1 : (longest_k0 >= 32 || grid_k0 <= 2048);'));
-  assert.match(softmax, /threads_k0 = static_cast<unsigned>\(std::min<U>\(128, \(longest_k0 \+ 31\) \/ 32 \* 32\)\);/);
+  assert.ok(
+    softmax.includes(
+      'const bool fused_k0 = gate_mode ? gate_mode == 1 : (longest_k0 >= 32 || grid_k0 <= 2048);',
+    ),
+  );
+  assert.match(
+    softmax,
+    /threads_k0 = static_cast<unsigned>\(std::min<U>\(128, \(longest_k0 \+ 31\) \/ 32 \* 32\)\);/,
+  );
   // attention with the division inside each term: score and out carry divisions that cannot be staged, so the
   // block is as wide as the narrower of their rows and the gate asks for 19/24 of an SM's lanes on each
   const inner = `fn f(q:f32[Q,D], k:f32[K,D], v:f32[K,V]):f32[Q,V] {
@@ -331,8 +360,14 @@ test('the gate is a host condition on the grid, the longest row and the lanes of
   const plan = planFusion(fnOf(inner));
   assert.deepEqual(plan.groups[0].heavy, ['score', 'out']);
   const source = cudaSource(compileTix(inner), 'f');
-  assert.match(source, /threads_k0 = static_cast<unsigned>\(std::min<U>\(256, \(std::max<U>\(std::min<U>\(\{/);
-  assert.match(source, /resident_k0 = std::min<U>\(\{sm_blocks, sm_threads \/ threads_k0, shared_k0 \? sm_shared \/ \(row_k0 \+ sm_reserved\) : sm_blocks\}\);/);
+  assert.match(
+    source,
+    /threads_k0 = static_cast<unsigned>\(std::min<U>\(256, \(std::max<U>\(std::min<U>\(\{/,
+  );
+  assert.match(
+    source,
+    /resident_k0 = std::min<U>\(\{sm_blocks, sm_threads \/ threads_k0, shared_k0 \? sm_shared \/ \(row_k0 \+ sm_reserved\) : sm_blocks\}\);/,
+  );
   assert.equal(source.match(/\* 24 >= 19 \* sm_threads/g).length, 2);
   // the corpus attention multiplies inside and divides outside: one multiplication per term is not heavy
   assert.deepEqual(planFusion(corpus('attention').current.value.functions[0]).groups[0].heavy, []);
