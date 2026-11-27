@@ -57,13 +57,21 @@ test('a rejected optimization step reports the first counterexample and leaves t
   const p = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k)((16777216+x[i,k])-16777216);return y;}');
   const result = optimizeTix(p, ['split-sum']);
   assert.equal(result.program.current, p.current);
-  assert.throws(() => checked(p, splitPass, 'tolerance'), error => {
-    assert.ok(rejected(error));
-    assert.deepEqual(result.steps, [
-      { pass: 'split-sum', accepted: false, changed: false, reason: error.evidence.counterexamples[0].reason },
-    ]);
-    return true;
-  });
+  assert.throws(
+    () => checked(p, splitPass, 'tolerance'),
+    error => {
+      assert.ok(rejected(error));
+      assert.deepEqual(result.steps, [
+        {
+          pass: 'split-sum',
+          accepted: false,
+          changed: false,
+          reason: error.evidence.counterexamples[0].reason,
+        },
+      ]);
+      return true;
+    },
+  );
 });
 test('coverage required per function and screening is origin-only', () => {
   const never = 'fn g(x:f32[5000]):f32[5000]{return x;}';

@@ -107,14 +107,22 @@ test('GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and
 
 test('remote runner links repeated libraries and keys the build by their order', async () => {
   const tool = fileURLToPath(new URL('../../tools/cuda-remote.mjs', import.meta.url));
-  const dir = fileURLToPath(new URL(
-    '../../ttmp/2026/11/26/IRWB-024--framework-and-tensor-fixes-f14-f19-f20/scripts/01-cublas-product/',
-    import.meta.url,
-  ));
+  // a 2x2 cublasSgemm checked against a CPU product (from IRWB-024's probe, scripts/01-cublas-product)
+  const dir = fileURLToPath(new URL('./fixtures/cublas-product/', import.meta.url));
   async function run(first, second) {
-    const { stdout } = await promisify(execFile)(process.execPath, [tool, dir, '--link', first, '--link', second]);
+    const { stdout } = await promisify(execFile)(process.execPath, [
+      tool,
+      dir,
+      '--link',
+      first,
+      '--link',
+      second,
+    ]);
     const result = JSON.parse(stdout);
-    assert.deepEqual(JSON.parse(result.stdout), [[19, 22], [43, 50]]);
+    assert.deepEqual(JSON.parse(result.stdout), [
+      [19, 22],
+      [43, 50],
+    ]);
     return result.hash;
   }
   assert.notEqual(await run('m', 'cublas'), await run('cublas', 'm'));

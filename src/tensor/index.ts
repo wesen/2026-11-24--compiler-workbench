@@ -45,7 +45,12 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
     } catch (error) {
       if (error instanceof PassError && error.code === 'contractRejected') {
         const evidence = error.evidence as DifferentialEvidence | undefined;
-        return { pass, accepted: false, changed: false, reason: evidence?.counterexamples[0]?.reason ?? error.message };
+        return {
+          pass,
+          accepted: false,
+          changed: false,
+          reason: evidence?.counterexamples[0]?.reason ?? error.message,
+        };
       }
       throw error;
     }
