@@ -32,7 +32,7 @@ interface Ctx {
 const lastOf = (st: Store, b: BlockRec): StmtRec | undefined =>
   b.stmts.length ? (st.get(b.stmts.at(-1)!) as StmtRec) : undefined;
 
-// ---------- cfg: a block that only tests a local ----------
+// ---------- thread: a block that only tests a local ----------
 const copyTree = (tx: Tx, st: Store, id: string, because: string[]): string => {
   const v = st.get(id) as ValueRec;
   return tx.make(v.op, ...v.args.map(a => copyTree(tx, st, a, because)), {
@@ -117,7 +117,7 @@ function domChildren(f: WorkFn, ssa: SsaFn): Map<string, string[]> {
   return kids;
 }
 
-// ---------- constprop: reads of copies ----------
+// ---------- copies: reads of copies ----------
 /**
  * For a copy `x = y` (the whole value is a read of `y`), a read of that `x` is replaced by a read of `y` wherever
  * the name of `y` the copy read is still `y`'s current name. Returns the plan: `get` value id -> the local to read
@@ -186,7 +186,7 @@ export function copyReads({ st, f }: Ctx, ssa: SsaFn, whole = false): Map<string
   return plan;
 }
 
-// ---------- bce: checks decided by dominating branches ----------
+// ---------- guards: what dominating branches decide ----------
 const NEGATE: Record<string, string> = {
   lt: 'ge',
   ge: 'lt',

@@ -1,0 +1,51 @@
+across-calls           inline cfg copies dce subst-mem subst-mem subst-mem
+algebra                simplify constprop copies simplify dce
+blend                  cfg fold simplify constprop copies dce licm rotate
+bounds-lab             cfg simplify copies dce bce cfg rotate
+bounds-offset          cfg simplify copies dce rotate
+bounds-param           cfg simplify copies dce rotate
+bounds-two             cfg simplify copies dce bce cfg rotate
+branches               cfg fold dce
+bytecode-vm            cfg fold copies dce cfg licm guards subst-mem cfg subst-mem
+call-chain             inline inline cfg simplify copies dce subst-mem subst-mem subst-mem
+calls                  inline cfg constprop copies dce subst-mem subst-mem subst-mem
+checksum               cfg simplify copies dce bce cfg rotate
+chess-search           inline inline cfg thread fold simplify constprop copies fold simplify dce cfg licm strength thread guards subst-mem subst-mem dce cfg subst-mem identities rotate
+collatz                thread dce cfg strength subst-mem rotate
+constants              simplify constprop fold dce subst-mem
+dead-code              cfg fold simplify constprop dce cfg subst-mem
+diagnostics            simplify subst-mem
+distinct               inline cfg copies dce lvn subst-mem subst-mem subst-mem
+div-checks             constprop copies dce
+div-magic              fold simplify copies dce rotate
+early-exit             cfg fold simplify copies dce bce cfg rotate
+f32-dsp                inline cfg simplify copies dce licm lvn subst-mem identities rotate
+first-steps            inline cfg fold constprop copies simplify dce subst-mem subst-mem
+fixed-point            inline cfg fold constprop copies dce subst-mem subst-mem
+fragments              cfg fold simplify constprop copies dce licm rotate
+gcd                    simplify rotate
+heat-lab               cfg thread simplify copies dce cfg subst-mem rotate
+histogram              cfg simplify copies dce bce cfg rotate
+licm-nested            simplify licm rotate
+licm-traps             simplify rotate
+lz-roundtrip           inline cfg thread simplify copies dce cfg licm guards subst-mem subst-mem cfg subst-mem rotate
+match-enum             cfg copies dce
+my-analysis            cfg simplify licm cfg rotate
+my-first-pass          lvn subst-mem subst-mem
+nested-loops           simplify licm rotate
+orders                 cfg fold simplify constprop copies simplify dce licm lvn subst-mem subst-mem rotate
+params-demo            cfg fold simplify constprop copies dce licm rotate
+pressure               lvn subst-mem subst-mem
+ramp                   cfg simplify constprop copies dce bce cfg rotate
+records                copies dce
+regalloc-lab           inline cfg simplify copies dce lvn subst-mem rotate
+regex-nfa              inline cfg thread fold simplify constprop copies dce cfg licm thread guards subst-mem subst-mem dce cfg subst-mem rotate
+sha-chacha             inline cfg fold simplify constprop copies fold dce licm lvn strength guards subst-mem subst-mem cfg subst-mem rotate
+sort                   cfg thread simplify copies dce cfg subst-mem rotate
+start-here             inline cfg fold simplify constprop copies dce licm bce subst-mem subst-mem cfg rotate
+strength               cfg simplify constprop copies dce strength bce cfg rotate
+strings                cfg thread simplify copies dce cfg bce subst-mem cfg rotate
+ui-gallery             inline cfg fold simplify constprop copies dce licm rotate
+value-numbering        simplify lvn rotate
+wrong-shift            cfg simplify copies dce bce cfg rotate
+{"against":"speed images, default and tuned options","revisions":368,"functionChecks":166,"decided":16572,"agree":16572,"inconclusive":28,"rejected":[],"disagreements":0}

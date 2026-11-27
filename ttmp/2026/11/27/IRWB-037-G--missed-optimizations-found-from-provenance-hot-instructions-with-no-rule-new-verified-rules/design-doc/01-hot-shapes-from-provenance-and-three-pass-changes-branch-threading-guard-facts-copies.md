@@ -183,3 +183,18 @@ table's records use (`random: 1e6, seed: 7, exhaustive32: true`).
 - Buffer checks against a loaded length (`if geu(x, load)`), beyond what bce proves now.
 - Check merging for `caddr` across blocks (LZ: 24,192 instructions in `caddr(x, add)`).
 - A sparse analysis over SSA names in `src/framework/dataflow`, of which 2.2's walk is one instance.
+
+## Addendum: what changed during the implementation
+
+The text above is the design as committed before the implementation (badf42a). Four things changed, each
+because of a measurement. The report has the numbers.
+
+- **Passes of their own, in `speed` only.** The phases inside cfg, bce and constprop changed the book's O2
+  examples, and nine tests pin those. They became the passes `thread`, `guards`, `copies` and `subst-mem`; O2 is
+  unchanged.
+- **`thread` decides a constant arm itself and runs twice.** The inner join of a nested `&&` appears only
+  after the first run and a cfg.
+- **`guards` also bounds loop counters and reduces `x / 2^k`, `x % 2^k`.** `typed.ranges` loses the lower
+  bound of an outer loop counter under an inner loop, so `strength` left chess's `dense / 8`.
+- **A rule table was added after all** (`identities`, three rules), for the shapes `guards` leaves. The first
+  round of candidates confirmed the design's expectation: 192 instructions.
