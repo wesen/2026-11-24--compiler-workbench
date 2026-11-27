@@ -8,7 +8,7 @@
 //   - thread mode (every member has rank `depth`): one thread per point; a member is a register;
 //   - block mode (some member has trailing axes): one block per point; a member's row lives in a row buffer, a
 //     member with no trailing axes is computed by thread 0, and `__syncthreads()` separates the members.
-// Every element is still computed by one thread with stage 2's scalar code, so its evaluation order is unchanged.
+// The block may precompute independent terms. The fold always runs on one thread in the original order.
 import { plain, visit, type Affine, type Expr, type Fn, type Statement } from './model.js';
 
 export interface FusionGroup {
@@ -26,6 +26,8 @@ export interface FusionGroup {
   staged: string[];
   /** Why the statements share this kernel, and what changed in the thread mapping. */
   reasons: string[];
+  /** Reduction selected for cooperative term evaluation in each eligible row scalar. */
+  parallelTerms: Record<string, Reduction>;
 }
 export interface FusionRefusal {
   statement: string;
@@ -78,6 +80,39 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
   return { depth: k, reason };
 }
 
+type Reduction = Extract<Expr, { kind: 'reduce' }>;
+
+function reductions(expr: Expr): Reduction[] {
+  const result: Reduction[] = [];
+  visit(expr, e => {
+    if (e.kind === 'reduce') result.push(e);
+  });
+  return result;
+}
+
+// A row-vector contraction with division in its body and a cross-row matrix operand can instead
+// launch across its complete output grid. Arithmetic after the fold does not qualify.
+function dividedContraction(s: Statement, depth: number): boolean {
+  if (s.axes.length <= depth) return false;
+  const columns = new Set(s.axes.slice(depth).map(axis => axis.id));
+  return reductions(s.expr).some(r => {
+    let divides = false,
+      crossRow = false;
+    const binders = new Set(r.axes.map(a => a.id));
+    visit(r.body, e => {
+      if (e.kind === 'op' && e.op === '/') divides = true;
+      if (
+        e.kind === 'load' &&
+        e.indices.length === 2 &&
+        binders.has(plain(e.indices[0]) ?? '') &&
+        columns.has(plain(e.indices[1]) ?? '')
+      )
+        crossRow = true;
+    });
+    return divides && crossRow;
+  });
+}
+
 export function planFusion(fn: Fn): FusionPlan {
   const runs: { members: Statement[]; depth: number; reasons: string[] }[] = [];
   const refusals: FusionRefusal[] = [];
@@ -85,7 +120,9 @@ export function planFusion(fn: Fn): FusionPlan {
     const current = runs.at(-1);
     if (current) {
       const join = joinDepth(s, current.members, current.depth);
-      if (join.depth > 0) {
+      if (join.depth > 0 && dividedContraction(s, join.depth)) {
+        join.reason = 'divided cross-row contraction keeps one thread per output across the grid';
+      } else if (join.depth > 0) {
         if (join.depth < current.depth)
           current.reasons.push(
             `${s.name} narrows the block domain to ${join.depth} ${join.depth === 1 ? 'axis' : 'axes'}: ${join.reason}`,
@@ -123,6 +160,19 @@ export function planFusion(fn: Fn): FusionPlan {
           if (rows.every((d, p) => same(d, t.shape[p]) && plain(e.indices[p]) === m.axes[p].id))
             staged.add(e.name);
         }
+    const parallelTerms: Record<string, Reduction> = Object.create(null);
+    if (block)
+      for (const m of members) {
+        if (m.axes.length !== depth) continue;
+        const rs = reductions(m.expr);
+        if (rs.length !== 1) continue;
+        const [r] = rs;
+        let costly = false;
+        visit(r.body, e => {
+          if (e.kind === 'op' && ['/', 'sqrt', 'exp', 'log', 'tanh'].includes(e.op)) costly = true;
+        });
+        if (r.axes.length === 1 && r.axes[0].extent.kind === 'dim' && costly) parallelTerms[m.name] = r;
+      }
     const axes = members[0].shape.slice(0, depth).map(text).join(', ');
     const why = single
       ? []
@@ -146,7 +196,12 @@ export function planFusion(fn: Fn): FusionPlan {
       stored,
       buffered: buffered.map(m => m.name),
       staged: [...staged],
-      reasons: [...why, ...reasons],
+      parallelTerms,
+      reasons: [
+        ...why,
+        ...Object.keys(parallelTerms).map(n => `the block stages ordered terms for ${n}`),
+        ...reasons,
+      ],
     };
   });
   return { fn: fn.name, groups, refusals };
@@ -165,6 +220,7 @@ export function unfusedPlan(fn: Fn): FusionPlan {
       buffered: [],
       staged: [],
       reasons: [],
+      parallelTerms: {},
     })),
     refusals: [],
   };

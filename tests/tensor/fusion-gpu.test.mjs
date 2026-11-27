@@ -150,3 +150,24 @@ test('GB10: benchmark mode times warm launches and returns the same words', asyn
   assert.deepEqual(words(timed), words(plain));
   assert.ok(Number.isFinite(timed.gpuMs) && timed.gpuMs > 0);
 });
+
+test('GB10: ordered staged sum and max share space, including tails, empties and scratch', async () => {
+  const p = compileTix(`fn f(x:f32[N,D], z:f32[N,C]):f32[N] {
+    a[i] = (sum(j) x[i,j] / 2) + 1;
+    b[i,j] = z[i,j] - a[i];
+    m[i] = max(j) b[i,j] / 3;
+    y[i] = m[i] + a[i]; return y;
+  }`);
+  assert.deepEqual(Object.keys(planFusion(p.current.value.functions[0]).groups[0].parallelTerms), ['a', 'm']);
+  assert.deepEqual(await checkLowering(p, 'f'), { accepted: true, relation: 'exact' });
+  // At C=9000 the original rows fit the opt-in limit but adding a third row would exceed it.
+  // At C=30000 the original rows themselves require global scratch.
+  for (const [d, c] of [[0, 3], [5, 0], [131, 257], [7, 9000], [7, 30000]]) {
+    const input = n => ({
+      shape: [2, n],
+      data: Float32Array.from({ length: 2 * n }, (_, i) => [1, 2 ** -24, -1, -0, 0][i % 5]),
+    });
+    const inputs = { x: input(d), z: input(c) };
+    assert.deepEqual(words(await runTixCuda(p, 'f', inputs)), words(runTix(p, 'f', inputs)));
+  }
+});

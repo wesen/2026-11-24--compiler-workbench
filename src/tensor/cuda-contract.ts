@@ -162,7 +162,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
+    version: '3',
     description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
     inputs,
     outputs,

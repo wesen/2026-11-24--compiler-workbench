@@ -168,6 +168,7 @@ function kernelWriter(
     return name;
   };
 
+  const stagedTerms = new Set<string>();
   function scalar(e: Expr): string {
     switch (e.kind) {
       case 'literal':
@@ -218,7 +219,16 @@ function kernelWriter(
           line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
           indent += '  ';
         }
-        const value = scalar(e.body);
+        let value: string;
+        if (stagedTerms.has(e.axes[0].id)) {
+          value = temporary('0.0f');
+          line(`if (Shared && stageTerms) ${value} = terms[${index(e.axes[0].id)}];`);
+          line('else {');
+          indent += '  ';
+          line(`${value} = ${scalar(e.body)};`);
+          indent = indent.slice(2);
+          line('}');
+        } else value = scalar(e.body);
         const fold = maxFold.replace('ACC', acc).replace('VALUE', value);
         line(`${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : fold};`);
         for (const _axis of e.axes) {
@@ -230,6 +240,7 @@ function kernelWriter(
     }
   }
   return {
+    stagedTerms,
     lines,
     line,
     dim,
@@ -331,12 +342,14 @@ function emitGroup(
     visit(m.expr, e => {
       if (e.kind === 'load' && !inGroup.has(e.name)) reads.add(e.name);
     });
+  const termExtents = Object.values(group.parallelTerms).map(r => r.axes[0].extent.dim);
   const outputs = members.filter(m => stored.has(m.name)).map(m => tensorName(m.name));
   const params = [
     ...Array.from(dimensions.values(), d => `I ${d}`),
     ...Array.from(reads, t => `const float* ${tensorName(t)}`),
     ...outputs.map(t => `float* ${t}`),
     block ? 'float* scratch' : 'U count',
+    ...(termExtents.length ? ['bool stageTerms'] : []),
   ];
   const suffix = (name: string) => tensorName(name).slice(1);
   const rowBuffers = [...group.staged, ...group.buffered];
@@ -390,8 +403,10 @@ function emitGroup(
   if (block) {
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
+    const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const row = rowBuffers.map(n => `n${suffix(n)}`).join(' + ');
     w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
+    if (termExtents.length) w.line(`float* const terms = shared + (${row});`);
     rowBuffers.forEach((name, i) =>
       w.line(
         `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
@@ -405,6 +420,22 @@ function emitGroup(
     members.forEach((m, j) => {
       current = m;
       const s = suffix(m.name);
+      const reduction = group.parallelTerms[m.name];
+      if (reduction) {
+        w.stagedTerms.add(reduction.axes[0].id);
+        w.line('if (Shared && stageTerms) {');
+        w.enter();
+        const axis = w.bind(reduction.axes[0].id);
+        const extent = w.dim(reduction.axes[0].extent.dim);
+        w.line(`for (I ${axis} = threadIdx.x; ${axis} < ${extent}; ${axis} += blockDim.x) {`);
+        w.enter();
+        w.line(`terms[${axis}] = ${w.scalar(reduction.body)};`);
+        w.leave();
+        w.line('}');
+        w.line('__syncthreads();');
+        w.leave();
+        w.line('}');
+      }
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
       w.enter();
       if (m.axes.length > depth) w.line('U rest = e;');
@@ -421,12 +452,18 @@ function emitGroup(
       if (j < members.length - 1) w.line('__syncthreads();');
     });
     // The host computes the same lengths from the same shape values.
-    const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
     const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
+    // Keep the original rows in shared memory when only the optional terms would spill.
+    if (termExtents.length)
+      host.push(
+        `  const U terms_${kernel} = std::max<I>({${termExtents.map(hostDim).join(', ')}});`,
+        `  const bool stage_${kernel} = (${hostRow} + terms_${kernel}) <= shared_limit / sizeof(float);`,
+      );
+    const termLength = termExtents.length ? ` + (stage_${kernel} ? terms_${kernel} : 0)` : '';
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
-      `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
+      `  const U row_${kernel} = (${hostRow}${termLength}) * sizeof(float);`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
@@ -449,6 +486,7 @@ function emitGroup(
     ...Array.from(reads, t => tensorName(t) + '.ptr'),
     ...outputs.map(t => t + '.ptr'),
     block ? `scratch_${kernel}.ptr` : `count_${kernel}`,
+    ...(termExtents.length ? [`stage_${kernel}`] : []),
   ].join(', ');
   const optIn = `shared_${kernel} && row_${kernel} > ${defaultShared}`;
   return {

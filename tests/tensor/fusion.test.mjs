@@ -167,3 +167,23 @@ test('the lowering records which statements each kernel computes, and fused and 
   assert.equal(batches[0].count, batches[1].count);
   assert.ok(batches[0].count > 10);
 });
+
+test('ordered staging is local to the body of a row-scalar reduction', () => {
+  const p = plan(`fn f(x:f32[N,D]):f32[N,D] {
+    a[i] = (sum(j) x[i,j]) / D;
+    b[i,j] = x[i,j] - a[i];
+    v[i] = sum(j) b[i,j] / D;
+    y[i,j] = b[i,j] - v[i];
+    return y;
+  }`, 'f');
+  assert.deepEqual(Object.keys(p.groups[0].parallelTerms), ['v']);
+});
+
+test('a divided cross-row contraction leaves the block and keeps both live inputs', () => {
+  const p = plan(`fn f(x:f32[N,K], v:f32[K,V]):f32[N,V] {
+    m[i] = max(k) x[i,k]; a[i,k] = x[i,k] - m[i];
+    z[i] = sum(k) a[i,k]; y[i,c] = sum(k) a[i,k] * v[k,c] / z[i]; return y;
+  }`, 'f');
+  assert.deepEqual(summary(p), [['block', 1, 'm,a,z', 'a,z'], ['thread', 2, 'y', 'y']]);
+  assert.match(p.refusals[0].reason, /divided cross-row contraction/);
+});
