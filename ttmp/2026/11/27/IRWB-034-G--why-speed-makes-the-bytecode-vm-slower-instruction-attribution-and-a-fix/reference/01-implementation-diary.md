@@ -3,7 +3,8 @@ Title: Implementation diary
 Ticket: IRWB-034-G
 Status: active
 Topics:
-    - typed
+    - compiler
+    - performance
 DocType: reference
 Intent: long-term
 Owners: []
@@ -103,3 +104,21 @@ WhenToUse: ""
 - VM, coalesce on: Fibonacci 6,349, checksum 5,677 under O2 and `speed`.
 - A mistake in the test runs: I ended a background command with `tail -9 a b c`, which this `tail` rejects, so
   the command reported failure although the logs were complete. The logs are read directly since.
+
+## Step 10: final measurements and checks (f503708, 6cb091b)
+
+- `various/corpus-after.json` against `corpus-before.json` (`scripts/09-corpus-table.mjs`): 8 of 50 projects
+  change, no cell higher, no pass rejected. bounds-lab and bounds-two move only under O2 tuned, from the
+  coalescer.
+- parity: 0 failures; both reference checks agree on all decided cases; typed 155 of 157 (2 skipped), framework
+  234, `IRWB_FULL=1` speed test 9 of 9.
+- The workbench suite failed once: `tests/workbench/strategies.test.mjs` pins `typed.loops@1`. I had committed
+  f503708 after the typed suite and before the workbench suite finished, so that commit has one failing test;
+  6cb091b updates the expectation. Lesson: wait for all three suites before committing a version bump.
+
+## Step 11: the VM's notes
+
+- The notes table is measured by `tests/typed/bytecode-vm.test.mjs` (diagnostics). I had updated it after the
+  loops change (6,382 and 5,710; evaluator maxima 2,445 and 2,193). With sharing the image counts are 6,349 and
+  5,677 and the maxima 2,432 and 2,180 (the test's diagnostics on the final code); the notes now say so.
+- Checked with `tools/format-corpus.mjs --check`: no file would change.
