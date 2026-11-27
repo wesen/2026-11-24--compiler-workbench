@@ -1,0 +1,101 @@
+across-calls         240
+algebra              20
+blend                1750
+bounds-lab           3830
+bounds-offset        1285
+bounds-param         179
+bounds-two           278
+branches             139
+bytecode-vm          31981
+call-chain           330
+calls                234
+checksum             1251
+chess-search         295401
+collatz              4861
+constants            70
+dead-code            30
+diagnostics          30
+distinct             50
+div-checks           160
+div-magic            739
+early-exit           564
+f32-dsp              45401
+first-steps          80
+fixed-point          251
+fragments            2090
+gcd                  314
+heat-lab             7584
+histogram            2036
+licm-nested          1631
+licm-traps           139
+lz-roundtrip         26839
+match-enum           231
+my-analysis          966
+my-first-pass        50
+nested-loops         2289
+orders               1127
+params-demo          2090
+pressure             240
+ramp                 962
+records              240
+regalloc-lab         1970
+regex-nfa            31966
+sha-chacha           115097
+sort                 4329
+start-here           2550
+strength             1793
+strings              8100
+ui-gallery           606
+value-numbering      3073
+wrong-shift          1491
+
+speed: 608957 instructions, 184603 untouched (30.3%)
+simplify rules that never fire: 13 of 27: one-mul zero-mul or-zero xor-zero shl-zero shr-zero shru-zero and-zero and-ones not-eq not-ltu not-geu not-not
+fired: {"mul-pow2":143,"not-lt":72,"fold-shl":54,"fold-sub":33,"pow2-mul":28,"fold-mul":15,"fold-add":11,"fold-eqz":10,"zero-add":9,"not-gt":5,"add-zero":4,"not-le":4,"mul-one":2,"mul-zero":2,"sub-zero":1,"sub-self":1,"not-ge":1,"div-one":1,"fold-gt":1,"not-ne":1}
+
+   instr untouched sites proj rules  node pattern
+   44079     11061   222   26     3  add(x, shl)                  chess-search: t9 = (dense + ((dense / 8) << 3))
+   31751     11686   241   27     0  load(x)                      chess-search: if (from >=u load32[board+0]) goto .4 else .7
+   29179       433    32    6     1  if ge(x, #)                  chess-search: if (dense >= 64) goto .2 else .3
+   28256     10677   187   26     2  shl(x, 1)                    chess-search: piece = load16[(board + (from << 1))+4]
+   28250     23582   128   35     3  add(x, 1)                    chess-search: dense = (dense + 1)
+   24405      1115    41   12     2  div(x, #)                    chess-search: t9 = (dense + ((dense / 8) << 3))
+   23800      9269   142   16     1  if geu(x, load)              chess-search: if (from >=u load32[board+0]) goto .4 else .7
+   22739       532    40    8     1  if lt(x, #)                  chess-search: if (at < 128) goto .n53 else .n54
+   22643     15743   159   25     0  set x                        chess-search: from = t9
+   20093        10   106   10     2  shl(x, #)                    sha-chacha: return (qa, ((rotl_x3 << 7) | (rotl_x3 >>> 25)), qc, t10)
+   17467      4692    98   20     0  load16u(add)                 chess-search: piece = load16[(board + (from << 1))+4]
+   17298      4659    77   18     3  add(x, x)                    chess-search: at = (at + t18)
+   14458     14428    43    4     1  if geu(x, #)                 bytecode-vm: if (sp >=u 4) goto .21 else .24
+   14280      5120    18    4     0  caddr(x, x)                  bytecode-vm: opcode = load16[caddr(code, pc)+4]
+   11230      7757    44    5     1  if eq(x, #)                  bytecode-vm: if (opcode == 2) goto .19 else .20
+   10634        20    42    2     2  shru(x, #)                   sha-chacha: t8 = ((rotl_x << 16) | (rotl_x >>> 16))
+   10397        10    74   18     1  if ge(x, x)                  regex-nfa: if (state >= stateCount) goto .n5 else .51
+   10078      2192    50    5     0  load(add)                    bytecode-vm: store32[t17+0] = load32[(inv1 + (operand << 2))+0]
+    8907      1772    89   17     0  br                           chess-search: goto .n55
+    7932         0     9    3     0  caddr(x, add)                bytecode-vm: operand = load16[caddr(code, (pc + 1))+4]
+    6600        70    47    4     3  and(x, #)                    chess-search: chessOnBoard_t2 = ((at & 15) < 8)
+    6316      5548    12    2     1  if ne(x, 0)                  chess-search: if (piece != 0) goto .8 else .13
+    6000      3600     8    1     0  call(x, x, x, x)             sha-chacha: quarter(x0, x4, x8, x12)
+    5770        10    11    1     2  or(shru, shl)                sha-chacha: t72 = ((e >>> 6) | (e << 26))
+    5654      1280    45    4     0  load16u(caddr)               bytecode-vm: opcode = load16[caddr(code, pc)+4]
+    5460      5460     9    4     0  zero                         sha-chacha: zero frame+0, 256 bytes
+    5412        30    13    1     1  if ge(x, 0)                  chess-search: if (at >= 0) goto .n50 else .n54
+    4767      2906   145   33     0  set 0                        chess-search: chessIsPiece_t52 = 0
+    4616      3485    75    6     3  add(x, #)                    bytecode-vm: pc = (pc + 2)
+    4561        57    31    3     0  br_if x                      chess-search: if chessOnBoard_t23 goto .n31 else .n32
+    4289         0    10    1     1  lt(and, #)                   chess-search: chessOnBoard_t2 = ((at & 15) < 8)
+    3956      3020    33    3     3  add(shl, 1)                  f32-dsp: t20 = ((i << 1) + 1)
+    3931      3431    12    2     1  if eq(x, 1)                  bytecode-vm: if (opcode == 1) goto .12 else .13
+    3880         0     5    1     2  xor(x, x)                    sha-chacha: rotl_x = (d ^ qa)
+    3873         0     9    1    10  if eqz(x)                    chess-search: if !(chessOnBoard_t2) goto .20 else .21
+    3798      1940    21    5     3  sub(x, #)                    sha-chacha: t19 = (t - 16)
+    3794         0    16    1     2  shl(div, #)                  chess-search: t9 = (dense + ((dense / 8) << 3))
+    3788        36    16    1     3  sub(#, mul)                  chess-search: t16 = (14 - (i * 28))
+    3600      3600    32    1     0  result()                     sha-chacha: t60 = result#1
+    3543      1560    49    8     0  store x                      f32-dsp: store32[(output + (t24 << 1))+2] = y
+    3439         0    32   13     1  if ge(x, load)               strings: if (i >= load32[s+0]) goto .2 else .7
+    3288         0    22    1     1  if geu(#, load)              chess-search: if (130 >=u load32[board+0]) goto .5 else .8
+    3250        10     5    1     2  or(shl, shru)                sha-chacha: t8 = ((rotl_x << 16) | (rotl_x >>> 16))
+    3080         0    62    1     0  caddr(x, #)                  sha-chacha: store16[caddr(out, 2)+4] = (x1 & 65535)
+    3024        24    11    1     7  mul(sub, #)                  chess-search: t16 = (18 - ((i - 2) * 36))

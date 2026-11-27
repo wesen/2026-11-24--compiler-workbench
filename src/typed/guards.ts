@@ -49,6 +49,10 @@ const copyTree = (tx: Tx, st: Store, id: string, because: string[]): string => {
  * branch runs one branch. The passes after it finish the job: `t = 0; if t` folds (constprop, cfg), and
  * `t = c; if t` becomes `if c` (subst), on which `typed.ranges` can refine.
  *
+ * When the predecessor's own last assignment to `t` is a constant, the branch is decided there and the predecessor
+ * jumps straight to the arm (`t = 0; goto J` becomes `t = 0; goto B`), so a nested `&&`, whose inner join only
+ * appears once the outer one is gone, needs no constant propagation in between.
+ *
  * Loop heads are left alone: copying a head is rotation, which must run after licm (rotate.ts). Returns whether
  * it changed anything.
  */
@@ -59,14 +63,35 @@ export function threadTests({ st, f, tx }: Ctx, loops: readonly Loop[]): boolean
     if (J.stmts.length !== 1 || J.id === f.blocks[0].id || heads.has(J.id)) continue;
     const test = st.get(J.stmts[0]) as StmtRec;
     if (test.op !== 'br_if' || test.then === test.else || test.then === J.id || test.else === J.id) continue;
-    let c = st.get(test.cond!) as ValueRec;
-    if (c.op === 'eqz') c = st.get(c.args[0]) as ValueRec;
-    if (c.op !== 'get') continue;
+    let c = st.get(test.cond!) as ValueRec,
+      negated = false;
+    if (c.op === 'eqz') {
+      c = st.get(c.args[0]) as ValueRec;
+      negated = true;
+    }
+    if (c.op !== 'get' || c.type === 'f32') continue;
     for (const P of f.blocks) {
       if (P.id === J.id) continue;
       const last = lastOf(st, P);
       if (!last || last.op !== 'br' || last.to !== J.id) continue;
       const because = [J.id];
+      // the value of t at the end of P, when P's last assignment to it is a constant
+      let known: StmtRec | undefined;
+      for (let i = P.stmts.length - 2; i >= 0 && !known; i--) {
+        const s = st.get(P.stmts[i]) as StmtRec;
+        if (s.op === 'set' && s.local === c.imm) known = s;
+      }
+      const k = known ? (st.get(known.value!) as ValueRec) : undefined;
+      if (known && k!.op === 'const' && !k!.type) {
+        const taken = (k!.imm !== 0) !== negated;
+        tx.replaceStmt(
+          last.id,
+          { op: 'br', to: taken ? test.then : test.else },
+          { because: [J.id, known.id], note: `the test of ${J.id} is decided by ${known.id}` },
+        );
+        changed = true;
+        continue;
+      }
       tx.replaceStmt(
         last.id,
         { op: 'br_if', cond: copyTree(tx, st, test.cond!, because), then: test.then, else: test.else },
@@ -95,9 +120,13 @@ function domChildren(f: WorkFn, ssa: SsaFn): Map<string, string[]> {
 /**
  * For a copy `x = y` (the whole value is a read of `y`), a read of that `x` is replaced by a read of `y` wherever
  * the name of `y` the copy read is still `y`'s current name. Returns the plan: `get` value id -> the local to read
- * instead. A copy all of whose reads go this way is dead, and dce removes it; one that reaches a phi stays.
+ * instead.
+ *
+ * A read is replaced wherever it can be. When every read of a copy goes this way and no phi takes it, the copy is
+ * dead and dce removes it. `whole` restricts the pass to those copies (all reads or none); measured on the corpus
+ * that is worse (various/09-ablation-*.json), so it is off.
  */
-export function copyReads({ st, f }: Ctx, ssa: SsaFn): Map<string, number> {
+export function copyReads({ st, f }: Ctx, ssa: SsaFn, whole = false): Map<string, number> {
   const plan = new Map<string, number>();
   if (ssa.entry !== f.blocks[0].id) return plan;
   // the source of a copy, through earlier copies: x = y, z = x gives z -> y when y's name is the same
@@ -111,6 +140,13 @@ export function copyReads({ st, f }: Ctx, ssa: SsaFn): Map<string, number> {
     if (typeClass(f.locals[d.local].type) !== typeClass(f.locals[v.imm as number].type)) return undefined;
     return { local: v.imm as number, name: from };
   };
+  // reads of each name, and the names phis take
+  const reads = new Map<string, number>(),
+    intoPhi = new Set<string>();
+  for (const n of Object.values(ssa.uses)) reads.set(n, (reads.get(n) ?? 0) + 1);
+  for (const ps of Object.values(ssa.phis))
+    for (const phi of ps) for (const a of Object.values(phi.args)) intoPhi.add(a);
+  const through = new Map<string, string[]>();
   const current = new ScopedMap<number, string>();
   for (const [name, d] of Object.entries(ssa.names))
     if (d.block === VIRTUAL_ENTRY) current.set(d.local, name);
@@ -119,8 +155,13 @@ export function copyReads({ st, f }: Ctx, ssa: SsaFn): Map<string, number> {
     if (!id) return;
     const v = st.get(id) as ValueRec;
     if (v.op === 'get') {
-      const src = sourceOf(ssa.uses[id] ?? '');
-      if (src && current.get(src.local) === src.name) plan.set(id, src.local);
+      const name = ssa.uses[id] ?? '';
+      const src = sourceOf(name);
+      if (src && current.get(src.local) === src.name) {
+        plan.set(id, src.local);
+        if (!through.has(name)) through.set(name, []);
+        through.get(name)!.push(id);
+      }
       return;
     }
     v.args.forEach(visit);
@@ -138,6 +179,9 @@ export function copyReads({ st, f }: Ctx, ssa: SsaFn): Map<string, number> {
     },
     [current],
   );
+  if (whole)
+    for (const [name, gets] of through)
+      if (intoPhi.has(name) || gets.length !== reads.get(name)) for (const g of gets) plan.delete(g);
   return plan;
 }
 

@@ -2,10 +2,13 @@
 // simplify and fold rule firings of the pipeline: which rules fire at all, and the hot patterns no pass touched.
 // usage: node 07-corpus-shapes.mjs out.json [--pipeline speed] [--depth 2] [id...]
 import { writeFileSync } from 'node:fs';
-import { projectIds, projectFiles } from '../../../../../../tools/corpus.mjs';
-import { installVendor } from '../../../../../../tools/node-vendor.mjs';
+import { pathToFileURL } from 'node:url';
+// IRWB_ROOT names another build to run (10-snapshot.sh), so `npm run build` does not disturb a long run
+const ROOT = process.env.IRWB_ROOT ? pathToFileURL(process.env.IRWB_ROOT + '/').href : new URL('../../../../../../', import.meta.url).href;
+const { projectIds, projectFiles } = await import(ROOT + 'tools/corpus.mjs');
+const { installVendor } = await import(ROOT + 'tools/node-vendor.mjs');
 await installVendor();
-const D = '../../../../../../dist/';
+const D = ROOT + 'dist/';
 const { Program } = await import(D + 'typed/program.js');
 const { projectSource } = await import(D + 'typed/project.js');
 const { storeOf } = await import(D + 'typed/ir.js');

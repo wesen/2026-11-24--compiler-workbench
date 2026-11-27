@@ -15,6 +15,11 @@ export const BENCH = {
     id: 'lz-roundtrip',
     cases: (st, ps) => casesFrom(st, 'roundTrip', { count: 100, seed: 7, inputs: ps.meta.inputs.roundTrip }),
   },
+  // not one of the three: the project's own perft input, a short run of the chess code for listings
+  perft: {
+    id: 'chess-search',
+    cases: (st, ps) => casesFrom(st, 'chessPerft', { count: 1, seed: 7, inputs: ps.meta.inputs.chessPerft }),
+  },
   chess: {
     id: 'chess-search',
     limit: 3e7,

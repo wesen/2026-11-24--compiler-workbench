@@ -1,0 +1,656 @@
+{
+ "evidence": {
+  "eq-and-one": {
+   "text": "eq(and(x, 1), 1) → and(x, 1)",
+   "from": "eq(and, 1): 320",
+   "verdict": "sound",
+   "strength": "sampled",
+   "methods": [
+    "structural:pass",
+    "exhaustive-w8:pass",
+    "random-32:pass"
+   ]
+  },
+  "eq-zero": {
+   "text": "eq(x, 0) → eqz(x)",
+   "from": "if eq(x, 0): 1,333; eq(x, 0): 62",
+   "verdict": "sound",
+   "strength": "reduced-width+argument",
+   "methods": [
+    "structural:pass",
+    "exhaustive-w8:pass",
+    "random-32:pass"
+   ]
+  },
+  "ne-zero-bool": {
+   "text": "ne(x, 0) → x if bool x",
+   "from": "ne(x, 0): 82",
+   "verdict": "sound",
+   "strength": "exhaustive",
+   "methods": [
+    "structural:pass",
+    "exhaustive-w8:pass",
+    "random-32:pass",
+    "exhaustive-32:pass"
+   ]
+  },
+  "ne-zero": {
+   "text": "ne(x, 0) → x",
+   "from": "if ne(x, 0): 6,190 (unsound as a value: ne gives 0 or 1)",
+   "verdict": "unsound",
+   "methods": [
+    "structural:pass",
+    "exhaustive-w8:fail"
+   ],
+   "counterexample": {
+    "bindings": {
+     "x": -128
+    },
+    "lhs": 1,
+    "rhs": -128,
+    "method": "exhaustive-w8",
+    "width": 8
+   }
+  },
+  "add-add-const": {
+   "text": "add(add(x, #a), #b) → add(x, #add(a, b))",
+   "from": "add(add, #): 60",
+   "verdict": "sound",
+   "strength": "sampled",
+   "methods": [
+    "structural:pass",
+    "exhaustive-w8:pass",
+    "random-32:pass"
+   ]
+  },
+  "sub-add-const": {
+   "text": "sub(add(x, #a), #b) → add(x, #sub(a, b))",
+   "from": "sub(add, #): 198",
+   "verdict": "sound",
+   "strength": "sampled",
+   "methods": [
+    "structural:pass",
+    "exhaustive-w8:pass",
+    "random-32:pass"
+   ]
+  },
+  "shl-shl-one": {
+   "text": "shl(shl(x, 1), 1) → shl(x, 2)",
+   "from": "shl(shl, 1): 192",
+   "verdict": "sound",
+   "strength": "proof",
+   "methods": [
+    "structural:pass",
+    "symbolic-linear:pass",
+    "random-32:pass"
+   ]
+  },
+  "lt-rem16-8": {
+   "text": "lt(rem(x, 16), 8) → eqz(and(x, 8))",
+   "from": "lt(rem, #): 4,289 (unsound: x < 0)",
+   "verdict": "unsound",
+   "methods": [
+    "structural:pass",
+    "random-32:fail"
+   ],
+   "counterexample": {
+    "bindings": {
+     "x": -1431655766
+    },
+    "lhs": 1,
+    "rhs": 0,
+    "method": "random-32",
+    "width": 32
+   }
+  },
+  "lt-and15-8": {
+   "text": "lt(and(x, 15), 8) → eqz(and(x, 8))",
+   "from": "lt(rem, #) after strength",
+   "verdict": "sound",
+   "strength": "sampled",
+   "methods": [
+    "structural:pass",
+    "random-32:pass"
+   ]
+  },
+  "shl-div8-3": {
+   "text": "shl(div(x, 8), 3) → and(x, -8)",
+   "from": "shl(div, #): 3,794 (unsound: x < 0)",
+   "verdict": "unsound",
+   "methods": [
+    "structural:pass",
+    "random-32:fail"
+   ],
+   "counterexample": {
+    "bindings": {
+     "x": -2147483647
+    },
+    "lhs": -2147483640,
+    "rhs": -2147483648,
+    "method": "random-32",
+    "width": 32
+   }
+  }
+ },
+ "fired": {
+  "eq-and-one": 0,
+  "eq-zero": 61,
+  "ne-zero-bool": 0,
+  "add-add-const": 0,
+  "sub-add-const": 0,
+  "shl-shl-one": 4,
+  "lt-and15-8": 0
+ },
+ "totals": {
+  "table": {
+   "default": 822611,
+   "tuned": 764703
+  },
+  "candidates": {
+   "default": 822419,
+   "tuned": 764511
+  }
+ },
+ "rows": {
+  "across-calls": {
+   "table": {
+    "default": 240,
+    "tuned": 210
+   },
+   "candidates": {
+    "default": 240,
+    "tuned": 210
+   }
+  },
+  "algebra": {
+   "table": {
+    "default": 20,
+    "tuned": 20
+   },
+   "candidates": {
+    "default": 20,
+    "tuned": 20
+   }
+  },
+  "blend": {
+   "table": {
+    "default": 1750,
+    "tuned": 1585
+   },
+   "candidates": {
+    "default": 1750,
+    "tuned": 1585
+   }
+  },
+  "bounds-lab": {
+   "table": {
+    "default": 4817,
+    "tuned": 4426
+   },
+   "candidates": {
+    "default": 4817,
+    "tuned": 4426
+   }
+  },
+  "bounds-offset": {
+   "table": {
+    "default": 1285,
+    "tuned": 1258
+   },
+   "candidates": {
+    "default": 1285,
+    "tuned": 1258
+   }
+  },
+  "bounds-param": {
+   "table": {
+    "default": 449,
+    "tuned": 408
+   },
+   "candidates": {
+    "default": 449,
+    "tuned": 408
+   }
+  },
+  "bounds-two": {
+   "table": {
+    "default": 706,
+    "tuned": 665
+   },
+   "candidates": {
+    "default": 706,
+    "tuned": 665
+   }
+  },
+  "branches": {
+   "table": {
+    "default": 139,
+    "tuned": 131
+   },
+   "candidates": {
+    "default": 139,
+    "tuned": 131
+   }
+  },
+  "bytecode-vm": {
+   "table": {
+    "default": 31981,
+    "tuned": 24593
+   },
+   "candidates": {
+    "default": 31981,
+    "tuned": 24593
+   }
+  },
+  "call-chain": {
+   "table": {
+    "default": 330,
+    "tuned": 290
+   },
+   "candidates": {
+    "default": 330,
+    "tuned": 290
+   }
+  },
+  "calls": {
+   "table": {
+    "default": 234,
+    "tuned": 227
+   },
+   "candidates": {
+    "default": 234,
+    "tuned": 227
+   }
+  },
+  "checksum": {
+   "table": {
+    "default": 1251,
+    "tuned": 1110
+   },
+   "candidates": {
+    "default": 1251,
+    "tuned": 1110
+   }
+  },
+  "chess-search": {
+   "table": {
+    "default": 307360,
+    "tuned": 279858
+   },
+   "candidates": {
+    "default": 307360,
+    "tuned": 279858
+   }
+  },
+  "collatz": {
+   "table": {
+    "default": 4861,
+    "tuned": 3675
+   },
+   "candidates": {
+    "default": 4861,
+    "tuned": 3675
+   }
+  },
+  "constants": {
+   "table": {
+    "default": 70,
+    "tuned": 70
+   },
+   "candidates": {
+    "default": 70,
+    "tuned": 70
+   }
+  },
+  "dead-code": {
+   "table": {
+    "default": 30,
+    "tuned": 30
+   },
+   "candidates": {
+    "default": 30,
+    "tuned": 30
+   }
+  },
+  "diagnostics": {
+   "table": {
+    "default": 30,
+    "tuned": 30
+   },
+   "candidates": {
+    "default": 30,
+    "tuned": 30
+   }
+  },
+  "distinct": {
+   "table": {
+    "default": 50,
+    "tuned": 50
+   },
+   "candidates": {
+    "default": 50,
+    "tuned": 50
+   }
+  },
+  "div-checks": {
+   "table": {
+    "default": 160,
+    "tuned": 152
+   },
+   "candidates": {
+    "default": 160,
+    "tuned": 152
+   }
+  },
+  "div-magic": {
+   "table": {
+    "default": 739,
+    "tuned": 661
+   },
+   "candidates": {
+    "default": 739,
+    "tuned": 661
+   }
+  },
+  "early-exit": {
+   "table": {
+    "default": 564,
+    "tuned": 557
+   },
+   "candidates": {
+    "default": 564,
+    "tuned": 557
+   }
+  },
+  "f32-dsp": {
+   "table": {
+    "default": 45401,
+    "tuned": 44107
+   },
+   "candidates": {
+    "default": 45209,
+    "tuned": 43915
+   }
+  },
+  "first-steps": {
+   "table": {
+    "default": 80,
+    "tuned": 80
+   },
+   "candidates": {
+    "default": 80,
+    "tuned": 80
+   }
+  },
+  "fixed-point": {
+   "table": {
+    "default": 251,
+    "tuned": 242
+   },
+   "candidates": {
+    "default": 251,
+    "tuned": 242
+   }
+  },
+  "fragments": {
+   "table": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "candidates": {
+    "default": 2090,
+    "tuned": 1891
+   }
+  },
+  "gcd": {
+   "table": {
+    "default": 314,
+    "tuned": 265
+   },
+   "candidates": {
+    "default": 314,
+    "tuned": 265
+   }
+  },
+  "heat-lab": {
+   "table": {
+    "default": 7584,
+    "tuned": 7523
+   },
+   "candidates": {
+    "default": 7584,
+    "tuned": 7523
+   }
+  },
+  "histogram": {
+   "table": {
+    "default": 2036,
+    "tuned": 1910
+   },
+   "candidates": {
+    "default": 2036,
+    "tuned": 1910
+   }
+  },
+  "licm-nested": {
+   "table": {
+    "default": 1631,
+    "tuned": 1596
+   },
+   "candidates": {
+    "default": 1631,
+    "tuned": 1596
+   }
+  },
+  "licm-traps": {
+   "table": {
+    "default": 149,
+    "tuned": 142
+   },
+   "candidates": {
+    "default": 149,
+    "tuned": 142
+   }
+  },
+  "lz-roundtrip": {
+   "table": {
+    "default": 26839,
+    "tuned": 25469
+   },
+   "candidates": {
+    "default": 26839,
+    "tuned": 25469
+   }
+  },
+  "match-enum": {
+   "table": {
+    "default": 231,
+    "tuned": 226
+   },
+   "candidates": {
+    "default": 231,
+    "tuned": 226
+   }
+  },
+  "my-analysis": {
+   "table": {
+    "default": 200966,
+    "tuned": 200618
+   },
+   "candidates": {
+    "default": 200966,
+    "tuned": 200618
+   }
+  },
+  "my-first-pass": {
+   "table": {
+    "default": 50,
+    "tuned": 50
+   },
+   "candidates": {
+    "default": 50,
+    "tuned": 50
+   }
+  },
+  "nested-loops": {
+   "table": {
+    "default": 2289,
+    "tuned": 2252
+   },
+   "candidates": {
+    "default": 2289,
+    "tuned": 2252
+   }
+  },
+  "orders": {
+   "table": {
+    "default": 1127,
+    "tuned": 952
+   },
+   "candidates": {
+    "default": 1127,
+    "tuned": 952
+   }
+  },
+  "params-demo": {
+   "table": {
+    "default": 2090,
+    "tuned": 1891
+   },
+   "candidates": {
+    "default": 2090,
+    "tuned": 1891
+   }
+  },
+  "pressure": {
+   "table": {
+    "default": 240,
+    "tuned": 230
+   },
+   "candidates": {
+    "default": 240,
+    "tuned": 230
+   }
+  },
+  "ramp": {
+   "table": {
+    "default": 962,
+    "tuned": 780
+   },
+   "candidates": {
+    "default": 962,
+    "tuned": 780
+   }
+  },
+  "records": {
+   "table": {
+    "default": 240,
+    "tuned": 240
+   },
+   "candidates": {
+    "default": 240,
+    "tuned": 240
+   }
+  },
+  "regalloc-lab": {
+   "table": {
+    "default": 1970,
+    "tuned": 1716
+   },
+   "candidates": {
+    "default": 1970,
+    "tuned": 1716
+   }
+  },
+  "regex-nfa": {
+   "table": {
+    "default": 31966,
+    "tuned": 26029
+   },
+   "candidates": {
+    "default": 31966,
+    "tuned": 26029
+   }
+  },
+  "sha-chacha": {
+   "table": {
+    "default": 115097,
+    "tuned": 107540
+   },
+   "candidates": {
+    "default": 115097,
+    "tuned": 107540
+   }
+  },
+  "sort": {
+   "table": {
+    "default": 4329,
+    "tuned": 4294
+   },
+   "candidates": {
+    "default": 4329,
+    "tuned": 4294
+   }
+  },
+  "start-here": {
+   "table": {
+    "default": 2550,
+    "tuned": 2327
+   },
+   "candidates": {
+    "default": 2550,
+    "tuned": 2327
+   }
+  },
+  "strength": {
+   "table": {
+    "default": 1793,
+    "tuned": 1404
+   },
+   "candidates": {
+    "default": 1793,
+    "tuned": 1404
+   }
+  },
+  "strings": {
+   "table": {
+    "default": 8100,
+    "tuned": 6558
+   },
+   "candidates": {
+    "default": 8100,
+    "tuned": 6558
+   }
+  },
+  "ui-gallery": {
+   "table": {
+    "default": 606,
+    "tuned": 572
+   },
+   "candidates": {
+    "default": 606,
+    "tuned": 572
+   }
+  },
+  "value-numbering": {
+   "table": {
+    "default": 3073,
+    "tuned": 2453
+   },
+   "candidates": {
+    "default": 3073,
+    "tuned": 2453
+   }
+  },
+  "wrong-shift": {
+   "table": {
+    "default": 1491,
+    "tuned": 1340
+   },
+   "candidates": {
+    "default": 1491,
+    "tuned": 1340
+   }
+  }
+ }
+}

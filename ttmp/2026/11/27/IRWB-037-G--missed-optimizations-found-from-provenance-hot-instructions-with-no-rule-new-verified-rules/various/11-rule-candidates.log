@@ -8,3 +8,6 @@ shl-shl-one    sound    proof                  shl(shl(x, 1), 1) → shl(x, 2)
 lt-rem16-8     unsound  -                      lt(rem(x, 16), 8) → eqz(and(x, 8))   {"x":-1431655766} lhs 1 rhs 0
 lt-and15-8     sound    sampled                lt(and(x, 15), 8) → eqz(and(x, 8))
 shl-div8-3     unsound  -                      shl(div(x, 8), 3) → and(x, -8)   {"x":-2147483647} lhs -2147483640 rhs -2147483648
+f32-dsp              default 45401 -> 45209, tuned 44107 -> 43915
+firings of the candidates: {"eq-and-one":0,"eq-zero":61,"ne-zero-bool":0,"add-add-const":0,"sub-add-const":0,"shl-shl-one":4,"lt-and15-8":0}
+totals: {"table":{"default":822611,"tuned":764703},"candidates":{"default":822419,"tuned":764511}}
