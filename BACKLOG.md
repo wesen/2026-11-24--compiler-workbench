@@ -437,6 +437,13 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F22: the tolerance's absolute term accepts anything at small scale** _(ready, S; found by R2's Opus cell)_.
   - _Known:_ |c − r| ≤ 2e-6 + 2e-5·|r| accepts an all-zero output whenever the results are below about 2e-6 (shown at an input scale of 1e-7). It is also vacuous for inputs scaled by 2⁻²⁰.
   - _Needed:_ a scale-covariant relation, part of F15.
+- **F23: a correspondence's entity lists are self-declared** _(ready, S; found by T3's Opus and DeepSeek xhigh cells)_.
+  - _Known:_ `makeCorrespondence` (`src/framework/ir/correspondence.ts:50`) checks each entry against the `sourceEntities` and `targetEntities` lists, but the caller supplies those lists. Nothing compares them with the entities of the two artifacts.
+    - DeepSeek xhigh passed no target list, and `{from: [m, s], to: [k0]}` was rejected ("Unknown target entity k0").
+    - Opus passed lists with made-up IDs (or no kernels at all), and they were accepted.
+    - The two findings looked contradictory, but they are one gap: the check is only as good as the declared lists. For a heterogeneous lowering, such as Tix statements into CUDA kernels, nothing derives the target list. T3's emitters produce an artifact without entities (`defineIR<{fn, source}>`).
+  - _Needed:_ an optional entity enumeration on `defineIR`, as Opus proposed, so the manager can check the declared lists against both revisions.
+  - _Measure:_ a probe with a made-up ID is rejected, and the existing correspondences still pass.
 
 ## 4. Agent methodology
 
