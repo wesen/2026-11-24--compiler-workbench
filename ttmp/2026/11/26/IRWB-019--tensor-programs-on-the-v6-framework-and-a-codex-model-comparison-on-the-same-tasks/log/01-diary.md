@@ -971,3 +971,7 @@ The user set the cells for implementation tasks from now on, and asked to start 
   - Medians: matmul 0.197, softmax 0.772, layernorm 0.566, attention 1.762, mlp 1.066, conv 0.342 ms.
   - 18 minutes per implementation, so ten cells take about three hours, run one at a time.
 - **Backlog:** "Eleven cells" corrected to ten. F2–F6 marked done.
+- **All fourteen R1b and R2b cells are done.**
+  - IRWB-021-O (DeepSeek max, R1b) hit the two-hour cap (exit 124), but its design was committed at 23:05 local, before it idled.
+  - Two R1b cells (O, and P from GLM Flash high) put their design in `design/`, not `design-doc/`.
+  - **The launcher bug, a second time:** when its first ten cells finished, `25-launch-r1b-r2b-pi.sh`'s first run resumed in a file I had edited while it ran (adding GLM 5.3). It stopped with "line 36: syntax error near unexpected token `)'", so this time nothing was relaunched. No stray Pi process.
