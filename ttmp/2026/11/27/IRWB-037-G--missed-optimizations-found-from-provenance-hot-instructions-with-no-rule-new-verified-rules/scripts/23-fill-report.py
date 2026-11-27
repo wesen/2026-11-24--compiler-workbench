@@ -40,9 +40,12 @@ fills = {
     '@@GEU_LOAD_AFTER@@': n(geu['instructions']),
     '@@LVN_AGAIN@@': f"{n(ex['all']['default'] - ex['all, lvn again before rotate']['default'])} instructions on the 49 projects (default options)",
 }
-ev = os.path.join(here, '..', '..', '..', '..', '..', '..', 'src', 'typed', 'rules', 'evidence-identities.ts')
-text = open(ev).read()
-records = json.loads(text[text.index('= {', text.index('IDENTITY_EVIDENCE:')) + 2:].rstrip().rstrip(';'))
+root = os.path.abspath(os.path.join(here, '..', '..', '..', '..', '..', '..'))
+# the recorded evidence, read from the build (the source file is formatted TypeScript, not JSON)
+records = json.loads(subprocess.run(
+    ['node', '--input-type=module', '-e',
+     "const m = await import('file://%s/dist/typed/rules/evidence-identities.js'); console.log(JSON.stringify(m.IDENTITY_EVIDENCE))" % root],
+    capture_output=True, text=True, check=True).stdout)
 for i, name in enumerate(['shl-shr3-mask', 'lt-and15-8', 'shl-shl-one'], 1):
     e = records[name]
     how = [m for m in e['methods'] if m['verdict'] == 'pass' and m['method'] in ('exhaustive-32', 'symbolic-linear')]

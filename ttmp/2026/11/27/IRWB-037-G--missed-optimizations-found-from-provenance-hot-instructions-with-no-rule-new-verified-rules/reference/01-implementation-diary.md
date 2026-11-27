@@ -127,5 +127,28 @@ WhenToUse: ""
 
 ## Step 12: final measurements and checks
 
-- See the report for the numbers. `scripts/18-verify.sh` runs parity, the reference checks and `speed` on every
-  project under each backend option.
+- `scripts/08-corpus-measure.mjs` after: `speed` 867,770 to 789,710 (default options) and 792,800 to 724,721
+  (tuned); 30 projects change, none higher, none rejected; O2 identical in every cell.
+- `scripts/01-benchmarks.mjs` after: regex 6,052 and 4,868; LZ 147,978 and 140,194; chess 9,252,728 and
+  8,172,948.
+- `scripts/17-identities-evidence.mjs`: the two rules without a proof were checked on all 2^32 inputs (563 s and
+  729 s on the loaded machine); the third has a symbolic proof.
+- `scripts/18-verify.sh`: parity 8,286 of 8,286, both reference checks 8,286 of 8,286. The IRWB_FULL test in
+  `speed.test.mjs` runs O2+, rotate, cfg and not `speed`, so `scripts/21-speed-full-check.mjs` checks `speed`
+  itself: 368 revisions accepted, 16,572 of 16,572 decided image cases agree.
+- One workbench test pinned the number of passes (15); it is 20 now.
+- The ablation with 17 variants was still on chess-search after 50 minutes on the shared machine (load average
+  17 to 23). I stopped it and split it: the per-pass variants on all projects, with chess-search in its own
+  process, and the parameter and order variants on the other 49 projects. `scripts/20-ablation-table.mjs` merges
+  the files, and `old` and `all` reproduce the totals of script 08.
+- A mistake on the way: `pkill -f 09-ablation.mjs` also matched the shell that ran it and killed my own command.
+  The edit it carried had not run; I redid it.
+- `scripts/23-fill-report.py` fills the report's numbers from the JSON outputs.
+
+## What I would check first when reviewing
+
+- `src/typed/guards.ts`: the dominance argument in the header, the counter induction in `guardPlan`, and
+  `narrowBy` for `ltu` and `geu`.
+- `tests/typed/guards.test.mjs`: the negative cases (an index assigned after its check, a counter that goes both
+  ways, a store between a load and its reader).
+- `various/19-corpus-table.txt` and `various/21-speed-full-check.log`.
