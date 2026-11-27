@@ -1143,3 +1143,9 @@ The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if av
   - `scripts/49-check-fixes-3.sh` confirmed it independently: the 4 new tests fail on the base code and pass on the agent's, and framework, typed and non-GPU tensor tests give 410 pass, 0 fail.
   - `npm test` on main gives 450 pass, 0 fail, 3 skipped. Its GPU tests ran while the T3b cells were measuring, a brief overlap.
   - Still open: the tensor CUDA artifact should declare its kernels via `entities`, after T3b merges.
+- **T3b Opus (D) done** (self-reported; the hidden evaluation comes later):
+  - Every program, including both "inside" variants, lowers to one kernel, and none is slower fused.
+  - **Staged terms:** an outermost row reduction whose body holds `/`, `sqrt`, `exp`, `log`, `tanh` or a nested reduction gets parallel terms, in chunks of 256 (chosen by measurement), folded by thread 0.
+  - **The gate:** `runTixCuda` falls back to stage 2's source when the longest block-mode row has fewer than 24 elements at the call's shapes (measured: rows of 4 are 4.7× slower fused). `cudaSource` and `checkLowering` always give the fused source.
+  - **Results:** layernorm-inside 0.567 → 0.211 ms. Attention-inside is only 6% faster: its divisions sit in per-element reductions.
+  - **Framework finding:** nothing records that a run chose one checked artifact over another by a rule at given shapes.
