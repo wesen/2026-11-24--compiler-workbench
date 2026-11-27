@@ -1,8 +1,8 @@
-// Probe 05: benchmark GPU time for the corpus at the brief's sizes, fused and unfused, from the public API.
+// Probe 04: benchmark GPU time for the corpus at the brief's sizes, fused and unfused, from the public API.
 // One warm-up launch and the median of three timed runs (`benchmark: true`), under the tool's `--timed` GPU lock.
 //
 // Run from the worktree root after `npm run build`:
-//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/05-benchmark.mjs [program ...]
+//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/04-benchmark.mjs [program ...]
 import { readFileSync } from 'node:fs';
 
 const { compileTix, cudaSource, runTixCuda } = await import(

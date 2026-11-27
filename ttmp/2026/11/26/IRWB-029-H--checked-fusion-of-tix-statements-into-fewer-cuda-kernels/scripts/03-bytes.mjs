@@ -1,4 +1,4 @@
-// Probe 04: kernel count, fusion decisions, and the global bytes each kernel reads and writes, for the corpus at
+// Probe 03: kernel count, fusion decisions, and the global bytes each kernel reads and writes, for the corpus at
 // the brief's sizes, fused and unfused.
 //
 // Two byte counts, because one number cannot say what the memory system does:
@@ -9,7 +9,7 @@
 // The time at 244 GB/s is given for both, so a measured time can be read against the two.
 //
 // Run from the worktree root after `npm run build`:
-//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/04-bytes.mjs
+//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/03-bytes.mjs
 import { readFileSync } from 'node:fs';
 
 const { compileTix, cudaSource } = await import(new URL('dist/tensor/index.js', `file://${process.cwd()}/`));

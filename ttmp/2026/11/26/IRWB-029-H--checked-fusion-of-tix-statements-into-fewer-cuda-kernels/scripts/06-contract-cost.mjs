@@ -1,11 +1,11 @@
-// Probe 07: what the lowering contract checks, and what that costs.
+// Probe 06: what the lowering contract checks, and what that costs.
 //
 // The fused lowering is judged by the same invariant as stage 2, under the exact relation (`tensor.cuda-meaning`,
 // version 2). This prints, per corpus function, the eligible case count and the compared element count, then times a
 // cold check and a replay of the same verdict, fused and unfused.
 //
 // Run from the worktree root after `npm run build`:
-//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/07-contract-cost.mjs
+//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/06-contract-cost.mjs
 import { readFileSync } from 'node:fs';
 
 const { checkLowering, compileTix } = await import(new URL('dist/tensor/index.js', `file://${process.cwd()}/`));

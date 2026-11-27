@@ -1,4 +1,4 @@
-// Probe 06: does the fused row kernel want 256 threads per block?
+// Probe 05: does the fused row kernel want 256 threads per block?
 //
 // The block per row mapping makes every reduction over the lane axis one thread's serial fold, so the number of
 // resident blocks (not threads) sets how many rows the folds can work on at once: 2048 threads per SM divided by
@@ -7,7 +7,7 @@
 // through the runner with `benchmark: true`.
 //
 // Run from the worktree root after `npm run build`:
-//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/06-block-size.mjs
+//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/05-block-size.mjs
 import { readFileSync } from 'node:fs';
 
 const { compileTix, cudaSource } = await import(new URL('dist/tensor/index.js', `file://${process.cwd()}/`));

@@ -1,8 +1,8 @@
-// Probe 03: is the fused lowering exact? Runs checkLowering (the GPU contract, exact relation) on the corpus and
+// Probe 02: is the fused lowering exact? Runs checkLowering (the GPU contract, exact relation) on the corpus and
 // on small programs chosen to hit the plan's edges, fused and unfused, and prints the verdicts and their wall time.
 //
 // Run from the worktree root after `npm run build`:
-//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/03-exactness-probe.mjs [--programs]
+//   node ttmp/2026/11/26/IRWB-029-H--*/scripts/02-exactness-probe.mjs [--programs]
 import { readFileSync } from 'node:fs';
 
 const { checkLowering, compileTix, optimizeTix } = await import(

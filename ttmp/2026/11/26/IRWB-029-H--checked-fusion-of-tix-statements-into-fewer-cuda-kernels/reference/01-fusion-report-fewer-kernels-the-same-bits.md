@@ -102,7 +102,7 @@ launch's error message needs — and in no kernel, argument list, address or rou
 
 ## What the plan does per corpus program
 
-`s` = staged in shared memory, `g` = global memory. From `scripts/04-bytes.mjs`.
+`s` = staged in shared memory, `g` = global memory. From `scripts/03-bytes.mjs`.
 
 | Program | Stage 2 | Fused kernel | Why |
 | --- | --- | --- | --- |
@@ -117,7 +117,7 @@ launch's error message needs — and in no kernel, argument list, address or rou
 
 Three `runTixCuda(..., {benchmark: true})` calls per cell (each one warm-up and the median of three CUDA-event
 intervals), median of the three shown with the three in brackets. GB10, CUDA 13.0.88, `nvcc -O3 -arch=sm_121`,
-`sizes` as in the brief. `scripts/05-benchmark.mjs`, one run of it.
+`sizes` as in the brief. `scripts/04-benchmark.mjs`, one run of it.
 
 | Program (sizes) | Kernels fused / unfused | Fused ms | Unfused ms | Speed-up | Bytes floor (fused) |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -151,7 +151,7 @@ Where the remaining time goes, argued from the byte counts and one measurement e
 
 ## Bytes read and written, and the time they would take at 244 GB/s
 
-Two counts, because one number cannot say what the memory system does (`scripts/04-bytes.mjs`):
+Two counts, because one number cannot say what the memory system does (`scripts/03-bytes.mjs`):
 
 - **issued** — every load and store instruction × 4 bytes, summed over the threads that execute it. What L1 and L2
   must serve; an upper bound on DRAM traffic.
@@ -183,7 +183,7 @@ NaN compared as a class — against the current revision's f32 meaning. One defi
 (`tensor.lower-cuda-fused`, and stage 2's `tensor.lower-cuda` for `fuse: false`), one artifact kind, no framework
 change. A rejected candidate reports its first counterexample.
 
-From `scripts/07-contract-cost.mjs`:
+From `scripts/06-contract-cost.mjs`:
 
 | Program | Cases | Elements compared | Cold check | Replay of the same verdict |
 | --- | ---: | ---: | ---: | ---: |
@@ -218,7 +218,7 @@ the unmutated lowering.
 | `threadIdx.x` strides the lane axis (`for (l = threadIdx.x; l < lanes; l += blockDim.x)`) | Keeps the loads coalesced for any lane extent while the block size stays a compile-time constant. |
 | One `__syncthreads()` after each statement | A staged value has to be visible to the other lanes and to the single fold. One barrier per statement is uniform across the block, so no thread waits where another has already left. |
 | Copy a global row into shared memory before a fold reads it | The alternative is 1024 dependent loads issued by one thread with a 4 KiB stride. This is what turns softmax from "one thread per row with uncoalesced reads" into a stream. |
-| 128 threads per block, from 256 | A fold is one thread's serial work, so the number of *resident blocks* sets how many rows are folded at once. Measured (`scripts/06-block-size.mjs`, two runs, spread under 1%): softmax 0.414 ms at 128 against 0.609 at 256 and 0.492 at 64; layernorm 0.152 against 0.180 and 0.168. The flat mapping keeps 256, so `fuse: false` is untouched. |
+| 128 threads per block, from 256 | A fold is one thread's serial work, so the number of *resident blocks* sets how many rows are folded at once. Measured (`scripts/05-block-size.mjs`, two runs, spread under 1%): softmax 0.414 ms at 128 against 0.609 at 256 and 0.492 at 64; layernorm 0.152 against 0.180 and 0.168. The flat mapping keeps 256, so `fuse: false` is untouched. |
 | The shared-memory requirement is checked at launch, not assumed | A row footprint larger than the device allows makes the launch throw `k0 needs N bytes of shared memory per block; the device allows M`. This is the one boundary the fused lowering adds to stage 2's input domain; 12 KiB is the largest the corpus needs. |
 
 ## Framework and tool changes
@@ -240,13 +240,13 @@ the unmutated lowering.
 Measured on the GB10:
 
 - the exact-relation verdict for both lowerings on the corpus before and after `inline` + `split-sum`, and on 17
-  small edge programs: 58 checks, all accepted (`scripts/03-exactness-probe.mjs`);
+  small edge programs: 58 checks, all accepted (`scripts/02-exactness-probe.mjs`);
 - fused vs unfused bit-identity, and fused vs `runTix` f32 bit-identity, on the corpus at small sizes and on six
   edge programs (`tests/tensor/cuda-gpu.test.mjs`);
-- kernel counts, per-kernel decisions, issued and distinct global bytes (`scripts/04-bytes.mjs`);
-- benchmark GPU time per corpus program, both lowerings, three calls each (`scripts/05-benchmark.mjs`);
-- 32/64/128/256 threads per block for the two fold-heavy programs (`scripts/06-block-size.mjs`);
-- case counts, compared elements, cold and replay check cost (`scripts/07-contract-cost.mjs`);
+- kernel counts, per-kernel decisions, issued and distinct global bytes (`scripts/03-bytes.mjs`);
+- benchmark GPU time per corpus program, both lowerings, three calls each (`scripts/04-benchmark.mjs`);
+- 32/64/128/256 threads per block for the two fold-heavy programs (`scripts/05-block-size.mjs`);
+- case counts, compared elements, cold and replay check cost (`scripts/06-contract-cost.mjs`);
 - that the framework accepts a grouped correspondence and rejects one with no target universe
   (`scripts/01-grouped-correspondence-probe.mjs`).
 

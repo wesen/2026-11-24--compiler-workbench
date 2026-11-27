@@ -15,9 +15,9 @@ RelatedFiles:
       Note: The plan, its rules and the staged-read predicate
     - Path: repo://src/tensor/cuda-source.ts
       Note: The shared scalar emitter and the block-per-row kernel
-    - Path: repo://ttmp/2026/11/26/IRWB-029-H--checked-fusion-of-tix-statements-into-fewer-cuda-kernels/scripts/03-exactness-probe.mjs
+    - Path: repo://ttmp/2026/11/26/IRWB-029-H--checked-fusion-of-tix-statements-into-fewer-cuda-kernels/scripts/02-exactness-probe.mjs
       Note: 58 exact-relation checks over the corpus and 17 edge programs
-    - Path: repo://ttmp/2026/11/26/IRWB-029-H--checked-fusion-of-tix-statements-into-fewer-cuda-kernels/scripts/05-benchmark.mjs
+    - Path: repo://ttmp/2026/11/26/IRWB-029-H--checked-fusion-of-tix-statements-into-fewer-cuda-kernels/scripts/04-benchmark.mjs
       Note: The fused/unfused timing table
 ExternalSources: []
 Summary: Design and its amendments, the fusion implementation, the failures that changed it, and the measurements taken.
@@ -116,7 +116,7 @@ kernel count on a program that now fuses to one kernel; it now asserts both coun
 
 ## Step 4. Exactness on the GB10
 
-`scripts/03-exactness-probe.mjs` runs the contract on the corpus before and after optimization and on 17 small
+`scripts/02-exactness-probe.mjs` runs the contract on the corpus before and after optimization and on 17 small
 programs chosen for the plan's edges: two rows of different extents, a permuted read of a reduction result, a nested
 reduction, a rank three statement, empty extents, signed zeros, NaN and domain edges, a dead statement, a chain of
 three reductions. 58 checks, all accepted as `exact`, median 2.6 s each.
@@ -131,7 +131,7 @@ last lane of the sum fold, which the contract rejects with a counterexample at a
 
 ## Step 5. Bytes
 
-`scripts/04-bytes.mjs` counts what each kernel reads and writes. The first version counted every issued load and got
+`scripts/03-bytes.mjs` counts what each kernel reads and writes. The first version counted every issued load and got
 1.07 GB for matmul against the brief's 0.14 ms for a 32 MB stream: an *issued* count is not DRAM traffic when the
 same address is read by thousands of threads. It also forgot the per-block factor for row kernels, and looked up
 `p.lane` on a plan entry whose field is `slots`.
@@ -143,13 +143,13 @@ brief's independent 0.14 ms estimate — a check on the counting.
 
 ## Step 6. Timing, and a block size I had not planned to change
 
-`scripts/05-benchmark.mjs` uses the public `runTixCuda(..., { benchmark: true })`. The first runs disagreed with
+`scripts/04-benchmark.mjs` uses the public `runTixCuda(..., { benchmark: true })`. The first runs disagreed with
 themselves by up to 26% because the GPU is shared, so each cell now takes three calls (nine CUDA-event intervals
 each) and reports the median with all three values. `matmul` and `conv2d` emit the same translation unit either way,
 so their ratio measures the noise: about 2%.
 
 With 256 threads the fused softmax was 0.605 ms against a 0.138 ms floor, which was further from the floor than the
-analysis of its traffic suggested. `scripts/06-block-size.mjs` patched only the launch configuration and measured
+analysis of its traffic suggested. `scripts/05-block-size.mjs` patched only the launch configuration and measured
 32/64/128/256: 0.414 ms at 128 against 0.609 at 256 for softmax, 0.152 against 0.180 for layernorm, reproducible to
 under 1% over two runs. That is the expected shape — a fold is one thread's serial work, so resident *blocks*, not
 threads, set how many rows are folded at once — so the row kernel now launches 128 threads and the flat kernel keeps
@@ -157,7 +157,7 @@ threads, set how many rows are folded at once — so the row kernel now launches
 
 ## Step 7. The contract's cost
 
-`scripts/07-contract-cost.mjs`: 28 to 40 cases per corpus function, 360 to 5900 compared elements, 2.2 to 4.1 s for a
+`scripts/06-contract-cost.mjs`: 28 to 40 cases per corpus function, 360 to 5900 compared elements, 2.2 to 4.1 s for a
 cold check (dominated by `nvcc`), about 1 ms to replay a verdict for the same candidate revision. `matmul` and
 `conv2d` show a 1 ms `fuse: false` check because their unfused source *is* the fused source, so the artifact
 revision and its verdict are the same evidence.
