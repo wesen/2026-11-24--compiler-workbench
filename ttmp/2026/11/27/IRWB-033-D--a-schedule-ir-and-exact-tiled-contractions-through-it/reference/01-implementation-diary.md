@@ -70,3 +70,10 @@ Script 03 `--variants` (`03-variants.out.jsonl`) timed each variant forced, five
 **Mistake:** `schedule-gpu.test.mjs` compared a 640^3 product with the JS interpreter, which ran for over ten minutes; the test file's process timed out. Replaced by 200 x 130 x 300.
 
 The base build for the `base` side of the final table is the branch's first commit, built into a scratch directory by script 06 (`06-build-base.sh`).
+
+## Step 6: final runs and tests
+
+- Script 06 (`06-final-corpus.out.jsonl`): the six corpus programs, fused, unfused and base, five alternating benchmark calls each. All identical; attention 0.750 → 0.184 ms, mlp 0.626 → 0.219, matmul 512^3 0.218 → 0.046, conv2d 0.167 → 0.100; softmax and layernorm unchanged (same source).
+- `schedule-gpu.test.mjs`: 3 of 3 pass. The older GPU tests (`cuda-gpu`, `fusion-gpu`, `terms-gpu`, `gate-choice-gpu`): 19 of 20 passed in one run; the 20th failed with an ssh "Connection reset by peer" and passed when rerun alone.
+- Non-GPU tests: `schedule`, `fusion`, `cuda`, `passes`, `language`, `corpus` (tensor) and `native-pass-sync` (framework) pass.
+- The report is assembled by script 08 from its parts and script 07's tables.
