@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "digest": "c87f8ae3b4f11b6205653aa15cf6530b57bf28b26fc886ae34891f462015d97f",
+  "request": {
+    "ticket": "IRWB-025",
+    "status": "complete",
+    "intent": "",
+    "entry": "Verified all three fixes and the cuBLAS probe on GB10."
+  },
+  "receipt": {
+    "sequence": 1,
+    "operation_id": "close-d4ebacb1f1aee2a9cbeb77f365b1465a",
+    "state": "committed",
+    "created_at": "2026-11-27T03:15:09.4619986Z",
+    "changed_paths": [
+      "changelog.md",
+      "index.md"
+    ],
+    "before": {
+      "changelog.md": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "index.md": "dbe7de0cddf148481861188ec9b9c41e9e7932002e94d2a0ffb915203841aa45"
+    },
+    "after": {
+      "changelog.md": "23ed9ba578d42bf2c1c191b277cf8f96d5fe42cd8cd4e3cc0f6e0ba21c14671c",
+      "index.md": "f31e2041ba0a59545065091e0aa7df7b9930e8e13cd6e7d344695ca7e3c51862"
+    }
+  },
+  "changes": [
+    {
+      "path": "changelog.md",
+      "before": "0ad8335f4cbb6e4996b736d1f13e038ee45cd287842c3921fe376a1d68296cfe",
+      "after": "IyBDaGFuZ2Vsb2cKCiMjIDIwMjYtMTEtMjYKCi0gSW5pdGlhbCB3b3Jrc3BhY2UgY3JlYXRlZAoKIyMgMjAyNi0xMS0yNgoKVmVyaWZpZWQgYWxsIHRocmVlIGZpeGVzIGFuZCB0aGUgY3VCTEFTIHByb2JlIG9uIEdCMTAuCg=="
+    },
+    {
+      "path": "index.md",
+      "before": "dbe7de0cddf148481861188ec9b9c41e9e7932002e94d2a0ffb915203841aa45",
+      "after": "LS0tClRpdGxlOiBmcmFtZXdvcmsgYW5kIHRlbnNvciBmaXhlcyBGMTQsIEYxOSwgRjIwClRpY2tldDogSVJXQi0wMjUKU3RhdHVzOiBjb21wbGV0ZQpUb3BpY3M6CiAgICAtIGZyYW1ld29yawogICAgLSB0ZW5zb3IKRG9jVHlwZTogaW5kZXgKSW50ZW50OiBsb25nLXRlcm0KT3duZXJzOiBbXQpSZWxhdGVkRmlsZXM6IFtdCkV4dGVybmFsU291cmNlczogW10KU3VtbWFyeTogIiIKTGFzdFVwZGF0ZWQ6IDIwMjYtMTEtMjZUMjI6MTU6MDkuNDYxOTM3NzY4LTA1OjAwCldoYXRGb3I6ICIiCldoZW5Ub1VzZTogIiIKLS0tCgojIGZyYW1ld29yayBhbmQgdGVuc29yIGZpeGVzIEYxNCwgRjE5LCBGMjAKClRoZSB0aHJlZSBmaXhlcyBjb3ZlciBUaXggcGFzcyByZXBvcnRpbmcsIGNvbmN1cnJlbnQgZGlmZmVyZW50aWFsIGNoZWNrcyBhbmQgbGlicmFyeSBsaW5raW5nIGluIHRoZSBDVURBIHJ1bm5lci4gVGhlIFtkaWFyeV0ocmVmZXJlbmNlLzAxLWRpYXJ5Lm1kKSByZWNvcmRzIHRoZSByZWdyZXNzaW9ucyBhbmQgdGhlIFtjdUJMQVMgcHJvYmVdKHNjcmlwdHMvMDEtY3VibGFzL21haW4uY3UpIGNoZWNrcyB0aGUgR1BVIHJlc3VsdCBhZ2FpbnN0IENQVSBtdWx0aXBsaWNhdGlvbi4K"
+    }
+  ]
+}
