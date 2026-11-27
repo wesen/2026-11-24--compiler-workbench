@@ -872,3 +872,18 @@ The user asked for the two research rounds on DeepSeek and GLM through Pi. Neith
   - The only brief change: R2b's common.md says the GPU machine is shared with four other agents (R2 said three).
 - **A false start of mine:** I first launched the cells in a background command with a 10-minute timeout, which the harness might enforce and so kill the cells. I stopped it within seconds, confirmed that no Pi process remained and the ten worktrees were clean at their bases, removed the partial logs, and relaunched without a timeout.
 - **GLM 5.3 added** on the user's answer ("glm-5.3 yeah"): high and max in both rounds (IRWB-021-R and -S, IRWB-023-J and -K), launched about 20 minutes after the first ten, with `ONLY=` on the launcher. The two R2b cells' brief (`prompts/r2b-2`) says six other agents share the GPU machine, which is true from then on. The first five R2b cells were told four, which was true when they started. Fourteen cells in all: seven per round.
+
+## Step 34: F13 fixed; F14, F19 and F20 handed to Codex · Astra, at high and at low
+
+The user asked whether the remaining fixes could go to an agent, to save Claude tokens. I had finished F13 myself by then. The three other small tensor-side fixes went to Codex · Astra, first at high effort and then, on the user's request, at low effort too, on the same brief and base. That gives a direct effort comparison on one task.
+
+- **The user's messages** (verbatim): "what are teh fixes? can those be sent out to an agent?", "why did you chose astra high", "you can try astra low, can you change that after the fact while it's running?", "ok do it".
+- **F13** (`bc7702c`): `applyPass` opens its edit on the first read of `ctx.edit`. A pass that neither opens it nor returns a native value is the identity. New test: on the previous build it fails with "Adapter probe-lazy.adapter is not Rewritable". Framework and tensor tests 248/248.
+- **Why Astra:** it was the leanest correct implementer in stages 1 and 2 (median 972 and 480 lines, against Sol's 1,336 and 633), and had the fewest R2 errors (2 listed over four judge runs). High effort had no evidence behind it: effort made no consistent difference, so medium was the better default.
+- **The cells:**
+  - IRWB-024: Astra high, round `fix1-ah`.
+  - IRWB-025: Astra low, round `fix1-al`, launched about 10 minutes later.
+
+  Both run from `bc7702c` with the brief `prompts/fixes-1/common.md`, through `scripts/26-launch-fixes.sh`, with network access for the cuBLAS probe and the global v3 policy. A running `codex exec` cannot change its effort level, so the low cell is a second agent rather than a switch. A probe confirmed that `model_reasoning_effort=low` works for gpt-6.2-astra.
+- **Kit fix** (vault `b6efb26`): `01-launch-codex-round.sh` now gives `codex exec` `/dev/null` as stdin.
+- **To compare after both exit:** whether each fix is correct and its regression test really fails before the fix, the diff size, wall time, and the test counts. I review both and merge the better one, then run the full suite and the frozen stage-1 suite.
