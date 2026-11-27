@@ -27,7 +27,7 @@ RelatedFiles:
       Note: Symbolic fingerprints of the same kernel source
 ExternalSources: []
 Summary: Defines best in class for Tix as the fastest code that is bit-identical to its portable f32 meaning, and proposes four ranked lines of compiler work backed by GB10 experiments.
-LastUpdated: 2026-11-26T19:10:00-05:00
+LastUpdated: 2026-11-26T19:30:00-05:00
 WhatFor: Choosing the next stages of Tix compiler work
 WhenToUse: Before designing a Tix optimization, backend or checking stage
 ---
@@ -41,7 +41,7 @@ Tix specifies the result of a tensor program bit for bit. Every operator rounds 
 I therefore define best in class for Tix as **the fastest code that is bit-identical to a portable, exactly specified meaning, with every step carrying evidence of that equality as strong as the step allows.** Raw speed is still measured, but against the ceiling that the meaning itself imposes. This document argues for that definition, measures the ceiling on the GB10, and proposes four lines of work, ranked:
 
 1. **Exact-meaning scheduling.** Use a schedule space in which no transformation can change a result word: tiling and binding of free indices, staging, register blocking, fusion of pointwise and row-local producers, and tree reduction of the exactly associative `max`. Lowering is then judged by f32 word equality. Hand-written kernels in this space were bit-identical to the unmodified Stage 2 code on all six corpus programs at full size. They were 2.0× to 7.6× faster (geometric mean 3.76×), and the six programs together took 0.887 ms instead of 3.763 ms.
-2. **Exhaustively proven intrinsics.** These are fast f32-only paths for `exp` and `tanh` that use a Ziv rounding test with a double-precision fallback. On the GPU I checked every one of the 2^32 inputs against the meaning in under a second: 0 mismatches. They are 2.4× (exp) and 4.9× (tanh) faster than the double routine Stage 2 uses, and they halve softmax and MLP time.
+2. **Exhaustively proven intrinsics.** These are fast f32-only paths for `exp` and `tanh` that use a Ziv rounding test with a double-precision fallback. On the GPU I checked every one of the 2^32 inputs against the meaning in under a second: 0 mismatches. They are 2.4× (exp) and 4.9× (tanh) faster than the double routine Stage 2 uses. In the fused kernels they halve softmax time and cut MLP time by 39%.
 3. **Data-universal exactness checks.** The *same kernel source* is compiled at a symbolic scalar type whose loads are hashes and whose arithmetic hashes the expression tree modulo the laws IEEE rounding obeys. Equal fingerprints at a shape mean equal words for every input of that shape. This caught a reassociation bug that numerical checks missed on two of three data streams. The current sample recipe exercises no tile at all. A residue-complete recipe caught every seeded schedule bug in 1.2 s, where my first tile-aware recipe missed two.
 4. **A menu of exactly specified contraction meanings.** These are a sequential FMA fold and K-only chunk trees, together with a scale-covariant accuracy relation for meaning changes. cuBLAS's own 4096³ result equals a sequential FMA fold word for word. The FMUL+FADD meaning has half the FFMA ceiling. In one tuned kernel, the FMA fold ran 1.45× faster than the current meaning and came within 1.22× of cuBLAS at 4096³. The Stage 1/2 tolerance accepts an all-zero output once results are small.
 
@@ -70,7 +70,7 @@ There are four candidate definitions.
 
 *The fastest code whose result is a function of the program and its inputs alone.* Here the result does not depend on the GPU, batch composition, library version or interpreter, and every compiler step comes with evidence of that. This is the definition I defend, for three reasons.
 
-First, there is demand, and no vendor supplies it. He and Thinking Machines Lab trace nondeterminism in LLM inference to kernels that are not *batch invariant*, where a row's reduction order depends on the batch size. They rewrote matmul, RMSNorm and attention by hand to fix this, at about a 20% matmul cost relative to cuBLAS [He 2025]. Gond et al. report that batch-invariant kernels can be much slower still against cuBLAS on large GPUs, and they build a system around avoiding them [Gond 2026]. cuBLAS guarantees bit-wise reproducibility only for "GPUs with the same architecture and the same number of SMs" from one toolkit version [NVIDIA cuBLAS].
+First, there is demand, and no vendor supplies it. He and Thinking Machines Lab trace nondeterminism in LLM inference to kernels that are not *batch invariant*, where a row's reduction order depends on the batch size. They rewrote matmul, RMSNorm and attention by hand to fix this, at about a 20% matmul cost relative to cuBLAS [He 2025]. Gond et al. measured a batch-invariant GEMM peaking at 194 TFLOP/s against cuBLAS's 527 on an H100. They therefore build their system to avoid batch-invariant kernels where determinism is not needed [Gond 2026]. cuBLAS guarantees bit-wise reproducibility only for "GPUs with the same architecture and the same number of SMs" from one toolkit version [NVIDIA cuBLAS].
 
 Second, Tix already owns the hard part: the specification. Batch invariance is a *theorem* of the Tix meaning. The fold order of `y[i,j] = sum(k) …` depends only on k, never on the extents of i or j. Any implementation that is exact is therefore batch invariant, run-to-run deterministic and identical across devices. This holds without any per-kernel engineering.
 
@@ -96,11 +96,11 @@ The meaning of `sum(k) a*b` is `v = RN(v + RN(a·b))`, two roundings per term. A
 | FMUL + FADD (`__fadd_rn(__fmul_rn(…))`, the Tix meaning) | 14.39 TFLOP/s (53% of FFMA) |
 | DFMA | 0.386 TFLOP/s (1/70 of FFMA) |
 | Streaming `y = 2x` (coordinator) | 244 GB/s |
-| cuBLAS SGEMM 4096³ (this ticket, median of 3) | 18.6 TFLOP/s |
+| cuBLAS SGEMM 4096³ (this ticket, three runs) | 18.2–18.9 TFLOP/s |
 
 Two consequences shape every proposal.
 
-- **Compute-bound contractions pay at most 2×.** No implementation of the current meaning can exceed 14.39 TFLOP/s. That is 77% of cuBLAS at 4096³, so exact matmul at that size is at best 1.29× slower than cuBLAS. Tensor cores (TF32, BF16) cannot produce the meaning either, since they round differently. Proposal 4 is the response.
+- **Compute-bound contractions pay at most 2×.** No implementation of the current meaning can exceed 14.39 TFLOP/s. That is about 77% of cuBLAS at 4096³, so exact matmul at that size is at best about 1.3× slower than cuBLAS. Tensor cores (TF32, BF16) cannot produce the meaning either, since they round differently. In one realistic kernel the measured price was 1.45× against an FMA fold of the same code (experiment 09). Proposal 4 is the response.
 - **Memory-bound kernels pay nothing, except for transcendentals.** FP64 runs at 1/70 of the FP32 rate, so Stage 2's correct way of computing `exp` costs more than the memory traffic. A streaming exp kernel runs at 92 GB/s. Proposal 2 removes that cost without changing a single word.
 
 ## 3. What the meaning fixes, and where the freedom lies
@@ -150,7 +150,7 @@ The same view yields **batch invariance as a theorem**. T_e depends on the reduc
 
 It also makes **autotuning semantically inert**. Every point in the exact schedule space has the same outputs, so a tuner choosing per-shape configurations cannot introduce a numerical difference between shapes. That kind of difference is exactly the vendor failure measured below: cuBLAS chooses kernels per shape, and the bits change with the shape.
 
-**What is new.** Tensor compilers treat floating-point reductions as reassociable. Halide's `rfactor` is defined for associative reductions [Suriana 2017; Ragan-Kelley 2013], TVM and Triton expose split-K, and polyhedral GPU compilers model reductions so that their dependences can be relaxed [Reddy 2016]. Tix inverts the default: a reduction dependence is real unless a checked meaning change removes it. What I add is (i) the measured price of that choice on real hardware, (ii) the observation that batch invariance and inert autotuning come with it for free, and (iii) corpus-wide evidence that this exact space already reaches large speedups.
+**What is new.** Tensor compilers treat floating-point reductions as reassociable. Halide's `rfactor` is defined for associative reductions [Suriana 2017; Ragan-Kelley 2013], TVM has an `rfactor` of its own, split-K kernels are routine in Triton, and polyhedral GPU compilers model reductions so that their dependences can be relaxed [Reddy 2016]. Tix inverts the default: a reduction dependence is real unless a checked meaning change removes it. What I add is (i) the measured price of that choice on real hardware, (ii) the observation that batch invariance and inert autotuning come with it for free, and (iii) corpus-wide evidence that this exact space already reaches large speedups.
 
 **Evidence.**
 
@@ -165,9 +165,9 @@ It also makes **autotuning semantically inert**. Every point in the exact schedu
 
 - The exact tiled kernels differed from the naive kernel in **0 of 262,144 to 16,777,216 words** at every size, on random data in [−1, 1].
 - At 4096³ my first exact kernel reached 9.00 TFLOP/s, which is 63% of the 14.39 exact ceiling. cuBLAS reached 18.6, which is 69% of the FFMA ceiling.
-- A second kernel (experiment 09) adds float4 global and shared loads to the 128×128×8 layout. It reached **10.32 TFLOP/s at 4096³**, 72% of the exact ceiling, still with 0 words different, and 9.62 TFLOP/s at 2048³. That is 1.76× of cuBLAS's time at 4096³. Of that factor, 1.29× is forced by the semantics and the rest is engineering.
+- A second kernel (experiment 09) adds float4 global and shared loads to the 128×128×8 layout. It reached **10.32 TFLOP/s at 4096³**, 72% of the exact ceiling, still with 0 words different, and 9.62 TFLOP/s at 2048³. That is 1.76× cuBLAS's time at 4096³. Of that factor, 1.29× is forced by the semantics and the rest is engineering.
 - **cuBLAS is not batch invariant on the GB10.** Row 0 computed as a 1×N problem differs from row 0 of the N×N problem in 471/512, 924/1024, 1928/2048 and 4014/4096 words. The exact kernels and the K-only split-K kernel differ in 0.
-- cuBLAS differs from the Tix meaning in 93% of words at every size. At 4096³ it equals my sequential-k FMA kernel in every word (0 of 16,777,216 differ), whereas at 512³ to 2048³ it differs from that kernel in 92–96% of words. cuBLAS thus computes a different function at different sizes. That is the property Tix forbids.
+- cuBLAS differs from the Tix meaning in 91–96% of words at every size. At 4096³ it equals my sequential-k FMA kernel in every word (0 of 16,777,216 differ), whereas at 512³ to 2048³ it differs from that kernel in 92–96% of words. cuBLAS thus computes a different function at different sizes. That is the property Tix forbids.
 
 *Experiment 03 (corpus, `scripts/03-fused-exact.mjs`).* A generator builds one translation unit from the **unmodified Stage 2 output** of `cudaSource()` for all six programs. Each program sits in its own namespace, and its `run_case` is driven through in-memory streams. The same unit holds hand-written schedules from the space above. The Stage 2 code is therefore both the oracle and the baseline, on identical inputs. The table in §1 gives the results. The schedules used were:
 
@@ -248,7 +248,7 @@ Inputs outside (−87, 88.5), where results are subnormal or overflow, and NaNs 
 | exp, 2^26 args in [−12, 0] | 5.83 ms (92 GB/s) | 2.47 ms (218 GB/s) | `expf` 2.17 ms | 0 | 20,444,397 (30.5%) |
 | tanh, 2^24 args in [−3, 3] | 3.30 ms | 0.668 ms | `tanhf` 0.544 ms | 0 | 3,397,679 (20.3%) |
 
-The first exp sweep point that fails, at 2^-52, is x = 2^-24. There exp(x) lies just above the midpoint between 1 and 1 + 2^-23, so a fast path without a test returns the even neighbour. A fast path without the test is more accurate than `expf`, yet it is wrong on 882 inputs. "Accurate" and "exact" are different properties, and only the exhaustive check tells them apart.
+At bound 2^-52 the first failing input is x = 2^-24 (`0x33800000`). There exp(x) lies just above the midpoint between 1 and 1 + 2^-23, so a fast path without a usable test returns the even neighbour. The fast path is more accurate than `expf`, yet without the test it is wrong on 882 inputs. "Accurate" and "exact" are different properties, and only the exhaustive check tells them apart.
 
 **Risks.**
 
@@ -318,7 +318,7 @@ Moving between them is a meaning change, judged once at the IR level. The judge 
 
 **Why it works (theory).**
 
-- *The FMA fold* doubles the exact ceiling, from 14.39 to 26.98 TFLOP/s, and is more accurate, since there is one rounding per term instead of two. Its interpreter meaning can be computed exactly in JavaScript. For f32 a and b, a·b is exact in f64: at most 48 significant bits, with exponents between 2^-298 and 2^256. TwoSum gives s + e = a·b + c exactly. RN32(s + e) equals `Math.fround(s)` unless s is an f32 midpoint, in which case the sign of e decides. The midpoint argument holds because f32 midpoints are f64 numbers, so a non-midpoint s is at least one f64 ulp away from any midpoint, while |e| ≤ ulp64(s)/2. Rounding to odd is the classical alternative [Boldo 2008].
+- *The FMA fold* doubles the exact ceiling, from 14.39 to 26.98 TFLOP/s. It also has the smaller worst-case error bound, since there is one rounding per term instead of two. Its interpreter meaning can be computed exactly in JavaScript. For f32 a and b, a·b is exact in f64: at most 48 significant bits, with exponents between 2^-298 and 2^256. TwoSum gives s + e = a·b + c exactly. RN32(s + e) equals `Math.fround(s)` unless s is an f32 midpoint, in which case the sign of e decides. The midpoint argument holds because f32 midpoints are f64 numbers, so a non-midpoint s is at least one f64 ulp away from any midpoint, while |e| ≤ ulp64(s)/2. Rounding to odd is the classical alternative [Boldo 2008].
 - *K-only chunk trees* depend only on K and C, so they keep batch invariance. He et al. reach the same conclusion for split-KV decoding: use a fixed split size, not a fixed number of splits [He 2025]. They also restore parallelism where M·N is small, which is the sequential-fold wall from Proposal 1.
 - *Scale covariance.* Linear programs are homogeneous: scaling the inputs by 2^s scales every f32 and f64 result exactly, absent underflow and overflow. A relation R(candidate, origin, reference) should give the same verdict after scaling, but the Stage 1/2 tolerance `|C−R| ≤ 2e-6 + 2e-5|R|` does not, because of its absolute term. I propose, per case, `max|C−R| ≤ k·(max|O−R| + ulp32(max|R|)/2)`. Here O is the origin's exact f32 result and R its f64 result. In words: the meaning change may not make the program more than k times less accurate than it already was. Tix is the setting where this is possible, because the origin's f32 behaviour is exactly specified and computable.
 
@@ -362,7 +362,7 @@ Across all programs and both scales, split-sum's largest norm ratio was 0.95. Sp
 
 **Risks.** This proposal changes the language: users must choose meanings, and the interpreter's FMA path is slower. The accuracy relation is still sampled. An *elementwise* version of it failed (§6), and the norm version's constant k = 2 is fitted to six programs. Tensor cores remain out of reach for every meaning on the menu. An Ozaki-style meaning, the correctly rounded dot product computed exactly with integer tensor cores [Ozaki 2012], is a research direction, not a proposal.
 
-**How success is measured.** An FMA-meaning matmul runs within 1.2× of cuBLAS at 4096³ and is bit-identical to cuBLAS wherever cuBLAS uses a sequential fold. K-chunk trees give 1×N problems the same row words as M×N. The accuracy relation has no false rejections on the corpus at any power-of-two input scale and rejects every seeded mutant.
+**How success is measured.** An FMA-meaning matmul runs within 1.1× of cuBLAS at 4096³ (experiment 09's untuned kernel is at 1.22×) and is bit-identical to cuBLAS wherever cuBLAS uses a sequential fold. K-chunk trees give 1×N problems the same row words as M×N. The accuracy relation has no false rejections on the corpus at any power-of-two input scale and rejects every seeded mutant.
 
 **What it needs from `src/framework`.** Mostly domain changes in `src/tensor`:
 
