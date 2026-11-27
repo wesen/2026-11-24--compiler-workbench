@@ -174,10 +174,8 @@ function compare(expected: BufferValue, got: BufferValue) {
   return { ok: true };
 }
 
-// A fused kernel in block mode has a gate: at launch the host runs it fused, or its statements one by one, by the
-// shapes (fusion.ts). The recipe's shapes are small, so the rule alone would show little of one side. For a
-// program with a gate, every sample is therefore a case on each side, and the program is run once with each side
-// forced. A program without a gate has one case per sample.
+// Small recipe shapes rarely select the fast launches. Force every emitted
+// alternative so a numerical error in a large-shape specialization is observable.
 type Gate = 'fused' | 'unfused' | 'tiled' | 'wide';
 const sides = (source: string): Gate[] => [
   'fused',
@@ -222,7 +220,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       seed,
       ...(gate && { gate }),
     }),
-    // The case list depends on the subject only through whether it has a gate.
+    // The mode inventory determines case replication and panel-shape sampling.
     baselineKey: ({ baseline, fn, subject }) =>
       JSON.stringify([baseline.revision, fn, takesGate(subject.value.source) && sides(subject.value.source)]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),

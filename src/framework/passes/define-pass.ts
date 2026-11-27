@@ -229,7 +229,7 @@ function requirePostcondition(result: CheckResult) {
   return result;
 }
 
-/** Run a synchronous native kernel; the caller supplies its synchronous semantic gate. */
+/** Apply a native kernel with its structural postcondition and any caller-supplied semantic gate. */
 export function applyNativePassSync<S, P>(
   pass: Pass<S, {}, P>,
   before: Artifact<S>,

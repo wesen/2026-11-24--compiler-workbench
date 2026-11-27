@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { applyNativePassSync } from '../../dist/framework/passes/index.js';
-import { traceEntity } from '../../dist/framework/ir/index.js';
+import { createIRArtifact, traceEntity } from '../../dist/framework/ir/index.js';
 import { compileTix, cudaSource } from '../../dist/tensor/index.js';
 import { compileCudaPipeline } from '../../dist/tensor/cuda-contract.js';
 import { ScheduleIR, schedulePasses, orderCheck } from '../../dist/tensor/schedule.js';
@@ -30,6 +30,11 @@ test('the compiler exposes connected Tix, schedule revisions and CUDA, including
   }
   assert.deepEqual(last, { artifact: cuda.id, revision: cuda.revision });
   assert.equal(applyNativePassSync(schedulePasses.vectorize, initial).changed, false);
+  const deep = structuredClone(steps[0].artifact.value);
+  deep.groups[0].tiles.h.depth = 512;
+  deep.groups[0].tiles.y.depth = 512;
+  const deepTile = createIRArtifact(schedulePasses.stage.adapter, initial.id, deep);
+  assert.equal(applyNativePassSync(schedulePasses.stage, deepTile).changed, false);
   assert.deepEqual(
     steps.find(s => s.pass.id.endsWith('stage-panels')).contract.evidence.panels.map(p => p.statement),
     ['h', 'y'],

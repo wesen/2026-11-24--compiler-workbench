@@ -228,6 +228,16 @@ function phasesFor(fn: Fn, g: KernelSchedule, combine: boolean) {
   return phases;
 }
 
+// The printer specializes complete and clipped tiles. Budget both pairs of
+// static arrays against CUDA's 48 KiB default per-block limit.
+function panelsFit(t: Tile) {
+  if (!t.shared) return true;
+  return [t.registers, ...(t.wide ? [t.wide.registers] : [])].every(([ry, rx]) => {
+    const words = (t.lanes[0] * ry + t.fragment + t.lanes[1] * rx) * t.depth;
+    return 2 * Float32Array.BYTES_PER_ELEMENT * words <= 48 * 1024;
+  });
+}
+
 function validate(value: unknown) {
   const s = value as Schedule;
   if (!s.fn || !Array.isArray(s.groups)) throw Error('Invalid schedule');
@@ -294,13 +304,7 @@ function validate(value: unknown) {
         t.lanes[0] * t.lanes[1] > 1024
       )
         throw Error('Invalid rectangular tile partition');
-      // Two aligned/edge specializations each have an A and a B array. The
-      // default static shared-memory budget is 48 KiB per block.
-      for (const [ry, rx] of [t.registers, ...(t.wide ? [t.wide.registers] : [])]) {
-        const panelWords = (t.lanes[0] * ry + t.fragment + t.lanes[1] * rx) * t.depth;
-        if (t.shared && 2 * Float32Array.BYTES_PER_ELEMENT * panelWords > 48 * 1024)
-          throw Error('Staged panels exceed the static shared-memory budget');
-      }
+      if (!panelsFit(t)) throw Error('Staged panels exceed the static shared-memory budget');
     }
 }
 export function foldsOf(stmt: Statement) {
@@ -399,7 +403,11 @@ const tile = rewrite('tile', 'Partition independent outputs and strip-mine the s
   return next;
 });
 function mapTiles(g: KernelSchedule, f: (t: Tile) => Tile) {
-  return { ...g, tiles: Object.fromEntries(Object.entries(g.tiles).map(([n, t]) => [n, f(t)])) };
+  const tiles = Object.entries(g.tiles).map(([name, tile]) => {
+    const candidate = f(tile);
+    return [name, panelsFit(candidate) ? candidate : tile];
+  });
+  return { ...g, tiles: Object.fromEntries(tiles) };
 }
 const broadcast = rewrite(
   'broadcast-patch',
