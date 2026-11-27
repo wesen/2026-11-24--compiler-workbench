@@ -34,7 +34,7 @@ interface CudaUnit {
 const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
   version: '2',
-  description: 'Standalone CUDA translation unit for a Tix function, with its kernels\' statements',
+  description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
   validate(value) {
     const unit = value as Partial<CudaUnit> | null;
     if (typeof unit?.fn !== 'string' || !unit.fn || typeof unit.source !== 'string' || !unit.source)
@@ -76,7 +76,10 @@ export function cudaArtifact(fn: string, source: string, kernels: CudaKernel[] =
 }
 
 /** The lowering as a framework correspondence: each kernel and the Tix statement entities it computes. */
-export function kernelCorrespondence(baseline: Artifact<Module>, subject: Artifact<CudaUnit>): Correspondence {
+export function kernelCorrespondence(
+  baseline: Artifact<Module>,
+  subject: Artifact<CudaUnit>,
+): Correspondence {
   const { fn, kernels } = subject.value;
   return {
     id: 'kernels',
@@ -178,7 +181,11 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
       const plan = fuse ? planFusion(f) : unfusedPlan(f);
-      const kernels = plan.groups.map(g => ({ name: g.kernel, mapping: g.mapping, statements: g.statements }));
+      const kernels = plan.groups.map(g => ({
+        name: g.kernel,
+        mapping: g.mapping,
+        statements: g.statements,
+      }));
       const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
     },

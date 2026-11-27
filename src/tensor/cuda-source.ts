@@ -1,5 +1,14 @@
 import { unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
-import { plain, visit, width, type Affine, type Expr, type Fn, type Statement, type Tensor } from './model.js';
+import {
+  plain,
+  visit,
+  width,
+  type Affine,
+  type Expr,
+  type Fn,
+  type Statement,
+  type Tensor,
+} from './model.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -131,7 +140,11 @@ type Offset = (indices: readonly Affine[], shape: readonly Affine[]) => string;
 
 // The scalar code of one kernel: index names, temporaries and the tree walk shared by stage 2's one-statement
 // kernels and stage 3's fused kernels, so every element is computed by the same code either way.
-function kernelWriter(dimensions: ReadonlyMap<string, string>, load: (e: Load, offset: Offset) => string) {
+function kernelWriter(
+  dimensions: ReadonlyMap<string, string>,
+  load: (e: Load, offset: Offset) => string,
+  maxFold = 'minmax(ACC, VALUE, true)',
+) {
   const lines: string[] = [];
   let indent = '  ',
     next = 0;
@@ -145,7 +158,10 @@ function kernelWriter(dimensions: ReadonlyMap<string, string>, load: (e: Load, o
   };
   const index = (id: string) => indices.get(id)!;
   const offset: Offset = (at, shape) =>
-    at.reduce((prior, a, i) => (i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index)), '');
+    at.reduce(
+      (prior, a, i) => (i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index)),
+      '',
+    );
   const temporary = (code: string) => {
     const name = `v${next++}`;
     line(`float ${name} = ${code};`);
@@ -203,9 +219,8 @@ function kernelWriter(dimensions: ReadonlyMap<string, string>, load: (e: Load, o
           indent += '  ';
         }
         const value = scalar(e.body);
-        line(
-          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
-        );
+        const fold = maxFold.replace('ACC', acc).replace('VALUE', value);
+        line(`${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : fold};`);
         for (const _axis of e.axes) {
           indent = indent.slice(2);
           line('}');
@@ -274,9 +289,22 @@ function emitKernel(
   };
 }
 
-// Threads per block in block mode: the shortest warp multiple covering the longest row, up to this cap
-// (chosen by measurement, IRWB-029-D diary).
-export const blockThreads = 256;
+// Fused kernels fold max with PTX max.NaN.f32: a NaN operand gives the canonical NaN, and +0 is above -0, as in
+// minmax(a, b, true) (probe 07 in IRWB-029-D: equal on all 324 pairs of special and ordinary words). It is one
+// instruction where minmax is a chain of compares; a block-mode kernel runs fewer serial folds per SM than stage 2
+// runs threads, so the fold's latency is its critical path (script 06: 0.32 ms to 0.15 ms for a row max).
+const fusedSupport = String.raw`
+__device__ static float max_nan(float a, float b) {
+  float r;
+  asm("max.NaN.f32 %0, %1, %2;" : "=f"(r) : "f"(a), "f"(b));
+  return r;
+}`;
+
+// Threads per block in block mode: the shortest warp multiple covering the longest row, up to a cap chosen by
+// measurement (IRWB-029-D diary step 4, caps 64, 128 and 256 on softmax, layernorm, attention and mlp): 64 when a
+// member's reduction reads a tensor from global memory (a contraction operand: attention's k and v, mlp's w and
+// v), 128 otherwise (rows only: softmax, layernorm).
+export const blockThreads = { rows: 128, contraction: 64 };
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 
@@ -314,16 +342,30 @@ function emitGroup(
   const rowBuffers = [...group.staged, ...group.buffered];
   const registers = new Map<string, string>();
   let current = members[0];
-  const w = kernelWriter(dimensions, (e, offset) => {
-    const shape = tensors.get(e.name)!.shape;
-    if (!block && inGroup.has(e.name)) return registers.get(e.name)!;
-    const ownRow = e.indices.slice(0, depth).every((a, p) => plain(a) === current.axes[p].id);
-    if (block && rowBuffers.includes(e.name) && ownRow)
-      return `r${suffix(e.name)}[${offset(e.indices.slice(depth), shape.slice(depth)) || '0'}]`;
-    if (inGroup.has(e.name)) throw Error(`Fused read of ${e.name} outside its row`);
-    return `${tensorName(e.name)}[${offset(e.indices, shape)}]`;
-  });
+  const operands = (e: Expr, inReduction: boolean): boolean =>
+    e.kind === 'load'
+      ? inReduction && !rowBuffers.includes(e.name)
+      : e.kind === 'op'
+        ? e.args.some(a => operands(a, inReduction))
+        : e.kind === 'reduce' && operands(e.body, true);
+  const cap = members.some(m => operands(m.expr, false)) ? blockThreads.contraction : blockThreads.rows;
+  const w = kernelWriter(
+    dimensions,
+    (e, offset) => {
+      const shape = tensors.get(e.name)!.shape;
+      if (!block && inGroup.has(e.name)) return registers.get(e.name)!;
+      const ownRow = e.indices.slice(0, depth).every((a, p) => plain(a) === current.axes[p].id);
+      if (block && rowBuffers.includes(e.name) && ownRow)
+        return `r${suffix(e.name)}[${offset(e.indices.slice(depth), shape.slice(depth)) || '0'}]`;
+      if (inGroup.has(e.name)) throw Error(`Fused read of ${e.name} outside its row`);
+      return `${tensorName(e.name)}[${offset(e.indices, shape)}]`;
+    },
+    'max_nan(ACC, VALUE)',
+  );
   w.lines.push(`// ${kernel}: ${group.statements.join(', ')}; ${group.reasons.join('; ')}`);
+  // Block mode is a template on where the rows live, so that shared-memory rows are addressed as shared memory
+  // (generic addressing cost 25% on a row max, script 06); the host picks the instantiation.
+  if (block) w.lines.push('template <bool Shared>');
   w.lines.push(`__global__ void ${kernel}(${params.join(', ')}) {`);
   const first = members[0];
   const counter = block ? 'point' : 'thread';
@@ -349,9 +391,11 @@ function emitGroup(
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
     const row = rowBuffers.map(n => `n${suffix(n)}`).join(' + ');
-    w.line(`float* const base = scratch ? scratch + point * (${row}) : shared;`);
+    w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
     rowBuffers.forEach((name, i) =>
-      w.line(`float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`),
+      w.line(
+        `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
+      ),
     );
     for (const name of group.staged) {
       const s = suffix(name);
@@ -386,7 +430,7 @@ function emitGroup(
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
-      `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${blockThreads}, (longest_${kernel} + 31) / 32 * 32));`,
+      `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
     );
     hasWork = `grid_${kernel}`;
   } else {
@@ -412,16 +456,15 @@ function emitGroup(
     host,
     preload: block
       ? `  if (grid_${kernel}) {
-    check(cudaFuncGetAttributes(&attributes, ${kernel}));
-    if (${optIn}) check(cudaFuncSetAttribute(${kernel}, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(row_${kernel})));
+    check(cudaFuncGetAttributes(&attributes, shared_${kernel} ? ${kernel}<true> : ${kernel}<false>));
+    if (${optIn}) check(cudaFuncSetAttribute(${kernel}<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(row_${kernel})));
   }`
       : `  if (count_${kernel}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork,
     launch: block
-      ? `    if (grid_${kernel}) {
-      ${kernel}<<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, shared_${kernel} ? row_${kernel} : 0>>>(${args});
-      check(cudaGetLastError());
-    }`
+      ? `    if (grid_${kernel} && shared_${kernel}) ${kernel}<true><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, row_${kernel}>>>(${args});
+    if (grid_${kernel} && !shared_${kernel}) ${kernel}<false><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}>>>(${args});
+    if (grid_${kernel}) check(cudaGetLastError());`
       : `    if (count_${kernel}) {
       ${kernel}<<<(count_${kernel} - 1) / 256 + 1, 256>>>(${args});
       check(cudaGetLastError());
@@ -501,5 +544,6 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     '  write(output, &gpu_ms, 1);',
     '}',
   );
-  return [support, ...kernels.map(k => k.code), host.join('\n'), main].join('\n\n');
+  const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
+  return [support, ...fused, ...kernels.map(k => k.code), host.join('\n'), main].join('\n\n');
 }

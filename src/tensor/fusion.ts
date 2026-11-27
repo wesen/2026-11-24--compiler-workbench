@@ -48,8 +48,10 @@ function loads(s: Statement): Load[] {
   return out;
 }
 const text = (a: Affine) =>
-  [...a.terms.map(([n, k]) => (k === 1 ? n : `${k}*${n}`)), ...(a.constant || !a.terms.length ? [a.constant] : [])]
-    .join(' + ');
+  [
+    ...a.terms.map(([n, k]) => (k === 1 ? n : `${k}*${n}`)),
+    ...(a.constant || !a.terms.length ? [a.constant] : []),
+  ].join(' + ');
 
 /** The deepest block domain s can share with the group's members, or 0 with the reason it cannot join. */
 function joinDepth(s: Statement, members: Statement[], depth: number): { depth: number; reason: string } {
@@ -60,7 +62,10 @@ function joinDepth(s: Statement, members: Statement[], depth: number): { depth: 
     reason = '';
   for (let p = 0; p < k; p++)
     if (!same(s.shape[p], members[0].shape[p])) {
-      [k, reason] = [p, `its axis ${p} has extent ${text(s.shape[p])}, the kernel's ${text(members[0].shape[p])}`];
+      [k, reason] = [
+        p,
+        `its axis ${p} has extent ${text(s.shape[p])}, the kernel's ${text(members[0].shape[p])}`,
+      ];
       break;
     }
   for (const r of reads)
@@ -116,10 +121,7 @@ export function planFusion(fn: Fn): FusionPlan {
           if (rows.every((d, p) => same(d, t.shape[p]) && plain(e.indices[p]) === m.axes[p].id))
             staged.add(e.name);
         }
-    const axes = members[0].shape
-      .slice(0, depth)
-      .map(text)
-      .join(', ');
+    const axes = members[0].shape.slice(0, depth).map(text).join(', ');
     const why = single
       ? []
       : block
@@ -131,7 +133,9 @@ export function planFusion(fn: Fn): FusionPlan {
               .map(m => `thread 0 computes ${m.name} (one element per row) in the meaning's order`),
             ...(staged.size ? [`rows of ${[...staged].join(', ')} are staged in the row buffer`] : []),
           ]
-        : [`one thread per element of [${axes}] computes ${members.map(m => m.name).join(', ')} in registers`];
+        : [
+            `one thread per element of [${axes}] computes ${members.map(m => m.name).join(', ')} in registers`,
+          ];
     return {
       kernel: 'k' + g,
       statements: members.map(m => m.name),
