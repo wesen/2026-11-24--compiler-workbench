@@ -384,9 +384,21 @@ function emitRowGroup(
     ...Array.from(dimensions.values(), d => `I ${d}`),
     ...info.pointers.map(t => `${groupNames.has(t.name) ? '' : 'const '}float* ${tensorName(t.name)}`),
   ];
+  const need = slots.map(x => `(${x.len})`).join(' + ') || '0';
+  // One warp per row: a row's serial reductions run on one lane chain while the block carries several rows, so
+  // row concurrency is not throttled by idle threads of a one-block-per-row mapping. Each warp stages its own
+  // row in its own slice of the static shared array; statements are ordered with __syncwarp, which the guard
+  // makes warp-uniform. The host picks the warp count so every warp's slice fits the stage (or 8 warps with the
+  // global staging fallback).
+  const warps = slots.length
+    ? `((${need}) <= ${stageFloats}u ? (${stageFloats}u / (${need}) < 8u ? ${stageFloats}u / (${need}) : 8u) : 8u)`
+    : '8u';
   const lines = [`__global__ void ${kernel}(${params.join(', ')}) {`];
   const s = new Scalar(lines, dimensions);
-  s.line('const I row = static_cast<I>(blockIdx.x);');
+  s.line(`const I rows = ${s.dim(seg.row)};`);
+  s.line('const I row = static_cast<I>(blockIdx.x) * (blockDim.x / 32) + static_cast<I>(threadIdx.x / 32);');
+  s.line('if (row >= rows) return;');
+  s.line('const U lane = static_cast<U>(threadIdx.x % 32u);');
   if (slots.length) {
     s.line(`__shared__ float stage[${stageFloats}];`);
     slots.forEach((_slot, k) =>
@@ -401,26 +413,28 @@ function emitRowGroup(
         };`,
       ),
     );
-    s.line(`const bool fits = ${slots.map(x => `(${x.len})`).join(' + ')} <= ${stageFloats}u;`);
+    s.line(`const U need = ${need};`);
+    s.line('const U wbase = static_cast<U>(threadIdx.x / 32u) * need;');
+    s.line(`const bool fits = need <= ${stageFloats}u;`);
     s.line('if (fits) {');
     s.open();
     info.stagedOutside.forEach((name, k) => {
       const len = slots[k].len;
-      s.line(`for (U l = threadIdx.x; l < (${len}); l += blockDim.x) {`);
+      s.line(`for (U l = lane; l < (${len}); l += 32u) {`);
       s.open();
-      s.line(`stage[off${k} + l] = ${tensorName(name)}[(row) * (${len}) + l];`);
+      s.line(`stage[wbase + off${k} + l] = ${tensorName(name)}[(row) * (${len}) + l];`);
       s.close();
       s.line('}');
     });
     s.close();
     s.line('}');
-    s.line('__syncthreads();');
   }
+  if (slots.length) s.line('__syncwarp();');
   for (const [j, statement] of info.statements.entries()) {
     const len = sliceLength(statement, dimensions);
     const slot = slotOf.get(statement.name);
     s.indices.set(statement.axes[0].id, 'row');
-    s.line(`for (U l = threadIdx.x; l < (${len}); l += blockDim.x) {`);
+    s.line(`for (U l = lane; l < (${len}); l += 32u) {`);
     s.open();
     if (statement.axes.length > 1) {
       s.line('U coordinate = l;');
@@ -443,7 +457,7 @@ function emitRowGroup(
           rest.length ? '' : '0',
         );
         const global = `${tensorName(e.name)}[(row) * (${found.len}) + ${inner}]`;
-        return slots.length ? `(fits ? stage[${found.off} + ${inner}] : ${global})` : global;
+        return slots.length ? `(fits ? stage[wbase + ${found.off} + ${inner}] : ${global})` : global;
       }
       return globalAddress(e, tensors, tensorName, s);
     };
@@ -451,10 +465,10 @@ function emitRowGroup(
     const out = `${tensorName(statement.name)}[(row) * (${len}) + l]`;
     if (info.external[j]) s.line(`${out} = ${value};`);
     else if (slot) s.line(`if (!fits) ${out} = ${value};`);
-    if (slot) s.line(`if (fits) stage[${slot.off} + l] = ${value};`);
+    if (slot) s.line(`if (fits) stage[wbase + ${slot.off} + l] = ${value};`);
     s.close();
     s.line('}');
-    if (slots.length) s.line('__syncthreads();');
+    if (slots.length) s.line('__syncwarp();');
   }
   lines.push('}');
   return {
@@ -462,7 +476,8 @@ function emitRowGroup(
     preload: `  if (${rowExtent}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork: rowExtent,
     launch: `    if (${rowExtent}) {
-      ${kernel}<<<static_cast<unsigned>(${rowExtent}), 256>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')});
+      const unsigned warps${kernel} = ${warps};
+      ${kernel}<<<static_cast<unsigned>(((${rowExtent}) + warps${kernel} - 1) / warps${kernel}), warps${kernel} * 32>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')});
       check(cudaGetLastError());
     }`,
   };
@@ -480,11 +495,7 @@ function emitChain(
   const info = groupInfo(fn, seg, tensors);
   const names = new Set(info.statements.map(s => s.name));
   const count = `${tensorName(info.statements[0].name)}.size`;
-  const args = [
-    ...dimensions.values(),
-    ...info.pointers.map(t => tensorName(t.name) + '.ptr'),
-    count,
-  ];
+  const args = [...dimensions.values(), ...info.pointers.map(t => tensorName(t.name) + '.ptr'), count];
   const params = [
     ...Array.from(dimensions.values(), d => `I ${d}`),
     ...info.pointers.map(t => `${names.has(t.name) ? '' : 'const '}float* ${tensorName(t.name)}`),

@@ -102,15 +102,19 @@ test('a two-dimensional elementwise chain uses the row mapping with staging', ()
   const source = cudaSource(program, 'f');
   assert.equal(kernels(source), 1);
   assert.match(source, /__shared__ float stage\[12288\];/);
-  assert.match(source, /__syncthreads\(\);/);
-  assert.match(source, /stage\[off0 \+ l\] = t0\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\];/);
+  assert.match(source, /__syncwarp\(\);/);
+  assert.doesNotMatch(source, /__syncthreads/);
+  assert.match(source, /for \(U l = lane; l < \(static_cast<U>\(\(d1\)\)\); l \+= 32u\)/);
+  assert.match(source, /stage\[wbase \+ off0 \+ l\] = t0\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\];/);
+  assert.match(source, /const bool fits = need <= 12288u;/);
+  // The host picks the warp count so every warp's shared slice fits the stage.
   assert.match(
     source,
-    /const bool fits = \(static_cast<U>\(\(d1\)\)\) \+ \(static_cast<U>\(\(d1\)\)\) <= 12288u;/,
+    /const unsigned warpsk0 = \(\(\(static_cast<U>\(\(d1\)\)\) \+ \(static_cast<U>\(\(d1\)\)\)\) <= 12288u/,
   );
   // The intermediate is staged for the consumer and only reaches global memory in the fallback path.
   assert.match(source, /if \(!fits\) t1\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\] = v0;/);
-  assert.match(source, /if \(fits\) stage\[off1 \+ l\] = v0;/);
+  assert.match(source, /if \(fits\) stage\[wbase \+ off1 \+ l\] = v0;/);
   // The result is written to global memory unconditionally.
   assert.match(source, /t2\[\(row\) \* \(static_cast<U>\(\(d1\)\)\) \+ l\] = v1;/);
 });
@@ -126,7 +130,7 @@ test('a row group stages row-local reads and reads row-free tensors from global 
   );
   const source = cudaSource(program, 'f');
   assert.equal(kernels(source), 1);
-  assert.match(source, /stage\[off0 \+ l\] = t0\[/);
+  assert.match(source, /stage\[wbase \+ off0 \+ l\] = t0\[/);
   assert.match(source, /t1\[\(i\d+\)\]/);
 });
 
