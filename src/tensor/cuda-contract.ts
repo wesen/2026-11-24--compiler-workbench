@@ -10,12 +10,15 @@ import {
   type DifferentialEvidence,
 } from '../framework/contracts/index.js';
 import type { Artifact } from '../framework/core/types.js';
+import { makeCorrespondence } from '../framework/ir/index.js';
+import { semanticCorrespondence } from '../framework/passes/index.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitCuda } from './cuda-source.js';
+import { emitPlan } from './cuda-source.js';
 import type { BufferValue } from './evaluate.js';
-import { TixIR } from './ir.js';
-import { selectFunction, type Module } from './model.js';
+import { adapter, TixIR } from './ir.js';
+import { KernelIR, planKernels, unfusedPlan, type KernelPlan } from './kernels.js';
+import { selectFunction, visit, type Module } from './model.js';
 
 interface CudaUnit {
   fn: string;
@@ -40,6 +43,56 @@ const FunctionName = defineType<string>({
     if (typeof name !== 'string' || !name) throw Error('Invalid Tix function name');
   },
 });
+
+const Fuse = defineType<boolean>({
+  id: 'tensor.fuse',
+  version: '1',
+  description: 'Whether statements are fused into fewer kernels',
+  validate(value) {
+    if (typeof value !== 'boolean') throw Error('Invalid fuse flag');
+  },
+});
+
+/**
+ * Which Tix entities became which kernel (IRWB-029-E). A kernel's sources are its statements and the statements
+ * inlined into them; parameters and the functions that are not lowered have no target.
+ */
+export function kernelCorrespondence(baseline: Artifact<Module>, plan: Artifact<KernelPlan>) {
+  const { fn, inlined, kernels } = plan.value,
+    id = (name: string) => fn.name + '/' + name;
+  const statements = new Map(fn.statements.map(s => [s.name, s]));
+  const sources = [...adapter.entities(baseline.value)].map(e => e.id);
+  const entries = kernels.map((k, i) => {
+    const from = new Set(k.mapping === 'row' ? k.statements : [k.statement]);
+    for (const name of from)
+      visit(statements.get(name)!.expr, e => {
+        if (e.kind === 'load' && inlined.includes(e.name)) from.add(e.name);
+      });
+    return {
+      from: Array.from(from, id),
+      to: [id('k' + i)],
+      relation: from.size > 1 ? 'fused' : 'lowered',
+      note: k.mapping === 'row' ? `one block per row, ${k.outer} leading axes` : 'one thread per element',
+    };
+  });
+  const lowered = new Set([fn.name, ...entries.flatMap(e => e.from)]);
+  const rest = sources.filter(s => !lowered.has(s));
+  return semanticCorrespondence(
+    makeCorrespondence(
+      { artifact: baseline.id, revision: baseline.revision },
+      { artifact: plan.id, revision: plan.revision },
+      sources,
+      [fn.name, ...entries.flatMap(e => e.to)],
+      [
+        { from: [fn.name], to: [fn.name], relation: 'function' },
+        ...entries,
+        ...(rest.length ? [{ from: rest, to: [], relation: 'no-kernel' }] : []),
+      ],
+    ),
+    'statements-to-kernels',
+    'kernel-plan',
+  );
+}
 
 export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
   return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
@@ -68,12 +121,17 @@ function compare(expected: BufferValue, got: BufferValue) {
   return { ok: true };
 }
 
+function planArtifact(baseline: Artifact<Module>, fn: string, fuse: boolean) {
+  const f = selectFunction(baseline.value, fn);
+  return createArtifact(KernelIR, 'tix-kernels/' + fn, fuse ? planKernels(f).plan : unfusedPlan(f));
+}
+
 type CudaSample = ReturnType<typeof cudaCases>[number];
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
-  const inputs = { baseline: TixIR, fn: FunctionName };
-  const outputs = { subject: CudaIR };
-  const ports = { ...inputs, ...outputs };
+  const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
+  const outputs = { plan: KernelIR, subject: CudaIR };
+  const ports = { baseline: TixIR, fn: FunctionName, subject: CudaIR };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
     id: 'tensor.cuda-meaning',
     version: '2',
@@ -102,15 +160,23 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       if (subject.value.fn !== fn)
         return todo.map(() => ({ v: 'disagree', reason: 'CUDA function differs' }));
       const pending = todo.map(i => cases[i]);
-      const results = await executeBatch(
-        subject.value.source,
-        selectFunction(baseline.value, fn),
-        pending.map(c => c.inputs),
-      );
-      if (results.length !== pending.length) throw Error('Wrong CUDA response case count');
+      const run = (spill: boolean) =>
+        executeBatch(
+          subject.value.source,
+          selectFunction(baseline.value, fn),
+          pending.map(c => c.inputs),
+          spill ? { spill } : undefined,
+        );
+      // A source with row kernels has a second path for rows too long for shared memory. No small case reaches
+      // it, so the batch runs again with that path forced, and a case agrees only if both runs do.
+      const runs = await Promise.all(/\bspill_all\b/.test(subject.value.source) ? [run(false), run(true)] : [run(false)]);
+      if (runs.some(results => results.length !== pending.length)) throw Error('Wrong CUDA response case count');
       return pending.map((sample, i): Decided => {
-        const result = compare(sample.reference, results[i]);
-        return result.ok ? { v: 'agree' } : { v: 'disagree', reason: result.reason! };
+        for (const [spilled, results] of runs.entries()) {
+          const result = compare(sample.reference, results[i]);
+          if (!result.ok) return { v: 'disagree', reason: (spilled ? 'With spilled rows: ' : '') + result.reason! };
+        }
+        return { v: 'agree' };
       });
     },
   });
@@ -121,6 +187,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     inputs,
     outputs,
     cache: 'never',
+    correspondence: [{ id: 'statements-to-kernels', from: 'baseline', to: 'plan', relation: 'kernel-plan' }],
     ensures: [
       {
         invariant,
@@ -131,17 +198,31 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         },
       },
     ],
-    run(_ctx, { baseline, fn }) {
-      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+    run(_ctx, { baseline, fn, fuse }) {
+      const plan = planArtifact(baseline, fn, fuse);
+      return {
+        outputs: { plan, subject: cudaArtifact(fn, emitPlan(plan.value)) },
+        correspondence: [kernelCorrespondence(baseline, plan)],
+      };
     },
   });
 
-  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+  return async (
+    baseline: Artifact<Module>,
+    fn: string,
+    candidate?: Artifact<CudaUnit>,
+    options?: { fuse?: boolean },
+  ) => {
     const relation = 'exact' as const;
     const manager = new AnalysisManager();
+    const fuse = options?.fuse !== false;
     try {
-      if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
-      else await manager.execute(pass, { baseline, fn });
+      if (candidate) {
+        const plan = planArtifact(baseline, fn, fuse);
+        await manager.verifyTransformation({ baseline, fn, fuse }, { plan, subject: candidate }, pass, [
+          kernelCorrespondence(baseline, plan),
+        ]);
+      } else await manager.execute(pass, { baseline, fn, fuse });
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -8,6 +8,7 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { evaluate, OutsideSample, size, type BufferValue } from './evaluate.js';
 import type { CudaInputs } from './cuda-runtime.js';
+import { rowThreads } from './cuda-source.js';
 import { TixIR } from './ir.js';
 import { plain, value, type Fn, type Module } from './model.js';
 
@@ -36,6 +37,11 @@ function cases(fn: Fn, baseline: Fn, relation: Relation, random: () => number, c
   );
   assignments.push(symbols.map(() => 0));
   for (const [zero] of symbols.entries()) assignments.push(symbols.map((_, i) => (i === zero ? 0 : 3)));
+  // A row kernel's thread takes elements t, t + B, ... of its row. One symbol at B + 3 makes threads take a
+  // second element and leaves the last stride partial; the stage-1 gate has no kernels and does not need it.
+  if (cuda)
+    for (const [long] of symbols.entries())
+      assignments.push(symbols.map((_, i) => (i === long ? rowThreads + 3 : 2)));
   for (const shapeValues of assignments) {
     const key = JSON.stringify(shapeValues);
     if (seen.has(key)) continue;

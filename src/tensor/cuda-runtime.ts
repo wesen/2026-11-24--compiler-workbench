@@ -92,7 +92,8 @@ export async function runCudaBatch(
   source: string,
   fn: Fn,
   cases: readonly CudaInputs[],
-  options?: { host?: string; benchmark?: boolean },
+  // spill: run a fused source with its staged rows forced into global scratch memory (the contract's second run)
+  options?: { host?: string; benchmark?: boolean; spill?: boolean },
 ): Promise<CudaResult[]> {
   const request = encodeCudaCases(fn, cases);
   const dir = await mkdtemp(join(tmpdir(), 'irwb-tix-cuda-'));
@@ -101,6 +102,7 @@ export async function runCudaBatch(
     const args = [runner, dir, '--runtime-input', 'inputs.bin'];
     if (options?.host !== undefined) args.push('--host', options.host);
     if (options?.benchmark) args.push('--timed', '--', '--benchmark');
+    else if (options?.spill) args.push('--', '--spill');
     try {
       await exec(process.execPath, args);
     } catch (error) {

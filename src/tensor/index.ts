@@ -8,7 +8,8 @@ import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
 import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
-import { emitCuda } from './cuda-source.js';
+import { emitPlan } from './cuda-source.js';
+import { planKernels, unfusedPlan, type KernelPlan, type Refusal } from './kernels.js';
 import { parse } from './parser.js';
 import { inlinePass, splitPass } from './passes.js';
 
@@ -58,24 +59,41 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
   return { program: { origin, current }, steps };
 }
 
-export function cudaSource(program: TixProgram, fn: string): string {
-  return emitCuda(selectFunction(program.current.value, fn));
+export interface FuseOptions {
+  /** Fuse statements into fewer kernels (default). `false` is stage 2's lowering, one kernel per statement. */
+  fuse?: boolean;
+}
+/** The kernel plan of a function, and the fusions the planner refused (none when `fuse` is false). */
+export function kernelPlan(
+  program: TixProgram,
+  fn: string,
+  options?: FuseOptions,
+): { plan: KernelPlan; refused: Refusal[] } {
+  const f = selectFunction(program.current.value, fn);
+  return options?.fuse === false ? { plan: unfusedPlan(f), refused: [] } : planKernels(f);
+}
+export function cudaSource(program: TixProgram, fn: string, options?: FuseOptions): string {
+  return emitPlan(kernelPlan(program, fn, options).plan);
 }
 
 export async function runTixCuda(
   program: TixProgram,
   fn: string,
   inputs: CudaInputs,
-  options?: { host?: string },
+  options?: { host?: string; fuse?: boolean; benchmark?: boolean },
 ): Promise<CudaResult> {
   const f = selectFunction(program.current.value, fn);
-  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+  const [result] = await runCudaBatch(cudaSource(program, fn, options), f, [inputs], {
+    host: options?.host,
+    benchmark: options?.benchmark,
+  });
   return result;
 }
 
 export function checkLowering(
   program: TixProgram,
   fn: string,
+  options?: FuseOptions,
 ): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
-  return checkCudaLowering(program.current, fn);
+  return checkCudaLowering(program.current, fn, undefined, options);
 }
