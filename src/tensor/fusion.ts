@@ -284,9 +284,7 @@ const termsText = (e: Reduce) =>
 
 /** The axes of `e` whose terms the fold can address by a flat index: one axis, or several plain dimensions. */
 const addressable = (e: Reduce) =>
-  e.axes.length === 1
-    ? e.axes[0].extent.kind !== 'tail'
-    : e.axes.every(a => a.extent.kind === 'dim');
+  e.axes.length === 1 ? e.axes[0].extent.kind !== 'tail' : e.axes.every(a => a.extent.kind === 'dim');
 
 /** Why `reduction` in `member` stays a serial fold, or undefined when its terms are staged in parallel. */
 function serialReason(member: Statement, depth: number, e: Reduce): string | undefined {
@@ -393,7 +391,12 @@ export function blockWidth(group: FusionGroup, tensors: ReadonlyMap<string, Tens
     ...[...group.staged, ...group.statements].map(n =>
       extentProduct(tensors.get(n)!.shape.slice(group.depth), sizes),
     ),
-    ...termArrays(group, members).map(a => extentProduct(a.reduction.axes.map(x => x.extent.dim), sizes)),
+    ...termArrays(group, members).map(a =>
+      extentProduct(
+        a.reduction.axes.map(x => x.extent.dim),
+        sizes,
+      ),
+    ),
   ];
   if (lengths.some(n => n === undefined)) return undefined;
   return Math.max(1, ...(lengths as number[]));

@@ -434,7 +434,9 @@ function emitGroup(
     const row = layout.map(l => l.length).join(' + ');
     w.line(`float* const base = Shared ? shared : scratch + point * (${row});`);
     layout.forEach((l, i) =>
-      w.line(`float* const ${l.pointer} = ${i ? `${layout[i - 1].pointer} + ${layout[i - 1].length}` : 'base'};`),
+      w.line(
+        `float* const ${l.pointer} = ${i ? `${layout[i - 1].pointer} + ${layout[i - 1].length}` : 'base'};`,
+      ),
     );
     for (const name of group.staged) {
       const s = suffix(name);
@@ -485,19 +487,15 @@ function emitGroup(
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
     const hostTerms = terms.map(t => `static_cast<U>(${foldLength(t.reduction, hostDim)})`);
-    const hostRow = [
-      ...rowBuffers.map(n => lengthOf(n, hostDim)),
-      ...hostTerms,
-    ].join(' + ');
+    const hostRow = [...rowBuffers.map(n => lengthOf(n, hostDim)), ...hostTerms].join(' + ');
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
-      `  const U longest_${kernel} = std::max<U>({${[
-        ...lengths,
-        ...hostTerms,
-      ].join(', ')}, static_cast<U>(1)});`,
+      `  const U longest_${kernel} = std::max<U>({${[...lengths, ...hostTerms].join(
+        ', ',
+      )}, static_cast<U>(1)});`,
       `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
     );
     hasWork = `grid_${kernel}`;

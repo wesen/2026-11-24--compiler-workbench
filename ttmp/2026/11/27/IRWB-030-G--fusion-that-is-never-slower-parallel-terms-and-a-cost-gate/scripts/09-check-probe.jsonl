@@ -1,0 +1,5 @@
+{"case":"01-softmax-exp-in-sum.tix#softmax_exp_in_sum {\"N\":4096,\"C\":1024}","set":"probe","fused":{"accepted":true,"relation":"exact"},"unfused":{"accepted":true,"relation":"exact"},"equal":true,"sha":["6e965523088d394f","6e965523088d394f"]}
+{"case":"03-multi-axis.tix#multi {\"N\":256,\"C\":64,\"D\":32}","set":"probe","fused":{"accepted":true,"relation":"exact"},"unfused":{"accepted":true,"relation":"exact"},"equal":true,"sha":["a91b6241370e1598","a91b6241370e1598"]}
+{"case":"softmax {\"N\":524288,\"C\":4}","set":"probe","fused":{"accepted":true,"relation":"exact"},"unfused":{"accepted":true,"relation":"exact"},"equal":true,"sha":["89bdbb6b1d22c524","89bdbb6b1d22c524"]}
+{"case":"softmax {\"N\":1,\"C\":65536}","set":"probe","fused":{"accepted":true,"relation":"exact"},"unfused":{"accepted":true,"relation":"exact"},"equal":true,"sha":["f2fa4506704e62c6","f2fa4506704e62c6"]}
+{"case":"01-layernorm-inside.tix#layernorm_inside {\"N\":64,\"D\":16384}","set":"probe","fused":{"accepted":true,"relation":"exact"},"unfused":{"accepted":true,"relation":"exact"},"equal":true,"sha":["a748128c9606054a","a748128c9606054a"]}
