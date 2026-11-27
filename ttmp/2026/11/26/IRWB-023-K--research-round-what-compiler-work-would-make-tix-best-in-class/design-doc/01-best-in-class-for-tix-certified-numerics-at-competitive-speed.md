@@ -11,29 +11,37 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: repo://src/tensor/contract.ts
-      Note: Stage-1 sampled tolerance this round upgrades
-    - Path: repo://src/tensor/cuda-source.ts
-      Note: Rounding-site-precise emitter the schedule passes would consume
     - Path: repo://src/framework/contracts/differential.ts
       Note: Differential invariant that would carry per-case certified evidence
+    - Path: repo://src/tensor/contract.ts
+      Note: |-
+        Stage-1 sampled tolerance this round upgrades
+        Stage-1 sampled tolerance this round upgrades to certified budgets
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: Rounding-site-precise emitter the schedule passes would consume
     - Path: repo://ttmp/2026/11/26/IRWB-023-K--research-round-what-compiler-work-would-make-tix-best-in-class/scripts/01-certified-bounds.mjs
-      Note: Certified bound analyzer and gate simulation on the corpus
+      Note: |-
+        Certified bound analyzer and gate simulation on the corpus
+        Certified bound analyzer, gate simulation and soundness assertions (Experiment 1)
+    - Path: repo://ttmp/2026/11/26/IRWB-023-K--research-round-what-compiler-work-would-make-tix-best-in-class/scripts/02-cuda-exactness.mjs
+      Note: GB10 experiment runner and bit-comparisons against the Node meaning (Experiment 2)
     - Path: repo://ttmp/2026/11/26/IRWB-023-K--research-round-what-compiler-work-would-make-tix-best-in-class/scripts/cuda-exp2/main.cu
-      Note: Bit-exact tiling, fused row kernels, f64 reference, probes
+      Note: |-
+        Bit-exact tiling, fused row kernels, f64 reference, probes
+        Bit-exact tiling, fused row kernels, f64 reference and transcendental probes
 ExternalSources:
-    - Title: 'Accuracy and Stability of Numerical Algorithms, 2nd ed.'
-    - Title: 'Fast Reproducible Floating-Point Summation (ARITH 21, 2013)'
-    - Title: 'Algorithms for Efficient Reproducible Floating Point Summation (TOMS 2020)'
-    - Title: 'ExBLAS: Reproducible and Accurate BLAS Library (NRE 2015)'
-    - Title: 'Rigorous Estimation of Floating-Point Round-off Errors with Symbolic Taylor Expansions (FM 2015)'
-    - Title: 'Automatically Improving Accuracy for Floating Point Expressions (PLDI 2015)'
-    - Title: 'The Tensor Algebra Compiler (OOPSLA 2017)'
-    - Title: 'Tensor Comprehensions (2018)'
-    - Title: 'Triton: an intermediate language and compiler for tiled neural network computation (MAPL 2019)'
-    - Title: 'Halide: Decoupling algorithms from schedules (PLDI 2013)'
-    - Title: 'FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness (NeurIPS 2022)'
-    - Title: 'Floating Point and IEEE 754 Compliance for NVIDIA GPUs (NVIDIA whitepaper)'
+    - Nicholas J. Higham, "Accuracy and Stability of Numerical Algorithms", 2nd ed., SIAM, 2002 — gamma_n error machinery for summation
+    - James Demmel and Hong Diep Nguyen, "Fast Reproducible Floating-Point Summation", ARITH 21, 2013, https://dl.acm.org/doi/10.1109/ARITH.2013.9
+    - Willow Ahrens, James Demmel, and Hong Diep Nguyen, "Algorithms for Efficient Reproducible Floating Point Summation", ACM TOMS 46(3), 2020, https://dl.acm.org/doi/10.1145/3389360
+    - 'Roman Iakymchuk, Sylvain Collange, David Defour, Stef Graillat, "ExBLAS: Reproducible and Accurate BLAS Library", NRE 2015, https://hal.science/hal-01202396v3'
+    - Alexey Solovyev, Casey Jacobsen, Zvonimir Rakamaric, Ganesh Gopalakrishnan, "Rigorous Estimation of Floating-Point Round-off Errors with Symbolic Taylor Expansions", FM 2015, LNCS 9109, https://link.springer.com/chapter/10.1007/978-3-319-19249-9_33
+    - Pavel Panchekha, Alex Sanchez-Stern, James R. Wilcox, Zachary Tatlock, "Automatically Improving Accuracy for Floating Point Expressions", PLDI 2015, https://dl.acm.org/doi/10.1145/2813885.2737959
+    - Fredrik Kjolstad, Shoaib Kamil, Stephen Chou, David Lugato, Saman Amarasinghe, "The Tensor Algebra Compiler", OOPSLA 2017, https://dl.acm.org/doi/10.1145/3133901
+    - 'Nicolas Vasilache et al., "Tensor Comprehensions: Framework-Agnostic High-Performance Machine Learning Abstractions", 2018, https://arxiv.org/abs/1802.04730'
+    - 'Philippe Tillet, H. T. Kung, David Cox, "Triton: an intermediate language and compiler for tiled neural network computation", MAPL 2019'
+    - 'Jonathan Ragan-Kelley, Connelly Barnes, Andrew Adams, Sylvain Paris, Fredo Durand, Saman Amarasinghe, "Halide: Decoupling algorithms from schedules", PLDI 2013, https://dl.acm.org/doi/10.1145/2491956.2462176'
+    - 'Tri Dao, Daniel Y. Fu, Stefano Ermon, Atri Rudra, Christopher Re, "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", NeurIPS 2022, https://arxiv.org/abs/2205.14135'
+    - NVIDIA, "Floating Point and IEEE 754 Compliance for NVIDIA GPUs", whitepaper, https://docs.nvidia.com/cuda/archive/13.1.2/pdf/Floating_Point_on_NVIDIA_GPU.pdf
 Summary: A research round defining best-in-class for Tix as verifiable numerics at competitive speed, with three ranked proposals, experiments on Node and the GB10, a staged plan, and failures.
 LastUpdated: 2026-11-26T22:45:00-05:00
 WhatFor: ""
