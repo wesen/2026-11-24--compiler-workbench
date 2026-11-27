@@ -64,13 +64,23 @@ Shared facts:
   - cuBLAS SGEMM in FP32 math (pedantic, so no TF32): 0.0329 ms at 512³ (8.15 TFLOP/s), and 19.2 TFLOP/s at 4096³;
   - streaming bandwidth: 244 GB/s.
 
+### Direction from T6 on (the user, 2026-11-27)
+
+The user asked for "T6 level work, and working on additional IRs and innovative approaches". T3 and T3b put every lowering decision in a plan and an emitter: nineteen cells changed nothing in `src/framework`, and only one built a second IR. From T6 on, the stages ask for compiler structure, not only speed:
+
+- new IRs as v6 artifacts, with each lowering step a checked pass;
+- legality from the IR;
+- new approaches tried and reported, including negative results.
+
+The cells run under policy v3r (`prompts/developer-instructions-v3r.md`). It is v3 with two rules changed: try the invited approaches instead of preferring the smallest deliverable, and describe new IRs and passes built in the session. The IR-level items are T6 (schedule IR), T14 (a parallel fold bit-identical to the sequential one), T5 (a fold construct with a tuple state, from R1), T10 (reassociation as an IR rewrite), T15 (acceptance by proof), and on the Typed side A1 (an e-graph with verified rules).
+
 ### Queue (tensor track, in order)
 
 The path from T2's naive kernels toward library speed. Each step is a stage for the agent matrix unless marked as coordinator work. Every transformation that changes results is an explicit IR pass checked under tolerance, so the lowering stays exact against the program it receives. Speed and the strength of the claim are both measured.
 
-1. **T3, checked fusion** (ready now, base `2e035c6`): softmax and layernorm toward the bandwidth bound, exact where the order is kept.
+1. **T3, checked fusion** (done, with T3b).
 2. **T9, a GPU timing protocol** (the coordinator, while T3 runs): needed before any speed comparison is trusted.
-3. **T6, exact tiled contractions with a schedule IR:** shared-memory and register tiling, vector loads, double buffering. Order-preserving, so bit-exact; against cuBLAS.
+3. **T6, a schedule IR with checked scheduling passes, and exact tiled contractions through it:** tile, split, reorder, bind, stage, vectorize and double-buffer as passes; order-preserving, so bit-exact; against cuBLAS. Brief: `prompts/t6/common.md`.
 4. **T4, tolerance calibration with mutants,** with F15's derived bound: T10–T12 all rest on tolerance, which must still reject real bugs.
 5. **T10, parallel reductions and split-K:** lowering `split-sum` programs to block- and warp-parallel sums.
 6. **T11, checked FMA contraction:** the last factor of about 2 to cuBLAS on large matrices.

@@ -1189,3 +1189,17 @@ The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if av
   - Fable: the differential's `baselineKey` contract (cases are a function of the key) is not checked.
 - **Follow-up:** the tensor CUDA artifact should declare its kernels via F23's `entities`.
 - **Write-ups for T3b:** report 11 §13 (vault `1fab9d9`), playbook §12 (`d72f4c6`: held-out programs caught the 6.6× regression), and a new scorecard section "Stage 3b: fusion that is never slower" (dataset `t3b`, page version 10; its check passed).
+
+## Step 43: F24–F26 (one review round), and T6 rewritten as IR-level work
+
+- **The user's requests** (2026-11-27): "T9 and T6", then "and 3" (the three small follow-ups). Asked what about compiler work: "i mean T6 level work, and working on additional IRs and innovative approaches".
+- **F24–F26 (IRWB-032, Terra low, base `fix4-base` `1ac4595`, 6 min):**
+  - F24 (the CUDA kernels and Tix statements are enumerated, so lowering correspondences are checked) and F25 (`runTixCuda` reports each gated kernel's side) are accepted.
+  - F26 compared the regenerated cases with `node:util`'s `isDeepStrictEqual`, which breaks the browser bundle of `src/framework` (`node tools/build-site.mjs`: `Could not resolve "node:util"`; main builds). The agent had flagged the risk itself. It was sent back to use the framework's own canonical digests (`prompts/fixes-4/review-1.md`, `scripts/54-resume-fixes-4.sh`).
+- **T6 rewritten** (`prompts/t6/common.md`):
+  - It now requires a schedule IR as a v6 artifact between Tix and CUDA. Scheduling steps (tile, split, reorder, bind, stage, vectorize, unroll, double-buffer) become passes with legality from the IR, each checked. The emitter only prints, the schedule is chosen by a strategy, and fusion either moves into the IR or feeds it.
+  - It invites new approaches (order preservation proven from the IR, accumulation-order correspondence, shared rewrites, an IR cost model) and counts framework changes as primary results.
+  - Up to four hours per cell.
+  - The hidden evaluator (`hidden-t6/t6-eval.mjs`, committed before the brief's final form) does not depend on these changes.
+- **Policy v3r** (`prompts/developer-instructions-v3r.md`) is v3 with two rules changed: try at least one invited approach and report it, instead of "prefer the smallest deliverable"; and describe what you build in the session, new IRs included. The playbook's lesson that a policy outranks the brief is the reason.
+- **The backlog's direction note** lists the IR-level items: T6, T14, T5, T10, T15, A1.
