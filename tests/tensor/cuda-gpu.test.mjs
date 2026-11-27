@@ -105,7 +105,7 @@ test('GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and
   );
 });
 
-test('remote runner shares a compile across isolated jobs and invalidates on build input changes', async () => {
+test('remote runner shares a compile across isolated jobs and invalidates on build input and library changes', async () => {
   const tool = fileURLToPath(new URL('../../tools/cuda-remote.mjs', import.meta.url));
   const exec = promisify(execFile);
   const dirs = await Promise.all(['A', 'B'].map(() => mkdtemp(join(tmpdir(), 'irwb-cuda-runner-test-'))));
@@ -129,11 +129,11 @@ int main() {
         await writeFile(join(dir, 'input.txt'), i ? 'B' : 'A');
       }),
     );
-    async function run(dir) {
-      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt']);
+    async function run(dir, ...linkArgs) {
+      const { stdout } = await exec(process.execPath, [tool, dir, '--runtime-input', 'input.txt', ...linkArgs]);
       return { ...JSON.parse(stdout), answer: await readFile(join(dir, 'out', 'answer.txt'), 'utf8') };
     }
-    const [a, b] = await Promise.all(dirs.map(run));
+    const [a, b] = await Promise.all(dirs.map(dir => run(dir)));
     assert.equal(a.hash, b.hash);
     assert.deepEqual([a.compiled, b.compiled].sort(), [false, true]);
     assert.deepEqual([a.answer, b.answer], ['A1', 'B1']);
@@ -142,6 +142,13 @@ int main() {
     assert.equal(changed.compiled, true);
     assert.notEqual(changed.hash, a.hash);
     assert.equal(changed.answer, 'A2');
+    const linked = await run(dirs[0], '--link', 'cublas');
+    assert.notEqual(linked.hash, changed.hash);
+    assert.equal(linked.compiled, true);
+    const linkedTwice = await run(dirs[0], '--link', 'cublas', '--link', 'cudart');
+    assert.notEqual(linkedTwice.hash, linked.hash);
+    assert.equal(linkedTwice.compiled, true);
+    assert.equal(linkedTwice.answer, 'A2');
   } finally {
     await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true })));
   }

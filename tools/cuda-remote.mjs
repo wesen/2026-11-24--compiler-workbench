@@ -1,10 +1,11 @@
 // Compile and run a CUDA program on the GPU machine over ssh, and bring its outputs back.
 //
 //   node tools/cuda-remote.mjs <dir> [--timed] [--host user@host] [--arch sm_121]
-//     [--runtime-input relative-path ...] [-- program args...]
+//     [--link lib ...] [--runtime-input relative-path ...] [-- program args...]
 //
 // <dir> holds main.cu and any input files. Each invocation uploads to its own remote working directory.
-// `nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture and build files.
+// `nvcc -O3 -arch=<arch> -o prog main.cu` is cached by compiler path, architecture, libraries and build files.
+// Each --link lib appends -l<lib> to nvcc in the order given (for example, --link cublas).
 // Each --runtime-input path marks an uploaded file that does not affect compilation. Files under out/
 // are copied back to <dir>/out/ after running ./prog from the working directory.
 // --timed takes an exclusive lock on the GPU (flock ~/irwb-cuda/.gpu.lock) for the run, so concurrent timed
@@ -23,11 +24,11 @@ const argv = process.argv.slice(2);
 const sep = argv.indexOf('--');
 const opts = sep < 0 ? argv : argv.slice(0, sep);
 const progArgs = sep < 0 ? [] : argv.slice(sep + 1);
-const valued = ['--host', '--arch', '--runtime-input'];
+const valued = ['--host', '--arch', '--runtime-input', '--link'];
 const dir = opts.find((a, i) => !a.startsWith('--') && !valued.includes(opts[i - 1]));
 if (!dir)
   throw new Error(
-    'usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [--runtime-input path ...] [-- args]',
+    'usage: node tools/cuda-remote.mjs <dir> [--timed] [--host h] [--arch a] [--link lib ...] [--runtime-input path ...] [-- args]',
   );
 for (const [i, opt] of opts.entries())
   if (valued.includes(opt) && (!opts[i + 1] || opts[i + 1].startsWith('--')))
@@ -51,7 +52,8 @@ if (!files.includes('main.cu')) throw new Error(dir + ': no main.cu');
 const runtime = new Set(opts.flatMap((arg, i) => (arg === '--runtime-input' ? [opts[i + 1]] : [])));
 for (const path of runtime)
   if (path === 'main.cu' || !files.includes(path)) throw new Error('Invalid runtime input: ' + path);
-const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch]));
+const links = opts.flatMap((arg, i) => (arg === '--link' ? ['-l' + opts[i + 1]] : []));
+const h = createHash('sha256').update(JSON.stringify([nvcc, '-O3', arch, ...links]));
 for (const f of files) {
   if (runtime.has(f)) continue;
   const bytes = readFileSync(join(dir, f));
@@ -82,7 +84,7 @@ try {
     'exec 9>"$cache/.lock"',
     'flock 9',
     'if [ ! -x "$cache/prog" ]; then',
-    `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu || exit 97`,
+    `  ${q(nvcc)} -O3 ${q('-arch=' + arch)} -o prog.tmp main.cu ${links.map(q).join(' ')} || exit 97`,
     '  mv prog.tmp "$cache/prog"',
     '  compiled=1',
     'fi',

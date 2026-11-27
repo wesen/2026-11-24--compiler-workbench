@@ -18,7 +18,7 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Report Tix optimization decisions, share in-flight differential verdicts, and add library linking to the remote CUDA runner. See the [diary](reference/01-diary.md) for regression evidence and the [cuBLAS probe](scripts/01-cublas-probe/main.cu).
 
 ## Key Links
 
