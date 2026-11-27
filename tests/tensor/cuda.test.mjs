@@ -128,3 +128,12 @@ test('the lowering relation is exact: one ulp is rejected, a different NaN word 
     relation: 'exact',
   });
 });
+
+test('lowering rejects statement IDs absent from the Tix artifact', async () => {
+  const engine = async (_source, f, cases) => cases.map(inputs => ({ ...evaluate(f, inputs, 'f32'), gpuMs: 0 }));
+  const check = createCudaLowering('entity-test', engine);
+  const candidate = cudaArtifact('f', 'source', [{ name: 'k0', mapping: 'thread', statements: ['missing'] }]);
+  const result = await check(p.current, 'f', candidate);
+  assert.equal(result.accepted, false);
+  assert.match(result.reason, /missing/);
+});

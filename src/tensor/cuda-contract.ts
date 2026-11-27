@@ -37,6 +37,7 @@ const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
   version: '2',
   description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
+  entities: unit => unit.kernels.map(k => k.name),
   validate(value) {
     const unit = value as Partial<CudaUnit> | null;
     if (typeof unit?.fn !== 'string' || !unit.fn || typeof unit.source !== 'string' || !unit.source)
@@ -89,6 +90,8 @@ export function kernelCorrespondence(
     from: { artifact: baseline.id, revision: baseline.revision },
     to: { artifact: subject.id, revision: subject.revision },
     relation: 'statements-to-kernels',
+    sourceEntities: baseline.value.functions.flatMap(f => f.statements.map(s => f.name + '/' + s.name)),
+    targetEntities: kernels.map(k => k.name),
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
     evidence: { mappings: kernels.map(k => k.mapping), gated: kernels.map(k => k.gated === true) },
   };
