@@ -98,3 +98,7 @@ No framework change is planned; stage 3's transformation, port and correspondenc
 - Double-buffered term chunks (fold one chunk while computing the next).
 - A per-group gate with its own check of the mixed plan.
 - Correspondence entity checks (another ticket).
+
+## As built
+
+Term staging follows this design; M1 kept the multi-instruction rule (a one-multiply body was 2 to 15% slower staged in each of five rounds; a square root 41% faster; five single-instruction operations mixed). The gate's mechanism follows the design, but **its quantity changed**: M3 showed fused faster at every row count, down to one row, and slower only with short rows (2^20 rows of 4: 2.93 ms fused, 0.62 ms unfused). So the rule is "every block-mode kernel's longest row has at least 24 elements" (M3b), not a row count. The report gives the measurements.

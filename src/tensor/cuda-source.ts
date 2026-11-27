@@ -317,8 +317,11 @@ __device__ static float max_nan(float a, float b) {
 // v), 128 otherwise (rows only: softmax, layernorm).
 export const blockThreads = { rows: 128, contraction: 64 };
 // Staged reduction terms (IRWB-030-D): the term buffer holds at most this many terms; longer reductions are
-// computed and folded in chunks of this size. Chosen by measurement (the ticket's M2).
-export const termChunk = { size: 1024 };
+// computed and folded in chunks of this size. Measured (the ticket's M2, chunks of 128 to 4096 on layernorm-inside
+// and softmax-inside with rows of 1024 and 4096): 256 has the smallest worst-case slowdown against the best chunk
+// of each case (7%; 128: 10%, 512: 15%, 1024: 20%). Smaller buffers leave room for more blocks per SM; smaller
+// chunks add barriers.
+export const termChunk = { size: 256 };
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 

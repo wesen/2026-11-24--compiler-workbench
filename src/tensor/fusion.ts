@@ -220,11 +220,12 @@ export function planFusion(fn: Fn, options?: { terms?: TermRule }): FusionPlan {
 }
 
 // IRWB-030-D: the gate. A block-mode kernel runs one block per row; when every row is short, most of the block's
-// threads idle and the barriers dominate, and stage 2's lowering is faster. Measured (the ticket's M3b, softmax at
-// 2^22 and 2^18 elements, layernorm-inside at 2^22, rows of 4 to 128): fused was slower with rows of 16 in two of
-// the three series (softmax 0.737 against 0.661 ms, layernorm-inside 0.434 against 0.417) and of 4 or 8 in all,
-// and faster with rows of 24 and longer in all three. Below 24 elements in a kernel's longest row, the program
-// runs stage 2's lowering. The row count does not matter (M3: fused was faster from 1 to 4,096 rows of 1,024).
+// threads idle and the barriers dominate, and stage 2's lowering is faster. Measured (the ticket's M3b, medians of
+// three rounds, softmax at 2^22 and 2^18 elements and layernorm-inside at 2^22, rows of 4 to 128): fused was slower
+// with rows of 4 and 8 in all three series and with rows of 16 in both softmax series (0.737 against 0.668 ms,
+// 0.050 against 0.042), and faster with rows of 24 and longer in all three (by 1.16 to 2.8 times). Below 24
+// elements in a kernel's longest row, the program runs stage 2's lowering. The row count does not matter (M3:
+// fused was faster from 1 to 4,096 rows of 1,024, and from 1 row of 2^22 elements to 2^16 rows of 64).
 export const gate = { shortestRow: 24 };
 
 /** Whether `plan` should run at these shape values, or stage 2's lowering instead (`fuse: false`). */
