@@ -23,17 +23,20 @@ interface CudaKernel {
   name: string;
   mapping: 'thread' | 'block';
   statements: string[];
+  /** IRWB-030-J: the staged reductions this kernel computes with parallel terms (`member:op(axes)`). */
+  parallel?: string[];
 }
 interface CudaUnit {
   fn: string;
   source: string;
-  /** The fusion plan the source follows: which statements each kernel computes (IRWB-029-D). */
+  /** The fusion plan the source follows: which statements each kernel computes (IRWB-029-D) and which of
+   * their reductions run with parallel terms (IRWB-030-J). */
   kernels: CudaKernel[];
 }
 
 const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '2',
+  version: '3',
   description: "Standalone CUDA translation unit for a Tix function, with its kernels' statements",
   validate(value) {
     const unit = value as Partial<CudaUnit> | null;
@@ -47,7 +50,9 @@ const CudaIR = defineIR<CudaUnit>({
           !['thread', 'block'].includes(k.mapping) ||
           !Array.isArray(k.statements) ||
           !k.statements.length ||
-          k.statements.some(s => typeof s !== 'string'),
+          k.statements.some(s => typeof s !== 'string') ||
+          (k.parallel !== undefined &&
+            (!Array.isArray(k.parallel) || k.parallel.some(p => typeof p !== 'string'))),
       )
     )
       throw Error('Invalid CUDA kernel list');
@@ -87,7 +92,10 @@ export function kernelCorrespondence(
     to: { artifact: subject.id, revision: subject.revision },
     relation: 'statements-to-kernels',
     entities: kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
-    evidence: { mappings: kernels.map(k => k.mapping) },
+    evidence: {
+      mappings: kernels.map(k => k.mapping),
+      parallel: kernels.map(k => k.parallel ?? []),
+    },
   };
 }
 
@@ -162,8 +170,9 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '2',
-    description: 'Lower a Tix function to CUDA, fused or one kernel per statement, and check it on the GPU',
+    version: '3',
+    description:
+      'Lower a Tix function to CUDA, fused (with parallel reduction terms where the plan stages them) or one kernel per statement, and check it on the GPU',
     inputs,
     outputs,
     cache: 'never',
@@ -178,6 +187,9 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         },
       },
     ],
+    // No shape values reach the transformation (the framework has no port for them; IRWB-030-J's finding), so it
+    // emits the shape-independent plan: every legal group fused. runTixCuda may leave a group unfused at a
+    // concrete launch's shapes; that group then runs the same stage-2 kernels this transformation also emits.
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
       const plan = fuse ? planFusion(f) : unfusedPlan(f);
@@ -185,6 +197,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         name: g.kernel,
         mapping: g.mapping,
         statements: g.statements,
+        parallel: g.terms.map(t => `${t.member}:${t.op}(${t.axes.join(', ')})`),
       }));
       const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };

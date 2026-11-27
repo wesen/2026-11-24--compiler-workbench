@@ -7,7 +7,7 @@ import { evaluate, type Inputs, type Precision, type BufferValue } from './evalu
 import { adapter } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 import { checkCudaLowering } from './cuda-contract.js';
-import { runCudaBatch, type CudaInputs, type CudaResult } from './cuda-runtime.js';
+import { runCudaBatch, caseShapeValues, type CudaInputs, type CudaResult } from './cuda-runtime.js';
 import { emitCuda } from './cuda-source.js';
 import { planFusion, unfusedPlan } from './fusion.js';
 import { parse } from './parser.js';
@@ -63,9 +63,14 @@ export interface LoweringOptions {
   /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
   fuse?: boolean;
 }
-function lower(program: TixProgram, fn: string, options?: LoweringOptions) {
+function lower(program: TixProgram, fn: string, options?: LoweringOptions, shapes?: Map<string, number>) {
   const f = selectFunction(program.current.value, fn);
-  return { f, source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f)) };
+  // Without shape values (cudaSource, the checked transformation) the plan fuses every legal group; with them
+  // (a concrete run) a block-mode group that cannot fill the machine keeps stage 2's kernels (IRWB-030-J).
+  return {
+    f,
+    source: emitCuda(f, options?.fuse === false ? unfusedPlan(f) : planFusion(f, shapes)),
+  };
 }
 
 export function cudaSource(program: TixProgram, fn: string, options?: LoweringOptions): string {
@@ -78,7 +83,8 @@ export async function runTixCuda(
   inputs: CudaInputs,
   options?: LoweringOptions & { host?: string; benchmark?: boolean },
 ): Promise<CudaResult> {
-  const { f, source } = lower(program, fn, options);
+  const shapes = caseShapeValues(selectFunction(program.current.value, fn), inputs);
+  const { f, source } = lower(program, fn, options, shapes);
   const [result] = await runCudaBatch(source, f, [inputs], {
     host: options?.host,
     benchmark: options?.benchmark,

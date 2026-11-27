@@ -13,6 +13,32 @@ export interface CudaResult {
   gpuMs: number;
 }
 
+// The shape values of one concrete case: the value of every plain extent of every parameter, checked for
+// consistency. runTixCuda passes these to the fusion planner so it can compare the fused and unfused
+// parallelism at this launch (IRWB-030-J); encodeCudaCases validates every case with the same rules.
+export function caseShapeValues(fn: Fn, inputs: CudaInputs): Map<string, number> {
+  return validateCase(fn, inputs).dims;
+}
+function validateCase(fn: Fn, inputs: CudaInputs) {
+  const dims = new Map<string, number>();
+  const ordered = fn.params.map(p => {
+    const tensor = Object.hasOwn(inputs, p.name) ? inputs[p.name] : undefined;
+    if (!tensor || tensor.shape.length !== p.shape.length || elements(tensor.shape) !== tensor.data.length)
+      throw Error('Invalid input shape or length for ' + p.name);
+    for (const [i, d] of p.shape.entries()) {
+      const key = plain(d);
+      if (key === undefined) continue;
+      if (dims.has(key) && dims.get(key) !== tensor.shape[i]) throw Error('Inconsistent input extent ' + key);
+      dims.set(key, tensor.shape[i]);
+    }
+    return tensor;
+  });
+  for (const [i, p] of fn.params.entries())
+    if (p.shape.some((d, j) => value(d, dims) !== ordered[i].shape[j]))
+      throw Error('Inconsistent affine shape for ' + p.name);
+  return { dims, ordered };
+}
+
 const magic = Buffer.from('TIXCUDA1');
 const header = magic.length + 8;
 
@@ -24,26 +50,7 @@ function elements(shape: number[]): number {
 }
 
 export function encodeCudaCases(fn: Fn, cases: readonly CudaInputs[]): Buffer {
-  const tensors = cases.flatMap(inputs => {
-    const dims = new Map<string, number>();
-    const ordered = fn.params.map(p => {
-      const tensor = Object.hasOwn(inputs, p.name) ? inputs[p.name] : undefined;
-      if (!tensor || tensor.shape.length !== p.shape.length || elements(tensor.shape) !== tensor.data.length)
-        throw Error('Invalid input shape or length for ' + p.name);
-      for (const [i, d] of p.shape.entries()) {
-        const key = plain(d);
-        if (key === undefined) continue;
-        if (dims.has(key) && dims.get(key) !== tensor.shape[i])
-          throw Error('Inconsistent input extent ' + key);
-        dims.set(key, tensor.shape[i]);
-      }
-      return tensor;
-    });
-    for (const [i, p] of fn.params.entries())
-      if (p.shape.some((d, j) => value(d, dims) !== ordered[i].shape[j]))
-        throw Error('Inconsistent affine shape for ' + p.name);
-    return ordered;
-  });
+  const tensors = cases.flatMap(inputs => validateCase(fn, inputs).ordered);
   const bytes = Buffer.allocUnsafe(
     header + tensors.reduce((n, t) => n + 8 * t.shape.length + 4 * t.data.length, 0),
   );
