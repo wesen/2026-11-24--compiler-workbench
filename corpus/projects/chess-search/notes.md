@@ -49,7 +49,7 @@ on every guest memory byte. The table gives executed RV32 instructions.
 
 | Position | r0 | Checked speed | Reference |
 | --- | ---: | ---: | ---: |
-| Quiet mate in two | 14,804,396 | 10,079,349 | 10,827,760 |
+| Quiet mate in two | 14,804,396 | 9,955,027 | 10,827,760 |
 
 The speed image enables `chains`, `coalesce`, and `homes`. The reference
 compiler receives the exact same assembled Typed source.

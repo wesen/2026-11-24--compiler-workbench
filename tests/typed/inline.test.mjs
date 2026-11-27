@@ -49,8 +49,9 @@ test('inline: a whole-program pass, registered, in the speed pipeline twice, and
   assert.equal(PASSES.inline.id, 'typed.inline');
   assert.deepEqual(PIPELINES.speed.slice(0, 2), ['inline', 'inline']);
   assert.deepEqual(PIPELINES.speed.slice(-2), ['rotate', 'cfg']);
-  // IRWB-037-F: O2+ with bcm after bce, and reassoc, bitwise, simplify and lvn after its last subst
-  const o2plus = [...PIPELINES['O2+']];
+  // IRWB-037-F: O2+ with licm-lengths for licm, bcm after bce, and reassoc, bitwise, simplify and lvn after its
+  // last subst
+  const o2plus = PIPELINES['O2+'].map(n => (n === 'licm' ? 'licm-lengths' : n));
   o2plus.splice(o2plus.indexOf('bce') + 1, 0, 'bcm');
   assert.deepEqual(PIPELINES.speed.slice(2, -2), [...o2plus, 'reassoc', 'bitwise', 'simplify', 'lvn']);
 });

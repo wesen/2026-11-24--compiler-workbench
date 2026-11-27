@@ -149,6 +149,7 @@ test('bitwise: choice and majority are proofs at width 1, and the pass removes o
     assert.ok(e.methods.some(m => m.method === 'bitwise-w1' && m.verdict === 'pass'), r.name);
   }
   const p = open();
+  await p.apply('fold', { count: 40 }); // the source's -1 is 0 - 1 until fold
   const ops = () => (p.listing('choose').match(/ [&^|] /g) || []).length;
   assert.equal(ops(), 9);
   const r = await p.apply('bitwise', { count: 40 });

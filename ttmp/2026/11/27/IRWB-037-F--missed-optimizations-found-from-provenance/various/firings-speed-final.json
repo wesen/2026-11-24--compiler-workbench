@@ -1,0 +1,96 @@
+{
+ "simplify": {
+  "fire": {
+   "add-zero": 6,
+   "zero-add": 13,
+   "sub-zero": 1,
+   "sub-self": 1,
+   "mul-one": 2,
+   "mul-zero": 2,
+   "mul-pow2": 143,
+   "pow2-mul": 28,
+   "div-one": 1,
+   "not-lt": 72,
+   "not-ge": 1,
+   "not-gt": 5,
+   "not-le": 4,
+   "not-ne": 1
+  },
+  "never": [
+   "one-mul",
+   "zero-mul",
+   "or-zero",
+   "xor-zero",
+   "shl-zero",
+   "shr-zero",
+   "shru-zero",
+   "and-zero",
+   "and-ones",
+   "not-eq",
+   "not-ltu",
+   "not-geu",
+   "not-not"
+  ]
+ },
+ "fold": {
+  "fire": {
+   "fold-eqz": 2,
+   "fold-add": 11,
+   "fold-sub": 33,
+   "fold-mul": 15,
+   "fold-shl": 54,
+   "fold-gt": 1
+  },
+  "never": [
+   "fold-fadd",
+   "fold-fsub",
+   "fold-fmul",
+   "fold-fdiv",
+   "fold-fmin",
+   "fold-fmax",
+   "fold-fcopysign",
+   "fold-feq",
+   "fold-fne",
+   "fold-flt",
+   "fold-fgt",
+   "fold-fle",
+   "fold-fge",
+   "fold-fneg",
+   "fold-fabs",
+   "fold-fsqrt",
+   "fold-i2f",
+   "fold-u2f",
+   "fold-f2bits",
+   "fold-bits2f",
+   "fold-and",
+   "fold-or",
+   "fold-xor",
+   "fold-shr",
+   "fold-shru",
+   "fold-eq",
+   "fold-ne",
+   "fold-lt",
+   "fold-le",
+   "fold-ge",
+   "fold-ltu",
+   "fold-geu",
+   "fold-div",
+   "fold-rem"
+  ]
+ },
+ "reassoc": {
+  "fire": {
+   "add-add-const": 16,
+   "shl-add-const": 27,
+   "add-inner-const": 13
+  },
+  "never": []
+ },
+ "bitwise": {
+  "fire": {
+   "choice": 1,
+   "majority": 1
+  },
+  "never": []
+ }
+}

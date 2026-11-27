@@ -506,8 +506,8 @@ test("P2.6: the book's table against the reference compiler, and 5160 bytes agai
   const rows = [
     ['blend', 'blend', { work: cells(40), n: 40, a: 3, b: 5 }, [531, 451, 383]],
     ['checksum', 'total', { work: cells(40) }, [446, 366, 292]],
-    // IRWB-037-F: O2's bce removes the second check of work[j] in the inner loop (2022 before)
-    ['sort', 'sort', { work: { cells: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1] } }, [2022, 1932, 1533]],
+    // IRWB-037-F: O2's bce removes the second checks of work[j] and work[j - 1] in the inner loop (2022 before)
+    ['sort', 'sort', { work: { cells: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1] } }, [2022, 1842, 1533]],
     ['collatz', 'collatz', { n: 27 }, [1590, 1590, 1486]],
     ['value-numbering', 'halves', { n: 40 }, [690, 570, 695]],
   ];

@@ -8,7 +8,17 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/attribute.ts
+      Note: hotSites
+    - Path: repo://src/typed/passes.ts
+      Note: the pass changes
+    - Path: repo://src/typed/rules/bitwise.ts
+      Note: bitwise rules
+    - Path: repo://src/typed/rules/reassoc.ts
+      Note: reassoc rules
+    - Path: repo://tests/typed/missed.test.mjs
+      Note: tests
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T12:41:33.947506109-05:00

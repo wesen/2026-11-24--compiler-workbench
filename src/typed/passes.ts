@@ -495,11 +495,12 @@ export const licm = typedPass({
       ];
       // IRWB-037-F: a buffer's length, `load32[b+0]` for a buffer local b the loop does not assign. No statement
       // writes a length word: stores into a buffer go through positions checked against the length (offset 4 and
-      // up), and a buffer local holds a buffer, so the load cannot trap. `lengths: false` turns it off.
+      // up), and a buffer local holds a buffer, so the load cannot trap. Off unless `lengths: true` (the pass
+      // `licm-lengths`, which speed runs): O2 stays the book's O2.
       // Only an outermost loop hoists a length: its body holds the inner loops' lengths too, so each is loaded
       // once per call instead of once per entry of an inner loop.
       const outermost = !facts.loops!.some(M => M !== L && M.body.includes(L.head));
-      const lengths = params.lengths !== false && outermost;
+      const lengths = params.lengths === true && outermost;
       const lengthLocal = (v: ValueRec): number | undefined => {
         if (v.op !== 'load' || v.imm !== 0) return undefined;
         const b = st.get(v.args[0]) as ValueRec;
@@ -569,6 +570,17 @@ export const licm = typedPass({
         }
     }
   },
+});
+
+/**
+ * IRWB-037-F: licm with `lengths: true`, as a pass of its own because a pipeline names passes and cannot give one
+ * a parameter. speed runs it in licm's place.
+ */
+export const licmLengths = typedPass({
+  ...licm.typed,
+  name: 'licm-lengths',
+  about: `${licm.typed.about}; also a buffer's length read twice or more in an outermost loop`,
+  body: ctx => licm.typed.body({ ...ctx, params: { ...ctx.params, lengths: true } }),
 });
 
 export const lvn = typedPass({
@@ -1236,6 +1248,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   dce,
   cfg,
   licm,
+  'licm-lengths': licmLengths,
   lvn,
   strength,
   'div-to-shift': divToShift,
@@ -1298,7 +1311,7 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
   /**
    * IRWB-003: two levels of inlining, then O2+, then loop rotation and a cfg to merge what rotation leaves in a
    * line. Meant for the backend options chains, coalesce and homes. No dfe: it needs the program's entries.
-   * IRWB-037-F: bcm after bce merges the checked text addresses inlining puts in one block; after the last subst
+   * IRWB-037-F: licm-lengths in licm's place also hoists buffer lengths; bcm after bce merges the checked text addresses inlining puts in one block; after the last subst
    * has built the trees, reassoc moves constants out to address offsets, bitwise rewrites SHA's choice and
    * majority, simplify takes the `x + 0` reassoc leaves,
    * and lvn shares the subtrees the substitutions duplicated. Each placement measured on the corpus (ticket).
@@ -1314,7 +1327,7 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
     'simplify',
     'dce',
     'cfg',
-    'licm',
+    'licm-lengths',
     'lvn',
     'strength',
     'bce',

@@ -41,7 +41,7 @@ The benchmark includes pattern compilation. All three images returned
 | Image | RV32 instructions |
 | --- | ---: |
 | Workbench r0 | 8,183 |
-| Workbench `speed` | 8,040 |
+| Workbench `speed` | 6,515 |
 | Reference compiler | 6,628 |
 
 With `[a-d]*[a-d]*[a-d]*[a-d]*` over `aaaaaaaa`, all nine states are

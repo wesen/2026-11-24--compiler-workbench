@@ -1,0 +1,56 @@
+✔ the site bundles Candela and the reference compiler as checked, lazily loaded scripts (1803.40466ms)
+✔ the Candela project: its files in app.json order, the same source as tools/candela.mjs, narrow text (17.132311ms)
+✔ renderProgressive: one span per row at stride 1, one per pixel otherwise, as renderScene (10.690366ms)
+✔ renderProgressive: pass p renders frame 0, then p + 1, and colour is summed as f32 (1.119916ms)
+✔ renderProgressive stops when asked, and keeps what it rendered (5.182972ms)
+✔ compareFrames counts differing bits, and compares the colour sums only over the same passes (5.85471ms)
+✔ B-01 at stride 32: the emulator and the evaluator at r0 give the same floats (7613.396977ms)
+﹣ Candela opens as a project: ingested from the tape, check inputs derived (IRWB_FULL=1) (0.504265ms) # SKIP
+✔ project scripts run unchanged through the wb layer (2843.939766ms)
+✔ build:site writes the page, the bundle, the styles and the checked vendor scripts (1769.98759ms)
+✔ the reference, the divergences and the book are wrapped at 72 columns (322.727699ms)
+✔ wb.strategy: choosing among O0/O1/O2/loops by instructions picks O2 for Blend (1677.873911ms)
+✔ wb.strategy: in a replay context a strategy returns its result directly (695.086856ms)
+✔ wb.strategy: a candidate whose pass breaks the contract is a rejected alternative (289.3121ms)
+✔ wb.strategy: project files in the short form, presets and pipelines, at tile width (98.112078ms)
+✔ wb.pass: the kernel builder from a project script; applied, listed, and used in a candidate (208.949587ms)
+✖ wb.compiler and wb.source: declarations with ids and versions, and where each is defined (57.094637ms)
+✔ wb: Blend at O2 shows the hoisted statement, an 88-byte image and its why chain (1285.816385ms)
+✔ wb.sync: passes are synchronous inside a replay context, and Promises outside it (309.696371ms)
+✔ wb: the gate is the kernel contract; a rejected pass changes nothing (247.73957ms)
+✔ projects: browser-local edits over the built-in files, kept in storage, and reset (91.049405ms)
+✔ projects: project.json the workbench writes fits a tile; prose read back as one string (42.394969ms)
+✔ params, book and help (43.896509ms)
+✔ events: views hear revisions, focus and files (80.072081ms)
+✔ projects: shared metadata parser matches workbench metadata across the corpus (82.72856ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 23
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 9942.194417
+
+✖ failing tests:
+
+test at tests/workbench/strategies.test.mjs:103:1
+✖ wb.compiler and wb.source: declarations with ids and versions, and where each is defined (57.094637ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  17 !== 15
+  
+      at TestContext.<anonymous> (file:///home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/d2-op-irwb-037-f/tests/workbench/strategies.test.mjs:106:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 17,
+    expected: 15,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

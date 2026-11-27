@@ -131,3 +131,25 @@ reference keeps the length in a register. In sort, `work[j - 1]` is checked twic
 - `x + c < length` proving the check of `x + c`: does not fire on bounds-offset, correctly: the range of `i + 1`
   includes the overflow at `i = MAX`, where the check must trap.
 - A waiting loop `until ! pgrep -f "10-rule-firings.mjs O2"` matched its own command line and never ended; killed.
+
+## Step 5: The length hoist raised chess-search with the tuned options; two guards
+
+**Commit (code):** 1ea00c1 — "IRWB-037-F: licm hoists buffer lengths read twice or more from outermost loops; bce sees through them and indexes x + c; bitwise rules (choice, majority) in speed; round-2 measurements"
+
+Round two over the corpus (`various/variant-nolengths.json`, `corpus-round2.json`, `variant-bitwise.json`):
+hoisting lengths took speed from 857,421/782,486 to 842,624/776,834 (default/tuned) and O2 from 1,085,269 to
+1,071,282, but chess-search under speed with the tuned options rose (296,935 to 298,772) and regex-nfa under O2
+rose against round one (38,580 to 39,000; still below the 40,212 before this ticket). The bitwise rules took
+sha-chacha down by 1,280 in both cells and changed nothing else.
+
+### What I did
+- First guard: only an outermost loop hoists a length (its body holds the inner loops' lengths). Measured
+  (`various/corpus-round3.json`): no change to either rise (chess tuned 298,982; regex O2 39,000).
+- `scripts/13-per-function.mjs chess-search`: lengths on against off, per entry function, tuned options:
+  chessPerft +1,990, small functions +10 to +83 each, chessSearch -80. A length read once per iteration saves one
+  load per iteration but holds a register across the loop, and small loops lose.
+- Second guard: hoist a buffer's length only when the loop reads it at least twice. Per function after it:
+  chessSearch -1,354, chessPerft -1,130, five small functions +10 to +48; net -2,373 against lengths off.
+
+### What I learned
+- The census's largest check shape, `geu(x, load)` (20,513 weighted executions), was mostly this reload.
