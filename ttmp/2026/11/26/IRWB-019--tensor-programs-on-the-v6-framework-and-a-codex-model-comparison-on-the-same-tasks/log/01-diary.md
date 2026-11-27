@@ -1056,3 +1056,11 @@ Each pack was scored by two judges: Codex (Sol high) and Claude (an Opus subagen
   - The Pi extension has no such timeout (its only timeouts are 10–15 s, for settings and discovery). So a 20-minute cap on one streamed response sits on the LunaRoute side or upstream.
   - GLM 5.3 Flash at max thinks long in other cells too. Its longest single request was 14.5 min in R1b and 9.4 min in R2b; at high in T3 it was 11.8 min. T3's opening planning request runs past 20 min.
   - **Not retried a third time:** the failure is systematic, not transient. Unless the cap can be raised, J is recorded as not run. That leaves T3 with nine cells.
+- **The last three Pi cells are done** (T3 launched at 04:00:50Z; times are from the last-message files; all results self-reported):
+  - **DeepSeek 4.1 Flash xhigh (H):** 56 min, +978 −114. Every program fuses to 1 kernel. Softmax 0.81 → 0.42 ms, layernorm 0.49 → 0.15 ms.
+    - Probe: a grouped correspondence needs a target entity universe. With none, it is rejected ("Unknown target entity k0").
+    - This contradicts Opus's finding that made-up IDs are accepted. The two set up the correspondence differently, so check which is right before acting on either.
+  - **GLM 5.3 high (F):** 71 min, +845 −87. Softmax 1 kernel but only 1.10× faster (0.80 → 0.72 ms). Layernorm 2.04×. Attention and mlp 2 kernels each.
+  - **GLM 5.3 Flash high (I):** 77 min, +1003 −44. Softmax 0.79 → 0.39 ms, layernorm 0.47 → 0.15 ms. Attention and mlp 2 kernels each.
+  - None of the three changed `src/framework/` or `tools/`.
+- **The hidden evaluator** (`scripts/42-eval-t3.sh`) is running on the nine cells, one at a time, each rebuilt from its HEAD first.
