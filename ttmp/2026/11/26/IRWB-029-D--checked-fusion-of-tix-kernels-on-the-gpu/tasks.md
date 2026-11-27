@@ -7,4 +7,4 @@
 - [x] API: fuse and benchmark options; lowering contract fuse port and statements-to-kernels correspondence <!-- t:xlbd -->
 - [x] Tests: local plan/source/contract tests; GB10 fused checks, fallback, mutants <!-- t:qp3m -->
 - [x] Measure: kernel counts, benchmark times, bytes per kernel, contract cost <!-- t:k7tv -->
-- [ ] Final report in the ticket <!-- t:5rpc -->
+- [x] Final report in the ticket <!-- t:5rpc -->

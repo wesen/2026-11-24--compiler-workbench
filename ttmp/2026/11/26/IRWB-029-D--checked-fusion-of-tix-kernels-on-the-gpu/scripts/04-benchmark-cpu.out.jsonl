@@ -3,3 +3,4 @@
 {"name":"attention","mode":"cpu","ms":59179.942677,"shape":[1024,64],"outputSha256":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba"}
 {"name":"mlp","mode":"cpu","ms":212420.077214,"shape":[1024,256],"outputSha256":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829"}
 {"name":"matmul","mode":"cpu","ms":51385.103689999996,"shape":[512,512],"outputSha256":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"name":"conv2d","mode":"cpu","ms":114004.63020300001,"shape":[8,32,62,62],"outputSha256":"87ea2ac715c0b7721c5b5424fc73440c30129ca1db8ce6ff4c83e8db23617cdd"}
