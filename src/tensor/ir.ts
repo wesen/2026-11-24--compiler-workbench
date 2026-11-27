@@ -97,6 +97,7 @@ export const TixIR = defineIR<Module>({
   version: '1',
   description: 'Ordered tensor definitions with affine reads',
   validate,
+  entities: m => m.functions.flatMap(f => f.statements.map(s => f.name + '/' + s.name)),
 });
 function* entities(m: Module): Generator<IREntity> {
   for (const { name, statements, params, shape, result } of m.functions) {
