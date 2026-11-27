@@ -455,6 +455,6 @@ The experiments around the work. The playbooks are in the go-go-parc vault under
 - **M4: Claude models in the same matrix** _(ran on T1: Opus and Fable, medium and xhigh designs; medium implementations)_. About 2.97M subagent tokens in all for IRWB-019's Claude cells, judges and reviewer.
 - **M6: policy wording for Sol** _(ran on T1: v1, v2, v3; v3 is the global Codex default since 2026-11-26, without the experiment's isolation rule; backup `~/.codex/config.toml.bak-2026-11-26-before-v3`)_.
   - _Known:_ v3 cuts excess by 1–2 items per cell and over-engineering by about one rubric point, at a fitness cost of 0.5 on average; v2's narrowing rule overrode the brief.
-  - _Unknown:_ whether v3 should replace v1 in `~/.codex/config.toml` (the user's call), and whether its effect holds over repeated runs (M2).
+  - _Unknown:_ whether its effect holds over repeated runs (M2). (Whether v3 should replace v1 globally was decided: yes, 2026-11-26.)
 - **M5: tell designers what is already checked** _(ready)_.
   - _Known:_ in IRWB-018, half of each project's test matrix repeated corpus-wide checks, because the designs prescribed it and nothing said what was covered.
