@@ -116,16 +116,14 @@ export function indexRules(rules: readonly Rule[]): Map<string, Rule[]> {
 }
 
 /** A table as a function from a transaction to a `Tx.rewrite` visitor. */
-export function compileRules(
-  rules: readonly Rule[],
-  firings?: Firings,
-): (tx: Tx) => (v: ValueHandle) => string | undefined {
+export function compileRules(rules: readonly Rule[], firings?: Firings) {
   const index = indexRules(rules);
-  return tx => v => {
+  return (tx: Tx) => (v: ValueHandle) => {
     const m = firstMatch(index, v);
     if (!m) return undefined;
     if (firings) firings.set(m.rule.name, (firings.get(m.rule.name) ?? 0) + 1);
-    return instantiate(m.rule.rhs, m.bindings, tx, provenance(m.rule, v, m.bindings));
+    const id = instantiate(m.rule.rhs, m.bindings, tx, provenance(m.rule, v, m.bindings));
+    return { id, rule: { name: m.rule.name, version: m.rule.version, from: v.id, to: id } };
   };
 }
 

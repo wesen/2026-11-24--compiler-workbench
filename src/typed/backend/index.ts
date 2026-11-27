@@ -55,3 +55,9 @@ export {
   type ImageDiff,
   type ImageRun,
 } from './run.js';
+export {
+  attributeInstructions,
+  type AttributionRevision,
+  type AttributionStep,
+  type ExecutedInstruction,
+} from './attribution.js';

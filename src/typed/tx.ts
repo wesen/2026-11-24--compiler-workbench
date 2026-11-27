@@ -44,12 +44,20 @@ export class TxError extends Error {
   }
 }
 
+export interface AppliedRule {
+  readonly name: string;
+  readonly version: string;
+  readonly from: string;
+  readonly to: string;
+}
+
 export interface Edit {
   readonly id: string;
   readonly rev: number;
   readonly pass: string;
   readonly fn: string;
   readonly kind: string;
+  readonly rules?: readonly AppliedRule[];
   readonly [field: string]: unknown;
 }
 
@@ -429,13 +437,13 @@ export class Tx {
   }
   /** Rebuild every live statement's trees bottom-up; visit(handle) returns a new value id or nothing. */
   rewrite(
-    visit: (v: ValueHandle) => Ref | void | undefined,
+    visit: (v: ValueHandle) => string | { readonly id: string; readonly rule?: AppliedRule } | void,
     blocks: readonly BlockRec[] = this.fn.blocks,
     opts: MakeOptions = {},
   ): void {
-    const walk = (vid: string): string => {
+    const walk = (vid: string, rules: AppliedRule[]): string => {
       const v = this.st.get(vid) as ValueRec;
-      const args = v.args.map(walk);
+      const args = v.args.map(a => walk(a, rules));
       let cur = vid;
       if (args.some((a, i) => a !== v.args[i])) {
         this.may('values', 'rebuilt a value');
@@ -454,6 +462,7 @@ export class Tx {
       this.cur = cur;
       const r = visit(valueHandle(this.st, cur, { stmt: this.sid ?? undefined }));
       this.cur = null;
+      if (r && typeof r === 'object' && r.rule) rules.push(r.rule);
       return r ? id(r as Ref)! : cur;
     };
     for (const b of blocks)
@@ -462,7 +471,8 @@ export class Tx {
         this.sid = sid;
         for (const k of ['value', 'cond', 'addr'] as const)
           if (s[k]) {
-            const n = walk(s[k]!);
+            const rules: AppliedRule[] = [];
+            const n = walk(s[k]!, rules);
             if (n !== s[k]) {
               this.record('replace', {
                 stmt: sid,
@@ -471,6 +481,7 @@ export class Tx {
                 to: n,
                 text: show(this.st, n),
                 because: this.because(opts),
+                ...(rules.length ? { rules } : {}),
               });
               s[k] = n;
             }
