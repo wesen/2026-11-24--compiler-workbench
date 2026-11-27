@@ -161,7 +161,13 @@ export interface DefinitionDescriptor extends DefinitionBase {
   readonly category: AnyDefinition['category'];
   readonly schema: unknown;
 }
-export type Assurance = 'declared' | 'checked' | 'checked-sampled' | 'checked-exact' | 'transferred' | 'proof';
+export type Assurance =
+  | 'declared'
+  | 'checked'
+  | 'checked-sampled'
+  | 'checked-exact'
+  | 'transferred'
+  | 'proof';
 export interface AnalysisDependency {
   readonly type: 'analysis';
   readonly key: string;
