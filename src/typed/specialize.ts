@@ -33,8 +33,15 @@ export interface Binding {
   readonly record?: string;
   /** The field's name (field form). */
   readonly field?: string;
-  /** Its value (an enum case's value for enum parameters). */
-  readonly value: number;
+  /** Its value (an enum case's value for enum parameters). Absent in the `cells` and `oneOf` forms. */
+  readonly value?: number;
+  /**
+   * IRWB-036-G, parameter form only: the exact cells (u16) of a buffer parameter. The `specialize-buffer` pass
+   * (specialize-buffer.ts) reads it; the `specialize` pass ignores it.
+   */
+  readonly cells?: readonly number[];
+  /** IRWB-036-G, parameter form only: the values a scalar parameter can have (candidates to specialize on). */
+  readonly oneOf?: readonly number[];
   /** The entity of the outer artifact that establishes the fact (e.g. `candela:scene/cornell#K.scene`). */
   readonly entity: string;
   readonly note?: string;
@@ -58,8 +65,16 @@ export const BindingsIR = defineIR<Bindings>({
     for (const b of v.bindings) {
       const param = typeof b.fn === 'string' && typeof b.param === 'string';
       const field = typeof b.record === 'string' && typeof b.field === 'string';
-      if (param === field || !Number.isInteger(b.value) || typeof b.entity !== 'string')
+      const ints = (x: unknown) => Array.isArray(x) && x.every(n => Number.isInteger(n));
+      const forms =
+        +Number.isInteger(b.value) +
+        +(ints(b.cells) && b.cells!.every((c: number) => c >= 0 && c <= 65535)) +
+        +(ints(b.oneOf) && b.oneOf!.length > 0);
+      const present = +(b.value !== undefined) + +(b.cells !== undefined) + +(b.oneOf !== undefined);
+      if (param === field || forms !== 1 || present !== 1 || typeof b.entity !== 'string')
         throw new Error(`typed.bindings: malformed binding ${JSON.stringify(b)}`);
+      if (field && b.value === undefined)
+        throw new Error(`typed.bindings: a field binding needs a value ${JSON.stringify(b)}`);
     }
   },
 });
@@ -84,6 +99,8 @@ export const specialize = typedPass({
       return defs.length === 1 && defs[0] === `param:${i}`;
     };
     for (const b of art.value.bindings) {
+      if (b.value === undefined) continue; // cells and oneOf: specialize-buffer's
+      const value = b.value;
       if (b.record && b.field) {
         const layout = (
           st.frontEnd.records as Record<string, Record<string, { type: string; offset: number }>> | null
@@ -117,9 +134,9 @@ export const specialize = typedPass({
             !own(v, base.imm as number)
           )
             return;
-          return tx.const(b.value, {
+          return tx.const(value, {
             because: [factRef(art, b)],
-            note: `${f.locals[base.imm as number].name}.${b.field} = ${b.value} (${art.value.source})`,
+            note: `${f.locals[base.imm as number].name}.${b.field} = ${value} (${art.value.source})`,
           });
         });
         continue;
@@ -131,9 +148,9 @@ export const specialize = typedPass({
         tx.rewrite(
           v => {
             if (v.op !== 'get' || v.imm !== i || !v.statement || !own(v, i)) return;
-            return tx.const(b.value, {
+            return tx.const(value, {
               because: [factRef(art, b)],
-              note: `${b.param} = ${b.value} (${art.value.source})`,
+              note: `${b.param} = ${value} (${art.value.source})`,
             });
           },
           [blk],

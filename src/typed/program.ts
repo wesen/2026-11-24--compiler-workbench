@@ -61,7 +61,7 @@ export interface Revision {
   readonly fns?: readonly string[];
   readonly note?: string;
   /** The assumptions in force when this revision was made (see `Program.assume`). */
-  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
+  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, Assumed>>>>;
 }
 
 export interface ApplyResult {
@@ -76,6 +76,9 @@ export interface ApplyResult {
 
 const revNumber = (r: number | string) => (typeof r === 'string' ? +r.replace(/^r/, '') : r);
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+/** An assumed parameter: its value, a buffer's exact cells, or the values a scalar can have (IRWB-036-G). */
+export type Assumed = number | { readonly cells: readonly number[] } | { readonly oneOf: readonly number[] };
 
 export class Program {
   readonly manager = new AnalysisManager();
@@ -143,7 +146,7 @@ export class Program {
     return `prog:${this.name}`;
   }
   /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
-  readonly assumptions: Record<string, Record<string, number>> = {};
+  readonly assumptions: Record<string, Record<string, Assumed>> = {};
   /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
   get inputs(): ProgramInputs {
     const base = this.options.inputs ?? {};
@@ -170,8 +173,16 @@ export class Program {
    * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
    */
   assume(
-    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
-  ): Record<string, Record<string, number>> {
+    bindings: readonly {
+      fn?: string;
+      param?: string;
+      record?: string;
+      field?: string;
+      value?: number;
+      cells?: readonly number[];
+      oneOf?: readonly number[];
+    }[],
+  ): Record<string, Record<string, Assumed>> {
     const previous = JSON.parse(JSON.stringify(this.assumptions));
     for (const b of bindings) {
       if (b.record && b.field) {
@@ -179,14 +190,40 @@ export class Program {
         const st = storeOf(this.head.value);
         for (const f of st.fns.values())
           f.params.forEach((t, i) => {
-            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value;
+            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
           });
         continue;
       }
       this.fname(b.fn!);
-      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value;
+      // IRWB-036-G: a buffer's cells and a scalar's candidates are input specifications as they stand
+      (this.assumptions[b.fn!] ??= {})[b.param!] = b.cells
+        ? { cells: [...b.cells] }
+        : b.oneOf
+          ? { oneOf: [...b.oneOf] }
+          : b.value!;
     }
     return previous;
+  }
+  /**
+   * IRWB-036-G: specialize on a constant buffer (and candidate values of a scalar): assume the bindings, then apply
+   * `specialize-buffer` under that contract. With `guard`, the residual program checks the cells it relied on at run
+   * time and keeps the general code, so nothing is assumed and the contract stays the unrestricted one.
+   */
+  async specializeBuffer(
+    bindings: Artifact<import('./specialize.js').Bindings>,
+    opts: { budget?: number; guard?: boolean } = {},
+  ): Promise<ApplyResult> {
+    const { specializeBuffer } = await import('./specialize-buffer.js');
+    const previous = opts.guard
+      ? JSON.parse(JSON.stringify(this.assumptions))
+      : this.assume(bindings.value.bindings.filter(b => b.cells || b.oneOf));
+    try {
+      return await this.apply(specializeBuffer, { params: { bindings, ...opts } });
+    } catch (e) {
+      for (const k of Object.keys(this.assumptions)) delete this.assumptions[k];
+      Object.assign(this.assumptions, previous);
+      throw e;
+    }
   }
   /** Specialize on an outer artifact's facts: assume them, then apply the `specialize` pass under that contract. */
   async specialize(bindings: Artifact<import('./specialize.js').Bindings>): Promise<ApplyResult> {
