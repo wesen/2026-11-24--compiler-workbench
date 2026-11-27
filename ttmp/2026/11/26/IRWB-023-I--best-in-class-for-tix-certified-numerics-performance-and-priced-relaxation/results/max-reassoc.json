@@ -1,0 +1,14 @@
+{
+  "max": {
+    "trials": 100000,
+    "mismatches": 0
+  },
+  "min": {
+    "trials": 100000,
+    "mismatches": 0
+  },
+  "sum": {
+    "trials": 5250,
+    "mismatches": 80
+  }
+}

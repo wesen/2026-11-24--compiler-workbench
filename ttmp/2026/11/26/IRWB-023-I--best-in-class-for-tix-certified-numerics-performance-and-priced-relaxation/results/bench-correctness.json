@@ -1,0 +1,132 @@
+[
+  {
+    "config": "mm_base_rn",
+    "elements": 262144,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "mm_base_fma",
+    "elements": 262144,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "mm_smem_rn",
+    "elements": 262144,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "mm_rt32_rn",
+    "elements": 262144,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "mm_rt32_fma",
+    "elements": 262144,
+    "mismatches": 222009,
+    "first": 0,
+    "maxAbs": 0.0000095367431640625,
+    "maxUlp": 327518,
+    "budgetFail": 321,
+    "worstFraction": 4.395852589674893
+  },
+  {
+    "config": "sm_base",
+    "elements": 4194304,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "sm_fused_exact",
+    "elements": 4194304,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "sm_fused_tree",
+    "elements": 4194304,
+    "mismatches": 3853915,
+    "first": 0,
+    "maxAbs": 3.4924596548080444e-9,
+    "maxUlp": 25,
+    "budgetFail": 0,
+    "worstFraction": 0.00020062920257019043
+  },
+  {
+    "config": "sm_fused_expf",
+    "elements": 4194304,
+    "mismatches": 1660895,
+    "first": 0,
+    "maxAbs": 9.313225746154785e-10,
+    "maxUlp": 6,
+    "budgetFail": 0,
+    "worstFraction": 0.0016842734261539492
+  },
+  {
+    "config": "ln_base",
+    "elements": 4194304,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "ln_fused",
+    "elements": 4194304,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "attn_base",
+    "elements": 65536,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  },
+  {
+    "config": "attn_fused",
+    "elements": 65536,
+    "mismatches": 0,
+    "first": -1,
+    "maxAbs": 0,
+    "maxUlp": 0,
+    "budgetFail": 0,
+    "worstFraction": 0
+  }
+]

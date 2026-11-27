@@ -1,0 +1,74 @@
+[
+  {
+    "name": "matmul",
+    "parseMs": 4,
+    "inlineMs": 2.1,
+    "bothMs": 14.2,
+    "exactGateMs": 3.8,
+    "tolGateMs": 2.8,
+    "barePassMs": 1.158,
+    "exactOk": true,
+    "tolOk": true,
+    "seed": 20
+  },
+  {
+    "name": "softmax",
+    "parseMs": 1.1,
+    "inlineMs": 0.9,
+    "bothMs": 3.4,
+    "exactGateMs": 2.3,
+    "tolGateMs": 1.4,
+    "barePassMs": 0.69,
+    "exactOk": true,
+    "tolOk": true,
+    "seed": 20
+  },
+  {
+    "name": "layernorm",
+    "parseMs": 1.1,
+    "inlineMs": 0.8,
+    "bothMs": 4.9,
+    "exactGateMs": 5,
+    "tolGateMs": 4.3,
+    "barePassMs": 1.146,
+    "exactOk": true,
+    "tolOk": true,
+    "seed": 20
+  },
+  {
+    "name": "attention",
+    "parseMs": 1.2,
+    "inlineMs": 11.5,
+    "bothMs": 16,
+    "exactGateMs": 6.8,
+    "tolGateMs": 5.8,
+    "barePassMs": 0.949,
+    "exactOk": true,
+    "tolOk": true,
+    "seed": 20
+  },
+  {
+    "name": "mlp",
+    "parseMs": 1,
+    "inlineMs": 16.9,
+    "bothMs": 23,
+    "exactGateMs": 10.8,
+    "tolGateMs": 9,
+    "barePassMs": 1.074,
+    "exactOk": true,
+    "tolOk": true,
+    "seed": 20
+  },
+  {
+    "name": "conv2d",
+    "parseMs": 0.6,
+    "inlineMs": 0.5,
+    "bothMs": 0.7,
+    "exactGateMs": 629.3,
+    "tolGateMs": 470.8,
+    "barePassMs": 0.541,
+    "exactOk": true,
+    "tolOk": true,
+    "seed": 20
+  }
+]

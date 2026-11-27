@@ -1,0 +1,99 @@
+{
+  "growth": [
+    {
+      "K": 4,
+      "f64": 1,
+      "f32seq": 1,
+      "split": 1,
+      "seqErr": 0,
+      "splitErr": 0,
+      "budget": 0.000022000000000000003,
+      "seqInBudget": true,
+      "splitInBudget": true
+    },
+    {
+      "K": 7,
+      "f64": 1.0000001788139343,
+      "f32seq": 1,
+      "split": 1.000000238418579,
+      "seqErr": 1.7881393432617188e-7,
+      "splitErr": 5.960464477539063e-8,
+      "budget": 0.00002200000357627869,
+      "seqInBudget": true,
+      "splitInBudget": true
+    },
+    {
+      "K": 64,
+      "f64": 10.000001609325409,
+      "f32seq": 10,
+      "split": 10.000000953674316,
+      "seqErr": 0.0000016093254089355469,
+      "splitErr": 6.556510925292969e-7,
+      "budget": 0.00020200003218650818,
+      "seqInBudget": true,
+      "splitInBudget": true
+    },
+    {
+      "K": 4096,
+      "f64": 586.0001046061516,
+      "f32seq": 586,
+      "split": 586,
+      "seqErr": 0.00010460615158081055,
+      "splitErr": 0.00010460615158081055,
+      "budget": 0.011722002092123034,
+      "seqInBudget": true,
+      "splitInBudget": true
+    },
+    {
+      "K": 65536,
+      "f64": 9363.001674056053,
+      "f32seq": 9363,
+      "split": 9363,
+      "seqErr": 0.001674056053161621,
+      "splitErr": 0.001674056053161621,
+      "budget": 0.18726203348112108,
+      "seqInBudget": true,
+      "splitInBudget": true
+    },
+    {
+      "K": 1048576,
+      "f64": 149797.0267856121,
+      "f32seq": 149797,
+      "split": 149797,
+      "seqErr": 0.026785612106323242,
+      "splitErr": 0.026785612106323242,
+      "budget": 2.995942535712242,
+      "seqInBudget": true,
+      "splitInBudget": true
+    }
+  ],
+  "cancellation": [
+    {
+      "label": "B,1,-B with B=2^24",
+      "K": 3,
+      "f64": 1,
+      "f32": 0,
+      "err": 1,
+      "budget": 0.000022000000000000003,
+      "inBudget": false
+    },
+    {
+      "label": "B,1,-B with B=1e8",
+      "K": 3,
+      "f64": 1,
+      "f32": 0,
+      "err": 1,
+      "budget": 0.000022000000000000003,
+      "inBudget": false
+    },
+    {
+      "label": "half-ulp prefix + cancellation",
+      "K": 9,
+      "f64": 1.0000001788139343,
+      "f32": 1,
+      "err": 1.7881393432617188e-7,
+      "budget": 0.00002200000357627869,
+      "inBudget": true
+    }
+  ]
+}
