@@ -1,0 +1,348 @@
+<title>Tix Compiler Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
+<style>
+/* Layout: one reading column (about 72ch) with full-width tables and diagrams; a sticky contents rail on wide screens. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --fg: #1a2230; --muted: #5a6577; --line: #dde2ea;
+  --accent: #2456b8; --accent-soft: #e6edfa; --ok: #1f7a4d; --warn: #a65a00; --code-bg: #eef1f6;
+  --display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151c; --panel: #171c25; --fg: #e3e8f0; --muted: #9aa6b8; --line: #2a3242;
+  --accent: #7ea6f2; --accent-soft: #1d2a44; --ok: #5cc38f; --warn: #e3a24a; --code-bg: #1d2330; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11151c; --panel: #171c25; --fg: #e3e8f0; --muted: #9aa6b8; --line: #2a3242;
+  --accent: #7ea6f2; --accent-soft: #1d2a44; --ok: #5cc38f; --warn: #e3a24a; --code-bg: #1d2330; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15.5px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 40px 80px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } nav.toc { display: none; } }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 13.5px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+main { min-width: 0; display: grid; gap: 56px; }
+section { display: grid; gap: 14px; min-width: 0; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(30px, 4.2vw, 44px); line-height: 1.12; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.2; margin: 0; text-wrap: balance; }
+h3 { font-size: 16.5px; font-weight: 600; margin: 10px 0 0; }
+p, li { max-width: 74ch; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 17.5px; color: var(--fg); }
+.muted { color: var(--muted); }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); font-size: 0.9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre.code { font-family: var(--mono); font-size: 13px; background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; margin: 0; line-height: 1.5; }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.fact { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
+.fact b { font-family: var(--display); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--muted); font-size: 13.5px; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; display: grid; gap: 12px; min-width: 0; }
+.stage-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; }
+.tag { font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.tag.ok { color: var(--ok); border-color: var(--ok); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; }
+.two > div { min-width: 0; display: grid; gap: 6px; align-content: start; }
+.label { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+ul.files, ul.refs { list-style: none; padding: 0; gap: 5px; }
+ul.files a.src { font-family: var(--mono); font-size: 13px; word-break: break-all; }
+ul.refs li { display: grid; gap: 1px; }
+ul.refs .what { color: var(--muted); font-size: 13.5px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 500; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+td.best { color: var(--ok); font-weight: 600; }
+td.bad { color: var(--warn); }
+.diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; }
+.callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; display: grid; gap: 6px; }
+nav.toc li.navpart { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-top: 10px; }
+.eyebrow.part { margin-bottom: -40px; }
+footer { color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#pipeline">The pipeline</a></li>
+    <li class="navpart">Part one · framework</li>
+    <li><a href="#framework">What it is, six layers</a></li>
+    <li><a href="#examples">Four worked examples</a></li>
+    <li><a href="#extended">What the work added</a></li>
+    <li><a href="#limits">Where it fell short</a></li>
+    <li class="navpart">Part two · compiler</li>
+    <li><a href="#t1">Stage 1: Tix</a></li>
+    <li><a href="#t2">Stage 2: CUDA lowering</a></li>
+    <li><a href="#exact">The exact relation</a></li>
+    <li><a href="#t3">Stage 3: fusion</a></li>
+    <li><a href="#t3b">Stage 3b: never slower</a></li>
+    <li><a href="#fixes">Framework fixes</a></li>
+    <li><a href="#evaluation">How it was checked</a></li>
+    <li><a href="#research">Research rounds</a></li>
+    <li class="navpart">Part three · agents</li>
+    <li><a href="#agents">Results by stage</a></li>
+    <li><a href="#workflow">How we compare them</a></li>
+    <li><a href="#next">Running now, next</a></li>
+    <li><a href="#documents">Documents</a></li>
+    <li><a href="#reading">Where everything is</a></li>
+  </ol>
+</nav>
+<main>
+
+<section id="overview">
+  <div class="eyebrow">IR Workbench · tensor track · IRWB-019</div>
+  <h1>A checked tensor compiler on the v6 framework</h1>
+  <p class="lede">The IR Workbench's framework was built for one language, Typed, a small scalar language compiled to 32-bit RISC-V. The tensor track tests whether it carries a second, very different domain. Tix is an index-notation language for tensor programs, compiled to CUDA and run on an NVIDIA GB10 over ssh.</p>
+  <p>Every stage was designed and implemented by several coding agents from one brief, scored by hidden tests, and the best implementation merged. This page has three parts. Part one explains the framework: its layers, four worked examples from the code, what the work added to it, and where it fell short. Part two follows the compiler stage by stage. Part three describes how the agents' work is compared and judged, and what that has shown. Source links point to commit {{REV}} on {{REPO}}.</p>
+  <div class="facts">
+    <div class="fact"><b>4</b><span>stages merged: language, CUDA lowering, fusion, fusion that is never slower</span></div>
+    <div class="fact"><b>bit-exact</b><span>every lowering, fused or not, equals the f32 meaning word for word</span></div>
+    <div class="fact"><b>1.86×</b><span>geomean fusion speed-up over nine programs; worst program 1.31×</span></div>
+    <div class="fact"><b>460</b><span>tests pass on main (0 fail, 3 skipped), GPU tests included</span></div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <h2>The pipeline</h2>
+  <p>A Tix program becomes a v6 artifact, an immutable revision with a content hash. Passes rewrite it, and a meaning gate checks each one against the revision before it. The lowering plans fusion from the IR and prints one CUDA translation unit, a second v6 artifact. The GPU check runs that unit on generated cases and compares every output word with the f32 meaning.</p>
+  <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  S["Tix source"] --> P["parser"] --> A["Tix IR artifact<br/>tensor.tix"]
+  A -->|"inline, split-sum<br/>(checked passes)"| A2["optimized Tix IR"]
+  A2 --> F["planFusion<br/>groups, thread or block mode,<br/>staged terms, gate"]
+  F --> E["emitter"] --> C["CUDA artifact<br/>tensor.cuda-source"]
+  C --> R["cuda-remote<br/>nvcc on the GB10"]
+  R --> V{"exact check:<br/>bits = f32 meaning"}
+  A2 -. "reference cases" .-> V
+  C -. "correspondence:<br/>statements to kernels" .-> A2
+</pre>
+  </div>
+  <p class="muted">The dotted edges are what the framework checks: a correspondence from Tix statements to the kernels that compute them, and the f32 meaning of the Tix revision as the reference for the GPU's output.</p>
+</section>
+
+{{FRAMEWORK_BIG}}
+
+<div class="eyebrow part">Part two · the compiler, stage by stage</div>
+<section id="t1">
+  <div class="stage">
+    <div class="stage-head"><h2>Stage 1: the Tix language, IR, evaluators and checked passes</h2><span class="tag ok">merged · IRWB-020-B · Astra</span></div>
+    <p>Tix has five constructs: shaped parameters, pointwise expressions, <code>sum</code> and <code>max</code> reductions over named indices, single-assignment statements, and affine index arithmetic. Shapes are inferred and named (<code>N</code>, <code>D</code>), and indices may be affine (<code>x[i + dy, j + dx]</code>). Its f32 meaning is fixed down to the order of accumulation: every literal and operation is rounded to f32, and a reduction starts at 0 or −∞ and adds in increasing lexicographic order of its indices. Implementations can therefore be compared bit for bit.</p>
+<pre class="code">fn layernorm(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {
+  mean[i] = (sum(j) x[i,j]) / D;
+  centered[i,j] = x[i,j] - mean[i];
+  variance[i] = (sum(j) centered[i,j] * centered[i,j]) / D;
+  y[i,j] = centered[i,j] / sqrt(variance[i] + eps[0]) * gamma[j] + beta[j];
+  return y;
+}</pre>
+    <div class="two">
+      <div>
+        <div class="label">What was built</div>
+        <ul>
+          <li>A parser with shape inference and affine dimensions.</li>
+          <li>The Tix IR as a v6 artifact (<code>tensor.tix</code>), exposing functions and tensors as entities, definition order as containment and reads as dependencies.</li>
+          <li>f32 and f64 evaluators; the f32 one is the meaning.</li>
+          <li>A meaning gate: sampled shapes and inputs, compared against the revision before. Since F21 every shape symbol gets a distinct size, and empty extents are checked.</li>
+          <li>Two passes: <code>inline</code>, which substitutes a statement into its readers, and <code>split-sum</code>, which splits a reduction (that changes rounding, so it is checked under a tolerance).</li>
+          <li><b>Framework change:</b> a synchronous native pass path in <code>define-pass.ts</code>, so same-IR passes need no async manager.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="label">Source</div>
+        {{FILES_T1}}
+        <div class="label">Further reading</div>
+        {{REFS_T1}}
+      </div>
+    </div>
+    <p class="muted">Fourteen implementations (twelve OpenAI configurations, two Claude) were all correct on the hidden suite. Astra's was merged as the base.</p>
+  </div>
+</section>
+
+<section id="t2">
+  <div class="stage">
+    <div class="stage-head"><h2>Stage 2: lowering to CUDA, checked on the GPU</h2><span class="tag ok">merged · IRWB-022-I · Astra</span></div>
+    <p>Each statement becomes one kernel, and each output element one thread. Every f32 operation is emitted with an explicitly rounded intrinsic (<code>__fadd_rn</code>, <code>__fmul_rn</code>, <code>__fdiv_rn</code>, <code>__fsqrt_rn</code>), so nvcc can neither contract to FMA nor reorder. Transcendentals are computed in double and rounded once, which matches the interpreter's <code>Math.fround(Math.exp(x))</code> exactly. The result is bit-identical to the f32 meaning by construction, a property three of twelve implementations had and none claimed in its design.</p>
+    <div class="two">
+      <div>
+        <div class="label">What was built</div>
+        <ul>
+          <li><code>cudaSource</code>: one standalone translation unit with host code that reads cases, launches the kernels, and writes results and CUDA-event times.</li>
+          <li><code>tools/cuda-remote.mjs</code>: copies a directory to the GB10 keyed by content (identical inputs compile once, about 0.5 s), runs it, and brings <code>out/</code> back. <code>--timed</code> takes an exclusive GPU lock, so agents sharing the machine do not disturb each other's timings.</li>
+          <li><code>checkLowering</code>: the lowering as a heterogeneous v6 transformation. Its differential check runs every undecided case in one GPU batch.</li>
+          <li><code>runTixCuda</code>, with <code>benchmark</code> (a warm-up and the median of three timed launches).</li>
+          <li><b>Framework changes:</b> none. Heterogeneous transformations and batched <code>decide</code> were enough.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="label">Source</div>
+        {{FILES_T2}}
+        <div class="label">Further reading</div>
+        {{REFS_T2}}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="exact">
+  <h2>The exact relation, and why it matters</h2>
+  <p>Stage 2's lowering was exact, but it was checked against an f64 reference under a tolerance, <code>|c − r| ≤ 2e-6 + 2e-5·|r|</code>. That tolerance is too weak to catch some bugs and too strong for others. A research agent showed that its absolute term accepts an all-zero output when results are below 2e-6 (F22, open). Since F17, <code>checkLowering</code> compares f32 words exactly against the current revision's f32 meaning. NaN is compared as a class, because the GPU and Node produce different NaN bit patterns.</p>
+  <p>Exactness is what makes every later stage checkable without arguing about error bounds. A fusion, a tile or a thread mapping that keeps each output's order of operations has to produce the same bits, and any other result is a bug.</p>
+</section>
+
+<section id="t3">
+  <div class="stage">
+    <div class="stage-head"><h2>Stage 3: checked fusion</h2><span class="tag ok">merged · IRWB-029-D · Opus</span></div>
+    <p>Stage 2 writes every intermediate tensor to global memory, and its row reductions run one thread per row with uncoalesced reads. Stage 3 fuses statements into fewer kernels without changing a bit. <code>planFusion</code> decides groups from the Tix IR: a statement joins a kernel when every read of a kernel member uses that member's own index on the shared leading axes, with matching extents. Two mappings cover the cases:</p>
+    <ul>
+      <li><b>Thread mode</b> keeps stage 2's one thread per element and holds intermediates in registers: elementwise chains and epilogues (mlp's bias and GELU).</li>
+      <li><b>Block mode</b> gives one block a row, staged in shared memory, or in global scratch when it does not fit. Thread 0 computes each per-row reduction in the meaning's order, with barriers between statements: softmax, layernorm, attention.</li>
+    </ul>
+    <p>Max folds use PTX <code>max.NaN.f32</code>, probed equal to stage 2's max on all 324 special-value pairs. <code>fuse: false</code> still prints stage 2's source byte for byte, pinned by digest in the tests. Every corpus program lowers to one kernel.</p>
+    <div class="two">
+      <div>
+        <div class="label">Result</div>
+        <p>Softmax 2.06×, mlp 1.21× faster. On the hidden programs, which divide inside their reductions (<code>sum(d) x[i,d] / D</code>), fused layernorm and attention lost to unfused: the division ran in thread 0's serial loop. A probe showed the same code gains 2.5× on layernorm when the division is outside. That finding defined stage 3b.</p>
+      </div>
+      <div>
+        <div class="label">Source</div>
+        {{FILES_T3}}
+        <div class="label">Further reading</div>
+        {{REFS_T3}}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="t3b">
+  <div class="stage">
+    <div class="stage-head"><h2>Stage 3b: fusion that is never slower</h2><span class="tag ok">merged · IRWB-030-E · Fable</span></div>
+    <ul>
+      <li><b>Parallel terms, serial fold.</b> In a costly reduction body (a division, a transcendental, <code>max</code>/<code>min</code>, a nested reduction, or at least four cheap operations, a threshold measured), every thread computes terms into a term area, and thread 0 adds them in order with the same rounded fold. Each term is rounded as before and the sum keeps its order, so the bits are unchanged.</li>
+      <li><b>Rows written in place</b> when nothing reads the old row later (<code>e</code> over <code>score</code>, <code>centered</code> over <code>x</code>). This fits more blocks per SM, and it is what lifted attention and mlp.</li>
+      <li><b>A launch-time gate.</b> A block-mode group runs fused when its longest row has at least 96 elements or there are at most 1,024 rows, and its heavy members fill enough lanes. Otherwise the same template kernel runs as per-statement instantiations. <code>checkLowering</code> checks both sides of every gate, and since F25 <code>runTixCuda</code> reports which side ran.</li>
+    </ul>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Speed-up, unfused ÷ fused</th><th class="num">softmax</th><th class="num">layernorm (÷ inside)</th><th class="num">attention (÷ inside)</th><th class="num">mlp</th><th class="num">rmsnorm*</th><th class="num">log-softmax*</th><th class="num">geomean of 9</th></tr></thead>
+      <tbody>
+        <tr><td>Fable, merged</td><td class="num">2.09×</td><td class="num">2.69×</td><td class="num best">1.31×</td><td class="num best">1.51×</td><td class="num">1.83×</td><td class="num">1.91×</td><td class="num best">1.86×</td></tr>
+        <tr><td>Main before 3b (stage 3)</td><td class="num">2.12×</td><td class="num">1.01×</td><td class="num">1.10×</td><td class="num">1.23×</td><td class="num bad">0.87×</td><td class="num bad">0.15×</td><td class="num">1.04×</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">* held-out programs the brief did not name, written into the evaluation before the agents started. Log-softmax exposed a 6.6× regression in stage 3 that none of the named programs showed.</p>
+    <div class="label">Source</div>
+    {{FILES_T3B}}
+  </div>
+</section>
+
+<section id="fixes">
+  <h2>Framework and tool fixes found by the agents</h2>
+  <p>Agents' reports and the coordinator's reviews produced a numbered list of fixes. Small ones go to one cheap agent (Terra low), reviewed and checked independently: each fix's new tests are run against the old code first, to confirm they fail there.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Fix</th><th>What it changed</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>F13</td><td><code>applyPass</code> opens its edit transaction lazily, on the first read of <code>ctx.edit</code>, so read-only adapters work.</td><td>framework/passes</td></tr>
+      <tr><td>F14</td><td><code>optimizeTix</code> steps report <code>changed</code> and a rejection <code>reason</code>.</td><td>tensor</td></tr>
+      <tr><td>F17</td><td>The CUDA lowering is checked under the exact relation, NaN as a class.</td><td>tensor contract</td></tr>
+      <tr><td>F19</td><td>Concurrent cold checks share one in-flight GPU batch per key.</td><td>framework/contracts</td></tr>
+      <tr><td>F20</td><td><code>cuda-remote --link &lt;lib&gt;</code> (cuBLAS for reference measurements).</td><td>tools</td></tr>
+      <tr><td>F21</td><td>The meaning gate gives every shape symbol a distinct size, and checks empty extents. A research agent had shown a pass confusing two equal-sized dimensions was accepted.</td><td>tensor contract</td></tr>
+      <tr><td>F2–F6</td><td>Typed-side: required reference signatures, project selection in <code>reference-check</code>, idempotent prose wrapping, per-project corpus expectations, one <code>project.json</code> parser.</td><td>typed, tools</td></tr>
+      <tr><td>F23</td><td>An IR type may enumerate its entities; the contracts manager then checks a correspondence's declared lists and every entry ID against both artifacts.</td><td>framework/contracts</td></tr>
+      <tr><td>F24</td><td>Tix statements and CUDA kernels are enumerated, so every lowering's correspondence is checked.</td><td>tensor</td></tr>
+      <tr><td>F25</td><td><code>runTixCuda</code> reports which side of the gate each gated kernel took.</td><td>tensor</td></tr>
+      <tr><td>F26</td><td>The differential checker detects a spec whose cases do not depend on its key alone, by a canonical digest that also works in the browser bundle.</td><td>framework/contracts</td></tr>
+    </tbody>
+  </table></div>
+  {{FILES_FIXES}}
+</section>
+
+<section id="evaluation">
+  <h2>How each stage was checked</h2>
+  <p>Agents' own measurements are reported, but the merge decision rests on a hidden evaluator, written from the brief before any agent's work existed and run one implementation at a time so that GPU timings do not interfere. It checks:</p>
+  <ul>
+    <li>corpus programs fused and unfused, optimized programs, and random programs, all bit for bit against the f32 meaning;</li>
+    <li>every <code>checkLowering</code> verdict accepted as exact;</li>
+    <li>kernel counts;</li>
+    <li>benchmark medians at the brief's sizes, plus full-size bits.</li>
+  </ul>
+  <p>Two lessons shaped it. In stage 3, the hidden programs differed in structure from the visible ones (where the division sits), which showed that the agents' performance claims were tuned to the visible corpus. For stage 3b, held-out programs were added that the brief did not name, and they caught the log-softmax regression.</p>
+  {{FILES_EVAL}}
+</section>
+
+<section id="research">
+  <h2>Research rounds</h2>
+  <p>Two design-only rounds asked open questions, scored blind by judges from two model families.</p>
+  <ul>
+    <li><b>R1: derive streaming (Flash-style) attention by checked rewrites.</b> Every OpenAI configuration derived the online-softmax rescaling correctly, as a sequence of rules with side conditions and a new fold construct with a tuple state. It is queued as T5.</li>
+    <li><b>R2: what would make Tix best in class?</b> All four original cells defined it around the exact meaning: the fastest code that stays bit-identical. Their convergent measurements include an exact tiled 512³ matmul at 0.054–0.058 ms (3.7× faster than stage 2, about 1.7× slower than cuBLAS), and the meaning's arithmetic ceiling (FMUL+FADD 14.4 TFLOP/s against FFMA 27.0). Two cells independently found a parallel fold that is bit-identical to the sequential one. The R2 judge also found the closest prior art, arXiv 2609.11356, which reconstructs cuBLAS's reduction order and checks bitwise equivalence of compiled kernels.</li>
+  </ul>
+</section>
+
+<section id="agents">
+  <h2>The agents, stage by stage</h2>
+  <p>Each task went to a matrix of configurations: Codex CLI with gpt-6.2-sol and gpt-6.2-astra (medium, high, xhigh) and gpt-6.1-terra (low); Claude Opus and Fable as subagents; and, through the Pi coding agent and the LunaRoute provider, DeepSeek 4.1 Flash, GLM 5.3 and GLM 5.3 Flash. Every agent wrote its own ticket, design, diary and report.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Stage</th><th>Cells</th><th>Correct</th><th>Merged</th><th>What separated them</th></tr></thead>
+    <tbody>
+      <tr><td>1 (Tix)</td><td>16</td><td>14 of 14 implementations</td><td>Astra</td><td>size and contract quality; design scores did not predict correctness</td></tr>
+      <tr><td>2 (CUDA)</td><td>12</td><td>12 (3 exact by construction)</td><td>Astra</td><td>exactness, which no design had claimed</td></tr>
+      <tr><td>3 (fusion)</td><td>10 (9 ran)</td><td>9 of 9 bit-exact</td><td>Opus</td><td>speed: geomean 1.00–1.26×</td></tr>
+      <tr><td>3b (never slower)</td><td>10</td><td>10 of 10 bit-exact; 9 never slower</td><td>Fable</td><td>speed: geomean 1.27–1.86×</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><b>Implementation versus research.</b> On implementation stages, with a precise brief and an exact hidden evaluator, every model family was correct, and DeepSeek and GLM matched Opus on speed. On the research rounds, both judges placed every DeepSeek and GLM design below every OpenAI and Anthropic one. Those designs were two to five times longer, with real mathematical errors and some fabricated references.</li>
+    <li><b>Wall time.</b> The Codex cells finished in 4–16 minutes; Claude and Pi cells in 43–118.</li>
+    <li><b>Judges favour their own family</b> by about one point in ten, even blind. Every cross-family ranking therefore uses one judge from each family, averaged, and the coordinator re-checks the listed errors.</li>
+    <li><b>Policy wording matters.</b> A developer policy outranks the brief. A rule meant to curb over-engineering, "prefer the smallest deliverable", would cap the new approaches stage 6 asks for. Stage 6 runs under v3r, which asks the agents to try them.</li>
+  </ul>
+  
+</section>
+
+{{WORKFLOW_BIG}}
+
+<section id="next">
+  <h2>Running now, and next</h2>
+  <div class="stage">
+    <div class="stage-head"><h3>Stage 6: a schedule IR with checked scheduling passes</h3><span class="tag">running · IRWB-033 · ten cells</span></div>
+    <p>The pipeline becomes Tix → schedule IR → CUDA. Tile, split, reorder, bind, stage, vectorize and double-buffer become passes on the schedule IR, each with legality decided from the IR and each checked. The emitter only prints, and a strategy picks the schedule. The target is exact tiled contractions against cuBLAS at 512³ and 4096³, without losing anything fusion gained. The brief invites new approaches: order preservation proven from the IR, correspondence that follows each output's accumulation, an IR-level cost model. The hidden evaluator adds five shapes the brief does not name.</p>
+  </div>
+  <div class="stage">
+    <div class="stage-head"><h3>Typed side, in parallel</h3><span class="tag">running · seven cells each</span></div>
+    <ul>
+      <li><b>D1:</b> why the <code>speed</code> pipeline makes the bytecode VM slower, found by crediting executed instructions to compiler decisions through correspondence, then fixed.</li>
+      <li><b>A0:</b> what share of O2 and <code>speed</code> edits are local value rewrites, the founding hypothesis for proving functions equivalent from per-rule proofs.</li>
+      <li><b>B1:</b> specializing the VM on its bytecode, a first Futamura projection over constant memory.</li>
+      <li><b>Queued:</b> D2, missed optimizations from provenance, which reuses D1's attribution.</li>
+    </ul>
+  </div>
+  <p>Later in the queue: tolerance calibration with mutants (T4), split-K and parallel reductions as IR rewrites (T10), checked FMA contraction (T11), autotuning (T7), the streaming-attention derivation (T5), tensor cores as a checked precision change (T12), and R2's ideas: verified fast intrinsics, a bit-identical parallel fold, and acceptance by proof.</p>
+  <div class="label">Further reading</div>
+  {{REFS_T6}}
+</section>
+
+{{DOCS_BIG}}
+
+<section id="reading">
+  <h2>Where everything is</h2>
+  <ul>
+    <li>Repository: {{REPO}}, branch <code>irwb-001/import-v6-prototype</code>, pinned here at {{REV}}.</li>
+    <li>The coordinator's ticket, with every brief, configuration key, launcher, result and the diary: <a href="https://github.com/wesen/2026-11-24--compiler-workbench/tree/e72865e/ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks">IRWB-019</a>.</li>
+    <li>The backlog, with every open item and what is known about it: <a href="https://github.com/wesen/2026-11-24--compiler-workbench/blob/e72865e/BACKLOG.md">BACKLOG.md</a>.</li>
+    <li>Agents' own branches (every cell's ticket and code) are local, in <code>.claude/worktrees/</code>; only merged work is on GitHub.</li>
+  </ul>
+  <footer>Written by the coordinating agent from the tickets, the hidden evaluations and the merged code. Agents' self-reported numbers are marked as such in the tickets; the tables here come from the hidden evaluations.</footer>
+</section>
+
+</main>
+</div>

@@ -1,0 +1,195 @@
+<section id="framework">
+  <div class="eyebrow">Part one · the framework</div>
+  <h2>The v6 framework: what it is for, and how a compiler is built on it</h2>
+  <p class="lede">The goal of this research is a compiler framework that people can use to build new compilers, IRs, passes and optimizations, and then study them, because every step is checked, recorded and measured. It should be versatile, solid, composable, reusable, extensible and theoretically sound. Two very different languages run on it so that each test of that claim is real: Typed, compiled to RV32, and Tix, compiled to CUDA.</p>
+  <p>The framework lives in {{src:src/framework|src/framework/}}, about 11,500 lines of TypeScript with no runtime dependencies. It was imported from a prototype (v6) at the start of the project ({{src:ttmp/2026/11/24/IRWB-001--ir-workbench/analysis/01-ir-workbench-v6-import-analysis.md|the import analysis}}) and extended by every stage since. It does not define a universal IR. Each domain keeps its own native data structure and tells the framework three things about it: how to see it as a graph, what it means, and which changes it allows. The framework provides what is common across domains: revisions, edits, correspondence, checking, evidence, caching and orchestration.</p>
+
+  <h3>Six layers</h3>
+  <div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph Domains
+    T["Typed → RV32<br/>src/typed"]
+    X["Tix → CUDA<br/>src/tensor"]
+  end
+  ST["strategy<br/>plans as data: apply, sequence, fork,<br/>chooseBest, repeatUntilStable, attempt"]
+  PA["passes<br/>definePass, applyPass, applyNativePassSync,<br/>bridge to strategies"]
+  CO["contracts<br/>IR types, analyses, properties, invariants,<br/>transformations, AnalysisManager, differential"]
+  IR["ir<br/>adapters, views, edit transactions,<br/>diff, correspondence, patterns and rewrites"]
+  DF["dataflow<br/>lattices, solver, analyses"]
+  CORE["core<br/>artifacts, SHA-256 revisions,<br/>records, canonical data"]
+  T --> ST & PA & DF
+  X --> PA & CO
+  ST --> PA --> CO --> IR --> CORE
+  DF --> CO
+</pre>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Layer</th><th>What it gives a compiler author</th><th>Used by</th></tr></thead>
+    <tbody>
+      <tr><td>{{src:src/framework/core|core}}</td><td>Immutable artifacts with content and revision hashes, canonical JSON, records shared between revisions.</td><td>both</td></tr>
+      <tr><td>{{src:src/framework/ir/README.md|ir}}</td><td>Adapters that project a native structure as entities and typed relations; navigation and walks with budgets; edit transactions (<code>beginEdit</code>, <code>prepare</code>, <code>commit</code>); structural diffs; correspondence that composes and traces; a pattern matcher with seven rewrite schedules ({{src:src/framework/ir/PATTERNS-AND-REWRITES.md|PATTERNS-AND-REWRITES.md}}).</td><td>both (rewrites: Typed only)</td></tr>
+      <tr><td>{{src:src/framework/contracts/README.md|contracts}}</td><td>Versioned definitions for IR types, analyses, properties, invariants and transformations. An <code>AnalysisManager</code> that computes, reuses, invalidates and explains facts. <code>differential()</code>, which turns "run both sides on generated cases and compare" into an ordinary invariant.</td><td>both</td></tr>
+      <tr><td>{{src:src/framework/dataflow|dataflow}}</td><td>Lattices and a solver, so liveness, ranges and reaching definitions are versioned analyses the manager caches per revision.</td><td>Typed</td></tr>
+      <tr><td>{{src:src/framework/passes/define-pass.ts|passes}}</td><td>A pass is a declaration: id, version, IR, adapter, the analyses it needs, the entity and relation kinds it may write, what it preserves, and the contract it must pass.</td><td>both</td></tr>
+      <tr><td>{{src:src/framework/strategy/README.md|strategy}}</td><td>A strategy IR: a pipeline is an immutable, versioned JSON plan of thirteen operators, executed with a full trace. Passes and analyses join it through {{src:src/framework/passes/bridge.ts|bridge.ts}}.</td><td>Typed (T6 asks Tix to use it)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The ideas that hold it together</h3>
+  <ul>
+    <li><b>A revision is identified by its content.</b> An artifact carries its kind, schema version and two SHA-256 hashes. The contracts manager recomputes them, so a stale fact cannot be attached to changed data: "an artifact cannot pass a contract merely by claiming the expected kind or supplying an old revision next to changed data."</li>
+    <li><b>Every edit is a transaction.</b> A draft is tied to the exact head and its generation. <code>prepare()</code> rebuilds the native value and reprojects it, rejecting any entity that was silently lost or invented. <code>commit()</code> runs the semantic verifier and publishes only if it accepts. A rejected candidate never advances the head.</li>
+    <li><b>Correspondence says where each entity went.</b> Each revision step records one-to-one, split, merge, insertion and removal relations between entity IDs. They compose across steps, so <code>traceEntity</code> can follow an instruction back to the source statement that produced it. The README is precise about its limit: "Correspondence records association, not semantic equivalence."</li>
+    <li><b>Facts have an assurance level.</b> A fact is <code>declared</code> (asserted, never enough to satisfy a requirement), <code>checked</code> (a checker ran), <code>transferred</code> (carried across a correspondence by a registered transfer rule) or <code>proof</code> (an external certificate verifier accepted it).</li>
+    <li><b>Meaning is checked on each run (translation validation).</b> The framework never assumes a pass is correct. Its contract compares the output with a baseline on generated cases. The evidence records the method (<code>sampled</code>), the seed, the case count, the agreeing, disagreeing and inconclusive cases, and the first counterexamples. A check with no decided case fails, because it has established nothing.</li>
+    <li><b>Pipelines are data.</b> A strategy plan can be validated, diffed, edited and serialized, and its execution trace names every algorithm version it ran. "Choose the pipeline with the fewest executed instructions" is the operator <code>chooseBest</code> with a metric, not a script.</li>
+  </ul>
+  {{FILES_FRAMEWORK}}
+</section>
+
+<section id="examples">
+  <div class="eyebrow">Part one · worked examples</div>
+  <h2>Four worked examples from the code</h2>
+  <p>Each example below is quoted from the repository at the pinned commit. Together they show how the layers fit together: a same-IR pass, a meaning check, a lowering across IR kinds checked on a GPU, and a domain that uses every layer.</p>
+
+  <div class="stage">
+    <div class="stage-head"><h3>1. A Tix pass, from declaration to verdict</h3><span class="tag">{{src:src/tensor/passes.ts|tensor/passes.ts}} · {{src:src/tensor/index.ts|tensor/index.ts}}</span></div>
+    <p>Both Tix passes share one declaration. The pass writes only <code>tensor</code> entities and the <code>reads</code> and <code>contains</code> relations, and returns a new native module. The framework checks the rest.</p>
+<pre class="code">function pass(name: string, transform: (fn: Fn) =&gt; Fn) {
+  return definePass&lt;Module&gt;({
+    id: 'tensor.' + name, version: '1', description: name,
+    ir: TixIR, adapter,
+    writes: { entities: ['tensor'], relations: ['reads', 'contains'] },
+    run: ({ before }) =&gt; ({ native: { functions: before.value.functions.map(transform) } }),
+  });
+}
+export const inlinePass = pass('inline', inline), splitPass = pass('split-sum', split);</pre>
+    <p><code>optimizeTix</code> applies each pass with a meaning gate, and the relation is chosen per pass. <code>inline</code> must be exact, because substituting a pointwise expression does not change any rounding. <code>split-sum</code> turns <code>sum(k)</code> into a sum over blocks of a sum over lanes. That changes the order of addition, so it is checked under a tolerance. A rejection comes back as data, with the first counterexample:</p>
+<pre class="code">const result = applyNativePassSync(definition, current,
+  meaningGate(origin, pass === 'inline' ? 'exact' : 'tolerance'));
+// on rejection:
+{ pass, accepted: false, changed: false, reason: 'at [3,1] expected 1065353216, got 1065353218, allowed 0' }</pre>
+    <p class="muted">The values in the rejection are illustrative; the format is that of the <code>compare</code> function in the next example. Under the exact relation it compares f32 words, so values appear as integers.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-head"><h3>2. The meaning gate: a differential check as an invariant</h3><span class="tag">{{src:src/tensor/contract.ts|tensor/contract.ts}} · {{src:src/framework/contracts/differential.ts|contracts/differential.ts}}</span></div>
+    <p>The gate builds cases from the origin program and evaluates each side with the f32 interpreter. <code>differential()</code> wraps that as an invariant the framework understands. Under the exact relation the baseline is the revision before; under tolerance it is the origin, so tolerances cannot accumulate across passes.</p>
+<pre class="code">const baseline = relation === 'exact' ? before : origin;
+const invariant = differential&lt;typeof ports, Sample, BufferValue&gt;({
+  id: 'tensor.meaning.' + relation, version: '1', inputs: ports,
+  baseline: 'baseline', subject: 'subject', seed, count: samples.length,
+  cases: () =&gt; samples,
+  run: (side, artifact, s) =&gt; side === 'baseline'
+    ? s.reference
+    : evaluate(artifact.value.functions.find(f =&gt; f.name === s.fn)!, s.inputs, 'f32'),
+  compare: (a, b) =&gt; compare(a, b, relation),
+});
+const evidence = runDifferential(differentialSpec(invariant), { baseline, subject: candidate });</pre>
+    <p>The cases are where most of the strength lies, and agents found that weak cases let bad passes through. A research agent showed that a pass confusing two equal-sized dimensions was accepted when every shape symbol got the same size. Since F21 every symbol gets a distinct size, and empty extents are checked too.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-head"><h3>3. Lowering to CUDA: a transformation across IR kinds, decided on a GPU</h3><span class="tag">{{src:src/tensor/cuda-contract.ts|tensor/cuda-contract.ts}}</span></div>
+    <p>The lowering takes a <code>tensor.tix</code> artifact to a <code>tensor.cuda-source</code> artifact. Its check is the same <code>differential()</code>, but nothing runs locally: <code>decide</code> receives every undecided case at once and runs them in one remote batch. If the source has a launch-time gate, every case is run on both sides of it.</p>
+<pre class="code">cases: ({ baseline, fn, subject }, random) =&gt; {
+  const samples = cudaCases(selectFunction(baseline.value, fn), random);
+  return takesGate(subject.value.source)
+    ? samples.flatMap(s =&gt; sides.map(gate =&gt; ({ ...s, gate })))
+    : samples;
+},
+// The case list depends on the subject only through whether it has a gate.
+baselineKey: ({ baseline, fn, subject }) =&gt;
+  JSON.stringify([baseline.revision, fn, takesGate(subject.value.source)]),
+subjectKey: (_a, _c, { subject }) =&gt; JSON.stringify([subject.revision, profile]),
+async decide({ baseline, fn, subject }, cases, todo) { /* one GPU batch per gate side */ }</pre>
+    <p>The keys make verdicts reusable. A second check of the same source and compiler profile costs nothing, and concurrent cold checks share one in-flight batch (F19). The comment above <code>baselineKey</code> is a claim, and since F26 the framework checks it. On a reuse hit it regenerates the cases, compares a canonical digest, and throws a <code>ContractError</code> if the cases depend on more than the key.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-head"><h3>4. Typed: every layer at once</h3><span class="tag">{{src:src/typed/passes.ts|typed/passes.ts}} · {{src:src/typed/strategies.ts|typed/strategies.ts}} · {{src:src/typed/rules/verify.ts|typed/rules/verify.ts}}</span></div>
+    <p>The Typed domain is where the framework is used most fully. Its passes declare dataflow analyses as <code>needs</code>, so the manager computes them once per revision. Correspondence comes from the origin records each edit wrote and from the <code>because</code> of each removal, so the workbench's <code>why</code> can walk any instruction back to the front end. The contract checks that the program still means what r0, the unoptimized original, meant, by running both in an RV32 emulator on generated cases.</p>
+<pre class="code">const pass = definePass&lt;TypedBlocks, Record&lt;string, any&gt;, Record&lt;string, unknown&gt;&gt;({
+  id: `typed.${spec.name}`, version: '1', description: spec.about,
+  ir: BlocksIR, adapter: blocksAdapter,
+  needs,                                                   // dataflow analyses, cached per revision
+  writes: { entities: [...writes.entities], relations: [...writes.relations] },
+  preserves: (spec.preserves ?? []).map(n =&gt; ANALYSES[n]), // claims the framework checks
+  run({ before, facts, params }) { /* the pass body, through a Tx on a working copy */ },
+});</pre>
+    <p>Pipelines are strategy plans. <code>fastest</code> runs four pipelines and keeps the one whose image executes the fewest instructions on the project's own cases:</p>
+<pre class="code">fastest: { choose: { O0: 'O0', O1: 'O1', O2: 'O2', loops: 'loops' }, by: 'instructions' },
+cleanup: { repeat: ['cfg', 'fold', 'simplify', 'constprop', 'dce'] },   // until nothing changes</pre>
+    <p>Rewrite rules are data, and each is verified once for all inputs of its types, by the strongest methods that apply. The verifier records which method established it, so a rule's assurance is explicit:</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>What it does</th><th>Strength</th></tr></thead>
+      <tbody>
+        <tr><td><code>by-construction</code></td><td>R is the evaluator's own value of L; the guard excludes every trap</td><td>relative proof</td></tr>
+        <tr><td><code>symbolic-linear</code></td><td>both sides are degree-one polynomials over Z/2³² with equal coefficients</td><td>proof</td></tr>
+        <tr><td><code>bitwise-w1</code></td><td>only and/or/xor and 0/−1, checked at width 1</td><td>proof</td></tr>
+        <tr><td><code>exhaustive-32</code></td><td>every assignment at 32 bits</td><td>complete</td></tr>
+        <tr><td><code>exhaustive-w8</code></td><td>every assignment at 8 bits; counts only with a width-independence argument (x·256 → 0 holds for every 8-bit x)</td><td>complete at 8 bits</td></tr>
+        <tr><td><code>random-32</code>, <code>f32-special</code></td><td>boundary and special values crossed, plus random assignments</td><td>sampled</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section id="extended">
+  <div class="eyebrow">Part one · what the work added</div>
+  <h2>How the research and the agents extended the framework</h2>
+  <p>Every stage was allowed to change the framework when the domain did not fit, with the change and its reason reported as a primary result. The list below is the framework's history, from {{src:ttmp/2026/11/24/IRWB-001--ir-workbench|IRWB-001}} on.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Where</th><th>Change</th><th>Why it was needed</th></tr></thead>
+    <tbody>
+      <tr><td>IRWB-001 E1–E2</td><td>Control relations and reasons on edits</td><td>A CFG needs edges that are neither containment nor data dependency, and removals need a recorded cause.</td></tr>
+      <tr><td>IRWB-001 E3</td><td><code>definePass</code></td><td>Passes as declarations, so writes, needs and preservation are checked uniformly.</td></tr>
+      <tr><td>IRWB-001 E4</td><td>Dataflow as v6 analyses</td><td>Liveness and ranges cached and invalidated per revision, like any other fact.</td></tr>
+      <tr><td>IRWB-001 E5</td><td><code>differential()</code></td><td>v6 only knew exact checkers; sampled meaning checks had to become ordinary invariants with evidence.</td></tr>
+      <tr><td>IRWB-001 E6</td><td>Strategy bridge</td><td>Pipelines as Strategy IR plans of passes, with <code>chooseBest</code> over measured metrics.</td></tr>
+      <tr><td>IRWB-004</td><td>Shared records, hashing once, function parts and closure keys, a worker pool, a browser worker</td><td>Checking large artifacts (the Candela renderer) was too slow; experiments had to be cheap enough to run often.</td></tr>
+      <tr><td>IRWB-020-B</td><td><code>applyNativePassSync</code></td><td>Tix passes need no async analysis manager; a synchronous path keeps them simple.</td></tr>
+      <tr><td>F13</td><td>Edit opened on first use of <code>ctx.edit</code></td><td>A pass returning a native value had an edit transaction it never used, which broke read-only adapters.</td></tr>
+      <tr><td>F19</td><td>In-flight batch sharing</td><td>Concurrent cold checks of one CUDA source ran the GPU batch twice.</td></tr>
+      <tr><td>F23–F24</td><td><code>entities(value)</code> on IR types; checked correspondence lists</td><td>Correspondence entity lists were self-declared; a made-up ID was accepted.</td></tr>
+      <tr><td>F26</td><td>Fingerprinted case reuse</td><td>Verdict reuse trusted the spec's <code>baselineKey</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Typed-side research built further layers on top without changing the core: verified rewrite rules and a single-assignment view ({{src:ttmp/2026/11/25/IRWB-006--rewrite-rules-as-verified-data-and-a-single-assignment-view-of-typed-blocks|IRWB-006}}), a mutation score measuring how strong the meaning gate is ({{src:ttmp/2026/11/25/IRWB-005--gate-strength-a-mutation-score-for-the-meaning-contract-and-stronger-case-generation|IRWB-005}}), exact checks for edits that cite verified rules ({{src:ttmp/2026/11/26/IRWB-008--exact-checking-for-edits-that-cite-verified-rules-and-version-2-of-the-meaning-check-as-the-standard-for-new-pipelines|IRWB-008}}), specialization over constant memory ({{src:ttmp/2026/11/26/IRWB-007--specializing-candela-on-its-scene-data-partial-evaluation-over-constant-memory|IRWB-007}}), and function-incremental analyses ({{src:ttmp/2026/11/26/IRWB-009--a-function-incremental-framework-analyses-per-function-part-a-lazy-projection-a-persistent-store-and-demand-driven-queries|IRWB-009}}).</p>
+</section>
+
+<section id="limits">
+  <div class="eyebrow">Part one · honest limits</div>
+  <h2>Where the framework's promises have not held up</h2>
+  <p>Most of what the framework promises held under two domains. The places where it did not are listed here, because they set the next stages' work.</p>
+  <div class="two">
+    <div>
+      <h3>Checks are sampled, not proven</h3>
+      <p>Every meaning check that guards a pass is a differential test on generated cases. Its evidence is labelled <code>checked-sampled</code>. The <code>proof</code> assurance exists only as a slot for an external certificate verifier, and the README says so: "This framework does not contain a theorem prover." The case generator carries the strength, and it has been wrong twice: equal shape sizes before F21, and a tolerance whose absolute term accepts an all-zero output below 2e-6 (F22, open). Exact relations and verified rules are the way out, and that is where programme A (A0, running now) starts.</p>
+    </div>
+    <div>
+      <h3>Lowering decisions bypass the pass machinery</h3>
+      <p>Fusion groups, thread or block mode, staged terms and the launch gate are decided by <code>planFusion</code> and the emitter, in plain TypeScript. The CUDA artifact is a source string whose only entities are kernel names (F24). The framework checks the meaning of the result, but none of the individual decisions, and none of them is composable as a pass. Stage 6 exists to fix this: a schedule IR whose every scheduling step is a checked pass.</p>
+    </div>
+    <div>
+      <h3>Correspondence and keys were trusted</h3>
+      <p>Correspondence promised traceability, but its entity lists were whatever the caller declared, until F23. Verdict reuse promised safety, but it trusted the spec's key, until F26. Both were found by agents comparing their own results, not by design review. Tix passes still declare coarse writes (all <code>tensor</code> entities) and return a whole new module, so their correspondence is no finer than "the module changed".</p>
+    </div>
+    <div>
+      <h3>The rewrite engine and the strategy IR are barely used by Tix</h3>
+      <p>The IR layer has a pattern matcher with seven rewrite schedules, scoped edit authority and failure statuses. No Tix pass uses it, because whole-function rewrites were simpler. The strategy IR runs every Typed pipeline but no Tix one. A framework whose second domain skips two of its layers has not yet shown those layers are general.</p>
+    </div>
+    <div>
+      <h3>Two runners with different powers</h3>
+      <p><code>applyPass</code> is asynchronous and supports analysis needs, preservation claims and manager-dependent contracts. <code>applyNativePassSync</code>, added for Tix, refuses all three. Simple passes are easier this way, but a domain has to choose between simplicity and the framework's checking of preservation.</p>
+    </div>
+    <div>
+      <h3>Measured choice is not a cost model</h3>
+      <p><code>chooseBest</code> picks the pipeline that measures best per project, and that works. A fixed preset does not. <code>speed</code> takes the bytecode VM from 7,678 to 9,286 executed instructions, the only one of six corpus programs it makes worse. Nothing in the framework predicts cost from the IR; D1, running now, is finding out why from the correspondence records.</p>
+    </div>
+  </div>
+  <p class="muted">Trust boundaries, from the READMEs: adapter callbacks, predicates, rewrite bodies and verifiers are trusted TypeScript; read-only facades constrain capabilities but are not a sandbox; <code>cache: 'pure'</code> is not a security boundary; the revision store is in memory.</p>
+  <div class="label">Further reading</div>
+  {{REFS_FRAMEWORK}}
+</section>

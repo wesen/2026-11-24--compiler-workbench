@@ -1,0 +1,217 @@
+{
+ "1": [
+  {
+   "title": "Halide: A Language and Compiler for Optimizing Parallelism, Locality, and Recomputation in Image Processing Pipelines (PLDI 2013)",
+   "url": "https://people.csail.mit.edu/jrk/halide-pldi13.pdf",
+   "what": "Author-hosted PDF of the PLDI 2013 Halide paper introducing the algorithm/schedule separation."
+  }
+ ],
+ "2": [
+  {
+   "title": "TVM: An Automated End-to-End Optimizing Compiler for Deep Learning",
+   "url": "https://www.usenix.org/conference/osdi18/presentation/chen",
+   "what": "OSDI 2018 paper page with PDF and talk."
+  },
+  {
+   "title": "TVM (arXiv)",
+   "url": "https://arxiv.org/abs/1802.04799",
+   "what": "arXiv abstract page of the TVM paper."
+  },
+  {
+   "title": "Ansor: Generating High-Performance Tensor Programs for Deep Learning",
+   "url": "https://www.usenix.org/conference/osdi20/presentation/zheng",
+   "what": "OSDI 2020 paper page for the auto-scheduler Ansor."
+  }
+ ],
+ "3": [
+  {
+   "title": "MLIR: A Compiler Infrastructure for the End of Moore's Law",
+   "url": "https://arxiv.org/abs/2002.11054",
+   "what": "arXiv page of the MLIR paper (CGO 2021)."
+  }
+ ],
+ "4": [
+  {
+   "title": "Pnueli, Siegel, Singerman: Translation Validation (TACAS 1998, LNCS 1384)",
+   "url": "https://doi.org/10.1007/BFb0054170",
+   "what": "DOI of the original translation-validation paper (Springer page blocks bots; metadata confirmed via Crossref and BibSLEIGH)."
+  },
+  {
+   "title": "Necula: Translation Validation for an Optimizing Compiler (PLDI 2000)",
+   "url": "https://people.eecs.berkeley.edu/~necula/Papers/tv_pldi00.pdf",
+   "what": "Author-hosted PDF of Necula's PLDI 2000 paper."
+  }
+ ],
+ "5": [
+  {
+   "title": "Provably Correct Peephole Optimizations with Alive (PLDI 2015)",
+   "url": "https://web.ist.utl.pt/nuno.lopes/pubs/alive-pldi15.pdf",
+   "what": "Author-hosted PDF introducing the Alive DSL for verifying LLVM peepholes."
+  },
+  {
+   "title": "Alive2: Bounded Translation Validation for LLVM (PLDI 2021)",
+   "url": "https://web.ist.utl.pt/nuno.lopes/pubs/alive2-pldi21.pdf",
+   "what": "Author-hosted PDF of the Alive2 translation validator for LLVM."
+  }
+ ],
+ "6": [
+  {
+   "title": "egg: Fast and Extensible Equality Saturation",
+   "url": "https://arxiv.org/abs/2004.03082",
+   "what": "arXiv page of the POPL 2021 e-graph library paper."
+  }
+ ],
+ "7": [
+  {
+   "title": "Online normalizer calculation for softmax",
+   "url": "https://arxiv.org/abs/1805.02867",
+   "what": "Milakov and Gimelshein's single-pass online softmax."
+  },
+  {
+   "title": "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness",
+   "url": "https://arxiv.org/abs/2205.14135",
+   "what": "Tiled, fused exact attention using online softmax."
+  }
+ ],
+ "8": [
+  {
+   "title": "CUTLASS: Efficient GEMM in CUDA",
+   "url": "https://github.com/NVIDIA/cutlass/blob/main/media/docs/cpp/efficient_gemm.md",
+   "what": "Official CUTLASS doc on hierarchical tiling for GPU matrix multiplication."
+  },
+  {
+   "title": "How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance: a Worklog",
+   "url": "https://siboehm.com/articles/22/CUDA-MMM",
+   "what": "Simon Boehm's step-by-step tiled SGEMM optimisation tutorial."
+  }
+ ],
+ "9": [
+  {
+   "title": "Efficient Reproducible Floating Point Summation and BLAS (Demmel, Ahrens, Nguyen; ReproBLAS)",
+   "url": "https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-121.html",
+   "what": "Berkeley tech report on order-independent reproducible summation underlying ReproBLAS."
+  },
+  {
+   "title": "What Every Computer Scientist Should Know About Floating-Point Arithmetic (Goldberg)",
+   "url": "https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html",
+   "what": "Oracle-hosted reprint of Goldberg's classic article."
+  }
+ ],
+ "10": [
+  {
+   "title": "Defeating Nondeterminism in LLM Inference",
+   "url": "https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/",
+   "what": "Thinking Machines blog on batch invariance and deterministic inference kernels."
+  }
+ ],
+ "11": [
+  {
+   "title": "Taming Bitwise Behavior in GPU Kernels with Tensor Core",
+   "url": "https://arxiv.org/abs/2609.11356",
+   "what": "arXiv page, title confirmed (Yang, Riasanovsky, Deng, Sarkar)."
+  }
+ ],
+ "12": [
+  {
+   "title": "Csmith: Finding and Understanding Bugs in C Compilers (PLDI 2011)",
+   "url": "https://www.cs.utah.edu/~regehr/papers/pldi11-preprint.pdf",
+   "what": "Author-hosted preprint of the Csmith random-program differential-testing paper."
+  },
+  {
+   "title": "Jia and Harman: An Analysis and Survey of the Development of Mutation Testing (IEEE TSE 2011)",
+   "url": "https://web.eecs.umich.edu/~weimerw/2020-481F/readings/mutation-testing.pdf",
+   "what": "Course-hosted copy of the mutation testing survey (DOI 10.1109/TSE.2010.62)."
+  }
+ ],
+ "13": [
+  {
+   "title": "Futamura: Partial Evaluation of Computation Process - An Approach to a Compiler-Compiler (HOSC 12, 1999 reprint)",
+   "url": "https://static.aminer.org/pdf/PDF/001/006/665/partial_evaluation_of_computation_process_an_approach_to_a_compiler.pdf",
+   "what": "PDF of the 1999 HOSC reprint of the original Futamura projections paper (third-party host)."
+  },
+  {
+   "title": "Jones, Gomard, Sestoft: Partial Evaluation and Automatic Program Generation",
+   "url": "https://www.cs.utexas.edu/~novak/jonesgomardsestoft.pdf",
+   "what": "Free full-text PDF of the book (copyright reverted to authors); the authors' page https://www.itu.dk/~sestoft/pebook/ did not resolve to the book."
+  }
+ ],
+ "14": [
+  {
+   "title": "Cytron et al.: Efficiently Computing Static Single Assignment Form and the Control Dependence Graph",
+   "url": "https://bears.ece.ucsb.edu/class/ece253/papers/cytron91.pdf",
+   "what": "Course-hosted PDF of the 1991 TOPLAS SSA paper."
+  },
+  {
+   "title": "Wegman and Zadeck: Constant Propagation with Conditional Branches",
+   "url": "https://people.cs.umass.edu/~emery/classes/cmpsci710-spring2003/p181-wegman.pdf",
+   "what": "Course-hosted PDF of the 1991 TOPLAS SCCP paper."
+  }
+ ],
+ "15": [
+  {
+   "title": "RISC-V Ratified Specifications: Unprivileged ISA (RV32I, M, F chapters)",
+   "url": "https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html",
+   "what": "Official RISC-V International HTML spec; RV32I chapter, with M and F chapters alongside."
+  },
+  {
+   "title": "RISC-V Ratified Specifications index",
+   "url": "https://riscv.org/specifications/ratified/",
+   "what": "Official list of ratified specifications."
+  }
+ ],
+ "16": [
+  {
+   "title": "Salsa: a generic framework for on-demand, incrementalized computation",
+   "url": "https://salsa-rs.github.io/salsa/",
+   "what": "Official Salsa book (rust-analyzer's query system)."
+  },
+  {
+   "title": "Adapton: Composable, Demand-Driven Incremental Computation (PLDI 2014)",
+   "url": "https://www.cs.umd.edu/~mwh/papers/hammer13adapton.html",
+   "what": "Author page for the Adapton paper."
+  }
+ ],
+ "17": [
+  {
+   "title": "LLM Evaluators Recognize and Favor Their Own Generations",
+   "url": "https://arxiv.org/abs/2404.13076",
+   "what": "Panickssery et al. on self-preference bias in LLM judges."
+  },
+  {
+   "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena",
+   "url": "https://arxiv.org/abs/2306.05685",
+   "what": "Zheng et al. 2023 introducing MT-Bench and studying LLM judges."
+  }
+ ],
+ "18": [
+  {
+   "title": "CUDA Programming Guide",
+   "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/",
+   "what": "Official NVIDIA CUDA programming guide (covers memory hierarchy and shared memory)."
+  },
+  {
+   "title": "NVIDIA DGX Spark",
+   "url": "https://www.nvidia.com/en-us/products/workstations/dgx-spark/",
+   "what": "Official product page for the GB10-based DGX Spark."
+  }
+ ],
+ "19": [
+  {
+   "title": "DNNFusion: Accelerating Deep Neural Networks Execution with Advanced Operator Fusion",
+   "url": "https://arxiv.org/abs/2108.13342",
+   "what": "arXiv page of the PLDI 2021 operator-fusion paper."
+  },
+  {
+   "title": "XLA architecture (OpenXLA)",
+   "url": "https://openxla.org/xla/architecture",
+   "what": "Official XLA docs describing the compilation pipeline including fusion."
+  }
+ ],
+ "20": [
+  {
+   "title": "CUDA Math API: Single Precision Intrinsics",
+   "url": "https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__INTRINSIC__SINGLE.html",
+   "what": "Official reference for __fadd_rn, __fmul_rn and other rounding-mode intrinsics."
+  }
+ ]
+}

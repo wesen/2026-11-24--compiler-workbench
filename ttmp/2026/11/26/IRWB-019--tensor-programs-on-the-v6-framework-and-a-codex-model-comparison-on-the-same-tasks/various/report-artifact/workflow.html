@@ -1,0 +1,90 @@
+<section id="workflow">
+  <div class="eyebrow">Part three · method</div>
+  <h2>How we compare the agents' work</h2>
+  <p class="lede">Most of the compiler on this page was written by coding agents. Each stage goes to a matrix of agent configurations, each working from the same brief and the same base revision in its own git worktree, and is then measured. That serves two purposes: the best implementation is merged, and the comparison shows which configurations, briefs and policies produce good compiler work.</p>
+  <p>The method is written up as a reusable playbook, {{vault:Research/playbooks/agents/PLAYBOOK - Comparing Coding-Agent Configurations on the Same Design-and-Implement Tasks.md|Comparing Coding-Agent Configurations}}, with a companion on {{vault:Research/playbooks/agents/PLAYBOOK - Measuring and Reducing Over-Engineering in Agent-Written Designs.md|measuring over-engineering}}. The launch and judging scripts are in {{vault:Research/playbooks/agents/scripts|the playbook's scripts}}, and the per-experiment ones in the {{src:ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/scripts|IRWB-019 scripts}}.</p>
+
+  <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  B["Brief<br/>fixed surface + open choices"] --> K["Base revision cut<br/>(no briefs, keys or rubrics in it)"]
+  K --> M["Config key<br/>seeded blind letters"]
+  M --> L["Launch the matrix<br/>Codex, Pi, Claude"]
+  L --> A["Each agent: ticket, design,<br/>diary, scripts, commits"]
+  A --> D{"Stage type"}
+  D -->|research| J["Blind pack → judges<br/>from two model families"]
+  D -->|implementation| H["Hidden evaluator<br/>written before the work, run one at a time"]
+  J --> V["Coordinator re-checks<br/>listed errors and headline claims"]
+  H --> G["Merge the best<br/>by cherry-pick"]
+  V --> R["Reports, playbook,<br/>scorecard, backlog"]
+  G --> F["Fix list → one cheap cell,<br/>new tests run on old code first"]
+  F --> R
+</pre>
+  </div>
+
+  <h3>The matrix</h3>
+  <p>A cell is a harness, a model and a reasoning effort. The current ten cells come from earlier rounds, which showed that the model matters more than the harness or the effort, and that medium effort is enough at this size.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Harness</th><th>Cells</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Codex CLI</td><td>gpt-6.2-sol medium, gpt-6.2-astra medium, gpt-6.1-terra low</td><td>Sandboxed; network granted explicitly for the GPU. Policy goes in <code>developer_instructions</code>.</td></tr>
+      <tr><td>Claude Code subagents</td><td>Opus 5.5, Fable 5.2</td><td>Launched by the coordinator with the same brief and policy.</td></tr>
+      <tr><td>Pi with the LunaRoute provider</td><td>GLM 5.3 high and max, DeepSeek 4.1 Flash high and xhigh, GLM 5.3 Flash high</td><td>No sandbox; four built-in tools. GLM Flash max was dropped, because the provider ends a streamed response at 20 minutes.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The axes we measure</h3>
+  <p>No single score is trusted. Each axis has its own instrument, and the instruments that a judge cannot bias come first.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Axis</th><th>Instrument</th><th>Bias-resistant?</th></tr></thead>
+    <tbody>
+      <tr><td>Correctness</td><td>Hidden suite against the brief's fixed API; bits against the f32 meaning on corpus, optimized and random programs; every <code>checkLowering</code> verdict</td><td>yes</td></tr>
+      <tr><td>Performance</td><td>Benchmark medians at the brief's sizes, alternating variants; held-out programs; geomean and worst case; "never slower than unfused"</td><td>yes, given the timing protocol</td></tr>
+      <tr><td>Generalization</td><td>Held-out programs and shapes the brief does not name, written before launch</td><td>yes</td></tr>
+      <tr><td>Design quality</td><td>Rubric of task-specific fitness criteria, scored blind</td><td>no: judges favour their own family</td></tr>
+      <tr><td>Over-engineering</td><td>Count of unrequested machinery, each item with a quote</td><td>partly: items are checkable</td></tr>
+      <tr><td>Errors</td><td>Mathematical and factual errors listed by judges, each re-checked by the coordinator</td><td>yes, after adjudication</td></tr>
+      <tr><td>Size and scope</td><td>Lines per area, framework diff, edits outside the allowed paths</td><td>yes</td></tr>
+      <tr><td>Framework findings</td><td>Changes the agent made or proposed, and whether they survive review</td><td>yes</td></tr>
+      <tr><td>Honest self-report</td><td>The agent gets its own failing inputs and must diagnose each with <code>file:line</code>, without changing code</td><td>yes</td></tr>
+      <tr><td>Cost</td><td>Wall time, commands, output tokens, from the session records</td><td>yes</td></tr>
+      <tr><td>Process</td><td>Diary, committed scripts, tests, and isolation (no reading other agents' branches), checked in the transcripts</td><td>yes</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Blinding and judging</h3>
+  <ul>
+    <li><b>Letters, not names.</b> Ticket IDs carry a letter (IRWB-033-A to J). A seeded shuffle assigns letters to cells, and the key stays in the coordinator's ticket, which no base revision contains.</li>
+    <li><b>Blind packs.</b> Designs are copied without frontmatter, as <code>doc-A</code>, <code>doc-B</code> and so on. A word-boundary scan checks for model and ticket names, and file counts are compared with the source so that nothing is silently dropped.</li>
+    <li><b>Two judges from different families.</b> In R2 the Claude judge scored Claude designs 1.5 points higher (of 10), and the Codex judge scored Codex designs 1.75 higher. Each repeated itself within a point, so this is a bias, not noise. Every cross-family ranking averages one judge from each family. With neither judge's family among the authors, the two rankings agreed at Spearman 0.88–0.89.</li>
+    <li><b>Judges are audited.</b> A script scans each judge's tool calls for paths outside the pack: the key, other worktrees, the coordinator's ticket. None were found in seven Codex judge sessions.</li>
+  </ul>
+
+  <h3>Hidden evaluators and the timing protocol</h3>
+  <p>An implementation stage is scored by a program written from the brief before any agent starts ({{src:ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/various/hidden-t3b/t3b-eval.mjs|t3b-eval.mjs}}, {{src:ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks/various/hidden-t6/t6-eval.mjs|t6-eval.mjs}}). It runs each worktree in its own process, one at a time, after every agent has finished, with the current main as a baseline in the same run. Today's measurement (T9) fixed the timing protocol: 12 interleaved calls on each of 14 program and variant series showed a coefficient of variation of 0.2–1.7% (3.4% for attention) at a steady 2411 MHz SM clock. The median of 5 calls fell within 5% of the median of 12 in every subset, so differences under 5% count as noise.</p>
+
+  <h3>Briefs and policies</h3>
+  <ul>
+    <li><b>Fix only the comparison surface,</b> such as the language core, a three-function API and the pass names, at the generality the corpus uses. When a brief allowed affine parameter types that no program used, twelve of sixteen designs planned a general shape solver.</li>
+    <li><b>A policy outranks the brief.</b> A policy example that narrowed the brief's grammar was followed by every agent over the brief. Policies are written in the task's own terms, without examples.</li>
+    <li><b>Policies by stage type.</b> v1 is the baseline. v3 adds rules against over-engineering, which reduced Sol's excess by one or two items at a cost of about half a fitness point. v3r, used for stage 6 and the Typed stages, keeps v3 but asks each agent to try at least one of the brief's invited approaches and report the result, because "prefer the smallest deliverable" would cap a creative stage.</li>
+    <li><b>Ask for the strongest claim the evidence supports.</b> In stage 2, one implementation was bit-exact by construction and still checked and reported itself under a tolerance.</li>
+  </ul>
+
+  <h3>What the comparisons have shown so far</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Finding</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Implementation stages separate configurations far less than research rounds</td><td>All cells correct in stages 1, 3 and 3b; new families near Opus on speed. In the research rounds, both judges placed every DeepSeek and GLM design below every OpenAI and Anthropic one.</td></tr>
+      <tr><td>Hidden programs must differ in structure from visible ones</td><td>Division inside reductions reversed stage 3's speed-ups; held-out log-softmax exposed a 6.6× regression.</td></tr>
+      <tr><td>Agents implement less than they design, and that is usually right</td><td>All 16 stage-1 designs proposed a lazy-edit framework change; 4 of 14 implementations made it.</td></tr>
+      <tr><td>Self-reports were faithful</td><td>All fourteen stage-1 cells reported their hidden-suite results accurately when shown them.</td></tr>
+      <tr><td>Codex cells are fastest in wall time</td><td>4–16 minutes against 43–118 for Claude and Pi cells on the same stage.</td></tr>
+      <tr><td>Contradictory findings point at real gaps</td><td>Two cells reported opposite results on correspondence checking; the code showed both were right, and F23 followed.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The live scorecard holds every measured number per stage and cell: <a href="https://claude.ai/artifact/LohZckE2CXVn7PGZV41dhW">IRWB-019 scorecard</a>.</p>
+  {{FILES_AGENTS}}
+  <div class="label">Further reading</div>
+  {{REFS_AGENTS}}
+</section>
