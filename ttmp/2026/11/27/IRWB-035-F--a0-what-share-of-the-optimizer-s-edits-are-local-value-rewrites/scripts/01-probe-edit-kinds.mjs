@@ -1,5 +1,7 @@
 // IRWB-035-F probe 01: run O2 and speed on every corpus project through Program.pipeline (the gated path) and count
 // edit records by pass and kind; time the pipelines and one lowering + seeded run per revision (cost of weights).
+// NOTE: as first launched this probe never ran (zsh aborted the command line on an unmatched glob in its tee path,
+// diary step 2); tools/edit-classes.mjs prints the same edit-kind counts (record kinds per sub-class), so it was not rerun.
 const root = new URL('../../../../../../', import.meta.url).pathname;
 const { installVendor } = await import(root + 'tools/node-vendor.mjs');
 await installVendor();

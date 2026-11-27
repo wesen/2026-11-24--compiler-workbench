@@ -1,0 +1,10 @@
+O2: units 559 (structural grouped per application, function and sub-class): local 40.6 %, structural 21.6 %, other 37.7 %
+O2: published applications 199
+  no local edit                   122 (61.3 %)  subst 26, dce 18, cfg 47, licm 13, bce 10, lvn 8
+  all local/verified               58 (29.1 %)  simplify 40, fold 18
+  all local (some fact-guarded)    19 (9.5 %)  constprop 16, strength 3
+speed: units 909 (structural grouped per application, function and sub-class): local 30.4 %, structural 30.0 %, other 39.6 %
+speed: published applications 294
+  no local edit                   213 (72.4 %)  inline 16, cfg 54, subst 59, dce 20, licm 13, rotate 33, bce 10, lvn 8
+  all local/verified               60 (20.4 %)  simplify 41, fold 19
+  all local (some fact-guarded)    21 (7.1 %)  constprop 18, strength 3

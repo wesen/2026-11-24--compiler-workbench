@@ -1,0 +1,220 @@
+edits classified: 11757; projects skipped: none
+gate rejections: none
+
+== per pipeline
+key            edits  local% str% oth%  (edits | static | executed)
+O2              2021  17.0 69.9 13.1 | 37.9 44.8 17.4 | 24.9 60.3 14.9
+speed           9736   6.8 83.5  9.7 | 15.9 72.7 11.4 | 14.6 77.1  8.3
+
+== O2: sub-classes (edits, static, executed)
+structural/control-flow     1083  53.6%   1272  31.8%    200k  40.4%
+structural/licm              329  16.3%    518  12.9%     98k  19.8%
+local/verified               183   9.1%    556  13.9%     96k  19.4%
+other/remove                 170   8.4%    193   4.8%     11k   2.3%
+local/fact-guarded           161   8.0%    959  24.0%     27k   5.5%
+other/coupled                 73   3.6%    484  12.1%     60k  12.1%
+other/local                   11   0.5%      0   0.0%       0   0.0%
+other/insert                  11   0.5%     18   0.5%    2409   0.5%
+total                       2021          4000            495k
+
+== O2: per pass
+key            edits  local% str% oth%  (edits | static | executed)
+subst            102   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+simplify         140 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+constprop        141 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+dce              118   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+cfg             1058   0.0 99.9  0.1 |  0.0100.0  0.0 |  0.0100.0  0.0
+fold              43 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+licm             329   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+bce               26   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+lvn               44   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+strength          20 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+
+== speed: sub-classes (edits, static, executed)
+structural/control-flow     4259  43.7%   5103  32.9%    577k  39.4%
+structural/inline           3165  32.5%   5327  34.3%    410k  27.9%
+other/remove                 548   5.6%    631   4.1%     47k   3.2%
+structural/licm              422   4.3%    605   3.9%     89k   6.1%
+other/coupled                363   3.7%   1097   7.1%     73k   4.9%
+local/verified               362   3.7%   1191   7.7%    139k   9.5%
+local/fact-guarded           302   3.1%   1282   8.3%     76k   5.2%
+structural/rotate            281   2.9%    243   1.6%     54k   3.7%
+other/local                   16   0.2%      0   0.0%       0   0.0%
+other/insert                  16   0.2%     29   0.2%    1818   0.1%
+other/unmatched-value          2   0.0%      9   0.1%      72   0.0%
+total                       9736           16k           1.47M
+
+== speed: per pass
+key            edits  local% str% oth%  (edits | static | executed)
+inline          3165   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+cfg             4234   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+subst            662   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+simplify         258 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+constprop        258 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+dce              216   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+fold             104 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+licm             422   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+rotate           281   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+bce               26   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+lvn               64   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+strength          46  95.7  0.0  4.3 | 94.1  0.0  5.9 | 98.8  0.0  1.2
+
+== O2: per project
+key            edits  local% str% oth%  (edits | static | executed)
+across-calls       4   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+algebra           11  54.5  0.0 45.5 | 72.2  0.0 27.8 | 72.2  0.0 27.8
+blend              9  33.3 55.6 11.1 | 45.5 50.0  4.5 | 47.1 52.5  0.3
+bounds-lab        40  10.0 90.0  0.0 | 10.6 89.4  0.0 | 12.3 87.7  0.0
+bounds-offset      7  14.3 85.7  0.0 | 27.3 72.7  0.0 | 30.0 70.0  0.0
+bounds-param       3  33.3 66.7  0.0 | 33.3 66.7  0.0 | 35.1 64.9  0.0
+bounds-two        13   7.7 92.3  0.0 |  9.5 90.5  0.0 | 10.9 89.1  0.0
+branches          12   8.3 83.3  8.3 | 27.3 63.6  9.1 | 19.0 65.1 15.9
+bytecode-vm      205   0.5 97.6  2.0 |  0.8 93.5  5.7 |  1.9 86.8 11.3
+call-chain         1 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+calls              2   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+checksum          11   9.1 90.9  0.0 | 10.5 89.5  0.0 | 11.8 88.2  0.0
+chess-search     764  17.0 76.6  6.4 | 39.3 53.4  7.3 | 47.0 50.3  2.7
+constants          8  62.5  0.0 37.5 | 76.0  0.0 24.0 | 76.0  0.0 24.0
+dead-code         24  16.7 58.3 25.0 | 26.9 50.0 23.1 | 25.0 45.0 30.0
+diagnostics        3  33.3  0.0 66.7 | 33.3  0.0 66.7 | 33.3  0.0 66.7
+div-checks         6  66.7  0.0 33.3 | 66.7  0.0 33.3 | 54.5  0.0 45.5
+div-magic          2 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+early-exit        12  16.7 83.3  0.0 | 15.0 85.0  0.0 | 12.3 87.7  0.0
+f32-dsp           82  25.6 67.1  7.3 | 43.4 48.4  8.2 | 42.5 43.8 13.7
+first-steps        4  75.0  0.0 25.0 | 85.7  0.0 14.3 | 85.7  0.0 14.3
+fixed-point        9  55.6  0.0 44.4 | 50.0  0.0 50.0 | 40.9  0.0 59.1
+fragments          9  33.3 55.6 11.1 | 45.5 50.0  4.5 | 47.1 52.6  0.3
+gcd                1 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+heat-lab          13   7.7 92.3  0.0 | 13.3 86.7  0.0 |  5.9 94.1  0.0
+histogram         17   5.9 94.1  0.0 |  5.4 94.6  0.0 |  6.4 93.6  0.0
+licm-nested       10  20.0 80.0  0.0 | 11.1 88.9  0.0 | 10.0 90.0  0.0
+licm-traps         1 100.0  0.0  0.0 |100.0  0.0  0.0 |100.0  0.0  0.0
+lz-roundtrip      79   5.1 57.0 38.0 |  1.7 19.3 79.1 |  3.3 22.2 74.6
+match-enum         6   0.0 83.3 16.7 |  0.0 83.3 16.7 |  0.0 68.8 31.3
+my-analysis       12  16.7 83.3  0.0 | 33.3 66.7  0.0 | 92.0  8.0  0.0
+my-first-pass      8   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+nested-loops       5  40.0 60.0  0.0 | 28.6 71.4  0.0 | 23.9 76.1  0.0
+orders            36  38.9 22.2 38.9 | 45.9 16.4 37.7 | 53.9 29.0 17.2
+params-demo        9  33.3 55.6 11.1 | 45.5 50.0  4.5 | 47.1 52.6  0.3
+pressure           8   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+ramp              14  21.4 71.4  7.1 | 17.4 73.9  8.7 | 15.4 75.2  9.4
+regalloc-lab       8  25.0 25.0 50.0 | 36.7  6.7 56.7 | 36.5 31.0 32.5
+regex-nfa        252   4.4 90.5  5.2 |  7.2 82.9 10.0 |  8.9 89.1  2.0
+sha-chacha       206  37.9 19.4 42.7 | 79.4  8.3 12.3 | 32.1 41.4 26.5
+sort              13   7.7 92.3  0.0 | 13.3 86.7  0.0 |  6.8 93.2  0.0
+start-here        17  23.5 76.5  0.0 | 36.0 64.0  0.0 | 39.9 60.1  0.0
+strength          14  28.6 64.3  7.1 | 35.7 60.7  3.6 | 19.8 75.5  4.7
+strings           24   8.3 91.7  0.0 | 11.1 88.9  0.0 | 12.2 87.8  0.0
+ui-gallery        11  54.5 36.4  9.1 | 77.8 16.7  5.6 | 69.4 22.1  8.5
+value-numberin     5  20.0  0.0 80.0 |  3.1  0.0 96.9 |  3.3  0.0 96.7
+wrong-shift       11   9.1 90.9  0.0 |  9.5 90.5  0.0 | 10.6 89.4  0.0
+
+== speed: per project
+key            edits  local% str% oth%  (edits | static | executed)
+across-calls      69   0.0 91.3  8.7 |  0.0 80.9 19.1 |  0.0 80.9 19.1
+algebra           11  54.5  0.0 45.5 | 72.2  0.0 27.8 | 72.2  0.0 27.8
+blend             12  25.0 66.7  8.3 | 41.7 54.2  4.2 | 42.1 57.6  0.3
+bounds-lab        58   6.9 82.8 10.3 |  7.7 76.9 15.4 |  8.7 75.5 15.8
+bounds-offset     10  10.0 90.0  0.0 | 20.0 80.0  0.0 | 21.6 78.4  0.0
+bounds-param       6  16.7 83.3  0.0 | 20.0 80.0  0.0 | 21.4 78.6  0.0
+bounds-two        18   5.6 83.3 11.1 |  7.1 78.6 14.3 |  8.1 77.3 14.7
+branches          12   8.3 83.3  8.3 | 27.3 63.6  9.1 | 19.0 65.1 15.9
+bytecode-vm      205   0.5 97.6  2.0 |  0.8 93.5  5.7 |  1.9 86.8 11.3
+call-chain       135   0.7 90.4  8.9 |  1.3 83.1 15.6 |  1.2 84.5 14.3
+calls             96   6.3 81.3 12.5 |  4.8 70.2 25.0 |  3.3 70.6 26.0
+checksum          16   6.3 81.3 12.5 |  7.4 74.1 18.5 |  8.1 72.8 19.0
+chess-search    7260   5.4 86.4  8.2 | 11.5 79.2  9.3 | 12.0 83.3  4.7
+collatz            3   0.0100.0  0.0 |  0.0100.0  0.0 |  0.0100.0  0.0
+constants          8  62.5  0.0 37.5 | 76.0  0.0 24.0 | 76.0  0.0 24.0
+dead-code         24  16.7 58.3 25.0 | 26.9 50.0 23.1 | 25.0 45.0 30.0
+diagnostics        3  33.3  0.0 66.7 | 33.3  0.0 66.7 | 33.3  0.0 66.7
+distinct          55   0.0 89.1 10.9 |  0.0 85.3 14.7 |  0.0 85.3 14.7
+div-checks         6  66.7  0.0 33.3 | 66.7  0.0 33.3 | 54.5  0.0 45.5
+div-magic          5  40.0 60.0  0.0 | 84.6 15.4  0.0 | 59.6 40.4  0.0
+early-exit        17  11.8 76.5 11.8 | 10.7 71.4 17.9 |  8.6 72.4 19.1
+f32-dsp          129  16.3 76.0  7.8 | 26.1 62.1 11.8 | 19.6 64.2 16.2
+first-steps       51  17.6 64.7 17.6 | 29.5 50.8 19.7 | 29.5 50.8 19.7
+fixed-point       55  18.2 56.4 25.5 | 16.9 53.5 29.6 | 12.7 55.1 32.2
+fragments         12  25.0 66.7  8.3 | 41.7 54.2  4.2 | 42.1 57.6  0.3
+gcd                4  25.0 75.0  0.0 | 33.3 66.7  0.0 | 35.3 64.7  0.0
+heat-lab          19   5.3 94.7  0.0 | 10.0 90.0  0.0 |  4.8 95.2  0.0
+histogram         22   4.5 86.4  9.1 |  4.0 76.0 20.0 |  4.7 75.2 20.1
+licm-nested       16  12.5 87.5  0.0 |  9.1 90.9  0.0 |  8.4 91.6  0.0
+licm-traps         4  25.0 75.0  0.0 | 33.3 66.7  0.0 | 39.6 60.4  0.0
+lz-roundtrip     192   3.1 74.0 22.9 |  1.6 62.0 36.4 |  2.6 67.1 30.3
+match-enum         6   0.0 83.3 16.7 |  0.0 83.3 16.7 |  0.0 68.8 31.3
+my-analysis       16  12.5 87.5  0.0 | 23.1 76.9  0.0 | 39.1 60.9  0.0
+my-first-pass      8   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+nested-loops      11  18.2 81.8  0.0 | 18.2 81.8  0.0 | 16.5 83.5  0.0
+orders            39  35.9 28.2 35.9 | 44.4 19.0 36.5 | 49.2 35.1 15.7
+params-demo       12  25.0 66.7  8.3 | 41.7 54.2  4.2 | 42.1 57.6  0.3
+pressure           8   0.0  0.0100.0 |  0.0  0.0100.0 |  0.0  0.0100.0
+ramp              19  15.8 68.4 15.8 | 13.8 69.0 17.2 | 11.9 69.9 18.1
+regalloc-lab      33   6.1 69.7 24.2 | 15.5 49.3 35.2 |  5.0 73.8 21.2
+regex-nfa        288   3.8 90.3  5.9 |  6.9 83.0 10.1 |  8.5 89.2  2.3
+sha-chacha       541  19.6 59.7 20.7 | 53.5 37.1  9.4 | 22.0 70.0  8.0
+sort              19   5.3 94.7  0.0 | 10.0 90.0  0.0 |  5.4 94.6  0.0
+start-here        89  13.5 73.0 13.5 | 16.8 66.4 16.8 | 14.6 68.3 17.1
+strength          19  21.1 63.2 15.8 | 27.8 55.6 16.7 | 14.3 65.2 20.4
+strings           34   5.9 82.4 11.8 |  8.0 76.0 16.0 |  8.6 74.8 16.6
+ui-gallery        37  29.7 64.9  5.4 | 44.6 51.8  3.6 | 27.5 69.1  3.4
+value-numberin     8  12.5 37.5 50.0 |  2.9  5.9 91.2 |  3.1  6.0 90.9
+wrong-shift       16   6.3 81.3 12.5 |  6.7 73.3 20.0 |  7.3 72.2 20.5
+
+== O2: changed functions 102; every edit local 13; every edit local/verified 13
+== speed: changed functions 112; every edit local 7; every edit local/verified 7
+
+== O2: local rewrites 344; matched by a verified rule 183 (53.2 %), static 36.7 %, executed 78.0 %; citing a rule in the record: 0
+  firings: not-lt 62, mul-pow2 47, pow2-mul 19, fold-shl 19, fold-sub 13, fold-mul 9, add-zero 4, not-gt 3, mul-one 2, mul-zero 2, fold-eqz 2, not-le 2, sub-zero 1, sub-self 1, not-ge 1, fold-add 1, fold-gt 1, not-ne 1
+  weakest strength per edit: proof 71, by-construction 43, reduced-width+argument 69
+== speed: local rewrites 664; matched by a verified rule 362 (54.5 %), static 48.2 %, executed 64.8 %; citing a rule in the record: 0
+  firings: mul-pow2 143, not-lt 72, fold-shl 54, fold-sub 33, pow2-mul 28, fold-mul 13, fold-add 9, zero-add 9, add-zero 6, not-gt 5, not-le 4, mul-one 2, mul-zero 2, fold-eqz 2, zero-mul 2, sub-zero 1, sub-self 1, not-ge 1, div-one 1, fold-gt 1, not-ne 1
+  weakest strength per edit: proof 176, by-construction 102, reduced-width+argument 83, exhaustive 1
+
+== O2: shapes of the local rewrites no verified rule matches, and of the other value replacements (top 20 by edits)
+  153     24k  local/fact-guarded constprop: const-read
+   29     31k  other/coupled subst: get → get
+   13    2342  local/fact-guarded strength: rem-pow2
+   10    1240  local/fact-guarded strength: div-pow2
+    6     13k  other/coupled subst: get → add(get, #)
+    4     144  other/coupled lvn: add(get, #) → get
+    4    2928  other/coupled subst: get → add(get, get)
+    4    6024  other/coupled lvn: (no window)
+    4    3220  other/coupled lvn: shl(get, #) → get
+    4     300  other/coupled lvn: mul(get, get) → get
+    2     196  other/coupled lvn: eq(get, #) → get
+    2     200  other/coupled subst: get → sub(#, mul(get, #))
+    2    1300  other/coupled lvn: add(get, get) → get
+    2      40  other/coupled lvn: add(shl(get, #), #) → get
+    2     250  other/coupled subst: get → mul(get, get)
+    1      70  other/coupled subst: get → add(add(get, get), get)
+    1       0  other/coupled subst: get → sub(#, get)
+    1      98  other/coupled subst: get → eqz(get)
+    1      40  other/coupled subst: get → sub(get, #)
+    1      10  other/coupled subst: get → shl(get, #)
+
+== speed: shapes of the local rewrites no verified rule matches, and of the other value replacements (top 20 by edits)
+  284     69k  local/fact-guarded constprop: const-read
+  207     43k  other/coupled subst: get → get
+   25    3020  local/fact-guarded strength: rem-pow2
+   20    3141  local/fact-guarded strength: div-pow2
+   15    7955  other/coupled subst: get → add(get, #)
+   12     144  other/coupled lvn: add(get, #) → get
+   10     167  other/coupled subst: get → add(#, shl(get, #))
+    9     663  other/coupled subst: get → add(shl(get, #), get)
+    8     134  other/coupled subst: get → add(#, mul(get, #))
+    7     170  other/coupled subst: get → shl(get, #)
+    6     150  other/coupled subst: get → #
+    6      52  other/coupled subst: get → sub(#, get)
+    6     200  other/coupled subst: get → sub(#, mul(get, #))
+    6     391  other/coupled subst: get → sub(shl(get, #), #)
+    6    2720  other/coupled subst: get → or(shru(get, #), shl(get, #))
+    5     340  other/coupled subst: get → mul(get, get)
+    5     108  other/coupled subst: get → eqz(get)
+    5    2100  other/coupled subst: get → add(get, get)
+    4     294  other/coupled lvn: eq(get, #) → get
+    4      52  other/coupled subst: get → shr(get, #)
+
+check: fold/simplify replace edits 545, of them local/verified 545
+unattributed weight (new statements no edit names), by pipeline and pass: {"O2 subst":{"static":0,"executed":0},"speed inline":{"static":0,"executed":0},"speed cfg":{"static":0,"executed":0},"speed subst":{"static":0,"executed":0},"O2 simplify":{"static":0,"executed":0},"O2 constprop":{"static":0,"executed":0},"O2 dce":{"static":0,"executed":0},"speed simplify":{"static":0,"executed":0},"speed constprop":{"static":0,"executed":0},"speed dce":{"static":0,"executed":0},"O2 cfg":{"static":0,"executed":0},"O2 fold":{"static":0,"executed":0},"O2 licm":{"static":0,"executed":0},"speed fold":{"static":0,"executed":0},"speed licm":{"static":0,"executed":0},"speed rotate":{"static":0,"executed":0},"O2 bce":{"static":0,"executed":0},"speed bce":{"static":0,"executed":0},"O2 lvn":{"static":0,"executed":0},"O2 strength":{"static":0,"executed":0},"speed lvn":{"static":0,"executed":0},"speed strength":{"static":0,"executed":0}}
+803906 ms

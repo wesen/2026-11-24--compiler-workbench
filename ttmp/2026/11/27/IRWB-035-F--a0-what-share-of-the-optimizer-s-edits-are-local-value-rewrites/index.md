@@ -20,7 +20,12 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Measures what share of the edits that O2 and `speed` make on the corpus are local value rewrites (verified or fact-guarded), structural or other, by edit count and by instructions, and how much of the local share is covered by verified rules. Status: done.
+
+- Design: [design-doc/01-…](./design-doc/01-design-classifying-the-optimizer-s-edits-as-local-structural-or-other.md)
+- Report: [report/01-…](./report/01-report-the-share-of-local-rewrites-in-o2-and-speed.md)
+- Diary: [diary/01-diary.md](./diary/01-diary.md)
+- Tool: `tools/edit-classes.mjs`; classifier: `src/typed/edit-classes.ts`
 
 ## Key Links
 

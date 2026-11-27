@@ -8,7 +8,13 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/typed/edit-classes.ts
+      Note: implements the design
+    - Path: repo://src/typed/rules/compile.ts
+      Note: the matcher reused for re-derivation
+    - Path: repo://src/typed/tx.ts
+      Note: edit records
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T10:08:29.560333357-05:00
