@@ -7,4 +7,4 @@
 - [x] Specify checking: domain, observation, relations, f32 error model <!-- t:3wai -->
 - [x] Generality analysis: reached programs and failures <!-- t:oiys -->
 - [x] Experiment design: hypothesis, metrics, refutation conditions <!-- t:ntmy -->
-- [ ] Diary, changelog, relations, commit <!-- t:l4tv -->
+- [x] Diary, changelog, relations, commit <!-- t:l4tv -->
