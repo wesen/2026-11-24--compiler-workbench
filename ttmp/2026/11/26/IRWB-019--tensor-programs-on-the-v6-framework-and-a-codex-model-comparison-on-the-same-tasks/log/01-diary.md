@@ -955,3 +955,10 @@ The user set the cells for implementation tasks from now on, and asked to start 
   All run on policy v3, with a three-hour cap.
 - **F2–F6** (`prompts/fixes-2/common.md`, `scripts/32-launch-fixes-2.sh`): IRWB-028, Terra low, on `t3-base`.
 - **Kit logs committed:** the 24 stage-2 implementation and report-turn kit directories had never been committed. They are now (`9783c1a`), along with the fixes and the finished R1b and R2b cells.
+- **F2–F6, first pass** (IRWB-028, Terra low; commits `f3ba438` to `f212153` on `fix2-tl/irwb-028`):
+  - F2 makes `imageFromCode`'s signatures required and updates every caller. F3 restricts `reference-check` to the projects named. F4 keeps the continuation indent and makes wrapping idempotent. F6 is one `parseProjectMeta`, used by both readers.
+  - Each fix has a test that, by its own account, failed first. The agent reported 173 of 176 Typed and workbench tests passing, 3 skipped.
+  - **F5 was not acceptable.** It replaced exact corpus-wide quantities with `> 0`: O2 image bytes 5160/7628, the inconclusive bound, r0 agreement's 14 inconclusive, FULL parity's totals, SSA's [135, 3322], and tape's {24, 22}. The agent said so itself. The brief asked to keep every property.
+  - The corpus does not encode the book's 44 projects: `index.json` lists 47 projects in the book's order, and the corpus has 50. So the totals the tests assert cover the current corpus.
+- **The review** (`prompts/fixes-2/review-1.md`) asks for per-project expectation tables, so that a new project adds a row. It also asks to keep the inconclusive bound per project, and to keep the book's figures where a test states them as the book's. The same session was resumed (`scripts/34-resume-fixes-2.sh`, round `fix2-tl-r1`).
+  - The kit's `02-resume-codex-round.sh` now also gives `codex exec` `/dev/null` as stdin (vault `85345d8`).
