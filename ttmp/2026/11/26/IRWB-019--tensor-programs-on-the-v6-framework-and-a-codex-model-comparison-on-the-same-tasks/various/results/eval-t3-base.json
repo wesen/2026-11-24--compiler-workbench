@@ -1,0 +1,512 @@
+{
+ "t3-base": {
+  "api": [
+   "cudaSource",
+   "runTixCuda",
+   "checkLowering"
+  ],
+  "corpus": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "unfused": {
+   "matmul": {
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "layernorm": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "attention": {
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   "conv": {
+    "shapeOk": true,
+    "bitExact": 160,
+    "n": 160,
+    "max32": 0
+   }
+  },
+  "optimized": {
+   "matmul": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   "softmax": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 76,
+    "n": 76,
+    "max32": 0
+   },
+   "attention": {
+    "steps": [
+     "inline:true:false",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 72,
+    "n": 72,
+    "max32": 0
+   },
+   "mlp": {
+    "steps": [
+     "inline:true:true",
+     "split-sum:true:true"
+    ],
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   }
+  },
+  "random": [
+   {
+    "i": 0,
+    "shapeOk": true,
+    "bitExact": 16,
+    "n": 16,
+    "max32": 0
+   },
+   {
+    "i": 1,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 2,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 3,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 4,
+    "shapeOk": true,
+    "bitExact": 5,
+    "n": 5,
+    "max32": 0
+   },
+   {
+    "i": 5,
+    "shapeOk": true,
+    "bitExact": 1,
+    "n": 1,
+    "max32": 0
+   },
+   {
+    "i": 6,
+    "shapeOk": true,
+    "bitExact": 3,
+    "n": 3,
+    "max32": 0
+   },
+   {
+    "i": 7,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 8,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 9,
+    "shapeOk": true,
+    "bitExact": 4,
+    "n": 4,
+    "max32": 0
+   },
+   {
+    "i": 10,
+    "shapeOk": true,
+    "bitExact": 42,
+    "n": 42,
+    "max32": 0
+   },
+   {
+    "i": 11,
+    "shapeOk": true,
+    "bitExact": 35,
+    "n": 35,
+    "max32": 0
+   },
+   {
+    "i": 12,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   },
+   {
+    "i": 13,
+    "shapeOk": true,
+    "bitExact": 30,
+    "n": 30,
+    "max32": 0
+   },
+   {
+    "i": 14,
+    "shapeOk": true,
+    "bitExact": 8,
+    "n": 8,
+    "max32": 0
+   },
+   {
+    "i": 15,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 16,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 17,
+    "shapeOk": true,
+    "bitExact": 24,
+    "n": 24,
+    "max32": 0
+   },
+   {
+    "i": 18,
+    "shapeOk": true,
+    "bitExact": 2,
+    "n": 2,
+    "max32": 0
+   },
+   {
+    "i": 19,
+    "shapeOk": true,
+    "bitExact": 6,
+    "n": 6,
+    "max32": 0
+   }
+  ],
+  "check": {
+   "matmul": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2710
+   },
+   "softmax": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 2790
+   },
+   "layernorm": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3185
+   },
+   "attention": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3252
+   },
+   "mlp": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3037
+   },
+   "conv": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3537
+   },
+   "random0": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3269
+   },
+   "random1": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 4035
+   },
+   "random2": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 4126
+   },
+   "random3": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3114
+   },
+   "random4": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3357
+   },
+   "random5": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3297
+   },
+   "random6": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3326
+   },
+   "random7": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3359
+   },
+   "random8": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3256
+   },
+   "random9": {
+    "accepted": true,
+    "relation": "exact",
+    "ms": 3360
+   }
+  },
+  "kernels": {
+   "matmul": {
+    "fused": 1,
+    "unfused": 1
+   },
+   "softmax": {
+    "fused": 4,
+    "unfused": 4
+   },
+   "layernorm": {
+    "fused": 4,
+    "unfused": 4
+   },
+   "attention": {
+    "fused": 5,
+    "unfused": 5
+   },
+   "mlp": {
+    "fused": 3,
+    "unfused": 3
+   },
+   "conv": {
+    "fused": 1,
+    "unfused": 1
+   }
+  },
+  "large": {
+   "matmul": {
+    "fused": {
+     "gpuMs": 0.1971839964389801,
+     "runs": [
+      0.1952960044145584,
+      0.1971839964389801,
+      0.20905600488185883
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.20015999674797058,
+     "runs": [
+      0.19846400618553162,
+      0.20015999674797058,
+      0.3537279963493347
+     ]
+    }
+   },
+   "softmax": {
+    "fused": {
+     "gpuMs": 0.7718080282211304,
+     "runs": [
+      0.7726719975471497,
+      0.7650240063667297,
+      0.7718080282211304
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.7934079766273499,
+     "runs": [
+      0.8935359716415405,
+      0.7778239846229553,
+      0.7934079766273499
+     ]
+    }
+   },
+   "layernorm": {
+    "fused": {
+     "gpuMs": 0.5657600164413452,
+     "runs": [
+      0.5663999915122986,
+      0.554207980632782,
+      0.5657600164413452
+     ],
+     "shapeOk": true,
+     "bitExact": 4194304,
+     "n": 4194304,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.5587520003318787,
+     "runs": [
+      0.5540800094604492,
+      0.5684159994125366,
+      0.5587520003318787
+     ]
+    }
+   },
+   "attention": {
+    "fused": {
+     "gpuMs": 1.762495994567871,
+     "runs": [
+      1.8008320331573486,
+      1.762495994567871,
+      1.758847951889038
+     ],
+     "shapeOk": true,
+     "bitExact": 65536,
+     "n": 65536,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.7485439777374268,
+     "runs": [
+      1.7485439777374268,
+      1.736672043800354,
+      2.245151996612549
+     ]
+    }
+   },
+   "mlp": {
+    "fused": {
+     "gpuMs": 1.0662399530410767,
+     "runs": [
+      1.0476479530334473,
+      1.0662399530410767,
+      1.0894720554351807
+     ],
+     "shapeOk": true,
+     "bitExact": 262144,
+     "n": 262144,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 1.082751989364624,
+     "runs": [
+      1.082751989364624,
+      1.0682239532470703,
+      1.0862079858779907
+     ]
+    }
+   },
+   "conv": {
+    "fused": {
+     "gpuMs": 0.3415040075778961,
+     "runs": [
+      0.34515199065208435,
+      0.34137600660324097,
+      0.3415040075778961
+     ],
+     "shapeOk": true,
+     "bitExact": 984064,
+     "n": 984064,
+     "max32": 0
+    },
+    "unfused": {
+     "gpuMs": 0.3441919982433319,
+     "runs": [
+      0.3437440097332001,
+      0.3441919982433319,
+      0.34438401460647583
+     ]
+    }
+   }
+  },
+  "seconds": 1075.4
+ }
+}
