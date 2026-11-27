@@ -76,6 +76,13 @@ Second, Tix already owns the hard part: the specification. Batch invariance is a
 
 Third, speed remains measurable and honest. It is measured against the exact ceiling, which is the fastest any implementation of the meaning could be on the hardware. The definition names the price of exactness and does not hide it.
 
+| | Result specified independently of the implementation? | Batch invariant? | Same bits across GPUs and versions? | Evidence per compiler step |
+|---|---|---|---|---|
+| cuBLAS | No; the algorithm is chosen per shape | No (measured below: 471–4014 differing row words) | Only on the same architecture, SM count and toolkit version [NVIDIA cuBLAS] | None published |
+| Schedulers that reassociate (Halide `rfactor`, TVM, split-K in Triton) | No; reassociating schedules change results | Only if every schedule happens to be | No | None for numerics |
+| Batch-invariant kernels [He 2025] | No; invariance is designed per kernel | Yes, by construction of each kernel | Not claimed | None |
+| Tix, as proposed here | Yes: the f32 meaning, executable in the interpreter | Yes, a consequence of the meaning (§4.1) | Yes, wherever the lowering is exact | Exhaustive, per shape for all data, or sampled, recorded as evidence |
+
 ### 2.2 How it is measured
 
 | Axis | Metric | Current | Target |
