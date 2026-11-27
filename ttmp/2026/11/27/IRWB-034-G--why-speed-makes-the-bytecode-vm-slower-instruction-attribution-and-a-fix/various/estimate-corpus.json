@@ -1,0 +1,9270 @@
+{
+ "pipeline": "speed",
+ "summary": {
+  "est+ emu+": 39,
+  "est+ emu-": 65,
+  "est+ emu0": 25,
+  "est- emu+": 3,
+  "est- emu-": 219,
+  "est- emu0": 76,
+  "est0 emu0": 231
+ },
+ "byPass": {
+  "bce est- emu-": 13,
+  "cfg est+ emu-": 2,
+  "cfg est- emu-": 17,
+  "cfg est- emu0": 12,
+  "cfg est0 emu0": 77,
+  "constprop est+ emu+": 22,
+  "constprop est+ emu0": 6,
+  "constprop est- emu-": 3,
+  "constprop est0 emu0": 12,
+  "dce est- emu-": 38,
+  "dce est- emu0": 7,
+  "fold est+ emu+": 1,
+  "fold est+ emu0": 2,
+  "fold est- emu+": 1,
+  "fold est- emu-": 24,
+  "fold est- emu0": 17,
+  "fold est0 emu0": 2,
+  "inline est+ emu+": 11,
+  "inline est+ emu-": 21,
+  "inline est+ emu0": 3,
+  "inline est- emu-": 34,
+  "licm est+ emu+": 5,
+  "licm est+ emu-": 3,
+  "licm est+ emu0": 3,
+  "licm est- emu+": 2,
+  "licm est- emu-": 7,
+  "lvn est- emu-": 6,
+  "lvn est- emu0": 1,
+  "lvn est0 emu0": 6,
+  "rotate est+ emu-": 39,
+  "rotate est+ emu0": 11,
+  "rotate est- emu-": 6,
+  "rotate est- emu0": 3,
+  "simplify est- emu-": 4,
+  "simplify est- emu0": 5,
+  "simplify est0 emu0": 83,
+  "strength est- emu-": 3,
+  "strength est- emu0": 10,
+  "strength est0 emu0": 2,
+  "subst est- emu-": 64,
+  "subst est- emu0": 21,
+  "subst est0 emu0": 49
+ },
+ "steps": [
+  {
+   "id": "across-calls",
+   "fn": "keep",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    46,
+    24
+   ],
+   "emu": [
+    620,
+    240
+   ]
+  },
+  {
+   "id": "across-calls",
+   "fn": "keep",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    24,
+    24
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "across-calls",
+   "fn": "keep",
+   "rev": 3,
+   "pass": "subst",
+   "est": [
+    24,
+    23
+   ],
+   "emu": [
+    240,
+    230
+   ]
+  },
+  {
+   "id": "across-calls",
+   "fn": "keep",
+   "rev": 4,
+   "pass": "subst",
+   "est": [
+    23,
+    23
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "across-calls",
+   "fn": "keep",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    23,
+    23
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "algebra",
+   "fn": "tidy",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    10,
+    6
+   ],
+   "emu": [
+    100,
+    60
+   ]
+  },
+  {
+   "id": "algebra",
+   "fn": "tidy",
+   "rev": 2,
+   "pass": "constprop",
+   "est": [
+    6,
+    6
+   ],
+   "emu": [
+    60,
+    60
+   ]
+  },
+  {
+   "id": "algebra",
+   "fn": "tidy",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    6,
+    5
+   ],
+   "emu": [
+    60,
+    50
+   ]
+  },
+  {
+   "id": "algebra",
+   "fn": "tidy",
+   "rev": 4,
+   "pass": "dce",
+   "est": [
+    5,
+    4
+   ],
+   "emu": [
+    50,
+    40
+   ]
+  },
+  {
+   "id": "algebra",
+   "fn": "tidy",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    4,
+    3
+   ],
+   "emu": [
+    40,
+    30
+   ]
+  },
+  {
+   "id": "algebra",
+   "fn": "tidy",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    3,
+    2
+   ],
+   "emu": [
+    30,
+    20
+   ]
+  },
+  {
+   "id": "blend",
+   "fn": "blend",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    106.33333262706465,
+    106.33333262706465
+   ],
+   "emu": [
+    2255,
+    2255
+   ]
+  },
+  {
+   "id": "blend",
+   "fn": "blend",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    106.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2255,
+    2245
+   ]
+  },
+  {
+   "id": "blend",
+   "fn": "blend",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    105.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2245,
+    2245
+   ]
+  },
+  {
+   "id": "blend",
+   "fn": "blend",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    105.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2245,
+    2245
+   ]
+  },
+  {
+   "id": "blend",
+   "fn": "blend",
+   "rev": 5,
+   "pass": "dce",
+   "est": [
+    105.33333262706465,
+    104.33333262706464
+   ],
+   "emu": [
+    2245,
+    2235
+   ]
+  },
+  {
+   "id": "blend",
+   "fn": "blend",
+   "rev": 6,
+   "pass": "licm",
+   "est": [
+    104.33333262706464,
+    91.66666606162217
+   ],
+   "emu": [
+    2235,
+    1925
+   ]
+  },
+  {
+   "id": "blend",
+   "fn": "blend",
+   "rev": 7,
+   "pass": "rotate",
+   "est": [
+    91.66666606162217,
+    91.666666073493
+   ],
+   "emu": [
+    1925,
+    1915
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "total",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    86.66666608232711,
+    86.66666608232711
+   ],
+   "emu": [
+    1391,
+    1391
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "window",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    78.33333280650751,
+    78.33333280650751
+   ],
+   "emu": [
+    1340,
+    1340
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "pairs",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    137.9999990613758,
+    137.9999990613758
+   ],
+   "emu": [
+    1116,
+    1116
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "tail",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    137.9999990613758,
+    137.9999990613758
+   ],
+   "emu": [
+    2076,
+    2076
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "total",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    86.66666608232711,
+    86.66666608232711
+   ],
+   "emu": [
+    1391,
+    1391
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "window",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    78.33333280650751,
+    78.33333280650751
+   ],
+   "emu": [
+    1340,
+    1340
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "pairs",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    137.9999990613758,
+    137.9999990613758
+   ],
+   "emu": [
+    1116,
+    1116
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "tail",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    137.9999990613758,
+    137.9999990613758
+   ],
+   "emu": [
+    2076,
+    2076
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "total",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    86.66666608232711,
+    71.99999951688463
+   ],
+   "emu": [
+    1391,
+    1149
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "pairs",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    137.9999990613758,
+    123.33333249593332
+   ],
+   "emu": [
+    1116,
+    992
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "tail",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    137.9999990613758,
+    123.33333249593332
+   ],
+   "emu": [
+    2076,
+    1852
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "total",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    71.99999951688463,
+    71.99999951688463
+   ],
+   "emu": [
+    1149,
+    1149
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "pairs",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    123.33333249593332,
+    123.33333249593332
+   ],
+   "emu": [
+    992,
+    992
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "tail",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    123.33333249593332,
+    123.33333249593332
+   ],
+   "emu": [
+    1852,
+    1852
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "total",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    71.99999951688463,
+    64.66666623416339
+   ],
+   "emu": [
+    1149,
+    1028
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "pairs",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    123.33333249593332,
+    115.99999921321208
+   ],
+   "emu": [
+    992,
+    930
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "tail",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    123.33333249593332,
+    115.99999921321208
+   ],
+   "emu": [
+    1852,
+    1740
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "total",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    64.66666623416339,
+    64.66666624962308
+   ],
+   "emu": [
+    1028,
+    1019
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "window",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    78.33333280650751,
+    78.33333281506557
+   ],
+   "emu": [
+    1340,
+    1335
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "pairs",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    115.99999921321208,
+    115.99999922867177
+   ],
+   "emu": [
+    930,
+    927
+   ]
+  },
+  {
+   "id": "bounds-lab",
+   "fn": "tail",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    115.99999921321208,
+    115.99999922867177
+   ],
+   "emu": [
+    1740,
+    1731
+   ]
+  },
+  {
+   "id": "bounds-offset",
+   "fn": "rises",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    142.66666569583478,
+    142.66666569583478
+   ],
+   "emu": [
+    1364,
+    1364
+   ]
+  },
+  {
+   "id": "bounds-offset",
+   "fn": "rises",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    142.66666569583478,
+    142.66666569583478
+   ],
+   "emu": [
+    1364,
+    1364
+   ]
+  },
+  {
+   "id": "bounds-offset",
+   "fn": "rises",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    142.66666569583478,
+    142.66666571819613
+   ],
+   "emu": [
+    1364,
+    1355
+   ]
+  },
+  {
+   "id": "bounds-param",
+   "fn": "prefix",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    78.33333280650751,
+    78.33333280650751
+   ],
+   "emu": [
+    502,
+    502
+   ]
+  },
+  {
+   "id": "bounds-param",
+   "fn": "prefix",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    78.33333280650751,
+    78.33333280650751
+   ],
+   "emu": [
+    502,
+    502
+   ]
+  },
+  {
+   "id": "bounds-param",
+   "fn": "prefix",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    78.33333280650751,
+    78.33333281506557
+   ],
+   "emu": [
+    502,
+    499
+   ]
+  },
+  {
+   "id": "bounds-two",
+   "fn": "dot",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    137.9999990613758,
+    137.9999990613758
+   ],
+   "emu": [
+    910,
+    910
+   ]
+  },
+  {
+   "id": "bounds-two",
+   "fn": "dot",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    137.9999990613758,
+    137.9999990613758
+   ],
+   "emu": [
+    910,
+    910
+   ]
+  },
+  {
+   "id": "bounds-two",
+   "fn": "dot",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    137.9999990613758,
+    123.33333249593332
+   ],
+   "emu": [
+    910,
+    810
+   ]
+  },
+  {
+   "id": "bounds-two",
+   "fn": "dot",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    123.33333249593332,
+    123.33333249593332
+   ],
+   "emu": [
+    810,
+    810
+   ]
+  },
+  {
+   "id": "bounds-two",
+   "fn": "dot",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    123.33333249593332,
+    115.99999921321208
+   ],
+   "emu": [
+    810,
+    760
+   ]
+  },
+  {
+   "id": "bounds-two",
+   "fn": "dot",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    115.99999921321208,
+    115.99999922867177
+   ],
+   "emu": [
+    760,
+    756
+   ]
+  },
+  {
+   "id": "branches",
+   "fn": "sign",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    4.75,
+    4.75
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "branches",
+   "fn": "grade",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    9.875,
+    9
+   ],
+   "emu": [
+    125,
+    109
+   ]
+  },
+  {
+   "id": "branches",
+   "fn": "sign",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    4.75,
+    4.75
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "branches",
+   "fn": "grade",
+   "rev": 3,
+   "pass": "dce",
+   "est": [
+    9,
+    8
+   ],
+   "emu": [
+    109,
+    99
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    163.0009671287984,
+    156.1700374311213
+   ],
+   "emu": [
+    39954,
+    36724
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    156.1700374311213,
+    151.75163213695114
+   ],
+   "emu": [
+    36724,
+    35801
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    151.75163213695114,
+    295.4278896676972
+   ],
+   "emu": [
+    35801,
+    34888
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 4,
+   "pass": "licm",
+   "est": [
+    295.4278896676972,
+    318.8770931400316
+   ],
+   "emu": [
+    34888,
+    33548
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    318.8770931400316,
+    310.6006603391964
+   ],
+   "emu": [
+    33548,
+    32625
+   ]
+  },
+  {
+   "id": "bytecode-vm",
+   "fn": "runVm",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    310.6006603391964,
+    310.6006603391964
+   ],
+   "emu": [
+    32625,
+    32625
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "g",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    19,
+    10
+   ],
+   "emu": [
+    270,
+    100
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "f",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    20,
+    33
+   ],
+   "emu": [
+    740,
+    490
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "f",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    33,
+    23
+   ],
+   "emu": [
+    490,
+    230
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "g",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    10,
+    10
+   ],
+   "emu": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "f",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    23,
+    23
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "f",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    23,
+    23
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "g",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    10,
+    9
+   ],
+   "emu": [
+    100,
+    90
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "f",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    23,
+    22
+   ],
+   "emu": [
+    230,
+    220
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "g",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    9,
+    9
+   ],
+   "emu": [
+    90,
+    90
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "f",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    22,
+    22
+   ],
+   "emu": [
+    220,
+    220
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "g",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    9,
+    9
+   ],
+   "emu": [
+    90,
+    90
+   ]
+  },
+  {
+   "id": "call-chain",
+   "fn": "f",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    22,
+    22
+   ],
+   "emu": [
+    220,
+    220
+   ]
+  },
+  {
+   "id": "calls",
+   "fn": "energy",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    40,
+    19
+   ],
+   "emu": [
+    550,
+    190
+   ]
+  },
+  {
+   "id": "calls",
+   "fn": "energy",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    19,
+    19
+   ],
+   "emu": [
+    190,
+    190
+   ]
+  },
+  {
+   "id": "calls",
+   "fn": "energy",
+   "rev": 3,
+   "pass": "constprop",
+   "est": [
+    19,
+    24.5
+   ],
+   "emu": [
+    190,
+    247
+   ]
+  },
+  {
+   "id": "calls",
+   "fn": "energy",
+   "rev": 4,
+   "pass": "dce",
+   "est": [
+    24.5,
+    18.5
+   ],
+   "emu": [
+    247,
+    187
+   ]
+  },
+  {
+   "id": "calls",
+   "fn": "energy",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    18.5,
+    18.5
+   ],
+   "emu": [
+    187,
+    187
+   ]
+  },
+  {
+   "id": "calls",
+   "fn": "energy",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    18.5,
+    18.5
+   ],
+   "emu": [
+    187,
+    187
+   ]
+  },
+  {
+   "id": "calls",
+   "fn": "energy",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    18.5,
+    18.5
+   ],
+   "emu": [
+    187,
+    187
+   ]
+  },
+  {
+   "id": "checksum",
+   "fn": "total",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    86.66666608232711,
+    86.66666608232711
+   ],
+   "emu": [
+    1710,
+    1710
+   ]
+  },
+  {
+   "id": "checksum",
+   "fn": "total",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    86.66666608232711,
+    86.66666608232711
+   ],
+   "emu": [
+    1710,
+    1710
+   ]
+  },
+  {
+   "id": "checksum",
+   "fn": "total",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    86.66666608232711,
+    71.99999951688463
+   ],
+   "emu": [
+    1710,
+    1410
+   ]
+  },
+  {
+   "id": "checksum",
+   "fn": "total",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    71.99999951688463,
+    71.99999951688463
+   ],
+   "emu": [
+    1410,
+    1410
+   ]
+  },
+  {
+   "id": "checksum",
+   "fn": "total",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    71.99999951688463,
+    64.66666623416339
+   ],
+   "emu": [
+    1410,
+    1260
+   ]
+  },
+  {
+   "id": "checksum",
+   "fn": "total",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    64.66666623416339,
+    64.66666624962308
+   ],
+   "emu": [
+    1260,
+    1251
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    77.33333294454047,
+    451.9583307903656
+   ],
+   "emu": [
+    237552,
+    211302
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMove",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    25,
+    19
+   ],
+   "emu": [
+    390,
+    190
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFrom",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    16,
+    13
+   ],
+   "emu": [
+    230,
+    130
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTo",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    12,
+    9
+   ],
+   "emu": [
+    190,
+    90
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessIsPiece",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    24.5,
+    15.5
+   ],
+   "emu": [
+    274,
+    129
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    110.78571349181999,
+    170.13932744612603
+   ],
+   "emu": [
+    3061,
+    2016
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRemoveRight",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    18,
+    17.5
+   ],
+   "emu": [
+    264,
+    124
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRookRight",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    21.25,
+    28.53125
+   ],
+   "emu": [
+    190,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    352.8333314641354,
+    443.6666643362072
+   ],
+   "emu": [
+    720,
+    550
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    206.3333324959333,
+    218.3333324959333
+   ],
+   "emu": [
+    650,
+    450
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAdd",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    30,
+    44
+   ],
+   "emu": [
+    150,
+    180
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    87.16666632388478,
+    134.833332737491
+   ],
+   "emu": [
+    534,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    148.99999934089254,
+    170.79166590633503
+   ],
+   "emu": [
+    479,
+    438
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    54.25,
+    65.9375
+   ],
+   "emu": [
+    330,
+    390
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    182.55555431110207,
+    346.0138867735648
+   ],
+   "emu": [
+    1767,
+    1679
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    184.66666555090015,
+    427.44443972081905
+   ],
+   "emu": [
+    150,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegal",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    36,
+    51
+   ],
+   "emu": [
+    150,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    174.9999989923593,
+    314.9999980813417
+   ],
+   "emu": [
+    300,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    278.33333160217006,
+    433.4999714229668
+   ],
+   "emu": [
+    169190,
+    147030
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCenter",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    25,
+    13
+   ],
+   "emu": [
+    298,
+    124
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    269.9583317048319,
+    356.24218528979947
+   ],
+   "emu": [
+    10920,
+    9042
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    38.5,
+    46
+   ],
+   "emu": [
+    362,
+    272
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTactical",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    21.5,
+    19.5
+   ],
+   "emu": [
+    570,
+    426
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPriority",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    33,
+    37.52734375
+   ],
+   "emu": [
+    470,
+    380
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    160.66666570963807,
+    214.33333204732614
+   ],
+   "emu": [
+    194,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    576.9976914547823,
+    698.6639087984347
+   ],
+   "emu": [
+    336,
+    358
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    82.10638280919127,
+    160.3191485686005
+   ],
+   "emu": [
+    257,
+    297
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    68,
+    144.10638273303678
+   ],
+   "emu": [
+    450,
+    550
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStopSearch",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    201.33333203352285,
+    191.9999987508016
+   ],
+   "emu": [
+    210,
+    172
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    56.75,
+    54.375
+   ],
+   "emu": [
+    280,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    83.6171875,
+    326.8798993823555
+   ],
+   "emu": [
+    426,
+    383
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    67.625,
+    124.93359375
+   ],
+   "emu": [
+    240,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    451.9583307903656,
+    487.8333305910805
+   ],
+   "emu": [
+    211302,
+    190874
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    170.13932744612603,
+    156.2155685808778
+   ],
+   "emu": [
+    2016,
+    1690
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRookRight",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    28.53125,
+    17.28125
+   ],
+   "emu": [
+    230,
+    80
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    443.6666643362072,
+    379.33333140547114
+   ],
+   "emu": [
+    550,
+    440
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    218.3333324959333,
+    207.3333324959333
+   ],
+   "emu": [
+    450,
+    270
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAdd",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    44,
+    27
+   ],
+   "emu": [
+    180,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    134.833332737491,
+    153.16666579245782
+   ],
+   "emu": [
+    419,
+    243
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    170.79166590633503,
+    170.16666590633503
+   ],
+   "emu": [
+    438,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    65.9375,
+    65.375
+   ],
+   "emu": [
+    390,
+    370
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    346.0138867735648,
+    383.57465048056207
+   ],
+   "emu": [
+    1679,
+    1692
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    427.44443972081905,
+    626.8003135398425
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    314.9999980813417,
+    424.9999973221603
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    356.24218528979947,
+    297.49218551582874
+   ],
+   "emu": [
+    9042,
+    7771
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    46,
+    37.25
+   ],
+   "emu": [
+    272,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPriority",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    37.52734375,
+    33.15234375
+   ],
+   "emu": [
+    380,
+    240
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    214.33333204732614,
+    202.9999987646049
+   ],
+   "emu": [
+    230,
+    206
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    698.6639087984347,
+    703.1143962269574
+   ],
+   "emu": [
+    358,
+    304
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    160.3191485686005,
+    218.82978670144135
+   ],
+   "emu": [
+    297,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    326.8798993823555,
+    350.9543683315213
+   ],
+   "emu": [
+    383,
+    363
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 2,
+   "pass": "inline",
+   "est": [
+    124.93359375,
+    255.61945896077498
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    487.8333305910805,
+    474.4583306764884
+   ],
+   "emu": [
+    190874,
+    188458
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMove",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    19,
+    19
+   ],
+   "emu": [
+    190,
+    190
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFrom",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    13,
+    13
+   ],
+   "emu": [
+    130,
+    130
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTo",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    9,
+    9
+   ],
+   "emu": [
+    90,
+    90
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSide",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    7,
+    7
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRay",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    10,
+    10
+   ],
+   "emu": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessKnight",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    10.75,
+    10.75
+   ],
+   "emu": [
+    104,
+    104
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessIsPiece",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    15.5,
+    15.5
+   ],
+   "emu": [
+    129,
+    129
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    156.2155685808778,
+    154.23463777298747
+   ],
+   "emu": [
+    1690,
+    1690
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessInCheck",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    21,
+    21
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRemoveRight",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    17.5,
+    17.5
+   ],
+   "emu": [
+    124,
+    124
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRookRight",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    17.28125,
+    17.28125
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    379.33333140547114,
+    374.58333143825416
+   ],
+   "emu": [
+    440,
+    440
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    207.3333324959333,
+    205.5833324959333
+   ],
+   "emu": [
+    270,
+    270
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAdd",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    27,
+    27
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    153.16666579245782,
+    153.16666579245782
+   ],
+   "emu": [
+    243,
+    243
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    170.16666590633503,
+    165.9999992649744
+   ],
+   "emu": [
+    419,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    65.375,
+    65.375
+   ],
+   "emu": [
+    370,
+    370
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    383.57465048056207,
+    380.26909493649265
+   ],
+   "emu": [
+    1692,
+    1692
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    626.8003135398425,
+    624.3558692403517
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegal",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    51,
+    51
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    424.9999973221603,
+    417.66666403943907
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    433.4999714229668,
+    428.91663845235377
+   ],
+   "emu": [
+    133010,
+    130770
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessValue",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    7.78125,
+    7.78125
+   ],
+   "emu": [
+    120,
+    120
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAbs",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    3.5,
+    3.5
+   ],
+   "emu": [
+    28,
+    28
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCenter",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    13,
+    13
+   ],
+   "emu": [
+    124,
+    124
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    297.49218551582874,
+    283.5442689454263
+   ],
+   "emu": [
+    7771,
+    7368
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    37.25,
+    37.25
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTactical",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    19.5,
+    19.5
+   ],
+   "emu": [
+    294,
+    294
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPriority",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    33.15234375,
+    33.15234375
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    202.9999987646049,
+    195.66666548188365
+   ],
+   "emu": [
+    206,
+    206
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    703.1143962269574,
+    703.1143962269574
+   ],
+   "emu": [
+    304,
+    304
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    218.82978670144135,
+    218.82978670144135
+   ],
+   "emu": [
+    295,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessInitNode",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    36,
+    36
+   ],
+   "emu": [
+    132,
+    132
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    144.10638273303678,
+    143.1063827358573
+   ],
+   "emu": [
+    550,
+    550
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStopSearch",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    191.9999987508016,
+    191.9999987508016
+   ],
+   "emu": [
+    172,
+    172
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAcceptScore",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    43,
+    40
+   ],
+   "emu": [
+    160,
+    154
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    54.375,
+    54.375
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    350.9543683315213,
+    348.9127016648629
+   ],
+   "emu": [
+    363,
+    361
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 3,
+   "pass": "cfg",
+   "est": [
+    255.61945896077498,
+    251.2353443774449
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 4,
+   "pass": "fold",
+   "est": [
+    474.4583306764884,
+    473.2499973463183
+   ],
+   "emu": [
+    188458,
+    188468
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 4,
+   "pass": "fold",
+   "est": [
+    143.1063827358573,
+    142.35638273797267
+   ],
+   "emu": [
+    550,
+    550
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 4,
+   "pass": "fold",
+   "est": [
+    54.375,
+    54.125
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 4,
+   "pass": "fold",
+   "est": [
+    348.9127016648629,
+    349.3814516648629
+   ],
+   "emu": [
+    361,
+    361
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 4,
+   "pass": "fold",
+   "est": [
+    251.2353443774449,
+    251.4072193774449
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    473.2499973463183,
+    473.2499973463183
+   ],
+   "emu": [
+    188468,
+    188468
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSquare",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    7,
+    7
+   ],
+   "emu": [
+    70,
+    70
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessDense",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    7,
+    7
+   ],
+   "emu": [
+    70,
+    70
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMove",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    19,
+    19
+   ],
+   "emu": [
+    190,
+    190
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFrom",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    13,
+    13
+   ],
+   "emu": [
+    130,
+    130
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTo",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    9,
+    9
+   ],
+   "emu": [
+    90,
+    90
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnStep",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    3,
+    3
+   ],
+   "emu": [
+    30,
+    30
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRay",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    10,
+    10
+   ],
+   "emu": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    154.23463777298747,
+    154.23463777298747
+   ],
+   "emu": [
+    1690,
+    1690
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    374.58333143825416,
+    374.58333143825416
+   ],
+   "emu": [
+    440,
+    440
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    205.5833324959333,
+    205.5833324959333
+   ],
+   "emu": [
+    270,
+    270
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAdd",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    27,
+    27
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    153.16666579245782,
+    153.16666579245782
+   ],
+   "emu": [
+    243,
+    243
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    165.9999992649744,
+    165.9999992649744
+   ],
+   "emu": [
+    419,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    65.375,
+    65.375
+   ],
+   "emu": [
+    370,
+    370
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    380.26909493649265,
+    380.26909493649265
+   ],
+   "emu": [
+    1692,
+    1692
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    624.3558692403517,
+    624.3558692403517
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    417.66666403943907,
+    417.66666403943907
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    428.91663845235377,
+    428.91663845235377
+   ],
+   "emu": [
+    130770,
+    130770
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCenter",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    13,
+    13
+   ],
+   "emu": [
+    124,
+    124
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    283.5442689454263,
+    283.5442689454263
+   ],
+   "emu": [
+    7368,
+    7368
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    37.25,
+    37.25
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPriority",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    33.15234375,
+    33.15234375
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    195.66666548188365,
+    195.66666548188365
+   ],
+   "emu": [
+    206,
+    206
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    703.1143962269574,
+    703.1143962269574
+   ],
+   "emu": [
+    304,
+    304
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    218.82978670144135,
+    218.82978670144135
+   ],
+   "emu": [
+    295,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFrame",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    3,
+    3
+   ],
+   "emu": [
+    30,
+    30
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessList",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    3,
+    3
+   ],
+   "emu": [
+    30,
+    30
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    142.35638273797267,
+    142.35638273797267
+   ],
+   "emu": [
+    550,
+    550
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStopSearch",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    191.9999987508016,
+    191.9999987508016
+   ],
+   "emu": [
+    172,
+    172
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    54.125,
+    54.125
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    349.3814516648629,
+    349.3814516648629
+   ],
+   "emu": [
+    361,
+    361
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    251.4072193774449,
+    251.4072193774449
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    473.2499973463183,
+    477.91666398767893
+   ],
+   "emu": [
+    188468,
+    190364
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSide",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    7,
+    9
+   ],
+   "emu": [
+    40,
+    50
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRookRight",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    17.28125,
+    19.09375
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    374.58333143825416,
+    399.08333129677004
+   ],
+   "emu": [
+    440,
+    450
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    205.5833324959333,
+    209.5833324959333
+   ],
+   "emu": [
+    270,
+    280
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    153.16666579245782,
+    153.66666579245782
+   ],
+   "emu": [
+    243,
+    244
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    165.9999992649744,
+    167.1249992649744
+   ],
+   "emu": [
+    419,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    65.375,
+    64.5
+   ],
+   "emu": [
+    370,
+    350
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    380.26909493649265,
+    381.5642338119417
+   ],
+   "emu": [
+    1692,
+    1692
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    624.3558692403517,
+    629.105869082241
+   ],
+   "emu": [
+    230,
+    240
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegal",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    51,
+    53
+   ],
+   "emu": [
+    140,
+    150
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    417.66666403943907,
+    432.33333060488155
+   ],
+   "emu": [
+    420,
+    430
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    428.91663845235377,
+    429.91663845235377
+   ],
+   "emu": [
+    130770,
+    132620
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    283.5442689454263,
+    287.5442689178197
+   ],
+   "emu": [
+    7368,
+    7368
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    37.25,
+    38.75
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    218.82978670144135,
+    226.63120511915346
+   ],
+   "emu": [
+    295,
+    297
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    142.35638273797267,
+    143.35638273515215
+   ],
+   "emu": [
+    550,
+    560
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    54.125,
+    54.125
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    349.3814516648629,
+    350.3814516648629
+   ],
+   "emu": [
+    361,
+    364
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 6,
+   "pass": "constprop",
+   "est": [
+    251.4072193774449,
+    252.4072193774449
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    477.91666398767893,
+    466.41666402563806
+   ],
+   "emu": [
+    190364,
+    187692
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSide",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    9,
+    6
+   ],
+   "emu": [
+    50,
+    50
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    399.08333129677004,
+    371.0833314486065
+   ],
+   "emu": [
+    450,
+    450
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    209.5833324959333,
+    203.5833324959333
+   ],
+   "emu": [
+    280,
+    280
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    153.66666579245782,
+    153.16666579245782
+   ],
+   "emu": [
+    244,
+    243
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    167.1249992649744,
+    165.4999992649744
+   ],
+   "emu": [
+    419,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    64.5,
+    62.875
+   ],
+   "emu": [
+    350,
+    350
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    381.5642338119417,
+    379.12326160486583
+   ],
+   "emu": [
+    1692,
+    1692
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    629.105869082241,
+    621.3697582475979
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegal",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    53,
+    50
+   ],
+   "emu": [
+    150,
+    150
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    432.33333060488155,
+    410.3333307567178
+   ],
+   "emu": [
+    430,
+    430
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    429.91663845235377,
+    428.41663845235377
+   ],
+   "emu": [
+    132620,
+    130120
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    287.5442689178197,
+    281.54426895922967
+   ],
+   "emu": [
+    7368,
+    7368
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    38.75,
+    36.5
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    226.63120511915346,
+    214.9290774925853
+   ],
+   "emu": [
+    297,
+    297
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    143.35638273515215,
+    137.35638274079315
+   ],
+   "emu": [
+    560,
+    550
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    54.125,
+    53.375
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    350.3814516648629,
+    348.8814516648629
+   ],
+   "emu": [
+    364,
+    364
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 7,
+   "pass": "fold",
+   "est": [
+    252.4072193774449,
+    250.9072193774449
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRookRight",
+   "rev": 8,
+   "pass": "simplify",
+   "est": [
+    19.09375,
+    18.09375
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 8,
+   "pass": "simplify",
+   "est": [
+    153.16666579245782,
+    152.66666579245782
+   ],
+   "emu": [
+    243,
+    242
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 8,
+   "pass": "simplify",
+   "est": [
+    165.4999992649744,
+    165.3749992649744
+   ],
+   "emu": [
+    419,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 8,
+   "pass": "simplify",
+   "est": [
+    62.875,
+    62.75
+   ],
+   "emu": [
+    350,
+    350
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 8,
+   "pass": "simplify",
+   "est": [
+    379.12326160486583,
+    377.8072893943891
+   ],
+   "emu": [
+    1692,
+    1692
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 8,
+   "pass": "simplify",
+   "est": [
+    621.3697582475979,
+    620.7586471757888
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    466.41666402563806,
+    449.7916640920663
+   ],
+   "emu": [
+    187542,
+    186070
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSide",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    6,
+    5
+   ],
+   "emu": [
+    50,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRookRight",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    18.09375,
+    16.21875
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    371.0833314486065,
+    358.583331521074
+   ],
+   "emu": [
+    450,
+    440
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    203.5833324959333,
+    201.5833324959333
+   ],
+   "emu": [
+    280,
+    270
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    152.66666579245782,
+    151.66666579245782
+   ],
+   "emu": [
+    242,
+    235
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    165.3749992649744,
+    164.6249992649744
+   ],
+   "emu": [
+    419,
+    419
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    62.75,
+    62
+   ],
+   "emu": [
+    350,
+    350
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    377.8072893943891,
+    374.80034497456927
+   ],
+   "emu": [
+    1692,
+    1690
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    620.7586471757888,
+    616.8176751309896
+   ],
+   "emu": [
+    240,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegal",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    50,
+    49
+   ],
+   "emu": [
+    150,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    410.3333307567178,
+    402.9999974739966
+   ],
+   "emu": [
+    430,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    428.41663845235377,
+    427.91663845235377
+   ],
+   "emu": [
+    130050,
+    128960
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    281.54426895922967,
+    279.54426897303296
+   ],
+   "emu": [
+    7368,
+    7368
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    36.5,
+    35.75
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    214.9290774925853,
+    211.02836828372924
+   ],
+   "emu": [
+    297,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    137.35638274079315,
+    133.3563827436137
+   ],
+   "emu": [
+    550,
+    530
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    53.375,
+    52.625
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    348.8814516648629,
+    347.6783275547517
+   ],
+   "emu": [
+    364,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 9,
+   "pass": "dce",
+   "est": [
+    250.9072193774449,
+    249.993157306099
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 10,
+   "pass": "cfg",
+   "est": [
+    449.7916640920663,
+    448.7816640920663
+   ],
+   "emu": [
+    186070,
+    186062
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 10,
+   "pass": "cfg",
+   "est": [
+    347.6783275547517,
+    347.4752034446365
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 10,
+   "pass": "cfg",
+   "est": [
+    249.993157306099,
+    249.89159523475112
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    448.7816640920663,
+    451.0416640920662
+   ],
+   "emu": [
+    186062,
+    187572
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    154.23463777298747,
+    154.73463777298747
+   ],
+   "emu": [
+    1690,
+    1700
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    164.6249992649744,
+    161.291665985704
+   ],
+   "emu": [
+    419,
+    438
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    374.80034497456927,
+    364.41145619808526
+   ],
+   "emu": [
+    1690,
+    1697
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    616.8176751309896,
+    647.3732289607951
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    703.1143962269574,
+    873.1137578193316
+   ],
+   "emu": [
+    304,
+    468
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    347.4752034446365,
+    382.4802615357477
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 11,
+   "pass": "licm",
+   "est": [
+    249.89159523475112,
+    267.29256453064943
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 12,
+   "pass": "lvn",
+   "est": [
+    364.41145619808526,
+    363.41145619808526
+   ],
+   "emu": [
+    1697,
+    1679
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 12,
+   "pass": "lvn",
+   "est": [
+    647.3732289607951,
+    645.5398957283236
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 12,
+   "pass": "lvn",
+   "est": [
+    873.1137578193316,
+    873.1137578193316
+   ],
+   "emu": [
+    468,
+    468
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 12,
+   "pass": "lvn",
+   "est": [
+    382.4802615357477,
+    382.4802615357477
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 12,
+   "pass": "lvn",
+   "est": [
+    267.29256453064943,
+    267.29256453064943
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    154.73463777298747,
+    154.47983601235123
+   ],
+   "emu": [
+    1700,
+    1700
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    358.583331521074,
+    356.0833315314265
+   ],
+   "emu": [
+    440,
+    440
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    201.5833324959333,
+    200.5833324959333
+   ],
+   "emu": [
+    270,
+    270
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    161.291665985704,
+    160.37499932536383
+   ],
+   "emu": [
+    438,
+    438
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    363.41145619808526,
+    362.3420117593779
+   ],
+   "emu": [
+    1679,
+    1677
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    645.5398957283236,
+    640.4218404651963
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    279.54426897303296,
+    273.044269017894
+   ],
+   "emu": [
+    7368,
+    7166
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    35.75,
+    35.5
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPriority",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    33.15234375,
+    32.90234375
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    195.66666548188365,
+    195.66666548188365
+   ],
+   "emu": [
+    206,
+    206
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    873.1137578193316,
+    869.4471056469556
+   ],
+   "emu": [
+    468,
+    468
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    382.4802615357477,
+    381.735473131992
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 13,
+   "pass": "strength",
+   "est": [
+    267.29256453064943,
+    267.106367399845
+   ],
+   "emu": [
+    320,
+    320
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    451.0416640920662,
+    440.0416641679843
+   ],
+   "emu": [
+    187116,
+    185228
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessIsPiece",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    15.5,
+    15.5
+   ],
+   "emu": [
+    129,
+    129
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    154.47983601235123,
+    150.02948140242214
+   ],
+   "emu": [
+    1700,
+    1647
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRemoveRight",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    17.5,
+    16.5
+   ],
+   "emu": [
+    124,
+    114
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRookRight",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    16.21875,
+    15.28125
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    356.0833315314265,
+    352.0833315486807
+   ],
+   "emu": [
+    440,
+    430
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    200.5833324959333,
+    199.5833324959333
+   ],
+   "emu": [
+    270,
+    260
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAdd",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    27,
+    27
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    151.66666579245782,
+    147.4999991510972
+   ],
+   "emu": [
+    235,
+    225
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    160.37499932536383,
+    159.24999932536383
+   ],
+   "emu": [
+    438,
+    428
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    62,
+    60.875
+   ],
+   "emu": [
+    350,
+    350
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    362.3420117593779,
+    359.6979145558446
+   ],
+   "emu": [
+    1677,
+    1674
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    640.4218404651963,
+    635.7621185192162
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegal",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    49,
+    48
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    402.9999974739966,
+    395.66666419127534
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    427.91663845235377,
+    426.08330525815563
+   ],
+   "emu": [
+    128840,
+    127500
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    273.044269017894,
+    273.044269017894
+   ],
+   "emu": [
+    7166,
+    7166
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    35.5,
+    34
+   ],
+   "emu": [
+    140,
+    130
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTactical",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    19.5,
+    18.5
+   ],
+   "emu": [
+    294,
+    274
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPriority",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    32.90234375,
+    32.15234375
+   ],
+   "emu": [
+    240,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    195.66666548188365,
+    180.99999891644117
+   ],
+   "emu": [
+    206,
+    206
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    869.4471056469556,
+    856.6138230436401
+   ],
+   "emu": [
+    468,
+    464
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    211.02836828372924,
+    207.12765907487318
+   ],
+   "emu": [
+    295,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    133.3563827436137,
+    133.3563827436137
+   ],
+   "emu": [
+    530,
+    530
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStopSearch",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    191.9999987508016,
+    191.9999987508016
+   ],
+   "emu": [
+    172,
+    172
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCompleteNode",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    52.625,
+    52.125
+   ],
+   "emu": [
+    230,
+    220
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    381.735473131992,
+    378.3279332845823
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 14,
+   "pass": "subst",
+   "est": [
+    267.106367399845,
+    264.4826734124905
+   ],
+   "emu": [
+    320,
+    310
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    440.0416641679843,
+    430.8749975645827
+   ],
+   "emu": [
+    185228,
+    184794
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    150.02948140242214,
+    150.02948140242214
+   ],
+   "emu": [
+    1647,
+    1647
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessRemoveRight",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    16.5,
+    15.5
+   ],
+   "emu": [
+    114,
+    104
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    352.0833315486807,
+    351.0833315555824
+   ],
+   "emu": [
+    430,
+    430
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    199.5833324959333,
+    199.5833324959333
+   ],
+   "emu": [
+    260,
+    260
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAdd",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    27,
+    27
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    147.4999991510972,
+    147.4999991510972
+   ],
+   "emu": [
+    225,
+    225
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    159.24999932536383,
+    158.24999932536383
+   ],
+   "emu": [
+    428,
+    418
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    60.875,
+    60.25
+   ],
+   "emu": [
+    350,
+    350
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    359.6979145558446,
+    358.94791455754506
+   ],
+   "emu": [
+    1674,
+    1673
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    635.7621185192162,
+    632.7447575840495
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegal",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    48,
+    48
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    395.66666419127534,
+    388.3333309085541
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCapture",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    34,
+    34
+   ],
+   "emu": [
+    130,
+    130
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPriority",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    32.15234375,
+    32.15234375
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    180.99999891644117,
+    180.99999891644117
+   ],
+   "emu": [
+    206,
+    206
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    856.6138230436401,
+    856.6138230436401
+   ],
+   "emu": [
+    464,
+    464
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    207.12765907487318,
+    203.22694986601712
+   ],
+   "emu": [
+    295,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    133.3563827436137,
+    133.3563827436137
+   ],
+   "emu": [
+    530,
+    530
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    378.3279332845823,
+    376.95814488082664
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 15,
+   "pass": "subst",
+   "est": [
+    264.4826734124905,
+    262.9826734124905
+   ],
+   "emu": [
+    310,
+    300
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 16,
+   "pass": "cfg",
+   "est": [
+    430.8749975645827,
+    428.6149975645828
+   ],
+   "emu": [
+    184794,
+    184774
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    428.6149975645828,
+    426.78166424390247
+   ],
+   "emu": [
+    184774,
+    184584
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    351.0833315555824,
+    350.08333155558245
+   ],
+   "emu": [
+    430,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    199.5833324959333,
+    198.5833324959333
+   ],
+   "emu": [
+    260,
+    250
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAdd",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    27,
+    26
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    147.4999991510972,
+    147.4999991510972
+   ],
+   "emu": [
+    225,
+    225
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    158.24999932536383,
+    158.24999932536383
+   ],
+   "emu": [
+    418,
+    418
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessCastle",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    60.25,
+    60.25
+   ],
+   "emu": [
+    350,
+    350
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    358.94791455754506,
+    358.44791455754506
+   ],
+   "emu": [
+    1673,
+    1672
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    632.7447575840495,
+    630.9114243515779
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    388.3333309085541,
+    380.99999762583286
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    856.6138230436401,
+    856.6138230436401
+   ],
+   "emu": [
+    464,
+    464
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    203.22694986601712,
+    199.32624065716107
+   ],
+   "emu": [
+    295,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    133.3563827436137,
+    132.3563827436137
+   ],
+   "emu": [
+    530,
+    530
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    376.95814488082664,
+    376.45814488082664
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 17,
+   "pass": "subst",
+   "est": [
+    262.9826734124905,
+    262.4826734124905
+   ],
+   "emu": [
+    300,
+    300
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearch",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    426.78166424390247,
+    428.0416642601903
+   ],
+   "emu": [
+    184584,
+    184178
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessAttacked",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    150.02948140242214,
+    150.029481399447
+   ],
+   "emu": [
+    1647,
+    1643
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessMake",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    350.08333155558245,
+    350.0833316838851
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessUnmake",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    198.5833324959333,
+    198.58333251139297
+   ],
+   "emu": [
+    250,
+    250
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnAdd",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    147.4999991510972,
+    147.49999915882705
+   ],
+   "emu": [
+    225,
+    225
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPawnMoves",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    158.24999932536383,
+    158.24999932964286
+   ],
+   "emu": [
+    418,
+    418
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPieceMoves",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    358.44791455754506,
+    358.4479145726125
+   ],
+   "emu": [
+    1672,
+    1667
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPseudoMoves",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    630.9114243515779,
+    630.911453713385
+   ],
+   "emu": [
+    230,
+    230
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessLegalMoves",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    380.99999762583286,
+    380.9999976343909
+   ],
+   "emu": [
+    420,
+    420
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPerft",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    426.08330525815563,
+    426.58332996968153
+   ],
+   "emu": [
+    127180,
+    126880
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessEvaluate",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    273.044269017894,
+    273.0442690606847
+   ],
+   "emu": [
+    7166,
+    7166
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessTacticalMoves",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    180.99999891644117,
+    180.99999892499923
+   ],
+   "emu": [
+    206,
+    206
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessOrder",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    856.6138230436401,
+    856.580397565088
+   ],
+   "emu": [
+    464,
+    464
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessFirstLegal",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    199.32624065716107,
+    199.3262406606585
+   ],
+   "emu": [
+    295,
+    295
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStartSearch",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    132.3563827436137,
+    132.35638275498064
+   ],
+   "emu": [
+    530,
+    530
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessStopSearch",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    191.9999987508016,
+    191.9999987670895
+   ],
+   "emu": [
+    172,
+    172
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessPrepareNode",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    376.45814488082664,
+    374.9607816623946
+   ],
+   "emu": [
+    359,
+    359
+   ]
+  },
+  {
+   "id": "chess-search",
+   "fn": "chessSearchStep",
+   "rev": 18,
+   "pass": "rotate",
+   "est": [
+    262.4826734124905,
+    261.73407773863346
+   ],
+   "emu": [
+    300,
+    300
+   ]
+  },
+  {
+   "id": "collatz",
+   "fn": "collatz",
+   "rev": 1,
+   "pass": "rotate",
+   "est": [
+    106.49999927877774,
+    106.49999933826996
+   ],
+   "emu": [
+    7461,
+    6955
+   ]
+  },
+  {
+   "id": "constants",
+   "fn": "poly",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    10,
+    10
+   ],
+   "emu": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "constants",
+   "fn": "poly",
+   "rev": 2,
+   "pass": "constprop",
+   "est": [
+    10,
+    13
+   ],
+   "emu": [
+    100,
+    130
+   ]
+  },
+  {
+   "id": "constants",
+   "fn": "poly",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    13,
+    8
+   ],
+   "emu": [
+    130,
+    80
+   ]
+  },
+  {
+   "id": "constants",
+   "fn": "poly",
+   "rev": 4,
+   "pass": "dce",
+   "est": [
+    8,
+    7
+   ],
+   "emu": [
+    80,
+    70
+   ]
+  },
+  {
+   "id": "constants",
+   "fn": "poly",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    7,
+    7
+   ],
+   "emu": [
+    70,
+    70
+   ]
+  },
+  {
+   "id": "dead-code",
+   "fn": "pick",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    12,
+    12
+   ],
+   "emu": [
+    110,
+    110
+   ]
+  },
+  {
+   "id": "dead-code",
+   "fn": "pick",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    12,
+    10
+   ],
+   "emu": [
+    110,
+    90
+   ]
+  },
+  {
+   "id": "dead-code",
+   "fn": "pick",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    10,
+    10
+   ],
+   "emu": [
+    90,
+    90
+   ]
+  },
+  {
+   "id": "dead-code",
+   "fn": "pick",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    10,
+    10
+   ],
+   "emu": [
+    90,
+    90
+   ]
+  },
+  {
+   "id": "dead-code",
+   "fn": "pick",
+   "rev": 5,
+   "pass": "dce",
+   "est": [
+    10,
+    6.5
+   ],
+   "emu": [
+    90,
+    50
+   ]
+  },
+  {
+   "id": "dead-code",
+   "fn": "pick",
+   "rev": 6,
+   "pass": "cfg",
+   "est": [
+    6.5,
+    3
+   ],
+   "emu": [
+    50,
+    30
+   ]
+  },
+  {
+   "id": "dead-code",
+   "fn": "pick",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    3,
+    3
+   ],
+   "emu": [
+    30,
+    30
+   ]
+  },
+  {
+   "id": "diagnostics",
+   "fn": "f",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    3,
+    3
+   ],
+   "emu": [
+    30,
+    30
+   ]
+  },
+  {
+   "id": "diagnostics",
+   "fn": "f",
+   "rev": 2,
+   "pass": "subst",
+   "est": [
+    3,
+    3
+   ],
+   "emu": [
+    30,
+    30
+   ]
+  },
+  {
+   "id": "distinct",
+   "fn": "perimeter",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    26,
+    8
+   ],
+   "emu": [
+    320,
+    80
+   ]
+  },
+  {
+   "id": "distinct",
+   "fn": "perimeter",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    8,
+    8
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "distinct",
+   "fn": "perimeter",
+   "rev": 3,
+   "pass": "subst",
+   "est": [
+    8,
+    7
+   ],
+   "emu": [
+    80,
+    70
+   ]
+  },
+  {
+   "id": "distinct",
+   "fn": "perimeter",
+   "rev": 4,
+   "pass": "subst",
+   "est": [
+    7,
+    6
+   ],
+   "emu": [
+    70,
+    60
+   ]
+  },
+  {
+   "id": "distinct",
+   "fn": "perimeter",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    6,
+    6
+   ],
+   "emu": [
+    60,
+    60
+   ]
+  },
+  {
+   "id": "div-checks",
+   "fn": "safeShare",
+   "rev": 1,
+   "pass": "constprop",
+   "est": [
+    12,
+    13
+   ],
+   "emu": [
+    120,
+    130
+   ]
+  },
+  {
+   "id": "div-checks",
+   "fn": "safeShare",
+   "rev": 2,
+   "pass": "dce",
+   "est": [
+    13,
+    11
+   ],
+   "emu": [
+    130,
+    110
+   ]
+  },
+  {
+   "id": "div-magic",
+   "fn": "sevenths",
+   "rev": 1,
+   "pass": "fold",
+   "est": [
+    11,
+    15
+   ],
+   "emu": [
+    110,
+    150
+   ]
+  },
+  {
+   "id": "div-magic",
+   "fn": "digitsum",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    88.6666660961304,
+    88.6666660961304
+   ],
+   "emu": [
+    619,
+    619
+   ]
+  },
+  {
+   "id": "div-magic",
+   "fn": "digitsum",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    88.6666660961304,
+    88.66666610386025
+   ],
+   "emu": [
+    619,
+    609
+   ]
+  },
+  {
+   "id": "early-exit",
+   "fn": "find",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    47.97163107600918,
+    47.97163107600918
+   ],
+   "emu": [
+    761,
+    761
+   ]
+  },
+  {
+   "id": "early-exit",
+   "fn": "find",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    47.97163107600918,
+    47.97163107600918
+   ],
+   "emu": [
+    761,
+    761
+   ]
+  },
+  {
+   "id": "early-exit",
+   "fn": "find",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    47.97163107600918,
+    47.97163107600918
+   ],
+   "emu": [
+    761,
+    761
+   ]
+  },
+  {
+   "id": "early-exit",
+   "fn": "find",
+   "rev": 4,
+   "pass": "bce",
+   "est": [
+    47.97163107600918,
+    40.17021265829704
+   ],
+   "emu": [
+    761,
+    631
+   ]
+  },
+  {
+   "id": "early-exit",
+   "fn": "find",
+   "rev": 5,
+   "pass": "cfg",
+   "est": [
+    40.17021265829704,
+    40.17021265829704
+   ],
+   "emu": [
+    631,
+    631
+   ]
+  },
+  {
+   "id": "early-exit",
+   "fn": "find",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    40.17021265829704,
+    36.26950344944097
+   ],
+   "emu": [
+    631,
+    566
+   ]
+  },
+  {
+   "id": "early-exit",
+   "fn": "find",
+   "rev": 7,
+   "pass": "rotate",
+   "est": [
+    36.26950344944097,
+    36.26950345575894
+   ],
+   "emu": [
+    566,
+    564
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    689.3306835134503,
+    673.3305906182234
+   ],
+   "emu": [
+    14920,
+    13580
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "fft",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    1224.5583571133566,
+    1217.225054745099
+   ],
+   "emu": [
+    34726,
+    34590
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    673.3305906182234,
+    673.3305906182234
+   ],
+   "emu": [
+    13580,
+    13580
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "fft",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    1217.225054745099,
+    1217.225054745099
+   ],
+   "emu": [
+    34590,
+    34590
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    673.3305906182234,
+    673.3305906182234
+   ],
+   "emu": [
+    13580,
+    13580
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 4,
+   "pass": "licm",
+   "est": [
+    673.3305906182234,
+    673.3305925947175
+   ],
+   "emu": [
+    13580,
+    13280
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "fft",
+   "rev": 5,
+   "pass": "lvn",
+   "est": [
+    1217.225054745099,
+    1209.8986293081348
+   ],
+   "emu": [
+    34590,
+    34330
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    673.3305925947175,
+    665.9972902264599
+   ],
+   "emu": [
+    13280,
+    12960
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    665.9972902264599,
+    658.6639878582023
+   ],
+   "emu": [
+    12960,
+    12640
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 8,
+   "pass": "subst",
+   "est": [
+    658.6639878582023,
+    651.3306854899447
+   ],
+   "emu": [
+    12640,
+    12320
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "fft",
+   "rev": 9,
+   "pass": "rotate",
+   "est": [
+    1209.8986293081348,
+    1210.6478946598359
+   ],
+   "emu": [
+    34330,
+    34011
+   ]
+  },
+  {
+   "id": "f32-dsp",
+   "fn": "biquadBank",
+   "rev": 9,
+   "pass": "rotate",
+   "est": [
+    651.3306854899447,
+    651.3332865947629
+   ],
+   "emu": [
+    12320,
+    12290
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    13,
+    10
+   ],
+   "emu": [
+    230,
+    100
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    10,
+    10
+   ],
+   "emu": [
+    100,
+    100
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "scale",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    5,
+    4
+   ],
+   "emu": [
+    50,
+    40
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    10,
+    8
+   ],
+   "emu": [
+    100,
+    80
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "scale",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    4,
+    4
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    8,
+    8
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "scale",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    4,
+    4
+   ],
+   "emu": [
+    40,
+    40
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    8,
+    8
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "scale",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    4,
+    3
+   ],
+   "emu": [
+    40,
+    30
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    8,
+    6
+   ],
+   "emu": [
+    80,
+    60
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    6,
+    5
+   ],
+   "emu": [
+    60,
+    50
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 8,
+   "pass": "subst",
+   "est": [
+    5,
+    5
+   ],
+   "emu": [
+    50,
+    50
+   ]
+  },
+  {
+   "id": "first-steps",
+   "fn": "twice",
+   "rev": 9,
+   "pass": "subst",
+   "est": [
+    5,
+    5
+   ],
+   "emu": [
+    50,
+    50
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    17,
+    15
+   ],
+   "emu": [
+    300,
+    150
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    15,
+    15
+   ],
+   "emu": [
+    150,
+    150
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "qmul",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    12.5,
+    11.5
+   ],
+   "emu": [
+    129,
+    119
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    15,
+    14
+   ],
+   "emu": [
+    150,
+    140
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "qmul",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    11.5,
+    15
+   ],
+   "emu": [
+    119,
+    151
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    14,
+    17.5
+   ],
+   "emu": [
+    140,
+    170
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "qmul",
+   "rev": 5,
+   "pass": "dce",
+   "est": [
+    15,
+    12
+   ],
+   "emu": [
+    151,
+    121
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 5,
+   "pass": "dce",
+   "est": [
+    17.5,
+    14.5
+   ],
+   "emu": [
+    170,
+    140
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "qmul",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    12,
+    12
+   ],
+   "emu": [
+    121,
+    121
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    14.5,
+    14.5
+   ],
+   "emu": [
+    140,
+    140
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    14.5,
+    13.5
+   ],
+   "emu": [
+    140,
+    130
+   ]
+  },
+  {
+   "id": "fixed-point",
+   "fn": "lerp",
+   "rev": 8,
+   "pass": "subst",
+   "est": [
+    13.5,
+    13.5
+   ],
+   "emu": [
+    130,
+    130
+   ]
+  },
+  {
+   "id": "fragments",
+   "fn": "blend",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    106.33333262706465,
+    106.33333262706465
+   ],
+   "emu": [
+    2697,
+    2697
+   ]
+  },
+  {
+   "id": "fragments",
+   "fn": "blend",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    106.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2697,
+    2687
+   ]
+  },
+  {
+   "id": "fragments",
+   "fn": "blend",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    105.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2687,
+    2687
+   ]
+  },
+  {
+   "id": "fragments",
+   "fn": "blend",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    105.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2687,
+    2687
+   ]
+  },
+  {
+   "id": "fragments",
+   "fn": "blend",
+   "rev": 5,
+   "pass": "dce",
+   "est": [
+    105.33333262706465,
+    104.33333262706464
+   ],
+   "emu": [
+    2687,
+    2677
+   ]
+  },
+  {
+   "id": "fragments",
+   "fn": "blend",
+   "rev": 6,
+   "pass": "licm",
+   "est": [
+    104.33333262706464,
+    91.66666606162217
+   ],
+   "emu": [
+    2677,
+    2299
+   ]
+  },
+  {
+   "id": "fragments",
+   "fn": "blend",
+   "rev": 7,
+   "pass": "rotate",
+   "est": [
+    91.66666606162217,
+    91.666666073493
+   ],
+   "emu": [
+    2299,
+    2289
+   ]
+  },
+  {
+   "id": "gcd",
+   "fn": "gcd",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    54.33333296524543,
+    54.33333296524543
+   ],
+   "emu": [
+    324,
+    324
+   ]
+  },
+  {
+   "id": "gcd",
+   "fn": "gcd",
+   "rev": 2,
+   "pass": "rotate",
+   "est": [
+    54.33333296524543,
+    54.333332972975285
+   ],
+   "emu": [
+    324,
+    314
+   ]
+  },
+  {
+   "id": "heat-lab",
+   "fn": "sort",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    387.33171326692644,
+    387.33171326692644
+   ],
+   "emu": [
+    8832,
+    8832
+   ]
+  },
+  {
+   "id": "heat-lab",
+   "fn": "sort",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    387.33171326692644,
+    387.33171326692644
+   ],
+   "emu": [
+    8832,
+    8832
+   ]
+  },
+  {
+   "id": "heat-lab",
+   "fn": "sort",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    387.33171326692644,
+    387.31564798824394
+   ],
+   "emu": [
+    8832,
+    8664
+   ]
+  },
+  {
+   "id": "histogram",
+   "fn": "histogram",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    284.66666471580066,
+    284.66666471580066
+   ],
+   "emu": [
+    2416,
+    2416
+   ]
+  },
+  {
+   "id": "histogram",
+   "fn": "histogram",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    284.66666471580066,
+    284.66666471580066
+   ],
+   "emu": [
+    2416,
+    2416
+   ]
+  },
+  {
+   "id": "histogram",
+   "fn": "histogram",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    284.66666471580066,
+    269.9999981503582
+   ],
+   "emu": [
+    2416,
+    2292
+   ]
+  },
+  {
+   "id": "histogram",
+   "fn": "histogram",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    269.9999981503582,
+    269.9999981503582
+   ],
+   "emu": [
+    2292,
+    2292
+   ]
+  },
+  {
+   "id": "histogram",
+   "fn": "histogram",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    269.9999981503582,
+    262.66666486763694
+   ],
+   "emu": [
+    2292,
+    2230
+   ]
+  },
+  {
+   "id": "histogram",
+   "fn": "histogram",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    262.66666486763694,
+    262.66666488309664
+   ],
+   "emu": [
+    2230,
+    2222
+   ]
+  },
+  {
+   "id": "licm-nested",
+   "fn": "table",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    107.6662252496301,
+    107.6662252496301
+   ],
+   "emu": [
+    2677,
+    2677
+   ]
+  },
+  {
+   "id": "licm-nested",
+   "fn": "table",
+   "rev": 2,
+   "pass": "licm",
+   "est": [
+    107.6662252496301,
+    88.66632012135139
+   ],
+   "emu": [
+    2677,
+    1678
+   ]
+  },
+  {
+   "id": "licm-nested",
+   "fn": "table",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    88.66632012135139,
+    88.66666063116881
+   ],
+   "emu": [
+    1678,
+    1631
+   ]
+  },
+  {
+   "id": "licm-traps",
+   "fn": "ratio",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    100.33333265467124,
+    100.33333265467124
+   ],
+   "emu": [
+    153,
+    153
+   ]
+  },
+  {
+   "id": "licm-traps",
+   "fn": "ratio",
+   "rev": 2,
+   "pass": "rotate",
+   "est": [
+    100.33333265467124,
+    100.3333326632293
+   ],
+   "emu": [
+    153,
+    149
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    746.7101940990391,
+    740.3754495011318
+   ],
+   "emu": [
+    13867,
+    12781
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "roundTrip",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    24,
+    255.9999839310327
+   ],
+   "emu": [
+    16919,
+    15837
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    740.3754495011318,
+    720.8217890906012
+   ],
+   "emu": [
+    12781,
+    12498
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "decompress",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    224.9999840004305,
+    221.33331761203422
+   ],
+   "emu": [
+    2780,
+    2760
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "roundTrip",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    255.9999839310327,
+    250.3333175426364
+   ],
+   "emu": [
+    15837,
+    15506
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    720.8217890906012,
+    720.8217890906012
+   ],
+   "emu": [
+    12498,
+    12498
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "decompress",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    221.33331761203422,
+    221.33331761203422
+   ],
+   "emu": [
+    2760,
+    2760
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "roundTrip",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    250.3333175426364,
+    250.3333175426364
+   ],
+   "emu": [
+    15506,
+    15506
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 4,
+   "pass": "licm",
+   "est": [
+    720.8217890906012,
+    715.8240271178001
+   ],
+   "emu": [
+    12498,
+    12259
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    715.8240271178001,
+    704.8250826821749
+   ],
+   "emu": [
+    12259,
+    12056
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "decompress",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    221.33331761203422,
+    210.33331837541007
+   ],
+   "emu": [
+    2760,
+    2680
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "roundTrip",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    250.3333175426364,
+    238.33331837541004
+   ],
+   "emu": [
+    15234,
+    14864
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    704.8250826821749,
+    697.492449213017
+   ],
+   "emu": [
+    12056,
+    11987
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "decompress",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    210.33331837541007,
+    206.6666519870138
+   ],
+   "emu": [
+    2680,
+    2570
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "roundTrip",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    238.33331837541004,
+    232.66665198701378
+   ],
+   "emu": [
+    14864,
+    14718
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    697.492449213017,
+    697.492449213017
+   ],
+   "emu": [
+    11987,
+    11987
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "compress",
+   "rev": 8,
+   "pass": "rotate",
+   "est": [
+    697.492449213017,
+    697.4806582149356
+   ],
+   "emu": [
+    11987,
+    11816
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "decompress",
+   "rev": 8,
+   "pass": "rotate",
+   "est": [
+    206.6666519870138,
+    202.99999824766812
+   ],
+   "emu": [
+    2570,
+    2520
+   ]
+  },
+  {
+   "id": "lz-roundtrip",
+   "fn": "roundTrip",
+   "rev": 8,
+   "pass": "rotate",
+   "est": [
+    232.66665198701378,
+    228.99999824766806
+   ],
+   "emu": [
+    14718,
+    14509
+   ]
+  },
+  {
+   "id": "match-enum",
+   "fn": "area",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    12,
+    11
+   ],
+   "emu": [
+    122,
+    111
+   ]
+  },
+  {
+   "id": "match-enum",
+   "fn": "area",
+   "rev": 2,
+   "pass": "dce",
+   "est": [
+    11,
+    9
+   ],
+   "emu": [
+    111,
+    91
+   ]
+  },
+  {
+   "id": "my-analysis",
+   "fn": "f",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    45.16666638599964,
+    45.16666638599964
+   ],
+   "emu": [
+    200975,
+    200975
+   ]
+  },
+  {
+   "id": "my-analysis",
+   "fn": "f",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    45.16666638599964,
+    45.16666638599964
+   ],
+   "emu": [
+    200975,
+    200975
+   ]
+  },
+  {
+   "id": "my-analysis",
+   "fn": "f",
+   "rev": 3,
+   "pass": "licm",
+   "est": [
+    45.16666638599964,
+    46.66666638599964
+   ],
+   "emu": [
+    200975,
+    200990
+   ]
+  },
+  {
+   "id": "my-analysis",
+   "fn": "f",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    46.66666638599964,
+    45.16666638599964
+   ],
+   "emu": [
+    200990,
+    200975
+   ]
+  },
+  {
+   "id": "my-analysis",
+   "fn": "f",
+   "rev": 5,
+   "pass": "rotate",
+   "est": [
+    45.16666638599964,
+    45.16666640145934
+   ],
+   "emu": [
+    200975,
+    200966
+   ]
+  },
+  {
+   "id": "my-first-pass",
+   "fn": "double",
+   "rev": 1,
+   "pass": "lvn",
+   "est": [
+    6,
+    5
+   ],
+   "emu": [
+    60,
+    50
+   ]
+  },
+  {
+   "id": "my-first-pass",
+   "fn": "double",
+   "rev": 2,
+   "pass": "subst",
+   "est": [
+    5,
+    5
+   ],
+   "emu": [
+    50,
+    50
+   ]
+  },
+  {
+   "id": "my-first-pass",
+   "fn": "double",
+   "rev": 3,
+   "pass": "subst",
+   "est": [
+    5,
+    5
+   ],
+   "emu": [
+    50,
+    50
+   ]
+  },
+  {
+   "id": "nested-loops",
+   "fn": "grid",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    92.99962051311483,
+    92.99962051311483
+   ],
+   "emu": [
+    2634,
+    2634
+   ]
+  },
+  {
+   "id": "nested-loops",
+   "fn": "grid",
+   "rev": 2,
+   "pass": "licm",
+   "est": [
+    92.99962051311483,
+    92.99962248960902
+   ],
+   "emu": [
+    2634,
+    2342
+   ]
+  },
+  {
+   "id": "nested-loops",
+   "fn": "grid",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    92.99962248960902,
+    92.99999340796131
+   ],
+   "emu": [
+    2342,
+    2289
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    154.6666656268183,
+    154.6666656268183
+   ],
+   "emu": [
+    1240,
+    1240
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    154.6666656268183,
+    153.6666656268183
+   ],
+   "emu": [
+    1240,
+    1230
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    11,
+    8
+   ],
+   "emu": [
+    110,
+    80
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    153.6666656268183,
+    153.6666656268183
+   ],
+   "emu": [
+    1230,
+    1230
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    8,
+    6
+   ],
+   "emu": [
+    80,
+    60
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    153.6666656268183,
+    153.6666656268183
+   ],
+   "emu": [
+    1230,
+    1230
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    6,
+    9
+   ],
+   "emu": [
+    60,
+    90
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    153.6666656268183,
+    153.6666656268183
+   ],
+   "emu": [
+    1230,
+    1230
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 5,
+   "pass": "simplify",
+   "est": [
+    9,
+    9
+   ],
+   "emu": [
+    90,
+    90
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    153.6666656268183,
+    152.6666656268183
+   ],
+   "emu": [
+    1230,
+    1220
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    9,
+    8
+   ],
+   "emu": [
+    90,
+    80
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 7,
+   "pass": "licm",
+   "est": [
+    152.6666656268183,
+    141.9999990613758
+   ],
+   "emu": [
+    1220,
+    1144
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 8,
+   "pass": "lvn",
+   "est": [
+    141.9999990613758,
+    140.9999990613758
+   ],
+   "emu": [
+    1144,
+    1134
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 8,
+   "pass": "lvn",
+   "est": [
+    8,
+    8
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 9,
+   "pass": "subst",
+   "est": [
+    8,
+    8
+   ],
+   "emu": [
+    80,
+    80
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "rescale",
+   "rev": 10,
+   "pass": "subst",
+   "est": [
+    8,
+    7
+   ],
+   "emu": [
+    80,
+    70
+   ]
+  },
+  {
+   "id": "orders",
+   "fn": "kernel",
+   "rev": 11,
+   "pass": "rotate",
+   "est": [
+    140.9999990613758,
+    140.99999907076204
+   ],
+   "emu": [
+    1134,
+    1125
+   ]
+  },
+  {
+   "id": "params-demo",
+   "fn": "blend",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    106.33333262706465,
+    106.33333262706465
+   ],
+   "emu": [
+    2697,
+    2697
+   ]
+  },
+  {
+   "id": "params-demo",
+   "fn": "blend",
+   "rev": 2,
+   "pass": "fold",
+   "est": [
+    106.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2697,
+    2687
+   ]
+  },
+  {
+   "id": "params-demo",
+   "fn": "blend",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    105.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2687,
+    2687
+   ]
+  },
+  {
+   "id": "params-demo",
+   "fn": "blend",
+   "rev": 4,
+   "pass": "constprop",
+   "est": [
+    105.33333262706465,
+    105.33333262706465
+   ],
+   "emu": [
+    2687,
+    2687
+   ]
+  },
+  {
+   "id": "params-demo",
+   "fn": "blend",
+   "rev": 5,
+   "pass": "dce",
+   "est": [
+    105.33333262706465,
+    104.33333262706464
+   ],
+   "emu": [
+    2687,
+    2677
+   ]
+  },
+  {
+   "id": "params-demo",
+   "fn": "blend",
+   "rev": 6,
+   "pass": "licm",
+   "est": [
+    104.33333262706464,
+    91.66666606162217
+   ],
+   "emu": [
+    2677,
+    2299
+   ]
+  },
+  {
+   "id": "params-demo",
+   "fn": "blend",
+   "rev": 7,
+   "pass": "rotate",
+   "est": [
+    91.66666606162217,
+    91.666666073493
+   ],
+   "emu": [
+    2299,
+    2289
+   ]
+  },
+  {
+   "id": "pressure",
+   "fn": "mixer",
+   "rev": 1,
+   "pass": "lvn",
+   "est": [
+    28,
+    24
+   ],
+   "emu": [
+    280,
+    240
+   ]
+  },
+  {
+   "id": "pressure",
+   "fn": "mixer",
+   "rev": 2,
+   "pass": "subst",
+   "est": [
+    24,
+    24
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "pressure",
+   "fn": "mixer",
+   "rev": 3,
+   "pass": "subst",
+   "est": [
+    24,
+    24
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    123.33333249593332,
+    123.33333249593332
+   ],
+   "emu": [
+    1180,
+    1180
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    123.33333249593332,
+    123.33333249593332
+   ],
+   "emu": [
+    1180,
+    1180
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 3,
+   "pass": "constprop",
+   "est": [
+    123.33333249593332,
+    141.66666570273642
+   ],
+   "emu": [
+    1180,
+    1320
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 4,
+   "pass": "dce",
+   "est": [
+    141.66666570273642,
+    126.99999913729394
+   ],
+   "emu": [
+    1320,
+    1180
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 5,
+   "pass": "bce",
+   "est": [
+    126.99999913729394,
+    112.33333257185146
+   ],
+   "emu": [
+    1180,
+    1040
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 6,
+   "pass": "cfg",
+   "est": [
+    112.33333257185146,
+    112.33333257185146
+   ],
+   "emu": [
+    1040,
+    1040
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 7,
+   "pass": "subst",
+   "est": [
+    112.33333257185146,
+    104.99999928913022
+   ],
+   "emu": [
+    1040,
+    970
+   ]
+  },
+  {
+   "id": "ramp",
+   "fn": "ramp",
+   "rev": 8,
+   "pass": "rotate",
+   "est": [
+    104.99999928913022,
+    104.9999993045899
+   ],
+   "emu": [
+    970,
+    962
+   ]
+  },
+  {
+   "id": "regalloc-lab",
+   "fn": "accum",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    185.66666557850672,
+    169.999998861228
+   ],
+   "emu": [
+    2334,
+    1861
+   ]
+  },
+  {
+   "id": "regalloc-lab",
+   "fn": "accum",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    169.999998861228,
+    169.999998861228
+   ],
+   "emu": [
+    1861,
+    1861
+   ]
+  },
+  {
+   "id": "regalloc-lab",
+   "fn": "accum",
+   "rev": 3,
+   "pass": "simplify",
+   "est": [
+    169.999998861228,
+    169.999998861228
+   ],
+   "emu": [
+    1861,
+    1861
+   ]
+  },
+  {
+   "id": "regalloc-lab",
+   "fn": "mixer",
+   "rev": 4,
+   "pass": "lvn",
+   "est": [
+    24,
+    24
+   ],
+   "emu": [
+    240,
+    240
+   ]
+  },
+  {
+   "id": "regalloc-lab",
+   "fn": "accum",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    169.999998861228,
+    162.66666557850675
+   ],
+   "emu": [
+    1861,
+    1780
+   ]
+  },
+  {
+   "id": "regalloc-lab",
+   "fn": "accum",
+   "rev": 6,
+   "pass": "subst",
+   "est": [
+    162.66666557850675,
+    162.66666557850675
+   ],
+   "emu": [
+    1780,
+    1780
+   ]
+  },
+  {
+   "id": "regalloc-lab",
+   "fn": "accum",
+   "rev": 7,
+   "pass": "rotate",
+   "est": [
+    162.66666557850675,
+    162.66666559369037
+   ],
+   "emu": [
+    1780,
+    1771
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    1145.0206423899344,
+    1122.3045585741554
+   ],
+   "emu": [
+    41616,
+    40716
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    1122.3045585741554,
+    1090.8278255433834
+   ],
+   "emu": [
+    40716,
+    39052
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    1090.8278255433834,
+    1086.395532611596
+   ],
+   "emu": [
+    39052,
+    39005
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    1086.395532611596,
+    1086.395532611596
+   ],
+   "emu": [
+    39005,
+    39005
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 5,
+   "pass": "constprop",
+   "est": [
+    1086.395532611596,
+    1098.2959186818896
+   ],
+   "emu": [
+    39005,
+    39348
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    1098.2959186818896,
+    1095.2959186818896
+   ],
+   "emu": [
+    39348,
+    39318
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 7,
+   "pass": "cfg",
+   "est": [
+    1095.2959186818896,
+    1620.6586783273065
+   ],
+   "emu": [
+    39318,
+    39281
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 8,
+   "pass": "licm",
+   "est": [
+    1620.6586783273065,
+    1904.5144508007731
+   ],
+   "emu": [
+    39281,
+    39973
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 9,
+   "pass": "subst",
+   "est": [
+    1904.5144508007731,
+    1893.5144508008598
+   ],
+   "emu": [
+    39973,
+    39903
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 10,
+   "pass": "subst",
+   "est": [
+    1893.5144508008598,
+    1893.5144508008598
+   ],
+   "emu": [
+    39903,
+    39903
+   ]
+  },
+  {
+   "id": "regex-nfa",
+   "fn": "regexMatch",
+   "rev": 11,
+   "pass": "rotate",
+   "est": [
+    1893.5144508008598,
+    1903.4456163652626
+   ],
+   "emu": [
+    39903,
+    39771
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    1832.999992332274,
+    1682.3333268279948
+   ],
+   "emu": [
+    149936,
+    106836
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    57,
+    37
+   ],
+   "emu": [
+    810,
+    370
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    1682.3333268279948,
+    1682.3333268279948
+   ],
+   "emu": [
+    106836,
+    106836
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    37,
+    37
+   ],
+   "emu": [
+    370,
+    370
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    1682.3333268279948,
+    1674.9999935472415
+   ],
+   "emu": [
+    106836,
+    106196
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    1674.9999935472415,
+    1674.9999935472415
+   ],
+   "emu": [
+    106196,
+    106196
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "chacha20Block",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    1984.333321418778,
+    1984.333321418778
+   ],
+   "emu": [
+    53570,
+    53570
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 5,
+   "pass": "constprop",
+   "est": [
+    1674.9999935472415,
+    1671.9999935544115
+   ],
+   "emu": [
+    106196,
+    106166
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 5,
+   "pass": "constprop",
+   "est": [
+    37,
+    37
+   ],
+   "emu": [
+    370,
+    370
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "chacha20Block",
+   "rev": 5,
+   "pass": "constprop",
+   "est": [
+    1984.333321418778,
+    1928.3333218328798
+   ],
+   "emu": [
+    53570,
+    53010
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 6,
+   "pass": "fold",
+   "est": [
+    1671.9999935544115,
+    1523.3333275536456
+   ],
+   "emu": [
+    106166,
+    94626
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 6,
+   "pass": "fold",
+   "est": [
+    37,
+    29
+   ],
+   "emu": [
+    370,
+    290
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 7,
+   "pass": "dce",
+   "est": [
+    1523.3333275536456,
+    1433.9999946679825
+   ],
+   "emu": [
+    94626,
+    88706
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 7,
+   "pass": "dce",
+   "est": [
+    29,
+    25
+   ],
+   "emu": [
+    290,
+    250
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "chacha20Block",
+   "rev": 7,
+   "pass": "dce",
+   "est": [
+    1928.3333218328798,
+    1866.3333220537359
+   ],
+   "emu": [
+    46610,
+    42790
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 8,
+   "pass": "licm",
+   "est": [
+    1433.9999946679825,
+    1424.6666611983921
+   ],
+   "emu": [
+    88706,
+    87802
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 9,
+   "pass": "lvn",
+   "est": [
+    1424.6666611983921,
+    1424.6666611983921
+   ],
+   "emu": [
+    87802,
+    87802
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 10,
+   "pass": "strength",
+   "est": [
+    1424.6666611983921,
+    1424.6666611983921
+   ],
+   "emu": [
+    87802,
+    87802
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 11,
+   "pass": "subst",
+   "est": [
+    1424.6666611983921,
+    1417.3333278652412
+   ],
+   "emu": [
+    87802,
+    87490
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 11,
+   "pass": "subst",
+   "est": [
+    25,
+    24
+   ],
+   "emu": [
+    250,
+    240
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 12,
+   "pass": "subst",
+   "est": [
+    1417.3333278652412,
+    1417.3333278652412
+   ],
+   "emu": [
+    87490,
+    87490
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 12,
+   "pass": "subst",
+   "est": [
+    24,
+    23
+   ],
+   "emu": [
+    240,
+    230
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 13,
+   "pass": "subst",
+   "est": [
+    1417.3333278652412,
+    1417.3333278652412
+   ],
+   "emu": [
+    87490,
+    87490
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "quarter",
+   "rev": 13,
+   "pass": "subst",
+   "est": [
+    23,
+    22
+   ],
+   "emu": [
+    230,
+    220
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "sha256Block",
+   "rev": 14,
+   "pass": "rotate",
+   "est": [
+    1417.3333278652412,
+    1417.3333279526018
+   ],
+   "emu": [
+    87490,
+    87461
+   ]
+  },
+  {
+   "id": "sha-chacha",
+   "fn": "chacha20Block",
+   "rev": 14,
+   "pass": "rotate",
+   "est": [
+    1866.3333220537359,
+    1866.3333223626578
+   ],
+   "emu": [
+    40390,
+    40380
+   ]
+  },
+  {
+   "id": "sort",
+   "fn": "sort",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    387.33171326692644,
+    387.33171326692644
+   ],
+   "emu": [
+    5043,
+    5043
+   ]
+  },
+  {
+   "id": "sort",
+   "fn": "sort",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    387.33171326692644,
+    387.33171326692644
+   ],
+   "emu": [
+    5043,
+    5043
+   ]
+  },
+  {
+   "id": "sort",
+   "fn": "sort",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    387.33171326692644,
+    387.31564798824394
+   ],
+   "emu": [
+    5043,
+    4950
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    138.66666586147434,
+    133.33333242691683
+   ],
+   "emu": [
+    2841,
+    2176
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    133.33333242691683,
+    133.33333242691683
+   ],
+   "emu": [
+    2176,
+    2176
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "peak",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    90.33333272368773,
+    90.33333272368773
+   ],
+   "emu": [
+    1413,
+    1413
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "weight",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    5,
+    3
+   ],
+   "emu": [
+    50,
+    30
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    133.33333242691683,
+    118.66666586147434
+   ],
+   "emu": [
+    2176,
+    1924
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "weight",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    3,
+    3
+   ],
+   "emu": [
+    30,
+    30
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    118.66666586147434,
+    118.66666586147434
+   ],
+   "emu": [
+    1924,
+    1924
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "peak",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    90.33333272368773,
+    90.33333272368773
+   ],
+   "emu": [
+    1413,
+    1413
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 5,
+   "pass": "constprop",
+   "est": [
+    118.66666586147434,
+    124.16666582351527
+   ],
+   "emu": [
+    1924,
+    1976
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    124.16666582351527,
+    118.16666586492516
+   ],
+   "emu": [
+    1976,
+    1916
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "peak",
+   "rev": 7,
+   "pass": "bce",
+   "est": [
+    90.33333272368773,
+    75.66666615824525
+   ],
+   "emu": [
+    1413,
+    1171
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 8,
+   "pass": "subst",
+   "est": [
+    118.16666586492516,
+    110.83333258220392
+   ],
+   "emu": [
+    1916,
+    1790
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 9,
+   "pass": "subst",
+   "est": [
+    110.83333258220392,
+    110.83333258220392
+   ],
+   "emu": [
+    1790,
+    1790
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "peak",
+   "rev": 10,
+   "pass": "cfg",
+   "est": [
+    75.66666615824525,
+    75.66666615824525
+   ],
+   "emu": [
+    1171,
+    1171
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "peak",
+   "rev": 11,
+   "pass": "subst",
+   "est": [
+    75.66666615824525,
+    68.33333287552401
+   ],
+   "emu": [
+    1171,
+    1050
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "smooth",
+   "rev": 12,
+   "pass": "rotate",
+   "est": [
+    110.83333258220392,
+    110.83333259945806
+   ],
+   "emu": [
+    1790,
+    1780
+   ]
+  },
+  {
+   "id": "start-here",
+   "fn": "peak",
+   "rev": 12,
+   "pass": "rotate",
+   "est": [
+    68.33333287552401,
+    68.3333328909837
+   ],
+   "emu": [
+    1050,
+    1041
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    119.99999918560549,
+    119.99999918560549
+   ],
+   "emu": [
+    2140,
+    2140
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    119.99999918560549,
+    119.99999918560549
+   ],
+   "emu": [
+    2140,
+    2140
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 3,
+   "pass": "constprop",
+   "est": [
+    119.99999918560549,
+    127.33333246832673
+   ],
+   "emu": [
+    2140,
+    2276
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 4,
+   "pass": "dce",
+   "est": [
+    127.33333246832673,
+    119.99999918560549
+   ],
+   "emu": [
+    2276,
+    2140
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 5,
+   "pass": "strength",
+   "est": [
+    119.99999918560549,
+    118.99999919250713
+   ],
+   "emu": [
+    2140,
+    2130
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 6,
+   "pass": "bce",
+   "est": [
+    118.99999919250713,
+    104.33333262706465
+   ],
+   "emu": [
+    2130,
+    1858
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 7,
+   "pass": "cfg",
+   "est": [
+    104.33333262706465,
+    104.33333262706465
+   ],
+   "emu": [
+    1858,
+    1858
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 8,
+   "pass": "subst",
+   "est": [
+    104.33333262706465,
+    96.99999934434341
+   ],
+   "emu": [
+    1858,
+    1722
+   ]
+  },
+  {
+   "id": "strength",
+   "fn": "meter",
+   "rev": 9,
+   "pass": "rotate",
+   "est": [
+    96.99999934434341,
+    96.9999993622877
+   ],
+   "emu": [
+    1722,
+    1713
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "vowels",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    185.66666539906387,
+    185.66666539906387
+   ],
+   "emu": [
+    10010,
+    10010
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "digits",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    126.99999913729394,
+    126.99999913729394
+   ],
+   "emu": [
+    1885,
+    1885
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "vowels",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    185.66666539906387,
+    185.66666539906387
+   ],
+   "emu": [
+    10010,
+    10010
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "digits",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    126.99999913729394,
+    126.99999913729394
+   ],
+   "emu": [
+    1885,
+    1885
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "vowels",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    185.66666539906387,
+    170.9999988336214
+   ],
+   "emu": [
+    10010,
+    9190
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "digits",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    126.99999913729394,
+    112.33333257185146
+   ],
+   "emu": [
+    1885,
+    1643
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "vowels",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    170.9999988336214,
+    170.9999988336214
+   ],
+   "emu": [
+    9190,
+    9190
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "digits",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    112.33333257185146,
+    112.33333257185146
+   ],
+   "emu": [
+    1643,
+    1643
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "vowels",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    170.9999988336214,
+    163.66666555090015
+   ],
+   "emu": [
+    9190,
+    8780
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "digits",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    112.33333257185146,
+    104.99999928913022
+   ],
+   "emu": [
+    1643,
+    1522
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "vowels",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    163.66666555090015,
+    163.66666556635982
+   ],
+   "emu": [
+    8780,
+    8770
+   ]
+  },
+  {
+   "id": "strings",
+   "fn": "digits",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    104.99999928913022,
+    104.9999993045899
+   ],
+   "emu": [
+    1522,
+    1513
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "sum",
+   "rev": 1,
+   "pass": "inline",
+   "est": [
+    131.99999922011372,
+    147.9999989923593
+   ],
+   "emu": [
+    1144,
+    848
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "score",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    7.5,
+    7.5
+   ],
+   "emu": [
+    70,
+    70
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "sum",
+   "rev": 2,
+   "pass": "cfg",
+   "est": [
+    147.9999989923593,
+    147.9999989923593
+   ],
+   "emu": [
+    848,
+    848
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "score",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    7.5,
+    5.5
+   ],
+   "emu": [
+    70,
+    50
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "sum",
+   "rev": 3,
+   "pass": "fold",
+   "est": [
+    147.9999989923593,
+    133.33333242691683
+   ],
+   "emu": [
+    848,
+    764
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "score",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    5.5,
+    5.5
+   ],
+   "emu": [
+    50,
+    50
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "sum",
+   "rev": 4,
+   "pass": "simplify",
+   "est": [
+    133.33333242691683,
+    133.33333242691683
+   ],
+   "emu": [
+    764,
+    764
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "score",
+   "rev": 5,
+   "pass": "constprop",
+   "est": [
+    5.5,
+    5.5
+   ],
+   "emu": [
+    50,
+    50
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "sum",
+   "rev": 5,
+   "pass": "constprop",
+   "est": [
+    133.33333242691683,
+    133.33333242691683
+   ],
+   "emu": [
+    764,
+    764
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "score",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    5.5,
+    4.5
+   ],
+   "emu": [
+    50,
+    40
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "sum",
+   "rev": 6,
+   "pass": "dce",
+   "est": [
+    133.33333242691683,
+    125.99999914419558
+   ],
+   "emu": [
+    764,
+    722
+   ]
+  },
+  {
+   "id": "ui-gallery",
+   "fn": "sum",
+   "rev": 7,
+   "pass": "rotate",
+   "est": [
+    125.99999914419558,
+    125.99999915275365
+   ],
+   "emu": [
+    722,
+    714
+   ]
+  },
+  {
+   "id": "value-numbering",
+   "fn": "halves",
+   "rev": 1,
+   "pass": "simplify",
+   "est": [
+    134.66666575104796,
+    134.66666575104796
+   ],
+   "emu": [
+    3721,
+    3721
+   ]
+  },
+  {
+   "id": "value-numbering",
+   "fn": "halves",
+   "rev": 2,
+   "pass": "lvn",
+   "est": [
+    134.66666575104796,
+    112.66666590288423
+   ],
+   "emu": [
+    3721,
+    3082
+   ]
+  },
+  {
+   "id": "value-numbering",
+   "fn": "halves",
+   "rev": 3,
+   "pass": "rotate",
+   "est": [
+    112.66666590288423,
+    112.66666591558328
+   ],
+   "emu": [
+    3082,
+    3073
+   ]
+  },
+  {
+   "id": "wrong-shift",
+   "fn": "bucket",
+   "rev": 1,
+   "pass": "cfg",
+   "est": [
+    97.99999933744176,
+    97.99999933744176
+   ],
+   "emu": [
+    1900,
+    1900
+   ]
+  },
+  {
+   "id": "wrong-shift",
+   "fn": "bucket",
+   "rev": 2,
+   "pass": "simplify",
+   "est": [
+    97.99999933744176,
+    97.99999933744176
+   ],
+   "emu": [
+    1900,
+    1900
+   ]
+  },
+  {
+   "id": "wrong-shift",
+   "fn": "bucket",
+   "rev": 3,
+   "pass": "bce",
+   "est": [
+    97.99999933744176,
+    83.33333277199928
+   ],
+   "emu": [
+    1900,
+    1600
+   ]
+  },
+  {
+   "id": "wrong-shift",
+   "fn": "bucket",
+   "rev": 4,
+   "pass": "cfg",
+   "est": [
+    83.33333277199928,
+    83.33333277199928
+   ],
+   "emu": [
+    1600,
+    1600
+   ]
+  },
+  {
+   "id": "wrong-shift",
+   "fn": "bucket",
+   "rev": 5,
+   "pass": "subst",
+   "est": [
+    83.33333277199928,
+    75.99999948927804
+   ],
+   "emu": [
+    1600,
+    1450
+   ]
+  },
+  {
+   "id": "wrong-shift",
+   "fn": "bucket",
+   "rev": 6,
+   "pass": "rotate",
+   "est": [
+    75.99999948927804,
+    75.99999950805052
+   ],
+   "emu": [
+    1450,
+    1441
+   ]
+  }
+ ]
+}

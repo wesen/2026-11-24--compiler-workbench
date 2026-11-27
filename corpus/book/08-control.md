@@ -49,11 +49,11 @@ that block. bce rests entirely on this.
 ## 3. Loops
 
 A back edge is an edge whose target dominates its source; the target is
-a loop head. The loops analysis collects, for each back edge, the
-natural loop: the head, the latch (the source of the back edge), the
-body (every block that reaches the latch without passing the head), the
-exits, the locals assigned anywhere in the body, and the preheader if
-the head has exactly one predecessor outside the loop.
+a loop head. The loops analysis collects, for each head, the natural
+loop: the head, the latches (the sources of its back edges; `latch` is
+the first), the body (every block that reaches a latch without passing
+the head), the exits, the locals assigned anywhere in the body, and the
+preheader if the head has exactly one predecessor outside the loop.
 
 ```js
 const p = wb.projects.open('early-exit').program;

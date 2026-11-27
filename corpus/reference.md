@@ -243,9 +243,9 @@ wrong on purpose.
 Facts a pass can need, by analysis: liveness `{ in, out, liveAfter(sid)
 }`, reaching `{ in, out, reachingAt(sid, local) }`, ranges `{ in,
 at(sid, local), of(sid, valueId) }`, dominators `{ idom, dominates(a,
-b), children }`, loops `[{ id, head, latch, body, preheader, exits,
-assigned }]`, cfg `{ succ, preds, rpo }`. Maps are keyed by block id;
-locals are indices into `fn.locals()`.
+b), children }`, loops `[{ id, head, latch, latches, body, preheader,
+exits, assigned }]`, cfg `{ succ, preds, rpo }`. Maps are keyed by block
+id; locals are indices into `fn.locals()`.
 
 ## Analyses and lattices
 
