@@ -1,0 +1,84 @@
+{
+  entry: 0,
+  latches: [
+    'bb:runVm.17',
+    'bb:runVm.28',
+    'bb:runVm.39',
+    'bb:runVm.54',
+    'bb:runVm.69',
+    'bb:runVm.84',
+    'bb:runVm.91',
+    'bb:runVm.92',
+    'bb:runVm.96'
+  ]
+}
+bb:runVm.n0 [ [ 'addi t1, sp, 0', 172, [ 'v:runVm.44', 's:runVm.144' ] ] ]
+bb:runVm.n1 [
+  [ 'addi t2, sp, 16', 184, [ 'v:runVm.68', 's:runVm.146' ] ],
+  [ 'addi t3, sp, 0', 184, [ 'v:runVm.59', 's:runVm.147' ] ]
+]
+bb:runVm.n2 [
+  [ 'addi t4, sp, 0', 184, [ 'v:runVm.95', 's:runVm.149' ] ],
+  [ 'addi a2, sp, 16', 184, [ 'v:runVm.86', 's:runVm.150' ] ]
+]
+bb:runVm.n3 [
+  [ 'addi a3, sp, 0', 184, [ 'v:runVm.131', 's:runVm.152' ] ],
+  [ 'addi a4, sp, 0', 184, [ 'v:runVm.122', 's:runVm.153' ] ],
+  [ 'addi a5, sp, 0', 184, [ 'v:runVm.110', 's:runVm.154' ] ]
+]
+bb:runVm.n4 [
+  [ 'addi a6, sp, 0', 184, [ 'v:runVm.172', 's:runVm.156' ] ],
+  [ 'addi a7, sp, 0', 184, [ 'v:runVm.163', 's:runVm.157' ] ],
+  [ 'addi s1, sp, 0', 184, [ 'v:runVm.151', 's:runVm.158' ] ]
+]
+bb:runVm.n5 [
+  [ 'addi s2, sp, 0', 184, [ 'v:runVm.213', 's:runVm.160' ] ],
+  [ 'addi s3, sp, 0', 184, [ 'v:runVm.204', 's:runVm.161' ] ],
+  [ 'addi s4, sp, 0', 184, [ 'v:runVm.192', 's:runVm.162' ] ]
+]
+bb:runVm.n6 [ [ 'addi s5, sp, 0', 184, [ 'v:runVm.233', 's:runVm.164' ] ] ]
+bb:runVm.n7 []
+bb:runVm.n8 [ [ 'jal zero, bb.3', 184, [ 's:runVm.166' ] ] ]
+one path [{"at":{"artifact":"img:bytecode_vm","revision":"f0d1ecf502105fa67f6b76f102f2d0f45dbeacdf7eae8848dcef7f4f6bf8651b"},"because":[],"entity":"insn:runVm+0x318","from":[{"at":{"artifact":"bytecode_vm","revision":"e5321efb44ed9e796432e0f9cfe6fc4d60db435333a0640f71914fd7259fb43e"},"because":["loop:runVm@bb:runVm.3","s:runVm.144"],"entity":"s:runVm.144","from":[],"note":"hoisted out of loop:runVm@bb:runVm.3","relation":"licm"}],"relation":"covered-by"},{"at":{"artifact":"img:bytecode_vm","revision":"f0d1ecf502105fa67f6b76f102f2d0f45dbeacdf7eae8848dcef7f4f6bf8651b"},"because":[],"entity":"insn:runVm+0x318","from":[{"at":{"artifact":"bytecode_vm","revision":"e5321efb44ed9e796432e0f9cfe6fc4d60db435333a0640f71914fd7259fb43e"},"because":["loop:runVm@bb:runVm.3","s:runVm.144"],"entity":"v:runVm.44","from":[],"note":"hoisted out of loop:runVm@bb:runVm.3","relation":"licm"}],"relation":"covered-by"}]
+{
+  entry: 34,
+  latches: [
+    'bb:runVm.17',
+    'bb:runVm.28',
+    'bb:runVm.39',
+    'bb:runVm.54',
+    'bb:runVm.69',
+    'bb:runVm.84',
+    'bb:runVm.91',
+    'bb:runVm.92',
+    'bb:runVm.96'
+  ]
+}
+bb:runVm.n0 [ [ 'addi t1, sp, 0', 136, [ 'v:runVm.44', 's:runVm.144' ] ] ]
+bb:runVm.n1 [
+  [ 'addi t2, sp, 16', 160, [ 'v:runVm.68', 's:runVm.146' ] ],
+  [ 'addi t3, sp, 0', 160, [ 'v:runVm.59', 's:runVm.147' ] ]
+]
+bb:runVm.n2 [
+  [ 'addi t4, sp, 0', 160, [ 'v:runVm.95', 's:runVm.149' ] ],
+  [ 'addi a2, sp, 16', 160, [ 'v:runVm.86', 's:runVm.150' ] ]
+]
+bb:runVm.n3 [
+  [ 'addi a3, sp, 0', 160, [ 'v:runVm.131', 's:runVm.152' ] ],
+  [ 'addi a4, sp, 0', 160, [ 'v:runVm.122', 's:runVm.153' ] ],
+  [ 'addi a5, sp, 0', 160, [ 'v:runVm.110', 's:runVm.154' ] ]
+]
+bb:runVm.n4 [
+  [ 'addi a6, sp, 0', 160, [ 'v:runVm.172', 's:runVm.156' ] ],
+  [ 'addi a7, sp, 0', 160, [ 'v:runVm.163', 's:runVm.157' ] ],
+  [ 'addi s1, sp, 0', 160, [ 'v:runVm.151', 's:runVm.158' ] ]
+]
+bb:runVm.n5 [
+  [ 'addi s2, sp, 0', 160, [ 'v:runVm.213', 's:runVm.160' ] ],
+  [ 'addi s3, sp, 0', 160, [ 'v:runVm.204', 's:runVm.161' ] ],
+  [ 'addi s4, sp, 0', 160, [ 'v:runVm.192', 's:runVm.162' ] ]
+]
+bb:runVm.n6 [ [ 'addi s5, sp, 0', 160, [ 'v:runVm.233', 's:runVm.164' ] ] ]
+bb:runVm.n7 []
+bb:runVm.n8 [ [ 'jal zero, bb.3', 160, [ 's:runVm.166' ] ] ]
+one path [{"at":{"artifact":"img:bytecode_vm","revision":"f0d1ecf502105fa67f6b76f102f2d0f45dbeacdf7eae8848dcef7f4f6bf8651b"},"because":[],"entity":"insn:runVm+0x318","from":[{"at":{"artifact":"bytecode_vm","revision":"e5321efb44ed9e796432e0f9cfe6fc4d60db435333a0640f71914fd7259fb43e"},"because":["loop:runVm@bb:runVm.3","s:runVm.144"],"entity":"s:runVm.144","from":[],"note":"hoisted out of loop:runVm@bb:runVm.3","relation":"licm"}],"relation":"covered-by"},{"at":{"artifact":"img:bytecode_vm","revision":"f0d1ecf502105fa67f6b76f102f2d0f45dbeacdf7eae8848dcef7f4f6bf8651b"},"because":[],"entity":"insn:runVm+0x318","from":[{"at":{"artifact":"bytecode_vm","revision":"e5321efb44ed9e796432e0f9cfe6fc4d60db435333a0640f71914fd7259fb43e"},"because":["loop:runVm@bb:runVm.3","s:runVm.144"],"entity":"v:runVm.44","from":[],"note":"hoisted out of loop:runVm@bb:runVm.3","relation":"licm"}],"relation":"covered-by"}]

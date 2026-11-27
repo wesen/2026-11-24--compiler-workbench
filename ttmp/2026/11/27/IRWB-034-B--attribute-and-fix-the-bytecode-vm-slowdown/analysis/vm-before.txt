@@ -1,0 +1,724 @@
+[]
+0 ingest [ 7678, 6874 ] spills 0 edits 0
+1 cfg [ 7055, 6287 ] spills 0 edits 64
+{
+  id: 'edit:r1.0',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.15',
+  field: 'else',
+  from: 'bb:runVm.7',
+  to: 'bb:runVm.9',
+  because: [ 'bb:runVm.7' ]
+}
+{
+  id: 'edit:r1.1',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.22',
+  field: 'else',
+  from: 'bb:runVm.15',
+  to: 'bb:runVm.17',
+  because: [ 'bb:runVm.15' ]
+}
+{
+  id: 'edit:r1.2',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.28',
+  field: 'to',
+  from: 'bb:runVm.18',
+  to: 'bb:runVm.1',
+  because: [ 'bb:runVm.18' ]
+}
+{
+  id: 'edit:r1.3',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.138',
+  field: 'to',
+  from: 'bb:runVm.11',
+  to: 'bb:runVm.1',
+  because: [ 'bb:runVm.11' ]
+}
+{
+  id: 'edit:r1.4',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.30',
+  field: 'else',
+  from: 'bb:runVm.22',
+  to: 'bb:runVm.24',
+  because: [ 'bb:runVm.22' ]
+}
+{
+  id: 'edit:r1.5',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.35',
+  field: 'else',
+  from: 'bb:runVm.26',
+  to: 'bb:runVm.28',
+  because: [ 'bb:runVm.26' ]
+}
+{
+  id: 'edit:r1.6',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.41',
+  field: 'to',
+  from: 'bb:runVm.29',
+  to: 'bb:runVm.1',
+  because: [ 'bb:runVm.29' ]
+}
+{
+  id: 'edit:r1.7',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.137',
+  field: 'to',
+  from: 'bb:runVm.18',
+  to: 'bb:runVm.1',
+  because: [ 'bb:runVm.18' ]
+}
+{
+  id: 'edit:r1.8',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.44',
+  field: 'else',
+  from: 'bb:runVm.33',
+  to: 'bb:runVm.35',
+  because: [ 'bb:runVm.33' ]
+}
+{
+  id: 'edit:r1.9',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.49',
+  field: 'else',
+  from: 'bb:runVm.37',
+  to: 'bb:runVm.39',
+  because: [ 'bb:runVm.37' ]
+}
+{
+  id: 'edit:r1.10',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.54',
+  field: 'to',
+  from: 'bb:runVm.40',
+  to: 'bb:runVm.1',
+  because: [ 'bb:runVm.40' ]
+}
+{
+  id: 'edit:r1.11',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.136',
+  field: 'to',
+  from: 'bb:runVm.29',
+  to: 'bb:runVm.1',
+  because: [ 'bb:runVm.29' ]
+}
+{
+  id: 'edit:r1.12',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.57',
+  field: 'else',
+  from: 'bb:runVm.44',
+  to: 'bb:runVm.46',
+  because: [ 'bb:runVm.44' ]
+}
+{
+  id: 'edit:r1.13',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.63',
+  field: 'else',
+  from: 'bb:runVm.48',
+  to: 'bb:runVm.50',
+  because: [ 'bb:runVm.48' ]
+}
+{
+  id: 'edit:r1.14',
+  rev: 1,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.68',
+  field: 'else',
+  from: 'bb:runVm.52',
+  to: 'bb:runVm.54',
+  because: [ 'bb:runVm.52' ]
+}
+2 fold [ 6871, 6127 ] spills 0 edits 1
+{
+  id: 'edit:r2.0',
+  rev: 2,
+  pass: 'fold',
+  fn: 'runVm',
+  kind: 'replace',
+  stmt: 's:runVm.7',
+  field: 'cond',
+  from: 'v:runVm.7',
+  to: 'v:runVm.247',
+  text: '0',
+  because: []
+}
+3 cfg [ 6688, 5968 ] spills 0 edits 12
+{
+  id: 'edit:r3.0',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'replaceStmt',
+  from: 's:runVm.7',
+  to: 's:runVm.142',
+  block: 'bb:runVm.1',
+  text: 'goto .3',
+  because: [ 'v:runVm.247' ]
+}
+{
+  id: 'edit:r3.1',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.6',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.2',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.28',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.3',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.41',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.4',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.54',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.5',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.74',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.6',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.94',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.7',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.114',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.8',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.121',
+  field: 'else',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.9',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.123',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.10',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.128',
+  field: 'to',
+  from: 'bb:runVm.1',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.1' ]
+}
+{
+  id: 'edit:r3.11',
+  rev: 3,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'unreachable',
+  block: 'bb:runVm.1',
+  because: [ 'cfg' ]
+}
+4 licm [ 9287, 8219 ] spills 0 edits 81
+{
+  id: 'edit:r4.0',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'block',
+  block: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.1',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'insert',
+  stmt: 's:runVm.143',
+  block: 'bb:runVm.n0',
+  at: 0,
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.2',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.6',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.3',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.41',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.4',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.54',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.5',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.74',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.6',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.94',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.7',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.114',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.8',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.121',
+  field: 'else',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.9',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.123',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.10',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.128',
+  field: 'to',
+  from: 'bb:runVm.3',
+  to: 'bb:runVm.n0',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.11',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'local',
+  local: 'local:runVm/inv',
+  name: 'inv',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.12',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'insert',
+  stmt: 's:runVm.144',
+  block: 'bb:runVm.n0',
+  at: 0,
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.13',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'replace',
+  stmt: 's:runVm.26',
+  field: 'addr',
+  from: 'v:runVm.48',
+  to: 'v:runVm.249',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+{
+  id: 'edit:r4.14',
+  rev: 4,
+  pass: 'licm',
+  fn: 'runVm',
+  kind: 'block',
+  block: 'bb:runVm.n1',
+  because: [ 'loop:runVm@bb:runVm.3' ]
+}
+5 subst [ 9287, 8219 ] spills 0 edits 2
+{
+  id: 'edit:r5.0',
+  rev: 5,
+  pass: 'subst',
+  fn: 'runVm',
+  kind: 'replace',
+  stmt: 's:runVm.9',
+  field: 'value',
+  from: 'v:runVm.12',
+  to: 'v:runVm.290',
+  text: 'load16[caddr(code, pc)+4]',
+  because: []
+}
+{
+  id: 'edit:r5.1',
+  rev: 5,
+  pass: 'subst',
+  fn: 'runVm',
+  kind: 'remove',
+  stmt: 's:runVm.8',
+  block: 'bb:runVm.3',
+  text: 't6 = pc',
+  because: [ 's:runVm.9' ],
+  note: 'substituted into its only reader'
+}
+6 subst [ 9287, 8219 ] spills 0 edits 2
+{
+  id: 'edit:r6.0',
+  rev: 6,
+  pass: 'subst',
+  fn: 'runVm',
+  kind: 'replace',
+  stmt: 's:runVm.11',
+  field: 'value',
+  from: 'v:runVm.19',
+  to: 'v:runVm.295',
+  text: 'load16[caddr(code, (pc + 1))+4]',
+  because: []
+}
+{
+  id: 'edit:r6.1',
+  rev: 6,
+  pass: 'subst',
+  fn: 'runVm',
+  kind: 'remove',
+  stmt: 's:runVm.10',
+  block: 'bb:runVm.3',
+  text: 't8 = (pc + 1)',
+  because: [ 's:runVm.11' ],
+  note: 'substituted into its only reader'
+}
+7 cfg [ 9286, 8218 ] spills 0 edits 43
+{
+  id: 'edit:r7.0',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.163',
+  field: 'to',
+  from: 'bb:runVm.n7',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.n7' ]
+}
+{
+  id: 'edit:r7.1',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'retarget',
+  stmt: 's:runVm.165',
+  field: 'to',
+  from: 'bb:runVm.n8',
+  to: 'bb:runVm.3',
+  because: [ 'bb:runVm.n8' ]
+}
+{
+  id: 'edit:r7.2',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'unreachable',
+  block: 'bb:runVm.n7',
+  because: [ 'cfg' ]
+}
+{
+  id: 'edit:r7.3',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'unreachable',
+  block: 'bb:runVm.n8',
+  because: [ 'cfg' ]
+}
+{
+  id: 'edit:r7.4',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'remove',
+  stmt: 's:runVm.145',
+  block: 'bb:runVm.n1',
+  text: 'goto .n2',
+  because: [ 'bb:runVm.n2' ],
+  note: 'merged with its only successor'
+}
+{
+  id: 'edit:r7.5',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'move',
+  stmt: 's:runVm.149',
+  from: 'bb:runVm.n2',
+  to: 'bb:runVm.n1',
+  because: [ 's:runVm.145' ]
+}
+{
+  id: 'edit:r7.6',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'move',
+  stmt: 's:runVm.150',
+  from: 'bb:runVm.n2',
+  to: 'bb:runVm.n1',
+  because: [ 's:runVm.145' ]
+}
+{
+  id: 'edit:r7.7',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'move',
+  stmt: 's:runVm.148',
+  from: 'bb:runVm.n2',
+  to: 'bb:runVm.n1',
+  because: [ 's:runVm.145' ]
+}
+{
+  id: 'edit:r7.8',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'merge',
+  block: 'bb:runVm.n2',
+  into: 'bb:runVm.n1'
+}
+{
+  id: 'edit:r7.9',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'unreachable',
+  block: 'bb:runVm.n2',
+  because: [ 'cfg' ]
+}
+{
+  id: 'edit:r7.10',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'remove',
+  stmt: 's:runVm.148',
+  block: 'bb:runVm.n1',
+  text: 'goto .n3',
+  because: [ 'bb:runVm.n3' ],
+  note: 'merged with its only successor'
+}
+{
+  id: 'edit:r7.11',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'move',
+  stmt: 's:runVm.152',
+  from: 'bb:runVm.n3',
+  to: 'bb:runVm.n1',
+  because: [ 's:runVm.148' ]
+}
+{
+  id: 'edit:r7.12',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'move',
+  stmt: 's:runVm.153',
+  from: 'bb:runVm.n3',
+  to: 'bb:runVm.n1',
+  because: [ 's:runVm.148' ]
+}
+{
+  id: 'edit:r7.13',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'move',
+  stmt: 's:runVm.154',
+  from: 'bb:runVm.n3',
+  to: 'bb:runVm.n1',
+  because: [ 's:runVm.148' ]
+}
+{
+  id: 'edit:r7.14',
+  rev: 7,
+  pass: 'cfg',
+  fn: 'runVm',
+  kind: 'move',
+  stmt: 's:runVm.151',
+  from: 'bb:runVm.n3',
+  to: 'bb:runVm.n1',
+  because: [ 's:runVm.148' ]
+}
