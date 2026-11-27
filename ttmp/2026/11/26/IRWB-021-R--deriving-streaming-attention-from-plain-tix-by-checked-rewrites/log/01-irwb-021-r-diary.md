@@ -1,3 +1,28 @@
+---
+Title: IRWB-021-R diary
+Ticket: IRWB-021-R
+Status: active
+Topics:
+    - compiler
+    - ir
+    - verification
+    - research
+DocType: log
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: repo://ttmp/2026/11/26/IRWB-021-R--deriving-streaming-attention-from-plain-tix-by-checked-rewrites/design-doc/01-deriving-flashattention-from-the-plain-tix-attention-program-a-checked-rewrite-research-design.md
+      Note: the research design this diary records the making of
+ExternalSources: []
+Summary: >
+    Investigation diary for the IRWB-021-R research design: orientation on the framework contract layer,
+    settling the rescaling lemma and the nine-rule set, the six-step derivation (including the caught pitfall
+    of the still-materialized score statement), the checking design (domain, observation, exact vs tolerance
+    relations, f32 error model), generality and the pre-registered GB10 experiment, and the docmgr bookkeeping
+    with commits bb331d8 and the diary commit.
+LastUpdated: 2026-11-26T22:30:00-05:00
+---
+
 # IRWB-021-R diary
 
 Research design ticket: deriving streaming attention (FlashAttention) from the plain Tix program by checked rewrites. Design only, no implementation. All paths relative to the repository root.
