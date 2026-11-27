@@ -124,7 +124,9 @@ function kindOf(
   if (v.op === 'aaddr') return 'f';
   const at = bufferLoad(st, v, buffers);
   if (at)
-    return typeof at.position !== 'string' || kindOf(st, at.position, S, buffers, optimistic) === 'n' ? 'n' : null;
+    return typeof at.position !== 'string' || kindOf(st, at.position, S, buffers, optimistic) === 'n'
+      ? 'n'
+      : null;
   if (!STATIC_OPS.has(v.op)) return null;
   const ks = v.args.map(a => kindOf(st, a, S, buffers, optimistic));
   if (ks.every(k => k === 'n')) return 'n';
@@ -199,8 +201,7 @@ export const pe = typedPass({
       }
     // default budget: the residual code may not be larger than the function it specializes (a host that accepts
     // growth passes a larger one); the bytecode VM's fixtures need 42 and 40 of runVm's 123 statements
-    const budget =
-      (params.budget as number | undefined) ?? f.blocks.reduce((n, b) => n + b.stmts.length, 0);
+    const budget = (params.budget as number | undefined) ?? f.blocks.reduce((n, b) => n + b.stmts.length, 0);
     const live = facts.live!;
     const bt = bindingTimes(st, f, art.value.bindings, live.liveIn(f.blocks[0].id));
     const S = bt.static;
@@ -276,7 +277,10 @@ export const pe = typedPass({
         // a walk between specialization points that visits more blocks than the function has went around a cycle
         // without a loop header (an irreducible loop): it would not stop
         if (++walked > f.blocks.length)
-          throw new TxError('unsupported', `pe: ${f.name} has a cycle through ${start} without a loop header`);
+          throw new TxError(
+            'unsupported',
+            `pe: ${f.name} has a cycle through ${start} without a loop header`,
+          );
         const b = st.get(bid) as BlockRec;
         let next: string | undefined;
         for (const sid of b.stmts) {
@@ -306,7 +310,8 @@ export const pe = typedPass({
               );
               break;
             case 'eval':
-              if (!kindOf(st, s.value!, S, bt.buffers)) emit({ op: 'eval', value: residual(s.value!, env) }, sid);
+              if (!kindOf(st, s.value!, S, bt.buffers))
+                emit({ op: 'eval', value: residual(s.value!, env) }, sid);
               break;
             case 'zero':
               emit({ op: 'zero', offset: s.offset, bytes: s.bytes }, sid);
@@ -354,7 +359,8 @@ export const pe = typedPass({
       run(bid, env, rid);
     }
     // the old entry now only jumps to the residual one; every other old block becomes unreachable
-    for (const sid of entry.stmts.slice()) tx.remove(sid, { because, note: 'specialized: see the residual entry' });
+    for (const sid of entry.stmts.slice())
+      tx.remove(sid, { because, note: 'specialized: see the residual entry' });
     tx.insert({ block: entry, index: 0 }, tx.stmt({ op: 'br', to: start }, { from: entry.id, because }), {
       because,
     });

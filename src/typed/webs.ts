@@ -19,7 +19,8 @@ const getsOf = (st: { get(id: string): unknown }, id: string, l: number, out: st
 
 export const websSpec: TypedPassSpec = {
   name: 'webs',
-  about: 'live-range splitting: each web of definitions and uses of a local other than its first gets its own local',
+  about:
+    'live-range splitting: each web of definitions and uses of a local other than its first gets its own local',
   needs: { reach: 'reaching' },
   writes: ['stmts', 'values', 'locals'],
   preserves: ['cfg', 'dominators'],
@@ -50,7 +51,10 @@ export const websSpec: TypedPassSpec = {
         if (r === root) return null;
         let n = webs.get(r);
         if (n === undefined)
-          webs.set(r, (n = tx.local(f.locals[l].name, { because: [`fact:reaching(${f.name})@r${tx.rev - 1}`] })));
+          webs.set(
+            r,
+            (n = tx.local(f.locals[l].name, { because: [`fact:reaching(${f.name})@r${tx.rev - 1}`] })),
+          );
         return n;
       };
       for (const d of defs) {

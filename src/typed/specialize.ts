@@ -64,7 +64,8 @@ export const BindingsIR = defineIR<Bindings>({
       const param = typeof b.fn === 'string' && typeof b.param === 'string';
       const field = typeof b.record === 'string' && typeof b.field === 'string';
       const cells =
-        Array.isArray(b.cells) && b.cells.every((c: unknown) => typeof c === 'number' && Number.isInteger(c) && c >= 0 && c <= 65535);
+        Array.isArray(b.cells) &&
+        b.cells.every((c: unknown) => typeof c === 'number' && Number.isInteger(c) && c >= 0 && c <= 65535);
       if (
         param === field ||
         (b.cells !== undefined && (!param || !cells || b.value !== undefined)) ||
@@ -159,13 +160,16 @@ export function bufferLoad(
   }
   const direct = param(v.args[0]);
   if (direct !== undefined)
-    return v.imm >= 4 && v.imm % 2 === 0 ? { param: direct, position: (v.imm - 4) / 2, checked: false } : undefined;
+    return v.imm >= 4 && v.imm % 2 === 0
+      ? { param: direct, position: (v.imm - 4) / 2, checked: false }
+      : undefined;
   if (a.op !== 'add' || v.imm !== 4) return;
   const b = param(a.args[0]);
   if (b === undefined) return;
   const off = st.get(a.args[1]) as ValueRec;
   const k = lit(a.args[1]);
-  if (k !== undefined) return k >= 0 && k % 2 === 0 ? { param: b, position: k / 2, checked: false } : undefined;
+  if (k !== undefined)
+    return k >= 0 && k % 2 === 0 ? { param: b, position: k / 2, checked: false } : undefined;
   if (off.op === 'shl' && lit(off.args[1]) === 1) return { param: b, position: off.args[0], checked: false };
   return;
 }
