@@ -61,7 +61,7 @@ export interface Revision {
   readonly fns?: readonly string[];
   readonly note?: string;
   /** The assumptions in force when this revision was made (see `Program.assume`). */
-  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, number>>>>;
+  readonly assumptions?: Readonly<Record<string, Readonly<Record<string, AssumedValue>>>>;
 }
 
 export interface ApplyResult {
@@ -73,6 +73,12 @@ export interface ApplyResult {
   readonly ms: number;
   readonly check?: string;
 }
+
+/**
+ * What a call guarantees before the program runs (see `Program.assume`): a scalar parameter's value, a record
+ * field's value (a dotted key, `q.mode`), or a buffer parameter's whole contents (`{ cells }`, IRWB-036-D).
+ */
+export type AssumedValue = number | { readonly cells: readonly number[] };
 
 const revNumber = (r: number | string) => (typeof r === 'string' ? +r.replace(/^r/, '') : r);
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -143,7 +149,7 @@ export class Program {
     return `prog:${this.name}`;
   }
   /** Parameter values every check now assumes (set by `assume`, e.g. from a specialization's outer facts). */
-  readonly assumptions: Record<string, Record<string, number>> = {};
+  readonly assumptions: Record<string, Record<string, AssumedValue>> = {};
   /** The case inputs checks use: the project's specifications, with assumed parameters fixed. */
   get inputs(): ProgramInputs {
     const base = this.options.inputs ?? {};
@@ -152,6 +158,11 @@ export class Program {
     );
     for (const [f, params] of Object.entries(this.assumptions))
       for (const [k, v] of Object.entries(params)) {
+        if (typeof v !== 'number') {
+          // a buffer promise: the cases pass exactly these cells
+          out[f] = { ...(out[f] ?? {}), [k]: { cells: [...v.cells] } };
+          continue;
+        }
         const dot = k.indexOf('.');
         if (dot < 0) {
           out[f] = { ...(out[f] ?? {}), [k]: v };
@@ -170,21 +181,34 @@ export class Program {
    * and every check, compares with r0 only on such inputs. Returns the previous assumptions (for `unassume`).
    */
   assume(
-    bindings: readonly { fn?: string; param?: string; record?: string; field?: string; value: number }[],
-  ): Record<string, Record<string, number>> {
+    bindings: readonly {
+      fn?: string;
+      param?: string;
+      record?: string;
+      field?: string;
+      value?: number;
+      cells?: readonly number[];
+    }[],
+  ): Record<string, Record<string, AssumedValue>> {
     const previous = JSON.parse(JSON.stringify(this.assumptions));
     for (const b of bindings) {
+      if (b.cells) {
+        this.fname(b.fn!);
+        (this.assumptions[b.fn!] ??= {})[b.param!] = { cells: [...b.cells] };
+        continue;
+      }
       if (b.record && b.field) {
         // every parameter of that record type, in every function
         const st = storeOf(this.head.value);
         for (const f of st.fns.values())
           f.params.forEach((t, i) => {
-            if (t === b.record) (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value;
+            if (t === b.record)
+              (this.assumptions[f.name] ??= {})[`${f.locals[i].name}.${b.field}`] = b.value!;
           });
         continue;
       }
       this.fname(b.fn!);
-      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value;
+      (this.assumptions[b.fn!] ??= {})[b.param!] = b.value!;
     }
     return previous;
   }

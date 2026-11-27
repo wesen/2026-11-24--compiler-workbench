@@ -12,18 +12,24 @@ DocType: design-doc
 Intent: short-term
 Owners: []
 RelatedFiles:
-    - Path: repo://src/typed/specialize.ts
-      Note: the existing specializer (parameter and record-field bindings); gains the buffer form and the memory binding-time analysis
-    - Path: repo://src/typed/program.ts
-      Note: assume/inputs/specialize, the contract restriction a promise needs
-    - Path: repo://src/typed/passes.ts
-      Note: typedPass, PASSES, PIPELINES; the fold/cfg/dce passes the residual is built with
-    - Path: repo://src/typed/tx.ts
-      Note: the only way a pass edits; block/stmt/value construction and commit-time pruning
     - Path: repo://corpus/projects/bytecode-vm/main.typed
-      Note: the interpreter this ticket specializes; unchanged
+      Note: |-
+        the interpreter this ticket specializes; unchanged
+        the interpreter, unchanged
     - Path: repo://corpus/projects/bytecode-vm/project.json
       Note: the fixed 64-cell code image and the entry oneOf; the promise's data
+    - Path: repo://src/typed/passes.ts
+      Note: typedPass, PASSES, PIPELINES; the fold/cfg/dce passes the residual is built with
+    - Path: repo://src/typed/program.ts
+      Note: |-
+        assume/inputs/specialize, the contract restriction a promise needs
+        the contract restriction a buffer promise needs
+    - Path: repo://src/typed/specialize.ts
+      Note: |-
+        the existing specializer (parameter and record-field bindings); gains the buffer form and the memory binding-time analysis
+        gains the buffer form and the memory binding-time analysis
+    - Path: repo://src/typed/tx.ts
+      Note: the only way a pass edits; block/stmt/value construction and commit-time pruning
 ExternalSources: []
 Summary: 'Design for IRWB-036-D: a constant-buffer host promise (checked statically and by the restricted meaning contract), a binding-time analysis with abstract pointers that folds loads out of the promised buffer, and a dispatch-loop specialization that peels a loop head per constant program-counter state, judged by instructions and code size against the hand-specialized loops (75 and 74 instructions).'
 LastUpdated: 2026-11-27T00:00:00-05:00

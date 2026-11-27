@@ -47,6 +47,7 @@ import {
 } from './model.js';
 import { Tx, TxError, type Edit, type ValueHandle, type WriteKind } from './tx.js';
 import { rotateSpec } from './rotate.js';
+import { makeDispatch } from './dispatch.js';
 import { makeInline } from './inline.js';
 
 type AnalysisName = keyof typeof ANALYSES;
@@ -1032,6 +1033,8 @@ export const subst = typedPass({
 export const rotate = typedPass(rotateSpec);
 /** IRWB-003: inlining, a whole-program pass like dfe (src/typed/inline.ts). */
 export const inline = makeInline(revisionCorrespondence);
+/** IRWB-036-D: dispatch-loop specialization on a known program counter (src/typed/dispatch.ts). */
+export const dispatch = typedPass(makeDispatch({ fold, cfg }));
 
 export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   fold,
@@ -1049,6 +1052,7 @@ export const PASSES: Readonly<Record<string, TypedPass>> = Object.freeze({
   dfe,
   rotate,
   inline,
+  dispatch,
 });
 
 /** Compiler Workbench's pipelines, by pass name. */
