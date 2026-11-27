@@ -1,0 +1,13 @@
+{"n":0,"body":"x[i,j] + (sum(k) x[i,k] / D) / D","groups":1,"mappings":["block"],"stages":1,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":1,"body":"x[i,j] * x[i,j] / D","groups":1,"mappings":["block"],"stages":1,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":2,"body":"x[i,j] + (sum(k) x[i,k] / D) / D","groups":1,"mappings":["block"],"stages":2,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":3,"body":"exp(x[i,j] - 1)","groups":1,"mappings":["block"],"stages":1,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":4,"body":"x[i,j] + (sum(k) x[i,k] / D) / D","groups":1,"mappings":["block"],"stages":1,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":5,"body":"(x[i,j] - (sum(k) x[i,k] / D) / D) / D","groups":1,"mappings":["block"],"stages":2,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":6,"body":"tanh(x[i,j])","groups":1,"mappings":["block"],"stages":1,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":7,"body":"x[i,j] * 2","groups":1,"mappings":["block"],"stages":1,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":8,"body":"exp(x[i,j] - 1)","groups":1,"mappings":["block"],"stages":1,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":9,"body":"x[i,j] + (sum(k) x[i,k] / D) / D","groups":1,"mappings":["block"],"stages":2,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":10,"body":"x[i,j] * 2","groups":1,"mappings":["block"],"stages":2,"verdict":{"accepted":true,"relation":"exact"}}
+{"n":11,"body":"x[i,j] * 2","groups":1,"mappings":["block"],"stages":2,"verdict":{"accepted":true,"relation":"exact"}}
+{"count":12,"programsWithStagedTerms":true,"stages":17,"refusals":0,"accepted":12}

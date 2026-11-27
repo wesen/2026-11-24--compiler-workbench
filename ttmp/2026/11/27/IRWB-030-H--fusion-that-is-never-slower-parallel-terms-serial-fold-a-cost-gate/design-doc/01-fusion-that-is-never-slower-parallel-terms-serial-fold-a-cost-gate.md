@@ -201,6 +201,23 @@ its measurement.
 - The gate's boundary (script 03, re-run after the change) and the two programs it keeps unfused.
 - What the contract checks and what it costs (case count, cold and repeated `checkLowering`).
 
-## As built (filled in after implementation)
+## As built
 
-See the report.
+The implementation follows this design. Full results and measurements are in
+`reference/02-report-fusion-that-is-never-slower.md`; the diary is `reference/01-implementation-diary.md`. It differs
+in five points:
+
+- **The term region is laid out per member, not one region per group.** Each staged reduction of one member gets its
+  own slots, because all of a member's prologues run before its fold; the region is reused from member to member
+  behind the barriers. The design's "maximum of its staged reductions" was wrong for two reductions in one member and
+  was caught by the `twice` probe (script 06, diary step 6).
+- **The price list is measured, not listed in advance** (script 06): division 1.96×, `exp` 31.6×, a global read
+  1.03×, a row-buffer load 1.00×, a product 0.98×. Hence the four staged classes and the recorded serial refusals.
+- **A reduction with a split (`blocks`/`tail`) bound is refused**, because the host sizes the term region from shape
+  values alone; the design did not say what a staged split bound would do.
+- **The artifact records the staging**: `CudaKernel.terms` (`member#index`), `tensor.cuda-source` and
+  `tensor.lower-cuda` at version 3, and the correspondence's evidence carries the terms per kernel.
+- **The gate is exposed, not hidden**: `cudaSource(..., { shapes })` applies it, `loweredTix` returns the decision,
+  so the lowering a call runs can be read rather than inferred. The gate's threshold is the measured warp boundary
+  and it is conservative at `L = 16` (fusion would have won 1.4–1.5× for the traffic-bound programs there; report,
+  "The fuse gate").

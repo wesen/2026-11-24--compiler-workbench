@@ -127,7 +127,7 @@ test('GB10: staged terms agree with the meaning for every body the price list st
 
 test('GB10: the exact check rejects staged terms that are written or folded in another order', async () => {
   const source = cudaSource(staged, 'divide');
-  const kernels = [{ name: 'k0', mapping: 'block', statements: ['t', 'y'], terms: [{ member: 't', reduction: 0 }] }];
+  const kernels = [{ name: 'k0', mapping: 'block', statements: ['t', 'y'], terms: ['t#0'] }];
   const reversedTerms = source.replace(
     /terms0\[t\] = (v\d+);/,
     'terms0[((d1) - 1 - t)] = $1;',

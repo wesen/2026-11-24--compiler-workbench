@@ -324,7 +324,8 @@ const defaultShared = 48 * 1024;
 
 const product = (dims: string[]) =>
   dims.length ? `(${dims.map(d => `static_cast<U>(${d})`).join(' * ')})` : 'static_cast<U>(1)';
-/** The largest of a list of device-side length expressions (one term region, reused across members). */
+// Length expressions over the shape values, as C++ the device and the host both accept. `maxOf` is the term
+// region's size: the largest member's total, since the region is reused from member to member.
 const maxOf = (values: string[]) =>
   values.length ? [...new Set(values)].reduce((a, b) => `(${a} > ${b} ? ${a} : ${b})`) : '0';
 // Not deduplicated: two reductions of one member need their own slots even when they are the same length.
@@ -442,7 +443,7 @@ function emitGroup(
         w.line(`float* const ${name} = ${t.member === member ? offset : 'terms_base'};`);
         offset = `${name} + ${termCounts[i]}`;
         member = t.member;
-        stagedTerms.set(reductions.get(t.member)![t.reduction] as Expr, name);
+        stagedTerms.set(reductions.get(t.member)![t.reduction], name);
       });
     }
     for (const name of group.staged) {
@@ -471,7 +472,7 @@ function emitGroup(
             w.line(`const I ${axis} = rest % ${w.dim(r.axes[p].extent.dim)};`);
             if (p > 0) w.line(`rest /= ${w.dim(r.axes[p].extent.dim)};`);
           }
-          w.line(`${stagedTerms.get(r as Expr)}[t] = ${w.scalar(r.body)};`);
+          w.line(`${stagedTerms.get(r)}[t] = ${w.scalar(r.body)};`);
           w.leave();
           w.line('}');
         });

@@ -1,0 +1,16 @@
+{
+ "note": "fused corpus sources with // k plan comment lines removed; base commit 9e3e78a vs this stage",
+ "before": {
+  "softmax+fused": "d6b6433119d3d4f4097f49f8d179f947f26f73eee20f12b1ed6da8f469b5090f",
+  "layernorm+fused": "663e4fe9bca7b8912576a13384c26864cc648a0f4b754102768b80ca0b6278f3",
+  "attention+fused": "791820da45a01af2d0a141a49edded884280366f7e612ad59ac3b177a34cf674",
+  "mlp+fused": "3f1e51bab4296899262d25973b9d24b4dd85d5b02f76ee9bc3347955e571f584"
+ },
+ "after": {
+  "softmax+fused": "d6b6433119d3d4f4097f49f8d179f947f26f73eee20f12b1ed6da8f469b5090f",
+  "layernorm+fused": "663e4fe9bca7b8912576a13384c26864cc648a0f4b754102768b80ca0b6278f3",
+  "attention+fused": "791820da45a01af2d0a141a49edded884280366f7e612ad59ac3b177a34cf674",
+  "mlp+fused": "3f1e51bab4296899262d25973b9d24b4dd85d5b02f76ee9bc3347955e571f584"
+ },
+ "identical": true
+}
