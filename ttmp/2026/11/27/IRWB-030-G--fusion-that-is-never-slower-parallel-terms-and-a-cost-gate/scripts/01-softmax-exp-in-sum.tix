@@ -1,0 +1,9 @@
+// IRWB-030-G: softmax with the exponential moved inside the reduction, so the sum's body is a transcendental
+// instead of a load. A plausible variant of the corpus program, and the cost rule for parallel terms has to say
+// whether such a body is worth staging.
+fn softmax_exp_in_sum(x: f32[N,C]): f32[N,C] {
+  m[i] = max(j) x[i,j];
+  s[i] = sum(j) exp(x[i,j] - m[i]);
+  y[i,j] = exp(x[i,j] - m[i]) / s[i];
+  return y;
+}

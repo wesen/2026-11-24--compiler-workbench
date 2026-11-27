@@ -1,0 +1,13 @@
+// IRWB-030-G: the "inside" placement of the corpus attention, as the brief states it: the division by sqrt(D)
+// runs inside the score reduction, the normalization by l[i] runs inside the output reduction, and there is no
+// separate weight statement.
+//   corpus:      score[i,j] = (sum(d) q[i,d]*k[j,d]) / sqrt(D); weight[i,j] = e[i,j]/z[i]; out = sum(j) weight*v
+//   this program: score[i,j] = sum(d) q[i,d]*k[j,d] / sqrt(D);      out[i,c] = sum(j) e[i,j]*v[j,c] / l[i]
+fn attention_inside(q: f32[Q,D], k: f32[K,D], v: f32[K,V]): f32[Q,V] {
+  score[i,j] = sum(d) q[i,d] * k[j,d] / sqrt(D);
+  shift[i] = max(j) score[i,j];
+  e[i,j] = exp(score[i,j] - shift[i]);
+  l[i] = sum(j) e[i,j];
+  out[i,c] = sum(j) e[i,j] * v[j,c] / l[i];
+  return out;
+}

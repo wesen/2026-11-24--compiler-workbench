@@ -1,0 +1,8 @@
+// IRWB-030-G: one block-mode group whose first member is a two-axis sum with a division in its body (staged), a
+// one-axis max with a load body (left serial), and a row member reading both.
+fn multi(x: f32[N,C,D]): f32[N,C] {
+  s[i] = sum(j,k) x[i,j,k] / D;
+  m[i] = max(j) x[i,j,0] + s[i];
+  e[i,j]: f32[N,C] = x[i,j,0] - s[i] + m[i];
+  return e;
+}

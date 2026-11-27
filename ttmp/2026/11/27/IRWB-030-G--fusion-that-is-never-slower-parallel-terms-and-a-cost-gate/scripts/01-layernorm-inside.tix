@@ -1,0 +1,11 @@
+// IRWB-030-G: the "inside" placement of the corpus layernorm, as the brief states it: the division that the
+// corpus applies to the reduced value runs inside the reduction, so every term is divided and rounded separately.
+//   corpus:      mean[i] = (sum(j) x[i,j]) / D
+//   this program: mean[i] = sum(j) x[i,j] / D
+fn layernorm_inside(x: f32[N,D], gamma: f32[D], beta: f32[D], eps: f32[1]): f32[N,D] {
+  mean[i] = sum(j) x[i,j] / D;
+  centered[i,j] = x[i,j] - mean[i];
+  variance[i] = sum(j) centered[i,j] * centered[i,j] / D;
+  y[i,j] = centered[i,j] / sqrt(variance[i] + eps[0]) * gamma[j] + beta[j];
+  return y;
+}
