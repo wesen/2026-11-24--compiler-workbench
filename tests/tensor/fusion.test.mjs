@@ -59,7 +59,10 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
   for (const name of ['matmul', 'conv2d']) {
     const program = corpus(name);
     assert.notEqual(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
-    assert.match(cudaSource(program, name), /template <int V>\n__global__ void k0/);
+    assert.match(
+      cudaSource(program, name),
+      /template <int V>\n(\/\/.*\n)*__global__ void __launch_bounds__\([^)]*\) k0\(/,
+    );
   }
   assert.equal(kernels(cudaSource(corpus('softmax'), 'softmax', { fuse: false })), 4);
 });

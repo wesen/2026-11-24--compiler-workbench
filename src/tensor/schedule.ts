@@ -76,8 +76,16 @@ export interface ContractionKernel {
   /** The tensors of the body `X * Y`: X varies with m, Y with n. */
   operands: { m: string; n: string };
   variants: Variant[];
-  /** At launch, the first entry whose grid has at least minBlocks per SM wins; the last has minBlocks 0. */
-  select: { variant: number; minBlocks: number }[];
+  /**
+   * At launch, the first entry whose grid has at least minBlocks per SM, and whose reduction has at least minTerms
+   * terms, wins; the last entry has neither bound.
+   */
+  select: Selection[];
+}
+export interface Selection {
+  variant: number;
+  minBlocks: number;
+  minTerms?: number;
 }
 export type ScheduleKernel =
   | { name: string; kind: 'pointwise'; group: FusionGroup }
@@ -178,7 +186,8 @@ function validate(value: unknown) {
       k.select.every(
         e => Number.isSafeInteger(e.variant) && e.variant >= 0 && e.variant < k.variants.length,
       ) &&
-      k.select.at(-1)!.minBlocks === 0, 'Invalid variant selection');
+      k.select.at(-1)!.minBlocks === 0 &&
+      !k.select.at(-1)!.minTerms, 'Invalid variant selection');
   }
 }
 function* entities(s: Schedule): Generator<IREntity> {
@@ -646,14 +655,15 @@ export const stagePass = schedulePass<VariantRef & { operand: 'm' | 'n'; at: str
 );
 
 /** The launch rule over the kernel's variants. */
-export const selectPass = schedulePass<{ kernel: string; rule: { variant: number; minBlocks: number }[] }>(
+export const selectPass = schedulePass<{ kernel: string; rule: Selection[] }>(
   'select',
   'Set the launch-time rule that picks a variant from the grid size',
   (s, { kernel, rule }) => {
     const k = contractionKernel(s, kernel);
     if (!k) return no(`${kernel} is not a contraction kernel`);
-    if (!rule.length || rule.at(-1)!.minBlocks !== 0) return no('the last entry must accept every grid');
-    if (rule.some(e => !k.variants[e.variant] || !(e.minBlocks >= 0)))
+    if (!rule.length || rule.at(-1)!.minBlocks !== 0 || rule.at(-1)!.minTerms)
+      return no('the last entry must accept every grid');
+    if (rule.some(e => !k.variants[e.variant] || !(e.minBlocks >= 0) || !((e.minTerms ?? 0) >= 0)))
       return no('the rule names a missing variant');
     return ok;
   },
