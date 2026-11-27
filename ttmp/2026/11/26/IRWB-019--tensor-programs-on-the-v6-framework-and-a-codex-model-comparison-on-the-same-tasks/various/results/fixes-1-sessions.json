@@ -1,0 +1,110 @@
+[
+ {
+  "worktree": "fix1-ah-irwb-024",
+  "session": "01a21af7-cc4b-7760-8334-fd873332b576",
+  "start": "03:06:17Z",
+  "end": "03:13:57Z",
+  "minutes": 7.7,
+  "total_tokens": 2812689,
+  "output_tokens": 9925,
+  "reasoning_tokens": 2255,
+  "tool_calls": 41,
+  "sidecar": false
+ },
+ {
+  "worktree": "fix1-ah-irwb-024",
+  "session": "01a21afe-d66e-7333-b96c-4ebe90344db7",
+  "start": "03:13:59Z",
+  "end": "03:14:41Z",
+  "minutes": 0.7,
+  "total_tokens": 162733,
+  "output_tokens": 1126,
+  "reasoning_tokens": 83,
+  "tool_calls": 3,
+  "sidecar": false
+ },
+ {
+  "worktree": "fix1-al-irwb-025",
+  "session": "01a21afb-bbda-7730-86db-884aa695c8e2",
+  "start": "03:10:35Z",
+  "end": "03:15:30Z",
+  "minutes": 4.9,
+  "total_tokens": 1220986,
+  "output_tokens": 5075,
+  "reasoning_tokens": 98,
+  "tool_calls": 24,
+  "sidecar": false
+ },
+ {
+  "worktree": "fix1-al-irwb-025",
+  "session": "01a21afb-bc5f-71f0-8e16-7bd1535162d9",
+  "start": "03:12:22Z",
+  "end": "03:15:17Z",
+  "minutes": 2.9,
+  "total_tokens": 64329,
+  "output_tokens": 433,
+  "reasoning_tokens": 224,
+  "tool_calls": 0,
+  "sidecar": true
+ },
+ {
+  "worktree": "fix1-al-irwb-025",
+  "session": "01a21b00-421a-7a91-9213-04c7eb518e0c",
+  "start": "03:15:32Z",
+  "end": "03:16:03Z",
+  "minutes": 0.5,
+  "total_tokens": 138449,
+  "output_tokens": 767,
+  "reasoning_tokens": 0,
+  "tool_calls": 3,
+  "sidecar": false
+ },
+ {
+  "worktree": "fix1-sl-irwb-026",
+  "session": "01a21afd-e77d-7833-ac8e-ebbb92adb8f2",
+  "start": "03:12:57Z",
+  "end": "03:19:06Z",
+  "minutes": 6.1,
+  "total_tokens": 2098297,
+  "output_tokens": 9918,
+  "reasoning_tokens": 2046,
+  "tool_calls": 36,
+  "sidecar": false
+ },
+ {
+  "worktree": "fix1-sl-irwb-026",
+  "session": "01a21afd-e869-73f1-bae8-627a4b131cf0",
+  "start": "03:15:04Z",
+  "end": "03:18:53Z",
+  "minutes": 3.8,
+  "total_tokens": 77843,
+  "output_tokens": 320,
+  "reasoning_tokens": 139,
+  "tool_calls": 0,
+  "sidecar": true
+ },
+ {
+  "worktree": "fix1-tl-irwb-027",
+  "session": "01a21afd-e683-7261-9ea4-4c7e55158885",
+  "start": "03:12:58Z",
+  "end": "03:17:41Z",
+  "minutes": 4.7,
+  "total_tokens": 1616306,
+  "output_tokens": 7181,
+  "reasoning_tokens": 630,
+  "tool_calls": 32,
+  "sidecar": false
+ },
+ {
+  "worktree": "fix1-tl-irwb-027",
+  "session": "01a21afd-e70b-7da1-b4f6-fee09dd57803",
+  "start": "03:17:18Z",
+  "end": "03:17:22Z",
+  "minutes": 0.1,
+  "total_tokens": 15473,
+  "output_tokens": 158,
+  "reasoning_tokens": 96,
+  "tool_calls": 0,
+  "sidecar": true
+ }
+]
