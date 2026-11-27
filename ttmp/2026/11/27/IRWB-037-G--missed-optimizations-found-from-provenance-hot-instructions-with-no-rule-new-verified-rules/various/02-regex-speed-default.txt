@@ -1,0 +1,577 @@
+regex: 6933 instructions over 1 case(s)
+
+== regexMatch: 6933
+   regexMatch:frame 23
+ bb:regexMatch.0  [142]
+       137  zero frame+0, 180 bytes    {ingest@rundefined}
+                  1  addi t0, sp, 0   ; frame array
+                  1  addi t1, t0, 180
+                 45  sw zero, 0(t0)
+                 45  addi t0, t0, 4
+                 45  bne t0, t1, L0   ; zero the next word
+         1  p = 0    {ingest@rundefined}
+                  1  addi t0, zero, 0
+         1  s = 0    {ingest@rundefined}
+                  1  addi t1, zero, 0
+         1  inv = frame+0    {licm@r8}
+                  1  addi t2, sp, 0   ; frame array
+         2  if (p >= load32[pattern+0]) goto .2 else .3    {rotate@r11}
+                  1  lw t3, 0(a0)
+                  1  blt t0, t3, bb.3
+ bb:regexMatch.2  [6]
+         1  accept = s    {ingest@rundefined}
+                  1  addi t3, t1, 0   ; copy
+         2  t22 = (5 * accept)    {ingest@rundefined}
+                  1  addi t4, zero, 5
+                  1  mul t4, t4, t3
+         3  if (t22 >=u 45) goto .42 else .45    {ingest@rundefined}
+                  1  addi a2, zero, 45
+                  1  bgeu t4, a2, bb.42
+                  1  jal zero, bb.45
+ bb:regexMatch.3  [32]
+        20  low = load16[caddr(pattern, p)+4]    {ingest@rundefined}
+                  4  lw a2, 0(a0)   ; capacity
+                  4  bltu t0, a2, L1   ; checked address
+                  0  ebreak   ; checked address out of range
+                  4  slli a2, t0, 1
+                  4  add a2, a0, a2
+                  4  lhu a2, 4(a2)
+         4  high = low    {ingest@rundefined}
+                  4  addi a3, a2, 0   ; copy
+         8  if (low == 91) goto .4 else .5    {ingest@rundefined}
+                  4  addi a4, zero, 91
+                  4  bne a2, a4, bb.5
+ bb:regexMatch.4  [28]
+        12  low = load16[caddr(pattern, (p + 1))+4]    {ingest@rundefined}
+                  2  addi a4, t0, 1
+                  2  lw a5, 0(a0)   ; capacity
+                  2  bltu a4, a5, L2   ; checked address
+                  0  ebreak   ; checked address out of range
+                  2  slli a4, a4, 1
+                  2  add a4, a0, a4
+                  2  lhu a2, 4(a4)
+        12  high = load16[caddr(pattern, (p + 3))+4]    {ingest@rundefined}
+                  2  addi a4, t0, 3
+                  2  lw a5, 0(a0)   ; capacity
+                  2  bltu a4, a5, L3   ; checked address
+                  0  ebreak   ; checked address out of range
+                  2  slli a4, a4, 1
+                  2  add a4, a0, a4
+                  2  lhu a3, 4(a4)
+         2  p = (p + 5)    {ingest@rundefined}
+                  2  addi t0, t0, 5
+         2  goto .6    {ingest@rundefined}
+                  2  jal zero, bb.6
+ bb:regexMatch.5  [2]
+         2  p = (p + 1)    {ingest@rundefined}
+                  2  addi t0, t0, 1
+         0  goto .6    {ingest@rundefined}
+ bb:regexMatch.6  [12]
+         4  out = (s + 1)    {ingest@rundefined}
+                  4  addi a4, t1, 1
+         8  if (p < load32[pattern+0]) goto .7 else .8    {ingest@rundefined}
+                  4  lw a5, 0(a0)
+                  4  bge t0, a5, bb.8
+ bb:regexMatch.7  [24]
+        21  t42 = (load16[caddr(pattern, p)+4] == 42)    {ingest@rundefined}
+                  3  lw a5, 0(a0)   ; capacity
+                  3  bltu t0, a5, L4   ; checked address
+                  0  ebreak   ; checked address out of range
+                  3  slli a5, t0, 1
+                  3  add a5, a0, a5
+                  3  lhu a5, 4(a5)
+                  3  xori a5, a5, 42
+                  3  sltiu a5, a5, 1
+         3  goto .9    {ingest@rundefined}
+                  3  jal zero, bb.9
+ bb:regexMatch.8  [1]
+         1  t42 = 0    {ingest@rundefined}
+                  1  addi a5, zero, 0
+         0  goto .9    {ingest@rundefined}
+ bb:regexMatch.9  [4]
+         4  if t42 goto .10 else .24    {ingest@rundefined}
+                  4  beq a5, zero, bb.24
+ bb:regexMatch.10  [12]
+         6  split = (5 * s)    {ingest@rundefined}
+                  3  addi a5, zero, 5
+                  3  mul a5, a5, t1
+         6  if (split >=u 45) goto .12 else .15    {ingest@rundefined}
+                  3  addi a6, zero, 45
+                  3  bltu a5, a6, bb.15
+ bb:regexMatch.15  [21]
+        12  store32[(inv + (split << 2))+0] = 2    {ingest@rundefined}
+                  3  slli a6, a5, 2
+                  3  add a6, t2, a6
+                  3  addi a7, zero, 2
+                  3  sw a7, 0(a6)
+         3  t15 = (split + 3)    {ingest@rundefined}
+                  3  addi a6, a5, 3
+         6  if (t15 >=u 45) goto .16 else .19    {ingest@rundefined}
+                  3  addi a7, zero, 45
+                  3  bltu a6, a7, bb.19
+ bb:regexMatch.19  [21]
+        12  store32[(inv + (t15 << 2))+0] = (s + 1)    {ingest@rundefined}
+                  3  slli a6, a6, 2
+                  3  add a6, t2, a6
+                  3  addi a7, t1, 1
+                  3  sw a7, 0(a6)
+         3  t16 = (split + 4)    {ingest@rundefined}
+                  3  addi a5, a5, 4
+         6  if (t16 >=u 45) goto .20 else .23    {ingest@rundefined}
+                  3  addi a6, zero, 45
+                  3  bltu a5, a6, bb.23
+ bb:regexMatch.23  [21]
+        12  store32[(inv + (t16 << 2))+0] = (s + 2)    {ingest@rundefined}
+                  3  slli a5, a5, 2
+                  3  add a5, t2, a5
+                  3  addi a6, t1, 2
+                  3  sw a6, 0(a5)
+         3  out = s    {ingest@rundefined}
+                  3  addi a4, t1, 0   ; copy
+         3  s = (s + 1)    {ingest@rundefined}
+                  3  addi t1, t1, 1
+         3  p = (p + 1)    {ingest@rundefined}
+                  3  addi t0, t0, 1
+         0  goto .24    {ingest@rundefined}
+ bb:regexMatch.24  [16]
+         8  range = (5 * s)    {ingest@rundefined}
+                  4  addi a5, zero, 5
+                  4  mul a5, a5, t1
+         8  if (range >=u 45) goto .25 else .28    {ingest@rundefined}
+                  4  addi a6, zero, 45
+                  4  bltu a5, a6, bb.28
+ bb:regexMatch.28  [28]
+        16  store32[(inv + (range << 2))+0] = 1    {ingest@rundefined}
+                  4  slli a6, a5, 2
+                  4  add a6, t2, a6
+                  4  addi a7, zero, 1
+                  4  sw a7, 0(a6)
+         4  t18 = (range + 1)    {ingest@rundefined}
+                  4  addi a6, a5, 1
+         8  if (t18 >=u 45) goto .29 else .32    {ingest@rundefined}
+                  4  addi a7, zero, 45
+                  4  bltu a6, a7, bb.32
+ bb:regexMatch.32  [24]
+        12  store32[(inv + (t18 << 2))+0] = low    {ingest@rundefined}
+                  4  slli a6, a6, 2
+                  4  add a6, t2, a6
+                  4  sw a2, 0(a6)
+         4  t19 = (range + 2)    {ingest@rundefined}
+                  4  addi a2, a5, 2
+         8  if (t19 >=u 45) goto .33 else .36    {ingest@rundefined}
+                  4  addi a6, zero, 45
+                  4  bltu a2, a6, bb.36
+ bb:regexMatch.36  [24]
+        12  store32[(inv + (t19 << 2))+0] = high    {ingest@rundefined}
+                  4  slli a2, a2, 2
+                  4  add a2, t2, a2
+                  4  sw a3, 0(a2)
+         4  t20 = (range + 3)    {ingest@rundefined}
+                  4  addi a2, a5, 3
+         8  if (t20 >=u 45) goto .37 else .40    {ingest@rundefined}
+                  4  addi a3, zero, 45
+                  4  bltu a2, a3, bb.40
+ bb:regexMatch.40  [27]
+        12  store32[(inv + (t20 << 2))+0] = out    {ingest@rundefined}
+                  4  slli a2, a2, 2
+                  4  add a2, t2, a2
+                  4  sw a4, 0(a2)
+         4  s = (s + 1)    {ingest@rundefined}
+                  4  addi t1, t1, 1
+        11  if (p >= load32[pattern+0]) goto .2 else .3    {rotate@r11}
+                  4  lw a2, 0(a0)
+                  4  bge t0, a2, bb.2
+                  3  jal zero, bb.3
+ bb:regexMatch.45  [41]
+         5  store32[(frame+0 + (t22 << 2))+0] = 3    {ingest@rundefined}
+                  1  addi t0, sp, 0   ; frame array
+                  1  slli t1, t4, 2
+                  1  add t0, t0, t1
+                  1  addi t1, zero, 3
+                  1  sw t1, 0(t0)
+         1  stateCount = (accept + 1)    {ingest@rundefined}
+                  1  addi t0, t3, 1
+         9  zero frame+180, 36 bytes    {ingest@rundefined}
+                  1  sw zero, 180(sp)
+                  1  sw zero, 184(sp)
+                  1  sw zero, 188(sp)
+                  1  sw zero, 192(sp)
+                  1  sw zero, 196(sp)
+                  1  sw zero, 200(sp)
+                  1  sw zero, 204(sp)
+                  1  sw zero, 208(sp)
+                  1  sw zero, 212(sp)
+         9  zero frame+216, 36 bytes    {ingest@rundefined}
+                  1  sw zero, 216(sp)
+                  1  sw zero, 220(sp)
+                  1  sw zero, 224(sp)
+                  1  sw zero, 228(sp)
+                  1  sw zero, 232(sp)
+                  1  sw zero, 236(sp)
+                  1  sw zero, 240(sp)
+                  1  sw zero, 244(sp)
+                  1  sw zero, 248(sp)
+         9  zero frame+252, 36 bytes    {ingest@rundefined}
+                  1  sw zero, 252(sp)
+                  1  sw zero, 256(sp)
+                  1  sw zero, 260(sp)
+                  1  sw zero, 264(sp)
+                  1  sw zero, 268(sp)
+                  1  sw zero, 272(sp)
+                  1  sw zero, 276(sp)
+                  1  sw zero, 280(sp)
+                  1  sw zero, 284(sp)
+         2  store32[frame+180+0] = 1    {ingest@rundefined}
+                  1  addi t1, zero, 1
+                  1  sw t1, 180(sp)
+         1  i = 0    {ingest@rundefined}
+                  1  addi t1, zero, 0
+         1  inv9 = frame+252    {licm@r8}
+                  1  addi t2, sp, 252   ; frame array
+         1  inv10 = frame+180    {licm@r8}
+                  1  addi t4, sp, 180   ; frame array
+         1  inv11 = frame+216    {licm@r8}
+                  1  addi a2, sp, 216   ; frame array
+         1  inv12 = frame+0    {licm@r8}
+                  1  addi a3, sp, 0   ; frame array
+         1  goto .48    {ingest@rundefined}
+                  1  jal zero, bb.48
+ bb:regexMatch.47  [3]
+         3  if (accept >=u 9) goto .175 else .178    {ingest@rundefined}
+                  1  addi a4, zero, 9
+                  1  bgeu t3, a4, bb.175
+                  1  jal zero, bb.178
+ bb:regexMatch.48  [54]
+         9  head = 0    {ingest@rundefined}
+                  9  addi a4, zero, 0
+         9  tail = 0    {ingest@rundefined}
+                  9  addi a5, zero, 0
+         9  state = 0    {ingest@rundefined}
+                  9  addi a6, zero, 0
+         9  inv1 = inv9    {licm@r8}
+                  9  addi a7, t2, 0   ; copy
+         9  inv2 = inv10    {licm@r8}
+                  9  addi a0, t4, 0   ; copy
+         9  if (state >= stateCount) goto .n5 else .51    {rotate@r11}
+                  9  bge a6, t0, bb.n5
+ bb:regexMatch.51  [144]
+       144  if (state >=u 9) goto .52 else .55    {ingest@rundefined}
+                 72  addi s1, zero, 9
+                 72  bltu a6, s1, bb.55
+ bb:regexMatch.55  [360]
+       360  if (load32[(inv2 + (state << 2))+0] == 1) goto .56 else .62    {ingest@rundefined}
+                 72  slli s1, a6, 2
+                 72  add s1, a0, s1
+                 72  lw s1, 0(s1)
+                 72  addi s2, zero, 1
+                 72  bne s1, s2, bb.62
+ bb:regexMatch.56  [34]
+        34  if (tail >=u 9) goto .58 else .61    {ingest@rundefined}
+                 17  addi s1, zero, 9
+                 17  bltu a5, s1, bb.61
+ bb:regexMatch.61  [68]
+        51  store32[(inv1 + (tail << 2))+0] = state    {ingest@rundefined}
+                 17  slli s1, a5, 2
+                 17  add s1, a7, s1
+                 17  sw a6, 0(s1)
+        17  tail = (tail + 1)    {ingest@rundefined}
+                 17  addi a5, a5, 1
+         0  goto .62    {ingest@rundefined}
+ bb:regexMatch.62  [207]
+        72  state = (state + 1)    {ingest@rundefined}
+                 72  addi a6, a6, 1
+       135  if (state >= stateCount) goto .n5 else .51    {rotate@r11}
+                 72  bge a6, t0, bb.n5
+                 63  jal zero, bb.51
+ bb:regexMatch.64  [43]
+        43  if (head >= tail) goto .65 else .66    {ingest@rundefined}
+                 43  blt a4, a5, bb.66
+ bb:regexMatch.65  [26]
+        26  if (i == load32[text+0]) goto .47 else .120    {ingest@rundefined}
+                  9  lw s1, 0(a1)
+                  9  beq t1, s1, bb.47
+                  8  jal zero, bb.120
+ bb:regexMatch.66  [124]
+       124  if (head >=u 9) goto .67 else .70    {ingest@rundefined}
+                 62  addi s1, zero, 9
+                 62  bltu a4, s1, bb.70
+ bb:regexMatch.70  [496]
+       310  row = (5 * load32[(inv3 + (head << 2))+0])    {ingest@rundefined}
+                 62  addi s1, zero, 5
+                 62  slli s2, a4, 2
+                 62  add s2, a6, s2
+                 62  lw s2, 0(s2)
+                 62  mul s1, s1, s2
+        62  head = (head + 1)    {ingest@rundefined}
+                 62  addi a4, a4, 1
+       124  if (row >=u 45) goto .71 else .74    {ingest@rundefined}
+                 62  addi s2, zero, 45
+                 62  bltu s1, s2, bb.74
+ bb:regexMatch.74  [310]
+       310  if (load32[(inv5 + (row << 2))+0] == 2) goto .75 else .64    {ingest@rundefined}
+                 62  slli s2, s1, 2
+                 62  add s2, a0, s2
+                 62  lw s2, 0(s2)
+                 62  addi s3, zero, 2
+                 62  bne s2, s3, bb.64
+ bb:regexMatch.75  [78]
+        26  t29 = (row + 3)    {ingest@rundefined}
+                 26  addi s2, s1, 3
+        52  if (t29 >=u 45) goto .77 else .80    {ingest@rundefined}
+                 26  addi s3, zero, 45
+                 26  bltu s2, s3, bb.80
+ bb:regexMatch.80  [156]
+        78  first = load32[(inv5 + (t29 << 2))+0]    {ingest@rundefined}
+                 26  slli s2, s2, 2
+                 26  add s2, a0, s2
+                 26  lw s2, 0(s2)
+        26  t31 = (row + 4)    {ingest@rundefined}
+                 26  addi s1, s1, 4
+        52  if (t31 >=u 45) goto .81 else .84    {ingest@rundefined}
+                 26  addi s3, zero, 45
+                 26  bltu s1, s3, bb.84
+ bb:regexMatch.84  [130]
+        78  second = load32[(inv5 + (t31 << 2))+0]    {ingest@rundefined}
+                 26  slli s1, s1, 2
+                 26  add s1, a0, s1
+                 26  lw s1, 0(s1)
+        52  if (first >=u 9) goto .85 else .88    {ingest@rundefined}
+                 26  addi s3, zero, 9
+                 26  bltu s2, s3, bb.88
+ bb:regexMatch.88  [104]
+       104  if (load32[(inv4 + (first << 2))+0] == 0) goto .89 else .99    {ingest@rundefined}
+                 26  slli s3, s2, 2
+                 26  add s3, a7, s3
+                 26  lw s3, 0(s3)
+                 26  bne s3, zero, bb.99
+ bb:regexMatch.89  [52]
+        52  if (first >=u 9) goto .91 else .94    {ingest@rundefined}
+                 26  addi s3, zero, 9
+                 26  bltu s2, s3, bb.94
+ bb:regexMatch.94  [156]
+       104  store32[(inv4 + (first << 2))+0] = 1    {ingest@rundefined}
+                 26  slli s3, s2, 2
+                 26  add s3, a7, s3
+                 26  addi s4, zero, 1
+                 26  sw s4, 0(s3)
+        52  if (tail >=u 9) goto .95 else .98    {ingest@rundefined}
+                 26  addi s3, zero, 9
+                 26  bltu a5, s3, bb.98
+ bb:regexMatch.98  [104]
+        78  store32[(inv3 + (tail << 2))+0] = first    {ingest@rundefined}
+                 26  slli s3, a5, 2
+                 26  add s3, a6, s3
+                 26  sw s2, 0(s3)
+        26  tail = (tail + 1)    {ingest@rundefined}
+                 26  addi a5, a5, 1
+         0  goto .99    {ingest@rundefined}
+ bb:regexMatch.99  [52]
+        52  if (second >=u 9) goto .100 else .103    {ingest@rundefined}
+                 26  addi s2, zero, 9
+                 26  bltu s1, s2, bb.103
+ bb:regexMatch.103  [104]
+       104  if (load32[(inv4 + (second << 2))+0] == 0) goto .104 else .64    {ingest@rundefined}
+                 26  slli s2, s1, 2
+                 26  add s2, a7, s2
+                 26  lw s2, 0(s2)
+                 26  bne s2, zero, bb.64
+ bb:regexMatch.104  [38]
+        38  if (second >=u 9) goto .106 else .109    {ingest@rundefined}
+                 19  addi s2, zero, 9
+                 19  bltu s1, s2, bb.109
+ bb:regexMatch.109  [114]
+        76  store32[(inv4 + (second << 2))+0] = 1    {ingest@rundefined}
+                 19  slli s2, s1, 2
+                 19  add s2, a7, s2
+                 19  addi s3, zero, 1
+                 19  sw s3, 0(s2)
+        38  if (tail >=u 9) goto .110 else .113    {ingest@rundefined}
+                 19  addi s2, zero, 9
+                 19  bltu a5, s2, bb.113
+ bb:regexMatch.113  [114]
+        57  store32[(inv3 + (tail << 2))+0] = second    {ingest@rundefined}
+                 19  slli s2, a5, 2
+                 19  add s2, a6, s2
+                 19  sw s1, 0(s2)
+        19  tail = (tail + 1)    {ingest@rundefined}
+                 19  addi a5, a5, 1
+        38  if (head >= tail) goto .65 else .66    {rotate@r11}
+                 19  bge a4, a5, bb.65
+                 19  jal zero, bb.66
+ bb:regexMatch.120  [80]
+        40  code = load16[caddr(text, i)+4]    {ingest@rundefined}
+                  8  lw s1, 0(a1)   ; capacity
+                  8  bltu t1, s1, L5   ; checked address
+                  0  ebreak   ; checked address out of range
+                  8  slli s1, t1, 1
+                  8  add s1, a1, s1
+                  8  lhu s1, 4(s1)
+         8  state = 0    {ingest@rundefined}
+                  8  addi s2, zero, 0
+         8  inv6 = inv11    {licm@r8}
+                  8  addi s3, a2, 0   ; copy
+         8  inv7 = inv12    {licm@r8}
+                  8  addi s4, a3, 0   ; copy
+         8  inv8 = inv10    {licm@r8}
+                  8  addi s5, t4, 0   ; copy
+         8  if (state >= stateCount) goto .122 else .123    {rotate@r11}
+                  8  blt s2, t0, bb.123
+ bb:regexMatch.122  [24]
+         8  state = 0    {ingest@rundefined}
+                  8  addi s6, zero, 0
+        16  if (state >= stateCount) goto .159 else .160    {rotate@r11}
+                  8  bge s6, t0, bb.159
+                  8  jal zero, bb.160
+ bb:regexMatch.123  [256]
+       128  row = (5 * state)    {ingest@rundefined}
+                 64  addi s7, zero, 5
+                 64  mul s7, s7, s2
+       128  if (state >=u 9) goto .124 else .127    {ingest@rundefined}
+                 64  addi s8, zero, 9
+                 64  bltu s2, s8, bb.127
+ bb:regexMatch.127  [320]
+       320  if (load32[(inv8 + (state << 2))+0] == 1) goto .128 else .129    {ingest@rundefined}
+                 64  slli s8, s2, 2
+                 64  add s8, s5, s8
+                 64  lw s8, 0(s8)
+                 64  addi s9, zero, 1
+                 64  bne s8, s9, bb.129
+ bb:regexMatch.128  [168]
+       168  if (row >=u 45) goto .130 else .133    {ingest@rundefined}
+                 56  addi s8, zero, 45
+                 56  bgeu s7, s8, bb.130
+                 56  jal zero, bb.133
+ bb:regexMatch.129  [16]
+         8  t43 = 0    {ingest@rundefined}
+                  8  addi s8, zero, 0
+         8  goto .134    {ingest@rundefined}
+                  8  jal zero, bb.134
+ bb:regexMatch.133  [280]
+       280  t43 = (load32[(inv7 + (row << 2))+0] == 1)    {ingest@rundefined}
+                 56  slli s9, s7, 2
+                 56  add s9, s4, s9
+                 56  lw s9, 0(s9)
+                 56  xori s8, s9, 1
+                 56  sltiu s8, s8, 1
+         0  goto .134    {ingest@rundefined}
+ bb:regexMatch.134  [64]
+        64  if t43 goto .135 else .156    {ingest@rundefined}
+                 64  beq s8, zero, bb.156
+ bb:regexMatch.135  [96]
+        32  t37 = (row + 1)    {ingest@rundefined}
+                 32  addi s8, s7, 1
+        64  if (t37 >=u 45) goto .137 else .140    {ingest@rundefined}
+                 32  addi s9, zero, 45
+                 32  bltu s8, s9, bb.140
+ bb:regexMatch.140  [192]
+        32  t38 = (row + 2)    {ingest@rundefined}
+                 32  addi s9, s7, 2
+        96  t44 = load32[(inv7 + (t37 << 2))+0]    {ingest@rundefined}
+                 32  slli s8, s8, 2
+                 32  add s8, s4, s8
+                 32  lw s8, 0(s8)
+        64  if (t38 >=u 45) goto .141 else .144    {ingest@rundefined}
+                 32  addi s10, zero, 45
+                 32  bltu s9, s10, bb.144
+ bb:regexMatch.144  [160]
+        32  inRange_code = code    {inline@r1}
+                 32  addi s10, s1, 0   ; copy
+        96  inRange_high = load32[(inv7 + (t38 << 2))+0]    {inline@r1}
+                 32  slli s9, s9, 2
+                 32  add s9, s4, s9
+                 32  lw s9, 0(s9)
+        32  if (inRange_code >= t44) goto .n2 else .n3    {inline@r1}
+                 32  blt s10, s8, bb.n3
+ bb:regexMatch.n2  [69]
+        46  inRange_t3 = (inRange_code <= inRange_high)    {inline@r1}
+                 23  slt s8, s9, s10
+                 23  xori s8, s8, 1
+        23  goto .n4    {inline@r1}
+                 23  jal zero, bb.n4
+ bb:regexMatch.n3  [9]
+         9  inRange_t3 = 0    {inline@r1}
+                  9  addi s8, zero, 0
+         0  goto .n4    {inline@r1}
+ bb:regexMatch.n4  [32]
+        32  if inRange_t3 goto .145 else .156    {ingest@rundefined}
+                 32  beq s8, zero, bb.156
+ bb:regexMatch.145  [48]
+        16  t39 = (row + 3)    {ingest@rundefined}
+                 16  addi s7, s7, 3
+        32  if (t39 >=u 45) goto .147 else .150    {ingest@rundefined}
+                 16  addi s8, zero, 45
+                 16  bltu s7, s8, bb.150
+ bb:regexMatch.150  [80]
+        48  t40 = load32[(inv7 + (t39 << 2))+0]    {ingest@rundefined}
+                 16  slli s7, s7, 2
+                 16  add s7, s4, s7
+                 16  lw s7, 0(s7)
+        32  if (t40 >=u 9) goto .151 else .154    {ingest@rundefined}
+                 16  addi s8, zero, 9
+                 16  bltu s7, s8, bb.154
+ bb:regexMatch.154  [64]
+        64  store32[(inv6 + (t40 << 2))+0] = 1    {ingest@rundefined}
+                 16  slli s7, s7, 2
+                 16  add s7, s3, s7
+                 16  addi s8, zero, 1
+                 16  sw s8, 0(s7)
+         0  goto .156    {ingest@rundefined}
+ bb:regexMatch.156  [184]
+        64  state = (state + 1)    {ingest@rundefined}
+                 64  addi s2, s2, 1
+       120  if (state >= stateCount) goto .122 else .123    {rotate@r11}
+                 64  bge s2, t0, bb.122
+                 56  jal zero, bb.123
+ bb:regexMatch.159  [16]
+         8  i = (i + 1)    {ingest@rundefined}
+                  8  addi t1, t1, 1
+         8  goto .48    {ingest@rundefined}
+                  8  jal zero, bb.48
+ bb:regexMatch.160  [128]
+       128  if (state >=u 9) goto .161 else .164    {ingest@rundefined}
+                 64  addi s1, zero, 9
+                 64  bltu s6, s1, bb.164
+ bb:regexMatch.164  [256]
+       128  t46 = (inv10 + (state << 2))    {ingest@rundefined}
+                 64  slli s1, s6, 2
+                 64  add s1, t4, s1
+       128  if (state >=u 9) goto .165 else .168    {ingest@rundefined}
+                 64  addi s2, zero, 9
+                 64  bltu s6, s2, bb.168
+ bb:regexMatch.168  [384]
+       256  store32[t46+0] = load32[(inv11 + (state << 2))+0]    {ingest@rundefined}
+                 64  slli s2, s6, 2
+                 64  add s2, a2, s2
+                 64  lw s2, 0(s2)
+                 64  sw s2, 0(s1)
+       128  if (state >=u 9) goto .169 else .172    {ingest@rundefined}
+                 64  addi s1, zero, 9
+                 64  bltu s6, s1, bb.172
+ bb:regexMatch.172  [376]
+       192  store32[(inv11 + (state << 2))+0] = 0    {ingest@rundefined}
+                 64  slli s1, s6, 2
+                 64  add s1, a2, s1
+                 64  sw zero, 0(s1)
+        64  state = (state + 1)    {ingest@rundefined}
+                 64  addi s6, s6, 1
+       120  if (state >= stateCount) goto .159 else .160    {rotate@r11}
+                 64  bge s6, t0, bb.159
+                 56  jal zero, bb.160
+ bb:regexMatch.178  [6]
+         6  return load32[(frame+180 + (accept << 2))+0]    {ingest@rundefined}
+                  1  addi s1, sp, 180   ; frame array
+                  1  slli s2, t3, 2
+                  1  add s1, s1, s2
+                  1  lw s1, 0(s1)
+                  1  addi a0, s1, 0   ; copy
+                  1  jal zero, exit
+ bb:regexMatch.n5  [45]
+         9  inv3 = frame+252    {licm@r8}
+                  9  addi a6, sp, 252   ; frame array
+         9  inv4 = frame+180    {licm@r8}
+                  9  addi a7, sp, 180   ; frame array
+         9  inv5 = frame+0    {licm@r8}
+                  9  addi a0, sp, 0   ; frame array
+        18  if (head >= tail) goto .65 else .66    {rotate@r11}
+                  9  bge a4, a5, bb.65
+                  9  jal zero, bb.66
