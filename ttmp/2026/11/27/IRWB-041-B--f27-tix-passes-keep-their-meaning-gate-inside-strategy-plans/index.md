@@ -1,17 +1,19 @@
 ---
 Title: 'F27: Tix passes keep their meaning gate inside strategy plans'
 Ticket: IRWB-041-B
-Status: active
+Status: complete
 Topics:
     - tensor
     - framework
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/index.ts
+      Note: tixAlgorithm and optimizeTix's declared-relation gate
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-27T17:28:15.241371908-05:00
+LastUpdated: 2026-11-27T18:02:41.729781024-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
