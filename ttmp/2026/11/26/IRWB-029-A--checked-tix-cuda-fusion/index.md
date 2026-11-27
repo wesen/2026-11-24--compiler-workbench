@@ -1,7 +1,7 @@
 ---
 Title: Checked Tix CUDA fusion
 Ticket: IRWB-029-A
-Status: active
+Status: complete
 Topics:
     - compiler
     - ir
@@ -9,48 +9,26 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: Exact GPU acceptance for both schedule modes
+    - Path: repo://src/tensor/cuda-fusion.ts
+      Note: Legality and kernel grouping
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: CUDA thread mappings, barriers and storage
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-26T23:01:34.82521637-05:00
+LastUpdated: 2026-11-26T23:15:45.673320053-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Checked Tix CUDA fusion
 
-## Overview
+Stage 3 of Tix adds checked CUDA fusion from resolved tensor definitions. The workbench retains the per-statement lowering for comparison.
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
-
-## Key Links
-
-- **Related Files**: See frontmatter RelatedFiles field
-- **External Sources**: See frontmatter ExternalSources field
-
-## Status
-
-Current status: **active**
-
-## Topics
-
-- compiler
-- ir
-- verification
-
-## Tasks
-
-See [tasks.md](./tasks.md) for the current task list.
-
-## Changelog
-
-See [changelog.md](./changelog.md) for recent changes and decisions.
-
-## Structure
-
-- design/ - Architecture and design documents
-- reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
-- scripts/ - Temporary code and tooling
-- various/ - Working notes and research
-- archive/ - Deprecated or reference-only artifacts
+- [Design](design-doc/01-order-preserving-cuda-fusion.md)
+- [Results](reference/02-checked-fusion-results.md)
+- [Implementation diary](reference/01-implementation-diary.md)
+- [Tasks](tasks.md)
+- [Changelog](changelog.md)

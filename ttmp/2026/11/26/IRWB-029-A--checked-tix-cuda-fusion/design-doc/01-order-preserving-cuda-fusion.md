@@ -19,38 +19,6 @@ WhenToUse: ""
 
 # Order-preserving CUDA fusion
 
-## Executive Summary
-
-<!-- Provide a high-level overview of the design proposal -->
-
-## Problem Statement
-
-<!-- Describe the problem this design addresses -->
-
-## Proposed Solution
-
-<!-- Describe the proposed solution in detail -->
-
-## Design Decisions
-
-<!-- Document key design decisions and rationale -->
-
-## Alternatives Considered
-
-<!-- List alternative approaches that were considered and why they were rejected -->
-
-## Implementation Plan
-
-<!-- Outline the steps to implement this design -->
-
-## Open Questions
-
-<!-- List any unresolved questions or concerns -->
-
-## References
-
-<!-- Link to related documents, RFCs, or external resources -->
-
 Lower the selected function of the current checked Tix revision. Calls use finite f32 inputs, consistent nonnegative affine shapes, in-bounds row-major addresses and sizes representable by the CUDA target, as in Stage 2. Empty extents, signed zeros, generated split bounds and nested reductions retain their existing meaning.
 
 Put fusion in CUDA lowering, with an IR-derived schedule selected before code emission. Tix rewrites would need to encode thread ownership, barriers and storage in a language whose interpreter only needs tensor definitions. A kernel artifact would support later kernel-to-kernel passes, but this stage has one schedule producer and one consumer. The existing CUDA source artifact is the executable subject of the exact contract. Keep the ordered source statement names in the schedule and generated source. The generic IR correspondence can express grouped source and target IDs, but the CUDA text artifact has no kernel projection for the framework to trace.

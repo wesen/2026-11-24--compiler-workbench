@@ -1,0 +1,6 @@
+{"name":"matmul","samples":36,"wallMs":2745.506745,"replayMs":3.159783999999945}
+{"name":"softmax","samples":32,"wallMs":2771.2544080000002,"replayMs":1.8208410000006552}
+{"name":"layernorm","samples":32,"wallMs":2772.3060530000002,"replayMs":1.4282660000008036}
+{"name":"attention","samples":40,"wallMs":2666.1484550000005,"replayMs":1.4946280000003753}
+{"name":"mlp","samples":40,"wallMs":2955.4366609999997,"replayMs":1.842768000000433}
+{"name":"conv2d","samples":28,"wallMs":3795.337183999998,"replayMs":1.0742879999997967}
