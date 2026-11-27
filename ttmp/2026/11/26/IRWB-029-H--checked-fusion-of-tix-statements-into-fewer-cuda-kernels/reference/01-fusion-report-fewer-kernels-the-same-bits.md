@@ -86,7 +86,9 @@ written. A second copy of the arithmetic would be a second chance to round diffe
 | P4 staging | A value read only inside its kernel is staged in shared memory instead of global memory, and a global row that a fold reads is copied into shared memory by the whole block first, so the loads are coalesced and the fold works on chip. |
 
 A run of one statement has nothing fused, so it keeps stage 2's mapping and its text byte for byte
-(`matmul` and `conv2d` differ in no character). `tests/tensor/fusion.test.mjs` asserts that.
+(`matmul` and `conv2d` differ in no character). `tests/tensor/fusion.test.mjs` asserts that. Compared against the
+committed stage 2 emitter, `fuse: false` differs by one line of shared preamble — the `#include <string>` the fused
+launch's error message needs — and in no kernel, argument list, address or rounded operation.
 
 ### Legal-looking fusions that are refused
 

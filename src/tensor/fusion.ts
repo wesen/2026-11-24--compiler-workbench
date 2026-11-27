@@ -69,6 +69,20 @@ export interface LoadSite {
 const key = (a: Affine) => JSON.stringify(a);
 const extentOf = (a: { extent: Extent }): Extent => a.extent;
 
+/**
+ * Compose a substituted producer at each read of it, exactly as the checked `inline` pass does: the producer's axes
+ * take the reader's index expressions, so even a permuted read composes the right coordinate.
+ */
+function compose(expr: Expr, producer: Statement): Expr {
+  return mapExpr(expr, e => {
+    if (e.kind !== 'load' || e.name !== producer.name) return e;
+    const bindings = new Map(producer.axes.map((a, i) => [a.id, e.indices[i]]));
+    return mapExpr(producer.expr, x =>
+      x.kind === 'load' ? { ...x, indices: x.indices.map(a => substitute(a, bindings)) } : x,
+    );
+  });
+}
+
 export function binders(statement: Statement): Map<string, Extent> {
   return new Map(statement.axes.map(a => [a.id, extentOf(a)] as const));
 }
@@ -112,7 +126,7 @@ function hasReduce(e: Expr): boolean {
 }
 
 /**
- * The extent an index covers without leaving its own row, if it does. A plain binder covers the extent of its own
+ * The extent of the row an index walks without leaving it, if it does. A plain binder covers the extent of its own
  * `dim`. The stage 1 split-sum address `4 * block + lane` also covers exactly `[0, dim)` because its tail extent is
  * `min(4, dim - 4 * block)`, so a staged row of `dim` floats serves it directly.
  */
@@ -161,11 +175,6 @@ export function stagedIndex(
   return extent !== undefined && key(extent) === key(lane);
 }
 
-/** The extent of the row an index walks, whether the index is a plain binder or the split-sum address. */
-export function laneExtent(index: Affine, scope: ReadonlyMap<string, Extent>): Affine | undefined {
-  return covers(index, scope);
-}
-
 export function fusePlan(fn: Fn): FusionPlan {
   const statements = fn.statements;
   const result = fn.result;
@@ -180,17 +189,6 @@ export function fusePlan(fn: Fn): FusionPlan {
       readers.set(site.tensor, list);
     }
   const uses = (name: string) => readers.get(name)?.length ?? 0;
-
-  // Compose a substituted producer at each read of it, exactly as the checked `inline` pass does: the producer's
-  // axes take the reader's index expressions, so a permuted read composes the right coordinate.
-  const compose = (expr: Expr, producer: Statement): Expr =>
-    mapExpr(expr, e => {
-      if (e.kind !== 'load' || e.name !== producer.name) return e;
-      const bindings = new Map(producer.axes.map((a, i) => [a.id, e.indices[i]]));
-      return mapExpr(producer.expr, x =>
-        x.kind === 'load' ? { ...x, indices: x.indices.map(a => substitute(a, bindings)) } : x,
-      );
-    });
 
   // Rule 1: a statement whose expression holds no reduction is recomputed at every read, provided no read sits
   // inside a reduction. A read inside a reduction would put the recomputation in one thread's serial fold: exact,
@@ -216,8 +214,7 @@ export function fusePlan(fn: Fn): FusionPlan {
   // coordinate and outside every reduction, so the recomputed fold runs once per element, in the same order.
   const kept: Statement[] = [];
   for (const s of stage1) {
-    let expr = s.expr;
-    for (const [name, producer] of pointwise) if (name !== s.name) expr = compose(expr, producer);
+    const expr = s.expr;
     const current: Statement = { ...s, expr };
     const reads = (readers.get(s.name) ?? []).filter(site => site.statement.name !== s.name);
     const local =
@@ -259,14 +256,7 @@ function group(
   const emitted = kept.map(s => {
     let expr = s.expr;
     for (const [name, producer] of substituted)
-      if (name !== s.name && rules.get(name) === 'thread-local')
-        expr = mapExpr(expr, e => {
-          if (e.kind !== 'load' || e.name !== name) return e;
-          const bindings = new Map(producer.axes.map((a, i) => [a.id, e.indices[i]]));
-          return mapExpr(producer.expr, x =>
-            x.kind === 'load' ? { ...x, indices: x.indices.map(a => substitute(a, bindings)) } : x,
-          );
-        });
+      if (name !== s.name && rules.get(name) === 'thread-local') expr = compose(expr, producer);
     return { ...s, expr };
   });
 
@@ -362,7 +352,7 @@ function prefetch(kernel: PlanKernel): PlanPrefetch[] {
     for (const site of loadSites(s)) {
       if (staged.has(site.tensor) || site.indices.length !== 2) continue;
       if (plain(site.indices[0]) !== s.axes[0].id) continue;
-      const extent = laneExtent(site.indices[1], site.scope);
+      const extent = covers(site.indices[1], site.scope);
       if (extent === undefined) continue;
       const id = site.tensor + '/' + key(extent);
       if (seen.has(id)) continue;

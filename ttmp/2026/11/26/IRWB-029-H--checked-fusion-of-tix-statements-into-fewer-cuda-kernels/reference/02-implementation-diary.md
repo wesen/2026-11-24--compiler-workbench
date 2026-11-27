@@ -107,7 +107,9 @@ Failures, in order:
 Then the check that the plan and the text agree: `fuse: false` must be stage 2's lowering unchanged. I extracted the
 committed `cuda-source.ts` and `model.ts` from `HEAD`, bundled them with esbuild, and compared the two emitters'
 output for the six corpus programs (original and after `inline` + `split-sum`) and three extra programs: identical,
-character for character. That comparison is why the flat kernel path is untouched code.
+character for character. Re-running that comparison after the last changes shows exactly one difference — the
+`#include <string>` that the fused launch's error message needs — and nothing else, so the flat kernel path is
+untouched code. That comparison is why I could add a lowering without touching stage 2's.
 
 Committed as `f8c71f1`, after updating one existing test in `tests/tensor/cuda.test.mjs` that asserted stage 2's
 kernel count on a program that now fuses to one kernel; it now asserts both counts, `fuse: false` being the old one.
