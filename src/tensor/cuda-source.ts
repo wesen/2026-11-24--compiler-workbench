@@ -1,4 +1,5 @@
-import { plain, visit, width, type Affine, type Expr, type Fn, type Tensor } from './model.js';
+import { fusePlan, loadSites, stagedIndex, type PlanKernel } from './fusion.js';
+import { plain, visit, width, type Affine, type Expr, type Extent, type Fn, type Tensor } from './model.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -111,6 +112,8 @@ int main(int argc, char** argv) {
 }
 `;
 
+const threads = 256;
+
 function affine(a: Affine, name: (key: string) => string): string {
   const terms = a.terms.map(([key, coefficient]) =>
     coefficient === 1 ? name(key) : `${coefficient}LL * ${name(key)}`,
@@ -125,13 +128,115 @@ function literal(text: string): string {
   return `__uint_as_float(0x${bytes.getUint32(0).toString(16)}u)`;
 }
 
-function emitKernel(
-  statement: Fn['statements'][number],
+/** Row-major offset of one element, as stage 2 computes it. */
+function offset(shape: Affine[], values: string[], dim: (a: Affine) => string): string {
+  return values.reduce((prior, value, i) => (i ? `(${prior} * ${dim(shape[i])} + ${value})` : value), '');
+}
+
+// One scalar-expression emitter for both lowerings: they must round at the same places, so there must not be two
+// copies of this code. Only the address a load becomes and where the emitted lines go differ between them.
+interface ScalarContext {
+  line(code: string): void;
+  indent(more: boolean): void;
+  temporary(code: string): string;
+  /** a shape value as f32 */
+  shape(name: string): string;
+  dim(a: Affine): string;
+  /** the emitted name of a bound axis */
+  index(id: string): string;
+  /** the value of a load */
+  load(name: string, indices: Affine[]): string;
+  /** emit a name for a reduction binder and record it */
+  bind(id: string, extent: Extent): string;
+}
+
+function scalarEmitter(c: ScalarContext): (e: Expr) => string {
+  function scalar(e: Expr): string {
+    switch (e.kind) {
+      case 'literal':
+        return literal(e.text);
+      case 'shape':
+        return c.shape(e.name);
+      case 'load':
+        return c.load(e.name, e.indices);
+      case 'op': {
+        const [a, b] = e.args.map(scalar);
+        switch (e.op) {
+          case '+':
+            return c.temporary(`__fadd_rn(${a}, ${b})`);
+          case '-':
+            return c.temporary(`__fsub_rn(${a}, ${b})`);
+          case '*':
+            return c.temporary(`__fmul_rn(${a}, ${b})`);
+          case '/':
+            return c.temporary(`__fdiv_rn(${a}, ${b})`);
+          case 'neg':
+            return c.temporary(`-(${a})`);
+          case 'sqrt':
+            return c.temporary(`__fsqrt_rn(${a})`);
+          case 'exp':
+          case 'log':
+          case 'tanh':
+            return c.temporary(`__double2float_rn(${e.op}(static_cast<double>(${a})))`);
+          case 'max':
+          case 'min':
+            return c.temporary(`minmax(${a}, ${b}, ${e.op === 'max'})`);
+        }
+      }
+      case 'reduce': {
+        // One fold step per iteration with a rounding after each, in increasing lexicographic order of the axes,
+        // the first listed outermost. Whichever thread runs this loop, the sequence is the meaning's.
+        const acc = c.temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
+        for (const { id, extent } of e.axes) {
+          const axis = c.bind(id, extent),
+            n = c.dim(extent.dim);
+          let bound = n;
+          if (extent.kind === 'blocks') {
+            const tail = extent.rounding === 'ceil' ? ` + (${n} % ${width} != 0)` : '';
+            bound = `${n} / ${width}${tail}`;
+          }
+          if (extent.kind === 'tail') {
+            const remaining = `(${n} - ${width}LL * ${c.index(extent.block)})`;
+            bound = `(${remaining} < ${width}LL ? ${remaining} : ${width}LL)`;
+          }
+          c.line(`const I end_${axis} = ${bound};`);
+          c.line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
+          c.indent(true);
+        }
+        const value = scalar(e.body);
+        c.line(
+          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
+        );
+        for (const _axis of e.axes) {
+          c.indent(false);
+          c.line('}');
+        }
+        return acc;
+      }
+    }
+  }
+  return scalar;
+}
+
+interface Emitted {
+  code: string;
+  /** run once per case before the timed interval, so lazy module loading stays out of the measurement */
+  preload: string;
+  /** counts the work the kernel has; a zero skips the launch */
+  hasWork: string;
+  launch: string;
+}
+
+type Statement = Fn['statements'][number];
+
+/** Stage 2's kernel: one thread per output element. */
+function flatKernel(
+  statement: Statement,
   kernel: string,
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
-) {
+): Emitted {
   const reads = new Set<string>();
   visit(statement.expr, e => {
     if (e.kind === 'load') reads.add(e.name);
@@ -145,99 +250,45 @@ function emitKernel(
   ];
   const lines = [`__global__ void ${kernel}(${params.join(', ')}) {`];
   let indent = '  ',
-    next = 0;
+    next = 0,
+    bound = 0;
   const line = (code: string) => lines.push(indent + code);
   const dim = (a: Affine) => affine(a, n => dimensions.get(n)!);
   const indices = new Map<string, string>();
-  const bind = (id: string) => {
-    const name = `i${indices.size}`;
-    indices.set(id, name);
-    return name;
-  };
-  const index = (id: string) => indices.get(id)!;
   line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
   line('if (thread >= count) return;');
   line('U coordinate = thread;');
   for (let i = statement.axes.length - 1; i >= 0; --i) {
-    const axis = bind(statement.axes[i].id);
+    const axis = `i${bound++}`;
+    indices.set(statement.axes[i].id, axis);
     line(`const I ${axis} = coordinate % ${dim(statement.shape[i])};`);
     if (i > 0) line(`coordinate /= ${dim(statement.shape[i])};`);
   }
-
-  const temporary = (code: string) => {
-    const name = `v${next++}`;
-    line(`float ${name} = ${code};`);
-    return name;
-  };
-
-  function scalar(e: Expr): string {
-    switch (e.kind) {
-      case 'literal':
-        return literal(e.text);
-      case 'shape':
-        return `__ll2float_rn(${dimensions.get(e.name)!})`;
-      case 'load': {
-        const shape = tensors.get(e.name)!.shape;
-        const offset = e.indices.reduce(
-          (prior, a, i) => (i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index)),
-          '',
-        );
-        return `${tensorName(e.name)}[${offset}]`;
-      }
-      case 'op': {
-        const [a, b] = e.args.map(scalar);
-        switch (e.op) {
-          case '+':
-            return temporary(`__fadd_rn(${a}, ${b})`);
-          case '-':
-            return temporary(`__fsub_rn(${a}, ${b})`);
-          case '*':
-            return temporary(`__fmul_rn(${a}, ${b})`);
-          case '/':
-            return temporary(`__fdiv_rn(${a}, ${b})`);
-          case 'neg':
-            return temporary(`-(${a})`);
-          case 'sqrt':
-            return temporary(`__fsqrt_rn(${a})`);
-          case 'exp':
-          case 'log':
-          case 'tanh':
-            return temporary(`__double2float_rn(${e.op}(static_cast<double>(${a})))`);
-          case 'max':
-          case 'min':
-            return temporary(`minmax(${a}, ${b}, ${e.op === 'max'})`);
-        }
-      }
-      case 'reduce': {
-        const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
-        for (const { id, extent } of e.axes) {
-          const axis = bind(id),
-            n = dim(extent.dim);
-          let bound = n;
-          if (extent.kind === 'blocks') {
-            const tail = extent.rounding === 'ceil' ? ` + (${n} % ${width} != 0)` : '';
-            bound = `${n} / ${width}${tail}`;
-          }
-          if (extent.kind === 'tail') {
-            const remaining = `(${n} - ${width}LL * ${index(extent.block)})`;
-            bound = `(${remaining} < ${width}LL ? ${remaining} : ${width}LL)`;
-          }
-          line(`const I end_${axis} = ${bound};`);
-          line(`for (I ${axis} = 0; ${axis} < end_${axis}; ++${axis}) {`);
-          indent += '  ';
-        }
-        const value = scalar(e.body);
-        line(
-          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
-        );
-        for (const _axis of e.axes) {
-          indent = indent.slice(2);
-          line('}');
-        }
-        return acc;
-      }
-    }
-  }
+  const scalar = scalarEmitter({
+    line,
+    indent: more => {
+      indent = more ? indent + '  ' : indent.slice(2);
+    },
+    temporary: code => {
+      const name = `v${next++}`;
+      line(`float ${name} = ${code};`);
+      return name;
+    },
+    shape: name => `__ll2float_rn(${dimensions.get(name)!})`,
+    dim,
+    index: id => indices.get(id)!,
+    load: (name, loadIndices) =>
+      `${tensorName(name)}[${offset(
+        tensors.get(name)!.shape,
+        loadIndices.map(a => affine(a, id => indices.get(id)!)),
+        dim,
+      )}]`,
+    bind(id) {
+      const axis = `i${bound++}`;
+      indices.set(id, axis);
+      return axis;
+    },
+  });
   const result = scalar(statement.expr);
   line(`result[thread] = ${result};`);
   lines.push('}');
@@ -253,14 +304,182 @@ function emitKernel(
   };
 }
 
-export function emitCuda(fn: Fn): string {
-  const all = [...fn.params, ...fn.statements];
+/**
+ * A fused kernel: one block per row, one thread per lane. Statements run in definition order, a reduction over the
+ * lane axis is one thread's serial fold, and a value that no other kernel reads is kept in shared memory.
+ */
+function rowKernel(
+  kernel: PlanKernel,
+  name: string,
+  dimensions: ReadonlyMap<string, string>,
+  tensors: ReadonlyMap<string, Tensor>,
+  tensorName: (name: string) => string,
+): Emitted {
+  const dim = (a: Affine) => affine(a, n => dimensions.get(n)!);
+  const staged = new Map<string, { pointer: string; lane: Affine | null }>();
+  const prefetched = new Map<string, { pointer: string; extent: Affine }>();
+  const pointers: string[] = [];
+  let footprint = 'smem',
+    floats: string[] = [];
+  const slot = (pointer: string, extent: Affine | null) => {
+    pointers.push(`  float* ${pointer} = ${footprint};`);
+    const size = extent ? dim(extent) : '1';
+    floats = [...floats, size];
+    footprint = `${footprint} + ${size}`;
+  };
+  for (const p of kernel.statements) {
+    if (p.storage !== 'shared') continue;
+    const pointer = `p${staged.size}`;
+    staged.set(p.statement.name, { pointer, lane: p.slots });
+    slot(pointer, p.slots);
+  }
+  for (const p of kernel.prefetch) {
+    const pointer = `q${prefetched.size}`;
+    prefetched.set(p.tensor, { pointer, extent: p.extent });
+    slot(pointer, p.extent);
+  }
+  const shared = floats.length ? `(${floats.join(' + ')}) * sizeof(float)` : '0';
+
+  // A load reads the staged copy when that copy serves it; otherwise it goes to global memory, so the tensor has to
+  // stay a kernel parameter.
+  const redirect = (reader: Statement, tensor: string, scope: Map<string, Extent>, indices: Affine[]) => {
+    const local = staged.get(tensor);
+    if (local) return stagedIndex(reader, scope, indices, local.lane);
+    const row = prefetched.get(tensor);
+    return row ? stagedIndex(reader, scope, indices, row.extent) : false;
+  };
+  const reads = new Set<string>(),
+    writes = new Set<string>();
+  for (const p of kernel.statements) {
+    for (const site of loadSites(p.statement))
+      if (!redirect(p.statement, site.tensor, site.scope, site.indices)) reads.add(site.tensor);
+    if (p.storage === 'global') writes.add(p.statement.name);
+  }
+  // The copy loops read the global rows they stage.
+  for (const p of kernel.prefetch) reads.add(p.tensor);
+  // A value the kernel both writes and reads (a permuted read of a global intermediate) is one parameter.
+  const inputs = [...reads].filter(t => !writes.has(t));
+  const params = [
+    ...Array.from(dimensions.values(), d => `I ${d}`),
+    ...inputs.map(t => `const float* ${tensorName(t)}`),
+    ...Array.from(writes, t => `float* ${tensorName(t)}`),
+  ];
+  const args = [...dimensions.values(), ...[...inputs, ...writes].map(t => tensorName(t) + '.ptr')];
+  const lines = [`__global__ void ${name}(${params.join(', ')}) {`];
+  let indent = '  ',
+    next = 0,
+    bound = 0;
+  const line = (code: string) => lines.push(indent + code);
+  line('extern __shared__ float smem[];');
+  line('const I b = static_cast<I>(blockIdx.x);');
+  lines.push(...pointers);
+
+  // The whole block copies a row in, so a fold that reads it issues coalesced loads and then works on chip.
+  for (const p of kernel.prefetch) {
+    const { pointer, extent } = prefetched.get(p.tensor)!;
+    const lane = `m${next++}`;
+    line(
+      `for (I ${lane} = static_cast<I>(threadIdx.x); ${lane} < ${dim(extent)}; ${lane} += static_cast<I>(blockDim.x)) {`,
+    );
+    line(
+      `  ${pointer}[${lane}] = ${tensorName(p.tensor)}[(b) * ${dim(tensors.get(p.tensor)!.shape[1])} + (${lane})];`,
+    );
+    line('}');
+  }
+  if (kernel.prefetch.length) line('__syncthreads();');
+
+  for (const p of kernel.statements) {
+    const statement = p.statement;
+    const indices = new Map<string, string>();
+    const scope = new Map<string, Extent>();
+    indices.set(statement.axes[0].id, 'b');
+    scope.set(statement.axes[0].id, statement.axes[0].extent);
+    const scalar = scalarEmitter({
+      line,
+      indent: more => {
+        indent = more ? indent + '  ' : indent.slice(2);
+      },
+      temporary: code => {
+        const temporary = `v${next++}`;
+        line(`float ${temporary} = ${code};`);
+        return temporary;
+      },
+      shape: name => `__ll2float_rn(${dimensions.get(name)!})`,
+      dim,
+      index: id => indices.get(id)!,
+      load: (tensor, loadIndices) => {
+        const value = loadIndices.map(a => affine(a, id => indices.get(id)!));
+        if (redirect(statement, tensor, scope, loadIndices)) {
+          const pointer = (staged.get(tensor) ?? prefetched.get(tensor)!).pointer;
+          return loadIndices.length === 1 ? `${pointer}[0]` : `${pointer}[${value[1]}]`;
+        }
+        return `${tensorName(tensor)}[${offset(tensors.get(tensor)!.shape, value, dim)}]`;
+      },
+      bind(id, extent) {
+        const axis = `r${bound++}`;
+        indices.set(id, axis);
+        scope.set(id, extent);
+        return axis;
+      },
+    });
+    const lanes = statement.axes.length === 2 ? statement.axes[1] : undefined;
+    const target = p.storage === 'shared' ? staged.get(statement.name)! : undefined;
+    if (lanes) {
+      const lane = `l${next++}`;
+      indices.set(lanes.id, lane);
+      scope.set(lanes.id, lanes.extent);
+      line(
+        `for (I ${lane} = static_cast<I>(threadIdx.x); ${lane} < ${dim(lanes.extent.dim)}; ${lane} += static_cast<I>(blockDim.x)) {`,
+      );
+      indent += '  ';
+      const value = scalar(statement.expr);
+      line(
+        target
+          ? `${target.pointer}[${lane}] = ${value};`
+          : `${tensorName(statement.name)}[${offset(statement.shape, ['b', lane], dim)}] = ${value};`,
+      );
+      indent = indent.slice(2);
+      line('}');
+    } else {
+      line('if (threadIdx.x == 0) {');
+      indent += '  ';
+      const value = scalar(statement.expr);
+      line(
+        target
+          ? `${target.pointer}[0] = ${value};`
+          : `${tensorName(statement.name)}[${offset(statement.shape, ['b'], dim)}] = ${value};`,
+      );
+      indent = indent.slice(2);
+      line('}');
+    }
+    line('__syncthreads();');
+  }
+  lines.push('}');
+  const rows = dim(kernel.rows!);
+  return {
+    code: lines.join('\n'),
+    preload: `  if (${rows}) {
+    check(cudaFuncSetAttribute(${name}, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(${shared})));
+    check(cudaFuncGetAttributes(&attributes, ${name}));
+  }`,
+    hasWork: rows,
+    launch: `    if (${rows}) {
+      ${name}<<<${rows}, ${threads}, ${shared}>>>(${args.join(', ')});
+      check(cudaGetLastError());
+    }`,
+  };
+}
+
+export function emitCuda(fn: Fn, options?: { fuse?: boolean }): string {
+  const plan = options?.fuse === false ? null : fusePlan(fn);
+  const program = plan ? plan.fn : fn;
+  const all = [...program.params, ...program.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
   const name = (key: string) => names.get(key)!;
   const dims = new Map<string, string>(),
     bindings: string[] = [];
-  for (const p of fn.params) {
+  for (const p of program.params) {
     for (const [i, a] of p.shape.entries()) {
       const key = plain(a);
       if (key === undefined || dims.has(key)) continue;
@@ -269,9 +488,21 @@ export function emitCuda(fn: Fn): string {
       bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
     }
   }
-  const kernels = fn.statements.map((s, i) => emitKernel(s, `k${i}`, dims, tensors, name));
+  const kernels = plan
+    ? plan.kernels.map((kernel, i) =>
+        kernel.mapping === 'row'
+          ? rowKernel(kernel, `k${i}`, dims, tensors, name)
+          : flatKernel(kernel.statements[0].statement, `k${i}`, dims, tensors, name),
+      )
+    : program.statements.map((s, i) => flatKernel(s, `k${i}`, dims, tensors, name));
+  // A staged value is not a buffer: only global writes get one.
+  const buffers = plan
+    ? plan.kernels
+        .flatMap(kernel => kernel.statements.filter(p => p.storage === 'global'))
+        .map(p => p.statement)
+    : program.statements;
   const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
-  for (const p of fn.params) {
+  for (const p of program.params) {
     const t = name(p.name);
     host.push(
       `  std::array<I, ${p.shape.length}> shape_${t};`,
@@ -280,20 +511,20 @@ export function emitCuda(fn: Fn): string {
       `  read(input, host_${t}.data(), host_${t}.size());`,
     );
   }
-  const result = name(fn.result);
+  const result = name(program.result);
   let buffer = `host_${result}`;
   host.push('  double gpu_ms = 0;');
   if (kernels.length) {
     host.push(...bindings);
-    for (const p of fn.params) {
+    for (const p of program.params) {
       const t = name(p.name);
       host.push(`  DeviceBuffer ${t}(host_${t}.size());`, `  ${t}.upload(host_${t}.data());`);
     }
-    for (const s of fn.statements) {
-      const t = name(s.name);
-      const dimsText = s.shape.map(a => affine(a, key => dims.get(key)!)).join(', ');
+    for (const statement of buffers) {
+      const t = name(statement.name);
+      const dimsText = statement.shape.map(a => affine(a, key => dims.get(key)!)).join(', ');
       host.push(
-        `  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`,
+        `  const std::array<I, ${statement.shape.length}> shape_${t}{${dimsText}};`,
         `  DeviceBuffer ${t}(elements(shape_${t}));`,
       );
     }
@@ -304,7 +535,7 @@ export function emitCuda(fn: Fn): string {
       ...kernels.map(k => k.launch),
       '  }, benchmark);',
     );
-    if (fn.statements.some(s => s.name === fn.result)) {
+    if (buffers.some(s => s.name === program.result)) {
       buffer = `host_${result}`;
       host.push(`  std::vector<float> ${buffer}(${result}.size);`, `  ${result}.download(${buffer}.data());`);
     }
@@ -312,7 +543,7 @@ export function emitCuda(fn: Fn): string {
   host.push(
     `  write(output, shape_${result}.data(), shape_${result}.size());`,
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
-    '  write(output, &gpu_ms, 1);',
+    `  write(output, &gpu_ms, 1);`,
     '}',
   );
   return [support, ...kernels.map(k => k.code), host.join('\n'), main].join('\n\n');

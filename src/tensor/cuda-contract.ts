@@ -114,30 +114,46 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       });
     },
   });
-  const pass = defineTransformation({
-    id: 'tensor.lower-cuda',
-    version: '1',
-    description: 'Lower a Tix function to CUDA and check the candidate on the GPU',
-    inputs,
-    outputs,
-    cache: 'never',
-    ensures: [
-      {
-        invariant,
-        bindings: {
-          baseline: { from: 'inputs', port: 'baseline' },
-          fn: { from: 'inputs', port: 'fn' },
-          subject: { from: 'outputs', port: 'subject' },
+  // One definition per lowering: the fused plan and stage 2's one-kernel-per-statement text are different
+  // candidates, and the artifact revision already tells their subject keys apart.
+  const lower = (fuse: boolean) =>
+    defineTransformation({
+      id: fuse ? 'tensor.lower-cuda-fused' : 'tensor.lower-cuda',
+      version: '1',
+      description: fuse
+        ? 'Lower a Tix function to fused CUDA and check the candidate on the GPU'
+        : 'Lower a Tix function to one CUDA kernel per statement and check the candidate on the GPU',
+      inputs,
+      outputs,
+      cache: 'never',
+      ensures: [
+        {
+          invariant,
+          bindings: {
+            baseline: { from: 'inputs', port: 'baseline' },
+            fn: { from: 'inputs', port: 'fn' },
+            subject: { from: 'outputs', port: 'subject' },
+          },
         },
+      ],
+      run(_ctx, { baseline, fn }) {
+        return {
+          outputs: {
+            subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn), { fuse })),
+          },
+        };
       },
-    ],
-    run(_ctx, { baseline, fn }) {
-      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
-    },
-  });
+    });
+  const passes = { fuse: lower(true), plain: lower(false) };
 
-  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+  return async (
+    baseline: Artifact<Module>,
+    fn: string,
+    candidate?: Artifact<CudaUnit>,
+    options?: { fuse?: boolean },
+  ) => {
     const relation = 'exact' as const;
+    const pass = options?.fuse === false ? passes.plain : passes.fuse;
     const manager = new AnalysisManager();
     try {
       if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);

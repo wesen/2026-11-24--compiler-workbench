@@ -9,7 +9,9 @@ const buf = (shape, values) => ({ shape, data: Float32Array.from(values) });
 const p = compileTix('fn f(x:f32[N,K]):f32[N] { y[i] = sum(k) x[i,k]; return y; }');
 const fn = p.current.value.functions[0];
 
-test('CUDA source is deterministic and preloads every emitted statement kernel before timing', () => {
+const kernels = source => (source.match(/__global__ void/g) ?? []).length;
+
+test('CUDA source is deterministic and preloads every kernel before timing', () => {
   assert.equal(typeof checkLowering, 'function');
   assert.equal(typeof runTixCuda, 'function');
   const program = compileTix(
@@ -17,12 +19,17 @@ test('CUDA source is deterministic and preloads every emitted statement kernel b
   );
   const source = cudaSource(program, 'second');
   assert.equal(source, cudaSource(program, 'second'));
-  assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
-  assert.ok(
-    source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
-  );
   assert.match(source, /__double2float_rn\(exp/);
   assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
+  // Fused: the pointwise producer is recomputed at its only reader, so one kernel writes both values' consumer.
+  assert.equal(kernels(source), 1);
+  // Stage 2: one kernel per statement, every one preloaded before the timed interval.
+  const plain = cudaSource(program, 'second', { fuse: false });
+  assert.equal(kernels(plain), 2);
+  for (const k of ['k0', 'k1'])
+    assert.ok(
+      plain.indexOf(`cudaFuncGetAttributes(&attributes, ${k})`) < plain.indexOf('gpu_ms = time_kernels'),
+    );
 });
 
 test('CUDA binary requests and results preserve f32 words, including subarray and zero shape', () => {
