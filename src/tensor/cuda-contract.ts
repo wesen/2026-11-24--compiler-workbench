@@ -12,24 +12,24 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitCuda } from './cuda-source.js';
+import { lowerCuda, type CudaKernel, type CudaUnit } from './cuda-source.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
 
-interface CudaUnit {
-  fn: string;
-  source: string;
-}
-
 const CudaIR = defineIR<CudaUnit>({
   id: 'tensor.cuda-source',
-  version: '1',
-  description: 'Standalone CUDA translation unit for a Tix function',
+  version: '2',
+  description: 'Standalone CUDA translation unit for a Tix function, with its kernel plan',
   validate(value) {
     const unit = value as Partial<CudaUnit> | null;
     if (typeof unit?.fn !== 'string' || !unit.fn || typeof unit.source !== 'string' || !unit.source)
       throw Error('Invalid CUDA translation unit');
+    const kernel = (k: Partial<CudaKernel>) =>
+      (['single', 'flat', 'row'] as const).includes(k.form as 'single') &&
+      Array.isArray(k.statements) &&
+      k.statements.every(s => typeof s === 'string');
+    if (!Array.isArray(unit.kernels) || !unit.kernels.every(kernel)) throw Error('Invalid CUDA kernel plan');
   },
 });
 const FunctionName = defineType<string>({
@@ -40,9 +40,21 @@ const FunctionName = defineType<string>({
     if (typeof name !== 'string' || !name) throw Error('Invalid Tix function name');
   },
 });
+const Fuse = defineType<boolean>({
+  id: 'tensor.fuse',
+  version: '1',
+  description: 'Fuse statements into fewer kernels where the IR shows it order-preserving',
+  validate(fuse) {
+    if (typeof fuse !== 'boolean') throw Error('Invalid fuse flag');
+  },
+});
 
-export function cudaArtifact(fn: string, source: string): Artifact<CudaUnit> {
-  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source });
+export function cudaArtifact(
+  fn: string,
+  source: string,
+  kernels: readonly CudaKernel[] = [],
+): Artifact<CudaUnit> {
+  return createArtifact(CudaIR, 'tix-cuda/' + fn, { fn, source, kernels: [...kernels] });
 }
 
 // The relation is exact: the lowered function must give the current revision's f32 meaning bit for bit, signed
@@ -71,7 +83,7 @@ function compare(expected: BufferValue, got: BufferValue) {
 type CudaSample = ReturnType<typeof cudaCases>[number];
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
-  const inputs = { baseline: TixIR, fn: FunctionName };
+  const inputs = { baseline: TixIR, fn: FunctionName, fuse: Fuse };
   const outputs = { subject: CudaIR };
   const ports = { ...inputs, ...outputs };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
@@ -127,21 +139,23 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         bindings: {
           baseline: { from: 'inputs', port: 'baseline' },
           fn: { from: 'inputs', port: 'fn' },
+          fuse: { from: 'inputs', port: 'fuse' },
           subject: { from: 'outputs', port: 'subject' },
         },
       },
     ],
-    run(_ctx, { baseline, fn }) {
-      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+    run(_ctx, { baseline, fn, fuse }) {
+      const unit = lowerCuda(selectFunction(baseline.value, fn), fuse);
+      return { outputs: { subject: cudaArtifact(fn, unit.source, unit.kernels) } };
     },
   });
 
-  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>, fuse = true) => {
     const relation = 'exact' as const;
     const manager = new AnalysisManager();
     try {
-      if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
-      else await manager.execute(pass, { baseline, fn });
+      if (candidate) await manager.verifyTransformation({ baseline, fn, fuse }, { subject: candidate }, pass);
+      else await manager.execute(pass, { baseline, fn, fuse });
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

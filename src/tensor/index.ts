@@ -58,24 +58,28 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
   return { program: { origin, current }, steps };
 }
 
-export function cudaSource(program: TixProgram, fn: string): string {
-  return emitCuda(selectFunction(program.current.value, fn));
+export function cudaSource(program: TixProgram, fn: string, options?: { fuse?: boolean }): string {
+  return emitCuda(selectFunction(program.current.value, fn), options?.fuse ?? true);
 }
 
 export async function runTixCuda(
   program: TixProgram,
   fn: string,
   inputs: CudaInputs,
-  options?: { host?: string },
+  options?: { host?: string; fuse?: boolean; benchmark?: boolean },
 ): Promise<CudaResult> {
   const f = selectFunction(program.current.value, fn);
-  const [result] = await runCudaBatch(emitCuda(f), f, [inputs], { host: options?.host });
+  const [result] = await runCudaBatch(emitCuda(f, options?.fuse ?? true), f, [inputs], {
+    host: options?.host,
+    benchmark: options?.benchmark,
+  });
   return result;
 }
 
 export function checkLowering(
   program: TixProgram,
   fn: string,
+  options?: { fuse?: boolean },
 ): Promise<{ accepted: boolean; relation: 'exact' | 'tolerance'; reason?: string }> {
-  return checkCudaLowering(program.current, fn);
+  return checkCudaLowering(program.current, fn, undefined, options?.fuse ?? true);
 }

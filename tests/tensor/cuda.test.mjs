@@ -17,9 +17,11 @@ test('CUDA source is deterministic and preloads every emitted statement kernel b
   );
   const source = cudaSource(program, 'second');
   assert.equal(source, cudaSource(program, 'second'));
-  assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
+  // IRWB-029-I: fusion is the default; the identity chain is one kernel, stage 2's lowering has two.
+  assert.equal((source.match(/__global__ void/g) ?? []).length, 1);
+  assert.equal((cudaSource(program, 'second', { fuse: false }).match(/__global__ void/g) ?? []).length, 2);
   assert.ok(
-    source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
+    source.indexOf('cudaFuncGetAttributes(&attributes, k0)') < source.indexOf('gpu_ms = time_kernels'),
   );
   assert.match(source, /__double2float_rn\(exp/);
   assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
