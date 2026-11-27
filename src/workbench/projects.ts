@@ -14,7 +14,7 @@
 import { hash } from '../typed/evaluate.js';
 import { formatJson, joinText, splitWords, TILE_WIDTH } from '../typed/format.js';
 import { Program } from '../typed/program.js';
-import { projectSource } from '../typed/project.js';
+import { parseProjectMeta, projectSource } from '../typed/project.js';
 import { didYouMean, fail, guard, toYaml, WorkbenchError } from './base.js';
 import { WbProgram } from './programs.js';
 import { candelaInputs } from './candela-inputs.js';
@@ -194,37 +194,18 @@ export function makeProjects(
   }
   function metaOf(id: string): Record<string, any> {
     const files = filesOf(id);
-    let m: Record<string, any> = {};
-    if (files['project.json']) {
-      try {
-        m = JSON.parse(files['project.json']);
-      } catch (e) {
-        m = { _error: (e as Error).message };
-      }
+    try {
+      return { scripts: {}, ui: {}, ...parseProjectMeta(id, files) };
+    } catch (e) {
+      return {
+        scripts: {},
+        ui: {},
+        ...parseProjectMeta(id, { ...files, 'project.json': '{}' }),
+        _error: (e as Error).message,
+      };
     }
-    // prose fields may be arrays of lines (so project.json fits a tile): they mean the joined text
-    if (m.about !== undefined) m.about = joinText(m.about);
-    if (Array.isArray(m.try)) m.try = m.try.map((x: unknown) => joinText(x));
-    if (m.scripts && typeof m.scripts === 'object')
-      for (const sc of Object.values(m.scripts as Record<string, Record<string, unknown>>))
-        if (sc && sc.about !== undefined) sc.about = joinText(sc.about);
-    const typed = Object.keys(files)
-      .filter(f => kindOf(f) === 'typed')
-      .sort();
-    const named: string[] = Array.isArray(m.sources) ? m.sources : [];
-    const sources = named.filter(f => files[f] !== undefined).concat(typed.filter(f => !named.includes(f)));
-    return {
-      title: id,
-      about: '',
-      group: 'Mine',
-      pipeline: 'O2',
-      inputs: {},
-      scripts: {},
-      ui: {},
-      ...m,
-      sources,
-    };
   }
+
   /** Only the files the program is built from (project.json for its inputs and order, and the sources). */
   const buildFiles = (id: string) => {
     const f = filesOf(id),

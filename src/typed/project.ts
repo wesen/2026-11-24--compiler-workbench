@@ -37,7 +37,7 @@ export interface ProjectSource {
   readonly fileMap: readonly { readonly file: string; readonly start: number; readonly lines: number }[];
 }
 
-export function projectSource(id: string, files: Readonly<Record<string, string>>): ProjectSource {
+export function parseProjectMeta(id: string, files: Readonly<Record<string, string>>): ProjectMeta {
   let m: Record<string, unknown> = {};
   if (files['project.json']) m = JSON.parse(files['project.json']);
   const typed = Object.keys(files)
@@ -60,6 +60,12 @@ export function projectSource(id: string, files: Readonly<Record<string, string>
     ...m,
     sources,
   } as ProjectMeta;
+  return meta;
+}
+
+export function projectSource(id: string, files: Readonly<Record<string, string>>): ProjectSource {
+  const meta = parseProjectMeta(id, files);
+  const sources = meta.sources;
   let source = '',
     line = 1;
   const fileMap: { file: string; start: number; lines: number }[] = [];
