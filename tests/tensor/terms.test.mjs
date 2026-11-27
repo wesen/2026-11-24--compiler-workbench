@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { compileTix, cudaSource } from '../../dist/tensor/index.js';
+import { compileTix, cudaSource, optimizeTix } from '../../dist/tensor/index.js';
 import { blockWidth, planFusion, unfusedPlan, warp } from '../../dist/tensor/fusion.js';
 
 const corpus = name =>
@@ -176,6 +176,22 @@ test('a thread-mode group is never gated, and stage 2 has neither terms nor a ga
   const unfused = unfusedPlan(corpus('layernorm').current.value.functions[0]);
   assert.ok(unfused.groups.every(g => g.terms.length === 0 && g.serial.length === 0));
   assert.deepEqual(unfused.gate, []);
+});
+
+test('a split sum stages one term per block of the split, not one per element', () => {
+  const { program } = optimizeTix(inside, ['split-sum']);
+  const group = planFusion(program.current.value.functions.find(f => f.name === 'layernorm_inside')).groups[0];
+  assert.deepEqual(
+    group.terms.map(t => [t.member, t.terms]),
+    [
+      ['mean', 'ceil(D/4)'],
+      ['variance', 'ceil(D/4)'],
+    ],
+  );
+  const text = cudaSource(program, 'layernorm_inside');
+  // the fold visits the blocks of the split; each staged term is the tail reduction of up to four elements
+  assert.match(text, /const I end_i\d+ = \(d1\) \/ 4 \+ \(\(d1\) % 4 != 0\);/);
+  assert.match(text, /\(d1\) - 4LL \* i\d+\) < 4LL/);
 });
 
 test('fuse: false is unchanged by this stage: no term array, no barrier of its own', () => {

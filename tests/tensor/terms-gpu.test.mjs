@@ -6,7 +6,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { seededRandom } from '../../dist/framework/contracts/index.js';
-import { checkLowering, compileTix, cudaSource, runTix, runTixCuda } from '../../dist/tensor/index.js';
+import {
+  checkLowering,
+  compileTix,
+  cudaSource,
+  optimizeTix,
+  runTix,
+  runTixCuda,
+} from '../../dist/tensor/index.js';
 import { checkCudaLowering, cudaArtifact } from '../../dist/tensor/cuda-contract.js';
 import { planFusion } from '../../dist/tensor/fusion.js';
 import { value } from '../../dist/tensor/model.js';
@@ -93,6 +100,17 @@ test('GB10: staged terms equal the interpreter at full size, including rows too 
     assert.ok(same(words(reference), words(fused)), name + ' fused');
     const unfused = await runTixCuda(inside, name, inputs, { fuse: false });
     assert.ok(same(words(fused), words(unfused)), name + ' against stage 2');
+  }
+});
+
+test('GB10: split sums stage one term per block and stay exact', async () => {
+  for (const pass of [['inline'], ['inline', 'split-sum'], ['split-sum']]) {
+    const { program, steps } = optimizeTix(inside, pass);
+    assert.ok(steps.every(s => s.accepted), pass.join('+'));
+    for (const name of ['layernorm_inside', 'exp_in_sum', 'longterm']) {
+      const verdict = await checkLowering(program, name);
+      assert.deepEqual(verdict, { accepted: true, relation: 'exact' }, pass.join('+') + ' ' + name);
+    }
   }
 });
 

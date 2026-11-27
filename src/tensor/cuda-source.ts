@@ -327,6 +327,18 @@ const defaultShared = 48 * 1024;
 const product = (dims: string[]) =>
   dims.length ? `(${dims.map(d => `static_cast<U>(${d})`).join(' * ')})` : 'static_cast<U>(1)';
 
+// How many terms a reduction's fold visits: a product of extents, with a split-sum axis counted in blocks, which is
+// the same expression the fold's loop bounds use (IRWB-030-G stages a term array of this many floats).
+const foldLength = (e: Reduce, dim: (a: Affine) => string) =>
+  e.axes
+    .map(a => {
+      const n = dim(a.extent.dim);
+      if (a.extent.kind === 'dim') return n;
+      if (a.extent.kind === 'tail') throw Error('A staged term array cannot be sized from a tail extent');
+      return `(${n} / ${width}${a.extent.rounding === 'ceil' ? ` + (${n} % ${width} != 0)` : ''})`;
+    })
+    .reduce((a, b) => `(${a} * ${b})`);
+
 // Stage 3: one kernel for a fused group (fusion.ts). Thread mode keeps stage 2's mapping with the members'
 // values in registers; block mode runs one block per block-domain point with rows in shared memory, or in a
 // global scratch area when they do not fit.
@@ -416,7 +428,7 @@ function emitGroup(
     const layout = rowBuffers.map(n => ({ pointer: `r${suffix(n)}`, length: `n${suffix(n)}` }));
     for (const t of terms) {
       const i = t.array.slice(1);
-      w.line(`const U na${i} = ${product(t.reduction.axes.map(a => w.dim(a.extent.dim)))};`);
+      w.line(`const U na${i} = ${foldLength(t.reduction, w.dim)};`);
       layout.push({ pointer: t.array, length: `na${i}` });
     }
     const row = layout.map(l => l.length).join(' + ');
@@ -472,9 +484,10 @@ function emitGroup(
     // The host computes the same lengths from the same shape values.
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
+    const hostTerms = terms.map(t => `static_cast<U>(${foldLength(t.reduction, hostDim)})`);
     const hostRow = [
       ...rowBuffers.map(n => lengthOf(n, hostDim)),
-      ...terms.map(t => product(t.reduction.axes.map(a => hostDim(a.extent.dim)))),
+      ...hostTerms,
     ].join(' + ');
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
@@ -483,7 +496,7 @@ function emitGroup(
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
       `  const U longest_${kernel} = std::max<U>({${[
         ...lengths,
-        ...terms.map(t => product(t.reduction.axes.map(a => hostDim(a.extent.dim)))),
+        ...hostTerms,
       ].join(', ')}, static_cast<U>(1)});`,
       `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
     );
