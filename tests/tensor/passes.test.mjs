@@ -46,7 +46,7 @@ test('passes compose across calls and preserve the source baseline', () => {
   const p = compileTix('fn f(x:f32[1,K]):f32[1]{a[i,k]=x[i,k]*1;y[i]=sum(k)a[i,k];return y;}');
   const split = optimizeTix(p, ['split-sum']).program;
   const later = optimizeTix(split, ['inline']);
-  assert.deepEqual(later.steps, [{ pass: 'inline', accepted: true }]);
+  assert.deepEqual(later.steps, [{ pass: 'inline', accepted: true, changed: true }]);
   assert.equal(later.program.origin, p.origin);
   assert.notEqual(later.program.current.revision, split.current.revision);
 });
@@ -109,4 +109,18 @@ test('the meaning gate tells every pair of shape symbols apart (IRWB-019 F21)', 
   };
   assert.throws(() => checked(mlp, alias, 'exact'), rejected);
   assert.doesNotThrow(() => checked(mlp, inlinePass, 'exact'));
+});
+
+test('optimization steps report no-ops and the first rejection reason', () => {
+  const p = compileTix('fn f(x:f32[1,K]):f32[1]{y[i]=sum(k) sqrt(-1)*x[i,k];return y;}');
+  const candidate = { origin: sum.origin, current: p.current };
+  let reason;
+  assert.throws(() => checked(candidate, splitPass, 'tolerance'), error => {
+    reason = error.evidence.counterexamples[0].reason;
+    return rejected(error);
+  });
+  assert.deepEqual(optimizeTix(candidate, ['split-sum', 'inline']).steps, [
+    { pass: 'split-sum', accepted: false, changed: false, reason },
+    { pass: 'inline', accepted: true, changed: false },
+  ]);
 });
