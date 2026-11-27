@@ -464,3 +464,22 @@ Experiment 10's single template could not handle contractions, so I added a cont
 
 ### Code review instructions
 - `matchContraction`, `emitContraction` and `planFunction` in `scripts/lib/tix-cuda-gen.mjs`; generated `scripts/12-planner/main.cu` (`ct_attention_0`, `rg_attention_1`, `ct_attention_5`).
+
+## Step 17: Feature probes, consolidated (milestone)
+
+The standing instructions require a minimal probe before relying on a feature not yet seen working in this repository. This step lists each such feature with its probe and result, in the order they were first used.
+
+| Feature | Probe | Result |
+|---|---|---|
+| `npm run build` in this worktree | Step 1 | exit 0 |
+| `tools/cuda-remote.mjs` to the GB10 | `scripts/00-device` | Compiled in 431 ms, ran, printed device JSON |
+| cuBLAS without link flags | `dlopen("libcublas.so.13")` + `cublasCreate_v2` in experiment 01 | Loaded; SGEMM results agree with the meaning to 3.6e-5 relative |
+| `cudaMemcpyToSymbol` into initialized `__constant__` | `exhaust b` bound sweep in experiment 02 | Fallback and mismatch counts change with b as expected |
+| `fmemopen` / `open_memstream` on the GPU host | Driving Stage 2 `run_case` in experiment 03 | Shapes and words decoded; 0 differences on all programs |
+| `--runtime-input` | Experiment 04 `triples.bin` | Uploaded and read; outputs fetched from `out/` |
+| zsh word splitting | `exhaust $b` with `b="30 30"` (Step 9) | **Not split**: zsh passes one argument; used separate literals afterwards |
+| C++ float literals in generated host code | Experiment 10 first compile | `-1f` rejected; `toFixed(6)` + `f` accepted |
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Commit (code):** this step's commit

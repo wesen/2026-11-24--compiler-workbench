@@ -26,7 +26,7 @@ WhenToUse: ""
 
 # Best-in-class Tix: exact-meaning performance research
 
-Research round (no product-code changes). The thesis: Tix should be the fastest compiler whose output is bit-identical to its portable f32 meaning, with evidence for every step. GB10 experiments back four ranked proposals. Hand-written exact kernels for the six corpus programs are bit-identical to Stage 2 and 3.76× faster in geometric mean. Fast `exp` and `tanh` paths are proven equal to the meaning on all 2^32 inputs. Symbolic fingerprints decide exactness per shape for all data.
+Research round (no product-code changes). The thesis: Tix should be the fastest compiler whose output is bit-identical to its portable f32 meaning, with evidence for every step. GB10 experiments back four ranked proposals. Hand-written exact kernels for the six corpus programs are bit-identical to Stage 2 and 3.76× faster in geometric mean. Fast `exp` and `tanh` paths are proven equal to the meaning on all 2^32 inputs. Symbolic fingerprints decide exactness per shape for all data. A prototype planner generates exact schedules from the Tix IR for five of the six programs (3.19× geometric mean).
 
 - [Design document](design-doc/01-exact-meaning-performance-for-tix.md)
 - [Research diary](reference/01-research-diary.md)
