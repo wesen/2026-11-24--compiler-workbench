@@ -1,0 +1,14 @@
+1. sampled, subject wrong on every even input: ok true | assurance checked-sampled | evidence.method sampled
+2. exhaustive over u8, subject correct:        ok true | assurance checked-exact | evidence.method exhaustive
+   same assurance recorded for both: false
+3. assuranceOf(sampled evidence) checked-sampled | assuranceOf(undefined) checked | assuranceOf({method:'typo'}) checked | assuranceOf({method:'exhaustive'}) checked-exact
+4. every mention of assuranceOf in src/, tests/, tools/:
+   src/framework/contracts/analysis-manager.ts:102: export function assuranceOf(evidence: unknown): Assurance {
+   src/framework/contracts/analysis-manager.ts:1186: assurance: assuranceOf(result.evidence),
+   src/framework/contracts/differential.ts:379: export { assuranceOf } from './analysis-manager.js';
+   tests/framework/ext-e5.test.mjs:11: assuranceOf,
+   tests/framework/ext-e5.test.mjs:50: assert.equal(assuranceOf(good.evidence), 'checked-sampled');
+   tests/framework/r3-defects.test.mjs:8: const { assuranceOf } = await import('../../dist/framework/contracts/differential.js');
+   tests/framework/r3-defects.test.mjs:64: assert.notEqual(assuranceOf(undefined), 'checked-exact', 'no evidence must not count as exact');
+   tests/framework/r3-defects.test.mjs:66: assuranceOf({ method: 'typo' }),
+5. checks recorded by a transformation contract: ensures/checked-sampled

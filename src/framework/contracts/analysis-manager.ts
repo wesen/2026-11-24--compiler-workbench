@@ -96,6 +96,15 @@ const checkResult = (v: unknown): CheckResult => {
   Check.validate(v);
   return immutable(v);
 };
+/** The assurance a check's evidence supports: a sampled differential is weaker than an exhaustive or otherwise
+ * exact checker, and evidence that is missing or names a method the framework does not know is never exact —
+ * such a check ran (plain `checked`) but its evidence says nothing about how, so it claims no exactness. */
+export function assuranceOf(evidence: unknown): Assurance {
+  const method = (evidence as { method?: unknown } | null)?.method;
+  if (method === 'sampled') return 'checked-sampled';
+  if (method === 'exhaustive') return 'checked-exact';
+  return 'checked';
+}
 /** Revision-specific semantic facts, dependency-aware analyses and transactional verification. */
 export class AnalysisManager {
   readonly registry: ContractRegistry;
@@ -1174,7 +1183,7 @@ export class AnalysisManager {
         phase: 'query',
         definition: definitionRef(definition),
         ok: result.ok,
-        assurance: 'checked',
+        assurance: assuranceOf(result.evidence),
         reason: result.reason ?? (result.ok ? 'Invariant checked' : 'Invariant rejected'),
         evidence: result.evidence ?? null,
       });

@@ -161,7 +161,9 @@ export interface DefinitionDescriptor extends DefinitionBase {
   readonly category: AnyDefinition['category'];
   readonly schema: unknown;
 }
-export type Assurance = 'declared' | 'checked' | 'transferred' | 'proof';
+/** How a claim is backed. `checked-sampled` and `checked-exact` say how a check was checked; plain `checked`
+ * is a check whose evidence does not say (no method, or one the framework does not know) — never exact. */
+export type Assurance = 'declared' | 'checked' | 'checked-sampled' | 'checked-exact' | 'transferred' | 'proof';
 export interface AnalysisDependency {
   readonly type: 'analysis';
   readonly key: string;

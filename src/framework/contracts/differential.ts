@@ -374,7 +374,6 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
   return tally(spec, seed, cases, verdicts, maxCounterexamples);
 }
 
-/** The assurance a check's evidence supports: sampled differential testing is weaker than an exact checker. */
-export function assuranceOf(evidence: unknown): 'checked-sampled' | 'checked-exact' {
-  return (evidence as { method?: string } | null)?.method === 'sampled' ? 'checked-sampled' : 'checked-exact';
-}
+/** Moved to analysis-manager.ts, where the recorded checks it describes are stamped; re-exported so the
+ * `framework/contracts/differential.js` import path keeps working. */
+export { assuranceOf } from './analysis-manager.js';
