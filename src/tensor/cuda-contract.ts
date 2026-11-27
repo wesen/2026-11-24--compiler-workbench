@@ -14,7 +14,7 @@ import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
 import { emitSchedule, takesGate, takesScheduledGate } from './cuda-source.js';
-import { ScheduleIR, scheduleTix, seedSchedule, type Schedule } from './schedule.js';
+import { ScheduleIR, applyScheduleStrategy, seedSchedule, type Schedule } from './schedule.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -23,7 +23,7 @@ interface CudaKernel {
   name: string;
   mapping: 'thread' | 'block';
   statements: string[];
-  /** The host decides at launch between this kernel's block mode and its statements one by one (IRWB-030-E). */
+  /** The host selects a schedule for this kernel at launch. */
   gated?: boolean;
 }
 interface CudaUnit {
@@ -279,7 +279,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         name: g.kernel,
         mapping: g.mapping,
         statements: g.statements,
-        ...(g.gated && { gated: true }),
+        ...((g.gated || g.contractions.some(c => c.layout)) && { gated: true }),
       }));
       const subject = cudaArtifact(fn, emitSchedule(plan), kernels);
       return {
@@ -300,7 +300,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     const fuse = options?.fuse !== false;
     try {
       const { outputs } = await manager.execute(seedLowering, { baseline, fn, fuse });
-      const schedule = scheduleTix(outputs.schedule.value.fn, fuse, outputs.schedule).artifact;
+      const schedule = applyScheduleStrategy(outputs.schedule, fuse).artifact;
       if (candidate)
         await manager.verifyTransformation({ baseline, fn, fuse, schedule }, { subject: candidate }, pass, [
           kernelCorrespondence(baseline, candidate),

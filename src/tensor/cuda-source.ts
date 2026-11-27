@@ -314,6 +314,8 @@ function emitTile(
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
+  epilogue: readonly Statement[] = [],
+  stores: ReadonlyMap<string, string> = new Map([[statement.name, 'result']]),
 ) {
   const { swap, columnLoad, stripe } = layout;
   const [ty, tx] = layout.threads,
@@ -325,9 +327,11 @@ function emitTile(
     column = swap ? domain.row : domain.column;
   const [left, right] = swap ? [domain.operands[1], domain.operands[0]] : domain.operands;
   const reduction = contractionReduction(statement, domain);
+  const local = new Map<string, string>();
   const w = kernelWriter(
     dimensions,
-    (e, offset) => `${tensorName(e.name)}[${offset(e.indices, tensors.get(e.name)!.shape)}]`,
+    (e, offset) =>
+      local.get(e.name) ?? `${tensorName(e.name)}[${offset(e.indices, tensors.get(e.name)!.shape)}]`,
     undefined,
     undefined,
     e => (e === reduction ? 'acc[ri][ci]' : undefined),
@@ -436,18 +440,26 @@ function emitTile(
   decode('out_m', outputAxes(row));
   // At present recognition may produce several axes in either direction. Use different scratch names.
   decode('out_n', outputAxes(column));
-  const result = w.scalar(statement.expr);
   const at = statement.axes.map(a => ({ constant: 0, terms: [[a.id, 1]] as [string, number][] }));
-  w.line(`result[${w.offset(at, statement.shape)}] = ${result};`);
+  const output = w.offset(at, statement.shape);
+  for (const member of [statement, ...epilogue]) {
+    member.axes.forEach(({ id }, i) => w.alias(id, 'at_' + statement.axes[i].id));
+    const result = w.scalar(member.expr);
+    const target = stores.get(member.name);
+    if (target) w.line(`${target}[${output}] = ${result};`);
+    local.set(member.name, result);
+  }
   close();
   close();
   close();
+  const grid = `${batch} * ${divUp(m, rows)} * ${divUp(n, columns)}`;
   return {
     lines: w.lines,
     threads,
-    grid: `${batch} * ${divUp(m, rows)} * ${divUp(n, columns)}`,
+    grid,
+    work: `${k} * elements(shape_${tensorName(statement.name)})`,
     aligned: `${m} % ${rows} == 0 && ${n} % ${columns} == 0 && ${k} % ${stripe} == 0`,
-    profitability: `${k} >= ${layout.minTerms} && elements(shape_${tensorName(statement.name)}) >= ${layout.minOutputs}`,
+    profitability: `${m} >= ${rows} && ${n} >= ${columns} && ${k} >= ${layout.minTerms} && ${grid} >= ${layout.minBlocks}`,
   };
 }
 
@@ -460,6 +472,7 @@ interface KernelEmission {
   launch: string;
   hasWork: string;
   tiled?: ReturnType<typeof emitTile>;
+  scratchBytes?: string;
 }
 
 interface KernelLink {
@@ -482,6 +495,7 @@ function emitKernel(
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
+  threads: number,
   contraction?: ScheduledContraction,
   link?: KernelLink,
 ): KernelEmission {
@@ -529,29 +543,39 @@ function emitKernel(
   const target = (mode: number) => link?.target(mode) ?? (tiled ? `${kernel}<${mode}>` : kernel);
   const code = w.lines.join('\n');
   const metadata = { code, params, argumentKeys, hasWork: count, tiled };
-  if (tiled) {
-    return {
-      ...metadata,
-      host: [
-        `  const U tile_grid_${kernel} = ${tiled.grid};`,
-        `  const bool tiled_${kernel} = ${link ? 'true' : `gate_mode ? gate_mode == 1 : ${tiled.profitability}`};`,
-        `  const bool aligned_${kernel} = ${tiled.aligned};`,
-      ],
-      preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, tiled_${kernel} ? (aligned_${kernel} ? ${target(2)} : ${target(1)}) : ${target(0)}));`,
-      launch: `    if (${count}) {
-      if (tiled_${kernel} && aligned_${kernel}) ${target(2)}<<<tile_grid_${kernel}, ${tiled.threads}>>>(${actual});
-      else if (tiled_${kernel}) ${target(1)}<<<tile_grid_${kernel}, ${tiled.threads}>>>(${actual});
-      else ${target(0)}<<<(${count} - 1) / 256 + 1, 256>>>(${actual});
-      check(cudaGetLastError());
-    }`,
-    };
-  }
+  if (tiled) return { ...metadata, ...tileLaunch(tiled, kernel, target, actual, count, threads, link) };
   return {
     ...metadata,
     host: [] as string[],
     preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${target(0)}));`,
     launch: `    if (${count}) {
-      ${target(0)}<<<(${count} - 1) / 256 + 1, 256>>>(${actual});
+      ${target(0)}<<<(${count} - 1) / ${threads} + 1, ${threads}>>>(${actual});
+      check(cudaGetLastError());
+    }`,
+  };
+}
+
+function tileLaunch(
+  tile: ReturnType<typeof emitTile>,
+  kernel: string,
+  target: (mode: number) => string,
+  actual: string,
+  count: string,
+  fallbackThreads: number,
+  link?: KernelLink,
+) {
+  const chosen = `${link ? 'tiled' : 'fused'}_${kernel}`;
+  return {
+    host: [
+      `  const U tile_grid_${kernel} = ${tile.grid};`,
+      `  const bool ${chosen} = ${link ? `gate_mode == 3 || (${tile.profitability})` : `gate_mode ? gate_mode == 1 : ${tile.profitability}`};`,
+      `  const bool aligned_${kernel} = ${tile.aligned};`,
+    ],
+    preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${chosen} ? (aligned_${kernel} ? ${target(2)} : ${target(1)}) : ${target(0)}));`,
+    launch: `    if (${count}) {
+      if (${chosen} && aligned_${kernel}) ${target(2)}<<<tile_grid_${kernel}, ${tile.threads}>>>(${actual});
+      else if (${chosen}) ${target(1)}<<<tile_grid_${kernel}, ${tile.threads}>>>(${actual});
+      else ${target(0)}<<<(${count} - 1) / ${fallbackThreads} + 1, ${fallbackThreads}>>>(${actual});
       check(cudaGetLastError());
     }`,
   };
@@ -594,7 +618,11 @@ function emitGroup(
   tensorName: (name: string) => string,
   link?: GroupLink,
 ): KernelEmission {
-  const { kernel, depth } = group;
+  const {
+    kernel,
+    depth,
+    launch: { threads },
+  } = group;
   const target = (mode: number) => link?.target(mode) ?? `${kernel}<${mode}>`;
   const phase = link?.phase;
   const alternate = link?.alternate;
@@ -618,9 +646,28 @@ function emitGroup(
     'U count',
   ];
   const suffix = (name: string) => tensorName(name).slice(1);
+  const contraction = group.contractions.find(c => c.layout);
+  const tile =
+    contraction?.layout &&
+    emitTile(
+      contraction.domain,
+      contraction.layout,
+      members[0],
+      dimensions,
+      tensors,
+      tensorName,
+      members.slice(1),
+      new Map(group.stored.map(s => [s, tensorName(s)])),
+    );
   const rowBuffers = [...group.staged, ...group.buffered];
   const registers = new Map<string, string>();
   let current = members[0];
+  const rowReads = new Map(
+    group.rowReads.map(({ statement, loads }) => [
+      statement,
+      new Set(loads.map(load => JSON.stringify(load))),
+    ]),
+  );
   const cap = group.launch.kind === 'row' ? group.launch.cap : 0;
   // Staged terms (fusion.ts): reduction -> the name suffix of its count and pointer.
   const termIds = new Map<Reduce, string>();
@@ -638,8 +685,7 @@ function emitGroup(
     (e, offset) => {
       const shape = tensors.get(e.name)!.shape;
       if (!block && inGroup.has(e.name)) return registers.get(e.name)!;
-      const ownRow = e.indices.slice(0, depth).every((a, p) => plain(a) === current.axes[p].id);
-      if (block && rowBuffers.includes(e.name) && ownRow)
+      if (rowReads.get(current.name)?.has(JSON.stringify(e)))
         return `r${suffix(e.name)}[${offset(e.indices.slice(depth), shape.slice(depth)) || '0'}]`;
       if (inGroup.has(e.name)) throw Error(`Fused read of ${e.name} outside its row`);
       return `${tensorName(e.name)}[${offset(e.indices, shape)}]`;
@@ -653,9 +699,16 @@ function emitGroup(
   // 06). Mode 2 + s is member s alone in stage 2's mapping and scalar code, for launches where the gate
   // (fusion.ts) finds block mode slower: the host then launches the members' instantiations in order.
   if (block) w.lines.push('template <int Mode>');
+  if (tile) w.lines.push('template <int TileMode>');
   const qualifier = link ? '__device__ __forceinline__' : '__global__';
   w.lines.push(`${qualifier} void ${link?.device ?? kernel}(${params.join(', ')}) {`);
-  if (block) {
+  if (tile) {
+    w.line('if constexpr (TileMode != 0) {');
+    w.lines.push(...tile.lines);
+    w.line('} else {');
+    w.enter();
+  }
+  if (block && !phase) {
     w.line('if (Mode >= 2) {');
     w.line('  const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
     w.line('  if (thread >= count) return;');
@@ -671,8 +724,8 @@ function emitGroup(
     });
     w.line('  return;');
     w.line('}');
-    w.line('constexpr bool Shared = Mode == 1;');
   }
+  if (block) w.line('constexpr bool Shared = Mode == 1;');
   const first = members[0];
   const counter = block ? 'point' : 'thread';
   if (block) {
@@ -693,6 +746,7 @@ function emitGroup(
     product(tensors.get(name)!.shape.slice(depth).map(dim));
   const host: string[] = [];
   let hasWork: string;
+  let scratchBytes: string | undefined;
   if (block) {
     for (const name of new Set([...group.staged, ...group.statements]))
       w.line(`const U n${suffix(name)} = ${lengthOf(name, w.dim)};`);
@@ -779,9 +833,12 @@ function emitGroup(
     const hostRow = [...owners.map(n => lengthOf(n, hostDim)), ...(staging.length ? [area(count)] : [])].join(
       ' + ',
     );
+    const grid = product(first.shape.slice(0, depth).map(hostDim));
+    const rowBytes = `(${hostRow}) * sizeof(float)`;
+    scratchBytes = `(${rowBytes} <= static_cast<U>(shared_limit) ? 0 : ${grid} * (${rowBytes}))`;
     host.push(
-      `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
-      `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
+      `  const U grid_${kernel} = ${grid};`,
+      `  const U row_${kernel} = ${rowBytes};`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
       group.heavy.length
@@ -828,6 +885,10 @@ function emitGroup(
     host.push(`  const U count_${kernel} = elements(shape_${tensorName(first.name)});`);
     hasWork = `count_${kernel}`;
   }
+  if (tile) {
+    w.leave();
+    w.line('}');
+  }
   w.lines.push('}');
   const args = [
     ...dimensions.values(),
@@ -847,11 +908,25 @@ function emitGroup(
   const actual = (count: string) =>
     link?.arguments?.(`scratch_${kernel}.ptr`, count) ?? [...args, count].join(', ');
   const blockArgs = actual('0');
+  const code = w.lines.join('\n');
+  if (tile) {
+    const launch = tileLaunch(
+      tile,
+      kernel,
+      target,
+      link?.arguments?.('nullptr', hasWork) ?? args.join(', '),
+      hasWork,
+      threads,
+      link,
+    );
+    return { code, params, argumentKeys, hasWork, tiled: tile, ...launch, host: [...host, ...launch.host] };
+  }
   return {
-    code: w.lines.join('\n'),
+    code,
     host,
     params,
     argumentKeys,
+    scratchBytes,
     preload: block
       ? `  if (grid_${kernel} && fused_${kernel}) {
     check(cudaFuncGetAttributes(&attributes, shared_${kernel} ? ${target(1)} : ${target(0)}));
@@ -865,15 +940,15 @@ ${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${target(
     launch: block
       ? `    if (grid_${kernel} && fused_${kernel} && shared_${kernel}) ${target(1)}<<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, row_${kernel}>>>(${blockArgs});
     if (grid_${kernel} && fused_${kernel} && !shared_${kernel}) ${target(0)}<<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}>>>(${blockArgs});
-${members
+${(phase ? [] : members)
   .map(
     (m, j) =>
-      `    if (!fused_${kernel} && ${size(m)}) ${target(2 + j)}<<<(${size(m)} - 1) / 256 + 1, 256>>>(${actual(size(m))});`,
+      `    if (!fused_${kernel} && ${size(m)}) ${target(2 + j)}<<<(${size(m)} - 1) / ${threads} + 1, ${threads}>>>(${actual(size(m))});`,
   )
   .join('\n')}
     if (grid_${kernel}) check(cudaGetLastError());`
       : `    if (count_${kernel}) {
-      ${link?.target(0) ?? kernel}<<<(count_${kernel} - 1) / 256 + 1, 256>>>(${link?.arguments?.('nullptr', `count_${kernel}`) ?? args.join(', ')});
+      ${link?.target(0) ?? kernel}<<<(count_${kernel} - 1) / ${threads} + 1, ${threads}>>>(${link?.arguments?.('nullptr', `count_${kernel}`) ?? args.join(', ')});
       check(cudaGetLastError());
     }`,
   };
@@ -886,7 +961,7 @@ function emitPartition(
   tensorName: (name: string) => string,
 ) {
   const { kernel, partition } = group;
-  const { phases, materialized } = partition!;
+  const { phases, materialized, minTileWork } = partition!;
   const active = `scheduled_${kernel}`;
   const target = (mode: number) => `${kernel}<${mode}>`;
   const baseDevice = kernel + '_original';
@@ -914,6 +989,7 @@ function emitPartition(
             dimensions,
             tensors,
             tensorName,
+            phase.launch.threads,
             phase.contractions[0],
             link,
           )
@@ -924,9 +1000,20 @@ function emitPartition(
       `  if constexpr (Mode >= ${offset} && Mode < ${offset + 3})`,
       `    ${link.device}${templated ? `<Mode - ${offset}>` : ''}(${emitted.argumentKeys.join(', ')});`,
     ];
-    return { ...emitted, dispatch, profitable: tiled?.profitability };
+    return {
+      ...emitted,
+      dispatch,
+      profitable: tiled && `(${tiled.profitability} && ${tiled.work} >= ${minTileWork})`,
+    };
   });
-  const condition = phaseKernels.flatMap(p => (p.profitable ? [p.profitable] : [])).join(' && ');
+  const condition = phaseKernels.flatMap(p => (p.profitable ? [p.profitable] : [])).join(' || ');
+  const extraBytes =
+    [
+      ...materialized
+        .filter(s => !group.stored.includes(s))
+        .map(s => `elements(shape_${tensorName(s)}) * sizeof(float)`),
+      ...phaseKernels.flatMap(p => (p.scratchBytes ? [p.scratchBytes] : [])),
+    ].join(' + ') || '0';
   const scoped = (code: string, active: string) => `  if (${active}) {\n${code}\n  }`;
   return {
     code: [
@@ -940,7 +1027,12 @@ function emitPartition(
     ].join('\n'),
     hasWork: base.hasWork,
     host: [
-      `  const bool ${active} = gate_mode ? gate_mode == 3 : (${condition});`,
+      `  bool ${active} = gate_mode ? gate_mode == 3 : (${condition});`,
+      `  if (${active} && !gate_mode) {
+    size_t free_bytes, total_bytes;
+    check(cudaMemGetInfo(&free_bytes, &total_bytes));
+    ${active} = ${extraBytes} <= free_bytes;
+  }`,
       ...base.host,
       ...phaseKernels.flatMap(p => p.host),
     ],
@@ -991,6 +1083,7 @@ export function emitSchedule({ fn, groups }: Schedule): string {
             dims,
             tensors,
             name,
+            g.launch.threads,
             g.contractions.find(c => c.layout?.kind === 'shared-tile'),
           )
         : emitGroup(g, dims, tensors, name),
@@ -1052,7 +1145,7 @@ export function emitSchedule({ fn, groups }: Schedule): string {
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
     '  write(output, &gpu_ms, 1);',
     ...groups
-      .filter(g => g.statements.length > 1 && g.mapping === 'block')
+      .filter(g => g.gated || g.contractions.some(c => c.layout))
       .map(g => `  { const unsigned char choice = fused_${g.kernel} ? 1 : 0; write(output, &choice, 1); }`),
     '}',
   );

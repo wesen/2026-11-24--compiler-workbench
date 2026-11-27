@@ -32,7 +32,7 @@ test('lexicographic affine convolution and same-row contractions reach schedule 
   assert.ok(conv.layout.swap);
   const mlp = schedule('mlp').artifact.value.groups[0];
   assert.deepEqual(mlp.partition.phases.map(p => [p.statements, p.contractions[0]?.layout.kind]),
-    [[['h'], 'shared-tile'], [['g'], undefined], [['y'], 'shared-tile']]);
+    [[['h', 'g'], 'shared-tile'], [['y'], 'shared-tile']]);
   assert.deepEqual(mlp.inPlace, [{ statement: 'g', over: 'h' }]);
 });
 
@@ -41,4 +41,12 @@ test('split sums retain their scalar implementation and unfused source stays ind
   assert.equal(scheduleTix(program.current.value.functions[0], true).steps[0].changed, false);
   assert.doesNotMatch(cudaSource(program, 'matmul'), /TileMode/);
   assert.doesNotMatch(cudaSource(corpus('matmul'), 'matmul', { fuse: false }), /TileMode/);
+});
+
+test('the phased route must retain intermediate tensors and statement order', () => {
+  const { artifact, steps } = schedule('attention');
+  const { before, correspondence } = steps[2];
+  const candidate = structuredClone(artifact);
+  candidate.value.groups[0].partition.materialized = ['out'];
+  assert.match(checkScheduleStep(before, candidate, correspondence, 'partition').reason, /cross-phase reads/);
 });

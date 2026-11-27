@@ -28,3 +28,18 @@ test('aligned tile, fractured tiles and untiled short reductions agree with the 
     if (i >= 2) assert.deepEqual(words(await runTixCuda(program, 'f', inputs)), words(result[i]));
   }
 });
+
+test('batched transposed loads and a register epilogue share the ordered tile', { timeout: 120_000 }, async () => {
+  const program = compileTix(`fn f(a:f32[B,M,K], b:f32[B,N,K], bias:f32[N]):f32[B,M,N] {
+    c[p,i,j] = sum(k) a[p,i,k] * b[p,j,k];
+    out[p,i,j] = max(c[p,i,j] + bias[j], 0) - c[p,i,j];
+    return out;
+  }`);
+  const cases = [{ a: { ...matrix(3 * 7, 19, 7), shape: [3,7,19] },
+    b: { ...matrix(3 * 17, 19, 23), shape: [3,17,19] },
+    bias: { ...matrix(1,17,11), shape: [17] } }];
+  const { functions: [fn] } = program.current.value;
+  const [result] = await runCudaBatch(cudaSource(program, 'f'), fn, cases, { gate: 'fused' });
+  assert.deepEqual(words(result), words(runTix(program, 'f', cases[0])));
+  assert.deepEqual(result.gates, { k0: 'fused' });
+});

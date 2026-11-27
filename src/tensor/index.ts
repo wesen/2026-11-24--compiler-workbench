@@ -60,7 +60,7 @@ export function optimizeTix(program: TixProgram, passes: string[]) {
 }
 
 export interface LoweringOptions {
-  /** Fuse statements into fewer kernels (stage 3, the default); `false` is stage 2's one kernel per statement. */
+  /** Use the checked schedule by default. `false` selects one stage 2 kernel per statement. */
   fuse?: boolean;
 }
 function lower(program: TixProgram, fn: string, options?: LoweringOptions) {

@@ -4,7 +4,7 @@ import type { Artifact } from '../framework/core/types.js';
 import { createIRArtifact, defineAdapter, type EntityCorrespondence } from '../framework/ir/index.js';
 import { applyNativePassSync, definePass } from '../framework/passes/index.js';
 import { gate, outerReductions, planFusion, unfusedPlan, type FusionGroup, type Reduce } from './fusion.js';
-import { visit, type Expr, type Fn, type Statement } from './model.js';
+import { plain, visit, type Expr, type Fn, type Statement } from './model.js';
 
 type Load = Extract<Expr, { kind: 'load' }>;
 
@@ -24,9 +24,9 @@ export interface SharedTile {
   stripe: number;
   swap: boolean;
   columnLoad: 'column-first' | 'term-first';
-  // Minimum linear K and output sizes for which to use the cooperative schedule.
+  // Minimum K and CUDA blocks for which to cover the shared staging cost.
   minTerms: number;
-  minOutputs: number;
+  minBlocks: number;
 }
 
 export interface ScheduledContraction {
@@ -36,14 +36,13 @@ export interface ScheduledContraction {
 }
 
 export interface ScheduleGroup extends FusionGroup {
-  launch: { kind: 'element'; threads: number } | {
-    kind: 'row';
-    cap: number;
-    heavyCap: number;
-    gate: typeof gate;
-  };
+  launch:
+    | { kind: 'element'; threads: number }
+    | { kind: 'row'; threads: number; cap: number; heavyCap: number; gate: typeof gate };
+  /** Loads of the block's own row for each member. Other loads use global addresses. */
+  rowReads: { statement: string; loads: Load[] }[];
   contractions: ScheduledContraction[];
-  partition?: { phases: ScheduleGroup[]; materialized: string[] };
+  partition?: { phases: ScheduleGroup[]; materialized: string[]; minTileWork: number };
 }
 
 export interface Schedule {
@@ -56,23 +55,50 @@ const elementThreads = 256;
 
 function rowReadsGlobal(e: Expr, local: readonly string[], reducing = false): boolean {
   switch (e.kind) {
-    case 'load': return reducing && !local.includes(e.name);
-    case 'op': return e.args.some(a => rowReadsGlobal(a, local, reducing));
-    case 'reduce': return rowReadsGlobal(e.body, local, true);
-    default: return false;
+    case 'load':
+      return reducing && !local.includes(e.name);
+    case 'op':
+      return e.args.some(a => rowReadsGlobal(a, local, reducing));
+    case 'reduce':
+      return rowReadsGlobal(e.body, local, true);
+    default:
+      return false;
   }
 }
 
 export function scheduleGroup(fn: Fn, group: FusionGroup): ScheduleGroup {
   const local = [...group.staged, ...group.buffered];
-  const globalReduction = fn.statements.some(s =>
-    group.statements.includes(s.name) && rowReadsGlobal(s.expr, local));
+  const members = fn.statements.filter(s => group.statements.includes(s.name));
+  const globalReduction = members.some(s => rowReadsGlobal(s.expr, local));
+  const rowReads =
+    group.mapping === 'block'
+      ? members.map(s => {
+          const loads: Load[] = [];
+          visit(s.expr, e => {
+            if (
+              e.kind === 'load' &&
+              local.includes(e.name) &&
+              e.indices.slice(0, group.depth).every((at, i) => plain(at) === s.axes[i].id)
+            )
+              loads.push(e);
+          });
+          return { statement: s.name, loads };
+        })
+      : [];
+
   return {
     ...group,
-    launch: group.mapping === 'block'
-      ? { kind: 'row', cap: globalReduction ? blockThreads.contraction : blockThreads.rows,
-        heavyCap: blockThreads.heavy, gate }
-      : { kind: 'element', threads: elementThreads },
+    launch:
+      group.mapping === 'block'
+        ? {
+            kind: 'row',
+            threads: elementThreads,
+            cap: globalReduction ? blockThreads.contraction : blockThreads.rows,
+            heavyCap: blockThreads.heavy,
+            gate,
+          }
+        : { kind: 'element', threads: elementThreads },
+    rowReads,
     contractions: [],
   };
 }
@@ -80,7 +106,7 @@ export function scheduleGroup(fn: Fn, group: FusionGroup): ScheduleGroup {
 const entities = (schedule: Schedule) => [
   { id: 'function/' + schedule.fn.name, kind: 'function', attributes: { fn: schedule.fn } },
   ...schedule.groups.map(group => {
-    const { contractions, partition: _, ...mapping } = group;
+    const { contractions, ...mapping } = group;
     return { id: group.kernel, kind: 'group', attributes: { mapping } };
   }),
   ...schedule.groups.flatMap(group => group.statements.map(statement => ({
@@ -88,14 +114,13 @@ const entities = (schedule: Schedule) => [
     kind: 'statement',
     attributes: {
       contractions: group.contractions.filter(c => c.statement === statement),
-      ...(group.partition && statement === group.statements[0] && { partition: group.partition }),
     },
   }))),
 ];
 
 function validate(value: unknown) {
-  const s = value as Schedule;
-  if (!Array.isArray(s.fn?.statements) || !Array.isArray(s.groups) ||
+  const s = value as Schedule | undefined;
+  if (!Array.isArray(s?.fn?.statements) || !Array.isArray(s.groups) ||
       canonical(s.groups.flatMap(g => g.statements)) !== canonical(s.fn.statements.map(m => m.name)) ||
       new Set(s.groups.map(g => g.kernel)).size !== s.groups.length)
     throw Error('Invalid ordered schedule groups');
@@ -110,7 +135,16 @@ const adapter = defineAdapter<Schedule>({
   id: 'tensor.schedule-adapter', version: '1', description: 'Schedule groups and member mappings',
   kind: ScheduleIR.id, schemaVersion: ScheduleIR.version,
   validate, entities, resolve: (v, id) => entities(v).find(e => e.id === id),
-  relationKinds: {}, relations: () => [], describe: (_, id) => ({ label: id }),
+  relationKinds: { contains: 'containment' },
+  relations: ({ fn, groups }) => groups.flatMap(group => [
+    { id: 'contains/' + group.kernel, kind: 'contains', category: 'containment' as const,
+      from: 'function/' + fn.name, to: group.kernel },
+    ...group.statements.map(statement => ({
+      id: 'contains/' + fn.name + '/' + statement, kind: 'contains', category: 'containment' as const,
+      from: group.kernel, to: fn.name + '/' + statement,
+    })),
+  ]),
+  describe: (_, id) => ({ label: id }),
 });
 
 export function seedSchedule(fn: Fn, fuse: boolean): Artifact<Schedule> {
@@ -132,8 +166,10 @@ function recognize(statement: Statement): Contraction | undefined {
       body.kind !== 'op' || body.op !== '*') return;
   const [a, b] = body.args;
   if (a.kind !== 'load' || b.kind !== 'load') return;
-  const row: number[] = [], column: number[] = [], batch: number[] = [];
-  statement.axes.forEach(({id}, i) => {
+  const row: number[] = [];
+  const column: number[] = [];
+  const batch: number[] = [];
+  statement.axes.forEach(({ id }, i) => {
     const left = depends(a, id), right = depends(b, id);
     (left === right ? batch : left ? row : column).push(i);
   });
@@ -145,8 +181,12 @@ export function contractionReduction(statement: Statement, domain: Contraction):
   return outerReductions(statement.expr)[domain.reduction];
 }
 
-function selectLayout(group: ScheduleGroup, statement: Statement, domain: Contraction): SharedTile | undefined {
-  if (group.statements.length !== 1) return;
+function selectLayout(
+  group: ScheduleGroup,
+  statement: Statement,
+  domain: Contraction,
+): SharedTile | undefined {
+  if (group.launch.kind !== 'element' || group.statements[0] !== statement.name) return;
   const { row, column } = domain;
   // Assign contiguous lanes to the last output axis. The operands can swap storage roles, but
   // their multiplication order stays as written (the printer preserves their original positions).
@@ -160,10 +200,18 @@ function selectLayout(group: ScheduleGroup, statement: Statement, domain: Contra
     patch: [4, 4],
     stripe: 16,
     swap: spatialRows,
-    columnLoad: last.terms.some(([id]) => id === statement.axes[contiguous].id) ? 'column-first' : 'term-first',
+    columnLoad: last.terms.some(([id]) => id === statement.axes[contiguous].id)
+      ? 'column-first'
+      : 'term-first',
     minTerms: 16,
-    minOutputs: 4096,
+    // One wave on the 48-SM GB10. Every measured 32-block-or-smaller
+    // product lost to the scalar launch. Forced checks still exercise those tiles.
+    minBlocks: 48,
   };
+}
+
+function identities(schedule: Schedule) {
+  return entities(schedule).map(({ id }) => ({ from: [id], to: [id], relation: 'same-entity' }));
 }
 
 function rewrite(schedule: Schedule, update: (group: ScheduleGroup, s: Statement) => ScheduledContraction[]) {
@@ -172,8 +220,7 @@ function rewrite(schedule: Schedule, update: (group: ScheduleGroup, s: Statement
     ...group,
     contractions: group.statements.flatMap(name => update(group, members.get(name)!)),
   }));
-  const correspondence = entities(schedule).map(({ id }) =>
-    ({ from: [id], to: [id], relation: 'same-entity' }));
+  const correspondence = identities(schedule);
   return { native: { ...schedule, groups }, correspondence };
 }
 
@@ -199,21 +246,33 @@ export const mapContractions = definePass({
   }),
 });
 
+function fragmentFor(fn: Fn, statements: Statement[]): Fn {
+  const names = new Set(statements.map(s => s.name));
+  const last = statements.at(-1)!;
+  return { ...fn, statements,
+    params: [...fn.params, ...fn.statements.filter(s => !names.has(s.name))],
+    result: last.name, shape: last.shape,
+  };
+}
+
 function partitionGroup(fn: Fn, group: ScheduleGroup): ScheduleGroup['partition'] {
   if (group.launch.kind !== 'row' || group.depth !== 1 || group.statements.length < 3) return;
   const members = fn.statements.filter(s => group.statements.includes(s.name));
-  const first = members[0], last = members.at(-1)!;
+  const first = members[0];
+  const last = members.at(-1)!;
   const boundaries = [first, last].map(s => group.contractions.find(c => c.statement === s.name));
   if (boundaries.some(c => !c) || first.axes.length !== 2 || last.axes.length !== 2) return;
 
+  const prefix = [first];
+  for (const statement of members.slice(1, -1)) {
+    const { groups } = planFusion(fragmentFor(fn, [...prefix, statement]));
+    if (groups.length !== 1 || groups[0].mapping !== 'thread') break;
+    prefix.push(statement);
+  }
   const phases: ScheduleGroup[] = [];
-  for (const section of [[first], members.slice(1, -1), [last]]) {
-    const names = new Set(section.map(s => s.name));
-    const fragment: Fn = { ...fn, statements: section,
-      params: [...fn.params, ...fn.statements.filter(s => !names.has(s.name))],
-      result: section.at(-1)!.name, shape: section.at(-1)!.shape,
-    };
-    for (const part of planFusion(fragment).groups) {
+  for (const section of [prefix, members.slice(prefix.length, -1), [last]]) {
+    if (!section.length) continue;
+    for (const part of planFusion(fragmentFor(fn, section)).groups) {
       const outside = new Set(fn.statements.filter(s => !part.statements.includes(s.name)).flatMap(s => {
         const reads: string[] = [];
         visit(s.expr, e => { if (e.kind === 'load') reads.push(e.name); });
@@ -222,7 +281,9 @@ function partitionGroup(fn: Fn, group: ScheduleGroup): ScheduleGroup['partition'
       const phase = scheduleGroup(fn, {
         ...part,
         kernel: group.kernel + '_p' + phases.length,
-        stored: part.statements.filter(s => part.stored.includes(s) || group.stored.includes(s) || outside.has(s)),
+        stored: part.statements.filter(
+          s => part.stored.includes(s) || group.stored.includes(s) || outside.has(s),
+        ),
       });
       const boundary = boundaries.find(c => c && phase.statements.includes(c.statement));
       const statement = section[0];
@@ -234,13 +295,15 @@ function partitionGroup(fn: Fn, group: ScheduleGroup): ScheduleGroup['partition'
       phases.push(phase);
     }
   }
-  return { phases, materialized: phases.flatMap(p => p.stored) };
+  // The score contraction is the smallest corpus phase that paid for the
+  // extra launches and intermediate traffic (1024 * 1024 * 64 terms).
+  return { phases, materialized: phases.flatMap(p => p.stored), minTileWork: 1024 * 1024 * 64 };
 }
 
 export const partitionContractions = definePass({
   id: 'tensor.partition-contractions', version: '1',
   ir: ScheduleIR, adapter, description: 'Add tiled boundary phases around a fused row computation',
-  writes: { entities: ['statement'], relations: [] },
+  writes: { entities: ['group'], relations: [] },
   run: ({ before }) => {
     const schedule = before.value;
     const groups = schedule.groups.map(group => {
@@ -249,7 +312,7 @@ export const partitionContractions = definePass({
     });
     return {
       native: { ...schedule, groups },
-      correspondence: entities(schedule).map(({ id }) => ({ from: [id], to: [id], relation: 'same-entity' })),
+      correspondence: identities(schedule),
     };
   },
 });
@@ -301,27 +364,38 @@ export function checkScheduleStep(
       if (step === 'recognize') return reject('Recognition cannot install a mapping');
       if (layout.kind === 'shared-tile') {
         const [ty, tx] = layout.threads, [ry, rx] = layout.patch;
-        if (group.statements.length !== 1 ||
-            ![ty, tx, ry, rx, layout.stripe, layout.minTerms, layout.minOutputs].every(positive) ||
+        if (group.launch.kind !== 'element' || group.statements[0] !== statement ||
+            typeof layout.swap !== 'boolean' || !['column-first', 'term-first'].includes(layout.columnLoad) ||
+            ![ty, tx, ry, rx, layout.stripe, layout.minTerms, layout.minBlocks].every(positive) ||
             ty * tx > 1024 || (ty * ry + tx * rx + 2) * layout.stripe * 4 > 49152)
           return reject('The lane, register or shared-memory tile is invalid');
       } else return reject('Unknown contraction mapping');
     }
   }
-  return { ok: true, evidence: {
-    fold: 'positive zero followed by every original term in lexicographic order, with separate f32 multiply and add',
-    ownership: 'each coordinate belongs to one tile, one lane and one register position',
-  } };
+  return {
+    ok: true,
+    evidence: {
+      fold: 'positive zero, then original terms in lexicographic order with separate f32 multiply and add',
+      ownership: 'each coordinate belongs to one tile, one lane and one register position',
+    },
+  };
 }
 
 /** Synchronous because cudaSource must return its source without an asynchronous execution context. */
-export function scheduleTix(fn: Fn, fuse: boolean, seed = seedSchedule(fn, fuse)) {
+export function scheduleTix(fn: Fn, fuse: boolean) {
+  return applyScheduleStrategy(seedSchedule(fn, fuse), fuse);
+}
+
+export function applyScheduleStrategy(seed: Artifact<Schedule>, fuse: boolean) {
   if (!fuse) return { artifact: seed, steps: [] };
-  const recognized = applyNativePassSync(recognizeContractions, seed,
-    (before, after, c) => checkScheduleStep(before, after, c, 'recognize'));
-  const mapped = applyNativePassSync(mapContractions, recognized.artifact,
-    (before, after, c) => checkScheduleStep(before, after, c, 'map'));
-  const partitioned = applyNativePassSync(partitionContractions, mapped.artifact,
-    (before, after, c) => checkScheduleStep(before, after, c, 'partition'));
+  const recognized = applyNativePassSync(recognizeContractions, seed, (before, after, c) =>
+    checkScheduleStep(before, after, c, 'recognize'),
+  );
+  const mapped = applyNativePassSync(mapContractions, recognized.artifact, (before, after, c) =>
+    checkScheduleStep(before, after, c, 'map'),
+  );
+  const partitioned = applyNativePassSync(partitionContractions, mapped.artifact, (before, after, c) =>
+    checkScheduleStep(before, after, c, 'partition'),
+  );
   return { artifact: partitioned.artifact, steps: [recognized, mapped, partitioned] };
 }
