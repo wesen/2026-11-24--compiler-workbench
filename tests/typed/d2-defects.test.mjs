@@ -1,5 +1,5 @@
-// IRWB-039 phase 1a: three defects IRWB-037-G (D2) found and left unchanged, as tests of the CORRECT behaviour
-// (BACKLOG F36-F38; IRWB-037-G scripts/13 and 14). Remove `todo` in the fixing commit.
+// IRWB-039 phase 1a: defects IRWB-037-G (D2) found on the way, as tests of the CORRECT behaviour (BACKLOG
+// F36-F38; IRWB-037-G scripts/13 and 14). F36 and F38 are fixed (IRWB-042-B); F37 is still open.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installVendor } from '../../tools/node-vendor.mjs';
@@ -13,7 +13,6 @@ const { PIPELINES } = await import('../../dist/typed/passes.js');
 
 test(
   'F36: bce keeps a bounds check when the index is reassigned between the guard and the check',
-  { todo: 'F36' },
   async () => {
     // the only assignment to i lies between `i < buf.length` and `buf.charCodeAt(i)`, and reaches both: the sets of
     // reaching definitions are equal, the values are not
@@ -66,7 +65,6 @@ test(
 
 test(
   'F38: lvn can run a second time (speed with lvn again before rotate, on regex-nfa)',
-  { todo: 'F38' },
   async () => {
     const p = Program.fromProject(projectSource('regex-nfa', projectFiles('regex-nfa')));
     const speed = [...PIPELINES.speed];

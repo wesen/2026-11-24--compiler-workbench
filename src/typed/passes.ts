@@ -543,6 +543,15 @@ export const lvn = typedPass({
     const size = (id: string): number => 1 + (st.get(id) as ValueRec).args.reduce((n, a) => n + size(a), 0);
     for (const b of f.blocks) {
       const seen = new Map<string, { stmt: string; value: string }>();
+      // Every value this run has replaced. `tx.replace` rebuilds every tree around the value it replaces (a value
+      // has one user), so a recorded occurrence whose value is, or has above or below it, a replaced one is now a
+      // dead id: referring to it again is the `[absent]` a second lvn used to throw with (F38, regex-nfa).
+      const replaced = new Set<string>();
+      const stale = (root: string): boolean => {
+        if (replaced.has(root)) return true;
+        const under = (x: string): boolean => replaced.has(x) || (st.get(x) as ValueRec).args.some(under);
+        return (st.get(root) as ValueRec).args.some(under);
+      };
       for (const sid of b.stmts.slice()) {
         const s = st.get(sid) as StmtRec;
         const visit = (id: string): boolean => {
@@ -551,6 +560,12 @@ export const lvn = typedPass({
             const k = key(id),
               first = seen.get(k);
             if (first && first.value !== id) {
+              if (stale(first.value)) {
+                // an earlier merge of this block rebuilt the tree the recorded occurrence lived in: this
+                // occurrence is the first live one
+                seen.set(k, { stmt: sid, value: id });
+                return v.args.some(visit);
+              }
               const t = tx.local('vn', { because: [first.value], type: v.type ?? 'i32' });
               const set = tx.set(t, first.value, {
                 because: [first.value, id],
@@ -559,6 +574,8 @@ export const lvn = typedPass({
               tx.replace(first.value, tx.get(t, { from: first.value, because: [set] }));
               tx.replace(id, tx.get(t, { from: id, because: [set] }));
               tx.insert(tx.at.before(first.stmt), set, { because: [first.value, id] });
+              replaced.add(first.value);
+              replaced.add(id);
               seen.delete(k);
               return true;
             }
@@ -615,28 +632,28 @@ export const divToShift = typedPass({
 export const bce = typedPass({
   name: 'bce',
   about:
-    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length and ranges prove i ≥ 0',
-  needs: { dom: 'dominators', reach: 'reaching', ranges: 'ranges' },
+    'bounds-check elimination: a check i >=u buf.length goes when a dominating branch proved i < buf.length on the same SSA names of the index and the buffer, and ranges prove i ≥ 0',
+  needs: { dom: 'dominators', ssa: 'ssa', ranges: 'ranges' },
   writes: ['stmts', 'cfg'],
   preserves: [],
   body({ st, f, tx, facts }) {
     const dom = facts.dom!,
-      reach = facts.reach!,
+      ssa = facts.ssa!,
       ranges = facts.ranges!;
-    // resolve a read through single copies: t = x  ->  x (when t has one definition)
-    const resolve = (
-      sid: string,
-      id: string,
-    ): { id: string; local: number | null; sid: string; via?: string } => {
-      const v = st.get(id) as ValueRec;
-      if (v.op !== 'get') return { id, local: null, sid };
-      const defs = reach.reachingAt(sid, v.imm as number);
-      if (defs.length === 1 && defs[0].startsWith('s:')) {
-        const d = st.get(defs[0]) as StmtRec,
-          dv = st.get(d.value!) as ValueRec;
-        if (dv.op === 'get') return { id: d.value!, local: dv.imm as number, sid: d.id, via: d.id };
+    // The SSA name of the value a `get` reads, followed through copies (t = x gives x's name): one name is one
+    // value, so equal names at the branch and at the check mean the check tests what the branch proved. Equal
+    // *sets of reaching definitions* would not (F36: the only assignment to i lies between the two, reaches both
+    // on every path, and changes the value each time round the loop).
+    const nameOf = (vid: string): string | undefined => {
+      if ((st.get(vid) as ValueRec).op !== 'get') return undefined;
+      for (let name = ssa.uses[vid]; name; ) {
+        const d = ssa.names[name];
+        if (d.kind !== 'set') return name;
+        const dv = st.get(d.value!) as ValueRec;
+        if (dv.op !== 'get') return name; // not a copy: the name itself is the value
+        name = ssa.uses[dv.id];
       }
-      return { id, local: v.imm as number, sid };
+      return undefined;
     };
     const isLength = (id: string, buf?: number) => {
       const v = st.get(id) as ValueRec;
@@ -654,9 +671,9 @@ export const bce = typedPass({
       if (c.op !== 'geu' || !isLength(c.args[1])) continue;
       const trapB = st.get(last.then!) as BlockRec;
       if (!trapB.stmts.length || (st.get(trapB.stmts[0]) as StmtRec).op !== 'trap') continue;
-      const idx = resolve(last.id, c.args[0]),
-        buf = (st.get((st.get(c.args[1]) as ValueRec).args[0]) as ValueRec).imm as number;
-      if (idx.local === null) continue;
+      const idx = nameOf(c.args[0]),
+        buf = nameOf((st.get(c.args[1]) as ValueRec).args[0]);
+      if (idx === undefined || buf === undefined) continue;
       // walk up the dominator tree for a branch whose taken edge proves idx < buf.length
       for (let d = dom.idom.get(b.id), child = b.id; d && d !== child; child = d, d = dom.idom.get(d)) {
         const t = lastStmt(st, st.get(d) as BlockRec);
@@ -673,21 +690,18 @@ export const bce = typedPass({
         const arm = onTrue ? t.then! : t.else!;
         if (!dom.dominates(arm, b.id)) continue;
         const x = st.get(cond.args[0]) as ValueRec;
-        if (x.op !== 'get' || x.imm !== idx.local || !isLength(cond.args[1], buf)) continue;
+        // the branch must read the index itself, so that the interval of x's local at the branch is the interval
+        // of the value it tested (a copy t = i would leave i free to change between the copy and the branch)
+        if (x.op !== 'get' || !isLength(cond.args[1])) continue;
         // the index and the buffer are the same values at the branch and at the check
-        const same = (l: number) => {
-          const a = reach.reachingAt(t.id, l).sort().join(),
-            z = reach.reachingAt(idx.sid, l).sort().join();
-          return a === z;
-        };
-        if (!same(idx.local) || !same(buf)) continue;
-        if (ranges.at(t.id, idx.local)[0] < 0) continue;
+        if (nameOf(x.id) !== idx || nameOf((st.get(cond.args[1]) as ValueRec).args[0]) !== buf) continue;
+        if (ranges.at(t.id, x.imm as number)[0] < 0) continue;
         tx.replaceStmt(
           last.id,
           { op: 'br', to: last.else },
           {
-            because: [t.id, `fact:ranges(${f.name}): ${f.locals[idx.local].name} ≥ 0`],
-            note: `${t.id} already proved ${f.locals[idx.local].name} < length`,
+            because: [t.id, `fact:ranges(${f.name}): ${f.locals[x.imm as number].name} ≥ 0`],
+            note: `${t.id} already proved ${f.locals[x.imm as number].name} < length`,
           },
         );
         break;
