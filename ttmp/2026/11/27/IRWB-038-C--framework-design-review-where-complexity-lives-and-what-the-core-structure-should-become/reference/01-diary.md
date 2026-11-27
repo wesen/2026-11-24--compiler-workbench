@@ -74,3 +74,34 @@ probes, each committed with its output beside it in `scripts/`:
   `strategy/editing` have no direct importer in `src/tensor`, `src/typed` or `src/workbench`. Transactions and diff
   are reached indirectly through `applyPass`; the rewrite engine and the core runtime are not reached at all.
   Tix imports nothing from `dataflow`, `strategy` or `ir/patterns`.
+
+## Step 3: survey reports for T6, D1 and A0, with spot checks
+
+Four of the five survey agents returned (T6 in two halves, D1, A0). I spot-checked one or more load-bearing
+citations per report by reading the file at the cited line; all matched:
+- T6: `PassSpec.legal` (`t6-op-irwb-033-d/src/framework/passes/define-pass.ts:101`); sync `preserves` by recompute
+  (`t6-g-h-irwb-033-f/.../define-pass.ts:259-265`); gate gets the correspondence
+  (`t6-sm-irwb-033-a/.../define-pass.ts:228`); `PassSpec.postcondition` (`t6-am-irwb-033-b/.../define-pass.ts:89-90`);
+  `PassSpec.source` (`t6-ds-h-irwb-033-g/.../define-pass.ts:90`); **two** synchronous strategy interpreters, not one
+  (`t6-ds-x-irwb-033-h/src/framework/strategy/sync.ts:94` `runPlanSync`, `t6-fa-irwb-033-e/src/framework/strategy/sync.ts:37`
+  `executeSync`); the bridge gate mode (`t6-g-max-irwb-033-j/src/framework/passes/bridge.ts:56-57`); `planFusion`
+  re-run inside passes (`t6-op-irwb-033-d/src/tensor/schedule.ts:441`, `t6-sm-irwb-033-a/src/tensor/schedule.ts:268`,
+  `t6-fa-irwb-033-e/src/tensor/schedule-passes.ts:121`); the only `composeCorrespondence` use
+  (`t6-gf-h-irwb-033-i/src/tensor/cuda-contract.ts:215`).
+- D1: base `heat()` (`src/typed/backend/run.ts:175`) unused by every cell; only `d1-am` calls `whyEntity`
+  (`d1-am-irwb-034-b/src/typed/attribution.ts:40`); `d1-op` copies `whyEntity`'s skip rule
+  (`d1-op-irwb-034-f/src/typed/attribution.ts:127`); the merged loop fix (`src/typed/analyses.ts:216-226`).
+- A0: `a0-g-h` builds an independent matcher on purpose (`a0-g-h-irwb-035-e/src/typed/edit-class.ts:5-7`, `:107`);
+  pass-name class tables (`a0-sm-irwb-035-a/src/typed/edit-classification.ts:32`); the framework edit `Reason`
+  field that Typed's `Tx` does not use (`src/framework/ir/types.ts:210`).
+
+Counting framework edits across the ten T6 cells: seven of ten changed `src/framework/passes` or
+`src/framework/strategy`, and every change is one of four shapes: a precondition (`legal`), a synchronous
+postcondition or preservation check (`postcondition`, sync `preserves`, `claims`, gate with correspondence), a
+cross-IR input (`source`), or a synchronous strategy executor (two of them, `syncPassAlgorithm` twice, a bridge gate
+mode once). That is the clearest evidence in the material: independent agents converged on the same four holes.
+
+What I now think the root is (to be argued in the design doc): the framework's unit of transformation is an
+endomorphism `S -> S` with an asynchronous acceptance protocol wrapped around it, while both domains' important
+steps are translations `S -> T` whose checks are mostly synchronous and structural. Every workaround above is a
+local patch over that mismatch.
