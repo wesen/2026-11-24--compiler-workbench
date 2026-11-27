@@ -52,3 +52,5 @@ The already-wrapped list regression in `tests/typed/format.test.mjs` failed beca
 ## F5
 
 Changed corpus checks in backend, passes, SSA and tape tests to check per-project correctness and case accounting. The changed tests passed on the corpus (5/5) and with a temporary blend copy (4/4), removed by `scripts/01-extra-project.sh`. Size totals now check nonempty images per project; their former fixed totals described a particular corpus snapshot.
+
+F2 follow-up: the broad run found chess's fixture still omitted signatures, causing four setup failures reading `filter` of undefined. Updated that caller too.

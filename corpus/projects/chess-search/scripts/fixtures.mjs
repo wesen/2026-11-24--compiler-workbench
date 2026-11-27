@@ -85,7 +85,7 @@ export async function buildImages({ project, program, backend }) {
   return {
     r0: baseline,
     speed: optimized,
-    reference: backend.imageFromCode(id, compiled.image, compiled.entries),
+    reference: backend.imageFromCode(id, compiled.image, compiled.entries, compiled.signatures),
   };
 }
 
