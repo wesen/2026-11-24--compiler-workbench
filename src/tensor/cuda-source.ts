@@ -713,6 +713,7 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     `  write(output, shape_${result}.data(), shape_${result}.size());`,
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
     '  write(output, &gpu_ms, 1);',
+    ...plan.groups.filter(g => g.statements.length > 1 && g.mapping === 'block').map(g => `  { const unsigned char choice = fused_${g.kernel} ? 1 : 0; write(output, &choice, 1); }`),
     '}',
   );
   const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
