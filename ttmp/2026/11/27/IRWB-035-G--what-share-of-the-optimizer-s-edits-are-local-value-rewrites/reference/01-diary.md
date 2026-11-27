@@ -3,7 +3,9 @@ Title: Diary
 Ticket: IRWB-035-G
 Status: active
 Topics:
-    - typed
+    - compiler
+    - verification
+    - research
 DocType: reference
 Intent: long-term
 Owners: []
@@ -64,7 +66,7 @@ I read the contracts and IR READMEs, `define-pass.ts`, `strategies.ts`, `passes.
 
 ## Step 3: the first corpus run, and three corrections it prompted
 
-The first full run of `scripts/02-classify-corpus.mjs` took 1,841 s wall (257 s of CPU: the machine ran at a load of 30 to 60 on 8 cores) and classified 11,757 edits in 493 changed applications with no problems. Reading its tables showed three things to correct before the numbers could be used. A copy of that run's tables is `various/03a-tables-first-run.md`.
+The first full run of `scripts/02-classify-corpus.mjs` took 1,841 s wall (257 s of CPU: the machine ran at a load of 30 to 60 on 8 cores) and classified 11,757 edits in 493 changed applications with no problems. Reading its tables showed three things to correct before the numbers could be used. A copy of that run's tables is `various/03a-tables-first-run.txt`.
 
 ### What the first run showed
 - **Instruction weights of value edits were the size of the surrounding expression.** `constprop` under O2: 141 edits, 1,272 instructions, 9 per edit, for edits that turn one `get` into a constant. `Tx.rewrite` makes every value above a changed operand again, and the first footprint of a `replace` was "nodes of A absent from the revision after", which includes all of those. By that count local rewrites were 59.6 % of affected instructions under O2.
@@ -85,3 +87,28 @@ Two processes, `chess-search` alone and the other 49 projects (`--skip chess-sea
 
 ### Commit
 `9ffcc32` footprints, rebuilt values, transient removals, tables script.
+
+## Step 4: the final run, the tables and the report
+
+The rerun finished with the same 11,757 edits in 493 changed applications and no problems: 3,733 edits for the 49 projects (533 s wall) and 8,024 for `chess-search` (1,091 s wall). `scripts/03-tables.mjs` over both JSON files gives `various/03-tables.txt`; `scripts/04-per-project-compact.mjs` gives the report's per-project table.
+
+### What I measured
+- By edits: O2 local 19.5 %, structural 72.1 %, other 8.4 % (2,021 edits); `speed` 10.2 %, 84.1 %, 5.6 % (9,736).
+- By affected instructions: O2 31.6 %, 59.6 %, 8.7 % (2,209); `speed` 13.9 %, 80.7 %, 5.4 % (11,632). With rebuilt values counted the totals are 4,517 and 15,735 and the local shares 59.6 % and 34.3 %, exactly the first run's figures, which confirms the two footprints differ only by the rebuilt values.
+- Verified tables re-derive 183 of 395 local rewrites under O2 and 362 of 997 under `speed`, all made by `simplify` or `fold`; the two `fold` edits that the first run gave to `simplify` are now `fold`'s.
+- Every changed value and statement is claimed or rebuilt (0 left over in both pipelines); no edit is unresolved, unknown or a note.
+
+### What was tricky
+- My wait loops used `pgrep -f 02-classify-corpus`, which matched the waiting shell's own command line and never ended; I then killed them with `pkill -f`, which also killed the shell issuing it (exit 144). Waiting on the process id works.
+- I sent `SIGUSR1` to the running Node process by mistake while checking it; that only opens the inspector and the run went on.
+
+### Checks
+- `node --test tests/typed/edit-classes.test.mjs`: 4 pass.
+- `node --test --test-concurrency=4 tests/typed/*.test.mjs tests/framework/*.test.mjs tests/workbench/*.test.mjs` before the footprint change: 414 tests, 411 pass, 0 fail, 3 skipped (498 s). Rerun after it: see the last commit's message.
+- `tools/build-site.mjs` was not run: nothing under `src/framework/` or `src/workbench/` changed.
+- Prettier was run on `src/typed/edit-classes.ts` (new); `src/typed/analyses.ts` still passes `prettier --check`. The test file follows the unformatted style of the other tests.
+
+### Code review instructions
+- Start with the header of `src/typed/edit-classes.ts` (the definitions), then `classifyApplication`.
+- The report is `reference/02-report-…md`; its numbers come from `various/03-tables.txt`.
+- To validate: `npm run build && node --test tests/typed/edit-classes.test.mjs` (about 15 s).

@@ -3,7 +3,9 @@ Title: 'Design: classifying the optimizer''s edits as local value rewrites, stru
 Ticket: IRWB-035-G
 Status: active
 Topics:
-    - typed
+    - compiler
+    - verification
+    - research
 DocType: design-doc
 Intent: long-term
 Owners: []
@@ -116,5 +118,5 @@ The brief's hypothesis is tested twice: with the strict reading (only `local/rul
 ## Later
 
 - Rule names in edit records (one line per table-driven edit), when a consumer needs them without re-deriving.
-- A checker for fact-conditional rules (`get x -> c` under reaching definitions), as IRWB-008 section 18 sketches.
+- A checker for fact-conditional rules (`get x -> c` under reaching definitions), as IRWB-008 section 25 sketches.
 - Classes for backend choices (register allocation, coalescing), which have no edit records.

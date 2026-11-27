@@ -2,7 +2,7 @@
 // Per pipeline, per pass, per project, by edit count and by affected instructions; the verified-rule coverage of
 // the local rewrites; the shapes of the local rewrites no table re-derives. Markdown on stdout.
 // Several JSON files (runs over disjoint project lists) are read as one.
-// usage: node 03-tables.mjs classified.json [more.json ...] > tables.md
+// usage: node 03-tables.mjs classified.json [more.json ...] > tables.txt
 import { readFileSync } from 'node:fs';
 const parts = process.argv.slice(2).map(f => JSON.parse(readFileSync(f, 'utf8')));
 const d = {
