@@ -1,9 +1,10 @@
+import { printTile } from './tile-source.js';
+import { type Schedule, type KernelSchedule, type Tile } from './schedule.js';
+export { blockThreads } from './schedule.js';
 import {
   gateRule,
   outerReductions,
-  unfusedPlan,
-  type FusionGroup,
-  type FusionPlan,
+
   type Reduce,
 } from './fusion.js';
 import {
@@ -138,6 +139,7 @@ const gatedMain = main.replace(
       if (!strcmp(argv[a], "--benchmark")) benchmark = true;
       else if (!strcmp(argv[a], "--gate=fused")) gate_mode = 1;
       else if (!strcmp(argv[a], "--gate=unfused")) gate_mode = 2;
+      else if (!strcmp(argv[a], "--gate=tiled")) gate_mode = 3;
       else throw std::runtime_error("unknown argument");
     }
 `,
@@ -172,6 +174,7 @@ function kernelWriter(
   maxFold = 'minmax(ACC, VALUE, true)',
   /** A reduction whose terms are already in a buffer: its count and pointer (IRWB-030-E). */
   stagedTerms: (e: Reduce) => { count: string; terms: string } | undefined = () => undefined,
+  computedFold?: (e: Reduce) => string | undefined,
 ) {
   const lines: string[] = [];
   let indent = '  ',
@@ -239,6 +242,8 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const computed = computedFold?.(e);
+        if (computed) return computed;
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         const step = (value: string) =>
           line(
@@ -293,6 +298,23 @@ function elementOfThread(w: ReturnType<typeof kernelWriter>, statement: Statemen
   w.line(`${target}[thread] = ${result};`);
 }
 
+// A tile owns the dot product. The ordinary scalar printer owns its enclosing expression.
+function tiledMember(t: Tile, stmt: Statement, dimensions: ReadonlyMap<string,string>,
+    tensors: ReadonlyMap<string,Tensor>, name: (s:string) => string, output: string) {
+  const [fold] = outerReductions(stmt.expr);
+  const w = kernelWriter(dimensions, (e, offset) => `${name(e.name)}[${offset(e.indices, tensors.get(e.name)!.shape)}]`,
+    undefined, undefined, e => e === fold ? 'acc[y][x]' : undefined);
+  w.alias(stmt.axes[0].id,'row');
+  w.alias(stmt.axes[1].id,'col');
+  const result = w.scalar(stmt.expr);
+  w.line(`${output}[row*N+col] = ${result};`);
+  const [m,n] = stmt.shape.map(w.dim), k = w.dim(fold.axes[0].extent.dim);
+  const bm = t.lanes[0]*t.registers[0], bn = t.lanes[1]*t.registers[1];
+  const grid = `((${m}+${bm-1})/${bm})*((${n}+${bn-1})/${bn})`;
+  return { code: printTile(t, name(t.left), name(t.right), m,n,k,w.lines.join('\n')),
+    grid, threads:t.lanes[0]*t.lanes[1], eligible:`(${m} >= ${bm} && ${n} >= ${bn} && ${k} >= ${t.depth})` };
+}
+
 // Stage 2: one kernel for one statement, one thread per output element.
 function emitKernel(
   statement: Fn['statements'][number],
@@ -300,6 +322,7 @@ function emitKernel(
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
+  tile?: Tile,
 ) {
   const reads = new Set<string>();
   visit(statement.expr, e => {
@@ -316,12 +339,26 @@ function emitKernel(
     dimensions,
     (e, offset) => `${tensorName(e.name)}[${offset(e.indices, tensors.get(e.name)!.shape)}]`,
   );
+  const tiled = tile && tiledMember(tile, statement,dimensions,tensors,tensorName,'result');
+  if (tiled) w.lines.push('template<bool Tiled>');
   w.lines.push(`__global__ void ${kernel}(${params.join(', ')}) {`);
+  if (tiled) w.lines.push(`  if constexpr (Tiled) { ${tiled.code} }`);
   w.line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
   w.line('if (thread >= count) return;');
   elementOfThread(w, statement, 'result');
   w.lines.push('}');
   const count = `${tensorName(statement.name)}.size`;
+  const argumentsText = [...args.map((arg,i) => i < dimensions.size ? arg : arg+'.ptr'), count].join(', ');
+  if (tiled) return {
+    code:w.lines.join('\n'), hasWork:count,
+    host:[`  const bool tile_${kernel} = gate_mode ? gate_mode == 1 : ${tiled.eligible};`],
+    preload:`  if (${count}) check(cudaFuncGetAttributes(&attributes, tile_${kernel} ? ${kernel}<true> : ${kernel}<false>));`,
+    launch:`    if (${count}) {
+      if (tile_${kernel}) ${kernel}<true><<<${tiled.grid}, ${tiled.threads}>>>(${argumentsText});
+      else ${kernel}<false><<<(${count}-1)/256+1, 256>>>(${argumentsText});
+      check(cudaGetLastError());
+    }`,
+  };
   return {
     code: w.lines.join('\n'),
     host: [] as string[],
@@ -345,17 +382,6 @@ __device__ static float max_nan(float a, float b) {
   return r;
 }`;
 
-// Threads per block in block mode: the shortest warp multiple covering the longest row, up to a cap chosen by
-// measurement (IRWB-029-D diary step 4, caps 64, 128 and 256 on softmax, layernorm, attention and mlp): 64 when a
-// member's reduction reads a tensor from global memory (a contraction operand: attention's k and v, mlp's w and
-// v), 128 otherwise (rows only: softmax, layernorm).
-//
-// IRWB-030-E: when a member with trailing axes carries a costly reduction (the plan's `heavy`), the block is as
-// wide as the narrowest such row, up to 256, so that every lane works in that member's phase. Measured with the
-// division inside (scripts 06 and 09): attention (rows of 1024 and 64) 1.41 ms at 64 threads, 1.91 at 128, 1.86
-// at 32; narrow-div with rows of 128: 1.56 at 64, 1.21 at 128, 2.33 at 256. 256 is the widest block that was
-// faster than the next narrower one in any measurement (layernorm with staged terms; 512 was slower).
-export const blockThreads = { rows: 128, contraction: 64, heavy: 256 };
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 
@@ -366,13 +392,16 @@ const product = (dims: string[]) =>
 // values in registers; block mode runs one block per block-domain point with rows in shared memory, or in a
 // global scratch area when they do not fit.
 function emitGroup(
-  group: FusionGroup,
+  group: KernelSchedule,
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
 ) {
   const { kernel, depth } = group;
   const members = group.statements.map(n => tensors.get(n) as Statement);
+  const tiles = members.map(m => Object.hasOwn(group.tiles,m.name)
+    ? tiledMember(group.tiles[m.name],m,dimensions,tensors,tensorName,tensorName(m.name)) : undefined);
+  const tiled = tiles.some(Boolean);
   const inGroup = new Set(group.statements),
     stored = new Set(group.stored),
     staged = new Set(group.staged);
@@ -395,13 +424,7 @@ function emitGroup(
   const rowBuffers = [...group.staged, ...group.buffered];
   const registers = new Map<string, string>();
   let current = members[0];
-  const operands = (e: Expr, inReduction: boolean): boolean =>
-    e.kind === 'load'
-      ? inReduction && !rowBuffers.includes(e.name)
-      : e.kind === 'op'
-        ? e.args.some(a => operands(a, inReduction))
-        : e.kind === 'reduce' && operands(e.body, true);
-  const cap = members.some(m => operands(m.expr, false)) ? blockThreads.contraction : blockThreads.rows;
+  const cap = group.threadCap;
   // Staged terms (fusion.ts): reduction -> the name suffix of its count and pointer.
   const termIds = new Map<Reduce, string>();
   const memberTerms = members.map(m => {
@@ -435,6 +458,7 @@ function emitGroup(
   if (block) w.lines.push('template <int Mode>');
   w.lines.push(`__global__ void ${kernel}(${params.join(', ')}) {`);
   if (block) {
+    tiles.forEach((t,j) => { if (t) w.lines.push(`  if constexpr (Mode == ${-1-j}) { ${t.code} }`); });
     w.line('if (Mode >= 2) {');
     w.line('  const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
     w.line('  if (thread >= count) return;');
@@ -562,13 +586,14 @@ function emitGroup(
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
       group.heavy.length
-        ? `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${blockThreads.heavy}, (std::max<U>(std::min<U>({${group.heavy.map(n => lengthOf(n, hostDim)).join(', ')}}), 1) + 31) / 32 * 32));`
+        ? `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (std::max<U>(std::min<U>({${group.heavy.map(n => lengthOf(n, hostDim)).join(', ')}}), 1) + 31) / 32 * 32));`
         : `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
       // The gate: block mode, or the members one by one. --gate=fused|unfused forces a side (the contract).
       // Blocks of this kernel that fit on one SM, by its block, thread and shared-memory limits (each block's
       // shared memory includes the device's reserved part: 1 KiB on the GB10).
       `  const U resident_${kernel} = std::min<U>({sm_blocks, sm_threads / threads_${kernel}, shared_${kernel} ? sm_shared / (row_${kernel} + sm_reserved) : sm_blocks});`,
-      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : ${gateRule({
+      ...(tiled ? [`  const bool panels_${kernel} = gate_mode ? gate_mode == 3 : (${tiles.filter(t => !!t).map(t => t.eligible).join(' && ')});`] : []),
+      `  const bool fused_${kernel} = gate_mode ? gate_mode == 1 : ${tiled ? '!panels_'+kernel+' && ' : ''}${gateRule({
         grid: `grid_${kernel}`,
         longest: `longest_${kernel}`,
         lanes: group.heavy.map(
@@ -614,7 +639,7 @@ function emitGroup(
     if (${optIn}) check(cudaFuncSetAttribute(${kernel}<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(row_${kernel})));
   }
   if (grid_${kernel} && !fused_${kernel}) {
-${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${kernel}<${2 + j}>));`).join('\n')}
+${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${tiles[j] ? 'panels_'+kernel+' ? '+kernel+'<'+(-1-j)+'> : ' : ''}${kernel}<${2 + j}>));`).join('\n')}
   }`
       : `  if (count_${kernel}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork,
@@ -624,6 +649,7 @@ ${members.map((_m, j) => `    check(cudaFuncGetAttributes(&attributes, ${kernel}
 ${members
   .map(
     (m, j) =>
+      (tiles[j] ? `    if (!fused_${kernel} && panels_${kernel} && ${size(m)}) ${kernel}<${-1-j}><<<${tiles[j]!.grid}, ${tiles[j]!.threads}>>>(${[...args,size(m)].join(', ')});\n    else ` : '') +
       `    if (!fused_${kernel} && ${size(m)}) ${kernel}<${2 + j}><<<(${size(m)} - 1) / 256 + 1, 256>>>(${[...args, size(m)].join(', ')});`,
   )
   .join('\n')}
@@ -636,7 +662,8 @@ ${members
 }
 
 /** The CUDA translation unit for `fn`, one kernel per group of `plan` (default: stage 2, one per statement). */
-export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
+export function printSchedule(plan: Schedule): string {
+  const fn = plan.fn;
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -653,8 +680,8 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     }
   }
   const kernels = plan.groups.map(g =>
-    g.statements.length === 1
-      ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name)
+    g.form === 'element'
+      ? emitKernel(tensors.get(g.statements[0]) as Statement, g.kernel, dims, tensors, name, Object.hasOwn(g.tiles,g.statements[0]) ? g.tiles[g.statements[0]] : undefined)
       : emitGroup(g, dims, tensors, name),
   );
   const stored = new Set(plan.groups.flatMap(g => g.stored));
@@ -719,7 +746,7 @@ export function emitCuda(fn: Fn, plan: FusionPlan = unfusedPlan(fn)): string {
     '}',
   );
   const fused = plan.groups.some(g => g.statements.length > 1) ? [fusedSupport] : [];
-  const gated = plan.groups.some(g => g.statements.length > 1 && g.mapping === 'block');
+  const gated = plan.groups.some(g => g.gated || Object.keys(g.tiles).length > 0);
   if (gated) fused.push(gateSupport);
   return [support, ...fused, ...kernels.map(k => k.code), host.join('\n'), gated ? gatedMain : main].join(
     '\n\n',

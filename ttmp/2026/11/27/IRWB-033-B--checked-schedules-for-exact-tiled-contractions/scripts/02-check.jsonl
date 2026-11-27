@@ -1,0 +1,6 @@
+{"label":"matmul","steps":[["tensor.schedule.tile",true],["tensor.schedule.register-tile",true],["tensor.schedule.stage-panels",true]],"verdict":{"accepted":true,"relation":"exact"},"wallMs":6283.627637}
+{"label":"matmul","ms":0.09331200271844864,"hash":"0d61ed495ab6525624d86785ac20f6befd8912415ea7e7b5cd7b0a71d4198413"}
+{"label":"attention","steps":[["tensor.schedule.tile",true],["tensor.schedule.register-tile",true],["tensor.schedule.stage-panels",true]],"verdict":{"accepted":true,"relation":"exact"},"wallMs":11598.062006}
+{"label":"attention","ms":0.5325120091438293,"hash":"18486f63326ddfd2059014ed0c663dc36c136d6bef4309c7cb9a360095522cba","gates":{"k0":"unfused"}}
+{"label":"mlp","steps":[["tensor.schedule.tile",true],["tensor.schedule.register-tile",true],["tensor.schedule.stage-panels",true]],"verdict":{"accepted":true,"relation":"exact"},"wallMs":15905.086965999995}
+{"label":"mlp","ms":0.38310399651527405,"hash":"599022a69f63832257c8d866a66d0ed2d677fb765372a85f46efdc57d0639829","gates":{"k0":"unfused"}}

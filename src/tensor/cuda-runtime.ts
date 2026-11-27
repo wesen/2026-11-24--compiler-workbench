@@ -108,7 +108,7 @@ export async function runCudaBatch(
   fn: Fn,
   cases: readonly CudaInputs[],
   /** `gate` forces every gated kernel of the source to one side; only for sources that take it (`takesGate`). */
-  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused' },
+  options?: { host?: string; benchmark?: boolean; gate?: 'fused' | 'unfused' | 'tiled' },
 ): Promise<CudaResult[]> {
   const request = encodeCudaCases(fn, cases);
   const dir = await mkdtemp(join(tmpdir(), 'irwb-tix-cuda-'));

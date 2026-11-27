@@ -53,7 +53,7 @@ test('fuse: false is stage 2 byte for byte, and a one-statement program is the s
     const optimized = optimizeTix(program, ['inline', 'split-sum']).program;
     assert.equal(sha(cudaSource(optimized, name, { fuse: false })), digests[name + '+inline+split'], name);
   }
-  for (const name of ['matmul', 'conv2d']) {
+  for (const name of ['conv2d']) {
     const program = corpus(name);
     assert.equal(cudaSource(program, name), cudaSource(program, name, { fuse: false }));
   }

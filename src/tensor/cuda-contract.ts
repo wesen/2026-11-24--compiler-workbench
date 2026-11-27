@@ -13,8 +13,8 @@ import {
 import type { Artifact } from '../framework/core/types.js';
 import { coordinate, cudaCases, seed } from './contract.js';
 import { runCudaBatch } from './cuda-runtime.js';
-import { emitCuda, takesGate } from './cuda-source.js';
-import { planFusion, unfusedPlan } from './fusion.js';
+import { printSchedule, takesGate } from './cuda-source.js';
+import { scheduleFunction } from './schedule.js';
 import type { BufferValue } from './evaluate.js';
 import { TixIR } from './ir.js';
 import { selectFunction, type Module } from './model.js';
@@ -124,8 +124,8 @@ function compare(expected: BufferValue, got: BufferValue) {
 // shapes (fusion.ts). The recipe's shapes are small, so the rule alone would show little of one side. For a
 // program with a gate, every sample is therefore a case on each side, and the program is run once with each side
 // forced. A program without a gate has one case per sample.
-type Gate = 'fused' | 'unfused';
-const sides: readonly Gate[] = ['fused', 'unfused'];
+type Gate = 'fused' | 'unfused' | 'tiled';
+const sides = (source: string): Gate[] => source.includes('const bool panels_') ? ['fused','unfused','tiled'] : ['fused','unfused'];
 type CudaSample = ReturnType<typeof cudaCases>[number] & { gate?: Gate };
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
@@ -147,7 +147,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       const samples = cudaCases(selectFunction(baseline.value, fn), random);
       if (!samples.length) throw Error('No eligible CUDA check cases for ' + fn);
       return takesGate(subject.value.source)
-        ? samples.flatMap(s => sides.map(gate => ({ ...s, gate })))
+        ? samples.flatMap(s => sides(subject.value.source).map(gate => ({ ...s, gate })))
         : samples;
     },
     run: (side, _artifact, sample) => {
@@ -164,7 +164,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     }),
     // The case list depends on the subject only through whether it has a gate.
     baselineKey: ({ baseline, fn, subject }) =>
-      JSON.stringify([baseline.revision, fn, takesGate(subject.value.source)]),
+      JSON.stringify([baseline.revision, fn, takesGate(subject.value.source) && sides(subject.value.source)]),
     subjectKey: (_artifact, _case, { subject }) => JSON.stringify([subject.revision, profile]),
     async decide({ baseline, fn, subject }, cases, todo) {
       if (subject.value.fn !== fn)
@@ -186,7 +186,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
       };
       if (takesGate(source))
         await Promise.all(
-          sides.map(g =>
+          sides(source).map(g =>
             run(
               pending.filter(c => c.gate === g),
               g,
@@ -220,14 +220,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     ],
     run(_ctx, { baseline, fn, fuse }) {
       const f = selectFunction(baseline.value, fn);
-      const plan = fuse ? planFusion(f) : unfusedPlan(f);
+      const plan = scheduleFunction(f, fuse).artifact.value;
       const kernels = plan.groups.map(g => ({
         name: g.kernel,
         mapping: g.mapping,
         statements: g.statements,
         ...(g.gated && { gated: true }),
       }));
-      const subject = cudaArtifact(fn, emitCuda(f, plan), kernels);
+      const subject = cudaArtifact(fn, printSchedule(plan), kernels);
       return { outputs: { subject }, correspondence: [kernelCorrespondence(baseline, subject)] };
     },
   });
