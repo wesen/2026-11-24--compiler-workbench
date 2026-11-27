@@ -1,0 +1,11 @@
+chess-search         old 327316/297382  thread 307524/284842  copies 327296/301247  guards 319636/287142  subst-mem 327150/297362  guards+identities 316553/284059  all but identities 286239/245751  all 278850/242367
+
+variant              default     tuned
+old                   327316    297382
+thread                307524    284842
+copies                327296    301247
+guards                319636    287142
+subst-mem             327150    297362
+guards+identities     316553    284059
+all but identities    286239    245751
+all                   278850    242367

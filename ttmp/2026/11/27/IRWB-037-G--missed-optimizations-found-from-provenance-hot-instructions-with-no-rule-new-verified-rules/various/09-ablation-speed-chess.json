@@ -1,0 +1,73 @@
+{
+ "pipeline": "speed",
+ "totals": {
+  "old": {
+   "default": 327316,
+   "tuned": 297382
+  },
+  "thread": {
+   "default": 307524,
+   "tuned": 284842
+  },
+  "copies": {
+   "default": 327296,
+   "tuned": 301247
+  },
+  "guards": {
+   "default": 319636,
+   "tuned": 287142
+  },
+  "subst-mem": {
+   "default": 327150,
+   "tuned": 297362
+  },
+  "guards+identities": {
+   "default": 316553,
+   "tuned": 284059
+  },
+  "all but identities": {
+   "default": 286239,
+   "tuned": 245751
+  },
+  "all": {
+   "default": 278850,
+   "tuned": 242367
+  }
+ },
+ "rows": {
+  "chess-search": {
+   "old": {
+    "default": 327316,
+    "tuned": 297382
+   },
+   "thread": {
+    "default": 307524,
+    "tuned": 284842
+   },
+   "copies": {
+    "default": 327296,
+    "tuned": 301247
+   },
+   "guards": {
+    "default": 319636,
+    "tuned": 287142
+   },
+   "subst-mem": {
+    "default": 327150,
+    "tuned": 297362
+   },
+   "guards+identities": {
+    "default": 316553,
+    "tuned": 284059
+   },
+   "all but identities": {
+    "default": 286239,
+    "tuned": 245751
+   },
+   "all": {
+    "default": 278850,
+    "tuned": 242367
+   }
+  }
+ }
+}

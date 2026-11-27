@@ -25,7 +25,8 @@ WhenToUse: ""
   `attributeSteps`, which credits differences. Its first table for the regex matcher: 1,742 of 6,933 instructions
   in 30 constant bounds checks that no pass had touched.
 - **Added to `speed`:** four passes found from the tables (`thread`, `copies`, `guards`, `subst-mem`) and a
-  rule table of three verified rules (`identities`).
+  rule table of three verified rules (`identities`). Each alone on the old list, default options: thread
+  -25,884, guards -16,494, copies -13,780, subst-mem -166; the three rules -7,581 on top of the four.
 - **Result.** `speed` over the corpus: 867,770 to 789,710 instructions with the default backend options (-9.0%)
   and 792,800 to 724,721 with chains + coalesce + homes (-8.6%). 30 of 50 projects change, none is higher, no
   pass is rejected.
@@ -38,7 +39,7 @@ WhenToUse: ""
 
 - **O2 is unchanged**, in every cell. Its passes and its list are pinned to the book by tests, and the new
   passes change the book's own examples (see "Where the passes live"). O2 with the new passes inserted,
-  measured and not registered: @@O2_LINE@@.
+  measured and not registered: 1,090,271 to 1,042,444 with the default options (-4.4%), 1,032,485 to 1,001,200 tuned (-3.0%).
 - **Rules.** Ten candidates from the hot patterns before `guards`: seven sound, three refused by the verifier,
   and together worth 192 instructions. Four more for the shapes `guards` leaves: three fire and take 7,389
   instructions off chess-search. Those three are the table.
@@ -136,7 +137,20 @@ Corpus under `speed`, default options, the seeded cases that finish (`various/07
 
 ## What was added, and what each gave
 
-@@ABLATION_SPEED@@
+50 projects
+
+| Variant of speed | Default options | Difference | Tuned | Difference |
+| --- | ---: | ---: | ---: | ---: |
+| old | 867,770 |  | 792,800 |  |
+| thread | 841,886 | -25,884 | 773,982 | -18,818 |
+| copies | 853,990 | -13,780 | 797,071 | +4,271 |
+| guards | 851,276 | -16,494 | 776,784 | -16,016 |
+| subst-mem | 867,604 | -166 | 792,780 | -20 |
+| guards+identities | 848,001 | -19,769 | 773,509 | -19,291 |
+| all but identities | 797,291 | -70,479 | 728,297 | -64,503 |
+| all | 789,710 | -78,060 | 724,721 | -68,079 |
+
+copies: higher than old: sha-chacha tuned 107,102 -> 107,862; chess-search tuned 297,382 -> 301,247
 
 Each row is the corpus under a variant of `speed`'s pass list (`scripts/09-ablation.mjs`; chess-search and
 the other 49 projects ran as two processes, `various/09-ablation-speed-chess.json` and `-rest.json`, merged by
@@ -146,7 +160,21 @@ row with one name is the old list plus that pass.
 Variants of the parameters and of the order, on the 49 projects other than chess-search (the run with all
 variants on chess-search did not finish in the session; `various/09-ablation-extras-rest.json`):
 
-@@ABLATION_EXTRAS@@
+49 projects
+
+| Variant of speed | Default options | Difference | Tuned | Difference |
+| --- | ---: | ---: | ---: | ---: |
+| old | 540,454 |  | 495,418 |  |
+| thread | 534,362 | -6,092 | 489,140 | -6,278 |
+| thread+subst-mem | 533,761 | -6,693 | 488,295 | -7,123 |
+| all | 510,860 | -29,594 | 482,354 | -13,064 |
+| all, guards on every branch | 510,860 | -29,594 | 482,354 | -13,064 |
+| all, guards without divisions | 510,860 | -29,594 | 482,354 | -13,064 |
+| all, one thread | 511,239 | -29,215 | 482,733 | -12,685 |
+| all, copies whole | 520,779 | -19,675 | 483,077 | -12,341 |
+| all, lvn again before rotate | 509,536 | -30,918 | 481,030 | -14,388 |
+
+all, lvn again before rotate:  skipped passes: regex-nfa: lvn (absent)
 
 ### `thread`: a block that only tests a local is copied into the blocks that jump to it
 
@@ -157,7 +185,7 @@ variants on chess-search did not finish in the session; `various/09-ablation-ext
 - **Why it is valid.** It is tail duplication, as `rotate` does for loop heads: each path runs a copy of the
   test where it ran the original. Loop heads are left to `rotate`, which must run after licm.
 - **Why twice in `speed`.** The inner join of a nested `&&` is a block of its own only after the outer one is
-  gone and cfg has merged. On the 49 projects, one run gives @@ONE_THREAD@@.
+  gone and cfg has merged. On the 49 projects, one run gives 511,239, two give 510,860.
 - **What follows from it.** subst folds `t = c; if t` into `if c`, and then `typed.ranges` and `guards` refine
   on `c`. Collatz under `speed`: 6,955 to 4,861. strings: 10,283 to 8,100.
 - **Simplest alternative:** the backend's `chains` removes the jump. It keeps the stored boolean and the lost
@@ -185,7 +213,8 @@ variants on chess-search did not finish in the session; `various/09-ablation-ext
   cover `row`, which is assigned before the check on `state`: an interval per local cannot narrow `row`
   afterwards. And `typed.ranges` loses the lower bound of an outer loop counter when an inner loop's head
   widens it (`scripts/14-probe-chess-shapes.mjs`: `dense` in [-2^31, 63]), so `strength` leaves `dense / 8`.
-- **`params.all`** decides every branch, not only checks: @@ALL_BRANCH@@ on the 49 projects. Off.
+- **`params.all`** decides every branch, not only checks: no difference on the 49 projects (an earlier build
+  gave -80 over all 50). Off.
 - **Attribution.** `tools/attribute.mjs regex-nfa speed regexMatch` now has rows such as
   `guards: replaceStmt (always false: geu([0, 40], [45, 45]))  -112`.
 
@@ -195,28 +224,28 @@ variants on chess-search did not finish in the session; `various/09-ablation-ext
 - **Change.** For `x = y`, a read of that `x` becomes a read of `y` wherever the SSA name of `y` the copy read
   is still current (the same walk, with a scoped map from local to current name). dce removes a copy nobody
   reads.
-- **Measured.** Alone: @@COPIES_ALONE@@. With the default options it is the second largest gain; with the
-  tuned options the backend's `coalesce` already removes these copies, and `copies` alone costs there
+- **Measured.** Alone: -13,780 with the default options, +4,271 tuned. With the default options it is the
+  third largest gain alone; with the tuned options the backend's `coalesce` already removes these copies, and `copies` alone costs there
   (sha-chacha's `chacha20Block`: 34 spills against 19, `scripts/15-per-function.mjs`). In the full list no
   project is higher than before in either column.
 - **`params.whole`** (only copies all of whose reads can be replaced): worse on the 49 projects,
-  @@COPIES_WHOLE@@. Off.
+  520,779 against 510,860 in the full list (default options), 483,077 against 482,354 tuned. Off.
 
 ### `subst-mem`: subst, and a load may move into its reader
 
 - **Shape.** `t43 = (load32[…] == 1)` and `if t43` after `thread`.
 - **Change.** `subst` with `params.loads`: a value that reads memory (no call, division or checked address)
   moves into its only reader when no store, zeroing or call lies between and the reader makes no call.
-- **Measured.** Alone @@SUBST_ALONE@@; with `thread`, @@THREAD_SUBST@@ against `thread` alone (49
-  projects).
+- **Measured.** Alone -166 with the default options and -20 tuned; with `thread`, -601 and -845 against
+  `thread` alone (49 projects).
 
 ### `identities`: three rules for what `guards` leaves
 
 | Rule | Evidence | Firings on the corpus |
 | --- | --- | ---: |
-| `shl(shr(x, 3), 3) → and(x, -8)` | @@EV1@@ | 3 |
-| `lt(and(x, 15), 8) → eqz(and(x, 8))` | @@EV2@@ | 14 |
-| `shl(shl(x, 1), 1) → shl(x, 2)` | @@EV3@@ | 4 |
+| `shl(shr(x, 3), 3) → and(x, -8)` | exhaustive (exhaustive-32 over 4,294,967,296 inputs) | 3 |
+| `lt(and(x, 15), 8) → eqz(and(x, 8))` | exhaustive (exhaustive-32 over 4,294,967,296 inputs) | 14 |
+| `shl(shl(x, 1), 1) → shl(x, 2)` | proof (symbolic-linear) | 4 |
 
 - They match `dense + ((dense >> 3) << 3)` and `(at & 15) < 8` in the chess code, which exist only after
   `guards` has replaced the divisions, and `((i << 1) << 1)` in f32-dsp.
@@ -252,8 +281,8 @@ variants on chess-search did not finish in the session; `various/09-ablation-ext
 - The two hottest patterns are unsound as written, and the verifier said so with a negative x. They became
   sound and hot once `guards` had proved the operand non-negative and replaced the division: a rule that needs
   a fact is a pass plus a rule.
-- So the missed optimizations of this corpus are mostly not rules: @@PASSES_GAIN@@ instructions came off
-  through the four passes and @@RULES_GAIN@@ through the three rules (default options; the ablation table).
+- So the missed optimizations of this corpus are mostly not rules: 70,479 instructions came off
+  through the four passes and 7,581 through the three rules (default options; the ablation table).
 
 ## Corpus: instructions per project
 
@@ -337,7 +366,17 @@ variants on chess-search did not finish in the session; `various/09-ablation-ext
   cfg. Two tests assert that.
 - What O2 would gain is measured:
 
-@@ABLATION_O2@@
+50 projects
+
+| Variant of O2 | Default options | Difference | Tuned | Difference |
+| --- | ---: | ---: | ---: | ---: |
+| O2 | 1,090,271 |  | 1,032,485 |  |
+| O2 + the new passes | 1,042,444 | -47,827 | 1,001,200 | -31,285 |
+
+O2 + the new passes: higher than O2: sha-chacha tuned 211,526 -> 211,556
+
+This variant is `speed`'s list without the inlining, the last subst-mem and rotate, cfg. One cell is higher
+than O2 (sha-chacha, tuned, by 30).
 
 ## Framework changes
 
@@ -380,7 +419,7 @@ Changes outside the framework:
 - **`typed.ranges` loses a counter's lower bound** under an inner loop (above). It is an O2 analysis, so I did
   not change it; `guards` has its own rule.
 - **lvn throws `absent`** on regex-nfa when run a second time before rotate (the ablation skips a pass that
-  throws and says so). Where it runs, a second lvn saves @@LVN_AGAIN@@.
+  throws and says so). Where it runs, a second lvn saves 1,324 instructions on the 49 projects (default options).
 
 ## Measured and argued
 
@@ -438,7 +477,7 @@ change comments, the recorded evidence, tests and this ticket):
 
 ## Later
 
-- `if geu(x, load)`, @@GEU_LOAD_AFTER@@ instructions after this work: buffer checks against a loaded length.
+- `if geu(x, load)`, 22,990 instructions after this work: buffer checks against a loaded length.
 - `caddr` checks merged across blocks (LZ).
 - Congruences: `5 * queue[head] + 3 <u 45` needs "a multiple of 5 below 45 is at most 40".
 - A template number over a literal and a constant variable in `rules/form.ts`, so the three identities become
