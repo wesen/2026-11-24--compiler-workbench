@@ -17,7 +17,8 @@ import {
 import { applyNativePassSync } from '../../dist/framework/passes/index.js';
 import * as S from '../../dist/framework/strategy/index.js';
 
-const corpus = name => compileTix(readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'));
+const corpus = name =>
+  compileTix(readFileSync(new URL(`../../corpus/tensor/${name}/main.tix`, import.meta.url), 'utf8'));
 const fnOf = source => compileTix(source).current.value.functions[0];
 const kinds = schedule => schedule.kernels.map(k => [k.kind, k.statements.join(',')]);
 const open = () => ({ ok: true });
@@ -50,7 +51,10 @@ test('the fused schedule: contractions are tile kernels of their own, the rest k
   // fuse: false is the initial schedule
   const unfused = lowerToSchedule(corpus('attention').current.value.functions[0], false);
   assert.equal(unfused.schedule.revision, unfused.initial.revision);
-  assert.equal(unfused.schedule.value.kernels.every(k => k.kind === 'thread' && k.statements.length === 1), true);
+  assert.equal(
+    unfused.schedule.value.kernels.every(k => k.kind === 'thread' && k.statements.length === 1),
+    true,
+  );
 });
 
 test('what is and is not a contraction', () => {
@@ -58,26 +62,61 @@ test('what is and is not a contraction', () => {
     const c = contractionOf(fnOf(source).statements[0]);
     return 'refused' in c ? c.refused : [c.roles.rows.length, c.roles.cols.length, c.roles.batch.length];
   };
-  assert.deepEqual(roles('fn f(a:f32[B,M,K], b:f32[B,K,N]):f32[B,M,N] { y[t,i,j] = sum(k) a[t,i,k] * b[t,k,j]; return y; }'), [1, 1, 1]);
-  assert.deepEqual(roles('fn f(a:f32[M,K], b:f32[N,K]):f32[M,N] { y[i,j] = (sum(k) (a[i,k] - 1) * b[j,k]) + a[i,0]; return y; }'), [1, 1, 0]);
-  assert.match(roles('fn f(a:f32[M,K], x:f32[K]):f32[M] { y[i] = sum(k) a[i,k] * x[k]; return y; }'), /no row axis or no column axis/);
-  assert.match(roles('fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = max(k) a[i,k] * b[k,j]; return y; }'), /not a sum/);
-  assert.match(roles('fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = sum(k) a[i,k] + b[k,j]; return y; }'), /not a product/);
-  assert.match(roles('fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = (sum(k) a[i,k] * b[k,j]) + sum(k) a[i,k]; return y; }'), /2 outermost reductions/);
+  assert.deepEqual(
+    roles('fn f(a:f32[B,M,K], b:f32[B,K,N]):f32[B,M,N] { y[t,i,j] = sum(k) a[t,i,k] * b[t,k,j]; return y; }'),
+    [1, 1, 1],
+  );
+  assert.deepEqual(
+    roles(
+      'fn f(a:f32[M,K], b:f32[N,K]):f32[M,N] { y[i,j] = (sum(k) (a[i,k] - 1) * b[j,k]) + a[i,0]; return y; }',
+    ),
+    [1, 1, 0],
+  );
+  assert.match(
+    roles('fn f(a:f32[M,K], x:f32[K]):f32[M] { y[i] = sum(k) a[i,k] * x[k]; return y; }'),
+    /no row axis or no column axis/,
+  );
+  assert.match(
+    roles('fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = max(k) a[i,k] * b[k,j]; return y; }'),
+    /not a sum/,
+  );
+  assert.match(
+    roles('fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = sum(k) a[i,k] + b[k,j]; return y; }'),
+    /not a product/,
+  );
+  assert.match(
+    roles(
+      'fn f(a:f32[M,K], b:f32[K,N]):f32[M,N] { y[i,j] = (sum(k) a[i,k] * b[k,j]) + sum(k) a[i,k]; return y; }',
+    ),
+    /2 outermost reductions/,
+  );
 });
 
 test('every step is a checked revision: the interpreter gives the f32 meaning on every side', () => {
-  const f = fnOf('fn f(a:f32[M,K], b:f32[N,K], c:f32[N]):f32[M,N] { y[i,j] = (sum(k) a[i,k] * b[j,k]) + c[j]; z[i,j] = y[i,j] * 2; return z; }');
+  const f = fnOf(
+    'fn f(a:f32[M,K], b:f32[N,K], c:f32[N]):f32[M,N] { y[i,j] = (sum(k) a[i,k] * b[j,k]) + c[j]; z[i,j] = y[i,j] * 2; return z; }',
+  );
   const built = buildSchedule(f, fusedPlan, { check: true });
   const changed = built.steps.filter(s => s.changed);
   assert.deepEqual(
     changed.map(s => s.pass.replace('tensor.sched.', '')),
-    ['mark-contractions', 'tile', 'register-tile', 'stage-operands', 'tile', 'register-tile', 'stage-operands'],
+    [
+      'mark-contractions',
+      'tile',
+      'register-tile',
+      'stage-operands',
+      'tile',
+      'register-tile',
+      'stage-operands',
+    ],
   );
   // two configurations and stage 2's mapping: three sides, each run on every sample
   assert.equal(changed.at(-1).check.sides, 3);
   assert.ok(changed.at(-1).check.runs >= 3 * 10);
-  assert.deepEqual(scheduleSides(built.schedule.value).map(s => s.tile), [0, 1, 2]);
+  assert.deepEqual(
+    scheduleSides(built.schedule.value).map(s => s.tile),
+    [0, 1, 2],
+  );
   assert.equal(new Set(built.steps.filter(s => s.changed).map(s => s.revision)).size, changed.length);
   // the asynchronous strategy interpreter cannot be used by the synchronous cudaSource; the plan is the same data
   assert.equal(S.validate(fusedPlan).valid, true);
@@ -94,7 +133,10 @@ test('legality is decided from the IR before a step is applied, and the validato
   assert.throws(() => apply(passes.registerTile, tiled, { patch: [16, 16] }), /more than 64 accumulators/);
   const patched = apply(passes.registerTile, tiled, { patch: [4, 4] });
   assert.deepEqual(patched.value.kernels[0].configs[0].tile, [64, 64]);
-  assert.throws(() => apply(passes.stageOperands, patched, { chunk: 128 }), /exceeds the block's default shared memory/);
+  assert.throws(
+    () => apply(passes.stageOperands, patched, { chunk: 128 }),
+    /exceeds the block's default shared memory/,
+  );
   // each intermediate schedule prints and passes the interpreter's check
   for (const artifact of [tiled, patched, apply(passes.stageOperands, patched, { chunk: 16 })]) {
     assert.equal(scheduleGate(marked, artifact).ok, true);
@@ -107,11 +149,26 @@ test('legality is decided from the IR before a step is applied, and the validato
     change(copy);
     return () => ScheduleIR.validate(copy);
   };
-  assert.throws(mutate(s => (s.kernels[0].stored = [])), /reads score, which k0 does not store/);
-  assert.throws(mutate(s => (s.kernels[0].roles.rows = s.kernels[0].roles.cols)), /roles differ/);
-  assert.throws(mutate(s => s.kernels[1].inPlace.push({ statement: 'shift', over: 'score' })), /written over score, which is read later/);
-  assert.throws(mutate(s => s.kernels.reverse()), /statements in order/);
-  assert.throws(mutate(s => (s.kernels[2].configs[0].patch = [3, 4])), /does not divide/);
+  assert.throws(
+    mutate(s => (s.kernels[0].stored = [])),
+    /reads score, which k0 does not store/,
+  );
+  assert.throws(
+    mutate(s => (s.kernels[0].roles.rows = s.kernels[0].roles.cols)),
+    /roles differ/,
+  );
+  assert.throws(
+    mutate(s => s.kernels[1].inPlace.push({ statement: 'shift', over: 'score' })),
+    /written over score, which is read later/,
+  );
+  assert.throws(
+    mutate(s => s.kernels.reverse()),
+    /statements in order/,
+  );
+  assert.throws(
+    mutate(s => (s.kernels[2].configs[0].patch = [3, 4])),
+    /does not divide/,
+  );
 });
 
 test('the interpreter follows the schedule: staged tiles at shapes that cross tiles and chunks', () => {
@@ -143,6 +200,9 @@ test('the printed source: one definition per schedule kernel, configurations as 
     { gate: 'unfused', tile: 1 },
     { gate: 'fused', tile: 2 },
   ]);
-  assert.deepEqual(sidesOf(cudaSource(corpus('softmax'), 'softmax')), [{ gate: 'fused' }, { gate: 'unfused' }]);
+  assert.deepEqual(sidesOf(cudaSource(corpus('softmax'), 'softmax')), [
+    { gate: 'fused' },
+    { gate: 'unfused' },
+  ]);
   assert.deepEqual(sidesOf(cudaSource(corpus('matmul'), 'matmul', { fuse: false })), [{}]);
 });

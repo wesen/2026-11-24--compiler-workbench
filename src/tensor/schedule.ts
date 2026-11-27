@@ -4,7 +4,13 @@
 // cuda-source.ts prints one without deciding anything.
 import { defineIR } from '../framework/contracts/index.js';
 import { defineAdapter, type IREntity, type IRRelation } from '../framework/ir/index.js';
-import { gate as gateConstants, outerReductions, type FusionGroup, type FusionPlan, type Reduce } from './fusion.js';
+import {
+  gate as gateConstants,
+  outerReductions,
+  type FusionGroup,
+  type FusionPlan,
+  type Reduce,
+} from './fusion.js';
 import { TixIR } from './ir.js';
 import { plain, visit, type Expr, type Fn, type Statement } from './model.js';
 
@@ -78,7 +84,10 @@ export function scheduleFromPlan(fn: Fn, plan: FusionPlan): Schedule {
   return { fn, kernels: plan.groups.map(g => kernelOf(g, { terms: true, inPlace: true, gate: g.gated })) };
 }
 const termReason = /compute the terms of|is written over the row of/;
-export function kernelOf(g: FusionGroup, take: { terms: boolean; inPlace: boolean; gate: boolean }): ScheduleKernel {
+export function kernelOf(
+  g: FusionGroup,
+  take: { terms: boolean; inPlace: boolean; gate: boolean },
+): ScheduleKernel {
   if (g.mapping === 'thread')
     return { kind: 'thread', name: g.kernel, statements: g.statements, stored: g.stored, reasons: g.reasons };
   const { kernel, mapping: _mapping, gated: _gated, ...rest } = g;
@@ -90,11 +99,12 @@ export function kernelOf(g: FusionGroup, take: { terms: boolean; inPlace: boolea
     heavy: take.terms ? g.heavy : [],
     inPlace: take.inPlace ? g.inPlace : [],
     reasons: g.reasons.filter(
-      r =>
-        !termReason.test(r) || (r.includes('written over') ? take.inPlace : take.terms),
+      r => !termReason.test(r) || (r.includes('written over') ? take.inPlace : take.terms),
     ),
     width: { ...blockThreads },
-    ...(take.gate && { gate: { ...gateConstants, heavyLanes: [...gateConstants.heavyLanes] as [number, number] } }),
+    ...(take.gate && {
+      gate: { ...gateConstants, heavyLanes: [...gateConstants.heavyLanes] as [number, number] },
+    }),
   };
 }
 
@@ -152,7 +162,8 @@ export function configLimits(c: TileConfig) {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 // (artifact values are stored with sorted keys, so records are compared field by field)
-const sameRoles = (a: Roles, b: Roles) => same(a.rows, b.rows) && same(a.cols, b.cols) && same(a.batch, b.batch);
+const sameRoles = (a: Roles, b: Roles) =>
+  same(a.rows, b.rows) && same(a.cols, b.cols) && same(a.batch, b.batch);
 function loadsOf(e: Expr) {
   const out: Extract<Expr, { kind: 'load' }>[] = [];
   visit(e, x => {
@@ -173,10 +184,12 @@ function validate(value: unknown) {
   if (!s || typeof s !== 'object' || !Array.isArray(s.kernels)) fail('no kernel list');
   (TixIR.validate as (v: unknown) => void)({ functions: [s.fn] });
   const order = s.kernels.flatMap(k => k.statements);
-  if (!same(
+  if (
+    !same(
       order,
       s.fn.statements.map(x => x.name),
-    ))
+    )
+  )
     fail('the kernels do not hold the statements in order');
   if (new Set(s.kernels.map(k => k.name)).size !== s.kernels.length) fail('duplicate kernel name');
   const byName = new Map(s.fn.statements.map(x => [x.name, x]));
@@ -254,7 +267,8 @@ function validate(value: unknown) {
 export const ScheduleIR = defineIR<Schedule>({
   id: 'tensor.schedule',
   version: '1',
-  description: 'A Tix function with its kernels: thread, block and tiled mappings and their launch-time choices',
+  description:
+    'A Tix function with its kernels: thread, block and tiled mappings and their launch-time choices',
   validate,
   entities: s => s.kernels.map(k => k.name),
 });

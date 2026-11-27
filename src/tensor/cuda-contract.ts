@@ -294,9 +294,14 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
             from: { artifact: baseline.id, revision: baseline.revision },
             to: { artifact: schedule.id, revision: schedule.revision },
             relation: 'statements-to-schedule-kernels',
-            sourceEntities: baseline.value.functions.flatMap(f => f.statements.map(s => f.name + '/' + s.name)),
+            sourceEntities: baseline.value.functions.flatMap(f =>
+              f.statements.map(s => f.name + '/' + s.name),
+            ),
             targetEntities: schedule.value.kernels.map(k => k.name),
-            entities: schedule.value.kernels.map(k => ({ from: k.statements.map(s => fn + '/' + s), to: [k.name] })),
+            entities: schedule.value.kernels.map(k => ({
+              from: k.statements.map(s => fn + '/' + s),
+              to: [k.name],
+            })),
             evidence: { steps },
           },
         ],

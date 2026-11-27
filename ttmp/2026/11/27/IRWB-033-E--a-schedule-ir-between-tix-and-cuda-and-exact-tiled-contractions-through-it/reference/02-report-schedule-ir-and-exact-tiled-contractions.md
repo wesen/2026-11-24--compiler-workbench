@@ -9,7 +9,21 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/framework/strategy/sync.ts
+      Note: executeSync (framework change)
+    - Path: repo://src/tensor/cuda-contract.ts
+      Note: Sides forced by the check; tensor.schedule-tix
+    - Path: repo://src/tensor/cuda-source.ts
+      Note: emitSchedule and emitTile (the printer)
+    - Path: repo://src/tensor/schedule-eval.ts
+      Note: The schedule interpreter with order assertions; scheduleGate
+    - Path: repo://src/tensor/schedule-passes.ts
+      Note: The passes, the strategy plan and buildSchedule
+    - Path: repo://src/tensor/schedule.ts
+      Note: The schedule IR, its validator (legality) and adapter
+    - Path: repo://tests/tensor/schedule-gpu.test.mjs
+      Note: GB10 checks of tiled contractions and a mutant
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-11-27T10:09:23.672095333-05:00

@@ -883,7 +883,10 @@ function emitTile(
     tensorName(statement.name) + '.ptr',
     count,
   ].join(', ');
-  const rule = k.configs.reduceRight((rest, c, i) => `${tiles(i)} >= ${c.minTiles} ? ${i} : ${rest}`, String(n));
+  const rule = k.configs.reduceRight(
+    (rest, c, i) => `${tiles(i)} >= ${c.minTiles} ? ${i} : ${rest}`,
+    String(n),
+  );
   const hostTerms = space(
     reduction.axes.map(a => {
       const e = hostDim(a.extent.dim);
@@ -1034,9 +1037,12 @@ export function emitSchedule(schedule: Schedule): string {
     `  write(output, ${buffer}.data(), ${buffer}.size());`,
     '  write(output, &gpu_ms, 1);',
     // what the host chose: each block kernel's side, then each tile kernel's configuration
-    ...blocks.map(k => `  { const unsigned char choice = fused_${k.name} ? 1 : 0; write(output, &choice, 1); }`),
+    ...blocks.map(
+      k => `  { const unsigned char choice = fused_${k.name} ? 1 : 0; write(output, &choice, 1); }`,
+    ),
     ...tiles.map(
-      k => `  { const unsigned char choice = static_cast<unsigned char>(config_${k.name}); write(output, &choice, 1); }`,
+      k =>
+        `  { const unsigned char choice = static_cast<unsigned char>(config_${k.name}); write(output, &choice, 1); }`,
     ),
     '}',
   );

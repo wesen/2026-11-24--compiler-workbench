@@ -94,7 +94,9 @@ export function runSchedule(
         return hooks.load?.(e, at) ?? global(e, at);
       }
       case 'op':
-        return f(operations[e.op](scalar(e.args[0], hooks), e.args.length === 2 ? scalar(e.args[1], hooks) : 0));
+        return f(
+          operations[e.op](scalar(e.args[0], hooks), e.args.length === 2 ? scalar(e.args[1], hooks) : 0),
+        );
       case 'reduce': {
         const ready = hooks.reduce?.(e);
         if (ready !== undefined) return ready;
@@ -231,7 +233,9 @@ export function runSchedule(
           for (let r = 0; r < tm && r0 + r < rows; r++)
             for (let q = 0; q < tn && c0 + q < cols; q++) {
               if (taken[r * tn + q] !== terms)
-                throw new OrderViolation(`${k.name}: output (${r0 + r}, ${c0 + q}) took ${taken[r * tn + q]} of ${terms} terms`);
+                throw new OrderViolation(
+                  `${k.name}: output (${r0 + r}, ${c0 + q}) took ${taken[r * tn + q]} of ${terms} terms`,
+                );
               set(k.roles.rows, rowE, r0 + r);
               set(k.roles.cols, colE, c0 + q);
               set(k.roles.batch, batchE, b);
@@ -278,7 +282,8 @@ export function runSchedule(
         const load = (e: Load, ix: number[]) => {
           const row = rows.get(e.name);
           if (!row || !own(e)) {
-            if (k.statements.includes(e.name)) throw Error(`${k.name}: ${m.name} reads ${e.name} outside its row`);
+            if (k.statements.includes(e.name))
+              throw Error(`${k.name}: ${m.name} reads ${e.name} outside its row`);
             return undefined;
           }
           const shape = rowShape(e.name);
@@ -299,7 +304,8 @@ export function runSchedule(
             terms[slot] = scalar(r.body, { load });
           }
           let acc = r.op === 'sum' ? 0 : -Infinity;
-          for (let slot = 0; slot < count; slot++) acc = f(r.op === 'sum' ? acc + terms[slot] : Math.max(acc, terms[slot]));
+          for (let slot = 0; slot < count; slot++)
+            acc = f(r.op === 'sum' ? acc + terms[slot] : Math.max(acc, terms[slot]));
           ready.set(r, acc);
         }
         const shape = rowShape(m.name);
@@ -343,7 +349,9 @@ export function runSchedule(
     const { name: _name, reasons: _reasons, ...record } = k;
     const config = k.kind === 'tile' ? k.configs[forced.tile] : undefined;
     const effect =
-      k.kind === 'thread' || (k.kind === 'tile' && !config) || (k.kind === 'block' && k.gate && forced.gate === 'unfused')
+      k.kind === 'thread' ||
+      (k.kind === 'tile' && !config) ||
+      (k.kind === 'block' && k.gate && forced.gate === 'unfused')
         ? ['plain', k.statements]
         : k.kind === 'tile'
           ? ['tile', k.statements, k.roles, config]
@@ -362,7 +370,10 @@ export function runSchedule(
     if (k.kind === 'tile') tile(k);
     else if (k.kind === 'block') block(k);
     else k.statements.forEach(n => plainStatement(byName.get(n)!));
-    memo?.set(key, new Map(k.statements.flatMap(n => (tensors.has(n) ? [[n, tensors.get(n)!] as const] : []))));
+    memo?.set(
+      key,
+      new Map(k.statements.flatMap(n => (tensors.has(n) ? [[n, tensors.get(n)!] as const] : []))),
+    );
   }
   return tensors.get(fn.result)!;
 }

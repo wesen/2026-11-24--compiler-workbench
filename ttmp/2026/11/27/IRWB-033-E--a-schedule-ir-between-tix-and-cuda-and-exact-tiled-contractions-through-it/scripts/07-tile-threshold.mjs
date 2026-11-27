@@ -4,7 +4,17 @@
 // Median of 3 benchmark calls each, interleaved. node 07-tile-threshold.mjs [--part=a|b]
 import { readFileSync } from 'node:fs';
 import { compileTix, cudaSource } from '../../../../../../dist/tensor/index.js';
-import { runCudaBatch } from '../../../../../../dist/tensor/cuda-runtime.js';
+import { runCudaBatch as runOnce } from '../../../../../../dist/tensor/cuda-runtime.js';
+// the GPU machine's sshd resets connections when many agents connect at once: retry a failed call
+async function runCudaBatch(...args) {
+  for (let attempt = 0; ; attempt++)
+    try {
+      return await runOnce(...args);
+    } catch (error) {
+      if (attempt === 4 || !/ssh|Connection|kex/.test(String(error.message))) throw error;
+      await new Promise(done => setTimeout(done, 3000));
+    }
+}
 import { emitCuda } from '../../../../../../dist/tensor/cuda-source.js';
 import { planFusion } from '../../../../../../dist/tensor/fusion.js';
 const root = new URL('../../../../../../', import.meta.url);

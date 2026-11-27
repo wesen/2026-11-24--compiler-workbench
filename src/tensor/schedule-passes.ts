@@ -40,7 +40,9 @@ export const scheduleArtifact = (schedule: Schedule) =>
 /** The statements that are kernels of their own: marked contractions and tile kernels. */
 const isolated = (s: Schedule) =>
   new Set(
-    s.kernels.filter(k => k.kind === 'tile' || (k.kind === 'thread' && k.contraction)).flatMap(k => k.statements),
+    s.kernels
+      .filter(k => k.kind === 'tile' || (k.kind === 'thread' && k.contraction))
+      .flatMap(k => k.statements),
   );
 /** Stage 3b's decisions for this schedule's grouping, by first statement. */
 function planned(s: Schedule) {
@@ -72,7 +74,10 @@ function step<P>(
     writes: { entities: ['kernel'], relations: ['computes'] },
     run: ({ before, params }) => {
       const kernels = run(before.value, params);
-      return { native: { fn: before.value.fn, kernels }, correspondence: entries(before.value, kernels, name) };
+      return {
+        native: { fn: before.value.fn, kernels },
+        correspondence: entries(before.value, kernels, name),
+      };
     },
   });
 }
@@ -110,7 +115,9 @@ export const passes = {
     s => {
       if (s.kernels.some(k => k.kind !== 'thread' || k.statements.length !== 1))
         throw Error('fuse starts from one thread kernel per statement');
-      const marks = new Map(s.kernels.map(k => [k.statements[0], k.kind === 'thread' ? k.contraction : undefined]));
+      const marks = new Map(
+        s.kernels.map(k => [k.statements[0], k.kind === 'thread' ? k.contraction : undefined]),
+      );
       return planFusion(s.fn, isolated(s)).groups.map(g => {
         const k = kernelOf(g, { terms: false, inPlace: false, gate: false });
         const contraction = marks.get(g.statements[0]);
@@ -203,11 +210,15 @@ export const passes = {
 //    0.109 against 0.096) and won with 64 (512^3).
 //  - 32 x 32 tiles, 2 x 2 patches, chunks of 32: for fewer outputs (1024 x 1024 x 64: 0.072 with 64 tiles).
 // `threads` is the block before register tiling (one thread per element); the tile is threads x patch.
-export const tileConfigs: { threads: [number, number]; patch: [number, number]; chunk: number; minTiles: number }[] =
-  [
-    { threads: [16, 16], patch: [4, 4], chunk: 16, minTiles: 64 },
-    { threads: [16, 16], patch: [2, 2], chunk: 32, minTiles: 64 },
-  ];
+export const tileConfigs: {
+  threads: [number, number];
+  patch: [number, number];
+  chunk: number;
+  minTiles: number;
+}[] = [
+  { threads: [16, 16], patch: [4, 4], chunk: 16, minTiles: 64 },
+  { threads: [16, 16], patch: [2, 2], chunk: 32, minTiles: 64 },
+];
 
 /** The strategy that builds the fused schedule: stage 3 and 3b's steps, then one tile configuration at a time. */
 export const fusedPlan = S.plan(

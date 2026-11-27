@@ -1,0 +1,1 @@
+{"label":"matmul-4096","dims":{"a":[4096,4096],"b":[4096,4096]},"median":{"fused":20.4013,"unfused":133.7731},"times":{"fused":[20.3742,20.6389,20.4013],"unfused":[133.6646,135.1868,133.7731]},"sameBits":true,"chosen":{"tiles":{"k0":0}},"definitions":1}
