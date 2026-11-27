@@ -143,17 +143,23 @@ export function differentialSpec<P extends Ports>(inv: DifferentialInvariant<P>)
  * keys are kept, least recently used first out.
  */
 interface Reuse {
+  readonly key: string;
   readonly cases: readonly unknown[];
   readonly outcomes: unknown[];
   readonly verdicts: Map<string, Decided>;
 }
 const REUSE = new Map<string, Reuse>();
+// A running batch can outlive its baseline's entry in the bounded verdict cache.
+const IN_FLIGHT = new Map<string, Promise<readonly Decided[]>>();
 const REUSE_MAX = 4;
 let reuseEnabled = true;
 /** Turn the reuse of cases, baseline outcomes and verdicts on or off (tests and measurements compare both). */
 export function setDifferentialReuse(enabled: boolean): void {
   reuseEnabled = enabled;
-  if (!enabled) REUSE.clear();
+  if (!enabled) {
+    REUSE.clear();
+    IN_FLIGHT.clear();
+  }
 }
 /** Counts since the last reset: sides run here, verdicts replayed from the memo, cases decided by `decide`. */
 const STATS = { baselineRuns: 0, subjectRuns: 0, replayed: 0, delegated: 0 };
@@ -175,6 +181,7 @@ function prepare<P extends Ports, Case, Outcome>(
   if (reuse) REUSE.delete(key);
   else
     reuse = {
+      key,
       cases: spec.cases(inputs, (spec.random ?? seededRandom)(seed), spec.count),
       outcomes: [],
       verdicts: new Map(),
@@ -310,12 +317,22 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
       STATS.replayed++;
     } else todo.push(i);
   }
-  const elsewhere = todo.length ? spec.decide?.(inputs, cases, todo) : undefined;
+  const batchKey = spec.decide && reuse && todo.length && todo.every(i => keys[i] !== undefined)
+    ? JSON.stringify([reuse.key, todo.map(i => keys[i])])
+    : undefined;
+  const pending = batchKey === undefined ? undefined : IN_FLIGHT.get(batchKey);
+  const elsewhere = pending ?? (todo.length ? spec.decide?.(inputs, cases, todo) : undefined);
   if (elsewhere) {
-    const decided = await elsewhere;
-    if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
-    todo.forEach((i, k) => (verdicts[i] = decided[k]));
-    STATS.delegated += todo.length;
+    if (batchKey !== undefined && !pending) IN_FLIGHT.set(batchKey, elsewhere);
+    try {
+      const decided = await elsewhere;
+      if (decided.length !== todo.length) throw new Error(`${spec.id}: decide returned ${decided.length} of ${todo.length}`);
+      todo.forEach((i, k) => (verdicts[i] = decided[k]));
+      if (pending) STATS.replayed += todo.length;
+      else STATS.delegated += todo.length;
+    } finally {
+      if (batchKey !== undefined && IN_FLIGHT.get(batchKey) === elsewhere) IN_FLIGHT.delete(batchKey);
+    }
   } else for (const i of todo) verdicts[i] = decideCase(spec, inputs, cases[i], i, reuse?.outcomes);
   for (const i of todo) if (keys[i] !== undefined) reuse!.verdicts.set(keys[i]!, verdicts[i]);
   return tally(spec, seed, cases, verdicts, maxCounterexamples);

@@ -53,11 +53,12 @@ test('CUDA binary requests and results preserve f32 words, including subarray an
   assert.throws(() => decodeCudaCases(response, 1, 1), /case count/);
 });
 
-test('the lowering pass delegates one batch, replays verdicts and retries transport failures', async () => {
+test('concurrent lowering checks share a batch, retry transport failures and replay verdicts', async () => {
   const batches = [];
   let fail = true;
   const engine = async (source, f, cases) => {
     batches.push(cases);
+    await new Promise(resolve => setImmediate(resolve));
     if (fail) {
       fail = false;
       throw Error('simulated transport failure');
@@ -69,10 +70,14 @@ test('the lowering pass delegates one batch, replays verdicts and retries transp
     });
   };
   const check = createCudaLowering('tensor-test-engine-1', engine);
-  const first = await check(p.current, 'f');
+  const pair = () => Promise.all([check(p.current, 'f'), check(p.current, 'f')]);
+  const [first, other] = await pair();
+  assert.equal(batches.length, 1);
   assert.equal(first.accepted, false);
   assert.match(first.reason, /simulated transport failure/);
-  assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'exact' });
+  assert.deepEqual(other, first);
+  const accepted = { accepted: true, relation: 'exact' };
+  assert.deepEqual(await pair(), [accepted, accepted]);
   assert.deepEqual(await check(p.current, 'f'), { accepted: true, relation: 'exact' });
   assert.equal(batches.length, 2);
   assert.ok(batches[1].length > 1);
