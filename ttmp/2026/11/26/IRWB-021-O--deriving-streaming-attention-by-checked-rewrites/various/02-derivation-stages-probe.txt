@@ -1,0 +1,34 @@
+exact chain: N=6 D=4 sqrt(D)=2; exp is the multiplicative surrogate 3^x
+  P1  (R2 Factor: 1/l out of the sum) output EXACT
+  P2  (R3 Fuse: s and e fused away)  output EXACT
+  P3  (R4 Rebase: rebased fold, 1 block) output EXACT
+  P4  (R1 Split: B=2)                output EXACT
+  P4  (R1 Split: B=3)                output EXACT
+  P4  (R1 Split: B=1)                output EXACT
+
+f32 chain: same programs, Math.fround everywhere, exp = Math.exp; drift of each stage vs P0
+  P1  (R2 Factor)                    max rel 3.80e-2
+  P2  (R3 Fuse, value-neutral)       max rel 3.80e-2
+  P3  (R4 Rebase, one block)         max rel 3.80e-2
+  P4  (R1 Split, B=64)               max rel 4.48e-2
+  P4  (R1 Split, B=128)              max rel 3.80e-2
+
+  (P2 must be exactly P0 in f32 as well: fusion evaluates the same operations in the same order. Any
+   nonzero value there would mean the fusion rule is not order-preserving and needs its own check.)
+
+pairwise bit identity of the f32 stages (the sharp question for each rule):
+  P0 == P1 (R2 Factor)   : differs
+  P1 == P2 (R3 Fuse)   : identical
+  P1 == P3 (R4 Rebase, one block): identical
+  P1 == P4 (R1 Split, B=64)     : differs
+
+R1 Split in isolation on a plain reduction of 1024 f32 terms (increasing order vs B-blocked):
+  sum: blocked grouping changes the f32 bits (4/4 block widths differ); max: exact under every grouping (0/4 differ)
+
+scaled error per stage: |a-b| / sum(j)|e*v/l|  (brackets: multiples of eps32 = 2^-24)
+  P1  (Factor)             vs P0 3.08e-7 (5.2 eps)   vs f64 3.00e-7 (5.0 eps)
+  P2  (Fuse)               vs P0 3.08e-7 (5.2 eps)   vs f64 3.00e-7 (5.0 eps)
+  P3  (Rebase, one block)  vs P0 3.08e-7 (5.2 eps)   vs f64 3.00e-7 (5.0 eps)
+  P4  (Split, B=64)        vs P0 2.85e-7 (4.8 eps)   vs f64 3.00e-7 (5.0 eps)
+  P0 (plain)               vs f64 2.49e-7 (4.2 eps)
+  eps32*sqrt(N) = 1.91e-6 (32 eps)

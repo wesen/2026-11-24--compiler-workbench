@@ -1,0 +1,45 @@
+A. exact rationals, exp replaced by the multiplicative surrogate 3^x, integer inputs
+   (every sum, product, division, comparison exact; only multiplies of the surrogate used)
+   N=4 D=4 sqrtD=2: block=1: EXACT  block=2: EXACT  block=3: EXACT  block=4: EXACT
+   N=6 D=4 sqrtD=2: block=1: EXACT  block=2: EXACT  block=3: EXACT  block=6: EXACT
+   N=8 D=9 sqrtD=3: block=1: EXACT  block=2: EXACT  block=3: EXACT  block=8: EXACT
+   verdict: the derivation is exact over the reals for every block width tried
+
+B. Tix f32 meaning: streaming vs plain, both vs the f64 reference (random q,k,v in [-1,1])
+   N      D   B    stream-vs-plain(rel)  ulp   plain-vs-f64(rel)  stream-vs-f64(rel)
+      64    8   16   3.20e-4          3789  1.74e-5          3.17e-4
+      64    8   64   1.53e-5           183  1.15e-5          1.40e-5
+      64    8  128   1.74e-5           209  2.89e-5          1.97e-5
+     256   16   16   5.56e-4          6707  1.08e-3          5.29e-4
+     256   16   64   1.85e-4          2800  2.95e-4          1.62e-4
+     256   16  128   1.02e-3          14492  1.77e-4          8.40e-4
+    1024   64   16   1.50e-2          241704  9.38e-3          1.05e-2
+    1024   64   64   2.88e-2          328052  8.31e-3          2.12e-2
+    1024   64  128   2.74e-2          260897  2.92e-2          4.51e-3
+
+B'. a wide score spread (q,k scaled so s spans ~60 in natural log, exp underflows in f32):
+   stream-vs-plain rel 5.87e-5 (ulp 888); plain-vs-f64 1.29e-2; stream-vs-f64 1.29e-2
+   worst at output [169,2,0.0002202306204708293,0.0002202435425715521]
+
+C. the rule "sum(j) e[j]*v[j]/l  ->  (sum(j) e[j]*v[j]) / l" in f32, on the same data:
+   abs 4.10e-8, rel 2.59e-6: the two sums differ in f32 bits, so this rule needs its own verdict
+
+D. attribution: how much is algebra (checked with no rounding at all) and how much is
+   cancellation in the output contraction (cond = sum|terms| / |sum terms|).
+   N      D   B    algebra(no rounding)  cond(out)    stream-vs-plain/scale  plain-vs-f64/scale
+      64    8   64   2.53e-16              1.15e+4      1.35e-7                1.16e-7
+     256   16   64   5.09e-16              6.51e+4      1.93e-7                1.74e-7
+    1024   64   64   5.73e-16              4.18e+6      2.72e-7                2.59e-7
+   (a scaled error around 1e-6..1e-4 says: mostly cancellation, and eps32*sqrt(N) = 1.92e-6 at N=1024)
+
+E. one block of the full width differs from the plain form only by "pull 1/l out of the sum":
+   N=64 D=8: B=N vs plain 3.20e-4 (one rule), B=64 vs plain 3.20e-4 (all rules)
+   N=256 D=16: B=N vs plain 6.68e-4 (one rule), B=64 vs plain 7.85e-4 (all rules)
+   N=1024 D=64: B=N vs plain 1.28e-2 (one rule), B=64 vs plain 7.49e-2 (all rules)
+
+F. the rescale is the identity whenever the running maximum does not grow; measuring how often
+   (random q,k in [-1,1]; a block whose running max does not grow has alpha = exp(0) = 1 exactly,
+   so its normalizer and output accumulator keep the plain form's bits)
+   N=256 D=16 B=64: 27.5% of blocks rescale; 37.3% of blocks are processed after the global maximum is known (those accumulate with the plain form's bits)
+   N=1024 D=64 B=64: 15.3% of blocks rescale; 45.7% of blocks are processed after the global maximum is known (those accumulate with the plain form's bits)
+   N=1024 D=64 B=16: 5.7% of blocks rescale; 49.0% of blocks are processed after the global maximum is known (those accumulate with the plain form's bits)
