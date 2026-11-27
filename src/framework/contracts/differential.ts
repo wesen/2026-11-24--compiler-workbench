@@ -375,6 +375,9 @@ export async function runDifferentialAsync<P extends Ports, Case, Outcome>(
 }
 
 /** The assurance a check's evidence supports: sampled differential testing is weaker than an exact checker. */
-export function assuranceOf(evidence: unknown): 'checked-sampled' | 'checked-exact' {
-  return (evidence as { method?: string } | null)?.method === 'sampled' ? 'checked-sampled' : 'checked-exact';
+export function assuranceOf(evidence: unknown): 'checked' | 'checked-sampled' | 'checked-exact' {
+  const method = (evidence as { method?: string } | null)?.method;
+  if (method === 'sampled') return 'checked-sampled';
+  if (method === 'exhaustive' || method === 'exact') return 'checked-exact';
+  return 'checked';
 }

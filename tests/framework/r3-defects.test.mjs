@@ -20,7 +20,6 @@ const desc = 'r3 defect test';
 // ---------- F34 (probe 01): a sampled check and an exhaustive one must not record the same assurance ----------
 test(
   'F34: sampled and exhaustive checks record different assurance; unknown evidence is never exact',
-  { todo: 'F34' },
   async () => {
     const Fn = C.defineIR({ id: 'r3.fn', version: '1', description: desc, validate() {} });
     const table = { id: x => x, buggy: x => (x % 2 ? x : x | 1) }; // wrong on every even input
@@ -57,6 +56,9 @@ test(
       baseline: C.createArtifact(Fn, 'f', 'id'),
       subject: C.createArtifact(Fn, 'g', 'id'),
     });
+    assert.equal(a.assurance, 'checked-sampled');
+    assert.equal(b.assurance, 'checked-exact');
+    assert.equal(assuranceOf({ method: 'exact' }), 'checked-exact');
     assert.notDeepEqual(
       a.assurance,
       b.assurance,
