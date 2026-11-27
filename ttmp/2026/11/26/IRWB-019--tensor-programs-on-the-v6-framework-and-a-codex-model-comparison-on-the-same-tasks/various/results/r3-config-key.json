@@ -1,0 +1,34 @@
+{
+ "IRWB-038-A": {
+  "config": "sm",
+  "model": "gpt-6.2-sol",
+  "effort": "medium",
+  "round": "r3-sm",
+  "harness": "codex"
+ },
+ "IRWB-038-B": {
+  "config": "am",
+  "model": "gpt-6.2-astra",
+  "effort": "medium",
+  "round": "r3-am",
+  "harness": "codex"
+ },
+ "IRWB-038-C": {
+  "config": "op",
+  "model": "opus",
+  "effort": "default",
+  "round": "r3-op",
+  "harness": "claude-code-subagent",
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-op-irwb-038-c",
+  "branch": "r3-op/irwb-038-c"
+ },
+ "IRWB-038-D": {
+  "config": "fa",
+  "model": "fable",
+  "effort": "default",
+  "round": "r3-fa",
+  "harness": "claude-code-subagent",
+  "worktree": "/home/manuel/code/wesen/2026-11-24--compiler-workbench/.claude/worktrees/r3-fa-irwb-038-d",
+  "branch": "r3-fa/irwb-038-d"
+ }
+}

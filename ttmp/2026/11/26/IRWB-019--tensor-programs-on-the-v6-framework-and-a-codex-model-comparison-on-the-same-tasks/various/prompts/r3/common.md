@@ -10,6 +10,7 @@ We now have a lot of material: the framework, two domains, four merged tensor st
 - **Where does complexity live that the framework's composability should absorb?** Find the machinery that domains and implementations build for themselves: duplicated across cells or domains, reimplementing a framework concept, or filling a gap the framework leaves. For each, say which framework concept (existing, extended or new) would turn it into a reusable composable part, so that the domain code becomes a short instance of it.
 - **How good is the core structure?** Judge each layer on what the material shows: what held under two domains, what was bypassed and why, what leaked. Name what should be kept as it is.
 - **Be creative, and consider fundamental changes.** If the evidence suggests that the layering, the pass model, the contract model, the sync/async split, how IRs relate to each other, or the meaning of "checked" should change at the root, argue for it. Ground every framework concept you propose in standard theory: compiler theory, program analysis, rewriting, partial evaluation, polyhedral scheduling, translation validation, abstract interpretation, category-theoretic composition or anything else that applies. Name its domain-independent form and at least two uses in the material.
+- **A standard library of compiler building blocks.** Some reusable parts do not belong in the framework's generic core but are still common to many compilers and analyses: dominators and natural loops, SSA construction, liveness and other lattices, value numbering, affine expressions and dependence tests, binding-time analysis and a partial-evaluation core, exact f32 arithmetic, rule verifiers, case generators, instruction attribution, edit classification, cost and timing measurement, and others the material shows. Propose a standard library of such primitives, so that the project starts building a clean, composable, reusable set of them: what belongs in the generic core, what in the standard library, what stays in a domain, and the criteria that decide it; each primitive's interface, the theory it implements, the existing code (in either domain or any cell) it would replace, and how primitives compose with each other and with the framework.
 - **Give a path:** an ordered migration, each step small and checkable, what it deletes, and what you would measure to decide between alternatives.
 
 ## The material
@@ -69,6 +70,7 @@ Read the merged code first, then the unmerged work as evidence. You may read eve
 - **A design document in your ticket,** with your docmgr skill. Structure it as you see fit, but include:
   - the inventory of domain-built machinery, with file and line evidence;
   - the proposed framework concepts, each with its theory, its domain-independent interface sketch and its uses;
+  - the proposed standard library: its layering criteria and its primitives;
   - your assessment of each layer;
   - the fundamental changes you would make, if any, and the ones you considered and rejected;
   - the migration path;
@@ -80,5 +82,6 @@ Read the merged code first, then the unmerged work as evidence. You may read eve
 - your ticket and design document paths;
 - your five most important findings, one line each;
 - the framework concepts you propose, one line each;
+- the standard-library primitives you propose, one line each;
 - the fundamental changes you recommend;
 - the last commit hash.
