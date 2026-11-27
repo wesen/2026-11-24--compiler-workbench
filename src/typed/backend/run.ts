@@ -270,7 +270,7 @@ export function imageFromCode(
   program: string,
   code: Uint8Array,
   entries: Readonly<Record<string, number>>,
-  signatures: readonly (CallSignature & { readonly name: string })[] = [],
+  signatures: readonly (CallSignature & { readonly name: string })[],
 ): Rv32Image {
   const sigs = new Map(signatures.filter(needsConvention).map(s => [s.name, imageSig(s)]));
   const order = Object.entries(entries).sort((p, q) => p[1] - q[1]);

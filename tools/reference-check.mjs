@@ -12,7 +12,7 @@ for (const id of projectIds()) {
   const ps = projectSource(id, projectFiles(id)), p = Program.fromProject(ps);
   let image;
   if (o2) { await p.pipeline('O2'); image = B.lowerToImage(p.head).image; }       // our O2 image vs the evaluator
-  else { const r = globalThis.typedRv32.compile(ps.source, [], undefined); image = B.imageFromCode(id, r.image, r.entries); }
+  else { const r = globalThis.typedRv32.compile(ps.source, [], undefined); image = B.imageFromCode(id, r.image, r.entries, r.signatures); }
   const c = p.check({ count: 100, against: (fn, k) => B.runImage(image, fn, k.args, k.memory, { limit: 2e5 }) });
   for (const f of c.fns) { fns++; agree += f.agree; decided += f.total; inconclusive += f.inconclusive; if (f.status === 'disagree') bad.push(`${id}.${f.fn}: ${JSON.stringify(f.counterexamples[0])}`); }
 }

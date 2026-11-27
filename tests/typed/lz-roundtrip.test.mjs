@@ -56,8 +56,8 @@ test('LZ exact tokens, byte-for-byte round trips, and checked instruction measur
   assert.equal(program.status, 'ok', program.error?.message);
   const base = storeOf(program.origin.value);
   const r0Image = lowerToImage(program.origin).image;
-  const { image, entries } = globalThis.typedRv32.compile(source.source, [], undefined);
-  const reference = imageFromCode(id, image, entries);
+  const { image, entries, signatures } = globalThis.typedRv32.compile(source.source, [], undefined);
+  const reference = imageFromCode(id, image, entries, signatures);
   await checkedSpeed(program, t, 'general speed');
   const head = storeOf(program.head.value);
   const speedImage = lowerToImage(program.head, backendOptions).image;
