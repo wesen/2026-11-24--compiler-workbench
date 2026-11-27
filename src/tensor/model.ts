@@ -22,7 +22,7 @@ export function substitute(a: Affine, bindings: Map<string, Affine>): Affine {
     constant(a.constant),
   );
 }
-export function value(a: Affine, env: Map<string, number>): number {
+export function value(a: Affine, env: ReadonlyMap<string, number>): number {
   return a.terms.reduce((v, [name, k]) => v + env.get(name)! * k, a.constant);
 }
 export function plain(a: Affine): string | undefined {

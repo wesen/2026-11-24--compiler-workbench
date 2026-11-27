@@ -1,14 +1,17 @@
-import { unfusedPlan, type FusionGroup, type FusionPlan } from './fusion.js';
+import { blockThreads, groupCap, unfusedPlan, type FusionGroup, type FusionPlan, type ParallelTerm } from './fusion.js';
 import {
   plain,
   visit,
   width,
   type Affine,
+  type Axis,
   type Expr,
   type Fn,
   type Statement,
   type Tensor,
 } from './model.js';
+
+export { blockThreads } from './fusion.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -136,23 +139,35 @@ function literal(text: string): string {
 }
 
 type Load = Extract<Expr, { kind: 'load' }>;
+type Reduce = Extract<Expr, { kind: 'reduce' }>;
 type Offset = (indices: readonly Affine[], shape: readonly Affine[]) => string;
 
 // The scalar code of one kernel: index names, temporaries and the tree walk shared by stage 2's one-statement
-// kernels and stage 3's fused kernels, so every element is computed by the same code either way.
+// kernels and stage 3's fused kernels, so every element is computed by the same code either way. With `fold` set
+// (IRWB-030-F), a reduction in the map is not expanded into serial loops: its terms were computed in parallel by
+// the block into a shared term buffer, and the walk folds that buffer in the meaning's order instead.
 function kernelWriter(
   dimensions: ReadonlyMap<string, string>,
   load: (e: Load, offset: Offset) => string,
   maxFold = 'minmax(ACC, VALUE, true)',
 ) {
   const lines: string[] = [];
+  let termFold: ReadonlyMap<Reduce, { count: string; buffer: string }> | null = null;
+  const setFold = (value: ReadonlyMap<Reduce, { count: string; buffer: string }> | null) => {
+    termFold = value;
+  };
+  // Axis names come from a dedicated counter, not from the indices map's size: a staged member's expression is
+  // walked more than once (fill, fold, serial fallback), and an axis bound in an earlier walk would otherwise
+  // reuse a stale size and collide with the next binder's name (IRWB-030-F). Stage 2's kernels bind every
+  // axis exactly once in order, so their emitted names are unchanged.
+  let axisNames = 0;
   let indent = '  ',
     next = 0;
   const line = (code: string) => lines.push(indent + code);
   const dim = (a: Affine) => affine(a, n => dimensions.get(n)!);
   const indices = new Map<string, string>();
   const bind = (id: string) => {
-    const name = `i${indices.size}`;
+    const name = `i${axisNames++}`;
     indices.set(id, name);
     return name;
   };
@@ -201,6 +216,15 @@ function kernelWriter(
         }
       }
       case 'reduce': {
+        const staged = termFold?.get(e);
+        if (staged) {
+          const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
+          const term = `${staged.buffer}[t]`;
+          line(
+            `for (U t = 0; t < ${staged.count}; ++t) ${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${term})` : maxFold.replace('ACC', acc).replace('VALUE', term)};`,
+          );
+          return acc;
+        }
         const acc = temporary(e.op === 'sum' ? '0.0f' : '-INFINITY');
         for (const { id, extent } of e.axes) {
           const axis = bind(id),
@@ -236,6 +260,7 @@ function kernelWriter(
     bind,
     alias: (id: string, name: string) => void indices.set(id, name),
     scalar,
+    setFold,
     enter: () => void (indent += '  '),
     leave: () => void (indent = indent.slice(2)),
   };
@@ -300,11 +325,7 @@ __device__ static float max_nan(float a, float b) {
   return r;
 }`;
 
-// Threads per block in block mode: the shortest warp multiple covering the longest row, up to a cap chosen by
-// measurement (IRWB-029-D diary step 4, caps 64, 128 and 256 on softmax, layernorm, attention and mlp): 64 when a
-// member's reduction reads a tensor from global memory (a contraction operand: attention's k and v, mlp's w and
-// v), 128 otherwise (rows only: softmax, layernorm).
-export const blockThreads = { rows: 128, contraction: 64 };
+// Threads per block in block mode are capped in fusion.ts (groupCap); the cap constants are measured there.
 // Dynamic shared memory a block may use without opting in (CUDA's fixed default).
 const defaultShared = 48 * 1024;
 
@@ -342,13 +363,18 @@ function emitGroup(
   const rowBuffers = [...group.staged, ...group.buffered];
   const registers = new Map<string, string>();
   let current = members[0];
-  const operands = (e: Expr, inReduction: boolean): boolean =>
-    e.kind === 'load'
-      ? inReduction && !rowBuffers.includes(e.name)
-      : e.kind === 'op'
-        ? e.args.some(a => operands(a, inReduction))
-        : e.kind === 'reduce' && operands(e.body, true);
-  const cap = members.some(m => operands(m.expr, false)) ? blockThreads.contraction : blockThreads.rows;
+  // IRWB-030-F: the parallel-term staging and its template flag; a group without staged reductions keeps
+  // stage 3's single Shared parameter, so its source is unchanged.
+  const termStaged = block && group.parallelTerms.length > 0;
+  const reduceAt = (e: Expr, path: readonly number[]): Reduce =>
+    path.reduce<Expr>((x, i) => (x as { args: Expr[] }).args[i], e) as Reduce;
+  const extentCount = (a: Axis, dim: (x: Affine) => string): string => {
+    const e = a.extent;
+    if (e.kind === 'tail') throw Error('A tail extent cannot be counted for staging');
+    const n = dim(e.dim);
+    return e.kind === 'dim' ? n : e.rounding === 'ceil' ? `((${n}) + ${width - 1}) / ${width}` : `(${n}) / ${width}`;
+  };
+  const cap = groupCap(group, tensors);
   const w = kernelWriter(
     dimensions,
     (e, offset) => {
@@ -364,8 +390,10 @@ function emitGroup(
   );
   w.lines.push(`// ${kernel}: ${group.statements.join(', ')}; ${group.reasons.join('; ')}`);
   // Block mode is a template on where the rows live, so that shared-memory rows are addressed as shared memory
-  // (generic addressing cost 25% on a row max, script 06); the host picks the instantiation.
-  if (block) w.lines.push('template <bool Shared>');
+  // (generic addressing cost 25% on a row max, script 06); the host picks the instantiation. With staged
+  // reductions it is also a template on whether the terms were staged (IRWB-030-F): the host stages them only
+  // while the term buffers fit in shared memory beside the rows, and otherwise launches the serial fold.
+  if (block) w.lines.push(`template <bool Shared${termStaged ? ', bool Staged' : ''}>`);
   w.lines.push(`__global__ void ${kernel}(${params.join(', ')}) {`);
   const first = members[0];
   const counter = block ? 'point' : 'thread';
@@ -397,6 +425,9 @@ function emitGroup(
         `float* const r${suffix(name)} = ${i ? `r${suffix(rowBuffers[i - 1])} + n${suffix(rowBuffers[i - 1])}` : 'base'};`,
       ),
     );
+    // The staged reductions' term buffers, after the rows when the rows are shared, at the start of shared
+    // memory when they are not. One region serves every member: members are separated by barriers.
+    if (termStaged) w.line(`float* const terms = Shared ? shared + (${row}) : shared;`);
     for (const name of group.staged) {
       const s = suffix(name);
       w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) r${s}[e] = t${s}[point * n${s} + e];`);
@@ -405,30 +436,107 @@ function emitGroup(
     members.forEach((m, j) => {
       current = m;
       const s = suffix(m.name);
-      w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
-      w.enter();
-      if (m.axes.length > depth) w.line('U rest = e;');
-      for (let p = m.axes.length - 1; p >= depth; --p) {
-        const axis = w.bind(m.axes[p].id);
-        w.line(`const I ${axis} = rest % ${w.dim(m.shape[p])};`);
-        if (p > depth) w.line(`rest /= ${w.dim(m.shape[p])};`);
+      const stagedTerms =
+        block && m.axes.length === depth ? group.parallelTerms.filter(t => t.statement === m.name) : [];
+      if (stagedTerms.length) {
+        // Declarations visible to both the fill and the fold; the buffers of one member's reductions coexist,
+        // and a later member reuses the region after the barrier that follows this one.
+        const buffers: { count: string; buffer: string }[] = [];
+        stagedTerms.forEach((t, i) => {
+          const R = reduceAt(m.expr, t.path),
+            q = `q${s}_${i}`,
+            nt = `nt${s}_${i}`;
+          R.axes.forEach((a, p) => w.line(`const I ${nt}_${p} = ${extentCount(a, w.dim)};`));
+          w.line(`float* const ${q} = terms + (${buffers.map(b => b.count).join(' + ') || '0'});`);
+          w.line(`const U ${nt} = ${R.axes.map((_, p) => `${nt}_${p}`).join(' * ') || '1'};`);
+          buffers.push({ count: nt, buffer: q });
+        });
+        // Every thread computes its strided share of the terms; the flat index decomposes in the meaning's
+        // lexicographic order, so thread 0's fold below keeps the accumulation order.
+        w.line('if constexpr (Staged) {');
+        w.enter();
+        stagedTerms.forEach((t, i) => {
+          const R = reduceAt(m.expr, t.path),
+            q = `q${s}_${i}`,
+            nt = `nt${s}_${i}`;
+          w.line(`for (U f = threadIdx.x; f < ${nt}; f += blockDim.x) {`);
+          w.enter();
+          R.axes.forEach((a, p) => {
+            const last = p === R.axes.length - 1,
+              stride = R.axes.map((_, k) => `${nt}_${k}`).slice(p + 1).join(' * ') || '1';
+            if (last) w.line(`const I b${p} = static_cast<I>(f) % ${nt}_${p};`);
+            else if (p === 0) w.line(`const I b${p} = static_cast<I>(f) / (${stride});`);
+            else w.line(`const I b${p} = (static_cast<I>(f) / (${stride})) % ${nt}_${p};`);
+            w.alias(a.id, `b${p}`);
+          });
+          w.line(`${q}[f] = ${w.scalar(R.body)};`);
+          w.leave();
+          w.line('}');
+        });
+        w.line('__syncthreads();');
+        w.leave();
+        w.line('}');
+        // Thread 0 computes the member from the folded buffers; the serial branch keeps stage 3's code.
+        w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
+        w.enter();
+        w.line(`float m${s};`);
+        w.line('if constexpr (Staged) {');
+        w.enter();
+        w.setFold(
+          new Map(stagedTerms.map((t, i) => [reduceAt(m.expr, t.path), buffers[i]] as const)),
+        );
+        const folded = w.scalar(m.expr);
+        w.setFold(null);
+        w.line(`m${s} = ${folded};`);
+        w.leave();
+        w.line('} else {');
+        w.enter();
+        const serial = w.scalar(m.expr);
+        w.line(`m${s} = ${serial};`);
+        w.leave();
+        w.line('}');
+        if (group.buffered.includes(m.name)) w.line(`r${s}[e] = m${s};`);
+        if (stored.has(m.name)) w.line(`t${s}[point * n${s} + e] = m${s};`);
+        w.leave();
+        w.line('}');
+      } else {
+        w.line(`for (U e = threadIdx.x; e < n${s}; e += blockDim.x) {`);
+        w.enter();
+        if (m.axes.length > depth) w.line('U rest = e;');
+        for (let p = m.axes.length - 1; p >= depth; --p) {
+          const axis = w.bind(m.axes[p].id);
+          w.line(`const I ${axis} = rest % ${w.dim(m.shape[p])};`);
+          if (p > depth) w.line(`rest /= ${w.dim(m.shape[p])};`);
+        }
+        const value = w.scalar(m.expr);
+        if (group.buffered.includes(m.name)) w.line(`r${s}[e] = ${value};`);
+        if (stored.has(m.name)) w.line(`t${s}[point * n${s} + e] = ${value};`);
+        w.leave();
+        w.line('}');
       }
-      const value = w.scalar(m.expr);
-      if (group.buffered.includes(m.name)) w.line(`r${s}[e] = ${value};`);
-      if (stored.has(m.name)) w.line(`t${s}[point * n${s} + e] = ${value};`);
-      w.leave();
-      w.line('}');
       if (j < members.length - 1) w.line('__syncthreads();');
     });
     // The host computes the same lengths from the same shape values.
     const hostDim = (a: Affine) => affine(a, n => dimensions.get(n)!);
     const lengths = [...new Set([...group.staged, ...group.statements])].map(n => lengthOf(n, hostDim));
     const hostRow = rowBuffers.map(n => lengthOf(n, hostDim)).join(' + ');
+    // The term region holds the largest sum of term counts over the members (members reuse it in turn).
+    const hostCount = (a: Axis) => extentCount(a, hostDim);
+    const termsPerMember = members.map(m => {
+      const list = group.parallelTerms.filter(t => t.statement === m.name);
+      if (!list.length) return 'static_cast<U>(0)';
+      return list
+        .map(t => `(${reduceAt(m.expr, t.path).axes.map(hostCount).join(' * ')})`)
+        .join(' + ');
+    });
     host.push(
       `  const U grid_${kernel} = ${product(first.shape.slice(0, depth).map(hostDim))};`,
       `  const U row_${kernel} = (${hostRow}) * sizeof(float);`,
       `  const bool shared_${kernel} = row_${kernel} <= static_cast<U>(shared_limit);`,
       `  DeviceBuffer scratch_${kernel}(shared_${kernel} ? 0 : grid_${kernel} * (row_${kernel} / sizeof(float)));`,
+      `  const U terms_${kernel} = ${termStaged ? `std::max<U>({${termsPerMember.join(', ')}})` : '0'};`,
+      `  const bool staged_${kernel} = ${termStaged ? `terms_${kernel} * sizeof(float) + (shared_${kernel} ? row_${kernel} : 0) <= static_cast<U>(shared_limit)` : 'false'};`,
+      `  const unsigned smem_${kernel} = static_cast<unsigned>((shared_${kernel} ? row_${kernel} : 0) + (staged_${kernel} ? terms_${kernel} * sizeof(float) : 0));`,
       `  const U longest_${kernel} = std::max<U>({${lengths.join(', ')}, static_cast<U>(1)});`,
       `  const unsigned threads_${kernel} = static_cast<unsigned>(std::min<U>(${cap}, (longest_${kernel} + 31) / 32 * 32));`,
     );
@@ -444,27 +552,30 @@ function emitGroup(
     hasWork = `count_${kernel}`;
   }
   w.lines.push('}');
+  const instance = termStaged
+    ? `${kernel}<shared_${kernel}, staged_${kernel}>`
+    : `${kernel}<shared_${kernel}>`;
   const args = [
     ...dimensions.values(),
     ...Array.from(reads, t => tensorName(t) + '.ptr'),
     ...outputs.map(t => t + '.ptr'),
     block ? `scratch_${kernel}.ptr` : `count_${kernel}`,
   ].join(', ');
-  const optIn = `shared_${kernel} && row_${kernel} > ${defaultShared}`;
   return {
     code: w.lines.join('\n'),
     host,
     preload: block
       ? `  if (grid_${kernel}) {
-    check(cudaFuncGetAttributes(&attributes, shared_${kernel} ? ${kernel}<true> : ${kernel}<false>));
-    if (${optIn}) check(cudaFuncSetAttribute(${kernel}<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(row_${kernel})));
+    check(cudaFuncGetAttributes(&attributes, ${instance}));
+    if (smem_${kernel} > ${defaultShared}) check(cudaFuncSetAttribute(${instance}, cudaFuncAttributeMaxDynamicSharedMemorySize, static_cast<int>(smem_${kernel})));
   }`
       : `  if (count_${kernel}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork,
     launch: block
-      ? `    if (grid_${kernel} && shared_${kernel}) ${kernel}<true><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, row_${kernel}>>>(${args});
-    if (grid_${kernel} && !shared_${kernel}) ${kernel}<false><<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}>>>(${args});
-    if (grid_${kernel}) check(cudaGetLastError());`
+      ? `    if (grid_${kernel}) {
+      ${instance}<<<static_cast<unsigned>(grid_${kernel}), threads_${kernel}, smem_${kernel}>>>(${args});
+      check(cudaGetLastError());
+    }`
       : `    if (count_${kernel}) {
       ${kernel}<<<(count_${kernel} - 1) / 256 + 1, 256>>>(${args});
       check(cudaGetLastError());
