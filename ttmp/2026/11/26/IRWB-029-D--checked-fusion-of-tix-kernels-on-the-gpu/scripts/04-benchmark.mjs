@@ -4,13 +4,12 @@
 // seed 20, f32 values in [-0.1, 0.1], layernorm eps = 1e-5.
 //   node <ticket>/scripts/04-benchmark.mjs gpu [--threads=N] [--only=fused|unfused] [name ...]
 //   node <ticket>/scripts/04-benchmark.mjs cpu [name ...]     (the f32 interpreter: minutes per program)
-// --threads=N replaces the block-mode thread cap in the fused source (for choosing it; see the diary).
+// --threads=N replaces the block-mode thread cap in the fused source (for choosing it; diary step 4).
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { seededRandom } from '../../../../../../dist/framework/contracts/index.js';
 import { compileTix, cudaSource, runTix, runTixCuda } from '../../../../../../dist/tensor/index.js';
 import { runCudaBatch } from '../../../../../../dist/tensor/cuda-runtime.js';
-import { blockThreads } from '../../../../../../dist/tensor/cuda-source.js';
 import { value } from '../../../../../../dist/tensor/model.js';
 
 export const sizes = {
@@ -37,13 +36,14 @@ export function corpusInputs(name) {
   );
   return { program, fn, inputs };
 }
+const withCap = (source, n) => (n ? source.replace(/std::min<U>\(\d+, \(longest_/g, `std::min<U>(${n}, (longest_`) : source);
 const digest = ({ data }) =>
   createHash('sha256').update(Buffer.from(data.buffer, data.byteOffset, data.byteLength)).digest('hex');
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
   const mode = args.shift();
-  const threads = Number(args.find(a => a.startsWith('--threads='))?.slice(10) ?? blockThreads);
+  const threads = Number(args.find(a => a.startsWith('--threads='))?.slice(10) ?? 0) || undefined;
   const only = args.find(a => a.startsWith('--only='))?.slice(7);
   const names = args.filter(a => !a.startsWith('--'));
   for (const name of names.length ? names : Object.keys(sizes)) {
@@ -60,8 +60,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       const label = fuse ? 'fused' : 'unfused';
       let source = cudaSource(program, name, { fuse });
       let result;
-      if (fuse && threads !== blockThreads) {
-        source = source.replaceAll(`std::min<U>(${blockThreads},`, `std::min<U>(${threads},`);
+      if (fuse && threads) {
+        source = withCap(source, threads);
         [result] = await runCudaBatch(source, fn, [inputs], { benchmark: true });
       } else result = await runTixCuda(program, name, inputs, { fuse, benchmark: true });
       row[label] = {
