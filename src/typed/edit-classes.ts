@@ -26,7 +26,9 @@
  *
  * `instructionWeights` gives each edit the RV32 instructions it affects: the instructions of the image lowered from
  * the revision before that implement entities the edit removed, plus those of the image after that implement
- * entities it added (a moved or retargeted statement: its own instructions in the image after).
+ * entities it added (a moved or retargeted statement: its own instructions in the image after). For a `replace`
+ * the entities are those of the subtrees where A and B part; the operators above them, which `Tx.rewrite` makes
+ * again around a changed operand, are listed apart as `rebuilt` and counted only on request.
  */
 import { IMPURE } from './analyses.js';
 import type { Rv32Image } from './backend/image.js';
@@ -75,6 +77,8 @@ export interface ClassifiedEdit {
   readonly added: readonly string[];
   /** Statements that stay but whose instructions the edit touches (retarget, move). */
   readonly touched: readonly string[];
+  /** A `replace`: values above the changed subtrees, made again with the same operator (ids of either revision). */
+  readonly rebuilt?: readonly string[];
 }
 
 // ---------- plain trees, and the rule tables applied to them ----------
@@ -159,7 +163,11 @@ const STRENGTHS = ['proof', 'exhaustive', 'by-construction', 'reduced-width+argu
 const INDEXES = new Map<RuleSet, Map<string, Rule[]>>();
 
 /** The first table that rewrites `a` into `b`, with the rules it fired; undefined when none does. */
-export function rederive(a: Tree, b: Tree, tables: readonly RuleSet[] = VERIFIED_TABLES): RuleMatch | undefined {
+export function rederive(
+  a: Tree,
+  b: Tree,
+  tables: readonly RuleSet[] = VERIFIED_TABLES,
+): RuleMatch | undefined {
   for (const table of tables) {
     let index = INDEXES.get(table);
     if (!index) INDEXES.set(table, (index = indexRules(table.rules)));
@@ -225,6 +233,29 @@ const reads = (t: Tree, out = new Set<number>()): Set<number> => {
   t.args.forEach(a => reads(a, out));
   return out;
 };
+/**
+ * Where the trees rooted at `a` (before) and `b` (after) part: the roots of the differing subtrees on each side,
+ * and the values above them that were made again with the same operator, immediate and type.
+ */
+function parts(
+  av: Readonly<Record<string, ValueRec>>,
+  a: string,
+  bv: Readonly<Record<string, ValueRec>>,
+  b: string,
+  out: { a: string[]; b: string[]; rebuilt: string[] } = { a: [], b: [], rebuilt: [] },
+) {
+  if (a === b) return out;
+  const x = av[a],
+    y = bv[b];
+  if (x.op !== y.op || x.imm !== y.imm || x.type !== y.type || x.args.length !== y.args.length) {
+    out.a.push(a);
+    out.b.push(b);
+  } else {
+    out.rebuilt.push(a, b);
+    x.args.forEach((u, i) => parts(av, u, bv, y.args[i], out));
+  }
+  return out;
+}
 const STRUCTURAL: Readonly<Record<string, string>> = {
   block: 'cfg',
   retarget: 'cfg',
@@ -292,14 +323,30 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
           return { ...base(e), class: 'other', sub: 'unresolved', ...none };
         const a = treeOf(before.values, from),
           b = treeOf(after.values, to);
-        const first = chain[0] === e;
-        const removed = first ? claim(nodes(before.values, from), isGone) : [],
-          added = first ? claim(nodes(after.values, to), isNew) : [];
-        const io = { removed, added, touched: [] };
+        // the chain's first edit owns the entities: the subtrees where A and B part, and apart the rebuilt values
+        const first = chain[0] === e,
+          d = first ? parts(before.values, from, after.values, to) : { a: [], b: [], rebuilt: [] };
+        const io = {
+          removed: claim(
+            d.a.flatMap(id => nodes(before.values, id)),
+            isGone,
+          ),
+          added: claim(
+            d.b.flatMap(id => nodes(after.values, id)),
+            isNew,
+          ),
+          touched: [],
+          rebuilt: d.rebuilt.filter(id => (id in before.values ? isGone(id) : isNew(id))),
+        };
         const p = placed.get(e.fn);
         if (p && [...reads(b)].some(l => p.has(l)))
           return { ...base(e), class: 'structural', sub: inlining.has(e.fn) ? 'inline' : 'motion', ...io };
-        const rule = rederive(a, b);
+        // the table named after the pass first, so an edit two tables re-derive is counted for its own
+        const rule = rederive(
+          a,
+          b,
+          [...VERIFIED_TABLES].sort((s, t) => +(t.name === e.pass) - +(s.name === e.pass)),
+        );
         if (rule) return { ...base(e), class: 'local', sub: 'rule', rule, ...io };
         // what the made values say they hold by: the `because` of the new values of B
         const because = nodes(after.values, to)
@@ -320,6 +367,16 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
         const io = { removed, added: [], touched: [] };
         if (inlined.has(`${e.fn} ${sid}`)) return { ...base(e), class: 'structural', sub: 'inline', ...io };
         if (s && TERMINATORS.has(s.op)) return { ...base(e), class: 'structural', sub: 'cfg', ...io };
+        // a statement in neither revision: this application made it by `replaceStmt` (a terminator) and removed it
+        if (!s) {
+          const made = edits.some(x => x.kind === 'replaceStmt' && x.to === sid);
+          return {
+            ...base(e),
+            class: made ? 'structural' : 'other',
+            sub: made ? 'cfg' : 'unresolved',
+            ...io,
+          };
+        }
         return { ...base(e), class: 'other', sub: 'dead-statement', ...io };
       }
       case 'replaceStmt': {
@@ -373,10 +430,14 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
           sid = e.stmt as string;
         const mine = (x: { id: string; fn: string; origin: ValueRec['origin'] }) => {
           const o = x.origin[0];
-          return x.fn === `fn:${e.fn}` && !!o && (o.from === call || o.from === sid || !!o.because?.includes(call));
+          return (
+            x.fn === `fn:${e.fn}` && !!o && (o.from === call || o.from === sid || !!o.because?.includes(call))
+          );
         };
         const added = claim(
-          [...Object.values(after.stmts).filter(mine), ...Object.values(after.values).filter(mine)].map(x => x.id),
+          [...Object.values(after.stmts).filter(mine), ...Object.values(after.values).filter(mine)].map(
+            x => x.id,
+          ),
           isNew,
         );
         return { ...base(e), class: 'structural', sub: 'inline', removed: [], added, touched: [] };
@@ -394,13 +455,16 @@ export function classifyApplication(app: Application): ClassifiedEdit[] {
 /**
  * The instructions each classified edit affects, in the same order: instructions of `imageBefore` that implement
  * an entity the edit removed, and of `imageAfter` that implement one it added or touched. An instruction counts
- * once, for the edit owning the first of its `covers` that any edit claims.
+ * once, for the edit owning the first of its `covers` that any edit claims. With `rebuilt`, the values a `replace`
+ * made again above its changed subtrees count too (an upper bound: those instructions compute what they did).
  */
 export function instructionWeights(
   classified: readonly ClassifiedEdit[],
   imageBefore: Rv32Image,
   imageAfter: Rv32Image,
+  opts: { readonly rebuilt?: boolean } = {},
 ): number[] {
+  const extra = (c: ClassifiedEdit) => (opts.rebuilt ? (c.rebuilt ?? []) : []);
   const weights = classified.map(() => 0);
   const side = (image: Rv32Image, pick: (c: ClassifiedEdit) => readonly string[]) => {
     const owner = new Map<string, number>();
@@ -412,8 +476,8 @@ export function instructionWeights(
       if (hit !== undefined) weights[owner.get(hit)!]++;
     }
   };
-  side(imageBefore, c => c.removed);
-  side(imageAfter, c => [...c.added, ...c.touched]);
+  side(imageBefore, c => [...c.removed, ...extra(c)]);
+  side(imageAfter, c => [...c.added, ...c.touched, ...extra(c)]);
   return weights;
 }
 
@@ -434,7 +498,11 @@ export const emptyTally = (): Tally => ({
   },
   bySub: {},
 });
-export function tallyInto(t: Tally, classified: readonly ClassifiedEdit[], weights?: readonly number[]): Tally {
+export function tallyInto(
+  t: Tally,
+  classified: readonly ClassifiedEdit[],
+  weights?: readonly number[],
+): Tally {
   classified.forEach((c, i) => {
     const w = weights?.[i] ?? 0;
     t.edits++;
