@@ -1,3 +1,4 @@
+import { kernelGroups, rowSlots, type KernelGroup } from './cuda-fusion.js';
 import { plain, visit, width, type Affine, type Expr, type Fn, type Tensor } from './model.js';
 
 const support = String.raw`
@@ -126,22 +127,27 @@ function literal(text: string): string {
 }
 
 function emitKernel(
-  statement: Fn['statements'][number],
+  group: KernelGroup,
   kernel: string,
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
 ) {
+  const { statements, rowInput } = group;
+  const statement = statements[statements.length - 1];
+  const privateNames = new Set(statements.slice(0, -1).map(s => s.name));
   const reads = new Set<string>();
-  visit(statement.expr, e => {
-    if (e.kind === 'load') reads.add(e.name);
-  });
+  for (const s of statements)
+    visit(s.expr, e => {
+      if (e.kind === 'load' && !privateNames.has(e.name)) reads.add(e.name);
+    });
   const args = [...dimensions.values(), ...Array.from(reads, tensorName), tensorName(statement.name)];
   const params = [
     ...Array.from(dimensions.values(), d => `I ${d}`),
     ...Array.from(reads, t => `const float* ${tensorName(t)}`),
     'float* result',
     'U count',
+    ...(rowInput ? ['float* scratch'] : []),
   ];
   const lines = [`__global__ void ${kernel}(${params.join(', ')}) {`];
   let indent = '  ',
@@ -149,20 +155,15 @@ function emitKernel(
   const line = (code: string) => lines.push(indent + code);
   const dim = (a: Affine) => affine(a, n => dimensions.get(n)!);
   const indices = new Map<string, string>();
+  let nextIndex = 0;
   const bind = (id: string) => {
-    const name = `i${indices.size}`;
+    const name = `i${nextIndex++}`;
     indices.set(id, name);
     return name;
   };
   const index = (id: string) => indices.get(id)!;
-  line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
-  line('if (thread >= count) return;');
-  line('U coordinate = thread;');
-  for (let i = statement.axes.length - 1; i >= 0; --i) {
-    const axis = bind(statement.axes[i].id);
-    line(`const I ${axis} = coordinate % ${dim(statement.shape[i])};`);
-    if (i > 0) line(`coordinate /= ${dim(statement.shape[i])};`);
-  }
+  const locals = new Map<string, string>();
+  const rowBuffers = new Map<string, string>();
 
   const temporary = (code: string) => {
     const name = `v${next++}`;
@@ -177,6 +178,8 @@ function emitKernel(
       case 'shape':
         return `__ll2float_rn(${dimensions.get(e.name)!})`;
       case 'load': {
+        if (locals.has(e.name)) return locals.get(e.name)!;
+        if (rowBuffers.has(e.name)) return `${rowBuffers.get(e.name)}[${affine(e.indices[1], index)}]`;
         const shape = tensors.get(e.name)!.shape;
         const offset = e.indices.reduce(
           (prior, a, i) => (i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index)),
@@ -227,9 +230,12 @@ function emitKernel(
           indent += '  ';
         }
         const value = scalar(e.body);
-        line(
-          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
-        );
+        if (rowInput && e.op === 'max') {
+          line(`asm("max.NaN.f32 %0, %1, %2;" : "=f"(${acc}) : "f"(${acc}), "f"(${value}));`);
+        } else
+          line(
+            `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
+          );
         for (const _axis of e.axes) {
           indent = indent.slice(2);
           line('}');
@@ -238,22 +244,91 @@ function emitKernel(
       }
     }
   }
-  const result = scalar(statement.expr);
-  line(`result[thread] = ${result};`);
-  lines.push('}');
   const count = `${tensorName(statement.name)}.size`;
+  const setup: string[] = [];
+  let geometry = `(${count} - 1) / 256 + 1, 256`;
+  let extraArg = '';
+  if (rowInput) {
+    const cols = dim(tensors.get(rowInput)!.shape[1]),
+      rows = dim(statement.shape[0]);
+    const { slots, count: slotCount } = rowSlots(statements, rowInput);
+    const size = `bytes_${kernel}`,
+      scratch = `scratch_${kernel}`;
+    setup.push(
+      `  const U ${size} = sizeof(float) * ${slotCount} * ${cols};`,
+      `  const bool spill_${kernel} = ${count} && ${size} > static_cast<U>(attr_${kernel}.maxDynamicSharedSizeBytes);`,
+      `  DeviceBuffer ${scratch}(spill_${kernel} ? static_cast<U>(${rows}) * ${cols} * ${slotCount} : 0);`,
+    );
+    geometry = `${rows}, 256, spill_${kernel} ? 0 : ${size}`;
+    extraArg = `, ${scratch}.ptr`;
+    line('extern __shared__ float sharedRow[];');
+    line('const I row = blockIdx.x;');
+    line(`float* storage = scratch ? scratch + row * ${slotCount} * ${cols} : sharedRow;`);
+    slots.forEach((i, name) => {
+      const buf = `row_${tensorName(name)}`;
+      rowBuffers.set(name, buf);
+      line(`float* ${buf} = storage + ${i} * ${cols};`);
+    });
+    const columns = `for (I col = threadIdx.x; col < ${cols}; col += blockDim.x)`;
+    line(`${columns} ${rowBuffers.get(rowInput)}[col] = ${tensorName(rowInput)}[row * ${cols} + col];`);
+    line('__syncthreads();');
+    for (const s of statements) {
+      indices.set(s.axes[0].id, 'row');
+      const vector = s.axes.length === 2;
+      if (vector) indices.set(s.axes[1].id, 'col');
+      const dest =
+        s === statement
+          ? vector
+            ? `result[row * ${cols} + col]`
+            : 'result[row]'
+          : vector
+            ? `${rowBuffers.get(s.name)}[col]`
+            : `scalar_${tensorName(s.name)}`;
+      if (!vector && s !== statement) line(`__shared__ float ${dest};`);
+      line((vector ? columns : 'if (threadIdx.x == 0)') + ' {');
+      indent += '  ';
+      line(`${dest} = ${scalar(s.expr)};`);
+      indent = indent.slice(2);
+      line('}');
+      if (!vector) locals.set(s.name, dest);
+      if (s !== statement) line('__syncthreads();');
+    }
+  } else {
+    line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
+    line('if (thread >= count) return;');
+    line('U coordinate = thread;');
+    for (let i = statement.axes.length - 1; i >= 0; --i) {
+      const axis = bind(statement.axes[i].id);
+      line(`const I ${axis} = coordinate % ${dim(statement.shape[i])};`);
+      if (i > 0) line(`coordinate /= ${dim(statement.shape[i])};`);
+    }
+    const coordinates = statement.axes.map(a => index(a.id));
+    for (const s of statements) {
+      s.axes.forEach((a, i) => indices.set(a.id, coordinates[i]));
+      const value = scalar(s.expr);
+      if (s === statement) line(`result[thread] = ${value};`);
+      else locals.set(s.name, temporary(value));
+    }
+  }
+  lines.push('}');
   return {
     code: lines.join('\n'),
-    preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
+    preload: rowInput
+      ? [
+          `  cudaFuncAttributes attr_${kernel}{};`,
+          `  if (${count}) check(cudaFuncGetAttributes(&attr_${kernel}, ${kernel}));`,
+          ...setup,
+        ].join('\n')
+      : `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
     hasWork: count,
     launch: `    if (${count}) {
-      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')}, ${count});
+      ${kernel}<<<${geometry}>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')}, ${count}${extraArg});
       check(cudaGetLastError());
     }`,
   };
 }
 
-export function emitCuda(fn: Fn): string {
+export function emitCuda(fn: Fn, fuse = true): string {
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -269,7 +344,8 @@ export function emitCuda(fn: Fn): string {
       bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
     }
   }
-  const kernels = fn.statements.map((s, i) => emitKernel(s, `k${i}`, dims, tensors, name));
+  const groups = kernelGroups(fn, fuse);
+  const kernels = groups.map((s, i) => emitKernel(s, `k${i}`, dims, tensors, name));
   const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
   for (const p of fn.params) {
     const t = name(p.name);
@@ -289,7 +365,8 @@ export function emitCuda(fn: Fn): string {
       const t = name(p.name);
       host.push(`  DeviceBuffer ${t}(host_${t}.size());`, `  ${t}.upload(host_${t}.data());`);
     }
-    for (const s of fn.statements) {
+    for (const { statements } of groups) {
+      const s = statements[statements.length - 1];
       const t = name(s.name);
       const dimsText = s.shape.map(a => affine(a, key => dims.get(key)!)).join(', ');
       host.push(

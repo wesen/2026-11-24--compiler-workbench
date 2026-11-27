@@ -169,3 +169,32 @@ int main() {
     await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true })));
   }
 });
+
+test('GB10 fuses a pointwise producer into a row fold, including empty and oversize rows', async () => {
+  const p = compileTix('fn f(x:f32[N,K]):f32[N]{ a[i,k]=x[i,k]*x[i,k]; y[i]=sum(k) a[i,k]; return y; }');
+  assert.equal(cudaSource(p, 'f').match(/__global__ void/g).length, 1);
+  for (const k of [0, 7, 65536]) {
+    const data = Float32Array.from({length: 2*k}, (_,i) => (i%17-8)/9);
+    const inputs = {x: {shape:[2,k],data}};
+    assert.deepEqual(words(await runTixCuda(p,'f',inputs)),words(runTix(p,'f',inputs)));
+  }
+});
+
+test('GB10 checks row-private affine reads and detects a misplaced fused load', async () => {
+  const p = compileTix(`fn f(x:f32[N,5]):f32[N,5] {
+    a[i,k]=x[i,k]+1;
+    m[i]=max(k) a[i,k];
+    b[i,j]:f32[N,5]=a[i,4-j]-m[i];
+    z[i]=sum(j) b[i,j];
+    y[i,j]=b[i,j]+z[i];
+    return y;
+  }`);
+  const source = cudaSource(p,'f');
+  assert.equal(source.match(/__global__ void/g).length,1);
+  assert.deepEqual(await checkLowering(p,'f'),{accepted:true,relation:'exact'});
+  const mutant = source.replace('(4LL + -1LL * col)', '(col)');
+  assert.notEqual(mutant,source);
+  const rejection = await checkCudaLowering(p.current,'f',cudaArtifact('f',mutant));
+  assert.equal(rejection.accepted,false);
+  assert.match(rejection.reason,/expected .*got/);
+});

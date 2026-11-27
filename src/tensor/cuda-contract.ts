@@ -71,9 +71,17 @@ function compare(expected: BufferValue, got: BufferValue) {
 type CudaSample = ReturnType<typeof cudaCases>[number];
 
 export function createCudaLowering(profile: string, executeBatch: typeof runCudaBatch = runCudaBatch) {
-  const inputs = { baseline: TixIR, fn: FunctionName };
+  const fuseOption = defineType<boolean>({
+    id: 'tensor.cuda-fuse',
+    version: '1',
+    description: 'Enable checked fusion scheduling',
+    validate(value) {
+      if (typeof value !== 'boolean') throw Error('Expected a fusion switch');
+    },
+  });
+  const inputs = { baseline: TixIR, fn: FunctionName, fuse: fuseOption };
   const outputs = { subject: CudaIR };
-  const ports = { ...inputs, ...outputs };
+  const ports = { baseline: TixIR, fn: FunctionName, ...outputs };
   const invariant = differential<typeof ports, CudaSample, BufferValue>({
     id: 'tensor.cuda-meaning',
     version: '2',
@@ -116,7 +124,7 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
   });
   const pass = defineTransformation({
     id: 'tensor.lower-cuda',
-    version: '1',
+    version: '2',
     description: 'Lower a Tix function to CUDA and check the candidate on the GPU',
     inputs,
     outputs,
@@ -131,17 +139,17 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
         },
       },
     ],
-    run(_ctx, { baseline, fn }) {
-      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn))) } };
+    run(_ctx, { baseline, fn, fuse }) {
+      return { outputs: { subject: cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn), fuse)) } };
     },
   });
 
-  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>, fuse = true) => {
     const relation = 'exact' as const;
     const manager = new AnalysisManager();
     try {
-      if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
-      else await manager.execute(pass, { baseline, fn });
+      if (candidate) await manager.verifyTransformation({ baseline, fn, fuse }, { subject: candidate }, pass);
+      else await manager.execute(pass, { baseline, fn, fuse });
       return { accepted: true, relation };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

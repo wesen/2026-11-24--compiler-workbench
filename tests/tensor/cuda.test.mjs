@@ -15,8 +15,8 @@ test('CUDA source is deterministic and preloads every emitted statement kernel b
   const program = compileTix(
     'fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }',
   );
-  const source = cudaSource(program, 'second');
-  assert.equal(source, cudaSource(program, 'second'));
+  const source = cudaSource(program, 'second', { fuse: false });
+  assert.equal(source, cudaSource(program, 'second', { fuse: false }));
   assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
   assert.ok(
     source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
@@ -121,4 +121,17 @@ test('the lowering relation is exact: one ulp is rejected, a different NaN word 
     accepted: true,
     relation: 'exact',
   });
+});
+
+test('fusion keeps private element values and leaves escaping and cross-row reads materialized', () => {
+  const count = (body, result = 'z', options) => {
+    const program = compileTix(`fn f(x:f32[N,N]):f32[N,N]{ ${body} return ${result}; }`);
+    return cudaSource(program, 'f', options).match(/__global__ void/g).length;
+  };
+  const chain = 'y[i,j]=x[i,j]*2; z[i,j]=y[i,j]+y[i,j];';
+  assert.equal(count(chain), 1);
+  assert.equal(count(chain, 'z', { fuse: false }), 2);
+  assert.equal(count(chain, 'y'), 2);
+  assert.equal(count('y[i,j]=x[i,j]*2; z[i,j]=y[j,i];'), 2);
+  assert.equal(count('m[i]=sum(k) x[i,k]; z[i,j]=x[i,j]+m[j];'), 2);
 });
