@@ -54,3 +54,17 @@ await new AnalysisManager().verifyTransformation(
   {input: q.current}, {output: inline.artifact}, mappingOnly, [empty]
 );
 console.log('managed inline: projection mismatch; statement lists with zero mapping groups: accepted');
+
+const { IRStore } = await moduleAt('framework/ir/index.js');
+const store = new IRStore();
+await assert.rejects(
+  applyPass(inlinePass, q.current, {manager:new AnalysisManager(), store}),
+  /new revisions must be committed through an edit/
+);
+await assert.rejects(
+  applyPass(inlinePass, q.current, {manager:new AnalysisManager(), store,
+    outputId:'inline-candidate', contract:mappingOnly}),
+  /Correspondence source entity mismatch/
+);
+assert.equal(store.head('inline-candidate').revision, inline.artifact.revision);
+console.log('shared IRStore: same id refused; fresh output id retained as head even after contract rejection');

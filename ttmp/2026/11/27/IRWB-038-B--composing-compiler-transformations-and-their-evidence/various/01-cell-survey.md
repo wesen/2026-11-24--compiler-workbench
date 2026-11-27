@@ -1,3 +1,17 @@
+---
+Title: Comparative inventory of 31 implementation worktrees
+Ticket: IRWB-038-B
+Status: review
+Topics: [compiler, research]
+DocType: reference
+Intent: long-term
+Summary: "Committed changes and working-copy evidence for the T6, D1, A0 and B1 implementations."
+---
+
+# Implementation survey
+
+Each code and document locator is relative to the sibling worktree in its row. The status column describes the cited source file at observation time. HEAD identifies the committed tree only. The source location in B1-C is the cell’s negative-control report.
+
 | Sibling worktree | HEAD | Changed src/tools paths | Cited site | Code or negative control | Cell record |
 |---|---|---:|---|---|---|
 | t6-sm-irwb-033-a | 0f41a93 | 7 | committed | `src/tensor/schedule.ts:268` | `ttmp/2026/11/27/IRWB-033-A--schedule-ir-and-exact-tiled-contractions/reference/02-final-report.md:29` |
