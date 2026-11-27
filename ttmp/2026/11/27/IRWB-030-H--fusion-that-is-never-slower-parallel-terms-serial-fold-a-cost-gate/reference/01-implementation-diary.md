@@ -212,6 +212,11 @@ scripts and tests can see the decision instead of guessing it. `fuse: false` sti
 
 ## Step 12 — Final measurement (script 02, `--runs=3`)
 
+Two probe outputs were deleted after use rather than committed, because they were misleading rather than evidence: a
+post-change full sweep whose `gated` field the probe overwrote with the unfused iteration's answer (its valid
+successor is the corrected three-point run in `03-row-lengths-gate.out.jsonl`), and a first benchmark run that
+aborted on a probe bug (a variant's function name is not the variant's key).
+
 See the report. Measured, for each corpus program and the two inside variants at the brief's sizes, fused and
 unfused: kernel count of the lowering that ran, benchmark GPU time (median of three `benchmark` calls), and whether
 the gate fired and which reductions staged their terms.
