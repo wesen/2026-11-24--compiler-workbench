@@ -16,35 +16,35 @@ Keep it current: update an entry when a round finishes, move items between statu
 
 ## Index
 
-| ID     | Item                                                                        | Status                                           | Size   |
-| ------ | --------------------------------------------------------------------------- | ------------------------------------------------ | ------ |
-| T1     | Tix front end, IR, evaluators, contract, two passes                         | done (IRWB-020-B merged, `98b04da`)              | M      |
-| R1     | research: derive streaming attention by checked rewrites                    | done (design only; a ceiling)                    | M      |
-| T2     | CUDA lowering, one kernel per statement, run on the GB10                    | done (IRWB-022-I merged, `2e035c6`)              | M      |
-| T3     | checked fusion                                                              | **ready, queued 1st** (base `2e035c6`)           | M      |
-| T4     | tolerance calibration with mutants                                          | queued 4th (before the tolerance-checked stages) | M      |
-| T5     | implement the streaming-attention derivation                                | queued 8th                                       | L      |
-| T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | queued 3rd                                       | M–L    |
-| T7     | autotuning under noisy GPU cost                                             | queued 7th                                       | M      |
-| T8     | ONNX importer into Tix                                                      | idea                                             | M      |
-| T9     | a GPU timing protocol                                                       | prep, queued 2nd (coordinator, during T3)        | S      |
-| T10    | parallel reductions and split-K, by lowering split-sum programs             | queued 5th                                       | M      |
-| T11    | checked FMA contraction                                                     | queued 6th                                       | M      |
-| T12    | tensor cores as a checked precision change                                  | queued 9th (last)                                | L      |
-| R2     | research round: what would make Tix best in class (Sol, Astra, Opus, Fable) | done (IRWB-023; ideas below)                     | M      |
-| T13    | exhaustively verified fast intrinsics (`exp`, `tanh`)                       | idea, from R2                                    | M      |
-| T14    | a parallel fold that is bit-identical to the sequential one                 | idea, from R2                                    | M      |
-| T15    | acceptance by proof: normal-form equivalence and symbolic fingerprints      | idea, from R2; with F21                          | M      |
-| D1     | why `speed` slows the bytecode VM                                           | ready                                            | S–M    |
-| D2     | missed optimizations from provenance                                        | ready                                            | M      |
-| B1     | specialize the VM on its bytecode                                           | ready                                            | M–L    |
-| B2     | specialize Candela on its scene buffers                                     | idea                                             | L      |
-| A0     | measure: share of edits that are local value rewrites                       | ready                                            | S      |
-| A1     | e-graph over value trees with verified rules                                | decision                                         | L      |
-| C1     | calibrated gate                                                             | prep                                             | M      |
-| E1     | incremental checking per function                                           | prep                                             | L      |
-| F1–F20 | framework and workbench fixes found by agents                               | mostly ready                                     | S each |
-| M1–M5  | agent methodology                                                           | running / ready                                  | —      |
+| ID     | Item                                                                        | Status                                                                                                                 | Size   |
+| ------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------ |
+| T1     | Tix front end, IR, evaluators, contract, two passes                         | done (IRWB-020-B merged, `98b04da`)                                                                                    | M      |
+| R1     | research: derive streaming attention by checked rewrites                    | done (design only; a ceiling)                                                                                          | M      |
+| T2     | CUDA lowering, one kernel per statement, run on the GB10                    | done (IRWB-022-I merged, `2e035c6`)                                                                                    | M      |
+| T3     | checked fusion                                                              | **ready, queued 1st** (base: F17 and F21 fixed; cells Codex · Sol, Codex · Astra (medium), Opus, Fable; Pi left aside) | M      |
+| T4     | tolerance calibration with mutants                                          | queued 4th (before the tolerance-checked stages)                                                                       | M      |
+| T5     | implement the streaming-attention derivation                                | queued 8th                                                                                                             | L      |
+| T6     | exact tiled contractions with a schedule IR, against cuBLAS                 | queued 3rd                                                                                                             | M–L    |
+| T7     | autotuning under noisy GPU cost                                             | queued 7th                                                                                                             | M      |
+| T8     | ONNX importer into Tix                                                      | idea                                                                                                                   | M      |
+| T9     | a GPU timing protocol                                                       | prep, queued 2nd (coordinator, during T3)                                                                              | S      |
+| T10    | parallel reductions and split-K, by lowering split-sum programs             | queued 5th                                                                                                             | M      |
+| T11    | checked FMA contraction                                                     | queued 6th                                                                                                             | M      |
+| T12    | tensor cores as a checked precision change                                  | queued 9th (last)                                                                                                      | L      |
+| R2     | research round: what would make Tix best in class (Sol, Astra, Opus, Fable) | done (IRWB-023; ideas below)                                                                                           | M      |
+| T13    | exhaustively verified fast intrinsics (`exp`, `tanh`)                       | idea, from R2                                                                                                          | M      |
+| T14    | a parallel fold that is bit-identical to the sequential one                 | idea, from R2                                                                                                          | M      |
+| T15    | acceptance by proof: normal-form equivalence and symbolic fingerprints      | idea, from R2; with F21                                                                                                | M      |
+| D1     | why `speed` slows the bytecode VM                                           | ready                                                                                                                  | S–M    |
+| D2     | missed optimizations from provenance                                        | ready                                                                                                                  | M      |
+| B1     | specialize the VM on its bytecode                                           | ready                                                                                                                  | M–L    |
+| B2     | specialize Candela on its scene buffers                                     | idea                                                                                                                   | L      |
+| A0     | measure: share of edits that are local value rewrites                       | ready                                                                                                                  | S      |
+| A1     | e-graph over value trees with verified rules                                | decision                                                                                                               | L      |
+| C1     | calibrated gate                                                             | prep                                                                                                                   | M      |
+| E1     | incremental checking per function                                           | prep                                                                                                                   | L      |
+| F1–F20 | framework and workbench fixes found by agents                               | mostly ready                                                                                                           | S each |
+| M1–M5  | agent methodology                                                           | running / ready                                                                                                        | —      |
 
 ---
 
@@ -408,7 +408,7 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F16: unspecified rules in the Tix core** _(done: stated in the T2 brief)_.
   - _Known:_ fourteen implementations divided on whether an index may share a tensor's name (the Claude cells said no). The brief is also silent on shadowing (`sum(j) a[i, j] + sum(j) b[i, j]` parses as a nested reduction rebinding `j`) and on zero-size extents.
   - _Needed:_ state all three in the T2 brief's fixed core, and test them. _(Done in the T2 brief; all twelve T2 implementations implement them.)_
-- **F17: the lowering's relation should be exact for an exact emitter** _(ready, S; before or with T3)_.
+- **F17: the lowering's relation should be exact for an exact emitter** _(done: `885601f`; `checkLowering` reports `exact`, NaN as a class; GPU tests 10/10)_.
   - _Known:_ the merged base (I) is bit-exact by construction but checks under tolerance against f64. NaN words differ between the GPU and Node: `__fsqrt_rn(-2⁻¹⁴⁹)` gives `0x7fffffff` on the GB10 and `0xffc00000` in Node (I's report).
   - _Needed:_ compare f32 words exactly against the current revision, with NaN as a class. Keep the f64 tolerance as a separate numerical check. This makes T3's exact fusion checks direct.
 - **F18: a batch-only differential spec** _(idea, S)_.
@@ -420,7 +420,7 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F20: `tools/cuda-remote.mjs` cannot link libraries** _(ready, S)_.
   - _Known:_ the cuBLAS baseline needed `-lcublas`, so I ran it over `ssh` directly, outside the tool's lock and cache.
   - _Needed:_ a `--link` option that is part of the build key, so baselines go through the tool.
-- **F21: the stage-1 meaning gate cannot tell some shape symbols apart** _(ready, S; found by R2's Fable cell, root cause confirmed)_.
+- **F21: the stage-1 meaning gate cannot tell some shape symbols apart** _(done: `250626e`; distinct sizes, empty extents checked but not counted as coverage; regression test)_.
   - _Known:_ `cases()` in `src/tensor/contract.ts:25-36` sorts the shape symbols. Its assignments are all-equal (1, 3, 4, 7) or "mixed", which cycles `[3, 5, 7][i % 3]`, so symbols three apart in sorted order are always equal. The zero cases that would separate them are added only for the CUDA contract.
     - For `mlp` ([D, H, N, O]), D = O in every case. A mutant that sums the first contraction over O instead of D passes `meaningGate` (reproduced with `IRWB-023-D/scripts/05-normal-form-proof.mjs`).
   - _Needed:_ pairwise-distinct sizes in at least one assignment, and the zero cases in the meaning gate too, plus a test with this mutant.
@@ -443,7 +443,7 @@ The experiments around the work. The playbooks are in the go-go-parc vault under
 - **M3: the effect of the review loop** _(running from T1)_.
   - _Unknown:_ which review content changes designs and implementations, and whether it does so the same way for every configuration.
 - **M4: Claude models in the same matrix** _(ran on T1: Opus and Fable, medium and xhigh designs; medium implementations)_. About 2.97M subagent tokens in all for IRWB-019's Claude cells, judges and reviewer.
-- **M6: policy wording for Sol** _(ran on T1: v1, v2, v3)_.
+- **M6: policy wording for Sol** _(ran on T1: v1, v2, v3; v3 is the global Codex default since 2026-11-26, without the experiment's isolation rule; backup `~/.codex/config.toml.bak-2026-11-26-before-v3`)_.
   - _Known:_ v3 cuts excess by 1–2 items per cell and over-engineering by about one rubric point, at a fitness cost of 0.5 on average; v2's narrowing rule overrode the brief.
   - _Unknown:_ whether v3 should replace v1 in `~/.codex/config.toml` (the user's call), and whether its effect holds over repeated runs (M2).
 - **M5: tell designers what is already checked** _(ready)_.
