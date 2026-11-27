@@ -1,4 +1,14 @@
-import { plain, visit, width, type Affine, type Expr, type Fn, type Tensor } from './model.js';
+import { planCudaKernels, type KernelGroup } from './cuda-fusion.js';
+import {
+  plain,
+  visit,
+  width,
+  type Affine,
+  type Expr,
+  type Fn,
+  type Statement,
+  type Tensor,
+} from './model.js';
 
 const support = String.raw`
 #include <cuda_runtime.h>
@@ -125,25 +135,48 @@ function literal(text: string): string {
   return `__uint_as_float(0x${bytes.getUint32(0).toString(16)}u)`;
 }
 
+// PTX max.NaN propagates NaNs and orders -0 below +0. It uses the same sequential fold as minmax.
+const rowSupport = String.raw`
+__device__ static float row_max(float a, float b) {
+  float result;
+  asm("max.NaN.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
+  return result;
+}
+`;
+
+// Two warps per row keep the serial-fold warp resident alongside more rows (IRWB-029-A measurements).
+const rowThreads = 64;
+
 function emitKernel(
-  statement: Fn['statements'][number],
+  group: KernelGroup,
   kernel: string,
   dimensions: ReadonlyMap<string, string>,
   tensors: ReadonlyMap<string, Tensor>,
   tensorName: (name: string) => string,
 ) {
+  const { statements } = group;
+  const statement = statements[statements.length - 1];
+  const local = new Set(statements.map(s => s.name));
   const reads = new Set<string>();
-  visit(statement.expr, e => {
-    if (e.kind === 'load') reads.add(e.name);
-  });
+  for (const s of statements) {
+    visit(s.expr, e => {
+      if (e.kind === 'load' && !local.has(e.name)) reads.add(e.name);
+    });
+  }
   const args = [...dimensions.values(), ...Array.from(reads, tensorName), tensorName(statement.name)];
+  const rowKernel = group.kind === 'row';
   const params = [
     ...Array.from(dimensions.values(), d => `I ${d}`),
     ...Array.from(reads, t => `const float* ${tensorName(t)}`),
     'float* result',
-    'U count',
-  ];
-  const lines = [`__global__ void ${kernel}(${params.join(', ')}) {`];
+    rowKernel ? 'float* spill' : 'U count',
+  ].join(', ');
+  const lines = statements.length > 1 ? [`// Tix statements: ${statements.map(s => s.name).join(', ')}`] : [];
+  lines.push(
+    rowKernel
+      ? `template <bool inShared> __device__ __forceinline__ void ${kernel}_row(${params}, I row) {`
+      : `__global__ void ${kernel}(${params}) {`,
+  );
   let indent = '  ',
     next = 0;
   const line = (code: string) => lines.push(indent + code);
@@ -155,14 +188,10 @@ function emitKernel(
     return name;
   };
   const index = (id: string) => indices.get(id)!;
-  line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
-  line('if (thread >= count) return;');
-  line('U coordinate = thread;');
-  for (let i = statement.axes.length - 1; i >= 0; --i) {
-    const axis = bind(statement.axes[i].id);
-    line(`const I ${axis} = coordinate % ${dim(statement.shape[i])};`);
-    if (i > 0) line(`coordinate /= ${dim(statement.shape[i])};`);
-  }
+  const locals = new Map<string, string>();
+  const rowSlots = new Map<string, string>();
+  const staged = new Map<string, string>();
+  let current = statement;
 
   const temporary = (code: string) => {
     const name = `v${next++}`;
@@ -177,12 +206,22 @@ function emitKernel(
       case 'shape':
         return `__ll2float_rn(${dimensions.get(e.name)!})`;
       case 'load': {
+        const inThread = locals.get(e.name);
+        if (inThread !== undefined) return inThread;
+        const rowSlot = rowSlots.get(e.name);
+        if (rowSlot !== undefined) {
+          return `rowScratch[${rowSlot}${e.indices.length === 2 ? ' + ' + affine(e.indices[1], index) : ''}]`;
+        }
         const shape = tensors.get(e.name)!.shape;
         const offset = e.indices.reduce(
           (prior, a, i) => (i ? `(${prior} * ${dim(shape[i])} + ${affine(a, index)})` : affine(a, index)),
           '',
         );
-        return `${tensorName(e.name)}[${offset}]`;
+        const global = `${tensorName(e.name)}[${offset}]`;
+        const stagedSlot = staged.get(e.name);
+        if (stagedSlot !== undefined && plain(e.indices[0]) === current.axes[0].id)
+          return `(inShared ? rowScratch[${stagedSlot} + ${affine(e.indices[1], index)}] : ${global})`;
+        return global;
       }
       case 'op': {
         const [a, b] = e.args.map(scalar);
@@ -227,9 +266,9 @@ function emitKernel(
           indent += '  ';
         }
         const value = scalar(e.body);
-        line(
-          `${acc} = ${e.op === 'sum' ? `__fadd_rn(${acc}, ${value})` : `minmax(${acc}, ${value}, true)`};`,
-        );
+        const combine = e.op === 'sum' ? '__fadd_rn' : rowKernel ? 'row_max' : 'minmax';
+        const maximum = combine === 'minmax' ? ', true' : '';
+        line(`${acc} = ${combine}(${acc}, ${value}${maximum});`);
         for (const _axis of e.axes) {
           indent = indent.slice(2);
           line('}');
@@ -238,22 +277,116 @@ function emitKernel(
       }
     }
   }
-  const result = scalar(statement.expr);
-  line(`result[thread] = ${result};`);
-  lines.push('}');
   const count = `${tensorName(statement.name)}.size`;
+  const launchArgs = args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ');
+  const preload = `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`;
+  if (group.kind === 'row') {
+    const columns = dim(group.columns);
+    const rows = dim(statement.shape[0]);
+    let vectors = 0,
+      scalars = 0;
+    for (const s of statements.slice(0, -1)) {
+      rowSlots.set(s.name, s.shape.length === 2 ? `${vectors++}ULL * columns` : `scalarBase + ${scalars++}`);
+    }
+    const internalWords = `(${vectors}ULL * ${columns} + ${scalars})`;
+    const totalWords = `(${vectors + group.stagedInputs.length}ULL * ${columns} + ${scalars})`;
+    line('extern __shared__ float rowShared[];');
+    line(`const I columns = ${columns};`);
+    line(`const U scalarBase = ${vectors}ULL * columns;`);
+    line(`float* const rowScratch = inShared ? rowShared : spill + row * (scalarBase + ${scalars});`);
+    if (group.stagedInputs.length) {
+      line('if (inShared) {');
+      indent += '  ';
+      line('for (I col = threadIdx.x; col < columns; col += blockDim.x) {');
+      indent += '  ';
+      for (const [i, input] of group.stagedInputs.entries()) {
+        const slot = `scalarBase + ${scalars} + ${i}ULL * columns`;
+        staged.set(input, slot);
+        line(`rowScratch[${slot} + col] = ${tensorName(input)}[row * columns + col];`);
+      }
+      indent = indent.slice(2);
+      line('}');
+      line('__syncthreads();');
+      indent = indent.slice(2);
+      line('}');
+    }
+    for (const s of statements) {
+      current = s;
+      const wide = s.shape.length === 2;
+      indices.set(s.axes[0].id, 'row');
+      if (wide) indices.set(s.axes[1].id, 'col');
+      line(
+        wide ? 'for (I col = threadIdx.x; col < columns; col += blockDim.x) {' : 'if (threadIdx.x == 0) {',
+      );
+      indent += '  ';
+      const result = scalar(s.expr);
+      const slot = rowSlots.get(s.name);
+      const dest =
+        slot === undefined
+          ? wide
+            ? 'result[row * columns + col]'
+            : 'result[row]'
+          : `rowScratch[${slot}${wide ? ' + col' : ''}]`;
+      line(`${dest} = ${result};`);
+      indent = indent.slice(2);
+      line('}');
+      if (slot !== undefined) line('__syncthreads();');
+    }
+    const rowArgs = [...dimensions.values(), ...Array.from(reads, tensorName), 'result', 'spill', 'row'];
+    lines.push(
+      '}',
+      `__global__ void ${kernel}(${params}) {`,
+      `  for (I row = blockIdx.x; row < ${rows}; row += gridDim.x) {`,
+      `    if (spill == nullptr) ${kernel}_row<true>(${rowArgs.join(', ')});`,
+      `    else ${kernel}_row<false>(${rowArgs.join(', ')});`,
+      `    if (row + gridDim.x < ${rows}) __syncthreads();`,
+      '  }',
+      '}',
+    );
+    return {
+      code: lines.join('\n'),
+      setup: [
+        `  const U ${kernel}_shared_required = ${totalWords} * sizeof(float);`,
+        `  const bool ${kernel}_fits = ${kernel}_shared_required <= shared_limit;`,
+        `  DeviceBuffer ${kernel}_spill(${count} && !${kernel}_fits ? ${rows} * ${internalWords} : 0);`,
+      ],
+      preload,
+      hasWork: count,
+      launch: `    if (${count}) {
+      ${kernel}<<<std::min<I>(${rows}, row_grid_limit), ${rowThreads}, ${kernel}_fits ? ${kernel}_shared_required : 0>>>(${launchArgs}, ${kernel}_spill.ptr);
+      check(cudaGetLastError());
+    }`,
+    };
+  }
+
+  line('const U thread = static_cast<U>(blockIdx.x) * blockDim.x + threadIdx.x;');
+  line('if (thread >= count) return;');
+  line('U coordinate = thread;');
+  for (let i = statement.axes.length - 1; i >= 0; --i) {
+    const axis = bind(statement.axes[i].id);
+    line(`const I ${axis} = coordinate % ${dim(statement.shape[i])};`);
+    if (i > 0) line(`coordinate /= ${dim(statement.shape[i])};`);
+  }
+  for (const s of statements) {
+    s.axes.forEach((axis, i) => indices.set(axis.id, index(statement.axes[i].id)));
+    const result = scalar(s.expr);
+    if (s === statement) line(`result[thread] = ${result};`);
+    else locals.set(s.name, temporary(result));
+  }
+  lines.push('}');
   return {
     code: lines.join('\n'),
-    preload: `  if (${count}) check(cudaFuncGetAttributes(&attributes, ${kernel}));`,
+    setup: [],
+    preload,
     hasWork: count,
     launch: `    if (${count}) {
-      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${args.map((arg, i) => (i < dimensions.size ? arg : arg + '.ptr')).join(', ')}, ${count});
+      ${kernel}<<<(${count} - 1) / 256 + 1, 256>>>(${launchArgs}, ${count});
       check(cudaGetLastError());
     }`,
   };
 }
 
-export function emitCuda(fn: Fn): string {
+export function emitCuda(fn: Fn, fuse = true): string {
   const all = [...fn.params, ...fn.statements];
   const tensors = new Map(all.map(t => [t.name, t]));
   const names = new Map(all.map((t, i) => [t.name, `t${i}`]));
@@ -269,7 +402,9 @@ export function emitCuda(fn: Fn): string {
       bindings.push(`  const I ${d} = shape_${name(p.name)}[${i}];`);
     }
   }
-  const kernels = fn.statements.map((s, i) => emitKernel(s, `k${i}`, dims, tensors, name));
+  const groups = planCudaKernels(fn, fuse);
+  const hasRows = groups.some(g => g.kind === 'row');
+  const kernels = groups.map((g, i) => emitKernel(g, `k${i}`, dims, tensors, name));
   const host = ['static void run_case(FILE* input, FILE* output, bool benchmark) {'];
   for (const p of fn.params) {
     const t = name(p.name);
@@ -289,12 +424,22 @@ export function emitCuda(fn: Fn): string {
       const t = name(p.name);
       host.push(`  DeviceBuffer ${t}(host_${t}.size());`, `  ${t}.upload(host_${t}.data());`);
     }
-    for (const s of fn.statements) {
+    for (const { statements } of groups) {
+      const s = statements[statements.length - 1];
       const t = name(s.name);
       const dimsText = s.shape.map(a => affine(a, key => dims.get(key)!)).join(', ');
       host.push(
         `  const std::array<I, ${s.shape.length}> shape_${t}{${dimsText}};`,
         `  DeviceBuffer ${t}(elements(shape_${t}));`,
+      );
+    }
+    if (hasRows) {
+      host.push(
+        '  int device, shared_limit, row_grid_limit;',
+        '  check(cudaGetDevice(&device));',
+        '  check(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, device));',
+        '  check(cudaDeviceGetAttribute(&row_grid_limit, cudaDevAttrMaxGridDimX, device));',
+        ...kernels.flatMap(k => k.setup),
       );
     }
     host.push(
@@ -315,5 +460,7 @@ export function emitCuda(fn: Fn): string {
     '  write(output, &gpu_ms, 1);',
     '}',
   );
-  return [support, ...kernels.map(k => k.code), host.join('\n'), main].join('\n\n');
+  return [support, ...(hasRows ? [rowSupport] : []), ...kernels.map(k => k.code), host.join('\n'), main].join(
+    '\n\n',
+  );
 }

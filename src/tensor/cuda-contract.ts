@@ -136,10 +136,12 @@ export function createCudaLowering(profile: string, executeBatch: typeof runCuda
     },
   });
 
-  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>) => {
+  return async (baseline: Artifact<Module>, fn: string, candidate?: Artifact<CudaUnit>, fuse = true) => {
     const relation = 'exact' as const;
     const manager = new AnalysisManager();
     try {
+      if (!candidate && !fuse)
+        candidate = cudaArtifact(fn, emitCuda(selectFunction(baseline.value, fn), false));
       if (candidate) await manager.verifyTransformation({ baseline, fn }, { subject: candidate }, pass);
       else await manager.execute(pass, { baseline, fn });
       return { accepted: true, relation };

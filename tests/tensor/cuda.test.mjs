@@ -15,14 +15,35 @@ test('CUDA source is deterministic and preloads every emitted statement kernel b
   const program = compileTix(
     'fn first(x:f32[N]):f32[N] { return x; } fn second(x:f32[N]):f32[N] { y[i]=exp(x[i]); z[i]=y[i]*x[i]; return z; }',
   );
-  const source = cudaSource(program, 'second');
-  assert.equal(source, cudaSource(program, 'second'));
+  const source = cudaSource(program, 'second', { fuse: false });
+  assert.equal(source, cudaSource(program, 'second', { fuse: false }));
   assert.equal((source.match(/__global__ void/g) ?? []).length, 2);
   assert.ok(
     source.indexOf('cudaFuncGetAttributes(&attributes, k1)') < source.indexOf('gpu_ms = time_kernels'),
   );
   assert.match(source, /__double2float_rn\(exp/);
+  const fused = cudaSource(program, 'second');
+  assert.equal(fused, cudaSource(program, 'second', { fuse: true }));
+  assert.equal((fused.match(/__global__ void/g) ?? []).length, 1);
   assert.doesNotMatch(cudaSource(program, 'first'), /__global__ void/);
+});
+
+test('fusion requires an internal lifetime and ownership proved by symbolic IR', () => {
+  const count = source => (cudaSource(compileTix(source), 'f').match(/__global__ void/g) ?? []).length;
+  assert.equal(count('fn f(x:f32[N,N]):f32[N,N]{a[i,j]=x[i,j]+1;y[i,j]=a[j,i]+1;return y;}'), 2);
+  assert.equal(count('fn f(x:f32[N]):f32[N]{a[i]=x[i]+1;y[i]=a[i]*2;return a;}'), 2);
+  assert.equal(count(`fn f(x:f32[N,C]):f32[N,C]{
+    a[i,j] = x[i,j] + 1;
+    s[i] = sum(j) a[i,j];
+    y[i,j] = a[i,j] - s[i];
+    return y;
+  }`), 1);
+  assert.equal(count(`fn f(x:f32[N,N]):f32[N,N]{
+    a[i,j] = x[i,j] + 1;
+    s[i] = sum(j) a[j,i];
+    y[i,j] = a[i,j] - s[i];
+    return y;
+  }`), 2);
 });
 
 test('CUDA binary requests and results preserve f32 words, including subarray and zero shape', () => {

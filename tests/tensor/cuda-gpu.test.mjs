@@ -59,6 +59,40 @@ test('GB10 preserves split rounding and a partial final block', async () => {
   assert.match(verdict.reason, /At \[.*\], expected/);
 });
 
+test('GB10 fuses a row producer and ordered fold with shared and device-backed scratch', async () => {
+  const p = compileTix(`fn f(x:f32[N,K]):f32[N] {
+    a[i,j] = min(x[i,j], x[i,j]);
+    y[i] = sum(j) a[i,j];
+    return y;
+  }`);
+  const fused = cudaSource(p, 'f');
+  assert.equal((fused.match(/__global__ void/g) ?? []).length, 1);
+  for (const width of [0, 7, 32768]) {
+    // 128 KiB of scratch per row at width 32768, beyond the GB10 default and opt-in block limits.
+    const data = Float32Array.from({ length: 2 * width }, (_, i) => {
+      const col = i % width;
+      if (!col) return i < width ? 1 : -1;
+      return i < width ? 2 ** -24 : -(2 ** -24);
+    });
+    const inputs = { x: { shape: [2, width], data } };
+    const reference = runTix(p, 'f', inputs);
+    const actual = await runTixCuda(p, 'f', inputs);
+    assert.deepEqual(actual.shape, reference.shape);
+    assert.deepEqual(words(actual), words(reference));
+  }
+  for (const fuse of [true, false]) {
+    assert.deepEqual(await checkLowering(p, 'f', { fuse }), { accepted: true, relation: 'exact' });
+  }
+  const reversed = fused.replace(
+    /for \(I (i\d+) = 0; \1 < (end_i\d+); \+\+\1\)/,
+    'for (I $1 = $2 - 1; $1 >= 0; --$1)',
+  );
+  assert.notEqual(reversed, fused);
+  const verdict = await checkCudaLowering(p.current, 'f', cudaArtifact('f', reversed));
+  assert.equal(verdict.accepted, false);
+  assert.match(verdict.reason, /At \[.*\], expected/);
+});
+
 test('GB10 checks composed inline addresses and rejects a valid index mutant', async () => {
   const p = compileTix('fn f(x:f32[N,N]):f32[N,N] { z[i,j]=x[i,j]*2; y[i,j]=z[j,i]+1; return y; }');
   const { program } = optimizeTix(p, ['inline']);
@@ -72,6 +106,22 @@ test('GB10 checks composed inline addresses and rejects a valid index mutant', a
   const verdict = await checkCudaLowering(program.current, 'f', cudaArtifact('f', mutant));
   assert.equal(verdict.accepted, false);
   assert.match(verdict.reason, /At \[.*\], expected/);
+});
+
+test('GB10 row maximum preserves signed zeros, subnormals and the NaN class', async () => {
+  const p = compileTix(`fn f(x:f32[N,K], y:f32[N,K]):f32[N] {
+    a[i,j] = x[i,j] + sqrt(y[i,j]);
+    m[i] = max(j) a[i,j];
+    return m;
+  }`);
+  const inputs = {
+    x: buf([4, 2], [-0, -0, -0, 0, 0, 2 ** -149, -0, 1]),
+    y: buf([4, 2], [-0, -0, -0, -0, 0, 0, -1, 0]),
+  };
+  const actual = await runTixCuda(p, 'f', inputs);
+  assert.deepEqual([...actual.data], [-0, 0, 2 ** -149, NaN]);
+  const verdict = await checkLowering(p, 'f');
+  assert.deepEqual(verdict, { accepted: true, relation: 'exact' });
 });
 
 test('GB10 handles shadowing, empty reductions and outputs, intrinsic edges, and direct returns', async () => {
