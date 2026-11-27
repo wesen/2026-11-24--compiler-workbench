@@ -1188,3 +1188,4 @@ The user wrote (2026-11-27): "ok, let's skip glm-5.3 flash max then. xhigh if av
   - Opus: nothing records that a run chose one checked artifact over another by a rule at given shapes.
   - Fable: the differential's `baselineKey` contract (cases are a function of the key) is not checked.
 - **Follow-up:** the tensor CUDA artifact should declare its kernels via F23's `entities`.
+- **Write-ups for T3b:** report 11 §13 (vault `1fab9d9`), playbook §12 (`d72f4c6`: held-out programs caught the 6.6× regression), and a new scorecard section "Stage 3b: fusion that is never slower" (dataset `t3b`, page version 10; its check passed).
