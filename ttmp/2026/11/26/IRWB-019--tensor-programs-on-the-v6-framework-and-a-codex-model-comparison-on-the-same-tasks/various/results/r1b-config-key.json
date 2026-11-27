@@ -38,5 +38,21 @@
   "round": "r1b-gf-max",
   "harness": "pi",
   "tools": "read,bash,edit,write"
+ },
+ "IRWB-021-R": {
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "r1b-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
+ },
+ "IRWB-021-S": {
+  "config": "g-max",
+  "model": "lunaroute/glm-5.3",
+  "effort": "max",
+  "round": "r1b-g-max",
+  "harness": "pi",
+  "tools": "read,bash,edit,write"
  }
 }

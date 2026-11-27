@@ -10,7 +10,9 @@
 #        the Claude cells WebSearch and WebFetch). web_fetch is listed but the server does not offer it yet.
 # Same bases, policies and briefs as R1 and R2. The only brief change: R2b's common.md says the GPU machine is shared
 # with four other agents (R2 said three). Config keys: results/r1b-config-key.json, results/r2b-config-key.json.
-# Usage: 25-launch-r1b-r2b-pi.sh [r1b|r2b ...]   (default: both)
+# GLM 5.3 (high, max) was added later, on the user's answer (IRWB-021-R and -S, IRWB-023-J and -K). The R2b pair's
+# brief (prompts/r2b-2, the key's "prompts" field) says six other agents share the GPU machine, which was then true.
+# Usage: [ONLY="item ..."] 25-launch-r1b-r2b-pi.sh [r1b|r2b ...]   (default: both rounds, every item in the keys)
 K=/home/manuel/code/wesen/go-go-golems/go-go-parc/Research/playbooks/agents/scripts/agent-design-review
 T=/home/manuel/code/wesen/2026-11-24--compiler-workbench/ttmp/2026/11/26/IRWB-019--tensor-programs-on-the-v6-framework-and-a-codex-model-comparison-on-the-same-tasks
 E=/home/manuel/.pi/agent/npm/node_modules/@lunaroute/pi-extension/src/index.ts
@@ -18,10 +20,11 @@ export REPO=/home/manuel/code/wesen/2026-11-24--compiler-workbench OUT=$T/variou
 launch() { # task base policy timeout
   local task=$1
   export BASE=$2 DEV_INSTRUCTIONS_FILE=$T/various/prompts/$3 AGENT_TIMEOUT=$4
-  while read -r item round model effort tools; do
+  while read -r item round model effort tools prompts; do
+    [ -n "${ONLY:-}" ] && [[ " $ONLY " != *" $item "* ]] && continue
     PI_FLAGS="--no-extensions --no-mcp -e $E --tools $tools" MODEL=$model EFFORT=$effort \
-      bash $K/12-launch-pi-round.sh "$round" "$T/various/prompts/$task" "$item" &
-  done < <(node -e 'for (const [item, c] of Object.entries(require(process.argv[1]))) console.log(item, c.round, c.model, c.effort, c.tools)' "$T/various/results/$task-config-key.json")
+      bash $K/12-launch-pi-round.sh "$round" "$T/various/prompts/$prompts" "$item" &
+  done < <(node -e 'for (const [item, c] of Object.entries(require(process.argv[1]))) console.log(item, c.round, c.model, c.effort, c.tools, c.prompts ?? process.argv[2])' "$T/various/results/$task-config-key.json" "$task")
 }
 for task in "${@:-r1b r2b}"; do
   for t in $task; do

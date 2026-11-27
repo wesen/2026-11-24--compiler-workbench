@@ -38,5 +38,23 @@
   "round": "r2b-gf-max",
   "harness": "pi",
   "tools": "read,bash,edit,write,web_search,web_fetch"
+ },
+ "IRWB-023-J": {
+  "config": "g-h",
+  "model": "lunaroute/glm-5.3",
+  "effort": "high",
+  "round": "r2b-g-h",
+  "harness": "pi",
+  "tools": "read,bash,edit,write,web_search,web_fetch",
+  "prompts": "r2b-2"
+ },
+ "IRWB-023-K": {
+  "config": "g-max",
+  "model": "lunaroute/glm-5.3",
+  "effort": "max",
+  "round": "r2b-g-max",
+  "harness": "pi",
+  "tools": "read,bash,edit,write,web_search,web_fetch",
+  "prompts": "r2b-2"
  }
 }
