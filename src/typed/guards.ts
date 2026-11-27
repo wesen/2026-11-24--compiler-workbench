@@ -1,10 +1,11 @@
 /**
- * Three pass changes found from the hot-shape tables (IRWB-037-G, src/typed/missed.ts). Each is the body of a phase
- * that an existing pass runs (passes.ts), so O2 and `speed` get them without a change to a pipeline list:
+ * Three analyses behind the passes found from the hot-shape tables (IRWB-037-G, src/typed/missed.ts). The passes
+ * are in passes.ts and run in `speed`; O2 and the passes it names are as the book describes them.
  *
- *   threadTests   in `cfg`        a block that only branches on a local is copied into the blocks that jump to it
- *   decideChecks  in `bce`        a check that dominating branches already decide becomes a jump
- *   copyReads     in `constprop`  a read of a copy `x = y` becomes a read of `y` while `y` still holds that value
+ *   threadTests   `thread`   a block that only branches on a local is copied into the blocks that jump to it
+ *   copyReads     `copies`   a read of a copy `x = y` becomes a read of `y` while `y` still holds that value
+ *   guardPlan     `guards`   a check that dominating branches already decide becomes a jump; `x / 2^k` and
+ *                            `x % 2^k` with `x` proven non-negative become a shift and a mask
  *
  * The last two walk the dominator tree with scoped facts about SSA names (`typed.ssa`, a declared need of their
  * passes; `walkDominatorTree` and `ScopedMap` are the framework's). An SSA name has one value per activation of
@@ -283,45 +284,85 @@ export interface DecidedCheck {
   readonly note: string;
 }
 
+/** `x / 2^k` or `x % 2^k` whose `x` the facts prove non-negative: a shift or a mask, as `strength` makes them. */
+export interface ReducedDivision {
+  readonly value: string;
+  readonly op: 'div' | 'rem';
+  readonly divisor: number;
+  readonly because: readonly string[];
+  readonly note: string;
+}
+
+export interface GuardPlan {
+  readonly checks: readonly DecidedCheck[];
+  readonly divisions: readonly ReducedDivision[];
+  /** Phi names with a bound from induction (a counter that only goes up, or only down), for reports and tests. */
+  readonly counters: Readonly<Record<string, Range>>;
+}
+
 /** How far a name's interval is looked up through the expressions that define it (`row + 1` from `state` is 2). */
 const DEPTH = 4;
+const isPow2 = (n: number) => n > 0 && (n & (n - 1)) === 0;
 
 /**
- * The checks of `f` that dominating branches decide. A fact is an interval for an SSA name, set on entering a
- * block whose only predecessor ends in a `br_if` (so the branch's outcome on that edge holds in the block and in
- * everything it dominates). A name with no fact has the interval of its definition: a parameter's type, 0 for an
- * initial value, and for `x = e` the interval of `e` under the current facts (`evalRange`, which answers the full
- * interval for whatever it does not know, memory included), `DEPTH` definitions deep.
+ * What dominating branches decide in `f`. A fact is an interval for an SSA name, set on entering a block whose
+ * only predecessor ends in a `br_if` (so the branch's outcome on that edge holds in the block and in everything
+ * it dominates). A name with no fact has the interval of its definition: a parameter's type, 0 for an initial
+ * value, and for `x = e` the interval of `e` under the current facts (`evalRange`, which answers the full interval
+ * for whatever it does not know, memory included), `DEPTH` definitions deep.
  *
- * With `all`, every `br_if` is a candidate; otherwise only checks, whose taken arm is a trap.
+ * A phi has the full interval, except a counter. For `q = phi(a, n)` where `n = q + k` is the only other
+ * argument, k > 0, `a` is defined before the phi's block (it dominates it strictly), and the facts at the
+ * increment bound `q` by `MAX - k` (the loop test, usually), `q >= lo(a)`: `q` is `a` or an earlier `q` plus `k`,
+ * and that sum never wraps. Likewise downwards for k < 0. The bounds are found by one walk in which every phi is
+ * full, so they rest on branch facts alone, and used by a second walk.
+ *
+ * The second walk gives:
+ *   - checks: a `br_if` with a trap arm (with `all`: any `br_if`) whose pure condition the intervals decide;
+ *   - divisions: `x / 2^k` and `x % 2^k` with `x >= 0`.
  */
-export function decideChecks({ st, f }: Ctx, ssa: SsaFn, all = false): DecidedCheck[] {
-  const out: DecidedCheck[] = [];
-  if (ssa.entry !== f.blocks[0].id) return out;
+export function guardPlan({ st, f }: Ctx, ssa: SsaFn, all = false): GuardPlan {
+  const checks: DecidedCheck[] = [],
+    divisions: ReducedDivision[] = [],
+    counters = new Map<string, [number, number]>();
+  if (ssa.entry !== f.blocks[0].id) return { checks, divisions, counters: {} };
   const preds = new Map<string, string[]>();
   for (const b of f.blocks)
     for (const s of b.succ) {
       if (!preds.has(s)) preds.set(s, []);
       preds.get(s)!.push(b.id);
     }
-  const facts = new ScopedMap<string, { range: Range; by: readonly string[] }>();
+  const phiOf = new Map<string, { block: string; args: string[] }>();
+  for (const [block, ps] of Object.entries(ssa.phis))
+    for (const phi of ps) phiOf.set(phi.name, { block, args: [...new Set(Object.values(phi.args))] });
+  const strictlyDominates = (a: string, b: string): boolean => {
+    if (a === b) return false;
+    if (a === VIRTUAL_ENTRY) return true;
+    for (let x = ssa.idom[b]; x !== undefined && x !== VIRTUAL_ENTRY; x = ssa.idom[x])
+      if (x === a) return true;
+    return false;
+  };
+
+  let facts = new ScopedMap<string, { range: Range; by: readonly string[] }>();
   let used = new Set<string>();
-  const ofName = (name: string | undefined, depth: number): Range => {
+  /** The interval of a name; `plain` ignores the branch facts (what holds wherever the name is defined). */
+  const ofName = (name: string | undefined, depth: number, plain = false): Range => {
     if (name === undefined) return FULL;
-    const fact = facts.get(name);
+    const fact = plain ? undefined : facts.get(name);
     if (fact) fact.by.forEach(b => used.add(b));
     const d = ssa.names[name];
     let base: Range = FULL;
     if (d.kind === 'init') base = [0, 0];
     else if (d.kind === 'param') base = f.locals[d.local].type === 'bool' ? [0, 1] : FULL;
-    else if (d.kind === 'set' && depth > 0) base = ofValue(d.value!, depth - 1);
+    else if (d.kind === 'phi') base = counters.get(name) ?? FULL;
+    else if (d.kind === 'set' && depth > 0) base = ofValue(d.value!, depth - 1, plain);
     if (!fact) return base;
     const lo = Math.max(base[0], fact.range[0]),
       hi = Math.min(base[1], fact.range[1]);
     return lo <= hi ? [lo, hi] : fact.range;
   };
-  const ofValue = (id: string, depth = DEPTH): Range =>
-    evalRange(st, id, new Map(), get => ofName(ssa.uses[get.id], depth));
+  const ofValue = (id: string, depth = DEPTH, plain = false): Range =>
+    evalRange(st, id, new Map(), get => ofName(ssa.uses[get.id], depth, plain));
 
   /** A condition as a comparison, with `taken` folded in: `!(a < b)` not taken is `a < b`. */
   const asCompare = (cond: string, taken: boolean): { op: string; x: ValueRec; y?: ValueRec } | undefined => {
@@ -359,37 +400,100 @@ export function decideChecks({ st, f }: Ctx, ssa: SsaFn, all = false): DecidedCh
     const b = id ? (st.get(id) as BlockRec) : undefined;
     return !!b && b.stmts.length > 0 && (st.get(b.stmts[0]) as StmtRec).op === 'trap';
   };
-
+  const enterEdge = (b: string) => {
+    const ps = preds.get(b) ?? [];
+    if (ps.length !== 1 || ps[0] === b || b === ssa.entry) return;
+    const t = lastOf(st, st.get(ps[0]) as BlockRec);
+    if (t && t.op === 'br_if' && t.then !== t.else) assume(t, t.then === b);
+  };
   const kids = domChildren(f, ssa);
-  walkDominatorTree(
-    ssa.entry,
-    b => kids.get(b) ?? [],
-    b => {
-      const ps = preds.get(b) ?? [];
-      if (ps.length === 1 && ps[0] !== b && b !== ssa.entry) {
-        const t = lastOf(st, st.get(ps[0]) as BlockRec);
-        if (t && t.op === 'br_if' && t.then !== t.else) assume(t, t.then === b);
-      }
-      const last = lastOf(st, st.get(b) as BlockRec);
-      if (!last || last.op !== 'br_if' || last.then === last.else) return;
-      if (!all && !isTrap(last.then) && !isTrap(last.else)) return;
-      if (!isPure(st, last.cond!)) return;
-      const c = asCompare(last.cond!, true);
-      if (!c) return;
-      used = new Set();
-      const rx = ofValue(c.x.id),
-        ry = c.y ? ofValue(c.y.id) : ZERO;
-      const value = decideCompare(c.op, rx, ry);
-      if (value === undefined) return;
-      out.push({
-        stmt: last.id,
-        to: value ? last.then! : last.else!,
-        value,
-        because: [...used].sort(),
-        note: `always ${value}: ${c.op}([${rx[0]}, ${rx[1]}], [${ry[0]}, ${ry[1]}])`,
-      });
-    },
-    [facts],
-  );
-  return out;
+  const walk = (visit: (b: BlockRec) => void) => {
+    facts = new ScopedMap();
+    walkDominatorTree(
+      ssa.entry,
+      b => kids.get(b) ?? [],
+      b => {
+        enterEdge(b);
+        visit(st.get(b) as BlockRec);
+      },
+      [facts],
+    );
+  };
+
+  // walk 1: counters. `n = q + k` where q is a phi whose other argument is defined before the loop
+  const found = new Map<string, [number, number]>();
+  walk(b => {
+    for (const sid of b.stmts) {
+      const s = st.get(sid) as StmtRec;
+      if (s.op !== 'set') continue;
+      const v = st.get(s.value!) as ValueRec;
+      if (v.op !== 'add' && v.op !== 'sub') continue;
+      const [x, y] = v.args.map(a => st.get(a) as ValueRec);
+      const get = x.op === 'get' ? x : v.op === 'add' && y.op === 'get' ? y : undefined,
+        step = get === x ? y : x;
+      if (!get || get.type === 'f32' || step.op !== 'const' || step.type) continue;
+      const k = v.op === 'sub' ? -(step.imm as number) : (step.imm as number);
+      const q = ssa.uses[get.id],
+        phi = q === undefined ? undefined : phiOf.get(q);
+      const n = ssa.defs[sid];
+      if (!phi || !k || phi.args.length !== 2 || !phi.args.includes(n)) continue;
+      const a = phi.args.find(z => z !== n)!;
+      if (a === q || !strictlyDominates(ssa.names[a].block, phi.block)) continue;
+      const at = ofValue(get.id),
+        start = ofName(a, DEPTH, true);
+      const bound = found.get(q) ?? [MIN, MAX];
+      if (k > 0 && at[1] <= MAX - k) bound[0] = Math.max(bound[0], start[0]);
+      if (k < 0 && at[0] >= MIN - k) bound[1] = Math.min(bound[1], start[1]);
+      if (bound[0] !== MIN || bound[1] !== MAX) found.set(q, bound);
+    }
+  });
+  for (const [q, r] of found) counters.set(q, r);
+
+  // walk 2: checks and divisions
+  const eachValue = (id: string | undefined, visit: (v: ValueRec) => void) => {
+    if (!id) return;
+    const v = st.get(id) as ValueRec;
+    v.args.forEach(a => eachValue(a, visit));
+    visit(v);
+  };
+  walk(b => {
+    for (const sid of b.stmts) {
+      const s = st.get(sid) as StmtRec;
+      for (const root of [s.addr, s.value, s.cond])
+        eachValue(root, v => {
+          if ((v.op !== 'div' && v.op !== 'rem') || v.type === 'f32') return;
+          const d = st.get(v.args[1]) as ValueRec;
+          if (d.op !== 'const' || d.type || !isPow2(d.imm as number)) return;
+          used = new Set();
+          const r = ofValue(v.args[0]);
+          if (r[0] < 0) return;
+          divisions.push({
+            value: v.id,
+            op: v.op,
+            divisor: d.imm as number,
+            because: [...used].sort(),
+            note: `x ${v.op === 'div' ? '/' : '%'} ${d.imm} with x in [${r[0]}, ${r[1]}]`,
+          });
+        });
+    }
+    const last = lastOf(st, b);
+    if (!last || last.op !== 'br_if' || last.then === last.else) return;
+    if (!all && !isTrap(last.then) && !isTrap(last.else)) return;
+    if (!isPure(st, last.cond!)) return;
+    const c = asCompare(last.cond!, true);
+    if (!c) return;
+    used = new Set();
+    const rx = ofValue(c.x.id),
+      ry = c.y ? ofValue(c.y.id) : ZERO;
+    const value = decideCompare(c.op, rx, ry);
+    if (value === undefined) return;
+    checks.push({
+      stmt: last.id,
+      to: value ? last.then! : last.else!,
+      value,
+      because: [...used].sort(),
+      note: `always ${value}: ${c.op}([${rx[0]}, ${rx[1]}], [${ry[0]}, ${ry[1]}])`,
+    });
+  });
+  return { checks, divisions, counters: Object.fromEntries(counters) };
 }

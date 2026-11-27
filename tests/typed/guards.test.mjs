@@ -164,6 +164,47 @@ function clamp(x: i32): i32 {
   assert.doesNotMatch(text, /r = 2/);
 });
 
+const COUNTER = `
+function sum(n: i32): i32 {
+    let s = 0;
+    for (let d = 0; d < 64; d = d + 1) {
+        for (let j = 0; j < n; j = j + 1) {
+            s = s + j;
+        }
+        s = s + d / 8 + d % 8;
+    }
+    return s;
+}
+function wander(n: i32, back: bool): i32 {
+    let s = 0;
+    let d = 0;
+    while (d < 64) {
+        s = s + d / 8;
+        if (back) {
+            d = d - 3;
+        }
+        d = d + 2;
+        if (s > n) {
+            break;
+        }
+    }
+    return s;
+}`;
+
+test('guards: a counter that only goes up is not negative, so x / 8 and x % 8 are a shift and a mask', async () => {
+  const p = open('counter', COUNTER, { sum: { n: [0, 3] }, wander: { n: [0, 40], back: { bool: true } } });
+  await run(p, ['cfg', 'simplify']);
+  // typed.ranges loses d's lower bound here: the inner loop's head widens d while the outer loop is still rising
+  assert.equal((await p.apply('strength')).changed, false);
+  const { changed, text } = await run(p, ['guards']);
+  assert.deepEqual(changed, ['guards']);
+  assert.match(text, /\(s \+ \(d >> 3\)\) \+ \(d & 7\)/, text);
+  // wander's d goes down as well as up: it can be negative, and its division stays
+  assert.match(text, /s = \(s \+ \(d \/ 8\)\)/, text);
+  const edits = p.revisions.find(r => r.pass === 'guards').edits;
+  assert.ok(edits.length >= 1);
+});
+
 test('copies: a read of a copy reads the source, unless the source was assigned since', async () => {
   const p = open(
     'copy',
