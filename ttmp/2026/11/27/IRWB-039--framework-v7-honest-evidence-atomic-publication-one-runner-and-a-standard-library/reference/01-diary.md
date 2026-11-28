@@ -68,3 +68,57 @@ The user: "ok, write the plan out in a new docmgr tickeet + design doc, then do 
   | lib skeleton + liveness | sets a pattern | ~ | ~ | ~ |
 
   My claim to test: execution agents pass rows 1–3, and rows 4–7 need a stronger model (Sol or Astra for F35 and F33, Fable for the library).
+
+## Step 2: the matrix results, phase 1 and the first library primitive merged
+
+Twenty-one cells: seven tasks × Codex Terra low (A), Pi GLM 5.3 high (B), Pi DeepSeek 4.1 Flash xhigh (C). Every cell exited 0 and committed. Each was scored on its commit by `scripts/04-score-cell.sh` (results `various/results/matrix-scores.jsonl`): build, tsc, new Prettier issues, the step's test without `todo`, assertion counts in the shared tests, baselines against the coordinator's copy, the four suites (five with `tests/stdlib`). Then I read the code of every design-bearing cell.
+
+| Task | Terra low | GLM 5.3 high | DeepSeek xhigh | Predicted |
+|---|---|---|---|---|
+| F34 honest evidence | ✓ 14 lines | ✓ (one new Prettier issue) | ✓ 34 lines, README | ✓ ✓ ~ |
+| F27 Tix gate as contract | ✓ 62 lines (one Prettier issue) | ✓ 87 | ✓ 103 | ✓ ✓ ~ |
+| F36+F38 bce, lvn | ✓ 17 lines (one Prettier issue) | ✓ 43, drops the unused `reaching` need | ✓ 53 | ✓/~ ✓ ~ |
+| F37 ranges | ~ thresholds in the framework lattice, but left `guards.test` failing (it asserts the old defect), and said so | ✓ thresholds in the framework lattice; **re-recorded the coordinator's baseline** to make its check pass, and said so | ✓ widens only the locals a loop assigns; strengthened the F37 test (upper bound) | ✗ ~ ~ |
+| F35 coverage | ✓ vocabulary partial/nonempty/source/target/both, default nonempty, diff check via `diffGraphs` | ✓ 54 lines | ✓ 150 lines, changes `ir/diff.ts` | ✗ ~ ✗ |
+| F33 atomic publication | ✗ design only; stopped at a real subtlety (preservation checks publish their own records) and said so | ✓ private store, deferred contract, invalidates the rejected candidate's analyses | ✓ publishes revision and evidence through the store's compare-and-swap commit; leaves preservation analyses cached | ✗ ~ ✗ |
+| stdlib + liveness | ~ scope fixed and only documented; no layout | ✓ explicit scope, documented layering and later modules | ✓ explicit scope as a tagged union, no default; 218 lines | ~ ~ ~ |
+
+Times: Terra 4–25 minutes per task; the Pi cells 30–75.
+
+**What the predictions got wrong.**
+- **I underrated the Pi cells,** DeepSeek most of all. Every DeepSeek cell met the acceptance; I had predicted partial results on the easy rows and failure on F35 and F33.
+- **F35 was within everyone's reach,** Terra included. A brief that names the vocabulary's purpose, the default's constraint (every existing correspondence still passes) and the diff to check against turned a design question into a specified one.
+- **What held:** Terra stopped on F33, the one step whose brief leaves a semantic boundary open; and the library's quality varied in exactly the ways the tests could not see.
+
+**Why the cheap agents did well here.** Every brief had a test of the correct behaviour that must flip, a baseline that must not move, and the R3 probe that showed the defect. Phase 1a turned design questions into acceptance checks, and that preparation was a stronger model's work (the coordinator's).
+
+**What still needed a reviewer:**
+- the library's interface choices;
+- F33's treatment of the preservation records;
+- GLM editing the oracle (`various/baselines/main.json`) instead of reporting the difference.
+
+None of these is visible in a pass/fail score.
+
+**Brief fixes for next time:**
+- "A test that asserts the defect you fix must be updated; say which and why." Terra over-applied "do not weaken the defect tests" to every test.
+- "Never modify the coordinator's ticket (`ttmp/…/IRWB-039…/`); report baseline differences instead."
+
+**Merged by cherry-pick** onto `irwb-001/import-v6-prototype` (tag `v7-p1`, `8121680`):
+
+| Step | Cell (ticket) | Why this one |
+|---|---|---|
+| F34 | Terra (IRWB-040-A) | smallest correct change |
+| F35 | Terra (IRWB-044-A) | sound vocabulary and default |
+| F33 | DeepSeek (IRWB-045-C) | atomic through the store's own commit protocol |
+| F27 | Terra (IRWB-041-A) | smallest; Prettier applied |
+| F36+F38 | GLM (IRWB-042-B) | passes everything; drops the unused need |
+| F37 | GLM (IRWB-043-B) | thresholds in the framework, all green |
+| stdlib liveness | GLM (IRWB-046-B) | explicit scope and layout, right size |
+
+- **No conflicts.** Every phase-1 test passes on main with no `todo` left: typed 186, framework 243, workbench 24, stdlib 7, tensor CPU 45 and GPU 23, all with 0 failures. tsc is clean, Prettier flags only the nine files flagged before, and the site builds.
+- **Baselines:** against `v7-p1-base.json`, only F37's change on `chess-search` under `speed` (image hash; `strength` 58→60, `guards` 4→2; the same instructions). `main.json` was re-recorded on main after the merges.
+- **The 21 cell branches are pushed.**
+- **Follow-ups:**
+  - F33: discard preservation analyses of a rejected candidate (GLM's approach).
+  - Library: phase 2c (graph, lattice, ssa).
+  - Phase 3: the runner spike.
