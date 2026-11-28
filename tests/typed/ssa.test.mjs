@@ -99,7 +99,7 @@ const EXAMPLE = `function f(n: i32): i32 {
 test('A2: sccp finds the constant behind a decided branch, which constprop cannot see', async () => {
   const r0 = createIRArtifact(blocksAdapter, 'ex', ingest('ex', EXAMPLE).toNative());
   const st = storeOf(r0.value), f = st.fn('f'), ssa = S.ssaOf(st, f), res = sccpOf(st, f, ssa);
-  assert.deepEqual(res.values.get(ssa.uses[Object.keys(ssa.uses).find(g => ssa.names[ssa.uses[g]].kind === 'phi')]), { k: 'const', v: 7, t: 'i32' });
+  assert.deepEqual(res.values.get(ssa.uses[Object.keys(ssa.uses).find(g => ssa.names[ssa.uses[g]].kind === 'phi')]), { value: { v: 7, t: 'i32' } });
   const contract = optimizationContract({}), made = {};
   for (const pass of [PASSES.constprop, sccp]) {
     const r = await applyPass(pass, r0, { manager: new AnalysisManager(), contract, contractInputs: { origin: r0 } });
