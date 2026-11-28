@@ -332,3 +332,43 @@ Review the raw baseline output and per-suite counts in the report.
 ### Code review instructions
 
 Build once, then run the explicit file lists in the report. Do not invoke the repository-wide `npm test` command or any GPU test.
+
+## Step 8 — Close out verification on the relocation commit
+
+The implementation commit `948a4a4` contains the measured decision, the engine moves, and the raw evidence. The requested suites finished with zero failures. This follow-up records the results and leaves the implementation untouched.
+
+### Prompt Context
+
+See Step 1. Report the decisions, test outcomes, and last commit.
+
+### What I did
+
+I checked suite exit codes and summaries, validated the ticket with `docmgr doctor --ticket IRWB-066 --stale-after 30`, compared the final scope against the starting commit, and recorded acceptance in the report.
+
+### Why
+
+Per-suite exit codes avoid conflating an opt-in skip with a failure or a pass. Reviewing the actual path list protects the coordinator's read-only files and the adjacent lanes.
+
+### What worked
+
+The default suites passed 198 Typed, 165 framework, 24 workbench, 67 stdlib, 63 non-GPU tensor, and 108 lab tests. The default opt-in skips were two Typed and one workbench. Changed TypeScript and the benchmark scripts passed Prettier.
+
+### What didn't work
+
+`npm run format:check` reported `[warn] Code style issues found in 6 files. Run Prettier with --write to fix.` The named files were already outside the change set: `src/framework/core/data.ts`, `src/framework/ir/store.ts`, and `src/typed/{candela-render,evaluate,ir,model}.ts`. I did not reformat them.
+
+### What I learned
+
+The Typed and Tix snapshots were byte-for-byte unchanged under the oracle after the extraction.
+
+### What was tricky
+
+The full-worktree Prettier check and formatting of touched files answer different questions. Only the former encountered the pre-existing issues.
+
+### What warrants a second pair of eyes
+
+Review the three opt-in skips, the separately run lab suite, and the framework modules retained because of existing interfaces.
+
+### Code review instructions
+
+Begin at the report's acceptance table and the diff from the starting commit. Treat the ticket's final documentation-only commit as the acceptance record for the tested implementation.

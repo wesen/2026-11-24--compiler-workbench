@@ -42,7 +42,7 @@ The intact runs exercise real program sizes, with different edited functions and
 | chess-controlled | 40 | 1183 | 2472 | 6 | 492.85 (330.56–696.09) | 200.96 (127.55–353.94) | 0.408 |
 | chess-controlled | 50 | 1647 | 3520 | 6 | 817.26 (426.77–1297.34) | 222.67 (120.74–341.44) | 0.272 |
 
-Bytecode-vm has one function with 123 statements. Call-chain has three functions with seven statements, so function count alone understates the size of the former. The intact chess edit changes five reachable-root verdicts, while the Candela edit changes one. That difference helps explain why the Candela runtime was faster than the chess runtime despite the larger program. The controlled chess comparison holds that work fixed. From 29 to 50 functions, the current median roughly doubled and the runtime median grew by 61%. The last column shows a relative benefit with the extra unaffected code. It does not show flat or falling absolute checking cost. Sample ranges overlap, so this is an engineering decision for the measured path, not a tight estimate of the growth rate. The controlled run overlapped the end of the Candela campaign on the shared host.
+Bytecode-vm has one function with 123 statements. Call-chain has three functions with seven statements, so function count alone understates the size of the former. The intact chess edit changes five reachable-root verdicts, while the Candela edit changes one. That difference helps explain why the Candela runtime was faster than the chess runtime despite the larger program. The controlled chess comparison holds that work fixed. From 29 to 50 functions, the current median roughly doubled and the runtime median grew by 61%. Five of the six same-seed, same-site pairs were slower at 50 functions than at 29. The last column shows a relative benefit with the extra unaffected code. It does not show flat or falling absolute checking cost. Sample ranges overlap, so this is an engineering decision for the measured path, not a tight estimate of the growth rate. The controlled run overlapped the end of the Candela campaign on the shared host.
 
 The runtime still enumerates requested tasks and derives closure keys over the revision. An invalidated root also goes through the existing invariant manager on the whole artifact. These costs remain after unaffected analysis and meaning bodies hit the cache. The benchmark probes the measured CFG and meaning workload, not every Typed analysis or a complete optimization pipeline.
 
@@ -66,6 +66,27 @@ The summary command reads the checked-in samples. The runtime had already been p
 | `ir/traversal.ts`, `ir/view.ts` | Kept in the framework. The view delegates all its traversal queries to this module. `IRReader` binds those queries, and `IRView` declares them. The scope covers three view methods, not the declarations and readers needed to extract the shared implementation. |
 
 Framework TypeScript fell from **12,732 to 9,714 lines** across `src/framework/`, a reduction of **3,018 lines (23.7%)**. The moves account for 1,237 runtime lines and 1,776 pattern and rewrite lines. The two barrel files lost five export lines. No engine behavior was deleted. The obsolete `toNodePattern` conversion was removed. The corresponding test now checks stdlib repeat bindings and the listing of the formerly approximate `sub-self` rule. Two data-only assertions from the runtime test files remain in the framework suite.
+
+## Acceptance
+
+The checks ran against the implementation recorded in `948a4a4`. The final acceptance commit changes ticket documentation only.
+
+- `npm run build` and `npm run check` exited 0.
+- `node tools/build-site.mjs` built `dist/site` with 50 projects, 17 chapters, and 129 source files.
+- The frozen baseline command printed `no differences from …/various/baselines/main.json` and exited 0. Its informational inline-attention timing was `0.562 -> 1.034 ms per application`.
+- The relocated `01-e1.mjs call-chain` smoke run exited 0. The focused graph and rule test run passed 79 tests.
+- Changed source files and both benchmark scripts pass Prettier. The optional repository-wide `npm run format:check` reported six untouched files with pre-existing formatting issues: `src/framework/core/data.ts`, `src/framework/ir/store.ts`, and `src/typed/{candela-render,evaluate,ir,model}.ts`.
+
+| Suite | Passed | Failed | Skipped |
+| --- | ---: | ---: | ---: |
+| `tests/typed/*.test.mjs` | 198 | 0 | 2 |
+| `tests/framework/*.test.mjs` | 165 | 0 | 0 |
+| `tests/workbench/*.test.mjs` | 24 | 0 | 1 |
+| `tests/stdlib/*.test.mjs` | 67 | 0 | 0 |
+| `tests/tensor/*.test.mjs`, excluding GPU | 63 | 0 | 0 |
+| `tests/labs/*.test.mjs` | 108 | 0 | 0 |
+
+The skips are the existing opt-in Typed Candela O2 and 100-case image checks and the workbench Candela project-ingest check. The GPU test files were excluded from the invocation.
 
 ## Later
 
