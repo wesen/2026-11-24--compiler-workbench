@@ -1,0 +1,16 @@
+Tix inline on attention, trivial gate (the runner alone)
+  applyNativePassSync (today)                    3.127 ms  (1.956..4.483)
+  sync driver                                    2.516 ms  (2.255..3.623)
+  async driver                                   2.805 ms  (1.893..6.195)
+Tix inline on attention, with the meaning gate
+  applyNativePassSync (today)                    38.597 ms  (24.705..48.158)
+  sync driver                                    28.184 ms  (24.105..43.887)
+  async driver                                   29.538 ms  (23.079..44.907)
+Typed strength on strength r0, new manager each time, meaning check, preservation audited
+  applyPass (today)                              64.259 ms  (49.888..74.358)
+  async driver (contract)                        64.161 ms  (47.794..84.308)
+  sync driver (meaning check as a function)      56.793 ms  (43.531..69.291)
+Typed strength on strength r0, facts cached, no gate (the runner, cache hits, three transfers)
+  applyPass (today)                              24.037 ms  (15.764..25.978)
+  async driver                                   18.723 ms  (14.991..29.975)
+  sync driver                                    16.326 ms  (14.364..19.836)

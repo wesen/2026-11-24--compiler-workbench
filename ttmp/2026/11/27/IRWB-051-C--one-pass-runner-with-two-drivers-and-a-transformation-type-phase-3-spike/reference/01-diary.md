@@ -49,3 +49,40 @@ Probes (`scripts/01-…`, `scripts/02-…`, outputs beside them):
 
 Decision: one effect (a value that may be a promise), the manager's own functions as generators, the runner
 delegating with `yield*`. Design committed before the prototype.
+
+## Step 2: the manager's functions as steps
+
+Before touching the manager I recorded `analyse` on the base commit (`scripts/03-bench-analyse.mjs`, output
+`03-bench-analyse.base-3ba86fc.out.txt`), so the cost to existing asynchronous callers can be compared.
+
+Changes in `analysis-manager.ts` (+90 −17 lines):
+
+- `analyseInternal` (103 lines, `async`) became the generator `analyseFrom` (106 lines). Three statements changed:
+  `await definition.run(...)` is `yield* wait(definition.run(...))`; `await this.drain(frame)` is
+  `yield* this.drainSteps(frame)`; the `finally` yields `Promise.allSettled` only when something is pending, inside
+  an inner `try/finally` so that `frame.active = false` also runs when the synchronous driver abandons the run.
+- `analyseInternal` is now `driveAsync(this.analyseFrom(...))`, so `analyse`, `ctx.analysis`, `recordProof` and
+  `evaluateObjective` are unchanged callers. `analyseSync` is `driveSync(this.analyseFrom(...))`: 7 lines.
+- The same for `preserveInternal` → `preserveFrom`, `preserveSync`.
+
+The 243 framework tests passed on the first run after the change.
+
+What was tricky: the synchronous driver first threw its refusal *into* the generator. The runner's
+`try { preserve } catch { recompute }` would have caught that and gone on to recompute. Probe 02 settled it:
+`return()` instead of `throw()`. The consequence for anyone writing a runner: cleanup that must also run when a
+synchronous driver gives up belongs in `finally`, not `catch`.
+
+## Step 3: the transformation type, the runner, the ports
+
+- `src/framework/passes/transformation.ts`: the type, `transformation()`, `runTransformation` (205 lines; today's
+  `applyPass` is 154 and `applyNativePassSync` 42, and the runner covers both plus `requires`, several `ensures`
+  and the evidence list), `applyTransformation`, `applyTransformationSync`.
+- `define-pass.ts`: `export` on four helpers, nothing else.
+- `tensor/passes.ts`: `inlinePass` is a transformation with `relation: 'exact'` and the meaning gate as its
+  `ensures`. `typed/passes.ts`: `TypedPassSpec.relation`; `strength` declares it and is built by `transformation()`.
+
+`tsc` was clean. First test run: 7 of 9 passed; the two failures were my expectations (inline changes 2 Tix
+programs, not 3; `fixed-point` does not reach `strength` in O2), not the runner.
+
+The machine's load average was 54 during the measurements (other agents). All timings are therefore interleaved in
+one process and reported as median and min..max of batch means.

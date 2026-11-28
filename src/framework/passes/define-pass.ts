@@ -226,7 +226,7 @@ export function semanticCorrespondence(
   };
 }
 
-function prepareNative<S, N extends Needs, P>(
+export function prepareNative<S, N extends Needs, P>(
   pass: Pass<S, N, P>,
   view: IRView<S>,
   produced: NativeResult<S>,
@@ -250,7 +250,7 @@ function prepareNative<S, N extends Needs, P>(
   return { after, changes, correspondence, edits };
 }
 
-function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, changes: ChangeSet) {
+export function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, changes: ChangeSet) {
   const undeclared = undeclaredWrites(pass.writes, changes);
   if (undeclared.length)
     throw new PassError('undeclaredWrite', `Pass ${pass.id} changed kinds it did not declare in writes`, {
@@ -259,7 +259,7 @@ function enforceWrites(pass: Pick<PassSpec<unknown, Needs>, 'writes' | 'id'>, ch
 }
 
 /** Discard a deferred transformation's evidence unless it has already been committed. */
-function discardEvidence(prepared: PreparedTransformation | undefined, reason: string) {
+export function discardEvidence(prepared: PreparedTransformation | undefined, reason: string) {
   if (!prepared || prepared.execution.status === 'accepted') return;
   prepared.rollback(reason);
 }
@@ -270,7 +270,7 @@ function discardEvidence(prepared: PreparedTransformation | undefined, reason: s
  * outlives the evidence that justified it; without a store the evidence is the whole publication. A store refusal
  * (a stale head, a colliding lineage) propagates as its own `IRError` after the evidence is rolled back.
  */
-function publishAccepted<S>(
+export function publishAccepted<S>(
   pass: { readonly id: string },
   store: IRStore | undefined,
   before: Artifact<S>,
