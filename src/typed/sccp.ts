@@ -4,6 +4,12 @@
  * constant, ⊥: varies) and one flag per control-flow edge (executable or not), propagated together, so a branch on
  * a constant makes the other edge dead, which can make a phi constant, which can decide another branch, in one run.
  *
+ * The lattice is the standard library's flat one (`stdlib/lattice/lattices.ts`, IRWB-048-B): three levels, which is
+ * this algorithm's lattice — the library's bottom ("no value yet", W-Z's ⊤) below any single constant below the
+ * library's top ("varies", W-Z's ⊥), constants compared as JSON, so the same bits and type are the same constant.
+ * The client keeps W-Z's names locally in the comments only: this module reads the library's `BOT` where the paper
+ * starts a name at ⊤ and the library's `TOP` where it ends at ⊥.
+ *
  * The pass `sccp` then replaces, like `constprop`, every `get` in an executable block whose name is a constant by
  * that constant (of the local's type). Folding the now-constant conditions and removing dead arms is left to `fold`
  * and `cfg`. Operators are evaluated as `fold` evaluates them (`evalOp`: binop, f32Op; a trapping division, and the
@@ -13,6 +19,7 @@
  * through `Program.apply(pass)` with `runPasses`.
  */
 import { cfgOf } from './analyses.js';
+import { BOT, TOP, flatLattice, type Flat } from '../stdlib/lattice/lattices.js';
 import { F32_FOLDABLE, F32_RESULT } from './f32.js';
 import { typeClass, type StmtRec, type Store, type ValueRec, type WorkFn } from './model.js';
 import { PASSES, PIPELINES, typedPass, type TypedPass } from './passes.js';
@@ -20,16 +27,15 @@ import { evalOp } from './rules/compile.js';
 import { FOLD_I32 } from './rules/fold.js';
 import { ssaOf, VIRTUAL_ENTRY, type SsaFn } from './ssa.js';
 
-export type Lat =
-  | { readonly k: 'top' }
-  | { readonly k: 'const'; readonly v: number; readonly t: 'i32' | 'f32' }
-  | { readonly k: 'bot' };
-const TOP: Lat = { k: 'top' },
-  BOT: Lat = { k: 'bot' };
-const same = (a: Lat, b: Lat) =>
-  a.k === b.k && (a.k !== 'const' || (b.k === 'const' && a.v === b.v && a.t === b.t));
-export const meet = (a: Lat, b: Lat): Lat =>
-  a.k === 'top' ? b : b.k === 'top' ? a : a.k === 'const' && same(a, b) ? a : BOT;
+/** A constant's bits and the type it is read as; f32 values are carried as IEEE bit patterns, so both are integers. */
+export type Const = { readonly v: number; readonly t: 'i32' | 'f32' };
+export type Lat = Flat<Const>;
+const flat = flatLattice<Const>();
+const constant = (v: number, t: 'i32' | 'f32'): Lat => ({ value: { v, t } });
+/** The constant inside a lattice value, or undefined when the value is bottom or top. */
+const constantOf = (a: Lat): Const | undefined => (typeof a === 'object' ? a.value : undefined);
+/** The lattice's join, named as SCCP names it: the meet of the values arriving at a phi. */
+export const meet = (a: Lat, b: Lat): Lat => flat.join(a, b);
 
 const FOLDS = new Set<string>(['eqz', ...FOLD_I32, ...F32_FOLDABLE]);
 const MIN = -2147483648;
@@ -46,34 +52,32 @@ export interface SccpResult {
 /** The SCCP fixpoint of one function, on its SSA form. */
 export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
   const L = new Map<string, Lat>();
+  // A parameter varies (nothing above this function is known); every other name starts unknown, i.e. not yet seen to
+  // execute, which is the lattice's bottom.
   for (const [n, d] of Object.entries(ssa.names))
     L.set(
       n,
-      d.kind === 'param'
-        ? BOT
-        : d.kind === 'init'
-          ? { k: 'const', v: 0, t: typeClass(f.locals[d.local].type) }
-          : TOP,
+      d.kind === 'param' ? TOP : d.kind === 'init' ? constant(0, typeClass(f.locals[d.local].type)) : BOT,
     );
   const edges = new Set<string>([`${VIRTUAL_ENTRY}>${ssa.entry}`]),
     blocks = new Set<string>([ssa.entry]);
   const rpo = cfgOf(f).rpo.filter(b => !ssa.unreachable.includes(b));
   const evalTree = (vid: string): Lat => {
     const v = st.get(vid) as ValueRec;
-    if (v.op === 'const') return { k: 'const', v: v.imm as number, t: v.type === 'f32' ? 'f32' : 'i32' };
+    if (v.op === 'const') return constant(v.imm as number, v.type === 'f32' ? 'f32' : 'i32');
     if (v.op === 'get') return L.get(ssa.uses[vid]) ?? BOT;
-    if (!FOLDS.has(v.op)) return BOT;
+    if (!FOLDS.has(v.op)) return TOP;
     const args = v.args.map(evalTree);
-    if (args.some(a => a.k === 'bot')) return BOT;
-    if (args.some(a => a.k === 'top')) return TOP;
-    const xs = args.map(a => (a as { v: number }).v);
-    if ((v.op === 'div' || v.op === 'rem') && (xs[1] === 0 || (xs[0] === MIN && xs[1] === -1))) return BOT;
-    return { k: 'const', v: evalOp(v.op, xs) | 0, t: F32_RESULT.has(v.op) ? 'f32' : 'i32' };
+    if (args.some(a => a === TOP)) return TOP;
+    if (args.some(a => a === BOT)) return BOT;
+    const xs = args.map(a => constantOf(a)!.v);
+    if ((v.op === 'div' || v.op === 'rem') && (xs[1] === 0 || (xs[0] === MIN && xs[1] === -1))) return TOP;
+    return constant(evalOp(v.op, xs) | 0, F32_RESULT.has(v.op) ? 'f32' : 'i32');
   };
   let changed = true,
     rounds = 0;
   const set = (name: string, val: Lat) => {
-    if (!same(L.get(name)!, val)) {
+    if (!flat.equal(L.get(name)!, val)) {
       L.set(name, val);
       changed = true;
     }
@@ -91,7 +95,7 @@ export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
     for (const b of rpo) {
       if (!blocks.has(b)) continue;
       for (const phi of ssa.phis[b] ?? []) {
-        let val: Lat = TOP;
+        let val: Lat = BOT;
         for (const [pred, a] of Object.entries(phi.args))
           if (edges.has(`${pred}>${b}`)) val = meet(val, L.get(a)!);
         set(phi.name, val);
@@ -101,9 +105,12 @@ export function sccpOf(st: Store, f: WorkFn, ssa: SsaFn): SccpResult {
         if (s.op === 'set') set(ssa.defs[sid], evalTree(s.value!));
         else if (s.op === 'br') mark(b, s.to!);
         else if (s.op === 'br_if') {
-          const c = evalTree(s.cond!);
-          if (c.k === 'const') mark(b, c.v !== 0 ? s.then! : s.else!);
-          else if (c.k === 'bot') {
+          const c = evalTree(s.cond!),
+            k = constantOf(c);
+          // A constant condition marks the arm it takes; a varying one (the top) both arms; an unknown one neither,
+          // because until its name is a value the branch is not yet seen to execute.
+          if (k) mark(b, k.v !== 0 ? s.then! : s.else!);
+          else if (c === TOP) {
             mark(b, s.then!);
             mark(b, s.else!);
           }
@@ -153,9 +160,10 @@ export const sccp: TypedPass = typedPass({
         v => {
           if (v.op !== 'get') return;
           const name = ssa.uses[v.id],
-            lat = name ? res.values.get(name) : undefined;
-          if (!lat || lat.k !== 'const') return;
-          return tx.const(lat.v, {
+            lat = name ? res.values.get(name) : undefined,
+            c = lat && constantOf(lat);
+          if (!c) return;
+          return tx.const(c.v, {
             because: [`fact:sccp(${f.name})@r${tx.rev - 1}`, ...contributing(ssa, res, name, f)],
             type: typeClass(f.locals[v.imm as number].type),
           });

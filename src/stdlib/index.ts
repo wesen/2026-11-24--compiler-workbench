@@ -10,10 +10,11 @@
  *
  * What exists now:
  *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   lattice/  lattices — join, order and widening: the set, flat, interval and map lattices
+ *             (dataflow's ranges analysis, and SCCP's flat lattice of SSA names)
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominators and loops — the dominator tree, dominance frontiers, natural loops
- *   lattice/  lattices — joins, order, widening for dataflow and constant propagation
  *   num/      exact small-number helpers (saturating and wrapping arithmetic)
  *   flow/     the fixpoint solver over a lattice (liveness hardcodes its own; this generalises it)
  *   ssa/      SSA construction — from a graph and dominators to phi placement
@@ -25,3 +26,15 @@
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
 export type { LiveBlock, LiveGraph, Liveness, LivenessScope } from './flow/liveness.js';
+export {
+  BOT,
+  I32_MAX,
+  I32_MIN,
+  TOP,
+  flatLattice,
+  intervalLattice,
+  lattice,
+  mapLattice,
+  setLattice,
+} from './lattice/lattices.js';
+export type { Flat, Interval, Json, Lattice } from './lattice/lattices.js';
