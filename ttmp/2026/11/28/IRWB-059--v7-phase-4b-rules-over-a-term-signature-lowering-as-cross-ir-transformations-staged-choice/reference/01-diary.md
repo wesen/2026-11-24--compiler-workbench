@@ -113,3 +113,52 @@ The fork delivered the guide, about 8,500 words. I checked its structure and ali
 
 ### Code review instructions
 - Read the guide's section 5 against the briefs in `IRWB-039/various/prompts/{terms,lowering,staged,coverage}/common.md`.
+
+## Step 3: lane 4.2 (lowering as cross-IR transformations) scored and merged
+
+Fable (IRWB-061) finished in about 30 minutes. Both lowerings now run on the one runner as `CrossTransformation<In, Out>`, and same-IR passes keep their type and code path. The cell scored clean on its commit. I merged it by cherry-pick without conflicts, and every check passed on the working branch, including the GPU suite.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Score, review and merge lane 4.2.
+**Commit (code):** cherry-picks `b9b7730`..`a79c485` (the cell's `fbf7abb`).
+
+### What I did
+- `BASEREF=v7-p4b-base scripts/07-score-lanes.sh v7-lowering-fa-irwb-061`. Result: build and tsc ok, no new Prettier issues, baselines 0 differences, typed 198, framework 272, workbench 24, tensor 55, stdlib 61, oracle 0, dirty 0.
+- Read the diff stat. Sizes: `transformation.ts` +271/−69, `cuda-contract.ts` +177/−21, `define-pass.ts` +91/−7, `typed/backend/compile.ts` +102/−9. I also read `lowerToImage`.
+- `git cherry-pick v7-p4b-base..v7-lowering-fa/irwb-061` (6 commits).
+- Checks: build, tsc, Prettier (7 known files), the five suites, `02-baselines.mjs check`, `build:site`, then `node --test tests/tensor/*-gpu.test.mjs`.
+
+### Why
+- This was the only cell in its lane, and the review found no defect, so I merged it without a comparison.
+- The GPU suite ran at merge because the lane changed how `runTixCuda` hands kernels to the runtime (it now passes the manifest), and the cell could not test that without a GPU.
+
+### What worked
+- The cell's acceptance:
+  - a planted wrong image (one spill reload replaced by a nop) is rejected through `ensures` with cause `postcondition`, and nothing is published;
+  - the Typed correspondence equals `imageCorrespondence` on 100 lowerings;
+  - the composed Tix correspondence (statements → initial kernels → fuse → loops → emission) equals `kernelCorrespondence` on 24 lowerings;
+  - `cudaSource()` output is byte-identical on 24 of 24.
+- On the working branch, every check passed: tsc clean; suites typed 198, framework 272, workbench 24, stdlib 61, tensor CPU 55; baselines `no differences`; site builds; **GPU 23/23**.
+
+### What didn't work
+- No failures observed.
+
+### What I learned
+- **The default paths are still unchecked, but now they say so.** `lowerToImage` is a *pending* application: it records `rv32.image-agrees` as owed (`pending.reason`) and refuses a store. The checked path, `lowerImageChecked`, exists and is tested, but nothing in `src/` calls it. `cudaSource()` works the same way. The bypass became a recorded, declared choice; it did not become a check.
+- The brief was wrong: `rv32.image-agrees` was never run by workbench views. Nothing in `src/` called it.
+
+### What warrants a second pair of eyes
+- **Speed:** `cudaSource()` went from 0.29 ms to 4.7 ms per lowering, because the old body memoized the schedule. The cell found no hot caller. The baselines script and the tensor tests call it often, but their run times stayed acceptable.
+- **A second registry:** `cuda-contract.ts` runs `schedulePlan` on its own registry to collect the correspondences, because `scheduleFunction` drops the pass results. The cell estimates the fix at about three lines in `strategy.ts`, which is lane 4.8's file.
+- **`pending` on a same-IR pass** also skips its preservation claims. No caller uses that today.
+
+### What should be done in the future
+- Decide where the checked lowering runs: for example, `Program`'s O2 path or the workbench's image view could call `lowerImageChecked`. Until then the compiler's own output is checked only in tests.
+- Memoize the schedule in `lowerTixCuda`, or measure that no caller needs it.
+- `TixIR.entities` lists statements while the adapter also lists functions and parameters; there should be one list (F41's area).
+- After lane 4.8 merges: `scheduleFunction` should return the pass results, so the second registry can go.
+
+### Code review instructions
+- Start with `src/framework/passes/transformation.ts` (`transformation({ from, to })`, `CrossTransformation`, `options.pending`), then `src/typed/backend/compile.ts` (`imageLowering`, `lowerImageChecked`) and `src/tensor/cuda-contract.ts` (the composed correspondence).
+- Validate: `node --test tests/framework/cross-transformation.test.mjs tests/typed/lowering.test.mjs tests/tensor/lowering.test.mjs`.
