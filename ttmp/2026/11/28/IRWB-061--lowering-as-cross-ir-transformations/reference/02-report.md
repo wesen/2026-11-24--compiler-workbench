@@ -64,7 +64,24 @@ nothing measurable (below).
 
 ## Acceptance
 
-RESULTS_PLACEHOLDER
+All run on the source of commit `38f0704` (later commits change only this ticket's documents).
+
+| Check | Result |
+|---|---|
+| my tests | `tests/framework/cross-transformation.test.mjs` 6 of 6; `tests/typed/lowering.test.mjs` 5 of 5; `tests/tensor/lowering.test.mjs` 4 of 4 |
+| a same-IR pass is unchanged | the first framework test (result fields, head advance, unchanged, undeclared write, rejection), and the 266 earlier framework tests |
+| a planted wrong image is rejected | one spill reload of `pressure` (`registers: 1`) replaced by a nop: `contractRejected`, cause `postcondition`, the function among the counterexamples, nothing published |
+| composed correspondences equal today's | Typed: 100 lowerings (50 projects, r0 and O2), canonical equality with `imageCorrespondence`; Tix: 24 lowerings, the pairs and universes of `kernelCorrespondence`, in the runner's result and in the manager's record |
+| `cudaSource()` byte-identical | 24 of 24 against `emitSchedule(lowerSchedule(f, fuse).value)`; and the baselines |
+| baselines | `no differences from .../various/baselines/main.json` |
+| `tests/typed/*.test.mjs` | 200 tests: 198 pass, 0 fail, 2 skipped (the skips need `IRWB_FULL=1`) |
+| `tests/framework/*.test.mjs` | 272 pass, 0 fail |
+| `tests/workbench/*.test.mjs` | 25 tests: 24 pass, 0 fail, 1 skipped (`IRWB_FULL=1`) |
+| `tests/stdlib/*.test.mjs` | 61 pass, 0 fail |
+| `tests/tensor/*.test.mjs` without `*-gpu` | 55 pass, 0 fail |
+| `npm run check` | clean |
+| `node tools/build-site.mjs` | built (`dist/site built in 518 ms`) |
+| `npm run format:check` | the 7 files known to be unformatted, none of them changed here |
 
 ## An existing test that changed
 

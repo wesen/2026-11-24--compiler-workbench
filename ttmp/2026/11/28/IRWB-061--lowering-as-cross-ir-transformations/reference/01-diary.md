@@ -339,3 +339,37 @@ The corpus test takes 25 s (50 projects through O2).
 
 ### Code review instructions
 `node --test tests/framework/cross-transformation.test.mjs tests/typed/lowering.test.mjs tests/tensor/lowering.test.mjs`
+
+## Step 9: acceptance on the final source, and the report
+
+### What I did
+- Moved the runner's same-IR candidate handling into one `else` block (it had an empty `if (cross) {}` arm), then
+  rebuilt and ran everything on that source (commit `38f0704`): `npm run check`, the five suites, `node
+  tools/build-site.mjs`, `npm run format:check`, and the baselines.
+- Wrote `reference/02-report.md`; marked the tasks; added a changelog entry.
+
+### Why
+The acceptance is judged on the last commit.
+
+### What worked
+- Baselines: `no differences`.
+- Suites: typed 198 pass, 0 fail, 2 skipped; framework 272 pass; workbench 24 pass, 1 skipped; stdlib 61 pass;
+  tensor without the GPU files 55 pass.
+- `npm run check` clean; the site builds.
+
+### What didn't work
+Nothing failed. The baselines run takes 3 to 4 minutes and went to the background each time.
+
+### What I learned
+The skipped tests are gated on `IRWB_FULL=1` and were skipped before this change as well.
+
+### What was tricky
+Nothing.
+
+### What warrants a second pair of eyes
+The GPU suite, which this lane does not run: `checkLowering`, `runTixCuda` with the manifest, and the mutant tests
+that call `checkCudaLowering(p.current, fn, cudaArtifact(...))` all go through the runner now.
+
+### Code review instructions
+`node ttmp/2026/11/27/IRWB-039--*/scripts/02-baselines.mjs check` after `npm run build`, then the suites as the
+brief lists them.
