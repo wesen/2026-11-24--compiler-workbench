@@ -173,3 +173,24 @@ F42 (IRWB-067) is merged: one schedule registry, and the memo is back (`cudaSour
 - 4.3: `src/framework/ir/attribution.ts` (`creditLink`, `provenanceLabels`), `src/typed/attribute.ts`, `src/typed/edit-classes.ts`.
 - 4.7: the move commits and `tests/labs/`; E1's benchmark is in the IRWB-066 ticket's `scripts/`.
 - Validate: `node --test tests/labs/*.test.mjs tests/framework/attribution.test.mjs tests/typed/derivations.test.mjs`.
+
+## Step 4: v7 PR opened; the v7 vault report; two corrections
+
+I opened PR #1 into `main` (tag `v7`) and had a fork write the v7 project report for the vault. Checking its numbers, the fork found two errors of mine. I corrected both, then committed the report and pushed the vault.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1. Also, from earlier in the session: "when v7 is done open a PR".
+**Assistant interpretation:** Phase 4 closed, so open the PR. A milestone gets a vault report, which the coordinator reviews before committing.
+**Commit (code):** PR https://github.com/wesen/2026-11-24--compiler-workbench/pull/1, from `irwb-001/import-v6-prototype` (70 commits over `main`'s `c07a1e4`).
+
+### What I did
+- `gh pr create --base main --head irwb-001/import-v6-prototype --body-file <scratchpad>/pr-body.md`. Before it, the usual secret and private-string scan over `c07a1e4..HEAD`: 0 hits.
+- Updated the memory note `v7-pr-when-done` with the PR's URL. The user merges the PR, never the coordinator.
+- A fork wrote the report, 7,537 words, at `Projects/2026/11/28/PROJECT REPORT - IR Workbench - Framework v7 - … - A Technical Deep Dive.md`, with its sources cited per number. It also wrote the read-only probe `scripts/01-first-steps-chain.mjs` in this ticket.
+
+### What didn't work (corrections)
+- **The E1 ratio range was wrong.** I had written 2.8–3.7× (PR body, BACKLOG F44, handoff, diary step 3). From IRWB-066's medians the ratios are 390/138 = 2.82, 493/201 = 2.45 and 817/223 = 3.67, so the range is 2.5–3.7×. I fixed BACKLOG and the handoff and edited the PR body. Step 3 keeps its text as written; this note corrects it.
+- **The IRWB-064 guide swapped two ids.** In `first-steps` r3, `v:scale.12` is the constant 3 and `v:scale.13` is the shift. Running the probe confirmed it: `v:scale.13 = shl v:scale.3, v:scale.12`; the lowering records `v:scale.12` as `removed`, because it folds into the `slli` immediate, and `v:scale.13` as `covered-by` `insn:scale+0x0`. The guide is fixed, but the PDF on reMarkable still carries the error.
+
+### What I learned
+- A report written with every number traced to its source works as an audit of the coordinator's own summaries. Both errors had been repeated across several documents.
