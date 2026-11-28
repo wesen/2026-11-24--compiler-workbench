@@ -292,3 +292,28 @@ Fable (IRWB-057) finished in 25 minutes. Its branch scored clean on `06ebb78`: t
 - `directions.ts` has one client so far; the admission rule wants two.
 - Correspondence is coarser: loops and variants are recorded as inserted.
 - After this change, neither the `definePass` wrapper nor `applyNativePassSync` has a caller in `src/` outside the framework.
+
+## Step 9: the cleanup and solveFor merged; pe and unfold withdrawn at the decision point; handoff written
+
+The user asked for a handoff document for a colleague ("what instructions and files and guidelines and playbooks would we point them towards ... write a handoff document"), then: "after that, wait for the 2 agents to finish, update whatever is needed, and then stop and tell me how to hand over."
+
+**Cleanup (IRWB-055, Terra low).** Scored clean on `1f34dfe` and merged.
+- `steps.ts` moved to `src/framework/core/`; the layering allow-list gained `core/steps.js`.
+- `strategy/builders.ts` holds the shared identity algorithm and the pass-sequence builder, used by `optimizeTix` and Typed's `pipelinePlan` (keeping `tolerate`).
+- The extra lines in `differential.ts` are only Prettier formatting (checked with `git diff -w`), so the known-unformatted count drops from 8 to 7.
+- In the Codex sandbox the agent saw four failing test files with no causes shown; the scorer, outside the sandbox, found all suites green.
+
+**solveFor and pe (IRWB-058, Sol low). The decision point fired.**
+- `solveFor` (`src/stdlib/flow/solve-for.ts`, 80 lines: demand-driven equations, dependency tracking, widening, a budget) is merged, with SCCP ported onto it.
+- B1's specializer restated on a shared division and unfolding measured 652 lines, against a limit of 324 (half of the original 648). So `unfold` is not earning its place and the cell restored B1. The prototype stays in the cell's history (`77e1bed`, also in the cherry-picked commits).
+- B1's counts are unchanged under `promote+speed`: Fibonacci 110, entry 34 at 122.
+- **Conflict:** both solvers export a `Solution` type. The index now exports the new one as `LocalSolution`; nothing imported it by the old name.
+
+**Checks on the working branch:**
+- tsc clean; Prettier flags 7 pre-existing files;
+- suites: typed 187, framework 259, workbench 24, stdlib 61, tensor CPU 45 + 6;
+- baselines `no differences`; site builds.
+
+**Handoff:** `reference/02-handoff.md`. It covers what the project is, where everything is, the read-first list, v7 status, how a round is run (brief, launch, score, review, cherry-pick, check, scan, push, record), staffing evidence, standing rules, next steps, follow-ups and records owed.
+
+Still running: derivations (IRWB-056, GLM high and DeepSeek xhigh).
