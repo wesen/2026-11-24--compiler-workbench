@@ -71,16 +71,16 @@ Most implementation work is done by coding agents (Codex, Pi, Claude) in paralle
 |---|---|
 | 4.1 derivations (K2) | **merged** (IRWB-056-B, DeepSeek). Rule-citing records 0 → 183; correspondence from steps equals today's on all 547 O2 and `speed` applications; both A0 policies are queries over the records (203 and 393; the 2-record gap from 395 is explained in its test); cost 0.99× |
 | 4.2 lowering as cross-IR transformations | **merged** (IRWB-061, Fable): `CrossTransformation<In, Out>`; both lowerings on the runner; composed correspondences equal today's. The default paths (`lowerToImage`, `cudaSource()`) are *pending* applications: the check is recorded as owed, and nothing in `src/` calls the checked path (`lowerImageChecked`) yet |
-| 4.3 attribution and classification as queries | not started; needs 4.1 |
+| 4.3 attribution and classification as queries | **merged** (IRWB-065-A, GLM): `src/framework/ir/attribution.ts`; D1 and D2 reproduce byte for byte (whole-corpus differential: 0 differences); A0's 203 and 395 are both queries |
 | 4.4 fusion and scheduling as decide/eligible/prepare (K6) | **merged** (IRWB-057, Fable). The unification held, and the extent-17 counterexample is rejected. |
 | 4.5 `solveFor` and `pe` | **done, partly withdrawn** (IRWB-058, Sol low). `solveFor` is merged with SCCP as its client. The decision point fired for `pe`: B1's specializer restated on it is 652 lines against a 324-line limit, so `unfold` is withdrawn and B1 stays as it is. |
 | 4.6 rules over a term signature | **merged** (IRWB-060-A, GLM): `src/stdlib/term/`; Typed's matcher and verifier and Tix's `inline` and `split-sum` on it; cost +3–5%, under the 10% gate; F40 done |
-| 4.7 keep or delete the rewrite engine, the transaction layer and the 1,237-line core runtime | last |
+| 4.7 keep or delete the rewrite engine, the transaction layer and the 1,237-line core runtime | **decided** (IRWB-066, Sol low): the runtime and the graph rewrite engine moved to `src/labs/` (tests in `tests/labs/`); transactions and traversal kept (the runner uses them). The E1 benchmark is in its ticket. **Open:** the cell read R3's gate as absolute cost falling with size; on the relative reading the runtime passes (2.8–3.7× on chess, 27× on Candela). The user decides whether to adopt it. |
 | 4.8 staged choice | **merged** (IRWB-062, Sol low): one launch `select` for gates and variants; `modesOf` derives the arms; CUDA byte-identical |
 
 The cleanup lane (IRWB-055, Terra low) is merged: `steps.ts` moved into `core`, one identity algorithm, one plan builder.
 
-**Where things stood at handoff:** phase 4b (IRWB-059) merged, F40 and F41 done; see IRWB-059's diary for the latest step. Earlier: working branch at the last commit of diary step 10. Every v7 lane launched so far is merged or withdrawn, and no agent is running. All suites, the baselines and the GPU suite (23/23) pass on the working branch.
+**Where things stood at handoff:** v7 phase 4 is closed (IRWB-064 diary step 3): every item is merged or withdrawn at its decision point, and the v7 PR into `main` is open. Two decisions are with the user: the 4.7 gate reading, and whether the checked lowering runs on a default path.
 
 ## 5. How a round works
 
@@ -164,10 +164,8 @@ These come from the user during the project; keep them.
    - **4.6 term rules:** Typed simplify, fold and identities, and Tix inline and split-sum, as rules over a term signature. Cheap cells. Decision point: if the rule path is materially slower than the compiled visitor, share only the matcher and the verifier.
    - **4.2 lowering on the runner:** `lowerToImage` and the CUDA lowering as `Transformation`s from one IR to another, with `rv32.image-agrees` and `tensor.cuda-meaning` as their `ensures` obligations. Check: the composed correspondence equals today's, and images are unchanged. Use a strong cell.
    - **4.8 staged choice:** a launch-time variant with its guard, so the differential's arms are derived. It builds on 4.4.
-2. **Then:**
-   - 4.3, attribution and classification as queries over derivations;
-   - 4.7, keep or delete the unused engines, decided by what the other items actually use.
-3. **Open the PR** when phase 4 is closed, with every item merged or withdrawn at its decision point: `gh pr create --base main --head irwb-001/import-v6-prototype`. The body summarizes phases 0–4 and links this ticket's design doc and diary.
+2. **Done in phase 4c (IRWB-064):** 4.3 and 4.7, and F42 (lowering follow-ups).
+3. **The PR (opened):** when phase 4 is closed, with every item merged or withdrawn at its decision point: `gh pr create --base main --head irwb-001/import-v6-prototype`. The body summarizes phases 0–4 and links this ticket's design doc and diary.
 4. **After v7, the research stages in `BACKLOG.md`:**
    - tensor: T4 tolerance calibration, T10 split-K, T11 FMA contraction, T7 autotuning, T5 streaming attention, T12 tensor cores;
    - Typed: B2 (specializing Candela) and A1 (an e-graph over value trees).

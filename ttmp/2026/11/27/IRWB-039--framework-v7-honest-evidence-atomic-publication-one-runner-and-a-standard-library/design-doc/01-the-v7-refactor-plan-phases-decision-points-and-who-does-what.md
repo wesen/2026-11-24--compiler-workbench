@@ -121,6 +121,19 @@ This is the one step that changes what every pass sees, so it runs as a spike an
 
 As in the synthesis, unchanged: derivations and scoped correspondence (gate: about 2× today's correspondence cost); cross-IR transformations; attribution and classification as queries; fusion as decide/eligible/prepare on the affine library, with the extent-17 counterexample as its test; `solveFor` and `pe` (gate: B1's specializer at most half of its 719 lines); rules over a term signature; keep or delete the rewrite engine, the transaction layer and the 1,237-line core runtime; staged choice.
 
+**Outcome (2026-11-28).** Phase 4 is closed: every item is merged, or withdrawn at its decision point.
+
+| Item | Outcome | Ticket |
+|---|---|---|
+| derivations and scoped correspondence | merged; rule-citing records 0 → 183; cost 0.99× | IRWB-056-B |
+| cross-IR transformations | merged; composed correspondences equal today's; images and CUDA unchanged | IRWB-061 |
+| attribution and classification as queries | merged; D1 and D2 reproduce; A0's 203 and 395 are queries | IRWB-065-A |
+| fusion and scheduling as decide/eligible/prepare | merged; the unification held; the extent-17 counterexample is rejected | IRWB-057 |
+| `solveFor` and `pe` | `solveFor` merged (SCCP); `pe` and `unfold` withdrawn (652 lines against a limit of 324) | IRWB-058 |
+| rules over a term signature | merged; `stdlib/term`; +3–5% cost, under the 10% gate | IRWB-060-A |
+| keep or delete the engines | runtime and graph rewrite engine moved to `src/labs/`; transactions and traversal kept; gate reading open (BACKLOG F44) | IRWB-066 |
+| staged choice | merged; one launch `select`; derived arms | IRWB-062 |
+
 ## Who does what
 
 The question is whether execution agents (Terra low, GLM 5.3 high, GLM Flash, DeepSeek) can carry this, and how much of the stronger models (Opus, Fable, Sol, Astra) it needs. The record so far:

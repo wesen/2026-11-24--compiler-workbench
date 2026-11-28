@@ -94,3 +94,82 @@ The fork delivered the guide (5,834 words, frontmatter valid). It reported two f
 
 ### What warrants a second pair of eyes
 - The guide's reading of R3's 4.7 gate ("flat per-edit cost while today's grows") and its 395 reading of "local" are labelled proposals. The lanes decide, and the coordinator reviews.
+
+## Step 3: lanes 4.3, 4.7 and F42 scored and merged; phase 4 closed
+
+All four cells exited 0 and scored clean on their commits (`lanes-scores.jsonl`), and none touched the coordinator's tickets. I merged F42 (Terra), the engines lane (Sol low) and GLM's queries cell in that order, without conflicts, and exported the new attribution module from the IR index. Every check passes on the working branch, including the new labs suite and the GPU suite. With this merge every phase-4 item is merged or withdrawn at its decision point.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Score, review, choose, merge and validate; then close phase 4.
+**Commit (code):** cherry-picks of `v7-followups-tl/irwb-067`, `v7-engines-sl/irwb-066` and `v7-queries-g-h/irwb-065-a`; `da520d7` (exports `ir/attribution.js`).
+
+### What I did
+- Scored the four cells with `BASEREF=v7-p4c-base scripts/07-score-lanes.sh …`.
+- Added `labs` to the scorer's suite list (`04-score-cell.sh`), because the engines lane created `tests/labs/`. `sed -i` writes a new file, so the scorer run already in progress kept its old copy. Its last cell (the engines cell) was scored by a fresh invocation and already included labs: 108 passed.
+- Read the final messages of all four cells and cherry-picked F42, then engines, then GLM's queries.
+- Added `export * from './attribution.js'` to `src/framework/ir/index.ts`. Both 4.3 cells noted that the module was not exported; the file belonged to lane 4.7.
+- Checks on the working branch:
+  - tsc clean; Prettier flags 6 pre-existing files;
+  - suites: typed 200, framework 168, workbench 24, stdlib 67, **labs 108**, tensor CPU 64;
+  - baselines `no differences`; site builds;
+  - **GPU 23/23**;
+  - `src/framework` is now 9,927 lines (it was 12,732 by the engines lane's count).
+
+### Why: GLM's 4.3 cell over DeepSeek's
+| | GLM high (065-A) | DeepSeek xhigh (065-B) |
+|---|---|---|
+| D1 tables | byte-identical before and after | identical (151 and 173 lines, `cmp` clean) |
+| D2 tables | byte-identical, plus a **whole-corpus differential against the old tools**: O2 336 and `speed` 510 comparisons, 0 differences | the three tables identical |
+| A0 | 203 scoped, 395 in place, both queries; the two `fold` records counted as chain intermediates, following A0's header | 203 and 395, both queries, with 395 broken down by pass |
+| scope | edited `ir/derivation.ts` (`inPlaceInput`), flagged; no other lane touched that file this round | within scope; noted that `derivation.ts`'s docs on `locality` are stale |
+| A0's matcher on `stdlib/term` | yes (`normalize` through `instantiate`) | yes |
+
+Both deliver everything the lane asked for. GLM's corpus-wide differential is the stronger evidence that nothing changed, and its scope exception collided with nothing, so I merged GLM.
+
+### Lane 4.7: the decision, and why I am raising it with the user
+- **The E1 numbers** (ms per edit, runtime against today):
+
+  | Program | Size | With the runtime | Today |
+  |---|---|---|---|
+  | chess | 29 functions | 138 | 390 |
+  | chess | 40 functions | 201 | 493 |
+  | chess | 50 functions | 223 | 817 |
+  | Candela | full | 684 | 18,454 |
+
+- **The cell's reading of the gate:** absolute cost per edit must fall as program size grows. The runtime's absolute cost rises (138 → 223), so the cell called the gate failed. It moved the runtime (`runtime.ts`, `query.ts`, `records.ts`) and the graph rewrite engine (`patterns.ts`, `rewrites.ts`) into `src/labs/`, with their conformance tutorials and tests (`tests/labs/`, 108 tests).
+- **It kept** `transactions.ts` and `traversal.ts` in the framework: the runner's `ctx.edit` calls `View.beginEdit()`, and the view and reader APIs use traversal. The brief's caller list missed both dependencies.
+- **My view:**
+  - That reading is one no implementation could pass: any per-edit cost grows with program size.
+  - The likelier intent of "falls with program size" is the *relative* cost. On that reading the runtime passes clearly: its advantage grows from 2.8× to 3.7× on chess and reaches 27× on Candela.
+  - The move is reversible, since the code is in `src/labs/` and nothing was deleted, so I merged it as it stands.
+  - I am putting the reading to the user: the alternative is to bring the runtime back into the core and adopt it for incremental checking per function (BACKLOG E1).
+
+### What didn't work
+- F42 (Terra): in its sandbox, the non-GPU run reported 1 failing file (chess-search) with no diagnostic. It passed in isolation, and the scorer found no failure.
+
+### What I learned
+- R3's gates were written as phrases, not formulas. Two of them were ambiguous in this phase: "materially slower", which I fixed at 10% in the brief, and "falls with program size", which I did not fix. A gate in a brief should be a formula.
+
+### Phase 4 status
+| Item | Outcome |
+|---|---|
+| 4.1 derivations | merged (IRWB-056-B) |
+| 4.2 cross-IR lowering | merged (IRWB-061) |
+| 4.3 attribution and classification as queries | merged (IRWB-065-A) |
+| 4.4 fusion and scheduling as decide/eligible/prepare | merged (IRWB-057) |
+| 4.5 `solveFor` and `pe` | `solveFor` merged; `pe` and `unfold` withdrawn at the gate (IRWB-058) |
+| 4.6 rules over a term signature | merged (IRWB-060-A) |
+| 4.7 the unused engines | runtime and graph rewrite engine moved to labs; transactions and traversal kept (IRWB-066); gate reading open with the user |
+| 4.8 staged choice | merged (IRWB-062) |
+
+F42 (IRWB-067) is merged: one schedule registry, and the memo is back (`cudaSource()` on warmed matmul: 6.26 → 2.08 ms).
+
+### What should be done in the future
+- The user's two decisions: the 4.7 gate reading (adopt the runtime for incremental checking?), and the checked lowering on a default path.
+- The v7 PR into `main`, then the v7 vault report.
+
+### Code review instructions
+- 4.3: `src/framework/ir/attribution.ts` (`creditLink`, `provenanceLabels`), `src/typed/attribute.ts`, `src/typed/edit-classes.ts`.
+- 4.7: the move commits and `tests/labs/`; E1's benchmark is in the IRWB-066 ticket's `scripts/`.
+- Validate: `node --test tests/labs/*.test.mjs tests/framework/attribution.test.mjs tests/typed/derivations.test.mjs`.

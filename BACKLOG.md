@@ -44,7 +44,7 @@ Keep it current: update an entry when a round finishes, move items between statu
 | A1     | e-graph over value trees with verified rules                                | decision                                                              | L      |
 | C1     | calibrated gate                                                             | prep                                                                  | M      |
 | E1     | incremental checking per function                                           | prep                                                                  | L      |
-| F1–F41 | framework and workbench fixes found by agents                               | 15 open (F1, F7–F12, F15, F18, F22, F28–F32); F27, F33–F41 done | S each |
+| F1–F44 | framework and workbench fixes found by agents                               | 17 open (F1, F7–F12, F15, F18, F22, F28–F32, F43, F44); F27, F33–F42 done | S each |
 | M1–M5  | agent methodology                                                           | running / ready                                                       | —      |
 
 ---
@@ -518,6 +518,9 @@ Each of these came from evidence in the IRWB-012..018 rounds. Most are small.
 - **F39: intermittent exactness rejection of the batched tiled variant on the GPU** _(done: IRWB-054; not a race: sshd `MaxStartups` dropped connections, now retried in `tools/cuda-remote.mjs`)_. `tests/tensor/schedule-gpu.test.mjs:35` ("every tiled variant of the feature contractions is exact on every case") failed once in four runs on main at `v7-p2`, with the batched variant `accepted: false`; it passed in the other three, once serially. A nondeterministic exactness result points at a race in the batched kernel (IRWB-033-D's code), which would undercut the bit-exactness claims. Reproduce in a loop, capture the disagreeing case, and check the kernel's synchronization.
 - **F40: Tix `inline`'s correspondence says `removed` for a merged statement** _(done: IRWB-060-A, a `merged` step maps to its absorbing statement in `stepEntries`)_. Since derivations (IRWB-056-B), the merge is recorded in the derivation (`mergedInto`), but the correspondence still holds today's `removed` entry. IRWB-056-A's `src/tensor/passes.ts` records it as `merged`; port that, and update the equality test to the truthful entry.
 - **F41: one coverage check for correspondences** _(done: IRWB-063 and `b1e975d`; one `Coverage` and `checkCoverage` in `ir/correspondence.ts`)_. `DerivationCoverage` (`src/framework/ir/derivation.ts`) duplicates `CorrespondenceCoverage` (the analysis manager). The framework should own one coverage check over `EntityCorrespondence`.
+- **F42: lowering follow-ups** _(done: IRWB-067; one schedule registry, memo restored)_.
+- **F43: run the checked lowering on a default path** _(decision for the user; IRWB-061)_. `lowerToImage` and `cudaSource()` are pending applications: `rv32.image-agrees` and `tensor.cuda-meaning` are recorded as owed, and nothing in `src/` calls `lowerImageChecked`. Options: O2 compiles run it, or the workbench's image view does, or a corpus check in CI.
+- **F44: adopt the core runtime for incremental checking?** _(decision for the user; IRWB-066)_. E1, in ms per edit, runtime against today: chess 29/40/50 functions 138/201/223 against 390/493/817; full Candela 684 against 18,454. The cell read R3's gate ("per-edit checking cost falls with program size") as absolute cost and moved the runtime to `src/labs/`. On the relative reading it passes. Adopting it means queries keyed by function part on the analysis path (BACKLOG E1).
 
 ## 4. Agent methodology
 
