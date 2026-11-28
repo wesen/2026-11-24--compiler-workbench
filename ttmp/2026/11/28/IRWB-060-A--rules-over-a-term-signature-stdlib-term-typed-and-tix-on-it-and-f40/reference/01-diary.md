@@ -1,4 +1,22 @@
-# Diary — IRWB-060-A
+---
+Title: 'Diary: rules over a term signature (IRWB-060-A)'
+Ticket: IRWB-060-A
+Status: active
+Topics:
+    - stdlib
+    - typed
+    - tensor
+    - framework
+DocType: reference
+Intent: short-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: "The working diary of IRWB-060-A: one step per significant action, with review instructions per step."
+LastUpdated: 2026-11-28T06:30:00-05:00
+WhatFor: "Seeing how the lane went, step by step."
+WhenToUse: "Reviewing IRWB-060-A's process; resuming follow-up work."
+---
 
 ## Step 1: read the guide, the R3 row, the sources; the F40 discovery
 
