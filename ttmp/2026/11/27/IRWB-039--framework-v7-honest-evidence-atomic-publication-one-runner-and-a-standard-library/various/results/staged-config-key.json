@@ -1,0 +1,10 @@
+{
+ "IRWB-062": {
+  "task": "staged",
+  "config": "sl",
+  "model": "gpt-6.2-sol",
+  "effort": "low",
+  "round": "v7-staged-sl",
+  "harness": "codex"
+ }
+}
