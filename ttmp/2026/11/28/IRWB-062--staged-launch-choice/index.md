@@ -1,7 +1,7 @@
 ---
 Title: Staged launch choice
 Ticket: IRWB-062
-Status: active
+Status: complete
 Topics:
     - compiler
     - framework
@@ -11,7 +11,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-11-28T01:49:10.994327385-05:00
+LastUpdated: 2026-11-28T02:00:16.071706543-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -20,7 +20,7 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Tix lowers fusion gates and contraction launch rules through one schedule select. See the [design](design-doc/01-staged-launch-choice.md), [diary](reference/01-diary.md), and [implementation report](reference/02-implementation-report.md).
 
 ## Key Links
 
