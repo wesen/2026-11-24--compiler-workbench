@@ -86,3 +86,30 @@ programs, not 3; `fixed-point` does not reach `strength` in O2), not the runner.
 
 The machine's load average was 54 during the measurements (other agents). All timings are therefore interleaved in
 one process and reported as median and min..max of batch means.
+
+## Step 4: measurements
+
+- `scripts/04-revisions-and-timings.mjs revisions`: 0 differences on 6 Tix programs and 53 Typed inputs.
+- The first timing run used wall-clock time and was useless at load average 50: the same runner varied by a
+  factor of two between batches. I switched both scripts to CPU time of the process.
+- For "before" numbers of `analyse` I built the base commit into `.base-build/` inside the worktree
+  (`git archive 3ba86fc src tsconfig.json`), not a second worktree. First attempt was wrong in an instructive way:
+  I made the artifact with the prototype's build and analysed it with the base build, and `typed.cfg` took 110 ms
+  instead of 1 ms, because `immutable()` recognises frozen values per module instance and re-froze the whole
+  program each time. The script now loads everything from one build.
+- A mistake of mine: `pkill -f` with a pattern that matched my own shell. I killed the leftover process by PID.
+  The deleted `03-bench-analyse.base-3ba86fc.out.txt` was wall-clock data from before the script changed.
+- Results: no difference beyond the spread anywhere (report, tables 2 and 3).
+
+## Step 5: acceptance
+
+Baselines `no differences`; framework 252, stdlib 7, workbench 24 (+1 skipped), tensor 45, typed 186 (+2 skipped);
+`tsc` clean; the site builds. No existing test changed.
+
+## What I would check when reviewing this
+
+- `analyseFrom`'s `finally`: the inner `try/finally` is what keeps `frame.active = false` when the synchronous
+  driver returns through a yield in the outer `finally`.
+- `runTransformation`'s `settled` flag: `catch` handles rejections (with the reason), `finally` handles
+  abandonment; `claimsChecked` keeps the invalidation of the candidate's analyses where `applyPass` has it.
+- That the asynchronous callers' behaviour differs only in microtask turns (report, limit 2).

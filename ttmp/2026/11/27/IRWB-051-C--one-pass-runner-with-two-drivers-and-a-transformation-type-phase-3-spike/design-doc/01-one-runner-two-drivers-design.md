@@ -129,6 +129,9 @@ interface TransformationSpec<S, N extends Needs, P> {
   gate, reading `inputs.origin`), and an application can add more (`options.ensures`: Typed's optimization
   contract is built per project from its case inputs, as `ApplyOptions.contract` is today). This replaces both the
   `gate` argument of `applyNativePassSync` and `options.contract` of `applyPass`.
+- One application takes any number of check obligations and at most one contract (F33's publication point commits
+  one prepared execution). The manager is optional: it is needed for `needs`, `preserves` and a contract, so Tix
+  `inline` runs without one, as it does today. *(Added while building the prototype.)*
 - A transformation is also a `Pass`: `transformation(spec)` returns the spec plus the fields the two existing
   runners read (`run = prepare`, `legal`, `preserves`, `category`). So a ported pass stays in `PASSES` and in
   `optimizeTix`, and every existing caller keeps working. The migration deletes this view with the old runners.
