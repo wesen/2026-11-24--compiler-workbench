@@ -16,7 +16,8 @@ import { binop, Trap } from './evaluate.js';
 import type { BlockRec, StmtRec, Store, ValueRec, WorkFn } from './model.js';
 import { PIPELINES, typedPass } from './passes.js';
 import { bufferLoad, bufferPromiseBroken, factRef, type Binding, type Bindings } from './specialize.js';
-import { TxError, type Tx } from './tx.js';
+import { TxError } from './tx.js';
+import { divide, unfold } from '../stdlib/pe/index.js';
 
 const STATIC_OPS = new Set([
   'add',
@@ -84,51 +85,49 @@ export function bindingTimes(
   for (const { b, param } of bindingsOf(f, bindings))
     if (b.cells) buffers.set(param, b.cells);
     else scalars.set(param, b.value!);
-  const sets: StmtRec[] = [];
+  const candidates = new Map<number, Kind>();
+  f.locals.forEach((l, i) => {
+    if (!l.param || scalars.has(i)) candidates.set(i, 'n');
+  });
+  const sets = new Map<number, string[]>();
+  const optimistic = (local: number) => candidates.get(local) ?? 'n';
   for (const blk of f.blocks)
     for (const sid of blk.stmts) {
       const s = st.get(sid) as StmtRec;
-      if (s.op === 'set') sets.push(s);
+      if (s.op !== 'set') continue;
+      const local = s.local!;
+      const values = sets.get(local) ?? [];
+      values.push(s.value!);
+      sets.set(local, values);
+      if (candidates.has(local) && !entryLive.has(local) && kindOf(st, s.value!, optimistic, buffers) === 'f')
+        candidates.set(local, 'f');
     }
-  // start from the most static guess (frame kind where a set suggests it) and remove locals until consistent
-  const S = new Map<number, Kind>();
-  f.locals.forEach((l, i) => {
-    if (!l.param || scalars.has(i)) S.set(i, 'n');
-  });
-  for (const s of sets)
-    if (S.has(s.local!) && !entryLive.has(s.local!) && kindOf(st, s.value!, S, buffers, true) === 'f')
-      S.set(s.local!, 'f');
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (const s of sets)
-      if (S.has(s.local!) && kindOf(st, s.value!, S, buffers) !== S.get(s.local!)) {
-        S.delete(s.local!);
-        changed = true;
-      }
-  }
-  return { static: S, scalars, buffers };
+
+  const staticLocals = divide(candidates, (local, kind, bindingOf) =>
+    (sets.get(local) ?? []).every(value => kindOf(st, value, bindingOf, buffers) === kind),
+  );
+  return { static: staticLocals, scalars, buffers };
 }
 
-/** The kind of a static expression, or null when it is dynamic (`optimistic`: unknown locals count as `n`). */
+/** The kind of a static expression, or null when it is dynamic. */
 function kindOf(
   st: Store,
   id: string,
-  S: ReadonlyMap<number, Kind>,
+  bindingOf: (local: number) => Kind | undefined,
   buffers: ReadonlyMap<number, readonly number[]>,
-  optimistic = false,
 ): Kind | null {
   const v = st.get(id) as ValueRec;
   if (v.type) return null;
   if (v.op === 'const') return 'n';
-  if (v.op === 'get') return S.get(v.imm as number) ?? (optimistic ? 'n' : null);
+  if (v.op === 'get') return bindingOf(v.imm as number) ?? null;
   if (v.op === 'aaddr') return 'f';
   const at = bufferLoad(st, v, buffers);
   if (at)
-    return typeof at.position !== 'string' || kindOf(st, at.position, S, buffers, optimistic) === 'n'
+    return typeof at.position !== 'string' || kindOf(st, at.position, bindingOf, buffers) === 'n'
       ? 'n'
       : null;
   if (!STATIC_OPS.has(v.op)) return null;
-  const ks = v.args.map(a => kindOf(st, a, S, buffers, optimistic));
+  const ks = v.args.map(a => kindOf(st, a, bindingOf, buffers));
   if (ks.every(k => k === 'n')) return 'n';
   if (v.op === 'add' && ks.includes('f') && ks.includes('n')) return 'f';
   return null;
@@ -205,6 +204,7 @@ export const pe = typedPass({
     const live = facts.live!;
     const bt = bindingTimes(st, f, art.value.bindings, live.liveIn(f.blocks[0].id));
     const S = bt.static;
+    const bindingOf = (local: number) => S.get(local);
     const because = mine.map(m => factRef(art, m.b));
     const entry = f.blocks[0];
     const heads = new Set<string>([entry.id, ...facts.loops!.map(L => L.head)]);
@@ -220,25 +220,10 @@ export const pe = typedPass({
         'unsupported',
         `pe: ${f.name} needs more than ${budget} residual statements (params.budget) before its static stores repeat`,
       );
-    const memo = new Map<string, string>();
-    const queue: { bid: string; env: Map<number, number>; rid: string }[] = [];
-    const variant = (bid: string, env: ReadonlyMap<number, number>): string => {
-      const key = `${bid}|${staticLive(bid)
-        .map(l => env.get(l))
-        .join(',')}`;
-      let rid = memo.get(key);
-      if (!rid) {
-        rid = tx.block({ from: bid, because, note: show(bid, env) || 'no static locals live' });
-        memo.set(key, rid);
-        queue.push({ bid, env: new Map(env), rid });
-      }
-      return rid;
-    };
-
     // residual values: a static subtree becomes its constant; frame + constant becomes one frame address
     const residual = (id: string, env: ReadonlyMap<number, number>): string => {
       const v = st.get(id) as ValueRec;
-      const kind = kindOf(st, id, S, bt.buffers);
+      const kind = kindOf(st, id, bindingOf, bt.buffers);
       if (kind)
         try {
           const k = staticValue(st, id, env, bt.buffers);
@@ -265,8 +250,11 @@ export const pe = typedPass({
       return tx.make(v.op, ...args, { imm: v.imm, from: id, because, type: v.type ?? 'i32' });
     };
 
-    const run = (start: string, env: Map<number, number>, rid: string) => {
-      const R = st.get(rid) as BlockRec;
+    const run = (
+      { point: start, env, handle }: { point: string; env: Map<number, number>; handle: string },
+      variant: (bid: string, env: Map<number, number>) => string,
+    ) => {
+      const R = st.get(handle) as BlockRec;
       const emit = (fields: Partial<StmtRec> & { op: StmtRec['op'] }, from: string) => {
         if (++emitted > budget) throw over();
         tx.insert({ block: R, index: R.stmts.length }, tx.stmt(fields, { from, because }), { because });
@@ -310,7 +298,7 @@ export const pe = typedPass({
               );
               break;
             case 'eval':
-              if (!kindOf(st, s.value!, S, bt.buffers))
+              if (!kindOf(st, s.value!, bindingOf, bt.buffers))
                 emit({ op: 'eval', value: residual(s.value!, env) }, sid);
               break;
             case 'zero':
@@ -353,17 +341,33 @@ export const pe = typedPass({
 
     const env0 = new Map<number, number>();
     for (const l of S.keys()) env0.set(l, bt.scalars.get(l) ?? 0);
-    const start = variant(entry.id, env0);
-    while (queue.length) {
-      const { bid, env, rid } = queue.shift()!;
-      run(bid, env, rid);
-    }
+    const residualGraph = unfold<string, Map<number, number>, string>(
+      {
+        project: (bid, env) =>
+          staticLive(bid)
+            .map(l => env.get(l))
+            .join(','),
+        allocate: (bid, env) =>
+          tx.block({ from: bid, because, note: show(bid, env) || 'no static locals live' }),
+        snapshot: env => new Map(env),
+        step: run,
+        variants: budget,
+        onExhaustion: { kind: 'refuse' },
+      },
+      entry.id,
+      env0,
+    );
+    if (residualGraph.status === 'refused') throw over();
     // the old entry now only jumps to the residual one; every other old block becomes unreachable
     for (const sid of entry.stmts.slice())
       tx.remove(sid, { because, note: 'specialized: see the residual entry' });
-    tx.insert({ block: entry, index: 0 }, tx.stmt({ op: 'br', to: start }, { from: entry.id, because }), {
-      because,
-    });
-    tx.record('pe', { fn: f.name, variants: memo.size, statements: emitted, budget });
+    tx.insert(
+      { block: entry, index: 0 },
+      tx.stmt({ op: 'br', to: residualGraph.entry }, { from: entry.id, because }),
+      {
+        because,
+      },
+    );
+    tx.record('pe', { fn: f.name, variants: residualGraph.variants, statements: emitted, budget });
   },
 });
