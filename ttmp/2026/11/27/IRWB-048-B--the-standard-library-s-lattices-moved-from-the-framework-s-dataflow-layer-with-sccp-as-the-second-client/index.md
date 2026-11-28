@@ -9,9 +9,17 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://src/stdlib/lattice/lattices.ts
+      Note: the moved module (interface, set, flat, interval with thresholds, map)
+    - Path: repo://src/framework/dataflow/lattices.ts
+      Note: re-export shim, so the dataflow layer's callers are unchanged
+    - Path: repo://src/typed/sccp.ts
+      Note: second client, on the library's flat lattice
+    - Path: repo://tests/stdlib/lattice.test.mjs
+      Note: the join laws on every triple, the widening bounds and termination, the thresholds
 ExternalSources: []
-Summary: ""
+Summary: "The framework's lattice module moved to src/stdlib/lattice unchanged, re-exported by the dataflow layer; SCCP is the second client on the library's flat lattice"
 LastUpdated: 2026-11-27T20:21:51.958063168-05:00
 WhatFor: ""
 WhenToUse: ""
@@ -21,7 +29,18 @@ WhenToUse: ""
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+IRWB-039 phase 2c, second extraction: the framework's lattices (`src/framework/dataflow/lattices.ts`)
+moved into the standard library as `src/stdlib/lattice/lattices.ts` — the `Lattice` interface and the
+set, flat, interval (with the up-to widening and thresholds) and map lattices — and the framework's
+dataflow layer re-exports them, so its callers keep their imports. The second client is SCCP
+(`src/typed/sccp.ts`), which now runs on the library's flat lattice; its private three-level lattice
+was compared with the library's element by element before it was replaced.
+
+Done. Acceptance: `tests/stdlib/lattice.test.mjs` (17 tests) pass, the coordinator's baselines print
+`no differences`, `tests/{stdlib,framework,workbench,typed,tensor}` pass (522 pass, 0 fail, 3
+pre-existing skips), `npm run check` clean, the site builds. Read
+[the report](./reference/02-report-the-lattices-in-the-standard-library.md) and
+[the diary](./reference/01-implementation-diary.md).
 
 ## Key Links
 
@@ -30,7 +49,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **done** (2026-11-27); follow-ups listed in tasks.md
 
 ## Topics
 

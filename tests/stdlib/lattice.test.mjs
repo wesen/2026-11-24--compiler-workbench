@@ -90,9 +90,11 @@ const c1 = { v: 1, t: 'i32' },
   c2f = { v: 2, t: 'f32' };
 const set = setLattice();
 const flat = flatLattice();
-const mapOf = inner => {
+// Every map over the two keys whose value is absent, the inner bottom, or one of the inner constants; a key holding
+// the inner bottom is the same element as a missing key, which the laws then also check.
+const mapOf = constants => {
   const out = [];
-  for (const a of [undefined, BOT, ...inner.domain]) for (const b of [undefined, BOT, ...inner.domain]) {
+  for (const a of [undefined, BOT, ...constants]) for (const b of [undefined, BOT, ...constants]) {
     const m = new Map();
     if (a !== undefined) m.set('a', a);
     if (b !== undefined) m.set('b', b);
@@ -100,14 +102,13 @@ const mapOf = inner => {
   }
   return out;
 };
-const innerFlat = { L: flat, domain: [c1, c2] };
 const map = mapLattice(flat);
 const thresholds = [-2, 2];
 const interval = intervalLattice(-4, 4, thresholds);
 
 checkLattice({ name: 'set', L: set, values: subsets([1, 2, 3]), widen: (a, b) => set.join(a, b) });
 checkLattice({ name: 'flat', L: flat, values: [BOT, c1, c2, c2f, TOP], widen: (a, b) => flat.join(a, b) });
-checkLattice({ name: 'map', L: map, values: mapOf(innerFlat), widen: (a, b) => map.join(a, b) });
+checkLattice({ name: 'map', L: map, values: mapOf([c1, c2]), widen: (a, b) => map.join(a, b) });
 checkLattice({
   name: 'interval',
   L: interval,
