@@ -227,7 +227,7 @@ export function semanticCorrespondence(
 }
 
 function prepareNative<S, N extends Needs, P>(
-  pass: Pass<S, N, P>,
+  pass: Pick<Pass<S, N, P>, 'adapter'>,
   view: IRView<S>,
   produced: NativeResult<S>,
   id: string,
@@ -494,4 +494,178 @@ export async function applyPass<S, N extends Needs, P>(
     contract,
     report,
   };
+}
+
+/** Phase 3 spike. Native kernels may return void for identity. */
+export interface Transformation<S, N extends Needs, P = unknown> {
+  id: string;
+  version: string;
+  adapter: IRAdapter<S>;
+  writes: PassSpec<S, N, P>['writes'];
+  relation: 'exact' | 'tolerance';
+  needs: N;
+  eligible?: PassSpec<S, N, P>['legal'];
+  prepare: PassSpec<S, N, P>['run'];
+  obligations: {
+    requires?: (before: Artifact<S>, params: P) => CheckResult;
+    ensures: (before: Artifact<S>, after: Artifact<S>, relation: 'exact' | 'tolerance') => CheckResult;
+    preserves: readonly AnalysisDefinition<any, any>[];
+  };
+}
+
+type Effect = { sync(): unknown; async(): unknown };
+function* request<T>(sync: () => T, async: () => T | Promise<T>): Generator<Effect, T, unknown> {
+  return (yield { sync, async }) as T;
+}
+
+function* application<S, N extends Needs, P>(
+  tx: Transformation<S, N, P>,
+  before: Artifact<S>,
+  options: ApplyOptions<P>,
+): Generator<Effect, PassResult<S>, unknown> {
+  const { manager, store } = options;
+  const view = openIR(before, tx.adapter, store);
+  const generation = store?.generation(before.id);
+  const params = options.params as P;
+  checkLegal({ id: tx.id, legal: tx.eligible }, before, view, params);
+  const required = tx.obligations.requires?.(before, params);
+  if (required && !required.ok)
+    throw new PassError('contractRejected', required.reason ?? 'Input rejected', required.evidence);
+  const analyse = (def: AnalysisDefinition<any, any>, artifact: Artifact<S>) =>
+    request(
+      () => manager.analyseSync(def, artifact),
+      () => manager.analyse(def, artifact),
+    );
+  const facts: Record<string, unknown> = {},
+    records: Record<string, AnalysisRecord> = {};
+  for (const [name, def] of Object.entries(tx.needs)) {
+    const record = yield* analyse(def, before);
+    facts[name] = record.value;
+    records[name] = record;
+  }
+  const ctx: PassRunContext<S, N, P> = {
+    before,
+    view,
+    params,
+    facts: facts as FactValues<N>,
+    records: records as PassRunContext<S, N, P>['records'],
+    get edit(): IREdit<S> {
+      throw new PassError('badResult', 'Native preparation must return its result');
+    },
+  };
+  const produced = yield* request(
+    () => {
+      const value = tx.prepare(ctx);
+      if (value instanceof Promise) {
+        void value.catch(() => {});
+        throw new Error('Synchronous preparation needs an immediate result');
+      }
+      return value;
+    },
+    () => tx.prepare(ctx),
+  );
+  const base = { pass: { id: tx.id, version: tx.version }, before };
+  const unchanged = { ...base, changed: false, artifact: before, edits: 0, preserved: [] };
+  if (!produced) return unchanged;
+  const { after, changes, correspondence, edits } = prepareNative(
+    tx,
+    view,
+    produced,
+    options.outputId ?? before.id,
+  );
+  if (before.revision === after.revision && !changes.entities.length && !changes.relations.length)
+    return unchanged;
+  enforceWrites(tx, changes);
+  const verdict = tx.obligations.ensures(before, after, tx.relation);
+  if (!verdict.ok)
+    throw new PassError('contractRejected', verdict.reason ?? 'Candidate rejected', verdict.evidence);
+  let deferred: PreparedTransformation | undefined;
+  const contract = options.contract;
+  if (contract) {
+    deferred = yield* request(
+      () => {
+        throw new Error('Deferred manager contract needs the asynchronous driver');
+      },
+      () =>
+        manager.verifyTransformation(
+          { input: before, ...options.contractInputs } as never,
+          { output: after } as never,
+          contract,
+          contract.correspondence.length
+            ? contract.correspondence.map(r => semanticCorrespondence(correspondence, r.id, r.relation))
+            : [semanticCorrespondence(correspondence)],
+          { deferCommit: true },
+        ),
+    );
+  }
+  const preserved: PreservationOutcome[] = [];
+  const checked = [];
+  try {
+    for (const def of tx.obligations.preserves) {
+      if (!options.auditPreservation && !manager.hasAnalysis(def, before)) continue;
+      const old = yield* analyse(def, before);
+      const existed = manager.hasAnalysis(def, after);
+      const fresh = yield* analyse(def, after);
+      if (!existed) checked.push(def);
+      if (canonical(old.value) !== canonical(fresh.value))
+        throw new PassError('preserveViolated', tx.id + ' changed ' + def.id);
+      preserved.push({ analysis: def.id, how: 'confirmed-by-recompute', evidence: { equalValue: true } });
+    }
+    publishAccepted(tx, store, before, after, deferred, generation);
+  } catch (e) {
+    discardEvidence(deferred, String(e));
+    for (const def of checked) manager.invalidate(def, after, String(e));
+    throw e;
+  }
+  return {
+    ...base,
+    changed: true,
+    artifact: after,
+    edits,
+    changes,
+    correspondence,
+    preserved,
+    contract: deferred ?? verdict,
+    report: produced.report,
+  };
+}
+
+export function runTransformationSync<S, N extends Needs, P>(
+  tx: Transformation<S, N, P>,
+  before: Artifact<S>,
+  options: ApplyOptions<P>,
+): PassResult<S> {
+  const run = application(tx, before, options);
+  let step = run.next();
+  while (!step.done) {
+    let answer;
+    try {
+      answer = step.value.sync();
+    } catch (e) {
+      step = run.throw(e);
+      continue;
+    }
+    step = run.next(answer);
+  }
+  return step.value;
+}
+
+export async function runTransformation<S, N extends Needs, P>(
+  tx: Transformation<S, N, P>,
+  before: Artifact<S>,
+  options: ApplyOptions<P>,
+): Promise<PassResult<S>> {
+  const run = application(tx, before, options);
+  let step = run.next();
+  while (!step.done) {
+    let answer;
+    try {
+      answer = await step.value.async();
+    } catch (e) {
+      step = run.throw(e);
+      continue;
+    }
+    step = run.next(answer);
+  }
+  return step.value;
 }

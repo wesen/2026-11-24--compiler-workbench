@@ -1,5 +1,5 @@
-import { definePass, type Pass } from '../framework/passes/index.js';
-import type { Relation } from './contract.js';
+import { definePass, type Pass, type Transformation } from '../framework/passes/index.js';
+import { meaningGate, type Relation } from './contract.js';
 import { adapter, TixIR } from './ir.js';
 import {
   add,
@@ -98,3 +98,18 @@ function pass(name: string, relation: Relation, transform: (fn: Fn) => Fn): TixP
 }
 export const inlinePass = pass('inline', 'exact', inline),
   splitPass = pass('split-sum', 'tolerance', split);
+
+export const inlineTransformation: Transformation<Module, {}> = {
+  id: inlinePass.id,
+  version: inlinePass.version,
+  adapter,
+  writes: inlinePass.writes,
+  relation: inlinePass.relation,
+  needs: {},
+  eligible: inlinePass.legal,
+  prepare: inlinePass.run,
+  obligations: {
+    ensures: (before, after, relation) => meaningGate(before, relation)(before, after),
+    preserves: [],
+  },
+};

@@ -1,3 +1,4 @@
+import { differentialSpec, runDifferential } from '../framework/contracts/differential.js';
 /**
  * The built-in optimization passes over `typed.blocks`, defined with the framework's `definePass` (E3).
  *
@@ -11,7 +12,7 @@
 import { defineTransformation } from '../framework/contracts/definitions.js';
 import type { TransformationDefinition } from '../framework/contracts/types.js';
 import type { CorrespondenceEntry } from '../framework/ir/types.js';
-import { definePass, type Pass } from '../framework/passes/define-pass.js';
+import { definePass, type Pass, type Transformation } from '../framework/passes/define-pass.js';
 import type { DataflowResult } from '../framework/dataflow/analysis.js';
 import {
   ANALYSES,
@@ -1285,3 +1286,26 @@ export const PIPELINES: Readonly<Record<string, readonly string[]>> = Object.fre
 });
 
 export type { ValueHandle };
+
+export function constpropTransformation(
+  params: MeaningParams = {},
+): Transformation<TypedBlocks, Record<string, any>, Record<string, unknown>> {
+  const spec = differentialSpec(meaningKept(params));
+  return {
+    id: constprop.id,
+    version: constprop.version,
+    adapter: blocksAdapter,
+    writes: constprop.writes,
+    needs: constprop.needs!,
+    eligible: constprop.legal,
+    prepare: constprop.run,
+    relation: 'exact',
+    obligations: {
+      preserves: constprop.preserves!,
+      ensures(origin, candidate) {
+        const evidence = runDifferential(spec, { origin, candidate });
+        return { ok: evidence.status === 'agree', reason: evidence.counterexamples[0]?.reason, evidence };
+      },
+    },
+  };
+}

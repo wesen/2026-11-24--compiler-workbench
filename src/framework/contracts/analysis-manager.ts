@@ -525,12 +525,30 @@ export class AnalysisManager {
   ): Promise<AnalysisRecord<R>> {
     return this.analyseInternal(definition, subject, params);
   }
+  analyseSync<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    subject: Artifact<S>,
+    params: unknown = null,
+  ): AnalysisRecord<R> {
+    if (definition.effects.length) throw new Error('analyseSync requires an effect-free analysis');
+    const request = this.analysisRequest(definition, subject, params);
+    return 'hit' in request ? request.hit! : request.runSync();
+  }
   private async analyseInternal<S, R>(
     definition: AnalysisDefinition<S, R>,
     subject: Artifact<S>,
     params: unknown,
     parent?: Frame,
   ): Promise<AnalysisRecord<R>> {
+    const request = this.analysisRequest(definition, subject, params, parent);
+    return 'hit' in request ? request.hit! : request.runAsync();
+  }
+  private analysisRequest<S, R>(
+    definition: AnalysisDefinition<S, R>,
+    subject: Artifact<S>,
+    params: unknown,
+    parent?: Frame,
+  ) {
     if (parent) this.checkActive(parent);
     this.registry.register(definition);
     subject = this.snapshotArtifact(subject, definition.input);
@@ -568,13 +586,11 @@ export class AnalysisManager {
         definition,
         ref(subject),
       );
-      return current as AnalysisRecord<R>;
+      return { hit: current as AnalysisRecord<R> };
     }
     const frame = this.freshFrame(definition.effects, store, parent);
     frame.stack = [...(parent?.stack ?? []), `a:${key}`];
-    try {
-      const value = immutable(await definition.run(this.context(frame), immutable(subject), captured));
-      await this.drain(frame);
+    const finish = (value: R) => {
       definition.output.validate(value);
       this.checkActive(frame);
       if (this.epoch(definition, subject) !== epoch)
@@ -623,10 +639,37 @@ export class AnalysisManager {
         ref(subject),
       );
       return record;
-    } finally {
-      await Promise.allSettled([...frame.pending]);
-      frame.active = false;
-    }
+    };
+    return {
+      runAsync: async () => {
+        try {
+          const value = immutable(await definition.run(this.context(frame), immutable(subject), captured));
+          await this.drain(frame);
+          return finish(value);
+        } finally {
+          await Promise.allSettled([...frame.pending]);
+          frame.active = false;
+        }
+      },
+      runSync: () => {
+        try {
+          const context = new Proxy(this.context(frame), {
+            get(target, key) {
+              if (key === 'record') return target.record;
+              throw new Error('analyseSync requires a pure leaf analysis');
+            },
+          });
+          const value = definition.run(context, immutable(subject), captured);
+          if (value && typeof (value as Promise<R>).then === 'function') {
+            void Promise.resolve(value).catch(() => {});
+            throw new Error('analyseSync requires an immediate result');
+          }
+          return finish(immutable(value as R));
+        } finally {
+          frame.active = false;
+        }
+      },
+    };
   }
   hasAnalysis<S, R>(
     definition: AnalysisDefinition<S, R>,
