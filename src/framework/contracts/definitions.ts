@@ -153,11 +153,7 @@ const COVERAGE: readonly CorrespondenceCoverage[] = ['partial', 'sourceTotal', '
 /** Every mapping a requirement asks for must account for both entity universes unless it says otherwise. */
 export const DEFAULT_CORRESPONDENCE_COVERAGE: CorrespondenceCoverage = 'bothTotal';
 /** An explicit coverage on every requirement, so a definition states what it demands (IRWB-044-C). */
-function requirement(
-  c: CorrespondenceRequirement,
-  inputs: Ports,
-  outputs: Ports,
-): CorrespondenceRequirement {
+function requirement(c: CorrespondenceRequirement, inputs: Ports, outputs: Ports): CorrespondenceRequirement {
   if (inputs[c.from]?.category !== 'ir' || outputs[c.to]?.category !== 'ir')
     throw new Error('Correspondence requirements need IR input/output ports');
   const coverage = c.coverage ?? DEFAULT_CORRESPONDENCE_COVERAGE;
