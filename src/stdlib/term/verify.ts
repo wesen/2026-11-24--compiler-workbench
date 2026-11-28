@@ -40,6 +40,11 @@ export interface CaseVar<V> {
   values(w: number): readonly V[];
   /** One random draw at the level. */
   draw(w: number, rng: Rng): V;
+  /**
+   * The value at index i of the unbounded range at level w — `exhaustiveCases`' inner loop. A domain whose
+   * values are not the indices (Typed's are sign-extended) supplies this; default: the index itself.
+   */
+  ofIndex?(i: number, w: number): V;
 }
 
 /** The semantics of a rule's cases: what the domain supplies, everything the campaigns need. */
@@ -158,7 +163,7 @@ export function exhaustiveCases<V, O>(sem: CaseSemantics<V, O>, w: number): Case
       continue;
     }
     for (let x = 0; x < 2 ** w; x++) {
-      env[full] = x as unknown as V;
+      env[full] = vars[full].ofIndex?.(x, w) ?? (x as unknown as V);
       const l = sem.lhs(env, w),
         r = sem.rhs(env, w);
       if (!sem.agree(l, r, w))

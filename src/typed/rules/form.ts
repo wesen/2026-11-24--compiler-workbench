@@ -21,6 +21,7 @@
  */
 import type { NodePattern } from '../../framework/ir/patterns.js';
 import { capture, entity, op as nodeOp } from '../../framework/ir/patterns.js';
+import { patternVars as termPatternVars, templateVars as termTemplateVars } from '../../stdlib/term/terms.js';
 import { SYMBOL } from '../listing.js';
 import type { ValueOp } from '../model.js';
 
@@ -160,29 +161,19 @@ export function ruleSet(
 }
 
 // ---------- well-formedness ----------
-/** The variables a pattern binds (var, constVar), in left-to-right order, and the repeats (same). */
-export function patternVars(
+// The queries are the standard library's (src/stdlib/term/terms.ts) over the same shapes: `Pat` and `Tpl`
+// are the library's `Pattern` and `Template<Num>` structurally, so one implementation serves both domains.
+export const patternVars: (
   p: Pat,
-  out: { binds: string[]; repeats: string[] } = { binds: [], repeats: [] },
-) {
-  if ('var' in p) out.binds.push(p.var);
-  else if ('constVar' in p) out.binds.push(p.constVar);
-  else if ('same' in p) out.repeats.push(p.same);
-  else if ('op' in p) for (const a of p.args) patternVars(a, out);
-  return out;
-}
-/** The variables a template uses, in left-to-right order (with repetition), and the constant variables it reads. */
-export function templateVars(t: Tpl, out: { uses: string[]; consts: string[] } = { uses: [], consts: [] }) {
-  if ('var' in t) out.uses.push(t.var);
-  else if ('const' in t) {
-    const n = t.const;
-    if (typeof n === 'object') {
-      if ('log2' in n) out.consts.push(n.log2);
-      else out.consts.push(...n.args);
-    }
-  } else for (const a of t.args) templateVars(a, out);
-  return out;
-}
+  out?: { binds: string[]; repeats: string[] },
+) => {
+  binds: string[];
+  repeats: string[];
+} = termPatternVars;
+export const templateVars: (
+  t: Tpl,
+  out?: { uses: string[]; consts: string[] },
+) => { uses: string[]; consts: string[] } = termTemplateVars;
 
 function checkRule(r: Rule): void {
   const fail = (m: string) => {
