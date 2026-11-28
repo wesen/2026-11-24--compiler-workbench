@@ -1,8 +1,8 @@
 // The framework's module boundaries, enforced on the source imports.
 //   - src/framework/** imports nothing outside src/framework except src/stdlib/, the standard library of compiler
 //     algorithms, which sits below the framework and imports nothing outside itself (tests/stdlib/layering.test.mjs),
-//     so the two rules cannot form a cycle. The dataflow solver's depth-first order (IRWB-047-B) and the lattices
-//     (IRWB-048-B) live there.
+//     so the two rules cannot form a cycle. The dataflow solver's depth-first order (IRWB-047-B), the lattices
+//     (IRWB-048-B) and the fixpoint solver itself (IRWB-053-B) live there.
 //   - strategy, contracts and ir import from core only core/data.js and core/types.js (v6's separability claim).
 //   - no layer of the framework imports a domain (labs, typed, candela, workbench).
 import test from 'node:test';

@@ -1,0 +1,7 @@
+chess-search	22295.51	22982.63	1486.03	1562.99
+regex-nfa	1097.58	1210.72	92.55	88.52
+sha-chacha	2093.93	1987.14	96.98	89.64
+lz-roundtrip	854.69	811.27	50.52	49.77
+# id	pipeline.old	pipeline.new	lower.old	lower.new   (ms, minimum of 5 interleaved rounds)
+total	26341.71	26991.75	1726.08	1790.92
+change	pipeline 2.5%	lower 3.8%
