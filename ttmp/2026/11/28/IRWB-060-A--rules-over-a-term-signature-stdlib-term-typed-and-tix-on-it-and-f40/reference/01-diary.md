@@ -269,3 +269,85 @@ reaches `c`. (c) The merged entry's `to` names an entity another entry (`retaine
 below it and the 056-A version (`git show v7-derivations-g-h/irwb-056-a:src/framework/ir/derivation.ts`,
 `stepEntries`); run `node --test tests/framework/derivation.test.mjs tests/typed/derivations.test.mjs`;
 then re-run probe 01 to see the new entry.
+
+## Step 6: the decision point — the library rule path against today's compiled matcher, interleaved
+
+**What I did.** Probe `scripts/03-o2-rule-path-vs-compiled-matcher.mjs`: one process, the whole corpus
+(50 projects), each compiled through the full O2 pipeline (16 steps, the meaning contract on every
+application) once with today's `PASSES` (whose fold/simplify now match through the library) and once
+with a verbatim copy of the pre-IRWB-060-A matcher (from commit 5d52199's `compile.ts`) built into
+equivalent fold/simplify bodies. The order alternates each round (library-first, then direct-first);
+both runs of each round are compared for revision equality. Three runs: 3 rounds, 5 rounds, 5 rounds
+(outputs in `scripts/*.out`).
+
+**Why.** The brief's decision point: if the library path is materially slower — about 10% of compile
+time — Typed keeps its compiled visitor and only the matcher and verifier are shared.
+
+**What worked.** No revision differences in any run. The numbers:
+- run 1 (3 rounds): whole pipeline library 32.6 s vs direct 31.5 s (+3.4%); fold+simplify 7.27 s vs 8.42 s (−13.7%).
+- run 2 (5 rounds): 52.1 s vs 49.5 s (+5.2%); 12.55 s vs 12.14 s (+3.4%).
+- run 3 (5 rounds): 51.6 s vs 50.3 s (+2.7%); 12.31 s vs 12.71 s (−3.2%).
+
+**What didn't work.** The first probe draft had a syntax error (a broken template literal) and read
+`PASSES.fold.writes` from the transformation object instead of `PASSES.fold.typed` (the wrapper); both
+fixed before the measurements. The per-pass `ms` numbers turned out to jitter by several percent in
+both directions (they include the meaning contract, which dominates), so the fold+simplify-only column
+oscillates in sign between runs — it is reported but not the decision number.
+
+**What I learned.** The library path is *not* materially slower: the whole-pipeline deltas over three
+runs are +3.4%, +5.2% and +2.7% — around the measurement's own run-to-run spread, and well under the
+~10% threshold. The decision: **Typed keeps the library path** (no fallback to a private matcher);
+the numbers are reported either way, as the brief requires. The residual cost is the signature
+indirection (a `Map` per rule attempt where the old matcher allocated a plain object, and `sig.op`/
+`sig.args`/`sig.constant` callbacks where it read fields).
+
+**What was tricky.** Making the comparison honest on a loaded machine: both paths in one process
+(warm caches equal), the order alternated per round, the whole pipeline measured (the contract is part
+of "compile time", and it is the same work for both), and the revisions compared so the probe cannot
+reward a faster-but-wrong path.
+
+**What warrants a second pair of eyes.** Whether ~3–5% of O2 compile time is an acceptable standing
+cost for one shared matcher (I believe it is: the threshold the brief sets is ~10%, and the drift
+between runs is of the same order as the delta). If the coordinator disagrees, the fallback is
+mechanical: restore the copied matcher from the probe into `compileRules` and keep the library's
+verifier and Tix rules.
+
+**Code review instructions.** Run `node scripts/03-o2-rule-path-vs-compiled-matcher.mjs` (about
+2 minutes; from the repository root) and compare with `scripts/03-o2-rule-path-vs-compiled-matcher.out`;
+check that the copied "direct" matcher in the probe matches commit 5d52199's `compile.ts` line for line.
+
+## Step 7: the Tix terms test, the site build, the acceptance sweep
+
+**What I did.** Wrote `tests/tensor/terms.test.mjs`: for every Tix corpus program, the recorded
+revision after `inline` and after `split-sum` (from probe 04), the plan's agreement with the per-pass
+applications, `inline`'s merges equal to an independent single-use-pointwise analysis of the original
+statements (each merged statement gone, its consumer kept, the F40 correspondence entry saying the
+merge), and `split-sum` leaving no one-axis dimension-bound `sum` with one blocks/tail pair per matched
+reduction. Ran `node tools/build-site.mjs` (stdlib changed). Then the acceptance sweep on the last
+commit: `npm run check`, `npm run build`, the suites, the baselines.
+
+**Why.** The acceptance asks for my own tests pinning the Tix revisions and the F40 entry, and the site
+must be rebuilt when `src/stdlib/` changes.
+
+**What worked.** The terms test passes (3/3); the site builds (50 projects, 134 source files); the
+full sweep (below) is green.
+
+**What didn't work.** Two test-draft bugs: the recorded-revision table was filled with placeholder
+hashes before probe 04 printed the real ones (replaced), and my first `expectedMerges` helper counted
+a statement's reads in *all* statements instead of the later ones (inline's own condition), which made
+the expectation disagree with the pass on chain-merging programs; and `conv2d` has no one-axis `sum`
+(its convolution reduces over two axes), so the "the split reductions are there" assertion had to
+become "one pair per matched reduction, and the corpus matches at least one somewhere".
+
+**What I learned.** `optimizeTix`'s step records do not carry the intermediate revision, so the
+recorded-revision test applies the passes itself (`applyNativePassSync`) — which also exercises the
+runner path the plan uses.
+
+**What was tricky.** Nothing new; the acceptance numbers are in the report.
+
+**What warrants a second pair of eyes.** The recorded revisions in the test duplicate (in short form)
+what the coordinator's baselines pin; if a later lane legitimately changes Tix revisions, both places
+must change — the test says so in its comment.
+
+**Code review instructions.** `node --test tests/tensor/terms.test.mjs`; then the full sweep as in
+the report.
