@@ -1,0 +1,12 @@
+before	median-total=9610.1ms	projects=5
+before	bytecode-vm	644.1
+before	f32-dsp	1428.9
+before	lz-roundtrip	1457.2
+before	regex-nfa	2124.8
+before	sha-chacha	3955.0
+before2	median-total=9840.2ms	projects=5
+before2	bytecode-vm	728.5
+before2	f32-dsp	1760.3
+before2	lz-roundtrip	1403.5
+before2	regex-nfa	1971.3
+before2	sha-chacha	3976.6
