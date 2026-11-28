@@ -72,23 +72,20 @@ const q = s => "'" + String(s).replaceAll("'", "'\\''") + "'";
 const dropped =
   /kex_exchange_identification|ssh_exchange_identification|Connection closed|Connection reset|Connection timed out|Connection refused|No route to host|Network is unreachable|Broken pipe|closed by remote host|client_loop|Timeout, server|Control socket/;
 class StrayConnection extends Error {}
+const transportFailure = (error, text, status) =>
+  ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH', 'EPIPE'].includes(error?.code) ||
+  dropped.test(text) ||
+  (status === 255 && !text);
 function sshCall(what, args, options) {
   const r = spawnSync('ssh', [...ssh, ...args], options);
   if (r.status === 0) return r;
-  const text = [r.error?.message, r.stderr?.toString(), r.stdout?.toString()]
+  const said = [r.error?.message, r.stderr?.toString(), r.stdout?.toString()]
     .filter(Boolean)
     .join('\n')
     .trim();
-  const kind = StrayConnection.transported(r.error, text, r.status);
-  const error = new (kind === 'dropped' ? StrayConnection : Error)(`${what}: ${text || 'exit ' + r.status}`);
-  throw error;
+  const message = `${what}: ${said || 'exit ' + r.status}`;
+  throw transportFailure(r.error, said, r.status) ? new StrayConnection(message) : new Error(message);
 }
-StrayConnection.transported = (error, text, status) =>
-  ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH', 'EPIPE'].includes(error?.code) ||
-  dropped.test(text) ||
-  (status === 255 && !text)
-    ? 'dropped'
-    : 'failed';
 const attempts = 6;
 const sleep = ms => new Promise(done => setTimeout(done, ms));
 
@@ -96,10 +93,16 @@ const tar = spawnSync('tar', ['-C', dir, '-cf', '-', '--', ...files], { maxBuffe
 if (tar.status !== 0) throw new Error('tar: ' + (tar.error ?? tar.stderr));
 for (let attempt = 1; ; ++attempt) {
   const remote = 'irwb-cuda/run/' + randomUUID();
-  // Removed by the fetch below, on success; a failed attempt removes its own directory.
+  // Removed by the fetch below, on success; a failed attempt removes its own directory, and says so only if it could
+  // not: a cleanup connection is dropped like any other.
   let cleaned = false;
-  const cleanUp = () =>
-    cleaned || spawnSync('ssh', [...ssh, `rm -rf ~/${remote}`], { stdio: 'ignore', timeout: 60_000 });
+  const cleanUp = async () => {
+    for (let i = 0; !cleaned && i < 3; ++i) {
+      if (spawnSync('ssh', [...ssh, `rm -rf ~/${remote}`], { stdio: 'ignore', timeout: 60_000 }).status === 0)
+        return;
+      await sleep(150 * 2 ** i * (0.75 + Math.random() / 2));
+    }
+  };
   try {
     sshCall('ssh copy', [`mkdir -p ~/${remote} && tar -C ~/${remote} -xf -`], { input: tar.stdout });
 
@@ -158,10 +161,10 @@ for (let attempt = 1; ; ++attempt) {
     }
     process.stdout.write(JSON.stringify(result) + '\n');
     if (result.exit !== 0) process.exitCode = 1;
-    if (!cleaned) cleanUp();
+    await cleanUp();
     break;
   } catch (error) {
-    cleanUp();
+    await cleanUp();
     if (!(error instanceof StrayConnection) || attempt === attempts) throw error;
     // Back off past the throttling burst: sshd drops for as long as the surplus connections keep arriving.
     const delay = Math.round(Math.min(4000, 250 * 2 ** (attempt - 1)) * (0.75 + Math.random() / 2));

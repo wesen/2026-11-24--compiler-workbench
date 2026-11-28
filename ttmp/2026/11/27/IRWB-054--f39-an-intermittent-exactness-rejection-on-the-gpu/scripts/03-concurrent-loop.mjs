@@ -1,7 +1,8 @@
 // IRWB-054 probe 03: the `batched` lowering check under the GPU suite's real concurrency. The suite runs five
 // *-gpu.test.mjs files in parallel and each check fires one remote job per variant at once; sshd drops connections
 // past MaxStartups (10:30:100), so the parent starts W workers, each running the check R times and classifying every
-// rejection (transport failure against a value disagreement). Retries the runner announced on stderr are counted.
+// rejection (transport failure against a value disagreement). Retry notes are not visible here: a job that succeeded on
+// a later attempt has its stderr dropped by src/tensor/cuda-runtime.ts (execFile on success); probe 07 counts them.
 // Usage: node 03-concurrent-loop.mjs [workers=6] [runs=15]
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -29,11 +30,10 @@ if (process.argv.includes('--worker')) {
         child.stdout.on('data', d => (stdout += d));
         child.stderr.on('data', d => (stderr += d));
         child.on('close', code => {
-          const retries = stderr.split('\n').filter(line => line.includes('cuda-remote: ') && line.includes('retrying'));
           try {
-            resolve({ code, retries, verdicts: JSON.parse(stdout.trim().split('\n').at(-1)) });
+            resolve({ code, verdicts: JSON.parse(stdout.trim().split('\n').at(-1)) });
           } catch {
-            resolve({ code, retries, error: stderr.slice(-400) });
+            resolve({ code, error: stderr.slice(-400) });
           }
         });
       }),
@@ -41,7 +41,6 @@ if (process.argv.includes('--worker')) {
   );
   const verdicts = results.flatMap(r => r.verdicts ?? []);
   const failures = verdicts.filter(v => !v.accepted);
-  const retries = results.flatMap(r => r.retries ?? []);
   const classify = reason =>
     /Connection closed|kex_exchange|Broken pipe|Connection reset|Connection timed out|No route to host/i.test(reason)
       ? 'transport'
@@ -62,8 +61,6 @@ if (process.argv.includes('--worker')) {
         failures: failures.length,
         firstFailureAtCheck: failures.length ? verdicts.findIndex(v => !v.accepted) : null,
         rate: verdicts.length ? failures.length / verdicts.length : 0,
-        retriesAbsorbed: retries.length,
-        retryNotes: retries.slice(0, 4),
         byClass: Object.fromEntries(Object.entries(byClass).map(([k, v]) => [k, { count: v.length, reasons: [...new Set(v)].slice(0, 8) }])),
         childExitCodes: results.map(r => r.code),
         childErrors: results.map(r => r.error).filter(Boolean),
