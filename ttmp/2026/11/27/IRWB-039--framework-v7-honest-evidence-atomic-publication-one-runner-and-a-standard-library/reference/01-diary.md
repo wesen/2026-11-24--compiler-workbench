@@ -143,3 +143,39 @@ The user: "can we parallelize?", then "alright, do it."
 
   - Disjoint files by construction. A and B are split so that the fixpoint solver (`solver.ts`) moves only after both. C does not touch `evaluate.ts`; D does not touch `model.ts`.
   - Caps: two hours for the library lanes, three for the spike.
+
+## Step 4: lanes A–E scored; phase 2c merged; the spike's verdict
+
+All eleven cells exited 0 and committed. Every cell met the acceptance on its commit (`scripts/07-score-lanes.sh`, `various/results/lanes-scores.jsonl`):
+- build and tsc clean, and no new Prettier issues;
+- baselines unchanged, and all suites green;
+- **no cell touched the coordinator's ticket.** The brief fix from step 2 worked; in the matrix, GLM had rewritten the baseline.
+
+**Library lanes (all eight moved code, none copied):**
+
+| Lane | GLM 5.3 high | DeepSeek xhigh | Merged |
+|---|---|---|---|
+| graph | `orders.ts` + `dominators.ts` (loops inside), +249/−105 | `digraph`, `orders`, `dominators`, `loops`, generic `N`, +302/−111 | DeepSeek: one module per algorithm, as the layering plans |
+| lattice | moved the lattices; left SCCP, with a reason | moved them and put SCCP on the library's flat lattice (its probe compares element by element; corpus identical) | DeepSeek: the second client actually used |
+| affine | BigInt-exact forms, distances, `joinDepth` on them; 70 lines | the same, 106 lines | GLM: smaller |
+| num | min/max profiles only (46 lines) | binary32 arithmetic on bit patterns plus named IEEE 754-2019 min/max profiles; `f32.ts` −69 | DeepSeek: what the brief asked |
+
+- Merged by cherry-pick (`26bea81`, tag `v7-p2`). `src/stdlib/index.ts` and `tests/framework/layering.test.mjs` conflicted and were resolved by union: both lanes had allowed framework → stdlib.
+- On main, all suites are green: typed 186, framework 243, workbench 24, stdlib 48, tensor CPU 45. Baselines are unchanged and the site builds.
+- **GPU:** 22/23 on the first run, then 23/23 three times, once with `--test-concurrency=1`. The failure was `schedule-gpu.test.mjs:35`, "every tiled variant … exact", where the batched variant was `accepted: false`. Recorded as F39: an intermittent exactness rejection may be a kernel race.
+
+**Spike (phase 3): all three cells recommend one runner with two drivers.**
+
+| | Sol low (051-A) | Astra low (051-B) | Fable (051-C) |
+|---|---|---|---|
+| sync analysis path | 7 lines, shares the cache, validation, records and history | 27 sync-specific lines, no duplicated lookup or records | `analyseSync` 7 lines; `analyse` and `preserve` became generators driven by both drivers |
+| ported Typed pass | `constprop` | `constprop` | `strength` |
+| preservation | sync transfer | recomputes instead of transferring | `preserveSync` with transfer |
+| shape | effect driver + runner inside `define-pass.ts` | runner inside `define-pass.ts` | separate `transformation.ts` (398) + generic `steps.ts` (59) |
+| equality | 6 Tix + 50 Typed, identical | 6 Tix + 50 Typed, identical | 6 Tix + 53 Typed inputs, identical |
+| timing | overlapping ranges | overlapping ranges | overlapping ranges |
+
+- **Shared gaps,** found by all three: contracts are async-only (`verifyTransformation` always returns a promise), and there is no synchronous strategy driver (27 `await`s in the interpreter).
+- **Brief error:** I suggested `licm` or `bce`, but both declare `preserves: []`.
+- **Verdict:** one runner, two drivers. The migration base is Fable's structure (the runner in its own module, generic steps, the manager's `analyse` and `preserve` as generators), with Sol's sync transfer as a cross-check.
+- **Remaining phase 3 work:** contracts as steps (13 `await`s), a synchronous strategy driver, then every pass migrated.
