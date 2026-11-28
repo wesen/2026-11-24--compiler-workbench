@@ -10,6 +10,8 @@
  *
  * What exists now:
  *   flow/     liveness — backward gen/kill liveness over blocks, with an explicit scope
+ *   affine/   forms — linear expressions over index variables, computed exactly; distances — dependence
+ *             distance vectors over them (a read's index per position against the consumer's axis)
  *
  * Later modules, one line each (each enters under the admission rule, with its two clients):
  *   graph/    dominators and loops — the dominator tree, dominance frontiers, natural loops
@@ -18,10 +20,12 @@
  *   flow/     the fixpoint solver over a lattice (liveness hardcodes its own; this generalises it)
  *   ssa/      SSA construction — from a graph and dominators to phi placement
  *   term/     terms over a signature, matching and substitution
- *   affine/   affine forms — linear expressions over index variables
  *   pe/       partial evaluation — specialization over a term and an affine form
  *   check/    executable laws over library results (a checker per admitted algorithm)
  *   measure/  cost measures over library results (sizes, depths)
  */
 export { liveness, reachableBlocks } from './flow/liveness.js';
 export type { LiveBlock, LiveGraph, Liveness, LivenessScope } from './flow/liveness.js';
+export { add, constant, plain, substitute, value, variable } from './affine/forms.js';
+export type { Affine } from './affine/forms.js';
+export { distanceVector, isZero } from './affine/distances.js';
